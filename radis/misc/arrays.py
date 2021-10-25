@@ -481,6 +481,29 @@ else:
     add_at = rcx.add_at
 
 
+# @numba.njit
+# def non_zero_values_around(a, n):
+#     """return a boolean array of same size as ``a`` where each position ``i``
+#     is ``True`` if there are non-zero points less than ``n`` index position
+#     away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
+#     position away from from ``a[i]``
+#     """
+#     # # Cleaner version, but about 2x slower on real-life test cases:
+#     # #
+#     # %timeit non_zero_values_around(DLM[:, l, m], truncation)
+#     # 2.92 ms ± 99.3 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+
+#     # %timeit non_zero_values_around2(DLM[:, l, m], truncation)
+#     # 5.11 ms ± 110 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+#     # --------------
+
+#     # non_zero_values_around2()
+#     b = np.zeros(len(a)+2*n+1,  dtype=np.bool_)
+#     for pos in np.nonzero(a)[0]:
+#         b[pos:pos+2*n+1] = True
+#     return b[n:len(a)+n]
+
+
 @numba.njit(
     bool_[:](float64[:], int64),
     cache=True,
@@ -538,7 +561,143 @@ def non_zero_values_around(a, n):
     return b
 
 
-if __name__ == "__main__":
-    import pytest
+# @numba.njit(
+#     numba.types.List(numba.types.containers.UniTuple(int64, 2))(int32[:], int64),
+#     cache=True,
+# )
+# def non_zero_ranges_around(a, n):
+#     """return a list of coordinates corresponding to non-zero values
+#     where each position ``i``
+#     is ``True`` if there are non-zero points less than ``n`` index position
+#     away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
+#     position away from from ``a[i]``
 
-    pytest.main(["../test/misc/test_arrays.py", "-s"])  # -s for showing console output
+#     Parameters
+#     ----------
+#     a : array of int, line centers
+#     n : int or array of int, width
+#     """
+
+#     # build the list
+#     L = []
+#     pos = -1  # found position of non-zero point
+#     start = -1  # start position of subrange
+
+#     for i, ai in enumerate(a):
+#         if ai != 0:
+#             pos = i
+#             if start == -1:
+#                 if i == 0:
+#                     start = 0
+#                 else:
+#                     start = i - n
+#         else:
+#             if start == -1:
+#                 continue
+#             elif pos == i - n - 1:
+#                 L.append((start, i - 1))
+#                 start = -1
+#                 pos = -1
+
+#     if start != -1:
+#         L.append((start, len(a) - 1))
+
+#     return L
+
+
+# @numba.njit(
+#     bool_[:](int32[:], int64),
+#     cache=True,
+# )
+# def non_zero_values_around(a, n):
+#     """return a boolean array of same size as ``a`` where each position ``i``
+#     is ``True`` if there are non-zero points less than ``n`` index position
+#     away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
+#     position away from from ``a[i]``
+#     """
+#     L = non_zero_ranges_around(a, n)
+
+#     # turn it into a boolean array
+#     b = np.zeros(len(a), dtype=np.bool_)
+#     for start, end in L:
+#         b[max(0, start) : end + 1] = 1
+
+#     return b
+
+
+@numba.njit(
+    numba.types.List(numba.types.containers.UniTuple(int64, 2))(bool_[:]),
+    cache=True,
+)
+def non_zero_ranges_in_array(b):
+    """return a list of coordinates corresponding to non-zero values
+    in boolean array ``b``
+
+    Parameters
+    ----------
+    b : boolean array
+
+    Examples
+    --------
+    ::
+        b = np.array([0,0,1,1,0,1,0,1], dtype=np.bool)
+        non_zero_ranges_in_array(b)
+        >> [(2, 4), (5, 6), (7, 8)]
+    """
+
+    # build the list
+    L = []
+    start = -1  # start position of subrange
+
+    for i, bi in enumerate(b):
+        if bi:
+            if start == -1:
+                start = i
+        else:
+            if start == -1:
+                continue
+            else:
+                L.append((start, i))
+                start = -1
+
+    if start != -1:
+        L.append((start, len(b)))
+
+    return L
+
+
+# @numba.njit(
+#     (bool_[:])(numba.types.List(numba.types.containers.UniTuple(int64, 2)), int32),
+#     cache=True,
+# )
+def boolean_array_from_coordinates(L, n):
+    """return a boolean array of length ``n`` where (``L[i][0]``, ``L[i][1]``)
+    give the ranges set to ``True``
+
+    Examples
+    --------
+    ::
+        L = [(2, 4), (5, 6), (7, 8)]
+        boolean_array_from_coordinates(L, 10) == np.array([0,0,1,1,0,1,0,1,0,0])
+    """
+    # build the list
+    b = np.zeros(n, dtype=np.bool)  # , dtype=bool_)
+    for start, end in L:
+        b[start:end] = 1
+
+    return b
+
+
+if __name__ == "__main__":
+    # import pytest
+
+    # pytest.main(["../test/misc/test_arrays.py", "-s"])  # -s for showing console output
+
+    b = np.array([0, 0, 1, 1, 0, 1, 0, 1], dtype=bool)
+    assert non_zero_ranges_in_array(b) == [(2, 4), (5, 6), (7, 8)]
+
+    L = [(2, 4), (5, 6), (7, 8)]
+    assert (
+        boolean_array_from_coordinates(L, 8)
+        == np.array([0, 0, 1, 1, 0, 1, 0, 1], dtype=np.bool)
+    ).all()

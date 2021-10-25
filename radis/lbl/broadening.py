@@ -60,6 +60,7 @@ Formula in docstrings generated with :py:func:`~pytexit.pytexit.py2tex` ::
 ----------
 
 """
+
 from warnings import warn
 
 import numpy as np
@@ -72,7 +73,14 @@ from scipy.signal import oaconvolve
 import radis
 from radis.db.references import doi
 from radis.lbl.base import BaseFactory
-from radis.misc.arrays import add_at, arange_len, non_zero_values_around, numpy_add_at
+from radis.misc.arrays import (
+    add_at,
+    arange_len,
+    boolean_array_from_coordinates,
+    non_zero_ranges_in_array,
+    non_zero_values_around,
+    numpy_add_at,
+)
 from radis.misc.basics import is_float
 from radis.misc.debug import printdbg
 from radis.misc.plot import fix_style, set_style
@@ -1876,7 +1884,11 @@ class BroadenFactory(BaseFactory):
         self.profiler.start("DLM_Distribute_lines", 3)
         # ... Initialize array on which to distribute the lineshapes
         if broadening_method in ["voigt", "convolve"]:
-            DLM = np.zeros((len(wavenumber_calc) + 2, len(wG), len(wL)))
+            if radis.config["SPARSE_WAVERANGE"]:
+                # DLM is constructed in a sparse-way later
+                pass
+            else:
+                DLM = np.zeros((len(wavenumber_calc) + 2, len(wG), len(wL)))
             # +2 to allocate one empty grid point on each side : case where a line is on the boundary
             ki0 += 1
             ki1 += 1
@@ -1892,18 +1904,150 @@ class BroadenFactory(BaseFactory):
             raise NotImplementedError(broadening_method)
 
         # Distribute all line intensities on the 2x2x2 bins.
-        _add_at(DLM, ki0, li0, mi0, Iv0 * awV00)
-        _add_at(DLM, ki0, li0, mi1, Iv0 * awV01)
-        _add_at(DLM, ki0, li1, mi0, Iv0 * awV10)
-        _add_at(DLM, ki0, li1, mi1, Iv0 * awV11)
-        _add_at(DLM, ki1, li0, mi0, Iv1 * awV00)
-        _add_at(DLM, ki1, li0, mi1, Iv1 * awV01)
-        _add_at(DLM, ki1, li1, mi0, Iv1 * awV10)
-        _add_at(DLM, ki1, li1, mi1, Iv1 * awV11)
+        if radis.config["SPARSE_WAVERANGE"]:
+            if broadening_method not in ["voigt", "convolve"]:
+                raise NotImplementedError
 
-        if broadening_method in ["voigt", "convolve"]:
-            DLM = DLM[1:-1, :, :]
-            # 1:-1 to remove the empty grid point on each side
+            import pandas as pd
+
+            df = pd.DataFrame(
+                {
+                    "ki0": ki0,
+                    "li0": li0,
+                    "li1": li1,
+                    "mi0": mi0,
+                    "mi1": mi1,
+                    "Iv0": Iv0,
+                    "Iv1": Iv1,
+                    "awV00": awV00,
+                    "awV01": awV01,
+                    "awV10": awV10,
+                    "awV11": awV11,
+                }
+            )
+
+            def get_non_zero_wranges(lineshape_parameters, max_range):
+                """Get coordinates of non-zero wave ranges for all lines
+                that share the same ``lineshape_parameters``
+
+                Parameters
+                ----------
+                lineshape_parameters: str
+                max_range: int
+
+                Examples
+                --------
+                ::
+                    DLM_ranges_00 = get_non_zero_wranges(lineshape_parameters=["li0", "mi0"], max_range=len(wavenumber_calc))
+                """
+                dgb = df.groupby(lineshape_parameters)
+                DLM_ranges = {}
+                for lineshape_param, group in dgb:
+                    truncation_pts = int(self.params.truncation // self.params.wstep)
+                    # note: truncation can be unique for each point of the DLM basis
+                    # (allow to have line-dependant truncatino, at least as all
+                    # lines with same truncation are grouped together in the DLM basis)
+
+                    n = truncation_pts
+                    L = []
+
+                    # build the list of non-empty ranges for all lines with this lineshape
+                    pos = ki0[0]
+                    start = max(pos - n, 0)  # start position of non-zero range
+                    end = min(pos + 1 + n, max_range)
+
+                    for pos in group.ki0[1:]:
+                        if pos > end:
+                            # close the previous range:
+                            L.append((start, end))
+                            # reopen new range :
+                            start = max(pos - n, 0)
+                            end = min(pos + 1 + n, max_range)
+                        else:
+                            # we're in the middle of a range:
+                            # keep the start, move the end
+                            end = min(pos + 1 + n, max_range)
+
+                    # final close:
+                    if L == [] or L[-1] != (start, end):
+                        L.append((start, end))
+
+                    DLM_ranges[lineshape_param] = L
+                return DLM_ranges
+
+            w = wavenumber_calc
+
+            DLM_ranges_00 = get_non_zero_wranges(
+                lineshape_parameters=["li0", "mi0"], max_range=len(w)
+            )
+            DLM_ranges_01 = get_non_zero_wranges(
+                lineshape_parameters=["li0", "mi1"], max_range=len(w)
+            )
+            DLM_ranges_10 = get_non_zero_wranges(
+                lineshape_parameters=["li1", "mi0"], max_range=len(w)
+            )
+            DLM_ranges_11 = get_non_zero_wranges(
+                lineshape_parameters=["li1", "mi1"], max_range=len(w)
+            )
+
+            # Combine all DLM ranges:
+            DLM_ranges = dict().fromkeys(
+                set(DLM_ranges_00.keys())
+                | set(DLM_ranges_01.keys())
+                | set(DLM_ranges_10.keys())
+                | set(DLM_ranges_11.keys())
+            )
+            for param in DLM_ranges.keys():
+                b = np.ones(len(wavenumber_calc), dtype=bool)
+                if param in DLM_ranges_00:
+                    b *= boolean_array_from_coordinates(DLM_ranges_00[param], len(w))
+                if param in DLM_ranges_01:
+                    b *= boolean_array_from_coordinates(DLM_ranges_01[param], len(w))
+                if param in DLM_ranges_10:
+                    b *= boolean_array_from_coordinates(DLM_ranges_10[param], len(w))
+                if param in DLM_ranges_11:
+                    b *= boolean_array_from_coordinates(DLM_ranges_11[param], len(w))
+                DLM_ranges[param] = non_zero_ranges_in_array(b)
+
+                # w_reduced[pos] = Iv0 * awV00
+                # w_reduced[pos] = Iv0 * awV01
+
+                # _add_at(DLM, ki0, li0, mi0, Iv0 * awV00)
+                # _add_at(DLM, ki0, li0, mi1, Iv0 * awV01)
+                # _add_at(DLM, ki0, li1, mi0, Iv0 * awV10)
+                # _add_at(DLM, ki0, li1, mi1, Iv0 * awV11)
+                # _add_at(DLM, ki1, li0, mi0, Iv1 * awV00)
+                # _add_at(DLM, ki1, li0, mi1, Iv1 * awV01)
+                # _add_at(DLM, ki1, li1, mi0, Iv1 * awV10)
+                # _add_at(DLM, ki1, li1, mi1, Iv1 * awV11)
+
+            # builds the DLM active ranges as we go:
+            # note: truncation may be different each time? TODO Erwan
+
+            # DLM = {}
+            # for l in range(len(wG)):
+            #     for m in range(len(wL)):
+            # _add_at_sparse(DLM, ki0, li0, mi0, Iv0 * awV00)
+            # _add_at_sparse(DLM, ki0, li0, mi1, Iv0 * awV01)
+            # _add_at_sparse(DLM, ki0, li1, mi0, Iv0 * awV10)
+            # _add_at_sparse(DLM, ki0, li1, mi1, Iv0 * awV11)
+            # _add_at_sparse(DLM, ki1, li0, mi0, Iv1 * awV00)
+            # _add_at_sparse(DLM, ki1, li0, mi1, Iv1 * awV01)
+            # _add_at_sparse(DLM, ki1, li1, mi0, Iv1 * awV10)
+            # _add_at_sparse(DLM, ki1, li1, mi1, Iv1 * awV11)
+        else:
+            _add_at(DLM, ki0, li0, mi0, Iv0 * awV00)
+            _add_at(DLM, ki0, li0, mi1, Iv0 * awV01)
+            _add_at(DLM, ki0, li1, mi0, Iv0 * awV10)
+            _add_at(DLM, ki0, li1, mi1, Iv0 * awV11)
+            _add_at(DLM, ki1, li0, mi0, Iv1 * awV00)
+            _add_at(DLM, ki1, li0, mi1, Iv1 * awV01)
+            _add_at(DLM, ki1, li1, mi0, Iv1 * awV10)
+            _add_at(DLM, ki1, li1, mi1, Iv1 * awV11)
+
+            if broadening_method in ["voigt", "convolve"]:
+                DLM = DLM[1:-1, :, :]
+                # 1:-1 to remove the empty grid point on each side
 
         # All lines within each bins are convolved with the same lineshape.
         # Let's do it:
@@ -2882,3 +3026,5 @@ if __name__ == "__main__":
     from radis.test.lbl.test_broadening import _run_testcases
 
     print("Testing broadening.py:", _run_testcases(verbose=True, plot=True))
+
+# %%
