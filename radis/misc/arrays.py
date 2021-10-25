@@ -40,6 +40,7 @@ from math import ceil
 
 import numba
 import numpy as np
+from numba import bool_, float64, int64
 from numpy import hstack
 from scipy.interpolate import interp1d
 
@@ -480,7 +481,10 @@ else:
     add_at = rcx.add_at
 
 
-@numba.njit
+@numba.njit(
+    bool_[:](float64[:], int64),
+    cache=True,
+)
 def non_zero_values_around(a, n):
     """return a boolean array of same size as ``a`` where each position ``i``
     is ``True`` if there are non-zero points less than ``n`` index position
