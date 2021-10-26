@@ -310,7 +310,9 @@ def test_non_zero_values_around(*args, **kwargs):
     position away from from ``a[i]``
     """
 
-    a = np.array([0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0])
+    a = np.array(
+        [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0], dtype=np.float64
+    )
 
     # n = 1
     b = np.array([0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1])
@@ -329,7 +331,9 @@ def test_non_zero_values_around(*args, **kwargs):
     assert (out == b).all()
 
     # n = 2
-    a = np.array([0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
+    a = np.array(
+        [0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], dtype=np.float64
+    )
     b = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1])
     out = non_zero_values_around(a, 2)
     print(a, "width 2")
@@ -338,7 +342,9 @@ def test_non_zero_values_around(*args, **kwargs):
     assert (out == b).all()
 
     # n = 1
-    a = np.array([0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
+    a = np.array(
+        [0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], dtype=np.float64
+    )
     b = np.array([1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1])
     out = non_zero_values_around(a, 1)
     print(a, "width 1")
