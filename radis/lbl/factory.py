@@ -1256,7 +1256,6 @@ class SpectrumFactory(BandFactory):
                 slit_FWHM=s.conditions["slit_FWHM"],
                 gpu=(not s.conditions["emulate_gpu"]),
             )
-            print(iter_params.N_G, iter_params.N_L)
             if var == "abscoeff":
                 new_y = abscoeff
             elif var == "transmittance":
