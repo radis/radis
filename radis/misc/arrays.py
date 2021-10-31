@@ -40,7 +40,7 @@ from math import ceil
 
 import numba
 import numpy as np
-from numba import bool_, float64, int64
+from numba import bool_, float64, int32, int64
 from numpy import hstack
 from scipy.interpolate import interp1d
 
@@ -626,7 +626,7 @@ def non_zero_values_around(a, n):
 
 
 @numba.njit(
-    numba.types.List(numba.types.containers.UniTuple(int64, 2))(bool_[:]),
+    numba.types.Tuple((int64[:], int64[:]))(bool_[:]),
     cache=True,
 )
 def non_zero_ranges_in_array(b):
@@ -663,14 +663,16 @@ def non_zero_ranges_in_array(b):
     if start != -1:
         L.append((start, len(b)))
 
-    return L
+    start, stop = np.array(L).T
+
+    return start, stop
 
 
-# @numba.njit(
-#     (bool_[:])(numba.types.List(numba.types.containers.UniTuple(int64, 2)), int32),
-#     cache=True,
-# )
-def boolean_array_from_coordinates(L, n):
+@numba.njit(
+    (bool_[:])(int64[:], int64[:], int64),
+    cache=True,
+)
+def boolean_array_from_coordinates(start, stop, n):
     """return a boolean array of length ``n`` where (``L[i][0]``, ``L[i][1]``)
     give the ranges set to ``True``
 
@@ -681,11 +683,60 @@ def boolean_array_from_coordinates(L, n):
         boolean_array_from_coordinates(L, 10) == np.array([0,0,1,1,0,1,0,1,0,0])
     """
     # build the list
-    b = np.zeros(n, dtype=np.bool)  # , dtype=bool_)
-    for start, end in L:
-        b[start:end] = 1
+    b = np.zeros(n, dtype=bool_)
+    for i in range(len(start)):
+        b[start[i] : stop[i]] = True
 
     return b
+
+
+@numba.njit(
+    numba.types.Tuple((int64[:], int64[:], float64[:]))(
+        int32[:], float64[:], float64[:], float64[:], int64, int64
+    ),
+    cache=True,
+)
+def sparse_add_at(ki0, Iv0, Iv1, weight, max_range, truncation_pts):
+    """ Returns start, stop of non-zero ranges, and intensity ``I`` of length ``truncation_pts`` """
+    I = np.zeros(max_range)
+    L = [
+        (0, 0) for k in range(0)
+    ]  # empty list; helps Numba infer type. See https://numba.pydata.org/numba-doc/0.41.0/user/troubleshoot.html#my-code-has-an-untyped-list-problem
+    n = truncation_pts
+
+    # initiate start
+    pos = ki0[0]
+    start = max(pos - n, 0)
+    end = max_range  # will be rewritten in the first call of the loop
+
+    # Loop over all lines :
+    for i in range(len(ki0)):
+        pos = ki0[i]
+
+        # Adjust range:
+        if pos > end:
+            # close the previous range:
+            L.append((start, end))
+            # reopen new range :
+            start = max(pos - n, 0)
+            end = min(
+                pos + 1 + n, max_range
+            )  # TODO: check if not +2 because line is added on ki0 and ki1 ()
+        else:
+            # we're in the middle of a range:
+            # keep the start, move the end
+            end = min(pos + 1 + n, max_range)
+
+        # Sum intensity  (equivalent of "add-at")
+        I[pos] += Iv0[i] * weight[i]
+        I[pos + 1] += Iv1[i] * weight[i]
+    # final close:
+    if len(L) == 0 or L[-1] != (start, end):
+        L.append((start, end))
+
+    start, stop = np.array(L).T
+
+    return start, stop, I
 
 
 if __name__ == "__main__":

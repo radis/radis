@@ -79,6 +79,7 @@ from radis.misc.arrays import (
     boolean_array_from_coordinates,
     non_zero_ranges_in_array,
     numpy_add_at,
+    sparse_add_at,
 )
 from radis.misc.basics import is_float
 from radis.misc.debug import printdbg
@@ -1922,7 +1923,8 @@ class BroadenFactory(BaseFactory):
                     "awV01": awV01,
                     "awV10": awV10,
                     "awV11": awV11,
-                }
+                },
+                copy=False,
             )
 
             def get_non_zero_wranges(groupby_parameters, max_range, intensity_weight):
@@ -1942,57 +1944,26 @@ class BroadenFactory(BaseFactory):
                 dgb = df.groupby(groupby_parameters)
                 DLM_ranges = {}
                 DLM_reduced = {}
-                # I = np.zeros(max_range)
                 for groupby_param, group in dgb:
                     truncation_pts = int(self.params.truncation // self.params.wstep)
                     # note: truncation can be unique for each point of the DLM basis
                     # (allow to have line-dependant truncatino, at least as all
                     # lines with same truncation are grouped together in the DLM basis)
 
-                    # I *= 0   # reset
-                    I = np.zeros(max_range)
-                    n = truncation_pts
-                    L = []
+                    ki0 = group.ki0.values
+                    Iv0 = group.Iv0.values
+                    Iv1 = group.Iv1.values
+                    weight = group[intensity_weight].values
 
-                    # build the list of non-empty ranges for all lines with this lineshape
+                    # build the list of non-empty ranges for all lines with this lineshape :
+                    start, stop, I = sparse_add_at(
+                        ki0, Iv0, Iv1, weight, max_range, truncation_pts
+                    )
 
-                    # initiate start
-                    pos = group.ki0.values[0]
-                    start = max(pos - n, 0)
-                    end = max_range  # will be rewritten in the first call of the loop
-
-                    # Loop over all lines :
-                    for i in range(len(group)):
-                        pos = group["ki0"].iloc[i]
-
-                        # Adjust range:
-                        if pos > end:
-                            # close the previous range:
-                            L.append((start, end))
-                            # reopen new range :
-                            start = max(pos - n, 0)
-                            end = min(
-                                pos + 1 + n, max_range
-                            )  # TODO: check if not +2 because line is added on ki0 and ki1 ()
-                        else:
-                            # we're in the middle of a range:
-                            # keep the start, move the end
-                            end = min(pos + 1 + n, max_range)
-
-                        # Sum intensity  (equivalent of "add-at")
-                        I[pos] += group["Iv0"].iloc[i] * group[intensity_weight].iloc[i]
-                        I[pos + 1] += (
-                            group["Iv1"].iloc[i] * group[intensity_weight].iloc[i]
-                        )
-
-                    # final close:
-                    if L == [] or L[-1] != (start, end):
-                        L.append((start, end))
-
-                    DLM_ranges[groupby_param] = L
+                    DLM_ranges[groupby_param] = start, stop
 
                     # generate reduced array:
-                    b = boolean_array_from_coordinates(L, len(I))
+                    b = boolean_array_from_coordinates(start, stop, len(I))
                     I_reduced = I[b]
                     DLM_reduced[groupby_param] = I_reduced
 
@@ -2033,19 +2004,19 @@ class BroadenFactory(BaseFactory):
                 b = np.ones(len(w), dtype=bool)
                 I = np.zeros(len(w))
                 if param in DLM_ranges_00:
-                    bi = boolean_array_from_coordinates(DLM_ranges_00[param], len(w))
+                    bi = boolean_array_from_coordinates(*DLM_ranges_00[param], len(w))
                     I[bi] += DLM_reduced_00[param]
                     b += bi
                 if param in DLM_ranges_01:
-                    bi = boolean_array_from_coordinates(DLM_ranges_01[param], len(w))
+                    bi = boolean_array_from_coordinates(*DLM_ranges_01[param], len(w))
                     I[bi] += DLM_reduced_01[param]
                     b += bi
                 if param in DLM_ranges_10:
-                    bi = boolean_array_from_coordinates(DLM_ranges_10[param], len(w))
+                    bi = boolean_array_from_coordinates(*DLM_ranges_10[param], len(w))
                     I[bi] += DLM_reduced_10[param]
                     b += bi
                 if param in DLM_ranges_11:
-                    bi = boolean_array_from_coordinates(DLM_ranges_11[param], len(w))
+                    bi = boolean_array_from_coordinates(*DLM_ranges_11[param], len(w))
                     I[bi] += DLM_reduced_11[param]
                     b += bi
                 # Sparse storage (coordinates & non-zeros ranges) :
@@ -2086,7 +2057,7 @@ class BroadenFactory(BaseFactory):
                     if radis.config["SPARSE_WAVERANGE"]:
                         if (l, m) in DLM_ranges.keys():
                             mask = boolean_array_from_coordinates(
-                                DLM_ranges[(l, m)], len(sumoflines_calc)
+                                *DLM_ranges[(l, m)], len(sumoflines_calc)
                             )
                             sumoflines_calc[mask] += oaconvolve(
                                 DLM_reduced[(l, m)], lineshape, "same"
