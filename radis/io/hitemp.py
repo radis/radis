@@ -317,53 +317,48 @@ class HITEMPDatabaseManager(DatabaseManager):
 
             # assert not(exists(local_file))
 
-            with writer.open(local_file) as f:
+            b = np.zeros(chunksize, dtype=dt)  # receives the HITRAN 160-character data.
+
+            for nbytes in iter(lambda: gfile.readinto(b), 0):
+
+                if not b[-1]:
+                    # End of file flag within the chunk (but does not start
+                    # with End of file flag) so nbytes != 0
+                    b = get_last(b)
+
+                df = _ndarray2df(b, columns, linereturnformat)
+
+                # Post-processing :
+                # ... Add local quanta attributes, based on the HITRAN group
+                df = parse_local_quanta(df, molecule)
+
+                # ... Add global quanta attributes, based on the HITRAN class
+                df = parse_global_quanta(df, molecule)
+
+                # Switch 'P', 'Q', 'R' to -1, 0, 1
+                if "branch" in df:
+                    replace_PQR_with_m101(df)
+
+                writer.write(local_file, df, append=True)
+
+                wmin = np.min((wmin, df.wav.min()))
+                wmax = np.max((wmax, df.wav.max()))
+
+                Nlines += len(df)
+                Nlines_tot += len(df)
+                Nlines_raw += len(b)
+                if pbar_Ntot_estimate_factor is None:
+                    pbar_Ntot_message = f"{Ntotal_lines_expected:,} lines"
+                else:
+                    pbar_Ntot_message = f"~{Ntotal_lines_expected:,} lines (estimate)"
+                pb.update(
+                    Nlines_tot,
+                    message=f"  Parsed {Nlines_tot:,} / {pbar_Ntot_message}. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete.",
+                )
+                # Reinitialize for next read
                 b = np.zeros(
                     chunksize, dtype=dt
                 )  # receives the HITRAN 160-character data.
-
-                for nbytes in iter(lambda: gfile.readinto(b), 0):
-
-                    if not b[-1]:
-                        # End of file flag within the chunk (but does not start
-                        # with End of file flag) so nbytes != 0
-                        b = get_last(b)
-
-                    df = _ndarray2df(b, columns, linereturnformat)
-
-                    # Post-processing :
-                    # ... Add local quanta attributes, based on the HITRAN group
-                    df = parse_local_quanta(df, molecule)
-
-                    # ... Add global quanta attributes, based on the HITRAN class
-                    df = parse_global_quanta(df, molecule)
-
-                    # Switch 'P', 'Q', 'R' to -1, 0, 1
-                    if "branch" in df:
-                        replace_PQR_with_m101(df)
-
-                    writer.write(f, df, append=True)
-
-                    wmin = np.min((wmin, df.wav.min()))
-                    wmax = np.max((wmax, df.wav.max()))
-
-                    Nlines += len(df)
-                    Nlines_tot += len(df)
-                    Nlines_raw += len(b)
-                    if pbar_Ntot_estimate_factor is None:
-                        pbar_Ntot_message = f"{Ntotal_lines_expected:,} lines"
-                    else:
-                        pbar_Ntot_message = (
-                            f"~{Ntotal_lines_expected:,} lines (estimate)"
-                        )
-                    pb.update(
-                        Nlines_tot,
-                        message=f"  Parsed {Nlines_tot:,} / {pbar_Ntot_message}. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete.",
-                    )
-                    # Reinitialize for next read
-                    b = np.zeros(
-                        chunksize, dtype=dt
-                    )  # receives the HITRAN 160-character data.
         if pbar_last:
             pb.update(
                 Nlines_tot,

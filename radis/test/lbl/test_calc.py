@@ -744,6 +744,34 @@ def test_calc_spectrum_multiple_molecules_inputerror(
     return True
 
 
+@pytest.mark.needs_connection
+def test_calc_spectrum_multiple_molecules_wstep_auto(
+    verbose=True, plot=True, warnings=True, *args, **kwargs
+):
+    """Tests multiple molecules spectrum for wstep = 'auto'
+    and checks that minimum wstep value is selected with
+    resample = "intersect"""
+    from radis import calc_spectrum
+
+    # Merging the CO, CO2 spectrum itself in calc_spectrum
+    s = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,  # cm-1
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        Tgas=700,  # K
+        mole_fraction={"CO": 0.1, "CO2": 0.1},
+        path_length=1,  # cm
+        wstep="auto",
+        databank="hitran",  # or use 'hitemp'
+        verbose=verbose,
+    )
+
+    # Check calculation went fine:
+    assert set(s.conditions["molecule"]) == set(["CO2", "CO"])
+    assert s.get_conditions()["wstep"] in ("N/A", 0.013)
+
+
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
     # Test sPlanck and conversion functions
@@ -774,6 +802,7 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     test_calc_spectrum_multiple_molecules()
     test_calc_spectrum_multiple_molecules_otherinputs()
     test_calc_spectrum_multiple_molecules_inputerror()
+    test_calc_spectrum_multiple_molecules_wstep_auto()
 
     return True
 

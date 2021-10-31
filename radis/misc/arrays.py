@@ -40,6 +40,7 @@ from math import ceil
 
 import numba
 import numpy as np
+from numba import bool_, float64, int64
 from numpy import hstack
 from scipy.interpolate import interp1d
 
@@ -482,6 +483,63 @@ except (ModuleNotFoundError):
 # we may consider escaping this.
 else:
     add_at = rcx.add_at
+
+
+@numba.njit(
+    bool_[:](float64[:], int64),
+    cache=True,
+)
+def non_zero_values_around(a, n):
+    """return a boolean array of same size as ``a`` where each position ``i``
+    is ``True`` if there are non-zero points less than ``n`` index position
+    away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
+    position away from from ``a[i]``
+    """
+    # # Cleaner version, but about 2x slower on real-life test cases:
+    # #
+    # %timeit non_zero_values_around(DLM[:, l, m], truncation)
+    # 2.92 ms ± 99.3 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+
+    # %timeit non_zero_values_around2(DLM[:, l, m], truncation)
+    # 5.11 ms ± 110 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+    # --------------
+
+    # # non_zero_values_around2()
+    # b = np.zeros(len(a)+2*n+1,  dtype=np.bool_)
+    # for pos in np.nonzero(a)[0]:
+    #     b[pos:pos+2*n+1] = True
+    # return b[n:len(a)+n]
+
+    # build the list
+    L = []
+    pos = -1  # found position of non-zero point
+    start = -1  # start position of subrange
+
+    for i, ai in enumerate(a):
+        if ai != 0:
+            pos = i
+            if start == -1:
+                if i == 0:
+                    start = 0
+                else:
+                    start = i - n
+        else:
+            if start == -1:
+                continue
+            elif pos == i - n - 1:
+                L.append((start, i - 1))
+                start = -1
+                pos = -1
+
+    if start != -1:
+        L.append((start, len(a) - 1))
+
+    # turn it into a boolean array
+    b = np.zeros(len(a), dtype=np.bool_)
+    for start, end in L:
+        b[max(0, start) : end + 1] = 1
+
+    return b
 
 
 if __name__ == "__main__":

@@ -437,6 +437,17 @@ def calc_spectrum(
 
     # Stage 3: Now let's calculate all the spectra
     s_list = []
+
+    """If we are computing spectrums for multiple molecules with wstep='auto',
+    each spectrum can have different wstep values, thus will require resample="intersect"
+    argument in MergeSlab() function to interpolate the different wstep values."""
+    condition_multiple_wstep = len(molecule_dict) > 1 and wstep == "auto"
+    if condition_multiple_wstep:
+        wstep = [
+            "auto",
+            float("inf"),
+        ]  # Using a list to store minimum wstep value at 1st index
+
     for molecule, dict_arguments in molecule_dict.items():
         kwargs_molecule = deepcopy(
             kwargs
@@ -445,41 +456,47 @@ def calc_spectrum(
         # We add all of the DICT_INPUT_ARGUMENTS values:
         kwargs_molecule.update(**dict_arguments)
 
-        s_list.append(
-            _calc_spectrum(
-                wavenum_min=wavenum_min,
-                wavenum_max=wavenum_max,
-                wavelength_min=wavelength_min,
-                wavelength_max=wavelength_max,
-                Tgas=Tgas,
-                Tvib=Tvib,
-                Trot=Trot,
-                pressure=pressure,
-                # overpopulation=overpopulation,  # now in dict_arguments
-                molecule=molecule,
-                # isotope=isotope,                # now in dict_arguments
-                # mole_fraction=mole_fraction,    # now in dict_arguments
-                path_length=path_length,
-                # databank=databank,              # now in dict_arguments
-                medium=medium,
-                wstep=wstep,
-                truncation=truncation,
-                neighbour_lines=neighbour_lines,
-                cutoff=cutoff,
-                parsum_mode=parsum_mode,
-                optimization=optimization,
-                broadening_method=broadening_method,
-                name=name,
-                use_cached=use_cached,
-                verbose=verbose,
-                mode=mode,
-                export_lines=export_lines,
-                **kwargs_molecule
-            )
+        generated_spectrum = _calc_spectrum(
+            wavenum_min=wavenum_min,
+            wavenum_max=wavenum_max,
+            wavelength_min=wavelength_min,
+            wavelength_max=wavelength_max,
+            Tgas=Tgas,
+            Tvib=Tvib,
+            Trot=Trot,
+            pressure=pressure,
+            # overpopulation=overpopulation,  # now in dict_arguments
+            molecule=molecule,
+            # isotope=isotope,                # now in dict_arguments
+            # mole_fraction=mole_fraction,    # now in dict_arguments
+            path_length=path_length,
+            # databank=databank,              # now in dict_arguments
+            medium=medium,
+            wstep=wstep,
+            truncation=truncation,
+            neighbour_lines=neighbour_lines,
+            cutoff=cutoff,
+            parsum_mode=parsum_mode,
+            optimization=optimization,
+            broadening_method=broadening_method,
+            name=name,
+            use_cached=use_cached,
+            verbose=verbose,
+            mode=mode,
+            export_lines=export_lines,
+            **kwargs_molecule
         )
+        s_list.append(generated_spectrum)
+
+        if condition_multiple_wstep:
+            # Stores the minimum wstep value encountered
+            wstep[1] = generated_spectrum.get_conditions()["wstep"]
 
     # Stage 4: merge all molecules and return
-    s = MergeSlabs(*s_list)
+    if condition_multiple_wstep:
+        s = MergeSlabs(*s_list, resample="intersect")
+    else:
+        s = MergeSlabs(*s_list)
 
     if save_to:
         s.store(path=save_to, if_exists_then="replace", verbose=verbose)

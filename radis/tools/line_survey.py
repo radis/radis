@@ -184,7 +184,7 @@ def LineSurvey(
         return S / (k_b * T) / 10
 
     # Parsers to get units and more details
-    if dbformat in ["hitran", "hitemp"]:
+    if dbformat in ["hitran", "hitemp", "hitemp-radisdb"]:
         columndescriptor = hitrancolumns
     elif dbformat == "cdsd-hitemp":
         columndescriptor = cdsdhitempcolumns
@@ -445,7 +445,7 @@ def LineSurvey(
                 details[k] = ("", None, "")  # keep short name
 
     # Get label
-    if dbformat in ["hitran", "hitemp"]:
+    if dbformat in ["hitran", "hitemp", "radisdb-hitemp"]:
         sp["label"] = sp.apply(lambda r: get_label_hitran(r, details, sp.attrs), axis=1)
     elif dbformat in ["cdsd-hitemp", "cdsd-4000"]:
         try:

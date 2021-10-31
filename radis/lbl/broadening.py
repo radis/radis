@@ -72,7 +72,7 @@ from scipy.signal import oaconvolve
 import radis
 from radis.db.references import doi
 from radis.lbl.base import BaseFactory
-from radis.misc.arrays import add_at, arange_len, numpy_add_at
+from radis.misc.arrays import add_at, arange_len, non_zero_values_around, numpy_add_at
 from radis.misc.basics import is_float
 from radis.misc.debug import printdbg
 from radis.misc.plot import fix_style, set_style
@@ -1921,7 +1921,19 @@ class BroadenFactory(BaseFactory):
             for l in range(len(wG)):
                 for m in range(len(wL)):
                     lineshape = line_profile_DLM[l][m]
-                    sumoflines_calc += oaconvolve(DLM[:, l, m], lineshape, "same")
+                    if radis.config["SPARSE_WAVERANGE"]:
+                        truncation_pts = int(
+                            self.params.truncation // self.params.wstep
+                        )
+                        # note: truncation can be unique for each point of the DLM basis
+                        # (allow to have line-dependant truncatino, at least as all
+                        # lines with same truncation are grouped together in the DLM basis)
+                        mask = non_zero_values_around(DLM[:, l, m], truncation_pts)
+                        sumoflines_calc[mask] += oaconvolve(
+                            DLM[:, l, m][mask], lineshape, "same"
+                        )
+                    else:
+                        sumoflines_calc += oaconvolve(DLM[:, l, m], lineshape, "same")
 
         elif broadening_method == "fft":
             # ... Initialize array in FT space

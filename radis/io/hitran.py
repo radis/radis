@@ -103,6 +103,7 @@ def hit2df(
     drop_non_numeric=True,
     load_wavenum_min=None,
     load_wavenum_max=None,
+    engine="pytables",
 ):
     """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe
 
@@ -128,6 +129,8 @@ def hit2df(
         if not ``'None'``, only load the cached file if it contains data for
         wavenumbers above/below the specified value. See :py:func`~radis.io.cache_files.load_h5_cache_file`.
         Default ``'None'``.
+    engine: 'pytables', 'vaex'
+        format for Hdf5 cache file. Default `pytables`
 
     Returns
     -------
@@ -165,7 +168,7 @@ def hit2df(
     columns = columns_2004
 
     # Use cache file if possible
-    fcache = cache_file_name(fname)
+    fcache = cache_file_name(fname, engine=engine)
     if cache and exists(fcache):
         relevant_if_metadata_above = (
             {"wavenum_max": load_wavenum_min} if load_wavenum_min else {}
@@ -182,6 +185,7 @@ def hit2df(
             current_version=radis.__version__,
             last_compatible_version=radis.config["OLDEST_COMPATIBLE_VERSION"],
             verbose=verbose,
+            engine=engine,
         )
         if df is not None:
             return df
@@ -279,6 +283,7 @@ def hit2df(
                 key="df",
                 overwrite=True,
                 verbose=verbose,
+                engine=engine,
             )
         except PermissionError:
             if verbose:

@@ -138,6 +138,21 @@ Parameters
     --------
     :py:meth:`~radis.lbl.broadening.BroadenFactory._check_accuracy`
 
+"SPARSE_WAVERANGE": True
+    bool: if True, allow special optimizations to improve performances for
+    large spectra that are sparse, i.e there are no lines within ``truncation``
+    distance. In that case, spectral calculations can be an order of magnitude
+    faster, and result in less memory use.
+    This optimization may result in a small but unnecessary overhead
+    when there are lines everywhere in the spectral range considered. In such
+    cases, you may deactivate it by setting ``radis.config['SPARSE_WAVERANGE'] = False``
+    Default ``True``
+
+    See Also
+    --------
+    :py:meth:`~radis.lbl.broadening.BroadenFactory._apply_lineshape_DLM`
+
+
 
 Notes
 -----
