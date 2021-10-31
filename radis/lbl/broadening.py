@@ -2003,7 +2003,7 @@ class BroadenFactory(BaseFactory):
             )
             DLM_reduced = dict().fromkeys(DLM_ranges.keys())
             for param in DLM_ranges.keys():
-                b = np.ones(len(w), dtype=bool)
+                b = np.zeros(len(w), dtype=bool)
                 I = np.zeros(len(w))
                 if param in DLM_ranges_00:
                     bi = boolean_array_from_coordinates(*DLM_ranges_00[param], len(w))
