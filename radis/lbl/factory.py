@@ -1121,6 +1121,7 @@ class SpectrumFactory(BandFactory):
         absorbance = abscoeff * path_length
         # Generate output quantities
         transmittance_noslit = exp(-absorbance)
+        emissivity = 1 - transmittance
         emissivity_noslit = 1 - transmittance_noslit
         radiance_noslit = calc_radiance(
             wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
@@ -1174,6 +1175,7 @@ class SpectrumFactory(BandFactory):
         quantities = {
             "abscoeff": (wavenumber, abscoeff),
             "absorbance": (wavenumber, absorbance),
+            "emissivity": (wavenumber, emissivity),
             "emissivity_noslit": (wavenumber, emissivity_noslit),
             "transmittance_noslit": (wavenumber, transmittance_noslit),
             # (mW/cm2/sr/nm)
@@ -1211,7 +1213,7 @@ class SpectrumFactory(BandFactory):
 
         return s
 
-    def eq_spectrum_gpu_explore(self, slit_FWHM=0.0, *vargs, **kwargs):
+    def eq_spectrum_gpu_explore(self, var="abscoeff", slit_FWHM=0.0, *vargs, **kwargs):
 
         import matplotlib.pyplot as plt
         from matplotlib.widgets import Slider
@@ -1238,9 +1240,10 @@ class SpectrumFactory(BandFactory):
             slit_FWHM = slit_FWHM.valinit
 
         s.conditions["slit_FWHM"] = slit_FWHM
-        line = s.plot("transmittance_noslit", show=True)
 
-        def update_plot(self):
+        line = s.plot(var, show=True)
+
+        def update_plot(val):
             abscoeff, transmittance = gpu_iterate(
                 s.conditions["pressure_mbar"] * 1e-3,
                 s.conditions["Tgas"],
@@ -1250,7 +1253,50 @@ class SpectrumFactory(BandFactory):
                 slit_FWHM=s.conditions["slit_FWHM"],
                 gpu=(not s.conditions["emulate_gpu"]),
             )
-            line.set_ydata(transmittance)
+
+            if var == "abscoeff":
+                new_y = abscoeff
+            elif var == "transmittance":
+                new_y = transmittance
+            elif var in ["emissivity", "radiance"]:
+                emissivity = 1 - transmittance
+                if var == "emissivity":
+                    new_y = emissivity
+                else:  # var = 'radiance':
+                    # TODO: Is this a real thing - radiance with slit function?
+                    new_y = calc_radiance(
+                        s.get_wavenumber(),
+                        emissivity,
+                        s.conditions["Tgas"],
+                        unit=self.units["radiance"],
+                    )
+
+            elif var in [
+                "absorbance",
+                "transmittance_noslit",
+                "emissivity_noslit",
+                "radiance_noslit",
+            ]:
+                absorbance = abscoeff * s.conditions["path_length"]
+                if var == "absorbance":
+                    new_y = absorbance
+                else:
+                    transmittance_noslit = exp(-absorbance)
+                    if var == "transmittance_noslit":
+                        new_y = transmittance_noslit
+                    else:
+                        emissivity_noslit = 1 - transmittance_noslit
+                        if var == "emissivity_noslit":
+                            new_y = emissivity_noslit
+                        else:
+                            new_y = calc_radiance(
+                                s.get_wavenumber(),
+                                emissivity_noslit,
+                                s.conditions["Tgas"],
+                                unit=self.units["radiance_noslit"],
+                            )
+
+            line.set_ydata(new_y)
             s.figure.canvas.draw_idle()
 
         n_sliders = 0

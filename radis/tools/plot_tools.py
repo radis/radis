@@ -38,7 +38,7 @@ class ParamRange:
         self.name = None
         self.widget = None
 
-    def set_widget(self, w, spec, line, func=lambda x: 1):
+    def set_widget(self, w, spec, line, func=lambda x: 0):
         self.widget = w
         self.spec = spec
         self.line = line
