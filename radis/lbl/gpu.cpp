@@ -43,8 +43,8 @@ struct initData {
     float v_max;
     float dv;
     int N_v;
-    int N_G;
-    int N_L;
+    float dxG;
+    float dxL;
     int N_total;
     int Max_lines;
     int N_lines;
@@ -69,8 +69,8 @@ struct iterData {
     float slit_FWHM;
     float log_wG_min;
     float log_wL_min;
-    float dxG;
-    float dxL;
+    int N_G;
+    int N_L;
     float Q[16];
 };
 
@@ -103,8 +103,8 @@ __global__ void fillLDM(
     float* S_klm
     ) {
 
-    int N_G = init_d.N_G;
-    int N_L = init_d.N_L;
+    int N_G = iter_d.N_G;
+    int N_L = iter_d.N_L;
 
     agnostic_loop(threadIdx.x, blockDim.x){
         agnostic_loop(blockIdx.x, gridDim.x){
@@ -124,13 +124,13 @@ __global__ void fillLDM(
 
                         //Calc wG
                         float log_wGi = logf(v0[i]) + init_d.log_c2Mm[iso[i]] + iter_d.hlog_T;
-                        float li = (log_wGi - iter_d.log_wG_min) / iter_d.dxG;
+                        float li = (log_wGi - iter_d.log_wG_min) / init_d.dxG;
                         int l0i = (int)li;
                         int l1i = l0i + 1;
 
                         //Calc wL
                         float log_wLi = logf(gamma[i]) + iter_d.log_2p + na[i] * iter_d.log_rT;
-                        float mi = (log_wLi - iter_d.log_wL_min) / iter_d.dxL;
+                        float mi = (log_wLi - iter_d.log_wL_min) / init_d.dxL;
                         int m0i = (int)mi;
                         int m1i = m0i + 1;
 
@@ -180,11 +180,11 @@ __global__ void applyLineshapes(complex<float>* S_klm_FT, complex<float>* abscoe
                 float wG, wL;
                 int index;
 
-                for (int l = 0; l < init_d.N_G; l++) {
-                    wG = expf(iter_d.log_wG_min + l * iter_d.dxG);
-                    for (int m = 0; m < init_d.N_L; m++) {
-                        index = k + l * (init_d.N_v+1) + m * init_d.N_G * (init_d.N_v+1);
-                        wL = expf(iter_d.log_wL_min + m * iter_d.dxL);
+                for (int l = 0; l < iter_d.N_G; l++) {
+                    wG = expf(iter_d.log_wG_min + l * init_d.dxG);
+                    for (int m = 0; m < iter_d.N_L; m++) {
+                        index = k + l * (init_d.N_v+1) + m * iter_d.N_G * (init_d.N_v+1);
+                        wL = expf(iter_d.log_wL_min + m * init_d.dxL);
                         mul = expf(-r4log2 * powf(pi * x * wG, 2) - pi * x * wL) / init_d.dv;
                         out_complex += mul * S_klm_FT[index];
                         //out_complex += DLM[index];

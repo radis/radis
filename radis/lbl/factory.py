@@ -1055,8 +1055,11 @@ class SpectrumFactory(BandFactory):
         self.calc_S0()
         S0 = self.df0["S0"].to_numpy(dtype=np.float32)
 
-        self.NwG = 4  # TO-DO: these shouldn't be hardcoded
-        self.NwL = 8  # TO-DO: these shouldn't be hardcoded
+        dxG = self.params.dlm_log_pG
+        dxL = self.params.dlm_log_pL
+
+        # self.NwG = 4  # TO-DO: these shouldn't be hardcoded
+        # self.NwL = 8  # TO-DO: these shouldn't be hardcoded
 
         _Nlines_calculated = len(v0)
 
@@ -1078,8 +1081,8 @@ class SpectrumFactory(BandFactory):
 
         gpu_init(
             v_arr,
-            self.NwG,
-            self.NwL,
+            dxG,
+            dxL,
             iso,
             v0,
             da,
@@ -1101,7 +1104,7 @@ class SpectrumFactory(BandFactory):
         if verbose >= 2:
             print("Calculating spectra...", end=" ")
 
-        abscoeff, transmittance = gpu_iterate(
+        abscoeff, transmittance, iter_params = gpu_iterate(
             pressure_mbar * 1e-3,
             Tgas,
             mole_fraction,
@@ -1163,8 +1166,8 @@ class SpectrumFactory(BandFactory):
         if self.params.optimization != None:
             conditions.update(
                 {
-                    "NwL": self.NwL,
-                    "NwG": self.NwG,
+                    "NwL": iter_params.N_L,
+                    "NwG": iter_params.N_G,
                 }
             )
         del self.profiler.final[list(self.profiler.final)[-1]][
@@ -1244,7 +1247,7 @@ class SpectrumFactory(BandFactory):
         line = s.plot(var, show=True)
 
         def update_plot(val):
-            abscoeff, transmittance = gpu_iterate(
+            abscoeff, transmittance, iter_params = gpu_iterate(
                 s.conditions["pressure_mbar"] * 1e-3,
                 s.conditions["Tgas"],
                 s.conditions["mole_fraction"],
@@ -1253,7 +1256,7 @@ class SpectrumFactory(BandFactory):
                 slit_FWHM=s.conditions["slit_FWHM"],
                 gpu=(not s.conditions["emulate_gpu"]),
             )
-
+            print(iter_params.N_G, iter_params.N_L)
             if var == "abscoeff":
                 new_y = abscoeff
             elif var == "transmittance":
@@ -1270,13 +1273,7 @@ class SpectrumFactory(BandFactory):
                         s.conditions["Tgas"],
                         unit=self.units["radiance"],
                     )
-
-            elif var in [
-                "absorbance",
-                "transmittance_noslit",
-                "emissivity_noslit",
-                "radiance_noslit",
-            ]:
+            else:
                 absorbance = abscoeff * s.conditions["path_length"]
                 if var == "absorbance":
                     new_y = absorbance
@@ -1309,7 +1306,7 @@ class SpectrumFactory(BandFactory):
                 valmax=self.sliders[key].valmax,
                 valinit=self.sliders[key].valinit,
             )
-            self.sliders[key].set_widget(slider, s, line, update_plot)
+            self.sliders[key].set_widget(slider, s, update_plot)
             n_sliders += 1
 
         plt.subplots_adjust(bottom=0.05 * n_sliders + 0.15)

@@ -16,8 +16,8 @@ class initData(ctypes.Structure):
         ("v_max", ctypes.c_float),
         ("dv", ctypes.c_float),
         ("N_v", ctypes.c_int),
-        ("N_G", ctypes.c_int),
-        ("N_L", ctypes.c_int),
+        ("dxG", ctypes.c_float),
+        ("dxL", ctypes.c_float),
         ("N_total", ctypes.c_int),
         ("Max_lines", ctypes.c_int),
         ("N_lines", ctypes.c_int),
@@ -43,8 +43,8 @@ class iterData(ctypes.Structure):
         ("slit_FWHM", ctypes.c_float),
         ("log_wG_min", ctypes.c_float),
         ("log_wL_min", ctypes.c_float),
-        ("dxG", ctypes.c_float),
-        ("dxL", ctypes.c_float),
+        ("N_G", ctypes.c_int),
+        ("N_L", ctypes.c_int),
         ("Q", ctypes.c_float * 16),
     ]
 
@@ -262,10 +262,13 @@ def calc_gaussian_params(gaussian_param_data, init_h, iter_h, epsilon=1e-4):
     log_wG_max = log_2vMm_max + iter_h.hlog_T
     ##    print("wG:", log_wG_min, log_wG_max)
     log_wG_max += epsilon
-    dxG = (log_wG_max - log_wG_min) / (init_h.N_G - 1)
+
+    # dxG = (log_wG_max - log_wG_min) / (init_h.N_G - 1)
+    N = int(np.ceil((log_wG_max - log_wG_min) / init_h.dxG) + 1)
 
     iter_h.log_wG_min = log_wG_min
-    iter_h.dxG = dxG
+    # iter_h.dxG = dxG
+    iter_h.N_G = N
 
 
 def calc_lorentzian_minmax(param_data, log_rT, log_2p):
@@ -323,10 +326,11 @@ def calc_lorentzian_params(param_data, init_h, iter_h, epsilon=1e-4):
         param_data, iter_h.log_rT, iter_h.log_2p
     )
     log_wL_max += epsilon
-    dxL = (log_wL_max - log_wL_min) / (init_h.N_L - 1)
+    # dxL = (log_wL_max - log_wL_min) / (init_h.N_L - 1)
+    N = int(np.ceil((log_wL_max - log_wL_min) / init_h.dxL) + 1)
 
     iter_h.log_wL_min = log_wL_min
-    iter_h.dxL = dxL
+    iter_h.N_L = N
 
 
 def set_pTQ(p, T, mole_fraction, iter_h, l=1.0, slit_FWHM=0.0):
@@ -378,8 +382,8 @@ def constant_memory_setter(cuda_module, var_str):
 
 def gpu_init(
     v_arr,
-    N_G,
-    N_L,
+    dxG,
+    dxL,
     iso,
     v0,
     da,
@@ -399,9 +403,9 @@ def gpu_init(
     ----------
     v_arr : TYPE
         DESCRIPTION.
-    N_G : TYPE
+    dxG : TYPE
         DESCRIPTION.
-    N_L : TYPE
+    dxL : TYPE
         DESCRIPTION.
     iso : TYPE
         DESCRIPTION.
@@ -468,8 +472,8 @@ def gpu_init(
     init_h.v_max = np.max(v_arr)  # 2400.0
     init_h.dv = (v_arr[-1] - v_arr[0]) / (len(v_arr) - 1)  # 0.002
     init_h.N_v = len(v_arr)
-    init_h.N_G = N_G
-    init_h.N_L = N_L
+    init_h.dxG = dxG
+    init_h.dxL = dxL
 
     init_h.N_iterations_per_thread = 1024
     block_preparation_step_size = 128
@@ -477,8 +481,8 @@ def gpu_init(
     shared_size = 0x8000  # Bytes - Size of the shared memory
     init_h.shared_size_floats = shared_size // 4  # size of float
 
-    init_h.N_total = init_h.N_v * init_h.N_G * init_h.N_L
-    init_h.N_points_per_block = init_h.shared_size_floats // (init_h.N_v * init_h.N_G)
+    # init_h.N_total = init_h.N_v * init_h.N_G * init_h.N_L
+    # init_h.N_points_per_block = init_h.shared_size_floats // (init_h.N_v * init_h.N_G)
 
     init_h.N_threads_per_block = 1024
     init_h.N_blocks_per_grid = 4 * 256 * 256
@@ -500,11 +504,11 @@ def gpu_init(
     if verbose_gpu >= 2:
         print("Allocating device memory and copying data...")
 
-    S_klm_d = zeros(
-        (2 * init_h.N_v, init_h.N_G, init_h.N_L),
-        order="C",
-        dtype=float32,
-    )
+    # S_klm_d = zeros(
+    #     (2 * init_h.N_v, init_h.N_G, init_h.N_L),
+    #     order="C",
+    #     dtype=float32,
+    # )
     spectrum_in_d = zeros(init_h.N_v + 1, dtype=complex64)
     transmittance_noslit_d = zeros(init_h.N_v * 2, dtype=float32)
     transmittance_FT_d = zeros(init_h.N_v + 1, dtype=complex64)
@@ -590,7 +594,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
     # ------------------------------------------------------
 
     if gpu:
-        from cupy import asnumpy, complex64, float32
+        from cupy import asnumpy, complex64, float32, zeros
         from cupy.cuda.runtime import deviceSynchronize
         from cupy.fft import irfft, rfft
 
@@ -603,7 +607,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
         set_iter_params = constant_memory_setter(cuda_module, "iter_d")
 
     else:
-        from numpy import complex64, float32
+        from numpy import complex64, float32, zeros
         from numpy.fft import irfft, rfft
 
         from radis_cython_extensions import (
@@ -639,7 +643,14 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
         print("done!")
         print("Filling LDM...")
 
-    S_klm_d.fill(0)
+    # S_klm_d.fill(0)
+
+    S_klm_d = zeros(
+        (2 * init_h.N_v, iter_h.N_G, iter_h.N_L),
+        order="C",
+        dtype=float32,
+    )
+
     spectrum_in_d.fill(0)
     transmittance_FT_d.fill(0)
 
@@ -740,9 +751,9 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
         print("done!")
 
     if verbose_gpu == 1:
-        print("[rG = {0}%".format((np.exp(iter_h.dxG) - 1) * 100))
-        print("rL = {0}%]".format((np.exp(iter_h.dxL) - 1) * 100))
+        print("[rG = {0}%".format((np.exp(init_h.dxG) - 1) * 100))
+        print("rL = {0}%]".format((np.exp(init_h.dxL) - 1) * 100))
 
         print("Finished calculating spectrum!")
 
-    return abscoeff_h, transmittance_h
+    return abscoeff_h, transmittance_h, iter_h
