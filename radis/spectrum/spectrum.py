@@ -334,7 +334,6 @@ class Spectrum(object):
         "name",
         "_slit",
         "file",
-        "figure",
     ]
 
     def __init__(
@@ -1805,7 +1804,6 @@ class Spectrum(object):
         if nfig == "same":
             nfig = plt.gcf().number
         fig = plt.figure(nfig)
-        self.figure = fig
 
         # If figure exist, ensures xlabel and ylabel are the same (prevents some
         # users errors if plotting difference units!)... Note that since

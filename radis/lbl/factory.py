@@ -1245,6 +1245,7 @@ class SpectrumFactory(BandFactory):
         s.conditions["slit_FWHM"] = slit_FWHM
 
         line = s.plot(var, show=True)
+        fig = plt.gcf()
 
         def update_plot(val):
             abscoeff, transmittance, iter_params = gpu_iterate(
@@ -1293,7 +1294,7 @@ class SpectrumFactory(BandFactory):
                             )
 
             line.set_ydata(new_y)
-            s.figure.canvas.draw_idle()
+            fig.canvas.draw_idle()
 
         n_sliders = 0
         for key in self.sliders:

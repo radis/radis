@@ -440,7 +440,7 @@ def gpu_init(
     global init_h
     global block_preparation_step_size
     global iso_d, v0_d, da_d, S0_d, El_d, gamma_d, na_d
-    global S_klm_d, spectrum_in_d, transmittance_noslit_d, transmittance_FT_d
+    global spectrum_in_d, transmittance_noslit_d, transmittance_FT_d
     global lorentzian_param_data, gaussian_param_data, Q_interpolator_list
     global cuda_module, cuda_functions
     # -----------------------------------------------------
@@ -588,7 +588,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
     # ----------- setup global variables -----------------
     global init_h, iter_h
     global iso_d, v0_d, da_d, S0_d, El_d, gamma_d, na_d
-    global S_klm_d, spectrum_in_d, transmittance_noslit_d, transmittance_FT_d
+    global spectrum_in_d, transmittance_noslit_d, transmittance_FT_d
     global cuda_module, cuda_functions
     global start, stop, elapsedTime
     # ------------------------------------------------------
