@@ -31,7 +31,7 @@ class ParamRange:
         self.valmin = valmin
         self.valmax = valmax
 
-        if valinit == None:
+        if valinit is None:
             valinit = valmin
         self.valinit = valinit
         self.val = self.valinit

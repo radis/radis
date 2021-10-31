@@ -1066,13 +1066,6 @@ class SpectrumFactory(BandFactory):
         if verbose >= 2:
             print("Initializing parameters...", end=" ")
 
-        if verbose is False:
-            verbose_gpu = 0
-        elif verbose is True:
-            verbose_gpu = 1
-        else:
-            verbose_gpu = verbose
-
         try:
             from radis.lbl.gpu import gpu_init, gpu_iterate
         except (ModuleNotFoundError):
@@ -1092,7 +1085,7 @@ class SpectrumFactory(BandFactory):
             El,
             molarmass_arr,
             Q_interp_list,
-            verbose_gpu,
+            verbose=verbose,
             gpu=(not emulate),
         )
 
@@ -1108,7 +1101,7 @@ class SpectrumFactory(BandFactory):
             pressure_mbar * 1e-3,
             Tgas,
             mole_fraction,
-            verbose_gpu,
+            verbose=verbose,
             gpu=(not emulate),
         )
         # Calculate output quantities
@@ -1252,9 +1245,9 @@ class SpectrumFactory(BandFactory):
                 s.conditions["pressure_mbar"] * 1e-3,
                 s.conditions["Tgas"],
                 s.conditions["mole_fraction"],
-                verbose_gpu=False,
                 l=s.conditions["path_length"],
                 slit_FWHM=s.conditions["slit_FWHM"],
+                verbose=False,
                 gpu=(not s.conditions["emulate_gpu"]),
             )
             if var == "abscoeff":

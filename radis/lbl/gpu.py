@@ -149,7 +149,7 @@ except (ModuleNotFoundError):
     calc_lorentzian_envelope_params = py_calc_lorentzian_envelope_params
 
 
-def init_gaussian_params(log_2vMm, verbose_gpu):
+def init_gaussian_params(log_2vMm, verbose):
     """
 
 
@@ -157,7 +157,7 @@ def init_gaussian_params(log_2vMm, verbose_gpu):
     ----------
     log_2vMm : TYPE
         DESCRIPTION.
-    verbose_gpu : TYPE
+    verbose : TYPE
         DESCRIPTION.
 
     Returns
@@ -167,30 +167,30 @@ def init_gaussian_params(log_2vMm, verbose_gpu):
 
     """
 
-    if verbose_gpu >= 2:
+    if verbose >= 2:
         print("Initializing Gaussian parameters")
 
     ##fname = "Gaussian_minmax_" + str(len(log_2vMm)) + ".dat"
     ##    try:
     ##        param_data = pickle.load(open(fname, "rb"))
-    ##        if verbose_gpu >= 2:
+    ##        if verbose >= 2:
     ##            print(" (from cache)... ")
     ##
     ##    except (OSError, IOError):
     if True:
-        if verbose_gpu >= 2:
+        if verbose >= 2:
             print("... ")
 
-        param_data = calc_gaussian_envelope_params(log_2vMm, verbose_gpu)
+        param_data = calc_gaussian_envelope_params(log_2vMm, verbose)
     ##        pickle.dump(param_data, open(fname, "wb"))
 
-    if verbose_gpu >= 2:
+    if verbose >= 2:
         print("done!")
 
     return param_data
 
 
-def init_lorentzian_params(na, gamma, verbose_gpu):
+def init_lorentzian_params(na, gamma, verbose):
     """
 
 
@@ -200,7 +200,7 @@ def init_lorentzian_params(na, gamma, verbose_gpu):
         DESCRIPTION.
     gamma : TYPE
         DESCRIPTION.
-    verbose_gpu : TYPE
+    verbose : TYPE
         DESCRIPTION.
 
     Returns
@@ -210,27 +210,27 @@ def init_lorentzian_params(na, gamma, verbose_gpu):
 
     """
 
-    if verbose_gpu >= 2:
+    if verbose >= 2:
         print("Initializing Lorentzian parameters ")
 
     ##fname = "Lorenzian_minmax_" + str(len(gamma)) + ".dat"
     ##
     ##    try:
     ##        with open(fname, "rb") as f:
-    ##            if verbose_gpu >= 2:
+    ##            if verbose >= 2:
     ##                print(" (from cache)... ")
     ##            param_data = pickle.load(f)
     ##
     ##    except:
     if True:
-        if verbose_gpu >= 2:
+        if verbose >= 2:
             print(" ... ")
 
-        param_data = calc_lorentzian_envelope_params(na, gamma, verbose_gpu)
+        param_data = calc_lorentzian_envelope_params(na, gamma, verbose)
     ##        with open(fname, "wb") as f:
     ##            pickle.dump(param_data, f)
 
-    if verbose_gpu >= 2:
+    if verbose >= 2:
         print("done!")
 
     return param_data
@@ -393,7 +393,7 @@ def gpu_init(
     El,
     Mm_arr,
     Q_intp_list,
-    verbose_gpu=True,
+    verbose=True,
     gpu=False,
 ):
     """
@@ -425,7 +425,7 @@ def gpu_init(
         DESCRIPTION.
     Q_intp_list: TYPE
         DESCRIPTION.
-    verbose_gpu : TYPE, optional
+    verbose : TYPE, optional
         DESCRIPTION. The default is True.
     gpu : TYPE, optional
         DESCRIPTION. The default is False.
@@ -488,7 +488,7 @@ def gpu_init(
     init_h.N_blocks_per_grid = 4 * 256 * 256
     init_h.N_points_per_thread = init_h.N_points_per_block // init_h.N_threads_per_block
 
-    if verbose_gpu >= 2:
+    if verbose >= 2:
         print()
         print("Spectral points per block  : {0}".format(init_h.N_points_per_block))
         print("Threads per block          : {0}".format(init_h.N_threads_per_block))
@@ -497,11 +497,11 @@ def gpu_init(
 
     init_h.N_lines = int(len(v0))
 
-    if verbose_gpu == 1:
+    if verbose == 1:
         print("Number of lines loaded: {0}".format(init_h.N_lines))
         print()
 
-    if verbose_gpu >= 2:
+    if verbose >= 2:
         print("Allocating device memory and copying data...")
 
     # S_klm_d = zeros(
@@ -522,7 +522,7 @@ def gpu_init(
     gamma_d = array(gamma)
     na_d = array(na)
 
-    if verbose_gpu >= 2:
+    if verbose >= 2:
         print("done!")
 
     log_c2Mm_arr = np.array(
@@ -537,14 +537,14 @@ def gpu_init(
     Q_interpolator_list = Q_intp_list
 
     log_2vMm = np.log(v0) + log_c2Mm_arr.take(iso)
-    gaussian_param_data = init_gaussian_params(log_2vMm.astype(np.float32), verbose_gpu)
-    lorentzian_param_data = init_lorentzian_params(na, gamma, verbose_gpu)
+    gaussian_param_data = init_gaussian_params(log_2vMm.astype(np.float32), verbose)
+    lorentzian_param_data = init_lorentzian_params(na, gamma, verbose)
 
-    if verbose_gpu >= 2:
+    if verbose >= 2:
         print("Copying initialization parameters to device memory...")
     set_init_params(init_h)
 
-    if verbose_gpu >= 2:
+    if verbose >= 2:
         print("done!")
         print("Copying spectral data to device memory...")
 
@@ -555,7 +555,7 @@ def gpu_init(
 ##    print("wG arr:",np.min(log_wG_debug_h),np.max(log_wG_debug_h))
 
 
-def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu=False):
+def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False):
     """
     Parameters
     ----------
@@ -567,7 +567,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
 
     Other Parameters
     ----------------
-    verbose_gpu : bool, optional
+    verbose : bool, optional
         The default is True.
     l : TYPE, optional
         DESCRIPTION. The default is 1.0.
@@ -620,7 +620,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
 
         asnumpy = lambda arr: arr
 
-    if verbose_gpu >= 2:
+    if verbose >= 2:
         print("Copying iteration parameters to device...")
 
     set_pTQ(p, T, mole_fraction, iter_h, l=l, slit_FWHM=slit_FWHM)
@@ -639,7 +639,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
 
     set_iter_params(iter_h)
 
-    if verbose_gpu >= 2:
+    if verbose >= 2:
         print("done!")
         print("Filling LDM...")
 
@@ -674,7 +674,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
     if gpu:
         deviceSynchronize()
 
-    if verbose_gpu >= 2:
+    if verbose >= 2:
         print("Applying lineshapes...")
 
     S_klm_FT_d = rfft(S_klm_d, axis=0).astype(complex64)
@@ -701,7 +701,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
     if gpu:
         deviceSynchronize()
 
-    if verbose_gpu >= 2:
+    if verbose >= 2:
         print("Done!")
         print("Calculating transmittance...")
 
@@ -719,7 +719,7 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
     if gpu:
         deviceSynchronize()
 
-    if verbose_gpu >= 2:
+    if verbose >= 2:
         print("Done!")
         print("Applying slit function...")
 
@@ -747,13 +747,10 @@ def gpu_iterate(p, T, mole_fraction, verbose_gpu=True, l=1.0, slit_FWHM=0.0, gpu
 
     transmittance_h = asnumpy(transmittance_d)[: init_h.N_v]
 
-    if verbose_gpu >= 2:
+    if verbose >= 2:
         print("done!")
 
-    if verbose_gpu == 1:
-        print("[rG = {0}%".format((np.exp(init_h.dxG) - 1) * 100))
-        print("rL = {0}%]".format((np.exp(init_h.dxL) - 1) * 100))
-
+    if verbose == 1:
         print("Finished calculating spectrum!")
 
     return abscoeff_h, transmittance_h, iter_h
