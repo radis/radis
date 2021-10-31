@@ -1893,6 +1893,11 @@ class BroadenFactory(BaseFactory):
                 ki0 += 1
                 ki1 += 1
         elif broadening_method == "fft":
+            if radis.config["SPARSE_WAVERANGE"]:
+                if self.verbose >= 2:
+                    print(
+                        "SPARSE optimisation not implemented with 'fft' mode. Use 'voigt' for analytical voigt, or radis.config['SPARSE_WAVERANGE'] = False"
+                    )
             DLM = np.zeros(
                 (
                     2 * len(wavenumber_calc),  # TO-DO: Add  + self.misc.zero_padding
@@ -1904,9 +1909,10 @@ class BroadenFactory(BaseFactory):
             raise NotImplementedError(broadening_method)
 
         # Distribute all line intensities on the 2x2x2 bins.
-        if radis.config["SPARSE_WAVERANGE"]:
-            if broadening_method not in ["voigt", "convolve"]:
-                raise NotImplementedError
+        if (
+            broadening_method in ["voigt", "convolve"]
+            and radis.config["SPARSE_WAVERANGE"]
+        ):
 
             import pandas as pd
 
