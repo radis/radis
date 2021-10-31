@@ -26,6 +26,39 @@ Examples
 import warnings
 
 
+class ParamRange:
+    def __init__(self, valmin=0, valmax=1, valinit=None):
+        self.valmin = valmin
+        self.valmax = valmax
+
+        if valinit == None:
+            valinit = valmin
+        self.valinit = valinit
+        self.val = self.valinit
+        self.name = None
+        self.widget = None
+
+    def set_widget(self, w, spec, line, func=lambda x: 1):
+        self.widget = w
+        self.spec = spec
+        self.line = line
+        self.update_callback = func
+        w.on_changed(self.widget_callback)
+
+    def widget_callback(self, val):
+        self.val = val
+        self.spec.conditions[self.name] = val
+        self.update_callback(val)
+
+    def __repr__(self):
+        return "ParamRange({:s}..{:s} [{:s}] @ {:s})".format(
+            self.valmin.__repr__(),
+            self.valmax.__repr__(),
+            self.valinit.__repr__(),
+            self.val.__repr__(),
+        )
+
+
 def add_ruler(fig, wunit="", Iunit="", ax=None):
 
     import matplotlib.pyplot as plt

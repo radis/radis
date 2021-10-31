@@ -96,7 +96,7 @@ except ImportError:  # if ran from here
     from radis.lbl.bands import BandFactory
     from radis.lbl.base import get_waverange
 
-from radis.misc.basics import flatten, is_float, list_if_float, round_off
+from radis.misc.basics import flatten, is_float, is_range, list_if_float, round_off
 from radis.misc.utils import Default
 from radis.phys.constants import k_b
 from radis.phys.convert import conv2
@@ -1208,6 +1208,65 @@ class SpectrumFactory(BandFactory):
 
         #  In the less verbose case, we print the total calculation+generation time:
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
+
+        return s
+
+    def eq_spectrum_gpu_explore(self, slit_FWHM=0.0, *vargs, **kwargs):
+
+        import matplotlib.pyplot as plt
+        from matplotlib.widgets import Slider
+
+        try:
+            from radis.lbl.gpu import gpu_iterate
+        except (ModuleNotFoundError):
+            print("Failed to load GPU module, exiting!")
+            exit()
+
+        self.sliders = {}
+
+        for key in kwargs:
+            if is_range(kwargs[key]):
+                self.sliders[key] = kwargs[key]
+                kwargs[key].name = key
+                kwargs[key] = kwargs[key].valinit
+
+        s = self.eq_spectrum_gpu(*vargs, **kwargs)
+
+        if is_range(slit_FWHM):
+            self.sliders["slit_FWHM"] = slit_FWHM
+            slit_FWHM.name = "slit_FWHM"
+            slit_FWHM = slit_FWHM.valinit
+
+        s.conditions["slit_FWHM"] = slit_FWHM
+        line = s.plot("transmittance_noslit", show=True)
+
+        def update_plot(self):
+            abscoeff, transmittance = gpu_iterate(
+                s.conditions["pressure_mbar"] * 1e-3,
+                s.conditions["Tgas"],
+                s.conditions["mole_fraction"],
+                verbose_gpu=False,
+                l=s.conditions["path_length"],
+                slit_FWHM=s.conditions["slit_FWHM"],
+                gpu=(not s.conditions["emulate_gpu"]),
+            )
+            line.set_ydata(transmittance)
+            s.figure.canvas.draw_idle()
+
+        n_sliders = 0
+        for key in self.sliders:
+            slider_axis = plt.axes([0.25, 0.05 * n_sliders + 0.05, 0.65, 0.03])
+            slider = Slider(
+                ax=slider_axis,
+                label=key,
+                valmin=self.sliders[key].valmin,
+                valmax=self.sliders[key].valmax,
+                valinit=self.sliders[key].valinit,
+            )
+            self.sliders[key].set_widget(slider, s, line, update_plot)
+            n_sliders += 1
+
+        plt.subplots_adjust(bottom=0.05 * n_sliders + 0.15)
 
         return s
 

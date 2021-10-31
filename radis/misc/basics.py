@@ -438,6 +438,12 @@ def is_float(a):
     return type(a) in [float, np.float64, np.int32, np.float32, int, np.int64]
 
 
+def is_range(a):
+    from radis.tools.plot_tools import ParamRange
+
+    return type(a) == ParamRange
+
+
 def is_number(s):
     """Return True if ``s`` is a number.
 

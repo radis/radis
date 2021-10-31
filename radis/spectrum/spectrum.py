@@ -54,13 +54,9 @@ from warnings import warn
 
 import astropy.units as u
 import numpy as np
-from matplotlib.widgets import Cursor, Slider
 from numpy import abs, diff
 
 from radis.db.references import doi
-
-# %% Spectrum class to hold results )
-from radis.lbl.gpu import gpu_iterate
 
 # from radis.lbl.base import print_conditions
 from radis.misc.arrays import (
@@ -90,6 +86,8 @@ from radis.spectrum.utils import (
     print_conditions,
 )
 from radis.tools.track_ref import RefTracker
+
+# %% Spectrum class to hold results )
 
 
 class Spectrum(object):
@@ -336,7 +334,7 @@ class Spectrum(object):
         "name",
         "_slit",
         "file",
-        "plot_sliders",
+        "figure",
     ]
 
     def __init__(
@@ -511,7 +509,6 @@ class Spectrum(object):
         self.cond_units = cond_units
         self.name = name
         self.file = None  # used to store filename when loaded from a file
-        self.plot_sliders = {}
 
         # Add references
         self.references = RefTracker(**references)
@@ -1657,7 +1654,6 @@ class Spectrum(object):
         normalize=False,
         force=False,
         plot_by_parts=False,
-        sliders={},
         show=False,
         show_ruler=False,
         **kwargs,
@@ -1708,11 +1704,6 @@ class Spectrum(object):
         force: bool
             plotting on an existing figure is forbidden if labels are not the
             same. Use ``force=True`` to ignore that.
-        sliders:
-            dict that describes which variables will get a slider assigned in the plot.
-            the for each key:value pair the key should be the name of the variable and
-            the value should be a 2-tuple with (min_value, max_value). The default value
-            will be the value with which the spectrum was originally generated.
         show: bool
             show figure. Default ``False``. Will still show the figure in
             interactive mode, e.g, `%matplotlib inline` in a Notebook.
@@ -1814,6 +1805,7 @@ class Spectrum(object):
         if nfig == "same":
             nfig = plt.gcf().number
         fig = plt.figure(nfig)
+        self.figure = fig
 
         # If figure exist, ensures xlabel and ylabel are the same (prevents some
         # users errors if plotting difference units!)... Note that since
@@ -1888,44 +1880,10 @@ class Spectrum(object):
 
             add_ruler(fig, wunit=wunit, Iunit=Iunit)
 
-        # Sliders
-        n_sliders = 0
-        for key in sliders:
-            slider_axis = plt.axes([0.25, 0.05 * n_sliders + 0.05, 0.65, 0.03])
-            slider = Slider(
-                ax=slider_axis,
-                label=key,
-                valmin=sliders[key][0],
-                valmax=sliders[key][1],
-                valinit=self.conditions[key],
-            )
-            slider.on_changed(lambda val: self.update_plot(val, fig, line))
-            self.plot_sliders[key] = slider
-            n_sliders += 1
-
-        plt.subplots_adjust(bottom=0.05 * n_sliders + 0.15)
-
         if show:
             plt.show()
 
         return line
-
-    def update_plot(self, val, fig, line):
-        for key in self.plot_sliders:
-            self.conditions[key] = self.plot_sliders[key].val
-
-        abscoeff, transmittance = gpu_iterate(
-            self.conditions["pressure_mbar"] * 1e-3,
-            self.conditions["Tgas"],
-            self.conditions["mole_fraction"],
-            verbose_gpu=False,
-            l=self.conditions["path_length"],
-            slit_FWHM=self.conditions["slit_FWHM"],
-            gpu=(not self.conditions["emulate_gpu"]),
-        )
-
-        line.set_ydata(transmittance)
-        fig.canvas.draw_idle()
 
     def get_populations(self, molecule=None, isotope=None, electronic_state=None):
         """Return populations that are featured in the spectrum, either as
