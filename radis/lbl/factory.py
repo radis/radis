@@ -935,9 +935,17 @@ class SpectrumFactory(BandFactory):
                 Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
                 to plot it. See [1]_ to get an overview of all Spectrum methods
 
+        Examples
+        --------
+
+        .. minigallery:: radis.lbl.SpectrumFactory.eq_spectrum_gpu
+            :add-heading:
+
+
         See Also
         --------
-        :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`
+        :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`,
+        :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu_explore`
         """
 
         # %% Preprocessing
@@ -1209,7 +1217,55 @@ class SpectrumFactory(BandFactory):
 
         return s
 
-    def eq_spectrum_gpu_explore(self, var="abscoeff", slit_FWHM=0.0, *vargs, **kwargs):
+    def eq_spectrum_gpu_explore(
+        self, var="abscoeff", slit_FWHM=0.0, plotkwargs={}, *vargs, **kwargs
+    ):
+        """
+
+        Parameters
+        ----------
+        var : TYPE, optional
+            DESCRIPTION. The default is "abscoeff".
+        slit_FWHM : TYPE, optional
+            DESCRIPTION. The default is 0.0.
+        *vargs : TYPE
+            arguments forwarded to :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`
+        **kwargs : dict
+            arguments forwarded to :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`
+        plotkwargs : dict
+            arguments forwarded to :py:meth:`~radis.spectrum.spectrum.Spectrum.plot`
+
+        Returns
+        -------
+        s : TYPE
+            DESCRIPTION.
+
+        Examples
+        --------
+        ::
+            from radis import SpectrumFactory
+            from radis.tools.plot_tools import ParamRange
+
+
+            sf = SpectrumFactory(2200, 2400, # cm-1
+                              molecule='CO2',
+                              isotope='1,2,3',
+                              wstep=0.002,
+                              )
+
+            sf.fetch_databank('hitemp')
+
+            s = sf.eq_spectrum_gpu_explore(Tgas=ParamRange(300.0,2000.0,1200.0), #K
+                                           pressure=0.2, #bar
+                                           mole_fraction=0.1,
+                                           path_length=ParamRange(0,10,2.0), #cm
+                                           slit_FWHM=ParamRange(0,1,0), #cm
+                                           emulate=False,
+                                           )
+        .. minigallery:: radis.lbl.SpectrumFactory.eq_spectrum_gpu_explore
+            :add-heading:
+
+        """
 
         import matplotlib.pyplot as plt
         from matplotlib.widgets import Slider
@@ -1235,9 +1291,10 @@ class SpectrumFactory(BandFactory):
             slit_FWHM.name = "slit_FWHM"
             slit_FWHM = slit_FWHM.valinit
 
+        s.apply_slit(slit_FWHM, unit="cm-1")  # to create 'radiance', 'transmittance'
         s.conditions["slit_FWHM"] = slit_FWHM
 
-        line = s.plot(var, show=True)
+        line = s.plot(var, show=True, **plotkwargs)
         fig = plt.gcf()
 
         def update_plot(val):
