@@ -1204,7 +1204,13 @@ class Spectrum(object):
             If 'default', the value is determined from the self_absorption key
             in Spectrum.conditions. If not given, False is taken. Default 'default'
             Also updates the self_absorption value in conditions (creates it if
-            doesnt exist)
+            doesnt exist
+
+        Examples
+        --------
+        ::
+
+            s.update('transmittance_noslit')
 
         See Also
         --------
@@ -1251,6 +1257,7 @@ class Spectrum(object):
         Examples
         --------
         ::
+
             for path in [0.1, 10, 100]:
                 s.rescale_path_length(10, inplace=False).plot(nfig='same')
 
@@ -1314,6 +1321,7 @@ class Spectrum(object):
         Examples
         --------
         ::
+
             s.rescale_mole_fraction(0.2)
 
         .. minigallery:: radis.spectrum.spectrum.Spectrum.rescale_mole_fraction
@@ -3032,11 +3040,6 @@ class Spectrum(object):
         Spectrum conditions and get Spectrum that suits specific parameters.
 
 
-        Implementation:
-
-            Shouldnt rely on a Database. One may just want to store/load a Spectrum
-            once.
-
         Examples
         --------
         Store a spectrum in compressed mode, regenerate quantities after loading::
@@ -3090,7 +3093,7 @@ class Spectrum(object):
     def to_json(self, *args, **kwargs):
         """Alias to Spectrum.store(compress=False).
 
-        See Spectrum.store for documentation
+        See Spectrum. :py:meth:`~radis.spectrum.spectrum.Spectrum.store` for documentation
         """
 
         return self.store(compress=False, *args, **kwargs)
@@ -3417,6 +3420,9 @@ class Spectrum(object):
             default ``True``
         quantity: 'all', or one of 'radiance_noslit', 'absorbance', etc.
             if not 'all', copy only one quantity. Default ``'all'``
+
+        Examples
+        --------
 
         .. minigallery:: radis.spectrum.spectrum.Spectrum.copy
             :add-heading:
@@ -3757,7 +3763,10 @@ class Spectrum(object):
 
         .. raw:: html
 
-        </details>
+            </details>
+
+        Other Examples
+        --------------
 
         .. minigallery:: radis.spectrum.spectrum.Spectrum.cite
 
