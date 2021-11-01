@@ -330,10 +330,10 @@ class HITEMPDatabaseManager(DatabaseManager):
 
                 # Post-processing :
                 # ... Add local quanta attributes, based on the HITRAN group
-                df = parse_local_quanta(df, molecule)
+                df = parse_local_quanta(df, molecule, verbose=verbose)
 
                 # ... Add global quanta attributes, based on the HITRAN class
-                df = parse_global_quanta(df, molecule)
+                df = parse_global_quanta(df, molecule, verbose=verbose)
 
                 # Switch 'P', 'Q', 'R' to -1, 0, 1
                 if "branch" in df:

@@ -1139,11 +1139,11 @@ class DatabankLoader(object):
         # (note : this is now done in 'fetch_hitemp' before saving to the disk)
         # spectroscopic quantum numbers will be needed for nonequilibrium calculations, and line survey.
         if parse_local_global_quanta and "locu" in df:
-            df = parse_local_quanta(df, molecule)
+            df = parse_local_quanta(df, molecule, verbose=self.verbose)
         if (
             parse_local_global_quanta and "globu" in df
         ):  # spectroscopic quantum numbers will be needed for nonequilibrium calculations :
-            df = parse_global_quanta(df, molecule)
+            df = parse_global_quanta(df, molecule, verbose=self.verbose)
 
         # Remove non numerical attributes
         if drop_non_numeric:
