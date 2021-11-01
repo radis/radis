@@ -26,7 +26,7 @@ def test_line_survey(verbose=True, plot=False, warnings=True, *args, **kwargs):
         os.remove(_temp_file)
 
     s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
-    s.line_survey(overlay="abscoeff", writefile=_temp_file)
+    s.line_survey(overlay="abscoeff", writefile=_temp_file, barwidth="fwhm_voigt")
 
     assert exists(_temp_file)
 

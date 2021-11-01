@@ -674,6 +674,26 @@ class DatabankLoader(object):
 
         See :py:class:`~radis.db.molparam.MolParams`"""
 
+        # Extra paramaters :
+        # HARDCODED molar mass; for WIP ExoMol implementation, until MolParams
+        # is an attribute and can be updated with definitions from ExoMol.
+        # https://github.com/radis/radis/issues/321
+        self._EXTRA_MOLAR_MASS = {
+            "SiO": {1: 43.971842},
+            "CN": {
+                1: 26.0179
+            },  # https://www.chemicalaid.com/tools/molarmass.php?formula=CN%7B-%7D
+        }
+        """Extra molar mass when not found in HITRAN molecular parameter database
+        ::
+            self._EXTRA_MOLAR_MASS[molecule][isotope] = M (g/mol)
+
+        See :py:func:`radis.lbl.base.BaseFactory.get_molar_mass`
+        """
+
+        # Profiler
+        self.profiler = None
+
     def _reset_profiler(self, verbose):
         """Reset :py:class:`~radis.misc.profiler.Profiler`
 

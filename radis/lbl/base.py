@@ -1645,15 +1645,22 @@ class BaseFactory(DatabankLoader):
             return molpar.get(df.attrs["id"], iso, "abundance")
 
     def get_molar_mass(self, df):
-        """Returns molar mass.
+        """Returns molar mass for all lines of DataFrame ``df``.
 
         Parameters
         ----------
-        df: dataframe
+        df: pd.DataFrame
 
         Returns
         -------
         The molar mass of all the isotopes in the dataframe
+
+
+        Notes
+        -----
+
+        If molar mass is unknown, it can be temporarily added in the
+        :py:attr:`radis.lbl.loader.DatabankLoader._EXTRA_MOLAR_MASS` dictionary
         """
         molpar = self.molparam
 
@@ -1665,16 +1672,16 @@ class BaseFactory(DatabankLoader):
             # HARDCODED molar mass; for WIP ExoMol implementation, until MolParams
             # is an attribute and can be updated with definitions from ExoMol.
             # https://github.com/radis/radis/issues/321
-            HARCODED_MOLAR_MASS = {
-                "SiO": {1: 43.971842},
-                "CN": {
-                    1: 26.0179
-                },  # https://www.chemicalaid.com/tools/molarmass.php?formula=CN%7B-%7D
-            }
+
+            # see :py:attr:`radis.lbl.loader.DatabankLoader._EXTRA_MOLAR_MASS`
             try:
-                return HARCODED_MOLAR_MASS[df.attrs["molecule"]][df.attrs["iso"]]
+                return self._EXTRA_MOLAR_MASS[df.attrs["molecule"]][df.attrs["iso"]]
             except KeyError:
-                raise NotImplementedError
+                raise NotImplementedError(
+                    "Molar mass of {0} (isotope {1}) is unknown. You can manually add it in the SpectrumFactory._EXTRA_MOLAR_MASS[molecule][isotope] = M (g/mol) dictionary (temporary hack until we fetch all molar mass)".format(
+                        df.attrs["molecule"], df.attrs["iso"]
+                    )
+                )
 
         if "iso" in df.columns:
             iso_set = df.iso.unique()
@@ -1814,7 +1821,8 @@ class BaseFactory(DatabankLoader):
         df = self.df0
         Tref = self.input.Tref
 
-        self.profiler.start("calc_ref_linestrength", 2)
+        if self.profiler:
+            self.profiler.start("calc_ref_linestrength", 2)
 
         if "id" in df:
             id_set = df.id.unique()
@@ -1879,7 +1887,10 @@ class BaseFactory(DatabankLoader):
             A=df.A, gu=df.gu, El=df.El, Ia=df.Ia, nu=df.wav, Q=Qref, T=Tref
         )
 
-        self.profiler.stop("calc_ref_linestrength", "Calculated reference linestrength")
+        if self.profiler:
+            self.profiler.stop(
+                "calc_ref_linestrength", "Calculated reference linestrength"
+            )
 
         return S0
 
