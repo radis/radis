@@ -2001,14 +2001,16 @@ class BroadenFactory(BaseFactory):
             )
 
             # Combine all DLM ranges:
-            DLM_ranges = dict().fromkeys(
+            all_keys = (
                 set(DLM_ranges_00.keys())
                 | set(DLM_ranges_01.keys())
                 | set(DLM_ranges_10.keys())
                 | set(DLM_ranges_11.keys())
             )
-            DLM_reduced = dict().fromkeys(DLM_ranges.keys())
-            for param in DLM_ranges.keys():
+            DLM_ranges = {}
+            DLM_reduced = {}
+            #  (note : could be combined faster by combining the ranges directly, rather than geenrating the boolean arrays?)
+            for param in all_keys:
                 b = np.zeros(len(w), dtype=bool)
                 I = np.zeros(len(w))
                 if param in DLM_ranges_00:
@@ -2027,9 +2029,11 @@ class BroadenFactory(BaseFactory):
                     bi = boolean_array_from_coordinates(*DLM_ranges_11[param], len(w))
                     I[bi] += DLM_reduced_11[param]
                     b += bi
+
                 # Sparse storage (coordinates & non-zeros ranges) :
-                DLM_ranges[param] = non_zero_ranges_in_array(b)
-                DLM_reduced[param] = I[b]
+                if b.any():
+                    DLM_ranges[param] = non_zero_ranges_in_array(b)
+                    DLM_reduced[param] = I[b]
 
         else:
             _add_at(DLM, ki0, li0, mi0, Iv0 * awV00)

@@ -482,7 +482,7 @@ else:
 
 
 # @numba.njit
-# def non_zero_values_around(a, n):
+# def non_zero_values_around2(a, n):
 #     """return a boolean array of same size as ``a`` where each position ``i``
 #     is ``True`` if there are non-zero points less than ``n`` index position
 #     away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
@@ -514,20 +514,6 @@ def non_zero_values_around(a, n):
     away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
     position away from from ``a[i]``
     """
-    # # Cleaner version, but about 2x slower on real-life test cases:
-    # #
-    # %timeit non_zero_values_around(DLM[:, l, m], truncation)
-    # 2.92 ms ± 99.3 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
-
-    # %timeit non_zero_values_around2(DLM[:, l, m], truncation)
-    # 5.11 ms ± 110 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
-    # --------------
-
-    # # non_zero_values_around2()
-    # b = np.zeros(len(a)+2*n+1,  dtype=np.bool_)
-    # for pos in np.nonzero(a)[0]:
-    #     b[pos:pos+2*n+1] = True
-    # return b[n:len(a)+n]
 
     # build the list
     L = []
@@ -640,9 +626,11 @@ def non_zero_ranges_in_array(b):
     Examples
     --------
     ::
-        b = np.array([0,0,1,1,0,1,0,1], dtype=np.bool)
+
+        b = np.array([0,0,1,1,0,1,0,1], dtype=bool)
         non_zero_ranges_in_array(b)
-        >> [(2, 4), (5, 6), (7, 8)]
+        >> ([2, 5, 7],
+            [4, 6, 8])
     """
 
     # build the list
@@ -679,8 +667,11 @@ def boolean_array_from_coordinates(start, stop, n):
     Examples
     --------
     ::
-        L = [(2, 4), (5, 6), (7, 8)]
-        boolean_array_from_coordinates(L, 10) == np.array([0,0,1,1,0,1,0,1,0,0])
+
+        L = np.array([[2,4], [5,6], [7,8]])
+        boolean_array_from_coordinates(*L.T, 8)
+        >>> np.array([0, 0, 1, 1, 0, 1, 0, 1], dtype=bool)
+
     """
     # build the list
     b = np.zeros(n, dtype=bool_)
@@ -740,15 +731,6 @@ def sparse_add_at(ki0, Iv0, Iv1, weight, max_range, truncation_pts):
 
 
 if __name__ == "__main__":
-    # import pytest
+    import pytest
 
-    # pytest.main(["../test/misc/test_arrays.py", "-s"])  # -s for showing console output
-
-    b = np.array([0, 0, 1, 1, 0, 1, 0, 1], dtype=bool)
-    assert non_zero_ranges_in_array(b) == [(2, 4), (5, 6), (7, 8)]
-
-    L = [(2, 4), (5, 6), (7, 8)]
-    assert (
-        boolean_array_from_coordinates(L, 8)
-        == np.array([0, 0, 1, 1, 0, 1, 0, 1], dtype=np.bool)
-    ).all()
+    pytest.main(["../test/misc/test_arrays.py", "-s"])  # -s for showing console output
