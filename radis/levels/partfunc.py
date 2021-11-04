@@ -1213,7 +1213,7 @@ class PartFuncTIPS(RovibParFuncTabulator):
                 else:
                     tip = ""
                 raise OutOfBoundError(
-                    "Partition functions not computed in TIPS-2017 "
+                    "Partition functions not computed in TIPS "
                     + f"for molecule {self.molecule}, isotope {self.I}. "
                     + f"Max range : {str(err)}"
                     + tip
