@@ -1204,8 +1204,7 @@ class PartFuncTIPS(RovibParFuncTabulator):
         try:
             return self.partitionSum(self.M, self.I, T)
         except Exception as err:
-            if "TIPS2017" in str(err) or "TIPS2020" in str(err):
-                # TIPS 2017 OutOfBoundError
+            if "TIPS" in str(err):  # improve error message
                 from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
 
                 if self.molecule in MOLECULES_LIST_NONEQUILIBRIUM:
@@ -1218,6 +1217,8 @@ class PartFuncTIPS(RovibParFuncTabulator):
                     + f"Max range : {str(err)}"
                     + tip
                 )
+            else:
+                raise
 
 
 # %% Calculated partition functions (either from energy levels, or ab initio)
