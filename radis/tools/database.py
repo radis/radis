@@ -1928,7 +1928,9 @@ class SpecDatabase(SpecList):
         super(SpecDatabase, self).__init__()
         # now load from the folder with the update() function
         if not lazy_loading:
-            return self.update(force_reload=True, filt=filt, update_register_only=update_register_only)
+            return self.update(
+                force_reload=True, filt=filt, update_register_only=update_register_only
+            )
         else:
             if verbose >= 2:
                 print(
@@ -1947,7 +1949,9 @@ class SpecDatabase(SpecList):
                 )
             spec_files = [f for f in os.listdir(self.path) if f.endswith(".spec")]
             # Initialize database without loading the spectra
-            self.df = read_conditions_file(join(self.path, csv_file[0]), verbose=self.verbose)
+            self.df = read_conditions_file(
+                join(self.path, csv_file[0]), verbose=self.verbose
+            )
 
             if len(self.df["file"]) != len(spec_files):
                 raise ValueError(
@@ -2012,7 +2016,9 @@ class SpecDatabase(SpecList):
         if force_reload:
             # Reloads whole database  (necessary on database init to create self.df
             files = [join(path, f) for f in os.listdir(path) if f.endswith(filt)]
-            self.df = self._load_new_files(files=files, update_register_only=update_register_only)
+            self.df = self._load_new_files(
+                files=files, update_register_only=update_register_only
+            )
         else:
             dbfiles = list(self.df["file"])
             files = [
@@ -2023,7 +2029,10 @@ class SpecDatabase(SpecList):
             # no parallelization here because the number of files is supposed to be small
             for f in files:
                 self.df = self.df.append(
-                    self._load_new_file(f, binary=self.binary, update_register_only=update_register_only), ignore_index=True
+                    self._load_new_file(
+                        f, binary=self.binary, update_register_only=update_register_only
+                    ),
+                    ignore_index=True,
                 )
 
         # Print index
@@ -2403,7 +2412,9 @@ class SpecDatabase(SpecList):
         minimum_nfiles = self.minimum_nfiles
 
         def funLoad(f):
-            return self._load_new_file(f, binary=self.binary, update_register_only=update_register_only)
+            return self._load_new_file(
+                f, binary=self.binary, update_register_only=update_register_only
+            )
 
         # Sequential loading
         if nJobs == 1 or len(files) < minimum_nfiles:
@@ -2526,16 +2537,28 @@ def read_conditions_file(path, verbose=True):
 
     df = pd.read_csv(path, float_precision="round_trip")
     # thank you https://stackoverflow.com/questions/36909368/precision-lost-while-using-read-csv-in-pandas
-    
+
     # Force some types
-    for boolvar in ["self_absorption", "db_use_cached", "lvl_use_cached", "include_neighbouring_lines", "export_lines", "export_rovib_fractions", "load_energies", "thermal_equilibrium"]:
+    for boolvar in [
+        "self_absorption",
+        "db_use_cached",
+        "lvl_use_cached",
+        "include_neighbouring_lines",
+        "export_lines",
+        "export_rovib_fractions",
+        "load_energies",
+        "thermal_equilibrium",
+    ]:
         if boolvar in df:
             if df.dtypes[boolvar] == object:
                 from radis.misc.basics import str2bool
+
                 if verbose:
-                    print(f"Reading {path} : casting column {boolvar} from string type to boolean")
+                    print(
+                        f"Reading {path} : casting column {boolvar} from string type to boolean"
+                    )
                 df[boolvar] = df[boolvar].map(str2bool)
-        
+
     # if only "1" in isotopes they are read as numbers and later get() function fails.
     if "isotope" in df:
         df["isotope"] = df["isotope"].astype(str).str.replace(".0", "", regex=True)

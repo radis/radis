@@ -503,7 +503,7 @@ class MiscParams(ConditionDict):
         "total_lines",
         "zero_padding",
         "hdf5_engine",
-        "add_at_used",    # function used in DIT ; a Cython and a pure-Python version exist
+        "add_at_used",  # function used in DIT ; a Cython and a pure-Python version exist
     ]
 
     def __init__(self):
@@ -525,7 +525,10 @@ class MiscParams(ConditionDict):
         self.total_lines = 0  #: int : number of lines in database.
         self.hdf5_engine = "pytables"  # 'pytables', 'vaex' (/!\ experimental in 0.9.30)
 
-        self.add_at_used = ""       # function used in DIT ; a Cython and a pure-Python version exist
+        self.add_at_used = (
+            ""  # function used in DIT ; a Cython and a pure-Python version exist
+        )
+
 
 def format_paths(s):
     """escape all special characters."""
@@ -1610,7 +1613,9 @@ class DatabankLoader(object):
         .. minigallery:: radis.lbl.loader.DatabankLoader.init_database
         """
 
-        db = SpecDatabase(path, add_info=add_info, add_date=add_date, binary=compress, **kwargs)
+        db = SpecDatabase(
+            path, add_info=add_info, add_date=add_date, binary=compress, **kwargs
+        )
 
         self.SpecDatabase = db
         self.database = format_paths(path)  # just to appear in conditions
@@ -1698,10 +1703,7 @@ class DatabankLoader(object):
             for iso, lvl in levels.items():
                 self.parsum_calc[molecule][iso] = {}
                 ParsumCalc = self._build_partition_function_calculator(
-                    lvl,
-                    levelsfmt,
-                    isotope=iso,
-                    parsum_mode=self.params.parsum_mode,
+                    lvl, levelsfmt, isotope=iso, parsum_mode=self.params.parsum_mode,
                 )
                 self.parsum_calc[molecule][iso][state] = ParsumCalc
         # energy levels arent specified in a tabulated file, but we can still
@@ -1710,10 +1712,7 @@ class DatabankLoader(object):
             for iso in self._get_isotope_list():
                 self.parsum_calc[molecule][iso] = {}
                 ParsumCalc = self._build_partition_function_calculator(
-                    None,
-                    levelsfmt,
-                    isotope=iso,
-                    parsum_mode=self.params.parsum_mode,
+                    None, levelsfmt, isotope=iso, parsum_mode=self.params.parsum_mode,
                 )
                 self.parsum_calc[molecule][iso][state] = ParsumCalc
 
