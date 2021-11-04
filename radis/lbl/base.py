@@ -1940,17 +1940,6 @@ class BaseFactory(DatabankLoader):
 
         return
 
-    def _get_parsum(self, molecule, iso, state):
-        """Get function that calculates the partition function.
-
-        By default, try to get the tabulated version. If does not exist,
-        returns the direct summation version
-        """
-        try:
-            return self.get_partition_function_interpolator(molecule, iso, state)
-        except KeyError:
-            return self.get_partition_function_calculator(molecule, iso, state)
-
     def _calc_Q(self, molecule, iso, state, T):
         """Get partition function at temperature ``T`` from tabulated values, try with
         calculated partition function (full summation) if Out of Bounds.
