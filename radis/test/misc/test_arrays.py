@@ -352,21 +352,17 @@ def test_non_zero_values_around(*args, **kwargs):
     print(np.array(out, dtype=int))
     assert (out == b).all()
 
-    # Also test non_zero_ranges_in_array, boolean_array_from_coordinates
-    from radis.misc.arrays import (
-        boolean_array_from_coordinates,
-        non_zero_ranges_in_array,
-    )
+    # Also test non_zero_ranges_in_array, boolean_array_from_ranges
+    from radis.misc.arrays import boolean_array_from_ranges, non_zero_ranges_in_array
 
     b = np.array([0, 0, 1, 1, 0, 1, 0, 1], dtype=bool)
-    assert (non_zero_ranges_in_array(b) == np.array([(2, 4), (5, 6), (7, 8)]).T).all()
+    assert (non_zero_ranges_in_array(b) == np.array([(2, 4), (5, 6), (7, 8)])).all()
 
     L = np.array([[2, 4], [5, 6], [7, 8]], dtype=np.int64)
     assert (
-        boolean_array_from_coordinates(*L.T, 8)
+        boolean_array_from_ranges(L, 8)
         == np.array([0, 0, 1, 1, 0, 1, 0, 1], dtype=bool)
     ).all()
-    # TODO: refactor so we don't have to use Transpose
 
 
 if __name__ == "__main__":

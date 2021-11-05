@@ -76,7 +76,7 @@ from radis.lbl.base import BaseFactory
 from radis.misc.arrays import (
     add_at,
     arange_len,
-    boolean_array_from_coordinates,
+    boolean_array_from_ranges,
     non_zero_ranges_in_array,
     numpy_add_at,
     sparse_add_at,
@@ -1964,14 +1964,14 @@ class BroadenFactory(BaseFactory):
                     weight = group[intensity_weight].values
 
                     # build the list of non-empty ranges for all lines with this lineshape :
-                    start, stop, I = sparse_add_at(
+                    ranges, I = sparse_add_at(
                         ki0, Iv0, Iv1, weight, max_range, truncation_pts
                     )
 
-                    DLM_ranges[groupby_param] = start, stop
+                    DLM_ranges[groupby_param] = ranges
 
                     # generate reduced array:
-                    b = boolean_array_from_coordinates(start, stop, len(I))
+                    b = boolean_array_from_ranges(ranges, len(I))
                     I_reduced = I[b]
                     DLM_reduced[groupby_param] = I_reduced
 
@@ -2014,19 +2014,19 @@ class BroadenFactory(BaseFactory):
                 b = np.zeros(len(w), dtype=bool)
                 I = np.zeros(len(w))
                 if param in DLM_ranges_00:
-                    bi = boolean_array_from_coordinates(*DLM_ranges_00[param], len(w))
+                    bi = boolean_array_from_ranges(DLM_ranges_00[param], len(w))
                     I[bi] += DLM_reduced_00[param]
                     b += bi
                 if param in DLM_ranges_01:
-                    bi = boolean_array_from_coordinates(*DLM_ranges_01[param], len(w))
+                    bi = boolean_array_from_ranges(DLM_ranges_01[param], len(w))
                     I[bi] += DLM_reduced_01[param]
                     b += bi
                 if param in DLM_ranges_10:
-                    bi = boolean_array_from_coordinates(*DLM_ranges_10[param], len(w))
+                    bi = boolean_array_from_ranges(DLM_ranges_10[param], len(w))
                     I[bi] += DLM_reduced_10[param]
                     b += bi
                 if param in DLM_ranges_11:
-                    bi = boolean_array_from_coordinates(*DLM_ranges_11[param], len(w))
+                    bi = boolean_array_from_ranges(DLM_ranges_11[param], len(w))
                     I[bi] += DLM_reduced_11[param]
                     b += bi
 
@@ -2068,8 +2068,8 @@ class BroadenFactory(BaseFactory):
 
                     if radis.config["SPARSE_WAVERANGE"]:
                         if (l, m) in DLM_ranges.keys():
-                            mask = boolean_array_from_coordinates(
-                                *DLM_ranges[(l, m)], len(sumoflines_calc)
+                            mask = boolean_array_from_ranges(
+                                DLM_ranges[(l, m)], len(sumoflines_calc)
                             )
                             sumoflines_calc[mask] += oaconvolve(
                                 DLM_reduced[(l, m)], lineshape, "same"

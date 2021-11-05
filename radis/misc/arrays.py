@@ -612,7 +612,7 @@ def non_zero_values_around(a, n):
 
 
 @numba.njit(
-    numba.types.Tuple((int64[:], int64[:]))(bool_[:]),
+    (int64[:, :])(bool_[:]),
     cache=True,
 )
 def non_zero_ranges_in_array(b):
@@ -651,16 +651,14 @@ def non_zero_ranges_in_array(b):
     if start != -1:
         L.append((start, len(b)))
 
-    start, stop = np.array(L).T
-
-    return start, stop
+    return np.array(L)
 
 
 @numba.njit(
-    (bool_[:])(int64[:], int64[:], int64),
+    (bool_[:])(int64[:, :], int64),
     cache=True,
 )
-def boolean_array_from_coordinates(start, stop, n):
+def boolean_array_from_ranges(ranges, n):
     """return a boolean array of length ``n`` where (``L[i][0]``, ``L[i][1]``)
     give the ranges set to ``True``
 
@@ -675,20 +673,22 @@ def boolean_array_from_coordinates(start, stop, n):
     """
     # build the list
     b = np.zeros(n, dtype=bool_)
-    for i in range(len(start)):
-        b[start[i] : stop[i]] = True
+    for i in range(len(ranges)):
+        b[ranges[i][0] : ranges[i][1]] = True
 
     return b
 
 
 @numba.njit(
-    numba.types.Tuple((int64[:], int64[:], float64[:]))(
+    numba.types.Tuple((int64[:, :], float64[:]))(
         int32[:], float64[:], float64[:], float64[:], int64, int64
     ),
     cache=True,
 )
 def sparse_add_at(ki0, Iv0, Iv1, weight, max_range, truncation_pts):
-    """ Returns start, stop of non-zero ranges, and intensity ``I`` of length ``truncation_pts`` """
+    """Returns (start, stop) of non-zero ranges, and intensity ``I`` (length
+    ``truncation_pts``) for all lines ``Iv0`` and ``Iv1`` summed at ``ki0``
+    and ``ki0+1`` with weights ``weight``"""
     I = np.zeros(max_range)
     L = [
         (0, 0) for k in range(0)
@@ -725,9 +725,7 @@ def sparse_add_at(ki0, Iv0, Iv1, weight, max_range, truncation_pts):
     if len(L) == 0 or L[-1] != (start, end):
         L.append((start, end))
 
-    start, stop = np.array(L).T
-
-    return start, stop, I
+    return np.array(L), I
 
 
 if __name__ == "__main__":
