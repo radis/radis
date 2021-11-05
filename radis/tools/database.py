@@ -1997,7 +1997,7 @@ class SpecDatabase(SpecList):
             if ``True``, reloads files already in database. Default ``False``
         filt: str
             only consider files ending with ``filt``. Default ``.spec``
-        
+
         Other Parameters
         ----------------
         update_register_only: bool
@@ -2392,7 +2392,7 @@ class SpecDatabase(SpecList):
         update_register_only: bool
             if ``True``, load files and update csv but do not keep the Spectrum in memory.
             Default ``False``
-            
+
         Returns
         -------
         db: pandas.DataFrame
@@ -2449,7 +2449,7 @@ class SpecDatabase(SpecList):
         update_register_only: bool
             if ``True``, load files and update csv but do not keep the Spectrum in memory.
             Default ``False``
-            
+
         Returns
         -------
         dict: dictionary of conditions of loaded spectrum"""

@@ -118,7 +118,7 @@ def partition(pred, iterable):
 
 
 def str2bool(s):
-    """ Used to convert Pandas columns in str type to boolean 
+    """Used to convert Pandas columns in str type to boolean
     (note that by default bool("False")==True !)
     """
     if s in [True, "true", "True", 1, "1", "1.0"]:
