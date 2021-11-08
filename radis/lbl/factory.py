@@ -465,7 +465,17 @@ class SpectrumFactory(BandFactory):
         )
 
         # Storing inital value of wstep if wstep != "auto"
-        self.wstep = wstep
+        self._wstep = wstep
+
+        # Set default variables from config:
+        import radis
+
+        self._sparse_dlm = radis.config[
+            "SPARSE_WAVERANGE"
+        ]  # target value (can be 'auto'), stored for next calculatinos
+        self.params["sparse_dlm"] = radis.config[
+            "SPARSE_WAVERANGE"
+        ]  # value evaluated at each new spectrum calculation
 
         # Init variables
         # --------------
@@ -1572,13 +1582,14 @@ class SpectrumFactory(BandFactory):
         ``SpectrumFactory.wavenumber_calc`` the spectral range used for calculation, that
         includes neighbour lines within ``neighbour_lines`` distance."""
 
+        import radis
+
         self.profiler.start("generate_wavenumber_arrays", 2)
         # calculates minimum FWHM of lines
         self._calc_min_width(self.df1)
 
         # Setting wstep to optimal value and rounding it to a degree 3
-        if self.wstep == "auto" or type(self.params.wstep) == list:
-            import radis
+        if self._wstep == "auto" or type(self.params.wstep) == list:
 
             wstep_calc = round_off(
                 self.min_width / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
@@ -1628,9 +1639,20 @@ class SpectrumFactory(BandFactory):
         # AccuracyWarning. Check there are enough gridpoints per line.
         self._check_accuracy(self.params.wstep)
 
-        self.profiler.stop("generate_wavenumber_arrays", "Generated Wavenumber Arrays")
+        # Set sparse waverange mode
 
-        import radis
+        # Setting wstep to optimal value and rounding it to a degree 3
+        if self._sparse_dlm == "auto":
+            sparsity = len(wavenumber_calc) / len(self.df0)
+            self.params["sparse_dlm"] = (
+                sparsity > 1.0
+            )  # works ; TODO : set a threshold based on more data
+            if self.verbose >= 2:
+                print(
+                    f"Sparsity (grid points/lines) = {sparsity:.1f}. Set sparse_dlm to {self.params['sparse_dlm']}"
+                )
+
+        self.profiler.stop("generate_wavenumber_arrays", "Generated Wavenumber Arrays")
 
         if radis.config["DEBUG_MODE"]:
             assert (wavenumber_calc[woutrange[0] : woutrange[1]] == wavenumber).all()

@@ -1884,7 +1884,7 @@ class BroadenFactory(BaseFactory):
         self.profiler.start("DLM_Distribute_lines", 3)
         # ... Initialize array on which to distribute the lineshapes
         if broadening_method in ["voigt", "convolve"]:
-            if radis.config["SPARSE_WAVERANGE"]:
+            if self.params.sparse_dlm == True:
                 # DLM is constructed in a sparse-way later
                 pass
             else:
@@ -1893,7 +1893,7 @@ class BroadenFactory(BaseFactory):
                 ki0 += 1
                 ki1 += 1
         elif broadening_method == "fft":
-            if radis.config["SPARSE_WAVERANGE"]:
+            if self.params.sparse_dlm == True:
                 if self.verbose >= 2:
                     print(
                         "SPARSE optimisation not implemented with 'fft' mode. Use 'voigt' for analytical voigt, or radis.config['SPARSE_WAVERANGE'] = False"
@@ -1911,7 +1911,7 @@ class BroadenFactory(BaseFactory):
         # Distribute all line intensities on the 2x2x2 bins.
         if (
             broadening_method in ["voigt", "convolve"]
-            and radis.config["SPARSE_WAVERANGE"]
+            and self.params.sparse_dlm == True
         ):
 
             import pandas as pd
@@ -2066,7 +2066,7 @@ class BroadenFactory(BaseFactory):
                 for m in range(len(wL)):
                     lineshape = line_profile_DLM[l][m]
 
-                    if radis.config["SPARSE_WAVERANGE"]:
+                    if self.params.sparse_dlm == True:
                         if (l, m) in DLM_ranges.keys():
                             mask = boolean_array_from_ranges(
                                 DLM_ranges[(l, m)], len(sumoflines_calc)

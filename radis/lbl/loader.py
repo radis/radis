@@ -428,6 +428,7 @@ class Parameters(ConditionDict):
         "parfuncpath",
         "parsum_mode",
         "pseudo_continuum_threshold",
+        "sparse_dlm",
         "warning_broadening_threshold",
         "warning_linestrength_cutoff",
         "wavenum_max_calc",
@@ -472,6 +473,7 @@ class Parameters(ConditionDict):
         """bool: if ``True``, includes the contribution of off-range, neighbouring
         lines because of lineshape broadening. Default ``True``."""
         self.parsum_mode = "full summation"  #: int : "full summation" or "tabulation"  . calculation mode of parittion function. See :py:class:`~radis.levels.partfunc.RovibParFuncCalculator`
+        self.sparse_dlm = "auto"  #: str: "auto", True, False  . Sparse DLM calculation. See :py:meth:`radis.lbl.broadening.BroadenFactory._apply_lineshape_DLM`
 
 
 class MiscParams(ConditionDict):
