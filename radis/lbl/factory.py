@@ -1643,7 +1643,7 @@ class SpectrumFactory(BandFactory):
 
         # Setting wstep to optimal value and rounding it to a degree 3
         if self._sparse_dlm == "auto":
-            sparsity = len(wavenumber_calc) / len(self.df0)
+            sparsity = len(wavenumber_calc) / len(self.df1)
             self.params["sparse_dlm"] = (
                 sparsity > 1.0
             )  # works ; TODO : set a threshold based on more data

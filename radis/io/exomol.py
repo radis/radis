@@ -62,7 +62,7 @@ def get_exomol_full_isotope_name(molecule, isotope):
         return mp.get(molecule, isotope, "isotope_name_exomol")
 
 
-def get_exomol_database_list(molecule, isotope_full_name):
+def get_exomol_database_list(molecule, isotope_full_name, verbose=True):
     """Parse ExoMol website and return list of available databases, and recommended database
 
     Parameters
@@ -106,7 +106,10 @@ def get_exomol_database_list(molecule, isotope_full_name):
     rows = soup.find_all("a", {"class": "list-group-item link-list-group-item"})
     databases = [r.get_attribute_list("title")[0] for r in rows]
 
-    assert len(databases_recommended) <= 1
+    if len(databases_recommended) > 1 and verbose:
+        print(
+            f"Multiple recommended databases for {molecule} in ExoMol : {databases_recommended}. Using the first"
+        )
 
     databases = databases + databases_recommended
 
