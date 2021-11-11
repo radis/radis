@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Created on Fri Apr 28 10:00:25 2017.
-
-@author: erwan
-
+"""
 -------------------------------------------------------------------------------
 """
 
@@ -146,37 +143,37 @@ isotope_name_dict = {
 
 
 class MolParams(object):
-    """Easy access to molecular parameters taken from HITRAN molparam.txt.
-
-    Parameters
-    ----------
-    file: str
-        if None the one in RADIS is taken
-
-    Examples
-    --------
-    Get earth abundance of CO2, isotope 1::
-
-        molpar = Molparams()
-        molpar.get(2, 1, 'abundance')         # 2 for CO2, 1 for isotope 1
-
-    .. minigallery:: radis.db.molparam.MolParams
-    :add-heading
-
-    Note
-    ----
-    Isotope number was derived manually assuming the isonames were ordered in the database
-    The isotope name (ex: CO2 626) is kept for comparison if ever needed
-
-    References
-    ----------
-
-    http://hitran.org/media/molparam.txt
-    """
-
     __slots__ = ["df", "terrestrial_abundances"]
 
     def __init__(self, file=None, terrestrial_abundances=True):
+        """Easy access to molecular parameters taken from HITRAN molparam.txt.
+
+        Parameters
+        ----------
+        file: str
+            if None the one in RADIS is taken. See https://github.com/radis/radis/blob/master/radis/db/molparam.txt
+
+        Examples
+        --------
+        Get earth abundance of CO2, isotope 1::
+
+            from radis.db.molparam import MolParams
+            molpar = MolParams()
+            molpar.get(2, 1, 'abundance')         # 2 for CO2, 1 for isotope 1
+
+        .. minigallery:: radis.db.molparam.MolParams
+        :add-heading:
+
+        Note
+        ----
+        Isotope number was derived manually assuming the isonames were ordered in the database
+        The isotope name (ex: CO2 626) is kept for comparison if ever needed
+
+        References
+        ----------
+        http://hitran.org/media/molparam.txt
+        """
+
         if file is None:
             file = getFile("molparam.txt")
 
@@ -194,15 +191,15 @@ class MolParams(object):
         except AttributeError:
             pass  # old Python version
 
-    def get(self, M, I, key):
+    def get(self, molecule, isotope, key):
         """Get attribute of molecule, isotope.
 
         Parameters
         ----------
-        M: int
-            molecule id
-        I: int
-            molecule isotope #
+        molecule: str or int
+            molecule name or molecule id
+        iso: int
+            isotope number # (sorted by terrestrial abundance)
         key: ``'abundance'``, ``'mol_mass'``, ``'isotope_name'``, ``'isotope_name_exomol'``
             parameter
 
@@ -217,9 +214,10 @@ class MolParams(object):
 
 
         .. minigallery:: radis.db.molparam.MolParams.get
-            :add-heading
+            :add-heading:
 
         """
+        M = molecule
         try:
             float(M)
         except ValueError:
@@ -227,7 +225,7 @@ class MolParams(object):
             from radis.db.classes import get_molecule_identifier
 
             M = get_molecule_identifier(M)
-        return self.df.loc[(M, I), key]
+        return self.df.loc[(M, isotope), key]
 
 
 def _add_exomol_name(df):
