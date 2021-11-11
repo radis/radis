@@ -240,23 +240,27 @@ class BaseFactory(DatabankLoader):
 
         return energies
 
-    def plot_linestrength_hist(self):
+    def plot_linestrength_hist(self, cutoff=None):
         """Plot linestrength distribution (to help determine a cutoff
         criteria)"""
-        return self.plot_hist("df1", "S")
+        return self.plot_hist("df1", "S", axvline=np.log10(cutoff))
 
-    def plot_hist(self, dataframe="df0", what="int"):
-        """Plot distribution (to help determine a cutoff criteria)
+    def plot_hist(self, dataframe="df0", what="int", axvline=None):
+        """Plot distribution of column ``what`` in ``dataframe``
+
+        For instance, help determine a cutoff criteria ::
+
+            plot_hist("df1", "int")
 
         Parameters
         ----------
-
         dataframe: 'df0', 'df1'
             which dataframe to plot (df0 is the loaded one, df1 the scaled one)
-
         what: str
             which feature to plot. Default ``'S'`` (scaled linestrength). Could also
             be ``'int'`` (reference linestrength intensity), ``'A'`` (Einstein coefficient)
+        axvline: float
+            if not ``None``, plot a vertical line at this position.
         """
         import matplotlib.pyplot as plt
 
@@ -267,6 +271,8 @@ class BaseFactory(DatabankLoader):
         if np.isnan(a).any():
             printwarn("Nan values in log10(lines)")
         plt.hist(np.round(a[~np.isnan(a)]))
+        if axvline is not None:
+            plt.axvline(axvline, color="r")
         plt.xlabel("log10({0})".format(what))
         plt.ylabel("Count")
         plt.show()
@@ -3139,9 +3145,9 @@ class BaseFactory(DatabankLoader):
         try:
             assert sum(~b) > 0
         except AssertionError as err:
-            self.plot_linestrength_hist()
+            self.plot_linestrength_hist(cutoff=cutoff)
             raise AssertionError(
-                "All lines discarded! Please increase cutoff. "
+                f"All lines discarded! Please increase cutoff (currently : {cutoff:.1e}). "
                 + "In your case: (min,max,mean)=({0:.2e},{1:.2e},{2:.2e}".format(
                     df.S.min(), df.S.max(), df.S.mean()
                 )
@@ -3435,23 +3441,30 @@ def get_waverange(
 
     # Checking consistency of all input variables
 
-    if (
-        wmin is None
-        and wmax is None
-        and wavelength_min is None
-        and wavelength_max is None
-        and wavenum_min is None
-        and wavenum_max is None
-    ):
-        raise ValueError("Give wavenumber or wavelength")
     w_present = wmin is not None and wmax is not None
     wavenum_present = wavenum_min is not None and wavenum_max is not None
     wavelength_present = wavelength_min is not None and wavelength_max is not None
     if w_present + wavenum_present + wavelength_present != 1:
+        _msg = "Got : "
+        _msg += f" wmin={wmin}, wmax={wmax}" if w_present else ""
+        _msg += (
+            f" wavenum_min={wavenum_min}, wavenum_max={wavenum_max}"
+            if wavenum_present
+            else ""
+        )
+        _msg += (
+            f" wavelength_min={wavelength_min}, wavelength_max={wavelength_max}"
+            if wavelength_present
+            else ""
+        )
         raise ValueError(
-            "Please pass exactly one set of values as input: "
-            "choose either wmin/wmax (with astropy.units), "
-            "wavenum_min/wavenum_max, or wavelength_min/wavelength_max"
+            "Please pass exactly one range for wavenumber/wavelength input. {}".format(
+                _msg
+            )
+            + "\nChoose either `wmin=..., wmax=...` (with astropy.units), "
+            "`wavenum_min=..., wavenum_max=...` (in cm-1), "
+            "or `wavelength_min=..., wavelength_max=...` (in nm)"
+            "We recommend to use units. Example: \n\n  import astropy.units as u\n  calc_spectrum(wmin=2000 / u.cm, wmax=2300 / u.cm, ..."
         )
 
     if not isinstance(wunit, Default):
@@ -3493,11 +3506,6 @@ def get_waverange(
         if not isinstance(wunit, Default):
             if not wmin.unit.is_equivalent(u.Unit(wunit)):
                 raise ValueError("Conflicting units passed for wmin/wmax and wunit")
-            # Should I keep this in?
-            # Deals with cases like: calc_spectrum(wmin=10*u.cm, wmax=1.u.m, wunit="cm")
-    #             else:
-    #                 if wmin.unit != wmax.unit and (wmin.unit != u.Unit(wunit.value) or wmax.unit != u.Unit(wunit.value)):
-    #                     raise Warning("Ambiguous units passed, ignoring wunit")
 
     # Conversion to base units
     if wmin is not None:
@@ -3525,8 +3533,13 @@ def get_waverange(
         wavenum_min = convert_and_strip_units(wavenum_min, 1 / u.cm)
         wavenum_max = convert_and_strip_units(wavenum_max, 1 / u.cm)
 
-    if wavelength_min is not None or wavelength_max is not None:
-        assert medium in ["air", "vacuum"]
+    elif wavelength_min is not None or wavelength_max is not None:
+        if not medium in ["air", "vacuum"]:
+            raise NotImplementedError(
+                "Unknown propagating medium: {0}. Choose `'air'` or `'vacuum'` to get the correct wavelengths".format(
+                    medium
+                )
+            )
         wavelength_min = convert_and_strip_units(wavelength_min, u.nm)
         wavelength_max = convert_and_strip_units(wavelength_max, u.nm)
         if medium == "air":

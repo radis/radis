@@ -124,6 +124,7 @@ def compare_dict(
     d2,
     verbose="if_different",
     compare_as_paths=[],
+    compare_as_close=[],
     return_string=False,
     df1_str="Left",
     df2_str="Right",
@@ -141,6 +142,8 @@ def compare_dict(
     compare_as_paths: list of keys
         compare the values corresponding to given keys as path (irrespective of
         forward / backward slashes, or case )
+    compare_as_close: list of keys
+        compare with ``np.isclose(a,b)`` rather than ``a==b``
     verbose: boolean, or ``'if_different'``
         ``'if_different'`` means results will be shown only if there is a difference.
     return_string: boolean
@@ -163,7 +166,7 @@ def compare_dict(
 
     try:
 
-        print("{0:15}{1}\t{2}".format("Key", df1_str, df2_str))
+        print("{0:15}{1:17}\t{2}".format("Key", df1_str, df2_str))
         print("-" * 40)
         all_keys = set(list(d1.keys()) + list(d2.keys()))
         all_keys = [k for k in all_keys if k not in ignore_keys]
@@ -173,6 +176,12 @@ def compare_dict(
                 # Deal with path case
                 if k in compare_as_paths:
                     if not compare_paths(d1[k], d2[k]):
+                        print("{0:15}{1}\t{2}".format(k, d1[k], d2[k]))
+                    else:
+                        s += 1
+                # Deal with is close case
+                elif k in compare_as_close:
+                    if not np.isclose(d1[k], d2[k]):
                         print("{0:15}{1}\t{2}".format(k, d1[k], d2[k]))
                     else:
                         s += 1
