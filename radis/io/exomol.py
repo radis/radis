@@ -90,6 +90,8 @@ def get_exomol_database_list(molecule, isotope_full_name, verbose=True):
         >>> ['xsec-YT10to10', 'YT10to10', 'YT34to10'], 'YT34to10'
 
 
+    .. minigallery:: radis.io.exomol.get_exomol_database_list
+
 
     See Also
     --------
@@ -185,6 +187,11 @@ def fetch_exomol(
     local_path: str
         path of local database file if ``return_local_path``
 
+    Examples
+    --------
+
+    .. minigallery:: radis.io.exomol.fetch_exomol
+
     Notes
     -----
     if using ``load_only_wavenum_above/below`` or ``isotope``, the whole
@@ -247,6 +254,14 @@ def fetch_exomol(
 
     df = mdb.to_df(attrs=attrs)
 
+    # Replace Linestrength with Line Intensity taking into account Terrestrial isotopic abundance
+    from radis.db.molparam import MolParams
+
+    Ia = MolParams().get(molecule, isotope, "abundance")
+    df["Sij0"] *= Ia
+    df.rename(columns={"Sij0": "int"}, inplace=True)
+
+    # Return:
     out = [df]
 
     if return_local_path:
@@ -464,15 +479,13 @@ class MdbExomol(object):
         self.Tref = 296.0
         self.QTref = np.array(self.QT_interp(self.Tref))
 
-        Ia = 1  #  TODO    Add isotope abundance
-
         from radis.lbl.base import linestrength_from_Einstein  # TODO: move elsewhere
 
         self.Sij0 = linestrength_from_Einstein(
             A=self._A,
             gu=self._gpp,
             El=self._elower,
-            Ia=Ia,
+            Ia=1,  #  Sij0 is a linestrength calculated without taking into account isotopic abundance (unlike line intensity parameter of HITRAN. In RADIS this is corrected for in fetch_exomol()  )
             nu=self.nu_lines,
             Q=self.QTref,
             T=self.Tref,
@@ -653,7 +666,8 @@ class MdbExomol(object):
         Parameters
         ----------
         attrs: dict
-            add these as attributes of the DataFrame"""
+            add these as attributes of the DataFrame
+        """
 
         ##Broadening parameters
         self.set_broadening()
@@ -662,7 +676,7 @@ class MdbExomol(object):
         df = pd.DataFrame(
             {
                 "wav": self.nu_lines,
-                "int": self.Sij0,
+                "Sij0": self.Sij0,  #  linestrength (not corrected for isotopic abundance)
                 "A": self._A,
                 "airbrd": self.alpha_ref,  # temperature dependance exponent for air broadening
                 # "selbrd": None,                  # self-temperature dependant exponent. Not implementedi in ExoMol
@@ -675,6 +689,8 @@ class MdbExomol(object):
                 "Tdpair": self.n_Texp,  # temperature dependance exponent. Here we use Tdair; no Tdpsel. TODO
             }
         )
+
+        # Check format :
         for key, array in self._quantumNumbers.items():
             try:
                 df[key] = pd.to_numeric(array, errors="raise")

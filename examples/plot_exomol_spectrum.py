@@ -6,6 +6,9 @@ Calculate a spectrum from ExoMol
 
 Auto-download and compute a SiO spectrum from the ExoMol database ([ExoMol-2020]_)
 
+ExoMol lines can be downloaded and accessed separately using
+:py:func:`~radis.io.exomol.fetch_exomol`
+
 """
 
 from radis import calc_spectrum
@@ -24,3 +27,10 @@ s = calc_spectrum(
 )
 s.apply_slit(1, "cm-1")  # simulate an experimental slit
 s.plot("radiance")
+
+
+#%% See line data:
+from radis.io.exomol import fetch_exomol
+
+df = fetch_exomol("SiO", database="EBJT")
+print(df)
