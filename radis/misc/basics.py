@@ -228,16 +228,26 @@ def compare_dict(
         sys.stdout = old_stdout
 
 
-def compare_lists(l1, l2, verbose="if_different", return_string=False):
+def compare_lists(
+    l1,
+    l2,
+    verbose="if_different",
+    return_string=False,
+    l1_str="Left",
+    l2_str="Right",
+    print_index=False,
+):
     """Compare 2 lists of elements that may not be of the same length, irrespective
     of order. Returns the ratio of elements [0-1] present in both lists. If verbose,
     prints the differences
+
     Parameters
     ----------
     l1, l2: list-like
     verbose: boolean, or 'if_different'
         'if_different' means results will be shown only if there is a difference.
         function is called twice
+
     Other Parameters
     ----------------
     verbose: boolean, or ``'if_different'``
@@ -245,6 +255,7 @@ def compare_lists(l1, l2, verbose="if_different", return_string=False):
     return_string: boolean
         if ``True``, returns message instead of just printing it (useful in error messages)
         Default ``False``
+
     Returns
     -------
     out: float [0-1]
@@ -255,19 +266,27 @@ def compare_lists(l1, l2, verbose="if_different", return_string=False):
     sys.stdout = newstdout = StringIO()  # capture all print
 
     try:
-
-        print("{0:20}\t{1}".format("Left", "Right"))
-        print("-" * 40)
+        tab = "        " if print_index else ""
+        print(tab + "{0:20}\t\t{1}".format(l1_str, tab + l2_str))
+        print(tab + "-" * (44 + len(tab)))
         all_keys = set(list(l1) + list(l2))
         s = 0  # counter of all matching keys
-        for k in all_keys:
+        for i, k in enumerate(all_keys):
             if k in l1 and k in l2:  # key in both lists
                 s += 1
             elif k in l1:
-                print("{0:20}\tN/A".format("{0} ({1})".format(k, type(k))))
+                l1_index_str = f"|#{l1.index(k):3}|  " if print_index else ""
+                print(
+                    "{0:20}\t\t{1}".format(
+                        l1_index_str + "{0} ({1})".format(k, type(k)), tab + "N/A"
+                    )
+                )
             else:
-                print("{0:20}\t{1} ({2})".format("N/A", k, type(k)))
-        print("-" * 40)
+                l2_index_str = f"|#{l2.index(k):3}|  " if print_index else ""
+                print(
+                    "{0:20}\t\t{1} ({2})".format(tab + "N/A", l2_index_str + k, type(k))
+                )
+        print(tab + "-" * (44 + len(tab)))
 
         if len(all_keys) == 0:
             out = 1

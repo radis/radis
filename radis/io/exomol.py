@@ -50,10 +50,10 @@ def get_exomol_full_isotope_name(molecule, isotope):
     --------
     :py:func:`~radis.io.exomol.get_exomol_database_list`"""
 
-    from radis.db.classes import KNOWN_EXOMOL_ISOTOPES_NAMES
+    from radis.db.classes import EXOMOL_ONLY_ISOTOPES_NAMES
 
-    if (molecule, isotope) in KNOWN_EXOMOL_ISOTOPES_NAMES:
-        return KNOWN_EXOMOL_ISOTOPES_NAMES[(molecule, isotope)]
+    if (molecule, isotope) in EXOMOL_ONLY_ISOTOPES_NAMES:
+        return EXOMOL_ONLY_ISOTOPES_NAMES[(molecule, isotope)]
     else:
         # Read and convert from HITRAN molecules
         from radis.db.molparam import MolParams
@@ -136,12 +136,86 @@ def get_exomol_database_list(molecule, isotope_full_name):
     return databases, databases_recommended[0]
 
 
+# def fetch_exomol_molecule_list():
+#     """Parse ExoMol website and return list of available databases, and recommended database
+
+#     Parameters
+#     ----------
+#     molecule: str
+#     isotope_full_name: str
+#         isotope full name (ex. ``12C-1H4`` for CH4,1). Get it from
+#         :py:func:`radis.io.exomol.get_exomol_full_isotope_name`
+
+#     Returns
+#     -------
+
+#     Examples
+#     --------
+#     Get CH4 from ExoMol :
+#     ::
+#         databases, recommended = get_exomol_database_list("CH4", "12C-1H4")
+#         >>> ['xsec-YT10to10', 'YT10to10', 'YT34to10'], 'YT34to10'
+
+#     Or combine with :py:func:`~radis.io.exomol.get_exomol_full_isotope_name` to
+#     get the isopologue (sorted by terrestrial abundance) ::
+
+#         from radis.io.exomol import get_exomol_database_list, get_exomol_full_isotope_name
+#         databases, recommended = get_exomol_database_list("CH4", get_exomol_full_isotope_name("CH4", 1))
+#         >>> ['xsec-YT10to10', 'YT10to10', 'YT34to10'], 'YT34to10'
+
+
+#     .. minigallery:: radis.io.exomol.get_exomol_database_list
+
+
+#     See Also
+#     --------
+#     :py:func:`~radis.io.exomol.get_exomol_full_isotope_name`
+#     """
+
+# url = f"https://exomol.com/data/molecules/"
+# try:
+#     response = urlopen(url).read()
+# except HTTPError as err:
+#     raise ValueError(f"HTTPError opening url={url}") from err
+
+# soup = BeautifulSoup(
+#     response, features="lxml"
+# )  # make soup that is parse-able by bs
+
+# # Recommended database
+# rows = soup.find_all(
+#     "a", {"class": "list-group-item link-list-group-item recommended"}
+# )
+# databases_recommended = [r.get_attribute_list("title")[0] for r in rows]
+
+# # All others
+# rows = soup.find_all("a", {"class": "list-group-item link-list-group-item"})
+# databases = [r.get_attribute_list("title")[0] for r in rows]
+
+# if len(databases_recommended) > 1:
+#     # Known exceptions :
+#     if (
+#         isotope_full_name == "28Si-16O"
+#         and databases_recommended[0] == "xsec-SiOUVenIR"
+#     ):
+#         # this is a cross-section dataset, shouldn't be used. Reverse and use the other one:
+#         databases_recommended = databases_recommended[::-1]
+#     else:
+#         print(
+#             f"Multiple recommended databases found for {molecule} in ExoMol : {databases_recommended}. This is unexpected. Using the first"
+#         )
+
+# databases = databases + databases_recommended
+
+# return databases, databases_recommended[0]
+
+
 def fetch_exomol(
     molecule,
     database=None,
     local_databases=r"~/.radisdb/exomol/",
     databank_name="EXOMOL-{molecule}",
-    isotope=None,
+    isotope="1",
     load_wavenum_min=None,
     load_wavenum_max=None,
     cache=True,
@@ -156,19 +230,35 @@ def fetch_exomol(
 
     Parameters
     ----------
-    molecule: str
+    molecule: ``str``
         ExoMol molecule
-    database: str
+    database: ``str``
         database name. Ex:: ``POKAZATEL`` or ``BT2`` for ``H2O``. See
         :py:data:`~radis.io.exomol.KNOWN_EXOMOL_DATABASE_NAMES`. If ``None`` and
         there is only one database available, use it.
-    local_databases: str
+    local_databases: ``str``
         where to create the RADIS HDF5 files. Default ``"~/.radisdb/exomol"``
-    databank_name: str
+    databank_name: ``str``
         name of the databank in RADIS :ref:`Configuration file <label_lbl_config_file>`
         Default ``"EXOMOL-{molecule}"``
-    isotope: str
-        load only certain isotopes : ``'2'``, ``'1,2'``, etc. Default ``1``.
+    isotope: ``str`` or ``int``
+        load only certain isotopes, sorted by terrestrial abundances : ``'1'``, ``'2'``,
+        etc. Default ``1``.
+
+        .. note::
+
+            In RADIS, isotope abundance is included in the line intensity
+            calculation. However, the terrestrial abundances used may not be
+            relevant to non-terrestrial applications.
+            By default, the abundance is given reading HITRAN data. If the molecule
+            does not exist in the HITRAN database, the abundance is read from
+            the ``radis/radis_default.json`` configuration file, which can be
+            modified by editing ``radis.config`` after import or directly
+            by editing the user ``~/radis.json`` user configuration file
+            (overwrites ``radis_default.json``). In the ``radis/radis_default.json``
+            file, values were calculated with a simple model based on the
+            terrestrial isotopic abundance of each element.
+
     load_wavenum_min, load_wavenum_max: float (cm-1)
         load only specific wavenumbers.
 
@@ -213,6 +303,15 @@ def fetch_exomol(
     :py:func:`~radis.io.hdf5.hdf2df`
 
     """
+    # Ensure isotope format:
+    try:
+        isotope = int(isotope)
+    except:
+        raise ValueError(
+            f"In fetch_exomol, ``isotope`` must be an integer. Got `{isotope}` "
+            + "Only one isotope can be queried at a time. "
+        )
+
     full_molecule_name = get_exomol_full_isotope_name(molecule, isotope)
     known_exomol_databases, recommended_database = get_exomol_database_list(
         molecule, full_molecule_name
@@ -247,6 +346,10 @@ def fetch_exomol(
         / database
     )
 
+    if load_wavenum_min is None:
+        load_wavenum_min = -np.inf
+    if load_wavenum_max is None:
+        load_wavenum_max = np.inf
     mdb = MdbExomol(local_path, [load_wavenum_min, load_wavenum_max])
 
     # Attributes of the DataFrame
