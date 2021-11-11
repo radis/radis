@@ -119,6 +119,14 @@ def partition(pred, iterable):
 # %% Compare / merge tools
 
 
+def intersect(a, b):
+    """Returns intersection of two dictionaries on values."""
+    c = {}
+    for k in set(a.keys()) & set(b.keys()):
+        c[k] = a[k] if (a[k] == b[k]) else "N/A"
+    return c
+
+
 def compare_dict(
     d1,
     d2,

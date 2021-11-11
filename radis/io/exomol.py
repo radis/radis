@@ -62,7 +62,7 @@ def get_exomol_full_isotope_name(molecule, isotope):
         return mp.get(molecule, isotope, "isotope_name_exomol")
 
 
-def get_exomol_database_list(molecule, isotope_full_name):
+def get_exomol_database_list(molecule, isotope_full_name, verbose=True):
     """Parse ExoMol website and return list of available databases, and recommended database
 
     Parameters
@@ -77,9 +77,19 @@ def get_exomol_database_list(molecule, isotope_full_name):
 
     Examples
     --------
+    Get CH4 from ExoMol :
     ::
         databases, recommended = get_exomol_database_list("CH4", "12C-1H4")
         >>> ['xsec-YT10to10', 'YT10to10', 'YT34to10'], 'YT34to10'
+
+    Or combine with :py:func:`~radis.io.exomol.get_exomol_full_isotope_name` to
+    get the isopologue (sorted by terrestrial abundance) ::
+
+        from radis.io.exomol import get_exomol_database_list, get_exomol_full_isotope_name
+        databases, recommended = get_exomol_database_list("CH4", get_exomol_full_isotope_name("CH4", 1))
+        >>> ['xsec-YT10to10', 'YT10to10', 'YT34to10'], 'YT34to10'
+
+
 
     See Also
     --------
@@ -106,7 +116,10 @@ def get_exomol_database_list(molecule, isotope_full_name):
     rows = soup.find_all("a", {"class": "list-group-item link-list-group-item"})
     databases = [r.get_attribute_list("title")[0] for r in rows]
 
-    assert len(databases_recommended) <= 1
+    if len(databases_recommended) > 1 and verbose:
+        print(
+            f"Multiple recommended databases for {molecule} in ExoMol : {databases_recommended}. Using the first"
+        )
 
     databases = databases + databases_recommended
 
@@ -190,7 +203,7 @@ def fetch_exomol(
         molecule, full_molecule_name
     )
 
-    _exomol_use_hint = f"Select one of them with `radis.fetch_exomol(DATABASE_NAME)`, `SpectrumFactory.fetch_databank('exomol', exomol_database=DATABASE_NAME')`, or `calc_spectrum(..., databank=('exomol', DATABASE_NAME))` \n"
+    _exomol_use_hint = "Select one of them with `radis.fetch_exomol(DATABASE_NAME)`, `SpectrumFactory.fetch_databank('exomol', exomol_database=DATABASE_NAME')`, or `calc_spectrum(..., databank=('exomol', DATABASE_NAME))` \n"
     if database is None:
         if len(known_exomol_databases) == 1:
             database = known_exomol_databases[0]
@@ -221,7 +234,18 @@ def fetch_exomol(
 
     mdb = MdbExomol(local_path, [load_wavenum_min, load_wavenum_max])
 
-    df = mdb.to_df()
+    # Attributes of the DataFrame
+    from radis.db.classes import HITRAN_MOLECULES
+
+    attrs = {}
+    if molecule in HITRAN_MOLECULES:
+        attrs["id"] = get_molecule_identifier(
+            molecule
+        )  # HITRAN id-number (if available)
+    attrs["molecule"] = molecule
+    attrs["iso"] = isotope
+
+    df = mdb.to_df(attrs=attrs)
 
     out = [df]
 
@@ -623,8 +647,13 @@ class MdbExomol(object):
 
         return PartFuncExoMol(self.isotope_fullname, self.T_gQT, self.gQT)
 
-    def to_df(self):
-        """Export Line Database to a RADIS-friendly Pandas DataFrame"""
+    def to_df(self, attrs={}):
+        """Export Line Database to a RADIS-friendly Pandas DataFrame
+
+        Parameters
+        ----------
+        attrs: dict
+            add these as attributes of the DataFrame"""
 
         ##Broadening parameters
         self.set_broadening()
@@ -653,12 +682,8 @@ class MdbExomol(object):
                 df[key] = array
                 df[key] = df[key].astype("str")
 
-        from radis.db.classes import HITRAN_MOLECULES
-
-        if self.molecule in HITRAN_MOLECULES:
-            df.attrs["id"] = get_molecule_identifier(self.molecule)
-        df.attrs["molecule"] = self.molecule
-        df.attrs["iso"] = 1  # TODO : get isotope number while parsing ExoMol name
+        for k, v in attrs.items():
+            df.attrs[k] = v
 
         assert self.Tref == 296  # default in RADIS
 

@@ -1119,8 +1119,19 @@ class DatabankLoader(object):
             if len(frames) > 1:
                 # Note @dev : may be faster/less memory hungry to keep lines separated for each isotope. TODO : test both versions
                 for df in frames:
-                    assert "iso" in df.columns
+                    if "iso" not in df.columns:
+                        assert "iso" in df.attrs
+                        df["iso"] = df.attrs["iso"]
+                # Keep attributes:
+                from radis.misc.basics import intersect
+
+                attrs = frames[0].attrs
+                for df in frames[1:]:
+                    attrs = intersect(attrs, df.attrs)
+                del attrs["iso"]  # added as a column (different for each line)
+                # Merge:
                 df = pd.concat(frames, ignore_index=True)  # reindex
+                df.attrs = attrs
                 self.params.dbpath = ",".join(local_paths)
             else:
                 df = frames[0]
