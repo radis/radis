@@ -62,7 +62,7 @@ def get_exomol_full_isotope_name(molecule, isotope):
         return mp.get(molecule, isotope, "isotope_name_exomol")
 
 
-def get_exomol_database_list(molecule, isotope_full_name, verbose=True):
+def get_exomol_database_list(molecule, isotope_full_name):
     """Parse ExoMol website and return list of available databases, and recommended database
 
     Parameters
@@ -118,10 +118,18 @@ def get_exomol_database_list(molecule, isotope_full_name, verbose=True):
     rows = soup.find_all("a", {"class": "list-group-item link-list-group-item"})
     databases = [r.get_attribute_list("title")[0] for r in rows]
 
-    if len(databases_recommended) > 1 and verbose:
-        print(
-            f"Multiple recommended databases for {molecule} in ExoMol : {databases_recommended}. Using the first"
-        )
+    if len(databases_recommended) > 1:
+        # Known exceptions :
+        if (
+            isotope_full_name == "28Si-16O"
+            and databases_recommended[0] == "xsec-SiOUVenIR"
+        ):
+            # this is a cross-section dataset, shouldn't be used. Reverse and use the other one:
+            databases_recommended = databases_recommended[::-1]
+        else:
+            print(
+                f"Multiple recommended databases found for {molecule} in ExoMol : {databases_recommended}. This is unexpected. Using the first"
+            )
 
     databases = databases + databases_recommended
 

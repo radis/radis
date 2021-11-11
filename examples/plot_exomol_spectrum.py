@@ -23,7 +23,7 @@ s = calc_spectrum(
     mole_fraction=0.1,
     path_length=1,  # cm
     broadening_method="fft",  # @ dev: Doesn't work with 'voigt'
-    databank="exomol",  # uses the recommended database. Use ('exomol', "EBJT") for a specific database ("EBJT")
+    databank=("exomol", "EBJT"),  # Simply use 'exomol' for the recommended database
 )
 s.apply_slit(1, "cm-1")  # simulate an experimental slit
 s.plot("radiance")
@@ -34,3 +34,11 @@ from radis.io.exomol import fetch_exomol
 
 df = fetch_exomol("SiO", database="EBJT")
 print(df)
+
+
+#%% See the list of recommended databases for this molecule:
+from radis.io.exomol import get_exomol_database_list
+
+databases, recommended = get_exomol_database_list()
+print("Databases for SiO: ", databases)
+print("Database recommended by ExoMol: ", recommended)
