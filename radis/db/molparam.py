@@ -10,29 +10,6 @@ import pandas as pd
 
 from radis.db.utils import getFile
 
-EXTRA_ABUNDANCES = {
-    "SiO": {1: 1},
-    "CN": {1: 1},
-}
-"""Extra isotopic abundances when not found in HITRAN molecular parameter database
-::
-    self._EXTRA_ABUNDANCES[molecule][isotope] = Ia
-
-"""
-
-EXTRA_MOLAR_MASS = {
-    "SiO": {1: 43.971842},
-    "CN": {
-        1: 26.0179
-    },  # https://www.chemicalaid.com/tools/molarmass.php?formula=CN%7B-%7D
-}
-"""Extra molar mass when not found in HITRAN molecular parameter database
-::
-    self._EXTRA_MOLAR_MASS[molecule][isotope] = M (g/mol)
-
-See :py:func:`radis.lbl.base.BaseFactory.get_molar_mass`
-"""
-
 # Isotope definitions in HITRAN
 isotope_name_dict = {
     (1, 1): "H2(16O)",

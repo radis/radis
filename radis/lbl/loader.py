@@ -679,29 +679,25 @@ class DatabankLoader(object):
         # HARDCODED molar mass; for WIP ExoMol implementation, until MolParams
         # is an attribute and can be updated with definitions from ExoMol.
         # https://github.com/radis/radis/issues/321
-        from radis.db.molparam import EXTRA_MOLAR_MASS
+        from radis import config
 
-        self._EXTRA_MOLAR_MASS = EXTRA_MOLAR_MASS
+        self._EXTRA_MOLAR_MASS = config["molparams"]["molar_mass"]
         """Extra molar mass when not found in HITRAN molecular parameter database
         ::
             self._EXTRA_MOLAR_MASS[molecule][isotope] = M (g/mol)
 
         See :py:func:`radis.lbl.base.BaseFactory.get_molar_mass`
         """
-        # TODO @dev: Refactor: move into radis.json  ?
 
         # HARDCODED isotopic abundance; for WIP ExoMol implementation, until MolParams
         # is an attribute and can be updated with definitions from ExoMol.
         # https://github.com/radis/radis/issues/321
-        from radis.db.molparam import EXTRA_ABUNDANCES
-
-        self._EXTRA_ABUNDANCES = EXTRA_ABUNDANCES
+        self._EXTRA_ABUNDANCES = config["molparams"]["abundances"]
         """Extra isotopic abundances when not found in HITRAN molecular parameter database
         ::
             self._EXTRA_ABUNDANCES[molecule][isotope] = Ia
 
         """
-        # TODO @dev: Refactor: move into radis.json  ?
 
         # Profiler
         self.profiler = None

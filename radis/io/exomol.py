@@ -268,9 +268,9 @@ def fetch_exomol(
     try:
         Ia = MolParams().get(molecule, isotope, "abundance")
     except NotImplementedError:
-        from radis.db.molparam import EXTRA_ABUNDANCES
+        from radis import config
 
-        Ia = EXTRA_ABUNDANCES[molecule][isotope]
+        Ia = config["molparams"]["abundances"][molecule][str(isotope)]
 
     df["Sij0"] *= Ia
     df.rename(columns={"Sij0": "int"}, inplace=True)

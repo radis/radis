@@ -1682,10 +1682,12 @@ class BaseFactory(DatabankLoader):
 
             # see :py:attr:`radis.lbl.loader.DatabankLoader._EXTRA_MOLAR_MASS`
             try:
-                return self._EXTRA_MOLAR_MASS[df.attrs["molecule"]][df.attrs["iso"]]
+                return self._EXTRA_MOLAR_MASS[df.attrs["molecule"]][
+                    str(df.attrs["iso"])
+                ]
             except KeyError:
                 raise NotImplementedError(
-                    "Molar mass of {0} (isotope {1}) is unknown. You can manually add it in the SpectrumFactory._EXTRA_MOLAR_MASS[molecule][isotope] = M (g/mol) dictionary (temporary hack until we fetch all molar mass)".format(
+                    "Molar mass of {0} (isotope {1}) is unknown. You can manually add it in your radis.json file {'molparams':{'molar_mass':{'molecule':{'ISOTOPE':...}}}}; or in the SpectrumFactory._EXTRA_MOLAR_MASS[molecule][isotope] = M (g/mol) dictionary. Please also report on GitHub so we can update !".format(
                         df.attrs["molecule"], df.attrs["iso"]
                     )
                 )

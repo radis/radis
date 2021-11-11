@@ -1,5 +1,13 @@
 {
 "database":{},
+"molparams":{
+    "abundances": {
+        "SiO": {"1": 1},
+        "CN": {"1": 1}
+    },
+    "molar_mass": {
+    "SiO": {"1": 43.971842},
+    "CN": {"1": 26.0179}}},
 "spectroscopic_constants":{
     "CO2": "molecules_data.json",
     "CO": "molecules_data.json"
@@ -12,7 +20,7 @@
 "DEBUG_MODE":false,
 "AUTO_UPDATE_DATABASE":false,
 "AUTO_UPDATE_SPEC":false,
-"OLDEST_COMPATIBLE_VERSION":"0.9.1",
+"OLDEST_COMPATIBLE_VERSION":",0.9.1",
 "USE_CYTHON":true,
 "GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD":3,
 "GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD":1,
