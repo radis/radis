@@ -265,7 +265,13 @@ def fetch_exomol(
     # Replace Linestrength with Line Intensity taking into account Terrestrial isotopic abundance
     from radis.db.molparam import MolParams
 
-    Ia = MolParams().get(molecule, isotope, "abundance")
+    try:
+        Ia = MolParams().get(molecule, isotope, "abundance")
+    except NotImplementedError:
+        from radis.db.molparam import EXTRA_ABUNDANCES
+
+        Ia = EXTRA_ABUNDANCES[molecule][isotope]
+
     df["Sij0"] *= Ia
     df.rename(columns={"Sij0": "int"}, inplace=True)
 
@@ -737,22 +743,6 @@ if __name__ == "__main__":
     # # s_hit = sf.eq_spectrum(500, name='HITRAN')
 
     #%% Test by direct caclulation
-    from radis import SpectrumFactory
+    import pytest
 
-    sf = SpectrumFactory(
-        4310,
-        4320,
-        molecule="H2O",
-        isotope="1",
-        verbose=3,
-    )
-    sf.fetch_databank("exomol")
-    s = sf.eq_spectrum(500, name="ExoMol")
-    s.plot()
-
-#    mask=mdb.A>1.e-42
-#    mdb.masking(mask)
-#    mdb=MdbExomol("/home/kawahara/exojax/data/exomol/NH3/14N-1H3/CoYuTe/",nurange=[6050.0,6150.0])
-#    mdb=MdbExomol("/home/kawahara/exojax/data/exomol/H2S/1H2-32S/AYT2/",nurange=[6050.0,6150.0])
-#    mdb=MdbExomol("/home/kawahara/exojax/data/exomol/FeH/56Fe-1H/MoLLIST/",nurange=[6050.0,6150.0])
-#    mdb=MdbExomol("/home/kawahara/exojax/data/exomol/NO/14N-16O/NOname/14N-16O__NOname")
+    print("Testing factory:", pytest.main(["../test/io/test_exomol.py"]))

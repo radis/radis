@@ -120,6 +120,6 @@ def test_calc_exomol_vs_hitemp(verbose=True, plot=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    # test_exomol_parsing_functions()
-    # test_calc_exomol_spectrum()
+    test_exomol_parsing_functions()
+    test_calc_exomol_spectrum()
     test_calc_exomol_vs_hitemp()

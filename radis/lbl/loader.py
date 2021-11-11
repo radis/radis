@@ -673,23 +673,35 @@ class DatabankLoader(object):
         """MolParam: contains information about molar mass; isotopic abundance.
 
         See :py:class:`~radis.db.molparam.MolParams`"""
+        # TODO @dev : Refactor : turn it into a Dictinoary? (easier to store as JSON Etc.)
 
         # Extra paramaters :
         # HARDCODED molar mass; for WIP ExoMol implementation, until MolParams
         # is an attribute and can be updated with definitions from ExoMol.
         # https://github.com/radis/radis/issues/321
-        self._EXTRA_MOLAR_MASS = {
-            "SiO": {1: 43.971842},
-            "CN": {
-                1: 26.0179
-            },  # https://www.chemicalaid.com/tools/molarmass.php?formula=CN%7B-%7D
-        }
+        from radis.db.molparam import EXTRA_MOLAR_MASS
+
+        self._EXTRA_MOLAR_MASS = EXTRA_MOLAR_MASS
         """Extra molar mass when not found in HITRAN molecular parameter database
         ::
             self._EXTRA_MOLAR_MASS[molecule][isotope] = M (g/mol)
 
         See :py:func:`radis.lbl.base.BaseFactory.get_molar_mass`
         """
+        # TODO @dev: Refactor: move into radis.json  ?
+
+        # HARDCODED isotopic abundance; for WIP ExoMol implementation, until MolParams
+        # is an attribute and can be updated with definitions from ExoMol.
+        # https://github.com/radis/radis/issues/321
+        from radis.db.molparam import EXTRA_ABUNDANCES
+
+        self._EXTRA_ABUNDANCES = EXTRA_ABUNDANCES
+        """Extra isotopic abundances when not found in HITRAN molecular parameter database
+        ::
+            self._EXTRA_ABUNDANCES[molecule][isotope] = Ia
+
+        """
+        # TODO @dev: Refactor: move into radis.json  ?
 
         # Profiler
         self.profiler = None
@@ -2443,6 +2455,7 @@ class DatabankLoader(object):
 
         Examples
         --------
+        ::
 
             from radis import SpectrumFactory
 
