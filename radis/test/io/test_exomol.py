@@ -62,7 +62,7 @@ def test_calc_exomol_spectrum(verbose=True, plot=True, *args, **kwargs):
         mole_fraction=0.1,
         path_length=1,  # cm
         broadening_method="fft",  # @ dev: Doesn't work with 'voigt'
-        databank="exomol",  # or use ('exomol', "EBJT") for a specific database ("EBJT")
+        databank=("exomol", "EBJT"),
         verbose=verbose,
     )
     s.apply_slit(1, "cm-1")  # simulate an experimental slit
