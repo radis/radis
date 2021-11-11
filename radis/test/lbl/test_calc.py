@@ -786,8 +786,8 @@ def test_calc_spectrum_multiple_molecules_wstep_auto(
 
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
-    # # Test sPlanck and conversion functions
-    # test_sPlanck_conversions()
+    # Test sPlanck and conversion functions
+    test_sPlanck_conversions()
 
     # Test calc_spectrum function
     test_calc_spectrum()
