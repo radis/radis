@@ -1204,7 +1204,13 @@ class Spectrum(object):
             If 'default', the value is determined from the self_absorption key
             in Spectrum.conditions. If not given, False is taken. Default 'default'
             Also updates the self_absorption value in conditions (creates it if
-            doesnt exist)
+            doesnt exist
+
+        Examples
+        --------
+        ::
+
+            s.update('transmittance_noslit')
 
         See Also
         --------
@@ -1251,6 +1257,7 @@ class Spectrum(object):
         Examples
         --------
         ::
+
             for path in [0.1, 10, 100]:
                 s.rescale_path_length(10, inplace=False).plot(nfig='same')
 
@@ -1314,6 +1321,7 @@ class Spectrum(object):
         Examples
         --------
         ::
+
             s.rescale_mole_fraction(0.2)
 
         .. minigallery:: radis.spectrum.spectrum.Spectrum.rescale_mole_fraction
@@ -2823,9 +2831,15 @@ class Spectrum(object):
 
             Note: if not None, cutoff criteria is applied in this unit.
             Not used if plot is not 'S'
+        barwidth: float or str
+            if float, width of bars, in ``wunit``, as a fraction of full-range; i.e. ::
 
-        barwidth: float
-            With of bars in LineSurvey. Default 0.07
+                barwidth=0.01
+
+            makes bars span 1% of the full range.
+            if ``str``, uses the column as width. Example ::
+
+                barwidth = 'hwhm_voigt'
 
 
 
@@ -2854,7 +2868,7 @@ class Spectrum(object):
             sf.load_databank('HITRAN-CO2-TEST')
             s = sf.eq_spectrum(Tgas=1500)
             s.apply_slit(0.5)
-            s.line_survey(overlay='radiance_noslit', barwidth=0.01)
+            s.line_survey(overlay='radiance_noslit', barwidth=0.01)  # or barwidth='hwhm_voigt'
 
         See the output in :ref:`Examples <label_examples>`
 
@@ -3032,11 +3046,6 @@ class Spectrum(object):
         Spectrum conditions and get Spectrum that suits specific parameters.
 
 
-        Implementation:
-
-            Shouldnt rely on a Database. One may just want to store/load a Spectrum
-            once.
-
         Examples
         --------
         Store a spectrum in compressed mode, regenerate quantities after loading::
@@ -3090,7 +3099,7 @@ class Spectrum(object):
     def to_json(self, *args, **kwargs):
         """Alias to Spectrum.store(compress=False).
 
-        See Spectrum.store for documentation
+        See Spectrum. :py:meth:`~radis.spectrum.spectrum.Spectrum.store` for documentation
         """
 
         return self.store(compress=False, *args, **kwargs)
@@ -3417,6 +3426,9 @@ class Spectrum(object):
             default ``True``
         quantity: 'all', or one of 'radiance_noslit', 'absorbance', etc.
             if not 'all', copy only one quantity. Default ``'all'``
+
+        Examples
+        --------
 
         .. minigallery:: radis.spectrum.spectrum.Spectrum.copy
             :add-heading:
@@ -3757,7 +3769,10 @@ class Spectrum(object):
 
         .. raw:: html
 
-        </details>
+            </details>
+
+        Other Examples
+        --------------
 
         .. minigallery:: radis.spectrum.spectrum.Spectrum.cite
 

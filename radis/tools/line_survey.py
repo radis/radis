@@ -62,7 +62,7 @@ def LineSurvey(
     cutoff=None,
     plot="S",
     lineinfo=["int", "A", "El"],
-    barwidth=0.07,
+    barwidth="hwhm_voigt",  # 0.01,
     yscale="log",
     writefile=None,
     xunit=None,
@@ -104,6 +104,15 @@ def LineSurvey(
         If ``None``, use the ``fig`` object returned to show the plot.
     yscale: ``'log'``, ``'linear'``
         Default ``'log'``
+    barwidth: float or str
+        if float, width of bars, in ``wunit``, as a fraction of full-range; i.e. ::
+
+            barwidth=0.01
+
+        makes bars span 1% of the full range.
+        if ``str``, uses the column as width. Example ::
+
+            barwidth = 'hwhm_voigt'
 
     Returns
     -------
@@ -186,6 +195,8 @@ def LineSurvey(
     # Parsers to get units and more details
     if dbformat in ["hitran", "hitemp", "hitemp-radisdb"]:
         columndescriptor = hitrancolumns
+    elif dbformat in ["nist"]:
+        columndescriptor = hitrancolumns  # Placeholder. TODO replace with NIST (for the moment we copy the names anyway)
     elif dbformat == "cdsd-hitemp":
         columndescriptor = cdsdhitempcolumns
     elif dbformat == "cdsd-4000":
@@ -425,6 +436,25 @@ def LineSurvey(
 
         return label
 
+    def get_label_nist(row, attrs):
+        label = attrs[
+            "molecule"
+        ] + " [{Lower level}] ({El:.2f} eV) -> [{Upper level}] ({Eu:.2f} eV)".format(
+            **dict(
+                [
+                    (k, row[k])
+                    for k in [
+                        "Lower level",  # TODO: have nicer Term Symbol appear
+                        "Upper level",  # TODO: have nicer Term Symbol appear
+                        "El",
+                        "Eu",
+                    ]
+                ]
+            )
+        )
+
+        return label
+
     def get_label_none(row):
         return "unknown databank format. \ndetails cant be read"
 
@@ -452,11 +482,31 @@ def LineSurvey(
             sp["label"] = sp.apply(lambda r: get_label_cdsd_hitran(r, details), axis=1)
         except KeyError:
             sp["label"] = sp.apply(lambda r: get_label_cdsd(r, details), axis=1)
+    elif dbformat in ["nist"]:
+        sp["label"] = sp.apply(lambda r: get_label_nist(r, sp.attrs), axis=1)
     else:
         sp["label"] = sp.apply(get_label_none, axis=1)
 
     # from plotly.graph_objs import Scatter, Figure, Layout
-    #
+
+    if wunit == "nm":
+        xlabel = "Wavelength (nm) [{0}]".format(medium)
+        x_range = spec.get_wavelength()
+    elif wunit == "cm-1":
+        xlabel = "Wavenumber (cm-1)"
+        x_range = spec.get_wavenumber()
+    else:
+        raise ValueError("unknown wunit: {0}".format(wunit))
+
+    # TODO : implement barwidth -->  if ``hwhm_voigt``, bars are one half-width at half-maximum (in cm-1)
+    if isinstance(barwidth, str):
+        if not barwidth in sp.columns:
+            raise ValueError(
+                f"`{barwidth}` not in the lines Dataframe columns. Use one of the column names ({sp.columns}) or set `barwidth=[a 0-1 number]` to plot bars with widths as a fraction of the total range, ex : `barwidth=0.01`"
+            )
+        barwidth = sp[barwidth]
+    else:
+        barwidth = (x_range.max() - x_range.min()) * barwidth
     l = [
         go.Bar(
             x=get_x(sp.shiftwav),
@@ -467,16 +517,9 @@ def LineSurvey(
         )
     ]
 
-    if wunit == "nm":
-        xlabel = "Wavelength (nm) [{0}]".format(medium)
-    elif wunit == "cm-1":
-        xlabel = "Wavenumber (cm-1)"
-    else:
-        raise ValueError("unknown wunit: {0}".format(wunit))
-
     if yscale == "log":
         plot_range = (
-            int(np.log10(max(cutoff, sp[plot].min()))),
+            int(np.log10(max(cutoff, sp[plot].min()))) - 1,
             int(np.log10(sp[plot].max())) + 1,
         )
     else:
@@ -489,6 +532,7 @@ def LineSurvey(
         hovermode="closest",
         xaxis=dict(
             title=xlabel,
+            range=(x_range.min(), x_range.max()),
         ),
         yaxis=dict(
             title=ylabel,

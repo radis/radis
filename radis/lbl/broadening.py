@@ -287,13 +287,13 @@ def pressure_broadening_HWHM(
     References
     ----------
 
-    ..math::
+    .. math::
 
         \\gamma_{lb}={\\left(\\frac{T_{ref}}{T_{gas}}\\right)}^{n_{air}} \\gamma_{air} P \\left(1-x\\right)+{\\left(\\frac{T_{ref}}{T_{gas}}\\right)}^{n_{self}} \\gamma_{self} P x
 
     With :math:`n_{air}, n_{self}` the temperature dependance coefficients
     ``Tdpair, Tdpsel`` ; :math:`\\gamma_{air}, \\gamma_{self}` the air and resonant
-    broadening ``airbrd, selbrd``, :math:`x` the ``mole_fraction``.
+    HWHM broadening tabulated at :math:`T_{ref}`, :math:`x` the ``mole_fraction``.
 
     .. [1] `Rothman 1998 (HITRAN 1996) eq (A.14) <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`_
 
@@ -1524,8 +1524,9 @@ class BroadenFactory(BaseFactory):
         return line_profile_DLM, wL, wG, wL_dat, wG_dat
 
     def plot_broadening(self, i=0, pressure_atm=None, mole_fraction=None, Tgas=None):
-        """just for testing. Recalculate and plot broadening for line of index
-        i.
+        """Recalculate and plot broadening for line of index ``i``.
+
+        Used mainly for testing.
 
         Parameters
         ----------
@@ -1541,6 +1542,8 @@ class BroadenFactory(BaseFactory):
         Examples
         --------
         ::
+
+            from radis import SpectrumFactory
             sf=SpectrumFactory(...)
             sf.eq_spectrum(...)
             sf.plot_broadening(i=500)   # plot line number 500

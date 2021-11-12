@@ -675,6 +675,34 @@ class DatabankLoader(object):
         """MolParam: contains information about molar mass; isotopic abundance.
 
         See :py:class:`~radis.db.molparam.MolParams`"""
+        # TODO @dev : Refactor : turn it into a Dictinoary? (easier to store as JSON Etc.)
+
+        # Extra paramaters :
+        # HARDCODED molar mass; for WIP ExoMol implementation, until MolParams
+        # is an attribute and can be updated with definitions from ExoMol.
+        # https://github.com/radis/radis/issues/321
+        from radis import config
+
+        self._EXTRA_MOLAR_MASS = config["molparams"]["molar_mass"]
+        """Extra molar mass when not found in HITRAN molecular parameter database
+        ::
+            self._EXTRA_MOLAR_MASS[molecule][isotope] = M (g/mol)
+
+        See :py:func:`radis.lbl.base.BaseFactory.get_molar_mass`
+        """
+
+        # HARDCODED isotopic abundance; for WIP ExoMol implementation, until MolParams
+        # is an attribute and can be updated with definitions from ExoMol.
+        # https://github.com/radis/radis/issues/321
+        self._EXTRA_ABUNDANCES = config["molparams"]["abundances"]
+        """Extra isotopic abundances when not found in HITRAN molecular parameter database
+        ::
+            self._EXTRA_ABUNDANCES[molecule][isotope] = Ia
+
+        """
+
+        # Profiler
+        self.profiler = None
 
     def _reset_profiler(self, verbose):
         """Reset :py:class:`~radis.misc.profiler.Profiler`
@@ -1101,8 +1129,19 @@ class DatabankLoader(object):
             if len(frames) > 1:
                 # Note @dev : may be faster/less memory hungry to keep lines separated for each isotope. TODO : test both versions
                 for df in frames:
-                    assert "iso" in df.columns
+                    if "iso" not in df.columns:
+                        assert "iso" in df.attrs
+                        df["iso"] = df.attrs["iso"]
+                # Keep attributes:
+                from radis.misc.basics import intersect
+
+                attrs = frames[0].attrs
+                for df in frames[1:]:
+                    attrs = intersect(attrs, df.attrs)
+                del attrs["iso"]  # added as a column (different for each line)
+                # Merge:
                 df = pd.concat(frames, ignore_index=True)  # reindex
+                df.attrs = attrs
                 self.params.dbpath = ",".join(local_paths)
             else:
                 df = frames[0]
@@ -1121,11 +1160,11 @@ class DatabankLoader(object):
         # (note : this is now done in 'fetch_hitemp' before saving to the disk)
         # spectroscopic quantum numbers will be needed for nonequilibrium calculations, and line survey.
         if parse_local_global_quanta and "locu" in df:
-            df = parse_local_quanta(df, molecule)
+            df = parse_local_quanta(df, molecule, verbose=self.verbose)
         if (
             parse_local_global_quanta and "globu" in df
         ):  # spectroscopic quantum numbers will be needed for nonequilibrium calculations :
-            df = parse_global_quanta(df, molecule)
+            df = parse_global_quanta(df, molecule, verbose=self.verbose)
 
         # Remove non numerical attributes
         if drop_non_numeric:
@@ -2414,6 +2453,7 @@ class DatabankLoader(object):
 
         Examples
         --------
+        ::
 
             from radis import SpectrumFactory
 

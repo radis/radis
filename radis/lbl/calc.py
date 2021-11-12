@@ -21,22 +21,22 @@ from copy import deepcopy
 from os.path import exists
 
 try:  # Proper import
-    from .labels import SpectrumFactory
+    from .base import get_waverange
+    from .factory import SpectrumFactory
 except ImportError:  # if ran from here
     from radis.lbl.factory import SpectrumFactory
+    from radis.lbl.base import get_waverange
+
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
-from radis.phys.air import air2vacuum
-from radis.phys.convert import nm2cm
 from radis.spectrum.spectrum import Spectrum
 
 
 # %%
 def calc_spectrum(
-    wavenum_min=None,
-    wavenum_max=None,
-    wavelength_min=None,
-    wavelength_max=None,
+    wmin=None,
+    wmax=None,
+    wunit=Default("cm-1"),
     Tgas=None,
     Tvib=None,
     Trot=None,
@@ -63,7 +63,7 @@ def calc_spectrum(
     verbose=True,
     **kwargs
 ) -> Spectrum:
-    r"""Multipurpose function to calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
+    r"""Calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
 
     Can automatically download databases (HITRAN/HITEMP) or use manually downloaded
     local databases, under equilibrium or non-equilibrium, with or without overpopulation,
@@ -75,15 +75,18 @@ def calc_spectrum(
 
     Parameters
     ----------
-    wavenum_min, wavenum_max: float [:math:`cm^{-1}`] or `~astropy.units.quantity.Quantity`
-        wavenumber range to be processed in :math:`cm^{-1}`. Use arbitrary units::
+    wmin, wmax: float [:math:`cm^{-1}`] or `~astropy.units.quantity.Quantity`
+        wavelength/wavenumber range. If no units are given, use :math:`cm^{-1}` ::
+
+            calc_spectrum(2000, 2300, ... )   # cm-1
+            calc_spectrum(4000, 4200, wunit='nm', ...)
+
+        You can use arbitrary units::
 
             import astropy.units as u
             calc_spectrum(2.5*u.um, 3.0*u.um, ...)
-
-    wavelength_min, wavelength_max: float [:math:`nm`] or `~astropy.units.quantity.Quantity`
-        wavelength range to be processed in :math:`nm`. Wavelength in ``'air'`` or
-        ``'vacuum'`` depending of the value of ``'medium'``.
+    wunit: ``'nm'``, ``'cm-1'``
+        unit for ``wmin`` and ``wmax``. Default is ``"cm-1"``.
     Tgas: float [:math:`K`]
         Gas temperature. If non equilibrium, is used for :math:`T_{translational}`.
         Default ``300`` K​
@@ -322,6 +325,25 @@ def calc_spectrum(
     --------
     :py:class:`~radis.lbl.factory.SpectrumFactory`
     """
+
+    # Check inputs
+
+    # ... wavelengths / wavenumbers
+
+    # Get wavenumber, based on whatever was given as input.
+    wavenum_min, wavenum_max = get_waverange(
+        wmin,
+        wmax,
+        wunit,
+        kwargs.pop("wavenum_min") if "wavenum_min" in kwargs else None,
+        kwargs.pop("wavenum_max") if "wavenum_max" in kwargs else None,
+        kwargs.pop("wavelength_min") if "wavelength_min" in kwargs else None,
+        kwargs.pop("wavelength_max") if "wavelength_max" in kwargs else None,
+        medium,
+    )
+
+    # Deal with Multi-molecule mode:
+
     from radis.los.slabs import MergeSlabs
 
     if molecule is not None and type(molecule) != list:
@@ -454,11 +476,9 @@ def calc_spectrum(
         # We add all of the DICT_INPUT_ARGUMENTS values:
         kwargs_molecule.update(**dict_arguments)
 
-        generated_spectrum = _calc_spectrum(
+        generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
             wavenum_max=wavenum_max,
-            wavelength_min=wavelength_min,
-            wavelength_max=wavelength_max,
             Tgas=Tgas,
             Tvib=Tvib,
             Trot=Trot,
@@ -502,11 +522,9 @@ def calc_spectrum(
     return s
 
 
-def _calc_spectrum(
+def _calc_spectrum_one_molecule(
     wavenum_min,
     wavenum_max,
-    wavelength_min,
-    wavelength_max,
     Tgas,
     Tvib,
     Trot,
@@ -535,28 +553,6 @@ def _calc_spectrum(
     """See :py:func:`~radis.lbl.calc.calc_spectrum`"""
 
     # Check inputs
-
-    # ... wavelengths / wavenumbers
-    if (wavelength_min is not None or wavelength_max is not None) and (
-        wavenum_min is not None or wavenum_max is not None
-    ):
-        raise ValueError("Wavenumber and Wavelength both given... it's time to choose!")
-
-    if not medium in ["air", "vacuum"]:
-        raise NotImplementedError("Unknown propagating medium: {0}".format(medium))
-
-    if wavenum_min is None and wavenum_max is None:
-        assert wavelength_max is not None
-        assert wavelength_min is not None
-        if medium == "vacuum":
-            wavenum_min = nm2cm(wavelength_max)
-            wavenum_max = nm2cm(wavelength_min)
-        else:
-            wavenum_min = nm2cm(air2vacuum(wavelength_max))
-            wavenum_max = nm2cm(air2vacuum(wavelength_min))
-    else:
-        assert wavenum_min is not None
-        assert wavenum_max is not None
 
     # ... temperatures
 
@@ -601,8 +597,8 @@ def _calc_spectrum(
 
     # Run calculations
     sf = SpectrumFactory(
-        wavenum_min,
-        wavenum_max,
+        wavenum_min=wavenum_min,
+        wavenum_max=wavenum_max,
         medium=medium,
         molecule=molecule,
         isotope=isotope,

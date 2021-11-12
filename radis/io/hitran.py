@@ -228,7 +228,7 @@ def hit2df(
 
     # Add local quanta attributes, based on the HITRAN group
     try:
-        df = parse_local_quanta(df, mol)
+        df = parse_local_quanta(df, mol, verbose=verbose)
     except ValueError as err:
         # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
         # In this case, do not parse (makes non-equilibrium calculations impossible).
@@ -242,7 +242,7 @@ def hit2df(
 
     # Add global quanta attributes, based on the HITRAN class
     try:
-        df = parse_global_quanta(df, mol)
+        df = parse_global_quanta(df, mol, verbose=verbose)
     except ValueError as err:
         # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
         # In this case, do not parse (makes non-equilibrium calculations impossible).
@@ -302,7 +302,7 @@ def hit2df(
 # %% Hitran global quanta classes
 
 
-def _parse_HITRAN_class1(df):
+def _parse_HITRAN_class1(df, verbose=True):
     r"""Diatomic molecules: CO, HF, HCl, HBr, HI, N2, NO+
 
 
@@ -342,7 +342,7 @@ def _parse_HITRAN_class1(df):
     return pd.concat([df, dgu, dgl], axis=1)
 
 
-def _parse_HITRAN_class2(df):
+def _parse_HITRAN_class2(df, verbose=True):
     r"""Diatomic molecules with different electronic levels: O2
 
 
@@ -367,11 +367,14 @@ def _parse_HITRAN_class2(df):
     .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     """
-    print("parse_global_quanta not implemented for molecules of HITRAN class 2")
+    if verbose > 2:
+        print(
+            f"parse_global_quanta not implemented for molecules of HITRAN class 2 ({HITRAN_CLASS2}). Non-LTE calculations will not be possible."
+        )
     return df
 
 
-def _parse_HITRAN_class3(df):
+def _parse_HITRAN_class3(df, verbose=True):
     r"""Diatomic molecules with doublet-Pi electronic state: NO, OH, ClO
 
 
@@ -396,11 +399,14 @@ def _parse_HITRAN_class3(df):
     .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     """
-    print("parse_global_quanta not implemented for molecules of HITRAN class 3")
+    if verbose > 2:
+        print(
+            "parse_global_quanta not implemented for molecules of HITRAN class 3 ({HITRAN_CLASS3}). Non-LTE calculations will not be possible."
+        )
     return df
 
 
-def _parse_HITRAN_class4(df):
+def _parse_HITRAN_class4(df, verbose=True):
     r"""Parse linear triatomic class in HITRAN [1]_: N2O, OCS, HCN
 
     Parameters
@@ -455,7 +461,7 @@ def _parse_HITRAN_class4(df):
     return pd.concat([df, dgu, dgl], axis=1)
 
 
-def _parse_HITRAN_class5(df):
+def _parse_HITRAN_class5(df, verbose=True):
     r"""Parse linear triatomic with large Fermi resonance in HITRAN [1]_: CO2
 
     Parameters
@@ -510,7 +516,7 @@ def _parse_HITRAN_class5(df):
     return pd.concat([df, dgu, dgl], axis=1)
 
 
-def _parse_HITRAN_class6(df):
+def _parse_HITRAN_class6(df, verbose=True):
     r"""Parse non-linear triatomic in HITRAN [1]_: H2O, O3, SO2, NO2, HOCl, H2S, HO2, HOBr
 
     Parameters
@@ -576,7 +582,7 @@ def _parse_HITRAN_class6(df):
     return pd.concat([df, dgu, dgl], axis=1)
 
 
-def _parse_HITRAN_class7(df):
+def _parse_HITRAN_class7(df, verbose=True):
     r"""Parse linear tetratomic in HITRAN [1]_: C2H2
 
     Parameters
@@ -598,11 +604,14 @@ def _parse_HITRAN_class7(df):
     .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     """
-    print("parse_global_quanta not implemented for molecules of HITRAN class 7")
+    if verbose > 2:
+        print(
+            "parse_global_quanta not implemented for molecules of HITRAN class 7 ({HITRAN_CLASS7}). Non-LTE calculations will not be possible."
+        )
     return df
 
 
-def _parse_HITRAN_class8(df):
+def _parse_HITRAN_class8(df, verbose=True):
     r"""Pyramidal tetratomic in HITRAN [1]_: NH3, PH3
 
 
@@ -626,11 +635,14 @@ def _parse_HITRAN_class8(df):
     .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     """
-    print("parse_global_quanta not implemented for molecules of HITRAN class 8")
+    if verbose > 2:
+        print(
+            "parse_global_quanta not implemented for molecules of HITRAN class 8 ({HITRAN_CLASS8}). Non-LTE calculations will not be possible."
+        )
     return df
 
 
-def _parse_HITRAN_class9(df):
+def _parse_HITRAN_class9(df, verbose=True):
     r"""Non-linear tetratomic in HITRAN [1]_: H2CO, H2O2, COF2
 
 
@@ -654,11 +666,14 @@ def _parse_HITRAN_class9(df):
     .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     """
-    print("parse_global_quanta not implemented for molecules of HITRAN class 9")
+    if verbose > 2:
+        print(
+            "parse_global_quanta not implemented for molecules of HITRAN class 9 ({HITRAN_CLASS9}). Non-LTE calculations will not be possible."
+        )
     return df
 
 
-def _parse_HITRAN_class10(df):
+def _parse_HITRAN_class10(df, verbose=True):
     r"""Pentatomic or greater polyatomic in HITRAN [1]_
 
 
@@ -682,14 +697,17 @@ def _parse_HITRAN_class10(df):
     .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     """
-    print("parse_global_quanta not implemented for molecules of HITRAN class 10")
+    if verbose > 2:
+        print(
+            "parse_global_quanta not implemented for molecules of HITRAN class 10. Non-LTE calculations will not be possible."
+        )
     return df
 
 
 # %% HITRAN Local quanta
 
 
-def _parse_HITRAN_group1(df):
+def _parse_HITRAN_group1(df, verbose=True):
     r"""Parse asymmetric rotors (:py:attr:`~radis.db.classes.HITRAN_GROUP1` ):
     H2O, O3, SO2, NO2, HNO3, H2CO, HOCl, H2O2, COF2, H2S, HO2, HCOOH, ClONO2, HOBr, C2H4
 
@@ -754,7 +772,7 @@ def _parse_HITRAN_group1(df):
     return pd.concat([df, dgu, dgl], axis=1)
 
 
-def _parse_HITRAN_group2(df):
+def _parse_HITRAN_group2(df, verbose=True):
     r"""Parse diatomic and linear molecules (:py:attr:`~radis.db.classes.HITRAN_GROUP2` ):
     CO2, N2O, CO, HF, HCl, HBr, HI, OCS, N2, HCN, C2H2, NO+
 
@@ -820,7 +838,7 @@ def _parse_HITRAN_group2(df):
 #               'Fl',     ('a5',   str,   'lower state total angular momentum including nuclear spin', ''         )),(
 
 
-def _parse_HITRAN_group3(df):
+def _parse_HITRAN_group3(df, verbose=True):
     r"""Parse Spherical rotors (:py:attr:`~radis.db.classes.HITRAN_GROUP3` ) :
     SF6, CH4
 
@@ -844,11 +862,14 @@ def _parse_HITRAN_group3(df):
 
 
     """
-    print("parse_local_quanta not implemented for molecules of HITRAN group 3")
+    if verbose > 2:
+        print(
+            f"parse_local_quanta not implemented for molecules of HITRAN group 3 ({HITRAN_GROUP3}). Non-LTE calculations will not be possible."
+        )
     return df
 
 
-def _parse_HITRAN_group4(df):
+def _parse_HITRAN_group4(df, verbose=True):
     r"""Parse symmetric rotors (:py:attr:`~radis.db.classes.HITRAN_GROUP4` ):
     CH3D, CH3Cl, C2H6, NH3, PH3, CH3OH
 
@@ -872,11 +893,14 @@ def _parse_HITRAN_group4(df):
 
 
     """
-    print("parse_local_quanta not implemented for molecules of HITRAN group 4")
+    if verbose > 2:
+        print(
+            f"parse_local_quanta not implemented for molecules of HITRAN group 4 ({HITRAN_GROUP4}). Non-LTE calculations will not be possible."
+        )
     return df
 
 
-def _parse_HITRAN_group5(df):
+def _parse_HITRAN_group5(df, verbose=True):
     r"""Parse Triplet-Sigma ground electronic states (:py:attr:`~radis.db.classes.HITRAN_GROUP5` ) :
     O2
 
@@ -900,11 +924,14 @@ def _parse_HITRAN_group5(df):
 
 
     """
-    print("parse_local_quanta not implemented for molecules of HITRAN group 5")
+    if verbose > 2:
+        print(
+            "parse_local_quanta not implemented for molecules of HITRAN group 5 ({HITRAN_GROUP5}). Non-LTE calculations will not be possible."
+        )
     return df
 
 
-def _parse_HITRAN_group6(df):
+def _parse_HITRAN_group6(df, verbose=True):
     r"""Parse Doublet-Pi ground electronic states (:py:attr:`~radis.db.classes.HITRAN_GROUP6` ) :
     NO, OH, ClO
 
@@ -928,14 +955,17 @@ def _parse_HITRAN_group6(df):
 
 
     """
-    print("parse_local_quanta not implemented for molecules of HITRAN group 6")
+    if verbose > 2:
+        print(
+            "parse_local_quanta not implemented for molecules of HITRAN group 6 ({HITRAN_GROUP6}). Non-LTE calculations will not be possible."
+        )
     return df
 
 
 # %% Reading function
 
 
-def parse_local_quanta(df, mol):
+def parse_local_quanta(df, mol, verbose=True):
     r"""
     Parameters
     ----------
@@ -947,17 +977,17 @@ def parse_local_quanta(df, mol):
     """
 
     if mol in HITRAN_GROUP1:
-        df = _parse_HITRAN_group1(df)
+        df = _parse_HITRAN_group1(df, verbose=verbose)
     elif mol in HITRAN_GROUP2:
-        df = _parse_HITRAN_group2(df)
+        df = _parse_HITRAN_group2(df, verbose=verbose)
     elif mol in HITRAN_GROUP3:
-        df = _parse_HITRAN_group3(df)
+        df = _parse_HITRAN_group3(df, verbose=verbose)
     elif mol in HITRAN_GROUP4:
-        df = _parse_HITRAN_group4(df)
+        df = _parse_HITRAN_group4(df, verbose=verbose)
     elif mol in HITRAN_GROUP5:
-        df = _parse_HITRAN_group5(df)
+        df = _parse_HITRAN_group5(df, verbose=verbose)
     elif mol in HITRAN_GROUP6:
-        df = _parse_HITRAN_group6(df)
+        df = _parse_HITRAN_group6(df, verbose=verbose)
     else:
         raise ValueError(
             "Unknown group for molecule {0}. Cant parse local quanta".format(mol)
@@ -966,7 +996,7 @@ def parse_local_quanta(df, mol):
     return df
 
 
-def parse_global_quanta(df, mol):
+def parse_global_quanta(df, mol, verbose=True):
     r"""
 
     Parameters
@@ -979,25 +1009,25 @@ def parse_global_quanta(df, mol):
     """
 
     if mol in HITRAN_CLASS1:
-        df = _parse_HITRAN_class1(df)
+        df = _parse_HITRAN_class1(df, verbose=verbose)
     elif mol in HITRAN_CLASS2:
-        df = _parse_HITRAN_class2(df)
+        df = _parse_HITRAN_class2(df, verbose=verbose)
     elif mol in HITRAN_CLASS3:
-        df = _parse_HITRAN_class3(df)
+        df = _parse_HITRAN_class3(df, verbose=verbose)
     elif mol in HITRAN_CLASS4:
-        df = _parse_HITRAN_class4(df)
+        df = _parse_HITRAN_class4(df, verbose=verbose)
     elif mol in HITRAN_CLASS5:
-        df = _parse_HITRAN_class5(df)
+        df = _parse_HITRAN_class5(df, verbose=verbose)
     elif mol in HITRAN_CLASS6:
-        df = _parse_HITRAN_class6(df)
+        df = _parse_HITRAN_class6(df, verbose=verbose)
     elif mol in HITRAN_CLASS7:
-        df = _parse_HITRAN_class7(df)
+        df = _parse_HITRAN_class7(df, verbose=verbose)
     elif mol in HITRAN_CLASS8:
-        df = _parse_HITRAN_class8(df)
+        df = _parse_HITRAN_class8(df, verbose=verbose)
     elif mol in HITRAN_CLASS9:
-        df = _parse_HITRAN_class9(df)
+        df = _parse_HITRAN_class9(df, verbose=verbose)
     elif mol in HITRAN_CLASS10:
-        df = _parse_HITRAN_class10(df)
+        df = _parse_HITRAN_class10(df, verbose=verbose)
     else:
         raise ValueError(
             "Unknown class for molecule {0}. Cant parse global quanta".format(mol)

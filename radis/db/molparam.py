@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Created on Fri Apr 28 10:00:25 2017.
-
-@author: erwan
-
+"""
 -------------------------------------------------------------------------------
 """
 
@@ -117,6 +114,8 @@ isotope_name_dict = {
     (32, 1): "H(12C)(16O)(16O)H",
     (33, 1): "H(16O)2",
     (34, 1): "(16O)",
+    (35, 1): "(35Cl)(16O)(14N)(16O)2",
+    (35, 2): "(37Cl)(16O)(14N)(16O)2",
     (36, 1): "(14N)(16O)+",
     (37, 1): "H(16O)(79Br)",
     (37, 2): "H(16O)(81Br)",
@@ -139,6 +138,22 @@ isotope_name_dict = {
     (48, 1): "(12C)2(14N)2",
     (49, 1): "(12C)(16O)(35Cl)2",
     (49, 2): "(12C)(16O)(35Cl)(37Cl)",
+    (49, 2): "(12C)(16O)(35Cl)(37Cl)",
+    (50, 1): "(32S)(16O)",
+    (50, 2): "(34S)(16O)",
+    (50, 3): "(32S)(18O)",
+    (51, 1): "(12C)H3(19F)",
+    (52, 1): "(74Ge)H4",
+    (52, 2): "(72Ge)H4",
+    (52, 3): "(70Ge)H4",
+    (52, 4): "(73Ge)H4",
+    (52, 5): "(76Ge)H4",
+    (53, 1): "(12C)(32S)2",
+    (53, 2): "(32S)(12C)(34S)",
+    (53, 3): "(32S)(12C)(33S)",
+    (53, 4): "(13C)(32S)2",
+    (54, 1): "(12C)H3(127I)",
+    (55, 1): "(14N)(19F)3",
 }
 # TODO : add test in test_molparams comparing dictionary above to
 # latest values from HAPI; to make sure we never have any problem
@@ -146,37 +161,37 @@ isotope_name_dict = {
 
 
 class MolParams(object):
-    """Easy access to molecular parameters taken from HITRAN molparam.txt.
-
-    Parameters
-    ----------
-    file: str
-        if None the one in RADIS is taken
-
-    Examples
-    --------
-    Get earth abundance of CO2, isotope 1::
-
-        molpar = Molparams()
-        molpar.get(2, 1, 'abundance')         # 2 for CO2, 1 for isotope 1
-
-    .. minigallery:: radis.db.molparam.MolParams
-    :add-heading
-
-    Note
-    ----
-    Isotope number was derived manually assuming the isonames were ordered in the database
-    The isotope name (ex: CO2 626) is kept for comparison if ever needed
-
-    References
-    ----------
-
-    http://hitran.org/media/molparam.txt
-    """
-
     __slots__ = ["df", "terrestrial_abundances"]
 
     def __init__(self, file=None, terrestrial_abundances=True):
+        """Easy access to molecular parameters taken from HITRAN molparam.txt.
+
+        Parameters
+        ----------
+        file: str
+            if None the one in RADIS is taken. See https://github.com/radis/radis/blob/master/radis/db/molparam.txt
+
+        Examples
+        --------
+        Get earth abundance of CO2, isotope 1::
+
+            from radis.db.molparam import MolParams
+            molpar = MolParams()
+            molpar.get(2, 1, 'abundance')         # 2 for CO2, 1 for isotope 1
+
+        .. minigallery:: radis.db.molparam.MolParams
+        :add-heading:
+
+        Note
+        ----
+        Isotope number was derived manually assuming the isonames were ordered in the database
+        The isotope name (ex: CO2 626) is kept for comparison if ever needed
+
+        References
+        ----------
+        http://hitran.org/media/molparam.txt
+        """
+
         if file is None:
             file = getFile("molparam.txt")
 
@@ -194,15 +209,15 @@ class MolParams(object):
         except AttributeError:
             pass  # old Python version
 
-    def get(self, M, I, key):
+    def get(self, molecule, isotope, key):
         """Get attribute of molecule, isotope.
 
         Parameters
         ----------
-        M: int
-            molecule id
-        I: int
-            molecule isotope #
+        molecule: str or int
+            molecule name or molecule id
+        iso: int
+            isotope number # (sorted by terrestrial abundance)
         key: ``'abundance'``, ``'mol_mass'``, ``'isotope_name'``, ``'isotope_name_exomol'``
             parameter
 
@@ -217,9 +232,10 @@ class MolParams(object):
 
 
         .. minigallery:: radis.db.molparam.MolParams.get
-            :add-heading
+            :add-heading:
 
         """
+        M = molecule
         try:
             float(M)
         except ValueError:
@@ -227,7 +243,7 @@ class MolParams(object):
             from radis.db.classes import get_molecule_identifier
 
             M = get_molecule_identifier(M)
-        return self.df.loc[(M, I), key]
+        return self.df.loc[(M, isotope), key]
 
 
 def _add_exomol_name(df):
