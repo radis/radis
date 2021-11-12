@@ -673,22 +673,30 @@ class DatabankLoader(object):
         """MolParam: contains information about molar mass; isotopic abundance.
 
         See :py:class:`~radis.db.molparam.MolParams`"""
+        # TODO @dev : Refactor : turn it into a Dictinoary? (easier to store as JSON Etc.)
 
         # Extra paramaters :
         # HARDCODED molar mass; for WIP ExoMol implementation, until MolParams
         # is an attribute and can be updated with definitions from ExoMol.
         # https://github.com/radis/radis/issues/321
-        self._EXTRA_MOLAR_MASS = {
-            "SiO": {1: 43.971842},
-            "CN": {
-                1: 26.0179
-            },  # https://www.chemicalaid.com/tools/molarmass.php?formula=CN%7B-%7D
-        }
+        from radis import config
+
+        self._EXTRA_MOLAR_MASS = config["molparams"]["molar_mass"]
         """Extra molar mass when not found in HITRAN molecular parameter database
         ::
             self._EXTRA_MOLAR_MASS[molecule][isotope] = M (g/mol)
 
         See :py:func:`radis.lbl.base.BaseFactory.get_molar_mass`
+        """
+
+        # HARDCODED isotopic abundance; for WIP ExoMol implementation, until MolParams
+        # is an attribute and can be updated with definitions from ExoMol.
+        # https://github.com/radis/radis/issues/321
+        self._EXTRA_ABUNDANCES = config["molparams"]["abundances"]
+        """Extra isotopic abundances when not found in HITRAN molecular parameter database
+        ::
+            self._EXTRA_ABUNDANCES[molecule][isotope] = Ia
+
         """
 
         # Profiler
@@ -1119,8 +1127,19 @@ class DatabankLoader(object):
             if len(frames) > 1:
                 # Note @dev : may be faster/less memory hungry to keep lines separated for each isotope. TODO : test both versions
                 for df in frames:
-                    assert "iso" in df.columns
+                    if "iso" not in df.columns:
+                        assert "iso" in df.attrs
+                        df["iso"] = df.attrs["iso"]
+                # Keep attributes:
+                from radis.misc.basics import intersect
+
+                attrs = frames[0].attrs
+                for df in frames[1:]:
+                    attrs = intersect(attrs, df.attrs)
+                del attrs["iso"]  # added as a column (different for each line)
+                # Merge:
                 df = pd.concat(frames, ignore_index=True)  # reindex
+                df.attrs = attrs
                 self.params.dbpath = ",".join(local_paths)
             else:
                 df = frames[0]
@@ -2432,6 +2451,7 @@ class DatabankLoader(object):
 
         Examples
         --------
+        ::
 
             from radis import SpectrumFactory
 

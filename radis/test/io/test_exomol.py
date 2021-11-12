@@ -62,7 +62,7 @@ def test_calc_exomol_spectrum(verbose=True, plot=True, *args, **kwargs):
         mole_fraction=0.1,
         path_length=1,  # cm
         broadening_method="fft",  # @ dev: Doesn't work with 'voigt'
-        databank="exomol",  # or use ('exomol', "EBJT") for a specific database ("EBJT")
+        databank=("exomol", "EBJT"),
         verbose=verbose,
     )
     s.apply_slit(1, "cm-1")  # simulate an experimental slit
@@ -70,6 +70,56 @@ def test_calc_exomol_spectrum(verbose=True, plot=True, *args, **kwargs):
         s.plot("radiance")
 
 
+@pytest.mark.needs_connection
+def test_calc_exomol_vs_hitemp(verbose=True, plot=True, *args, **kwargs):
+    """Auto-fetch and calculate a CO spectrum from the ExoMol database
+    (HITEMP lineset)   and compare to HITEMP (on the HITRAN server)
+
+    https://github.com/radis/radis/pull/320#issuecomment-884508206
+    """
+    import astropy.units as u
+
+    from radis import calc_spectrum
+
+    conditions = {
+        "wmin": 2002 / u.cm,
+        "wmax": 2300 / u.cm,
+        "molecule": "CO",
+        "isotope": "2",
+        "pressure": 1.01325,  # bar
+        "Tgas": 1000,  # K
+        "mole_fraction": 0.1,
+        "path_length": 1,  # cm
+        "broadening_method": "fft",  # @ dev: Doesn't work with 'voigt'
+        "verbose": True,
+    }
+
+    s_exomol = calc_spectrum(
+        **conditions, databank="exomol", name="EXOMOL/HITEMP (H2 broadened)"
+    )
+    s_hitemp = calc_spectrum(
+        **conditions,
+        databank="hitemp",
+        name="HITEMP (Air broadened)",
+    )
+    if plot:
+        s_exomol.plot(
+            lw=3,
+        )
+        s_hitemp.plot(lw=1, nfig="same")
+        import matplotlib.pyplot as plt
+
+        plt.legend()
+
+    # Broadening coefficients are different but areas under the lines should be the same :
+    import numpy as np
+
+    assert np.isclose(
+        s_exomol.get_integral("abscoeff"), s_hitemp.get_integral("abscoeff"), rtol=0.001
+    )
+
+
 if __name__ == "__main__":
     test_exomol_parsing_functions()
     test_calc_exomol_spectrum()
+    test_calc_exomol_vs_hitemp()

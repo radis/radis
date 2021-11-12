@@ -25,20 +25,12 @@ import numpy as np
 from numpy import abs, allclose, arange, diff
 
 from radis.misc.arrays import anynan
-from radis.misc.basics import in_all, merge_lists
+from radis.misc.basics import in_all, intersect, merge_lists
 from radis.misc.debug import printdbg
 from radis.spectrum.spectrum import Spectrum
 
 # %% Slabs / Multi-layers / Radiative Transfer Equation (RTE)
 # ----------------------------------------------------------------------
-
-
-def intersect(a, b):
-    """Returns intersection of two dictionaries on values."""
-    c = {}
-    for k in set(a.keys()) & set(b.keys()):  # work in Python 2?
-        c[k] = a[k] if (a[k] == b[k]) else "N/A"
-    return c
 
 
 def SerialSlabs(*slabs, **kwargs) -> Spectrum:

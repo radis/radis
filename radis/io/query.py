@@ -114,6 +114,7 @@ def fetch_astroquery(
                 fcache=fcache,
                 use_cached=cache,
                 expected_metadata=expected_metadata,
+                compare_as_close=["wmin", "wmax"],
                 verbose=verbose,
                 engine="pytables-fixed",
             )
