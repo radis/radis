@@ -204,7 +204,7 @@ def test_other_algebraic_operations(verbose=True, plot=False, *args, **kwargs):
 
     # There should be an error if algebraic operations are used when
     # multiple quantities are defined:
-    with pytest.raises(KeyError):
+    with pytest.raises(ValueError):
         2 * s
 
     s.apply_slit(0.1, "nm")
