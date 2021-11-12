@@ -62,7 +62,7 @@ def get_exomol_full_isotope_name(molecule, isotope):
         return mp.get(molecule, isotope, "isotope_name_exomol")
 
 
-def get_exomol_database_list(molecule, isotope_full_name, verbose=True):
+def get_exomol_database_list(molecule, isotope_full_name):
     """Parse ExoMol website and return list of available databases, and recommended database
 
     Parameters
