@@ -40,7 +40,7 @@ from math import ceil
 
 import numba
 import numpy as np
-from numba import bool_, float64, int64
+from numba import bool_, float64, int32, int64
 from numpy import hstack
 from scipy.interpolate import interp1d
 
@@ -481,6 +481,29 @@ else:
     add_at = rcx.add_at
 
 
+# @numba.njit
+# def non_zero_values_around2(a, n):
+#     """return a boolean array of same size as ``a`` where each position ``i``
+#     is ``True`` if there are non-zero points less than ``n`` index position
+#     away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
+#     position away from from ``a[i]``
+#     """
+#     # # Cleaner version, but about 2x slower on real-life test cases:
+#     # #
+#     # %timeit non_zero_values_around(DLM[:, l, m], truncation)
+#     # 2.92 ms ± 99.3 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+
+#     # %timeit non_zero_values_around2(DLM[:, l, m], truncation)
+#     # 5.11 ms ± 110 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+#     # --------------
+
+#     # non_zero_values_around2()
+#     b = np.zeros(len(a)+2*n+1,  dtype=np.bool_)
+#     for pos in np.nonzero(a)[0]:
+#         b[pos:pos+2*n+1] = True
+#     return b[n:len(a)+n]
+
+
 @numba.njit(
     bool_[:](float64[:], int64),
     cache=True,
@@ -491,20 +514,6 @@ def non_zero_values_around(a, n):
     away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
     position away from from ``a[i]``
     """
-    # # Cleaner version, but about 2x slower on real-life test cases:
-    # #
-    # %timeit non_zero_values_around(DLM[:, l, m], truncation)
-    # 2.92 ms ± 99.3 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
-
-    # %timeit non_zero_values_around2(DLM[:, l, m], truncation)
-    # 5.11 ms ± 110 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
-    # --------------
-
-    # # non_zero_values_around2()
-    # b = np.zeros(len(a)+2*n+1,  dtype=np.bool_)
-    # for pos in np.nonzero(a)[0]:
-    #     b[pos:pos+2*n+1] = True
-    # return b[n:len(a)+n]
 
     # build the list
     L = []
@@ -536,6 +545,187 @@ def non_zero_values_around(a, n):
         b[max(0, start) : end + 1] = 1
 
     return b
+
+
+# @numba.njit(
+#     numba.types.List(numba.types.containers.UniTuple(int64, 2))(int32[:], int64),
+#     cache=True,
+# )
+# def non_zero_ranges_around(a, n):
+#     """return a list of coordinates corresponding to non-zero values
+#     where each position ``i``
+#     is ``True`` if there are non-zero points less than ``n`` index position
+#     away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
+#     position away from from ``a[i]``
+
+#     Parameters
+#     ----------
+#     a : array of int, line centers
+#     n : int or array of int, width
+#     """
+
+#     # build the list
+#     L = []
+#     pos = -1  # found position of non-zero point
+#     start = -1  # start position of subrange
+
+#     for i, ai in enumerate(a):
+#         if ai != 0:
+#             pos = i
+#             if start == -1:
+#                 if i == 0:
+#                     start = 0
+#                 else:
+#                     start = i - n
+#         else:
+#             if start == -1:
+#                 continue
+#             elif pos == i - n - 1:
+#                 L.append((start, i - 1))
+#                 start = -1
+#                 pos = -1
+
+#     if start != -1:
+#         L.append((start, len(a) - 1))
+
+#     return L
+
+
+# @numba.njit(
+#     bool_[:](int32[:], int64),
+#     cache=True,
+# )
+# def non_zero_values_around(a, n):
+#     """return a boolean array of same size as ``a`` where each position ``i``
+#     is ``True`` if there are non-zero points less than ``n`` index position
+#     away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
+#     position away from from ``a[i]``
+#     """
+#     L = non_zero_ranges_around(a, n)
+
+#     # turn it into a boolean array
+#     b = np.zeros(len(a), dtype=np.bool_)
+#     for start, end in L:
+#         b[max(0, start) : end + 1] = 1
+
+#     return b
+
+
+@numba.njit(
+    (int64[:, :])(bool_[:]),
+    cache=True,
+)
+def non_zero_ranges_in_array(b):
+    """return a list of coordinates corresponding to non-zero values
+    in boolean array ``b``
+
+    Parameters
+    ----------
+    b : boolean array
+
+    Examples
+    --------
+    ::
+
+        b = np.array([0,0,1,1,0,1,0,1], dtype=bool)
+        non_zero_ranges_in_array(b)
+        >> ([2, 5, 7],
+            [4, 6, 8])
+    """
+
+    # build the list
+    L = []
+    start = -1  # start position of subrange
+
+    for i, bi in enumerate(b):
+        if bi:
+            if start == -1:
+                start = i
+        else:
+            if start == -1:
+                continue
+            else:
+                L.append((start, i))
+                start = -1
+
+    if start != -1:
+        L.append((start, len(b)))
+
+    return np.array(L)
+
+
+@numba.njit(
+    (bool_[:])(int64[:, :], int64),
+    cache=True,
+)
+def boolean_array_from_ranges(ranges, n):
+    """return a boolean array of length ``n`` where (``L[i][0]``, ``L[i][1]``)
+    give the ranges set to ``True``
+
+    Examples
+    --------
+    ::
+
+        L = np.array([[2,4], [5,6], [7,8]])
+        boolean_array_from_coordinates(*L.T, 8)
+        >>> np.array([0, 0, 1, 1, 0, 1, 0, 1], dtype=bool)
+
+    """
+    # build the list
+    b = np.zeros(n, dtype=bool_)
+    for i in range(len(ranges)):
+        b[ranges[i][0] : ranges[i][1]] = True
+
+    return b
+
+
+@numba.njit(
+    numba.types.Tuple((int64[:, :], float64[:]))(
+        int32[:], float64[:], float64[:], float64[:], int64, int64
+    ),
+    cache=True,
+)
+def sparse_add_at(ki0, Iv0, Iv1, weight, max_range, truncation_pts):
+    """Returns (start, stop) of non-zero ranges, and intensity ``I`` (length
+    ``truncation_pts``) for all lines ``Iv0`` and ``Iv1`` summed at ``ki0``
+    and ``ki0+1`` with weights ``weight``"""
+    I = np.zeros(max_range)
+    L = [
+        (0, 0) for k in range(0)
+    ]  # empty list; helps Numba infer type. See https://numba.pydata.org/numba-doc/0.41.0/user/troubleshoot.html#my-code-has-an-untyped-list-problem
+    n = truncation_pts
+
+    # initiate start
+    pos = ki0[0]
+    start = max(pos - n, 0)
+    end = max_range  # will be rewritten in the first call of the loop
+
+    # Loop over all lines :
+    for i in range(len(ki0)):
+        pos = ki0[i]
+
+        # Adjust range:
+        if pos > end:
+            # close the previous range:
+            L.append((start, end))
+            # reopen new range :
+            start = max(pos - n, 0)
+            end = min(
+                pos + 1 + n, max_range
+            )  # TODO: check if not +2 because line is added on ki0 and ki1 ()
+        else:
+            # we're in the middle of a range:
+            # keep the start, move the end
+            end = min(pos + 1 + n, max_range)
+
+        # Sum intensity  (equivalent of "add-at")
+        I[pos] += Iv0[i] * weight[i]
+        I[pos + 1] += Iv1[i] * weight[i]
+    # final close:
+    if len(L) == 0 or L[-1] != (start, end):
+        L.append((start, end))
+
+    return np.array(L), I
 
 
 if __name__ == "__main__":

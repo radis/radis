@@ -253,6 +253,7 @@ def run_setup(with_binary):
             "cython",
             "pandas>=1.0.5",
             "plotly>=2.5.1",
+            "progressbar2",  # used in vaex
             "numba",
             "mpldatacursor",
             "astropy",  # Unit aware calculations

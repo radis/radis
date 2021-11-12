@@ -53,7 +53,7 @@ Tgas = np.linspace(300, 3000, 4)
 
 # Multiple Spectrum calculation based on different values of Tgas and wstep
 for i in wstep:
-    sf.wstep = i
+    sf._wstep = i
     sf.params.wstep = i
     for j in Tgas:
         sf.eq_spectrum(Tgas=j, path_length=1)

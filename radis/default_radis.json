@@ -16,7 +16,7 @@
     "USE_CYTHON": true,
     "GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD": 3,
     "GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD": 1,
-    "SPARSE_WAVERANGE": true,
+    "SPARSE_WAVERANGE": "auto",
     "molparams": {
         "isotope_full_name": {
             "AlCl": {

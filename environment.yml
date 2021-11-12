@@ -34,6 +34,7 @@ dependencies:
   - hitran-api     # HAPI, used to access TIPS partition functions
   - json-tricks>=3.15.0  # to deal with non jsonable formats
   - mpldatacursor
+  - progressbar2    # used in vaex
   - tuna           # to generate visual/interactive performance profiles
   - tables  # for pandas to HDF5 export
   - vaex    # load HDF5 files
