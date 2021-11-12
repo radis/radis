@@ -10,7 +10,9 @@ from pathlib import Path
 
 import pytest
 
-EXAMPLE_FOLDER = abspath(join(dirname(__file__), "..", "..", "examples"))
+EXAMPLE_FOLDER = join(
+    abspath(join(dirname(__file__), os.pardir, os.pardir)), "examples"
+)
 
 scripts = [
     join(EXAMPLE_FOLDER, k) for k in os.listdir(EXAMPLE_FOLDER) if k.endswith(".py")
