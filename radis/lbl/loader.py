@@ -49,6 +49,7 @@ key in :py:attr:`radis.config`
 # @dev: (on Spyder IDE navigate between sections easily as # XXX makes a reference
 # (on the slide bar on the right)
 
+import os
 import warnings
 from copy import deepcopy
 from os.path import exists
@@ -926,9 +927,10 @@ class DatabankLoader(object):
             will be left untouched.
         db_use_cached: bool, or ``'regen'``
             use cached
-        hdf5_engine: ``'pytables'``, ``'vaex'``, ``'feather'``
+        memory_mapping_engine: ``'pytables'``, ``'vaex'``, ``'feather'``
             which library to use to read HDF5 files (they are incompatible: ``'pytables'`` is
             row-major while ``'vaex'`` is column-major) or other memory-mapping formats
+            If ``'default'``, use the value from ~/radis.json `["MEMORY_MAPPING_ENGINE"]`
         parallel: bool
             if ``True``, uses joblib.parallel to load database with multiple processes
             (works only for HITEMP files)
@@ -981,6 +983,13 @@ class DatabankLoader(object):
             )
         if memory_mapping_engine == "default":
             memory_mapping_engine = self.misc.memory_mapping_engine
+        if memory_mapping_engine == "vaex" and any(
+            "SPYDER" in name for name in os.environ
+        ):
+            # vaex processes are stuck if ran from Spyder. See https://github.com/spyder-ide/spyder/issues/16183
+            self.warn(
+                "Spyder IDE detected while using memory_mapping_engine='vaex'.\nVaex is the fastest way to read database files in RADIS, but Vaex processes may be stuck if ran from Spyder. See https://github.com/spyder-ide/spyder/issues/16183. You may consider using another IDE, or using a different `memory_mapping_engine` such as 'pytables' or 'feather'. You can change the engine in Spectrum.fetch_databank() calls, or globally by seting the 'MEMORY_MAPPING_ENGINE' key in your ~/radis.json \n"
+            )
 
         # Get inputs
         molecule = self.input.molecule
@@ -1017,9 +1026,6 @@ class DatabankLoader(object):
         if source == "hitran":
             self.reftracker.add(doi["HITRAN-2016"], "line database")  # [HITRAN-2016]_
             self.reftracker.add(doi["Astroquery"], "data retrieval")  # [Astroquery]_
-
-            if memory_mapping_engine != "pytables":
-                raise NotImplementedError(f"{memory_mapping_engine} with HITRAN files")
 
             # Query one isotope at a time
             if isotope == "all":
