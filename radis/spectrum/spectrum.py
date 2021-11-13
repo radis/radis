@@ -519,7 +519,18 @@ class Spectrum(object):
     # %% Constructors
 
     @classmethod
-    def from_array(self, w, I, quantity, wunit, unit, waveunit=None, *args, **kwargs):
+    def from_array(
+        self,
+        w,
+        I,
+        quantity,
+        wunit=None,
+        Iunit=None,
+        waveunit=None,
+        unit=None,
+        *args,
+        **kwargs,
+    ):
         """Construct Spectrum from 2 arrays.
 
         Parameters
@@ -531,8 +542,10 @@ class Spectrum(object):
         wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
             unit of waverange:         wavelength in air (``'nm'``), wavenumber
             (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
-        unit: str
-            spectral quantity unit (arbitrary). Ex: 'mW/cm2/sr/nm' for radiance_noslit
+            If ``None``, then ``w`` must be a dimensionned array.
+        Iunit: str
+            spectral quantity unit (arbitrary). Ex: ``'mW/cm2/sr/nm'`` for radiance_noslit
+            If ``None``, then ``I`` must be a dimensionned array.
         *args, **kwargs
             see :class:`~radis.spectrum.spectrum.Spectrum` doc
 
@@ -561,18 +574,23 @@ class Spectrum(object):
 
         Returns
         -------
-
-        s: Spectrum
+        Spectrum
             creates a :class:`~radis.spectrum.spectrum.Spectrum` object
 
         Examples
         --------
-
         Create a spectrum::
 
             from radis import Spectrum
             s = Spectrum.from_array(w, I, 'radiance_noslit',
                                    wunit='nm', unit='mW/cm2/sr/nm')
+
+        Dimensionned arrays can also be used directly ::
+
+            import astropy.units as u
+            w = np.linspace(200, 300) * u.nm
+            I = np.random.rand(len(w)) * u.mW/u.cm**2/u.sr/u.nm
+            s = Spectrum.from_array(w, I, 'radiance_noslit')
 
         To create a spectrum with absorption and emission components
         (e.g: ``radiance_noslit`` and ``transmittance_noslit``, or ``emisscoeff``
@@ -604,9 +622,56 @@ class Spectrum(object):
                 DeprecationWarning,
             )
             wunit = waveunit
+        if unit is not None:
+            warn(
+                "`unit=` parameter in from_array is now named `Iunit=`",
+                DeprecationWarning,
+            )
+            Iunit = unit
+
+        # Check if dimensionned arrays
+        try:
+            I.unit
+        except AttributeError:
+            # dimensionless
+            if Iunit is None:
+                raise ValueError(
+                    "I must be a dimensionned array, or ``Iunit=`` must be given."
+                )
+        else:
+            if Iunit is not None:
+                raise ValueError(
+                    f"I is a dimensionned array (in {Iunit.unit.to_string()}), therefore ``Iunit`` cannot be given too (got {Iunit}). Set ``Iunit=None``"
+                )
+            Iunit = I.unit.to_string()
+            I = I.value
+        try:
+            w.unit
+        except AttributeError:
+            # dimensionless
+            if wunit is None:
+                raise ValueError(
+                    "``w`` must be a dimensionned array, or ``Iunit=`` must be given."
+                )
+        else:
+            if wunit is not None:
+                raise ValueError(
+                    f"``w`` is a dimensionned array (in {wunit.unit.to_string()}), therefore ``wunit`` cannot be given too (got {wunit}). Set ``wunit=None``"
+                )
+            wunit = w.unit.to_string()
+            if wunit not in WAVELEN_UNITS + WAVENUM_UNITS:
+                # Convert to something we know, for instance 'nm' :
+                if w.unit.is_equivalent("nm"):
+                    w = w.to("nm")
+                    wunit = "nm"
+                elif w.unit.is_equivalent("1 / cm"):
+                    w = w.to("1 / cm")
+                    wunit = "cm-1"
+                # else, an error will be raised anyway on Spectrum creation.
+            w = w.value
 
         quantities = {quantity: (w, I)}
-        units = {quantity: unit}
+        units = {quantity: Iunit}
 
         # Update Spectrum conditions
         conditions = kwargs.pop("conditions", {})
@@ -767,7 +832,12 @@ class Spectrum(object):
         Examples
         --------
         ::
+
             Spectrum.from_hdf5("rad_hdf.h5", wmin=2100, wmax=2200, columns=['abscoeff', 'emisscoeff'])
+
+        See Also
+        --------
+        :py:func:`~radis.spectrum.spectrum.Spectrum.to_hdf5`
         """
         from radis.io.spec_hdf import hdf2spec
 
@@ -785,6 +855,64 @@ class Spectrum(object):
         from radis.tools.database import load_spec
 
         return load_spec(file)
+
+    @classmethod
+    def from_specutils(self, spectrum, var="radiance"):
+        """Convert a ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D`
+        to a ``radis`` :py:class:`~radis.spectrum.spectrum.Spectrum` object.
+
+        Examples
+        --------
+
+        Taken from the Specutils website (https://specutils.readthedocs.io/en/stable/#getting-started-with-specutils)
+        ::
+
+            from astropy.io import fits
+            from astropy import units as u
+            from specutils import Spectrum1D
+
+            f = fits.open('https://data.sdss.org/sas/dr16/sdss/spectro/redux/26/spectra/1323/spec-1323-52797-0012.fits')
+            # The spectrum is in the second HDU of this file.
+            specdata = f[1].data
+
+            lamb = 10**specdata['loglam'] * u.AA
+            flux = specdata['flux'] * 10**-17 * u.Unit('erg cm-2 s-1 AA-1')
+            spec = Spectrum1D(spectral_axis=lamb, flux=flux)
+
+
+            from radis import Spectrum
+            s = Spectrum.from_specutils(spec)
+            s.plot(wunit='nm')
+
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.from_specutils
+
+        See Also
+        --------
+        :py:func:`~radis.spectrum.spectrum.Spectrum.to_specutils`
+        """
+        try:
+            import specutils
+        except ModuleNotFoundError as err:
+            raise ModuleNotFoundError(
+                "Specutils is required to use this function."
+                "Install it with:\n"
+                "   conda install -c conda-forge specutils"
+                "\nor\n"
+                "   pip install specutils"
+            ) from err
+
+        assert isinstance(spectrum, specutils.Spectrum1D)
+
+        # Convert to radis Spectrum
+        # note : in Specutils wavelengths are given as wavelength in vacuum (1e7/X conversion
+        # to wavenumbers), so here we give the frequency unit.
+        return Spectrum.from_array(
+            spectrum.wavelength.to("1 / cm"),
+            spectrum.flux,
+            quantity=var,
+            conditions=spectrum.meta,
+        )
 
     # Public functions
     # %% ======================================================================
@@ -3105,7 +3233,18 @@ class Spectrum(object):
         return self.store(compress=False, *args, **kwargs)
 
     def to_hdf5(self, file, engine="pytables"):
-        """Stores the Spectrum under HDF5 format. Uses :py:func:`~radis.io.spec_hdf.spec2hdf`"""
+        """Stores the Spectrum under HDF5 format. Uses :py:func:`~radis.io.spec_hdf.spec2hdf`
+
+        Examples
+        --------
+        ::
+
+            s.to_hdf5('spec01.h5')
+
+        See Also
+        --------
+        :py:func:`~radis.spectrum.spectrum.Spectrum.from_hdf5`
+        """
         from radis.io.spec_hdf import spec2hdf
 
         return spec2hdf(self, file, engine=engine)
@@ -3132,6 +3271,91 @@ class Spectrum(object):
         df.attrs = s.units
 
         return df
+
+    def to_specutils(self, var=None, wunit="default", Iunit="default"):
+        """Convert a ``radis`` :py:class:`~radis.spectrum.spectrum.Spectrum`
+        object to ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D`
+
+        Parameters
+        ----------
+        var: 'radiance', 'radiance_noslit', etc.
+            which spectral array to convert. If ``None`` and only one spectral
+            arry is defined, use it
+        wunit: ``'nm'``, ``'cm'``, ``'nm_vac'``.
+            wavespace unit: wavelength in air (``'nm'``), wavenumber
+            (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
+            if ``"default"``, default unit for waveunit is used. See
+            :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit`.
+        Iunit: unit for variable ``var``
+            if ``"default"``, default unit for quantity `var` is used. See the
+            :py:attr:`~radis.spectrum.spectrum.Spectrum.units` attribute.
+            For ``var="radiance"``, one can use per wavelength (~ 'W/m2/sr/nm')
+            or per wavenumber (~ 'W/m2/sr/cm-1') units
+
+        .. note::
+            `nan`, that may have been added on the wings of the spectra if a
+            slit has been applied, are removed using ``trim_nan`` parameter of
+            :py:meth:`~radis.spectrum.spectrum.Spectrum.get` . The waverange
+            in the 1DSpectrum object may therefore be cropped.
+
+        Examples
+        --------
+        ::
+
+            spectrum = s.to_specutils()
+
+        Add uncertainties by reading a spectrum noise region with
+        :py:class:`~specutils.SpectralRegion` and
+        :py:func:`~specutils.manipulation.noise_region_uncertainty` ::
+
+            from specutils import SpectralRegion
+            from specutils.manipulation import noise_region_uncertainty
+            noise_region = SpectralRegion(2012 / u.cm, 2009 / u.cm)
+            spectrum = noise_region_uncertainty(spectrum, noise_region)
+
+        Find lines out of the noise using :py:func:`~specutils.fitting.find_lines_threshold` ::
+
+            from specutils.fitting import find_lines_threshold
+            lines = find_lines_threshold(spectrum)
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.to_specutils
+            :add-heading:
+
+        See Also
+        --------
+        :py:func:`~radis.spectrum.spectrum.Spectrum.from_specutils`
+
+        """
+        import astropy.units as u
+
+        try:
+            from specutils.spectra import Spectrum1D
+        except ModuleNotFoundError as err:
+            raise ModuleNotFoundError(
+                "Specutils is required to use this function."
+                "Install it with:\n"
+                "   conda install -c conda-forge specutils"
+                "\nor\n"
+                "   pip install specutils"
+            ) from err
+
+        if var is None:
+            var = self._get_unique_var(operation_name="to_specutils")
+        if wunit == "default":
+            wunit = self.get_waveunit()
+        if Iunit == "default":
+            Iunit = self.units[var]
+
+        if wunit in WAVELEN_UNITS:
+            wunit = "nm_vac"  # AFAIK, specutil's Spectrum1D will only handle wavelengths as seen in vacuum
+            # so below we request wavelengths in vac :
+
+        w, I = self.get(var, wunit=wunit, Iunit=Iunit, copy=True, trim_nan=True)
+        return Spectrum1D(
+            flux=I * u.Unit(Iunit),
+            spectral_axis=w * u.Unit(wunit),
+            meta=self.get_conditions(),
+        )
 
     def resample(
         self,
@@ -4250,7 +4474,7 @@ class Spectrum(object):
         elif isinstance(other, np.ndarray):
             from radis.spectrum.operations import add_array
 
-            return add_array(self, other, inplace=True)
+            return add_array(self, other, inplace=False)
         elif isinstance(other, Spectrum):
             from radis.spectrum.operations import add_spectra
 

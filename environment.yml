@@ -6,25 +6,25 @@ channels:
 - cantera
 dependencies:
 - python=3.8
-- numpy
-- scipy>=1.4.0
-- matplotlib
-- seaborn   # other matplotlib themes
-- cantera   # for chemical equilibrium computations
-- cython
-- pandas>=1.0.5
-- pytables  # for pandas to HDF5 export
-- plotly    # used in line-survey
 - astropy  # Unit aware calculations
-- plotly>=2.5.1  # for line survey HTML output
-- termcolor  # terminal colors
-- configparser
 - astroquery>=0.3.9  # to fetch HITRAN databases
-- pytest  # to run test suite
-- joblib  # for parallel loading of SpecDatabase
-- numba  # just-in-time compiler
-- psutil # for getting user RAM
+- cantera   # for chemical equilibrium computations
+- configparser
+- cython
 - h5py   # load HDF5
+- joblib  # for parallel loading of SpecDatabase
+- matplotlib
+- numpy
+- numba  # just-in-time compiler
+- pandas>=1.0.5
+- plotly>=2.5.1  # for line survey HTML output
+- psutil # for getting user RAM
+- pytables  # for pandas to HDF5 export
+- pytest  # to run test suite
+- scipy>=1.4.0
+- seaborn   # other matplotlib themes
+- termcolor  # terminal colors
+- specutils
 - pip
 - pip:
   - beautifulsoup4 # parse ExoMol website
