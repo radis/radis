@@ -1,24 +1,31 @@
+# default values for RADIS configuration parameters
+# the values of your ~/radis.json file will overwrite these.
 {
-    "database": {},
-    "spectroscopic_constants": {
+    "database": {},                          # list of registered databases on this computer. See expected format in https://radis.readthedocs.io/en/latest/lbl/lbl.html#label-lbl-config-file
+    "spectroscopic_constants": {             # path to spectroscopic constants for non-LTE calculations. By default look for them in radis/db/[MOLECULE]/*
         "CO2": "molecules_data.json",
         "CO": "molecules_data.json"
     },
     "plot": {
-        "plotlib": "publib",
-        "context": "paper",
-        "style": "origin"
+        "plotlib": "publib",                 # library for plot style. "publib", "seaborn".
+        "context": "paper",                  # "paper", "talk", "poster"
+        "style": "origin"                    # default style. See Publib (https://github.com/erwanp/publib) or Seaborn (https://seaborn.pydata.org/)
     },
+    # global parameters
+    # -----------------
     "DEBUG_MODE": false,
-    "AUTO_UPDATE_DATABASE": false,
-    "AUTO_UPDATE_SPEC": false,
-    "OLDEST_COMPATIBLE_VERSION": "0.9.1",
-    "USE_CYTHON": true,
-    "GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD": 3,
-    "GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD": 1,
-    "MEMORY_MAPPING_ENGINE": "vaex",
-    "SPARSE_WAVERANGE": "auto",
-    "molparams": {
+    "AUTO_UPDATE_DATABASE": false,           # auto-convert 'pytables' files to 'vaex'
+    "AUTO_UPDATE_SPEC": false,               # auto-update saved Spectrum objects to latest format.
+    "OLDEST_COMPATIBLE_VERSION": "0.9.1",    # automatically regenerate cache files generated with versions anterior to this one
+    "USE_CYTHON": true,                      # use Cython module if available (else, default to Python)
+    "GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD": 3,    # raise a warning if less than THIS number of grid points per lineshape
+    "GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD": 1,   # raise an error if less than THIS number of grid points per lineshape
+    "MEMORY_MAPPING_ENGINE": "vaex",         #  warning: on Spyder this may result in freezes. see https://github.com/spyder-ide/spyder/issues/16183.
+    "SPARSE_WAVERANGE": "auto",              # sparse DLM algorithm. May be smaller on dense spectra. If "auto", a scarcity criterion is used (Nlines/Ngrids > 1)
+
+    # molecular parameters
+    # --------------------
+    "molparams": {                           # molecular parameters for non-HITRAN species (the latter being defined in https://github.com/radis/radis/blob/master/radis/db/molparam.txt)
         "isotope_full_name": {
             "AlCl": {
                 "1": "27Al-35Cl",
