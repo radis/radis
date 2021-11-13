@@ -447,7 +447,7 @@ def fetch_hitemp(
     databank_name: str
         name of the databank in RADIS :ref:`Configuration file <label_lbl_config_file>`
         Default ``"HITEMP-{molecule}"``
-    isotope: str
+    isotope: str, int or None
         load only certain isotopes : ``'2'``, ``'1,2'``, etc. If ``None``, loads
         everything. Default ``None``.
     load_wavenum_min, load_wavenum_max: float (cm-1)
@@ -596,6 +596,10 @@ def fetch_hitemp(
     files_loaded = ldb.keep_only_relevant(
         local_files, load_wavenum_min, load_wavenum_max
     )
+
+    if isotope and type(isotope) == int:
+        isotope = str(isotope)
+
     df = ldb.load(
         files_loaded,  # filter other files,
         columns=columns,
