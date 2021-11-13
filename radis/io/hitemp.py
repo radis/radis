@@ -596,6 +596,10 @@ def fetch_hitemp(
     files_loaded = ldb.keep_only_relevant(
         local_files, load_wavenum_min, load_wavenum_max
     )
+
+    if isotope and type(isotope) == int:
+        isotope = str(isotope)
+
     df = ldb.load(
         files_loaded,  # filter other files,
         columns=columns,
