@@ -223,7 +223,7 @@ def fetch_exomol(
     clean_cache_files=True,
     return_local_path=False,
     return_partition_function=False,
-    engine="vaex",
+    engine="default",
 ):
     """Stream ExoMol file from EXOMOL website. Unzip and build a HDF5 file directly.
 
@@ -276,7 +276,7 @@ def fetch_exomol(
     return_partition_function: bool
         if ``True``, also returns a :py:class:`~radis.levels.partfunc.PartFuncExoMol` object.
     engine: 'vaex', 'feather'
-        which memory-mapping library to use.
+        which memory-mapping library to use. If 'default' use the value from ~/radis.json
 
     Returns
     -------
@@ -414,6 +414,8 @@ class MdbExomol(object):
         alpha_ref_def: default alpha_ref (gamma0) in .def file, used for jlower not given in .broad
 
     """
+
+    # TODO : inherit from DatabaseManager or similar
 
     # @dev: In exojax this class is defined in exojax/spec/moldb.py
     # see https://github.com/HajimeKawahara/exojax/blob/develop/src/exojax/spec/moldb.py

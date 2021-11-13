@@ -7,7 +7,7 @@ Created on Tue Jan 26 21:27:15 2021
 
 import os
 import sys
-from os.path import exists
+from os.path import exists, splitext
 from time import time
 
 import h5py
@@ -58,6 +58,9 @@ def update_pytables_to_vaex(fname, remove_initial=False, verbose=True, key="df")
 class HDF5Manager(object):
     def __init__(self, engine="pytables"):
         self.engine = engine
+        self._temp_batch_files = (
+            []
+        )  # list of batch files when writing by part in vaex mode
 
     def open(self, file, mode="w"):
         if self.engine == "pytables":
@@ -111,9 +114,23 @@ class HDF5Manager(object):
             import vaex
 
             if append == True:
-                raise ValueError(
-                    "Cannot append with 'vaex' engine. Load all files separately using vaex.open('many') then export to a single file"
-                )
+                # In vaex we cannot append. Here we write lots of small files then combine them.
+                # self.combine_temp_batch_files() should be combined at the end.
+                base, ext = splitext(file)
+                i = 0
+                temp_batch_file = base + "_temp" + str(i).zfill(6) + ext
+                while temp_batch_file in self._temp_batch_files:
+                    i += 1
+                    temp_batch_file = base + "_temp" + str(i).zfill(6) + ext
+                file = temp_batch_file
+                # Check no remaining one from a non-cleaned previous run:
+                if exists(file):
+                    from radis.misc.printer import printr
+
+                    printr(f"Temp file {temp_batch_file} already exists: deleting it")
+                    os.remove(file)
+                self._temp_batch_files.append(file)
+            # Write:
             try:
                 df.export_hdf5(file, group=key, mode="w")
             except AttributeError:  # case where df is not a Vaex dataFrame but (likely) a Pandas Dataframe
@@ -121,6 +138,36 @@ class HDF5Manager(object):
         else:
             raise NotImplementedError(self.engine)
             # h5py is not designed to write Pandas DataFrames
+
+    def combine_temp_batch_files(self, file, key="default"):
+        if self.engine == "vaex":
+            if len(self._temp_batch_files) == 0:
+                raise ValueError(f"No batch temp files were written for {file}")
+            if key == "default":
+                key = r"/table"
+            import vaex
+
+            df = vaex.open(self._temp_batch_files, group=key)
+            df.export_hdf5(file, group=key, mode="w")
+            df.close()
+        self._close_temp_batch_files()
+
+    def _close_temp_batch_files(self):
+        for i in range(len(self._temp_batch_files) - 1, -1, -1):
+            os.remove(self._temp_batch_files[i])
+            del self._temp_batch_files[i]
+
+    def __del__(self):
+        """ clean before deleting"""
+        if len(self._temp_batch_files) > 0:
+            from radis.misc.printer import printr
+
+            printr(
+                "Warning : {0} files were written but not combined. Deleting them.\n\n{1}".format(
+                    len(self._temp_batch_files), self._temp_batch_files
+                )
+            )
+            self._close_temp_batch_files()
 
     def load(
         self,
@@ -323,7 +370,11 @@ class HDF5Manager(object):
             if key == "default":
                 key = "df"
             with pd.HDFStore(fname, mode="r", complib="blosc", complevel=9) as f:
-                metadata = f.get_storer(key).attrs.metadata
+                try:
+                    metadata = f.get_storer(key).attrs.metadata
+                except KeyError as err:
+                    print(f"Error reading metadata from {fname}")
+                    raise err
 
         elif self.engine == "h5py":
             if key == "default":
@@ -332,7 +383,11 @@ class HDF5Manager(object):
                 if key is None:  # read metadta at root level
                     metadata = dict(hf.attrs)
                 else:
-                    metadata = dict(hf[key].attrs)
+                    try:
+                        metadata = dict(hf[key].attrs)
+                    except KeyError as err:
+                        print(f"Error reading metadata from {fname}")
+                        raise err
 
         elif self.engine == "vaex":
             if key == "default":
@@ -350,7 +405,11 @@ class HDF5Manager(object):
                     if key is None:  # add metadta at root level
                         metadata = dict(hf.attrs)
                     else:
-                        metadata = dict(hf[key].attrs)
+                        try:
+                            metadata = dict(hf[key].attrs)
+                        except KeyError as err:
+                            print(f"Error reading metadata from {fname}")
+                            raise err
 
         else:
             raise NotImplementedError(self.engine)
@@ -476,41 +535,34 @@ def hdf2df(
         # fails in Vaex (and worse: still returns something.)
         # For the moment, only implement with one isotope.
         # TODO : add all cases manually...
+        # if isotope is not None:
+        #     if not isinstance(isotope, int):
+        #         try:
+        #             isotope = int(isotope)
+        #         except:
+        #             raise NotImplementedError(
+        #                 f"When reading HDF5 in vaex mode, selection works for a single isotope only (got {isotope})"
+        #             )
+        b = True
+        if load_wavenum_min is not None:
+            b *= df.wav > load_wavenum_min
+        if load_wavenum_max is not None:
+            b *= df.wav < load_wavenum_max
         if isotope is not None:
-            if not isinstance(isotope, int):
-                try:
-                    isotope = int(isotope)
-                except:
-                    raise NotImplementedError(
-                        f"When reading HDF5 in vaex mode, selection works for a single isotope only (got {isotope})"
-                    )
-        if (
-            load_wavenum_min is not None
-            and load_wavenum_max is not None
-            and isotope is not None
-        ):
-            df.select(
-                (df.wav > load_wavenum_min)
-                & (df.wav < load_wavenum_max)
-                & (df.iso == isotope)
-            )
-        elif load_wavenum_min is not None and load_wavenum_max is not None:
-            df.select((df.wav > load_wavenum_min) & (df.wav < load_wavenum_max))
-        elif load_wavenum_min is not None and isotope is not None:
-            df.select((df.wav > load_wavenum_min) & (df.iso == isotope))
-        elif load_wavenum_max is not None and isotope is not None:
-            df.select((df.wav < load_wavenum_max) & (df.iso == isotope))
-        elif load_wavenum_min is not None:
-            df.select(df.wav > load_wavenum_min)
-        elif load_wavenum_max is not None:
-            df.select(df.wav < load_wavenum_max)
-        elif isotope is not None:
-            df.select(df.iso == isotope)
-        else:
-            selection = False
+            from radis.misc.basics import is_float
+
+            if is_float(isotope):
+                b *= df.iso == int(isotope)
+            else:
+                b2 = False
+                for iso in isotope.split(","):
+                    b2 += df.iso == int(iso)
+                b *= b2
+        if b != True and False in b:
+            df = df[b]
 
         # Load
-        df = df.to_pandas_df(column_names=columns, selection=selection)
+        df = df.to_pandas_df(column_names=columns)
 
     # Read and add metadata in the DataFrame
     metadata = manager.read_metadata(fname)

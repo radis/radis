@@ -98,15 +98,18 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
     # ... This is done at the HITEMPDatabaseManager level
     # ... unitest for this part:
     ldb = HITEMPDatabaseManager(
-        name="HITEMP-CO2", molecule="CO2", local_databases="~/.radisdb/hitemp/"
+        name="HITEMP-CO2",
+        molecule="CO2",
+        engine="default",
+        local_databases="~/.radisdb/hitemp/",
     )
-    local_files, _ = ldb.get_filenames(engine="auto")
+    local_files, _ = ldb.get_filenames()
     relevant_file, file_wmin, file_wmax = keep_only_relevant(
         local_files, wavenum_min=wmin, wavenum_max=wmax
     )
 
     assert len(relevant_file) == 1
-    assert basename(relevant_file[0]) == "CO2-02_02500-03000_HITEMP2010.h5"
+    assert basename(relevant_file[0]).startswith("CO2-02_02500-03000_HITEMP2010.")
     assert file_wmin == 2500
     assert file_wmax == 3000
 
@@ -123,7 +126,7 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
     assert "HITEMP-CO2" in getDatabankList()
 
     assert len(local_files) == 1
-    assert basename(local_files[0]) == "CO2-02_02500-03000_HITEMP2010.h5"
+    assert basename(local_files[0]).startswith("CO2-02_02500-03000_HITEMP2010.")
 
 
 @pytest.mark.needs_connection
@@ -161,7 +164,7 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
         columns=["int", "wav"],
         verbose=verbose,
         return_local_path=True,
-        engine="pytables",
+        engine="default",
     )
 
     assert f"HITEMP-{molecule}" in getDatabankList()
@@ -170,6 +173,7 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
         name=f"HITEMP-{molecule}",
         molecule=molecule,
         verbose=verbose,
+        engine="default",
         local_databases="~/.radisdb/hitemp/",
     )
     url, Nlines, _, _ = ldb.fetch_url_Nlines_wmin_wmax()

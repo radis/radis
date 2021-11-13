@@ -58,6 +58,9 @@ class DatabaseManager(object):
     molecule: str
     local_databases: str
         path to local database
+    engine: 'vaex', 'pytables', 'h5py', or 'default'
+        memory-mapping library to use with this database. If 'default' use
+        the value from ~/radis.json
 
     Other Parameters
     ----------------
@@ -88,17 +91,31 @@ class DatabaseManager(object):
         name,
         molecule,
         local_databases,
+        engine,
         verbose=False,
         parallel=True,
         nJobs=-2,
         batch_size="auto",
     ):
+        if engine == "default":
+            from radis import config
+
+            engine = config["MEMORY_MAPPING_ENGINE"]  # 'pytables', 'vaex', 'feather'
+
+        # vaex processes are stuck if ran from Spyder. See https://github.com/spyder-ide/spyder/issues/16183
+        if engine == "vaex" and any("SPYDER" in name for name in os.environ):
+            from radis.misc.log import printwarn
+
+            printwarn(
+                "Spyder IDE detected while using memory_mapping_engine='vaex'.\nVaex is the fastest way to read database files in RADIS, but Vaex processes may be stuck if ran from Spyder. See https://github.com/spyder-ide/spyder/issues/16183. You may consider using another IDE, or using a different `memory_mapping_engine` such as 'pytables' or 'feather'. You can change the engine in Spectrum.fetch_databank() calls, or globally by seting the 'MEMORY_MAPPING_ENGINE' key in your ~/radis.json \n"
+            )
 
         self.name = name
         self.molecule = molecule
         self.local_databases = local_databases
         self.downloadable = False  # by default
         self.format = ""
+        self.engine = engine
 
         self.tempdir = join(self.local_databases, "downloads(can_be_deleted)")
         self.ds = DataSource(self.tempdir)
@@ -112,7 +129,7 @@ class DatabaseManager(object):
             4  #: type: int. If there are less files, don't use parallel mode.
         )
 
-    def get_filenames(self, engine):
+    def get_filenames(self):
         """Get names of all files in the database (even if not downloaded yet)
 
         See Also
@@ -120,6 +137,7 @@ class DatabaseManager(object):
         :py:meth:`~radis.io.linedb.get_files_to_download`"""
         verbose = self.verbose
         local_databases = self.local_databases
+        engine = self.engine
 
         # First; checking if the database is registered in radis.json
         if self.is_registered():
@@ -190,11 +208,12 @@ class DatabaseManager(object):
             "This function should be overwritten by the DatabaseManager subclass"
         )
 
-    def check_deprecated_files(self, local_files, engine, remove=True):
+    def check_deprecated_files(self, local_files, remove=True):
         """Check metadata of files and remove the deprecated ones
 
         Unless remove=False: Then raise an error"""
         verbose = self.verbose
+        engine = self.engine
         for local_file in local_files:
             try:
                 check_not_deprecated(
@@ -268,11 +287,11 @@ class DatabaseManager(object):
             self.verbose,
         )
 
-    def get_hdf5_manager(self, engine):
-        return HDF5Manager(engine=engine)
+    def get_hdf5_manager(self):
+        return HDF5Manager(engine=self.engine)
 
-    def download_and_parse(self, urlnames, local_files, engine="pytables"):
-        all_local_files, _ = self.get_filenames(engine)
+    def download_and_parse(self, urlnames, local_files):
+        all_local_files, _ = self.get_filenames()
 
         verbose = self.verbose
         molecule = self.molecule
@@ -317,7 +336,6 @@ class DatabaseManager(object):
                 pbar_Ntot_estimate_factor=pbar_Ntot_estimate_factor,
                 pbar_Nlines_already=Nlines_total,
                 pbar_last=(Ndownload == Ntotal_downloads),
-                engine=engine,
             )
             # except Exception as err:
             #     raise IOError("Problem parsing `{0}`. Check the error above. It may arise if the file wasn't properly downloaded. Try to delete it".format(self.ds._findfile(urlname))) from err
@@ -374,7 +392,6 @@ class DatabaseManager(object):
         columns,
         load_wavenum_min,
         load_wavenum_max,
-        engine="pytables",
     ):
         """
         Other Parameters
@@ -382,6 +399,7 @@ class DatabaseManager(object):
         columns: list of str
             list of columns to load. If ``None``, returns all columns in the file.
         """
+        engine = self.engine
         if engine == "pytables":
             df_all = []
             for local_file in local_files:
@@ -393,7 +411,7 @@ class DatabaseManager(object):
                         load_wavenum_min=load_wavenum_min,
                         load_wavenum_max=load_wavenum_max,
                         verbose=self.verbose,
-                        engine="pytables",
+                        engine=engine,
                     )
                 )
             return pd.concat(df_all)
@@ -407,7 +425,7 @@ class DatabaseManager(object):
                 load_wavenum_min=load_wavenum_min,
                 load_wavenum_max=load_wavenum_max,
                 verbose=self.verbose,
-                engine="vaex",
+                engine=engine,
             )
         else:
             raise NotImplementedError(engine)
@@ -420,12 +438,22 @@ class DatabaseManager(object):
         )
         df.plot("wav", "int")
 
-    def get_nrows(self, local_file, engine="pytables"):
+    def get_nrows(self, local_file):
+        """ Get number of rows (without loading all DataFrame)"""
+        engine = self.engine
         if engine == "pytables":
             with pd.HDFStore(local_file, "r") as store:
                 nrows = store.get_storer("df").nrows
 
-        elif engine in ["vaex", "h5py"]:
+        elif engine == "vaex":
+            import vaex
+
+            # by default vaex does not load everything
+            df = vaex.open(local_file)
+            nrows = len(df)
+            df.close()
+
+        elif engine in ["h5py"]:
             raise NotImplementedError
         else:
             raise ValueError(engine)

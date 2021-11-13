@@ -49,7 +49,6 @@ key in :py:attr:`radis.config`
 # @dev: (on Spyder IDE navigate between sections easily as # XXX makes a reference
 # (on the slide bar on the right)
 
-import os
 import warnings
 from copy import deepcopy
 from os.path import exists
@@ -983,13 +982,6 @@ class DatabankLoader(object):
             )
         if memory_mapping_engine == "default":
             memory_mapping_engine = self.misc.memory_mapping_engine
-        if memory_mapping_engine == "vaex" and any(
-            "SPYDER" in name for name in os.environ
-        ):
-            # vaex processes are stuck if ran from Spyder. See https://github.com/spyder-ide/spyder/issues/16183
-            self.warn(
-                "Spyder IDE detected while using memory_mapping_engine='vaex'.\nVaex is the fastest way to read database files in RADIS, but Vaex processes may be stuck if ran from Spyder. See https://github.com/spyder-ide/spyder/issues/16183. You may consider using another IDE, or using a different `memory_mapping_engine` such as 'pytables' or 'feather'. You can change the engine in Spectrum.fetch_databank() calls, or globally by seting the 'MEMORY_MAPPING_ENGINE' key in your ~/radis.json \n"
-            )
 
         # Get inputs
         molecule = self.input.molecule
