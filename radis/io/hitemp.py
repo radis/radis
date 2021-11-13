@@ -514,7 +514,7 @@ def fetch_hitemp(
     if databank_name == "HITEMP-{molecule}":
         databank_name = databank_name.format(**{"molecule": molecule})
 
-    local_databases = abspath(local_databases.replace("~", expanduser("~")))
+    local_databases = abspath(expanduser(local_databases))
 
     ldb = HITEMPDatabaseManager(
         databank_name,

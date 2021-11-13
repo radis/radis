@@ -412,6 +412,10 @@ class MdbExomol(object):
 
     """
 
+    # @dev: In exojax this class is defined in exojax/spec/moldb.py
+    # see https://github.com/HajimeKawahara/exojax/blob/develop/src/exojax/spec/moldb.py
+    # It uses Jax arrays (jnp). Here RADIS uses Numpy arrays.
+
     def __init__(
         self,
         path,
@@ -420,6 +424,7 @@ class MdbExomol(object):
         crit=-np.inf,
         bkgdatm="H2",
         broadf=True,
+        engine="vaex",
     ):
         """Molecular database for Exomol form
 
@@ -435,7 +440,16 @@ class MdbExomol(object):
            The trans/states files can be very large. For the first time to read it, we convert it to the feather-format. After the second-time, we use the feather format instead.
 
         """
-        explanation = "Note: Couldn't find the feather format. We convert data to the feather format. After the second time, it will become much faster."
+        if engine == "vaex":
+            import vaex
+        elif engine == "feather":
+            pass
+            # vaex will be the future default, but it still fails on some systems
+            # Ex : on Spyder : See https://github.com/spyder-ide/spyder/issues/16183
+            # We keep "feather" as backup)
+        else:
+            raise NotImplementedError(f"{engine} is not implemented")
+        self.engine = engine  # which memory mapping engine to use : 'vaex', 'pytables' (HDF5), 'feather'
 
         self.path = pathlib.Path(path)
         t0 = self.path.parents[0].stem
@@ -498,12 +512,26 @@ class MdbExomol(object):
             self.alpha_ref_def = 0.07
 
         # load states
-        if self.states_file.with_suffix(".feather").exists():
-            states = pd.read_feather(self.states_file.with_suffix(".feather"))
-        else:
-            print(explanation)
-            states = exomolapi.read_states(self.states_file, dic_def)
-            states.to_feather(self.states_file.with_suffix(".feather"))
+        if engine == "feather":
+            if self.states_file.with_suffix(".feather").exists():
+                ndstates = pd.read_feather(self.states_file.with_suffix(".feather"))
+            else:
+                print(
+                    "Note: Caching states data to the feather format. After the second time, it will become much faster."
+                )
+                ndstates = exomolapi.read_states(self.states_file, dic_def)
+                ndstates.to_feather(self.states_file.with_suffix(".feather"))
+        elif engine == "vaex":
+            if self.states_file.with_suffix(".bz2.hdf5").exists():
+                states = vaex.open(self.states_file.with_suffix(".bz2.hdf5"))
+                ndstates = vaex.array_types.to_numpy(states)
+            else:
+                print(
+                    "Note: Caching states data to the hdf5 format with vaex. After the second time, it will become much faster."
+                )
+                states = exomolapi.read_states(self.states_file, dic_def)
+                ndstates = vaex.array_types.to_numpy(states)
+
         # load pf
         pf = exomolapi.read_pf(self.pf_file)
         self.gQT = pf["QT"].to_numpy()  # grid QT
@@ -516,15 +544,41 @@ class MdbExomol(object):
             if not self.trans_file.exists():
                 self.download(molec, [".trans.bz2"])
 
-            if self.trans_file.with_suffix(".feather").exists():
-                trans = pd.read_feather(self.trans_file.with_suffix(".feather"))
-            else:
-                print(explanation)
-                trans = exomolapi.read_trans(self.trans_file)
-                trans.to_feather(self.trans_file.with_suffix(".feather"))
+            if engine == "vaex":
+                if self.trans_file.with_suffix(".hdf5").exists():
+                    trans = vaex.open(self.trans_file.with_suffix(".hdf5"))
+                    cdt = 1
+                    if not np.isneginf(self.nurange[0]):
+                        cdt *= trans.nu_lines > self.nurange[0] - self.margin
+                    if not np.isinf(self.nurange[1]):
+                        cdt *= trans.nu_lines < self.nurange[1] - self.margin
+                    if not np.isneginf(self.crit):
+                        cdt *= trans.Sij0 > self.crit
+                    if cdt != 1:
+                        trans = trans[cdt]
+                    ndtrans = vaex.array_types.to_numpy(trans)
 
-            #!!TODO:restrict NOW the trans size to avoid useless overload of memory and CPU
-            # trans = trans[(trans['nu'] > self.nurange[0] - self.margin) & (trans['nu'] < self.nurange[1] + self.margin)]
+                    # mask has been alraedy applied
+                    mask_needed = False
+                else:
+                    print(
+                        "Note: Caching line transition data to the HDF5 format with vaex. After the second time, it will become much faster."
+                    )
+                    trans = exomolapi.read_trans(self.trans_file)
+                    ndtrans = vaex.array_types.to_numpy(trans)
+
+                    # mask needs to be applied
+                    mask_needed = True
+            elif engine == "feather":
+                if self.trans_file.with_suffix(".feather").exists():
+                    ndtrans = pd.read_feather(self.trans_file.with_suffix(".feather"))
+                else:
+                    print(
+                        "Note: Caching line transition data to the feather format. After the second time, it will become much faster."
+                    )
+                    ndtrans = exomolapi.read_trans(self.trans_file)
+                    ndtrans.to_feather(self.trans_file.with_suffix(".feather"))
+
             # compute gup and elower
             (
                 self._A,
@@ -533,9 +587,46 @@ class MdbExomol(object):
                 self._gpp,
                 self._jlower,
                 self._jupper,
+                mask_zeronu,
                 self._quantumNumbers,
-            ) = exomolapi.pickup_gE(states, trans, dic_def)
-        else:
+            ) = exomolapi.pickup_gE(ndstates, ndtrans, self.trans_file, dic_def)
+
+            # Compute linestrengths or retrieve them from cache
+            self.Tref = 296.0
+            self.QTref = np.array(self.QT_interp(self.Tref))
+
+            if engine == "vaex" and self.trans_file.with_suffix(".hdf5").exists():
+                # if engine == 'feather' we recompute all the time
+                # Todo : we should get the column name instead ?
+                self.Sij0 = ndtrans[:, 4]
+            else:
+                ##Line strength:
+                from radis.lbl.base import (  # TODO: move elsewhere
+                    linestrength_from_Einstein,
+                )
+
+                self.Sij0 = linestrength_from_Einstein(
+                    A=self._A,
+                    gu=self._gpp,
+                    El=self._elower,
+                    Ia=1,  #  Sij0 is a linestrength calculated without taking into account isotopic abundance (unlike line intensity parameter of HITRAN. In RADIS this is corrected for in fetch_exomol()  )
+                    nu=self.nu_lines,
+                    Q=self.QTref,
+                    T=self.Tref,
+                )
+
+                # exclude the lines whose nu_lines evaluated inside exomolapi.pickup_gE (thus sometimes different from the "nu_lines" column in trans) is not positive
+                trans["nu_positive"] = mask_zeronu
+                trans = trans[trans.nu_positive].extract()
+                trans.drop("nu_positive", inplace=True)
+
+                trans["nu_lines"] = self.nu_lines
+                trans["Sij0"] = self.Sij0
+
+                if engine == "vaex":
+                    trans.export(self.trans_file.with_suffix(".hdf5"))
+
+        else:  # dic_def["numinf"] is not None
             imin = (
                 np.searchsorted(dic_def["numinf"], nurange[0], side="right") - 1
             )  # left side
@@ -551,15 +642,42 @@ class MdbExomol(object):
                     self.download(
                         molec, extension=[".trans.bz2"], numtag=dic_def["numtag"][i]
                     )
-                if trans_file.with_suffix(".feather").exists():
-                    trans = pd.read_feather(trans_file.with_suffix(".feather"))
-                else:
-                    print(explanation)
-                    trans = exomolapi.read_trans(trans_file)
-                    trans.to_feather(trans_file.with_suffix(".feather"))
-                    #!!TODO:restrict NOW the trans size to avoid useless overload of memory and CPU
-                    # trans = trans[(trans['nu'] > self.nurange[0] - self.margin) & (trans['nu'] < self.nurange[1] + self.margin)]
+                if engine == "feather":
+                    if trans_file.with_suffix(".feather").exists():
+                        trans = pd.read_feather(trans_file.with_suffix(".feather"))
+                    else:
+                        print(
+                            "Note: Caching line transition data to the feather format. After the second time, it will become much faster."
+                        )
+                        ndtrans = exomolapi.read_trans(trans_file)
+                        ndtrans.to_feather(trans_file.with_suffix(".feather"))
+                        #!!TODO:restrict NOW the trans size to avoid useless overload of memory and CPU
+                        # trans = trans[(trans['nu'] > self.nurange[0] - self.margin) & (trans['nu'] < self.nurange[1] + self.margin)]
+                elif engine == "vaex":
+                    if trans_file.with_suffix(".hdf5").exists():
+                        trans = vaex.open(trans_file.with_suffix(".hdf5"))
+                        cdt = 1
+                        if not np.isneginf(self.nurange[0]):
+                            cdt *= trans.nu_lines > self.nurange[0] - self.margin
+                        if not np.isinf(self.nurange[1]):
+                            cdt *= trans.nu_lines < self.nurange[1] - self.margin
+                        if not np.isneginf(self.crit):
+                            cdt *= trans.Sij0 > self.crit
+                        if cdt != 1:
+                            trans = trans[cdt]
+                        ndtrans = vaex.array_types.to_numpy(trans)
 
+                        # mask has been already applied
+                        mask_needed = False
+                    else:
+                        print(
+                            "Note: Caching line transition data to the HDF5 format with vaex. After the second time, it will become much faster."
+                        )
+                        trans = exomolapi.read_trans(trans_file)
+                        ndtrans = vaex.array_types.to_numpy(trans)
+
+                        # mask needs to be applied
+                        mask_needed = True
                 self.trans_file.append(trans_file)
 
                 # compute gup and elower
@@ -571,9 +689,42 @@ class MdbExomol(object):
                         self._gpp,
                         self._jlower,
                         self._jupper,
+                        mask_zeronu,
                         self._quantumNumbers,
-                    ) = exomolapi.pickup_gE(states, trans, dic_def)
-                else:
+                    ) = exomolapi.pickup_gE(ndstates, ndtrans, trans_file, dic_def)
+
+                    if (
+                        engine == "vaex"
+                        and self.trans_file.with_suffix(".hdf5").exists()
+                    ):
+                        # if engine == 'feather' we recompute all the time
+                        # Todo : we should get the column name instead ?
+                        self.Sij0 = ndtrans[:, 4]
+                    else:
+                        ##Line strength:
+                        from radis.lbl.base import (  # TODO: move elsewhere
+                            linestrength_from_Einstein,
+                        )
+
+                        self.Sij0 = linestrength_from_Einstein(
+                            A=self._A,
+                            gu=self._gpp,
+                            El=self._elower,
+                            Ia=1,  #  Sij0 is a linestrength calculated without taking into account isotopic abundance (unlike line intensity parameter of HITRAN. In RADIS this is corrected for in fetch_exomol()  )
+                            nu=self.nu_lines,
+                            Q=self.QTref,
+                            T=self.Tref,
+                        )
+
+                        # exclude the lines whose nu_lines evaluated inside exomolapi.pickup_gE (thus sometimes different from the "nu_lines" column in trans) is not positive
+                        trans["nu_positive"] = mask_zeronu
+                        trans = trans[trans.nu_positive].extract()
+                        trans.drop("nu_positive", inplace=True)
+
+                        trans["nu_lines"] = self.nu_lines
+                        trans["Sij0"] = self.Sij0
+                else:  # k!=0
+
                     (
                         Ax,
                         nulx,
@@ -581,8 +732,35 @@ class MdbExomol(object):
                         gppx,
                         jlowerx,
                         jupperx,
-                        _quantumNumbersx,
-                    ) = exomolapi.pickup_gE(states, trans, dic_def)
+                        mask_zeronu,
+                        quantumNumbersx,
+                    ) = exomolapi.pickup_gE(ndstates, ndtrans, trans_file)
+                    if engine == "vaex" and trans_file.with_suffix(".hdf5").exists():
+                        Sij0x = ndtrans[:, 4]
+                    else:
+                        ##Line strength:
+                        from radis.lbl.base import (  # TODO: move elsewhere
+                            linestrength_from_Einstein,
+                        )
+
+                        Sij0x = linestrength_from_Einstein(
+                            A=Ax,
+                            gu=gppx,
+                            El=elowerx,
+                            Ia=1,  #  Sij0 is a linestrength calculated without taking into account isotopic abundance (unlike line intensity parameter of HITRAN. In RADIS this is corrected for in fetch_exomol()  )
+                            nu=nulx,
+                            Q=self.QTref,
+                            T=self.Tref,
+                        )
+
+                        # exclude the lines whose nu_lines evaluated inside exomolapi.pickup_gE (thus sometimes different from the "nu_lines" column in trans) is not positive
+                        trans["nu_positive"] = mask_zeronu
+                        trans = trans[trans.nu_positive].extract()
+                        trans.drop("nu_positive", inplace=True)
+
+                        trans["nu_lines"] = nulx
+                        trans["Sij0"] = Sij0x
+
                     self._A = np.hstack([self._A, Ax])
                     self.nu_lines = np.hstack([self.nu_lines, nulx])
                     self._elower = np.hstack([self._elower, elowerx])
@@ -590,23 +768,14 @@ class MdbExomol(object):
                     self._jlower = np.hstack([self._jlower, jlowerx])
                     self._jupper = np.hstack([self._jupper, jupperx])
                     self._quantumNumbers = np.hstack(
-                        [self._quantumNumbers, _quantumNumbersx]
+                        [self._quantumNumbers, quantumNumbersx]
                     )
 
-        self.Tref = 296.0
-        self.QTref = np.array(self.QT_interp(self.Tref))
-
-        from radis.lbl.base import linestrength_from_Einstein  # TODO: move elsewhere
-
-        self.Sij0 = linestrength_from_Einstein(
-            A=self._A,
-            gu=self._gpp,
-            El=self._elower,
-            Ia=1,  #  Sij0 is a linestrength calculated without taking into account isotopic abundance (unlike line intensity parameter of HITRAN. In RADIS this is corrected for in fetch_exomol()  )
-            nu=self.nu_lines,
-            Q=self.QTref,
-            T=self.Tref,
-        )
+                    if (
+                        engine == "vaex"
+                        and not trans_file.with_suffix(".hdf5").exists()
+                    ):
+                        trans.export(trans_file.with_suffix(".hdf5"))
 
         ### MASKING ###
         mask = (
@@ -615,27 +784,31 @@ class MdbExomol(object):
             * (self.Sij0 > self.crit)
         )
 
-        self.masking(mask)
+        self.masking(mask, mask_needed)
 
-    def masking(self, mask):
+    def masking(self, mask, mask_needed=True):
         """applying mask and (re)generate jnp.arrays
 
         Args:
            mask: mask to be applied. self.mask is updated.
+           mask_needed: whether mask needs to be applied or not
 
         """
-        # TODO : replace with HDF5 masking ?
+        # TODO : with Vaex-HDF5, selection should happen on disk.
 
         # numpy float 64 Do not convert them jnp array
-        self.nu_lines = self.nu_lines[mask]
-        self.Sij0 = self.Sij0[mask]
-        self._A = self._A[mask]
-        self._elower = self._elower[mask]
-        self._gpp = self._gpp[mask]
-        self._jlower = self._jlower[mask]
-        self._jupper = self._jupper[mask]
+        if mask_needed:
+            self.nu_lines = self.nu_lines[mask]
+            self.Sij0 = self.Sij0[mask]
+            self._A = self._A[mask]
+            self._elower = self._elower[mask]
+            self._gpp = self._gpp[mask]
+            self._jlower = self._jlower[mask]
+            self._jupper = self._jupper[mask]
+            for key, array in self._quantumNumbers.items():
+                self._quantumNumbers[key] = array[mask]
 
-        # jnp arraysgamma_
+        # jnp arrays
         self.dev_nu_lines = np.array(self.nu_lines)
         self.logsij0 = np.array(np.log(self.Sij0))
         self.A = np.array(self._A)
@@ -646,9 +819,6 @@ class MdbExomol(object):
         self.jupper = np.array(self._jupper, dtype=int)
         ##Broadening parameters
         self.set_broadening()
-
-        for key, array in self._quantumNumbers.items():
-            self._quantumNumbers[key] = array[mask]
 
     def set_broadening(self, alpha_ref_def=None, n_Texp_def=None):
         """setting broadening parameters
