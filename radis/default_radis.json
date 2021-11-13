@@ -12,10 +12,11 @@
     "DEBUG_MODE": false,
     "AUTO_UPDATE_DATABASE": false,
     "AUTO_UPDATE_SPEC": false,
-    "OLDEST_COMPATIBLE_VERSION": ",0.9.1",
+    "OLDEST_COMPATIBLE_VERSION": "0.9.1",
     "USE_CYTHON": true,
     "GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD": 3,
     "GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD": 1,
+    "MEMORY_MAPPING_ENGINE": "vaex",
     "SPARSE_WAVERANGE": "auto",
     "molparams": {
         "isotope_full_name": {

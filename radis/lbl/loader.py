@@ -58,6 +58,7 @@ from uuid import uuid1
 import numpy as np
 import pandas as pd
 
+from radis import config
 from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
 from radis.db.molparam import MolParams
@@ -504,7 +505,7 @@ class MiscParams(ConditionDict):
         "warning_linestrength_cutoff",
         "total_lines",
         "zero_padding",
-        "hdf5_engine",
+        "memory_mapping_engine",
     ]
 
     def __init__(self):
@@ -524,7 +525,9 @@ class MiscParams(ConditionDict):
         )
         self.warning_linestrength_cutoff = None  #: float [0-1]: raise a warning if the sum of linestrength cut is above that
         self.total_lines = 0  #: int : number of lines in database.
-        self.hdf5_engine = "pytables"  # 'pytables', 'vaex' (/!\ experimental in 0.9.30)
+        self.memory_mapping_engine = config[
+            "MEMORY_MAPPING_ENGINE"
+        ]  # 'pytables', 'vaex', 'feather'
 
 
 def format_paths(s):
@@ -681,7 +684,6 @@ class DatabankLoader(object):
         # HARDCODED molar mass; for WIP ExoMol implementation, until MolParams
         # is an attribute and can be updated with definitions from ExoMol.
         # https://github.com/radis/radis/issues/321
-        from radis import config
 
         self._EXTRA_MOLAR_MASS = config["molparams"]["molar_mass"]
         """Extra molar mass when not found in HITRAN molecular parameter database
@@ -867,7 +869,7 @@ class DatabankLoader(object):
         drop_non_numeric=True,
         db_use_cached=True,
         lvl_use_cached=True,
-        hdf5_engine="default",
+        memory_mapping_engine="default",
         parallel=True,
     ):
         """Fetch the latest databank files from HITRAN or HITEMP with the
@@ -924,9 +926,9 @@ class DatabankLoader(object):
             will be left untouched.
         db_use_cached: bool, or ``'regen'``
             use cached
-        hdf5_engine: ``'pytables'``, ``'vaex'``
+        hdf5_engine: ``'pytables'``, ``'vaex'``, ``'feather'``
             which library to use to read HDF5 files (they are incompatible: ``'pytables'`` is
-            row-major while ``'vaex'`` is column-major)
+            row-major while ``'vaex'`` is column-major) or other memory-mapping formats
         parallel: bool
             if ``True``, uses joblib.parallel to load database with multiple processes
             (works only for HITEMP files)
@@ -977,8 +979,8 @@ class DatabankLoader(object):
                 + "for consistency we recommend using lines and partition functions from the same database",
                 "AccuracyWarning",
             )
-        if hdf5_engine == "default":
-            hdf5_engine = self.misc.hdf5_engine
+        if memory_mapping_engine == "default":
+            memory_mapping_engine = self.misc.memory_mapping_engine
 
         # Get inputs
         molecule = self.input.molecule
@@ -1016,8 +1018,8 @@ class DatabankLoader(object):
             self.reftracker.add(doi["HITRAN-2016"], "line database")  # [HITRAN-2016]_
             self.reftracker.add(doi["Astroquery"], "data retrieval")  # [Astroquery]_
 
-            if hdf5_engine != "pytables":
-                raise NotImplementedError(f"{hdf5_engine} with ExoMol files")
+            if memory_mapping_engine != "pytables":
+                raise NotImplementedError(f"{memory_mapping_engine} with HITRAN files")
 
             # Query one isotope at a time
             if isotope == "all":
@@ -1073,7 +1075,7 @@ class DatabankLoader(object):
                 cache=db_use_cached,
                 verbose=self.verbose,
                 return_local_path=True,
-                engine=hdf5_engine,
+                engine=memory_mapping_engine,
                 parallel=parallel,
             )
             self.params.dbpath = ",".join(local_paths)
@@ -1088,8 +1090,8 @@ class DatabankLoader(object):
             self.reftracker.add(doi["ExoMol-2020"], "line database")  # [ExoMol-2020]
 
             # Download, setup local databases, and fetch (use existing if possible)
-            if hdf5_engine != "pytables":
-                raise NotImplementedError(f"{hdf5_engine} with ExoMol files")
+            if memory_mapping_engine not in ["vaex", "feather"]:
+                raise NotImplementedError(f"{memory_mapping_engine} with ExoMol files")
 
             if isotope == "all":
                 raise ValueError(

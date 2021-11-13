@@ -223,6 +223,7 @@ def fetch_exomol(
     clean_cache_files=True,
     return_local_path=False,
     return_partition_function=False,
+    engine="vaex",
 ):
     """Stream ExoMol file from EXOMOL website. Unzip and build a HDF5 file directly.
 
@@ -274,6 +275,8 @@ def fetch_exomol(
         if ``True``, also returns the path of the local database file.
     return_partition_function: bool
         if ``True``, also returns a :py:class:`~radis.levels.partfunc.PartFuncExoMol` object.
+    engine: 'vaex', 'feather'
+        which memory-mapping library to use.
 
     Returns
     -------
@@ -350,7 +353,7 @@ def fetch_exomol(
         load_wavenum_min = -np.inf
     if load_wavenum_max is None:
         load_wavenum_max = np.inf
-    mdb = MdbExomol(local_path, [load_wavenum_min, load_wavenum_max])
+    mdb = MdbExomol(local_path, [load_wavenum_min, load_wavenum_max], engine=engine)
 
     # Attributes of the DataFrame
     from radis.db.classes import HITRAN_MOLECULES
