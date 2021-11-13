@@ -2491,7 +2491,7 @@ class Spectrum(object):
                 w_nm, wslit0_nm, slit_dispersion, slit_dispersion_threshold
             )
         else:
-            slice_windows = [np.ones_like(w, dtype=np.bool)]
+            slice_windows = [np.ones_like(w, dtype=bool)]
 
         # Create dictionary to store convolved
         I_conv_slices = {}
