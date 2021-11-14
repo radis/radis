@@ -242,36 +242,37 @@ def run_setup(with_binary):
         ],
         packages=find_packages(),
         install_requires=[
-            "hitran-api",
+            "astropy",  # Unit aware calculations
+            "astroquery>=0.3.9",  # to fetch HITRAN databases
             "beautifulsoup4",  # parse ExoMol website
+            "configparser",
+            "cython",
+            "hitran-api",
             "lxml",  # parser used for ExoMol website
             "numpy",
-            "scipy>=1.4.0",
             "matplotlib",  # ">=3.4.0" to suppress the Ruler warning, but only available for Python >= 3.7
-            "seaborn",  # other matplotlib themes
-            "cython",
+            "habanero",  # CrossRef API to retrieve data from doi
+            "h5py",  # HDF5
             "hjson",
+            "joblib",  # for parallel loading of SpecDatabase
+            "json-tricks>=3.15.0",  # to deal with non jsonable formats
             "pandas>=1.0.5",
             "plotly>=2.5.1",
             "progressbar2",  # used in vaex
             "numba",
             "mpldatacursor",
-            "astropy",  # Unit aware calculations
             "publib>=0.3.2",  # Plotting styles for Matplotlib
             "plotly>=2.5.1",  # for line survey HTML output
-            "configparser",
             "peakutils",
-            "astroquery>=0.3.9",  # to fetch HITRAN databases
-            "json-tricks>=3.15.0",  # to deal with non jsonable formats
+            "termcolor",
             "tables",  # for pandas to HDF5 export
             "pytest",  # to run test suite
-            "joblib",  # for parallel loading of SpecDatabase
             "numba",  # just-in-time compiler
             "psutil",  # for getting user RAM
+            "seaborn",  # other matplotlib themes
+            "scipy>=1.4.0",
             "tuna",  # to generate visual/interactive performance profiles
             "vaex>=4.4.0",  # load HDF5 files  (version for custom HDF5 groups)
-            "h5py",  # HDF5
-            "habanero",  # CrossRef API to retrieve data from doi
         ],
         extras_require={
             "dev": [
