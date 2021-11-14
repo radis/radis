@@ -474,7 +474,7 @@ def fetch_hitemp(
         if ``True`` clean downloaded cache files after HDF5 are created.
     return_local_path: bool
         if ``True``, also returns the path of the local database file.
-    engine: 'pytables', 'vaex'
+    engine: 'pytables', 'vaex', 'default'
         which HDF5 library to use. If 'default' use the value from ~/radis.json
     parallel: bool
         if ``True``, uses joblib.parallel to load database with multiple processes

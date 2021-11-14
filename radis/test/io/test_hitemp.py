@@ -202,7 +202,7 @@ def test_partial_loading(*args, **kwargs):
     assert df.wav.max() <= wmax
 
     # Test with isotope:
-    wmin2 = 0
+    wmin2 = 1
     wmax2 = 300
     df = fetch_hitemp(
         "OH",
@@ -230,18 +230,21 @@ def test_partial_loading(*args, **kwargs):
         df = fetch_hitemp("OH", engine="vaex")
     finally:
         radis.config["AUTO_UPDATE_DATABASE"] = old_config
-    assert df.wav.min() < wmin
-    assert df.wav.max() > wmax
+    # assert that database is wider than future selection
+    assert df.wav.min() < wmin2
+    assert df.wav.max() > wmax2
 
-    # multiple isotope selection not implemetned with vaex
-    with pytest.raises(NotImplementedError):
-        fetch_hitemp(
-            "OH",
-            load_wavenum_min=wmin,
-            load_wavenum_max=wmax,
-            isotope="1,2,3",
-            engine="vaex",
-        )
+    # now test wrange & multiple isotope selection with vaex
+    df = fetch_hitemp(
+        "OH",
+        load_wavenum_min=wmin2,
+        load_wavenum_max=wmax2,
+        isotope="2,3",
+        engine="vaex",
+    )
+    assert df.wav.min() >= wmin2
+    assert df.wav.max() <= wmax2
+    assert set(df.iso.unique()) == {2, 3}
 
 
 @pytest.mark.needs_connection

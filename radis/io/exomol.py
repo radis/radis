@@ -445,6 +445,11 @@ class MdbExomol(object):
            The trans/states files can be very large. For the first time to read it, we convert it to the feather-format. After the second-time, we use the feather format instead.
 
         """
+        if engine == "default":
+            import radis
+
+            engine = radis.config["MEMORY_MAPPING_ENGINE"]
+
         if engine == "vaex":
             import vaex
         elif engine == "feather":

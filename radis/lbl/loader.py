@@ -1113,6 +1113,7 @@ class DatabankLoader(object):
                     verbose=self.verbose,
                     return_local_path=True,
                     return_partition_function=True,
+                    engine=memory_mapping_engine,
                 )
                 # @dev refactor : have a DatabaseClass from which we load lines and partition functions
                 if len(df) > 0:
