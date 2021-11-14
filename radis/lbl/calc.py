@@ -685,9 +685,19 @@ def _calc_spectrum_one_molecule(
             # constants (not all molecules are supported!)
             conditions["levelsfmt"] = "radis"
             conditions["lvl_use_cached"] = use_cached
+
+        # Columns to load
+        if export_lines:
+            conditions["load_columns"] = "all"
+        elif not _equilibrium:
+            conditions["load_columns"] = "noneq"
+        else:
+            conditions["load_columns"] = "equilibrium"
+
         conditions["load_energies"] = not _equilibrium
         # Details to identify lines
         conditions["parse_local_global_quanta"] = (not _equilibrium) or export_lines
+        # Finally, LOAD :
         sf.fetch_databank(**conditions)
     elif exists(databank):
         conditions = {
@@ -727,14 +737,34 @@ def _calc_spectrum_one_molecule(
                 + "and define the format there. More information on "
                 + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
             )
+
+        # Columns to load
+        if export_lines:
+            conditions["load_columns"] = "all"
+        elif not _equilibrium:
+            conditions["load_columns"] = "noneq"
+        else:
+            conditions["load_columns"] = "equilibrium"
+
         conditions["load_energies"] = not _equilibrium
+        # Finally, LOAD :
         sf.load_databank(**conditions)
 
     else:  # manual mode: get from user-defined line databases defined in ~/radis.json
+
+        # Columns to load
+        if export_lines:
+            load_columns = "all"
+        elif not _equilibrium:
+            load_columns = "noneq"
+        else:
+            load_columns = "equilibrium"
+
         sf.load_databank(
             databank,
             load_energies=not _equilibrium,  # no need to load/calculate energies at eq.
             drop_columns=drop_columns,
+            load_columns=load_columns,
         )
 
     #    # Get optimisation strategies

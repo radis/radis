@@ -522,7 +522,7 @@ def test_all_calc_methods_CO2pcN(
     del database_kwargs["info"]
     database_kwargs["levelsfmt"] = "cdsd-pcN"
     # ... load the new database
-    sf.load_databank(**database_kwargs, load_energies=True)
+    sf.load_databank(**database_kwargs, load_energies=True, load_columns="noneq")
 
     # Now, define Evib:
     Q_calc = sf.parsum_calc["CO2"][1]["X"]
@@ -601,7 +601,7 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **k
     sf.warnings["NegativeEnergiesWarning"] = "ignore"
     sf.warnings["HighTemperatureWarning"] = "ignore"
     sf.fetch_databank(
-        "hitran"
+        "hitran", load_columns="noneq"
     )  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
     s_nq = sf.non_eq_spectrum(Tvib=Tgas, Trot=Tgas, name="Non-eq")
     s_eq = sf.eq_spectrum(Tgas=Tgas, name="Eq")

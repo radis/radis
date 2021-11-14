@@ -101,6 +101,7 @@ def cast_to_int64_with_missing_values(dg, keys):
 def hit2df(
     fname,
     cache=True,
+    load_columns=None,
     verbose=True,
     drop_non_numeric=True,
     load_wavenum_min=None,
@@ -119,6 +120,12 @@ def hit2df(
         improves performances a lot (but changes in the database are not
         taken into account). If False, no database is used. If ``'regen'``, temp
         file are reconstructed. Default ``True``.
+    load_columns: list
+        columns to load. If ``None``, loads everything
+
+        .. note::
+            this is only relevant if loading from a cache file. To generate
+            the cache file, all columns are loaded anyway.
 
     Other Parameters
     ----------------
@@ -181,6 +188,7 @@ def hit2df(
         df = load_h5_cache_file(
             fcache,
             cache,
+            columns=load_columns,
             valid_if_metadata_is=metadata,
             relevant_if_metadata_above=relevant_if_metadata_above,
             relevant_if_metadata_below=relevant_if_metadata_below,

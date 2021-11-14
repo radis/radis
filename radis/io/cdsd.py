@@ -116,6 +116,7 @@ def cdsd2df(
     fname,
     version="hitemp",
     cache=True,
+    load_columns=None,
     verbose=True,
     drop_non_numeric=True,
     load_wavenum_min=None,
@@ -135,6 +136,12 @@ def cdsd2df(
         improves performances a lot (but changes in the database are not
         taken into account). If ``False``, no database is used. If 'regen', temp
         file are reconstructed. Default ``True``.
+    load_columns: list
+        columns to load. If ``None``, loads everything
+
+        .. note::
+            this is only relevant if loading from a cache file. To generate
+            the cache file, all columns are loaded anyway.
 
     Other Parameters
     ----------------
@@ -242,6 +249,7 @@ def cdsd2df(
         df = load_h5_cache_file(
             fcache,
             cache,
+            columns=load_columns,
             valid_if_metadata_is=metadata,
             relevant_if_metadata_above=relevant_if_metadata_above,
             relevant_if_metadata_below=relevant_if_metadata_below,

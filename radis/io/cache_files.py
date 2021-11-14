@@ -55,6 +55,7 @@ assert parse(radis.__version__) >= parse(radis.config["OLDEST_COMPATIBLE_VERSION
 def load_h5_cache_file(
     cachefile,
     use_cached,
+    columns=None,
     valid_if_metadata_is={},
     relevant_if_metadata_above={},
     relevant_if_metadata_below={},
@@ -79,6 +80,8 @@ def load_h5_cache_file(
         if using the cache file, check if the file is deprecated. If it
         is deprecated, regenerate the file unless ``'force'`` was used
         (in that case, raise an error)
+    columns: list, or ``None``
+        columns to load
     valid_if_metadata_is: dict
         values are compared to cache file attributes. If they dont match,
         the file is considered deprecated. See ``use_cached`` to know
@@ -177,7 +180,7 @@ def load_h5_cache_file(
     try:
         # Load file :
         manager = HDF5Manager(engine)
-        df = manager.load(cachefile, key="df")
+        df = manager.load(cachefile, columns=columns, key="df")
 
     except KeyError as err:  # An error happened during file reading.
         # Fail safe by deleting cache file (unless we explicitely wanted it
@@ -690,7 +693,7 @@ def cache_file_name(fname, engine="pytables"):
     engine: ``'h5py'``, ``'pytables'``, ``'vaex'``
        which HDF5 library to use. Default ``pytables``
     """
-    if engine in ["pytables"]:
+    if engine in ["pytables", "pytables-fixed"]:
         return splitext(fname)[0] + ".h5"
     elif engine in ["h5py", "vaex"]:
         return splitext(fname)[0] + ".hdf5"

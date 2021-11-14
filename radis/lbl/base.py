@@ -1443,8 +1443,9 @@ class BaseFactory(DatabankLoader):
                 if "globu" in df:
                     error_details = ". However, it looks like `globu` is defined. Maybe HITRAN-like database wasn't fully parsed? See radis.io.hitran.hit2df"
                 raise KeyError(
-                    f"`{k}` not defined in database ({list(df.columns)})"
+                    f"`{k}` not defined in database ({list(df.columns)}). "
                     + error_details
+                    + f"Make sure you properly load parameters required for non-LTE calculations by adding `load_columns=['{k}', ...]` or simply `load_columns='noneq'` in fetch_databank / load_databank()"
                 )
 
         # Make sure database has pre-computed non equilibrium quantities

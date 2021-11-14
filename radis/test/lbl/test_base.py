@@ -241,7 +241,7 @@ def test_populations_CO2_hamiltonian(
         verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-    sf.load_databank("HITEMP-CO2-HAMIL-TEST", load_energies=True)
+    sf.load_databank("HITEMP-CO2-HAMIL-TEST", load_energies=True, load_columns="noneq")
 
     # First run a calculation at equilibrium
     s = sf.eq_spectrum(300)
@@ -338,7 +338,7 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
             verbose=False,
         )
         sf.warnings["NegativeEnergiesWarning"] = "ignore"
-        sf.load_databank("HITEMP-CO2-TEST")
+        sf.load_databank("HITEMP-CO2-TEST", load_columns="noneq")
         pb = ProgressBar(3, active=verbose)
         s_eq = sf.eq_spectrum(Tgas=Tgas, mole_fraction=1, name="Equilibrium")
         pb.update(1)
@@ -450,7 +450,7 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
             pressure=P,
             verbose=False,
         )
-        sf.load_databank("HITEMP-CO2-TEST")
+        sf.load_databank("HITEMP-CO2-TEST", load_columns="noneq")
         sf.warnings["NegativeEnergiesWarning"] = "ignore"
         #        sf.warnings['MissingSelfBroadeningWarning'] = 'ignore'
         pb = ProgressBar(3, active=verbose)

@@ -611,6 +611,8 @@ def hdf2df(
             df = df[b]  # note that this is a vaex Expression, not the DataFrame yet
 
         # Load
+        if columns:  # load only these columns (if they exist)
+            columns = [c for c in columns if c in df.columns]
         df = df.to_pandas_df(column_names=columns)
 
     # Read and add metadata in the DataFrame
