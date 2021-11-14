@@ -208,10 +208,10 @@ class DatabaseManager(object):
             "This function should be overwritten by the DatabaseManager subclass"
         )
 
-    def check_deprecated_files(self, local_files, remove=True):
+    def check_deprecated_files(self, local_files, auto_remove=True):
         """Check metadata of files and remove the deprecated ones
 
-        Unless remove=False: Then raise an error"""
+        Unless auto_remove=False: Then raise an error"""
         verbose = self.verbose
         engine = self.engine
         for local_file in local_files:
@@ -223,7 +223,7 @@ class DatabaseManager(object):
                     engine=engine,
                 )
             except DeprecatedFileWarning as err:
-                if not remove:
+                if not auto_remove:
                     raise err
                 else:  # delete file to regenerate it in the end of the script
                     if verbose:

@@ -1953,6 +1953,7 @@ class DatabankLoader(object):
                             drop_non_numeric=True,
                             load_wavenum_min=wavenum_min,
                             load_wavenum_max=wavenum_max,
+                            engine="guess",
                         )
                     elif dbformat in ["hdf5-radisdb", "hitemp-radisdb"]:
                         if dbformat == "hitemp-radisdb":
@@ -1974,7 +1975,7 @@ class DatabankLoader(object):
                             else None,
                             load_wavenum_min=wavenum_min,
                             load_wavenum_max=wavenum_max,
-                            engine="pytables",
+                            engine="guess",
                         )
                     elif dbformat in ["exomol"]:
                         # self.reftracker.add("10.1016/j.jqsrt.2020.107228", "line database")  # [ExoMol-2020]

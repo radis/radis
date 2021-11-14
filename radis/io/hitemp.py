@@ -393,9 +393,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         return Nlines
 
     def register(self):
-        """register in ~/radis.json
-
-        engine required to differentiate '.h5', '.hdf5'"""
+        """register in ~/radis.json"""
 
         local_files, urlnames = self.get_filenames()
         info = f"HITEMP {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1) with TIPS-2017 (through HAPI) for partition functions"
@@ -463,8 +461,9 @@ def fetch_hitemp(
 
     Other Parameters
     ----------------
-    cache: bool, or ``'regen'``
-        if ``True``, use existing HDF5 file. If ``False`` or ``'regen'``, rebuild it..
+    cache: ``True``, ``False``, ``'regen'`` or ``'force'``
+        if ``True``, use existing HDF5 file. If ``False`` or ``'regen'``, rebuild it.
+        If ``'force'``, raise an error if cache file cannot be used (useful for debugging).
         Default ``True``.
     verbose: bool
     chunksize: int
@@ -517,7 +516,7 @@ def fetch_hitemp(
 
     """
 
-    if databank_name == "HITEMP-{molecule}":
+    if r"{molecule}" in databank_name:
         databank_name = databank_name.format(**{"molecule": molecule})
 
     local_databases = abspath(expanduser(local_databases))
@@ -543,7 +542,7 @@ def fetch_hitemp(
         ldb.remove_local_files(relevant_files)
     ldb.check_deprecated_files(
         ldb.get_existing_files(relevant_files),
-        remove=True if cache != "force" else False,
+        auto_remove=True if cache != "force" else False,
     )
 
     # Get missing files
@@ -595,7 +594,7 @@ def fetch_hitemp(
     if not ldb.is_registered():
         ldb.register()
 
-    if clean_cache_files:
+    if len(download_files) > 0 and clean_cache_files:
         ldb.clean_download_files()
 
     # Load and return

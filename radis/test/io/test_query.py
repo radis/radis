@@ -99,11 +99,25 @@ def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
     return
 
 
+# ignored by pytest with argument -m "not needs_connection"
+@pytest.mark.needs_connection
+def test_fetch_hitran(*args, **kwargs):
+
+    from radis.io.hitran import fetch_hitran
+
+    df = fetch_hitran("CO")
+
+    assert len(df) == 483772
+    assert df.wav.min() == 1.006779
+    assert df.wav.max() == 39997.619007
+
+
 def _run_testcases(verbose=True, *args, **kwargs):
 
     test_fetch_astroquery(verbose=verbose, *args, **kwargs)
     test_fetch_astroquery_empty(verbose=verbose, *args, **kwargs)
     test_fetch_astroquery_cache(verbose=verbose, *args, **kwargs)
+    test_fetch_hitran(*args, **kwargs)
 
     return True
 

@@ -25,6 +25,7 @@ dependencies:
 - numba  # just-in-time compiler
 - psutil # for getting user RAM
 - h5py   # load HDF5
+- vaex    # load HDF5 files
 - pip
 - pip:
   - beautifulsoup4 # parse ExoMol website
@@ -37,5 +38,4 @@ dependencies:
   - progressbar2    # used in vaex
   - tuna           # to generate visual/interactive performance profiles
   - tables  # for pandas to HDF5 export
-  - vaex    # load HDF5 files
   - habanero  # CrossRef API to retrieve data from doi
