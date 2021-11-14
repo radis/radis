@@ -260,6 +260,7 @@ def run_setup(with_binary):
             "publib>=0.3.2",  # Plotting styles for Matplotlib
             "plotly>=2.5.1",  # for line survey HTML output
             "configparser",
+            "peakutils",
             "astroquery>=0.3.9",  # to fetch HITRAN databases
             "json-tricks>=3.15.0",  # to deal with non jsonable formats
             "tables",  # for pandas to HDF5 export

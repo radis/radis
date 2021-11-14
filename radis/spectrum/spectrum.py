@@ -1581,6 +1581,11 @@ class Spectrum(object):
             sorted Spectrum. If ``inplace=True``, Spectrum has been updated
             directly anyway. Allows :ref:`chaining <label_spectrum_chaining>`.
 
+        Examples
+        --------
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.sort
+
         """
 
         if inplace:
@@ -4370,6 +4375,51 @@ class Spectrum(object):
         if verbose:
             print("Normalization factor : {0}".format(norm))
         return out
+
+    def get_baseline(self, algorithm="als", **kwargs):
+        """
+        Calculate and returns a baseline
+
+        Parameters
+        ----------
+        s: Spectrum
+            Spectrum which needs a baseline
+        var: str
+            on which spectral quantity to read the baseline. Default ``'radiance'``.
+            See :py:data:`~radis.spectrum.utils.SPECTRAL_QUANTITIES`
+        algorithm: 'als', 'polynomial'
+            Asymmetric least square or Polynomial fit
+        **kwargs: dict
+            additional parameters to send to the algorithm. By default,
+            for 'polynomial':
+
+                **kwargs = **{"deg": 1, "max_it":500}
+
+            for 'als':
+
+                **kwargs = {"asymmetry_param": 0.05,
+                            "smoothness_param": 1e6}
+
+        Returns
+        -------
+        baseline: Spectrum
+            Spectrum object where intenisity is the baseline of s
+
+        Examples
+        --------
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.get_baseline
+
+        See also
+        --------
+        :py:func:`~radis.spectrum.operations.get_baseline`
+
+        """
+        from radis.spectrum.operations import get_baseline
+
+        var = self._get_unique_var(operation_name="get_baseline")
+
+        return get_baseline(self, var, **kwargs)
 
     # %% Performance / profilers
 
