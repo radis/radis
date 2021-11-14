@@ -2376,6 +2376,8 @@ class Spectrum(object):
                 wavelengths and intensity (doesn't have to be normalized)
             If ``array``:
                 format must be 2-columns with wavelengths and intensity (doesn't have to be normalized)
+                It is recommended to truncate the input slit function to its minimum useful spectral
+                extension (see Notes of :func:`~radis.tools.slit.convolve_with_slit`).
         unit: ``'nm'`` or ``'cm-1'``
             unit of slit_function (FWHM, or imported file)
         shape: ``'triangular'``, ``'trapezoidal'``, ``'gaussian'``, or any of :data:`~radis.tools.slit.SLIT_SHAPES`
