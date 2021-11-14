@@ -22,7 +22,7 @@ except ImportError:
     from radis.io.cache_files import check_not_deprecated
 
 from datetime import date
-from os.path import join
+from os.path import join, split
 
 import numpy as np
 import pandas as pd
@@ -113,11 +113,16 @@ class DatabaseManager(object):
         self.name = name
         self.molecule = molecule
         self.local_databases = local_databases
+        # create folder if needed
+        from radis.misc.basics import make_folders
+
+        make_folders(*split(abspath(local_databases)))
+
         self.downloadable = False  # by default
         self.format = ""
         self.engine = engine
 
-        self.tempdir = join(self.local_databases, "downloads(can_be_deleted)")
+        self.tempdir = join(self.local_databases, "downloads__can_be_deleted")
         self.ds = DataSource(self.tempdir)
 
         self.verbose = verbose
@@ -150,7 +155,7 @@ class DatabaseManager(object):
                 )
             except AssertionError as err:
                 raise DeprecatedFileWarning(
-                    "Database entry {self.name} not valid anymore. See above."
+                    f"Database entry {self.name} not valid anymore. See above which keys are missing/wrong. Update or delete the entry in your ~/radis.json"
                 ) from err
             else:
                 local_files = entries["path"]

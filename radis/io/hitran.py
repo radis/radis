@@ -26,7 +26,7 @@ import sys
 # from radis.test.utils import getTestFile
 import time
 from collections import OrderedDict
-from os.path import exists, getmtime, join
+from os.path import exists, getmtime, join, split
 
 import pandas as pd
 from numpy import int64
@@ -1107,6 +1107,11 @@ class HITRANDatabaseManager(DatabaseManager):
                 Neglected for the moment, they're irrelevant for most calculations anyway
 
             """
+            # create temp folder :
+            from radis.misc.basics import make_folders
+
+            make_folders(*split(abspath(directory)))
+
             db_begin(directory)
             isotope_list = []
             data_file_list = []

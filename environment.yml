@@ -25,7 +25,7 @@ dependencies:
 - numba  # just-in-time compiler
 - psutil # for getting user RAM
 - h5py   # load HDF5
-- vaex    # load HDF5 files
+- vaex>=4.4.0   # load HDF5 files  (version for custom HDF5 groups)
 - pip
 - pip:
   - beautifulsoup4 # parse ExoMol website

@@ -250,6 +250,7 @@ def run_setup(with_binary):
             "matplotlib",  # ">=3.4.0" to suppress the Ruler warning, but only available for Python >= 3.7
             "seaborn",  # other matplotlib themes
             "cython",
+            "hjson",
             "pandas>=1.0.5",
             "plotly>=2.5.1",
             "progressbar2",  # used in vaex
@@ -267,7 +268,7 @@ def run_setup(with_binary):
             "numba",  # just-in-time compiler
             "psutil",  # for getting user RAM
             "tuna",  # to generate visual/interactive performance profiles
-            "vaex",  # HDF5,
+            "vaex>=4.4.0",  # load HDF5 files  (version for custom HDF5 groups)
             "h5py",  # HDF5
             "habanero",  # CrossRef API to retrieve data from doi
         ],
