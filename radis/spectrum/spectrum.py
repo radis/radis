@@ -999,8 +999,7 @@ class Spectrum(object):
         # Get wavespace (in correct unit, and correct medium)
         if wunit == "default":
             wunit = self.get_waveunit()
-        else:
-            wunit = cast_waveunit(wunit)
+        wunit = cast_waveunit(wunit)
         if wunit == "cm-1":
             w = self.get_wavenumber(copy=copy)
         elif wunit == "nm":

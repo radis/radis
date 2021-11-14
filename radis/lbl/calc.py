@@ -134,16 +134,33 @@ def calc_spectrum(
 
     databank: str or dict
         can be either:
-        - ``'hitran'``, to fetch automatically the latest HITRAN version
-          through :py:func:`~radis.io.query.fetch_astroquery` (based on [HAPI]_ ).
-        - ``'hitemp'``, to fetch automatically the latest HITEMP version
-          through :py:func:`~radis.io.hitemp.fetch_hitemp`.
+        - ``'hitran'``, to fetch the latest HITRAN version
+          through :py:func:`~radis.io.hitran.fetch_hitran` (download full database
+          with  [HAPI]_) or :py:func:`~radis.io.query.fetch_astroquery` (download
+          only the required range). To use one mode or the other, use ::
+
+            databank=('hitran', 'full')     # download and cache full database, all isotopes
+            databank=('hitran', 'range')    # download and cache required range, required isoope
+
+        - ``'hitemp'``, to fetch the latest HITEMP version
+          through :py:func:`~radis.io.hitemp.fetch_hitemp`. Downloads all lines
+          and all isotopes.
+        - ``'exomol'``, to fetch the latest ExoMol database
+          through :py:func:`~radis.io.hitemp.fetch_exomol`. To download a specific
+          database use (more info in fetch_exomol) ::
+
+            databank=('exomol', 'EBJT')   # 'EBJT' is a specific ExoMol database name
+
         - the name of a a valid database file, in which case the format is inferred.
           For instance, ``'.par'`` is recognized as ``hitran/hitemp`` format.
-          Accepts wildcards ``'*'`` to select multiple files.
+          Accepts wildcards ``'*'`` to select multiple files ::
+
+            databank='PATH/TO/co_*.par'
+
         - the name of a spectral database registered in your ``~/radis.json``
-          :ref:`configuration file <label_lbl_config_file>`.
-          This allows to use multiple database files.
+          :ref:`configuration file <label_lbl_config_file>` ::
+
+            databank='MY_SPECTRAL_DATABASE'
 
         Default ``'hitran'``. See :class:`~radis.lbl.loader.DatabankLoader` for more
         information on line databases, and :data:`~radis.misc.config.DBFORMAT` for
@@ -633,13 +650,29 @@ def _calc_spectrum_one_molecule(
         export_lines=export_lines,
         **kwargs
     )
-    if databank in ["fetch", "hitran", "hitemp", "exomol",] or (
-        isinstance(databank, tuple) and databank[0] == "exomol"
+    if (
+        databank
+        in [
+            "fetch",
+            "hitran",
+            "hitemp",
+            "exomol",
+        ]
+        or (isinstance(databank, tuple) and databank[0] == "exomol")
+        or (isinstance(databank, tuple) and databank[0] == "hitran")
     ):  # mode to get databank without relying on  Line databases
         # Line database :
         if databank in ["fetch", "hitran"]:
             conditions = {
                 "source": "hitran",
+                "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
+            }
+        elif isinstance(databank, tuple) and databank[0] == "hitran":
+            conditions = {
+                "source": "hitran",
+                "database": databank[
+                    1
+                ],  # 'full' or 'partial', cf LoaderFactory.fetch_databank()
                 "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
             }
         elif databank in ["hitemp"]:
@@ -655,7 +688,7 @@ def _calc_spectrum_one_molecule(
         elif isinstance(databank, tuple) and databank[0] == "exomol":
             conditions = {
                 "source": "exomol",
-                "exomol_database": databank[1],
+                "database": databank[1],
                 "parfuncfmt": "exomol",  # download & use Exo partition functions for equilibrium}
             }
         # Partition functions :
@@ -671,9 +704,19 @@ def _calc_spectrum_one_molecule(
             # constants (not all molecules are supported!)
             conditions["levelsfmt"] = "radis"
             conditions["lvl_use_cached"] = use_cached
+
+        # Columns to load
+        if export_lines:
+            conditions["load_columns"] = "all"
+        elif not _equilibrium:
+            conditions["load_columns"] = "noneq"
+        else:
+            conditions["load_columns"] = "equilibrium"
+
         conditions["load_energies"] = not _equilibrium
         # Details to identify lines
         conditions["parse_local_global_quanta"] = (not _equilibrium) or export_lines
+        # Finally, LOAD :
         sf.fetch_databank(**conditions)
     elif exists(databank):
         conditions = {
@@ -713,14 +756,34 @@ def _calc_spectrum_one_molecule(
                 + "and define the format there. More information on "
                 + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
             )
+
+        # Columns to load
+        if export_lines:
+            conditions["load_columns"] = "all"
+        elif not _equilibrium:
+            conditions["load_columns"] = "noneq"
+        else:
+            conditions["load_columns"] = "equilibrium"
+
         conditions["load_energies"] = not _equilibrium
+        # Finally, LOAD :
         sf.load_databank(**conditions)
 
     else:  # manual mode: get from user-defined line databases defined in ~/radis.json
+
+        # Columns to load
+        if export_lines:
+            load_columns = "all"
+        elif not _equilibrium:
+            load_columns = "noneq"
+        else:
+            load_columns = "equilibrium"
+
         sf.load_databank(
             databank,
             load_energies=not _equilibrium,  # no need to load/calculate energies at eq.
             drop_columns=drop_columns,
+            load_columns=load_columns,
         )
 
     #    # Get optimisation strategies

@@ -7,7 +7,7 @@ Created on Tue Jan 26 21:27:15 2021
 
 import os
 import sys
-from os.path import exists
+from os.path import exists, splitext
 from time import time
 
 import h5py
@@ -56,8 +56,42 @@ def update_pytables_to_vaex(fname, remove_initial=False, verbose=True, key="df")
 
 
 class HDF5Manager(object):
-    def __init__(self, engine="pytables"):
+    def __init__(self, engine=None):
+        """Class to handle all memory-mapping-librairies with one common API
+
+        All functions may not be fully implemetned, will raise a NotImplementedError
+        if that's not the case.
+
+        Librairies ::
+
+            'vaex'     > HDF5,  column-based
+            'pytables' > Pandas's HDF5,  row-based
+            'h5py'     > HDF5
+
+        Functions ::
+
+            add_metadata
+            read_metadata
+            write
+            load
+            guess_engine
+
+        Examples
+        --------
+        ::
+
+            file = 'CO.hdf5'
+            from radis.io.hdf5 import HDF5Manager
+            engine = HDF5Manager.guess_engine(file)
+            mgr = HDF5Manager(engine)
+            mgr.read_metadata(file)
+
+
+        """
         self.engine = engine
+        self._temp_batch_files = (
+            []
+        )  # list of batch files when writing by part in vaex mode
 
     def open(self, file, mode="w"):
         if self.engine == "pytables":
@@ -111,9 +145,23 @@ class HDF5Manager(object):
             import vaex
 
             if append == True:
-                raise ValueError(
-                    "Cannot append with 'vaex' engine. Load all files separately using vaex.open('many') then export to a single file"
-                )
+                # In vaex we cannot append. Here we write lots of small files then combine them.
+                # self.combine_temp_batch_files() should be combined at the end.
+                base, ext = splitext(file)
+                i = 0
+                temp_batch_file = base + "_temp" + str(i).zfill(6) + ext
+                while temp_batch_file in self._temp_batch_files:
+                    i += 1
+                    temp_batch_file = base + "_temp" + str(i).zfill(6) + ext
+                file = temp_batch_file
+                # Check no remaining one from a non-cleaned previous run:
+                if exists(file):
+                    from radis.misc.printer import printr
+
+                    printr(f"Temp file {temp_batch_file} already exists: deleting it")
+                    os.remove(file)
+                self._temp_batch_files.append(file)
+            # Write:
             try:
                 df.export_hdf5(file, group=key, mode="w")
             except AttributeError:  # case where df is not a Vaex dataFrame but (likely) a Pandas Dataframe
@@ -121,6 +169,39 @@ class HDF5Manager(object):
         else:
             raise NotImplementedError(self.engine)
             # h5py is not designed to write Pandas DataFrames
+
+    def combine_temp_batch_files(self, file, key="default"):
+        """Combine all batch files in ``self._temp_batch_files`` into one.
+        Removes all batch files.
+        """
+        if self.engine == "vaex":
+            if len(self._temp_batch_files) == 0:
+                raise ValueError(f"No batch temp files were written for {file}")
+            if key == "default":
+                key = r"/table"
+            import vaex
+
+            df = vaex.open(self._temp_batch_files, group=key)
+            df.export_hdf5(file, group=key, mode="w")
+            df.close()
+        self._close_temp_batch_files()
+
+    def _close_temp_batch_files(self):
+        for i in range(len(self._temp_batch_files) - 1, -1, -1):
+            os.remove(self._temp_batch_files[i])
+            del self._temp_batch_files[i]
+
+    def __del__(self):
+        """ clean before deleting"""
+        if len(self._temp_batch_files) > 0:
+            from radis.misc.printer import printr
+
+            printr(
+                "Warning : {0} files were written but not combined. Deleting them.\n\n{1}".format(
+                    len(self._temp_batch_files), self._temp_batch_files
+                )
+            )
+            self._close_temp_batch_files()
 
     def load(
         self,
@@ -323,7 +404,11 @@ class HDF5Manager(object):
             if key == "default":
                 key = "df"
             with pd.HDFStore(fname, mode="r", complib="blosc", complevel=9) as f:
-                metadata = f.get_storer(key).attrs.metadata
+                try:
+                    metadata = f.get_storer(key).attrs.metadata
+                except KeyError as err:
+                    print(f"Error reading metadata from {fname}")
+                    raise err
 
         elif self.engine == "h5py":
             if key == "default":
@@ -332,7 +417,11 @@ class HDF5Manager(object):
                 if key is None:  # read metadta at root level
                     metadata = dict(hf.attrs)
                 else:
-                    metadata = dict(hf[key].attrs)
+                    try:
+                        metadata = dict(hf[key].attrs)
+                    except KeyError as err:
+                        print(f"Error reading metadata from {fname}")
+                        raise err
 
         elif self.engine == "vaex":
             if key == "default":
@@ -350,7 +439,11 @@ class HDF5Manager(object):
                     if key is None:  # add metadta at root level
                         metadata = dict(hf.attrs)
                     else:
-                        metadata = dict(hf[key].attrs)
+                        try:
+                            metadata = dict(hf[key].attrs)
+                        except KeyError as err:
+                            print(f"Error reading metadata from {fname}")
+                            raise err
 
         else:
             raise NotImplementedError(self.engine)
@@ -359,16 +452,40 @@ class HDF5Manager(object):
 
     @classmethod
     def guess_engine(self, file, verbose=True):
-        """Guess which HDF5 library ``file`` is compatible with"""
+        """Guess which HDF5 library ``file`` is compatible with
+
+        .. note::
+            it still take about 1 ms for this functino to execute. For extreme
+            performance you want to directly give the correct engine
+
+        Examples
+        --------
+        ::
+
+            file = 'CO.hdf5'
+            from radis.io.hdf5 import HDF5Manager
+            engine = HDF5Manager.guess_engine(file)
+            mgr = HDF5Manager(engine)
+            mgr.read_metadata(file)
+
+        """
         # See if it looks like PyTables
-        #  TODO : move in Manager
-        with pd.HDFStore(file, mode="r") as store:
-            if store.get_storer("df"):
-                engine = "pytables"
-            else:
-                engine = "h5py"
+        import tables
+
+        if tables.is_pytables_file(file):
+            engine = "pytables"
+        else:
+            # Try Vaex
+            with h5py.File(file, mode="r") as hf:
+                try:
+                    hf[r"/table"]
+                except KeyError:
+                    engine = "h5py"
+                else:
+                    engine = "vaex"
         if verbose:
             print(f"Guessed that {file} was compatible with `{engine}` hdf5 engine")
+        # raise
         return engine
 
 
@@ -380,7 +497,7 @@ def hdf2df(
     load_wavenum_max=None,
     verbose=True,
     store_kwargs={},
-    engine="auto",
+    engine="guess",
 ):
     """Load a HDF5 line databank into a Pandas DataFrame.
 
@@ -403,7 +520,7 @@ def hdf2df(
     store_kwargs: dict
         arguments forwarded to :py:meth:`~pandas.io.pytables.read_hdf`
     engine: ``'h5py'``, ``'pytables'``, ``'vaex'``, ``'auto'``
-        which HDF5 library to use. If ``'auto'``, try to guess. Note: ``'vaex'``
+        which HDF5 library to use. If ``'guess'``, try to guess. Note: ``'vaex'``
         uses ``'h5py'`` compatible HDF5.
 
     Returns
@@ -438,7 +555,7 @@ def hdf2df(
 
     """
 
-    if engine == "auto":
+    if engine == "guess":
         engine = HDF5Manager.guess_engine(fname)
 
     t0 = time()
@@ -457,13 +574,13 @@ def hdf2df(
             where.append(f'iso in {isotope.split(",")}')
 
     elif engine == "vaex":
-        #  Selection is done after opening the file time in vaex
-        where = []
+        # Selection is done after opening the file time in vaex
+        # see end of this function
+        where = None
     else:
         raise NotImplementedError(engine)
 
     # Load :
-
     manager = HDF5Manager(engine)
     df = manager.load(fname, columns=columns, where=where, **store_kwargs)
 
@@ -472,45 +589,28 @@ def hdf2df(
 
         # Selection
         selection = True
-        # limitation : so far the df.select(df.iso in isotope.split(",")) syntax
-        # fails in Vaex (and worse: still returns something.)
-        # For the moment, only implement with one isotope.
-        # TODO : add all cases manually...
+        b = True
+        if load_wavenum_min is not None:
+            b *= df.wav > load_wavenum_min
+        if load_wavenum_max is not None:
+            b *= df.wav < load_wavenum_max
         if isotope is not None:
-            if not isinstance(isotope, int):
-                try:
-                    isotope = int(isotope)
-                except:
-                    raise NotImplementedError(
-                        f"When reading HDF5 in vaex mode, selection works for a single isotope only (got {isotope})"
-                    )
-        if (
-            load_wavenum_min is not None
-            and load_wavenum_max is not None
-            and isotope is not None
-        ):
-            df.select(
-                (df.wav > load_wavenum_min)
-                & (df.wav < load_wavenum_max)
-                & (df.iso == isotope)
-            )
-        elif load_wavenum_min is not None and load_wavenum_max is not None:
-            df.select((df.wav > load_wavenum_min) & (df.wav < load_wavenum_max))
-        elif load_wavenum_min is not None and isotope is not None:
-            df.select((df.wav > load_wavenum_min) & (df.iso == isotope))
-        elif load_wavenum_max is not None and isotope is not None:
-            df.select((df.wav < load_wavenum_max) & (df.iso == isotope))
-        elif load_wavenum_min is not None:
-            df.select(df.wav > load_wavenum_min)
-        elif load_wavenum_max is not None:
-            df.select(df.wav < load_wavenum_max)
-        elif isotope is not None:
-            df.select(df.iso == isotope)
-        else:
-            selection = False
+            from radis.misc.basics import is_float
+
+            if is_float(isotope):
+                b *= df.iso == int(isotope)
+            else:
+                b2 = False
+                for iso in isotope.split(","):
+                    b2 += df.iso == int(iso)
+                b *= b2
+        if b != True and False in b:
+            df = df[b]  # note that this is a vaex Expression, not the DataFrame yet
 
         # Load
-        df = df.to_pandas_df(column_names=columns, selection=selection)
+        if columns:  # load only these columns (if they exist)
+            columns = [c for c in columns if c in df.columns]
+        df = df.to_pandas_df(column_names=columns)
 
     # Read and add metadata in the DataFrame
     metadata = manager.read_metadata(fname)

@@ -245,12 +245,12 @@ def run_setup(with_binary):
             "hitran-api",
             "beautifulsoup4",  # parse ExoMol website
             "lxml",  # parser used for ExoMol website
-            "pyarrow",  # for the feather format (temporarily needed for ExoMol)
             "numpy",
             "scipy>=1.4.0",
             "matplotlib",  # ">=3.4.0" to suppress the Ruler warning, but only available for Python >= 3.7
             "seaborn",  # other matplotlib themes
             "cython",
+            "hjson",
             "pandas>=1.0.5",
             "plotly>=2.5.1",
             "progressbar2",  # used in vaex
@@ -259,7 +259,6 @@ def run_setup(with_binary):
             "astropy",  # Unit aware calculations
             "publib>=0.3.2",  # Plotting styles for Matplotlib
             "plotly>=2.5.1",  # for line survey HTML output
-            "termcolor",  # terminal colors
             "configparser",
             "astroquery>=0.3.9",  # to fetch HITRAN databases
             "json-tricks>=3.15.0",  # to deal with non jsonable formats
@@ -269,7 +268,7 @@ def run_setup(with_binary):
             "numba",  # just-in-time compiler
             "psutil",  # for getting user RAM
             "tuna",  # to generate visual/interactive performance profiles
-            "vaex",  # HDF5,
+            "vaex>=4.4.0",  # load HDF5 files  (version for custom HDF5 groups)
             "h5py",  # HDF5
             "habanero",  # CrossRef API to retrieve data from doi
         ],

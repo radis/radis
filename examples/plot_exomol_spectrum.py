@@ -32,7 +32,7 @@ s.plot("radiance")
 #%% See line data:
 from radis.io.exomol import fetch_exomol
 
-df = fetch_exomol("SiO", database="EBJT", isotope="1")
+df = fetch_exomol("SiO", database="EBJT", isotope="1", load_wavenum_max=5000)
 print(df)
 
 

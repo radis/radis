@@ -68,6 +68,7 @@ be used to batch-generate multiple spectra using the same line database::
 
     from radis import SpectrumFactory
     sf = SpectrumFactory(...)
+    sf.fetch_databank("hitemp", load_columns='noneq')  # or 'hitran', 'exomol', etc.
     s = sf.eq_spectrum(...)
     s2 = sf.non_eq_spectrum(...)
 

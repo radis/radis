@@ -99,11 +99,52 @@ def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
     return
 
 
+# ignored by pytest with argument -m "not needs_connection"
+@pytest.mark.needs_connection
+def test_fetch_hitran(*args, **kwargs):
+
+    from radis.io.hitran import fetch_hitran
+
+    df = fetch_hitran("CO")
+
+    assert len(df) == 5381
+    assert df.wav.min() == 3.40191
+    assert df.wav.max() == 14477.377142
+
+
+@pytest.mark.needs_connection
+def test_calc_hitran_spectrum(verbose=True, plot=False, *args, **kwargs):
+    """
+    Test full range & partial loading of CO spectrum
+    """
+
+    from radis import test_spectrum
+
+    # The main thing here is to make sure the two function calls work :
+    s = test_spectrum(databank=("hitran", "full"), name="full range", verbose=verbose)
+    s2 = test_spectrum(
+        databank=("hitran", "range"), name="partial range", verbose=verbose
+    )
+
+    if plot:
+        from radis import plot_diff
+
+        plot_diff(s, s2)
+
+    # assert s == s2
+    # Note: tiny differences (0.56%) probably due to how data is stored on disk
+    assert s.compare_with(s2, spectra_only="abscoeff", method="ratio", rtol=0.006)
+
+    return
+
+
 def _run_testcases(verbose=True, *args, **kwargs):
 
     test_fetch_astroquery(verbose=verbose, *args, **kwargs)
     test_fetch_astroquery_empty(verbose=verbose, *args, **kwargs)
     test_fetch_astroquery_cache(verbose=verbose, *args, **kwargs)
+    test_fetch_hitran(*args, **kwargs)
+    test_calc_hitran_spectrum(*args, **kwargs)
 
     return True
 

@@ -54,6 +54,7 @@ References
 # TODO: store molecule_data.json in the H5 file metadata. If not done already.
 
 
+import os
 import sys
 from os.path import exists
 from warnings import warn
@@ -220,6 +221,15 @@ class RovibParFuncCalculator(RovibPartitionFunction):
 
         if not mode in ["full summation", "tabulation"]:
             raise ValueError("Choose mode = one of 'full summation', 'tabulation'")
+
+        # vaex processes are stuck if ran from Spyder. See https://github.com/spyder-ide/spyder/issues/16183
+        if mode == "tabulation" and any("SPYDER" in name for name in os.environ):
+            from radis.misc.log import printwarn
+
+            printwarn(
+                "Spyder IDE detected while using parsum_mode='tabulation', which depends on `vaex`. This is the fastest way to compute partition functions, but Vaex processes may be stuck if ran from Spyder. See https://github.com/radis/radis/issues/338. You may consider using another IDE, or use `parsum_mode='full summation'` for the moment (note: starting another iPython console somehow releases the freeze in Spyder) \n"
+            )
+
         self.mode = mode
         self._tab_at = None  # tabulated function
         self._tab_at_noneq = None  # tabulated function
@@ -301,6 +311,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         import vaex  # import delayed until now (takes ~2s to import)
 
         df = vaex.from_pandas(self.df)
+        # Vaex processs may get stuck in Spyder IDE. https://github.com/radis/radis/issues/338
+        # Temp fix : >>> df.executor.async_method = "awaitio"     (doesn't always work here)
 
         epsilon = 1e-4  # prevent log(0)
         df["logE"] = np.log(df["E"] + epsilon)  # to bin on a log grid
@@ -495,6 +507,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         import vaex  # import delayed until now (takes ~2s to import)
 
         df = vaex.from_pandas(self.df)
+        # Vaex processs may get stuck in Spyder IDE. https://github.com/radis/radis/issues/338
+        # Temp fix : >>> df.executor.async_method = "awaitio"     (doesn't always work here)
 
         epsilon = 1e-4  # prevent log(0)
         df["logEvib"] = np.log(df["Evib"] + epsilon)  # to bin on a log grid
@@ -850,6 +864,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         import vaex  # import delayed until now (takes ~2s to import)
 
         df = vaex.from_pandas(self.df)
+        # Vaex processs may get stuck in Spyder IDE. https://github.com/radis/radis/issues/338
+        # Temp fix : >>> df.executor.async_method = "awaitio"     (doesn't always work here)
 
         epsilon = 1e-4  # prevent log(0)
 

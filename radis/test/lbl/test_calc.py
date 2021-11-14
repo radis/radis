@@ -173,6 +173,10 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
     #         0.11158052, 0.04583138, 0.00232573, 0.00136583])
     # Update on 05/11/21 (Radis 0.10.4) with use of tabulated instead of ab-initio
     # partition functions for Qref  (0.02% constant difference)
+    #
+    # Update on 14/11/21: after switching from HITRAN fetched by astroquery (partial range)
+    # to HITRAN fetched by HAPI (full database) > atol=1e-6 fails, because of
+    # numerical errors in how the two databases are stored. Switched to rtol=1e-3
     w_ref = np.array(
         [
             4197.60321744,
@@ -228,7 +232,7 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
     # [71:-71] because of the shift introduced in 0.9.30 where convolved
     # arrays are not cropped; but np.nan values are added
     assert np.allclose(w[71:-71][::100], w_ref, atol=1e-6)
-    assert np.allclose(I[71:-71][::100], I_ref, atol=1e-6)
+    assert np.allclose(I[71:-71][::100], I_ref, rtol=1e-3)
 
     return True
 
@@ -347,6 +351,10 @@ def test_calc_spectrum_overpopulations(
     #        0.3293075 , 0.13525292, 0.00645308, 0.00366828])
     # Update on 05/11/21 (Radis 0.10.4) with use of tabulated instead of ab-initio
     # partition functions for Qref  (0.02% constant difference)
+    #
+    # Update on 14/11/21: after switching from HITRAN fetched by astroquery (partial range)
+    # to HITRAN fetched by HAPI (full database) > atol=1e-6 fails, because of
+    # numerical errors in how the two databases are stored. Switched to rtol=1e-3
 
     I_ref = np.array(
         [
@@ -378,7 +386,7 @@ def test_calc_spectrum_overpopulations(
 
     # [71:-71] because of the shift introduced in 0.9.30 where convolved
     # arrays are not cropped; but np.nan values are added
-    assert np.allclose(I[71:-71][::100], I_ref, atol=1e-6)
+    assert np.allclose(I[71:-71][::100], I_ref, rtol=1e-3)
 
     if verbose:
         printm("Test overpopulations: OK")
@@ -514,7 +522,7 @@ def test_all_calc_methods_CO2pcN(
     del database_kwargs["info"]
     database_kwargs["levelsfmt"] = "cdsd-pcN"
     # ... load the new database
-    sf.load_databank(**database_kwargs, load_energies=True)
+    sf.load_databank(**database_kwargs, load_energies=True, load_columns="noneq")
 
     # Now, define Evib:
     Q_calc = sf.parsum_calc["CO2"][1]["X"]
@@ -593,7 +601,7 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **k
     sf.warnings["NegativeEnergiesWarning"] = "ignore"
     sf.warnings["HighTemperatureWarning"] = "ignore"
     sf.fetch_databank(
-        "hitran"
+        "hitran", load_columns="noneq"
     )  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
     s_nq = sf.non_eq_spectrum(Tvib=Tgas, Trot=Tgas, name="Non-eq")
     s_eq = sf.eq_spectrum(Tgas=Tgas, name="Eq")

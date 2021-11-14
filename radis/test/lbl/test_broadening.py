@@ -91,7 +91,7 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
             "HighTemperatureWarning": "ignore",
             "GaussianBroadeningWarning": "ignore",
         },
-    )  # 0.2)
+    )
     sf.load_databank(
         path=join(hapi_data_path, "CO.data"), format="hitran", parfuncfmt="hapi"
     )
@@ -318,6 +318,7 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
         pressure=p,
         truncation=truncation,
         neighbour_lines=neighbour_lines,
+        optimization=None,
         isotope="1",
         verbose=False,
         warnings={
@@ -326,16 +327,16 @@ def test_broadening_DLM(verbose=True, plot=False, *args, **kwargs):
             "HighTemperatureWarning": "ignore",
             "GaussianBroadeningWarning": "ignore",
         },
-    )  # 0.2)
+    )
     sf.load_databank("HITRAN-CO-TEST")
 
     # Reference: calculate without DLM
-    assert sf.misc["chunksize"] is None
+    assert sf.params["optimization"] is None
     s_ref = sf.eq_spectrum(Tgas=T)
     s_ref.name = "Reference ({0:.2f}s)".format(s_ref.conditions["calculation_time"])
 
     # DLM:
-    sf.misc["chunksize"] = "DLM"
+    sf.params["optimization"] = "simple"
     sf.params.broadening_method = "convolve"
     s_dlm = sf.eq_spectrum(Tgas=T)
     s_dlm.name = "DLM ({0:.2f}s)".format(s_dlm.conditions["calculation_time"])
@@ -398,14 +399,14 @@ def test_broadening_DLM_FT(verbose=True, plot=False, *args, **kwargs):
         neighbour_lines=neighbour_lines,
         isotope="1",
         verbose=verbose,
-        chunksize="DLM",
+        optimization="simple",
         warnings={
             "MissingSelfBroadeningWarning": "ignore",
             "NegativeEnergiesWarning": "ignore",
             "HighTemperatureWarning": "ignore",
             "GaussianBroadeningWarning": "ignore",
         },
-    )  # 0.2)
+    )
     sf.load_databank("HITRAN-CO-TEST")
 
     # DLM, real space
@@ -478,11 +479,11 @@ def test_broadening_DLM_noneq(verbose=True, plot=False, *args, **kwargs):
             "HighTemperatureWarning": "ignore",
             "GaussianBroadeningWarning": "ignore",
         },
-    )  # 0.2)
-    sf.load_databank("HITRAN-CO2-TEST")
+    )
+    sf.load_databank("HITRAN-CO2-TEST", load_columns="noneq")
 
     # DLM:
-    sf.misc["chunksize"] = "DLM"
+    sf.params["optimization"] = "simple"
     s_dlm_eq = sf.eq_spectrum(Tgas=3000)
     s_dlm_eq.name = "DLM eq ({0:.2f}s)".format(s_dlm_eq.conditions["calculation_time"])
 
@@ -830,9 +831,8 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
         }
     )
     sf.fetch_databank(
-        "hitran"
+        "hitran", load_columns="noneq"
     )  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
-    #        sf.load_databank('HITEMP-CO2-DUNHAM')       # to take a real advantage of abscoeff continuum, should calculate with HITEMP
     sf._export_continuum = True  # activate it
 
     # Calculate one without pseudo-continuum
