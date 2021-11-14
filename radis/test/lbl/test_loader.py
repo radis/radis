@@ -57,7 +57,8 @@ def test_retrieve_from_database(
         )
         sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
         sf.init_databank(
-            "HITEMP-CO2-TEST"
+            "HITEMP-CO2-TEST",
+            load_columns="noneq",
         )  # unlike load_databank, will automatically be built when needed
         db = sf.init_database(temp_database_name, autoretrieve=True)
 
@@ -180,7 +181,7 @@ def test_custom_abundance(verbose=True, plot=False, *args, **kwargs):
         verbose=0,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-    sf.load_databank("HITEMP-CO2-TEST")
+    sf.load_databank("HITEMP-CO2-TEST", load_columns="all")
 
     #%% Compute a spectrum ; set the terrestrial abundance to False to
     # force computation of linestrength from Einstein coefficients instead

@@ -17,8 +17,6 @@ from typing import Union
 
 import numpy as np
 
-import radis
-
 try:
     from .dbmanager import DatabaseManager
     from .hdf5 import update_pytables_to_vaex
@@ -378,6 +376,8 @@ class HITEMPDatabaseManager(DatabaseManager):
         assert Nlines == Nlines_raw
 
         # Add metadata
+        from radis import __version__
+
         writer.add_metadata(
             local_file,
             {
@@ -386,7 +386,7 @@ class HITEMPDatabaseManager(DatabaseManager):
                 "download_date": self.get_today(),
                 "download_url": urlname,
                 "total_lines": Nlines_raw,
-                "version": radis.__version__,
+                "version": __version__,
             },
         )
 
@@ -553,9 +553,9 @@ def fetch_hitemp(
     # do not re-download files if they exist in another format :
     if engine in ["vaex", "auto", "default"]:
         # ... convert files if asked:
-        import radis
+        from radis import config
 
-        if radis.config["AUTO_UPDATE_DATABASE"]:
+        if config["AUTO_UPDATE_DATABASE"]:
             converted = []
             for f in download_files:
                 if exists(f.replace(".hdf5", ".h5")):

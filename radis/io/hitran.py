@@ -31,7 +31,6 @@ from os.path import exists, getmtime, join, split
 import pandas as pd
 from numpy import int64
 
-import radis
 from radis.db.classes import (  # get_molecule_identifier,
     HITRAN_CLASS1,
     HITRAN_CLASS2,
@@ -153,16 +152,8 @@ def hit2df(
     .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
 
 
-
-    Notes
-    -----
-
-    Performances: see CDSD-HITEMP parser
-
-
     See Also
     --------
-
     :func:`~radis.io.cdsd.cdsd2df`
     """
     metadata = {}
@@ -185,6 +176,8 @@ def hit2df(
         relevant_if_metadata_below = (
             {"wavenum_min": load_wavenum_max} if load_wavenum_max else {}
         )  # not relevant if wavenum_min of file is > wavenum max required
+        from radis import __version__, config
+
         df = load_h5_cache_file(
             fcache,
             cache,
@@ -192,8 +185,8 @@ def hit2df(
             valid_if_metadata_is=metadata,
             relevant_if_metadata_above=relevant_if_metadata_above,
             relevant_if_metadata_below=relevant_if_metadata_below,
-            current_version=radis.__version__,
-            last_compatible_version=radis.config["OLDEST_COMPATIBLE_VERSION"],
+            current_version=__version__,
+            last_compatible_version=config["OLDEST_COMPATIBLE_VERSION"],
             verbose=verbose,
             engine=engine,
         )
@@ -284,12 +277,14 @@ def hit2df(
                     fcache, new_metadata
                 )
             )
+        from radis import __version__
+
         try:
             save_to_hdf(
                 df,
                 fcache,
                 metadata=new_metadata,
-                version=radis.__version__,
+                version=__version__,
                 overwrite=True,
                 verbose=verbose,
                 engine=engine,
@@ -1190,6 +1185,8 @@ class HITRANDatabaseManager(DatabaseManager):
         self.wmax = wmax_final
 
         # Add metadata
+        from radis import __version__
+
         writer.add_metadata(
             local_file,
             {
@@ -1198,7 +1195,7 @@ class HITRANDatabaseManager(DatabaseManager):
                 "download_date": self.get_today(),
                 "download_url": "downloaded by HAPI, parsed & store with RADIS",
                 "total_lines": Nlines,
-                "version": radis.__version__,
+                "version": __version__,
             },
         )
 

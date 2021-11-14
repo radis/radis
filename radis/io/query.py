@@ -24,9 +24,12 @@ from os.path import exists, isfile, join
 import numpy as np
 import pandas as pd
 
-import radis
 from radis.db.classes import get_molecule, get_molecule_identifier
-from radis.io.cache_files import check_cache_file, get_cache_file, save_to_hdf
+
+try:
+    from .cache_files import check_cache_file, get_cache_file, save_to_hdf
+except ImportError:
+    from radis.io.cache_files import check_cache_file, get_cache_file, save_to_hdf
 from radis.misc import is_float
 from radis.misc.printer import printr
 
@@ -252,12 +255,14 @@ def fetch_astroquery(
                     fcache, new_metadata
                 )
             )
+        from radis import __version__
+
         try:
             save_to_hdf(
                 df,
                 fcache,
                 metadata=new_metadata,
-                version=radis.__version__,
+                version=__version__,
                 key="df",
                 overwrite=True,
                 verbose=verbose,

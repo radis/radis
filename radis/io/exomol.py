@@ -218,6 +218,7 @@ def fetch_exomol(
     isotope="1",
     load_wavenum_min=None,
     load_wavenum_max=None,
+    columns=None,
     cache=True,
     verbose=True,
     clean_cache_files=True,
@@ -262,6 +263,8 @@ def fetch_exomol(
 
     load_wavenum_min, load_wavenum_max: float (cm-1)
         load only specific wavenumbers.
+    columns: list of str
+        list of columns to load. If ``None``, returns all columns in the file.
 
     Other Parameters
     ----------------
@@ -306,6 +309,9 @@ def fetch_exomol(
     :py:func:`~radis.io.hdf5.hdf2df`
 
     """
+    # TODO: implement columns= ... to load only specific columns.
+    # refactor with "self._quantumNumbers" (which serves the same purpose)
+
     # Ensure isotope format:
     try:
         isotope = int(isotope)

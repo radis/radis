@@ -893,8 +893,6 @@ class DatabankLoader(object):
             levelsfmt=levelsfmt,
             db_use_cached=db_use_cached,
             lvl_use_cached=lvl_use_cached,
-            drop_columns=drop_columns,
-            load_columns=load_columns,
             load_energies=load_energies,
             include_neighbouring_lines=include_neighbouring_lines,
         )
@@ -2110,11 +2108,12 @@ class DatabankLoader(object):
                             filename,
                             version="hitemp" if dbformat == "cdsd-hitemp" else "4000",
                             cache=db_use_cached,
-                            load_columns=columns,
+                            # load_columns=columns,  # not possible with "pytables-fixed"
                             verbose=verbose,
                             drop_non_numeric=True,
                             load_wavenum_min=wavenum_min,
                             load_wavenum_max=wavenum_max,
+                            engine="pytables",
                         )
                         # TODO: implement load_columns
                     elif dbformat in ["hitran", "hitemp"]:
@@ -2134,7 +2133,7 @@ class DatabankLoader(object):
                             drop_non_numeric=True,
                             load_wavenum_min=wavenum_min,
                             load_wavenum_max=wavenum_max,
-                            engine="pytables-fixed",
+                            engine="pytables",
                         )
                     elif dbformat in ["hdf5-radisdb", "hitemp-radisdb"]:
                         if dbformat == "hitemp-radisdb":

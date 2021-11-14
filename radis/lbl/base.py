@@ -1378,6 +1378,12 @@ class BaseFactory(DatabankLoader):
         P, Q, R are replaced by -1, 0, 1 in the DataFrame to ensure that all
         terms are numeric (improves performances)
         """
+        if "branch" not in df:
+            raise KeyError(
+                f"`branch` not defined in database columns: ({list(df.columns)}). "
+                + "You can add it with `load_columns=['branch', ...]` or simply `load_columns='noneq'` / `load_columns='all'` in fetch_databank / load_databank()"
+            )
+
         if df.dtypes["branch"] != np.int64:
             raise DeprecationWarning(
                 "For performance purpose, numeric (-1, 0, 1) "
@@ -1688,9 +1694,10 @@ class BaseFactory(DatabankLoader):
                 ]
             except KeyError:
                 raise NotImplementedError(
-                    "Molar mass of {0} (isotope {1}) is unknown. You can manually add it in your radis.json file {'molparams':{'molar_mass':{'molecule':{'ISOTOPE':...}}}}; or in the SpectrumFactory._EXTRA_MOLAR_MASS[molecule][isotope] = M (g/mol) dictionary. Please also report on GitHub so we can update !".format(
+                    "Molar mass of {0} (isotope {1}) is unknown.".format(
                         df.attrs["molecule"], df.attrs["iso"]
                     )
+                    + " You can manually add it in your radis.json file {'molparams':{'molar_mass':{'molecule':{'ISOTOPE':...}}}}; or in the SpectrumFactory._EXTRA_MOLAR_MASS[molecule][isotope] = M (g/mol) dictionary. Please also report on GitHub so we can update !"
                 )
 
         if "iso" in df.columns:

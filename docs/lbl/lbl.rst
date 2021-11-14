@@ -364,10 +364,14 @@ and :py:mod:`~astropy.units` ::
                          cutoff=1e-25,              # cm/molecule
                          broadening_max_width=10,   # cm-1
                          )
-    sf.load_databank('HITRAN-CO2-TEST')        # this database must be defined in ~/radis.json
+    sf.load_databank('HITRAN-CO2-TEST', load_columns='noneq')        # this database must be defined in ~/radis.json
     s1 = sf.eq_spectrum(Tgas=300 * u.K)
     s2 = sf.eq_spectrum(Tgas=2000 * u.K)
     s3 = sf.non_eq_spectrum(Tvib=2000 * u.K, Trot=300 * u.K)
+
+Note that for non-LTE calculations, specific columns must be loaded. This is done by using the
+``load_columns='noneq'`` parameter. See :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank`
+for more information.
 
 
 .. _label_lbl_config_file:
