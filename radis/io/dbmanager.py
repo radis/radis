@@ -7,7 +7,7 @@ Created on Mon Aug  9 19:42:51 2021
 import os
 import shutil
 from io import BytesIO
-from os.path import abspath, exists, splitext
+from os.path import abspath, dirname, exists, splitext
 from zipfile import ZipFile
 
 from radis.misc.config import addDatabankEntries, getDatabankEntries, getDatabankList
@@ -107,16 +107,18 @@ class DatabaseManager(object):
             from radis.misc.log import printwarn
 
             printwarn(
-                "Spyder IDE detected while using memory_mapping_engine='vaex'.\nVaex is the fastest way to read database files in RADIS, but Vaex processes may be stuck if ran from Spyder. See https://github.com/spyder-ide/spyder/issues/16183. You may consider using another IDE, or using a different `memory_mapping_engine` such as 'pytables' or 'feather'. You can change the engine in Spectrum.fetch_databank() calls, or globally by setting the 'MEMORY_MAPPING_ENGINE' key in your ~/radis.json  (note: starting another iPython console somehow releases the freeze in Spyder)  \n"
+                "Spyder IDE detected while using memory_mapping_engine='vaex'.\nVaex is the fastest way to read database files in RADIS, but Vaex processes may be stuck if ran from Spyder. See https://github.com/spyder-ide/spyder/issues/16183. You may consider using another IDE, or using a different `memory_mapping_engine` such as 'pytables' or 'feather'. You can change the engine in Spectrum.fetch_databank() calls, or globally by setting the 'MEMORY_MAPPING_ENGINE' key in your ~/radis.json \n"
             )
 
         self.name = name
         self.molecule = molecule
         self.local_databases = local_databases
         # create folder if needed
-        from radis.misc.basics import make_folders
+        if not exists(local_databases):
+            from radis.misc.basics import make_folders
 
-        make_folders(*split(abspath(local_databases)))
+            make_folders(*split(abspath(dirname(local_databases))))
+            make_folders(*split(abspath(local_databases)))
 
         self.downloadable = False  # by default
         self.format = ""
