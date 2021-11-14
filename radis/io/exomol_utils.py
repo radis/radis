@@ -17,7 +17,8 @@ def e2s(molname_exact):
     Returns:
        simple molname
 
-    Examples:
+    Examples::
+
        >>> print(e2s("12C-1H4"))
        >>> CH4
        >>> print(e2s("23Na-16O-1H"))

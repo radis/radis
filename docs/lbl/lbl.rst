@@ -364,10 +364,14 @@ and :py:mod:`~astropy.units` ::
                          cutoff=1e-25,              # cm/molecule
                          broadening_max_width=10,   # cm-1
                          )
-    sf.load_databank('HITRAN-CO2-TEST')        # this database must be defined in ~/radis.json
+    sf.load_databank('HITRAN-CO2-TEST', load_columns='noneq')        # this database must be defined in ~/radis.json
     s1 = sf.eq_spectrum(Tgas=300 * u.K)
     s2 = sf.eq_spectrum(Tgas=2000 * u.K)
     s3 = sf.non_eq_spectrum(Tvib=2000 * u.K, Trot=300 * u.K)
+
+Note that for non-LTE calculations, specific columns must be loaded. This is done by using the
+``load_columns='noneq'`` parameter. See :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank`
+for more information.
 
 
 .. _label_lbl_config_file:
@@ -735,6 +739,21 @@ points for each linewidth.
 .. note::
     wstep = 'auto' is optimized for performances while ensuring accuracy,
     but is still experimental in 0.9.30. Feedback welcome!
+
+
+Sparse wavenumber grid
+----------------------
+
+To compute large band spectra with a small number of lines, RADIS includes
+a sparse wavenumber implementation of the DIT algorithm, which is
+activated based on a scarcity criterion (``Nlines/Ngrid_points > 1``).
+
+The sparse version can be forced to be activated or deactivated. This behavior
+is done by setting the `SPARSE_WAVENUMBER` key of the :py:attr:`radis.config`
+dictionary, or of the ~/radis.json user file.
+
+See the :ref:`HITRAN full-range example <example_hitran_full_range>` for an
+example.
 
 
 Database loading

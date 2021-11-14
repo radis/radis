@@ -31,6 +31,5 @@ print(df.columns)
 # function. The already downloaded database will be used:
 #
 
-fetch_hitemp("OH", load_wavenum_min=31500, load_wavenum_max=33000, isotope="1").plot(
-    "wav", "int"
-)
+df = fetch_hitemp("OH", load_wavenum_min=31500, load_wavenum_max=33000, isotope="1")
+df.plot("wav", "int")

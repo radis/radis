@@ -39,10 +39,11 @@ Routine Listing
 import configparser
 import json
 import os
-import shutil
 import warnings
 from json import JSONDecodeError
 from os.path import dirname, exists, expanduser, join
+
+import hjson
 
 from radis.misc.basics import compare_dict, compare_lists, stdpath
 from radis.misc.utils import DatabankNotFound, getProjectRoot
@@ -66,7 +67,11 @@ def get_config(configpath=CONFIG_PATH_JSON):
     jsonfile = CONFIG_PATH_DEFAULT
     with open(jsonfile) as f:
         try:
-            config = json.load(f)
+            config = hjson.load(f)
+            # read with Hjson to allow comments in CONFIG_PATH_DEFAULT
+            # we do not allow comments in (user) CONFIG_PATH_JSON
+            # because it is read/written automatically. So far there is no
+            # two-way JSON editor with comments. See https://github.com/radis/radis/issues/328
         except JSONDecodeError as err:
             raise JSONDecodeError(
                 "Error reading '{0}' (line {2} col {3}): \n{1}".format(
@@ -391,14 +396,40 @@ def init_radis_json(config_path_json, config_path_old=CONFIG_PATH_OLD):
         convertRadisToJSON(config_path_json, config_path_old)
     else:
         # Create it from the default config path
-        try:
-            shutil.copy2(CONFIG_PATH_DEFAULT, config_path_json)
-        except Exception as err:
-            print(
-                f"Couldn't create RADIS configuration in {config_path_json} ({str(err)})"
-            )
-        else:
-            print(f"RADIS configuration file created in {config_path_json}")
+
+        with open(CONFIG_PATH_DEFAULT) as f:
+            try:
+                default_config = hjson.load(f)
+                # read with Hjson to allow comments in CONFIG_PATH_DEFAULT
+                # we do not allow comments in (user) CONFIG_PATH_JSON
+                # because it is read/written automatically. So far there is no
+                # two-way JSON editor with comments. See https://github.com/radis/radis/issues/328
+            except JSONDecodeError as err:
+                raise JSONDecodeError(
+                    "Error reading '{0}' (line {2} col {3}): \n{1}".format(
+                        CONFIG_PATH_DEFAULT, err.msg, err.lineno, err.colno
+                    ),
+                    err.doc,
+                    err.pos,
+                ) from err
+
+        # Creating json file
+        config = {
+            "_HELLO!": "This is your RADIS configuration file. Any key here will overwrite the values of the radis/default_radis.json file on your local computer (see online version of the latest release: https://github.com/radis/radis/blob/master/radis/default_radis.json). More information on the online docs : https://radis.readthedocs.io/en/latest/lbl/lbl.html#label-lbl-config-file"
+        }
+        config.update(default_config)
+        with open(config_path_json, "w") as outfile:
+            json.dump(config, outfile, indent=3)
+        # outfile.close()
+
+        # try:
+        #     shutil.copy2(CONFIG_PATH_DEFAULT, config_path_json)
+        # except Exception as err:
+        #     print(
+        #         f"Couldn't create RADIS configuration in {config_path_json} ({str(err)})"
+        #     )
+        # else:
+        #     print(f"RADIS configuration file created in {config_path_json}")
 
     # Check it user file exists
     if not exists(config_path_json):
@@ -827,6 +858,8 @@ def getDatabankEntries(dbname, get_extra_keys=[], configpath=CONFIG_PATH_JSON):
             + "See databank format above. More information in "
             + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
         )
+        if dbname in ["hitran", "hitemp", "exomol"]:
+            msg += f"\nIf querying {dbname.upper()} you may want to be using SpectrumFactory.fetch_databank({dbname}) instead of SpectrumFactory.load_databank"
         raise DatabankNotFound(msg)
 
     entries = config[dbname]

@@ -166,7 +166,17 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
     #       0.19213799, 0.20150788, 0.17328113, 0.17212415, 0.15883971,
     #       0.17112437, 0.15403756, 0.13375255, 0.1193155 , 0.10882585,
     #       0.11113302, 0.04581781, 0.00247155, 0.00143631])
-    # Update on 17/06/20 (Radis 0.9.30) with the new HITRAN-2020 lines for CO2:
+    # Update on 17/06/21 (Radis 0.9.30) with the new HITRAN-2020 lines for CO2:
+    # I_ref = np.array([0.29009315, 0.29732781, 0.32959567, 0.32061864, 0.20588816,
+    #         0.19179586, 0.20101157, 0.17255937, 0.17163118, 0.15821026,
+    #         0.17120068, 0.15403946, 0.13356296, 0.11907705, 0.10890721,
+    #         0.11158052, 0.04583138, 0.00232573, 0.00136583])
+    # Update on 05/11/21 (Radis 0.10.4) with use of tabulated instead of ab-initio
+    # partition functions for Qref  (0.02% constant difference)
+    #
+    # Update on 14/11/21: after switching from HITRAN fetched by astroquery (partial range)
+    # to HITRAN fetched by HAPI (full database) > atol=1e-6 fails, because of
+    # numerical errors in how the two databases are stored. Switched to rtol=1e-3
     w_ref = np.array(
         [
             4197.60321744,
@@ -193,25 +203,25 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
 
     I_ref = np.array(
         [
-            0.29009315,
-            0.29732781,
-            0.32959567,
-            0.32061864,
-            0.20588816,
-            0.19179586,
-            0.20101157,
-            0.17255937,
-            0.17163118,
-            0.15821026,
-            0.17120068,
-            0.15403946,
-            0.13356296,
-            0.11907705,
-            0.10890721,
-            0.11158052,
-            0.04583138,
-            0.00232573,
-            0.00136583,
+            0.29003961,
+            0.29727294,
+            0.32953484,
+            0.32055948,
+            0.20585016,
+            0.19176046,
+            0.20097447,
+            0.17252753,
+            0.17159951,
+            0.15818106,
+            0.17116909,
+            0.15401103,
+            0.13353831,
+            0.11905508,
+            0.10888712,
+            0.11155993,
+            0.04582293,
+            0.0023253,
+            0.00136557,
         ]
     )
 
@@ -222,7 +232,7 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
     # [71:-71] because of the shift introduced in 0.9.30 where convolved
     # arrays are not cropped; but np.nan values are added
     assert np.allclose(w[71:-71][::100], w_ref, atol=1e-6)
-    assert np.allclose(I[71:-71][::100], I_ref, atol=1e-6)
+    assert np.allclose(I[71:-71][::100], I_ref, rtol=1e-3)
 
     return True
 
@@ -335,28 +345,38 @@ def test_calc_spectrum_overpopulations(
     #    0.32788457, 0.13512857, 0.00686548, 0.00386199])
 
     # Update on 17/06/20 (Radis 0.9.30) with the new HITRAN-2020 lines for CO2
+    # array([0.62009366, 0.66644973, 0.81033866, 0.79357758, 0.56690276,
+    #        0.58248594, 0.61106305, 0.52129611, 0.51819065, 0.47520791,
+    #        0.51455743, 0.46064655, 0.39761512, 0.35293948, 0.32169967,
+    #        0.3293075 , 0.13525292, 0.00645308, 0.00366828])
+    # Update on 05/11/21 (Radis 0.10.4) with use of tabulated instead of ab-initio
+    # partition functions for Qref  (0.02% constant difference)
+    #
+    # Update on 14/11/21: after switching from HITRAN fetched by astroquery (partial range)
+    # to HITRAN fetched by HAPI (full database) > atol=1e-6 fails, because of
+    # numerical errors in how the two databases are stored. Switched to rtol=1e-3
 
     I_ref = np.array(
         [
-            0.62009366,
-            0.66644973,
-            0.81033866,
-            0.79357758,
-            0.56690276,
-            0.58248594,
-            0.61106305,
-            0.52129611,
-            0.51819065,
-            0.47520791,
-            0.51455743,
-            0.46064655,
-            0.39761512,
-            0.35293948,
-            0.32169967,
-            0.3293075,
-            0.13525292,
-            0.00645308,
-            0.00366828,
+            0.61997922,
+            0.66632674,
+            0.81018912,
+            0.79343113,
+            0.56679814,
+            0.58237845,
+            0.61095028,
+            0.52119991,
+            0.51809502,
+            0.47512021,
+            0.51446247,
+            0.46056154,
+            0.39754174,
+            0.35287435,
+            0.3216403,
+            0.32924673,
+            0.13522796,
+            0.00645189,
+            0.0036676,
         ]
     )
     if plot:
@@ -366,7 +386,7 @@ def test_calc_spectrum_overpopulations(
 
     # [71:-71] because of the shift introduced in 0.9.30 where convolved
     # arrays are not cropped; but np.nan values are added
-    assert np.allclose(I[71:-71][::100], I_ref, atol=1e-6)
+    assert np.allclose(I[71:-71][::100], I_ref, rtol=1e-3)
 
     if verbose:
         printm("Test overpopulations: OK")
@@ -502,7 +522,7 @@ def test_all_calc_methods_CO2pcN(
     del database_kwargs["info"]
     database_kwargs["levelsfmt"] = "cdsd-pcN"
     # ... load the new database
-    sf.load_databank(**database_kwargs, load_energies=True)
+    sf.load_databank(**database_kwargs, load_energies=True, load_columns="noneq")
 
     # Now, define Evib:
     Q_calc = sf.parsum_calc["CO2"][1]["X"]
@@ -581,7 +601,7 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **k
     sf.warnings["NegativeEnergiesWarning"] = "ignore"
     sf.warnings["HighTemperatureWarning"] = "ignore"
     sf.fetch_databank(
-        "hitran"
+        "hitran", load_columns="noneq"
     )  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
     s_nq = sf.non_eq_spectrum(Tvib=Tgas, Trot=Tgas, name="Non-eq")
     s_eq = sf.eq_spectrum(Tgas=Tgas, name="Eq")
@@ -744,6 +764,34 @@ def test_calc_spectrum_multiple_molecules_inputerror(
     return True
 
 
+@pytest.mark.needs_connection
+def test_calc_spectrum_multiple_molecules_wstep_auto(
+    verbose=True, plot=True, warnings=True, *args, **kwargs
+):
+    """Tests multiple molecules spectrum for wstep = 'auto'
+    and checks that minimum wstep value is selected with
+    resample = "intersect"""
+    from radis import calc_spectrum
+
+    # Merging the CO, CO2 spectrum itself in calc_spectrum
+    s = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,  # cm-1
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        Tgas=700,  # K
+        mole_fraction={"CO": 0.1, "CO2": 0.1},
+        path_length=1,  # cm
+        wstep="auto",
+        databank="hitran",  # or use 'hitemp'
+        verbose=verbose,
+    )
+
+    # Check calculation went fine:
+    assert set(s.conditions["molecule"]) == set(["CO2", "CO"])
+    assert s.get_conditions()["wstep"] in ("N/A", 0.013)
+
+
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
     # Test sPlanck and conversion functions
@@ -774,6 +822,7 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     test_calc_spectrum_multiple_molecules()
     test_calc_spectrum_multiple_molecules_otherinputs()
     test_calc_spectrum_multiple_molecules_inputerror()
+    test_calc_spectrum_multiple_molecules_wstep_auto()
 
     return True
 

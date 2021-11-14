@@ -53,17 +53,13 @@ def calculated_spectrum(
 
     Parameters
     ----------
-
     w: np.array
         wavelength, or wavenumber
-
     I: np.array
         intensity (no slit)
-
     wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
         wavespace unit: wavelength in air (``'nm'``), wavenumber
         (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``). Default ``'nm'``.
-
     Iunit: str
         intensity unit (can be 'counts', 'mW/cm2/sr/nm', etc...). Default
         'mW/cm2/sr/nm' (note that non-convoluted Specair spectra are in 'mW/cm2/sr/µm')
@@ -71,16 +67,12 @@ def calculated_spectrum(
 
     Other Parameters
     ----------------
-
     conditions: dict
         (optional) calculation conditions to be stored with Spectrum. Default ``None``
-
     cond_units: dict
         (optional) calculation conditions units. Default ``None``
-
     populations: dict
         populations to be stored in Spectrum. Default ``None``
-
     name: str
         (optional) give a name
 
@@ -128,43 +120,34 @@ def transmittance_spectrum(
 
     Parameters
     ----------
-
     w: np.array
         wavelength, or wavenumber
-
     T: np.array
         transmittance (no slit)
-
     wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
         wavespace unit: wavelength in air (``'nm'``), wavenumber
         (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``). Default ``'nm'``.
-
     Iunit: str
         intensity unit. Default ``""`` (adimensionned)
 
 
     Other Parameters
     ----------------
-
     conditions: dict
         (optional) calculation conditions to be stored with Spectrum
-
     cond_units: dict
         (optional) calculation conditions units
-
     name: str
         (optional) give a name
 
 
     Examples
     --------
-
     ::
 
         # w, T are numpy arrays for wavelength and transmittance
         from radis import transmittance_spectrum
         s2 = transmittance_spectrum(w, T, wunit='nm')                       # creates 'transmittance_noslit'
-
 
 
     See Also
@@ -190,7 +173,7 @@ def transmittance_spectrum(
 
 
 def experimental_spectrum(
-    w, I, wunit="nm", Iunit="counts", conditions={}, cond_units=None, name=None
+    w, I, wunit="nm", Iunit="count", conditions={}, cond_units=None, name=None
 ) -> Spectrum:
     """Convert ``(w, I)`` into a :py:class:`~radis.spectrum.spectrum.Spectrum`
     object that has unit conversion and plotting capabilities. Convolution is
@@ -199,48 +182,39 @@ def experimental_spectrum(
 
     Parameters
     ----------
-
     w: np.array
         wavelength, or wavenumber
-
     I: np.array
         intensity
-
     wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
         wavespace unit: wavelength in air (``'nm'``), wavenumber
         (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``). Default ``'nm'``.
-
     Iunit: str
-        intensity unit (can be 'counts', 'mW/cm2/sr/nm', etc...). Default
-        'counts' (default Winspec output)
+        intensity unit (can be ``'count'``, 'mW/cm2/sr/nm', etc...). Default
+        ``'count'`` (i.e., non calibrated output)
 
     Other Parameters
     ----------------
-
     conditions: dict
         (optional) calculation conditions to be stored with Spectrum
-
     cond_units: dict
         (optional) calculation conditions units
-
     name: str
         (optional) give a name
 
     Examples
     --------
-
     Load and plot an experimental spectrum::
 
         from numpy import loadtxt
         from radis import experimental_spectrum
-        w, I = loadtxt('my_file.txt').T    # assuming 2 columns
+        w, I = loadtxt('my_file.txt').T    # transpose is often useful, depending on your data.
         s = experimental_spectrum(w, I, Iunit='mW/cm2/sr/nm')             # creates 'radiance'
         s.plot()
 
 
     See Also
     --------
-
     :func:`~radis.spectrum.models.calculated_spectrum`,
     :func:`~radis.spectrum.models.transmittance_spectrum`,
     :meth:`~radis.spectrum.spectrum.Spectrum.from_array`,

@@ -24,9 +24,12 @@ from os.path import exists, isfile, join
 import numpy as np
 import pandas as pd
 
-import radis
 from radis.db.classes import get_molecule, get_molecule_identifier
-from radis.io.cache_files import check_cache_file, get_cache_file, save_to_hdf
+
+try:
+    from .cache_files import check_cache_file, get_cache_file, save_to_hdf
+except ImportError:
+    from radis.io.cache_files import check_cache_file, get_cache_file, save_to_hdf
 from radis.misc import is_float
 from radis.misc.printer import printr
 
@@ -34,7 +37,14 @@ CACHE_FILE_NAME = "tempfile_{molecule}_{isotope}_{wmin:.2f}_{wmax:.2f}.h5"
 
 
 def fetch_astroquery(
-    molecule, isotope, wmin, wmax, verbose=True, cache=True, expected_metadata={}
+    molecule,
+    isotope,
+    wmin,
+    wmax,
+    verbose=True,
+    cache=True,
+    expected_metadata={},
+    engine="pytables-fixed",
 ):
     """Download a HITRAN line database to a Pandas DataFrame.
 
@@ -114,12 +124,13 @@ def fetch_astroquery(
                 fcache=fcache,
                 use_cached=cache,
                 expected_metadata=expected_metadata,
+                compare_as_close=["wmin", "wmax"],
                 verbose=verbose,
-                engine="pytables",
+                engine=engine,
             )
             if exists(fcache):
                 try:
-                    return get_cache_file(fcache, verbose=verbose)
+                    return get_cache_file(fcache, verbose=verbose, engine=engine)
                 except Exception as err:
                     if verbose:
                         printr(
@@ -244,15 +255,18 @@ def fetch_astroquery(
                     fcache, new_metadata
                 )
             )
+        from radis import __version__
+
         try:
             save_to_hdf(
                 df,
                 fcache,
                 metadata=new_metadata,
-                version=radis.__version__,
+                version=__version__,
                 key="df",
                 overwrite=True,
                 verbose=verbose,
+                engine=engine,
             )
         except PermissionError:
             if verbose:

@@ -1046,34 +1046,69 @@ def offset(s, offset, unit, name=None, inplace=False):
     return s
 
 
-def get_baseline(s, var="radiance", Iunit=None):
+def get_baseline(
+    s, var="radiance", algorithm="als", wunit="default", Iunit="default", **kwargs
+):
     """Calculate and returns a baseline
 
     Parameters
     ----------
     s: Spectrum
         Spectrum which needs a baseline
-
     var: str
         on which spectral quantity to read the baseline. Default ``'radiance'``.
         See :py:data:`~radis.spectrum.utils.SPECTRAL_QUANTITIES`
+    algorithm: 'als', 'polynomial'
+        Asymmetric least square or Polynomial fit
+    **kwargs: dict
+        additional parameters to send to the algorithm. By default,
+        for 'polynomial':
+
+            **kwargs = **{"deg": 1, "max_it":500}
+
+        for 'als':
+
+            **kwargs = {"asymmetry_param": 0.05,
+                        "smoothness_param": 1e6}
 
     Returns
     -------
     baseline: Spectrum
         Spectrum object where intenisity is the baseline of s is computed by peakutils
 
+    Examples
+    --------
+
+    .. minigallery:: radis.spectrum.spectrum.Spectrum.get_baseline
+
     See Also
     --------
 
-    :py:func:`~radis.spectrum.operations.sub_baseline`
+    :py:func:`~radis.spectrum.operations.sub_baseline`,
+    :py:meth:`~radis.spectrum.spectrum.Spectrum.get_baseline`
     """
-    import peakutils
+    if wunit == "default":
+        wunit = s.get_waveunit()
+    if Iunit == "default":
+        Iunit = s.units[var]
 
-    w1, I1 = s.get(var=var, Iunit=Iunit)
-    baseline = peakutils.baseline(I1, deg=1, max_it=500)
+    w1, I1 = s.get(var=var, wunit=wunit, Iunit=Iunit)
+
+    if algorithm == "polynomial":
+        import peakutils
+
+        polyargs = {"deg": 1, "max_it": 500}
+        polyargs.update(kwargs)
+        baseline = peakutils.baseline(I1, **polyargs)
+    elif algorithm == "als":
+        from radis.misc.signal import als_baseline
+
+        alsargs = {"asymmetry_param": 0.05, "smoothness_param": 1e6}
+        alsargs.update(kwargs)
+        baseline = als_baseline(I1, **alsargs)
+
     baselineSpectrum = Spectrum.from_array(
-        w1, baseline, var, unit=Iunit, name=s.get_name() + "_baseline"
+        w1, baseline, var, wunit=wunit, unit=Iunit, name=s.get_name() + "_baseline"
     )
     return baselineSpectrum
 

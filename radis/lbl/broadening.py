@@ -60,6 +60,7 @@ Formula in docstrings generated with :py:func:`~pytexit.pytexit.py2tex` ::
 ----------
 
 """
+
 from warnings import warn
 
 import numpy as np
@@ -72,7 +73,14 @@ from scipy.signal import oaconvolve
 import radis
 from radis.db.references import doi
 from radis.lbl.base import BaseFactory
-from radis.misc.arrays import add_at, arange_len, numpy_add_at
+from radis.misc.arrays import (
+    add_at,
+    arange_len,
+    boolean_array_from_ranges,
+    non_zero_ranges_in_array,
+    numpy_add_at,
+    sparse_add_at,
+)
 from radis.misc.basics import is_float
 from radis.misc.debug import printdbg
 from radis.misc.plot import fix_style, set_style
@@ -279,13 +287,13 @@ def pressure_broadening_HWHM(
     References
     ----------
 
-    ..math::
+    .. math::
 
         \\gamma_{lb}={\\left(\\frac{T_{ref}}{T_{gas}}\\right)}^{n_{air}} \\gamma_{air} P \\left(1-x\\right)+{\\left(\\frac{T_{ref}}{T_{gas}}\\right)}^{n_{self}} \\gamma_{self} P x
 
     With :math:`n_{air}, n_{self}` the temperature dependance coefficients
     ``Tdpair, Tdpsel`` ; :math:`\\gamma_{air}, \\gamma_{self}` the air and resonant
-    broadening ``airbrd, selbrd``, :math:`x` the ``mole_fraction``.
+    HWHM broadening tabulated at :math:`T_{ref}`, :math:`x` the ``mole_fraction``.
 
     .. [1] `Rothman 1998 (HITRAN 1996) eq (A.14) <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`_
 
@@ -1516,8 +1524,9 @@ class BroadenFactory(BaseFactory):
         return line_profile_DLM, wL, wG, wL_dat, wG_dat
 
     def plot_broadening(self, i=0, pressure_atm=None, mole_fraction=None, Tgas=None):
-        """just for testing. Recalculate and plot broadening for line of index
-        i.
+        """Recalculate and plot broadening for line of index ``i``.
+
+        Used mainly for testing.
 
         Parameters
         ----------
@@ -1533,6 +1542,8 @@ class BroadenFactory(BaseFactory):
         Examples
         --------
         ::
+
+            from radis import SpectrumFactory
             sf=SpectrumFactory(...)
             sf.eq_spectrum(...)
             sf.plot_broadening(i=500)   # plot line number 500
@@ -1794,10 +1805,10 @@ class BroadenFactory(BaseFactory):
         # ...    (either because deactivated, or because not installed)
         if self.use_cython and add_at != numpy_add_at:
             _add_at = add_at
-            self.params.add_at_used = "cython"
+            self.misc.add_at_used = "cython"
         else:
             _add_at = numpy_add_at
-            self.params.add_at_used = "numpy"
+            self.misc.add_at_used = "numpy"
         # Vectorize the chunk of lines
         S = broadened_param
 
@@ -1876,11 +1887,20 @@ class BroadenFactory(BaseFactory):
         self.profiler.start("DLM_Distribute_lines", 3)
         # ... Initialize array on which to distribute the lineshapes
         if broadening_method in ["voigt", "convolve"]:
-            DLM = np.zeros((len(wavenumber_calc) + 2, len(wG), len(wL)))
-            # +2 to allocate one empty grid point on each side : case where a line is on the boundary
-            ki0 += 1
-            ki1 += 1
+            if self.params.sparse_dlm == True:
+                # DLM is constructed in a sparse-way later
+                pass
+            else:
+                DLM = np.zeros((len(wavenumber_calc) + 2, len(wG), len(wL)))
+                # +2 to allocate one empty grid point on each side : case where a line is on the boundary
+                ki0 += 1
+                ki1 += 1
         elif broadening_method == "fft":
+            if self.params.sparse_dlm == True:
+                if self.verbose >= 2:
+                    print(
+                        "SPARSE optimisation not implemented with 'fft' mode. Use 'voigt' for analytical voigt, or radis.config['SPARSE_WAVERANGE'] = False"
+                    )
             DLM = np.zeros(
                 (
                     2 * len(wavenumber_calc),  # TO-DO: Add  + self.misc.zero_padding
@@ -1892,18 +1912,145 @@ class BroadenFactory(BaseFactory):
             raise NotImplementedError(broadening_method)
 
         # Distribute all line intensities on the 2x2x2 bins.
-        _add_at(DLM, ki0, li0, mi0, Iv0 * awV00)
-        _add_at(DLM, ki0, li0, mi1, Iv0 * awV01)
-        _add_at(DLM, ki0, li1, mi0, Iv0 * awV10)
-        _add_at(DLM, ki0, li1, mi1, Iv0 * awV11)
-        _add_at(DLM, ki1, li0, mi0, Iv1 * awV00)
-        _add_at(DLM, ki1, li0, mi1, Iv1 * awV01)
-        _add_at(DLM, ki1, li1, mi0, Iv1 * awV10)
-        _add_at(DLM, ki1, li1, mi1, Iv1 * awV11)
+        if (
+            broadening_method in ["voigt", "convolve"]
+            and self.params.sparse_dlm == True
+        ):
 
-        if broadening_method in ["voigt", "convolve"]:
-            DLM = DLM[1:-1, :, :]
-            # 1:-1 to remove the empty grid point on each side
+            import pandas as pd
+
+            df = pd.DataFrame(
+                {
+                    "ki0": ki0,
+                    "li0": li0,
+                    "li1": li1,
+                    "mi0": mi0,
+                    "mi1": mi1,
+                    "Iv0": Iv0,
+                    "Iv1": Iv1,
+                    "awV00": awV00,
+                    "awV01": awV01,
+                    "awV10": awV10,
+                    "awV11": awV11,
+                },
+                copy=False,
+            )
+
+            def get_non_zero_wranges(groupby_parameters, max_range, intensity_weight):
+                """Get coordinates of non-zero wave ranges for all lines
+                that share the same ``groupby_parameters``
+
+                Parameters
+                ----------
+                groupby_parameters: str
+                max_range: int
+
+                Examples
+                --------
+                ::
+                    DLM_ranges_00 = get_non_zero_wranges(groupby_parameters=["li0", "mi0"], max_range=len(wavenumber_calc))
+                """
+                # EP 31/10: the for loop over df.groupby is the current bottleneck
+                # (not even the sparse_add_at function !)
+                dgb = df.groupby(groupby_parameters, sort=False)
+                DLM_ranges = {}
+                DLM_reduced = {}
+                for groupby_param, group in dgb:
+                    truncation_pts = int(self.params.truncation // self.params.wstep)
+                    # note: truncation can be unique for each point of the DLM basis
+                    # (allow to have line-dependant truncatino, at least as all
+                    # lines with same truncation are grouped together in the DLM basis)
+
+                    ki0 = group.ki0.values
+                    Iv0 = group.Iv0.values
+                    Iv1 = group.Iv1.values
+                    weight = group[intensity_weight].values
+
+                    # build the list of non-empty ranges for all lines with this lineshape :
+                    ranges, I = sparse_add_at(
+                        ki0, Iv0, Iv1, weight, max_range, truncation_pts
+                    )
+
+                    DLM_ranges[groupby_param] = ranges
+
+                    # generate reduced array:
+                    b = boolean_array_from_ranges(ranges, len(I))
+                    I_reduced = I[b]
+                    DLM_reduced[groupby_param] = I_reduced
+
+                return DLM_ranges, DLM_reduced
+
+            w = wavenumber_calc
+
+            DLM_ranges_00, DLM_reduced_00 = get_non_zero_wranges(
+                groupby_parameters=["li0", "mi0"],
+                max_range=len(w),
+                intensity_weight="awV00",
+            )
+            DLM_ranges_01, DLM_reduced_01 = get_non_zero_wranges(
+                groupby_parameters=["li0", "mi1"],
+                max_range=len(w),
+                intensity_weight="awV01",
+            )
+            DLM_ranges_10, DLM_reduced_10 = get_non_zero_wranges(
+                groupby_parameters=["li1", "mi0"],
+                max_range=len(w),
+                intensity_weight="awV10",
+            )
+            DLM_ranges_11, DLM_reduced_11 = get_non_zero_wranges(
+                groupby_parameters=["li1", "mi1"],
+                max_range=len(w),
+                intensity_weight="awV11",
+            )
+
+            # Combine all DLM ranges:
+            all_keys = (
+                set(DLM_ranges_00.keys())
+                | set(DLM_ranges_01.keys())
+                | set(DLM_ranges_10.keys())
+                | set(DLM_ranges_11.keys())
+            )
+            DLM_ranges = {}
+            DLM_reduced = {}
+            #  (note : could be combined faster by combining the ranges directly, rather than geenrating the boolean arrays?)
+            for param in all_keys:
+                b = np.zeros(len(w), dtype=bool)
+                I = np.zeros(len(w))
+                if param in DLM_ranges_00:
+                    bi = boolean_array_from_ranges(DLM_ranges_00[param], len(w))
+                    I[bi] += DLM_reduced_00[param]
+                    b += bi
+                if param in DLM_ranges_01:
+                    bi = boolean_array_from_ranges(DLM_ranges_01[param], len(w))
+                    I[bi] += DLM_reduced_01[param]
+                    b += bi
+                if param in DLM_ranges_10:
+                    bi = boolean_array_from_ranges(DLM_ranges_10[param], len(w))
+                    I[bi] += DLM_reduced_10[param]
+                    b += bi
+                if param in DLM_ranges_11:
+                    bi = boolean_array_from_ranges(DLM_ranges_11[param], len(w))
+                    I[bi] += DLM_reduced_11[param]
+                    b += bi
+
+                # Sparse storage (coordinates & non-zeros ranges) :
+                if b.any():
+                    DLM_ranges[param] = non_zero_ranges_in_array(b)
+                    DLM_reduced[param] = I[b]
+
+        else:
+            _add_at(DLM, ki0, li0, mi0, Iv0 * awV00)
+            _add_at(DLM, ki0, li0, mi1, Iv0 * awV01)
+            _add_at(DLM, ki0, li1, mi0, Iv0 * awV10)
+            _add_at(DLM, ki0, li1, mi1, Iv0 * awV11)
+            _add_at(DLM, ki1, li0, mi0, Iv1 * awV00)
+            _add_at(DLM, ki1, li0, mi1, Iv1 * awV01)
+            _add_at(DLM, ki1, li1, mi0, Iv1 * awV10)
+            _add_at(DLM, ki1, li1, mi1, Iv1 * awV11)
+
+            if broadening_method in ["voigt", "convolve"]:
+                DLM = DLM[1:-1, :, :]
+                # 1:-1 to remove the empty grid point on each side
 
         # All lines within each bins are convolved with the same lineshape.
         # Let's do it:
@@ -1921,7 +2068,17 @@ class BroadenFactory(BaseFactory):
             for l in range(len(wG)):
                 for m in range(len(wL)):
                     lineshape = line_profile_DLM[l][m]
-                    sumoflines_calc += oaconvolve(DLM[:, l, m], lineshape, "same")
+
+                    if self.params.sparse_dlm == True:
+                        if (l, m) in DLM_ranges.keys():
+                            mask = boolean_array_from_ranges(
+                                DLM_ranges[(l, m)], len(sumoflines_calc)
+                            )
+                            sumoflines_calc[mask] += oaconvolve(
+                                DLM_reduced[(l, m)], lineshape, "same"
+                            )
+                    else:
+                        sumoflines_calc += oaconvolve(DLM[:, l, m], lineshape, "same")
 
         elif broadening_method == "fft":
             # ... Initialize array in FT space
@@ -2870,3 +3027,5 @@ if __name__ == "__main__":
     from radis.test.lbl.test_broadening import _run_testcases
 
     print("Testing broadening.py:", _run_testcases(verbose=True, plot=True))
+
+# %%

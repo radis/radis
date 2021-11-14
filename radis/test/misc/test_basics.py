@@ -23,3 +23,22 @@ def test_round_off(*args, **kwargs):
     assert round_off(0.024231242) == 0.024
     assert round_off(0.0019932133) == 0.002
     assert round_off(0.0000000000002193) == 0
+
+
+@pytest.mark.fast
+def test_str2bool(*args, **kwargs):
+    import pandas as pd
+
+    from radis.misc.basics import str2bool
+
+    df = pd.Series(["1.0", "true", "True", 1])
+    assert df.dtypes == object
+
+    # Test
+    assert df.map(str2bool).all()
+
+    df = pd.Series(["0.0", "false", "False", 0])
+    assert df.dtypes == object
+
+    # Test
+    assert not df.map(str2bool).any()

@@ -48,7 +48,7 @@ def test_hdf5_io_engines(*args, **kwargs):
 
     # Test h5py engine : add_metadata ; load ; read_metadata
     manager = HDF5Manager(engine="h5py")
-    manager.add_metadata("test_h5py.h5", metadata0)
+    manager.add_metadata("test_h5py.h5", metadata0, key=None)
     df = manager.load("test_h5py.h5", key=None)
     assert (df == df0).all().all()
     assert manager.read_metadata("test_h5py.h5") == metadata0
@@ -56,13 +56,13 @@ def test_hdf5_io_engines(*args, **kwargs):
     # Test vaex engine : add_metadata ; load ; read_
     # .. also able to read h5py files
     manager = HDF5Manager(engine="vaex")
-    manager.add_metadata("test_h5py.h5", metadata0)
+    manager.add_metadata("test_h5py.h5", metadata0, key=None)
     df = manager.load("test_h5py.h5", key=None)
     # this time; df is a vaex DataFrame
     # ... it keeps the file open so we should close the file handle
     assert (df.to_pandas_df() == df0).all().all()
     df.close()
-    assert manager.read_metadata("test_h5py.h5") == metadata0
+    assert manager.read_metadata("test_h5py.h5", key=None) == metadata0
 
 
 @pytest.mark.needs_connection

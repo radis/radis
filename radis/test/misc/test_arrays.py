@@ -26,6 +26,7 @@ from radis.misc.arrays import (
     is_sorted_backward,
     last_nonnan_index,
     logspace,
+    non_zero_values_around,
 )
 from radis.test.utils import setup_test_line_databases
 
@@ -291,15 +292,77 @@ def test_cython_add_at_spectra(*args, **kwargs):
     sf.use_cython = False
     s_numpy = sf.eq_spectrum(Tgas=T, name="numpy")
     s_numpy.apply_slit(0.5, "nm")
-    assert sf.params.add_at_used == "numpy"
+    assert sf.misc.add_at_used == "numpy"
 
     sf.use_cython = True
     s_cython = sf.eq_spectrum(Tgas=T, name="cython")
     s_cython.apply_slit(0.5, "nm")
-    assert sf.params.add_at_used == "cython"
+    assert sf.misc.add_at_used == "cython"
 
     res = get_residual(s_numpy, s_cython, "transmittance")
     assert res < 2e-4
+
+
+def test_non_zero_values_around(*args, **kwargs):
+    """return a boolean array of same size as ``a`` where each position ``i``
+    is ``True`` if there are non-zero points less than ``n`` index position
+    away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
+    position away from from ``a[i]``
+    """
+
+    a = np.array(
+        [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0], dtype=np.float64
+    )
+
+    # n = 1
+    b = np.array([0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1])
+    out = non_zero_values_around(a, 1)
+    print(a, "width 1")
+    print(b)
+    print(np.array(out, dtype=int))
+    assert (out == b).all()
+
+    # n = 2
+    b = np.array([1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
+    out = non_zero_values_around(a, 2)
+    print(a, "width 2")
+    print(b)
+    print(np.array(out, dtype=int))
+    assert (out == b).all()
+
+    # n = 2
+    a = np.array(
+        [0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], dtype=np.float64
+    )
+    b = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1])
+    out = non_zero_values_around(a, 2)
+    print(a, "width 2")
+    print(b)
+    print(np.array(out, dtype=int))
+    assert (out == b).all()
+
+    # n = 1
+    a = np.array(
+        [0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1], dtype=np.float64
+    )
+    b = np.array([1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1])
+    out = non_zero_values_around(a, 1)
+    print(a, "width 1")
+    print(b)
+    print(np.array(out, dtype=int))
+    assert (out == b).all()
+
+    # Also test non_zero_ranges_in_array, boolean_array_from_ranges
+    from radis.misc.arrays import boolean_array_from_ranges, non_zero_ranges_in_array
+
+    b = np.array([0, 0, 1, 1, 0, 1, 0, 1], dtype=bool)
+    assert (non_zero_ranges_in_array(b) == np.array([(2, 4), (5, 6), (7, 8)])).all()
+
+    L = np.array([[2, 4], [5, 6], [7, 8]], dtype=np.int64)
+    assert (
+        boolean_array_from_ranges(L, 8)
+        == np.array([0, 0, 1, 1, 0, 1, 0, 1], dtype=bool)
+    ).all()
 
 
 if __name__ == "__main__":

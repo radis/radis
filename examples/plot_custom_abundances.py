@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+.. _example_custom_abundances:
+
 =====================
 Use Custom Abundances
 =====================
