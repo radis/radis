@@ -335,5 +335,4 @@ def _run_testcases(verbose=True, plot=False, *args, **kwargs):
 
 if __name__ == "__main__":
 
-    # _run_testcases(plot=True)
-    test_get_baseline(plot=True)
+    _run_testcases(plot=True)

@@ -260,6 +260,7 @@ def run_setup(with_binary):
             "plotly>=2.5.1",  # for line survey HTML output
             "termcolor",  # terminal colors
             "configparser",
+            "peakutils",
             "astroquery>=0.3.9",  # to fetch HITRAN databases
             "json-tricks>=3.15.0",  # to deal with non jsonable formats
             "tables",  # for pandas to HDF5 export
