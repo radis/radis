@@ -466,7 +466,7 @@ def LineSurvey(
     def get_label_all(row):
         """ print all lines details """
         # label = row.__repr__()
-        label = "\n".join(
+        label = "<br>".join(
             [f"{k}: {v}" for k, v in row.items() if k not in ["wav", "shiftwav"]]
         )
         return label

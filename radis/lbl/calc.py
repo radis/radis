@@ -61,6 +61,7 @@ def calc_spectrum(
     mode="cpu",
     export_lines=False,
     verbose=True,
+    return_factory=False,
     **kwargs
 ) -> Spectrum:
     r"""Calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
@@ -244,9 +245,18 @@ def calc_spectrum(
         Note that ``mode='gpu'`` requires CUDA compatible hardware to execute.
         For more information on how to setup your system to run GPU-accelerated
         methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`__
+    return_factory: bool
+        if ``True``, return the :py:class:`~radis.lbl.factory.SpectrumFactory` that
+        computes the spectrum. Useful to access computational parameters, the line database,
+        or to start batch-computations from a first spectrum calculation. Ex::
+
+                s, sf = calc_spectrum(..., return_factory=True)
+                sf.df1  # see the lines calculated
+                sf.eq_spectrum(...)  #  new calculation without reloading the database
+
     **kwargs: other inputs forwarded to SpectrumFactory
         For instance: ``warnings``.
-        See :class:`~radis.lbl.factory.SpectrumFactory` documentation for more
+        See :py:class:`~radis.lbl.factory.SpectrumFactory` documentation for more
         details on input.
 
     Returns
@@ -415,6 +425,7 @@ def calc_spectrum(
 
     # ... Initialize and fill the master-dictionary
     molecule_dict = {}
+    factory_dict = {}
 
     for molecule in molecule_reference_set:
         molecule_dict[molecule] = {}
@@ -502,8 +513,12 @@ def calc_spectrum(
             verbose=verbose,
             mode=mode,
             export_lines=export_lines,
+            return_factory=return_factory,
             **kwargs_molecule
         )
+        if return_factory:
+            factory_dict[molecule] = generated_spectrum[1]
+            generated_spectrum = generated_spectrum[0]  # the spectrum
         s_list.append(generated_spectrum)
 
         if condition_multiple_wstep:
@@ -519,7 +534,10 @@ def calc_spectrum(
     if save_to:
         s.store(path=save_to, if_exists_then="replace", verbose=verbose)
 
-    return s
+    if return_factory:
+        return s, factory_dict
+    else:
+        return s
 
 
 def _calc_spectrum_one_molecule(
@@ -548,8 +566,9 @@ def _calc_spectrum_one_molecule(
     verbose,
     mode,
     export_lines,
+    return_factory=False,
     **kwargs
-):
+) -> Spectrum:
     """See :py:func:`~radis.lbl.calc.calc_spectrum`"""
 
     # Check inputs
@@ -747,7 +766,10 @@ def _calc_spectrum_one_molecule(
             name=name,
         )
 
-    return s
+    if return_factory:
+        return s, sf
+    else:
+        return s
 
 
 # --------------------------
