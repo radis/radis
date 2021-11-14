@@ -107,9 +107,9 @@ def test_fetch_hitran(*args, **kwargs):
 
     df = fetch_hitran("CO")
 
-    assert len(df) == 483772
-    assert df.wav.min() == 1.006779
-    assert df.wav.max() == 39997.619007
+    assert len(df) == 5381
+    assert df.wav.min() == 3.40191
+    assert df.wav.max() == 14477.377142
 
 
 def _run_testcases(verbose=True, *args, **kwargs):

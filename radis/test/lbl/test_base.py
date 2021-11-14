@@ -507,6 +507,8 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
 
 def test_get_waverange(*args, **kwargs):
 
+    assert get_waverange(1 * u.um, 10 * u.um, medium="vacuum") == (1000, 10000)
+
     # 'wunit' is none
     # ...'wmin/wmax' is none
     # ...... wavenumber is passed > should return the same wavenumbers

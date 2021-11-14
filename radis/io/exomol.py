@@ -321,7 +321,7 @@ def fetch_exomol(
     )
 
     _exomol_use_hint = "Select one of them with `radis.fetch_exomol(DATABASE_NAME)`, `SpectrumFactory.fetch_databank('exomol', exomol_database=DATABASE_NAME')`, or `calc_spectrum(..., databank=('exomol', DATABASE_NAME))` \n"
-    if database is None:
+    if database is None or database == "default":
         if len(known_exomol_databases) == 1:
             database = known_exomol_databases[0]
             if verbose:

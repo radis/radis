@@ -475,8 +475,10 @@ class HDF5Manager(object):
         # See if it looks like PyTables
         import tables
 
-        engine = tables.is_pytables_file(file)
-        if not engine:
+        if tables.is_pytables_file(file):
+            engine = "pytables"
+        else:
+            # Try Vaex
             with h5py.File(file, mode="r") as hf:
                 try:
                     hf[r"/table"]
