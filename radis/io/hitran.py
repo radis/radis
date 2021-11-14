@@ -100,12 +100,12 @@ def cast_to_int64_with_missing_values(dg, keys):
 def hit2df(
     fname,
     cache=True,
-    load_columns=None,
     verbose=True,
     drop_non_numeric=True,
     load_wavenum_min=None,
     load_wavenum_max=None,
     engine="pytables",
+    parse_quanta=True,
 ):
     """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe
 
@@ -119,12 +119,6 @@ def hit2df(
         improves performances a lot (but changes in the database are not
         taken into account). If False, no database is used. If ``'regen'``, temp
         file are reconstructed. Default ``True``.
-    load_columns: list
-        columns to load. If ``None``, loads everything
-
-        .. note::
-            this is only relevant if loading from a cache file. To generate
-            the cache file, all columns are loaded anyway.
 
     Other Parameters
     ----------------
@@ -139,6 +133,9 @@ def hit2df(
         Default ``'None'``.
     engine: 'pytables', 'vaex'
         format for Hdf5 cache file. Default `pytables`
+    parse_quanta: bool
+        if ``True``, parse local & global quanta (required to identify lines
+        for non-LTE calculations ; but sometimes lines are not labelled.)
 
     Returns
     -------
@@ -152,8 +149,16 @@ def hit2df(
     .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
 
 
+
+    Notes
+    -----
+
+    Performances: see CDSD-HITEMP parser
+
+
     See Also
     --------
+
     :func:`~radis.io.cdsd.cdsd2df`
     """
     metadata = {}
@@ -181,7 +186,6 @@ def hit2df(
         df = load_h5_cache_file(
             fcache,
             cache,
-            columns=load_columns,
             valid_if_metadata_is=metadata,
             relevant_if_metadata_above=relevant_if_metadata_above,
             relevant_if_metadata_below=relevant_if_metadata_below,
@@ -229,33 +233,34 @@ def hit2df(
             + "below: \n{0}".format(secondline)
         )
 
-    # Add local quanta attributes, based on the HITRAN group
-    try:
-        df = parse_local_quanta(df, mol, verbose=verbose)
-    except ValueError as err:
-        # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
-        # In this case, do not parse (makes non-equilibrium calculations impossible).
-        # see https://github.com/radis/radis/issues/211
-        if verbose:
-            print(str(err))
-            print("-" * 10)
-            print(
-                f"Impossible to parse local quanta in {fname}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
-            )
+    if parse_quanta:
+        # Add local quanta attributes, based on the HITRAN group
+        try:
+            df = parse_local_quanta(df, mol, verbose=verbose)
+        except ValueError as err:
+            # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
+            # In this case, do not parse (makes non-equilibrium calculations impossible).
+            # see https://github.com/radis/radis/issues/211
+            if verbose:
+                print(str(err))
+                print("-" * 10)
+                print(
+                    f"Impossible to parse local quanta in {fname}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
+                )
 
-    # Add global quanta attributes, based on the HITRAN class
-    try:
-        df = parse_global_quanta(df, mol, verbose=verbose)
-    except ValueError as err:
-        # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
-        # In this case, do not parse (makes non-equilibrium calculations impossible).
-        # see https://github.com/radis/radis/issues/211
-        if verbose:
-            print(str(err))
-            print("-" * 10)
-            print(
-                f"Impossible to parse global quanta in {fname}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
-            )
+        # Add global quanta attributes, based on the HITRAN class
+        try:
+            df = parse_global_quanta(df, mol, verbose=verbose)
+        except ValueError as err:
+            # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
+            # In this case, do not parse (makes non-equilibrium calculations impossible).
+            # see https://github.com/radis/radis/issues/211
+            if verbose:
+                print(str(err))
+                print("-" * 10)
+                print(
+                    f"Impossible to parse global quanta in {fname}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
+                )
 
     # Remove non numerical attributes
     if drop_non_numeric:
@@ -1071,11 +1076,7 @@ class HITRANDatabaseManager(DatabaseManager):
         else:
             raise NotImplementedError()
 
-    def download_and_parse(
-        self,
-        local_file,
-        cache=True,
-    ):
+    def download_and_parse(self, local_file, cache=True, parse_quanta=True):
         """Download from HITRAN and parse into ``local_file``.
         Also add metadata
 
@@ -1166,6 +1167,7 @@ class HITRANDatabaseManager(DatabaseManager):
             df = hit2df(
                 join(self.tempdir, data_file),
                 cache=False,  # do not generate cache yet
+                parse_quanta=parse_quanta,
             )
             # if engine == 'vaex':
             #     df.executor.async_method = "awaitio"   # Temp fix for https://github.com/spyder-ide/spyder/issues/16183
@@ -1249,6 +1251,7 @@ def fetch_hitran(
     return_local_path=False,
     engine="default",
     parallel=True,
+    parse_quanta=True,
 ):
     """Download all HITRAN lines from HITRAN website. Unzip and build a HDF5 file directly.
 
@@ -1286,6 +1289,10 @@ def fetch_hitran(
         which HDF5 library to use. If 'default' use the value from ~/radis.json
     parallel: bool
         if ``True``, uses joblib.parallel to load database with multiple processes
+    parse_quanta: bool
+        if ``True``, parse local & global quanta (required to identify lines
+        for non-LTE calculations ; but sometimes lines are not labelled.)
+
 
     Returns
     -------
@@ -1353,7 +1360,7 @@ def fetch_hitran(
     # Download files
     download_files = ldb.get_missing_files(local_file)
     if download_files:
-        ldb.download_and_parse(download_files, cache=cache)
+        ldb.download_and_parse(download_files, cache=cache, parse_quanta=parse_quanta)
 
     # Register
     if not ldb.is_registered():
@@ -1380,6 +1387,6 @@ def fetch_hitran(
 
 if __name__ == "__main__":
 
-    from radis.test.io.test_hitran_cdsd import _run_testcases
+    from radis.test.test_io import _run_testcases
 
     print("Testing HITRAN parsing: ", _run_testcases())
