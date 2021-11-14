@@ -78,7 +78,7 @@ def get_slit_function(
     verbose=True,
     auto_recenter_crop=True,
     *args,
-    **kwargs
+    **kwargs,
 ):
     """Import or generate slit function in correct wavespace
     Give a file path to import, or a float / tuple to generate arbitrary shapes
@@ -278,7 +278,7 @@ def get_slit_function(
                 wunit=return_unit,
                 scale=scale_slit,
                 *args,
-                **kwargs
+                **kwargs,
             )
 
         # Insert other slit shapes here
@@ -294,7 +294,7 @@ def get_slit_function(
                 wunit=return_unit,
                 scale=scale_slit,
                 *args,
-                **kwargs
+                **kwargs,
             )
 
         elif shape == "trapezoidal":
@@ -361,7 +361,7 @@ def get_slit_function(
             wunit=return_unit,
             scale=scale_slit,
             *args,
-            **kwargs
+            **kwargs,
         )
 
     # Or import it from file or numpy input
@@ -385,7 +385,7 @@ def get_slit_function(
             auto_recenter=auto_recenter_crop,
             bplot=False,  # we will plot after resampling
             *args,
-            **kwargs
+            **kwargs,
         )
 
         # ... get unit
@@ -501,13 +501,13 @@ def convolve_with_slit(
 ):
     """Convolves spectrum (w,I) with instrumental slit function (w_slit, I_slit)
 
-        Returns a convolved spectrum on a valid range. 
+        Returns a convolved spectrum on a valid range.
 
         Check Notes section below for more details about its implementation.
 
         This function is called directly from a :py:class:`~radis.spectrum.spectrum.Spectrum`
         object with the :py:meth:`~radis.spectrum.spectrum.Spectrum.apply_slit` method.
-    
+
 
     .. warning::
 
@@ -534,11 +534,11 @@ def convolve_with_slit(
 
         ``'same'``:
         returns output of same length as initial spectra,
-        but boundary effects are still visible. 
+        but boundary effects are still visible.
 
         ``'valid'``:
         returns output of length len(spectra) - len(slit) + 1, assuming len(I_slit) < len(I),
-        for which lines outside of the calculated range have no impact. 
+        for which lines outside of the calculated range have no impact.
 
         Default ``'valid'``.
 
@@ -581,8 +581,8 @@ def convolve_with_slit(
     two adjacent points). The minimal step between values of ``w`` is used to determine
     this reference spacing.
 
-    If the slit function covers a spectral interval much larger than its 
-    Full Width a Half Maximum (FWHM), it will potentially add non-zero elements in the sum 
+    If the slit function covers a spectral interval much larger than its
+    Full Width a Half Maximum (FWHM), it will potentially add non-zero elements in the sum
     and mix spectral features that are much further away from each other than the FWHM, as
     it would have been expected.
     For an experimental slit function, this also means introducing more noise and artificial
@@ -591,9 +591,9 @@ def convolve_with_slit(
 
     For instance, if you have an instrumental slit function that looks like so, we recommend
     to cut it where the vertical lines are drawn.
-    
+
     ::
-    
+
         I_slit  ^
                 |     |   _   |
                 |     |  / \\  |
@@ -603,13 +603,13 @@ def convolve_with_slit(
                     cut       cut        w_slit
 
     When we apply a slit function, we should consider the contributions of spectral features outside
-    of the initial spectral range (i.e. ``w[0]`` - FWHM, ``w[-1]`` + FWHM) that would matter to reproduce 
+    of the initial spectral range (i.e. ``w[0]`` - FWHM, ``w[-1]`` + FWHM) that would matter to reproduce
     the entire spectrum. Those points are probably not taken into account during the simulation and
     it could be interesting to extend the spectral range of ``w`` when possible to gauge this contribution.
 
     Since, we don't have access to this extra points, we truncated the output spectrum to the spectral
-    range we can trust (no missing information). The ``valid`` mode operates this truncation by cutting 
-    the edge of the spectrum ever a spectral width corresponding to the spectral width of the provided 
+    range we can trust (no missing information). The ``valid`` mode operates this truncation by cutting
+    the edge of the spectrum ever a spectral width corresponding to the spectral width of the provided
     slit function. This is meant to remove incorrect points on the edge. We recommend using this mode.
     You can however access those removed points using the ``same`` mode (at your own risk).
 
@@ -648,29 +648,29 @@ def convolve_with_slit(
     w_slit_range = abs(w_slit[-1] - w_slit[0])
     slit_FWHM = get_FWHM(w_slit, I_slit)
 
-    if w_slit_range >10*slit_FWHM:
+    if w_slit_range > 10 * slit_FWHM:
         warn(
-            f"FWHM >> spectral range!\n" \
-          + f"Slit Function is provided with a spectral range {w_slit_range:.1f} nm that is much " \
-          + f"wider than its estimated FWHM {slit_FWHM:.1f}. We recommend truncating the input " \
-          + f"slit function. See radis documentation about convolve_with_slit for more information."
+            f"FWHM >> spectral range!\n"
+            + f"Slit Function is provided with a spectral range {w_slit_range:.1f} nm that is much "
+            + f"wider than its estimated FWHM {slit_FWHM:.1f}. We recommend truncating the input "
+            + f"slit function. See radis documentation about convolve_with_slit for more information."
         )
 
     if w_range < w_slit_range:
         if mode == "valid":
             raise AssertionError(
-              f"Slit function is provided with a spectral range ({w_slit_range:.1f} {waveunit}) larger than " \
-              + f"the spectral range of the spectrum ({w_range:.1f} {waveunit}) : the output spectrum will therefore be empty " \
-              + f"as boundary effects of the convolution are automatically discarded. If you still want to apply the slit "
-              + f"despite potential boundary effects, set `mode='same'`. However, we recommend truncating the input slit function if possible, or compute the spectrum on a larger spectral range. "
-              + f"See radis documentation about convolve_with_slit for more information."
+                f"Slit function is provided with a spectral range ({w_slit_range:.1f} {waveunit}) larger than "
+                + f"the spectral range of the spectrum ({w_range:.1f} {waveunit}) : the output spectrum will therefore be empty "
+                + f"as boundary effects of the convolution are automatically discarded. If you still want to apply the slit "
+                + f"despite potential boundary effects, set `mode='same'`. However, we recommend truncating the input slit function if possible, or compute the spectrum on a larger spectral range. "
+                + f"See radis documentation about convolve_with_slit for more information."
             )
         else:
             warn(
-                f"Slit spectral range > Spectrum spectral range!\n" \
-              + f"Slit function is provided with a spectral range ({w_slit_range:.1f} nm) larger than " \
-              + f"the spectral range of the spectrum ({w_range:.1f} nm). We recommend truncating the input " \
-              + f"slit function. See radis documentation about convolve_with_slit for more information."
+                f"Slit spectral range > Spectrum spectral range!\n"
+                + f"Slit function is provided with a spectral range ({w_slit_range:.1f} nm) larger than "
+                + f"the spectral range of the spectrum ({w_range:.1f} nm). We recommend truncating the input "
+                + f"slit function. See radis documentation about convolve_with_slit for more information."
             )
 
     # 2. Interpolate the slit function on the spectrum grid, resample it if not
@@ -804,12 +804,12 @@ def get_FWHM(w, I, return_index=False):
     def get_zero(x1, y1, x2, y2):
         """
         Linear interpolation on data to get zero
-        Return location of zero by solving for f(x) = (y2-y1)/(x2-x1) * (x-x1) + y1 = 0 
+        Return location of zero by solving for f(x) = (y2-y1)/(x2-x1) * (x-x1) + y1 = 0
         """
-        return x1 - y1*(x2-x1)/(y2-y1)
+        return x1 - y1 * (x2 - x1) / (y2 - y1)
 
-    wmin = get_zero(w[xmin-1], I_offset[xmin-1], w[xmin], I_offset[xmin])
-    wmax = get_zero(w[xmax], I_offset[xmax], w[xmax+1], I_offset[xmax+1])
+    wmin = get_zero(w[xmin - 1], I_offset[xmin - 1], w[xmin], I_offset[xmin])
+    wmax = get_zero(w[xmax], I_offset[xmax], w[xmax + 1], I_offset[xmax + 1])
 
     if return_index:
         return abs(wmax - wmin), xmin, xmax

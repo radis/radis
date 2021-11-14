@@ -2355,7 +2355,7 @@ class Spectrum(object):
         imported from an experimental slit function (path to a text file or
         numpy array of shape n*2). Convoluted spectra are cut on the edge
         compared to non-convoluted spectra, to remove side effects. See
-        ``mode=`` to change this behaviour. 
+        ``mode=`` to change this behaviour.
 
         Warning with units: read about ``'unit'`` and ``'return_unit'`` parameters.
 
