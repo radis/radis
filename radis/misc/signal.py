@@ -6,15 +6,18 @@ Summary
 
 Signal processing functions
 
+Resampling  & smoothing.
+
 
 -------------------------------------------------------------------------------
 
 
 """
 
-
+import numpy as np
 from numpy import abs, isnan, linspace, nan, trapz, zeros_like
 from scipy.interpolate import splev, splrep
+from scipy.linalg import solveh_banded
 
 from radis.misc.arrays import (
     anynan,
@@ -105,7 +108,9 @@ def resample(
     elif is_sorted_backward(xspace):
         reverse = True
     else:
-        raise ValueError("Resampling requires wavespace to be sorted. It is not!")
+        raise ValueError(
+            "Resampling requires wavespace to be sorted. It is not! Use .sort()? "
+        )
 
     if reverse:
         xspace = xspace[::-1]
@@ -309,6 +314,130 @@ def resample_even(
     )
 
     return xspace_new, vector_new
+
+
+def als_baseline(
+    intensities,
+    asymmetry_param=0.05,
+    smoothness_param=1e6,
+    max_iters=10,
+    conv_thresh=1e-5,
+    verbose=False,
+):
+    """Computes the asymmetric least squares baseline
+
+    Parameters
+    ----------
+    intensities: array_like
+        vector to smooth
+    asymmetry_param: float
+        value will shift the baseline fit below or above your average line. To cancel gaussian noise,
+        you would want the value to be ``0.5``. To remove a positive peak would want it to be close
+        to ``0``. To remove a negative peaks (from a transmittance signal for instance) you would
+        want it to be close to ``1``. Default ``0.05``
+    smoothness_param: float
+        Relative importance of smoothness of the predicted response:
+        the higher, the smoother the baseline. Suggested range: ``1e2`` to ``1e8``. Default ``1e6``
+
+    Other Parameters
+    ----------------
+    max_iters: int
+        number of iterations
+    conv_thresh: float
+        convergence
+    verbose: boolean
+
+
+    Examples
+    --------
+    ::
+
+        from neq.math.smooth import als_baseline
+        I = als_baseline(I, smoothness_param=1e5, aymmetry_param=0.1)
+
+    References
+    ----------
+
+    * https://zanran_storage.s3.amazonaws.com/www.science.uva.nl/ContentPages/443199618.pdf
+    * http://www.science.uva.nl/~hboelens/publications/draftpub/Eilers_2005.pdf
+
+    Notes
+    -----
+
+    Implementation:
+
+    - uses :func:`~neq.math.smooth.WhittakerSmoother` internally
+    - kudos to https://gist.github.com/perimosocordiae
+
+    See Also
+    --------
+
+    :func:`~radis.misc.signal.WhittakerSmoother`
+
+    """
+    smoother = WhittakerSmoother(intensities, smoothness_param, deriv_order=2)
+    # Rename p for concision.
+    p = asymmetry_param
+    # Initialize weights.
+    w = np.ones(intensities.shape[0])
+    for i in range(max_iters):
+        z = smoother.smooth(w)
+        mask = intensities > z
+        new_w = p * mask + (1 - p) * (~mask)
+        conv = np.linalg.norm(new_w - w)
+        if verbose:
+            print(i + 1, conv)
+        if conv < conv_thresh:
+            break
+        w = new_w
+    else:
+        print("ALS did not converge in %d iterations" % max_iters)
+    return z
+
+
+class WhittakerSmoother(object):
+    """
+
+    References
+    ----------
+    - kudos to https://gist.github.com/perimosocordiae
+
+    See Also
+    --------
+
+    :func:`~radis.misc.signal.als_baseline`
+    """
+
+    def __init__(self, signal, smoothness_param, deriv_order=1):
+        self.y = signal
+        assert deriv_order > 0, "deriv_order must be an int > 0"
+        # Compute the fixed derivative of identity (D).
+        d = np.zeros(deriv_order * 2 + 1, dtype=int)
+        d[deriv_order] = 1
+        d = np.diff(d, n=deriv_order)
+        n = self.y.shape[0]
+        k = len(d)
+        s = float(smoothness_param)
+
+        # Here be dragons: essentially we're faking a big banded matrix D,
+        # doing s * D.T.dot(D) with it, then taking the upper triangular bands.
+        diag_sums = np.vstack(
+            [
+                np.pad(s * np.cumsum(d[-i:] * d[:i]), ((k - i, 0),), "constant")
+                for i in range(1, k + 1)
+            ]
+        )
+        upper_bands = np.tile(diag_sums[:, -1:], n)
+        upper_bands[:, :k] = diag_sums
+        for i, ds in enumerate(diag_sums):
+            upper_bands[i, -i - 1 :] = ds[::-1][: i + 1]
+        self.upper_bands = upper_bands
+
+    def smooth(self, w):
+        foo = self.upper_bands.copy()
+        foo[-1] += w  # last row is the diagonal
+
+        return solveh_banded(foo, w * self.y, overwrite_ab=True, overwrite_b=True)
 
 
 if __name__ == "__main__":
