@@ -7525,7 +7525,6 @@
             ]
         }
     },
-    "_q_conv": {},
     "units": {
         "radiance_noslit": "mW/cm2/sr/um",
         "transmittance_noslit": "1"
@@ -7561,7 +7560,6 @@
         "wo2": 0.0,
         "nprt1": 2,
         "nms": 9,
-        "medium": "air",
         "narray": 2500,
         "wh2o": 0.0,
         "bandoriginsaver": "0",
@@ -7590,6 +7588,11 @@
         "wavelength_min": "nm"
     },
     "populations": {},
+    "references": {
+        "10.1016/j.jqsrt.2018.09.027": [
+            "post-processing"
+        ]
+    },
     "lines": null,
     "name": "N2C_specair_380nm",
     "_slit": {},

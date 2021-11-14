@@ -104,8 +104,14 @@ convenience function::
     s = Spectrum.from_array(w, T, 'transmittance_noslit',
                                wunit='nm', unit='') # adimensioned
 
+Dimensionned arrays can also be used directly ::
 
-Convenience functions have been added to handle the usual cases:
+    import astropy.units as u
+    w = np.linspace(200, 300) * u.nm
+    I = np.random.rand(len(w)) * u.mW/u.cm**2/u.sr/u.nm
+    s = Spectrum.from_array(w, I, 'radiance_noslit')
+
+Other convenience functions have been added to handle the usual cases:
 :func:`~radis.spectrum.models.calculated_spectrum`,
 :func:`~radis.spectrum.models.transmittance_spectrum` and
 :func:`~radis.spectrum.models.experimental_spectrum`::
@@ -115,6 +121,16 @@ Convenience functions have been added to handle the usual cases:
     s1 = calculated_spectrum(w, I, wunit='nm', Iunit='W/cm2/sr/nm')     # creates 'radiance_noslit'
     s2 = transmittance_spectrum(w, T, wunit='nm')                       # creates 'transmittance_noslit'
     s3 = experimental_spectrum(w, I, wunit='nm', Iunit='W/cm2/sr/nm')   # creates 'radiance'
+
+
+Initialize from Specutils
+-------------------------
+
+Use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_specutils` to convert
+from a ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D` object ::
+
+    from radis import Spectrum
+    Spectrum.from_specutils(spectrum)
 
 
 Initialize from a text file
@@ -157,8 +173,20 @@ Spectrum conditions and get Spectrum that suits specific parameters
 .. minigallery:: radis.load_spec
 
 
-Want a quick spectrum
+Load from a HDF5 file
 ---------------------
+
+This is the fastest way to read a Spectrum object from disk. It keeps metadata
+and units, and you can also load only a part of a very large spectrum.
+Use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_hdf5`  ::
+
+    Spectrum.from_hdf5("rad_hdf.h5", wmin=2100, wmax=2200, columns=['abscoeff', 'emisscoeff'])
+
+
+
+
+Calculate a test spectrum
+-------------------------
 
 You need a spectrum immediatly, to run some tests ? Use :py:func:`~radis.test.utils.test_spectrum` ::
 
@@ -447,6 +475,14 @@ automatically retrieves a spectrum from a database if you calculated it already,
 or calculates it and stores it if you didn't. Very useful for spectra that
 requires long computational times!
 
+Export to hdf5
+--------------
+
+This is the fastest way to dump a Spectrum object on disk (and also, it keeps metadata
+and therefore units !). Use :py:meth:`~radis.spectrum.spectrum.Spectrum.to_hdf5`  ::
+
+    s.to_hdf5('spec01.h5')
+
 
 Export to txt
 -------------
@@ -460,6 +496,28 @@ for instance), you can use the :py:meth:`~radis.spectrum.spectrum.Spectrum.savet
 will export a given spectral arrays::
 
     s.savetxt('radiance_W_cm2_sr_um.csv', 'radiance_noslit', wunit='nm', Iunit='W/cm2/sr/µm')
+
+Export to Pandas
+----------------
+
+Use :py:meth:`~radis.spectrum.spectrum.Spectrum.to_pandas` ::
+
+    s.to_pandas()
+
+This will return a DataFrame with all spectral arrays as columns.
+
+
+Export to Specutils
+-------------------
+
+Use :py:meth:`~radis.spectrum.spectrum.Spectrum.to_specutils` to convert
+to a to ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D` object ::
+
+    s.to_specutils()
+
+
+.. minigallery:: radis.spectrum.spectrum.Spectrum.to_specutils
+
 
 
 How to modify a Spectrum object?
@@ -606,13 +664,15 @@ For instance, remove a constant baseline in a given unit::
 
     s -= 0.1 * u.Unit('W/cm2/sr/nm')
 
-Here, se normalize a spectrum manually, assuming the spectrum units is in "mW/cm2/sr/nm" ::
+The :py:meth:`~radis.spectrum.spectrum.Spectrum.max` function returns a dimensionned
+value, therefore it can be used to normalize a spectrum directly :  ::
 
-    s /= s.max() * u.Unit("mW/cm2/sr/nm")
+    s /= s.max()
 
-Or below, we calibrate a Spectrum, assuming the spectrum units is in "count" ::
+Or below, we calibrate a Spectrum, assuming the spectrum units is in "count",
+and that our calibration show we have 94 :math:`mW/cm2/sr/nm` per count.  ::
 
-    s *= 100 * u.Unit("mW/cm2/sr/nm/count")
+    s *= 94 * u.Unit("mW/cm2/sr/nm") / u.Unit("count")
 
 
 .. _label_spectrum_offset_crop:
@@ -667,7 +727,7 @@ Or::
 If you want to create a new spectrum, don't forget to set ``inplace=False``
 for the first command that allows it. i.e ::
 
-    s2 = s.crop(4120, 4220, 'nm', inplace=False).apply_slit(3, 'nm').take('radiance')
+    s2 = s.crop(4120, 4220, 'nm', inplace=False).apply_slit(3, 'nm').offset(1.5, 'nm')
 
 
 .. _label_spectrum_remove_baseline:
@@ -684,6 +744,9 @@ Or remove a linear baseline with:
 
 - :py:func:`~radis.spectrum.operations.get_baseline`
 - :py:func:`~radis.spectrum.operations.sub_baseline`
+
+You could also use the functions available in :py:mod:`pyspecutils`,
+see :py:meth:`~radis.spectrum.spectrum.Spectrum.to_specutils`.
 
 
 Calculate transmittance from radiance with Kirchoff's law

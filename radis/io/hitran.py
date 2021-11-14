@@ -1380,6 +1380,6 @@ def fetch_hitran(
 
 if __name__ == "__main__":
 
-    from radis.test.test_io import _run_testcases
+    from radis.test.io.test_hitran_cdsd import _run_testcases
 
     print("Testing HITRAN parsing: ", _run_testcases())
