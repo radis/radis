@@ -631,8 +631,16 @@ def _calc_spectrum_one_molecule(
         export_lines=export_lines,
         **kwargs
     )
-    if databank in ["fetch", "hitran", "hitemp", "exomol",] or (
-        isinstance(databank, tuple) and databank[0] == "exomol"
+    if (
+        databank
+        in [
+            "fetch",
+            "hitran",
+            "hitemp",
+            "exomol",
+        ]
+        or (isinstance(databank, tuple) and databank[0] == "exomol")
+        or (isinstance(databank, tuple) and databank[0] == "hitran")
     ):  # mode to get databank without relying on  Line databases
         # Line database :
         if databank in ["fetch", "hitran"]:

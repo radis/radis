@@ -125,7 +125,7 @@ by the generating class (ex: SpectrumFactory)"""
 
 
 def cast_waveunit(unit, force_match=True):
-    """Standardize unit formats."""
+    """Standardize unit formats, return either "nm", "nm_vac" or "cm-1"."""
     if unit in WAVELEN_UNITS:
         return "nm"
     if unit in WAVELENVAC_UNITS:

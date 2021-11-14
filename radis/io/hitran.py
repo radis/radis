@@ -1224,6 +1224,7 @@ class HITRANDatabaseManager(DatabaseManager):
 from os.path import abspath, expanduser
 
 
+# TODO: implement parallel=True for all isotopes ?
 def fetch_hitran(
     molecule,
     local_databases="~/.radisdb/hitran/",
