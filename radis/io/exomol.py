@@ -750,7 +750,7 @@ class MdbExomol(object):
                         jupperx,
                         mask_zeronu,
                         quantumNumbersx,
-                    ) = exomolapi.pickup_gE(ndstates, ndtrans, trans_file)
+                    ) = exomolapi.pickup_gE(ndstates, ndtrans, trans_file, dic_def)
                     if engine == "vaex" and trans_file.with_suffix(".hdf5").exists():
                         Sij0x = ndtrans[:, 4]
                     else:

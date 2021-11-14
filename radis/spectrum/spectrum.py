@@ -3252,7 +3252,7 @@ class Spectrum(object):
 
         return spec2hdf(self, file, engine=engine)
 
-    def to_pandas(s, copy=True):
+    def to_pandas(self, copy=True):
         """Convert a Spectrum to a Pandas DataFrame
 
         Returns
@@ -3269,9 +3269,9 @@ class Spectrum(object):
         For the moment, we store units as metadata"""
         import pandas as pd
 
-        df = pd.DataFrame(s._q, copy=copy)
+        df = pd.DataFrame(self._q, copy=copy)
 
-        df.attrs = s.units
+        df.attrs = self.units
 
         return df
 
@@ -3329,8 +3329,6 @@ class Spectrum(object):
         :py:func:`~radis.spectrum.spectrum.Spectrum.from_specutils`
 
         """
-        import astropy.units as u
-
         try:
             from specutils.spectra import Spectrum1D
         except ModuleNotFoundError as err:

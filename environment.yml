@@ -4,6 +4,7 @@ channels:
 - conda-forge
 - astropy
 - cantera
+- plotly
 dependencies:
 - python=3.8
 - astropy  # Unit aware calculations

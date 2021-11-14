@@ -206,7 +206,7 @@ def LineSurvey(
         elif dbformat == "cdsd-4000":
             columndescriptor = cdsd4000columns
         else:
-            warn(NotImplemented(f"unknown dbformat {dbformat}"))
+            warn(f"unknown dbformat {dbformat}")
             columndescriptor = {}
     else:
         columndescriptor = {}

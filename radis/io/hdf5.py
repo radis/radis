@@ -262,7 +262,6 @@ class HDF5Manager(object):
             if key == "default":
                 key = r"/table"
 
-            import h5py
             import vaex
 
             # Open file
