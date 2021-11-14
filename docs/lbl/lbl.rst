@@ -737,6 +737,21 @@ points for each linewidth.
     but is still experimental in 0.9.30. Feedback welcome!
 
 
+Sparse wavenumber grid
+----------------------
+
+To compute large band spectra with a small number of lines, RADIS includes
+a sparse wavenumber implementation of the DIT algorithm, which is
+activated based on a scarcity criterion (``Nlines/Ngrid_points > 1``).
+
+The sparse version can be forced to be activated or deactivated. This behavior
+is done by setting the `SPARSE_WAVENUMBER` key of the :py:attr:`radis.config`
+dictionary, or of the ~/radis.json user file.
+
+See the :ref:`HITRAN full-range example <example_hitran_full_range>` for an
+example.
+
+
 Database loading
 ----------------
 
