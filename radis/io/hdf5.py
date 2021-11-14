@@ -173,7 +173,6 @@ class HDF5Manager(object):
     def combine_temp_batch_files(self, file, key="default"):
         """Combine all batch files in ``self._temp_batch_files`` into one.
         Removes all batch files.
-        Returns length of final DataFrame.
         """
         if self.engine == "vaex":
             if len(self._temp_batch_files) == 0:
@@ -183,11 +182,9 @@ class HDF5Manager(object):
             import vaex
 
             df = vaex.open(self._temp_batch_files, group=key)
-            Nlines = len(df)
             df.export_hdf5(file, group=key, mode="w")
             df.close()
         self._close_temp_batch_files()
-        return Nlines
 
     def _close_temp_batch_files(self):
         for i in range(len(self._temp_batch_files) - 1, -1, -1):

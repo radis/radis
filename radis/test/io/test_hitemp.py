@@ -187,16 +187,28 @@ def test_partial_loading(*args, **kwargs):
 
     Also check 'vaex' engine and ``radis.config["AUTO_UPDATE_DATABASE"]``"""
 
-    wmin, wmax = 2500, 4500
+    from radis.test.utils import getTestFile
 
-    # First ensures that the database is wider than this (else test is irrelevant) :
-    df = fetch_hitemp("OH", engine="pytables")
-    assert df.wav.min() < wmin
-    assert df.wav.max() > wmax
+    df = fetch_hitemp(
+        "OH",
+        local_databases=getTestFile("."),
+        databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
+        engine="pytables",
+    )
 
     # Now fetch with partial loading
+    wmin, wmax = 2500, 4500
+    # ... First ensures that the database is wider than this (else test is irrelevant) :
+    assert df.wav.min() < wmin
+    assert df.wav.max() > wmax
+    # ... load :
     df = fetch_hitemp(
-        "OH", load_wavenum_min=wmin, load_wavenum_max=wmax, engine="pytables"
+        "OH",
+        local_databases=getTestFile("."),
+        databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
+        load_wavenum_min=wmin,
+        load_wavenum_max=wmax,
+        engine="pytables",
     )
     assert df.wav.min() >= wmin
     assert df.wav.max() <= wmax
@@ -206,6 +218,8 @@ def test_partial_loading(*args, **kwargs):
     wmax2 = 300
     df = fetch_hitemp(
         "OH",
+        local_databases=getTestFile("."),
+        databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
         load_wavenum_min=wmin2,
         load_wavenum_max=wmax2,
         isotope="2",
@@ -214,6 +228,8 @@ def test_partial_loading(*args, **kwargs):
     assert df.iso.unique() == 2
     df = fetch_hitemp(
         "OH",
+        local_databases=getTestFile("."),
+        databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
         load_wavenum_min=wmin2,
         load_wavenum_max=wmax2,
         isotope="1,2",
@@ -227,7 +243,12 @@ def test_partial_loading(*args, **kwargs):
     old_config = radis.config["AUTO_UPDATE_DATABASE"]
     try:
         radis.config["AUTO_UPDATE_DATABASE"] = True
-        df = fetch_hitemp("OH", engine="vaex")
+        df = fetch_hitemp(
+            "OH",
+            local_databases=getTestFile("."),
+            databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
+            engine="vaex",
+        )
     finally:
         radis.config["AUTO_UPDATE_DATABASE"] = old_config
     # assert that database is wider than future selection
@@ -237,6 +258,8 @@ def test_partial_loading(*args, **kwargs):
     # now test wrange & multiple isotope selection with vaex
     df = fetch_hitemp(
         "OH",
+        local_databases=getTestFile("."),
+        databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
         load_wavenum_min=wmin2,
         load_wavenum_max=wmax2,
         isotope="2,3",
