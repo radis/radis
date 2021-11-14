@@ -1907,7 +1907,6 @@ class Spectrum(object):
             if None, only one electronic state must be defined. Else, an error
             is raised
 
-
         Returns
         -------
         pandas dataframe of levels, where levels are the index,
@@ -2383,18 +2382,16 @@ class Spectrum(object):
 
             s.apply_slit(1.2, 'nm')
 
-        To manually apply the slit to a particular quantity use::
+        This applies the instrumental function to all available spectral arrays.
+        To manually apply the slit to a particular spectral array, use
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.take` ::
 
-            wavenum, quantity = s['quantity']
-            s['convolved_quantity'] = convolve_slit(wavenum, quantity,
-                slit_function_base)
+            s.take('transmittance_noslit').apply_slit(1.2, 'nm')
 
         See :func:`~radis.tools.slit.convolve_with_slit` for more details on Units and Normalization
 
         The slit is made considering the "center wavelength" which is
         the mean wavelength of the full spectrum you are applying it to.
-
-        Examples using apply_slit :
 
         .. minigallery:: radis.Spectrum.apply_slit
             :add-heading:
@@ -3962,59 +3959,91 @@ class Spectrum(object):
     def _get_unique_var(self, operation_name="algebraic"):
         quantities = self.get_vars()
         if len(quantities) > 1:
-            raise KeyError(
-                "There is an ambiguity with the Spectrum {0} operation. ".format(
+            raise ValueError(
+                "There is an ambiguity with the Spectrum `{0}()` operation. ".format(
                     operation_name
                 )
-                + "There should be only one var in Spectrum {0}. Got {1}\n".format(
-                    self.get_name(), self.get_vars()
+                + "There are currently multiple spectral arrays in the Spectrum {0} ({1})\n\n".format(
+                    self.get_name(), ", ".join(self.get_vars())
                 )
-                + "Use `s.take('transmittance')` or `s.take('radiance')`, etc. to extract the "
-                "one spectral quantity you want."
+                + f"Use `s.take('transmittance').{operation_name}()` or `s.take('radiance').{operation_name}()`"
+                f", etc. to apply `{operation_name}()` to the one spectral array you want."
             )
         elif len(quantities) == 0:
-            raise KeyError(
-                "No spectral quantity defined in Spectrum {0}".format(self.get_name())
+            raise ValueError(
+                "No spectral array defined in Spectrum {0}".format(self.get_name())
             )
         else:
             var = quantities[0]
         return var
 
-    def max(self):
+    def max(self, value_only=False):
         """Maximum of the Spectrum, if only one spectral quantity is
         available::
 
             s.max()
 
-        Else, use :func:`~radis.spectrum.operations.Radiance`,
-        :func:`~radis.spectrum.operations.Radiance_noslit`,
-        :func:`~radis.spectrum.operations.Transmittance` or
-        :func:`~radis.spectrum.operations.Transmittance_noslit`  ::
+        Returns a dimensioned quantity by default, with the default unit of the spectrum.
+        If ``value_only=False``, a float is returned, without dimensions.
 
-            Radiance(s).max()
+        If there are multiple arrays in your Spectrum, use
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.take`, e.g. ::
+
+            s.take('radiance').max()
+
+        Examples
+        --------
+        Normalize a spectrum (we could also have used :py:meth:`~radis.spectrum.spectrum.Spectrum.normalize`
+        directly) ::
+
+            s /= s.max()
+
+        Below is a slightly more advanced use case, convenient to process
+        non-calibrated experimental data.
+
+        Imagine we want to remove a baseline that we have identified to originate from
+        a particular species, modelled by spectrum ``s``, but whose intensity
+        (and units) are not the same as that of the experimental spectrum.
+
+        We substract exactly the intensity that correspond to the intensity on a given range ``w1, w2`` of the experimental
+        spectrum ``s_exp``, using a combination of :py:meth:`~radis.spectrum.spectrum.Spectrum.take`,
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.normalize`,
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.crop` and :py:meth:`~radis.spectrum.spectrum.Spectrum.max`:
+        ::
+
+            s_exp -= s.take('radiance').normalize() * s_exp.crop((w1, w2)), inplace=False).max()
+
         """
 
         var = self._get_unique_var(operation_name="max")
         w, I = self.get(var, wunit=self.get_waveunit(), copy=False)
-        return I[~np.isnan(I)].max()
+        if value_only:
+            return I[~np.isnan(I)].max()
+        else:
+            return I[~np.isnan(I)].max() * Unit(self.units[var])
 
-    def min(self):
+    def min(self, value_only=True):
         """Minimum of the Spectrum, if only one spectral quantity is available
         ::
 
             s.min()
 
-        Else, use :func:`~radis.spectrum.operations.Radiance`,
-        :func:`~radis.spectrum.operations.Radiance_noslit`,
-        :func:`~radis.spectrum.operations.Transmittance` or
-        :func:`~radis.spectrum.operations.Transmittance_noslit`  ::
+        Returns a dimensioned quantity by default, with the default unit of the spectrum.
+        If ``value_only=False``, a float is returned, without dimensions.
 
-            Radiance(s).min()
+        If there are multiple arrays in your Spectrum, use
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.take`, e.g. ::
+
+            s.take('radiance').min()
+
         """
 
         var = self._get_unique_var(operation_name="min")
         w, I = self.get(var, wunit=self.get_waveunit(), copy=False)
-        return I[~np.isnan(I)].min()
+        if value_only:
+            return I[~np.isnan(I)].min()
+        else:
+            return I[~np.isnan(I)].min() * Unit(self.units[var])
 
     def normalize(
         self,
@@ -4051,7 +4080,13 @@ class Spectrum(object):
         Examples
         --------
         ::
+
             s.normalize("max", (4200, 4800), inplace=True).plot()
+
+        If there are multiple arrays in your Spectrum, use
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.take`, e.g. ::
+
+            s.take('radiance').normalize(wrange=(4200, 4800)).plot()
 
         .. minigallery:: radis.spectrum.spectrum.Spectrum.normalize
 
