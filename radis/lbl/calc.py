@@ -133,16 +133,33 @@ def calc_spectrum(
 
     databank: str or dict
         can be either:
-        - ``'hitran'``, to fetch automatically the latest HITRAN version
-          through :py:func:`~radis.io.query.fetch_astroquery` (based on [HAPI]_ ).
-        - ``'hitemp'``, to fetch automatically the latest HITEMP version
-          through :py:func:`~radis.io.hitemp.fetch_hitemp`.
+        - ``'hitran'``, to fetch the latest HITRAN version
+          through :py:func:`~radis.io.hitran.fetch_hitran` (download full database
+          with  [HAPI]_) or :py:func:`~radis.io.query.fetch_astroquery` (download
+          only the required range). To use one mode or the other, use ::
+
+            databank=('hitran', 'full')     # download and cache full database, all isotopes
+            databank=('hitran', 'range')    # download and cache required range, required isoope
+
+        - ``'hitemp'``, to fetch the latest HITEMP version
+          through :py:func:`~radis.io.hitemp.fetch_hitemp`. Downloads all lines
+          and all isotopes.
+        - ``'exomol'``, to fetch the latest ExoMol database
+          through :py:func:`~radis.io.hitemp.fetch_exomol`. To download a specific
+          database use (more info in fetch_exomol) ::
+
+            databank=('exomol', 'EBJT')   # 'EBJT' is a specific ExoMol database name
+
         - the name of a a valid database file, in which case the format is inferred.
           For instance, ``'.par'`` is recognized as ``hitran/hitemp`` format.
-          Accepts wildcards ``'*'`` to select multiple files.
+          Accepts wildcards ``'*'`` to select multiple files ::
+
+            databank='PATH/TO/co_*.par'
+
         - the name of a spectral database registered in your ``~/radis.json``
-          :ref:`configuration file <label_lbl_config_file>`.
-          This allows to use multiple database files.
+          :ref:`configuration file <label_lbl_config_file>` ::
+
+            databank='MY_SPECTRAL_DATABASE'
 
         Default ``'hitran'``. See :class:`~radis.lbl.loader.DatabankLoader` for more
         information on line databases, and :data:`~radis.misc.config.DBFORMAT` for
@@ -623,6 +640,14 @@ def _calc_spectrum_one_molecule(
                 "source": "hitran",
                 "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
             }
+        elif isinstance(databank, tuple) and databank[0] == "hitran":
+            conditions = {
+                "source": "hitran",
+                "database": databank[
+                    1
+                ],  # 'full' or 'partial', cf LoaderFactory.fetch_databank()
+                "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
+            }
         elif databank in ["hitemp"]:
             conditions = {
                 "source": "hitemp",
@@ -636,7 +661,7 @@ def _calc_spectrum_one_molecule(
         elif isinstance(databank, tuple) and databank[0] == "exomol":
             conditions = {
                 "source": "exomol",
-                "exomol_database": databank[1],
+                "database": databank[1],
                 "parfuncfmt": "exomol",  # download & use Exo partition functions for equilibrium}
             }
         # Partition functions :

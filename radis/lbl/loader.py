@@ -68,7 +68,12 @@ from radis.io.cdsd import cdsd2df
 from radis.io.exomol import fetch_exomol
 from radis.io.hdf5 import hdf2df
 from radis.io.hitemp import fetch_hitemp
-from radis.io.hitran import hit2df, parse_global_quanta, parse_local_quanta
+from radis.io.hitran import (
+    fetch_hitran,
+    hit2df,
+    parse_global_quanta,
+    parse_local_quanta,
+)
 from radis.io.query import fetch_astroquery
 from radis.io.tools import drop_object_format_columns, replace_PQR_with_m101
 from radis.levels.partfunc import (
@@ -858,7 +863,7 @@ class DatabankLoader(object):
     def fetch_databank(
         self,
         source="hitran",
-        exomol_database=None,
+        database="default",
         parfunc=None,
         parfuncfmt="hapi",
         levels=None,
@@ -880,9 +885,21 @@ class DatabankLoader(object):
         source: ``'hitran'``, ``'hitemp'``, ``'exomol'``
             [Download database lines from the latest HITRAN (see [HITRAN-2016]_),
             HITEMP (see [HITEMP-2010]_  )] or EXOMOL see [ExoMol-2020]_  ) databases.
-        exomol_database: None
-            if fetching from ''`exomol`'', choose which database to use. Keep
-            ``None`` to use the recommended one. See all available databases
+        database: ``'full'``, ``'range'``, name of an ExoMol database, or ``'default'``
+            if fetching from HITRAN, ``'full'`` download the full database and register
+            it, ``'range'`` download only the lines in the range of the molecule.
+
+            .. note::
+                ``'range'`` will be faster, but will require a new download each time
+                you'll change the range. ``'full'`` is slower and takes more memory, but
+                will be downloaded only once.
+
+            Default is ``'full'``.
+
+            If fetching from HITEMP, only ``'full'`` is available.
+
+            if fetching from ''`exomol`'', use this parameter to choose which database
+            to use. Keep ``'default'`` to use the recommended one. See all available databases
             with :py:func:`radis.io.exomol.get_exomol_database_list`
 
 
@@ -966,14 +983,17 @@ class DatabankLoader(object):
             raise NotImplementedError("source: {0}".format(source))
         if source == "hitran":
             dbformat = "hitran"
+            if database == "default":
+                database = "full"
         elif source == "hitemp":
             dbformat = (
                 "hitemp-radisdb"  # downloaded in RADIS local databases ~/.radisdb
             )
+            if database == "default":
+                database = "full"
         elif source == "exomol":
             dbformat = "exomol-radisdb"  # downloaded in RADIS local databases ~/.radisdb  # Note @EP : still WIP.
-        if exomol_database != None:
-            assert source == "exomol"
+
         if [parfuncfmt, source].count("exomol") == 1:
             self.warn(
                 f"Using lines from {source} but partition functions from {parfuncfmt}"
@@ -1019,44 +1039,75 @@ class DatabankLoader(object):
             self.reftracker.add(doi["HITRAN-2016"], "line database")  # [HITRAN-2016]_
             self.reftracker.add(doi["Astroquery"], "data retrieval")  # [Astroquery]_
 
-            # Query one isotope at a time
-            if isotope == "all":
-                raise ValueError(
-                    "Please define isotope explicitely (cannot use 'all' with fetch_databank('hitran'))"
-                )
-            isotope_list = self._get_isotope_list()
+            if database == "full":
 
-            frames = []  # lines for all isotopes
-            for iso in isotope_list:
-                df = fetch_astroquery(
-                    molecule, iso, wavenum_min, wavenum_max, verbose=self.verbose
-                )
-                if len(df) > 0:
-                    frames.append(df)
+                if isotope == "all":
+                    isotope_list = None
                 else:
-                    self.warn(
-                        "No line for isotope n°{}".format(iso),
-                        "EmptyDatabaseWarning",
-                        level=2,
-                    )
+                    isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
 
-            # Merge
-            if frames == []:
-                raise EmptyDatabaseError(
-                    f"{molecule} has no lines on range "
-                    + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
+                df, local_paths = fetch_hitran(
+                    molecule,
+                    isotope=isotope_list,
+                    load_wavenum_min=wavenum_min,
+                    load_wavenum_max=wavenum_max,
+                    cache=db_use_cached,
+                    verbose=self.verbose,
+                    return_local_path=True,
+                    engine=memory_mapping_engine,
+                    parallel=parallel,
                 )
-            if len(frames) > 1:
-                # Note @dev : may be faster/less memory hungry to keep lines separated for each isotope. TODO : test both versions
-                for df in frames:
-                    assert "iso" in df.columns
-                df = pd.concat(frames, ignore_index=True)  # reindex
+                self.params.dbpath = ",".join(local_paths)
+
+            elif database == "range":
+
+                # Query one isotope at a time
+                if isotope == "all":
+                    raise ValueError(
+                        "Please define isotope explicitely (cannot use 'all' with fetch_databank('hitran'))"
+                    )
+                isotope_list = self._get_isotope_list()
+
+                frames = []  # lines for all isotopes
+                for iso in isotope_list:
+                    df = fetch_astroquery(
+                        molecule, iso, wavenum_min, wavenum_max, verbose=self.verbose
+                    )
+                    if len(df) > 0:
+                        frames.append(df)
+                    else:
+                        self.warn(
+                            "No line for isotope n°{}".format(iso),
+                            "EmptyDatabaseWarning",
+                            level=2,
+                        )
+
+                # Merge
+                if frames == []:
+                    raise EmptyDatabaseError(
+                        f"{molecule} has no lines on range "
+                        + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
+                    )
+                if len(frames) > 1:
+                    # Note @dev : may be faster/less memory hungry to keep lines separated for each isotope. TODO : test both versions
+                    for df in frames:
+                        assert "iso" in df.columns
+                    df = pd.concat(frames, ignore_index=True)  # reindex
+                else:
+                    df = frames[0]
+                self.params.dbpath = "fetched from hitran"
             else:
-                df = frames[0]
-            self.params.dbpath = "fetched from hitran"
+                raise ValueError(
+                    f"Got `database={database}`. When fetching HITRAN, choose `database='full'` to download all database (once for all) or `database='range'` to download only the lines in the current range."
+                )
 
         elif source == "hitemp":
             self.reftracker.add(doi["HITEMP-2010"], "line database")  # [HITEMP-2010]_
+
+            if database != "full":
+                raise ValueError(
+                    f"Got `database={database}`. When fetching HITEMP, only the `database='full'` option is available."
+                )
 
             # Download, setup local databases, and fetch (use existing if possible)
 
@@ -1087,6 +1138,11 @@ class DatabankLoader(object):
         elif source == "exomol":
             self.reftracker.add(doi["ExoMol-2020"], "line database")  # [ExoMol-2020]
 
+            if database in ["full", "range"]:
+                raise ValueError(
+                    f"Got `database={database}`. When fetching ExoMol, only the `database=` key to retrieve a speciifc database. Use `database='default'` to get the recommended database. See more informatino in radis.io.fetch_exomol()"
+                )
+
             # Download, setup local databases, and fetch (use existing if possible)
             if memory_mapping_engine not in ["vaex", "feather"]:
                 raise NotImplementedError(f"{memory_mapping_engine} with ExoMol files")
@@ -1105,7 +1161,7 @@ class DatabankLoader(object):
             for iso in isotope_list:
                 df, local_path, Z_exomol = fetch_exomol(
                     molecule,
-                    database=exomol_database,
+                    database=database,
                     isotope=iso,
                     load_wavenum_min=wavenum_min,
                     load_wavenum_max=wavenum_max,
