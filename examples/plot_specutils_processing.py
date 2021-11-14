@@ -27,7 +27,7 @@ s = (
     .take("radiance")
 )
 s.trim()  # removes nans created by the slit convolution boundary effects
-noise = np.random.normal(0.0, s.max() * 0.03, len(s))
+noise = np.random.normal(0.0, s.max().value * 0.03, len(s))
 s_exp = s + noise
 
 s_exp.plot()
