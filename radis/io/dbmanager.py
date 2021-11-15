@@ -7,7 +7,7 @@ Created on Mon Aug  9 19:42:51 2021
 import os
 import shutil
 from io import BytesIO
-from os.path import abspath, dirname, exists, splitext
+from os.path import abspath, dirname, exists, expanduser, join, split, splitext
 from zipfile import ZipFile
 
 from radis.misc.config import addDatabankEntries, getDatabankEntries, getDatabankList
@@ -22,7 +22,6 @@ except ImportError:
     from radis.io.cache_files import check_not_deprecated
 
 from datetime import date
-from os.path import join, split
 
 import numpy as np
 import pandas as pd
@@ -180,7 +179,9 @@ class DatabaseManager(object):
 
             # Check that local files are the one we expect :
             for f in local_files:
-                if not f.startswith(local_databases):
+                if not abspath(expanduser(f)).startswith(
+                    abspath(expanduser(local_databases))
+                ):
                     raise ValueError(
                         f"Database {self.name} is inconsistent : it should be stored in {local_databases} but files registered in ~/radis.json contains {f}. Please fix or delete the ~/radis.json entry."
                     )

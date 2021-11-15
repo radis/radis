@@ -107,7 +107,7 @@ def read_pf(pff):
         partition data in pandas DataFrame
 
     """
-    dat = pd.read_csv(pff, sep="\s+", names=("T", "QT"))
+    dat = pd.read_csv(pff, sep=r"\s+", names=("T", "QT"))
     return dat
 
 
@@ -134,14 +134,14 @@ def read_trans(transf, engine="vaex"):
             dat = vaex.from_csv(
                 transf,
                 compression="bz2",
-                sep="\s+",
+                sep=r"\s+",
                 names=("i_upper", "i_lower", "A", "nu_lines"),
                 convert=True,
             )
         except:
             dat = vaex.read_csv(
                 transf,
-                sep="\s+",
+                sep=r"\s+",
                 names=("i_upper", "i_lower", "A", "nu_lines"),
                 convert=True,
             )
@@ -150,12 +150,12 @@ def read_trans(transf, engine="vaex"):
             dat = pd.read_csv(
                 transf,
                 compression="bz2",
-                sep="\s+",
+                sep=r"\s+",
                 names=("i_upper", "i_lower", "A", "nu_lines"),
             )
         except:
             dat = pd.read_csv(
-                transf, sep="\s+", names=("i_upper", "i_lower", "A", "nu_lines")
+                transf, sep=r"\s+", names=("i_upper", "i_lower", "A", "nu_lines")
             )
 
     return dat
@@ -206,22 +206,22 @@ def read_states(statesf, dic_def, engine="vaex"):
             dat = vaex.from_csv(
                 statesf,
                 compression="bz2",
-                sep="\s+",
+                sep=r"\s+",
                 usecols=usecol,
                 names=names,
                 convert=True,
             )
         except:
             dat = vaex.read_csv(
-                statesf, sep="\s+", usecols=usecol, names=names, convert=True
+                statesf, sep=r"\s+", usecols=usecol, names=names, convert=True
             )
     elif engine == "csv":
         try:
             dat = pd.read_csv(
-                statesf, compression="bz2", sep="\s+", usecols=usecol, names=names
+                statesf, compression="bz2", sep=r"\s+", usecols=usecol, names=names
             )
         except:  #!!!TODO What was the expected error?
-            dat = pd.read_csv(statesf, sep="\s+", usecols=usecol, names=names)
+            dat = pd.read_csv(statesf, sep=r"\s+", usecols=usecol, names=names)
     else:
         raise NotImplementedError(engine)
 
@@ -380,7 +380,7 @@ def read_broad(broadf):
     """
     bdat = pd.read_csv(
         broadf,
-        sep="\s+",
+        sep=r"\s+",
         names=(
             "code",
             "alpha_ref",
