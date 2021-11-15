@@ -974,10 +974,21 @@ class BroadenFactory(BaseFactory):
 
         molar_mass = self.get_molar_mass(df)
 
+        if not "selbrd" in list(df.keys()):
+            self.warn(
+                "Self-broadening coefficient selbrd not given in database: used airbrd instead",
+                "MissingSelfBroadeningWarning",
+                level=1,  # only appear if verbose>=2
+            )
+
+            selbrd = df.airbrd
+        else:
+            selbrd = df.selbrd
+
         # Calculate broadening FWHM
         wv, wl, wg = voigt_broadening_HWHM(
             df.airbrd,
-            df.selbrd,
+            selbrd,
             df.Tdpair,
             Tdpsel,
             df.wav,
