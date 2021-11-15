@@ -1115,6 +1115,12 @@ class DatabankLoader(object):
 
             if database == "full":
 
+                # quick fix for https://github.com/radis/radis/issues/401
+                if memory_mapping_engine not in ["vaex", "pytables"]:
+                    raise NotImplementedError(
+                        f"{memory_mapping_engine} with HITRAN files. Define radis.config['MEMORY_MAPPING_ENGINE'] = 'vaex' or 'pytables'"
+                    )
+
                 if isotope == "all":
                     isotope_list = None
                 else:
@@ -1179,6 +1185,12 @@ class DatabankLoader(object):
         elif source == "hitemp":
             self.reftracker.add(doi["HITEMP-2010"], "line database")  # [HITEMP-2010]_
 
+            # quick fix for https://github.com/radis/radis/issues/401
+            if memory_mapping_engine not in ["vaex", "pytables"]:
+                raise NotImplementedError(
+                    f"{memory_mapping_engine} with HITEMP files. Define radis.config['MEMORY_MAPPING_ENGINE'] = 'vaex' or 'pytables'"
+                )
+
             if database != "full":
                 raise ValueError(
                     f"Got `database={database}`. When fetching HITEMP, only the `database='full'` option is available."
@@ -1216,12 +1228,14 @@ class DatabankLoader(object):
 
             if database in ["full", "range"]:
                 raise ValueError(
-                    f"Got `database={database}`. When fetching ExoMol, only the `database=` key to retrieve a speciifc database. Use `database='default'` to get the recommended database. See more informatino in radis.io.fetch_exomol()"
+                    f"Got `database={database}`. When fetching ExoMol, use the `database=` key to retrieve a specific database. Use `database='default'` to get the recommended database. See more informatino in radis.io.fetch_exomol()"
                 )
 
             # Download, setup local databases, and fetch (use existing if possible)
             if memory_mapping_engine not in ["vaex", "feather"]:
-                raise NotImplementedError(f"{memory_mapping_engine} with ExoMol files")
+                raise NotImplementedError(
+                    f"{memory_mapping_engine} with ExoMol files. Define radis.config['MEMORY_MAPPING_ENGINE'] = 'vaex' or 'feather'"
+                )
 
             if isotope == "all":
                 raise ValueError(
