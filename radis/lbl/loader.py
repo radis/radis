@@ -49,7 +49,6 @@ key in :py:attr:`radis.config`
 # @dev: (on Spyder IDE navigate between sections easily as # XXX makes a reference
 # (on the slide bar on the right)
 
-import os
 import warnings
 from copy import deepcopy
 from os.path import exists
@@ -1110,6 +1109,8 @@ class DatabankLoader(object):
         # ---------------------
         self._reset_references()  # bibliographic references
 
+        from os import environ
+
         if source == "hitran":
             self.reftracker.add(doi["HITRAN-2016"], "line database")  # [HITRAN-2016]_
             self.reftracker.add(doi["Astroquery"], "data retrieval")  # [Astroquery]_
@@ -1118,7 +1119,7 @@ class DatabankLoader(object):
 
                 # quick fix for https://github.com/radis/radis/issues/401
                 if memory_mapping_engine == "auto":
-                    if any("SPYDER" in name for name in os.environ):
+                    if any("SPYDER" in name for name in environ):
                         engine = "pytables"
                         if self.verbose >= 3:
                             print(
@@ -1193,7 +1194,7 @@ class DatabankLoader(object):
 
             # quick fix for https://github.com/radis/radis/issues/401
             if memory_mapping_engine == "auto":
-                if any("SPYDER" in name for name in os.environ):
+                if any("SPYDER" in name for name in environ):
                     engine = "pytables"
                     if self.verbose >= 3:
                         print(
@@ -1239,7 +1240,7 @@ class DatabankLoader(object):
 
             # quick fix for https://github.com/radis/radis/issues/401
             if memory_mapping_engine == "auto":
-                if any("SPYDER" in name for name in os.environ):
+                if any("SPYDER" in name for name in environ):
                     engine = "feather"
                     if self.verbose >= 3:
                         print(

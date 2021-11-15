@@ -452,6 +452,8 @@ class MdbExomol(object):
            The trans/states files can be very large. For the first time to read it, we convert it to the feather-format. After the second-time, we use the feather format instead.
 
         """
+        from os import environ
+
         if engine == "default":
             from radis import config
 
@@ -461,9 +463,7 @@ class MdbExomol(object):
                 # "auto" uses "vaex" in most cases unless you're using the Spyder IDE (where it may result in freezes).
                 # see https://github.com/spyder-ide/spyder/issues/16183.
                 # and https://github.com/radis/radis/issues/401
-                import os
-
-                if any("SPYDER" in name for name in os.environ):
+                if any("SPYDER" in name for name in environ):
                     if verbose >= 3:
                         print(
                             "Spyder IDE detected. Memory-mapping-engine set to 'feather' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"

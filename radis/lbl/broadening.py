@@ -978,7 +978,7 @@ class BroadenFactory(BaseFactory):
             self.warn(
                 "Self-broadening coefficient selbrd not given in database: used airbrd instead",
                 "MissingSelfBroadeningWarning",
-                level=1,  # only appear if verbose>=2
+                level=2,  # only appear if verbose>=2
             )
 
             selbrd = df.airbrd
@@ -1047,6 +1047,7 @@ class BroadenFactory(BaseFactory):
             self.warn(
                 "Self-broadening reference width `selbrd` not given in database: used air broadening reference width `airbrd` instead",
                 "MissingSelfBroadeningWarning",
+                level=2,  # only appear if verbose>=2
             )
             selbrd = df.airbrd
         else:

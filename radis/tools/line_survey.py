@@ -9,7 +9,6 @@ Functions to plot line surveys
 """
 
 
-import os
 from warnings import warn
 
 import numpy as np
@@ -169,7 +168,9 @@ def LineSurvey(
     assert yscale in ["log", "linear"]
 
     # auto plot in Spyder IDE
-    if writefile is None and any("SPYDER" in name for name in os.environ):
+    from os import environ
+
+    if writefile is None and any("SPYDER" in name for name in environ):
         writefile = "line_survey.html"
 
     try:
