@@ -54,8 +54,8 @@ def test_relevant_files_filter():
 
 
 @pytest.mark.needs_connection
-def test_fetch_hitemp_OH(verbose=True, *args, **kwargs):
-    """Test proper download of HITEMP OH database.
+def test_fetch_hitemp_OH_pytables(verbose=True, *args, **kwargs):
+    """Test proper download of HITEMP OH database, with two engines.
 
     Good to test fetch_hitemp.
     ``13_HITEMP2020.par.bz2`` is only 900 kb so it can be run on online
@@ -68,14 +68,61 @@ def test_fetch_hitemp_OH(verbose=True, *args, **kwargs):
 
     """
 
-    df = fetch_hitemp("OH", cache="regen", chunksize=20000, verbose=3 * verbose)
+    df = fetch_hitemp(
+        "OH",
+        cache="regen",
+        chunksize=20000,
+        verbose=3 * verbose,
+        databank_name="HITEMP-OH-TEST-ENGINE-PYTABLES",
+        engine="pytables",
+    )
 
-    assert "HITEMP-OH" in getDatabankList()
+    assert "HITEMP-OH-TEST-ENGINE-PYTABLES" in getDatabankList()
 
     assert len(df) == 57019
 
     # Load again and make sure it works (ex: metadata properly loaded etc.):
-    fetch_hitemp("OH")
+    fetch_hitemp(
+        "OH",
+        databank_name="HITEMP-OH-TEST-ENGINE-PYTABLES",
+        engine="pytables",
+    )
+
+
+@pytest.mark.needs_connection
+def test_fetch_hitemp_OH_vaex(verbose=True, *args, **kwargs):
+    """Test proper download of HITEMP OH database, with two engines.
+
+    Good to test fetch_hitemp.
+    ``13_HITEMP2020.par.bz2`` is only 900 kb so it can be run on online
+    tests without burning the planet 🌳
+
+    ⚠️ if using the default `chunksize=100000`, it uncompresses in one pass
+    (only 57k lines for OH) and we cannot test that appending to the same HDF5
+    works. So here we use a smaller chunksize of 20,000.
+    .
+
+    """
+
+    df = fetch_hitemp(
+        "OH",
+        cache="regen",
+        chunksize=20000,
+        verbose=3 * verbose,
+        databank_name="HITEMP-OH-TEST-ENGINE-VAEX",
+        engine="vaex",
+    )
+
+    assert "HITEMP-OH-TEST-ENGINE-VAEX" in getDatabankList()
+
+    assert len(df) == 57019
+
+    # Load again and make sure it works (ex: metadata properly loaded etc.):
+    fetch_hitemp(
+        "OH",
+        databank_name="HITEMP-OH-TEST-ENGINE-VAEX",
+        engine="vaex",
+    )
 
 
 @pytest.mark.needs_connection
@@ -358,7 +405,8 @@ def test_parse_hitemp_missing_labels_issue280(*args, **kwargs):
 
 if __name__ == "__main__":
     test_relevant_files_filter()
-    test_fetch_hitemp_OH()
+    test_fetch_hitemp_OH_pytables()
+    test_fetch_hitemp_OH_vaex()
     test_partial_loading()
     test_calc_hitemp_CO_noneq()
     test_fetch_hitemp_partial_download_CO2()

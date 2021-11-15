@@ -1069,6 +1069,8 @@ class HITRANDatabaseManager(DatabaseManager):
         self.downloadable = True
         self.base_url = None
         self.Nlines = None
+        self.wmin = None
+        self.wmax = None
 
     def get_filenames(self):
         if self.engine == "vaex":
@@ -1213,6 +1215,26 @@ class HITRANDatabaseManager(DatabaseManager):
         from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
 
         local_files = self.get_filenames()
+
+        if self.wmin is None or self.wmax is None:
+            print(
+                "Somehow wmin and wmax was not given for this database. Reading from the files"
+            )
+            ##  fix:
+            # (can happen if database was downloaded & parsed, but registration failed a first time)
+            df_full = self.load(
+                local_files,
+                columns=["wav"],
+                isotope=None,
+                load_wavenum_min=None,
+                load_wavenum_max=None,
+            )
+            self.wmin = df_full.wav.min()
+            self.wmax = df_full.wav.max()
+            print(
+                f"Somehow wmin and wmax was not given for this database. Read {self.wmin}, {self.wmax} directly from the files"
+            )
+
         info = f"HITRAN {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1) with TIPS-2021 (through HAPI) for partition functions"
 
         dict_entries = {

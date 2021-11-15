@@ -101,6 +101,43 @@ def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
 
 # ignored by pytest with argument -m "not needs_connection"
 @pytest.mark.needs_connection
+def test_fetch_hitran_CO_pytables(*args, **kwargs):
+
+    from radis.io.hitran import fetch_hitran
+
+    df = fetch_hitran(
+        "CO",
+        databank_name="HITRAN-CO-TEST-ENGINE-PYTABLES",
+        engine="pytables",
+    )
+
+    assert len(df) == 5381
+    assert df.wav.min() == 3.40191
+    assert df.wav.max() == 14477.377142
+
+
+# TODO : clean database on each new pytest run ?
+
+
+# ignored by pytest with argument -m "not needs_connection"
+@pytest.mark.needs_connection
+def test_fetch_hitran_CO_vaex(*args, **kwargs):
+
+    from radis.io.hitran import fetch_hitran
+
+    df = fetch_hitran(
+        "CO",
+        databank_name="HITRAN-CO-TEST-ENGINE-VAEX",
+        engine="vaex",
+    )
+
+    assert len(df) == 5381
+    assert df.wav.min() == 3.40191
+    assert df.wav.max() == 14477.377142
+
+
+# ignored by pytest with argument -m "not needs_connection"
+@pytest.mark.needs_connection
 def test_fetch_hitran(*args, **kwargs):
 
     from radis.io.hitran import fetch_hitran
@@ -143,6 +180,8 @@ def _run_testcases(verbose=True, *args, **kwargs):
     test_fetch_astroquery(verbose=verbose, *args, **kwargs)
     test_fetch_astroquery_empty(verbose=verbose, *args, **kwargs)
     test_fetch_astroquery_cache(verbose=verbose, *args, **kwargs)
+    test_fetch_hitran_CO_pytables(*args, **kwargs)
+    test_fetch_hitran_CO_vaex(*args, **kwargs)
     test_fetch_hitran(*args, **kwargs)
     test_calc_hitran_spectrum(*args, **kwargs)
 
