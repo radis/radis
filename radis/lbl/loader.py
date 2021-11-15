@@ -49,6 +49,7 @@ key in :py:attr:`radis.config`
 # @dev: (on Spyder IDE navigate between sections easily as # XXX makes a reference
 # (on the slide bar on the right)
 
+import os
 import warnings
 from copy import deepcopy
 from os.path import exists
@@ -1116,10 +1117,15 @@ class DatabankLoader(object):
             if database == "full":
 
                 # quick fix for https://github.com/radis/radis/issues/401
-                if memory_mapping_engine not in ["vaex", "pytables"]:
-                    raise NotImplementedError(
-                        f"{memory_mapping_engine} with HITRAN files. Define radis.config['MEMORY_MAPPING_ENGINE'] = 'vaex' or 'pytables'"
-                    )
+                if memory_mapping_engine == "auto":
+                    if any("SPYDER" in name for name in os.environ):
+                        engine = "pytables"
+                        if self.verbose >= 3:
+                            print(
+                                f"Spyder IDE detected. Memory-mapping-engine set to '{engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
+                            )
+                    else:
+                        engine = "vaex"
 
                 if isotope == "all":
                     isotope_list = None
@@ -1186,10 +1192,15 @@ class DatabankLoader(object):
             self.reftracker.add(doi["HITEMP-2010"], "line database")  # [HITEMP-2010]_
 
             # quick fix for https://github.com/radis/radis/issues/401
-            if memory_mapping_engine not in ["vaex", "pytables"]:
-                raise NotImplementedError(
-                    f"{memory_mapping_engine} with HITEMP files. Define radis.config['MEMORY_MAPPING_ENGINE'] = 'vaex' or 'pytables'"
-                )
+            if memory_mapping_engine == "auto":
+                if any("SPYDER" in name for name in os.environ):
+                    engine = "pytables"
+                    if self.verbose >= 3:
+                        print(
+                            f"Spyder IDE detected. Memory-mapping-engine set to '{engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
+                        )
+                else:
+                    engine = "vaex"
 
             if database != "full":
                 raise ValueError(
@@ -1225,6 +1236,17 @@ class DatabankLoader(object):
 
         elif source == "exomol":
             self.reftracker.add(doi["ExoMol-2020"], "line database")  # [ExoMol-2020]
+
+            # quick fix for https://github.com/radis/radis/issues/401
+            if memory_mapping_engine == "auto":
+                if any("SPYDER" in name for name in os.environ):
+                    engine = "feather"
+                    if self.verbose >= 3:
+                        print(
+                            f"Spyder IDE detected. Memory-mapping-engine set to '{engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
+                        )
+                else:
+                    engine = "vaex"
 
             if database in ["full", "range"]:
                 raise ValueError(

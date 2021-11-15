@@ -106,8 +106,6 @@ class DatabaseManager(object):
                 # "auto" uses "vaex" in most cases unless you're using the Spyder IDE (where it may result in freezes).
                 # see https://github.com/spyder-ide/spyder/issues/16183.
                 # and https://github.com/radis/radis/issues/401
-                import os
-
                 if any("SPYDER" in name for name in os.environ):
                     if verbose >= 3:
                         print(
