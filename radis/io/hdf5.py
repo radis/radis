@@ -445,7 +445,9 @@ class HDF5Manager(object):
                             raise err
 
         else:
-            raise NotImplementedError(self.engine)
+            raise NotImplementedError(
+                f"'{self.engine}' is not implemented. Use 'pytables' or 'vaex' ?"
+            )
 
         return metadata
 

@@ -1073,6 +1073,8 @@ class HITRANDatabaseManager(DatabaseManager):
     def get_filenames(self):
         if self.engine == "vaex":
             return [join(self.local_databases, f"{self.molecule}.hdf5")]
+        elif self.engine == "pytables":
+            return [join(self.local_databases, f"{self.molecule}.h5")]
         else:
             raise NotImplementedError()
 
