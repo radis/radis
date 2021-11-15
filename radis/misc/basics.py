@@ -36,10 +36,9 @@ def make_folders(path, folders):
     if type(folders) is str:
         folders = [folders]
     for folder in folders:
-        try:
-            os.mkdir(join(path, folder))
-        except OSError:
-            pass
+        os.makedirs(
+            join(path, folder), exist_ok=True
+        )  # makedirs create folders recursively
 
 
 # %%

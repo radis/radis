@@ -100,12 +100,12 @@ def cast_to_int64_with_missing_values(dg, keys):
 def hit2df(
     fname,
     cache=True,
-    load_columns=None,
     verbose=True,
     drop_non_numeric=True,
     load_wavenum_min=None,
     load_wavenum_max=None,
     engine="pytables",
+    parse_quanta=True,
 ):
     """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe
 
@@ -119,12 +119,6 @@ def hit2df(
         improves performances a lot (but changes in the database are not
         taken into account). If False, no database is used. If ``'regen'``, temp
         file are reconstructed. Default ``True``.
-    load_columns: list
-        columns to load. If ``None``, loads everything
-
-        .. note::
-            this is only relevant if loading from a cache file. To generate
-            the cache file, all columns are loaded anyway.
 
     Other Parameters
     ----------------
@@ -139,6 +133,9 @@ def hit2df(
         Default ``'None'``.
     engine: 'pytables', 'vaex'
         format for Hdf5 cache file. Default `pytables`
+    parse_quanta: bool
+        if ``True``, parse local & global quanta (required to identify lines
+        for non-LTE calculations ; but sometimes lines are not labelled.)
 
     Returns
     -------
@@ -152,8 +149,16 @@ def hit2df(
     .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
 
 
+
+    Notes
+    -----
+
+    Performances: see CDSD-HITEMP parser
+
+
     See Also
     --------
+
     :func:`~radis.io.cdsd.cdsd2df`
     """
     metadata = {}
@@ -181,7 +186,6 @@ def hit2df(
         df = load_h5_cache_file(
             fcache,
             cache,
-            columns=load_columns,
             valid_if_metadata_is=metadata,
             relevant_if_metadata_above=relevant_if_metadata_above,
             relevant_if_metadata_below=relevant_if_metadata_below,
@@ -211,7 +215,7 @@ def hit2df(
 
     # assert one molecule per database only. Else the groupbase data reading
     # above doesnt make sense
-    nmol = len(set(df["id"]))
+    nmol = len(df["id"].unique())
     if nmol == 0:
         raise ValueError("Databank looks empty")
     elif nmol != 1:
@@ -221,7 +225,9 @@ def hit2df(
         except IndexError:
             secondline = ""
         raise ValueError(
-            "Multiple molecules in database ({0}). Current ".format(nmol)
+            "Multiple molecules in database ({0} : {1}). Current ".format(
+                nmol, [get_molecule(idi) for idi in df["id"].unique()]
+            )
             + "spectral code only computes 1 species at the time. Use MergeSlabs. "
             + "Verify the parsing was correct by looking at the first row below: "
             + "\n{0}".format(df.iloc[0])
@@ -229,33 +235,34 @@ def hit2df(
             + "below: \n{0}".format(secondline)
         )
 
-    # Add local quanta attributes, based on the HITRAN group
-    try:
-        df = parse_local_quanta(df, mol, verbose=verbose)
-    except ValueError as err:
-        # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
-        # In this case, do not parse (makes non-equilibrium calculations impossible).
-        # see https://github.com/radis/radis/issues/211
-        if verbose:
-            print(str(err))
-            print("-" * 10)
-            print(
-                f"Impossible to parse local quanta in {fname}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
-            )
+    if parse_quanta:
+        # Add local quanta attributes, based on the HITRAN group
+        try:
+            df = parse_local_quanta(df, mol, verbose=verbose)
+        except ValueError as err:
+            # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
+            # In this case, do not parse (makes non-equilibrium calculations impossible).
+            # see https://github.com/radis/radis/issues/211
+            if verbose:
+                print(str(err))
+                print("-" * 10)
+                print(
+                    f"Impossible to parse local quanta in {fname}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
+                )
 
-    # Add global quanta attributes, based on the HITRAN class
-    try:
-        df = parse_global_quanta(df, mol, verbose=verbose)
-    except ValueError as err:
-        # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
-        # In this case, do not parse (makes non-equilibrium calculations impossible).
-        # see https://github.com/radis/radis/issues/211
-        if verbose:
-            print(str(err))
-            print("-" * 10)
-            print(
-                f"Impossible to parse global quanta in {fname}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
-            )
+        # Add global quanta attributes, based on the HITRAN class
+        try:
+            df = parse_global_quanta(df, mol, verbose=verbose)
+        except ValueError as err:
+            # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
+            # In this case, do not parse (makes non-equilibrium calculations impossible).
+            # see https://github.com/radis/radis/issues/211
+            if verbose:
+                print(str(err))
+                print("-" * 10)
+                print(
+                    f"Impossible to parse global quanta in {fname}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
+                )
 
     # Remove non numerical attributes
     if drop_non_numeric:
@@ -1064,18 +1071,18 @@ class HITRANDatabaseManager(DatabaseManager):
         self.downloadable = True
         self.base_url = None
         self.Nlines = None
+        self.wmin = None
+        self.wmax = None
 
     def get_filenames(self):
         if self.engine == "vaex":
             return [join(self.local_databases, f"{self.molecule}.hdf5")]
+        elif self.engine == "pytables":
+            return [join(self.local_databases, f"{self.molecule}.h5")]
         else:
             raise NotImplementedError()
 
-    def download_and_parse(
-        self,
-        local_file,
-        cache=True,
-    ):
+    def download_and_parse(self, local_file, cache=True, parse_quanta=True):
         """Download from HITRAN and parse into ``local_file``.
         Also add metadata
 
@@ -1149,13 +1156,14 @@ class HITRANDatabaseManager(DatabaseManager):
         wmin_final = 100000
         wmax_final = -1
 
-        # make_folders(dirname(self.local_databases), basename(self.local_databases))
-        # make_folders(self.local_databases, ["downloads"])
+        # create database in a subfolder to isolate molecules from one-another
+        # (HAPI doesn't check and may mix molecules --> see failure at https://app.travis-ci.com/github/radis/radis/jobs/548126303#L2676)
+        tempdir = join(self.tempdir, molecule)
 
         # Use HAPI only to download the files, then we'll parse them with RADIS's
         # parsers, and convert to RADIS's fast HDF5 file formats.
         isotope_list, data_file_list, header_file_list = download_all_hitran_isotopes(
-            molecule, self.tempdir
+            molecule, tempdir
         )
 
         writer = self.get_hdf5_manager()
@@ -1164,8 +1172,9 @@ class HITRANDatabaseManager(DatabaseManager):
         Nlines = 0
         for iso, data_file in zip(isotope_list, data_file_list):
             df = hit2df(
-                join(self.tempdir, data_file),
+                join(tempdir, data_file),
                 cache=False,  # do not generate cache yet
+                parse_quanta=parse_quanta,
             )
             # if engine == 'vaex':
             #     df.executor.async_method = "awaitio"   # Temp fix for https://github.com/spyder-ide/spyder/issues/16183
@@ -1209,6 +1218,26 @@ class HITRANDatabaseManager(DatabaseManager):
         from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
 
         local_files = self.get_filenames()
+
+        if self.wmin is None or self.wmax is None:
+            print(
+                "Somehow wmin and wmax was not given for this database. Reading from the files"
+            )
+            ##  fix:
+            # (can happen if database was downloaded & parsed, but registration failed a first time)
+            df_full = self.load(
+                local_files,
+                columns=["wav"],
+                isotope=None,
+                load_wavenum_min=None,
+                load_wavenum_max=None,
+            )
+            self.wmin = df_full.wav.min()
+            self.wmax = df_full.wav.max()
+            print(
+                f"Somehow wmin and wmax was not given for this database. Read {self.wmin}, {self.wmax} directly from the files"
+            )
+
         info = f"HITRAN {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1) with TIPS-2021 (through HAPI) for partition functions"
 
         dict_entries = {
@@ -1249,6 +1278,7 @@ def fetch_hitran(
     return_local_path=False,
     engine="default",
     parallel=True,
+    parse_quanta=True,
 ):
     """Download all HITRAN lines from HITRAN website. Unzip and build a HDF5 file directly.
 
@@ -1286,6 +1316,10 @@ def fetch_hitran(
         which HDF5 library to use. If 'default' use the value from ~/radis.json
     parallel: bool
         if ``True``, uses joblib.parallel to load database with multiple processes
+    parse_quanta: bool
+        if ``True``, parse local & global quanta (required to identify lines
+        for non-LTE calculations ; but sometimes lines are not labelled.)
+
 
     Returns
     -------
@@ -1353,7 +1387,7 @@ def fetch_hitran(
     # Download files
     download_files = ldb.get_missing_files(local_file)
     if download_files:
-        ldb.download_and_parse(download_files, cache=cache)
+        ldb.download_and_parse(download_files, cache=cache, parse_quanta=parse_quanta)
 
     # Register
     if not ldb.is_registered():
@@ -1383,3 +1417,6 @@ if __name__ == "__main__":
     from radis.test.io.test_hitran_cdsd import _run_testcases
 
     print("Testing HITRAN parsing: ", _run_testcases())
+    from radis.test.io.test_query import _run_testcases
+
+    print("Testing HITRAN fetch: ", _run_testcases())

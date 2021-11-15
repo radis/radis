@@ -77,7 +77,9 @@ def LineSurvey(
         result from SpectrumFactory calculation (see spectrum.py)
     overlay: tuple (w, I, [name], [units]), or list or tuples
         plot (w, I) on a secondary axis. Useful to compare linestrength with
-        calculated / measured data
+        calculated / measured data::
+
+            LineSurvey(overlay='abscoeff')
     wunit: ``'nm'``, ``'cm-1'``
         wavelength / wavenumber units
     Iunit: ``'hitran'``, ``'splot'``
@@ -165,6 +167,12 @@ def LineSurvey(
         Iunit = yunit
     assert yscale in ["log", "linear"]
 
+    # auto plot in Spyder IDE
+    from os import environ
+
+    if writefile is None and any("SPYDER" in name for name in environ):
+        writefile = "line_survey.html"
+
     try:
         spec.lines
         assert spec.lines is not None
@@ -206,7 +214,7 @@ def LineSurvey(
         elif dbformat == "cdsd-4000":
             columndescriptor = cdsd4000columns
         else:
-            warn(NotImplemented(f"unknown dbformat {dbformat}"))
+            warn(f"unknown dbformat {dbformat}")
             columndescriptor = {}
     else:
         columndescriptor = {}

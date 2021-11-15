@@ -7,7 +7,7 @@ Created on Mon Aug  9 19:42:51 2021
 import os
 import shutil
 from io import BytesIO
-from os.path import abspath, exists, splitext
+from os.path import abspath, dirname, exists, expanduser, join, split, splitext
 from zipfile import ZipFile
 
 from radis.misc.config import addDatabankEntries, getDatabankEntries, getDatabankList
@@ -22,7 +22,6 @@ except ImportError:
     from radis.io.cache_files import check_not_deprecated
 
 from datetime import date
-from os.path import join, split
 
 import numpy as np
 import pandas as pd
@@ -97,26 +96,43 @@ class DatabaseManager(object):
         nJobs=-2,
         batch_size="auto",
     ):
+        from os import environ
+
         if engine == "default":
             from radis import config
 
             engine = config["MEMORY_MAPPING_ENGINE"]  # 'pytables', 'vaex', 'feather'
+            # Quick fix for #401
+            if engine == "auto":
+                # "auto" uses "vaex" in most cases unless you're using the Spyder IDE (where it may result in freezes).
+                # see https://github.com/spyder-ide/spyder/issues/16183.
+                # and https://github.com/radis/radis/issues/401
+                if any("SPYDER" in name for name in environ):
+                    if verbose >= 3:
+                        print(
+                            "Spyder IDE detected. Memory-mapping-engine set to 'pytables' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
+                        )
+                    engine = "pytables"  # for HITRAN and HITEMP databases
+                else:
+                    engine = "vaex"
 
         # vaex processes are stuck if ran from Spyder. See https://github.com/spyder-ide/spyder/issues/16183
-        if engine == "vaex" and any("SPYDER" in name for name in os.environ):
+        if engine == "vaex" and any("SPYDER" in name for name in environ):
             from radis.misc.log import printwarn
 
             printwarn(
-                "Spyder IDE detected while using memory_mapping_engine='vaex'.\nVaex is the fastest way to read database files in RADIS, but Vaex processes may be stuck if ran from Spyder. See https://github.com/spyder-ide/spyder/issues/16183. You may consider using another IDE, or using a different `memory_mapping_engine` such as 'pytables' or 'feather'. You can change the engine in Spectrum.fetch_databank() calls, or globally by setting the 'MEMORY_MAPPING_ENGINE' key in your ~/radis.json  (note: starting another iPython console somehow releases the freeze in Spyder)  \n"
+                "Spyder IDE detected while using memory_mapping_engine='vaex'.\nVaex is the fastest way to read database files in RADIS, but Vaex processes may be stuck if ran from Spyder. See https://github.com/spyder-ide/spyder/issues/16183. You may consider using another IDE, or using a different `memory_mapping_engine` such as 'pytables' or 'feather'. You can change the engine in Spectrum.fetch_databank() calls, or globally by setting the 'MEMORY_MAPPING_ENGINE' key in your ~/radis.json \n"
             )
 
         self.name = name
         self.molecule = molecule
         self.local_databases = local_databases
         # create folder if needed
-        from radis.misc.basics import make_folders
+        if not exists(local_databases):
+            from radis.misc.basics import make_folders
 
-        make_folders(*split(abspath(local_databases)))
+            make_folders(*split(abspath(dirname(local_databases))))
+            make_folders(*split(abspath(local_databases)))
 
         self.downloadable = False  # by default
         self.format = ""
@@ -160,6 +176,15 @@ class DatabaseManager(object):
             else:
                 local_files = entries["path"]
             urlnames = None
+
+            # Check that local files are the one we expect :
+            for f in local_files:
+                if not abspath(expanduser(f)).startswith(
+                    abspath(expanduser(local_databases))
+                ):
+                    raise ValueError(
+                        f"Database {self.name} is inconsistent : it should be stored in {local_databases} but files registered in ~/radis.json contains {f}. Please fix or delete the ~/radis.json entry."
+                    )
 
         elif self.is_downloadable():
             # local_files = self.fetch_filenames()

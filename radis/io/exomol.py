@@ -436,6 +436,7 @@ class MdbExomol(object):
         bkgdatm="H2",
         broadf=True,
         engine="vaex",
+        verbose=True,
     ):
         """Molecular database for Exomol form
 
@@ -451,10 +452,25 @@ class MdbExomol(object):
            The trans/states files can be very large. For the first time to read it, we convert it to the feather-format. After the second-time, we use the feather format instead.
 
         """
-        if engine == "default":
-            import radis
+        from os import environ
 
-            engine = radis.config["MEMORY_MAPPING_ENGINE"]
+        if engine == "default":
+            from radis import config
+
+            engine = config["MEMORY_MAPPING_ENGINE"]
+            # Quick fix for #401
+            if engine == "auto":
+                # "auto" uses "vaex" in most cases unless you're using the Spyder IDE (where it may result in freezes).
+                # see https://github.com/spyder-ide/spyder/issues/16183.
+                # and https://github.com/radis/radis/issues/401
+                if any("SPYDER" in name for name in environ):
+                    if verbose >= 3:
+                        print(
+                            "Spyder IDE detected. Memory-mapping-engine set to 'feather' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
+                        )
+                    engine = "feather"  # for ExoMol database
+                else:
+                    engine = "vaex"
 
         if engine == "vaex":
             import vaex
@@ -530,13 +546,16 @@ class MdbExomol(object):
         # load states
         if engine == "feather":
             if self.states_file.with_suffix(".feather").exists():
-                ndstates = pd.read_feather(self.states_file.with_suffix(".feather"))
+                states = pd.read_feather(self.states_file.with_suffix(".feather"))
             else:
                 print(
                     "Note: Caching states data to the feather format. After the second time, it will become much faster."
                 )
-                ndstates = exomolapi.read_states(self.states_file, dic_def)
-                ndstates.to_feather(self.states_file.with_suffix(".feather"))
+                states = exomolapi.read_states(self.states_file, dic_def, engine="csv")
+                states.to_feather(self.states_file.with_suffix(".feather"))
+            ndstates = states.to_numpy()[
+                :, :4
+            ]  # the i, E, g, J are in the 4 first columns
         elif engine == "vaex":
             if self.states_file.with_suffix(".bz2.hdf5").exists():
                 states = vaex.open(self.states_file.with_suffix(".bz2.hdf5"))
@@ -545,7 +564,7 @@ class MdbExomol(object):
                 print(
                     "Note: Caching states data to the hdf5 format with vaex. After the second time, it will become much faster."
                 )
-                states = exomolapi.read_states(self.states_file, dic_def)
+                states = exomolapi.read_states(self.states_file, dic_def, engine="vaex")
                 ndstates = vaex.array_types.to_numpy(states)
 
         # load pf
@@ -580,20 +599,23 @@ class MdbExomol(object):
                     print(
                         "Note: Caching line transition data to the HDF5 format with vaex. After the second time, it will become much faster."
                     )
-                    trans = exomolapi.read_trans(self.trans_file)
+                    trans = exomolapi.read_trans(self.trans_file, engine="vaex")
                     ndtrans = vaex.array_types.to_numpy(trans)
 
                     # mask needs to be applied
                     mask_needed = True
             elif engine == "feather":
                 if self.trans_file.with_suffix(".feather").exists():
-                    ndtrans = pd.read_feather(self.trans_file.with_suffix(".feather"))
+                    trans = pd.read_feather(self.trans_file.with_suffix(".feather"))
                 else:
                     print(
                         "Note: Caching line transition data to the feather format. After the second time, it will become much faster."
                     )
-                    ndtrans = exomolapi.read_trans(self.trans_file)
-                    ndtrans.to_feather(self.trans_file.with_suffix(".feather"))
+                    trans = exomolapi.read_trans(self.trans_file, engine="csv")
+                    trans.to_feather(self.trans_file.with_suffix(".feather"))
+                ndtrans = trans.to_numpy()
+                # mask needs to be applied   (in feather mode we don't sleect wavneumbers)
+                mask_needed = True
 
             # compute gup and elower
             (
@@ -631,16 +653,24 @@ class MdbExomol(object):
                     T=self.Tref,
                 )
 
-                # exclude the lines whose nu_lines evaluated inside exomolapi.pickup_gE (thus sometimes different from the "nu_lines" column in trans) is not positive
                 trans["nu_positive"] = mask_zeronu
-                trans = trans[trans.nu_positive].extract()
-                trans.drop("nu_positive", inplace=True)
+                if engine == "vaex":
+                    # exclude the lines whose nu_lines evaluated inside exomolapi.pickup_gE (thus sometimes different from the "nu_lines" column in trans) is not positive
+
+                    trans = trans[trans.nu_positive].extract()
+                    trans.drop("nu_positive", inplace=True)
+                else:
+                    if False in mask_zeronu:
+                        raise NotImplementedError(
+                            "some wavenumber is not defined;  masking not impleemtend so far in 'feather' engine"
+                        )
 
                 trans["nu_lines"] = self.nu_lines
                 trans["Sij0"] = self.Sij0
 
                 if engine == "vaex":
                     trans.export(self.trans_file.with_suffix(".hdf5"))
+                #  TODO : implement masking in 'feather' mode
 
         else:  # dic_def["numinf"] is not None
             imin = (
@@ -665,10 +695,13 @@ class MdbExomol(object):
                         print(
                             "Note: Caching line transition data to the feather format. After the second time, it will become much faster."
                         )
-                        ndtrans = exomolapi.read_trans(trans_file)
-                        ndtrans.to_feather(trans_file.with_suffix(".feather"))
+                        trans = exomolapi.read_trans(trans_file, engine="csv")
+                        trans.to_feather(trans_file.with_suffix(".feather"))
                         #!!TODO:restrict NOW the trans size to avoid useless overload of memory and CPU
                         # trans = trans[(trans['nu'] > self.nurange[0] - self.margin) & (trans['nu'] < self.nurange[1] + self.margin)]
+                    ndtrans = trans.to_numpy()
+                    # mask needs to be applied   (in feather mode we don't sleect wavneumbers)
+                    mask_needed = True
                 elif engine == "vaex":
                     if trans_file.with_suffix(".hdf5").exists():
                         trans = vaex.open(trans_file.with_suffix(".hdf5"))
@@ -689,7 +722,7 @@ class MdbExomol(object):
                         print(
                             "Note: Caching line transition data to the HDF5 format with vaex. After the second time, it will become much faster."
                         )
-                        trans = exomolapi.read_trans(trans_file)
+                        trans = exomolapi.read_trans(trans_file, engine="vaex")
                         ndtrans = vaex.array_types.to_numpy(trans)
 
                         # mask needs to be applied
@@ -750,7 +783,7 @@ class MdbExomol(object):
                         jupperx,
                         mask_zeronu,
                         quantumNumbersx,
-                    ) = exomolapi.pickup_gE(ndstates, ndtrans, trans_file)
+                    ) = exomolapi.pickup_gE(ndstates, ndtrans, trans_file, dic_def)
                     if engine == "vaex" and trans_file.with_suffix(".hdf5").exists():
                         Sij0x = ndtrans[:, 4]
                     else:
