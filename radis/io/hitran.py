@@ -215,7 +215,7 @@ def hit2df(
 
     # assert one molecule per database only. Else the groupbase data reading
     # above doesnt make sense
-    nmol = len(set(df["id"]))
+    nmol = len(df["id"].unique())
     if nmol == 0:
         raise ValueError("Databank looks empty")
     elif nmol != 1:
@@ -225,7 +225,9 @@ def hit2df(
         except IndexError:
             secondline = ""
         raise ValueError(
-            "Multiple molecules in database ({0}). Current ".format(nmol)
+            "Multiple molecules in database ({0} : {1}). Current ".format(
+                nmol, [get_molecule(idi) for idi in df["id"].unique()]
+            )
             + "spectral code only computes 1 species at the time. Use MergeSlabs. "
             + "Verify the parsing was correct by looking at the first row below: "
             + "\n{0}".format(df.iloc[0])
@@ -1154,13 +1156,14 @@ class HITRANDatabaseManager(DatabaseManager):
         wmin_final = 100000
         wmax_final = -1
 
-        # make_folders(dirname(self.local_databases), basename(self.local_databases))
-        # make_folders(self.local_databases, ["downloads"])
+        # create database in a subfolder to isolate molecules from one-another
+        # (HAPI doesn't check and may mix molecules --> see failure at https://app.travis-ci.com/github/radis/radis/jobs/548126303#L2676)
+        tempdir = join(self.tempdir, molecule)
 
         # Use HAPI only to download the files, then we'll parse them with RADIS's
         # parsers, and convert to RADIS's fast HDF5 file formats.
         isotope_list, data_file_list, header_file_list = download_all_hitran_isotopes(
-            molecule, self.tempdir
+            molecule, tempdir
         )
 
         writer = self.get_hdf5_manager()
@@ -1169,7 +1172,7 @@ class HITRANDatabaseManager(DatabaseManager):
         Nlines = 0
         for iso, data_file in zip(isotope_list, data_file_list):
             df = hit2df(
-                join(self.tempdir, data_file),
+                join(tempdir, data_file),
                 cache=False,  # do not generate cache yet
                 parse_quanta=parse_quanta,
             )
@@ -1411,6 +1414,9 @@ def fetch_hitran(
 
 if __name__ == "__main__":
 
-    from radis.test.test_io import _run_testcases
+    from radis.test.io.test_hitran_cdsd import _run_testcases
 
     print("Testing HITRAN parsing: ", _run_testcases())
+    from radis.test.io.test_query import _run_testcases
+
+    print("Testing HITRAN fetch: ", _run_testcases())
