@@ -436,6 +436,7 @@ class MdbExomol(object):
         bkgdatm="H2",
         broadf=True,
         engine="vaex",
+        verbose=True,
     ):
         """Molecular database for Exomol form
 
@@ -452,9 +453,24 @@ class MdbExomol(object):
 
         """
         if engine == "default":
-            import radis
+            from radis import config
 
-            engine = radis.config["MEMORY_MAPPING_ENGINE"]
+            engine = config["MEMORY_MAPPING_ENGINE"]
+            # Quick fix for #401
+            if engine == "auto":
+                # "auto" uses "vaex" in most cases unless you're using the Spyder IDE (where it may result in freezes).
+                # see https://github.com/spyder-ide/spyder/issues/16183.
+                # and https://github.com/radis/radis/issues/401
+                import os
+
+                if any("SPYDER" in name for name in os.environ):
+                    if verbose >= 3:
+                        print(
+                            "Spyder IDE detected. Memory-mapping-engine set to 'feather' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
+                        )
+                    engine = "feather"  # for ExoMol database
+                else:
+                    engine = "vaex"
 
         if engine == "vaex":
             import vaex

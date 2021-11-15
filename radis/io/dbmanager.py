@@ -101,6 +101,21 @@ class DatabaseManager(object):
             from radis import config
 
             engine = config["MEMORY_MAPPING_ENGINE"]  # 'pytables', 'vaex', 'feather'
+            # Quick fix for #401
+            if engine == "auto":
+                # "auto" uses "vaex" in most cases unless you're using the Spyder IDE (where it may result in freezes).
+                # see https://github.com/spyder-ide/spyder/issues/16183.
+                # and https://github.com/radis/radis/issues/401
+                import os
+
+                if any("SPYDER" in name for name in os.environ):
+                    if verbose >= 3:
+                        print(
+                            "Spyder IDE detected. Memory-mapping-engine set to 'pytables' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
+                        )
+                    engine = "pytables"  # for HITRAN and HITEMP databases
+                else:
+                    engine = "vaex"
 
         # vaex processes are stuck if ran from Spyder. See https://github.com/spyder-ide/spyder/issues/16183
         if engine == "vaex" and any("SPYDER" in name for name in os.environ):

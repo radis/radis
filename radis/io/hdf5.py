@@ -299,7 +299,6 @@ class HDF5Manager(object):
             # TODO: define default key ?
             if key == "default":
                 key = None
-            import h5py
 
             with h5py.File(fname, "r") as f:
                 if key is None:  # load from root level
