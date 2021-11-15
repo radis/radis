@@ -2935,9 +2935,12 @@ class Spectrum(object):
         spec: Spectrum
             result from SpectrumFactory calculation (see spectrum.py)
         overlay: 'absorbance', 'transmittance', 'radiance', etc... or list of the above, or None
-            overlay Linestrength with specified variable calculated in `spec`.
+            overlay Linestrength with specified variable calculated
+            in `spec`.
             Get the full list with the :meth:`~radis.spectrum.spectrum.Spectrum.get_vars`
-            method. Default ``None``.
+            method. Default ``None`` ::
+
+                s.lineSurvey(overlay='abscoeff')
         wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``,
             wavelength air, wavenumber, or wavelength vacuum. If ``'default'``,
             Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit` is used.

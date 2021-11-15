@@ -9,6 +9,7 @@ Functions to plot line surveys
 """
 
 
+import os
 from warnings import warn
 
 import numpy as np
@@ -77,7 +78,9 @@ def LineSurvey(
         result from SpectrumFactory calculation (see spectrum.py)
     overlay: tuple (w, I, [name], [units]), or list or tuples
         plot (w, I) on a secondary axis. Useful to compare linestrength with
-        calculated / measured data
+        calculated / measured data::
+
+            LineSurvey(overlay='abscoeff')
     wunit: ``'nm'``, ``'cm-1'``
         wavelength / wavenumber units
     Iunit: ``'hitran'``, ``'splot'``
@@ -164,6 +167,10 @@ def LineSurvey(
         warn(DeprecationWarning("yunit replaced with Iunit"))
         Iunit = yunit
     assert yscale in ["log", "linear"]
+
+    # auto plot in Spyder IDE
+    if writefile is None and any("SPYDER" in name for name in os.environ):
+        writefile = "line_survey.html"
 
     try:
         spec.lines
