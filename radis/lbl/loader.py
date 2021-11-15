@@ -1120,13 +1120,13 @@ class DatabankLoader(object):
                 # quick fix for https://github.com/radis/radis/issues/401
                 if memory_mapping_engine == "auto":
                     if any("SPYDER" in name for name in environ):
-                        engine = "pytables"
+                        memory_mapping_engine = "pytables"
                         if self.verbose >= 3:
                             print(
-                                f"Spyder IDE detected. Memory-mapping-engine set to '{engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
+                                f"Spyder IDE detected. Memory-mapping-engine set to '{memory_mapping_engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
                             )
                     else:
-                        engine = "vaex"
+                        memory_mapping_engine = "vaex"
 
                 if isotope == "all":
                     isotope_list = None
@@ -1195,13 +1195,13 @@ class DatabankLoader(object):
             # quick fix for https://github.com/radis/radis/issues/401
             if memory_mapping_engine == "auto":
                 if any("SPYDER" in name for name in environ):
-                    engine = "pytables"
+                    memory_mapping_engine = "pytables"
                     if self.verbose >= 3:
                         print(
-                            f"Spyder IDE detected. Memory-mapping-engine set to '{engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
+                            f"Spyder IDE detected. Memory-mapping-engine set to '{memory_mapping_engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
                         )
                 else:
-                    engine = "vaex"
+                    memory_mapping_engine = "vaex"
 
             if database != "full":
                 raise ValueError(
@@ -1241,13 +1241,13 @@ class DatabankLoader(object):
             # quick fix for https://github.com/radis/radis/issues/401
             if memory_mapping_engine == "auto":
                 if any("SPYDER" in name for name in environ):
-                    engine = "feather"
+                    memory_mapping_engine = "feather"
                     if self.verbose >= 3:
                         print(
-                            f"Spyder IDE detected. Memory-mapping-engine set to '{engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
+                            f"Spyder IDE detected. Memory-mapping-engine set to '{memory_mapping_engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
                         )
                 else:
-                    engine = "vaex"
+                    memory_mapping_engine = "vaex"
 
             if database in ["full", "range"]:
                 raise ValueError(

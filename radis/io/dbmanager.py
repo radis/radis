@@ -178,6 +178,13 @@ class DatabaseManager(object):
                 local_files = entries["path"]
             urlnames = None
 
+            # Check that local files are the one we expect :
+            for f in local_files:
+                if not f.startswith(local_databases):
+                    raise ValueError(
+                        f"Database {self.name} is inconsistent : it should be stored in {local_databases} but files registered in ~/radis.json contains {f}. Please fix or delete the ~/radis.json entry."
+                    )
+
         elif self.is_downloadable():
             # local_files = self.fetch_filenames()
             urlnames = self.fetch_urlnames()

@@ -104,9 +104,11 @@ def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
 def test_fetch_hitran_CO_pytables(*args, **kwargs):
 
     from radis.io.hitran import fetch_hitran
+    from radis.test.utils import getTestFile
 
     df = fetch_hitran(
         "CO",
+        local_databases=join(getTestFile("."), "hitran"),
         databank_name="HITRAN-CO-TEST-ENGINE-PYTABLES",
         engine="pytables",
     )
@@ -124,9 +126,11 @@ def test_fetch_hitran_CO_pytables(*args, **kwargs):
 def test_fetch_hitran_CO_vaex(*args, **kwargs):
 
     from radis.io.hitran import fetch_hitran
+    from radis.test.utils import getTestFile
 
     df = fetch_hitran(
         "CO",
+        local_databases=join(getTestFile("."), "hitran"),
         databank_name="HITRAN-CO-TEST-ENGINE-VAEX",
         engine="vaex",
     )
