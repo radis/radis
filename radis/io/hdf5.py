@@ -262,7 +262,6 @@ class HDF5Manager(object):
             if key == "default":
                 key = r"/table"
 
-            import h5py
             import vaex
 
             # Open file
@@ -300,7 +299,6 @@ class HDF5Manager(object):
             # TODO: define default key ?
             if key == "default":
                 key = None
-            import h5py
 
             with h5py.File(fname, "r") as f:
                 if key is None:  # load from root level
@@ -446,7 +444,9 @@ class HDF5Manager(object):
                             raise err
 
         else:
-            raise NotImplementedError(self.engine)
+            raise NotImplementedError(
+                f"'{self.engine}' is not implemented. Use 'pytables' or 'vaex' ?"
+            )
 
         return metadata
 

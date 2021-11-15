@@ -2935,9 +2935,12 @@ class Spectrum(object):
         spec: Spectrum
             result from SpectrumFactory calculation (see spectrum.py)
         overlay: 'absorbance', 'transmittance', 'radiance', etc... or list of the above, or None
-            overlay Linestrength with specified variable calculated in `spec`.
+            overlay Linestrength with specified variable calculated
+            in `spec`.
             Get the full list with the :meth:`~radis.spectrum.spectrum.Spectrum.get_vars`
-            method. Default ``None``.
+            method. Default ``None`` ::
+
+                s.lineSurvey(overlay='abscoeff')
         wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``,
             wavelength air, wavenumber, or wavelength vacuum. If ``'default'``,
             Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit` is used.
@@ -3252,7 +3255,7 @@ class Spectrum(object):
 
         return spec2hdf(self, file, engine=engine)
 
-    def to_pandas(s, copy=True):
+    def to_pandas(self, copy=True):
         """Convert a Spectrum to a Pandas DataFrame
 
         Returns
@@ -3269,9 +3272,9 @@ class Spectrum(object):
         For the moment, we store units as metadata"""
         import pandas as pd
 
-        df = pd.DataFrame(s._q, copy=copy)
+        df = pd.DataFrame(self._q, copy=copy)
 
-        df.attrs = s.units
+        df.attrs = self.units
 
         return df
 
@@ -3329,8 +3332,6 @@ class Spectrum(object):
         :py:func:`~radis.spectrum.spectrum.Spectrum.from_specutils`
 
         """
-        import astropy.units as u
-
         try:
             from specutils.spectra import Spectrum1D
         except ModuleNotFoundError as err:

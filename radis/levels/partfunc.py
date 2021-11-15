@@ -54,7 +54,6 @@ References
 # TODO: store molecule_data.json in the H5 file metadata. If not done already.
 
 
-import os
 import sys
 from os.path import exists
 from warnings import warn
@@ -223,7 +222,9 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             raise ValueError("Choose mode = one of 'full summation', 'tabulation'")
 
         # vaex processes are stuck if ran from Spyder. See https://github.com/spyder-ide/spyder/issues/16183
-        if mode == "tabulation" and any("SPYDER" in name for name in os.environ):
+        from os import environ
+
+        if mode == "tabulation" and any("SPYDER" in name for name in environ):
             from radis.misc.log import printwarn
 
             printwarn(

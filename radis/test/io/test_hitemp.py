@@ -54,8 +54,8 @@ def test_relevant_files_filter():
 
 
 @pytest.mark.needs_connection
-def test_fetch_hitemp_OH(verbose=True, *args, **kwargs):
-    """Test proper download of HITEMP OH database.
+def test_fetch_hitemp_OH_pytables(verbose=True, *args, **kwargs):
+    """Test proper download of HITEMP OH database, with two engines.
 
     Good to test fetch_hitemp.
     ``13_HITEMP2020.par.bz2`` is only 900 kb so it can be run on online
@@ -68,14 +68,80 @@ def test_fetch_hitemp_OH(verbose=True, *args, **kwargs):
 
     """
 
-    df = fetch_hitemp("OH", cache="regen", chunksize=20000, verbose=3 * verbose)
+    from os.path import join
 
-    assert "HITEMP-OH" in getDatabankList()
+    from radis.test.utils import getTestFile
+
+    df = fetch_hitemp(
+        "OH",
+        cache="regen",
+        chunksize=20000,
+        verbose=3 * verbose,
+        local_databases=join(getTestFile("."), "hitemp"),
+        databank_name="HITEMP-OH-TEST-ENGINE-PYTABLES",
+        engine="pytables",
+    )
+
+    assert "HITEMP-OH-TEST-ENGINE-PYTABLES" in getDatabankList()
 
     assert len(df) == 57019
 
     # Load again and make sure it works (ex: metadata properly loaded etc.):
-    fetch_hitemp("OH")
+    fetch_hitemp(
+        "OH",
+        local_databases=join(getTestFile("."), "hitemp"),
+        databank_name="HITEMP-OH-TEST-ENGINE-PYTABLES",
+        engine="pytables",
+    )
+
+
+@pytest.mark.needs_connection
+def test_fetch_hitemp_OH_vaex(verbose=True, *args, **kwargs):
+    """Test proper download of HITEMP OH database, with two engines.
+
+    Good to test fetch_hitemp.
+    ``13_HITEMP2020.par.bz2`` is only 900 kb so it can be run on online
+    tests without burning the planet 🌳
+
+    ⚠️ if using the default `chunksize=100000`, it uncompresses in one pass
+    (only 57k lines for OH) and we cannot test that appending to the same HDF5
+    works. So here we use a smaller chunksize of 20,000.
+    .
+
+    """
+
+    from os.path import join
+
+    # dont download twice if files exist?
+    from radis import config
+    from radis.test.utils import getTestFile
+
+    old_value = config["AUTO_UPDATE_DATABASE"]
+    config["AUTO_UPDATE_DATABASE"] = True
+
+    df = fetch_hitemp(
+        "OH",
+        cache="regen",
+        chunksize=20000,
+        verbose=3 * verbose,
+        local_databases=join(getTestFile("."), "hitemp"),
+        databank_name="HITEMP-OH-TEST-ENGINE-VAEX",
+        engine="vaex",
+    )
+
+    config["AUTO_UPDATE_DATABASE"] = old_value
+
+    assert "HITEMP-OH-TEST-ENGINE-VAEX" in getDatabankList()
+
+    assert len(df) == 57019
+
+    # Load again and make sure it works (ex: metadata properly loaded etc.):
+    fetch_hitemp(
+        "OH",
+        local_databases=join(getTestFile("."), "hitemp"),
+        databank_name="HITEMP-OH-TEST-ENGINE-VAEX",
+        engine="vaex",
+    )
 
 
 @pytest.mark.needs_connection
@@ -187,11 +253,13 @@ def test_partial_loading(*args, **kwargs):
 
     Also check 'vaex' engine and ``radis.config["AUTO_UPDATE_DATABASE"]``"""
 
+    from os.path import join
+
     from radis.test.utils import getTestFile
 
     df = fetch_hitemp(
         "OH",
-        local_databases=getTestFile("."),
+        local_databases=join(getTestFile("."), "hitemp"),
         databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
         engine="pytables",
     )
@@ -204,7 +272,7 @@ def test_partial_loading(*args, **kwargs):
     # ... load :
     df = fetch_hitemp(
         "OH",
-        local_databases=getTestFile("."),
+        local_databases=join(getTestFile("."), "hitemp"),
         databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
         load_wavenum_min=wmin,
         load_wavenum_max=wmax,
@@ -218,7 +286,7 @@ def test_partial_loading(*args, **kwargs):
     wmax2 = 300
     df = fetch_hitemp(
         "OH",
-        local_databases=getTestFile("."),
+        local_databases=join(getTestFile("."), "hitemp"),
         databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
         load_wavenum_min=wmin2,
         load_wavenum_max=wmax2,
@@ -228,7 +296,7 @@ def test_partial_loading(*args, **kwargs):
     assert df.iso.unique() == 2
     df = fetch_hitemp(
         "OH",
-        local_databases=getTestFile("."),
+        local_databases=join(getTestFile("."), "hitemp"),
         databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
         load_wavenum_min=wmin2,
         load_wavenum_max=wmax2,
@@ -245,7 +313,7 @@ def test_partial_loading(*args, **kwargs):
         radis.config["AUTO_UPDATE_DATABASE"] = True
         df = fetch_hitemp(
             "OH",
-            local_databases=getTestFile("."),
+            local_databases=join(getTestFile("."), "hitemp"),
             databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
             engine="vaex",
         )
@@ -258,7 +326,7 @@ def test_partial_loading(*args, **kwargs):
     # now test wrange & multiple isotope selection with vaex
     df = fetch_hitemp(
         "OH",
-        local_databases=getTestFile("."),
+        local_databases=join(getTestFile("."), "hitemp"),
         databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
         load_wavenum_min=wmin2,
         load_wavenum_max=wmax2,
@@ -358,7 +426,8 @@ def test_parse_hitemp_missing_labels_issue280(*args, **kwargs):
 
 if __name__ == "__main__":
     test_relevant_files_filter()
-    test_fetch_hitemp_OH()
+    test_fetch_hitemp_OH_pytables()
+    test_fetch_hitemp_OH_vaex()
     test_partial_loading()
     test_calc_hitemp_CO_noneq()
     test_fetch_hitemp_partial_download_CO2()

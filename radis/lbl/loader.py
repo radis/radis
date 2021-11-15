@@ -1109,11 +1109,24 @@ class DatabankLoader(object):
         # ---------------------
         self._reset_references()  # bibliographic references
 
+        from os import environ
+
         if source == "hitran":
             self.reftracker.add(doi["HITRAN-2016"], "line database")  # [HITRAN-2016]_
             self.reftracker.add(doi["Astroquery"], "data retrieval")  # [Astroquery]_
 
             if database == "full":
+
+                # quick fix for https://github.com/radis/radis/issues/401
+                if memory_mapping_engine == "auto":
+                    if any("SPYDER" in name for name in environ):
+                        memory_mapping_engine = "pytables"
+                        if self.verbose >= 3:
+                            print(
+                                f"Spyder IDE detected. Memory-mapping-engine set to '{memory_mapping_engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
+                            )
+                    else:
+                        memory_mapping_engine = "vaex"
 
                 if isotope == "all":
                     isotope_list = None
@@ -1179,6 +1192,17 @@ class DatabankLoader(object):
         elif source == "hitemp":
             self.reftracker.add(doi["HITEMP-2010"], "line database")  # [HITEMP-2010]_
 
+            # quick fix for https://github.com/radis/radis/issues/401
+            if memory_mapping_engine == "auto":
+                if any("SPYDER" in name for name in environ):
+                    memory_mapping_engine = "pytables"
+                    if self.verbose >= 3:
+                        print(
+                            f"Spyder IDE detected. Memory-mapping-engine set to '{memory_mapping_engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
+                        )
+                else:
+                    memory_mapping_engine = "vaex"
+
             if database != "full":
                 raise ValueError(
                     f"Got `database={database}`. When fetching HITEMP, only the `database='full'` option is available."
@@ -1214,14 +1238,27 @@ class DatabankLoader(object):
         elif source == "exomol":
             self.reftracker.add(doi["ExoMol-2020"], "line database")  # [ExoMol-2020]
 
+            # quick fix for https://github.com/radis/radis/issues/401
+            if memory_mapping_engine == "auto":
+                if any("SPYDER" in name for name in environ):
+                    memory_mapping_engine = "feather"
+                    if self.verbose >= 3:
+                        print(
+                            f"Spyder IDE detected. Memory-mapping-engine set to '{memory_mapping_engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
+                        )
+                else:
+                    memory_mapping_engine = "vaex"
+
             if database in ["full", "range"]:
                 raise ValueError(
-                    f"Got `database={database}`. When fetching ExoMol, only the `database=` key to retrieve a speciifc database. Use `database='default'` to get the recommended database. See more informatino in radis.io.fetch_exomol()"
+                    f"Got `database={database}`. When fetching ExoMol, use the `database=` key to retrieve a specific database. Use `database='default'` to get the recommended database. See more informatino in radis.io.fetch_exomol()"
                 )
 
             # Download, setup local databases, and fetch (use existing if possible)
             if memory_mapping_engine not in ["vaex", "feather"]:
-                raise NotImplementedError(f"{memory_mapping_engine} with ExoMol files")
+                raise NotImplementedError(
+                    f"{memory_mapping_engine} with ExoMol files. Define radis.config['MEMORY_MAPPING_ENGINE'] = 'vaex' or 'feather'"
+                )
 
             if isotope == "all":
                 raise ValueError(
