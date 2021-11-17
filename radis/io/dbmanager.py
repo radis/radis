@@ -108,11 +108,19 @@ class DatabaseManager(object):
                 # see https://github.com/spyder-ide/spyder/issues/16183.
                 # and https://github.com/radis/radis/issues/401
                 if any("SPYDER" in name for name in environ):
+                    engine = "pytables"  # for HITRAN and HITEMP databases
                     if verbose >= 3:
                         print(
-                            "Spyder IDE detected. Memory-mapping-engine set to 'pytables' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
+                            f"Spyder IDE detected. Memory-mapping-engine set to '{engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
                         )
+                # temp fix for vaex not building on RTD
+                # see https://github.com/radis/radis/issues/404
+                if any("READTHEDOCS" in name for name in environ):
                     engine = "pytables"  # for HITRAN and HITEMP databases
+                    if verbose >= 3:
+                        print(
+                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{engine}'. See https://github.com/radis/radis/issues/404"
+                        )
                 else:
                     engine = "vaex"
 
