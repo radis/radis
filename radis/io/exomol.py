@@ -469,6 +469,14 @@ class MdbExomol(object):
                             "Spyder IDE detected. Memory-mapping-engine set to 'feather' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
                         )
                     engine = "feather"  # for ExoMol database
+                # temp fix for vaex not building on RTD
+                # see https://github.com/radis/radis/issues/404
+                if any("READTHEDOCS" in name for name in environ):
+                    engine = "feather"
+                    if verbose >= 3:
+                        print(
+                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{engine}'. See https://github.com/radis/radis/issues/404"
+                        )
                 else:
                     engine = "vaex"
 
