@@ -471,7 +471,7 @@ class MdbExomol(object):
                     engine = "feather"  # for ExoMol database
                 # temp fix for vaex not building on RTD
                 # see https://github.com/radis/radis/issues/404
-                if any("READTHEDOCS" in name for name in environ):
+                elif any("READTHEDOCS" in name for name in environ):
                     engine = "feather"
                     if verbose >= 3:
                         print(

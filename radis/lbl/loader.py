@@ -1125,6 +1125,14 @@ class DatabankLoader(object):
                             print(
                                 f"Spyder IDE detected. Memory-mapping-engine set to '{memory_mapping_engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
                             )
+                    # temp fix for vaex not building on RTD
+                    # see https://github.com/radis/radis/issues/404
+                    elif any("READTHEDOCS" in name for name in environ):
+                        memory_mapping_engine = "pytables"
+                        if self.verbose >= 3:
+                            print(
+                                f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
+                            )
                     else:
                         memory_mapping_engine = "vaex"
 
@@ -1200,6 +1208,14 @@ class DatabankLoader(object):
                         print(
                             f"Spyder IDE detected. Memory-mapping-engine set to '{memory_mapping_engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
                         )
+                # temp fix for vaex not building on RTD
+                # see https://github.com/radis/radis/issues/404
+                elif any("READTHEDOCS" in name for name in environ):
+                    memory_mapping_engine = "pytables"
+                    if self.verbose >= 3:
+                        print(
+                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
+                        )
                 else:
                     memory_mapping_engine = "vaex"
 
@@ -1245,6 +1261,14 @@ class DatabankLoader(object):
                     if self.verbose >= 3:
                         print(
                             f"Spyder IDE detected. Memory-mapping-engine set to '{memory_mapping_engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
+                        )
+                # temp fix for vaex not building on RTD
+                # see https://github.com/radis/radis/issues/404
+                elif any("READTHEDOCS" in name for name in environ):
+                    memory_mapping_engine = "feather"
+                    if self.verbose >= 3:
+                        print(
+                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
                         )
                 else:
                     memory_mapping_engine = "vaex"
