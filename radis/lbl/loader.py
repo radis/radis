@@ -51,7 +51,7 @@ key in :py:attr:`radis.config`
 
 import warnings
 from copy import deepcopy
-from os.path import exists
+from os.path import exists, join
 from time import time
 from uuid import uuid1
 
@@ -949,6 +949,9 @@ class DatabankLoader(object):
             to use. Keep ``'default'`` to use the recommended one. See all available databases
             with :py:func:`radis.io.exomol.get_exomol_database_list`
 
+            By default, databases are download in `~/.radisdb`.
+            Can be changed in ``radis.config["DEFAULT_DOWNLOAD_PATH"]`` or in ~/radis.json config file
+
 
         Other Parameters
         ----------------
@@ -1052,7 +1055,11 @@ class DatabankLoader(object):
             if database == "default":
                 database = "full"
         elif source == "exomol":
-            dbformat = "exomol-radisdb"  # downloaded in RADIS local databases ~/.radisdb  # Note @EP : still WIP.
+            dbformat = (
+                "exomol-radisdb"  # downloaded in RADIS local databases ~/.radisdb
+            )
+
+        local_databases = config["DEFAULT_DOWNLOAD_PATH"]
 
         if [parfuncfmt, source].count("exomol") == 1:
             self.warn(
@@ -1144,6 +1151,7 @@ class DatabankLoader(object):
                 df, local_paths = fetch_hitran(
                     molecule,
                     isotope=isotope_list,
+                    local_databases=join(local_databases, "hitran"),
                     load_wavenum_min=wavenum_min,
                     load_wavenum_max=wavenum_max,
                     columns=columns,
@@ -1234,6 +1242,7 @@ class DatabankLoader(object):
             df, local_paths = fetch_hitemp(
                 molecule,
                 isotope=isotope_list,
+                local_databases=join(local_databases, "hitemp"),
                 load_wavenum_min=wavenum_min,
                 load_wavenum_max=wavenum_max,
                 columns=columns,
@@ -1300,6 +1309,7 @@ class DatabankLoader(object):
                     molecule,
                     database=database,
                     isotope=iso,
+                    local_databases=join(local_databases, "exomol"),
                     load_wavenum_min=wavenum_min,
                     load_wavenum_max=wavenum_max,
                     columns=columns,

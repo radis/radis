@@ -213,7 +213,7 @@ def get_exomol_database_list(molecule, isotope_full_name):
 def fetch_exomol(
     molecule,
     database=None,
-    local_databases=r"~/.radisdb/exomol/",
+    local_databases=None,
     databank_name="EXOMOL-{molecule}",
     isotope="1",
     load_wavenum_min=None,
@@ -239,7 +239,8 @@ def fetch_exomol(
         :py:data:`~radis.io.exomol.KNOWN_EXOMOL_DATABASE_NAMES`. If ``None`` and
         there is only one database available, use it.
     local_databases: ``str``
-        where to create the RADIS HDF5 files. Default ``"~/.radisdb/exomol"``
+        where to create the RADIS HDF5 files. Default ``"~/.radisdb/exomol"``.
+        Can be changed in ``radis.config["DEFAULT_DOWNLOAD_PATH"]`` or in ~/radis.json config file
     databank_name: ``str``
         name of the databank in RADIS :ref:`Configuration file <label_lbl_config_file>`
         Default ``"EXOMOL-{molecule}"``
@@ -347,6 +348,11 @@ def fetch_exomol(
             raise KeyError(
                 f"{database} is not of the known available ExoMol databases for {full_molecule_name}. Choose one of : {known_exomol_databases}. ({recommended_database} is recommended by the ExoMol team). {_exomol_use_hint}"
             )
+
+    if local_databases is None:
+        import radis
+
+        local_databases = pathlib.Path(radis.config["DEFAULT_DOWNLOAD_PATH"]) / "exomol"
 
     local_path = (
         pathlib.Path(local_databases).expanduser()

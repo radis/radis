@@ -424,7 +424,7 @@ class HITEMPDatabaseManager(DatabaseManager):
 
 def fetch_hitemp(
     molecule,
-    local_databases="~/.radisdb/hitemp/",
+    local_databases=None,
     databank_name="HITEMP-{molecule}",
     isotope=None,
     load_wavenum_min=None,
@@ -447,7 +447,8 @@ def fetch_hitemp(
     molecule: `"H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"`
         HITEMP molecule. See https://hitran.org/hitemp/
     local_databases: str
-        where to create the RADIS HDF5 files. Default ``"~/.radisdb/"``
+        where to create the RADIS HDF5 files. Default ``"~/.radisdb/hitemp"``.
+        Can be changed in ``radis.config["DEFAULT_DOWNLOAD_PATH"]`` or in ~/radis.json config file
     databank_name: str
         name of the databank in RADIS :ref:`Configuration file <label_lbl_config_file>`
         Default ``"HITEMP-{molecule}"``
@@ -519,6 +520,10 @@ def fetch_hitemp(
     if r"{molecule}" in databank_name:
         databank_name = databank_name.format(**{"molecule": molecule})
 
+    if local_databases is None:
+        import radis
+
+        local_databases = join(radis.config["DEFAULT_DOWNLOAD_PATH"], "hitemp")
     local_databases = abspath(expanduser(local_databases))
 
     ldb = HITEMPDatabaseManager(

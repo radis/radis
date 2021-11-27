@@ -1266,7 +1266,7 @@ from os.path import abspath, expanduser
 # TODO: implement parallel=True for all isotopes ?
 def fetch_hitran(
     molecule,
-    local_databases="~/.radisdb/hitran/",
+    local_databases=None,
     databank_name="HITRAN-{molecule}",
     isotope=None,
     load_wavenum_min=None,
@@ -1289,7 +1289,8 @@ def fetch_hitran(
     molecule: `"H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"`
         HITEMP molecule. See https://hitran.org/hitemp/
     local_databases: str
-        where to create the RADIS HDF5 files. Default ``"~/.radisdb/"``
+        where to create the RADIS HDF5 files. Default ``"~/.radisdb/hitran"``.
+        Can be changed in ``radis.config["DEFAULT_DOWNLOAD_PATH"]`` or in ~/radis.json config file
     databank_name: str
         name of the databank in RADIS :ref:`Configuration file <label_lbl_config_file>`
         Default ``"HITRAN-{molecule}"``
@@ -1362,6 +1363,10 @@ def fetch_hitran(
     if r"{molecule}" in databank_name:
         databank_name = databank_name.format(**{"molecule": molecule})
 
+    if local_databases is None:
+        import radis
+
+        local_databases = join(radis.config["DEFAULT_DOWNLOAD_PATH"], "hitran")
     local_databases = abspath(local_databases.replace("~", expanduser("~")))
 
     ldb = HITRANDatabaseManager(

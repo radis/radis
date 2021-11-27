@@ -172,7 +172,7 @@ provides an interace to [CANTERA]_ directly from RADIS ::
 Nonequilibrium Calculations
 ---------------------------
 
-Nonequilibrium calculations (multiple temperatures) require to know the
+Non-LTE calculations (multiple temperatures) require to know the
 vibrational and rotational energies of each
 level in order to calculate the nonequilibrium populations.
 
@@ -380,7 +380,20 @@ Configuration file
 ------------------
 
 The ``~/radis.json`` configuration file is used to store the list and attributes of the Line databases
-available on your computer.
+available on your computer. It is also used to change global user preferences,
+such as plotting styles and libraries, or warnings thresholds, or default algorithms.
+The list of all available parameters is given in the `default_radis.json <https://github.com/radis/radis/blob/develop/radis/default_radis.json>`__
+file. Any key added to your ``~/radis.json`` will override the value in
+``default_radis.json``.
+
+.. note::
+    You can also update config parameters at runtime by setting::
+
+        import radis
+        radis.config["SOME_KEY"] = "SOME_VALUE"
+
+    Although it is recommended to simply edit your ``~/radis.json`` file.
+
 
 Without a configuration file, you can still:
 
@@ -388,6 +401,7 @@ Without a configuration file, you can still:
   either with the (default) ``databank='hitran'`` option in :py:func:`~radis.lbl.calc.calc_spectrum`,
   or the :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank` method of
   :py:class:`~radis.lbl.factory.SpectrumFactory`,
+- same for ``'hitemp'`` and ``'exomol'``
 - give a single file as an input to the ``databank=`` parameter of :py:func:`~radis.lbl.calc.calc_spectrum`
 
 A configuration file will help to:
@@ -396,13 +410,23 @@ A configuration file will help to:
 - use custom tabulated partition functions for equilibrium calculations
 - use custom, precomputed energy levels for nonequilibrium calculations
 
+Databases downloaded from 'hitran', 'hitemp' and 'exomol' with  :py:func:`~radis.lbl.calc.calc_spectrum`
+or :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank` are automatically
+registered in the ``~/radis.json`` configuration file. The default download path
+is ``~/.radisdb``. You can change this at runtime by setting the ``radis.config["DEFAULT_DOWNLOAD_PATH"]``
+key, or (recommended) by adding a ``DEFAULT_DOWNLOAD_PATH`` key in your ``~/radis.json``
+configuration file.
+
+
 .. note::
 
     it is also possible to give :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank` the line database path,
     format, and partition function format directly, but this is not recommended and should only be used if for some
     reason you cannot create a configuration file.
 
-A ``~/radis.json`` is user-dependant, and machine-dependant. It contains a list of database, everyone of which
+
+
+A ``~/radis.json`` is user-dependant, and machine-dependant. It contains a list of database, each of which
 is specific to a given molecule. It typically looks like::
 
 str: Typical expected format of a ~/radis.json entry::

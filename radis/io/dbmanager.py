@@ -142,6 +142,16 @@ class DatabaseManager(object):
             make_folders(*split(abspath(dirname(local_databases))))
             make_folders(*split(abspath(local_databases)))
 
+        if self.is_registered():
+            registered_paths = getDatabankEntries(self.name)["path"]
+            for registered_path in registered_paths:
+                if not abspath(expanduser(registered_path)).startswith(
+                    abspath(expanduser(local_databases))
+                ):
+                    raise ValueError(
+                        f"Databank `{self.name}` is already registered in radis.json but the declared path ({registered_path}) is not in the expected local databases folder ({local_databases}). Please fix/delete the radis.json entry, or change the default local databases path entry 'DEFAULT_DOWNLOAD_PATH' in `radis.config` or ~/radis.json"
+                    )
+
         self.downloadable = False  # by default
         self.format = ""
         self.engine = engine
