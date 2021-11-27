@@ -228,7 +228,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             from radis.misc.log import printwarn
 
             printwarn(
-                "Spyder IDE detected while using parsum_mode='tabulation', which depends on `vaex`. This is the fastest way to compute partition functions, but Vaex processes may be stuck if ran from Spyder. See https://github.com/radis/radis/issues/338. You may consider using another IDE, or use `parsum_mode='full summation'` for the moment (note: starting another iPython console somehow releases the freeze in Spyder) \n"
+                "Spyder IDE detected while using parsum_mode='tabulation', which depends on `vaex`. This is the fastest way to compute partition functions, but Vaex processes may be stuck if ran from Spyder. See https://github.com/radis/radis/issues/338. Quick fix: starting a new console releases the lock, usually for the rest of your session. You may consider using another IDE, or use `parsum_mode='full summation'` for the moment (note: starting another iPython console somehow releases the freeze in Spyder) \n"
             )
 
         self.mode = mode

@@ -1,7 +1,7 @@
 Description
 ===========
 
-Written as a general purpose radiative solver, the code is built around the [HITRAN-2016]_,
+Written as a general purpose radiative solver, the code is built around the [HITRAN-2020]_,
 [HITEMP-2010]_ and [CDSD-4000]_ databases for molecules in their electronic ground state. Energy
 levels are read from tabulated databases or calculated from Dunham developments.
 Boltzmann, Treanor, and state specific vibrational distributions can be generated.

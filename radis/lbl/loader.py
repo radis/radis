@@ -111,7 +111,7 @@ KNOWN_DBFORMAT = [
 ]
 """list: Known formats for Line Databases:
 
-- ``'hitran'`` : [HITRAN-2016]_ original .par format
+- ``'hitran'`` : [HITRAN-2020]_ original .par format
 - ``'hitemp'`` : [HITEMP-2010]_ original format (same format as 'hitran')
 - ``'cdsd-hitemp'`` : CDSD-HITEMP original format (CO2 only, same lines as HITEMP-2010)
 - ``'cdsd-4000'`` : [CDSD-4000]_ original format (CO2 only)
@@ -930,7 +930,7 @@ class DatabankLoader(object):
         Parameters
         ----------
         source: ``'hitran'``, ``'hitemp'``, ``'exomol'``
-            [Download database lines from the latest HITRAN (see [HITRAN-2016]_),
+            [Download database lines from the latest HITRAN (see [HITRAN-2020]_),
             HITEMP (see [HITEMP-2010]_  )] or EXOMOL see [ExoMol-2020]_  ) databases.
         database: ``'full'``, ``'range'``, name of an ExoMol database, or ``'default'``
             if fetching from HITRAN, ``'full'`` download the full database and register
@@ -1119,10 +1119,10 @@ class DatabankLoader(object):
         from os import environ
 
         if source == "hitran":
-            self.reftracker.add(doi["HITRAN-2016"], "line database")  # [HITRAN-2016]_
-            self.reftracker.add(doi["Astroquery"], "data retrieval")  # [Astroquery]_
+            self.reftracker.add(doi["HITRAN-2020"], "line database")  # [HITRAN-2020]_
 
             if database == "full":
+                self.reftracker.add(doi["HAPI"], "data retrieval")  # [HAPI]_
 
                 # quick fix for https://github.com/radis/radis/issues/401
                 if memory_mapping_engine == "auto":
@@ -1164,6 +1164,9 @@ class DatabankLoader(object):
                 self.params.dbpath = ",".join(local_paths)
 
             elif database == "range":
+                self.reftracker.add(
+                    doi["Astroquery"], "data retrieval"
+                )  # [Astroquery]_
 
                 # Query one isotope at a time
                 if isotope == "all":
@@ -2203,8 +2206,8 @@ class DatabankLoader(object):
                     elif dbformat in ["hitran", "hitemp"]:
                         if dbformat == "hitran":
                             self.reftracker.add(
-                                doi["HITRAN-2016"], "line database"
-                            )  # [HITRAN-2016]_
+                                doi["HITRAN-2020"], "line database"
+                            )  # [HITRAN-2020]_
                         if dbformat == "hitemp":
                             self.reftracker.add(
                                 doi["HITEMP-2010"], "line database"

@@ -43,8 +43,8 @@ Line-by-line algorithm :
 
 Database and database retrieval algorithms :
 
-- cite the Line Databases used (for instance, [HITRAN-2016]_, [HITEMP-2010]_ or [CDSD-4000]_ ).
-- if downloading [HITRAN-2016]_ directly with ``fetch('hitran')``, cite [HAPI]_ which is the underlying
+- cite the Line Databases used (for instance, [HITRAN-2020]_, [HITEMP-2010]_ or [CDSD-4000]_ ).
+- if downloading [HITRAN-2020]_ directly with ``fetch('hitran')``, cite [HAPI]_ which is the underlying
   interface that makes it work !
 - if running nonequilibrium calculations, mention the reference of the spectroscopic constants used
   to calculate the energies (for instance, the

@@ -3858,7 +3858,7 @@ class Spectrum(object):
     def cite(self, format="bibentry"):
         """Prints bibliographic references used to compute this spectrum, as
         stored in the :py:attr:`~radis.spectrum.spectrum.Spectrum.references`
-        dictionary.
+        dictionary. Default references known to RADIS are listed in :py:data:`radis.db.references.doi`.
 
         Parameters
         ----------
@@ -4006,7 +4006,8 @@ class Spectrum(object):
 
         See Also
         --------
-        :py:class:`~radis.tools.track_ref.RefTracker`
+        :py:class:`~radis.tools.track_ref.RefTracker`,
+        :py:data:`~radis.db.references.doi`
 
         """
 

@@ -8,7 +8,7 @@ from .molecules import Molecules, getMolecule
 # %% Get list of supported molecules
 def _get_supported_molecules_equilibrium():
     """Molecules supported in RADIS equilibrium calculations Basically, all
-    [HITRAN-2016]_ species."""
+    [HITRAN-2020]_ species."""
     # Add all HITRAN species
     # Add ExoMol species
     from .classes import EXOMOL_MOLECULES, HITRAN_MOLECULES
@@ -31,10 +31,10 @@ MOLECULES_LIST_EQUILIBRIUM = (
     __supported_molecules_equilibrium__
 ) = _get_supported_molecules_equilibrium()
 """ list: molecules that can be calculated in RADIS at equilibrium.
-All [HITRAN-2016]_ and [ExoMol-2020]_ species are available.
+All [HITRAN-2020]_ and [ExoMol-2020]_ species are available.
 
 Absorption coefficient calculated with RADIS at 300 K, 1 atm are shown for all
-[HITRAN-2016]_ molecules in the :ref:`HITRAN spectra page <label_examples_hitran_spectra>` .
+[HITRAN-2020]_ molecules in the :ref:`HITRAN spectra page <label_examples_hitran_spectra>` .
 
 - 1 	``'H2O'`` : 	Water 	(`spectrum <https://raw.githubusercontent.com/radis/radis-examples/master/hitran_spectra/out/0%20-%20H2O%20infrared%20spectrum.png>`__)
 - 2 	``'CO2'`` : 	Carbon Dioxide    (`spectrum <https://raw.githubusercontent.com/radis/radis-examples/master/hitran_spectra/out/1%20-%20CO2%20infrared%20spectrum.png>`__)
@@ -103,7 +103,7 @@ MOLECULES_LIST_NONEQUILIBRIUM = (
 Spectroscopic constants to calculate energy levels are needed.
 
 RADIS features some built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`
-for the following species ([HITRAN-2016]_ nomenclature):
+for the following species ([HITRAN-2020]_ nomenclature):
 
 - 2 	``'CO2'`` : 	Carbon Dioxide
 - 5 	``'CO'`` : 	Carbon Monoxide

@@ -214,7 +214,7 @@ trans = {
     "55": "NF3",
 }
 HITRAN_MOLECULES = list(trans.values())
-""" str: list of [HITRAN-2016]_ molecules. """
+""" str: list of [HITRAN-2020]_ molecules. """
 
 
 def get_molecule_identifier(molecule_name):

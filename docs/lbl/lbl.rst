@@ -397,7 +397,7 @@ file. Any key added to your ``~/radis.json`` will override the value in
 
 Without a configuration file, you can still:
 
-- download the corresponding [HITRAN-2016]_ line database automatically,
+- download the corresponding [HITRAN-2020]_ line database automatically,
   either with the (default) ``databank='hitran'`` option in :py:func:`~radis.lbl.calc.calc_spectrum`,
   or the :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank` method of
   :py:class:`~radis.lbl.factory.SpectrumFactory`,
@@ -554,7 +554,7 @@ The full description of a `~/radis.json` entry is given in :py:data:`~radis.misc
 *How to create the configuration file?*
 
 A default ``~/radis.json`` configuration file can be generated with :py:func:`~radis.test.utils.setup_test_line_databases`, which
-creates two test databases from fragments of [HITRAN-2016]_ line databases::
+creates two test databases from fragments of [HITRAN-2020]_ line databases::
 
     from radis.test.utils import setup_test_line_databases
     setup_test_line_databases()
