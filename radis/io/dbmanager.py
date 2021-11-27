@@ -145,9 +145,11 @@ class DatabaseManager(object):
         if self.is_registered():
             registered_paths = getDatabankEntries(self.name)["path"]
             for registered_path in registered_paths:
-                if not abspath(expanduser(registered_path)).startswith(
-                    abspath(expanduser(local_databases))
-                ):
+                if (
+                    not abspath(expanduser(registered_path))
+                    .lower()
+                    .startswith(abspath(expanduser(local_databases).lower()))
+                ):  # TODO: replace with pathlib
                     raise ValueError(
                         f"Databank `{self.name}` is already registered in radis.json but the declared path ({registered_path}) is not in the expected local databases folder ({local_databases}). Please fix/delete the radis.json entry, or change the default local databases path entry 'DEFAULT_DOWNLOAD_PATH' in `radis.config` or ~/radis.json"
                     )
@@ -197,8 +199,10 @@ class DatabaseManager(object):
 
             # Check that local files are the one we expect :
             for f in local_files:
-                if not abspath(expanduser(f)).startswith(
-                    abspath(expanduser(local_databases))
+                if (
+                    not abspath(expanduser(f))
+                    .lower()
+                    .startswith(abspath(expanduser(local_databases)).lower())
                 ):
                     raise ValueError(
                         f"Database {self.name} is inconsistent : it should be stored in {local_databases} but files registered in ~/radis.json contains {f}. Please fix or delete the ~/radis.json entry."
