@@ -357,6 +357,7 @@ EXOMOL_MOLECULES = [
     "NaCl",
     "NaF",
     "NaH",
+    "NaO",
     "NaOH",
     "NiH",
     "O2",
