@@ -4,7 +4,7 @@
 (based on [HAPI]_)
 
 .. note::
-    if using, cite [HAPI]_ and [HITRAN-2016]_
+    if using, cite [HAPI]_ and [HITRAN-2020]_
 
 
 References
@@ -51,7 +51,7 @@ def fetch_astroquery(
     Wrapper to the fetch function of Astroquery [1]_ (itself based on [HAPI]_)
 
     .. note::
-        if using, cite [HAPI]_ and [HITRAN-2016]_
+        if using, cite [HAPI]_ and [HITRAN-2020]_
 
     Parameters
     ----------

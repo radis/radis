@@ -55,7 +55,7 @@ def test_citations_in_eq_spectrum(verbose=False, *args, **kwargs):
 
     assert doi["RADIS-2018"] in s.references
     assert doi["DIT-2020"] in s.references
-    assert doi["HITRAN-2016"] in s.references
+    assert doi["HITRAN-2020"] in s.references
     assert doi["TIPS-2020"] in s.references
 
 
@@ -82,7 +82,7 @@ def test_citations_in_noneq_spectrum(verbose=False, *args, **kwargs):
 
     assert doi["RADIS-2018"] in s.references
     assert doi["DIT-2020"] in s.references
-    assert doi["HITRAN-2016"] in s.references
+    assert doi["HITRAN-2020"] in s.references
     assert doi["TIPS-2020"] in s.references
 
     assert doi["Guelachvili-1983"] in s.references

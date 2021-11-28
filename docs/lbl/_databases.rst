@@ -17,7 +17,7 @@ Refer to :py:func:`~radis.io.query.fetch_astroquery` for more information.
 You can also download the HITRAN databases files locally:
 
 - HITRAN can be downloaded from https://hitran.org/lbl/. Expect
-  ~80 Mb for CO2, or 50 Mb for H2O. Cite with [HITRAN-2016]_.
+  ~80 Mb for CO2, or 50 Mb for H2O. Cite with [HITRAN-2020]_.
 
 .. note::
 

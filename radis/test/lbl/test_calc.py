@@ -79,14 +79,14 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
 
     - neq 0.9.22: 8.4s
 
-    Starting from RADIS 1.0.1, the test is run on [HITRAN-2016]_, which
+    Starting from RADIS 1.0.1, the test is run on [HITRAN-2020]_, which
     is not valid for these temperatures but can be more conveniently
     downloaded automatically and thus executed everytime with `Travis CI <https://travis-ci.com/radis/radis>`_
 
     (we also expect the test to be much faster than above, but that's just
     because the database is smaller!)
 
-    - radis 0.9.20 : 2.49 s    on [HITRAN-2016]
+    - radis 0.9.20 : 2.49 s    on [HITRAN-2020]
                      4.05 s    on [CDSD-HITEMP-JMIN]
 
     """
@@ -257,7 +257,7 @@ def test_calc_spectrum_overpopulations(
     Better use the assignation scheme suggested in the paper.
     But it's okay here as a non-regression test.
 
-    Starting from RADIS 1.0.1, the test is run on [HITRAN-2016]_, which
+    Starting from RADIS 1.0.1, the test is run on [HITRAN-2020]_, which
     is not valid for these temperatures but can be more conveniently
     downloaded automatically and thus executed everytime with `Travis CI <https://travis-ci.com/radis/radis>`_
 
@@ -579,7 +579,7 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **k
 
     On the old NeQ package the test used [HITEMP-2010]_
 
-    Starting from RADIS 1.0.1, the test is run on [HITRAN-2016]_, which
+    Starting from RADIS 1.0.1, the test is run on [HITRAN-2020]_, which
     is not valid for these temperatures but can be more conveniently
     downloaded automatically and thus executed everytime with `Travis CI <https://travis-ci.com/radis/radis>`_
 

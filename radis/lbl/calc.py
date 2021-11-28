@@ -111,7 +111,7 @@ def calc_spectrum(
         Default ``None``.​
     isotope: int, list, str of the form ``'1,2'``, or ``'all'``, or dict
         isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
-        See [HITRAN-2016]_ documentation for isotope list for all species. If ``'all'``,
+        See [HITRAN-2020]_ documentation for isotope list for all species. If ``'all'``,
         all isotopes in database are used (this may result in larger computation
         times!). Default ``'all'``.
 
