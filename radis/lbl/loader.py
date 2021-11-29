@@ -1163,6 +1163,12 @@ class DatabankLoader(object):
                 )
                 self.params.dbpath = ",".join(local_paths)
 
+                # ... explicitely write all isotopes based on isotopes found in the database
+                if isotope == "all":
+                    self.input.isotope = ",".join(
+                        [str(k) for k in self._get_isotope_list(df=df)]
+                    )
+
             elif database == "range":
                 self.reftracker.add(
                     doi["Astroquery"], "data retrieval"
