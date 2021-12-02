@@ -1204,6 +1204,7 @@ class SpecList(object):
         --------
         :meth:`~radis.tools.database.SpecList.get_unique`,
         :meth:`~radis.tools.database.SpecList.get_closest`,
+        ;py:meth:`~radis.tools.database.SpecDatabase.interpolate`,
         :meth:`~radis.tools.database.SpecList.items`
         """
 
@@ -1321,7 +1322,8 @@ class SpecList(object):
         See Also
         --------
         :py:meth:`~radis.tools.database.SpecList.get`,
-        :py:meth:`~radis.tools.database.SpecList.get_closest`
+        :py:meth:`~radis.tools.database.SpecList.get_closest`,
+        ;py:meth:`~radis.tools.database.SpecDatabase.interpolate`
         """
 
         out = self.get(conditions, scale_if_possible=scale_if_possible, **kwconditions)
@@ -1338,7 +1340,7 @@ class SpecList(object):
                 if prevVerbose is not None:
                     kwconditions["verbose"] = prevVerbose
                 raise ValueError(
-                    "Spectrum not found. See closest above. Use get_closest()"
+                    "Spectrum not found. See closest above. Use db.get_closest(). You could also try db.interpolate()"
                 )
         elif len(out) > 1:
             raise ValueError(
@@ -1376,7 +1378,8 @@ class SpecList(object):
         See Also
         --------
         :meth:`~radis.tools.database.SpecList.get`,
-        :meth:`~radis.tools.database.SpecList.get_unique`
+        :meth:`~radis.tools.database.SpecList.get_unique`,
+        ;py:meth:`~radis.tools.database.SpecDatabase.interpolate`
         """
         #        split_columns: list of str.
         #            slits a comma separated column in multiple columns, and number them.

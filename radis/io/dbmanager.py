@@ -493,6 +493,7 @@ class DatabaseManager(object):
     def get_nrows(self, local_file):
         """ Get number of rows (without loading all DataFrame)"""
         engine = self.engine
+        local_file = expanduser(local_file)
         if engine == "pytables":
             with pd.HDFStore(local_file, "r") as store:
                 nrows = store.get_storer("df").nrows
