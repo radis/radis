@@ -651,7 +651,7 @@ class Spectrum(object):
             # dimensionless
             if wunit is None:
                 raise ValueError(
-                    "``w`` must be a dimensionned array, or ``Iunit=`` must be given."
+                    "``w`` must be a dimensionned array, or ``wunit=`` must be given."
                 )
         else:
             if wunit is not None:

@@ -1204,6 +1204,7 @@ class SpecList(object):
         --------
         :meth:`~radis.tools.database.SpecList.get_unique`,
         :meth:`~radis.tools.database.SpecList.get_closest`,
+        ;py:meth:`~radis.tools.database.SpecDatabase.interpolate`,
         :meth:`~radis.tools.database.SpecList.items`
         """
 
@@ -1321,7 +1322,8 @@ class SpecList(object):
         See Also
         --------
         :py:meth:`~radis.tools.database.SpecList.get`,
-        :py:meth:`~radis.tools.database.SpecList.get_closest`
+        :py:meth:`~radis.tools.database.SpecList.get_closest`,
+        ;py:meth:`~radis.tools.database.SpecDatabase.interpolate`
         """
 
         out = self.get(conditions, scale_if_possible=scale_if_possible, **kwconditions)
@@ -1338,7 +1340,7 @@ class SpecList(object):
                 if prevVerbose is not None:
                     kwconditions["verbose"] = prevVerbose
                 raise ValueError(
-                    "Spectrum not found. See closest above. Use get_closest()"
+                    "Spectrum not found. See closest above. Use db.get_closest(). You could also try db.interpolate()"
                 )
         elif len(out) > 1:
             raise ValueError(
@@ -1376,7 +1378,8 @@ class SpecList(object):
         See Also
         --------
         :meth:`~radis.tools.database.SpecList.get`,
-        :meth:`~radis.tools.database.SpecList.get_unique`
+        :meth:`~radis.tools.database.SpecList.get_unique`,
+        ;py:meth:`~radis.tools.database.SpecDatabase.interpolate`
         """
         #        split_columns: list of str.
         #            slits a comma separated column in multiple columns, and number them.
@@ -2289,6 +2292,70 @@ class SpecDatabase(SpecList):
         self.print_index()
 
         return file
+
+    def interpolate(self, **kwconditions):
+        """Interpolate existing spectra from the database to generate a new spectrum with conditions kwargs
+
+        Examples
+        --------
+        ::
+
+            db.interpolate(Tgas=300, mole_fraction=0.3)
+
+        """
+
+        # Not interpolated conditions :
+        not_interpolated_conditions = [
+            c for c in self.conditions() if c not in kwconditions
+        ]
+        not_interpolated_conditions = [
+            c
+            for c in not_interpolated_conditions
+            if c not in ["file", "last_modified", "name"]
+        ]
+        df = self.see(columns=not_interpolated_conditions)
+
+        # assert df values are unique :
+        for c in df.columns:
+            if df[c].nunique() > 1:
+                raise ValueError(
+                    f"Spectra in database {self.name} have different values for `{c}`. All conditions except from the one we are interpolating on should be the same"
+                )
+                # TODO : implement a way to get a subset of a SpecDatabase, so we can do something like db.take(molecule='C2').interpolate(... )
+
+        if len(kwconditions) > 1:
+            raise NotImplementedError(
+                "Interpolation of multiple conditions is not implemented yet"
+            )
+
+        cond = list(kwconditions.keys())[0]
+        val = kwconditions[cond]
+
+        cond_list = self.see(columns=[cond]).values[:, 0]
+        b = np.argsort(cond_list)
+
+        cond_list = cond_list[b]
+        spectra = (self.see().index.values)[b]
+
+        # Interpolate val over cond_list
+        pos = np.interp(val, cond_list, np.arange(cond_list.size))
+        index = pos.astype(int)
+        weight = pos - index
+
+        s_left = self.get_unique(file=spectra[index])
+        s_right = self.get_unique(file=spectra[index + 1])
+
+        # linear algebra on spectra directly :
+        s_interp = (1 - weight) * s_left + weight * s_right
+        # TODO : Will raise an error if multiple values in database. In this
+        # case, use s_left.take(var)   with 'var' given in parameters of interpolate()
+        # Or tell user to generate a subdatabase with only one spectral array
+
+        s_interp.conditions[
+            "interpolated_from"
+        ] = f"{spectra[index]}, {spectra[index+1]}"
+
+        return s_interp
 
     def fit_spectrum(
         self,
