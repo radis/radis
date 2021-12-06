@@ -21,22 +21,22 @@ from copy import deepcopy
 from os.path import exists
 
 try:  # Proper import
-    from .labels import SpectrumFactory
+    from .base import get_waverange
+    from .factory import SpectrumFactory
 except ImportError:  # if ran from here
     from radis.lbl.factory import SpectrumFactory
+    from radis.lbl.base import get_waverange
+
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
-from radis.phys.air import air2vacuum
-from radis.phys.convert import nm2cm
 from radis.spectrum.spectrum import Spectrum
 
 
 # %%
 def calc_spectrum(
-    wavenum_min=None,
-    wavenum_max=None,
-    wavelength_min=None,
-    wavelength_max=None,
+    wmin=None,
+    wmax=None,
+    wunit=Default("cm-1"),
     Tgas=None,
     Tvib=None,
     Trot=None,
@@ -61,9 +61,10 @@ def calc_spectrum(
     mode="cpu",
     export_lines=False,
     verbose=True,
+    return_factory=False,
     **kwargs
 ) -> Spectrum:
-    r"""Multipurpose function to calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
+    r"""Calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
 
     Can automatically download databases (HITRAN/HITEMP) or use manually downloaded
     local databases, under equilibrium or non-equilibrium, with or without overpopulation,
@@ -75,15 +76,18 @@ def calc_spectrum(
 
     Parameters
     ----------
-    wavenum_min, wavenum_max: float [:math:`cm^{-1}`] or `~astropy.units.quantity.Quantity`
-        wavenumber range to be processed in :math:`cm^{-1}`. Use arbitrary units::
+    wmin, wmax: float [:math:`cm^{-1}`] or `~astropy.units.quantity.Quantity`
+        wavelength/wavenumber range. If no units are given, use :math:`cm^{-1}` ::
+
+            calc_spectrum(2000, 2300, ... )   # cm-1
+            calc_spectrum(4000, 4200, wunit='nm', ...)
+
+        You can use arbitrary units::
 
             import astropy.units as u
             calc_spectrum(2.5*u.um, 3.0*u.um, ...)
-
-    wavelength_min, wavelength_max: float [:math:`nm`] or `~astropy.units.quantity.Quantity`
-        wavelength range to be processed in :math:`nm`. Wavelength in ``'air'`` or
-        ``'vacuum'`` depending of the value of ``'medium'``.
+    wunit: ``'nm'``, ``'cm-1'``
+        unit for ``wmin`` and ``wmax``. Default is ``"cm-1"``.
     Tgas: float [:math:`K`]
         Gas temperature. If non equilibrium, is used for :math:`T_{translational}`.
         Default ``300`` K​
@@ -107,7 +111,7 @@ def calc_spectrum(
         Default ``None``.​
     isotope: int, list, str of the form ``'1,2'``, or ``'all'``, or dict
         isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
-        See [HITRAN-2016]_ documentation for isotope list for all species. If ``'all'``,
+        See [HITRAN-2020]_ documentation for isotope list for all species. If ``'all'``,
         all isotopes in database are used (this may result in larger computation
         times!). Default ``'all'``.
 
@@ -130,16 +134,33 @@ def calc_spectrum(
 
     databank: str or dict
         can be either:
-        - ``'hitran'``, to fetch automatically the latest HITRAN version
-          through :py:func:`~radis.io.query.fetch_astroquery` (based on [HAPI]_ ).
-        - ``'hitemp'``, to fetch automatically the latest HITEMP version
-          through :py:func:`~radis.io.hitemp.fetch_hitemp`.
+        - ``'hitran'``, to fetch the latest HITRAN version
+          through :py:func:`~radis.io.hitran.fetch_hitran` (download full database
+          with  [HAPI]_) or :py:func:`~radis.io.query.fetch_astroquery` (download
+          only the required range). To use one mode or the other, use ::
+
+            databank=('hitran', 'full')     # download and cache full database, all isotopes
+            databank=('hitran', 'range')    # download and cache required range, required isoope
+
+        - ``'hitemp'``, to fetch the latest HITEMP version
+          through :py:func:`~radis.io.hitemp.fetch_hitemp`. Downloads all lines
+          and all isotopes.
+        - ``'exomol'``, to fetch the latest ExoMol database
+          through :py:func:`~radis.io.hitemp.fetch_exomol`. To download a specific
+          database use (more info in fetch_exomol) ::
+
+            databank=('exomol', 'EBJT')   # 'EBJT' is a specific ExoMol database name
+
         - the name of a a valid database file, in which case the format is inferred.
           For instance, ``'.par'`` is recognized as ``hitran/hitemp`` format.
-          Accepts wildcards ``'*'`` to select multiple files.
+          Accepts wildcards ``'*'`` to select multiple files ::
+
+            databank='PATH/TO/co_*.par'
+
         - the name of a spectral database registered in your ``~/radis.json``
-          :ref:`configuration file <label_lbl_config_file>`.
-          This allows to use multiple database files.
+          :ref:`configuration file <label_lbl_config_file>` ::
+
+            databank='MY_SPECTRAL_DATABASE'
 
         Default ``'hitran'``. See :class:`~radis.lbl.loader.DatabankLoader` for more
         information on line databases, and :data:`~radis.misc.config.DBFORMAT` for
@@ -243,9 +264,17 @@ def calc_spectrum(
         methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`__
         To try the GPU code without an actual GPU, you can use ``mode='emulated_gpu'``.
         This will run the GPU equivalent code on the CPU.
+    return_factory: bool
+        if ``True``, return the :py:class:`~radis.lbl.factory.SpectrumFactory` that
+        computes the spectrum. Useful to access computational parameters, the line database,
+        or to start batch-computations from a first spectrum calculation. Ex::
+
+                s, sf = calc_spectrum(..., return_factory=True)
+                sf.df1  # see the lines calculated
+                sf.eq_spectrum(...)  #  new calculation without reloading the database
     **kwargs: other inputs forwarded to SpectrumFactory
         For instance: ``warnings``.
-        See :class:`~radis.lbl.factory.SpectrumFactory` documentation for more
+        See :py:class:`~radis.lbl.factory.SpectrumFactory` documentation for more
         details on input.
 
     Returns
@@ -324,6 +353,25 @@ def calc_spectrum(
     --------
     :py:class:`~radis.lbl.factory.SpectrumFactory`
     """
+
+    # Check inputs
+
+    # ... wavelengths / wavenumbers
+
+    # Get wavenumber, based on whatever was given as input.
+    wavenum_min, wavenum_max = get_waverange(
+        wmin,
+        wmax,
+        wunit,
+        kwargs.pop("wavenum_min") if "wavenum_min" in kwargs else None,
+        kwargs.pop("wavenum_max") if "wavenum_max" in kwargs else None,
+        kwargs.pop("wavelength_min") if "wavelength_min" in kwargs else None,
+        kwargs.pop("wavelength_max") if "wavelength_max" in kwargs else None,
+        medium,
+    )
+
+    # Deal with Multi-molecule mode:
+
     from radis.los.slabs import MergeSlabs
 
     if molecule is not None and type(molecule) != list:
@@ -395,6 +443,7 @@ def calc_spectrum(
 
     # ... Initialize and fill the master-dictionary
     molecule_dict = {}
+    factory_dict = {}
 
     for molecule in molecule_reference_set:
         molecule_dict[molecule] = {}
@@ -456,11 +505,9 @@ def calc_spectrum(
         # We add all of the DICT_INPUT_ARGUMENTS values:
         kwargs_molecule.update(**dict_arguments)
 
-        generated_spectrum = _calc_spectrum(
+        generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
             wavenum_max=wavenum_max,
-            wavelength_min=wavelength_min,
-            wavelength_max=wavelength_max,
             Tgas=Tgas,
             Tvib=Tvib,
             Trot=Trot,
@@ -484,8 +531,12 @@ def calc_spectrum(
             verbose=verbose,
             mode=mode,
             export_lines=export_lines,
+            return_factory=return_factory,
             **kwargs_molecule
         )
+        if return_factory:
+            factory_dict[molecule] = generated_spectrum[1]
+            generated_spectrum = generated_spectrum[0]  # the spectrum
         s_list.append(generated_spectrum)
 
         if condition_multiple_wstep:
@@ -501,14 +552,15 @@ def calc_spectrum(
     if save_to:
         s.store(path=save_to, if_exists_then="replace", verbose=verbose)
 
-    return s
+    if return_factory:
+        return s, factory_dict
+    else:
+        return s
 
 
-def _calc_spectrum(
+def _calc_spectrum_one_molecule(
     wavenum_min,
     wavenum_max,
-    wavelength_min,
-    wavelength_max,
     Tgas,
     Tvib,
     Trot,
@@ -532,33 +584,12 @@ def _calc_spectrum(
     verbose,
     mode,
     export_lines,
+    return_factory=False,
     **kwargs
-):
+) -> Spectrum:
     """See :py:func:`~radis.lbl.calc.calc_spectrum`"""
 
     # Check inputs
-
-    # ... wavelengths / wavenumbers
-    if (wavelength_min is not None or wavelength_max is not None) and (
-        wavenum_min is not None or wavenum_max is not None
-    ):
-        raise ValueError("Wavenumber and Wavelength both given... it's time to choose!")
-
-    if not medium in ["air", "vacuum"]:
-        raise NotImplementedError("Unknown propagating medium: {0}".format(medium))
-
-    if wavenum_min is None and wavenum_max is None:
-        assert wavelength_max is not None
-        assert wavelength_min is not None
-        if medium == "vacuum":
-            wavenum_min = nm2cm(wavelength_max)
-            wavenum_max = nm2cm(wavelength_min)
-        else:
-            wavenum_min = nm2cm(air2vacuum(wavelength_max))
-            wavenum_max = nm2cm(air2vacuum(wavelength_min))
-    else:
-        assert wavenum_min is not None
-        assert wavenum_max is not None
 
     # ... temperatures
 
@@ -603,8 +634,8 @@ def _calc_spectrum(
 
     # Run calculations
     sf = SpectrumFactory(
-        wavenum_min,
-        wavenum_max,
+        wavenum_min=wavenum_min,
+        wavenum_max=wavenum_max,
         medium=medium,
         molecule=molecule,
         isotope=isotope,
@@ -620,13 +651,29 @@ def _calc_spectrum(
         export_lines=export_lines,
         **kwargs
     )
-    if databank in ["fetch", "hitran", "hitemp", "exomol",] or (
-        isinstance(databank, tuple) and databank[0] == "exomol"
+    if (
+        databank
+        in [
+            "fetch",
+            "hitran",
+            "hitemp",
+            "exomol",
+        ]
+        or (isinstance(databank, tuple) and databank[0] == "exomol")
+        or (isinstance(databank, tuple) and databank[0] == "hitran")
     ):  # mode to get databank without relying on  Line databases
         # Line database :
         if databank in ["fetch", "hitran"]:
             conditions = {
                 "source": "hitran",
+                "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
+            }
+        elif isinstance(databank, tuple) and databank[0] == "hitran":
+            conditions = {
+                "source": "hitran",
+                "database": databank[
+                    1
+                ],  # 'full' or 'partial', cf LoaderFactory.fetch_databank()
                 "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
             }
         elif databank in ["hitemp"]:
@@ -642,7 +689,7 @@ def _calc_spectrum(
         elif isinstance(databank, tuple) and databank[0] == "exomol":
             conditions = {
                 "source": "exomol",
-                "exomol_database": databank[1],
+                "database": databank[1],
                 "parfuncfmt": "exomol",  # download & use Exo partition functions for equilibrium}
             }
         # Partition functions :
@@ -658,9 +705,19 @@ def _calc_spectrum(
             # constants (not all molecules are supported!)
             conditions["levelsfmt"] = "radis"
             conditions["lvl_use_cached"] = use_cached
+
+        # Columns to load
+        if export_lines:
+            conditions["load_columns"] = "all"
+        elif not _equilibrium:
+            conditions["load_columns"] = "noneq"
+        else:
+            conditions["load_columns"] = "equilibrium"
+
         conditions["load_energies"] = not _equilibrium
         # Details to identify lines
         conditions["parse_local_global_quanta"] = (not _equilibrium) or export_lines
+        # Finally, LOAD :
         sf.fetch_databank(**conditions)
     elif exists(databank):
         conditions = {
@@ -700,14 +757,34 @@ def _calc_spectrum(
                 + "and define the format there. More information on "
                 + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
             )
+
+        # Columns to load
+        if export_lines:
+            conditions["load_columns"] = "all"
+        elif not _equilibrium:
+            conditions["load_columns"] = "noneq"
+        else:
+            conditions["load_columns"] = "equilibrium"
+
         conditions["load_energies"] = not _equilibrium
+        # Finally, LOAD :
         sf.load_databank(**conditions)
 
     else:  # manual mode: get from user-defined line databases defined in ~/radis.json
+
+        # Columns to load
+        if export_lines:
+            load_columns = "all"
+        elif not _equilibrium:
+            load_columns = "noneq"
+        else:
+            load_columns = "equilibrium"
+
         sf.load_databank(
             databank,
             load_energies=not _equilibrium,  # no need to load/calculate energies at eq.
             drop_columns=drop_columns,
+            load_columns=load_columns,
         )
 
     #    # Get optimisation strategies
@@ -755,7 +832,10 @@ def _calc_spectrum(
             name=name,
         )
 
-    return s
+    if return_factory:
+        return s, sf
+    else:
+        return s
 
 
 # --------------------------

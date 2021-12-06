@@ -38,6 +38,7 @@ jobs:
         - conda env create -n radis-env -f environment.yml
         # Activate and install test-only dependencies
         - source activate radis-env
+        - conda list
         - pip install pytest-cov
         - pip install -e . -v
 

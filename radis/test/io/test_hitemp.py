@@ -54,8 +54,8 @@ def test_relevant_files_filter():
 
 
 @pytest.mark.needs_connection
-def test_fetch_hitemp_OH(verbose=True, *args, **kwargs):
-    """Test proper download of HITEMP OH database.
+def test_fetch_hitemp_OH_pytables(verbose=True, *args, **kwargs):
+    """Test proper download of HITEMP OH database, with two engines.
 
     Good to test fetch_hitemp.
     ``13_HITEMP2020.par.bz2`` is only 900 kb so it can be run on online
@@ -68,14 +68,80 @@ def test_fetch_hitemp_OH(verbose=True, *args, **kwargs):
 
     """
 
-    df = fetch_hitemp("OH", cache="regen", chunksize=20000, verbose=3 * verbose)
+    from os.path import join
 
-    assert "HITEMP-OH" in getDatabankList()
+    from radis.test.utils import getTestFile
+
+    df = fetch_hitemp(
+        "OH",
+        cache="regen",
+        chunksize=20000,
+        verbose=3 * verbose,
+        local_databases=join(getTestFile("."), "hitemp"),
+        databank_name="HITEMP-OH-TEST-ENGINE-PYTABLES",
+        engine="pytables",
+    )
+
+    assert "HITEMP-OH-TEST-ENGINE-PYTABLES" in getDatabankList()
 
     assert len(df) == 57019
 
     # Load again and make sure it works (ex: metadata properly loaded etc.):
-    fetch_hitemp("OH")
+    fetch_hitemp(
+        "OH",
+        local_databases=join(getTestFile("."), "hitemp"),
+        databank_name="HITEMP-OH-TEST-ENGINE-PYTABLES",
+        engine="pytables",
+    )
+
+
+@pytest.mark.needs_connection
+def test_fetch_hitemp_OH_vaex(verbose=True, *args, **kwargs):
+    """Test proper download of HITEMP OH database, with two engines.
+
+    Good to test fetch_hitemp.
+    ``13_HITEMP2020.par.bz2`` is only 900 kb so it can be run on online
+    tests without burning the planet 🌳
+
+    ⚠️ if using the default `chunksize=100000`, it uncompresses in one pass
+    (only 57k lines for OH) and we cannot test that appending to the same HDF5
+    works. So here we use a smaller chunksize of 20,000.
+    .
+
+    """
+
+    from os.path import join
+
+    # dont download twice if files exist?
+    from radis import config
+    from radis.test.utils import getTestFile
+
+    old_value = config["AUTO_UPDATE_DATABASE"]
+    config["AUTO_UPDATE_DATABASE"] = True
+
+    df = fetch_hitemp(
+        "OH",
+        cache="regen",
+        chunksize=20000,
+        verbose=3 * verbose,
+        local_databases=join(getTestFile("."), "hitemp"),
+        databank_name="HITEMP-OH-TEST-ENGINE-VAEX",
+        engine="vaex",
+    )
+
+    config["AUTO_UPDATE_DATABASE"] = old_value
+
+    assert "HITEMP-OH-TEST-ENGINE-VAEX" in getDatabankList()
+
+    assert len(df) == 57019
+
+    # Load again and make sure it works (ex: metadata properly loaded etc.):
+    fetch_hitemp(
+        "OH",
+        local_databases=join(getTestFile("."), "hitemp"),
+        databank_name="HITEMP-OH-TEST-ENGINE-VAEX",
+        engine="vaex",
+    )
 
 
 @pytest.mark.needs_connection
@@ -98,15 +164,18 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
     # ... This is done at the HITEMPDatabaseManager level
     # ... unitest for this part:
     ldb = HITEMPDatabaseManager(
-        name="HITEMP-CO2", molecule="CO2", local_databases="~/.radisdb/hitemp/"
+        name="HITEMP-CO2",
+        molecule="CO2",
+        engine="default",
+        local_databases="~/.radisdb/hitemp/",
     )
-    local_files, _ = ldb.get_filenames(engine="auto")
+    local_files, _ = ldb.get_filenames()
     relevant_file, file_wmin, file_wmax = keep_only_relevant(
         local_files, wavenum_min=wmin, wavenum_max=wmax
     )
 
     assert len(relevant_file) == 1
-    assert basename(relevant_file[0]) == "CO2-02_02500-03000_HITEMP2010.h5"
+    assert basename(relevant_file[0]).startswith("CO2-02_02500-03000_HITEMP2010.")
     assert file_wmin == 2500
     assert file_wmax == 3000
 
@@ -123,7 +192,7 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
     assert "HITEMP-CO2" in getDatabankList()
 
     assert len(local_files) == 1
-    assert basename(local_files[0]) == "CO2-02_02500-03000_HITEMP2010.h5"
+    assert basename(local_files[0]).startswith("CO2-02_02500-03000_HITEMP2010.")
 
 
 @pytest.mark.needs_connection
@@ -161,7 +230,7 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
         columns=["int", "wav"],
         verbose=verbose,
         return_local_path=True,
-        engine="pytables",
+        engine="default",
     )
 
     assert f"HITEMP-{molecule}" in getDatabankList()
@@ -170,6 +239,7 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
         name=f"HITEMP-{molecule}",
         molecule=molecule,
         verbose=verbose,
+        engine="default",
         local_databases="~/.radisdb/hitemp/",
     )
     url, Nlines, _, _ = ldb.fetch_url_Nlines_wmin_wmax()
@@ -183,25 +253,41 @@ def test_partial_loading(*args, **kwargs):
 
     Also check 'vaex' engine and ``radis.config["AUTO_UPDATE_DATABASE"]``"""
 
-    wmin, wmax = 2500, 4500
+    from os.path import join
 
-    # First ensures that the database is wider than this (else test is irrelevant) :
-    df = fetch_hitemp("OH", engine="pytables")
-    assert df.wav.min() < wmin
-    assert df.wav.max() > wmax
+    from radis.test.utils import getTestFile
+
+    df = fetch_hitemp(
+        "OH",
+        local_databases=join(getTestFile("."), "hitemp"),
+        databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
+        engine="pytables",
+    )
 
     # Now fetch with partial loading
+    wmin, wmax = 2500, 4500
+    # ... First ensures that the database is wider than this (else test is irrelevant) :
+    assert df.wav.min() < wmin
+    assert df.wav.max() > wmax
+    # ... load :
     df = fetch_hitemp(
-        "OH", load_wavenum_min=wmin, load_wavenum_max=wmax, engine="pytables"
+        "OH",
+        local_databases=join(getTestFile("."), "hitemp"),
+        databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
+        load_wavenum_min=wmin,
+        load_wavenum_max=wmax,
+        engine="pytables",
     )
     assert df.wav.min() >= wmin
     assert df.wav.max() <= wmax
 
     # Test with isotope:
-    wmin2 = 0
+    wmin2 = 1
     wmax2 = 300
     df = fetch_hitemp(
         "OH",
+        local_databases=join(getTestFile("."), "hitemp"),
+        databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
         load_wavenum_min=wmin2,
         load_wavenum_max=wmax2,
         isotope="2",
@@ -210,6 +296,8 @@ def test_partial_loading(*args, **kwargs):
     assert df.iso.unique() == 2
     df = fetch_hitemp(
         "OH",
+        local_databases=join(getTestFile("."), "hitemp"),
+        databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
         load_wavenum_min=wmin2,
         load_wavenum_max=wmax2,
         isotope="1,2",
@@ -223,21 +311,31 @@ def test_partial_loading(*args, **kwargs):
     old_config = radis.config["AUTO_UPDATE_DATABASE"]
     try:
         radis.config["AUTO_UPDATE_DATABASE"] = True
-        df = fetch_hitemp("OH", engine="vaex")
-    finally:
-        radis.config["AUTO_UPDATE_DATABASE"] = old_config
-    assert df.wav.min() < wmin
-    assert df.wav.max() > wmax
-
-    # multiple isotope selection not implemetned with vaex
-    with pytest.raises(NotImplementedError):
-        fetch_hitemp(
+        df = fetch_hitemp(
             "OH",
-            load_wavenum_min=wmin,
-            load_wavenum_max=wmax,
-            isotope="1,2,3",
+            local_databases=join(getTestFile("."), "hitemp"),
+            databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
             engine="vaex",
         )
+    finally:
+        radis.config["AUTO_UPDATE_DATABASE"] = old_config
+    # assert that database is wider than future selection
+    assert df.wav.min() < wmin2
+    assert df.wav.max() > wmax2
+
+    # now test wrange & multiple isotope selection with vaex
+    df = fetch_hitemp(
+        "OH",
+        local_databases=join(getTestFile("."), "hitemp"),
+        databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
+        load_wavenum_min=wmin2,
+        load_wavenum_max=wmax2,
+        isotope="2,3",
+        engine="vaex",
+    )
+    assert df.wav.min() >= wmin2
+    assert df.wav.max() <= wmax2
+    assert set(df.iso.unique()) == {2, 3}
 
 
 @pytest.mark.needs_connection
@@ -328,7 +426,8 @@ def test_parse_hitemp_missing_labels_issue280(*args, **kwargs):
 
 if __name__ == "__main__":
     test_relevant_files_filter()
-    test_fetch_hitemp_OH()
+    test_fetch_hitemp_OH_pytables()
+    test_fetch_hitemp_OH_vaex()
     test_partial_loading()
     test_calc_hitemp_CO_noneq()
     test_fetch_hitemp_partial_download_CO2()

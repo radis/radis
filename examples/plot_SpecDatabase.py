@@ -1,14 +1,25 @@
 """
-================================================
+=================
 Spectrum Database
-================================================
-RADIS has :py:class:`~radis.tools.database.SpecDatabase` feature used to store and retrieve calculated Spectrums. A path can be specified for SpecDatabase all Spectrums are stored as .spec files which can be loaded
-from the SpecDatabase object itself.  A csv file is generated which contains all input and conditional parameters of Spectrum.
+=================
 
-RADIS also has :py:meth:`~radis.lbl.loader.DatabankLoader.init_database` feature which initializes the SpecDatabase for the SpectrumFactory and every Spectrum
+RADIS has :py:class:`~radis.tools.database.SpecDatabase` feature used to store
+and retrieve calculated Spectrums. A path can be specified for SpecDatabase all
+Spectrums are stored as .spec files which can be loaded
+from the SpecDatabase object itself.  A csv file is generated which contains all
+input and conditional parameters of Spectrum.
+
+RADIS also has :py:meth:`~radis.lbl.loader.DatabankLoader.init_database` feature
+which initializes the SpecDatabase for the SpectrumFactory and every Spectrum
 generated from it will be stored in the SpecDatabase automatically.
 
-You can use :py:meth:`~radis.tools.database.SpecList.plot_cond` to make a 2D plot using the conditions of the Spectrums in the SpecDatabase and use a z_label to plot a heat map based on it.
+You can use :py:meth:`~radis.tools.database.SpecList.plot_cond` to make a 2D plot
+using the conditions of the Spectrums in the SpecDatabase and use a z_label to plot
+a heat map based on it.
+
+:py:class:`~radis.tools.database.SpecDatabase` also has useful
+:py:meth:`~radis.tools.database.SpecDatabase.fit_spectrum` and
+:py:meth:`~radis.tools.database.SpecDatabase.interpolate` methods.
 
 
 """
@@ -37,7 +48,9 @@ sf.fetch_databank("hitemp")
 s1 = sf.eq_spectrum(Tgas=300, path_length=1)
 
 # Creating SpecDatabase
-my_folder = Path.cwd() / "SpecDatabase_Test"
+from radis.test.utils import getTestFile
+
+my_folder = Path(getTestFile(".")) / "SpecDatabase_Test"
 db = SpecDatabase(my_folder)
 
 # Method 1: Creating .spec file and adding manually to SpecDatabase
@@ -53,7 +66,7 @@ Tgas = np.linspace(300, 3000, 4)
 
 # Multiple Spectrum calculation based on different values of Tgas and wstep
 for i in wstep:
-    sf.wstep = i
+    sf._wstep = i
     sf.params.wstep = i
     for j in Tgas:
         sf.eq_spectrum(Tgas=j, path_length=1)

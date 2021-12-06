@@ -584,7 +584,7 @@ def test_wstep_auto_method_sf(verbose=True, plot=False, *args, **kwargs):
     sf.load_databank("HITRAN-CO-TEST")
 
     s1 = sf.eq_spectrum(300, pressure=1)
-    assert sf.wstep == "auto"
+    assert sf._wstep == "auto"
 
     wstep_calculated = s1.get_conditions()["wstep"]
 
@@ -594,10 +594,10 @@ def test_wstep_auto_method_sf(verbose=True, plot=False, *args, **kwargs):
     )
 
     s2 = sf.eq_spectrum(300, pressure=0.2)
-    assert sf.wstep == "auto"
+    assert sf._wstep == "auto"
 
     s3 = sf.eq_spectrum(300, pressure=0.001)
-    assert sf.wstep == "auto"
+    assert sf._wstep == "auto"
 
     assert (
         s1.get_conditions()["wstep"]
@@ -641,7 +641,7 @@ def test_all_spectrum_using_wstep_auto(verbose=True, plot=False, *args, **kwargs
     wstep_4 = sf.params.wstep
 
     assert wstep_1 == wstep_2 == wstep_3 == wstep_4
-    assert sf.wstep == "auto"
+    assert sf._wstep == "auto"
 
 
 # --------------------------

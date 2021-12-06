@@ -172,7 +172,7 @@ provides an interace to [CANTERA]_ directly from RADIS ::
 Nonequilibrium Calculations
 ---------------------------
 
-Nonequilibrium calculations (multiple temperatures) require to know the
+Non-LTE calculations (multiple temperatures) require to know the
 vibrational and rotational energies of each
 level in order to calculate the nonequilibrium populations.
 
@@ -364,10 +364,14 @@ and :py:mod:`~astropy.units` ::
                          cutoff=1e-25,              # cm/molecule
                          broadening_max_width=10,   # cm-1
                          )
-    sf.load_databank('HITRAN-CO2-TEST')        # this database must be defined in ~/radis.json
+    sf.load_databank('HITRAN-CO2-TEST', load_columns='noneq')        # this database must be defined in ~/radis.json
     s1 = sf.eq_spectrum(Tgas=300 * u.K)
     s2 = sf.eq_spectrum(Tgas=2000 * u.K)
     s3 = sf.non_eq_spectrum(Tvib=2000 * u.K, Trot=300 * u.K)
+
+Note that for non-LTE calculations, specific columns must be loaded. This is done by using the
+``load_columns='noneq'`` parameter. See :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank`
+for more information.
 
 
 .. _label_lbl_config_file:
@@ -376,14 +380,28 @@ Configuration file
 ------------------
 
 The ``~/radis.json`` configuration file is used to store the list and attributes of the Line databases
-available on your computer.
+available on your computer. It is also used to change global user preferences,
+such as plotting styles and libraries, or warnings thresholds, or default algorithms.
+The list of all available parameters is given in the `default_radis.json <https://github.com/radis/radis/blob/develop/radis/default_radis.json>`__
+file. Any key added to your ``~/radis.json`` will override the value in
+``default_radis.json``.
+
+.. note::
+    You can also update config parameters at runtime by setting::
+
+        import radis
+        radis.config["SOME_KEY"] = "SOME_VALUE"
+
+    Although it is recommended to simply edit your ``~/radis.json`` file.
+
 
 Without a configuration file, you can still:
 
-- download the corresponding [HITRAN-2016]_ line database automatically,
+- download the corresponding [HITRAN-2020]_ line database automatically,
   either with the (default) ``databank='hitran'`` option in :py:func:`~radis.lbl.calc.calc_spectrum`,
   or the :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank` method of
   :py:class:`~radis.lbl.factory.SpectrumFactory`,
+- same for ``'hitemp'`` and ``'exomol'``
 - give a single file as an input to the ``databank=`` parameter of :py:func:`~radis.lbl.calc.calc_spectrum`
 
 A configuration file will help to:
@@ -392,13 +410,23 @@ A configuration file will help to:
 - use custom tabulated partition functions for equilibrium calculations
 - use custom, precomputed energy levels for nonequilibrium calculations
 
+Databases downloaded from 'hitran', 'hitemp' and 'exomol' with  :py:func:`~radis.lbl.calc.calc_spectrum`
+or :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank` are automatically
+registered in the ``~/radis.json`` configuration file. The default download path
+is ``~/.radisdb``. You can change this at runtime by setting the ``radis.config["DEFAULT_DOWNLOAD_PATH"]``
+key, or (recommended) by adding a ``DEFAULT_DOWNLOAD_PATH`` key in your ``~/radis.json``
+configuration file.
+
+
 .. note::
 
     it is also possible to give :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank` the line database path,
     format, and partition function format directly, but this is not recommended and should only be used if for some
     reason you cannot create a configuration file.
 
-A ``~/radis.json`` is user-dependant, and machine-dependant. It contains a list of database, everyone of which
+
+
+A ``~/radis.json`` is user-dependant, and machine-dependant. It contains a list of database, each of which
 is specific to a given molecule. It typically looks like::
 
 str: Typical expected format of a ~/radis.json entry::
@@ -526,7 +554,7 @@ The full description of a `~/radis.json` entry is given in :py:data:`~radis.misc
 *How to create the configuration file?*
 
 A default ``~/radis.json`` configuration file can be generated with :py:func:`~radis.test.utils.setup_test_line_databases`, which
-creates two test databases from fragments of [HITRAN-2016]_ line databases::
+creates two test databases from fragments of [HITRAN-2020]_ line databases::
 
     from radis.test.utils import setup_test_line_databases
     setup_test_line_databases()
@@ -735,6 +763,21 @@ points for each linewidth.
 .. note::
     wstep = 'auto' is optimized for performances while ensuring accuracy,
     but is still experimental in 0.9.30. Feedback welcome!
+
+
+Sparse wavenumber grid
+----------------------
+
+To compute large band spectra with a small number of lines, RADIS includes
+a sparse wavenumber implementation of the DIT algorithm, which is
+activated based on a scarcity criterion (``Nlines/Ngrid_points > 1``).
+
+The sparse version can be forced to be activated or deactivated. This behavior
+is done by setting the `SPARSE_WAVENUMBER` key of the :py:attr:`radis.config`
+dictionary, or of the ~/radis.json user file.
+
+See the :ref:`HITRAN full-range example <example_hitran_full_range>` for an
+example.
 
 
 Database loading

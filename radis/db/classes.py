@@ -206,9 +206,15 @@ trans = {
     "47": "SO3",
     "48": "C2N2",
     "49": "COCl2",
+    "50": "SO",
+    "51": "CH3F",
+    "52": "GeH4",
+    "53": "CS2",
+    "54": "CH3I",
+    "55": "NF3",
 }
 HITRAN_MOLECULES = list(trans.values())
-""" str: list of [HITRAN-2016]_ molecules. """
+""" str: list of [HITRAN-2020]_ molecules. """
 
 
 def get_molecule_identifier(molecule_name):
@@ -278,16 +284,115 @@ def get_molecule(molecule_id):
 # %% ExoMol molecules
 
 
-KNOWN_EXOMOL_ISOTOPES_NAMES = {
-    ("FeH", 1): "56Fe-1H",
-    ("SiO", 1): "28Si-16O",  # Placeholder until all molecules parsed from website TODO
-    ("CN", 1): "12C-14N",  # Placeholder until all molecules parsed from website TODO
+from radis import config
+
+isotope_full_names = config["molparams"]["isotope_full_name"]
+
+EXOMOL_ONLY_ISOTOPES_NAMES = {
+    (molecule, int(iso_number)): iso_name
+    for molecule, iso_dict in isotope_full_names.items()
+    for iso_number, iso_name in iso_dict.items()
 }
 """All :py:data:`~radis.db.classes.HITRAN_MOLECULES` are also converted to their ExoMol full-name format
 in :py:func:`~radis.io.exomol.get_exomol_full_isotope_name`
 """
-EXOMOL_MOLECULES = list(set([M for M, iso in KNOWN_EXOMOL_ISOTOPES_NAMES.keys()]))
+assert EXOMOL_ONLY_ISOTOPES_NAMES[("FeH", 1)] == "56Fe-1H"
+assert EXOMOL_ONLY_ISOTOPES_NAMES[("SiO", 1)] == "28Si-16O"
+assert EXOMOL_ONLY_ISOTOPES_NAMES[("CN", 1)] == "12C-14N"
 
+EXOMOL_MOLECULES = [
+    "AlCl",
+    "AlF",
+    "AlH",
+    "AlO",
+    "AsH3",
+    "BeH",
+    "C2",
+    "C2H2",
+    "C2H4",
+    "CH",
+    "CH3",
+    "CH3Cl",
+    "CH3F",
+    "CH4",
+    "CN",
+    "CO",
+    "CO2",
+    "CP",
+    "CS",
+    "CaF",
+    "CaH",
+    "CaO",
+    "CrH",
+    "FeH",
+    "H2",
+    "H2CO",
+    "H2O",
+    "H2O2",
+    "H2S",
+    "H2_p",
+    "H3O_p",
+    "H3_p",
+    "HCN",
+    "HCl",
+    "HF",
+    "HNO3",
+    "HeH_p",
+    "KCl",
+    "KF",
+    "KOH",
+    "LiCl",
+    "LiF",
+    "LiH",
+    "LiH_p",
+    "MgF",
+    "MgH",
+    "MgO",
+    "N2",
+    "N2O",
+    "NH",
+    "NH3",
+    "NO",
+    "NS",
+    "NaCl",
+    "NaF",
+    "NaH",
+    "NaO",
+    "NaOH",
+    "NiH",
+    "O2",
+    "OCS",
+    "OH",
+    "OH_p",
+    "PF3",
+    "PH",
+    "PH3",
+    "PN",
+    "PO",
+    "PS",
+    "SH",
+    "SO2",
+    "SO3",
+    "ScH",
+    "SiH",
+    "SiH2",
+    "SiH4",
+    "SiO",
+    "SiO2",
+    "SiS",
+    "TiH",
+    "TiO",
+    "VO",
+    "YO",
+    "cis-P2H2",
+    "trans-P2H2",
+]
+EXOMOL_ONLY_MOLECULES = sorted(
+    list(set([M for M, iso in EXOMOL_ONLY_ISOTOPES_NAMES.keys()]))
+)
+
+for M in EXOMOL_ONLY_ISOTOPES_NAMES.keys():
+    assert M[0] in EXOMOL_MOLECULES
 
 # %% Molecule class
 

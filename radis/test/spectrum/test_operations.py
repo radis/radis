@@ -204,7 +204,7 @@ def test_other_algebraic_operations(verbose=True, plot=False, *args, **kwargs):
 
     # There should be an error if algebraic operations are used when
     # multiple quantities are defined:
-    with pytest.raises(KeyError):
+    with pytest.raises(ValueError):
         2 * s
 
     s.apply_slit(0.1, "nm")
@@ -275,7 +275,7 @@ def test_dimensioned_operations(*args, **kwargs):
 
     # Test division
     # Example : a manual normalization
-    s /= s.max() * u.Unit("mW/cm2/sr/nm")
+    s /= s.max()  # no need to correct for  byunits anymore : * u.Unit("mW/cm2/sr/nm")
 
     assert s.units["radiance"] == ""  # normalized
     assert s.max() == 1.0
@@ -291,6 +291,30 @@ def test_dimensioned_operations(*args, **kwargs):
     assert s.units["radiance"] == "mW / (cm2 nm sr)"  # check units have been simplified
 
 
+@pytest.mark.fast
+def test_get_baseline(plot=False, *args, **kwargs):
+
+    from radis import load_spec
+    from radis.test.utils import getTestFile
+
+    s = load_spec(getTestFile(r"CO2_measured_spectrum_4-5um.spec"), binary=True)
+
+    from radis.spectrum.operations import get_baseline
+
+    sb1 = get_baseline(s.crop(4480, 5000), algorithm="polynomial", deg=3)
+    sb1.name = "polynomial N=3"
+    sb2 = get_baseline(s.crop(4480, 5000), algorithm="als")
+    sb2.name = "asymmetric least square"
+
+    if plot:
+        import matplotlib.pyplot as plt
+
+        s.plot()
+        sb1.plot(nfig="same", lw=3)
+        sb2.plot(nfig="same", lw=3)
+        plt.legend()
+
+
 def _run_testcases(verbose=True, plot=False, *args, **kwargs):
     """Test procedures"""
 
@@ -304,6 +328,7 @@ def _run_testcases(verbose=True, plot=False, *args, **kwargs):
     test_other_algebraic_operations(verbose=verbose, plot=plot, *args, **kwargs)
     test_TestBaseline(verbose=verbose, plot=plot, *args, **kwargs)
     test_dimensioned_operations(*args, **kwargs)
+    test_get_baseline(plot=plot, *args, **kwargs)
 
     return True
 

@@ -116,10 +116,12 @@ def cdsd2df(
     fname,
     version="hitemp",
     cache=True,
+    load_columns=None,
     verbose=True,
     drop_non_numeric=True,
     load_wavenum_min=None,
     load_wavenum_max=None,
+    engine="pytables",
 ):
     """Convert a CDSD-HITEMP [1]_ or CDSD-4000 [2]_ file to a Pandas dataframe.
 
@@ -135,6 +137,12 @@ def cdsd2df(
         improves performances a lot (but changes in the database are not
         taken into account). If ``False``, no database is used. If 'regen', temp
         file are reconstructed. Default ``True``.
+    load_columns: list
+        columns to load. If ``None``, loads everything
+
+        .. note::
+            this is only relevant if loading from a cache file. To generate
+            the cache file, all columns are loaded anyway.
 
     Other Parameters
     ----------------
@@ -147,6 +155,8 @@ def cdsd2df(
         if not ``'None'``, only load the cached file if it contains data for
         wavenumbers above/below the specified value. See :py:func`~radis.io.cache_files.load_h5_cache_file`.
         Default ``'None'``.
+    engine: 'pytables', 'vaex'
+        format for Hdf5 cache file. Default `pytables`
 
     Returns
     -------
@@ -231,7 +241,7 @@ def cdsd2df(
         raise ValueError("Unknown CDSD version: {0}".format(version))
 
     # Use cache file if possible
-    fcache = cache_file_name(fname)
+    fcache = cache_file_name(fname, engine=engine)
     if cache and exists(fcache):
         relevant_if_metadata_above = (
             {"wavenum_max": load_wavenum_min} if load_wavenum_min else {}
@@ -242,12 +252,14 @@ def cdsd2df(
         df = load_h5_cache_file(
             fcache,
             cache,
+            columns=load_columns,
             valid_if_metadata_is=metadata,
             relevant_if_metadata_above=relevant_if_metadata_above,
             relevant_if_metadata_below=relevant_if_metadata_below,
             current_version=radis.__version__,
             last_compatible_version=radis.config["OLDEST_COMPATIBLE_VERSION"],
             verbose=verbose,
+            engine=engine,
         )
         if df is not None:
             return df
@@ -284,6 +296,7 @@ def cdsd2df(
                 key="df",
                 overwrite=True,
                 verbose=verbose,
+                engine=engine,
             )
         except PermissionError:
             if verbose:

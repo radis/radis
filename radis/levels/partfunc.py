@@ -220,6 +220,17 @@ class RovibParFuncCalculator(RovibPartitionFunction):
 
         if not mode in ["full summation", "tabulation"]:
             raise ValueError("Choose mode = one of 'full summation', 'tabulation'")
+
+        # vaex processes are stuck if ran from Spyder. See https://github.com/spyder-ide/spyder/issues/16183
+        from os import environ
+
+        if mode == "tabulation" and any("SPYDER" in name for name in environ):
+            from radis.misc.log import printwarn
+
+            printwarn(
+                "Spyder IDE detected while using parsum_mode='tabulation', which depends on `vaex`. This is the fastest way to compute partition functions, but Vaex processes may be stuck if ran from Spyder. See https://github.com/radis/radis/issues/338. Quick fix: starting a new console releases the lock, usually for the rest of your session. You may consider using another IDE, or use `parsum_mode='full summation'` for the moment (note: starting another iPython console somehow releases the freeze in Spyder) \n"
+            )
+
         self.mode = mode
         self._tab_at = None  # tabulated function
         self._tab_at_noneq = None  # tabulated function
@@ -301,6 +312,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         import vaex  # import delayed until now (takes ~2s to import)
 
         df = vaex.from_pandas(self.df)
+        # Vaex processs may get stuck in Spyder IDE. https://github.com/radis/radis/issues/338
+        # Temp fix : >>> df.executor.async_method = "awaitio"     (doesn't always work here)
 
         epsilon = 1e-4  # prevent log(0)
         df["logE"] = np.log(df["E"] + epsilon)  # to bin on a log grid
@@ -495,6 +508,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         import vaex  # import delayed until now (takes ~2s to import)
 
         df = vaex.from_pandas(self.df)
+        # Vaex processs may get stuck in Spyder IDE. https://github.com/radis/radis/issues/338
+        # Temp fix : >>> df.executor.async_method = "awaitio"     (doesn't always work here)
 
         epsilon = 1e-4  # prevent log(0)
         df["logEvib"] = np.log(df["Evib"] + epsilon)  # to bin on a log grid
@@ -850,6 +865,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         import vaex  # import delayed until now (takes ~2s to import)
 
         df = vaex.from_pandas(self.df)
+        # Vaex processs may get stuck in Spyder IDE. https://github.com/radis/radis/issues/338
+        # Temp fix : >>> df.executor.async_method = "awaitio"     (doesn't always work here)
 
         epsilon = 1e-4  # prevent log(0)
 
@@ -1204,8 +1221,7 @@ class PartFuncTIPS(RovibParFuncTabulator):
         try:
             return self.partitionSum(self.M, self.I, T)
         except Exception as err:
-            if "TIPS2017" in str(err) or "TIPS2020" in str(err):
-                # TIPS 2017 OutOfBoundError
+            if "TIPS" in str(err):  # improve error message
                 from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
 
                 if self.molecule in MOLECULES_LIST_NONEQUILIBRIUM:
@@ -1213,11 +1229,13 @@ class PartFuncTIPS(RovibParFuncTabulator):
                 else:
                     tip = ""
                 raise OutOfBoundError(
-                    "Partition functions not computed in TIPS-2017 "
+                    "Partition functions not computed in TIPS "
                     + f"for molecule {self.molecule}, isotope {self.I}. "
                     + f"Max range : {str(err)}"
                     + tip
                 )
+            else:
+                raise
 
 
 # %% Calculated partition functions (either from energy levels, or ab initio)
