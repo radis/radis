@@ -441,7 +441,7 @@ def is_float(a):
 def is_range(a):
     from radis.tools.plot_tools import ParamRange
 
-    return type(a) == ParamRange
+    return isinstance(a, ParamRange)
 
 
 def is_number(s):

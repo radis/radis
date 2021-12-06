@@ -945,7 +945,7 @@ class SpectrumFactory(BandFactory):
         See Also
         --------
         :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`,
-        :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu_explore`
+        :meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu_interactive`
         """
 
         # %% Preprocessing
@@ -1217,15 +1217,15 @@ class SpectrumFactory(BandFactory):
 
         return s
 
-    def eq_spectrum_gpu_explore(
-        self, var="abscoeff", slit_FWHM=0.0, plotkwargs={}, *vargs, **kwargs
+    def eq_spectrum_gpu_interactive(
+        self, var="transmittance", slit_FWHM=0.0, plotkwargs={}, *vargs, **kwargs
     ):
         """
 
         Parameters
         ----------
         var : TYPE, optional
-            DESCRIPTION. The default is "abscoeff".
+            DESCRIPTION. The default is "transmittance".
         slit_FWHM : TYPE, optional
             DESCRIPTION. The default is 0.0.
         *vargs : TYPE
@@ -1307,6 +1307,11 @@ class SpectrumFactory(BandFactory):
                 verbose=False,
                 gpu=(not s.conditions["emulate_gpu"]),
             )
+
+            # s._q["abscoeff"] = abscoeff
+            # s.update(var)    # adds required spectral array
+            # _, new_y = s.get(var)   # can also use wunits, Iunits, etc.
+
             if var == "abscoeff":
                 new_y = abscoeff
             elif var == "transmittance":
