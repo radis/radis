@@ -157,8 +157,8 @@ See Also
 """
 
 drop_auto_columns_for_dbformat = {
-    "hitran": ["ierr", "iref", "lmix", "gp", "gpp"],
-    "hitemp": ["ierr", "iref", "lmix", "gp", "gpp"],
+    "hitran": ["ierr", "iref", "lmix", "gpp"],
+    "hitemp": ["ierr", "iref", "lmix", "gpp"],
     "cdsd-4000": ["wang2"],
     "cdsd-hitemp": ["wang2", "lsrc"],
     "hdf5-radisdb": [],
@@ -198,12 +198,14 @@ drop_all_but_these = [
     "iso",
     "wav",
     "int",
+    "A",
     "airbrd",
     "selbrd",
     "Tdpair",
     "Tdpsel",
     "Pshft",
     "El",
+    "gp",
 ]
 """ list: drop all columns but these if using ``drop_columns='all'`` in load_databank
 Note: nonequilibrium calculations wont be possible anymore and it wont be possible

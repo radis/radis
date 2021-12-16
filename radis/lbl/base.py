@@ -1836,6 +1836,7 @@ class BaseFactory(DatabankLoader):
 
             Qref = df["iso"].map(Qref_dict)
         # NOTE: This S0 is not the same as the one calculated by calc_S0()!!!
+        # The difference is that this one is multiplied by the fractional population of transition's levels
         # TO-DO: Resolve this ambiguity
         S0 = linestrength_from_Einstein(
             A=df.A, gu=df.gu, El=df.El, Ia=df.Ia, nu=df.wav, Q=Qref, T=Tref
@@ -3624,7 +3625,15 @@ def get_waverange(
     return wavenum_min, wavenum_max
 
 
-def linestrength_from_Einstein(A, gu, El, Ia, nu, Q, T):
+def linestrength_from_Einstein(
+    A,
+    gu,
+    El,
+    Ia,
+    nu,
+    Q,
+    T,
+):
     r"""Calculate linestrength at temperature ``T`` from Einstein coefficients.
 
     Parameters

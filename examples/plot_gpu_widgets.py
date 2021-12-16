@@ -28,7 +28,7 @@ sf = SpectrumFactory(
 
 sf.fetch_databank("hitemp")
 
-s = sf.eq_spectrum_gpu_explore(
+s = sf.eq_spectrum_gpu_interactive(
     var="radiance",
     Tgas=ParamRange(300.0, 2500.0, 1100.0),  # K
     pressure=ParamRange(0.1, 2, 1),  # bar
