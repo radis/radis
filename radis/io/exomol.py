@@ -704,14 +704,15 @@ class MdbExomol(object):
                         molec, extension=[".trans.bz2"], numtag=dic_def["numtag"][i]
                     )
                 if engine == "feather":
-                    if trans_file.with_suffix(".feather").exists():
-                        trans = pd.read_feather(trans_file.with_suffix(".feather"))
+                    trans_feather_path = trans_file.with_suffix(".bz2.feather")
+                    if trans_feather_path.exists():
+                        trans = pd.read_feather(trans_feather_path)
                     else:
                         print(
                             "Note: Caching line transition data to the feather format. After the second time, it will become much faster."
                         )
                         trans = exomolapi.read_trans(trans_file, engine="csv")
-                        trans.to_feather(trans_file.with_suffix(".feather"))
+                        trans.to_feather(trans_feather_path)
                         #!!TODO:restrict NOW the trans size to avoid useless overload of memory and CPU
                         # trans = trans[(trans['nu'] > self.nurange[0] - self.margin) & (trans['nu'] < self.nurange[1] + self.margin)]
                     ndtrans = trans.to_numpy()
