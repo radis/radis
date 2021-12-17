@@ -649,12 +649,11 @@ def rescale_abscoeff(
         abscoeff_init = None
     else:
         raise ValueError(
-            "Can't rescale abscoeff if transmittance_noslit ({0}) ".format(
+            "Can't rescale abscoeff if not all of the following are given : transmittance_noslit ({0}) ".format(
                 "transmittance_noslit" in initial
             )
             + "or absorbance ({0}), ".format("absorbance" in initial)
-            + "and true_path_length ({0}) ".format(true_path_length)
-            + "are not given. Use optically_thin?"
+            + "and true_path_length ({0}). ".format(true_path_length)
         )
 
     # Then export rescaled value
@@ -1416,7 +1415,15 @@ def _recalculate(
     else:
         _check_quantity = [quantity]
     for k in _check_quantity:
-        assert k in CONVOLUTED_QUANTITIES + NON_CONVOLUTED_QUANTITIES + ["all", "same"]
+        try:
+            assert k in CONVOLUTED_QUANTITIES + NON_CONVOLUTED_QUANTITIES + [
+                "all",
+                "same",
+            ]
+        except AssertionError:
+            raise ValueError(
+                f"Unexpected spectral array `{k}`. Expected one of {CONVOLUTED_QUANTITIES+NON_CONVOLUTED_QUANTITIES}"
+            )
     # ... make sure we're not trying to rescale a Spectrum that has non scalable
     # ... quantities
     if any_in(initial, non_rescalable_keys):

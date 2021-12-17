@@ -985,11 +985,13 @@ class Spectrum(object):
                     + ". Have you used .apply_slit()?"
                 )
             else:
-                raise KeyError(
-                    "{0} not in quantity list: {1}. Try to compute it automatically with s.update('{0}')".format(
-                        var, self.get_vars()
-                    )
-                )
+                # Try to compute it automatically :
+                try:
+                    self.update(var)
+                except ValueError as err:
+                    raise ValueError(
+                        f"{var} not in Spectrum arrays {self.get_vars()}. An error occured while trying to recompute it from the available arrays and conditions. See above"
+                    ) from err
 
         # Get quantity
         I = self._q[var]
