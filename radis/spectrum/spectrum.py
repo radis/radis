@@ -986,7 +986,9 @@ class Spectrum(object):
                 )
             else:
                 raise KeyError(
-                    "{0} not in quantity list: {1}".format(var, self.get_vars())
+                    "{0} not in quantity list: {1}. Try to compute it automatically with s.update('{0}')".format(
+                        var, self.get_vars()
+                    )
                 )
 
         # Get quantity
@@ -1335,9 +1337,22 @@ class Spectrum(object):
 
         Examples
         --------
+        Initialize a spectrum from the absorption coefficient, retrieve the transmittance
+        or the emission coefficient :
         ::
 
+            s = Spectrum.from_array([1900.  , 1900.01, 1900.02, 1900.03, 1900.04, 1900.05, 1900.06,
+                                     1900.07, 1900.08, 1900.09],
+                                    [2.71414065e-06, 2.88341489e-06, 3.06942277e-06, 3.27445689e-06,
+                                     3.50121831e-06, 3.75290756e-06, 4.03334037e-06, 4.34709612e-06,
+                                     4.69971017e-06, 5.09792551e-06],
+                                    'abscoeff', wunit='cm-1', Iunit='cm-1',
+                                    conditions={'path_length':1, # cm
+                                                'thermal_equilibrium':True,
+                                                'Tgas':700,  # K
+                                                })
             s.update('transmittance_noslit')
+            s.update('emisscoeff')
 
         See Also
         --------

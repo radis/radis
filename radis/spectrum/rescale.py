@@ -482,32 +482,25 @@ def update(
     """Calculate missing quantities that can be derived from the current
     quantities and conditions.
 
-    e.g: if path_length and emisscoeff are given, radiance_noslit can be recalculated
-    if in an optically thin configuration, else if abscoeff is also given
+    e.g: if `path_length` and `emisscoeff` are given, `radiance_noslit` can be recalculated
+    if `abscoeff` is also given, or without `abscoeff` in an optically thin configuration, else
 
 
     Parameters
     ----------
-
     spec: Spectrum
-
     quantity: str, ``'same'``, ``'all'``, or list of str
         name of the spectral quantity to recompute. If ``'same'``, only the quantities
         in the Spectrum are recomputed. If ``'all'``, then all quantities that can
         be derived are recomputed. Default ``'all'``. See
         :py:data:`~radis.spectrum.utils.CONVOLUTED_QUANTITIES`
         and :py:data:`~radis.spectrum.utils.NON_CONVOLUTED_QUANTITIES`
-
     optically_thin: True, False, or ``'default'``
-        determines whether to calculate radiance with or without self absorption.
-        If 'default', the value is determined from the self_absorption key
-        in Spectrum.conditions. If not given, False is taken. Default 'default'
-        Also updates the self_absorption value in conditions (creates it if
+        determines whether to calculate radiance with or without self-absorption.
+        If ``'default'``, the value is determined from the ``'self_absorption'`` key
+        in Spectrum.conditions. If not given, ``False`` is taken. Default ``'default'``
+        Also updates the ``'self_absorption'`` key in conditions (creates it if
         doesnt exist)
-
-    Other Parameters
-    ----------------
-
     assume_equilibrium: boolean
         if ``True``, only absorption coefficient ``abscoeff`` is recomputed
         and all values are derived from a calculation under equilibrium,
@@ -580,6 +573,8 @@ def update(
         # make sure units exist
         if not k in spec.units:
             raise ValueError("{0} added but unit is unknown".format(k))
+
+    return spec
 
 
 # Rescale functions
@@ -846,7 +841,7 @@ def rescale_emisscoeff(
 
     else:
         if optically_thin:
-            msg = "Can't calculate emisscoeff if true path_length ({0})".format(
+            msg = "Can't calculate emisscoeff if path_length ({0})".format(
                 true_path_length
             ) + "and initial radiance_noslit ({0}) are not all given".format(
                 "radiance_noslit" in initial
@@ -859,14 +854,12 @@ def rescale_emisscoeff(
                 raise ValueError(msg)
         else:
             msg = (
-                "Trying to get the emission coefficient (emisscoeff) in non optically "
-                + "thin case. True path_length ({0}), radiance_noslit ({1}) ".format(
+                "Trying to get the emission coefficient (emisscoeff) for a non-optically "
+                + "thin column. Among the following required quantities, not all of them are given : path_length ({0}), radiance_noslit ({1}) ".format(
                     true_path_length, "radiance_noslit" in initial
                 )
-                + "and abscoeff ({0}) are needed but not all given. ".format(
-                    "abscoeff" in initial
-                )
-                + "Try optically_thin? See known Spectrum conditions with "
+                + "and abscoeff ({0}). ".format("abscoeff" in initial)
+                + "See known Spectrum conditions with "
                 + "print(Spectrum)"
             )
             if "emisscoeff" in extra:  # cant calculate this one but let it go
@@ -1251,14 +1244,13 @@ def rescale_radiance_noslit(
                 raise ValueError(msg)
         else:
             msg = (
-                "Missing data to recalculate radiance_noslit. You need at least "
-                + "scaled emisscoeff ({0}), scaled transmittance_noslit ({1}) ".format(
+                "Missing data to recalculate radiance_noslit for a non-optically thin column with thermal_equilibrium={0}. You need at least "
+                + "scaled emisscoeff ({0}), scaled transmittance_noslit ({1}), ".format(
                     "emisscoeff" in rescaled, "transmittance_noslit" in rescaled
                 )
                 + "scaled abscoeff ({0}) and true_path_length ({1}). ".format(
                     "abscoeff" in rescaled, true_path_length
                 )
-                + "Try in optically thin mode"
             )
             if "radiance_noslit" in extra:
                 radiance_noslit = None
@@ -1384,21 +1376,19 @@ def _recalculate(
     and :func:`~radis.spectrum.rescale.update`.
 
     Determines with spectral quantities should be recomputed, then scales
-    them solving the Radiative Transfer Equation in the process.
+    them solving the Radiative Transfer Equation on a 1D-homogeneous column
+    without scattering.
 
 
     Parameters
     ----------
-
     spec: Spectrum
         the Spectrum object to recompute
-
     quantity: str, ``'same'``, ``'all'``, or list of str
         name of the spectral quantity to recompute. If ``'same'``, only the quantities
         in the Spectrum are recomputed. If ``'all'``, then all quantities that can
         be derived are recomputed. See :py:data:`~radis.spectrum.utils.CONVOLUTED_QUANTITIES`
         and :py:data:`~radis.spectrum.utils.NON_CONVOLUTED_QUANTITIES`
-
     true_path_length: boolean
         if ``False``, only relative rescaling (new/old) is allowed. For instance,
         when you dont know the true path_lenth, rescaling absorbance
@@ -1407,12 +1397,10 @@ def _recalculate(
 
     Other Parameters
     ----------------
-
     assume_equilibrium: boolean
         if ``True``, only absorption coefficient ``abscoeff`` is recomputed
         and all values are derived from a calculation under equilibrium,
         using Kirchoff's Law. Default ``False``
-
     """
 
     optically_thin = spec.is_optically_thin()
