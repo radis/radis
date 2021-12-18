@@ -268,7 +268,7 @@ class ConditionDict(dict):
     See Also
     --------
     :py:class:`~radis.lbl.loader.Input`,
-    :py:class:`~radis.lbl.loader.Parameter`,
+    :py:class:`~radis.lbl.loader.Parameters`,
     :py:class:`~radis.lbl.loader.MiscParams`
     """
 
@@ -2490,7 +2490,9 @@ class DatabankLoader(object):
 
         conditions = {
             k: v
-            for (k, v) in self.get_conditions(ignore_misc=ignore_misc).items()
+            for (k, v) in self.get_conditions(
+                ignore_misc=ignore_misc, add_config=True
+            ).items()
             if k in self.SpecDatabase.conditions()
         }
         conditions = {
@@ -2498,6 +2500,14 @@ class DatabankLoader(object):
             for (k, v) in conditions.items()
             if k not in self._autoretrieveignoreconditions
         }
+
+        if "wstep" in conditions and conditions["wstep"] == "auto":
+            if "GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD" in conditions:
+                # ignore wstep='auto' but still make sure that 'GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD' is the same
+                del conditions["wstep"]
+                # TODO Refactor. Include this in a large Parameter metaclass where
+                # 'GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD' is a parameter from which
+                # depends 'wstep' evaluation
 
         s = self.SpecDatabase.get(**conditions)
         if len(s) == 1:
@@ -2834,7 +2844,7 @@ class DatabankLoader(object):
 
         return parsum
 
-    def get_conditions(self, ignore_misc=False):
+    def get_conditions(self, ignore_misc=False, add_config=False):
         """Get all parameters defined in the SpectrumFactory.
 
         Other Parameters
@@ -2851,6 +2861,13 @@ class DatabankLoader(object):
         vardict.update(self.params.get_params())
         if not ignore_misc:
             vardict.update(self.misc.get_params())
+
+        if add_config:
+            import radis
+
+            vardict.update(
+                {k: v for k, v in radis.config.items() if not isinstance(v, dict)}
+            )
 
         return vardict
 

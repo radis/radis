@@ -137,7 +137,7 @@ from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatfo
 
 
 def show_message(*lines):
-    """ Note : will only happen if user installs with `pip install -v` """
+    """Note : will only happen if user installs with `pip install -v`"""
     print("=" * 74, file=sys.stderr)
     for line in lines:
         print(line, file=sys.stderr)
@@ -146,8 +146,8 @@ def show_message(*lines):
 
 def get_ext_modules(with_binaries):
     """
-    Parameter
-    ---------
+    Parameters
+    ----------
     with_binaries: bool
         if False, do not try to build Cython extensions
     """

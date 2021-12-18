@@ -319,6 +319,13 @@ def print_conditions(
         lambda x: x in info_param_list, non_phys_param
     )
 
+    import radis
+
+    config_param_list = list(radis.config.keys())
+    config_param, non_phys_param = partition(
+        lambda x: x in config_param_list, non_phys_param
+    )
+
     print("Physical Conditions")
     print("-" * 40)
     for k in sorted(phys_param):
@@ -327,6 +334,11 @@ def print_conditions(
     print("Computation Parameters")
     print("-" * 40)
     for k in sorted(non_phys_param):
+        print_param(k)
+
+    print("Config parameters")
+    print("-" * 40)
+    for k in sorted(config_param):
         print_param(k)
 
     if len(info_param) > 0:

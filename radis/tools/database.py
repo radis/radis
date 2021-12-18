@@ -1536,10 +1536,17 @@ class SpecList(object):
         out: dict
             {condition:Spectrum}
 
+        Examples
+        --------
+        ::
+
+            db.get_items("Tgas")
+
         See Also
         --------
         :meth:`~radis.tools.database.SpecList.to_dict`,
-        :meth:`~radis.tools.database.SpecList.get`
+        :meth:`~radis.tools.database.SpecList.get`,
+        :py:meth:`~radis.tools.database.SpecList.create_fname_grid`
         """
 
         if not self.df[condition].is_unique:
@@ -1713,10 +1720,13 @@ class SpecList(object):
 
         import matplotlib.pyplot as plt
 
+        from radis.misc.plot import fix_style, set_style
+
         x = self.df[cond_x]
         y = self.df[cond_y]
 
         # Default
+        set_style()
         fig = plt.figure(num=nfig)
         ax = fig.gca()
         ax.plot(x, y, "ok")
@@ -1760,10 +1770,9 @@ class SpecList(object):
             )
             # lbls = plt.clabel(cs0, inline=1, fontsize=16,fmt='%.0fK',colors='k',manual=False)     # show labels
 
-            # %%
-
         plt.title(title)
         plt.tight_layout()
+        fix_style()
 
     def __len__(self):
         return len(self.df)

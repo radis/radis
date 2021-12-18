@@ -819,7 +819,7 @@ class SpectrumFactory(BandFactory):
         self.profiler.start("generate_spectrum_obj", 2)
 
         # Get conditions
-        conditions = self.get_conditions()
+        conditions = self.get_conditions(add_config=True)
         conditions.update(
             {
                 "calculation_time": self.profiler.final[list(self.profiler.final)[-1]][
@@ -1145,7 +1145,7 @@ class SpectrumFactory(BandFactory):
 
         # Get lines (intensities + populations)
 
-        conditions = self.get_conditions()
+        conditions = self.get_conditions(add_config=True)
         conditions.update(
             {
                 "calculation_time": self.profiler.final[list(self.profiler.final)[-1]][
@@ -1494,7 +1494,7 @@ class SpectrumFactory(BandFactory):
         self.profiler.start("generate_spectrum_obj", 2)
 
         # Get conditions
-        conditions = self.get_conditions()
+        conditions = self.get_conditions(add_config=True)
         conditions.update(
             {
                 "calculation_time": self.profiler.final[list(self.profiler.final)[-1]][
