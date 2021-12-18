@@ -45,6 +45,7 @@ def test_compression(verbose=True, warnings=True, *args, **kwargs):
         "transmittance_noslit": True,
         "absorbance": True,
         "abscoeff": False,
+        "xsection": True,
     }
 
     return True
@@ -232,12 +233,62 @@ def test_rescale_all_quantities(verbose=True, warnings=True, *args, **kwargs):
         radis.config["DEBUG_MODE"] = DEBUG_MODE
 
 
+def test_xsections(*args, **kwargs):
+    r"""Test that we do have
+
+    .. math::
+
+        exp(-\sigma \cdot N_x \cdot L) = exp(- k \cdot L)
+
+    Therefore
+
+    .. math::
+
+        k = \sigma \cdot \frac{x p}{k T}
+
+    With ``p`` total pressure and ``x`` the mole fraction.
+
+    """
+    from radis.phys.constants import k_b
+    from radis.phys.units import Unit as u
+
+    # Get spectrum
+    s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
+
+    N = s.c["pressure_mbar"] * 1e2 / k_b / s.c["Tgas"] * 1e-6  # cm-3
+
+    p = s.c["pressure_mbar"] * u("mbar")
+    k_b = k_b * u("J/K")
+    T = s.c["Tgas"] * u("K")
+
+    N = p / k_b / T
+
+    assert s.c["pressure_mbar"] == 1013.25
+    assert s.c["Tgas"] == 1500
+    assert s.c["mole_fraction"] == 0.01
+
+    assert np.isclose(N.to("1/cm3").value, 4.892e18, rtol=1e-3)
+
+    N_x = N * 0.01
+
+    assert s.take("abscoeff").max() == s.take("xsection").max() * N_x
+
+    # Test again for x =1
+
+    s.rescale_mole_fraction(1)
+    assert np.isclose(
+        s.take("abscoeff").max().to("1/cm").value,
+        (s.take("xsection").max() * N).to("1/cm").value,
+    )
+
+
 def _run_all_tests(verbose=True, warnings=True, *args, **kwargs):
     test_compression(verbose=verbose, warnings=warnings, *args, **kwargs)
     test_update_transmittance(verbose=verbose, warnings=warnings, *args, **kwargs)
     test_get_recompute(verbose=verbose, warnings=warnings, *args, **kwargs)
     test_recompute_equilibrium(verbose=verbose, warnings=warnings, *args, **kwargs)
     test_rescale_all_quantities(verbose=verbose, *args, **kwargs)
+    test_xsections()
 
     return True
 

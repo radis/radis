@@ -38,6 +38,7 @@ NON_CONVOLUTED_QUANTITIES = [
     "abscoeff",  # opacity
     "abscoeff_continuum",
     "emissivity_noslit",
+    "xsection",  # cross-sections
 ]
 """list: name of spectral quantities not convolved with slit function
 
@@ -174,6 +175,9 @@ def make_up(label):
         label = label.replace(
             "transmittance", "Transmittance"
         )  # make a small difference between no_slit and slit while plotting
+
+    label = label.replace("xsection", "cross-section")
+
     # ... Remove _noslit
     label = label.replace("_noslit", "")
 
