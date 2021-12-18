@@ -925,7 +925,7 @@ class Spectrum(object):
 
         Parameters
         ----------
-        var: variable ('absorbance', 'transmittance', etc.)
+        var: variable (``'absorbance'``, ``'transmittance'``, ``'xsection'`` etc.)
             Should be a defined quantity among :data:`~radis.spectrum.utils.CONVOLUTED_QUANTITIES`
             or :data:`~radis.spectrum.utils.NON_CONVOLUTED_QUANTITIES`.
             To get the full list of quantities defined in this Spectrum object use
@@ -1818,7 +1818,7 @@ class Spectrum(object):
 
         Parameters
         ----------
-        var: variable (`absorbance`, `transmittance`, `transmittance_noslit`, etc.)
+        var: variable (`absorbance`, `transmittance`, `transmittance_noslit`, `xsection`, etc.)
             For full list see :py:meth:`~radis.spectrum.spectrum.Spectrum.get_vars()`.
             If ``None``, plot the first thing in the Spectrum. Default ``None``.
         wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``,
@@ -4182,7 +4182,7 @@ class Spectrum(object):
         Parameters
         ----------
         var : str
-            spectral quantity
+            spectral quantity (``'absorbance'``, ``'transmittance'``, ``'xsection'`` etc.)
 
         Returns
         -------
@@ -4191,8 +4191,7 @@ class Spectrum(object):
 
         Examples
         --------
-
-        Use it to chain other commands ::
+        Use ``take`` to chain other commands ::
 
             s.take('radiance').normalize().plot()
 
