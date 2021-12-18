@@ -1092,12 +1092,28 @@ class SpecList(object):
                 return s
 
             db.map(add_condition)
+
+        .. note::
+
+            spectra are not changed on disk. If you want to update on disk
+            you may want to combine map() followed by :py:meth:`~radis.tools.database.SpecDatabase.compress_to`
+
+        Example ::
+
+            # See length of all spectra :
+
+            db.map(lambda s: print(len(s)))
+
+
+            # Resample all on spectrum of minimum wstep
+            s_wstep_min = db.get(wstep=float(db.see("wstep").min()))[0]
+
+            db.map(lambda s: s.resample(s_wstep_min))
+
+            # Export to a new database:
+            db.compress_to(db.path+'_interp')
+
         """
-
-        # TODO: If ``function``
-        # returns a :class:`~radis.spectrum.spectrum.Spectrum` object then the
-        # database is updated.
-
         for s in self:
             function(s)
 
@@ -1557,6 +1573,30 @@ class SpecList(object):
             )
 
         return dict(zip(self.df[condition], self.df.Spectrum))
+
+    def create_fname_grid(self, conditions):
+        """Create a 2D-grid of filenames for the list of parameters ``conditions``
+
+        Examples
+        --------
+        ::
+
+            db.create_fname_grid(["Tgas", "pressure_mbar"])
+
+        See Also
+        --------
+        :py:meth:`~radis.tools.database.SpecList.get_items`
+
+        """
+
+        gridsize = [len(self.df[cond].unique()) for cond in conditions]
+
+        return (
+            self.see(conditions)
+            .reset_index()
+            .set_index(conditions)
+            .values.reshape(gridsize)
+        )
 
     def __iter__(self):
         """Iterate over all Spectra in database.
@@ -2050,7 +2090,7 @@ class SpecDatabase(SpecList):
         # Print index
         self.print_index()
 
-    def compress_to(self, new_folder, compress=True):
+    def compress_to(self, new_folder, compress=True, if_exists_then="error"):
         """Saves the Database in a new folder with all Spectrum objects under
         compressed (binary) format. Read/write is much faster. After the
         operation, a new database should be initialized in the new_folder to
@@ -2064,6 +2104,11 @@ class SpecDatabase(SpecList):
         compress: boolean, or 2
             if ``True``, saves under binary format. Faster and takes less space.
             If ``2``, additionaly remove all redundant quantities.
+        if_exists_then: ``'increment'``, ``'replace'``, ``'error'``, ``'ignore'``
+            what to do if file already exists. If ``'increment'`` an incremental digit
+            is added. If ``'replace'`` file is replaced (!). If ``'ignore'`` the
+            Spectrum is not added to the database and no file is created.
+            If ``'error'`` (or anything else) an error is raised. Default ``'error'``.
 
         See Also
         --------
@@ -2078,7 +2123,9 @@ class SpecDatabase(SpecList):
             os.makedirs(new_folder)
 
         for file, s in self.items():  # loop over all spectra
-            s.store(join(new_folder, file), compress=compress)
+            s.store(
+                join(new_folder, file), compress=compress, if_exists_then=if_exists_then
+            )
 
         if self.verbose:
             print("Database compressed to {0}".format(new_folder))
