@@ -431,6 +431,11 @@ class SpectrumFactory(BandFactory):
                     + "We recommended, for most cases: `truncation=300, neighbour_lines=0}`"
                 )
             )
+        for boolarg in [self_absorption, save_memory, export_lines]:
+            if boolarg not in [True, False]:
+                raise ValueError(
+                    f"Expected boolean parameter. Got `{boolarg.__repr__()}`. Use `True` or `False`"
+                )
 
         if kwargs0 != {}:
             raise TypeError(
