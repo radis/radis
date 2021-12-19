@@ -93,6 +93,39 @@ Typical output of `plot_diff <https://radis.readthedocs.io/en/latest/source/radi
 Refer to the `Examples <https://radis.readthedocs.io/en/latest/examples/examples.html>`__ section for more examples, and to the
 `Spectrum page <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html>`__ for more post-processing functions.
 
+
+GPU Acceleration
+----------------
+
+RADIS supports GPU acceleration for super-fast computation of spectra:
+
+    from radis import SpectrumFactory
+    from radis.tools.plot_tools import ParamRange
+
+    sf = SpectrumFactory(
+        2100,
+        2400,  # cm-1
+        molecule="CO2",
+        isotope="1,2,3",
+        wstep=0.002,
+    )
+
+    sf.fetch_databank("hitemp")
+
+    s = sf.eq_spectrum_gpu_interactive(
+        var="radiance",
+        Tgas=ParamRange(300.0, 2500.0, 1100.0),  # K
+        pressure=ParamRange(0.1, 2, 1),  # bar
+        mole_fraction=ParamRange(0, 1, 0.8),
+        path_length=ParamRange(0, 1, 0.2),  # cm
+        slit_FWHM=ParamRange(0, 1.5, 0.24),  # cm-1
+        emulate=False,  # runs on GPU
+        plotkwargs={"nfig": "same", "wunit": "nm"},
+    )
+
+.. image:: https://raw.githubusercontent.com/dcmvdbekerom/radis/gpu_widget_new_branch/docs/examples/GPU_spectrum.png
+
+Refer to :ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>` for more details on GPU acceleration.
 ---------------------------------------------------------------------
 
 =======================================
