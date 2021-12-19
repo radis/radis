@@ -146,8 +146,8 @@ def show_message(*lines):
 
 def get_ext_modules(with_binaries):
     """
-    Parameter
-    ---------
+    Parameters
+    ----------
     with_binaries: bool
         if False, do not try to build Cython extensions
     """

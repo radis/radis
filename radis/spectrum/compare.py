@@ -511,19 +511,11 @@ def get_default_units(
             var = list(params)[0]
             if var.replace("_noslit", "") in params:
                 var = var.replace("_noslit", "")
-    # ... check variable exist
+    # ... create variable if it doesnt exist
     if var not in s1.get_vars():
-        raise ValueError(
-            "{0} not defined in Spectrum {1}. Use one of : {2}".format(
-                var, s1.get_name(), s1.get_vars()
-            )
-        )
+        s1.get(var)
     if var not in s2.get_vars():
-        raise ValueError(
-            "{0} not defined in Spectrum {1}. Use one of : {2}".format(
-                var, s2.get_name(), s2.get_vars()
-            )
-        )
+        s2.get(var)
     if Iunit == "default":
         try:
             Iunit = s1.units[var]

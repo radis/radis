@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-==============================================
-Compare CO from the ExoMol and HITEMP database
-==============================================
+=========================================================
+Compare CO xsections from the ExoMol and HITEMP database
+=========================================================
 
 Auto-download and calculate CO spectrum from the HITEMP database, and the
 ExoMol database. ExoMol references multiple databases for CO. Here we do not
@@ -44,11 +44,11 @@ s_hitemp = calc_spectrum(
     databank="hitemp",
     name="HITEMP (Air broadened)",
 )
-plot_diff(s_exomol, s_hitemp, "abscoeff")
+plot_diff(s_exomol, s_hitemp, "xsection")
 
 #%% Broadening coefficients are different but areas under the lines should be the same :
 import numpy as np
 
 assert np.isclose(
-    s_exomol.get_integral("abscoeff"), s_hitemp.get_integral("abscoeff"), rtol=0.001
+    s_exomol.get_integral("xsection"), s_hitemp.get_integral("xsection"), rtol=0.001
 )

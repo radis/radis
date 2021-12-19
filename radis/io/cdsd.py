@@ -125,7 +125,7 @@ def cdsd2df(
 ):
     """Convert a CDSD-HITEMP [1]_ or CDSD-4000 [2]_ file to a Pandas dataframe.
 
-    Parameter
+    Parameters
     ----------
     fname: str
         CDSD file name

@@ -15,6 +15,7 @@ def Unit(st, *args, **kwargs):
     Changes compare to Astropy standards:
 
     - "µm" is accepted and converted to "um"
+    - "/molecule" or "/molec" are removed, but do not raise an error
     - we do not raise a warning if multiple slashes, e.g. "mW/cm2/sr/nm"
 
     Examples
@@ -31,6 +32,8 @@ def Unit(st, *args, **kwargs):
 
     try:
         st = st.replace("µ", "u")
+        st = st.replace("/molecule", "")
+        st = st.replace("/molec", "")
     except AttributeError:
         pass
 
