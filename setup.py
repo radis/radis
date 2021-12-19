@@ -277,7 +277,7 @@ def run_setup(with_binary):
             "seaborn",  # other matplotlib themes
             "scipy>=1.4.0",
             "tuna",  # to generate visual/interactive performance profiles
-            "vaex>=4.7.0",  # load HDF5 files  (version for custom HDF5 groups). #TODO : install only required sub-packages
+            "vaex>=4.6.0",  # load HDF5 files  (version for custom HDF5 groups + avoids asyncio https://github.com/vaexio/vaex/pull/1546). #TODO : install only required sub-packages
         ],
         extras_require={
             "dev": [
