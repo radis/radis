@@ -3395,8 +3395,8 @@ class BaseFactory(DatabankLoader):
         # Checks there if there is change in wstep value if initial wstep != "auto" (could happen if users modified the _wstep value directly)
         if self._wstep != "auto":
             assert self._wstep == self.params.wstep
-        if self._sparse_dlm != "auto":
-            assert self._sparse_dlm == self.params.sparse_dlm
+        if self._sparse_ldm != "auto":
+            assert self._sparse_ldm == self.params.sparse_ldm
 
         # Checks there if there is change in truncation value
         # (except in the case where truncation is None, where we set it to be the full range)
