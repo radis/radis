@@ -2,8 +2,11 @@
 """
 Example using GPU sliders and GPU calculation with :py:meth:`~radis.lbl.SpectrumFactory.eq_spectrum_gpu`
 
-Use ``emulate=True`` to run the GPU code on CPU, and ``emulate=False`` (default)
-to run it with the full power of the GPU
+.. note::
+
+    in the example below, the GPU code runs on CPU, using the parameter ``emulate=True``.
+    In your environment, to run the GPU code with the full power of the GPU, remove this line
+    or set  ``emulate=False`` (default)
 
 """
 
@@ -39,7 +42,7 @@ s = sf.eq_spectrum_gpu_interactive(
     mole_fraction=ParamRange(0, 1, 0.8),
     path_length=ParamRange(0, 1, 0.2),  # cm
     slit_FWHM=ParamRange(0, 1.5, 0.24),  # cm-1
-    emulate=False,  # runs on GPU
+    emulate=True,  # if True, runs CPU code on GPU. Set to False or remove to run on the GPU
     plotkwargs={"nfig": "same", "wunit": "nm"},
 )
 print(s)

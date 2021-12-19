@@ -1239,6 +1239,7 @@ class SpectrumFactory(BandFactory):
             arguments forwarded to :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`
         **kwargs : dict
             arguments forwarded to :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`
+            In particular, see `emulate=`.
         plotkwargs : dict
             arguments forwarded to :py:meth:`~radis.spectrum.spectrum.Spectrum.plot`
 
@@ -1250,6 +1251,7 @@ class SpectrumFactory(BandFactory):
         Examples
         --------
         ::
+
             from radis import SpectrumFactory
             from radis.tools.plot_tools import ParamRange
 
@@ -1262,14 +1264,15 @@ class SpectrumFactory(BandFactory):
 
             sf.fetch_databank('hitemp')
 
-            s = sf.eq_spectrum_gpu_explore(Tgas=ParamRange(300.0,2000.0,1200.0), #K
+            s = sf.eq_spectrum_gpu_interactive(Tgas=ParamRange(300.0,2000.0,1200.0), #K
                                            pressure=0.2, #bar
                                            mole_fraction=0.1,
                                            path_length=ParamRange(0,10,2.0), #cm
                                            slit_FWHM=ParamRange(0,1,0), #cm
-                                           emulate=False,
+                                           emulate=False,  # if True, execute the GPU code on the CPU
                                            )
-        .. minigallery:: radis.lbl.SpectrumFactory.eq_spectrum_gpu_explore
+
+        .. minigallery:: radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu_interactive
             :add-heading:
 
         """

@@ -62,7 +62,7 @@ def calc_spectrum(
     export_lines=False,
     verbose=True,
     return_factory=False,
-    **kwargs
+    **kwargs,
 ) -> Spectrum:
     r"""Calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
 
@@ -532,7 +532,7 @@ def calc_spectrum(
             mode=mode,
             export_lines=export_lines,
             return_factory=return_factory,
-            **kwargs_molecule
+            **kwargs_molecule,
         )
         if return_factory:
             factory_dict[molecule] = generated_spectrum[1]
@@ -585,7 +585,7 @@ def _calc_spectrum_one_molecule(
     mode,
     export_lines,
     return_factory=False,
-    **kwargs
+    **kwargs,
 ) -> Spectrum:
     """See :py:func:`~radis.lbl.calc.calc_spectrum`"""
 
@@ -649,7 +649,7 @@ def _calc_spectrum_one_molecule(
         optimization=optimization,
         broadening_method=broadening_method,
         export_lines=export_lines,
-        **kwargs
+        **kwargs,
     )
     if (
         databank
@@ -818,7 +818,9 @@ def _calc_spectrum_one_molecule(
                 emulate=(True if mode == "emulated_gpu" else False),
             )
         else:
-            raise ValueError(mode)
+            raise ValueError(
+                f"mode= should be one of 'cpu', 'gpu', 'emulated_gpu' (GPU code running on CPU). Got {mode}"
+            )
     else:
         if mode != "cpu":
             raise NotImplementedError(mode)
