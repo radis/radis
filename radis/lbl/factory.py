@@ -1076,9 +1076,6 @@ class SpectrumFactory(BandFactory):
         dxG = self.params.dlm_log_pG
         dxL = self.params.dlm_log_pL
 
-        # self.NwG = 4  # TO-DO: these shouldn't be hardcoded
-        # self.NwL = 8  # TO-DO: these shouldn't be hardcoded
-
         _Nlines_calculated = len(v0)
 
         if verbose >= 2:
@@ -1229,7 +1226,7 @@ class SpectrumFactory(BandFactory):
 
     def eq_spectrum_gpu_interactive(
         self, var="transmittance", slit_FWHM=0.0, plotkwargs={}, *vargs, **kwargs
-    ):
+    ) -> Spectrum:
         """
 
         Parameters
@@ -1286,30 +1283,38 @@ class SpectrumFactory(BandFactory):
             print("Failed to load GPU module, exiting!")
             exit()
 
-        self.sliders = {}
+        self.interactive_params = {}
 
         for key in kwargs:
             if is_range(kwargs[key]):
-                self.sliders[key] = kwargs[key]
-                kwargs[key].name = key
-                kwargs[key] = kwargs[key].valinit
+                param_range = kwargs[key]
+                self.interactive_params[key] = param_range
+                param_range.name = key
+                kwargs[key] = param_range.valinit
 
         s = self.eq_spectrum_gpu(*vargs, **kwargs)
 
         if is_range(slit_FWHM):
-            self.sliders["slit_FWHM"] = slit_FWHM
+            self.interactive_params["slit_FWHM"] = slit_FWHM
             slit_FWHM.name = "slit_FWHM"
             slit_FWHM = slit_FWHM.valinit
 
         s.apply_slit(slit_FWHM, unit="cm-1")  # to create 'radiance', 'transmittance'
         s.conditions["slit_FWHM"] = slit_FWHM
 
+        # TODO: this should be resolved; there should be only one pressure that is
+        # both used as keyword by the user and as input value for spectra.
+        s.conditions["pressure"] = s.conditions["pressure_mbar"] * 1e-3
+
+        was_interactive = plt.isinteractive
+        plt.ion()
+
         line = s.plot(var, show=True, **plotkwargs)
-        fig = plt.gcf()
+        fig = line.figure
 
         def update_plot(val):
             abscoeff, transmittance, iter_params = gpu_iterate(
-                s.conditions["pressure_mbar"] * 1e-3,
+                s.conditions["pressure"],
                 s.conditions["Tgas"],
                 s.conditions["mole_fraction"],
                 l=s.conditions["path_length"],
@@ -1322,6 +1327,8 @@ class SpectrumFactory(BandFactory):
             # s.update(var)    # adds required spectral array
             # _, new_y = s.get(var)   # can also use wunits, Iunits, etc.
 
+            # TODO: the following should obviously be a self contained function..
+
             if var == "abscoeff":
                 new_y = abscoeff
             elif var == "transmittance":
@@ -1331,7 +1338,6 @@ class SpectrumFactory(BandFactory):
                 if var == "emissivity":
                     new_y = emissivity
                 else:  # var = 'radiance':
-                    # TODO: Is this a real thing - radiance with slit function?
                     new_y = calc_radiance(
                         s.get_wavenumber(),
                         emissivity,
@@ -1362,19 +1368,23 @@ class SpectrumFactory(BandFactory):
             fig.canvas.draw_idle()
 
         n_sliders = 0
-        for key in self.sliders:
-            slider_axis = plt.axes([0.25, 0.05 * n_sliders + 0.05, 0.65, 0.03])
+        for key in self.interactive_params:
+            param_range = self.interactive_params[key]
+            slider_axis = fig.add_axes([0.25, 0.05 * n_sliders + 0.05, 0.65, 0.03])
             slider = Slider(
                 ax=slider_axis,
                 label=key,
-                valmin=self.sliders[key].valmin,
-                valmax=self.sliders[key].valmax,
-                valinit=self.sliders[key].valinit,
+                valmin=param_range.valmin,
+                valmax=param_range.valmax,
+                valinit=param_range.valinit,
             )
-            self.sliders[key].set_widget(slider, s, update_plot)
+            self.interactive_params[key].set_widget(slider, s, update_plot)
             n_sliders += 1
 
-        plt.subplots_adjust(bottom=0.05 * n_sliders + 0.15)
+        fig.subplots_adjust(bottom=0.05 * n_sliders + 0.15)
+
+        if not was_interactive:
+            plt.ioff()
 
         return s
 

@@ -12,6 +12,10 @@ from radis.test.utils import getTestFile
 from radis.tools.database import load_spec
 from radis.tools.plot_tools import ParamRange
 
+# This spectrum is significantly absorbed by atmospheric CO2
+# so it will never match the synthetic spectrum.
+# TODO: find different spectrum for this example.
+
 my_file = getTestFile("CO2_measured_spectrum_4-5um.spec")  # for the example here
 s_exp = load_spec(my_file)
 
@@ -35,7 +39,7 @@ s = sf.eq_spectrum_gpu_interactive(
     mole_fraction=ParamRange(0, 1, 0.8),
     path_length=ParamRange(0, 1, 0.2),  # cm
     slit_FWHM=ParamRange(0, 1.5, 0.24),  # cm-1
-    emulate=True,  # runs on CPU
+    emulate=False,  # runs on CPU
     plotkwargs={"nfig": "same", "wunit": "nm"},
 )
 print(s)

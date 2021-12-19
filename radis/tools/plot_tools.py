@@ -28,7 +28,7 @@ import warnings
 
 class ParamRange:
     def __init__(self, valmin=0, valmax=1, valinit=None):
-        """Used in :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu_explore`  """
+        """Used in :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu_interactive`  """
         self.valmin = valmin
         self.valmax = valmax
 
@@ -51,7 +51,7 @@ class ParamRange:
         self.update_callback(val)
 
     def __repr__(self):
-        return "ParamRange({:s}..{:s} [{:s}] @ {:s})".format(
+        return "ParamRange({:s} .. {:s} [{:s}] @ {:s})".format(
             self.valmin.__repr__(),
             self.valmax.__repr__(),
             self.valinit.__repr__(),
