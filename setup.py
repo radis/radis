@@ -258,6 +258,7 @@ def run_setup(with_binary):
             "habanero",  # CrossRef API to retrieve data from doi
             "h5py",  # HDF5
             "hjson",
+            "ipython>=7.0.0",
             "joblib",  # for parallel loading of SpecDatabase
             "json-tricks>=3.15.0",  # to deal with non jsonable formats
             "pandas>=1.0.5",
@@ -276,7 +277,7 @@ def run_setup(with_binary):
             "seaborn",  # other matplotlib themes
             "scipy>=1.4.0",
             "tuna",  # to generate visual/interactive performance profiles
-            "vaex>=4.4.0",  # load HDF5 files  (version for custom HDF5 groups)
+            "vaex>=4.7.0",  # load HDF5 files  (version for custom HDF5 groups). #TODO : install only required sub-packages
         ],
         extras_require={
             "dev": [
