@@ -903,11 +903,11 @@ def test_parsum_mode_in_factory(verbose=True, plot=True, *args, **kwargs):
                 calc_hwhm                       0.013s █
                 generate_wavenumber_arrays      0.000s
                 calc_line_broadening            0.040s ███
-                    precompute_DLM_lineshapes       0.002s
-                    DLM_Initialized_vectors         0.000s
-                    DLM_closest_matching_line       0.000s
-                    DLM_Distribute_lines            0.001s
-                    DLM_convolve                    0.037s ██
+                    precompute_LDM_lineshapes       0.002s
+                    LDM_Initialized_vectors         0.000s
+                    LDM_closest_matching_line       0.000s
+                    LDM_Distribute_lines            0.001s
+                    LDM_convolve                    0.037s ██
                 calc_other_spectral_quan        0.004s
                 generate_spectrum_obj           0.000s
 
@@ -933,11 +933,11 @@ def test_parsum_mode_in_factory(verbose=True, plot=True, *args, **kwargs):
                 calc_hwhm                       0.017s ██
                 generate_wavenumber_arrays      0.001s
                 calc_line_broadening            0.035s █████
-                    precompute_DLM_lineshapes       0.001s
-                    DLM_Initialized_vectors         0.000s
-                    DLM_closest_matching_line       0.001s
-                    DLM_Distribute_lines            0.000s
-                    DLM_convolve                    0.032s ████
+                    precompute_LDM_lineshapes       0.001s
+                    LDM_Initialized_vectors         0.000s
+                    LDM_closest_matching_line       0.001s
+                    LDM_Distribute_lines            0.000s
+                    LDM_convolve                    0.032s ████
                     others                          0.001s
                 calc_other_spectral_quan        0.003s
                 generate_spectrum_obj           0.000s

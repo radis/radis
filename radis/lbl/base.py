@@ -1835,7 +1835,9 @@ class BaseFactory(DatabankLoader):
                     assert (df.loc[idx, "iso"] == iso).all()
 
             Qref = df["iso"].map(Qref_dict)
-
+        # NOTE: This S0 is not the same as the one calculated by calc_S0()!!!
+        # The difference is that this one is multiplied by the fractional population of transition's levels
+        # TO-DO: Resolve this ambiguity
         S0 = linestrength_from_Einstein(
             A=df.A, gu=df.gu, El=df.El, Ia=df.Ia, nu=df.wav, Q=Qref, T=Tref
         )
@@ -1943,6 +1945,7 @@ class BaseFactory(DatabankLoader):
 
         # Calculate
         air_pressure = self.input.pressure_mbar / 1013.25  # convert from mbar to atm
+
         if "Pshft" in df.columns:
             df["shiftwav"] = df.wav + (df.Pshft * air_pressure)
         else:
@@ -1953,6 +1956,64 @@ class BaseFactory(DatabankLoader):
             df["shiftwav"] = df.wav
 
         self.profiler.stop("calc_lineshift", "Calculated lineshift")
+
+        return
+
+    def calc_S0(self):
+        """Calculate the unscaled intensity from the tabulated Einstein coefficient.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None: ``self.df0`` is updated directly with new column ``S0``
+
+        References
+        ----------
+
+        .. math::
+            S_0 = \\frac{I_a g' A_{21}}{8 \\pi c \\nu^2}
+
+        Notes
+        -----
+        Currently this value is only used in GPU calculations.
+        It is one of the columns that is transferred to the GPU
+        memory. The idea behind S0 is that it is scaled with all
+        variabled that do not change during iterations as to
+        minimize calculations.
+
+        Units: cm-1/(molecules/cm-2
+
+        NOTE: S0 is not directly related to S(T) used elsewhere!!!
+              (It may even differ in units!!!)
+
+        """
+
+        from radis.phys.constants import c  # m.s-1
+
+        c_cm = c * 100  # cm.s-1
+
+        df0 = self.df0
+
+        if len(df0) == 0:
+            return  # no lines
+
+        self.profiler.start("scaled_S0", 2, "... Scaling equilibrium linestrength")
+
+        gp = df0["gp"]
+        A = df0["A"]
+        wav = df0["wav"]
+        Ia = self.get_lines_abundance(df0)
+
+        S0 = Ia * gp * A / (8 * pi * c_cm * wav ** 2)
+
+        df0["S0"] = S0  # [cm-1/(molecules/cm-2)]
+
+        assert "S0" in self.df0
+
+        self.profiler.stop("scaled_S0", "Scaled equilibrium linestrength")
 
         return
 
@@ -3334,8 +3395,8 @@ class BaseFactory(DatabankLoader):
         # Checks there if there is change in wstep value if initial wstep != "auto" (could happen if users modified the _wstep value directly)
         if self._wstep != "auto":
             assert self._wstep == self.params.wstep
-        if self._sparse_dlm != "auto":
-            assert self._sparse_dlm == self.params.sparse_dlm
+        if self._sparse_ldm != "auto":
+            assert self._sparse_ldm == self.params.sparse_ldm
 
         # Checks there if there is change in truncation value
         # (except in the case where truncation is None, where we set it to be the full range)
@@ -3564,7 +3625,15 @@ def get_waverange(
     return wavenum_min, wavenum_max
 
 
-def linestrength_from_Einstein(A, gu, El, Ia, nu, Q, T):
+def linestrength_from_Einstein(
+    A,
+    gu,
+    El,
+    Ia,
+    nu,
+    Q,
+    T,
+):
     r"""Calculate linestrength at temperature ``T`` from Einstein coefficients.
 
     Parameters

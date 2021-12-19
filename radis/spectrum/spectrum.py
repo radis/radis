@@ -2014,9 +2014,7 @@ class Spectrum(object):
         plt.ticklabel_format(useOffset=False, axis="x")
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
-
         plt.yscale(yscale)
-
         if "label" in kwargs:
             plt.legend()
         fix_style()
@@ -2039,6 +2037,7 @@ class Spectrum(object):
 
         if show:
             plt.show()
+
         return line
 
     def get_populations(self, molecule=None, isotope=None, electronic_state=None):
@@ -4475,11 +4474,11 @@ class Spectrum(object):
                     calc_hwhm                        0.007s
                     generate_wavenumber_arrays       0.001s
                     calc_line_broadening             0.074s ██████
-                        precompute_DLM_lineshapes        0.012s
-                        DLM_Initialized_vectors          0.000s
-                        DLM_closest_matching_line        0.001s
-                        DLM_Distribute_lines             0.001s
-                        DLM_convolve                     0.060s █████
+                        precompute_LDM_lineshapes        0.012s
+                        LDM_Initialized_vectors          0.000s
+                        LDM_closest_matching_line        0.001s
+                        LDM_Distribute_lines             0.001s
+                        LDM_convolve                     0.060s █████
                         others                           0.001s
                     calc_other_spectral_quan         0.003s
                     generate_spectrum_obj            0.000s

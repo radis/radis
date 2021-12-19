@@ -477,6 +477,10 @@ try:
 except (ModuleNotFoundError):
     add_at = numpy_add_at
     #  or use radis.misc.utils.NotInstalled() ?
+# EP: Also got (after switching back to former Cython version) :
+#     File "radis\cython\radis_cython_extensions.pyx", line 1, in init radis_cython_extensions
+#     ValueError: numpy.ndarray size changed, may indicate binary incompatibility. Expected 88 from C header, got 80 from PyObject
+# we may consider escaping this.
 else:
     add_at = rcx.add_at
 
@@ -490,10 +494,10 @@ else:
 #     """
 #     # # Cleaner version, but about 2x slower on real-life test cases:
 #     # #
-#     # %timeit non_zero_values_around(DLM[:, l, m], truncation)
+#     # %timeit non_zero_values_around(LDM[:, l, m], truncation)
 #     # 2.92 ms ± 99.3 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
 
-#     # %timeit non_zero_values_around2(DLM[:, l, m], truncation)
+#     # %timeit non_zero_values_around2(LDM[:, l, m], truncation)
 #     # 5.11 ms ± 110 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
 #     # --------------
 

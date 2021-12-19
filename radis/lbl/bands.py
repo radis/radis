@@ -873,10 +873,10 @@ class BandFactory(BroadenFactory):
 
         for i, (band, dg) in enumerate(gb):
             if optimization in ("simple", "min-RMS"):
-                line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(dg)
-                (wavenumber, absorption) = self._apply_lineshape_DLM(
+                line_profile_LDM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_LDM(dg)
+                (wavenumber, absorption) = self._apply_lineshape_LDM(
                     dg.S.values,
-                    line_profile_DLM,
+                    line_profile_LDM,
                     dg.shiftwav.values,
                     wL,
                     wG,
@@ -924,10 +924,10 @@ class BandFactory(BroadenFactory):
         pb = ProgressBar(len(gb), active=self.verbose)
         for i, (band, dg) in enumerate(gb):
             if optimization in ("simple", "min-RMS"):
-                line_profile_DLM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_DLM(dg)
-                (wavenumber, absorption) = self._apply_lineshape_DLM(
+                line_profile_LDM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_LDM(dg)
+                (wavenumber, absorption) = self._apply_lineshape_LDM(
                     dg.S.values,
-                    line_profile_DLM,
+                    line_profile_LDM,
                     dg.shiftwav.values,
                     wL,
                     wG,
@@ -935,9 +935,9 @@ class BandFactory(BroadenFactory):
                     wG_dat,
                     optimization,
                 )
-                (_, emission) = self._apply_lineshape_DLM(
+                (_, emission) = self._apply_lineshape_LDM(
                     dg.Ei.values,
-                    line_profile_DLM,
+                    line_profile_LDM,
                     dg.shiftwav.values,
                     wL,
                     wG,
@@ -1065,7 +1065,7 @@ class BandFactory(BroadenFactory):
         return wavenumber, abscoeff_bands, emisscoeff_bands
 
     def _retrieve_bands_from_database(self):
-        """"""
+        """ """
 
         # TODO: options:
         # - Implement store / retrieve machinery for Bands

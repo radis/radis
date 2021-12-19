@@ -143,7 +143,7 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
     #                          0.18974631,  0.2019285 ,  0.17346687,  0.17211401,  0.15939359,
     #                          0.17240575,  0.15395179,  0.13374185,  0.11997065,  0.10858693,
     #                          0.11114162,  0.04575873,  0.00163863,  0.00062654])
-    # Updated again in RADIS 0.9.20 (19/08/19) to account for the use of DLM (difference
+    # Updated again in RADIS 0.9.20 (19/08/19) to account for the use of LDM (difference
     # not significant)
     #        I_ref = np.array([ 0.29060991,  0.29756722,  0.32972058,  0.3206278 ,  0.20696867,
     #                           0.19218358,  0.20155747,  0.17336405,  0.17218653,  0.1589136 ,
@@ -317,7 +317,7 @@ def test_calc_spectrum_overpopulations(
     #                          0.57626389,  0.61424273,  0.52454807,  0.5200812 ,  0.47920924,
     #                          0.51843533,  0.46058817,  0.3983277 ,  0.35582979,  0.32095204,
     #                          0.32821575,  0.13525543,  0.00469489,  0.00174166])
-    # Updated again in RADIS 0.9.20 (16/08/19) to account for the use of DLM (difference
+    # Updated again in RADIS 0.9.20 (16/08/19) to account for the use of LDM (difference
     # not significant)
     #        I_ref = np.array([ 0.62134142,  0.66722021,  0.81016539,  0.79387937,  0.56974945,
     #                           0.58280035,  0.6120114 ,  0.52319075,  0.5193041 ,  0.47686282,

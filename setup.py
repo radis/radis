@@ -137,7 +137,7 @@ from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatfo
 
 
 def show_message(*lines):
-    """ Note : will only happen if user installs with `pip install -v` """
+    """Note : will only happen if user installs with `pip install -v`"""
     print("=" * 74, file=sys.stderr)
     for line in lines:
         print(line, file=sys.stderr)
@@ -203,10 +203,14 @@ def get_ext_modules(with_binaries):
     ext_modules.append(
         Extension(
             "radis_cython_extensions",
-            sources=["./radis/cython/radis_cython_extensions.pyx"],
+            sources=[
+                "./radis/cython/radis_cython_extensions.pyx",
+                "./radis/lbl/gpu.cpp",
+            ],
             include_dirs=[get_include()],
             language="c++",
             extra_link_args=[],
+            define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
         )
     )
 
