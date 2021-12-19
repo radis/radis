@@ -41,11 +41,11 @@ def test_perf_profile(*args, **kwargs):
                 calc_hwhm                        0.007s
                 generate_wavenumber_arrays       0.001s
                 calc_line_broadening             0.074s ██████
-                    precompute_DLM_lineshapes        0.012s
-                    DLM_Initialized_vectors          0.000s
-                    DLM_closest_matching_line        0.001s
-                    DLM_Distribute_lines             0.001s
-                    DLM_convolve                     0.060s █████
+                    precompute_LDM_lineshapes        0.012s
+                    LDM_Initialized_vectors          0.000s
+                    LDM_closest_matching_line        0.001s
+                    LDM_Distribute_lines             0.001s
+                    LDM_convolve                     0.060s █████
                     others                           0.001s
                 calc_other_spectral_quan         0.003s
                 generate_spectrum_obj            0.000s

@@ -150,7 +150,7 @@ Parameters
 
     See Also
     --------
-    :py:meth:`~radis.lbl.broadening.BroadenFactory._apply_lineshape_DLM`
+    :py:meth:`~radis.lbl.broadening.BroadenFactory._apply_lineshape_LDM`
 
 
 

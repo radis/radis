@@ -66,7 +66,7 @@ def test_compare_torch_CO2(
     - neq==0.9.22: (Parallel + continuum) Finished in 65s
       RADIS 0.9.9 == neq 0.9.24
 
-    - RADIS 0.9.26: Finished test_compare_torch_CO2 in 57s (DLM, no continuum)
+    - RADIS 0.9.26: Finished test_compare_torch_CO2 in 57s (LDM, no continuum)
 
     - RADIS 0.9.28: ParallelFactory is removed. Finished test_compare_torch_CO2 in 45s
 
@@ -117,9 +117,9 @@ def test_compare_torch_CO2(
         export_populations=False,  # saves some memory
         cutoff=1e-25,
         truncation=10,
-        # pseudo_continuum_threshold=0.01, # use pseudo-continuum, no DLM. Note : 56s on 20/08.
+        # pseudo_continuum_threshold=0.01, # use pseudo-continuum, no LDM. Note : 56s on 20/08.
         # optimization=None,
-        pseudo_continuum_threshold=0,  # use DLM, no pseudo-continuum. Note : 84s on 20/08
+        pseudo_continuum_threshold=0,  # use LDM, no pseudo-continuum. Note : 84s on 20/08
         optimization="min-RMS",
         verbose=False,
     )

@@ -228,14 +228,14 @@ class SpectrumFactory(BandFactory):
         size. If ``None``, all lines are processed directly. Usually faster but
         can create memory problems. Default ``None``
     optimization : ``"simple"``, ``"min-RMS"``, ``None``
-        If either ``"simple"`` or ``"min-RMS"`` DLM optimization for lineshape calculation is used:
+        If either ``"simple"`` or ``"min-RMS"`` LDM optimization for lineshape calculation is used:
         - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [Spectral-Synthesis-Algorithm]_)
         - ``"simple"`` : weights equal to their relative position in the grid
 
-        If using the DLM optimization, broadening method is automatically set to ``'fft'``.
+        If using the LDM optimization, broadening method is automatically set to ``'fft'``.
         If ``None``, no lineshape interpolation is performed and the lineshape of all lines is calculated.
 
-        Refer to [Spectral-Synthesis-Algorithm]_ for more explanation on the DLM method for lineshape interpolation.
+        Refer to [Spectral-Synthesis-Algorithm]_ for more explanation on the LDM method for lineshape interpolation.
 
         Default ``"min-RMS"``
     folding_thresh: float
@@ -263,8 +263,8 @@ class SpectrumFactory(BandFactory):
             sf = SpectrumFactory(...)
             sf.params.broadening_method = 'voigt'
 
-        Fast fourier transform ``'fft'`` is only available if using the DLM lineshape
-        calculation ``optimization``. Because the DLM convolves all lines at the same time,
+        Fast fourier transform ``'fft'`` is only available if using the LDM lineshape
+        calculation ``optimization``. Because the LDM convolves all lines at the same time,
         and thus operates on large arrays, ``'fft'`` becomes more appropriate than
         convolutions in real space (``'voit'``, ``'convolve'`` )
 
@@ -471,10 +471,10 @@ class SpectrumFactory(BandFactory):
         # Set default variables from config:
         import radis
 
-        self._sparse_dlm = radis.config[
+        self._sparse_ldm = radis.config[
             "SPARSE_WAVERANGE"
         ]  # target value (can be 'auto'), stored for next calculatinos
-        self.params["sparse_dlm"] = radis.config[
+        self.params["sparse_ldm"] = radis.config[
             "SPARSE_WAVERANGE"
         ]  # value evaluated at each new spectrum calculation
 
@@ -1073,8 +1073,8 @@ class SpectrumFactory(BandFactory):
         self.calc_S0()
         S0 = self.df0["S0"].to_numpy(dtype=np.float32)
 
-        dxG = self.params.dlm_log_pG
-        dxL = self.params.dlm_log_pL
+        dxG = self.params.dxG
+        dxL = self.params.dxL
 
         _Nlines_calculated = len(v0)
 
@@ -1823,14 +1823,14 @@ class SpectrumFactory(BandFactory):
         # Set sparse waverange mode
 
         # Setting wstep to optimal value and rounding it to a degree 3
-        if self._sparse_dlm == "auto":
+        if self._sparse_ldm == "auto":
             sparsity = len(wavenumber_calc) / len(self.df1)
-            self.params["sparse_dlm"] = (
+            self.params["sparse_ldm"] = (
                 sparsity > 1.0
             )  # works ; TODO : set a threshold based on more data
             if self.verbose >= 2:
                 print(
-                    f"Sparsity (grid points/lines) = {sparsity:.1f}. Set sparse_dlm to {self.params['sparse_dlm']}"
+                    f"Sparsity (grid points/lines) = {sparsity:.1f}. Set sparse_ldm to {self.params['sparse_ldm']}"
                 )
 
         self.profiler.stop("generate_wavenumber_arrays", "Generated Wavenumber Arrays")
@@ -1878,7 +1878,7 @@ class SpectrumFactory(BandFactory):
         factor = 1
 
         if not _is_at_equilibrium():
-            factor = 2  #  _apply_broadening_DLM() is called twice
+            factor = 2  #  _apply_broadening_LDM() is called twice
 
         wstep = self.params.wstep
         n_lines = self.misc.total_lines
@@ -2265,11 +2265,11 @@ class SpectrumFactory(BandFactory):
                     calc_hwhm                        0.007s
                     generate_wavenumber_arrays       0.001s
                     calc_line_broadening             0.074s ██████
-                        precompute_DLM_lineshapes        0.012s
-                        DLM_Initialized_vectors          0.000s
-                        DLM_closest_matching_line        0.001s
-                        DLM_Distribute_lines             0.001s
-                        DLM_convolve                     0.060s █████
+                        precompute_LDM_lineshapes        0.012s
+                        LDM_Initialized_vectors          0.000s
+                        LDM_closest_matching_line        0.001s
+                        LDM_Distribute_lines             0.001s
+                        LDM_convolve                     0.060s █████
                         others                           0.001s
                     calc_other_spectral_quan         0.003s
                     generate_spectrum_obj            0.000s

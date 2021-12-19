@@ -494,10 +494,10 @@ else:
 #     """
 #     # # Cleaner version, but about 2x slower on real-life test cases:
 #     # #
-#     # %timeit non_zero_values_around(DLM[:, l, m], truncation)
+#     # %timeit non_zero_values_around(LDM[:, l, m], truncation)
 #     # 2.92 ms ± 99.3 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
 
-#     # %timeit non_zero_values_around2(DLM[:, l, m], truncation)
+#     # %timeit non_zero_values_around2(LDM[:, l, m], truncation)
 #     # 5.11 ms ± 110 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
 #     # --------------
 

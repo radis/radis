@@ -448,8 +448,8 @@ class Parameters(ConditionDict):
         "db_use_cached",
         "dbformat",
         "dbpath",
-        "dlm_log_pL",
-        "dlm_log_pG",
+        "dxL",
+        "dxG",
         "export_lines",
         "export_populations",
         "folding_thresh",
@@ -461,7 +461,7 @@ class Parameters(ConditionDict):
         "parfuncpath",
         "parsum_mode",
         "pseudo_continuum_threshold",
-        "sparse_dlm",
+        "sparse_ldm",
         "warning_broadening_threshold",
         "warning_linestrength_cutoff",
         "wavenum_max_calc",
@@ -495,18 +495,18 @@ class Parameters(ConditionDict):
         self.wavenum_min_calc = None  #: float: minimum calculated wavenumber (cm-1) initialized by SpectrumFactory
         self.waveunit = "cm-1"  #: waverange unit: should be cm-1.
         self.wstep = None  #: float: spectral resolution (cm-1)
-        self.dlm_log_pL = _lorentzian_step(
+        self.dxL = _lorentzian_step(
             0.01
-        )  #: float : Lorentzian step for DLM lineshape database. Default _lorentzian_step(0.01)
-        self.dlm_log_pG = _gaussian_step(
+        )  #: float : Lorentzian step for LDM lineshape database. Default _lorentzian_step(0.01)
+        self.dxG = _gaussian_step(
             0.01
-        )  #: float : Gaussian step DLM lineshape database. Default _gaussian_step(0.01)
+        )  #: float : Gaussian step LDM lineshape database. Default _gaussian_step(0.01)
         # self.add_at_used = None  # use Cython-accelerated code
         self.include_neighbouring_lines = True
         """bool: if ``True``, includes the contribution of off-range, neighbouring
         lines because of lineshape broadening. Default ``True``."""
         self.parsum_mode = "full summation"  #: int : "full summation" or "tabulation"  . calculation mode of parittion function. See :py:class:`~radis.levels.partfunc.RovibParFuncCalculator`
-        self.sparse_dlm = "auto"  #: str: "auto", True, False  . Sparse DLM calculation. See :py:meth:`radis.lbl.broadening.BroadenFactory._apply_lineshape_DLM`
+        self.sparse_ldm = "auto"  #: str: "auto", True, False  . Sparse LDM calculation. See :py:meth:`radis.lbl.broadening.BroadenFactory._apply_lineshape_LDM`
 
 
 class MiscParams(ConditionDict):

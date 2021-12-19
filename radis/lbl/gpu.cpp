@@ -187,7 +187,7 @@ __global__ void applyLineshapes(complex<float>* S_klm_FT, complex<float>* abscoe
                         wL = expf(iter_d.log_wL_min + m * init_d.dxL);
                         mul = expf(-r4log2 * powf(pi * x * wG, 2) - pi * x * wL) / init_d.dv;
                         out_complex += mul * S_klm_FT[index];
-                        //out_complex += DLM[index];
+                        //out_complex += LDM[index];
                     }
                 }
                 abscoeff[k].real(out_complex.real());

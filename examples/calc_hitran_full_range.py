@@ -70,7 +70,7 @@ print(
     "Number of lines: ", s.c["total_lines"]
 )  # some are discarded by linestrength cutoff
 print("Number of lines: ", s.c["lines_calculated"])
-print("Whether the sparse wavenumber algorithm was activated: ", s.c["sparse_dlm"])
+print("Whether the sparse wavenumber algorithm was activated: ", s.c["sparse_ldm"])
 print(f"Lineshape truncation used: {s.c['truncation']:.1f}cm-1")
 print(f"Total calculation time: {s.c['calculation_time']:.1f}s")
 print(

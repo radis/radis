@@ -600,7 +600,7 @@ Two approaches can be used:
 
 - improve the convolution efficiency. This involves using an efficient convolution algorithm,
   using a reduced convolution kernel, analytical approximations, or multiple spectral grid.
-- reduce the number of convolutions (for a given number of lines): this is done using the DLM strategy.
+- reduce the number of convolutions (for a given number of lines): this is done using the LDM strategy.
 
 RADIS implements the two approaches as well as various strategies and parameters
 to calculate the lineshapes efficiently.
@@ -624,13 +624,13 @@ to calculate the lineshapes efficiently.
   calculate the lineshape wings with a lower resolution. This strategy is not
   implemented in RADIS.
 
-- *DLM* :  lines are projected on a Lineshape database to reduce the number of calculated
+- *LDM* :  lines are projected on a Lineshape database to reduce the number of calculated
   lineshapes from millions to a few dozens.
   With this optimization strategy, the lineshape convolution becomes almost instantaneous
   and all the other strategies are rendered useless. Projection of all lines on the lineshape
   database becomes the performance bottleneck.
-  parameters: :py:attr:`~radis.lbl.loader.Parameters.dlm_res_L`,
-  :py:attr:`~radis.lbl.loader.Parameters.dlm_res_G`.
+  parameters: :py:attr:`~radis.lbl.loader.Parameters.ldm_res_L`,
+  :py:attr:`~radis.lbl.loader.Parameters.ldm_res_G`.
   (this is the default strategy implemented in RADIS). Learn more in [Spectral-Synthesis-Algorithm]_
 
 More details on the parameters below:
@@ -800,11 +800,11 @@ For the above example::
             calc_hwhm                        0.007s
             generate_wavenumber_arrays       0.001s
             calc_line_broadening             0.074s ██████
-                precompute_DLM_lineshapes        0.012s
-                DLM_Initialized_vectors          0.000s
-                DLM_closest_matching_line        0.001s
-                DLM_Distribute_lines             0.001s
-                DLM_convolve                     0.060s █████
+                precompute_LDM_lineshapes        0.012s
+                LDM_Initialized_vectors          0.000s
+                LDM_closest_matching_line        0.001s
+                LDM_Distribute_lines             0.001s
+                LDM_convolve                     0.060s █████
                 others                           0.001s
             calc_other_spectral_quan         0.003s
             generate_spectrum_obj            0.000s
