@@ -171,7 +171,7 @@ class HDF5Manager(object):
             raise NotImplementedError(self.engine)
             # h5py is not designed to write Pandas DataFrames
 
-    def combine_temp_batch_files(self, file, key="default"):
+    def combine_temp_batch_files(self, file, key="default", sort_values=None):
         """Combine all batch files in ``self._temp_batch_files`` into one.
         Removes all batch files.
         """
@@ -184,7 +184,10 @@ class HDF5Manager(object):
             import vaex
 
             df = vaex.open(self._temp_batch_files, group=key)
-            df.export_hdf5(file, group=key, mode="w")
+            if sort_values:
+                df.sort(by=sort_values).export_hdf5(file, group=key, mode="w")
+            else:
+                df.export_hdf5(file, group=key, mode="w")
             df.close()
         self._close_temp_batch_files()
 
