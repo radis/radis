@@ -2864,9 +2864,10 @@ class DatabankLoader(object):
 
         if add_config:
             import radis
+            from radis.spectrum.utils import CONFIG_PARAMS
 
             vardict.update(
-                {k: v for k, v in radis.config.items() if not isinstance(v, dict)}
+                {k: v for k, v in radis.config.items() if k in CONFIG_PARAMS}
             )
 
         return vardict

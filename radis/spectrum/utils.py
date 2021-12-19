@@ -122,6 +122,17 @@ Notes
 units for these parameters are stored in Spectrum.cond_units and are defined
 by the generating class (ex: SpectrumFactory)"""
 
+CONFIG_PARAMS = [
+    "GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD",
+    "GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD",
+    "SPARSE_WAVERANGE",
+    "DEFAULT_DOWNLOAD_PATH",
+]
+""" list: these parameters are read from radis.config and stored in the Spectrum
+objects. Should be added here only the parameters that may have an impact on the computation,
+for instance the one defining the 'auto' thresholds
+"""
+
 # %% Util functions
 
 
@@ -256,6 +267,7 @@ def print_conditions(
     units,
     phys_param_list=PHYSICAL_PARAMS,
     info_param_list=INFORMATIVE_PARAMS,
+    config_param_list=CONFIG_PARAMS,
 ):
     """Print all Spectrum calculation parameters.
 
@@ -270,6 +282,11 @@ def print_conditions(
     info_param_list: list
         These parameters are shown below "Information" rather than "Computation
         Parameters. See :data:`~radis.spectrum.utils.INFORMATIVE_PARAMS` for more
+        information.
+
+    config_param_list: list
+        These parameters are read from radis.config file. See
+        :data:`~radis.spectrum.utils.CONFIG_PARAMS` for more
         information.
 
     See Also
@@ -323,9 +340,6 @@ def print_conditions(
         lambda x: x in info_param_list, non_phys_param
     )
 
-    import radis
-
-    config_param_list = list(radis.config.keys())
     config_param, non_phys_param = partition(
         lambda x: x in config_param_list, non_phys_param
     )
