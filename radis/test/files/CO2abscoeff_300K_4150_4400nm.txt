@@ -36,8 +36,8 @@
 #    db_assumed_sorted    True
 #    dbformat             cdsd-hitemp
 #    dbpath               D:/Dropbox/Data ECP/14_Databases/CDSD-HITEMP/cdsd_hitemp_07,D:/Dropbox/Data ECP/14_Databases/CDSD-HI...
-#    dlm_log_pG           0.1375350788016573
-#    dlm_log_pL           0.20180288881201608
+#    dxG           0.1375350788016573
+#    dxL           0.20180288881201608
 #    include_neighbouring_lines  True
 #    levelsfmt            radis
 #    parfuncfmt           cdsd

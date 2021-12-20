@@ -247,7 +247,7 @@ class LevelsList(object):
 
         # Add levels
         def add_viblvl(row):
-            """"""
+            """ """
             #    row['vib_lvl'] = '({p},{c},{N})'.format(**dict([(k,int(row[k])) for k in ['p', 'c', 'N']]))
             #            row['viblvl'] = '({p},{c})'.format(**dict([(k,int(row[k])) for k in ['p', 'c']]))
             row["viblvl"] = vib_lvl_name_cdsd(row.p, row.c, row.N)

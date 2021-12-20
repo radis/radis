@@ -108,11 +108,19 @@ class DatabaseManager(object):
                 # see https://github.com/spyder-ide/spyder/issues/16183.
                 # and https://github.com/radis/radis/issues/401
                 if any("SPYDER" in name for name in environ):
+                    engine = "pytables"  # for HITRAN and HITEMP databases
                     if verbose >= 3:
                         print(
-                            "Spyder IDE detected. Memory-mapping-engine set to 'pytables' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
+                            f"Spyder IDE detected. Memory-mapping-engine set to '{engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
                         )
+                # temp fix for vaex not building on RTD
+                # see https://github.com/radis/radis/issues/404
+                elif any("READTHEDOCS" in name for name in environ):
                     engine = "pytables"  # for HITRAN and HITEMP databases
+                    if verbose >= 3:
+                        print(
+                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{engine}'. See https://github.com/radis/radis/issues/404"
+                        )
                 else:
                     engine = "vaex"
 
@@ -121,7 +129,7 @@ class DatabaseManager(object):
             from radis.misc.log import printwarn
 
             printwarn(
-                "Spyder IDE detected while using memory_mapping_engine='vaex'.\nVaex is the fastest way to read database files in RADIS, but Vaex processes may be stuck if ran from Spyder. See https://github.com/spyder-ide/spyder/issues/16183. You may consider using another IDE, or using a different `memory_mapping_engine` such as 'pytables' or 'feather'. You can change the engine in Spectrum.fetch_databank() calls, or globally by setting the 'MEMORY_MAPPING_ENGINE' key in your ~/radis.json \n"
+                "Spyder IDE detected while using memory_mapping_engine='vaex'.\nVaex is the fastest way to read database files in RADIS, but Vaex processes may be stuck if ran from Spyder. See https://github.com/spyder-ide/spyder/issues/16183. Quick fix: starting a new console releases the lock, usually for the rest of your session. You may consider using another IDE, or using a different `memory_mapping_engine` such as 'pytables' or 'feather'. You can change the engine in Spectrum.fetch_databank() calls, or globally by setting the 'MEMORY_MAPPING_ENGINE' key in your ~/radis.json \n"
             )
 
         self.name = name
@@ -133,6 +141,18 @@ class DatabaseManager(object):
 
             make_folders(*split(abspath(dirname(local_databases))))
             make_folders(*split(abspath(local_databases)))
+
+        if self.is_registered():
+            registered_paths = getDatabankEntries(self.name)["path"]
+            for registered_path in registered_paths:
+                if (
+                    not abspath(expanduser(registered_path))
+                    .lower()
+                    .startswith(abspath(expanduser(local_databases).lower()))
+                ):  # TODO: replace with pathlib
+                    raise ValueError(
+                        f"Databank `{self.name}` is already registered in radis.json but the declared path ({registered_path}) is not in the expected local databases folder ({local_databases}). Please fix/delete the radis.json entry, or change the default local databases path entry 'DEFAULT_DOWNLOAD_PATH' in `radis.config` or ~/radis.json"
+                    )
 
         self.downloadable = False  # by default
         self.format = ""
@@ -179,8 +199,10 @@ class DatabaseManager(object):
 
             # Check that local files are the one we expect :
             for f in local_files:
-                if not abspath(expanduser(f)).startswith(
-                    abspath(expanduser(local_databases))
+                if (
+                    not abspath(expanduser(f))
+                    .lower()
+                    .startswith(abspath(expanduser(local_databases)).lower())
                 ):
                     raise ValueError(
                         f"Database {self.name} is inconsistent : it should be stored in {local_databases} but files registered in ~/radis.json contains {f}. Please fix or delete the ~/radis.json entry."
@@ -471,6 +493,7 @@ class DatabaseManager(object):
     def get_nrows(self, local_file):
         """ Get number of rows (without loading all DataFrame)"""
         engine = self.engine
+        local_file = expanduser(local_file)
         if engine == "pytables":
             with pd.HDFStore(local_file, "r") as store:
                 nrows = store.get_storer("df").nrows

@@ -51,7 +51,7 @@ key in :py:attr:`radis.config`
 
 import warnings
 from copy import deepcopy
-from os.path import exists
+from os.path import exists, join
 from time import time
 from uuid import uuid1
 
@@ -111,7 +111,7 @@ KNOWN_DBFORMAT = [
 ]
 """list: Known formats for Line Databases:
 
-- ``'hitran'`` : [HITRAN-2016]_ original .par format
+- ``'hitran'`` : [HITRAN-2020]_ original .par format
 - ``'hitemp'`` : [HITEMP-2010]_ original format (same format as 'hitran')
 - ``'cdsd-hitemp'`` : CDSD-HITEMP original format (CO2 only, same lines as HITEMP-2010)
 - ``'cdsd-4000'`` : [CDSD-4000]_ original format (CO2 only)
@@ -157,8 +157,8 @@ See Also
 """
 
 drop_auto_columns_for_dbformat = {
-    "hitran": ["ierr", "iref", "lmix", "gp", "gpp"],
-    "hitemp": ["ierr", "iref", "lmix", "gp", "gpp"],
+    "hitran": ["ierr", "iref", "lmix", "gpp"],
+    "hitemp": ["ierr", "iref", "lmix", "gpp"],
     "cdsd-4000": ["wang2"],
     "cdsd-hitemp": ["wang2", "lsrc"],
     "hdf5-radisdb": [],
@@ -198,12 +198,14 @@ drop_all_but_these = [
     "iso",
     "wav",
     "int",
+    "A",
     "airbrd",
     "selbrd",
     "Tdpair",
     "Tdpsel",
     "Pshft",
     "El",
+    "gp",
 ]
 """ list: drop all columns but these if using ``drop_columns='all'`` in load_databank
 Note: nonequilibrium calculations wont be possible anymore and it wont be possible
@@ -268,7 +270,7 @@ class ConditionDict(dict):
     See Also
     --------
     :py:class:`~radis.lbl.loader.Input`,
-    :py:class:`~radis.lbl.loader.Parameter`,
+    :py:class:`~radis.lbl.loader.Parameters`,
     :py:class:`~radis.lbl.loader.MiscParams`
     """
 
@@ -446,8 +448,8 @@ class Parameters(ConditionDict):
         "db_use_cached",
         "dbformat",
         "dbpath",
-        "dlm_log_pL",
-        "dlm_log_pG",
+        "dxL",
+        "dxG",
         "export_lines",
         "export_populations",
         "folding_thresh",
@@ -459,7 +461,7 @@ class Parameters(ConditionDict):
         "parfuncpath",
         "parsum_mode",
         "pseudo_continuum_threshold",
-        "sparse_dlm",
+        "sparse_ldm",
         "warning_broadening_threshold",
         "warning_linestrength_cutoff",
         "wavenum_max_calc",
@@ -493,18 +495,18 @@ class Parameters(ConditionDict):
         self.wavenum_min_calc = None  #: float: minimum calculated wavenumber (cm-1) initialized by SpectrumFactory
         self.waveunit = "cm-1"  #: waverange unit: should be cm-1.
         self.wstep = None  #: float: spectral resolution (cm-1)
-        self.dlm_log_pL = _lorentzian_step(
+        self.dxL = _lorentzian_step(
             0.01
-        )  #: float : Lorentzian step for DLM lineshape database. Default _lorentzian_step(0.01)
-        self.dlm_log_pG = _gaussian_step(
+        )  #: float : Lorentzian step for LDM lineshape database. Default _lorentzian_step(0.01)
+        self.dxG = _gaussian_step(
             0.01
-        )  #: float : Gaussian step DLM lineshape database. Default _gaussian_step(0.01)
+        )  #: float : Gaussian step LDM lineshape database. Default _gaussian_step(0.01)
         # self.add_at_used = None  # use Cython-accelerated code
         self.include_neighbouring_lines = True
         """bool: if ``True``, includes the contribution of off-range, neighbouring
         lines because of lineshape broadening. Default ``True``."""
         self.parsum_mode = "full summation"  #: int : "full summation" or "tabulation"  . calculation mode of parittion function. See :py:class:`~radis.levels.partfunc.RovibParFuncCalculator`
-        self.sparse_dlm = "auto"  #: str: "auto", True, False  . Sparse DLM calculation. See :py:meth:`radis.lbl.broadening.BroadenFactory._apply_lineshape_DLM`
+        self.sparse_ldm = "auto"  #: str: "auto", True, False  . Sparse LDM calculation. See :py:meth:`radis.lbl.broadening.BroadenFactory._apply_lineshape_LDM`
 
 
 class MiscParams(ConditionDict):
@@ -930,7 +932,7 @@ class DatabankLoader(object):
         Parameters
         ----------
         source: ``'hitran'``, ``'hitemp'``, ``'exomol'``
-            [Download database lines from the latest HITRAN (see [HITRAN-2016]_),
+            [Download database lines from the latest HITRAN (see [HITRAN-2020]_),
             HITEMP (see [HITEMP-2010]_  )] or EXOMOL see [ExoMol-2020]_  ) databases.
         database: ``'full'``, ``'range'``, name of an ExoMol database, or ``'default'``
             if fetching from HITRAN, ``'full'`` download the full database and register
@@ -948,6 +950,9 @@ class DatabankLoader(object):
             if fetching from ''`exomol`'', use this parameter to choose which database
             to use. Keep ``'default'`` to use the recommended one. See all available databases
             with :py:func:`radis.io.exomol.get_exomol_database_list`
+
+            By default, databases are download in `~/.radisdb`.
+            Can be changed in ``radis.config["DEFAULT_DOWNLOAD_PATH"]`` or in ~/radis.json config file
 
 
         Other Parameters
@@ -1052,7 +1057,11 @@ class DatabankLoader(object):
             if database == "default":
                 database = "full"
         elif source == "exomol":
-            dbformat = "exomol-radisdb"  # downloaded in RADIS local databases ~/.radisdb  # Note @EP : still WIP.
+            dbformat = (
+                "exomol-radisdb"  # downloaded in RADIS local databases ~/.radisdb
+            )
+
+        local_databases = config["DEFAULT_DOWNLOAD_PATH"]
 
         if [parfuncfmt, source].count("exomol") == 1:
             self.warn(
@@ -1112,10 +1121,10 @@ class DatabankLoader(object):
         from os import environ
 
         if source == "hitran":
-            self.reftracker.add(doi["HITRAN-2016"], "line database")  # [HITRAN-2016]_
-            self.reftracker.add(doi["Astroquery"], "data retrieval")  # [Astroquery]_
+            self.reftracker.add(doi["HITRAN-2020"], "line database")  # [HITRAN-2020]_
 
             if database == "full":
+                self.reftracker.add(doi["HAPI"], "data retrieval")  # [HAPI]_
 
                 # quick fix for https://github.com/radis/radis/issues/401
                 if memory_mapping_engine == "auto":
@@ -1124,6 +1133,14 @@ class DatabankLoader(object):
                         if self.verbose >= 3:
                             print(
                                 f"Spyder IDE detected. Memory-mapping-engine set to '{memory_mapping_engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
+                            )
+                    # temp fix for vaex not building on RTD
+                    # see https://github.com/radis/radis/issues/404
+                    elif any("READTHEDOCS" in name for name in environ):
+                        memory_mapping_engine = "pytables"
+                        if self.verbose >= 3:
+                            print(
+                                f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
                             )
                     else:
                         memory_mapping_engine = "vaex"
@@ -1136,6 +1153,7 @@ class DatabankLoader(object):
                 df, local_paths = fetch_hitran(
                     molecule,
                     isotope=isotope_list,
+                    local_databases=join(local_databases, "hitran"),
                     load_wavenum_min=wavenum_min,
                     load_wavenum_max=wavenum_max,
                     columns=columns,
@@ -1147,7 +1165,16 @@ class DatabankLoader(object):
                 )
                 self.params.dbpath = ",".join(local_paths)
 
+                # ... explicitely write all isotopes based on isotopes found in the database
+                if isotope == "all":
+                    self.input.isotope = ",".join(
+                        [str(k) for k in self._get_isotope_list(df=df)]
+                    )
+
             elif database == "range":
+                self.reftracker.add(
+                    doi["Astroquery"], "data retrieval"
+                )  # [Astroquery]_
 
                 # Query one isotope at a time
                 if isotope == "all":
@@ -1200,6 +1227,14 @@ class DatabankLoader(object):
                         print(
                             f"Spyder IDE detected. Memory-mapping-engine set to '{memory_mapping_engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
                         )
+                # temp fix for vaex not building on RTD
+                # see https://github.com/radis/radis/issues/404
+                elif any("READTHEDOCS" in name for name in environ):
+                    memory_mapping_engine = "pytables"
+                    if self.verbose >= 3:
+                        print(
+                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
+                        )
                 else:
                     memory_mapping_engine = "vaex"
 
@@ -1218,6 +1253,7 @@ class DatabankLoader(object):
             df, local_paths = fetch_hitemp(
                 molecule,
                 isotope=isotope_list,
+                local_databases=join(local_databases, "hitemp"),
                 load_wavenum_min=wavenum_min,
                 load_wavenum_max=wavenum_max,
                 columns=columns,
@@ -1245,6 +1281,14 @@ class DatabankLoader(object):
                     if self.verbose >= 3:
                         print(
                             f"Spyder IDE detected. Memory-mapping-engine set to '{memory_mapping_engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
+                        )
+                # temp fix for vaex not building on RTD
+                # see https://github.com/radis/radis/issues/404
+                elif any("READTHEDOCS" in name for name in environ):
+                    memory_mapping_engine = "feather"
+                    if self.verbose >= 3:
+                        print(
+                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
                         )
                 else:
                     memory_mapping_engine = "vaex"
@@ -1276,6 +1320,7 @@ class DatabankLoader(object):
                     molecule,
                     database=database,
                     isotope=iso,
+                    local_databases=join(local_databases, "exomol"),
                     load_wavenum_min=wavenum_min,
                     load_wavenum_max=wavenum_max,
                     columns=columns,
@@ -1326,6 +1371,9 @@ class DatabankLoader(object):
                 f"{molecule} has no lines on range "
                 + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
             )
+
+        # Always sort line database by wavenumber (required to SPARSE_WAVERANGE mode)
+        df.sort_values("wav", ignore_index=True, inplace=True)
 
         # Post-processing of the line database
         # (note : this is now done in 'fetch_hitemp' before saving to the disk)
@@ -2169,8 +2217,8 @@ class DatabankLoader(object):
                     elif dbformat in ["hitran", "hitemp"]:
                         if dbformat == "hitran":
                             self.reftracker.add(
-                                doi["HITRAN-2016"], "line database"
-                            )  # [HITRAN-2016]_
+                                doi["HITRAN-2020"], "line database"
+                            )  # [HITRAN-2020]_
                         if dbformat == "hitemp":
                             self.reftracker.add(
                                 doi["HITEMP-2010"], "line database"
@@ -2447,7 +2495,9 @@ class DatabankLoader(object):
 
         conditions = {
             k: v
-            for (k, v) in self.get_conditions(ignore_misc=ignore_misc).items()
+            for (k, v) in self.get_conditions(
+                ignore_misc=ignore_misc, add_config=True
+            ).items()
             if k in self.SpecDatabase.conditions()
         }
         conditions = {
@@ -2455,6 +2505,14 @@ class DatabankLoader(object):
             for (k, v) in conditions.items()
             if k not in self._autoretrieveignoreconditions
         }
+
+        if "wstep" in conditions and conditions["wstep"] == "auto":
+            if "GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD" in conditions:
+                # ignore wstep='auto' but still make sure that 'GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD' is the same
+                del conditions["wstep"]
+                # TODO Refactor. Include this in a large Parameter metaclass where
+                # 'GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD' is a parameter from which
+                # depends 'wstep' evaluation
 
         s = self.SpecDatabase.get(**conditions)
         if len(s) == 1:
@@ -2791,7 +2849,7 @@ class DatabankLoader(object):
 
         return parsum
 
-    def get_conditions(self, ignore_misc=False):
+    def get_conditions(self, ignore_misc=False, add_config=False):
         """Get all parameters defined in the SpectrumFactory.
 
         Other Parameters
@@ -2808,6 +2866,14 @@ class DatabankLoader(object):
         vardict.update(self.params.get_params())
         if not ignore_misc:
             vardict.update(self.misc.get_params())
+
+        if add_config:
+            import radis
+            from radis.spectrum.utils import CONFIG_PARAMS
+
+            vardict.update(
+                {k: v for k, v in radis.config.items() if k in CONFIG_PARAMS}
+            )
 
         return vardict
 

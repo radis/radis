@@ -142,11 +142,11 @@ def test_spec_generation(
 
     - 0.9.20 (normal code) >>> 6.3 s
              (with pseudo_continuum_threshold=0.01) >>> ???
-             (with DLM) >>> 2.3 s
+             (with LDM) >>> 2.3 s
 
     - 0.9.26 (normal code) >>> 7.6 s
              (with pseudo_continuum_threshold=0.01) >>> 2.73s
-             (with DLM) >>> 0.25 s
+             (with LDM) >>> 0.25 s
 
     """
 

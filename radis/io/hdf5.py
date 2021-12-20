@@ -7,7 +7,7 @@ Created on Tue Jan 26 21:27:15 2021
 
 import os
 import sys
-from os.path import exists, splitext
+from os.path import exists, expanduser, splitext
 from time import time
 
 import h5py
@@ -124,6 +124,7 @@ class HDF5Manager(object):
             only these column names will be searchable directly on disk to
             load certain lines only. See :py:func:`~radis.io.hdf5.hdf2df`
         """
+        file = expanduser(file)
         if self.engine == "pytables":
             if key == "default":
                 key = "df"
@@ -170,10 +171,11 @@ class HDF5Manager(object):
             raise NotImplementedError(self.engine)
             # h5py is not designed to write Pandas DataFrames
 
-    def combine_temp_batch_files(self, file, key="default"):
+    def combine_temp_batch_files(self, file, key="default", sort_values=None):
         """Combine all batch files in ``self._temp_batch_files`` into one.
         Removes all batch files.
         """
+        file = expanduser(file)
         if self.engine == "vaex":
             if len(self._temp_batch_files) == 0:
                 raise ValueError(f"No batch temp files were written for {file}")
@@ -182,7 +184,10 @@ class HDF5Manager(object):
             import vaex
 
             df = vaex.open(self._temp_batch_files, group=key)
-            df.export_hdf5(file, group=key, mode="w")
+            if sort_values:
+                df.sort(by=sort_values).export_hdf5(file, group=key, mode="w")
+            else:
+                df.export_hdf5(file, group=key, mode="w")
             df.close()
         self._close_temp_batch_files()
 
@@ -235,6 +240,7 @@ class HDF5Manager(object):
         """
 
         if self.engine in ["pytables", "pytables-fixed"]:
+            fname = expanduser(fname)
             if key == "default":
                 key = "df"
             try:
@@ -267,6 +273,7 @@ class HDF5Manager(object):
             # Open file
             assert len(store_kwargs) == 0
             fname_list = fname if isinstance(fname, list) else [fname]
+            fname_list = [expanduser(f) for f in fname_list]
             # vaex can open several files at the same time
             # First check group exists
             for fname in fname_list:
@@ -296,6 +303,7 @@ class HDF5Manager(object):
             return df
 
         elif self.engine == "h5py":
+            fname = expanduser(fname)
             # TODO: define default key ?
             if key == "default":
                 key = None
@@ -339,6 +347,7 @@ class HDF5Manager(object):
         from radis.io.cache_files import _h5_compatible
 
         if self.engine in ["pytables", "pytables-fixed"]:
+            fname = expanduser(fname)
             if key == "default":
                 key = "df"
             with pd.HDFStore(fname, mode="a", complib="blosc", complevel=9) as f:
@@ -349,6 +358,7 @@ class HDF5Manager(object):
                 f.get_storer(key).attrs.metadata = metadata
 
         elif self.engine == "h5py":
+            fname = expanduser(fname)
             if key == "default":
                 key = None
             with h5py.File(fname, "a") as hf:
@@ -367,6 +377,7 @@ class HDF5Manager(object):
             if isinstance(fname, list):
                 assert isinstance(metadata, list)
                 for f, m in zip(fname, metadata):
+                    f = expanduser(f)
                     with h5py.File(f, "a") as hf:
                         if create_empty_dataset:
                             assert key is not None
@@ -376,6 +387,7 @@ class HDF5Manager(object):
                         else:
                             hf[key].attrs.update(_h5_compatible(m))
             else:
+                fname = expanduser(fname)
                 with h5py.File(fname, "a") as hf:
                     if create_empty_dataset:
                         assert key is not None
@@ -399,6 +411,7 @@ class HDF5Manager(object):
         """
 
         if self.engine in ["pytables", "pytables-fixed"]:
+            fname = expanduser(fname)
             if key == "default":
                 key = "df"
             with pd.HDFStore(fname, mode="r", complib="blosc", complevel=9) as f:
@@ -409,6 +422,7 @@ class HDF5Manager(object):
                     raise err
 
         elif self.engine == "h5py":
+            fname = expanduser(fname)
             if key == "default":
                 key = None
             with h5py.File(fname, "r") as hf:
@@ -427,12 +441,14 @@ class HDF5Manager(object):
             if isinstance(fname, list):
                 metadata = []
                 for f in fname:
+                    f = expanduser(f)
                     with h5py.File(f, "r") as hf:
                         if key is None:  # read metadta at root level
                             metadata.append(dict(hf.attrs))
                         else:
                             metadata.append(dict(hf[key].attrs))
             else:
+                fname = expanduser(fname)
                 with h5py.File(fname, "r") as hf:
                     if key is None:  # add metadta at root level
                         metadata = dict(hf.attrs)
@@ -476,6 +492,7 @@ class HDF5Manager(object):
             engine = "pytables"
         else:
             # Try Vaex
+            file = expanduser(file)
             with h5py.File(file, mode="r") as hf:
                 try:
                     hf[r"/table"]

@@ -2,7 +2,7 @@ language: python
 python:
   # We don't actually use the Travis Python, but this keeps it organized.
   #- "2.7"    # not tested anymore starting from 0.9.19
-  - "3.7"
+  - "3.8"
 os: linux
 
 stages:
@@ -38,8 +38,9 @@ jobs:
         - conda env create -n radis-env -f environment.yml
         # Activate and install test-only dependencies
         - source activate radis-env
+        - conda list
         - pip install pytest-cov
-        - python setup.py install
+        - pip install -e . -v
 
       script:
         # Your test script goes here

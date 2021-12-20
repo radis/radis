@@ -62,7 +62,7 @@ def calc_spectrum(
     export_lines=False,
     verbose=True,
     return_factory=False,
-    **kwargs
+    **kwargs,
 ) -> Spectrum:
     r"""Calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
 
@@ -111,7 +111,7 @@ def calc_spectrum(
         Default ``None``.​
     isotope: int, list, str of the form ``'1,2'``, or ``'all'``, or dict
         isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
-        See [HITRAN-2016]_ documentation for isotope list for all species. If ``'all'``,
+        See [HITRAN-2020]_ documentation for isotope list for all species. If ``'all'``,
         all isotopes in database are used (this may result in larger computation
         times!). Default ``'all'``.
 
@@ -255,13 +255,15 @@ def calc_spectrum(
         If ``False``, stays quiet. If ``True``, tells what is going on.
         If ``>=2``, gives more detailed messages (for instance, details of
         calculation times). Default ``True``.​
-    mode: ``'cpu'``, ``'gpu'``
+    mode: ``'cpu'``, ``'gpu'``, ``'emulated_gpu'``
         if set to ``'cpu'``, computes the spectra purely on the CPU. if set to ``'gpu'``,
         offloads the calculations of lineshape and broadening steps to the GPU
         making use of parallel computations to speed up the process. Default ``'cpu'``.
         Note that ``mode='gpu'`` requires CUDA compatible hardware to execute.
         For more information on how to setup your system to run GPU-accelerated
         methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`__
+        To try the GPU code without an actual GPU, you can use ``mode='emulated_gpu'``.
+        This will run the GPU equivalent code on the CPU.
     return_factory: bool
         if ``True``, return the :py:class:`~radis.lbl.factory.SpectrumFactory` that
         computes the spectrum. Useful to access computational parameters, the line database,
@@ -270,7 +272,6 @@ def calc_spectrum(
                 s, sf = calc_spectrum(..., return_factory=True)
                 sf.df1  # see the lines calculated
                 sf.eq_spectrum(...)  #  new calculation without reloading the database
-
     **kwargs: other inputs forwarded to SpectrumFactory
         For instance: ``warnings``.
         See :py:class:`~radis.lbl.factory.SpectrumFactory` documentation for more
@@ -531,7 +532,7 @@ def calc_spectrum(
             mode=mode,
             export_lines=export_lines,
             return_factory=return_factory,
-            **kwargs_molecule
+            **kwargs_molecule,
         )
         if return_factory:
             factory_dict[molecule] = generated_spectrum[1]
@@ -584,7 +585,7 @@ def _calc_spectrum_one_molecule(
     mode,
     export_lines,
     return_factory=False,
-    **kwargs
+    **kwargs,
 ) -> Spectrum:
     """See :py:func:`~radis.lbl.calc.calc_spectrum`"""
 
@@ -648,7 +649,7 @@ def _calc_spectrum_one_molecule(
         optimization=optimization,
         broadening_method=broadening_method,
         export_lines=export_lines,
-        **kwargs
+        **kwargs,
     )
     if (
         databank
@@ -806,16 +807,20 @@ def _calc_spectrum_one_molecule(
                 path_length=path_length,
                 name=name,
             )
-        elif mode == "gpu":
+
+        elif mode in ("gpu", "emulated_gpu"):
             s = sf.eq_spectrum_gpu(
                 Tgas=Tgas,
                 mole_fraction=mole_fraction,
                 pressure=pressure,
                 path_length=path_length,
                 name=name,
+                emulate=(True if mode == "emulated_gpu" else False),
             )
         else:
-            raise ValueError(mode)
+            raise ValueError(
+                f"mode= should be one of 'cpu', 'gpu', 'emulated_gpu' (GPU code running on CPU). Got {mode}"
+            )
     else:
         if mode != "cpu":
             raise NotImplementedError(mode)

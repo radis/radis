@@ -4,3 +4,4 @@ sphinx>=1.7.0
 astroquery>=0.3.9
 sphinxcontrib-apidoc
 sphinx-gallery
+specutils

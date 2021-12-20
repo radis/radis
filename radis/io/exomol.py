@@ -213,7 +213,7 @@ def get_exomol_database_list(molecule, isotope_full_name):
 def fetch_exomol(
     molecule,
     database=None,
-    local_databases=r"~/.radisdb/exomol/",
+    local_databases=None,
     databank_name="EXOMOL-{molecule}",
     isotope="1",
     load_wavenum_min=None,
@@ -239,7 +239,8 @@ def fetch_exomol(
         :py:data:`~radis.io.exomol.KNOWN_EXOMOL_DATABASE_NAMES`. If ``None`` and
         there is only one database available, use it.
     local_databases: ``str``
-        where to create the RADIS HDF5 files. Default ``"~/.radisdb/exomol"``
+        where to create the RADIS HDF5 files. Default ``"~/.radisdb/exomol"``.
+        Can be changed in ``radis.config["DEFAULT_DOWNLOAD_PATH"]`` or in ~/radis.json config file
     databank_name: ``str``
         name of the databank in RADIS :ref:`Configuration file <label_lbl_config_file>`
         Default ``"EXOMOL-{molecule}"``
@@ -347,6 +348,11 @@ def fetch_exomol(
             raise KeyError(
                 f"{database} is not of the known available ExoMol databases for {full_molecule_name}. Choose one of : {known_exomol_databases}. ({recommended_database} is recommended by the ExoMol team). {_exomol_use_hint}"
             )
+
+    if local_databases is None:
+        import radis
+
+        local_databases = pathlib.Path(radis.config["DEFAULT_DOWNLOAD_PATH"]) / "exomol"
 
     local_path = (
         pathlib.Path(local_databases).expanduser()
@@ -469,6 +475,14 @@ class MdbExomol(object):
                             "Spyder IDE detected. Memory-mapping-engine set to 'feather' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
                         )
                     engine = "feather"  # for ExoMol database
+                # temp fix for vaex not building on RTD
+                # see https://github.com/radis/radis/issues/404
+                elif any("READTHEDOCS" in name for name in environ):
+                    engine = "feather"
+                    if verbose >= 3:
+                        print(
+                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{engine}'. See https://github.com/radis/radis/issues/404"
+                        )
                 else:
                     engine = "vaex"
 
@@ -574,6 +588,11 @@ class MdbExomol(object):
 
         # trans file(s)
         print("Reading transition file")
+
+        # Compute linestrengths or retrieve them from cache
+        self.Tref = 296.0
+        self.QTref = np.array(self.QT_interp(self.Tref))
+
         if dic_def["numinf"] is None:
             self.trans_file = self.path / pathlib.Path(molec + ".trans.bz2")
             if not self.trans_file.exists():
@@ -628,10 +647,6 @@ class MdbExomol(object):
                 mask_zeronu,
                 self._quantumNumbers,
             ) = exomolapi.pickup_gE(ndstates, ndtrans, self.trans_file, dic_def)
-
-            # Compute linestrengths or retrieve them from cache
-            self.Tref = 296.0
-            self.QTref = np.array(self.QT_interp(self.Tref))
 
             if engine == "vaex" and self.trans_file.with_suffix(".hdf5").exists():
                 # if engine == 'feather' we recompute all the time
@@ -689,14 +704,15 @@ class MdbExomol(object):
                         molec, extension=[".trans.bz2"], numtag=dic_def["numtag"][i]
                     )
                 if engine == "feather":
-                    if trans_file.with_suffix(".feather").exists():
-                        trans = pd.read_feather(trans_file.with_suffix(".feather"))
+                    trans_feather_path = trans_file.with_suffix(".bz2.feather")
+                    if trans_feather_path.exists():
+                        trans = pd.read_feather(trans_feather_path)
                     else:
                         print(
                             "Note: Caching line transition data to the feather format. After the second time, it will become much faster."
                         )
                         trans = exomolapi.read_trans(trans_file, engine="csv")
-                        trans.to_feather(trans_file.with_suffix(".feather"))
+                        trans.to_feather(trans_feather_path)
                         #!!TODO:restrict NOW the trans size to avoid useless overload of memory and CPU
                         # trans = trans[(trans['nu'] > self.nurange[0] - self.margin) & (trans['nu'] < self.nurange[1] + self.margin)]
                     ndtrans = trans.to_numpy()
@@ -742,15 +758,11 @@ class MdbExomol(object):
                         self._quantumNumbers,
                     ) = exomolapi.pickup_gE(ndstates, ndtrans, trans_file, dic_def)
 
-                    if (
-                        engine == "vaex"
-                        and self.trans_file.with_suffix(".hdf5").exists()
-                    ):
-                        # if engine == 'feather' we recompute all the time
-                        # Todo : we should get the column name instead ?
+                    if engine == "vaex" and trans_file.with_suffix(".hdf5").exists():
+                        # Sij0x already stored in cache file
                         self.Sij0 = ndtrans[:, 4]
                     else:
-                        ##Line strength:
+                        ##Recompute Line strength:
                         from radis.lbl.base import (  # TODO: move elsewhere
                             linestrength_from_Einstein,
                         )
@@ -766,9 +778,15 @@ class MdbExomol(object):
                         )
 
                         # exclude the lines whose nu_lines evaluated inside exomolapi.pickup_gE (thus sometimes different from the "nu_lines" column in trans) is not positive
-                        trans["nu_positive"] = mask_zeronu
-                        trans = trans[trans.nu_positive].extract()
-                        trans.drop("nu_positive", inplace=True)
+                        if engine == "vaex":
+                            trans["nu_positive"] = mask_zeronu
+                            trans = trans[trans.nu_positive].extract()
+                            trans.drop("nu_positive", inplace=True)
+                        else:
+                            if False in mask_zeronu:
+                                raise NotImplementedError(
+                                    "some wavenumber is not defined;  masking not impleemtend so far in 'feather' engine"
+                                )
 
                         trans["nu_lines"] = self.nu_lines
                         trans["Sij0"] = self.Sij0
@@ -785,9 +803,10 @@ class MdbExomol(object):
                         quantumNumbersx,
                     ) = exomolapi.pickup_gE(ndstates, ndtrans, trans_file, dic_def)
                     if engine == "vaex" and trans_file.with_suffix(".hdf5").exists():
+                        # Sij0x already stored in cache file
                         Sij0x = ndtrans[:, 4]
                     else:
-                        ##Line strength:
+                        ##Recompute Line strength:
                         from radis.lbl.base import (  # TODO: move elsewhere
                             linestrength_from_Einstein,
                         )
@@ -803,22 +822,30 @@ class MdbExomol(object):
                         )
 
                         # exclude the lines whose nu_lines evaluated inside exomolapi.pickup_gE (thus sometimes different from the "nu_lines" column in trans) is not positive
-                        trans["nu_positive"] = mask_zeronu
-                        trans = trans[trans.nu_positive].extract()
-                        trans.drop("nu_positive", inplace=True)
+                        if engine == "vaex":
+                            trans["nu_positive"] = mask_zeronu
+                            trans = trans[trans.nu_positive].extract()
+                            trans.drop("nu_positive", inplace=True)
+                        else:
+                            if False in mask_zeronu:
+                                raise NotImplementedError(
+                                    "some wavenumber is not defined;  masking not impleemtend so far in 'feather' engine"
+                                )
 
                         trans["nu_lines"] = nulx
                         trans["Sij0"] = Sij0x
 
                     self._A = np.hstack([self._A, Ax])
                     self.nu_lines = np.hstack([self.nu_lines, nulx])
+                    self.Sij0 = np.hstack([self.Sij0, Sij0x])
                     self._elower = np.hstack([self._elower, elowerx])
                     self._gpp = np.hstack([self._gpp, gppx])
                     self._jlower = np.hstack([self._jlower, jlowerx])
                     self._jupper = np.hstack([self._jupper, jupperx])
-                    self._quantumNumbers = np.hstack(
-                        [self._quantumNumbers, quantumNumbersx]
-                    )
+                    for key in self._quantumNumbers.keys():
+                        self._quantumNumbers[key] = np.hstack(
+                            [self._quantumNumbers[key], quantumNumbersx[key]]
+                        )
 
                     if (
                         engine == "vaex"

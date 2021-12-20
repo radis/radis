@@ -651,7 +651,7 @@ class Spectrum(object):
             # dimensionless
             if wunit is None:
                 raise ValueError(
-                    "``w`` must be a dimensionned array, or ``Iunit=`` must be given."
+                    "``w`` must be a dimensionned array, or ``wunit=`` must be given."
                 )
         else:
             if wunit is not None:
@@ -925,7 +925,7 @@ class Spectrum(object):
 
         Parameters
         ----------
-        var: variable ('absorbance', 'transmittance', etc.)
+        var: variable (``'absorbance'``, ``'transmittance'``, ``'xsection'`` etc.)
             Should be a defined quantity among :data:`~radis.spectrum.utils.CONVOLUTED_QUANTITIES`
             or :data:`~radis.spectrum.utils.NON_CONVOLUTED_QUANTITIES`.
             To get the full list of quantities defined in this Spectrum object use
@@ -985,9 +985,13 @@ class Spectrum(object):
                     + ". Have you used .apply_slit()?"
                 )
             else:
-                raise KeyError(
-                    "{0} not in quantity list: {1}".format(var, self.get_vars())
-                )
+                # Try to compute it automatically :
+                try:
+                    self.update(var)
+                except ValueError as err:
+                    raise ValueError(
+                        f"{var} not in Spectrum arrays {self.get_vars()}. An error occured while trying to recompute it from the available arrays and conditions. See above"
+                    ) from err
 
         # Get quantity
         I = self._q[var]
@@ -1335,9 +1339,22 @@ class Spectrum(object):
 
         Examples
         --------
+        Initialize a spectrum from the absorption coefficient, retrieve the transmittance
+        or the emission coefficient :
         ::
 
+            s = Spectrum.from_array([1900.  , 1900.01, 1900.02, 1900.03, 1900.04, 1900.05, 1900.06,
+                                     1900.07, 1900.08, 1900.09],
+                                    [2.71414065e-06, 2.88341489e-06, 3.06942277e-06, 3.27445689e-06,
+                                     3.50121831e-06, 3.75290756e-06, 4.03334037e-06, 4.34709612e-06,
+                                     4.69971017e-06, 5.09792551e-06],
+                                    'abscoeff', wunit='cm-1', Iunit='cm-1',
+                                    conditions={'path_length':1, # cm
+                                                'thermal_equilibrium':True,
+                                                'Tgas':700,  # K
+                                                })
             s.update('transmittance_noslit')
+            s.update('emisscoeff')
 
         See Also
         --------
@@ -1801,7 +1818,7 @@ class Spectrum(object):
 
         Parameters
         ----------
-        var: variable (`absorbance`, `transmittance`, `transmittance_noslit`, etc.)
+        var: variable (`absorbance`, `transmittance`, `transmittance_noslit`, `xsection`, etc.)
             For full list see :py:meth:`~radis.spectrum.spectrum.Spectrum.get_vars()`.
             If ``None``, plot the first thing in the Spectrum. Default ``None``.
         wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``,
@@ -1997,9 +2014,7 @@ class Spectrum(object):
         plt.ticklabel_format(useOffset=False, axis="x")
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
-
         plt.yscale(yscale)
-
         if "label" in kwargs:
             plt.legend()
         fix_style()
@@ -2022,6 +2037,7 @@ class Spectrum(object):
 
         if show:
             plt.show()
+
         return line
 
     def get_populations(self, molecule=None, isotope=None, electronic_state=None):
@@ -3858,7 +3874,7 @@ class Spectrum(object):
     def cite(self, format="bibentry"):
         """Prints bibliographic references used to compute this spectrum, as
         stored in the :py:attr:`~radis.spectrum.spectrum.Spectrum.references`
-        dictionary.
+        dictionary. Default references known to RADIS are listed in :py:data:`radis.db.references.doi`.
 
         Parameters
         ----------
@@ -4006,7 +4022,8 @@ class Spectrum(object):
 
         See Also
         --------
-        :py:class:`~radis.tools.track_ref.RefTracker`
+        :py:class:`~radis.tools.track_ref.RefTracker`,
+        :py:data:`~radis.db.references.doi`
 
         """
 
@@ -4164,7 +4181,7 @@ class Spectrum(object):
         Parameters
         ----------
         var : str
-            spectral quantity
+            spectral quantity (``'absorbance'``, ``'transmittance'``, ``'xsection'`` etc.)
 
         Returns
         -------
@@ -4173,8 +4190,7 @@ class Spectrum(object):
 
         Examples
         --------
-
-        Use it to chain other commands ::
+        Use ``take`` to chain other commands ::
 
             s.take('radiance').normalize().plot()
 
@@ -4457,11 +4473,11 @@ class Spectrum(object):
                     calc_hwhm                        0.007s
                     generate_wavenumber_arrays       0.001s
                     calc_line_broadening             0.074s ██████
-                        precompute_DLM_lineshapes        0.012s
-                        DLM_Initialized_vectors          0.000s
-                        DLM_closest_matching_line        0.001s
-                        DLM_Distribute_lines             0.001s
-                        DLM_convolve                     0.060s █████
+                        precompute_LDM_lineshapes        0.012s
+                        LDM_Initialized_vectors          0.000s
+                        LDM_closest_matching_line        0.001s
+                        LDM_Distribute_lines             0.001s
+                        LDM_convolve                     0.060s █████
                         others                           0.001s
                     calc_other_spectral_quan         0.003s
                     generate_spectrum_obj            0.000s

@@ -477,6 +477,10 @@ try:
 except (ModuleNotFoundError):
     add_at = numpy_add_at
     #  or use radis.misc.utils.NotInstalled() ?
+# EP: Also got (after switching back to former Cython version) :
+#     File "radis\cython\radis_cython_extensions.pyx", line 1, in init radis_cython_extensions
+#     ValueError: numpy.ndarray size changed, may indicate binary incompatibility. Expected 88 from C header, got 80 from PyObject
+# we may consider escaping this.
 else:
     add_at = rcx.add_at
 
@@ -490,10 +494,10 @@ else:
 #     """
 #     # # Cleaner version, but about 2x slower on real-life test cases:
 #     # #
-#     # %timeit non_zero_values_around(DLM[:, l, m], truncation)
+#     # %timeit non_zero_values_around(LDM[:, l, m], truncation)
 #     # 2.92 ms ± 99.3 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
 
-#     # %timeit non_zero_values_around2(DLM[:, l, m], truncation)
+#     # %timeit non_zero_values_around2(LDM[:, l, m], truncation)
 #     # 5.11 ms ± 110 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
 #     # --------------
 
@@ -687,8 +691,13 @@ def boolean_array_from_ranges(ranges, n):
 )
 def sparse_add_at(ki0, Iv0, Iv1, weight, max_range, truncation_pts):
     """Returns (start, stop) of non-zero ranges, and intensity ``I`` (length
-    ``truncation_pts``) for all lines ``Iv0`` and ``Iv1`` summed at ``ki0``
-    and ``ki0+1`` with weights ``weight``"""
+    ``truncation_pts``) for all line intensities ``Iv0`` and ``Iv1`` at position ``ki0``
+    and ``ki0+1`` with weights ``weight``
+
+    .. warning::
+        ``ki0`` must be sorted.
+    """
+    assert is_sorted(ki0)
     I = np.zeros(max_range)
     L = [
         (0, 0) for k in range(0)
@@ -708,15 +717,15 @@ def sparse_add_at(ki0, Iv0, Iv1, weight, max_range, truncation_pts):
         if pos > end:
             # close the previous range:
             L.append((start, end))
-            # reopen new range :
+            # reopen new range as `[pos-n, pos+n]`:
             start = max(pos - n, 0)
             end = min(
-                pos + 1 + n, max_range
-            )  # TODO: check if not +2 because line is added on ki0 and ki1 ()
+                pos + 2 + n, max_range
+            )  # TODO:  +2 because line is added on ki0 and ki0+1
         else:
             # we're in the middle of a range:
             # keep the start, move the end
-            end = min(pos + 1 + n, max_range)
+            end = min(pos + 2 + n, max_range)
 
         # Sum intensity  (equivalent of "add-at")
         I[pos] += Iv0[i] * weight[i]

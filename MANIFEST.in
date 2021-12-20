@@ -1,6 +1,8 @@
 include README.rst
 include LICENSE
 include radis/__version__.txt
+include radis/lbl/gpu.cpp
+include radis/lbl/gpu.h
 include radis/phys/units.txt
 include radis/test/files/*.txt
 include radis/test/files/*.spec

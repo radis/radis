@@ -1092,12 +1092,28 @@ class SpecList(object):
                 return s
 
             db.map(add_condition)
+
+        .. note::
+
+            spectra are not changed on disk. If you want to update on disk
+            you may want to combine map() followed by :py:meth:`~radis.tools.database.SpecDatabase.compress_to`
+
+        Example ::
+
+            # See length of all spectra :
+
+            db.map(lambda s: print(len(s)))
+
+
+            # Resample all on spectrum of minimum wstep
+            s_wstep_min = db.get(wstep=float(db.see("wstep").min()))[0]
+
+            db.map(lambda s: s.resample(s_wstep_min))
+
+            # Export to a new database:
+            db.compress_to(db.path+'_interp')
+
         """
-
-        # TODO: If ``function``
-        # returns a :class:`~radis.spectrum.spectrum.Spectrum` object then the
-        # database is updated.
-
         for s in self:
             function(s)
 
@@ -1204,6 +1220,7 @@ class SpecList(object):
         --------
         :meth:`~radis.tools.database.SpecList.get_unique`,
         :meth:`~radis.tools.database.SpecList.get_closest`,
+        ;py:meth:`~radis.tools.database.SpecDatabase.interpolate`,
         :meth:`~radis.tools.database.SpecList.items`
         """
 
@@ -1321,7 +1338,8 @@ class SpecList(object):
         See Also
         --------
         :py:meth:`~radis.tools.database.SpecList.get`,
-        :py:meth:`~radis.tools.database.SpecList.get_closest`
+        :py:meth:`~radis.tools.database.SpecList.get_closest`,
+        ;py:meth:`~radis.tools.database.SpecDatabase.interpolate`
         """
 
         out = self.get(conditions, scale_if_possible=scale_if_possible, **kwconditions)
@@ -1338,7 +1356,7 @@ class SpecList(object):
                 if prevVerbose is not None:
                     kwconditions["verbose"] = prevVerbose
                 raise ValueError(
-                    "Spectrum not found. See closest above. Use get_closest()"
+                    "Spectrum not found. See closest above. Use db.get_closest(). You could also try db.interpolate()"
                 )
         elif len(out) > 1:
             raise ValueError(
@@ -1376,7 +1394,8 @@ class SpecList(object):
         See Also
         --------
         :meth:`~radis.tools.database.SpecList.get`,
-        :meth:`~radis.tools.database.SpecList.get_unique`
+        :meth:`~radis.tools.database.SpecList.get_unique`,
+        ;py:meth:`~radis.tools.database.SpecDatabase.interpolate`
         """
         #        split_columns: list of str.
         #            slits a comma separated column in multiple columns, and number them.
@@ -1533,10 +1552,17 @@ class SpecList(object):
         out: dict
             {condition:Spectrum}
 
+        Examples
+        --------
+        ::
+
+            db.get_items("Tgas")
+
         See Also
         --------
         :meth:`~radis.tools.database.SpecList.to_dict`,
-        :meth:`~radis.tools.database.SpecList.get`
+        :meth:`~radis.tools.database.SpecList.get`,
+        :py:meth:`~radis.tools.database.SpecList.create_fname_grid`
         """
 
         if not self.df[condition].is_unique:
@@ -1547,6 +1573,30 @@ class SpecList(object):
             )
 
         return dict(zip(self.df[condition], self.df.Spectrum))
+
+    def create_fname_grid(self, conditions):
+        """Create a 2D-grid of filenames for the list of parameters ``conditions``
+
+        Examples
+        --------
+        ::
+
+            db.create_fname_grid(["Tgas", "pressure_mbar"])
+
+        See Also
+        --------
+        :py:meth:`~radis.tools.database.SpecList.get_items`
+
+        """
+
+        gridsize = [len(self.df[cond].unique()) for cond in conditions]
+
+        return (
+            self.see(conditions)
+            .reset_index()
+            .set_index(conditions)
+            .values.reshape(gridsize)
+        )
 
     def __iter__(self):
         """Iterate over all Spectra in database.
@@ -1710,10 +1760,13 @@ class SpecList(object):
 
         import matplotlib.pyplot as plt
 
+        from radis.misc.plot import fix_style, set_style
+
         x = self.df[cond_x]
         y = self.df[cond_y]
 
         # Default
+        set_style()
         fig = plt.figure(num=nfig)
         ax = fig.gca()
         ax.plot(x, y, "ok")
@@ -1757,10 +1810,9 @@ class SpecList(object):
             )
             # lbls = plt.clabel(cs0, inline=1, fontsize=16,fmt='%.0fK',colors='k',manual=False)     # show labels
 
-            # %%
-
         plt.title(title)
         plt.tight_layout()
+        fix_style()
 
     def __len__(self):
         return len(self.df)
@@ -2038,7 +2090,7 @@ class SpecDatabase(SpecList):
         # Print index
         self.print_index()
 
-    def compress_to(self, new_folder, compress=True):
+    def compress_to(self, new_folder, compress=True, if_exists_then="error"):
         """Saves the Database in a new folder with all Spectrum objects under
         compressed (binary) format. Read/write is much faster. After the
         operation, a new database should be initialized in the new_folder to
@@ -2052,6 +2104,11 @@ class SpecDatabase(SpecList):
         compress: boolean, or 2
             if ``True``, saves under binary format. Faster and takes less space.
             If ``2``, additionaly remove all redundant quantities.
+        if_exists_then: ``'increment'``, ``'replace'``, ``'error'``, ``'ignore'``
+            what to do if file already exists. If ``'increment'`` an incremental digit
+            is added. If ``'replace'`` file is replaced (!). If ``'ignore'`` the
+            Spectrum is not added to the database and no file is created.
+            If ``'error'`` (or anything else) an error is raised. Default ``'error'``.
 
         See Also
         --------
@@ -2066,7 +2123,9 @@ class SpecDatabase(SpecList):
             os.makedirs(new_folder)
 
         for file, s in self.items():  # loop over all spectra
-            s.store(join(new_folder, file), compress=compress)
+            s.store(
+                join(new_folder, file), compress=compress, if_exists_then=if_exists_then
+            )
 
         if self.verbose:
             print("Database compressed to {0}".format(new_folder))
@@ -2289,6 +2348,70 @@ class SpecDatabase(SpecList):
         self.print_index()
 
         return file
+
+    def interpolate(self, **kwconditions):
+        """Interpolate existing spectra from the database to generate a new spectrum with conditions kwargs
+
+        Examples
+        --------
+        ::
+
+            db.interpolate(Tgas=300, mole_fraction=0.3)
+
+        """
+
+        # Not interpolated conditions :
+        not_interpolated_conditions = [
+            c for c in self.conditions() if c not in kwconditions
+        ]
+        not_interpolated_conditions = [
+            c
+            for c in not_interpolated_conditions
+            if c not in ["file", "last_modified", "name"]
+        ]
+        df = self.see(columns=not_interpolated_conditions)
+
+        # assert df values are unique :
+        for c in df.columns:
+            if df[c].nunique() > 1:
+                raise ValueError(
+                    f"Spectra in database {self.name} have different values for `{c}`. All conditions except from the one we are interpolating on should be the same"
+                )
+                # TODO : implement a way to get a subset of a SpecDatabase, so we can do something like db.take(molecule='C2').interpolate(... )
+
+        if len(kwconditions) > 1:
+            raise NotImplementedError(
+                "Interpolation of multiple conditions is not implemented yet"
+            )
+
+        cond = list(kwconditions.keys())[0]
+        val = kwconditions[cond]
+
+        cond_list = self.see(columns=[cond]).values[:, 0]
+        b = np.argsort(cond_list)
+
+        cond_list = cond_list[b]
+        spectra = (self.see().index.values)[b]
+
+        # Interpolate val over cond_list
+        pos = np.interp(val, cond_list, np.arange(cond_list.size))
+        index = pos.astype(int)
+        weight = pos - index
+
+        s_left = self.get_unique(file=spectra[index])
+        s_right = self.get_unique(file=spectra[index + 1])
+
+        # linear algebra on spectra directly :
+        s_interp = (1 - weight) * s_left + weight * s_right
+        # TODO : Will raise an error if multiple values in database. In this
+        # case, use s_left.take(var)   with 'var' given in parameters of interpolate()
+        # Or tell user to generate a subdatabase with only one spectral array
+
+        s_interp.conditions[
+            "interpolated_from"
+        ] = f"{spectra[index]}, {spectra[index+1]}"
+
+        return s_interp
 
     def fit_spectrum(
         self,

@@ -21,7 +21,8 @@
     "GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD": 3,    # raise a warning if less than THIS number of grid points per lineshape
     "GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD": 1,   # raise an error if less than THIS number of grid points per lineshape
     "MEMORY_MAPPING_ENGINE": "auto",         # "vaex"/"pytables"/"feather". "auto" uses "vaex" in most cases unless you're using the Spyder IDE (where it may result in freezes). see https://github.com/spyder-ide/spyder/issues/16183.
-    "SPARSE_WAVERANGE": "auto",              # true/false. sparse DLM algorithm. May be smaller on dense spectra. If "auto", a scarcity criterion is used (Nlines/Ngrids > 1)
+    "SPARSE_WAVERANGE": "auto",              # true/false. sparse LDM algorithm. May be smaller on dense spectra. If "auto", a scarcity criterion is used (Nlines/Ngrids > 1)
+    "DEFAULT_DOWNLOAD_PATH": "~/.radisdb",   # default path for downloading databases with databank='hitran'/'hitemp'/'exomol' . You can also specify a local path for each entry of the "database" list.
 
     # molecular parameters
     # --------------------

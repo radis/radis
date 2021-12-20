@@ -37,7 +37,7 @@ Quick Start
 ===========
 
 
-Calculate a CO equilibrium spectrum from the [HITRAN-2016]_ database, using the
+Calculate a CO equilibrium spectrum from the [HITRAN-2020]_ database, using the
 :py:func:`~radis.lbl.calc.calc_spectrum` function. Lines are downloaded automatically
 using Astroquery (based on [HAPI]_). Output is a
 :ref:`Spectrum object <label_spectrum>`: ::
@@ -102,7 +102,7 @@ More examples
 .. minigallery:: radis.Spectrum
 
 
-The Quick Start examples automatically downloaded the line databases from [HITRAN-2016]_, which is valid for temperatures below 700 K.
+The Quick Start examples automatically downloaded the line databases from [HITRAN-2020]_, which is valid for temperatures below 700 K.
 For *high temperature* cases, you may need to use :ref:`other line databases <label_line_databases>` such as
 [HITEMP-2010]_ (typically T < 2000 K) or [CDSD-4000]_ (T < 5000 K). These databases must be described in a ``~/radis.json``
 :ref:`Configuration file <label_lbl_config_file>`.

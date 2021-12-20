@@ -24,7 +24,7 @@ dependencies:
 - seaborn   # other matplotlib themes
 - termcolor  # terminal colors
 - specutils
-- vaex>=4.4.0   # load HDF5 files  (version for custom HDF5 groups)
+- vaex>=4.6.0   # load HDF5 files  (version for custom HDF5 groups + avoids asyncio https://github.com/vaexio/vaex/pull/1546). #TODO : install only required sub-packages
 - pip
 - pip:
   - beautifulsoup4 # parse ExoMol website

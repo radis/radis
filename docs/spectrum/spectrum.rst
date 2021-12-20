@@ -255,6 +255,7 @@ is sometimes confusingly called *spectral intensity*.
 - ``'abscoeff'``: spectral absorption coefficient (typically in :math:``'cm^{-1}'``), also called *opacity*.
   This is sometimes found as the *extinction coefficient* in the literature (strictly speaking, *extinction*
   is *absorption* + *diffusion*, the latter being negligible in the infrared).
+- ``'xsection'``: absorption cross-section, typically in cm2
 
 Additionally, RADIS may calculate extra quantities such as:
 

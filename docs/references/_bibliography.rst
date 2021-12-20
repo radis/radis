@@ -42,6 +42,20 @@ Reference of supported line databases:
                  The HITRAN2016 Molecular Spectroscopic Database, Journal of Quantitative Spectroscopy and Radiative
                  Transfer 6 (38) (2017) 3–69, ISSN 00224073, `doi:10.1016/j.jqsrt.2017.06.038 <https://www.sciencedirect.com/science/article/pii/S0022407317301073>`__.
 
+.. [HITRAN-2020] I.E. Gordon, L.S. Rothman, R.J. Hargreaves, R. Hashemi, E.V. Karlovets, F.M. Skinner, E.K. Conway,
+                 C. Hill, R.V. Kochanov, Y. Tan, P. Wcis{\\l}o, A.A. Finenko, K. Nelson, P.F. Bernath, M. Birk, V. Boudon,
+                 A. Campargue, K.V. Chance, A. Coustenis, B.J. Drouin, J.{\textendash}M. Flaud, R.R. Gamache, J.T. Hodges,
+                 D. Jacquemart, E.J. Mlawer, A.V. Nikitin, V.I. Perevalov, M. Rotger, J. Tennyson, G.C. Toon, H. Tran, V.G. Tyuterev,
+                 E.M. Adkins, A. Baker, A. Barbe, E. Canè, A.G. Cs{'{a}}sz{'{a}}r, A. Dudaryonok, O. Egorov, A.J. Fleisher,
+                 H. Fleurbaey, A. Foltynowicz, T. Furtenbacher, J.J. Harrison, J.{\textendash}M. Hartmann, V.M. Horneman,
+                 X. Huang, T. Karman, J. Karns, S. Kassi, I. Kleiner, V. Kofman, F. KwabiaTchana, N.N. Lavrentieva, T.J. Lee,
+                 D.A. Long, A.A. Lukashevskaya, O.M. Lyulin, V.Yu. Makhnev, W. Matt, S.T. Massie, M. Melosso, S.N. Mikhailenko,
+                 D. Mondelain, H.S.P. Müller, O.V. Naumenko, A. Perrin, O.L. Polyansky, E. Raddaoui, P.L. Raston, Z.D. Reed,
+                 M. Rey, C. Richard, R. T{'{o}}bi{'{a}}s, I. Sadiek, D.W. Schwenke, E. Starikova, K. Sung, F. Tamassia, S.A. Tashkun,
+                 J. Vander Auwera, I.A. Vasilenko, A.A. Vigasin, G.L. Villanueva, B. Vispoel, G. Wagner, A. Yachmenev, S.N. Yurchenko
+                 The HITRAN2020 molecular spectroscopic database, Journal of Quantitative Spectroscopy and Radiative
+                 Transfer (277) (2022), `doi:10.1016/j.jqsrt.2021.107949 <https://doi.org/10.1016%2Fj.jqsrt.2021.107949>`__.
+
 The latest HITRAN database version is automatically downloaded if using ``databank='hitran'``.
 
 .. [HITEMP-2010] L. S. Rothman, I. E. Gordon, R. J. Barber, H. Dothe, R. R. Gamache, A. Goldman, V. I. Perevalov,

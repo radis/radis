@@ -137,7 +137,7 @@ from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatfo
 
 
 def show_message(*lines):
-    """ Note : will only happen if user installs with `pip install -v` """
+    """Note : will only happen if user installs with `pip install -v`"""
     print("=" * 74, file=sys.stderr)
     for line in lines:
         print(line, file=sys.stderr)
@@ -146,8 +146,8 @@ def show_message(*lines):
 
 def get_ext_modules(with_binaries):
     """
-    Parameter
-    ---------
+    Parameters
+    ----------
     with_binaries: bool
         if False, do not try to build Cython extensions
     """
@@ -203,10 +203,14 @@ def get_ext_modules(with_binaries):
     ext_modules.append(
         Extension(
             "radis_cython_extensions",
-            sources=["./radis/cython/radis_cython_extensions.pyx"],
+            sources=[
+                "./radis/cython/radis_cython_extensions.pyx",
+                "./radis/lbl/gpu.cpp",
+            ],
             include_dirs=[get_include()],
             language="c++",
             extra_link_args=[],
+            define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
         )
     )
 
@@ -254,6 +258,7 @@ def run_setup(with_binary):
             "habanero",  # CrossRef API to retrieve data from doi
             "h5py",  # HDF5
             "hjson",
+            "ipython>=7.0.0",
             "joblib",  # for parallel loading of SpecDatabase
             "json-tricks>=3.15.0",  # to deal with non jsonable formats
             "pandas>=1.0.5",
@@ -272,7 +277,7 @@ def run_setup(with_binary):
             "seaborn",  # other matplotlib themes
             "scipy>=1.4.0",
             "tuna",  # to generate visual/interactive performance profiles
-            "vaex>=4.4.0",  # load HDF5 files  (version for custom HDF5 groups)
+            "vaex>=4.6.0",  # load HDF5 files  (version for custom HDF5 groups + avoids asyncio https://github.com/vaexio/vaex/pull/1546). #TODO : install only required sub-packages
         ],
         extras_require={
             "dev": [

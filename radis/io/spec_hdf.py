@@ -13,7 +13,7 @@ except ImportError:
 
 
 def spec2hdf(s, file, engine="pytables"):
-    """ Convert Spectrum s to HDF5 file"""
+    """Convert Spectrum s to HDF5 file"""
 
     df_arrays = s.to_pandas(copy=False)
 
@@ -44,7 +44,7 @@ def spec2hdf(s, file, engine="pytables"):
 
 
 def hdf2spec(file, wmin=None, wmax=None, wunit=None, columns=None, engine="pytables"):
-    """ Read HDF5 file into a Spectrum object"""
+    """Read HDF5 file into a Spectrum object"""
     from radis import Spectrum
 
     mgr = HDF5Manager(engine=engine)
