@@ -1188,7 +1188,11 @@ class HITRANDatabaseManager(DatabaseManager):
             )  # create temporary files if required
 
         # Open all HDF5 cache files and export in a single file with Vaex
-        writer.combine_temp_batch_files(local_file)  # used for vaex mode only
+        writer.combine_temp_batch_files(
+            local_file, sort_values="wav"
+        )  # used for vaex mode only
+        # Note: by construction, in Pytables mode the database is not sorted
+        # by 'wav' but by isotope
 
         self.wmin = wmin_final
         self.wmax = wmax_final

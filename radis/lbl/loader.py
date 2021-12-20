@@ -1372,6 +1372,9 @@ class DatabankLoader(object):
                 + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
             )
 
+        # Always sort line database by wavenumber (required to SPARSE_WAVERANGE mode)
+        df.sort_values("wav", ignore_index=True, inplace=True)
+
         # Post-processing of the line database
         # (note : this is now done in 'fetch_hitemp' before saving to the disk)
         # spectroscopic quantum numbers will be needed for nonequilibrium calculations, and line survey.

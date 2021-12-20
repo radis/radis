@@ -1955,6 +1955,9 @@ class BaseFactory(DatabankLoader):
             )
             df["shiftwav"] = df.wav
 
+        # Sorted lines is needed for sparse wavenumber range algorithm.
+        df.sort_values("shiftwav", inplace=True)
+
         self.profiler.stop("calc_lineshift", "Calculated lineshift")
 
         return
