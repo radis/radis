@@ -97,7 +97,7 @@ Refer to the `Examples <https://radis.readthedocs.io/en/latest/examples/examples
 GPU Acceleration
 ----------------
 
-RADIS supports GPU acceleration for super-fast computation of spectra:
+RADIS supports GPU acceleration for super-fast computation of spectra::
 
     from radis import SpectrumFactory
     from radis.tools.plot_tools import ParamRange
@@ -125,8 +125,7 @@ RADIS supports GPU acceleration for super-fast computation of spectra:
 
 .. image:: https://raw.githubusercontent.com/dcmvdbekerom/radis/gpu_widget_new_branch/docs/examples/GPU_spectrum.png
 
-Refer to :ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>` for more details on GPU acceleration.
----------------------------------------------------------------------
+Refer to `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/lbl.html#calculating-spectrum-using-gpu>`__ for more details on GPU acceleration.
 
 =======================================
 🌱 Try online (no installation needed!)
