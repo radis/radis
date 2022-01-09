@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 """
+===============================================
+Real-time GPU Accelerated Spectra (Interactive)
+===============================================
+
 Example using GPU sliders and GPU calculation with :py:meth:`~radis.lbl.SpectrumFactory.eq_spectrum_gpu`
 
 .. note::
