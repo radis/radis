@@ -94,7 +94,7 @@ def cast_to_int64_with_missing_values(dg, keys):
     """replace missing values of int64 columns with -1"""
     for c in keys:
         if dg.dtypes[c] != int64:
-            dg.loc[dg[c] == "  "] = -1  # replace empty cells by -1, e.g. HCN
+            dg.loc[dg[c] == "  ", c] = -1  # replace empty cells by -1, e.g. HCN
             dg[c] = dg[c].fillna(-1).astype(int64)
 
 
