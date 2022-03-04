@@ -2140,6 +2140,9 @@ def rescale_path_length(
 
         To deal with all the input cases, we first make a list of what has to
         be recomputed, and what has to be recalculated
+
+    .. minigallery:: radis.Spectrum.rescale_path_length
+
     """
 
     if not inplace:
@@ -2251,6 +2254,9 @@ def rescale_mole_fraction(
         similar to rescale_path_length() but we have to scale abscoeff & emisscoeff
         Note that this is valid only for small changes in mole fractions. Then,
         the change in line broadening becomes significant
+
+    .. minigallery:: radis.Spectrum.rescale_mole_fraction
+
     """
 
     if not inplace:

@@ -212,7 +212,7 @@ def calc_spectrum(
         function are not already tabulated. ``'full summation'`` : sums over all
         (potentially millions) of rovibrational levels. ``'tabulation'`` :
         builds an on-the-fly tabulation of rovibrational levels (500 - 4000x faster
-        and usually accurate within 0.1%). Default ``full summation'``
+        and usually accurate within 0.1%). Default ``'full summation'``
 
         .. note::
             parsum_mode= 'tabulation'  is new in 0.9.30, and makes nonequilibrium
@@ -340,14 +340,14 @@ def calc_spectrum(
     For more details on how to use the GPU method and process the database, refer to the examples
     linked above and the documentation on :ref:`GPU support for RADIS <label_radis_gpu>`.
     ​
-    .. minigallery:: radis.lbl.calc.calc_spectrum
-        :add-heading:
+    .. minigallery:: radis.calc_spectrum
 
     References
     ----------
     **cite**: RADIS is built on the shoulders of many state-of-the-art packages and databases. If using RADIS
     to compute spectra, make sure you cite all of them, for proper reproducibility and acknowledgement of
-    the work ! See :ref:`How to cite? <label_cite>`
+    the work ! See :ref:`How to cite? <label_cite>` and the :py:meth:`~radis.spectrum.spectrum.Spectrum.cite`
+    method.
 
     See Also
     --------

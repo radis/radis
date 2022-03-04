@@ -1962,7 +1962,7 @@ class BroadenFactory(BaseFactory):
                 ::
                     LDM_ranges_00 = get_non_zero_wranges(groupby_parameters=["li0", "mi0"], max_range=len(wavenumber_calc))
                 """
-                # EP 31/10: the for loop over df.groupby is the current bottleneck
+                # EP 31/10/21: the for loop over df.groupby is the current bottleneck
                 # (not even the sparse_add_at function !)
                 dgb = df.groupby(groupby_parameters, sort=False)
                 LDM_ranges = {}
