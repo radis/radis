@@ -551,11 +551,10 @@ class SpectrumFactory(BandFactory):
         if broadening_method == "fft":
             if isinstance(truncation, Default):
                 truncation = None
-            else:
-                if broadening_method == "fft":
-                    raise NotImplementedError(
-                        "Lines cannot be truncated with `broadening_method='fft'`. Use `broadening_method='voigt'`"
-                    )
+            elif truncation is not None and broadening_method == "fft":
+                raise NotImplementedError(
+                    "Lines cannot be truncated with `broadening_method='fft'`. Use `broadening_method='voigt'`"
+                )
         if isinstance(truncation, Default):
             truncation = truncation.value
 
