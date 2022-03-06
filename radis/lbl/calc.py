@@ -52,7 +52,7 @@ def calc_spectrum(
     neighbour_lines=0,
     cutoff=1e-27,
     parsum_mode="full summation",
-    optimization="min-RMS",
+    optimization="simple",
     broadening_method="voigt",
     overpopulation=None,
     name=None,
@@ -227,7 +227,7 @@ def calc_spectrum(
         If using the LDM optimization, broadening method is automatically set to ``'fft'``.
         If ``None``, no lineshape interpolation is performed and the lineshape of all lines is calculated.
         Refer to [Spectral-Synthesis-Algorithm]_ for more explanation on the LDM method for lineshape interpolation.
-        Default ``"min-RMS"``.
+        Default ``"simple"``.
     overpopulation: dict
         dictionary of overpopulation compared to the given vibrational temperature.
         Default ``None``. Example::
