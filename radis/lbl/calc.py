@@ -146,7 +146,7 @@ def calc_spectrum(
           through :py:func:`~radis.io.hitemp.fetch_hitemp`. Downloads all lines
           and all isotopes.
         - ``'exomol'``, to fetch the latest ExoMol database
-          through :py:func:`~radis.io.hitemp.fetch_exomol`. To download a specific
+          through :py:func:`~radis.io.exomol.fetch_exomol`. To download a specific
           database use (more info in fetch_exomol) ::
 
             databank=('exomol', 'EBJT')   # 'EBJT' is a specific ExoMol database name
@@ -178,11 +178,11 @@ def calc_spectrum(
     ----------------
     medium: ``'air'``, ``'vacuum'``
         propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``.
-        Does not change anything when giving inputs in wavenumber. Default ``'air'``​ .
+        Does not change anything when giving inputs in wavenumber. Default ``'air'``​
     wstep: float (:math:`cm^{-1}`)  or `'auto'`
         Resolution of wavenumber grid. Default ``0.01`` cm-1.
         If `'auto'`, it is ensured that there
-        are slightly more or less than :py:data:`~radis.params.GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD`
+        are slightly more or less than :py:data:`radis.config` ``['GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD']``
         points for each linewidth.
 
         .. note::

@@ -44,7 +44,7 @@ def test_progress_bar(*args, **kwargs):
     print("Testing progress bar")
 
     a = 0
-    r = list(range(1000))
+    r = list(range(200))
     N = len(r)
     pb = ProgressBar(N)
     for i in r:
