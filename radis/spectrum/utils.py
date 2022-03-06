@@ -110,6 +110,14 @@ INFORMATIVE_PARAMS = [
     "load_energies",
     "export_lines",
     "export_populations",
+    # parameters added to reduce default verbose :
+    "levelsfmt",
+    "wavenum_max_calc",
+    "wavenum_min_calc",
+    "dxG",  # TODO : keep it a Computational parameter, but of verbose-level 2 so it's not shown by default
+    "dxL",
+    "export_rovib_fraction",
+    "parfuncpath",
 ]
 """ list: Informative parameters. Parameters that should be saved in the Spectrum
 objects, but ignored when comparing two spectra. Should be written here only
@@ -268,26 +276,27 @@ def print_conditions(
     phys_param_list=PHYSICAL_PARAMS,
     info_param_list=INFORMATIVE_PARAMS,
     config_param_list=CONFIG_PARAMS,
+    verbose=2,
 ):
     """Print all Spectrum calculation parameters.
 
     Parameters
     ----------
-
     phys_param_list: list
         These parameters are shown below "Physical Conditions" rather than "Computation
         Parameters. See :data:`~radis.spectrum.utils.PHYSICAL_PARAMS` for more
         information.
-
     info_param_list: list
         These parameters are shown below "Information" rather than "Computation
         Parameters. See :data:`~radis.spectrum.utils.INFORMATIVE_PARAMS` for more
         information.
-
     config_param_list: list
         These parameters are read from radis.config file. See
         :data:`~radis.spectrum.utils.CONFIG_PARAMS` for more
         information.
+    verbose: int
+        if ``1`` or ``True``, only physical and computational parameters are shown. If ``2``,
+        all parameters (including config & informative) are shown. Default ``2``.
 
     See Also
     --------
@@ -344,6 +353,9 @@ def print_conditions(
         lambda x: x in config_param_list, non_phys_param
     )
 
+    # TODO : add verbose level so that Trot, Tvib are not shown if equilibrium
+    # and verbose<2 . Same for rot_distriubtion; vib_distriubtion
+
     print("Physical Conditions")
     print("-" * 40)
     for k in sorted(phys_param):
@@ -354,28 +366,31 @@ def print_conditions(
     for k in sorted(non_phys_param):
         print_param(k)
 
-    print("Config parameters")
-    print("-" * 40)
-    for k in sorted(config_param):
-        print_param(k)
-
-    if len(info_param) > 0:
-        print("Information")
+    if verbose >= 2:
+        print("Config parameters")
         print("-" * 40)
-        for k in sorted(info_param):
+        for k in sorted(config_param):
             print_param(k)
 
+        if len(info_param) > 0:
+            print("Information")
+            print("-" * 40)
+            for k in sorted(info_param):
+                print_param(k)
+
     print("-" * 40)
 
-    # print gas_inp (information on each gas slab) if exists (specifically
-    # for Specair output)
-    if "gas_inp" in conditions:
-        try:
-            for slab in conditions["gas_inp"]:
-                print("Slab", slab)
-                slab.print_conditions()
-        except:
-            pass
+    if verbose >= 2:
+
+        # print gas_inp (information on each gas slab) if exists (specifically
+        # for Specair output)
+        if "gas_inp" in conditions:
+            try:
+                for slab in conditions["gas_inp"]:
+                    print("Slab", slab)
+                    slab.print_conditions()
+            except:
+                pass
 
     return None
 
