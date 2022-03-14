@@ -3,7 +3,7 @@ python:
   # We don't actually use the Travis Python, but this keeps it organized.
   #- "2.7"    # not tested anymore starting from 0.9.19
   - "3.8"
-os: linux
+# os: linux
 
 stages:
   - name: test
@@ -15,46 +15,60 @@ stages:
   - name: deploy
     if: branch = master
 
+#, we can use references and anchors to gracefully compose our stages
+_test: &_test
+  stage: test
+  language: generic
+  name: Test and Coverage
+  before_install:
+    - |
+      if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+        choco install python3;
+        export PATH="/c/Python37:/c/Python37/Scripts:$PATH";
+
+  install:
+    # Install Anaconda
+    # We do this conditionally because it saves us some downloading if the
+    # version is the same.
+    - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+    - bash miniconda.sh -b -p $HOME/miniconda
+    - export PATH="$HOME/miniconda/bin:$PATH"
+    - hash -r
+    - conda config --set always_yes yes --set changeps1 no
+    - conda update -q conda
+    # Useful for debugging any issues with conda
+    - conda info -a
+
+    # Update python version in environment
+    - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
+    # Create conda environment
+    - conda env create -n radis-env -f environment.yml
+    # Activate and install test-only dependencies
+    - source activate radis-env
+    - conda list
+    - pip install pytest-cov
+    - pip install -e . -v
+  script:
+    # Your test script goes here
+    - echo ">>> Run tests"
+    # use XVFB to have headless display port, and still run the Matplotlib tests.
+    - xvfb-run pytest --cov=./
+    # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
+
+  after_success:
+    # codecoverage
+    - pip install codecov
+    - codecov
+
 jobs:
   include:
-    - stage: test
-      name: Test and Coverage
-      install:
-        # Install Anaconda
-        # We do this conditionally because it saves us some downloading if the
-        # version is the same.
-        - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-        - bash miniconda.sh -b -p $HOME/miniconda
-        - export PATH="$HOME/miniconda/bin:$PATH"
-        - hash -r
-        - conda config --set always_yes yes --set changeps1 no
-        - conda update -q conda
-        # Useful for debugging any issues with conda
-        - conda info -a
-
-        # Update python version in environment
-        - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
-        # Create conda environment
-        - conda env create -n radis-env -f environment.yml
-        # Activate and install test-only dependencies
-        - source activate radis-env
-        - conda list
-        - pip install pytest-cov
-        - pip install -e . -v
-
-      script:
-        # Your test script goes here
-        - echo ">>> Run tests"
-        # use XVFB to have headless display port, and still run the Matplotlib tests.
-        - xvfb-run pytest --cov=./
-        # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
-
-      after_success:
-        # codecoverage
-        - pip install codecov
-        - codecov
+    - <<: *_test
+      os: windows
+    - <<: *_test
+      os: linux
 
     - stage: lint
+      os: linux
       name: Code Quality Checks
       install:
         - pip install pre-commit
@@ -62,6 +76,7 @@ jobs:
         - pre-commit run --all-files
 
     - stage: deploy
+      os: linux
       name: Deploy to PyPI
       install:
         - sudo apt-get update
@@ -71,6 +86,7 @@ jobs:
         - sudo apt-get install pandoc
         - pandoc README.rst -o README.md
       deploy:
+        os: linux
         provider: pypi
         user: "__token__"
         password:
