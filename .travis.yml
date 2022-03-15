@@ -63,8 +63,7 @@ jobs:
       before_install:
         - choco install python --version 3.9.2
         - python --version
-        - python -m pip install --upgrade pip
-        - python -m pip install --upgrade codecov pytest
+
       env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
 
     - <<: *_test
