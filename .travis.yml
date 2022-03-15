@@ -22,7 +22,7 @@ _test: &_test
   name: Test and Coverage
   before_install:
     - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then choco install python3; fi
-    - eif [[ "$TRAVIS_OS_NAME" == "windows" ]]; export PATH="/c/Python37:/c/Python37/Scripts:$PATH"; fi
+    - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; export PATH="/c/Python37:/c/Python37/Scripts:$PATH"; fi
 
   install:
     # Install Anaconda
