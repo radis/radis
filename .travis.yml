@@ -20,9 +20,6 @@ _test: &_test
   stage: test
   # language: generic
   name: Test and Coverage
-  before_install:
-    - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then choco install python3; fi
-    - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; export PATH="/c/Python37:/c/Python37/Scripts:$PATH"; fi
 
   install:
     # Install Anaconda
@@ -63,6 +60,13 @@ jobs:
     - <<: *_test
       os: windows
       language: shell
+      before_install:
+        - choco install python --version 3.9.2
+        - python --version
+        - python -m pip install --upgrade pip
+        - python -m pip install --upgrade codecov pytest
+      env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
+
     - <<: *_test
       os: linux
 
