@@ -20,7 +20,6 @@ _test: &_test
   stage: test
   # language: generic
   name: Test and Coverage
-
   install:
     # Install Anaconda
     # We do this conditionally because it saves us some downloading if the
@@ -37,7 +36,7 @@ _test: &_test
     # Update python version in environment
     - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
     # Create conda environment
-    - conda env create -n radis-env -f environment.yml
+    - conda env create -n py36 radis-env -f environment.yml
     # Activate and install test-only dependencies
     - source activate radis-env
     - conda list
@@ -63,7 +62,7 @@ jobs:
       before_install:
         - choco install python --version 3.9.2
         - python --version
-
+        - choco install runinbash
       env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
 
     - <<: *_test
