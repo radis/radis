@@ -2452,8 +2452,8 @@ class BaseFactory(DatabankLoader):
                 # ... make sure PartitionFunction above is calculated with the same
                 # ... temperatures, rovibrational distributions and overpopulations
                 # ... as the populations of active levels (somewhere below)
-                df.at[idx, "Qvib"] = Qvib
-                df.at[idx, "Q"] = Q
+                df.loc[idx, "Qvib"] = Qvib
+                df.loc[idx, "Q"] = Q
 
                 # reindexing to get a direct access to Qrot database
                 # create the lookup dictionary
