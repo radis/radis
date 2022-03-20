@@ -140,18 +140,19 @@ def setup(app):
 
 # Reference other packages
 intersphinx_mapping = {
-    "joblib": ("https://joblib.readthedocs.io/en/latest/", None),
+    "astropy": ("https://docs.astropy.org/en/stable/", None),
     "astroquery": ("https://astroquery.readthedocs.io/en/latest/", None),
+    "cantera": ("https://www.cantera.org/documentation/docs-2.4/sphinx/html/", None),
+    "fitroom": ("https://fitroom.readthedocs.io/en/latest/", None),
+    "habanero": ("https://habanero.readthedocs.io/en/latest/", None),
+    "joblib": ("https://joblib.readthedocs.io/en/latest/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "matplotlib": ("https://matplotlib.org/", None),
     "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
-    "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
-    "cantera": ("https://www.cantera.org/documentation/docs-2.4/sphinx/html/", None),
     "pytexit": ("https://pytexit.readthedocs.io/en/latest/", None),
-    "astropy": ("https://docs.astropy.org/en/stable/", None),
-    "habanero": ("https://habanero.readthedocs.io/en/latest/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
     "seaborn": ("https://seaborn.pydata.org/", None),
-    "fitroom": ("https://fitroom.readthedocs.io/en/latest/", None),
+    "specutils": ("https://specutils.readthedocs.io/en/stable/", None),
 }
 
 napoleon_google_docstring = False
