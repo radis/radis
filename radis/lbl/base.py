@@ -194,7 +194,7 @@ class BaseFactory(DatabankLoader):
 
         conditions = self.get_conditions()
 
-        return print_conditions(conditions, self.cond_units)
+        return print_conditions(conditions, self.cond_units, verbose=self.verbose)
 
     def get_energy_levels(self, molecule, isotope, state, conditions=None):
         """Return energy levels database for given molecule > isotope > state

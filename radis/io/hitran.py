@@ -1176,9 +1176,6 @@ class HITRANDatabaseManager(DatabaseManager):
                 cache=False,  # do not generate cache yet
                 parse_quanta=parse_quanta,
             )
-            # if engine == 'vaex':
-            #     df.executor.async_method = "awaitio"   # Temp fix for https://github.com/spyder-ide/spyder/issues/16183
-
             wmin_final = min(wmin_final, df.wav.min())
             wmax_final = max(wmax_final, df.wav.max())
             Nlines += len(df)

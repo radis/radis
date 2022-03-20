@@ -1405,7 +1405,7 @@ class Spectrum(object):
             for path in [0.1, 10, 100]:
                 s.rescale_path_length(10, inplace=False).plot(nfig='same')
 
-        .. minigallery:: radis.spectrum.spectrum.Spectrum.rescale_path_length
+        .. minigallery:: radis.Spectrum.rescale_path_length
 
         Notes
         -----
@@ -1468,7 +1468,7 @@ class Spectrum(object):
 
             s.rescale_mole_fraction(0.2)
 
-        .. minigallery:: radis.spectrum.spectrum.Spectrum.rescale_mole_fraction
+        .. minigallery:: radis.Spectrum.rescale_mole_fraction
 
         Notes
         -----
