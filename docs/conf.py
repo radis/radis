@@ -310,6 +310,7 @@ html_sidebars = {
         #'description.html',
         #'example.html',
         "searchbox.html",
+        "buttons.html",
     ]
 }
 
