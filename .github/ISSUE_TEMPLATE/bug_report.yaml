@@ -1,25 +1,113 @@
----
-name: Bug report
-about: Create a bug report to help us improve
-title: ''
-labels: bug
-assignees: ''
+# ---
+# name: Bug report
+# about: Create a bug report to help us improve
+# title: ''
+# labels: bug
+# assignees: ''
 
----
+# ---
 
-### 🐛 Describe the bug
-<!--- A clear and concise description of the bug (or unexpected behavior) -->
+# ### 🐛 Describe the bug
+# <!--- A clear and concise description of the bug (or unexpected behavior) -->
 
-### 🖥 Steps To Reproduce
-<!--- Steps or code snippet to reproduce the behavior.-->
-<!--- Best : use test files so that everyone can run your example : https://radis.readthedocs.io/en/latest/dev/developer.html#test-files -->
+# ### 🖥 Steps To Reproduce
+# <!--- Steps or code snippet to reproduce the behavior.-->
+# <!--- Best : use test files so that everyone can run your example : https://radis.readthedocs.io/en/latest/dev/developer.html#test-files -->
 
-```python
-```
+# ```python
+# ```
 
-### 🎯 Expected behavior
-<!--- A clear and concise description of what you expected to happen. -->
+# ### 🎯 Expected behavior
+# <!--- A clear and concise description of what you expected to happen. -->
 
-### 💡 Possible solutions
-<!--- Not obligatory, but suggest an idea for implementing addition or change -->
+# ### 💡 Possible solutions
+# <!--- Not obligatory, but suggest an idea for implementing addition or change -->
 
+name: "💩Bug Report"
+description: "Create a bug report to help us improve"
+title: "💩 Bug Report: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out our bug report form 
+  - type: textarea
+    id: steps-to-reproduce
+    validations:
+      required: true
+    attributes:
+      label: "🐛 Describe the bug"
+      description: "Please describe the bug !!"
+      placeholder: "describe ... "
+  - type: textarea
+    id: steps-to-reproduce
+    validations:
+      required: true
+    attributes:
+      label: "🖥 Steps To Reproduce"
+      description: "How do you trigger this bug? Please walk us through it step by step."
+      placeholder: "When I ..."
+  - type: textarea
+    id: expected-behavior
+    validations:
+      required: true
+    attributes:
+      label: "👍 Expected behavior"
+      description: "What did you think would happen?"
+      placeholder: "It should ..."
+  - type: textarea
+    id: actual-behavior
+    validations:
+      required: true
+    attributes:
+      label: "💡 Possible solutions"
+      description: "Not obligatory, but suggest an idea for implementing addition or change"
+      placeholder: "It actually ..."
+  - type: dropdown
+    id: radis-version
+    attributes:
+      label: "🎲 Radis version"
+      description: "What version of Appwrite are you running?"
+      options:
+        - Version 1.0.0
+        - Version 0.9.18
+        - Version 0.9.19
+        - Different version (specify in environment)
+    validations:
+      required: true
+  - type: dropdown
+    id: operating-system
+    attributes:
+      label: "💻 Operating system"
+      description: "What OS is your server / device running on?"
+      options:
+        - Linux
+        - MacOS
+        - Windows
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    validations:
+      required: false
+    attributes:
+      label: "🥦 Your Environment"
+      description: "Is your environment customized in any way?"
+      placeholder: "I use  ..."
+  - type: checkboxes
+    id: no-duplicate-issues
+    attributes:
+      label: "👀 Have you spent some time to check if this issue has been raised before?"
+      description: "Have you Googled for a similar issue ?"
+      options:
+        - label: "I checked and didn't find similar issue"
+          required: true
+  - type: checkboxes
+    id: read-code-of-conduct
+    attributes:
+      label: "🏢 Have you voted ?"
+      options:
+        - label: "I have read the [vote](https://github.com/radis/radis/issues/79)"
+          required: true
