@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to fill out our feature request form 😀
+        Thanks for taking the time to fill out our feature request form !!
   - type: textarea
     id: feature-description
     validations:

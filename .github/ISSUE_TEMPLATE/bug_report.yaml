@@ -31,7 +31,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to fill out our bug report form 
+        Thanks for taking the time to fill out our bug report form !!
   - type: textarea
     id: steps-to-reproduce
     validations:
@@ -105,7 +105,7 @@ body:
         - label: "I checked and didn't find similar issue"
           required: true
   - type: checkboxes
-    id: read-code-of-conduct
+    id: vote-here
     attributes:
       label: "🏢 Have you voted ?"
       options:
