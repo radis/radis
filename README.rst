@@ -29,7 +29,7 @@ Assuming you have Python installed with the `Anaconda <https://www.anaconda.com/
 
 **That's it!** You can now run your first example below.
 If you encounter any issue, or to upgrade the package later, please refer to the
-`detailed installation procedure <https://radis.readthedocs.io/en/latest/dev/install.html#label-install>`__ .
+`detailed installation procedure <https://radis.readthedocs.io/en/latest/dev/developer.html#label-install>`__ .
 
 Quick Start
 -----------
@@ -140,7 +140,7 @@ A simple web-app for RADIS under development.
     :target: https://radis.app/
     :alt: https://radis.app/
 
-See more `on GitHub <https://github.com/radis/radis-ui>`__
+See more `on GitHub <https://github.com/suzil/radis-app>`__
 
 
 RADIS-lab
