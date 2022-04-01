@@ -197,7 +197,7 @@ class HDF5Manager(object):
             del self._temp_batch_files[i]
 
     def __del__(self):
-        """ clean before deleting"""
+        """clean before deleting"""
         if len(self._temp_batch_files) > 0:
             from radis.misc.printer import printr
 

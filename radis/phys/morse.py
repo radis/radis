@@ -46,6 +46,6 @@ def morse_increment(Dzero, we, wexe=0, weye=0, weze=0, weae=0, webe=0, wece=0):
         + 7.8125e-3 * wece
     )
 
-    v_inc = we ** 2 / (2 * d_equil)
+    v_inc = we**2 / (2 * d_equil)
 
     return v_inc

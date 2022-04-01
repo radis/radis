@@ -1755,7 +1755,7 @@ class BaseFactory(DatabankLoader):
         )  # reference linestrength   ( computed with terrestrial isotopic abundances)
 
         weighted_trans_moment_sq = (
-            (3 * h * c / 8 / pi ** 3)
+            (3 * h * c / 8 / pi**3)
             / nu
             / (Ia * gl / self.Qgas(df, Tref) * exp(-hc_k * El / Tref))
             / (1 - exp(-hc_k * nu / Tref))
@@ -1897,11 +1897,11 @@ class BaseFactory(DatabankLoader):
         h = h_CGS  # erg.s
 
         # Calculate coefficients
-        df["Blu"] = 8 * pi ** 3 / (3 * h ** 2) * Rs2 * 1e-36 * 1e7  # cm3/(J.s^2)
+        df["Blu"] = 8 * pi**3 / (3 * h**2) * Rs2 * 1e-36 * 1e7  # cm3/(J.s^2)
         df["Bul"] = (
-            8 * pi ** 3 / (3 * h ** 2) * (gl / gu) * Rs2 * 1e-36 * 1e7
+            8 * pi**3 / (3 * h**2) * (gl / gu) * Rs2 * 1e-36 * 1e7
         )  # cm3/(J.s^2)
-        df["Aul"] = 64 * pi ** 4 / (3 * h) * nu ** 3 * gl / gu * Rs2 * 1e-36  # s-1
+        df["Aul"] = 64 * pi**4 / (3 * h) * nu**3 * gl / gu * Rs2 * 1e-36  # s-1
 
         return None  # dataframe updated directly
 
@@ -2010,7 +2010,7 @@ class BaseFactory(DatabankLoader):
         wav = df0["wav"]
         Ia = self.get_lines_abundance(df0)
 
-        S0 = Ia * gp * A / (8 * pi * c_cm * wav ** 2)
+        S0 = Ia * gp * A / (8 * pi * c_cm * wav**2)
 
         df0["S0"] = S0  # [cm-1/(molecules/cm-2)]
 
@@ -3676,7 +3676,7 @@ def linestrength_from_Einstein(
     """
 
     return (
-        (1 / (8 * np.pi * c_CGS * nu ** 2))
+        (1 / (8 * np.pi * c_CGS * nu**2))
         * A
         * ((Ia * gu * np.exp(-hc_k * El / T)) / Q)
         * (1 - np.exp(-hc_k * nu / T))

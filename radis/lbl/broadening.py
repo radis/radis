@@ -365,7 +365,7 @@ def lorentzian_lineshape(w_centered, gamma_lb):
 
     # Calculate broadening
     # -------
-    lineshape = 1 / pi * gamma_lb / ((gamma_lb ** 2) + (w_centered ** 2))
+    lineshape = 1 / pi * gamma_lb / ((gamma_lb**2) + (w_centered**2))
 
     return lineshape
 
@@ -531,7 +531,7 @@ def olivero_1977(wg, wl):
     sd = (wl - wg) / (wl + wg)
     wv = (
         1
-        - 0.18121 * (1 - sd ** 2)
+        - 0.18121 * (1 - sd**2)
         - (0.023665 * exp(0.6 * sd) + 0.00418 * exp(-1.9 * sd)) * sin(pi * sd)
     ) * (wl + wg)
     return wv
@@ -665,7 +665,7 @@ def whiting1968(w_centered, wl, wv):
     # ... 20.5.s > 16.5s) on the total eq_spectrum calculation
     # ... w_wv is typically a (10.001, 1997) array
     w_wv = w_centered / wv  # w_centered can be ~500 Mb
-    w_wv_2 = w_wv ** 2
+    w_wv_2 = w_wv**2
     wl_wv = wl / wv
     w_wv_225 = np.abs(w_wv) ** 2.25
 
@@ -711,7 +711,7 @@ def _whiting_jit(w_centered, wl, wv):
     # ... w_wv is typically a (10.001, 1997) array
 
     w_wv = w_centered / wv  # w_centered can be ~500 Mb
-    w_wv_2 = w_wv ** 2
+    w_wv_2 = w_wv**2
     wl_wv = wl / wv
     w_wv_225 = np.abs(w_wv) ** 2.25
 
@@ -1856,7 +1856,7 @@ class BroadenFactory(BaseFactory):
 
             R_Gv = 8 * np.log(2)
             R_GG = 2 - 1 / (C1_GG + C2_GG * alpha_i ** (2 / 1.50)) ** 1.50
-            R_GL = -2 * np.log(2) * alpha_i ** 2
+            R_GL = -2 * np.log(2) * alpha_i**2
 
             R_LL = 1
             R_LG = (
@@ -1869,13 +1869,13 @@ class BroadenFactory(BaseFactory):
             avi = tvi
 
             aGi = tGi + (
-                R_Gv * tvi * (tvi - 1) * dxvGi ** 2
-                + R_GG * tGi * (tGi - 1) * dxG ** 2
-                + R_GL * tLi * (tLi - 1) * dxL ** 2
+                R_Gv * tvi * (tvi - 1) * dxvGi**2
+                + R_GG * tGi * (tGi - 1) * dxG**2
+                + R_GL * tLi * (tLi - 1) * dxL**2
             ) / (2 * dxG)
 
             aLi = tLi + (
-                R_LG * tGi * (tGi - 1) * dxG ** 2 + R_LL * tLi * (tLi - 1) * dxL ** 2
+                R_LG * tGi * (tGi - 1) * dxG**2 + R_LL * tLi * (tLi - 1) * dxL**2
             ) / (2 * dxL)
 
         else:
