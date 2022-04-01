@@ -55,7 +55,7 @@ jobs:
     - stage: lint
       name: Code Quality Checks
       install:
-        - pip install pre-commit
+        - pip install pre-commit==2.17.0
       script:
         - pre-commit run --all-files
 
