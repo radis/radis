@@ -474,7 +474,7 @@ class DatabaseManager(object):
         df.plot("wav", "int")
 
     def get_nrows(self, local_file):
-        """ Get number of rows (without loading all DataFrame)"""
+        """Get number of rows (without loading all DataFrame)"""
         engine = self.engine
         local_file = expanduser(local_file)
         if engine == "pytables":

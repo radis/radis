@@ -81,7 +81,7 @@ def test_planck_nm(verbose=True, plot=True, *args, **kwargs):
 
     # Check Stefan's law
     sigma = 5.67e-8  # Stefan-Boltzmann constant   (W/m2/K-4)
-    P_theory = eps * sigma * T ** 4  # Stefan's law (W/m2)
+    P_theory = eps * sigma * T**4  # Stefan's law (W/m2)
     P_calc = pi * s.get_power("W/m2/sr")  # Lambert's cosine law
     assert np.isclose(P_theory, P_calc, rtol=1e-1)
     if verbose:
@@ -149,7 +149,7 @@ def test_planck_cm(verbose=True, plot=True, *args, **kwargs):
 
     # Check Stefan's law
     sigma = 5.67e-8  # Stefan-Boltzmann constant   (W/m2/K-4)
-    P_theory = eps * sigma * T ** 4  # Stefan's law (W/m2)
+    P_theory = eps * sigma * T**4  # Stefan's law (W/m2)
     P_calc = pi * s.get_power("W/m2/sr")  # Lambert's cosine law
     assert np.isclose(P_theory, P_calc, rtol=1e-3)
     if verbose:
