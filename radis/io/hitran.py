@@ -344,8 +344,22 @@ def _parse_HITRAN_class1(df, verbose=True):
     """
 
     # 1. Parse
-    dgu = df["globu"].astype(str).str.extract(r"[ ]{13}(?P<vu>[\d ]{2})", expand=True)
-    dgl = df["globl"].astype(str).str.extract(r"[ ]{13}(?P<vl>[\d ]{2})", expand=True)
+    dgu = (
+        df["globu"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{13}(?P<vu>[\d ]{2})",
+            expand=True,
+        )
+    )
+    dgl = (
+        df["globl"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{13}(?P<vl>[\d ]{2})",
+            expand=True,
+        )
+    )
 
     # 2. Convert to numeric
     cast_to_int64_with_missing_values(dgu, ["vu"])
@@ -383,11 +397,34 @@ def _parse_HITRAN_class2(df, verbose=True):
     .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     """
-    if verbose > 2:
-        print(
-            f"parse_global_quanta not implemented for molecules of HITRAN class 2 ({HITRAN_CLASS2}). Non-LTE calculations will not be possible."
+
+    # 1. Parse
+    dgu = (
+        df["globu"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{12}(?P<Xu>.)(?P<vu>[\d ]{2})",
+            expand=True,
         )
-    return df
+    )
+    dgl = (
+        df["globl"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{12}(?P<Xl>.)(?P<vl>[\d ]{2})",
+            expand=True,
+        )
+    )
+
+    # 2. Convert to numeric
+    cast_to_int64_with_missing_values(dgu, ["Xu", "vu"])
+    cast_to_int64_with_missing_values(dgl, ["Xl", "vl"])
+
+    # 3. Clean
+    del df["globu"]
+    del df["globl"]
+
+    return pd.concat([df, dgu, dgl], axis=1)
 
 
 def _parse_HITRAN_class3(df, verbose=True):
@@ -415,11 +452,34 @@ def _parse_HITRAN_class3(df, verbose=True):
     .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     """
-    if verbose > 2:
-        print(
-            "parse_global_quanta not implemented for molecules of HITRAN class 3 ({HITRAN_CLASS3}). Non-LTE calculations will not be possible."
+
+    # 1. Parse
+    dgu = (
+        df["globu"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{7}(?P<Xu>.)(?P<iu>.{3})[ ]{2}(?P<v1u>[\d ]{2})",
+            expand=True,
         )
-    return df
+    )
+    dgl = (
+        df["globl"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{7}(?P<Xl>.)(?P<il>.{3})[ ]{2}(?P<v1l>[\d ]{2})",
+            expand=True,
+        )
+    )
+
+    # 2. Convert to numeric
+    cast_to_int64_with_missing_values(dgu, ["Xu", "iu", "v1u"])
+    cast_to_int64_with_missing_values(dgl, ["Xl", "il", "v1l"])
+
+    # 3. Clean
+    del df["globu"]
+    del df["globl"]
+
+    return pd.concat([df, dgu, dgl], axis=1)
 
 
 def _parse_HITRAN_class4(df, verbose=True):
@@ -581,14 +641,7 @@ def _parse_HITRAN_class6(df, verbose=True):
     # ... somehow negative. The regex above is adapted to catch negation signs with \-
 
     # 2. Convert to numeric
-    cast_to_int64_with_missing_values(
-        dgu,
-        [
-            "v1u",
-            "v2u",
-            "v3u",
-        ],
-    )
+    cast_to_int64_with_missing_values(dgu, ["v1u", "v2u", "v3u"])
     cast_to_int64_with_missing_values(dgl, ["v1l", "v2l", "v3l"])
 
     # 3. Clean
@@ -612,7 +665,8 @@ def _parse_HITRAN_class7(df, verbose=True):
 
     HITRAN syntax:
 
-    >>>
+    >>>  v1 v2 v3 v4 v5 l  +- r  S
+    >>>  I2 I2 I2 I2 I2 I2 A1 I1 A1
 
     References
     ----------
@@ -643,7 +697,8 @@ def _parse_HITRAN_class8(df, verbose=True):
 
     HITRAN syntax:
 
-    >>>
+    >>>     v1 v2 v3 v4 S
+    >>>  5x I2 I2 I2 I2 I2
 
     References
     ----------
@@ -651,11 +706,34 @@ def _parse_HITRAN_class8(df, verbose=True):
     .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     """
-    if verbose > 2:
-        print(
-            "parse_global_quanta not implemented for molecules of HITRAN class 8 ({HITRAN_CLASS8}). Non-LTE calculations will not be possible."
+
+    # 1. Parse
+    dgu = (
+        df["globu"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{5}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<v4u>[\d ]{2})(?P<Su>[\d ]{2})",
+            expand=True,
         )
-    return df
+    )
+    dgl = (
+        df["globl"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{5}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<v3l>[\d ]{2})(?P<v4l>[\d ]{2})(?P<Sl>[\d ]{2})",
+            expand=True,
+        )
+    )
+
+    # 2. Convert to numeric
+    cast_to_int64_with_missing_values(dgu, ["v1u", "v2u", "v3u", "v4u", "Su"])
+    cast_to_int64_with_missing_values(dgl, ["v1l", "v2l", "v3l", "v4l", "Sl"])
+
+    # 3. Clean
+    del df["globu"]
+    del df["globl"]
+
+    return pd.concat([df, dgu, dgl], axis=1)
 
 
 def _parse_HITRAN_class9(df, verbose=True):
@@ -674,7 +752,8 @@ def _parse_HITRAN_class9(df, verbose=True):
 
     HITRAN syntax:
 
-    >>>
+    >>>     v1 v2 v3 v4 v5 v6
+    >>>  3x I2 I2 I2 I2 I2 I2
 
     References
     ----------
@@ -682,16 +761,39 @@ def _parse_HITRAN_class9(df, verbose=True):
     .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     """
-    if verbose > 2:
-        print(
-            "parse_global_quanta not implemented for molecules of HITRAN class 9 ({HITRAN_CLASS9}). Non-LTE calculations will not be possible."
+
+    # 1. Parse
+    dgu = (
+        df["globu"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{3}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<v4u>[\d ]{2})(?P<v5u>[\d ]{2})(?P<v6u>[\d ]{2})",
+            expand=True,
         )
-    return df
+    )
+    dgl = (
+        df["globl"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{3}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<v3l>[\d ]{2})(?P<v4l>[\d ]{2})(?P<v5l>[\d ]{2})(?P<v6l>[\d ]{2})",
+            expand=True,
+        )
+    )
+
+    # 2. Convert to numeric
+    cast_to_int64_with_missing_values(dgu, ["v1u", "v2u", "v3u", "v4u", "v5u", "v6u"])
+    cast_to_int64_with_missing_values(dgl, ["v1l", "v2l", "v3l", "v4l", "v5l", "v6l"])
+
+    # 3. Clean
+    del df["globu"]
+    del df["globl"]
+
+    return pd.concat([df, dgu, dgl], axis=1)
 
 
 def _parse_HITRAN_class10(df, verbose=True):
-    r"""Pentatomic or greater polyatomic in HITRAN [1]_
-
+    r"""Pentatomic or greater polyatomic in HITRAN [1]_: CH4
+        Individual molecule notation: CH3D, CH3Cl, C2H6, HNO3, SF6, HCOOH, ClONO2, C2H4, CH3OH
 
     Parameters
     ----------
@@ -705,7 +807,8 @@ def _parse_HITRAN_class10(df, verbose=True):
 
     HITRAN syntax:
 
-    >>>
+    >>>     v1 v2 v3 v4 n  C
+    >>>  3x I2 I2 I2 I2 A2 A2
 
     References
     ----------
@@ -713,11 +816,34 @@ def _parse_HITRAN_class10(df, verbose=True):
     .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     """
-    if verbose > 2:
-        print(
-            "parse_global_quanta not implemented for molecules of HITRAN class 10. Non-LTE calculations will not be possible."
+
+    # 1. Parse
+    dgu = (
+        df["globu"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{3}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<v4u>[\d ]{2})(?P<nu>.{2})(?P<Cu>.{2})",
+            expand=True,
         )
-    return df
+    )
+    dgl = (
+        df["globl"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{3}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<v3l>[\d ]{2})(?P<v4l>[\d ]{2})(?P<nl>.{2})(?P<Cl>.{2})",
+            expand=True,
+        )
+    )
+
+    # 2. Convert to numeric
+    cast_to_int64_with_missing_values(dgu, ["v1u", "v2u", "v3u", "v4u", "nu", "Cu"])
+    cast_to_int64_with_missing_values(dgl, ["v1u", "v2u", "v3u", "v4u", "nl", "Cl"])
+
+    # 3. Clean
+    del df["globu"]
+    del df["globl"]
+
+    return pd.concat([df, dgu, dgl], axis=1)
 
 
 # %% HITRAN Local quanta
