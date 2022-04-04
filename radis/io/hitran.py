@@ -443,7 +443,7 @@ def _parse_HITRAN_class3(df, verbose=True):
 
     HITRAN syntax [1]_:
 
-    >>>      X i     v1
+    >>>     X  i     v1
     >>>  7x A1 A3 2x I2
 
     References
@@ -817,33 +817,10 @@ def _parse_HITRAN_class10(df, verbose=True):
 
     """
 
-    # 1. Parse
-    dgu = (
-        df["globu"]
-        .astype(str)
-        .str.extract(
-            r"[ ]{3}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<v4u>[\d ]{2})(?P<nu>.{2})(?P<Cu>.{2})",
-            expand=True,
+    if verbose > 2:
+        print(
+            f"parse_global_quanta not implemented for molecules of HITRAN class 10 ({HITRAN_CLASS10}). Non-LTE calculations will not be possible."
         )
-    )
-    dgl = (
-        df["globl"]
-        .astype(str)
-        .str.extract(
-            r"[ ]{3}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<v3l>[\d ]{2})(?P<v4l>[\d ]{2})(?P<nl>.{2})(?P<Cl>.{2})",
-            expand=True,
-        )
-    )
-
-    # 2. Convert to numeric
-    cast_to_int64_with_missing_values(dgu, ["v1u", "v2u", "v3u", "v4u", "nu", "Cu"])
-    cast_to_int64_with_missing_values(dgl, ["v1u", "v2u", "v3u", "v4u", "nl", "Cl"])
-
-    # 3. Clean
-    del df["globu"]
-    del df["globl"]
-
-    return pd.concat([df, dgu, dgl], axis=1)
 
 
 # %% HITRAN Local quanta
@@ -945,7 +922,14 @@ def _parse_HITRAN_group2(df, verbose=True):
     # --------------
     #     | F'  |
     # 10X | A5  |
-    dgu = df["locu"].astype(str).str.extract(r"[ ]{10}(?P<Fu>.{5})", expand=True)
+    dgu = (
+        df["locu"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{10}(?P<Fu>.{5})",
+            expand=True,
+        )
+    )
     # Ref [1] : locl
     # --------------
     #     | Br  | J'' | Sym''| F'' |
@@ -1004,9 +988,20 @@ def _parse_HITRAN_group3(df, verbose=True):
 
 
     """
+
+    # Ref [1] : locu
+    # --------------
+    #     | J'  | C'  | α'  | F'  |
+    # 2X  | I3  | A2  | I3  | A5  |
+
+    # Ref [1] : locl
+    # --------------
+    #     | J'' | C'' | α'' | F'' |
+    # 2X  | I3  | A2  | I3  | A5  |
+
     if verbose > 2:
         print(
-            f"parse_local_quanta not implemented for molecules of HITRAN group 3 ({HITRAN_GROUP3}). Non-LTE calculations will not be possible."
+            "parse_local_quanta not implemented for molecules of HITRAN group 3 ({HITRAN_GROUP3}). Non-LTE calculations will not be possible."
         )
     return df
 
@@ -1035,9 +1030,20 @@ def _parse_HITRAN_group4(df, verbose=True):
 
 
     """
+
+    # Ref [1] : locu
+    # --------------
+    # J'  | K'  | l'  | C'  | Sym' | F'  |
+    # I3  | I3  | I2  | A2  | A1   | A4  |
+
+    # Ref [1] : locl
+    # --------------
+    # J'' | K'' | l'' | C'' | Sym'' | F'' |
+    # I3  | I3  | I2  | A2  | A1    | A4  |
+
     if verbose > 2:
         print(
-            f"parse_local_quanta not implemented for molecules of HITRAN group 4 ({HITRAN_GROUP4}). Non-LTE calculations will not be possible."
+            "parse_local_quanta not implemented for molecules of HITRAN group 4 ({HITRAN_GROUP4}). Non-LTE calculations will not be possible."
         )
     return df
 
@@ -1066,6 +1072,17 @@ def _parse_HITRAN_group5(df, verbose=True):
 
 
     """
+
+    # Ref [1] : locu
+    # --------------
+    #     | F'  |
+    # 10X | A5  |
+
+    # Ref [1] : locl
+    # --------------
+    #     | Br  | N'' | Br  | J'' | F'' | Sym |
+    # 1X  | A1  | I3  | A1  | I3  | A5  | A1  |
+
     if verbose > 2:
         print(
             "parse_local_quanta not implemented for molecules of HITRAN group 5 ({HITRAN_GROUP5}). Non-LTE calculations will not be possible."
@@ -1097,6 +1114,17 @@ def _parse_HITRAN_group6(df, verbose=True):
 
 
     """
+
+    # Ref [1] : locu
+    # --------------
+    #     | F'  |
+    # 10X | A5  |
+
+    # Ref [1] : locl
+    # --------------
+    #     | Br  | J''  | Sym'' | F'' |
+    # 3X  | A1  | F5.1 | A1    | A5  |
+
     if verbose > 2:
         print(
             "parse_local_quanta not implemented for molecules of HITRAN group 6 ({HITRAN_GROUP6}). Non-LTE calculations will not be possible."
