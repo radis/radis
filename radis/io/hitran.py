@@ -1347,7 +1347,7 @@ def fetch_hitran(
             'Pshft', 'gp', 'gpp', 'branch', 'jl', 'vu', 'vl'],
             dtype='object')
 
-    .. minigallery:: radis.fetch_hitemp
+    .. minigallery:: radis.fetch_hitran
 
     Notes
     -----
