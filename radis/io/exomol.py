@@ -307,6 +307,7 @@ def fetch_exomol(
 
     See Also
     --------
+    :py:func:`~radis.io.hitran.fetch_hitran`, :py:func:`~radis.io.hitemp.fetch_hitemp`
     :py:func:`~radis.io.hdf5.hdf2df`
 
     """

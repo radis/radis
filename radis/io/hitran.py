@@ -1288,8 +1288,10 @@ def fetch_hitran(
 
     Parameters
     ----------
-    molecule: `"H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"`
-        HITEMP molecule. See https://hitran.org/hitemp/
+    molecule: str
+        one specific molecule name, listed in HITRAN molecule metadata.
+        See https://hitran.org/docs/molec-meta/
+        Example: "H2O", "CO2", etc.
     local_databases: str
         where to create the RADIS HDF5 files. Default ``"~/.radisdb/hitran"``.
         Can be changed in ``radis.config["DEFAULT_DOWNLOAD_PATH"]`` or in ~/radis.json config file
@@ -1338,15 +1340,14 @@ def fetch_hitran(
     --------
     ::
 
-        from radis import fetch_hitemp
-        df = fetch_hitemp("CO")
+        from radis.io.hitran import fetch_hitran
+        df = fetch_hitran("CO")
         print(df.columns)
         >>> Index(['id', 'iso', 'wav', 'int', 'A', 'airbrd', 'selbrd', 'El', 'Tdpair',
-            'Pshft', 'ierr', 'iref', 'lmix', 'gp', 'gpp', 'Fu', 'branch', 'jl',
-            'syml', 'Fl', 'vu', 'vl'],
+            'Pshft', 'gp', 'gpp', 'branch', 'jl', 'vu', 'vl'],
             dtype='object')
 
-    .. minigallery:: radis.io.hitemp.fetch_hitemp
+    .. minigallery:: radis.fetch_hitemp
 
     Notes
     -----
@@ -1358,6 +1359,7 @@ def fetch_hitran(
 
     See Also
     --------
+    :py:func:`~radis.io.hitemp.fetch_hitemp`, :py:func:`~radis.io.exomol.fetch_exomol`
     :py:func:`~radis.io.hdf5.hdf2df`, :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`
 
     """
