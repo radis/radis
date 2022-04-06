@@ -501,7 +501,7 @@ def fetch_hitemp(
             'syml', 'Fl', 'vu', 'vl'],
             dtype='object')
 
-    .. minigallery:: radis.io.hitemp.fetch_hitemp
+    .. minigallery:: radis.fetch_hitemp
 
     Notes
     -----
@@ -513,6 +513,7 @@ def fetch_hitemp(
 
     See Also
     --------
+    :py:func:`~radis.io.hitran.fetch_hitran`, :py:func:`~radis.io.exomol.fetch_exomol`
     :py:func:`~radis.io.hdf5.hdf2df`, :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`
 
     """

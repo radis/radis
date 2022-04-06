@@ -7,8 +7,16 @@
 
 
 from .cdsd import cdsd2df
+from .exomol import fetch_exomol
 from .hitemp import fetch_hitemp
-from .hitran import hit2df
+from .hitran import fetch_hitran, hit2df
 from .query import fetch_astroquery
 
-__all__ = ["cdsd2df", "hit2df", "fetch_hitemp", "fetch_astroquery"]
+__all__ = [
+    "cdsd2df",
+    "hit2df",
+    "fetch_hitemp",
+    "fetch_hitran",
+    "fetch_exomol",
+    "fetch_astroquery",
+]
