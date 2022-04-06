@@ -15,11 +15,13 @@ Equations derived from the code using `pytexit <https://pytexit.readthedocs.io/e
 from warnings import warn
 
 import numpy as np
+from astropy import units as unit
 from numpy import exp
 from numpy import log as ln
 
 from radis.misc.basics import all_in, any_in, compare_lists
 from radis.misc.debug import printdbg
+from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.utils import CONVOLUTED_QUANTITIES, NON_CONVOLUTED_QUANTITIES
 
@@ -2175,6 +2177,10 @@ def rescale_path_length(
         raise ValueError(
             "Rescaling to 0 will loose information. Choose force " "= True"
         )
+    # Convert units
+    new_path_length = convert_and_strip_units(new_path_length, unit.cm)
+    old_path_length = convert_and_strip_units(old_path_length, unit.cm)
+
     for q in ["transmittance", "radiance"]:
         qns = q + "_noslit"
         qties = spec.get_vars()
