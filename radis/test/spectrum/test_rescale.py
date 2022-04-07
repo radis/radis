@@ -296,19 +296,15 @@ def test_astropy_units(verbose=True, warnings=True, *args, **kwargs):
     s_km = s0.copy().rescale_path_length(1 * u.km)  # Rescale directly to 1 astropy km
 
     # Get absorbance of original spectrum
-    w0, k0 = s0.get("abscoeff", wunit="cm-1")
-    L0 = s0.get_conditions()["path_length"]
-    A0 = k0 * L0
+    A0 = s0.get("absorbance", wunit="cm-1")
 
-    # Get absorbance of 100000cm-rescaled spectrum
-    w_cm, k_cm = s_cm.get("abscoeff", wunit="cm-1")
+    # Get absorbance and path length of 100000cm-rescaled spectrum
     L_cm = s_cm.get_conditions()["path_length"]
-    A_cm = k_cm * L_cm
+    A_cm = s_cm.get("absorbance", wunit="cm-1")
 
-    # Get absorbance of 1km-rescale spectrum
-    w_km, k_km = s_km.get("abscoeff", wunit="cm-1")
+    # Get absorbance and path length of 1km-rescale spectrum
     L_km = s_km.get_conditions()["path_length"]
-    A_km = k_km * L_km
+    A_km = s_km.get("absorbance", wunit="cm-1")
 
     # ---------- ASSERTION ----------
 
@@ -317,6 +313,9 @@ def test_astropy_units(verbose=True, warnings=True, *args, **kwargs):
 
     # Compare absorbances of 100000cm and 1km. They should be THE SAME.
     assert np.array_equal(A_cm, A_km)
+
+    # Compare path lengths in 1km and 100000cm. They should be THE SAME.
+    assert L_cm == L_km
 
     if verbose:
         print(
