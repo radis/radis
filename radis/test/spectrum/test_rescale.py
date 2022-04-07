@@ -12,6 +12,7 @@ Test Spectrum rescaling methods
 
 """
 
+import astropy.units as u
 import numpy as np
 import pytest
 
@@ -282,14 +283,59 @@ def test_xsections(*args, **kwargs):
     )
 
 
+def test_astropy_units(verbose=True, warnings=True, *args, **kwargs):
+    """This test is to assert the use of astropy units in rescale function,
+    by comparing the absorbance of a spectrum rescaled with astropy units
+    (in this test we use u.km) with the absorbance of original spectrum"""
+
+    # Get precomputed spectrum
+    s0 = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
+
+    # Generate new spectrums by rescaling original one
+    s_cm = s0.copy().rescale_path_length(100000)  # Rescale to 100000 cm = 1 km
+    s_km = s0.copy().rescale_path_length(1 * u.km)  # Rescale directly to 1 astropy km
+
+    # Get absorbance of original spectrum
+    w0, k0 = s0.get("abscoeff", wunit="cm-1")
+    L0 = s0.get_conditions()["path_length"]
+    A0 = k0 * L0
+
+    # Get absorbance of 100000cm-rescaled spectrum
+    w_cm, k_cm = s_cm.get("abscoeff", wunit="cm-1")
+    L_cm = s_cm.get_conditions()["path_length"]
+    A_cm = k_cm * L_cm
+
+    # Get absorbance of 1km-rescale spectrum
+    w_km, k_km = s_km.get("abscoeff", wunit="cm-1")
+    L_km = s_km.get_conditions()["path_length"]
+    A_km = k_km * L_km
+
+    # ---------- ASSERTION ----------
+
+    # Compare absorbances of original and 1km. They should be DIFFERENT.
+    assert not np.array_equal(A0, A_km)
+
+    # Compare absorbances of 100000cm and 1km. They should be THE SAME.
+    assert np.array_equal(A_cm, A_km)
+
+    if verbose:
+        print(
+            (
+                "Astropy units work normally in the provided test case. "
+                "The absorbances observed in original and rescaled spectrums "
+                "follow the basis of absorption spectroscopy."
+            )
+        )
+
+
 def _run_all_tests(verbose=True, warnings=True, *args, **kwargs):
     test_compression(verbose=verbose, warnings=warnings, *args, **kwargs)
     test_update_transmittance(verbose=verbose, warnings=warnings, *args, **kwargs)
     test_get_recompute(verbose=verbose, warnings=warnings, *args, **kwargs)
     test_recompute_equilibrium(verbose=verbose, warnings=warnings, *args, **kwargs)
     test_rescale_all_quantities(verbose=verbose, *args, **kwargs)
-    test_xsections()
-
+    test_xsections(*args, **kwargs)
+    test_astropy_units(verbose=True, warnings=True, *args, **kwargs)
     return True
 
 

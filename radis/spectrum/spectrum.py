@@ -1416,7 +1416,7 @@ class Spectrum(object):
             import astropy.units as u
             s.rescale_path_length(1 * u.km).plot()
 
-        .. minigallery:: radis.Spectrum.rescale_path_length
+        .. minigallery:: radis.spectrum.Spectrum.rescale_path_length
 
         Notes
         -----
