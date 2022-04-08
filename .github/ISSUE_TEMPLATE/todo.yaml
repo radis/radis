@@ -1,0 +1,17 @@
+name: "📚 todo"
+description: "the todos for nextdays "
+title: "📚 todo: "
+labels: [todo]
+body:
+  - type: markdown
+    attributes:
+      value: |
+          🎯 Todo
+  - type: textarea
+    id: todo-description
+    validations:
+      required: false
+    attributes:
+      label: "💭 Description"
+      description: "A clear  description for the todo."
+      placeholder: "todo ..."
