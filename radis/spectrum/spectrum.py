@@ -1405,7 +1405,18 @@ class Spectrum(object):
             for path in [0.1, 10, 100]:
                 s.rescale_path_length(10, inplace=False).plot(nfig='same')
 
-        .. minigallery:: radis.Spectrum.rescale_path_length
+        Additionally, you can also use astropy units in the input arguments, for example:
+        ::
+
+            # preparing a test spectrum :
+            import radis
+            s = radis.test_spectrum()
+
+            # rescaling :
+            import astropy.units as u
+            s.rescale_path_length(1 * u.km).plot()
+
+        .. minigallery:: radis.spectrum.Spectrum.rescale_path_length
 
         Notes
         -----
