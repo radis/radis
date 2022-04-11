@@ -540,13 +540,13 @@ class SpectrumFactory(BandFactory):
         # Time Based variables
         self.verbose = verbose
 
-        
-
         if truncation == 0:
             raise ValueError(
                 "Lineshape truncation must be > 0. If you want no truncation (compute lineshape on the full spectral range), use `truncation=None`"
             )
-        elif (truncation is not None and not isinstance(truncation, Default)) and truncation < 0:
+        elif (
+            truncation is not None and not isinstance(truncation, Default)
+        ) and truncation < 0:
             raise ValueError(
                 "Lineshape truncation can't be negative. Truncation must be > 0 or None to compute lineshape on the full spectral range"
             )
@@ -561,7 +561,11 @@ class SpectrumFactory(BandFactory):
                 raise NotImplementedError(
                     "Lines cannot be truncated with `broadening_method='fft'`. Use `broadening_method='voigt'`"
                 )
-        elif broadening_method == "voigt" and truncation == None and optimization is not None:
+        elif (
+            broadening_method == "voigt"
+            and truncation == None
+            and optimization is not None
+        ):
             raise NotImplementedError(
                 "Currently `broadening_method='voigt'` doesn't support computation of lineshape on the full spectral range, use `broadening_method='fft'` instead or use a truncation value > 0"
             )
