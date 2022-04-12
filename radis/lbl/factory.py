@@ -542,7 +542,7 @@ class SpectrumFactory(BandFactory):
 
         if truncation == 0:
             raise ValueError(
-                "Lineshape truncation must be > 0. If you want no truncation (compute lineshape on the full spectral range), use `truncation=None`"
+                "Lineshape truncation must be > 0. If you want no truncation (compute lineshape on the full spectral range), use `truncation=None`. \nNote (advanced) : no truncation is not physically more accurate. Most molecules exhibit a sub-lorentzian behavior far from the line centers. A truncation at around 40-50 cm-1 is a good choice"
             )
         elif (
             truncation is not None and not isinstance(truncation, Default)
@@ -563,7 +563,7 @@ class SpectrumFactory(BandFactory):
                 )
         elif (
             broadening_method == "voigt"
-            and truncation == None
+            and truncation is None
             and optimization is not None
         ):
             raise NotImplementedError(

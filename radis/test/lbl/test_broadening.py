@@ -559,8 +559,6 @@ def test_truncations_and_neighbour_lines(*args, **kwargs):
         > s_lbl_voigt_trunc10.get("abscoeff")[1][-1]
     )
 
-    #%%
-
     # Check incompatibilities correctly raise errors:
 
     import pytest
@@ -584,6 +582,62 @@ def test_truncations_and_neighbour_lines(*args, **kwargs):
             truncation=10,  # truncation != 0
         )
     assert "Lines cannot be truncated with `broadening_method='fft'`" in str(err.value)
+
+    # Check for negative truncation
+
+    with pytest.raises(ValueError) as err:
+
+        calc_spectrum(
+            **conditions,
+            optimization=None,
+            truncation=-1,  # truncation < 0
+        )
+    assert (
+        "Lineshape truncation can't be negative. Truncation must be > 0 or None to compute lineshape on the full spectral range"
+        in str(err.value)
+    )
+
+    #%% same with optimization=simple (DIT)
+    with pytest.raises(ValueError) as err:
+
+        calc_spectrum(
+            **conditions,
+            optimization="simple",
+            truncation=-1,  # truncation < 0
+        )
+    assert (
+        "Lineshape truncation can't be negative. Truncation must be > 0 or None to compute lineshape on the full spectral range"
+        in str(err.value)
+    )
+
+    # Check for truncation=None
+
+    with pytest.raises(NotImplementedError) as err:
+
+        calc_spectrum(
+            **conditions,
+            optimization="simple",
+            broadening_method="voigt",
+            truncation=None,  # truncation is None
+        )
+    assert (
+        "Currently `broadening_method='voigt'` doesn't support computation of lineshape on the full spectral range, use `broadening_method='fft'` instead or use a truncation value > 0"
+        in str(err.value)
+    )
+
+    #%% same with optimization=None but for 'fft' broadening method
+    with pytest.raises(NotImplementedError) as err:
+
+        calc_spectrum(
+            **conditions,
+            optimization=None,
+            broadening_method="fft",  # = "fft"
+            truncation=None,  # truncation is None
+        )
+    assert (
+        "FFT not implemented with `optimization=None`. Try using LDM method with `optimization='simple'`"
+        in str(err.value)
+    )
 
     #%% Test there is DeprecationError raised
     with pytest.raises(DeprecationWarning) as err:
