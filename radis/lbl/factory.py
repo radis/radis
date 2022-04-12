@@ -542,7 +542,13 @@ class SpectrumFactory(BandFactory):
 
         if truncation == 0:
             raise ValueError(
-                "Lineshape truncation must be >0. If you want no truncation (compute lineshape on the full spectral range), use `truncation=None`"
+                "Lineshape truncation must be > 0. If you want no truncation (compute lineshape on the full spectral range), use `truncation=None`. \nNote (advanced) : no truncation is not physically more accurate. Most molecules exhibit a sub-lorentzian behavior far from the line centers. A truncation at around 40-50 cm-1 is a good choice"
+            )
+        elif (
+            truncation is not None and not isinstance(truncation, Default)
+        ) and truncation < 0:
+            raise ValueError(
+                "Lineshape truncation can't be negative. Truncation must be > 0 or None to compute lineshape on the full spectral range"
             )
 
         self.misc.export_lines = export_lines
@@ -555,6 +561,15 @@ class SpectrumFactory(BandFactory):
                 raise NotImplementedError(
                     "Lines cannot be truncated with `broadening_method='fft'`. Use `broadening_method='voigt'`"
                 )
+        elif (
+            broadening_method == "voigt"
+            and truncation is None
+            and optimization is not None
+        ):
+            raise NotImplementedError(
+                "Currently `broadening_method='voigt'` doesn't support computation of lineshape on the full spectral range, use `broadening_method='fft'` instead or use a truncation value > 0"
+            )
+
         if isinstance(truncation, Default):
             truncation = truncation.value
 
