@@ -13,8 +13,6 @@ with RADIS or other spectral codes.
 
 User guide, install procedure and examples are available on the `RADIS Website <http://radis.readthedocs.io/>`__:
 
-|badge_docs|
-
 
 ===============
 Getting Started
@@ -274,7 +272,7 @@ See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__   |badge_awe
 .. |CO2| replace:: CO\ :sub:`2`
 
 .. |badge_docs| image:: https://readthedocs.org/projects/radis/badge/
-                :target: https://radis.readthedocs.io/en/latest/?badge=latest
+                :target: https://readthedocs.org/projects/radis/
                 :alt: Documentation Status
 
 .. |badge_article1| image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg

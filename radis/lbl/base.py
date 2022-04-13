@@ -3077,34 +3077,36 @@ class BaseFactory(DatabankLoader):
 
     # %%
     def calc_emission_integral(self):
-        r"""Calculate Emission Integral.
+        r"""Calculate the emission integral (in :math:`mW/sr`) of all lines in DataFrame ``df1``.
 
         .. math::
-            Ei=\frac{n_u A_{ul}}{4} \pi \Delta E_{ul}
 
-        Emission Integral is a non usual quantity introduced here to have an
-        equivalent of Linestrength in emission calculation
+            E_i=\frac{n_u A_{ul}}{4 \pi} \Delta E_{ul}
+
+        Where :math:`A_{ul}` (:math:`s^{-1}`) is the Einstein coefficient of the corresponding line,
+        :math:`n_u` (in :math:`cm^{-3}/cm^{-3}` is the fraction of the molecule population in the upper rovibrational state,
+        and :math:`\Delta E_{ul}` the transition energy.
+
+        Emission Integral is a non usual quantity introduced in RADIS as an
+        equivalent for emission calculations of the Linestrength quantity used in absorption calculations.
+
+        The emission integral is later multiplied by the total density :math:`n_tot` and the lineshape :math:`\Phi_i` to obtain
+        the spectral emission coefficient :math:`\epsilon_i` associated to each line.
+
+        .. math::
+
+            \epsilon_i(\lambda) = E_i \cdot n_{tot} \cdot \Phi_i(\lambda)
+
+        Which are afterwards summed over all N lines to obtain the total emission coefficient :
+
+        .. math::
+
+            \epsilon(\lambda) = \sum_i^N {\epsilon_i}(\lambda)
 
         Returns
         -------
         None
-            Emission integral `Ei` added in self.df
-
-        Notes
-        -----
-
-        emission_integral: (mW/sr)
-            emission integral is defined as::
-
-            Ei = n_u * A_ul / 4π * DeltaE_ul
-                  :      :     :      :
-                (#/#)  (s-1) (sr)    (mJ)
-
-            So that the radiance ϵ is:
-
-                ϵ(λ)   =      Ei  *   Phi(λ)  * ntot   * path_length
-                 :             :         :       :          :
-            mW/cm2/sr/nm    (mW/sr)   (1/nm)   (cm-3)      (cm)
+            Emission integral `Ei` added in ``df1``
 
         See Also
         --------
