@@ -154,7 +154,7 @@ def convert_emi2cm(j_nm, wavenum, Iunit0, Iunit):
     j_nm = conv2(j_nm, Iunit0, "mW/cm**3/sr/nm")
 
     # Convert ''mW/cm3/sr/nm' to 'mW/cm3/sr/cm-1'
-    j_cm = j_nm * 1e7 / wavenum ** 2
+    j_cm = j_nm * 1e7 / wavenum**2
     # note that we discard the - sign.
     # This means that one of the integrals `trapz(j_nm, wavelen)` or
     # `trapz(j_cm, wavenum)` will be < 0 as they are sorted in opposite order.
@@ -198,7 +198,7 @@ def convert_emi2nm(j_cm, wavenum, Iunit0, Iunit):
     j_cm = conv2(j_cm, Iunit0, "mW/cm3/sr/cm-1")
 
     # Convert 'mW/cm3/sr/cm-1' to 'mW/cm3/sr/nm'
-    j_nm = j_cm * 1e-7 * wavenum ** 2
+    j_nm = j_cm * 1e-7 * wavenum**2
     # note that we discard the - sign.
     # This means that one of the integrals `trapz(L_nm, wavelen)` or
     # `trapz(L_cm, wavenum)` will be < 0 as they are sorted in opposite order.
@@ -256,7 +256,7 @@ def convert_rad2cm(l_nm, wavenum, Iunit0, Iunit):
     l_nm = conv2(l_nm, Iunit0, "mW/cm2/sr/nm")
 
     # Convert ''mW/cm2/sr/nm' to 'mW/cm2/sr/cm-1'
-    l_cm = l_nm * 1e7 / wavenum ** 2
+    l_cm = l_nm * 1e7 / wavenum**2
     # note that we discard the - sign.
     # This means that one of the integrals `trapz(L_nm, wavelen)` or
     # `trapz(L_cm, wavenum)` will be < 0 as they are sorted in opposite order.
@@ -299,7 +299,7 @@ def convert_rad2nm(l_cm, wavenum, Iunit0, Iunit):
     l_cm = conv2(l_cm, Iunit0, "mW/cm2/sr/cm-1")
 
     # Convert 'mW/cm2/sr/cm-1' to 'mW/cm2/sr/nm'
-    l_nm = l_cm * 1e-7 * wavenum ** 2
+    l_nm = l_cm * 1e-7 * wavenum**2
     # note that we discard the - sign.
     # This means that one of the integrals `trapz(L_nm, wavelen)` or
     # `trapz(L_cm, wavenum)` will be < 0 as they are sorted in opposite order.

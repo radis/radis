@@ -223,7 +223,7 @@ def EvJah_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, remove_ZPE=Tr
     Bv = Be  # no coupling terms
     Dv = De
     Hv = He
-    F = Bv * J * (J + 1) - Dv * J ** 2 * (J + 1) ** 2 + Hv * J ** 3 * (J + 1) ** 3
+    F = Bv * J * (J + 1) - Dv * J**2 * (J + 1) ** 2 + Hv * J**3 * (J + 1) ** 3
 
     if remove_ZPE:
         # ZPE = 0  # by construction here

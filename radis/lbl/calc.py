@@ -52,7 +52,7 @@ def calc_spectrum(
     neighbour_lines=0,
     cutoff=1e-27,
     parsum_mode="full summation",
-    optimization="min-RMS",
+    optimization="simple",
     broadening_method="voigt",
     overpopulation=None,
     name=None,
@@ -146,7 +146,7 @@ def calc_spectrum(
           through :py:func:`~radis.io.hitemp.fetch_hitemp`. Downloads all lines
           and all isotopes.
         - ``'exomol'``, to fetch the latest ExoMol database
-          through :py:func:`~radis.io.hitemp.fetch_exomol`. To download a specific
+          through :py:func:`~radis.io.exomol.fetch_exomol`. To download a specific
           database use (more info in fetch_exomol) ::
 
             databank=('exomol', 'EBJT')   # 'EBJT' is a specific ExoMol database name
@@ -178,11 +178,11 @@ def calc_spectrum(
     ----------------
     medium: ``'air'``, ``'vacuum'``
         propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``.
-        Does not change anything when giving inputs in wavenumber. Default ``'air'``​ .
+        Does not change anything when giving inputs in wavenumber. Default ``'air'``​
     wstep: float (:math:`cm^{-1}`)  or `'auto'`
         Resolution of wavenumber grid. Default ``0.01`` cm-1.
         If `'auto'`, it is ensured that there
-        are slightly more or less than :py:data:`~radis.params.GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD`
+        are slightly more or less than :py:data:`radis.config` ``['GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD']``
         points for each linewidth.
 
         .. note::
@@ -212,7 +212,7 @@ def calc_spectrum(
         function are not already tabulated. ``'full summation'`` : sums over all
         (potentially millions) of rovibrational levels. ``'tabulation'`` :
         builds an on-the-fly tabulation of rovibrational levels (500 - 4000x faster
-        and usually accurate within 0.1%). Default ``full summation'``
+        and usually accurate within 0.1%). Default ``'full summation'``
 
         .. note::
             parsum_mode= 'tabulation'  is new in 0.9.30, and makes nonequilibrium
@@ -227,7 +227,7 @@ def calc_spectrum(
         If using the LDM optimization, broadening method is automatically set to ``'fft'``.
         If ``None``, no lineshape interpolation is performed and the lineshape of all lines is calculated.
         Refer to [Spectral-Synthesis-Algorithm]_ for more explanation on the LDM method for lineshape interpolation.
-        Default ``"min-RMS"``.
+        Default ``"simple"``.
     overpopulation: dict
         dictionary of overpopulation compared to the given vibrational temperature.
         Default ``None``. Example::
@@ -340,14 +340,14 @@ def calc_spectrum(
     For more details on how to use the GPU method and process the database, refer to the examples
     linked above and the documentation on :ref:`GPU support for RADIS <label_radis_gpu>`.
     ​
-    .. minigallery:: radis.lbl.calc.calc_spectrum
-        :add-heading:
+    .. minigallery:: radis.calc_spectrum
 
     References
     ----------
     **cite**: RADIS is built on the shoulders of many state-of-the-art packages and databases. If using RADIS
     to compute spectra, make sure you cite all of them, for proper reproducibility and acknowledgement of
-    the work ! See :ref:`How to cite? <label_cite>`
+    the work ! See :ref:`How to cite? <label_cite>` and the :py:meth:`~radis.spectrum.spectrum.Spectrum.cite`
+    method.
 
     See Also
     --------

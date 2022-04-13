@@ -307,6 +307,7 @@ def fetch_exomol(
 
     See Also
     --------
+    :py:func:`~radis.io.hitran.fetch_hitran`, :py:func:`~radis.io.hitemp.fetch_hitemp`
     :py:func:`~radis.io.hdf5.hdf2df`
 
     """
@@ -464,20 +465,11 @@ class MdbExomol(object):
             from radis import config
 
             engine = config["MEMORY_MAPPING_ENGINE"]
-            # Quick fix for #401
+            # Quick fix for #401, #404
             if engine == "auto":
-                # "auto" uses "vaex" in most cases unless you're using the Spyder IDE (where it may result in freezes).
-                # see https://github.com/spyder-ide/spyder/issues/16183.
-                # and https://github.com/radis/radis/issues/401
-                if any("SPYDER" in name for name in environ):
-                    if verbose >= 3:
-                        print(
-                            "Spyder IDE detected. Memory-mapping-engine set to 'feather' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
-                        )
-                    engine = "feather"  # for ExoMol database
                 # temp fix for vaex not building on RTD
                 # see https://github.com/radis/radis/issues/404
-                elif any("READTHEDOCS" in name for name in environ):
+                if any("READTHEDOCS" in name for name in environ):
                     engine = "feather"
                     if verbose >= 3:
                         print(

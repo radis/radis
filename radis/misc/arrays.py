@@ -474,7 +474,7 @@ def numpy_add_at(LDM, k, l, m, I):
 ## Cython functions:
 try:
     import radis_cython_extensions as rcx
-except (ModuleNotFoundError):
+except (ModuleNotFoundError, ValueError):
     add_at = numpy_add_at
     #  or use radis.misc.utils.NotInstalled() ?
 # EP: Also got (after switching back to former Cython version) :

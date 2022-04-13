@@ -102,20 +102,11 @@ class DatabaseManager(object):
             from radis import config
 
             engine = config["MEMORY_MAPPING_ENGINE"]  # 'pytables', 'vaex', 'feather'
-            # Quick fix for #401
+            # Quick fix for #401, #404
             if engine == "auto":
-                # "auto" uses "vaex" in most cases unless you're using the Spyder IDE (where it may result in freezes).
-                # see https://github.com/spyder-ide/spyder/issues/16183.
-                # and https://github.com/radis/radis/issues/401
-                if any("SPYDER" in name for name in environ):
-                    engine = "pytables"  # for HITRAN and HITEMP databases
-                    if verbose >= 3:
-                        print(
-                            f"Spyder IDE detected. Memory-mapping-engine set to '{engine}' (less powerful than 'vaex' but Spyder user experience freezes). See https://github.com/spyder-ide/spyder/issues/16183. Change this behavior by setting the radis.config['MEMORY_MAPPING_ENGINE'] key"
-                        )
                 # temp fix for vaex not building on RTD
                 # see https://github.com/radis/radis/issues/404
-                elif any("READTHEDOCS" in name for name in environ):
+                if any("READTHEDOCS" in name for name in environ):
                     engine = "pytables"  # for HITRAN and HITEMP databases
                     if verbose >= 3:
                         print(
@@ -123,14 +114,6 @@ class DatabaseManager(object):
                         )
                 else:
                     engine = "vaex"
-
-        # vaex processes are stuck if ran from Spyder. See https://github.com/spyder-ide/spyder/issues/16183
-        if engine == "vaex" and any("SPYDER" in name for name in environ):
-            from radis.misc.log import printwarn
-
-            printwarn(
-                "Spyder IDE detected while using memory_mapping_engine='vaex'.\nVaex is the fastest way to read database files in RADIS, but Vaex processes may be stuck if ran from Spyder. See https://github.com/spyder-ide/spyder/issues/16183. Quick fix: starting a new console releases the lock, usually for the rest of your session. You may consider using another IDE, or using a different `memory_mapping_engine` such as 'pytables' or 'feather'. You can change the engine in Spectrum.fetch_databank() calls, or globally by setting the 'MEMORY_MAPPING_ENGINE' key in your ~/radis.json \n"
-            )
 
         self.name = name
         self.molecule = molecule
@@ -491,7 +474,7 @@ class DatabaseManager(object):
         df.plot("wav", "int")
 
     def get_nrows(self, local_file):
-        """ Get number of rows (without loading all DataFrame)"""
+        """Get number of rows (without loading all DataFrame)"""
         engine = self.engine
         local_file = expanduser(local_file)
         if engine == "pytables":

@@ -13,8 +13,6 @@ with RADIS or other spectral codes.
 
 User guide, install procedure and examples are available on the `RADIS Website <http://radis.readthedocs.io/>`__:
 
-|badge_docs|
-
 
 ===============
 Getting Started
@@ -29,7 +27,7 @@ Assuming you have Python installed with the `Anaconda <https://www.anaconda.com/
 
 **That's it!** You can now run your first example below.
 If you encounter any issue, or to upgrade the package later, please refer to the
-`detailed installation procedure <https://radis.readthedocs.io/en/latest/dev/install.html#label-install>`__ .
+`detailed installation procedure <https://radis.readthedocs.io/en/latest/dev/developer.html#label-install>`__ .
 
 Quick Start
 -----------
@@ -97,7 +95,7 @@ Refer to the `Examples <https://radis.readthedocs.io/en/latest/examples/examples
 GPU Acceleration
 ----------------
 
-RADIS supports GPU acceleration for super-fast computation of spectra:
+RADIS supports GPU acceleration for super-fast computation of spectra::
 
     from radis import SpectrumFactory
     from radis.tools.plot_tools import ParamRange
@@ -125,8 +123,7 @@ RADIS supports GPU acceleration for super-fast computation of spectra:
 
 .. image:: https://raw.githubusercontent.com/dcmvdbekerom/radis/gpu_widget_new_branch/docs/examples/GPU_spectrum.png
 
-Refer to :ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>` for more details on GPU acceleration.
----------------------------------------------------------------------
+Refer to `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/lbl.html#calculating-spectrum-using-gpu>`__ for more details on GPU acceleration.
 
 =======================================
 🌱 Try online (no installation needed!)
@@ -141,7 +138,7 @@ A simple web-app for RADIS under development.
     :target: https://radis.app/
     :alt: https://radis.app/
 
-See more `on GitHub <https://github.com/radis/radis-ui>`__
+See more `on GitHub <https://github.com/suzil/radis-app>`__
 
 
 RADIS-lab
@@ -275,7 +272,7 @@ See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__   |badge_awe
 .. |CO2| replace:: CO\ :sub:`2`
 
 .. |badge_docs| image:: https://readthedocs.org/projects/radis/badge/
-                :target: https://radis.readthedocs.io/en/latest/?badge=latest
+                :target: https://readthedocs.org/projects/radis/
                 :alt: Documentation Status
 
 .. |badge_article1| image:: https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg

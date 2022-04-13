@@ -94,6 +94,7 @@ def cast_to_int64_with_missing_values(dg, keys):
     """replace missing values of int64 columns with -1"""
     for c in keys:
         if dg.dtypes[c] != int64:
+            dg.loc[dg[c] == "  ", c] = -1  # replace empty cells by -1, e.g. HCN
             dg[c] = dg[c].fillna(-1).astype(int64)
 
 
@@ -1176,9 +1177,6 @@ class HITRANDatabaseManager(DatabaseManager):
                 cache=False,  # do not generate cache yet
                 parse_quanta=parse_quanta,
             )
-            # if engine == 'vaex':
-            #     df.executor.async_method = "awaitio"   # Temp fix for https://github.com/spyder-ide/spyder/issues/16183
-
             wmin_final = min(wmin_final, df.wav.min())
             wmax_final = max(wmax_final, df.wav.max())
             Nlines += len(df)
@@ -1290,8 +1288,10 @@ def fetch_hitran(
 
     Parameters
     ----------
-    molecule: `"H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"`
-        HITEMP molecule. See https://hitran.org/hitemp/
+    molecule: str
+        one specific molecule name, listed in HITRAN molecule metadata.
+        See https://hitran.org/docs/molec-meta/
+        Example: "H2O", "CO2", etc.
     local_databases: str
         where to create the RADIS HDF5 files. Default ``"~/.radisdb/hitran"``.
         Can be changed in ``radis.config["DEFAULT_DOWNLOAD_PATH"]`` or in ~/radis.json config file
@@ -1340,15 +1340,14 @@ def fetch_hitran(
     --------
     ::
 
-        from radis import fetch_hitemp
-        df = fetch_hitemp("CO")
+        from radis.io.hitran import fetch_hitran
+        df = fetch_hitran("CO")
         print(df.columns)
         >>> Index(['id', 'iso', 'wav', 'int', 'A', 'airbrd', 'selbrd', 'El', 'Tdpair',
-            'Pshft', 'ierr', 'iref', 'lmix', 'gp', 'gpp', 'Fu', 'branch', 'jl',
-            'syml', 'Fl', 'vu', 'vl'],
+            'Pshft', 'gp', 'gpp', 'branch', 'jl', 'vu', 'vl'],
             dtype='object')
 
-    .. minigallery:: radis.io.hitemp.fetch_hitemp
+    .. minigallery:: radis.fetch_hitran
 
     Notes
     -----
@@ -1360,6 +1359,7 @@ def fetch_hitran(
 
     See Also
     --------
+    :py:func:`~radis.io.hitemp.fetch_hitemp`, :py:func:`~radis.io.exomol.fetch_exomol`
     :py:func:`~radis.io.hdf5.hdf2df`, :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`
 
     """

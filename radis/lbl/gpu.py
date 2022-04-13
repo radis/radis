@@ -528,7 +528,7 @@ def gpu_init(
     log_c2Mm_arr = np.array(
         [0]
         + [
-            0.5 * np.log(8 * k * np.log(2) / (c ** 2 * Mm * 1e-3 / N_A))
+            0.5 * np.log(8 * k * np.log(2) / (c**2 * Mm * 1e-3 / N_A))
             for Mm in Mm_arr[1:]
         ]
     )

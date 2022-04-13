@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 
 def fetch_ExoMol_molecules():
-    """ Get list of molecules in ExoMol by scrapping the ExoMol page """
+    """Get list of molecules in ExoMol by scrapping the ExoMol page"""
 
     url = "https://exomol.com/data/molecules/"
     try:
@@ -37,7 +37,7 @@ def fetch_ExoMol_molecules():
 
 @pytest.mark.needs_connection
 def test_ExoMol_molecules_list(verbose=True, *args, **kwargs):
-    """ Test that ExoMol molecule list in RADIS remains up to date"""
+    """Test that ExoMol molecule list in RADIS remains up to date"""
 
     from radis.db.classes import EXOMOL_MOLECULES
     from radis.misc.basics import compare_lists
@@ -63,7 +63,7 @@ def test_ExoMol_molecules_list(verbose=True, *args, **kwargs):
 
 
 def fetch_ExoMol_isotopes(verbose=True, *args, **kwargs):
-    """ Get dictionary of isotope names in ExoMol by scrapping the ExoMol pages """
+    """Get dictionary of isotope names in ExoMol by scrapping the ExoMol pages"""
 
     isotopes_full_names = {}
     molecules = fetch_ExoMol_molecules()
@@ -116,7 +116,7 @@ def fetch_HITRAN_molecules():
 
 @pytest.mark.needs_connection
 def test_HITRAN_molecules_list(verbose=True, *args, **kwargs):
-    """ Test that HITRAN molecule list in RADIS remains up to date"""
+    """Test that HITRAN molecule list in RADIS remains up to date"""
 
     from radis.db.classes import HITRAN_MOLECULES
     from radis.misc.basics import compare_lists
