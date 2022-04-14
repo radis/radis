@@ -3625,6 +3625,10 @@ class BaseFactory(DatabankLoader):
             discard linestrengths that are lower that this, to reduce calculation
             times. If 0, no cutoff. Default 0
 
+        cutoff_error: float
+            user-inputted value of cutoff error, to keep the estimated error
+            below this value. If None, no error to consider. Default None.
+
         Notes
         -----
 
@@ -3676,16 +3680,25 @@ class BaseFactory(DatabankLoader):
             else:
                 error_cutoff = df.S[b].sum() / df.S.sum() * 100
 
-            if cutoff_error < error:
-                # Remove additional lines such that cutoff error is less than user-inputted value
-                while cutoff_error < error:
-                    cutoff -= 0.0001
-                    b = df.S <= cutoff
-                    error = df.S[b].sum() / df.S.sum() * 100
-            else:
-                print("Cutoff error is greater than the current error.")
+            if cutoff_error is not None:
+                if cutoff_error < error:
+                    # Remove additional lines such that cutoff error is less than user-inputted value
+                    while cutoff_error < error:
+                        cutoff -= 0.0001
+                        b = df.S <= cutoff
+                        error = df.S[b].sum() / df.S.sum() * 100
+                else:
+                    print(
+                        "Cutoff error is greater than the current error."
+                        + " Inputted cutoff error percentage is {0:.2f}%".format(
+                            cutoff_error
+                        )
+                        + " Estimated error: {0:.2f}%".format(error)
+                    )
 
-            Nlines_cutoff = b.sum()
+                Nlines_cutoff = b.sum()
+            else:
+                print("Cutoff error not inputted.")
 
             if verbose >= 2:
                 print(
