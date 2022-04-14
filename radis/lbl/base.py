@@ -3077,7 +3077,7 @@ class BaseFactory(DatabankLoader):
 
     # %%
     def calc_emission_integral(self):
-        r"""Calculate the emission integral (in :math:`mW/sr`) of all lines in DataFrame ``df1``.
+        """Calculate the emission integral (in :math:`mW/sr`) of all lines in DataFrame ``df1``.
 
         .. math::
 
@@ -3145,7 +3145,7 @@ class BaseFactory(DatabankLoader):
         return
 
     # %%
-    def _cutoff_linestrength(self, cutoff=None):
+    def _cutoff_linestrength(self, cutoff=None, cutoff_error=None):
         """Discard linestrengths that are lower that this, to reduce
         calculation times. Set the number of lines cut in
         ``self._Nlines_cutoff``
@@ -3169,9 +3169,12 @@ class BaseFactory(DatabankLoader):
         # Update defaults
         if cutoff is not None:
             self.params.cutoff = cutoff
+        if cutoff_error is not None:
+            self.params.cutoff_error = cutoff_error
 
         # Load variables
         cutoff = self.params.cutoff
+        cutoff_error = self.params.cutoff_error
         verbose = self.verbose
         df = self.df1
 
@@ -3201,6 +3204,17 @@ class BaseFactory(DatabankLoader):
         if self.warnings["LinestrengthCutoffWarning"] != "ignore":
 
             error = df.S[b].sum() / df.S.sum() * 100
+
+            if cutoff_error < error:
+                # Remove additional lines such that cutoff error is less than user-inputted value
+                while cutoff_error < error:
+                    cutoff -= 0.0001
+                    b = df.S <= cutoff
+                    error = df.S[b].sum() / df.S.sum() * 100
+            else:
+                print("Cutoff error is greater than the current error.")
+
+            Nlines_cutoff = b.sum()
 
             if verbose >= 2:
                 print(
