@@ -458,6 +458,7 @@ class Parameters(ConditionDict):
         "neighbour_lines",
         "chunksize",
         "cutoff",
+        "cutoff_error",
         "db_use_cached",
         "dbformat",
         "dbpath",
@@ -491,6 +492,9 @@ class Parameters(ConditionDict):
         self.truncation = None  #: float: cutoff for half-width lineshape calculation (cm-1). Overwritten by SpectrumFactory
         self.neighbour_lines = None  #: float: extra range (cm-1) on each side of the spectrum to account for neighbouring lines. Overwritten by SpectrumFactory
         self.cutoff = None  #: float: linestrength cutoff (molecule/cm)
+        self.cutoff_error = (
+            None  #: float: error percentage below which the cutoff error should be
+        )
         self.broadening_method = ""  #: str:``"voigt"``, ``"convolve"``, ``"fft"``
         self.optimization = None  #: str: ``"simple"``, ``"min-RMS"``, ``None``
         self.db_use_cached = (
