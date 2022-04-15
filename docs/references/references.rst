@@ -60,6 +60,13 @@ Research papers using RADIS and the associated algorithms :
 
 - Papers citing |badge_article2| : https://scholar.google.fr/scholar?cites=17363432006874800849
 
+Tutorials
+=============
+Tutorials for molecular spectroscopy can be found here at https://github.com/radis/spectro101
+
+- Lab Spectroscopy: https://github.com/radis/spectro101/blob/main/102_lab_spectroscopy.ipynb
+
+- Line Broadening: https://github.com/radis/spectro101/blob/main/103_lineshape_broadening.ipynb 
 
 Useful Links
 ============
