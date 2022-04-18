@@ -3614,7 +3614,7 @@ class BaseFactory(DatabankLoader):
 
     # %%
     def _cutoff_linestrength(self, cutoff=None, cutoff_error=None):
-        """Discard linestrengths that are lower that this, to reduce
+        r"""Discard linestrengths that are lower that this, to reduce
         calculation times. Set the number of lines cut in
         ``self._Nlines_cutoff``
 
