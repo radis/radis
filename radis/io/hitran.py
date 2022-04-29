@@ -94,8 +94,12 @@ def cast_to_int64_with_missing_values(dg, keys):
     """replace missing values of int64 columns with -1"""
     for c in keys:
         if dg.dtypes[c] != int64:
-            dg.loc[dg[c] == "  ", c] = -1  # replace empty cells by -1, e.g. HCN
-            dg[c] = dg[c].fillna(-1).astype(int64)
+            dg[c].replace(
+                r"^\s+$", -1, regex=True, inplace=True
+            )  # replace empty strings by -1, e.g. HCN
+            # Warning: -1 may be a valid non-equilibirum quantum number for some
+            # molecules, e.g. H2O, see https://github.com/radis/radis/issues/280#issuecomment-896120510
+            dg[c] = dg[c].fillna(-1).astype(int64)  # replace nans with -1
 
 
 def hit2df(
