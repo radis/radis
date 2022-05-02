@@ -1211,21 +1211,41 @@ def _parse_HITRAN_group6(df, verbose=True):
 
     """
 
+    # 1. Parse
+
     # Ref [1] : locu
     # --------------
     #     | F'  |
     # 10X | A5  |
-
+    dgu = (
+        df["locu"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{10}(?P<Fu>.{5})",
+            expand=True,
+        )
+    )
     # Ref [1] : locl
     # --------------
     #     | Br  | J''  | Sym'' | F'' |
     # 3X  | A1  | F5.1 | A1    | A5  |
-
-    if verbose > 2:
-        print(
-            "parse_local_quanta not implemented for molecules of HITRAN group 6 ({HITRAN_GROUP6}). Non-LTE calculations will not be possible."
+    dgl = (
+        df["locl"]
+        .astype(str)
+        .str.extract(
+            r"[ ]{3}(?P<branch>[\S]{1})(?P<jl>[\d]{5}\.[\d]{1})(?P<syml>.)(?P<Fl>.{5})",
+            expand=True,
         )
-    return df
+    )
+
+    # 2. Convert to numeric
+    dgl["jl"] = dgl.jl.apply(pd.to_numeric)
+
+    # 3. Clean
+    del df["locu"]
+    del df["locl"]
+
+    return pd.concat([df, dgu, dgl], axis=1)
 
 
 # %% Reading function
