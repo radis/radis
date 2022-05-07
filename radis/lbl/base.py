@@ -3181,6 +3181,9 @@ class BaseFactory(DatabankLoader):
         cutoff_error = self.params.cutoff_error
         verbose = self.verbose
         df = self.df1
+        df1 = self.df1
+        lines_by_intensity = df1.S.tolist()
+        lines_by_intensity.sort()
 
         if len(df) == 0:  # no lines
             self._Nlines_cutoff = None
@@ -3212,10 +3215,37 @@ class BaseFactory(DatabankLoader):
             if cutoff_error is not None:
                 if cutoff_error < error:
                     # Remove additional lines such that cutoff error is less than user-inputted value
-                    while cutoff_error < error:
-                        cutoff -= 0.0001
-                        b = df.S <= cutoff
-                        error = df.S[b].sum() / df.S.sum() * 100
+                    intensity_sum = 0
+                    for i in lines_by_intensity:
+                        intensity_sum += i
+                    # Last value of the list is the cumulative intensity
+                    lines_by_intensity.append(intensity_sum)
+                    desired_intensity = (cutoff_error / 100) * lines_by_intensity[-1]
+                    next_index = 0
+                    sum = 0
+                    # Find the index till which sum <= desired intensity and remove the rest of the elements
+                    for i in lines_by_intensity[:-1]:
+                        if sum <= desired_intensity:
+                            if sum + lines_by_intensity[next_index] > desired_intensity:
+                                break
+                            else:
+                                sum += i
+                                next_index += 1
+                        else:
+                            break
+                    # Change a copy of the list containing lines by intensity
+                    correct_lines = lines_by_intensity.copy()
+                    for i in range(next_index + 1, len(lines_by_intensity) + 1):
+                        correct_lines.pop()
+                    # Update the database
+                    df1["S"] = correct_lines
+                    # Print current error
+                    current_error = sum / lines_by_intensity[-1] * 100
+                    print(
+                        "Current percentage error: {0:.2f}% ".format(current_error)
+                        + "Inputted error: {0:.2f}%".format(cutoff_error)
+                    )
+
                 else:
                     print(
                         "Cutoff error is greater than the current error."
@@ -3224,7 +3254,7 @@ class BaseFactory(DatabankLoader):
                         )
                         + " Estimated error: {0:.2f}%".format(error)
                     )
-
+                b = df.S <= cutoff
                 Nlines_cutoff = b.sum()
             else:
                 print("Cutoff error not inputted.")
