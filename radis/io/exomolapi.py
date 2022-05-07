@@ -32,7 +32,6 @@ def read_def(deff):
     dat = pd.read_csv(deff, sep="#", names=("VAL", "COMMENT"))
     alpha_ref = None
     # texp = None
-    molmasssw = False
     n_Texp = None
     ntransf = 1
     maxnu = 0.0
@@ -42,18 +41,13 @@ def read_def(deff):
             alpha_ref = float(dat["VAL"][i])
         elif "Default value of temperature exponent" in com:
             n_Texp = float(dat["VAL"][i])
-        elif "Element symbol 2" in com:
-            molmasssw = True
         elif "No. of transition files" in com:
             ntransf = int(dat["VAL"][i])
         elif "Maximum wavenumber (in cm-1)" in com:
             maxnu = float(dat["VAL"][i])
             # maxnu=20000.0
-        elif molmasssw:
-            c = np.unique(dat["VAL"][i].strip(" ").split(" "))
-            c = np.array(c, dtype=np.float)
-            molmass = np.max(c)
-            molmasssw = False
+        elif "Isotopologue mass (Da) and (kg)" in com:
+            molmass = float(dat["VAL"][i].split()[0])  # in Da (atomic unit)
 
         elif "Lifetime availability" in com:
             lifetime = dat["VAL"][i] == 1
@@ -63,11 +57,46 @@ def read_def(deff):
         elif "Quantum label" in com:
             quantum_labels.append(dat["VAL"][i].strip(" "))
 
-        # SOME DEF FILES CONTAINS ERRORS. THESE ARE THE EXCEPTIONS
-        if deff.stem == "12C-16O2__UCL-4000":
-            ntransf = 20
-        if deff.stem == "14N-1H3__CoYuTe":
-            maxnu = 20000.0
+    # SOME DEF FILES CONTAINS ERRORS. THESE ARE THE EXCEPTIONS
+    if deff.stem == "12C-16O2__UCL-4000":
+        ntransf = 20
+    if deff.stem == "14N-1H3__CoYuTe":
+        maxnu = 20000.0
+    if deff.stem == "12C2-1H2__aCeTY":
+        if molmass == 12.0:
+            molmass = 26.0
+            print(
+                f"Known error in ExoMol def file, molmass corrected from 12.0 to {molmass}"
+            )
+        if quantum_labels == [
+            "totalSym",
+            "v1",
+            "v2",
+            "v3",
+            "v4",
+            "v5",
+            "v5",
+            "v7",
+            "vibSym",
+            "K",
+            "rotSym",
+        ]:
+            quantum_labels = [
+                "totalSym",
+                "v1",
+                "v2",
+                "v3",
+                "v4",
+                "v5",
+                "v6",
+                "v7",
+                "vibSym",
+                "K",
+                "rotSym",
+            ]
+            print(
+                f"Known error in ExoMol def file, quantum_labels corrected from '['totalSym', 'v1', 'v2', 'v3', 'v4', 'v5', 'v5', 'v7', 'vibSym', 'K', 'rotSym']' to {quantum_labels}"
+            )
 
     if ntransf > 1:
         dnufile = maxnu / ntransf
