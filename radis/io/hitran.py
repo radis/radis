@@ -1283,6 +1283,7 @@ def fetch_hitran(
     clean_cache_files=True,
     return_local_path=False,
     engine="default",
+    output="pandas",
     parallel=True,
     parse_quanta=True,
 ):
@@ -1323,6 +1324,9 @@ def fetch_hitran(
         if ``True``, also returns the path of the local database file.
     engine: 'pytables', 'vaex', 'default'
         which HDF5 library to use. If 'default' use the value from ~/radis.json
+    output: 'pandas', 'vaex', 'jax'
+        format of the output DataFrame. If ``'jax'``, returns a dictionary of
+        jax arrays.
     parallel: bool
         if ``True``, uses joblib.parallel to load database with multiple processes
     parse_quanta: bool
@@ -1416,6 +1420,7 @@ def fetch_hitran(
         isotope=isotope,
         load_wavenum_min=load_wavenum_min,  # for relevant files, get only the right range
         load_wavenum_max=load_wavenum_max,
+        output=output,
     )
 
     return (df, local_file) if return_local_path else df
