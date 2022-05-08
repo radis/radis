@@ -43,6 +43,7 @@ def get_exomol_full_isotope_name(molecule, isotope):
     Examples
     --------
     ::
+
         get_exomol_full_isotope_name("CH4", 1)
         >>> '12C-1H4'
 
@@ -295,7 +296,7 @@ def fetch_exomol(
     Examples
     --------
 
-    .. minigallery:: radis.io.exomol.fetch_exomol
+    .. minigallery:: radis.fetch_exomol
 
     Notes
     -----
@@ -411,20 +412,23 @@ class MdbExomol(object):
 
     MdbExomol is a class for ExoMol.
 
-    Attributes:
-        nu_lines (nd array): line center (cm-1)
-        Sij0 (nd array): line strength at T=Tref (cm)
-        dev_nu_lines (np array): line center in device (cm-1)
-        logsij0 (np array): log line strength at T=Tref
-        A (np array): Einstein A coefficient
-        elower (np array): the lower state energy (cm-1)
-        gpp (np array): statistical weight
-        jlower (np array): J_lower
-        jupper (np array): J_upper
-        n_Tref (np array): temperature exponent
-        alpha_ref (np array): alpha_ref (gamma0)
-        n_Tref_def: default temperature exponent in .def file, used for jlower not given in .broad
-        alpha_ref_def: default alpha_ref (gamma0) in .def file, used for jlower not given in .broad
+    Parameters
+    ----------
+    nu_lines (nd array): line center (cm-1)
+    Sij0 (nd array): line strength at T=Tref (cm)
+    dev_nu_lines (np array): line center in device (cm-1)
+    logsij0 (np array): log line strength at T=Tref
+    A (np array): Einstein A coefficient
+    elower (np array): the lower state energy (cm-1)
+    gpp (np array): statistical weight
+    jlower (np array): J_lower
+    jupper (np array): J_upper
+    n_Tref (np array): temperature exponent
+    alpha_ref (np array): alpha_ref (gamma0)
+    n_Tref_def: default temperature exponent in .def file, used for jlower not given in .broad
+    alpha_ref_def: default alpha_ref (gamma0) in .def file, used for jlower not given in .broad
+
+    .. minigallery:: radis.fetch_exomol
 
     """
 
@@ -440,23 +444,28 @@ class MdbExomol(object):
         nurange=[-np.inf, np.inf],
         margin=1.0,
         crit=-np.inf,
-        bkgdatm="H2",
+        bkgdatm="H2",  # TODO: use Air whenever possible, to be consistent with HITRAN/HITEMP
         broadf=True,
         engine="vaex",
         verbose=True,
     ):
         """Molecular database for Exomol form
 
-        Args:
-           path: path for Exomol data directory/tag. For instance, "/home/CO/12C-16O/Li2015"
-           nurange: wavenumber range list (cm-1) or wavenumber array
-           margin: margin for nurange (cm-1)
-           crit: line strength lower limit for extraction
-           bkgdatm: background atmosphere for broadening. e.g. H2, He,
-           broadf: if False, the default broadening parameters in .def file is used
+        Parameters
+        ----------
+        path: path for Exomol data directory/tag. For instance, "/home/CO/12C-16O/Li2015"
+        nurange: wavenumber range list (cm-1) or wavenumber array
+        margin: margin for nurange (cm-1)
+        crit: line strength lower limit for extraction
+        bkgdatm: background atmosphere for broadening. e.g. H2, He,
+        broadf: if False, the default broadening parameters in .def file is used
 
-        Note:
-           The trans/states files can be very large. For the first time to read it, we convert it to the feather-format. After the second-time, we use the feather format instead.
+        Notes
+        -----
+
+        The trans/states files can be very large. For the first time to read it,
+        we convert it to the feather or hdf5-format. After the second-time,
+        we use the feather/hdf5 format instead.
 
         """
         from os import environ
@@ -564,14 +573,17 @@ class MdbExomol(object):
             ]  # the i, E, g, J are in the 4 first columns
         elif engine == "vaex":
             if self.states_file.with_suffix(".bz2.hdf5").exists():
-                states = vaex.open(self.states_file.with_suffix(".bz2.hdf5"))
-                ndstates = vaex.array_types.to_numpy(states)
+                states_file_cache = self.states_file.with_suffix(".bz2.hdf5")
+                states = vaex.open(states_file_cache)
+            elif self.states_file.with_suffix(".hdf5").exists():
+                states_file_cache = self.states_file.with_suffix(".hdf5")
+                states = vaex.open(states_file_cache)
             else:
                 print(
                     "Note: Caching states data to the hdf5 format with vaex. After the second time, it will become much faster."
                 )
                 states = exomolapi.read_states(self.states_file, dic_def, engine="vaex")
-                ndstates = vaex.array_types.to_numpy(states)
+            ndstates = vaex.array_types.to_numpy(states)
 
         # load pf
         pf = exomolapi.read_pf(self.pf_file)
@@ -585,6 +597,7 @@ class MdbExomol(object):
         self.Tref = 296.0
         self.QTref = np.array(self.QT_interp(self.Tref))
 
+        # Case1 : transitions are stored in a single file
         if dic_def["numinf"] is None:
             self.trans_file = self.path / pathlib.Path(molec + ".trans.bz2")
             if not self.trans_file.exists():
@@ -593,6 +606,7 @@ class MdbExomol(object):
             if engine == "vaex":
                 if self.trans_file.with_suffix(".hdf5").exists():
                     trans = vaex.open(self.trans_file.with_suffix(".hdf5"))
+                    # Apply filter
                     cdt = 1
                     if not np.isneginf(self.nurange[0]):
                         cdt *= trans.nu_lines > self.nurange[0] - self.margin
@@ -602,19 +616,35 @@ class MdbExomol(object):
                         cdt *= trans.Sij0 > self.crit
                     if cdt != 1:
                         trans = trans[cdt]
-                    ndtrans = vaex.array_types.to_numpy(trans)
 
                     # mask has been alraedy applied
                     mask_needed = False
+
                 else:
                     print(
                         "Note: Caching line transition data to the HDF5 format with vaex. After the second time, it will become much faster."
                     )
                     trans = exomolapi.read_trans(self.trans_file, engine="vaex")
-                    ndtrans = vaex.array_types.to_numpy(trans)
 
+                    # Check validity
+                    b = trans.nu_lines.isnan()  # TODO: check if can be made faster?
+                    if b.sum() > 0:
+                        raise NotImplementedError(
+                            "transition wavenumber not given. Has to be computed from upper/lower level energy look up"
+                        )
                     # mask needs to be applied
                     mask_needed = True
+
+                # TODO Load extra columns (precomputed Sij0, etc.)
+                # trans_file_extra = self.trans_file.with_name(
+                #    self.trans_file.stem + "_extra" + self.trans_file.suffix
+                # )
+                # if trans_file_extra.exists():
+                #    trans_extra = vaex.open(trans_file_extra)
+                #    # trans = trans.join(trans_extra)  # merge without column name will merge on rows basis
+
+                ndtrans = vaex.array_types.to_numpy(trans)
+
             elif engine == "feather":
                 if self.trans_file.with_suffix(".feather").exists():
                     trans = pd.read_feather(self.trans_file.with_suffix(".feather"))
@@ -628,7 +658,7 @@ class MdbExomol(object):
                 # mask needs to be applied   (in feather mode we don't sleect wavneumbers)
                 mask_needed = True
 
-            # compute gup and elower
+            # compute extra parameters (Sij0, gup and elower, etc.)
             (
                 self._A,
                 self.nu_lines,
@@ -643,7 +673,8 @@ class MdbExomol(object):
             if engine == "vaex" and self.trans_file.with_suffix(".hdf5").exists():
                 # if engine == 'feather' we recompute all the time
                 # Todo : we should get the column name instead ?
-                self.Sij0 = ndtrans[:, 4]
+                self.Sij0 = ndtrans[:, 4]  # TODO: Refactor remove array index lookups.
+                # TODO Refactor. Add extra here:   trans = trans.join(trans_extra)
             else:
                 ##Line strength:
                 from radis.lbl.base import (  # TODO: move elsewhere
@@ -679,6 +710,7 @@ class MdbExomol(object):
                     trans.export(self.trans_file.with_suffix(".hdf5"))
                 #  TODO : implement masking in 'feather' mode
 
+        # Case2 : Transitions are stored in multiple files:
         else:  # dic_def["numinf"] is not None
             imin = (
                 np.searchsorted(dic_def["numinf"], nurange[0], side="right") - 1
@@ -722,7 +754,6 @@ class MdbExomol(object):
                             cdt *= trans.Sij0 > self.crit
                         if cdt != 1:
                             trans = trans[cdt]
-                        ndtrans = vaex.array_types.to_numpy(trans)
 
                         # mask has been already applied
                         mask_needed = False
@@ -731,13 +762,32 @@ class MdbExomol(object):
                             "Note: Caching line transition data to the HDF5 format with vaex. After the second time, it will become much faster."
                         )
                         trans = exomolapi.read_trans(trans_file, engine="vaex")
-                        ndtrans = vaex.array_types.to_numpy(trans)
+
+                        # Check validity
+                        b = trans.nu_lines.isnan()  # TODO: check if can be made faster?
+                        if b.sum() > 0:
+                            raise NotImplementedError(
+                                "transition wavenumber not given. Has to be computed from upper/lower level energy look up"
+                            )
+
+                        # TODO Load extra columns (precomputed Sij0, etc.)
+                        # trans_file_extra = self.trans_file.with_name(
+                        #    self.trans_file.stem + "_extra" + self.trans_file.suffix
+                        # )
+                        # if trans_file_extra.exists():
+                        #    trans_extra = vaex.open(trans_file_extra)
+                        #    trans = trans.join(
+                        #        trans_extra
+                        #    )  # merge without column name will merge on rows basis
 
                         # mask needs to be applied
                         mask_needed = True
+
+                    ndtrans = vaex.array_types.to_numpy(trans)
                 self.trans_file.append(trans_file)
 
-                # compute gup and elower
+                # Complete transition data with lookup on upper & lower state :
+                # In particular, compute gup and elower
                 if k == 0:
                     (
                         self._A,
@@ -839,6 +889,7 @@ class MdbExomol(object):
                             [self._quantumNumbers[key], quantumNumbersx[key]]
                         )
 
+                    #  TODO refactpr : store into "extra" file ; create column if needed ;if it did exist already make sure the value was computed for ALL lines
                     if (
                         engine == "vaex"
                         and not trans_file.with_suffix(".hdf5").exists()
@@ -947,11 +998,13 @@ class MdbExomol(object):
     def QT_interp(self, T):
         """interpolated partition function
 
-        Args:
-           T: temperature
+        Parameters
+        ----------
+        T: temperature
 
-        Returns:
-           Q(T) interpolated in jnp.array
+        Returns
+        -------
+        Q(T) interpolated in jnp.array
 
         """
         return np.interp(T, self.T_gQT, self.gQT)
@@ -959,11 +1012,13 @@ class MdbExomol(object):
     def qr_interp(self, T):
         """interpolated partition function ratio
 
-        Args:
-           T: temperature
+        Parameters
+        ----------
+        T: temperature
 
-        Returns:
-           qr(T)=Q(T)/Q(Tref) interpolated in jnp.array
+        Returns
+        -------
+        qr(T)=Q(T)/Q(Tref) interpolated in jnp.array
 
         """
         return self.QT_interp(T) / self.QT_interp(self.Tref)
@@ -971,13 +1026,15 @@ class MdbExomol(object):
     def download(self, molec, extension, numtag=None):
         """Downloading Exomol files
 
-        Args:
-           molec: like "12C-16O__Li2015"
-           extension: extension list e.g. [".pf",".def",".trans.bz2",".states.bz2",".broad"]
-           numtag: number tag of transition file if exists. e.g. "11100-11200"
+        Parameters
+        ----------
+        molec: like "12C-16O__Li2015"
+        extension: extension list e.g. [".pf",".def",".trans.bz2",".states.bz2",".broad"]
+        numtag: number tag of transition file if exists. e.g. "11100-11200"
 
-        Note:
-           The download URL is written in exojax.utils.url.
+        Notes
+        -----
+        The download URL is written in exojax.utils.url.
 
         """
         import os
@@ -1059,6 +1116,11 @@ class MdbExomol(object):
         assert self.Tref == 296  # default in RADIS
 
         return df
+
+    def to_jax(self):
+        """Generate Jax arrays for use in ExoJax"""
+
+        pass  # TODO
 
 
 if __name__ == "__main__":

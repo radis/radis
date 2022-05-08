@@ -142,40 +142,49 @@ def read_pf(pff):
 
 def read_trans(transf, engine="vaex"):
     """Exomol IO for a transition file
-    Note:
+
+    Notes
+    -----
+
+    Transf format ::
+
         i_upper=Upper state counting number
         i_lower=Lower state counting number
         A=Einstein coefficient in s-1
         nu_lines=transition wavenumber in cm-1
-        See Table 12 in https://arxiv.org/pdf/1603.05890.pdf
 
-    Args:
-        transf: transition file
-        engine: parsing engine to use ('vaex', 'csv')
-    Returns:
-        transition data in pandas DataFrame
+    See Table 12 in https://arxiv.org/pdf/1603.05890.pdf [Exomol-2016]_
+
+    Parameters
+    ----------
+    transf: transition file
+    engine: parsing engine to use ('vaex', 'csv')
+
+    Returns
+    -------
+    transition data in vaex/pandas DataFrame
 
     """
     if engine == "vaex":
         import vaex
 
-        try:
+        try:  # bz2 compression
             dat = vaex.from_csv(
                 transf,
                 compression="bz2",
                 sep=r"\s+",
                 names=("i_upper", "i_lower", "A", "nu_lines"),
-                convert=True,
+                convert=False,  #  file is created by MdbMol
             )
         except:
             dat = vaex.read_csv(
                 transf,
                 sep=r"\s+",
                 names=("i_upper", "i_lower", "A", "nu_lines"),
-                convert=True,
+                convert=False,  #  file is created by MdbMol
             )
     elif engine == "csv":
-        try:
+        try:  # bz2 compression
             dat = pd.read_csv(
                 transf,
                 compression="bz2",
@@ -192,20 +201,30 @@ def read_trans(transf, engine="vaex"):
 
 def read_states(statesf, dic_def, engine="vaex"):
     """Exomol IO for a state file
-    Note:
+
+    Notes
+    -----
+
+    States f format ::
+
         i=state counting number
         E=state energy
         g=state degeneracy
         J=total angular momentum
-        See Table 11 in https://arxiv.org/pdf/1603.05890.pdf
 
-    Args:
-        statesf: state file
-        dic_def: Info from def file to read extra quantum numbers
-        engine: parsing engine to use ('vaex', 'csv')
-    Returns:
-        states data in pandas DataFrame
+    See Table 11 in https://arxiv.org/pdf/1603.05890.pdf
 
+    Parameters
+    ----------
+    statesf: state file
+    dic_def: Info from def file to read extra quantum numbers
+    engine: parsing engine to use ('vaex', 'csv')
+
+    Returns
+    -------
+    states data in pandas DataFrame
+
+    If ``'vaex'``, also writes a local hdf5 file `statesf.with_suffix('.hdf5')`
     """
     # we read first 4 columns for ("i", "E", "g", "J"),
     # skip lifetime, skip Landé g-factor,
@@ -258,21 +277,24 @@ def read_states(statesf, dic_def, engine="vaex"):
 
 
 def pickup_gE(ndstates, ndtrans, trans_file, dic_def, trans_lines=False):
-    """extract g_upper (gup), E_lower (elower), and J_lower and J_upper from states DataFrame and insert them to transition DataFrame.
+    """extract g_upper (gup), E_lower (elower), and J_lower and J_upper from states
+    DataFrame and insert them into the transition DataFrame.
 
-    Args:
-       ndstates: states numpy array    - the i, E, g, J are in the 4 first columns
-       ndtrans: transition numpy array
-       trans_file: name of the transition file
-       trans_lines: By default (False) we use nu_lines computed using the state file, i.e. E_upper - E_lower. If trans_nuline=True, we use the nu_lines in the transition file. Note that some trans files do not this info.
-       dic_def: Informations about additional quantum labels
+    Parameters
+    ----------
+    ndstates: states numpy array    - the i, E, g, J are in the 4 first columns
+    ndtrans: transition numpy array
+    trans_file: name of the transition file
+    trans_lines: By default (False) we use nu_lines computed using the state file, i.e. E_upper - E_lower. If trans_nuline=True, we use the nu_lines in the transition file. Note that some trans files do not this info.
+    dic_def: Informations about additional quantum labels
 
+    Returns
+    -------
+    A, nu_lines, elower, gup, jlower, jupper, mask, **quantum_labels
 
-    Returns:
-       A, nu_lines, elower, gup, jlower, jupper, mask, **quantum_labels
-
-    Note:
-       We first convert pandas DataFrame to ndarray. The state counting numbers in states DataFrame is used as indices of the new array for states (newstates). We remove the state count numbers as the column of newstate, i.e. newstates[:,k] k=0: E, 1: g, 2: J. Then, we can directly use the state counting numbers as mask.
+    Notes
+    -----
+    We first convert pandas DataFrame to ndarray. The state counting numbers in states DataFrame is used as indices of the new array for states (newstates). We remove the state count numbers as the column of newstate, i.e. newstates[:,k] k=0: E, 1: g, 2: J. Then, we can directly use the state counting numbers as mask.
 
 
     """
@@ -399,13 +421,17 @@ def pickup_gE(ndstates, ndtrans, trans_file, dic_def, trans_lines=False):
 
 def read_broad(broadf):
     """Reading braodening file (.broad)
-    Args:
-       broadf: .broad file
+    Parameters
+    ----------
+    broadf: .broad file
 
-    Return:
-       broadening info in bdat form (pandas), defined by this instance.
-    Note:
-       See Table 16 in https://arxiv.org/pdf/1603.05890.pdf
+    Returns
+    -------
+    broadening info in bdat form (pandas), defined by this instance.
+
+    Notes
+    -----
+    See Table 16 in https://arxiv.org/pdf/1603.05890.pdf
     """
     bdat = pd.read_csv(
         broadf,
