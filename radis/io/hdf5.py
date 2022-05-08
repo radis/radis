@@ -635,7 +635,7 @@ def hdf2df(
     # Convert to output format
     if output == "pandas" and engine == "vaex":
         df = df.to_pandas_df(column_names=columns)
-    elif output == "vaex" and engine == "pandas":
+    elif output == "vaex" and engine == "pytables":
         raise NotImplementedError
     elif output == "jax":
         if columns == None:
@@ -648,7 +648,9 @@ def hdf2df(
         for c in columns:
             out[c] = jnp.array(df[c].values)
         df = out
-    elif output == engine:  # pandas > pandas; vaex -> vaex
+    elif output == engine or (
+        engine == "pytables" and output == "pandas"
+    ):  # pandas > pandas; vaex -> vaex
         df = df
     else:
         raise NotImplementedError(output)
