@@ -11,13 +11,15 @@ HITRAN database parser
 """
 
 
+# import os
+# import sys
 import time
 from collections import OrderedDict
 from os.path import exists, getmtime
 
 import radis
 from radis.io.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
-from radis.io.tools import parse_hitran_file
+from radis.io.tools import drop_object_format_columns, parse_hitran_file
 
 # %% Parsing functions
 
@@ -174,7 +176,17 @@ def gei2df(
             return df
 
     # If cache files are not found, commence reading of full file
-    df = parse_hitran_file(fname, parse_columns)
+    df = parse_hitran_file(fname, parse_columns, is_geisa=True)
+
+    # Remove non numerical attributes
+    if drop_non_numeric:
+        # The function replace_PQR_with_m101 below will be developed
+        # in later updates for GEISA's non-equilibrium calculations
+        # replace_PQR_with_m101(df)
+
+        # Basically ripping out 4 quanta columns
+        df = drop_object_format_columns(df, verbose=verbose)
+
     # Generate cache file for later use
     if cache:
         new_metadata = {
@@ -210,9 +222,9 @@ def gei2df(
     return df
 
 
-# Test cases here, will work tomorrow
-# if __name__ == "__main__":
-# from radis.test.test_io import test_geisa
+# Test cases for
+if __name__ == "__main__":
+    from radis.test.test_io import test_geisa
 
-# print("Testing GEISA: ")
-# test_geisa()
+    print("Testing GEISA: ")
+    test_geisa()

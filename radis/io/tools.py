@@ -9,26 +9,28 @@ import numpy as np
 import pandas as pd
 
 
-def parse_hitran_file(fname, columns, count=-1):
+def parse_hitran_file(fname, columns, count=-1, is_geisa=False):
     """Parse a file under HITRAN ``par`` format. Parsing is done in binary
     format with :py:func:`numpy.fromfile` so it's as fast as possible.
 
     Parameters
     ----------
     fname: str
-        filename
+        filename.
     columns: dict
-        list of columns and their format
+        list of columns and their format.
 
     Other Parameters
     ----------------
     count: int
         number of lines to read. If ``-1`` reads all file.
+    is_geisa: boolean
+        ``False`` by default. ``True`` means currently parsing GEISA files.
 
     Returns
     -------
     df: pandas DataFrame
-        dataframe with lines
+        dataframe with lines.
 
     See Also
     --------
@@ -51,7 +53,7 @@ def parse_hitran_file(fname, columns, count=-1):
     data = _read_hitran_file(fname, columns, count, linereturnformat)
 
     # Return a Pandas dataframe
-    return _ndarray2df(data, columns, linereturnformat)
+    return _ndarray2df(data, columns, linereturnformat, is_geisa=is_geisa)
 
 
 def _get_linereturnformat(data, columns, fname=""):
@@ -86,7 +88,7 @@ def _get_linereturnformat(data, columns, fname=""):
     return linereturnformat
 
 
-def _ndarray2df(data, columns, linereturnformat):
+def _ndarray2df(data, columns, linereturnformat, is_geisa=False):
     """ """
 
     # ... Cast to new type
@@ -97,7 +99,7 @@ def _ndarray2df(data, columns, linereturnformat):
     dtype = list(zip(list(columns.keys()), newtype)) + [
         ("_linereturn", linereturnformat)
     ]
-    data = _cast_to_dtype(data, dtype)
+    data = _cast_to_dtype(data, dtype, is_geisa=is_geisa)
 
     # %% Create dataframe
     df = pd.DataFrame(data.tolist(), columns=list(columns.keys()) + ["_linereturn"])
@@ -166,7 +168,7 @@ def _format_dtype(dtype):
     return dt
 
 
-def _cast_to_dtype(data, dtype):
+def _cast_to_dtype(data, dtype, is_geisa=False):
     """Cast array to certain type, crash with hopefull helping error message.
 
     Return casted data.
@@ -176,8 +178,20 @@ def _cast_to_dtype(data, dtype):
     data: array to cast
     dtype: (ordered) list of (param, type)
     """
-    dt = _format_dtype(dtype)
 
+    # This code replaces all double-precision floating-point signifiers 'D', at
+    # columns 2nd ('int' - line intensity) and 20th ('ierrB' - est. accuracy),
+    # with 'E' so that np.array can cast them to float normally. As this process
+    # seems to be quite clumsy, it must be separated from parsing processes of
+    # other databases.
+    if is_geisa:
+        for line in data:
+            # Convert 'D' to 'E' in 2nd column
+            line[1] = line[1][0:7] + b"E" + line[1][8 : len(line[1])]
+            # Convert 'D' to 'E' in 20th column
+            line[19] = line[19][0:7] + b"E" + line[19][8 : len(line[19])]
+
+    dt = _format_dtype(dtype)
     try:
         data = np.array(data, dtype=dt)
     except ValueError as err:
@@ -235,7 +249,8 @@ def replace_PQR_with_m101(df):
     ----------
 
     df: pandas Dataframe
-        ``branch`` must be a column name
+        ``branch`` must be a column name.
+
 
     Returns
     -------
