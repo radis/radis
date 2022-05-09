@@ -73,6 +73,9 @@ The latest HITEMP database version is automatically downloaded if using ``databa
                 exoplanet and other hot atmospheres, Journal of Quantitative Spectroscopy and Radiative Transfer 255,
                 (2020), 107228,  `doi:10.1016/j.jqsrt.2020.107228 <https://www.sciencedirect.com/science/article/abs/pii/S002240732030491X>`__
 
+.. [ExoMol-2016] Tennyson et al.,  The ExoMol database: molecular line lists for exoplanet and other hot atmospheres,
+                J. Molec. Spectrosc., 327, 73-94 (2016), `doi:10.1016/j.jms.2016.05.002 <https://arxiv.org/abs/1603.05890>`__
+
 For download and configuration of line databases, see the :ref:`Line Databases section <label_line_databases>`
 
 
