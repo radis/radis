@@ -1288,7 +1288,7 @@ class DatabankLoader(object):
                 )
 
             # Download, setup local databases, and fetch (use existing if possible)
-            if memory_mapping_engine not in ["vaex", "feather"]:
+            if memory_mapping_engine not in ["vaex", "feather", "pytables"]:
                 raise NotImplementedError(
                     f"{memory_mapping_engine} with ExoMol files. Define radis.config['MEMORY_MAPPING_ENGINE'] = 'vaex' or 'feather'"
                 )

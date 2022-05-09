@@ -425,10 +425,10 @@ class DatabaseManager(object):
     def load(
         self,
         local_files,
-        isotope,
         columns,
-        load_wavenum_min,
-        load_wavenum_max,
+        lower_bound=[],
+        upper_bound=[],
+        within=[],
         output="pandas",
     ):
         """
@@ -439,18 +439,30 @@ class DatabaseManager(object):
         output: 'pandas', 'vaex', 'jax'
             format of the output DataFrame. If ``'jax'``, returns a dictionary of
             jax arrays.
+        lower_bound: list of tuples [(column, lower_bound), etc.]
+            ::
+
+                lower_bound =[("wav", load_wavenum_min)]
+        upper_bound_bound: list of tuples [(column, upper_bound), etc.]
+            ::
+
+                upper_bound=[("wav", load_wavenum_max)]
+        within: list of tuples [(column, within_list), etc.]
+            ::
+
+                within=[("iso", isotope.split(","))]
         """
         engine = self.engine
-        if engine == "pytables":
+        if engine in ["pytables", "feather"]:
             df_all = []
             for local_file in local_files:
                 df_all.append(
                     hdf2df(
                         local_file,
                         columns=columns,
-                        isotope=isotope,
-                        load_wavenum_min=load_wavenum_min,
-                        load_wavenum_max=load_wavenum_max,
+                        lower_bound=lower_bound,
+                        upper_bound=upper_bound,
+                        within=within,
                         verbose=self.verbose,
                         engine=engine,
                         output=output,
@@ -463,9 +475,9 @@ class DatabaseManager(object):
             return hdf2df(
                 local_files,
                 columns=columns,
-                isotope=isotope,
-                load_wavenum_min=load_wavenum_min,
-                load_wavenum_max=load_wavenum_max,
+                lower_bound=lower_bound,
+                upper_bound=upper_bound,
+                within=within,
                 verbose=self.verbose,
                 engine=engine,
                 output=output,

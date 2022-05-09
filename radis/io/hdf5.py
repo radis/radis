@@ -114,10 +114,10 @@ class DFrameManager(object):
         self,
         file,
         df,
-        append=True,
+        append=False,
         key="default",
         format="table",
-        data_columns=["iso", "wav"],
+        data_columns=["iso", "wav", "nu_lines"],
     ):
         """Write dataframe ``df`` to ``file``
 
@@ -303,7 +303,7 @@ class DFrameManager(object):
                 except (FileNotFoundError, OSError) as err:
                     # error message with suggestion on how to convert from existing file
                     for f in fname_list:
-                        if exists(f.replace(".hdf5", ".h5")):
+                        if f.endswith(".hdf5") and exists(f.replace(".hdf5", ".h5")):
                             raise FileNotFoundError(
                                 f"`{f}` not found but `{f.replace('.hdf5', '.h5')}` exists (probably a row-based pytables HDF5 file). Try (1) using engine='pytables' in the calling function (`hdf2df`, `fetch_hitemp`, etc.)  ; (2) delete the file to re-download and re-parse it (this may take a lot of time !) ;  or (3, recommended) set `import radis; radis.config['AUTO_UPDATE_DATABASE']= True` in your script to auto-update to Vaex HDF5 file"
                             ) from err
@@ -336,6 +336,7 @@ class DFrameManager(object):
             return pd.DataFrame(out)
 
         elif self.engine == "feather":
+            assert where is None
             fname = expanduser(fname)
             return pd.read_feather(fname)
 
@@ -384,7 +385,7 @@ class DFrameManager(object):
             for (column, withinv) in within:
                 where.append(f"{column} in {withinv}")
 
-        elif self.engine == "vaex":
+        elif self.engine in ["vaex", "feather"]:
             # Selection is done after opening the file time in vaex
             # see end of this function
             where = None
@@ -395,7 +396,9 @@ class DFrameManager(object):
         df = self.read(fname, columns=columns, where=where, **store_kwargs)
 
         #  Selection in vaex
-        if self.engine == "vaex":
+        if self.engine in ["vaex", "feather"]:
+            # (note that in Vaex, the selection happens on disk whereas Feather
+            # is already loaded as a Pandas DataFrame in RAM)
 
             # Selection
             b = True
@@ -413,8 +416,10 @@ class DFrameManager(object):
                     for val in withinv:
                         b2 += df[column] == float(val)
                     b *= b2
-            if b != True and False in b:
-                df = df[b]  # note that this is a vaex Expression, not the DataFrame yet
+            if b is not True and False in b:
+                df = df[
+                    b
+                ]  # note in Vaex mode, this is a vaex Expression, not the DataFrame yet
 
         return df
 
@@ -532,6 +537,14 @@ class DFrameManager(object):
                 except KeyError as err:
                     print(f"Error reading metadata from {fname}")
                     raise err
+                except AttributeError as err:
+                    if "Attribute 'metadata' does not exist" in str(err):
+                        metadata = {}
+                    else:
+                        raise err
+
+        elif self.engine == "feather":
+            return {}  # no metadata
 
         elif self.engine == "h5py":
             fname = expanduser(fname)
@@ -652,9 +665,9 @@ class DFrameManager(object):
 def hdf2df(
     fname,
     columns=None,
-    isotope=None,
-    load_wavenum_min=None,
-    load_wavenum_max=None,
+    lower_bound=[],
+    upper_bound=[],
+    within=[],
     verbose=True,
     store_kwargs={},
     engine="guess",
@@ -671,10 +684,20 @@ def hdf2df(
     columns: list of str
         list of columns to load. If ``None``, returns all columns in the file.
     isotope: str
-        load only certain isotopes : ``'2'``, ``'1,2'``, etc. If ``None``, loads
+    lower_bound: list of tuples [(column, lower_bound), etc.]
+        Used to load only load only specific waverange::
+
+            lower_bound =[("wav", load_wavenum_min)]
+    upper_bound_bound: list of tuples [(column, upper_bound), etc.]
+        ::
+
+            upper_bound=[("wav", load_wavenum_max)]
+    within: list of tuples [(column, within_list), etc.]
+        Used to load only certain isotopes : ``'2'``, ``'1,2'``, etc. If ``None``, loads
         everything. Default ``None``.
-    load_wavenum_min, load_wavenum_max: float (cm-1)
-        load only specific wavelength.
+        ::
+
+            within=[("iso", isotope.split(","))]
 
     Other Parameters
     ----------------
@@ -728,9 +751,9 @@ def hdf2df(
     df = manager.read_filter(
         fname,
         columns,
-        lower_bound=[("wav", load_wavenum_min)] if load_wavenum_min is not None else [],
-        upper_bound=[("wav", load_wavenum_max)] if load_wavenum_max is not None else [],
-        within=[("iso", isotope.split(","))] if isotope is not None else [],
+        lower_bound=lower_bound,
+        upper_bound=upper_bound,
+        within=within,
         **store_kwargs,
     )
 
@@ -741,7 +764,7 @@ def hdf2df(
     # Convert to output format
     if output == "pandas" and engine == "vaex":
         df = df.to_pandas_df(column_names=columns)
-    elif output == "vaex" and engine == "pytables":
+    elif output == "vaex" and engine in ["pytables", "pytables"]:
         raise NotImplementedError
     elif output == "jax":
         if columns == None:
@@ -750,12 +773,13 @@ def hdf2df(
         try:
             import jax as jnp
         except ImportError:
+            print("Jax not found. Using Numpy.")
             import numpy as jnp
         for c in columns:
             out[c] = jnp.array(df[c].values)
         df = out
     elif output == engine or (
-        engine == "pytables" and output == "pandas"
+        engine in ["pytables", "feather"] and output == "pandas"
     ):  # pandas > pandas; vaex -> vaex
         df = df
     else:
@@ -765,11 +789,7 @@ def hdf2df(
     metadata = manager.read_metadata(fname)
 
     # Sanity Checks if loading the full file
-    selection = (
-        isotope is not None
-        or load_wavenum_min is not None
-        or load_wavenum_max is not None
-    )
+    selection = within or upper_bound or lower_bound
     if not selection:
         if "total_lines" in metadata:
             assert len(df) == metadata["total_lines"]
@@ -779,7 +799,7 @@ def hdf2df(
             assert df["wav"].max() == metadata["wavenumber_max"]
 
     # Update metadata
-    if output != "jax":
+    if output != "jax":  # metadata not given in Jax output
         if isinstance(metadata, list):
             metadata_dict = {}
             for k, v in metadata[0].items():

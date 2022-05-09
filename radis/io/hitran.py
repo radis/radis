@@ -1418,9 +1418,11 @@ def fetch_hitran(
     df = ldb.load(
         local_file,
         columns=columns,
-        isotope=isotope,
-        load_wavenum_min=load_wavenum_min,  # for relevant files, get only the right range
-        load_wavenum_max=load_wavenum_max,
+        within=[("iso", isotope)],
+        lower_bound=[
+            ("wav", load_wavenum_min)
+        ],  # for relevant files, get only the right range
+        upper_bound=[("wav", load_wavenum_max)],
         output=output,
     )
 
