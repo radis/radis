@@ -312,7 +312,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         wmin = np.inf
         wmax = 0
 
-        writer = self.get_hdf5_manager()
+        writer = self.get_dframe_manager()
 
         with opener.open(urlname) as gfile:  # locally downloaded file
 

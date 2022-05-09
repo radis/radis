@@ -23,7 +23,8 @@ from collections import OrderedDict
 from os.path import exists, getmtime
 
 import radis
-from radis.io.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
+from radis.io.cache_files import load_h5_cache_file, save_to_hdf
+from radis.io.hdf5 import DFrameManager
 from radis.io.tools import (
     drop_object_format_columns,
     parse_hitran_file,
@@ -241,7 +242,7 @@ def cdsd2df(
         raise ValueError("Unknown CDSD version: {0}".format(version))
 
     # Use cache file if possible
-    fcache = cache_file_name(fname, engine=engine)
+    fcache = str(DFrameManager(engine).cache_file(fname))
     if cache and exists(fcache):
         relevant_if_metadata_above = (
             {"wavenum_max": load_wavenum_min} if load_wavenum_min else {}
@@ -312,6 +313,6 @@ def cdsd2df(
 
 
 if __name__ == "__main__":
-    from radis.test.test_io import test_hitemp
+    from radis.test.io.test_hitran_cdsd import _run_testcases
 
-    print("Testing cdsd: ", test_hitemp())
+    print("Testing cdsd: ", _run_testcases())

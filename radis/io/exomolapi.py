@@ -195,6 +195,8 @@ def read_trans(transf, engine="vaex"):
             dat = pd.read_csv(
                 transf, sep=r"\s+", names=("i_upper", "i_lower", "A", "nu_lines")
             )
+    else:
+        raise NotImplementedError(engine)
 
     return dat
 
@@ -250,6 +252,7 @@ def read_states(statesf, dic_def, engine="vaex"):
     if engine == "vaex":
         import vaex
 
+        # TODO Refactor: move in DFrameManager
         try:
             dat = vaex.from_csv(
                 statesf,

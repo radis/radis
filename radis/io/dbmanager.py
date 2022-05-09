@@ -16,9 +16,9 @@ from radis.misc.warning import DatabaseAlreadyExists, DeprecatedFileWarning
 
 try:
     from .cache_files import check_not_deprecated
-    from .hdf5 import HDF5Manager, hdf2df
+    from .hdf5 import DFrameManager, hdf2df
 except ImportError:
-    from radis.io.hdf5 import hdf2df, HDF5Manager
+    from radis.io.hdf5 import hdf2df, DFrameManager
     from radis.io.cache_files import check_not_deprecated
 
 from datetime import date
@@ -324,8 +324,8 @@ class DatabaseManager(object):
             self.verbose,
         )
 
-    def get_hdf5_manager(self):
-        return HDF5Manager(engine=self.engine)
+    def get_dframe_manager(self):
+        return DFrameManager(engine=self.engine)
 
     def download_and_parse(self, urlnames, local_files):
         all_local_files, _ = self.get_filenames()

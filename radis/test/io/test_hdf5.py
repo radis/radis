@@ -7,7 +7,7 @@ Created on Tue Jan 26 20:36:38 2021
 
 import pytest
 
-from radis.io.hdf5 import HDF5Manager, hdf2df
+from radis.io.hdf5 import DFrameManager, hdf2df
 from radis.io.hitemp import fetch_hitemp
 from radis.misc.config import getDatabankEntries
 
@@ -39,25 +39,25 @@ def test_hdf5_io_engines(*args, **kwargs):
             f.create_dataset(c, data=df0[c])
 
     # Test Pytables engine : add_metadata ; load ; read_metadata
-    manager = HDF5Manager(engine="pytables")
+    manager = DFrameManager(engine="pytables")
     manager.add_metadata("test_pytables.h5", metadata0)
 
-    df = manager.load("test_pytables.h5")
+    df = manager.read("test_pytables.h5")
     assert (df == df0).all().all()
     assert manager.read_metadata("test_pytables.h5") == metadata0
 
     # Test h5py engine : add_metadata ; load ; read_metadata
-    manager = HDF5Manager(engine="h5py")
+    manager = DFrameManager(engine="h5py")
     manager.add_metadata("test_h5py.h5", metadata0, key=None)
-    df = manager.load("test_h5py.h5", key=None)
+    df = manager.read("test_h5py.h5", key=None)
     assert (df == df0).all().all()
     assert manager.read_metadata("test_h5py.h5") == metadata0
 
     # Test vaex engine : add_metadata ; load ; read_
     # .. also able to read h5py files
-    manager = HDF5Manager(engine="vaex")
+    manager = DFrameManager(engine="vaex")
     manager.add_metadata("test_h5py.h5", metadata0, key=None)
-    df = manager.load("test_h5py.h5", key=None)
+    df = manager.read("test_h5py.h5", key=None)
     # this time; df is a vaex DataFrame
     # ... it keeps the file open so we should close the file handle
     assert (df.to_pandas_df() == df0).all().all()

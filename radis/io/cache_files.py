@@ -29,7 +29,7 @@ See Also
 # Note: don't import unicode_literals because it breaks the df.to_hdf of
 # save_to_hdf because of a stupid unicode/str error in Python 2.7
 import os
-from os.path import exists, splitext
+from os.path import exists
 from warnings import warn
 
 from packaging.version import parse
@@ -37,9 +37,9 @@ from packaging.version import parse
 import radis
 
 try:
-    from .hdf5 import HDF5Manager
+    from .hdf5 import DFrameManager
 except ImportError:  # if file is ran as a module
-    from radis.io.hdf5 import HDF5Manager
+    from radis.io.hdf5 import DFrameManager
 from radis.misc.basics import compare_dict, is_float
 from radis.misc.printer import printm, printr
 from radis.misc.warning import DeprecatedFileWarning, IrrelevantFileWarning
@@ -179,8 +179,8 @@ def load_h5_cache_file(
         printm("Reading cache file ({0})".format(cachefile))
     try:
         # Load file :
-        manager = HDF5Manager(engine)
-        df = manager.load(cachefile, columns=columns, key="df")
+        manager = DFrameManager(engine)
+        df = manager.read(cachefile, columns=columns, key="df")
 
     except KeyError as err:  # An error happened during file reading.
         # Fail safe by deleting cache file (unless we explicitely wanted it
@@ -222,7 +222,7 @@ def get_cache_file(fcache, engine="pytables", verbose=True):
     # TODO @dev: refactor : we probably don't need this function (only used in astroquery)
 
     # Load file
-    manager = HDF5Manager(engine)
+    manager = DFrameManager(engine)
     df = manager.load(fcache, key="df")
 
     # Check file
@@ -368,10 +368,10 @@ def check_not_deprecated(
         which HDF5 library to use. If ``'guess'``, try to guess.
     """
     if engine == "guess":
-        engine = HDF5Manager.guess_engine(file)
+        engine = DFrameManager.guess_engine(file)
 
     # Get metadata :
-    manager = HDF5Manager(engine)
+    manager = DFrameManager(engine)
 
     try:
         file_metadata = manager.read_metadata(file)
@@ -526,10 +526,10 @@ def check_relevancy(
 
     """
     if engine == "guess":
-        engine = HDF5Manager.guess_engine(file)
+        engine = DFrameManager.guess_engine(file)
 
     # Get metadata :
-    manager = HDF5Manager(engine)
+    manager = DFrameManager(engine)
     file_metadata = manager.read_metadata(file, key=key)
 
     for k, v in relevant_if_metadata_above.items():
@@ -607,7 +607,7 @@ def save_to_hdf(
      ``None`` values are not stored
     """
     # Check file
-    assert fname.endswith(".h5") or fname.endswith(".hdf5")
+    assert str(fname).endswith(".h5") or str(fname).endswith(".hdf5")
     assert "version" not in metadata
     # ... 'object' columns slow everything down (not fixed format strings!)
     if verbose >= 2:
@@ -621,7 +621,7 @@ def save_to_hdf(
         raise ValueError("File exist: {0}".format(fname))
 
     # start by exporting dataframe
-    manager = HDF5Manager(engine)
+    manager = DFrameManager(engine)
     manager.write(fname, df, append=False, key=key)
 
     # Add metadata
@@ -686,19 +686,7 @@ def filter_metadata(arguments, discard_variables=["self", "verbose"]):
 
 
 def cache_file_name(fname, engine="pytables"):
-    """Return the corresponding cache file name for fname.
-
-    Other Parameters
-    ----------------
-    engine: ``'h5py'``, ``'pytables'``, ``'vaex'``
-       which HDF5 library to use. Default ``pytables``
-    """
-    if engine in ["pytables", "pytables-fixed"]:
-        return splitext(fname)[0] + ".h5"
-    elif engine in ["h5py", "vaex"]:
-        return splitext(fname)[0] + ".hdf5"
-    else:
-        raise ValueError(engine)
+    raise DeprecationWarning("Use DFrameManager.cache_file() instead")
 
 
 if __name__ == "__main__":
