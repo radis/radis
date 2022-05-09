@@ -223,7 +223,7 @@ def get_cache_file(fcache, engine="pytables", verbose=True):
 
     # Load file
     manager = DFrameManager(engine)
-    df = manager.load(fcache, key="df")
+    df = manager.read(fcache, key="df")
 
     # Check file
     # ... 'object' columns slow everything down (not fixed format strings!)

@@ -1172,7 +1172,7 @@ class HITRANDatabaseManager(DatabaseManager):
             molecule, tempdir
         )
 
-        writer = self.get_hdf5_manager()
+        writer = self.get_dframe_manager()
 
         # Create HDF5 cache file for all isotopes
         Nlines = 0
