@@ -221,8 +221,93 @@ class DFrameManager(object):
             )
             self._close_temp_batch_files()
 
-    def load(*args, **kwargs):
-        raise DeprecationWarning("Refactored. Use .read() instead of .load()")
+    def load(
+        self,
+        fname,
+        columns,
+        lower_bound=[],
+        upper_bound=[],
+        within=[],
+        output="pandas",
+        **store_kwargs,
+    ):
+        """
+        Other Parameters
+        ----------------
+        columns: list of str
+            list of columns to load. If ``None``, returns all columns in the file.
+        output: 'pandas', 'vaex', 'jax'
+            format of the output DataFrame. If ``'jax'``, returns a dictionary of
+            jax arrays.
+        lower_bound: list of tuples [(column, lower_bound), etc.]
+            ::
+
+                lower_bound =[("wav", load_wavenum_min)]
+        upper_bound_bound: list of tuples [(column, upper_bound), etc.]
+            ::
+
+                upper_bound=[("wav", load_wavenum_max)]
+        within: list of tuples [(column, within_list), etc.]
+            ::
+
+                within=[("iso", isotope.split(","))]
+        """
+        if not lower_bound and not upper_bound and not within:
+            df = self.read(
+                fname,
+                columns,
+                **store_kwargs,
+            )
+        else:
+            df = self.read_filter(
+                fname,
+                columns,
+                lower_bound=lower_bound,
+                upper_bound=upper_bound,
+                within=within,
+                **store_kwargs,
+            )
+
+        # Load
+        # Convert to output format
+        engine = self.engine
+
+        if engine == output:
+            df = df
+        elif engine == "vaex":
+            # in vaex, column selection has to happen now
+            if columns:  # load only these columns (if they exist)
+                columns = [c for c in columns if c in df.columns]
+            if output == "pandas":
+                df = df.to_pandas_df(column_names=columns)
+            elif output == "jax":
+                if columns == None:
+                    columns = ["wav", "int", "A", "El", "gpp"]
+                out = {}
+                try:
+                    import jax as jnp
+                except ImportError:
+                    print("Jax not found. Using Numpy.")
+                    import numpy as jnp
+                for c in columns:
+                    out[c] = jnp.array(df[c].values)
+                df = out
+            else:
+                raise NotImplementedError(f"output {output} for engine {engine}")
+        elif engine == "pytables":
+            if output == "pandas":
+                df = df
+            else:
+                raise NotImplementedError(f"output {output} for engine {engine}")
+        elif engine == "feather":
+            if output == "pandas":
+                df = df
+            else:
+                raise NotImplementedError(f"output {output} for engine {engine}")
+        else:
+            raise NotImplementedError(output)
+
+        return df
 
     def read(
         self,
@@ -372,6 +457,7 @@ class DFrameManager(object):
             ::
 
                 within=[("iso", isotope.split(","))]
+
         """
 
         # Selection
@@ -383,7 +469,7 @@ class DFrameManager(object):
             for (column, ubound) in upper_bound:
                 where.append(f"{column} < {ubound}")
             for (column, withinv) in within:
-                where.append(f"{column} in {withinv}")
+                where.append(f"{column} in {withinv.split(',')}")
 
         elif self.engine in ["vaex", "feather"]:
             # Selection is done after opening the file time in vaex
@@ -407,15 +493,10 @@ class DFrameManager(object):
             for (column, ubound) in upper_bound:
                 b *= df[column] < ubound
             for (column, withinv) in within:
-                from radis.misc.basics import is_float
-
-                if is_float(withinv):
-                    b *= df[column] == float(withinv)
-                else:
-                    b2 = False
-                    for val in withinv:
-                        b2 += df[column] == float(val)
-                    b *= b2
+                b2 = False
+                for val in withinv.split(","):
+                    b2 += df[column] == float(val)
+                b *= b2
             if b is not True and False in b:
                 df = df[
                     b
@@ -665,9 +746,9 @@ class DFrameManager(object):
 def hdf2df(
     fname,
     columns=None,
-    lower_bound=[],
-    upper_bound=[],
-    within=[],
+    isotope=None,
+    load_wavenum_min=None,
+    load_wavenum_max=None,
     verbose=True,
     store_kwargs={},
     engine="guess",
@@ -684,20 +765,10 @@ def hdf2df(
     columns: list of str
         list of columns to load. If ``None``, returns all columns in the file.
     isotope: str
-    lower_bound: list of tuples [(column, lower_bound), etc.]
-        Used to load only load only specific waverange::
-
-            lower_bound =[("wav", load_wavenum_min)]
-    upper_bound_bound: list of tuples [(column, upper_bound), etc.]
-        ::
-
-            upper_bound=[("wav", load_wavenum_max)]
-    within: list of tuples [(column, within_list), etc.]
-        Used to load only certain isotopes : ``'2'``, ``'1,2'``, etc. If ``None``, loads
+        load only certain isotopes : ``'2'``, ``'1,2'``, etc. If ``None``, loads
         everything. Default ``None``.
-        ::
-
-            within=[("iso", isotope.split(","))]
+    load_wavenum_min, load_wavenum_max: float (cm-1)
+        load only specific wavelength.
 
     Other Parameters
     ----------------
@@ -712,7 +783,7 @@ def hdf2df(
 
     Returns
     -------
-    df: pandas Dataframe
+    df: pandas Dataframe, or vaex DataFrameLocal, or dictionary of Jax arrays
         dataframe containing all lines or energy levels
 
     Examples
@@ -744,52 +815,25 @@ def hdf2df(
 
     if engine == "guess":
         engine = DFrameManager.guess_engine(fname)
-    manager = DFrameManager(engine)
 
     t0 = time()
 
-    df = manager.read_filter(
+    manager = DFrameManager(engine)
+
+    df = manager.load(
         fname,
         columns,
-        lower_bound=lower_bound,
-        upper_bound=upper_bound,
-        within=within,
-        **store_kwargs,
+        lower_bound=[("wav", load_wavenum_min)] if load_wavenum_min is not None else [],
+        upper_bound=[("wav", load_wavenum_max)] if load_wavenum_max is not None else [],
+        within=[("iso", isotope)] if isotope is not None else [],
+        output=output,
     )
-
-    # Load
-    if columns:  # load only these columns (if they exist)
-        columns = [c for c in columns if c in df.columns]
-
-    # Convert to output format
-    if output == "pandas" and engine == "vaex":
-        df = df.to_pandas_df(column_names=columns)
-    elif output == "vaex" and engine in ["pytables", "pytables"]:
-        raise NotImplementedError
-    elif output == "jax":
-        if columns == None:
-            columns = ["wav", "int", "A", "El", "gpp"]
-        out = {}
-        try:
-            import jax as jnp
-        except ImportError:
-            print("Jax not found. Using Numpy.")
-            import numpy as jnp
-        for c in columns:
-            out[c] = jnp.array(df[c].values)
-        df = out
-    elif output == engine or (
-        engine in ["pytables", "feather"] and output == "pandas"
-    ):  # pandas > pandas; vaex -> vaex
-        df = df
-    else:
-        raise NotImplementedError(output)
 
     # Read and add metadata in the DataFrame
     metadata = manager.read_metadata(fname)
 
     # Sanity Checks if loading the full file
-    selection = within or upper_bound or lower_bound
+    selection = isotope or load_wavenum_min or load_wavenum_max
     if not selection:
         if "total_lines" in metadata:
             assert len(df) == metadata["total_lines"]

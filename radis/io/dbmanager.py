@@ -16,9 +16,9 @@ from radis.misc.warning import DatabaseAlreadyExists, DeprecatedFileWarning
 
 try:
     from .cache_files import check_not_deprecated
-    from .hdf5 import DFrameManager, hdf2df
+    from .hdf5 import DFrameManager
 except ImportError:
-    from radis.io.hdf5 import hdf2df, DFrameManager
+    from radis.io.hdf5 import DFrameManager
     from radis.io.cache_files import check_not_deprecated
 
 from datetime import date
@@ -453,18 +453,17 @@ class DatabaseManager(object):
                 within=[("iso", isotope.split(","))]
         """
         engine = self.engine
+        mgr = self.get_dframe_manager()
         if engine in ["pytables", "feather"]:
             df_all = []
             for local_file in local_files:
                 df_all.append(
-                    hdf2df(
+                    mgr.load(
                         local_file,
                         columns=columns,
                         lower_bound=lower_bound,
                         upper_bound=upper_bound,
                         within=within,
-                        verbose=self.verbose,
-                        engine=engine,
                         output=output,
                     )
                 )
@@ -472,14 +471,12 @@ class DatabaseManager(object):
 
         elif engine == "vaex":
             # vaex can open several files at the same time:
-            return hdf2df(
+            return mgr.load(
                 local_files,
                 columns=columns,
                 lower_bound=lower_bound,
                 upper_bound=upper_bound,
                 within=within,
-                verbose=self.verbose,
-                engine=engine,
                 output=output,
             )
         else:

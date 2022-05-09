@@ -314,16 +314,7 @@ def pickup_gE(states, trans, trans_file, dic_def, trans_lines=False):
 
     """
     ### Step 1. Essential quantum number for spectra
-
-    # iorig = np.array(ndstates[:, 0], dtype=int)
-    # maxii = int(np.max(iorig) + 1)
-    # newstates = np.zeros((maxii, np.shape(ndstates)[1] - 1), dtype=float)
-    # newstates[iorig, :] = ndstates[:, 1:]
-
-    # i_upper = np.array(ndtrans[:, 0], dtype=int)
-    # i_lower = np.array(ndtrans[:, 1], dtype=int)
-
-    # WIP. First implementation with join(). Use Map() will probably be faster.
+    # ----------------------------------------------
 
     def map_add(col, new_col, trans_key, states_key="i"):
         """Lookup `key` in states and add it in trans, using the level ``i``
@@ -338,6 +329,7 @@ def pickup_gE(states, trans, trans_file, dic_def, trans_lines=False):
         try:  # pytable
             trans[new_col] = trans[trans_key].map(dict(states[col]))
         except:  # vaex version  (TODO : replace with dict() approach in vaex too)
+            # WIP. First implementation with join(). Use Map() will probably be faster.
             trans.join(
                 states[states_key, col],
                 left_on=trans_key,
@@ -363,83 +355,11 @@ def pickup_gE(states, trans, trans_file, dic_def, trans_lines=False):
         map_add("E", "eupper", "i_upper")
         trans["nu_lines"] = trans("eupper") - trans("elower")
 
-    # trans.join(states, left_on='i_upper', right_on='i')
-
     ### Step 2. Extra quantum numbers (e/f parity, vib and rot numbers)
+    # -----------------------------------------------------------------
     for q in dic_def["quantum_labels"]:
         map_add(q, f"{q}_l", "i_lower")
         # map_add(q, f"{q}_u", "i_upper")
-
-    # #!!! Todo: Awfull management of memory, i know! @minou
-    # n0 = (
-    #     4 + dic_def["Landé"] + dic_def["lifetime"]
-    # )  # we need to shift if these quantities exist
-    # # ndstates_extra = ndstates.to_numpy()[
-    # ndstates_extra = ndstates[:, n0:]  # the i, E, g, J are in the 4 first columns
-    # a, b = np.shape(ndstates_extra)
-    # dico_quantumNumbers = {}
-    # if b != 0:
-    #     for index, label in enumerate(dic_def["quantum_labels"]):
-    #         if label == "K":  #!!!TODO: allow users to have other quantum numbers
-    #             dico_quantumNumbers["{}_l".format(label)] = ndstates_extra[
-    #                 i_lower, index
-    #             ]
-    #             # dico_quantumNumbers['{}_u'.format(label)] = ndstates_extra[index][i_upper]
-
-    # # use the state counting numbers (upper and lower) as masking.
-    # elower = newstates[i_lower, 0]
-    # eupper = newstates[i_upper, 0]
-    # gup = newstates[i_upper, 1]
-    # jlower = np.array(newstates[i_lower, 2], dtype=int)
-    # del i_lower
-    # jupper = np.array(newstates[i_upper, 2], dtype=int)
-    # del i_upper
-
-    # A = ndtrans[:, 2]
-
-    # if trans_lines:
-    #     nu_lines = ndtrans[:, 3]
-    # else:
-    #     nu_lines = eupper - elower
-    # del eupper
-
-    # # ### MASKING ###
-    # mask = nu_lines > 0.0
-    # if False in mask:
-    #     len_org = len(nu_lines)
-
-    #     A = A[mask]
-    #     nu_lines = nu_lines[mask]
-    #     elower = elower[mask]
-    #     gup = gup[mask]
-    #     jlower = jlower[mask]
-    #     jupper = jupper[mask]
-    #     for key, array in dico_quantumNumbers.items():
-    #         dico_quantumNumbers[key] = array[mask]
-    #     print(
-    #         "WARNING: {0:,} transitions with the wavenumber=zero in {1} have been ignored.".format(
-    #             len_org - len(nu_lines), trans_file
-    #         )
-    #     )
-    #     if trans_lines:
-    #         print(
-    #             "This is because the value for the wavenumber column in the transition file is zero for those transitions."
-    #         )
-    #     else:
-    #         print(
-    #             "This is because the upper and lower state IDs in the transition file indicate the same energy level when referring to the states file for those transitions."
-    #         )
-
-    # See Issue exojax#16
-    # import matplotlib.pyplot as plt
-    # nu_lines_t=ndtrans[:,3]
-    # plt.plot(nu_lines_t-nu_lines,".",alpha=0.03)
-    # plt.ylabel("diff nu from trans and state (cm-1)")
-    # plt.xlabel("wavenuber (cm-1)")
-    # plt.savefig("nudiff.png", bbox_inches="tight", pad_inches=0.0)
-    # plt.show()
-
-    # return A, nu_lines, elower, gup, jlower, jupper, mask, dico_quantumNumbers
 
     return trans
 
