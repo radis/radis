@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-"""Created on Fri Jul  6 13:52:04 2018.
+"""Created on Tue May 10 20:27 JST.
+Essentially cloned from erwan's tools.py with adjustments to fit GEISA format
 
-@author: erwan
+@author: TranHuuNhatHuy
 """
-# TODO refactor : rename this file as hitran_utils.py
 
 import numpy as np
 import pandas as pd
 
 
-def parse_hitran_file(fname, columns, count=-1):
-    """Parse a file under HITRAN ``par`` format. Parsing is done in binary
+def parse_geisa_file(fname, columns, count=-1):
+    """Parse a file under GEISA ``par`` format. Parsing is done in binary
     format with :py:func:`numpy.fromfile` so it's as fast as possible.
 
     Parameters
@@ -32,23 +32,16 @@ def parse_hitran_file(fname, columns, count=-1):
 
     See Also
     --------
-    Used in :py:func:`~radis.io.hitran.hit2df` and :py:func:`~radis.io.cdsd.cdsd2df`
+    Used in :py:func:`~radis.io.geisa.gei2df`
     """
 
-    # To be faster, we read file totally in bytes mode with fromfiles. But that
-    # requires to properly decode the line return character:
-
-    # We cannot simply infer it from the OS :
-    # problem arise when file was written in an OS and read in another OS (for instance,
-    # line return characters are not converted when read from .egg files). Here
-    # we read the first line and infer the line return character for it
-    data = _read_hitran_file(
+    data = _read_geisa_file(
         fname, columns, count=1, linereturnformat="a2"
     )  # 'a2' allocates space to get \n or \n\r linereturn formats
     linereturnformat = _get_linereturnformat(data, columns, fname)
 
     # Now re-read with correct line return character
-    data = _read_hitran_file(fname, columns, count, linereturnformat)
+    data = _read_geisa_file(fname, columns, count, linereturnformat)
 
     # Return a Pandas dataframe
     return _ndarray2df(data, columns, linereturnformat)
@@ -57,14 +50,6 @@ def parse_hitran_file(fname, columns, count=-1):
 def _get_linereturnformat(data, columns, fname=""):
     """
     Get line return character & format (size).
-
-    Notes
-    -----
-
-    We cannot simply infer it from the OS :
-    problem arise when file was written in an OS and read in another OS (for instance,
-    line return characters are not converted when read from .egg files). Here
-    we read the first line and infer the line return character for it
     """
     # fname just for the error message
 
@@ -78,7 +63,7 @@ def _get_linereturnformat(data, columns, fname=""):
         linereturnformat = "a1"
     else:
         raise ValueError(
-            "Unknown Line return format: {0}. Check that your file {1} has the HITRAN format. First line : {2}".format(
+            "Unknown Line return format: {0}. Check that your file {1} has the GEISA format. First line : {2}".format(
                 linereturn, fname, data[0]
             )
         )
@@ -89,14 +74,11 @@ def _get_linereturnformat(data, columns, fname=""):
 def _ndarray2df(data, columns, linereturnformat):
     """ """
 
-    # ... Cast to new type
-    # This requires to recast all the data already read, but is still the fastest
-    # method I found to read a file directly (for performance benchmark see
-    # CDSD-HITEMP parser)
     newtype = [c[0] if (c[1] == str) else c[1] for c in columns.values()]
     dtype = list(zip(list(columns.keys()), newtype)) + [
         ("_linereturn", linereturnformat)
     ]
+
     data = _cast_to_dtype(data, dtype)
 
     # %% Create dataframe
@@ -114,10 +96,16 @@ def _ndarray2df(data, columns, linereturnformat):
     if "branch" in df:  # (only in CDSD)
         df["branch"] = df.branch.str.strip()
 
+    # Commence "D to E" conversion on 2nd and 20th columns, by using
+    # df.columns.str.replace() which is much faster than Python loop.
+    # Finally, typecast them to float.
+    df["int"] = df["int"].astype(str).str.replace("D", "E").astype(float)
+    df["ierrB"] = df["ierrB"].astype(str).str.replace("D", "E").astype(float)
+
     return df
 
 
-def _read_hitran_file(fname, columns, count, linereturnformat):
+def _read_geisa_file(fname, columns, count, linereturnformat):
     """
     Returns
     -------
@@ -141,6 +129,7 @@ def _create_dtype(columns, linereturnformat):
     dtype = [(k, c[0]) for (k, c) in columns.items()] + [
         ("_linereturn", linereturnformat)
     ]
+
     # ... _linereturn is to capture the line return symbol. We delete it afterwards
     return _format_dtype(dtype)
 
@@ -178,6 +167,7 @@ def _cast_to_dtype(data, dtype):
     """
 
     dt = _format_dtype(dtype)
+
     try:
         data = np.array(data, dtype=dt)
     except ValueError as err:
@@ -226,6 +216,8 @@ def drop_object_format_columns(df, verbose=True):
     return df
 
 
+# This function will be developed in the future when non-equilibrium
+# calculation support for GEISA is implemented into RADIS
 def replace_PQR_with_m101(df):
     """Return P, Q, R in column ``branch`` with -1, 0, 1 to get a fully numeric
     database. This improves performances quite a lot, as Pandas doesnt have a

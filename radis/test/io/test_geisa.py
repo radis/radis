@@ -57,6 +57,8 @@ def test_local_geisa_co(verbose=True, warnings=True, **kwargs):
         5,
     ]
 
+    print("GEISA parsing process of molecule CO works normally.")
+
     return True
 
 
@@ -85,6 +87,8 @@ def test_local_geisa_h2o(verbose=True, warnings=True, **kwargs):
         1,
     ]
 
+    print("GEISA parsing process of molecule H2O works normally.")
+
     return True
 
 
@@ -112,6 +116,8 @@ def test_local_geisa_co2(verbose=True, warnings=True, **kwargs):
         626,
         2,
     ]
+
+    print("GEISA parsing process of molecule CO2 works normally.")
 
     return True
 

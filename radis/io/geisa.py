@@ -19,7 +19,7 @@ from os.path import exists, getmtime
 
 import radis
 from radis.io.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
-from radis.io.tools import drop_object_format_columns, parse_hitran_file
+from radis.io.geisa_utils import drop_object_format_columns, parse_geisa_file
 
 # %% Parsing functions
 
@@ -30,7 +30,7 @@ columns_GEISA = OrderedDict(
     [
         # name  # format  # type  # description  # unit
         ("wav", ("a12", float, "vacuum wavenumber", "cm-1")),
-        ("int", ("a11", float, "intensity at 296K", "cm-1/(molecule/cm-2)")),
+        ("int", ("a11", str, "intensity at 296K", "cm-1/(molecule/cm-2)")),
         ("airbrd", ("a6", float, "air-broadened half-width at 296K", "cm-1.atm-1")),
         ("El", ("a10", float, "lower-state energy", "cm-1")),
         ("globu", ("a25", str, "electronic and vibrational global upper quanta", "")),
@@ -48,7 +48,7 @@ columns_GEISA = OrderedDict(
         ("Pshft", ("a9", float, "air pressure-induced line shift at 296K", "cm-1.atm-1")),
         ("Tdppair", ("a6", float, "temperature-dependance exponent for air pressure-induced line shift", "")),
         ("ierrA", ("a10", float, "estimated accuracy on the line position", "cm-1")),
-        ("ierrB", ("a11", float, "estimated accuracy on the intensity of the line", "cm-1/(molecule/cm-2)")),
+        ("ierrB", ("a11", str, "estimated accuracy on the intensity of the line", "cm-1/(molecule/cm-2)")),
         ("ierrC", ("a6", float, "estimated accuracy on the air collision halfwidth", "cm-1.atm-1")),
         ("ierrF", ("a4", float, "estimated accuracy on the temperature dependence coefficient of the air-broadening halfwidth", "")),
         ("ierrO", ("a9", float, "estimated accuracy on the air pressure shift of the line transition at 296K", "cm-1.atm-1")),
@@ -176,7 +176,7 @@ def gei2df(
             return df
 
     # If cache files are not found, commence reading of full file
-    df = parse_hitran_file(fname, parse_columns, is_geisa=True)
+    df = parse_geisa_file(fname, parse_columns)
 
     # Remove non numerical attributes
     if drop_non_numeric:
