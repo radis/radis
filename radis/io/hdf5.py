@@ -515,6 +515,7 @@ def hdf2df(
     verbose=True,
     store_kwargs={},
     engine="guess",
+    output="pandas",
 ):
     """Load a HDF5 line databank into a Pandas DataFrame.
 
@@ -539,6 +540,9 @@ def hdf2df(
     engine: ``'h5py'``, ``'pytables'``, ``'vaex'``, ``'auto'``
         which HDF5 library to use. If ``'guess'``, try to guess. Note: ``'vaex'``
         uses ``'h5py'`` compatible HDF5.
+    output: 'pandas', 'vaex', 'jax'
+        format of the output DataFrame. If ``'jax'``, returns a dictionary of
+        jax arrays.
 
     Returns
     -------
@@ -627,7 +631,29 @@ def hdf2df(
         # Load
         if columns:  # load only these columns (if they exist)
             columns = [c for c in columns if c in df.columns]
+
+    # Convert to output format
+    if output == "pandas" and engine == "vaex":
         df = df.to_pandas_df(column_names=columns)
+    elif output == "vaex" and engine == "pytables":
+        raise NotImplementedError
+    elif output == "jax":
+        if columns == None:
+            columns = ["wav", "int", "A", "El", "gpp"]
+        out = {}
+        try:
+            import jax as jnp
+        except ImportError:
+            import numpy as jnp
+        for c in columns:
+            out[c] = jnp.array(df[c].values)
+        df = out
+    elif output == engine or (
+        engine == "pytables" and output == "pandas"
+    ):  # pandas > pandas; vaex -> vaex
+        df = df
+    else:
+        raise NotImplementedError(output)
 
     # Read and add metadata in the DataFrame
     metadata = manager.read_metadata(fname)
@@ -641,12 +667,18 @@ def hdf2df(
         if "wavenumber_max" in metadata:
             assert df["wav"].max() == metadata["wavenumber_max"]
 
-    if isinstance(metadata, list):
-        metadata_dict = {}
-        for k, v in metadata[0].items():
-            metadata_dict[k] = [v] + [M[k] for M in metadata[1:]]
-        metadata = metadata_dict
-    df.attrs.update(metadata)
+    # Update metadata
+    if output != "jax":
+        if isinstance(metadata, list):
+            metadata_dict = {}
+            for k, v in metadata[0].items():
+                metadata_dict[k] = [v] + [M[k] for M in metadata[1:]]
+            metadata = metadata_dict
+        if (
+            output in "vaex"
+        ):  # by default vaex.dataframe.DataFrameLocal doesn't have a .attrs attribute
+            df.attrs = {}
+        df.attrs.update(metadata)
 
     if verbose >= 3:
         from radis.misc.printer import printg
