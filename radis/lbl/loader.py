@@ -108,15 +108,17 @@ KNOWN_DBFORMAT = [
     "cdsd-4000",
     "hitemp-radisdb",
     "hdf5-radisdb",
+    "geisa",
 ]
 """list: Known formats for Line Databases:
 
-- ``'hitran'`` : [HITRAN-2020]_ original .par format
-- ``'hitemp'`` : [HITEMP-2010]_ original format (same format as 'hitran')
-- ``'cdsd-hitemp'`` : CDSD-HITEMP original format (CO2 only, same lines as HITEMP-2010)
-- ``'cdsd-4000'`` : [CDSD-4000]_ original format (CO2 only)
+- ``'hitran'`` : [HITRAN-2020]_ original .par format.
+- ``'hitemp'`` : [HITEMP-2010]_ original format (same format as 'hitran').
+- ``'cdsd-hitemp'`` : CDSD-HITEMP original format (CO2 only, same lines as HITEMP-2010).
+- ``'cdsd-4000'`` : [CDSD-4000]_ original format (CO2 only).
 - ``'hitemp-radisdb'`` : HITEMP under RADISDB format (pytables-HDF5 with RADIS column names).
 - ``'hdf5-radisdb'`` : arbitrary HDF5 file with RADIS column names.
+- ``'geisa'`` : [GEISA-2020]_ original .par format.
 
 To install all databases manually see the :ref:`Configuration file <label_lbl_config_file>`
 and the :ref:`list of databases <label_line_databases>` .
@@ -163,6 +165,7 @@ drop_auto_columns_for_dbformat = {
     "cdsd-hitemp": ["wang2", "lsrc"],
     "hdf5-radisdb": [],
     "hitemp-radisdb": [],
+    "geisa": [],
 }
 """ dict: drop these columns if using ``drop_columns='auto'`` in load_databank
 Based on the value of ``dbformat=``, some of these columns won't be used.
@@ -172,6 +175,7 @@ See Also
 - 'hitran': (HITRAN / HITEMP) :data:`~radis.io.hitran.columns_2004`,
 - 'cdsd-hitemp' (CDSD HITEMP): :data:`~radis.io.cdsd.columns_hitemp`,
 - 'cdsd-4000': (CDSD 4000) :data:`~radis.io.cdsd.columns_4000`,
+- 'geisa': (GEISA 2020) :data:`~radis.io.geisa.columns_GEISA`,
 """
 drop_auto_columns_for_levelsfmt = {
     "radis": [],

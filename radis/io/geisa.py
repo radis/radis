@@ -19,12 +19,18 @@ from os.path import exists, getmtime
 
 import radis
 from radis.io.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
-from radis.io.geisa_utils import drop_object_format_columns, parse_geisa_file
+from radis.io.tools import drop_object_format_columns, parse_hitran_file
 
 # %% Parsing functions
 
 # General case : GEISA 2020
 # Provided by Thibault Delahaye
+
+# BE ADVISED: the columns "int" and "ierrB" should be in format FLOAT instead of str as below.
+# However, because of Fortran's double-precision floating-point values used in these 2 columns,
+# which numpy cannot typecast to float. Thus, we set them as string here and will typecast them
+# to float again later in geisa_utils.
+
 # fmt: off
 columns_GEISA = OrderedDict(
     [
@@ -176,7 +182,13 @@ def gei2df(
             return df
 
     # If cache files are not found, commence reading of full file
-    df = parse_geisa_file(fname, parse_columns)
+    df = parse_hitran_file(fname, parse_columns)
+
+    # Commence "D to E" conversion on 2nd and 20th columns, by using
+    # df.columns.str.replace() which is much faster than Python loop.
+    # Finally, typecast them to float.
+    df["int"] = df["int"].astype(str).str.replace("D", "E").astype(float)
+    df["ierrB"] = df["ierrB"].astype(str).str.replace("D", "E").astype(float)
 
     # Remove non numerical attributes
     if drop_non_numeric:
