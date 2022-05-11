@@ -1,0 +1,45 @@
+name: "Bug Report"
+description: "Create a bug report to help us improve Radis \U0001F331"
+title: "Bug Report: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out our bug report form !!
+  - type: textarea
+    id: bug
+    validations:
+      required: true
+    attributes:
+      label: "🐛 Describe the bug"
+      description: "Please describe the bug !!"
+      placeholder: "describe ... "
+
+  - type: textarea
+    id: actual-behavior
+    validations:
+      required: false
+    attributes:
+      label: "💡 Possible solutions"
+      description: "Not obligatory, but suggest an idea for implementing addition or change"
+      placeholder: "It actually ..."
+  - type: input
+    id: radis-version
+    attributes:
+      label: "🎲 Radis version"
+      description: "What version of Radis are you running?(radis.get_version())"
+
+    validations:
+      required: true
+  - type: dropdown
+    id: operating-system
+    attributes:
+      label: "💻 Operating system"
+      description: "What OS is your server / device running on?"
+      options:
+        - Linux
+        - MacOS
+        - Windows
+    validations:
+      required: true

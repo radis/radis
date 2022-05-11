@@ -9,17 +9,19 @@ Multi-temperature Fit
 A method to fit an experimental spectrum directly from :py:class:`~radis.lbl.factory.SpectrumFactory`,
 with :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`
 
+Typical output is similar to the
+`radis-examples Multi-temperature fit <https://github.com/radis/radis-examples#1-multi-temperature-fit>`__ :
+
+.. image:: https://raw.githubusercontent.com/radis/radis-examples/master/docs/multi-temperature-fit.gif
+
 The method requires a fitting model. An example model is provided in :py:mod:`radis.tools.fitting` :
 :py:func:`~radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel`. Other models can be used, such
 as in the :ref:`one-temperature fit example <example_one_temperature_fit>`
 
 More advanced tools for interactive fitting of multi-dimensional, multi-slabs
 spectra can be found in :py:mod:`fitroom`.
-
-Typical output is similar to the
-`radis-examples Multi-temperature fit <https://github.com/radis/radis-examples#1-multi-temperature-fit>`__ :
-
-.. image:: https://raw.githubusercontent.com/radis/radis-examples/master/docs/multi-temperature-fit.gif
+Finally, the :ref:`GPU-accelerated example<example_real_time_gpu_spectra>` shows
+how to obtain real-time interactive spectra.
 
 """
 

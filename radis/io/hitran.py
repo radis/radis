@@ -94,7 +94,12 @@ def cast_to_int64_with_missing_values(dg, keys):
     """replace missing values of int64 columns with -1"""
     for c in keys:
         if dg.dtypes[c] != int64:
-            dg[c] = dg[c].fillna(-1).astype(int64)
+            dg[c].replace(
+                r"^\s+$", -1, regex=True, inplace=True
+            )  # replace empty strings by -1, e.g. HCN
+            # Warning: -1 may be a valid non-equilibirum quantum number for some
+            # molecules, e.g. H2O, see https://github.com/radis/radis/issues/280#issuecomment-896120510
+            dg[c] = dg[c].fillna(-1).astype(int64)  # replace nans with -1
 
 
 def hit2df(
@@ -1176,9 +1181,6 @@ class HITRANDatabaseManager(DatabaseManager):
                 cache=False,  # do not generate cache yet
                 parse_quanta=parse_quanta,
             )
-            # if engine == 'vaex':
-            #     df.executor.async_method = "awaitio"   # Temp fix for https://github.com/spyder-ide/spyder/issues/16183
-
             wmin_final = min(wmin_final, df.wav.min())
             wmax_final = max(wmax_final, df.wav.max())
             Nlines += len(df)
@@ -1281,6 +1283,7 @@ def fetch_hitran(
     clean_cache_files=True,
     return_local_path=False,
     engine="default",
+    output="pandas",
     parallel=True,
     parse_quanta=True,
 ):
@@ -1290,8 +1293,10 @@ def fetch_hitran(
 
     Parameters
     ----------
-    molecule: `"H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"`
-        HITEMP molecule. See https://hitran.org/hitemp/
+    molecule: str
+        one specific molecule name, listed in HITRAN molecule metadata.
+        See https://hitran.org/docs/molec-meta/
+        Example: "H2O", "CO2", etc.
     local_databases: str
         where to create the RADIS HDF5 files. Default ``"~/.radisdb/hitran"``.
         Can be changed in ``radis.config["DEFAULT_DOWNLOAD_PATH"]`` or in ~/radis.json config file
@@ -1319,6 +1324,9 @@ def fetch_hitran(
         if ``True``, also returns the path of the local database file.
     engine: 'pytables', 'vaex', 'default'
         which HDF5 library to use. If 'default' use the value from ~/radis.json
+    output: 'pandas', 'vaex', 'jax'
+        format of the output DataFrame. If ``'jax'``, returns a dictionary of
+        jax arrays.
     parallel: bool
         if ``True``, uses joblib.parallel to load database with multiple processes
     parse_quanta: bool
@@ -1340,15 +1348,14 @@ def fetch_hitran(
     --------
     ::
 
-        from radis import fetch_hitemp
-        df = fetch_hitemp("CO")
+        from radis.io.hitran import fetch_hitran
+        df = fetch_hitran("CO")
         print(df.columns)
         >>> Index(['id', 'iso', 'wav', 'int', 'A', 'airbrd', 'selbrd', 'El', 'Tdpair',
-            'Pshft', 'ierr', 'iref', 'lmix', 'gp', 'gpp', 'Fu', 'branch', 'jl',
-            'syml', 'Fl', 'vu', 'vl'],
+            'Pshft', 'gp', 'gpp', 'branch', 'jl', 'vu', 'vl'],
             dtype='object')
 
-    .. minigallery:: radis.io.hitemp.fetch_hitemp
+    .. minigallery:: radis.fetch_hitran
 
     Notes
     -----
@@ -1360,6 +1367,7 @@ def fetch_hitran(
 
     See Also
     --------
+    :py:func:`~radis.io.hitemp.fetch_hitemp`, :py:func:`~radis.io.exomol.fetch_exomol`
     :py:func:`~radis.io.hdf5.hdf2df`, :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`
 
     """
@@ -1412,6 +1420,7 @@ def fetch_hitran(
         isotope=isotope,
         load_wavenum_min=load_wavenum_min,  # for relevant files, get only the right range
         load_wavenum_max=load_wavenum_max,
+        output=output,
     )
 
     return (df, local_file) if return_local_path else df

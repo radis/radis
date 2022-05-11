@@ -376,7 +376,7 @@ def get_residual(
         wdiff, dI = wdiff[~b], dI[~b]
 
     if norm == "L2":
-        output = np.sqrt((dI ** 2).sum()) / len(dI)
+        output = np.sqrt((dI**2).sum()) / len(dI)
     elif norm == "L1":
         output = (np.abs(dI)).sum() / len(dI)
     else:

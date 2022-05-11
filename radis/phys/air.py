@@ -32,7 +32,7 @@ def air_index_dispersion(lbd):
     Standard air: dry air at 15 °C, 101.325 kPa and with 450 ppm CO2 content
     """
 
-    n = 1 + 0.05792105 / (238.0185 - lbd ** -2) + 0.00167917 / (57.362 - lbd ** -2)
+    n = 1 + 0.05792105 / (238.0185 - lbd**-2) + 0.00167917 / (57.362 - lbd**-2)
 
     return n
 

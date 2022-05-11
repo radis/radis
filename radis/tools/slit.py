@@ -1846,7 +1846,7 @@ def gaussian_slit(
     # 3 sigma: gaussian non calculated residual: 1%
 
     w0 = wstep * np.linspace(-a, a, 2 * a + 1)  # centered
-    Igauss = exp(-(w0 ** 2) / (2 * sigma ** 2))
+    Igauss = exp(-(w0**2) / (2 * sigma**2))
 
     I = np.hstack((np.zeros(f), Igauss, np.zeros(f)))
     w = wstep * np.linspace(-(a + f), (a + f), 2 * a + 2 * f + 1) + center

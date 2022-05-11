@@ -60,7 +60,7 @@ def planck(lmbda, T, eps=1, unit="mW/sr/cm2/nm"):
     k = k_b
     lbd = lmbda * 1e-9
     iplanck = (
-        eps * (2 * h * c ** 2 / lbd ** 5) * (1 / (exp(h * c / (lbd * k * T)) - 1))
+        eps * (2 * h * c**2 / lbd**5) * (1 / (exp(h * c / (lbd * k * T)) - 1))
     )  # S.I  (W.sr-1.m-3)
     iplanck *= 1e-10  # W.sr-1.m-3 >>> mW.sr-1.cm-2.nm-1
 
@@ -103,7 +103,7 @@ def planck_wn(wavenum, T, eps=1, unit="mW/sr/cm2/cm-1"):
 
     iplanck = (
         eps
-        * (2 * h * c ** 2 * wavenum ** 3)
+        * (2 * h * c**2 * wavenum**3)
         * (1 / (exp(h * c * wavenum / (k * T)) - 1))
     )
     # iplanck in erg/s/sr/cm2/cm-1

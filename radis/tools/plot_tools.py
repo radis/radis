@@ -28,7 +28,7 @@ import warnings
 
 class ParamRange:
     def __init__(self, valmin=0, valmax=1, valinit=None):
-        """Used in :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu_interactive`  """
+        """Used in :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu_interactive`"""
         self.valmin = valmin
         self.valmax = valmax
 
