@@ -20,25 +20,25 @@ jobs:
     - stage: test
       name: Test and Coverage
       install:
-        # Install Anaconda
+        # Install Micromamba
         # We do this conditionally because it saves us some downloading if the
         # version is the same.
-        - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-        - bash miniconda.sh -b -p $HOME/miniconda
-        - export PATH="$HOME/miniconda/bin:$PATH"
-        - hash -r
-        - conda config --set always_yes yes --set changeps1 no
-        - conda update -q conda
+        # For now use http instead of https according to this comment:
+        # https://github.com/mamba-org/mamba/issues/1675#issuecomment-1127160021
+        - wget -qO- http://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
+        - ./bin/micromamba shell init -s bash -p ~/micromamba
+        - source ~/.bashrc
+        - micromamba activate base
         # Useful for debugging any issues with conda
-        - conda info -a
-
+        - micromamba info
         # Update python version in environment
         - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
         # Create conda environment
-        - conda env create -n radis-env -f environment.yml
+        - micromamba install xtensor -c conda-forge -y
+        - micromamba create -f environment.yml -y
         # Activate and install test-only dependencies
-        - source activate radis-env
-        - conda list
+        - micromamba activate radis-env
+        - micromamba list
         - pip install pytest-cov
         - pip install -e . -v
 
@@ -54,10 +54,14 @@ jobs:
         - pip install codecov
         - codecov
 
+      before_script:
+        - export MPLBACKEND=Agg
+
     - stage: lint
       name: Code Quality Checks
       install:
         - pip install pre-commit
+        - pre-commit install
       script:
         - pre-commit run --all-files
 

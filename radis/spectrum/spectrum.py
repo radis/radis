@@ -1405,7 +1405,18 @@ class Spectrum(object):
             for path in [0.1, 10, 100]:
                 s.rescale_path_length(10, inplace=False).plot(nfig='same')
 
-        .. minigallery:: radis.spectrum.spectrum.Spectrum.rescale_path_length
+        Additionally, you can also use astropy units in the input arguments, for example:
+        ::
+
+            # preparing a test spectrum :
+            import radis
+            s = radis.test_spectrum()
+
+            # rescaling :
+            import astropy.units as u
+            s.rescale_path_length(1 * u.km).plot()
+
+        .. minigallery:: radis.spectrum.Spectrum.rescale_path_length
 
         Notes
         -----
@@ -1468,7 +1479,7 @@ class Spectrum(object):
 
             s.rescale_mole_fraction(0.2)
 
-        .. minigallery:: radis.spectrum.spectrum.Spectrum.rescale_mole_fraction
+        .. minigallery:: radis.Spectrum.rescale_mole_fraction
 
         Notes
         -----
@@ -4300,6 +4311,7 @@ class Spectrum(object):
         inplace=False,
         force=False,
         verbose=False,
+        return_norm=False,
     ):
         """Normalise the Spectrum, if only one spectral quantity is available.
 
@@ -4393,6 +4405,8 @@ class Spectrum(object):
             out = multiply(s, 1 / (norm * Unit(norm_unit)), inplace=inplace)
         if verbose:
             print("Normalization factor : {0}".format(norm))
+        if return_norm:
+            return out, norm * Unit(norm_unit)
         return out
 
     def get_baseline(self, algorithm="als", **kwargs):

@@ -154,7 +154,7 @@ def convert_emi2cm(j_nm, wavenum, Iunit0, Iunit):
     j_nm = conv2(j_nm, Iunit0, "mW/cm**3/sr/nm")
 
     # Convert ''mW/cm3/sr/nm' to 'mW/cm3/sr/cm-1'
-    j_cm = j_nm * 1e7 / wavenum ** 2
+    j_cm = j_nm * 1e7 / wavenum**2
     # note that we discard the - sign.
     # This means that one of the integrals `trapz(j_nm, wavelen)` or
     # `trapz(j_cm, wavenum)` will be < 0 as they are sorted in opposite order.
@@ -198,7 +198,7 @@ def convert_emi2nm(j_cm, wavenum, Iunit0, Iunit):
     j_cm = conv2(j_cm, Iunit0, "mW/cm3/sr/cm-1")
 
     # Convert 'mW/cm3/sr/cm-1' to 'mW/cm3/sr/nm'
-    j_nm = j_cm * 1e-7 * wavenum ** 2
+    j_nm = j_cm * 1e-7 * wavenum**2
     # note that we discard the - sign.
     # This means that one of the integrals `trapz(L_nm, wavelen)` or
     # `trapz(L_cm, wavenum)` will be < 0 as they are sorted in opposite order.
@@ -213,7 +213,14 @@ def convert_emi2nm(j_cm, wavenum, Iunit0, Iunit):
 # %% Radiance conversion functions (with changes from ~1/nm in ~1/cm-1)
 
 
-def convert_rad2cm(l_nm, wavenum, Iunit0, Iunit):
+def convert_rad2cm(
+    l_nm,
+    wavenum,
+    Iunit0,
+    Iunit,
+    per_nm_is_like="mW/sr/cm2/nm",
+    per_cm_is_like="mW/sr/cm2/cm-1",
+):
     """Convert spectral radiance in wavelength base (~1/nm) to spectral
     radiance in wavenumber base (~1/cm-1)
 
@@ -253,22 +260,29 @@ def convert_rad2cm(l_nm, wavenum, Iunit0, Iunit):
     Both integrals are to be the same
     """
 
-    l_nm = conv2(l_nm, Iunit0, "mW/cm2/sr/nm")
+    l_nm = conv2(l_nm, Iunit0, per_nm_is_like)
 
     # Convert ''mW/cm2/sr/nm' to 'mW/cm2/sr/cm-1'
-    l_cm = l_nm * 1e7 / wavenum ** 2
+    l_cm = l_nm * 1e7 / wavenum**2
     # note that we discard the - sign.
     # This means that one of the integrals `trapz(L_nm, wavelen)` or
     # `trapz(L_cm, wavenum)` will be < 0 as they are sorted in opposite order.
     # But both plots look alright
 
     # Convert to whatever was wanted
-    l_cm = conv2(l_cm, "mW/cm2/sr/cm-1", Iunit)
+    l_cm = conv2(l_cm, per_cm_is_like, Iunit)
 
     return l_cm
 
 
-def convert_rad2nm(l_cm, wavenum, Iunit0, Iunit):
+def convert_rad2nm(
+    l_cm,
+    wavenum,
+    Iunit0,
+    Iunit,
+    per_nm_is_like="mW/sr/cm2/nm",
+    per_cm_is_like="mW/sr/cm2/cm-1",
+):
     """Convert spectral radiance in wavenumber base (~1/cm-1) to spectral
     radiance in wavelength base (~1/nm)
 
@@ -296,17 +310,17 @@ def convert_rad2nm(l_cm, wavenum, Iunit0, Iunit):
     so        Lλ  = - Lν * 1e-7 * ν^2
     """
 
-    l_cm = conv2(l_cm, Iunit0, "mW/cm2/sr/cm-1")
+    l_cm = conv2(l_cm, Iunit0, per_cm_is_like)
 
     # Convert 'mW/cm2/sr/cm-1' to 'mW/cm2/sr/nm'
-    l_nm = l_cm * 1e-7 * wavenum ** 2
+    l_nm = l_cm * 1e-7 * wavenum**2
     # note that we discard the - sign.
     # This means that one of the integrals `trapz(L_nm, wavelen)` or
     # `trapz(L_cm, wavenum)` will be < 0 as they are sorted in opposite order.
     # But both plots look alright
 
     # Convert to whatever was wanted
-    l_nm = conv2(l_nm, "mW/cm2/sr/nm", Iunit)
+    l_nm = conv2(l_nm, per_nm_is_like, Iunit)
 
     return l_nm
 
@@ -350,14 +364,28 @@ def convert_universal(
             Iunit, per_cm_is_like
         ):
             w_cm = spec.get_wavenumber()
-            I = convert_rad2cm(I, w_cm, Iunit0, Iunit)
+            I = convert_rad2cm(
+                I,
+                w_cm,
+                Iunit0,
+                Iunit,
+                per_nm_is_like=per_nm_is_like,
+                per_cm_is_like=per_cm_is_like,
+            )
             # note that there may still be a new DimensionalityError
             # raise here if the input was non-sense.
         elif is_homogeneous(Iunit0, per_cm_is_like) and is_homogeneous(
             Iunit, per_nm_is_like
         ):
             w_cm = spec.get_wavenumber()
-            I = convert_rad2nm(I, w_cm, Iunit0, Iunit)
+            I = convert_rad2nm(
+                I,
+                w_cm,
+                Iunit0,
+                Iunit,
+                per_nm_is_like=per_nm_is_like,
+                per_cm_is_like=per_cm_is_like,
+            )
             # note that there may still be a new DimensionalityError
             # raise here if the input was non-sense.
         else:  # general case: just convert

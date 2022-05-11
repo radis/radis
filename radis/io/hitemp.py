@@ -436,6 +436,7 @@ def fetch_hitemp(
     clean_cache_files=True,
     return_local_path=False,
     engine="default",
+    output="pandas",
     parallel=True,
 ):
     """Stream HITEMP file from HITRAN website. Unzip and build a HDF5 file directly.
@@ -475,7 +476,10 @@ def fetch_hitemp(
     return_local_path: bool
         if ``True``, also returns the path of the local database file.
     engine: 'pytables', 'vaex', 'default'
-        which HDF5 library to use. If 'default' use the value from ~/radis.json
+        which HDF5 library to use to parse local files. If 'default' use the value from ~/radis.json
+    output: 'pandas', 'vaex', 'jax'
+        format of the output DataFrame. If ``'jax'``, returns a dictionary of
+        jax arrays.
     parallel: bool
         if ``True``, uses joblib.parallel to load database with multiple processes
 
@@ -501,7 +505,7 @@ def fetch_hitemp(
             'syml', 'Fl', 'vu', 'vl'],
             dtype='object')
 
-    .. minigallery:: radis.io.hitemp.fetch_hitemp
+    .. minigallery:: radis.fetch_hitemp
 
     Notes
     -----
@@ -513,6 +517,7 @@ def fetch_hitemp(
 
     See Also
     --------
+    :py:func:`~radis.io.hitran.fetch_hitran`, :py:func:`~radis.io.exomol.fetch_exomol`
     :py:func:`~radis.io.hdf5.hdf2df`, :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`
 
     """
@@ -616,6 +621,7 @@ def fetch_hitemp(
         isotope=isotope,
         load_wavenum_min=load_wavenum_min,  # for relevant files, get only the right range
         load_wavenum_max=load_wavenum_max,
+        output=output,
     )
 
     return (df, files_loaded) if return_local_path else df

@@ -16,6 +16,8 @@ the :ref:`multi-temperature fit example<example_multi_temperature_fit>`
 
 More advanced tools for interactive fitting of multi-dimensional, multi-slabs
 spectra can be found in :py:mod:`fitroom`.
+Finally, the :ref:`GPU-accelerated example<example_real_time_gpu_spectra>` shows
+how to obtain real-time interactive spectra.
 
 """
 

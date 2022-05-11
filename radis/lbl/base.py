@@ -194,7 +194,7 @@ class BaseFactory(DatabankLoader):
 
         conditions = self.get_conditions()
 
-        return print_conditions(conditions, self.cond_units)
+        return print_conditions(conditions, self.cond_units, verbose=self.verbose)
 
     def get_energy_levels(self, molecule, isotope, state, conditions=None):
         """Return energy levels database for given molecule > isotope > state
@@ -1755,7 +1755,7 @@ class BaseFactory(DatabankLoader):
         )  # reference linestrength   ( computed with terrestrial isotopic abundances)
 
         weighted_trans_moment_sq = (
-            (3 * h * c / 8 / pi ** 3)
+            (3 * h * c / 8 / pi**3)
             / nu
             / (Ia * gl / self.Qgas(df, Tref) * exp(-hc_k * El / Tref))
             / (1 - exp(-hc_k * nu / Tref))
@@ -1897,11 +1897,11 @@ class BaseFactory(DatabankLoader):
         h = h_CGS  # erg.s
 
         # Calculate coefficients
-        df["Blu"] = 8 * pi ** 3 / (3 * h ** 2) * Rs2 * 1e-36 * 1e7  # cm3/(J.s^2)
+        df["Blu"] = 8 * pi**3 / (3 * h**2) * Rs2 * 1e-36 * 1e7  # cm3/(J.s^2)
         df["Bul"] = (
-            8 * pi ** 3 / (3 * h ** 2) * (gl / gu) * Rs2 * 1e-36 * 1e7
+            8 * pi**3 / (3 * h**2) * (gl / gu) * Rs2 * 1e-36 * 1e7
         )  # cm3/(J.s^2)
-        df["Aul"] = 64 * pi ** 4 / (3 * h) * nu ** 3 * gl / gu * Rs2 * 1e-36  # s-1
+        df["Aul"] = 64 * pi**4 / (3 * h) * nu**3 * gl / gu * Rs2 * 1e-36  # s-1
 
         return None  # dataframe updated directly
 
@@ -2010,7 +2010,7 @@ class BaseFactory(DatabankLoader):
         wav = df0["wav"]
         Ia = self.get_lines_abundance(df0)
 
-        S0 = Ia * gp * A / (8 * pi * c_cm * wav ** 2)
+        S0 = Ia * gp * A / (8 * pi * c_cm * wav**2)
 
         df0["S0"] = S0  # [cm-1/(molecules/cm-2)]
 
@@ -2452,8 +2452,8 @@ class BaseFactory(DatabankLoader):
                 # ... make sure PartitionFunction above is calculated with the same
                 # ... temperatures, rovibrational distributions and overpopulations
                 # ... as the populations of active levels (somewhere below)
-                df.at[idx, "Qvib"] = Qvib
-                df.at[idx, "Q"] = Q
+                df.loc[idx, "Qvib"] = Qvib
+                df.loc[idx, "Q"] = Q
 
                 # reindexing to get a direct access to Qrot database
                 # create the lookup dictionary
@@ -3077,34 +3077,36 @@ class BaseFactory(DatabankLoader):
 
     # %%
     def calc_emission_integral(self):
-        r"""Calculate Emission Integral.
+        r"""Calculate the emission integral (in :math:`mW/sr`) of all lines in DataFrame ``df1``.
 
         .. math::
-            Ei=\frac{n_u A_{ul}}{4} \pi \Delta E_{ul}
 
-        Emission Integral is a non usual quantity introduced here to have an
-        equivalent of Linestrength in emission calculation
+            E_i=\frac{n_u A_{ul}}{4 \pi} \Delta E_{ul}
+
+        Where :math:`A_{ul}` (:math:`s^{-1}`) is the Einstein coefficient of the corresponding line,
+        :math:`n_u` (in :math:`cm^{-3}/cm^{-3}` is the fraction of the molecule population in the upper rovibrational state,
+        and :math:`\Delta E_{ul}` the transition energy.
+
+        Emission Integral is a non usual quantity introduced in RADIS as an
+        equivalent for emission calculations of the Linestrength quantity used in absorption calculations.
+
+        The emission integral is later multiplied by the total density :math:`n_tot` and the lineshape :math:`\Phi_i` to obtain
+        the spectral emission coefficient :math:`\epsilon_i` associated to each line.
+
+        .. math::
+
+            \epsilon_i(\lambda) = E_i \cdot n_{tot} \cdot \Phi_i(\lambda)
+
+        Which are afterwards summed over all N lines to obtain the total emission coefficient :
+
+        .. math::
+
+            \epsilon(\lambda) = \sum_i^N {\epsilon_i}(\lambda)
 
         Returns
         -------
         None
-            Emission integral `Ei` added in self.df
-
-        Notes
-        -----
-
-        emission_integral: (mW/sr)
-            emission integral is defined as::
-
-            Ei = n_u * A_ul / 4π * DeltaE_ul
-                  :      :     :      :
-                (#/#)  (s-1) (sr)    (mJ)
-
-            So that the radiance ϵ is:
-
-                ϵ(λ)   =      Ei  *   Phi(λ)  * ntot   * path_length
-                 :             :         :       :          :
-            mW/cm2/sr/nm    (mW/sr)   (1/nm)   (cm-3)      (cm)
+            Emission integral `Ei` added in ``df1``
 
         See Also
         --------
@@ -3676,7 +3678,7 @@ def linestrength_from_Einstein(
     """
 
     return (
-        (1 / (8 * np.pi * c_CGS * nu ** 2))
+        (1 / (8 * np.pi * c_CGS * nu**2))
         * A
         * ((Ia * gu * np.exp(-hc_k * El / T)) / Q)
         * (1 - np.exp(-hc_k * nu / T))

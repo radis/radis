@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+.. _example_real_time_gpu_spectra:
+
 ===============================================
 Real-time GPU Accelerated Spectra (Interactive)
 ===============================================
