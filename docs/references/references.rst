@@ -66,7 +66,7 @@ Tutorials for molecular spectroscopy can be found here at https://github.com/rad
 
 - Lab Spectroscopy: https://github.com/radis/spectro101/blob/main/102_lab_spectroscopy.ipynb
 
-- Line Broadening: https://github.com/radis/spectro101/blob/main/103_lineshape_broadening.ipynb 
+- Line Broadening: https://github.com/radis/spectro101/blob/main/103_lineshape_broadening.ipynb
 
 Useful Links
 ============
