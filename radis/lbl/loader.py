@@ -66,6 +66,8 @@ from radis.db.references import doi
 from radis.io.cache_files import cache_file_name
 from radis.io.cdsd import cdsd2df
 from radis.io.exomol import fetch_exomol
+
+# from radis.io.geisa import gei2df
 from radis.io.hdf5 import hdf2df
 from radis.io.hitemp import fetch_hitemp
 from radis.io.hitran import (

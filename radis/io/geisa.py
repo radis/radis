@@ -3,7 +3,7 @@
 Summary
 -----------------------
 
-HITRAN database parser
+GEISA database parser
 
 -----------------------
 
@@ -11,15 +11,23 @@ HITRAN database parser
 """
 
 
-# import os
-# import sys
 import time
 from collections import OrderedDict
 from os.path import exists, getmtime
 
+import numpy as np
+
 import radis
 from radis.io.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
-from radis.io.tools import drop_object_format_columns, parse_hitran_file
+from radis.io.dbmanager import DatabaseManager
+from radis.io.tools import (
+    _create_dtype,
+    _get_linereturnformat,
+    _ndarray2df,
+    drop_object_format_columns,
+    parse_hitran_file,
+)
+from radis.misc.progress_bar import ProgressBar
 
 # %% Parsing functions
 
@@ -86,6 +94,69 @@ equilibrium_columns = OrderedDict(
     ]
 )
 # fmt: on
+
+GEISA_MOLECULES_Nlines = {
+    "H2O": 75699,
+    "CO2": 532533,
+    "O3": 389378,
+    "N2O": 50633,
+    "CO": 13515,
+    "CH4": 240858,
+    "O2": 6428,
+    "NO": 105079,
+    "SO2": 68728,
+    "NO2": 113880,
+    "NH3": 29082,
+    "PH3": 34542,
+    "HNO3": 691161,
+    "OH": 42866,
+    "HF": 20010,
+    "HCL": 35985,
+    "HBR": 8980,
+    "HI": 4751,
+    "CLO": 7230,
+    "OCS": 33809,
+    "H2CO": 37050,
+    "C2H6": 28439,
+    "CH3D": 49237,
+    "C2H2": 11340,
+    "C2H4": 18378,
+    "GEH4": 32372,
+    "HCN": 81889,
+    "C3H8": 8983,
+    "C2N2": 2577,
+    "C4H2": 119480,
+    "HC3N": 179347,
+    "HOCL": 17862,
+    "N2": 120,
+    "CH3CL": 18344,
+    "H2O2": 126983,
+    "H2S": 20788,
+    "HCOOH": 62684,
+    "COF2": 70904,
+    "SF6": 92398,
+    "C3H4": 19001,
+    "HO2": 38804,
+    "CLONO2": 356899,
+    "CH3BR": 36911,
+    "CH3OH": 19897,
+    "NO+": 1206,
+    "HNC": 5619,
+    "C6H6": 9797,
+    "C2HD": 15512,
+    "CF4": 60033,
+    "CH3CN": 17172,
+    "HDO": 63641,
+    "SO3": 10881,
+    "HONO": 26041,
+    "COFCL": 215639,
+    "CH3I": 70291,
+    "CH3F": 1499,
+    "RUO4": 30205,
+    "H2C3H2": 31686,
+}
+
+GEISA_MOLECULES = list(GEISA_MOLECULES_Nlines.keys())
 
 
 def gei2df(
@@ -234,7 +305,220 @@ def gei2df(
     return df
 
 
-# Test cases for
+#%%
+def get_last(b):
+    """Get non-empty lines of a chunk b, parsing the bytes."""
+    element_length = np.vectorize(lambda x: len(x.__str__()))(b)
+    non_zero = element_length > element_length[-1]
+    threshold = non_zero.argmin() - 1
+    assert (non_zero[: threshold + 1] == 1).all()
+    assert (non_zero[threshold + 1 :] == 0).all()
+    return b[non_zero]
+
+
+class GEISADatabaseManager(DatabaseManager):
+    def __init__(
+        self,
+        name,
+        molecule,
+        local_databases,
+        engine="default",
+        verbose=True,
+        chunksize=100000,
+        parallel=True,
+    ):
+        super().__init__(
+            name,
+            molecule,
+            local_databases,
+            engine,
+            verbose=verbose,
+            parallel=parallel,
+        )
+        self.chunksize = chunksize
+        self.downloadable = True
+        self.base_url = "https://aeris-geisa.ipsl.fr/geisa_files/2020/Lines/line_GEISA2020_asc_gs08_v1.0_"
+        self.Nlines = None
+        self.wmin = None
+        self.wmax = None
+
+    def fetch_urlnames(self):
+        """requires connexion"""
+
+        if self.urlnames is not None:
+            return self.urlnames
+
+        molecule = self.molecule
+        base_url = self.base_url
+
+        if molecule.upper() in GEISA_MOLECULES:
+
+            urlname = base_url + molecule.lower()
+
+        else:
+            raise KeyError(
+                f"Please choose one of GEISA molecules : {GEISA_MOLECULES}. Got '{molecule}'"
+            )
+
+        self.urlnames = urlname
+
+        return urlname
+
+    def get_linereturn_format(self, opener, urlname, columns):
+
+        with opener.open(urlname) as gfile:  # locally downloaded file
+            dt = _create_dtype(
+                columns, "a2"
+            )  # 'a2' allocates space to get \n or \n\r for linereturn character
+            b = np.zeros(1, dtype=dt)
+            try:
+                gfile.readinto(b)
+            except EOFError as err:
+                raise ValueError(
+                    f"End of file while parsing file {opener.abspath(urlname)}. May be due to download error. Delete file ?"
+                ) from err
+            linereturnformat = _get_linereturnformat(b, columns)
+        return linereturnformat
+
+    def parse_to_local_file(
+        self,
+        opener,
+        urlname,
+        local_file,
+        pbar_active=True,
+        pbar_t0=0,
+        pbar_Ntot_estimate_factor=None,
+        pbar_Nlines_already=0,
+        pbar_last=True,
+    ):
+        """Uncompress ``urlname`` into ``local_file``.
+        Also add metadata
+
+        Parameters
+        ----------
+        opener: an opener with an .open() command
+        gfile : file handler. Filename: for info"""
+
+        # Get linereturn (depends on OS, but file may also have been generated
+        # on a different OS. Here we simply read the file to find out)
+        columns = columns_GEISA
+        chunksize = self.chunksize
+        verbose = self.verbose
+        molecule = self.molecule
+
+        if not verbose:
+            pbar_active = False
+
+        linereturnformat = self.get_linereturn_format(opener, urlname, columns)
+
+        Nlines = 0
+        Nlines_raw = 0
+        Nlines_tot = Nlines + pbar_Nlines_already
+        Ntotal_lines_expected = GEISA_MOLECULES_Nlines[molecule.upper()]
+        if pbar_Ntot_estimate_factor:
+            # multiply Ntotal_lines_expected by pbar_Ntot_estimate_factor
+            # (accounts for total lines divided in number of files, and
+            # not all files downloaded)
+            Ntotal_lines_expected = int(
+                Ntotal_lines_expected * pbar_Ntot_estimate_factor
+            )
+        pb = ProgressBar(N=Ntotal_lines_expected, active=pbar_active, t0=pbar_t0)
+        wmin = np.inf
+        wmax = 0
+
+        writer = self.get_hdf5_manager()
+
+        with opener.open(urlname) as gfile:  # locally downloaded file
+
+            dt = _create_dtype(columns, linereturnformat)
+
+            if verbose:
+                print(f"Download complete. Parsing {molecule} database to {local_file}")
+
+            # assert not(exists(local_file))
+
+            b = np.zeros(chunksize, dtype=dt)  # receives the GEISA data.
+
+            for nbytes in iter(lambda: gfile.readinto(b), 0):
+
+                if not b[-1]:
+                    # End of file flag within the chunk (but does not start
+                    # with End of file flag) so nbytes != 0
+                    b = get_last(b)
+
+                df = _ndarray2df(b, columns, linereturnformat)
+
+                writer.write(local_file, df, append=True)
+
+                wmin = np.min((wmin, df.wav.min()))
+                wmax = np.max((wmax, df.wav.max()))
+
+                Nlines += len(df)
+                Nlines_tot += len(df)
+                Nlines_raw += len(b)
+
+                if pbar_Ntot_estimate_factor is None:
+                    pbar_Ntot_message = f"{Ntotal_lines_expected:,} lines"
+                else:
+                    pbar_Ntot_message = f"~{Ntotal_lines_expected:,} lines (estimate)"
+                pb.update(
+                    Nlines_tot,
+                    message=f"  Parsed {Nlines_tot:,} / {pbar_Ntot_message}. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete.",
+                )
+
+                # Reinitialize for next read
+                b = np.zeros(chunksize, dtype=dt)  # receives the GEISA data.
+        writer.combine_temp_batch_files(local_file)  # used for vaex mode only
+        if pbar_last:
+            pb.update(
+                Nlines_tot,
+                message=f"  Parsed {Nlines_tot:,} / {Nlines_tot:,} lines. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete.",
+            )
+            pb.done()
+        else:
+            print("")
+
+        # Check number of lines is consistent
+        assert Nlines == Nlines_raw
+
+        # Add metadata
+        from radis import __version__
+
+        writer.add_metadata(
+            local_file,
+            {
+                "wavenumber_min": wmin,
+                "wavenumber_max": wmax,
+                "download_date": self.get_today(),
+                "download_url": urlname,
+                "total_lines": Nlines_raw,
+                "version": __version__,
+            },
+        )
+
+        return Nlines
+
+    def register(self):
+        """register in ~/radis.json"""
+
+        local_files, urlnames = self.get_filenames()
+        info = f"GEISA {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1)"
+
+        dict_entries = {
+            "info": info,
+            "path": local_files,
+            "format": "geisa-radisdb",
+            "parfuncfmt": "",
+            "wavenumber_min": self.wmin,
+            "wavenumber_max": self.wmax,
+            "download_date": self.get_today(),
+            "download_url": urlnames,
+        }
+
+        super().register(dict_entries)
+
+
+# Test cases for GEISA parsing
 if __name__ == "__main__":
     from radis.test.test_io import test_geisa
 
