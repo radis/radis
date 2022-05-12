@@ -302,15 +302,18 @@ def LineSurvey(
 
             add = ["vu", "vl", "jl"]
 
-            if "isotope" in spec.conditions:
+            if "iso" in row:
+                iso = row["iso"]
+            elif "isotope" in spec.conditions:
                 iso = spec.conditions["isotope"]
-                add.append("iso")
-                row["iso"] = iso
+            else:
+                iso = "?"
 
-            label = "{molec} [{branch}{jl:.0f}]({vl:.0f})->({vu:.0f})".format(
+            label = "{molec}[iso{iso}] [{branch}{jl:.0f}]({vl:.0f})->({vu:.0f})".format(
                 **dict(
                     [(k, row[k]) for k in add]
                     + [
+                        ("iso", iso),
                         ("molec", molecule),
                         ("branch", _fix_branch_format[row["branch"]]),
                     ]
@@ -330,15 +333,18 @@ def LineSurvey(
                 "jl",
             ]
 
-            if "isotope" in spec.conditions:
+            if "iso" in row:
+                iso = row["iso"]
+            elif "isotope" in spec.conditions:
                 iso = spec.conditions["isotope"]
-                add.append("iso")
-                row["iso"] = iso
+            else:
+                iso = "?"
 
             label = "{molec} [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})".format(
                 **dict(
                     [(k, row[k]) for k in add]
                     + [
+                        ("iso", iso),
                         ("molec", molecule),
                         ("branch", _fix_branch_format[row["branch"]]),
                     ]
@@ -360,15 +366,18 @@ def LineSurvey(
                 "jl",
             ]
 
-            if "isotope" in spec.conditions:
+            if "iso" in row:
+                iso = row["iso"]
+            elif "isotope" in spec.conditions:
                 iso = spec.conditions["isotope"]
-                add.append("iso")
-                row["iso"] = iso
+            else:
+                iso = "?"
 
             label = "{molec} [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f} {rl:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f} {ru:.0f})".format(
                 **dict(
                     [(k, row[k]) for k in add]
                     + [
+                        ("iso", iso),
                         ("molec", molecule),
                         ("branch", _fix_branch_format[row["branch"]]),
                     ]
@@ -401,15 +410,17 @@ def LineSurvey(
             "jl",
         ]
 
-        if "isotope" in spec.conditions:
+        if "iso" in row:
+            iso = row["iso"]
+        elif "isotope" in spec.conditions:
             iso = spec.conditions["isotope"]
-            add.append("iso")
-            row["iso"] = iso
+        else:
+            iso = "?"
 
         label = "CO2 [{branch}{jl:.0f}](p{polyl:.0f}c{wangl:.0f}n{rankl:.0f})->(p{polyu:.0f}c{wangu:.0f}n{ranku:.0f})".format(
             **dict(
                 [(k, row[k]) for k in add]
-                + [("branch", _fix_branch_format[row["branch"]])]
+                + [("iso", iso), ("branch", _fix_branch_format[row["branch"]])]
             )
         )
 
@@ -423,6 +434,13 @@ def LineSurvey(
         return label
 
     def get_label_cdsd_hitran(row, details):
+        if "iso" in row:
+            iso = row["iso"]
+        elif "isotope" in spec.conditions:
+            iso = spec.conditions["isotope"]
+        else:
+            iso = "?"
+
         label = "CO2 [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})".format(
             **dict(
                 [
@@ -439,7 +457,7 @@ def LineSurvey(
                         "jl",
                     ]
                 ]
-                + [("branch", _fix_branch_format[row["branch"]])]
+                + [("iso", iso), ("branch", _fix_branch_format[row["branch"]])]
             )
         )
 

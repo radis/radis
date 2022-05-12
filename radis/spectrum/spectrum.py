@@ -3059,12 +3059,6 @@ class Spectrum(object):
             transmittance)"""
 
             if isinstance(overlay, str):  # either get it from the Spectrum
-                if overlay not in self.get_vars():
-                    raise AttributeError(
-                        "{0} not in variables list: {1}".format(
-                            overlay, self.get_vars()
-                        )
-                    )
                 w, I = self.get(overlay, wunit=wunit)
                 name = overlay
                 units = self.units[overlay]
