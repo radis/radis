@@ -4311,6 +4311,7 @@ class Spectrum(object):
         inplace=False,
         force=False,
         verbose=False,
+        return_norm=False,
     ):
         """Normalise the Spectrum, if only one spectral quantity is available.
 
@@ -4404,6 +4405,8 @@ class Spectrum(object):
             out = multiply(s, 1 / (norm * Unit(norm_unit)), inplace=inplace)
         if verbose:
             print("Normalization factor : {0}".format(norm))
+        if return_norm:
+            return out, norm * Unit(norm_unit)
         return out
 
     def get_baseline(self, algorithm="als", **kwargs):
