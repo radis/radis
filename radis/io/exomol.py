@@ -6,6 +6,7 @@ Initial code borrowed from the `Exojax <https://github.com/HajimeKawahara/exojax
 code (which you should also have a look at !), by @HajimeKawahara, under MIT License.
 
 """
+import os
 import pathlib
 import warnings
 
@@ -269,9 +270,9 @@ def fetch_exomol(
 
     Other Parameters
     ----------------
-    cache: bool, or ``'regen'``
+    cache: bool, or ``'regen'`` or ``'force'``
         if ``True``, use existing HDF5 file. If ``False`` or ``'regen'``, rebuild it.
-        Default ``True``.
+        If ``'force'``, crash if not cache file found. Default ``True``.
     verbose: bool
     clean_cache_files: bool
         if ``True`` clean downloaded cache files after HDF5 are created.
@@ -378,6 +379,7 @@ def fetch_exomol(
             load_wavenum_max if load_wavenum_max is not None else np.inf,
         ],
         engine=engine,
+        cache=cache,
     )
 
     # Get local files
@@ -497,6 +499,7 @@ class MdbExomol(DatabaseManager):
         broadf=True,
         engine="vaex",
         verbose=True,
+        cache=True,
     ):
         """molecular database of ExoMol
 
@@ -572,6 +575,8 @@ class MdbExomol(DatabaseManager):
             engine,
             verbose=verbose,
         )
+
+        assert cache  # cache only used for cache='regen' or cache='force' modes, cache=False is not expected
 
         from os import environ
 
@@ -659,9 +664,17 @@ class MdbExomol(DatabaseManager):
         mgr = self.get_dframe_manager()
 
         # load states
+        if cache == "regen" and mgr.cache_file(self.states_file).exists():
+            if verbose:
+                print("Removing existing file ", mgr.cache_file(self.states_file))
+            os.remove(mgr.cache_file(self.states_file))
         if mgr.cache_file(self.states_file).exists():
             states = mgr.read(mgr.cache_file(self.states_file))
         else:
+            if cache == "force":
+                raise ValueError(
+                    f"Cache file {str(mgr.cache_file(self.states_file))} does not exist"
+                )
             print(
                 f"Note: Caching states data to the {engine} format. After the second time, it will become much faster."
             )
@@ -712,7 +725,17 @@ class MdbExomol(DatabaseManager):
         # -----------------------------------------
         for trans_file, num_tag in zip(self.trans_file, self.num_tag):
 
+            if cache == "regen" and mgr.cache_file(trans_file).exists():
+                if verbose:
+                    print("Removing existing file ", mgr.cache_file(trans_file))
+                os.remove(mgr.cache_file(trans_file))
+
             if not mgr.cache_file(trans_file).exists():
+
+                if cache == "force":
+                    raise ValueError(
+                        f"Cache file {str(mgr.cache_file(trans_file))} does not exist"
+                    )
 
                 if not trans_file.exists():
                     self.download(molec, extension=[".trans.bz2"], numtag=num_tag)
