@@ -66,6 +66,7 @@ from radis.db.references import doi
 from radis.io.cache_files import cache_file_name
 from radis.io.cdsd import cdsd2df
 from radis.io.exomol import fetch_exomol
+from radis.io.geisa import fetch_geisa
 
 # from radis.io.geisa import gei2df
 from radis.io.hdf5 import hdf2df
@@ -1050,7 +1051,7 @@ class DatabankLoader(object):
                 )
             )
             source = "hitran"
-        if source not in ["hitran", "hitemp", "exomol"]:
+        if source not in ["hitran", "hitemp", "exomol", "geisa"]:
             raise NotImplementedError("source: {0}".format(source))
         if source == "hitran":
             dbformat = "hitran"
@@ -1066,6 +1067,10 @@ class DatabankLoader(object):
             dbformat = (
                 "exomol-radisdb"  # downloaded in RADIS local databases ~/.radisdb
             )
+        elif source == "geisa":
+            dbformat = "geisa"
+            if database == "default":
+                database = "full"
 
         local_databases = config["DEFAULT_DOWNLOAD_PATH"]
 
@@ -1347,6 +1352,56 @@ class DatabankLoader(object):
             else:
                 df = frames[0]
                 self.params.dbpath = local_paths[0]
+
+        elif source == "geisa":
+
+            # self.reftracker.add(doi["GEISA-2020"], "line database")
+            # TODO: add GEISA-2020 DOI
+
+            if memory_mapping_engine == "auto":
+                # temp fix for vaex not building on RTD
+                # see https://github.com/radis/radis/issues/404
+                if any("READTHEDOCS" in name for name in environ):
+                    memory_mapping_engine = "pytables"
+                    if self.verbose >= 3:
+                        print(
+                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
+                        )
+                else:
+                    memory_mapping_engine = "vaex"
+
+            if database != "full":
+                raise ValueError(
+                    f"Got `database={database}`. When fetching GEISA, only the `database='full'` option is available."
+                )
+
+            # Download, setup local databases, and fetch (use existing if possible)
+
+            if isotope == "all":
+                isotope_list = None
+            else:
+                isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
+
+            df, local_paths = fetch_geisa(
+                molecule,
+                isotope=isotope_list,
+                local_databases=join(local_databases, "geisa"),
+                load_wavenum_min=wavenum_min,
+                load_wavenum_max=wavenum_max,
+                columns=columns,
+                cache=db_use_cached,
+                verbose=self.verbose,
+                return_local_path=True,
+                engine=memory_mapping_engine,
+                parallel=parallel,
+            )
+            self.params.dbpath = ",".join(local_paths)
+
+            # ... explicitely write all isotopes based on isotopes found in the database
+            if isotope == "all":
+                self.input.isotope = ",".join(
+                    [str(k) for k in self._get_isotope_list(df=df)]
+                )
 
         else:
             raise NotImplementedError("source: {0}".format(source))

@@ -658,6 +658,7 @@ def _calc_spectrum_one_molecule(
             "hitran",
             "hitemp",
             "exomol",
+            "geisa",
         ]
         or (isinstance(databank, tuple) and databank[0] == "exomol")
         or (isinstance(databank, tuple) and databank[0] == "hitran")
@@ -685,6 +686,12 @@ def _calc_spectrum_one_molecule(
             conditions = {
                 "source": "exomol",
                 "parfuncfmt": "exomol",  # download & use Exo partition functions for equilibrium}
+            }
+        elif databank in ["geisa"]:
+            conditions = {
+                "source": "geisa",
+                "parfuncfmt": "hapi",
+                # TODO: replace with GEISA partition function someday.............
             }
         elif isinstance(databank, tuple) and databank[0] == "exomol":
             conditions = {
