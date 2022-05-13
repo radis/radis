@@ -353,7 +353,7 @@ def pickup_gE(states, trans, trans_file, dic_def, trans_lines=False):
 
     if not "nu_lines" in trans or has_nan(trans["nu_lines"]):
         map_add("E", "eupper", "i_upper")
-        trans["nu_lines"] = trans("eupper") - trans("elower")
+        trans["nu_lines"] = trans["eupper"] - trans["elower"]
 
     ### Step 2. Extra quantum numbers (e/f parity, vib and rot numbers)
     # -----------------------------------------------------------------

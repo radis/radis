@@ -224,7 +224,7 @@ class DFrameManager(object):
     def load(
         self,
         fname,
-        columns,
+        columns=None,
         lower_bound=[],
         upper_bound=[],
         within=[],
@@ -285,12 +285,19 @@ class DFrameManager(object):
                     columns = ["wav", "int", "A", "El", "gpp"]
                 out = {}
                 try:
-                    import jax as jnp
+                    import jax.numpy as jnp
                 except ImportError:
                     print("Jax not found. Using Numpy.")
                     import numpy as jnp
                 for c in columns:
-                    out[c] = jnp.array(df[c].values)
+                    if (
+                        c == "Sij0"
+                    ):  # (special case for Sij0 : we store logSij0 instead, to store them as jax np.32 arrays)
+                        import numpy as np
+
+                        out["logsij0"] = jnp.array(np.log(df[c].values))
+                    else:
+                        out[c] = jnp.array(df[c].values)
                 df = out
             else:
                 raise NotImplementedError(f"output {output} for engine {engine}")

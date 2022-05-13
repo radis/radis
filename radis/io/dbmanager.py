@@ -425,7 +425,7 @@ class DatabaseManager(object):
     def load(
         self,
         local_files,
-        columns,
+        columns=None,
         lower_bound=[],
         upper_bound=[],
         within=[],

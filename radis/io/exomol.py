@@ -11,10 +11,6 @@ import warnings
 
 import numpy as np
 
-# from exojax.spec import hapi, exomolapi, exomol
-# from exojax.spec.hitran import gamma_natural as gn
-import pandas as pd
-
 try:
     from . import exomolapi
     from .dbmanager import DatabaseManager
@@ -421,6 +417,11 @@ def fetch_exomol(
         output=output,
     )
 
+    if "jlower" not in df:
+        raise KeyError(
+            f"jlower not found. Maybe try to delete cache file {local_files} and restart?"
+        )
+
     # Add broadening
     mdb.set_broadening(df)
 
@@ -475,52 +476,6 @@ def fetch_exomol(
 
 
 class MdbExomol(DatabaseManager):
-    """molecular database of ExoMol
-
-    MdbExomol is a class for ExoMol.
-
-    Parameters
-    ----------
-    nu_lines (nd array): line center (cm-1)
-    Sij0 (nd array): line strength at T=Tref (cm)
-    dev_nu_lines (np array): line center in device (cm-1)
-    logsij0 (np array): log line strength at T=Tref
-    A (np array): Einstein A coefficient
-    elower (np array): the lower state energy (cm-1)
-    gpp (np array): statistical weight
-    jlower (np array): J_lower
-    jupper (np array): J_upper
-    n_Tref (np array): temperature exponent
-    alpha_ref (np array): alpha_ref (gamma0)
-    n_Tref_def: default temperature exponent in .def file, used for jlower not given in .broad
-    alpha_ref_def: default alpha_ref (gamma0) in .def file, used for jlower not given in .broad
-
-    .. minigallery:: radis.fetch_exomol
-
-    Examples
-    --------
-    ::
-
-        # Init database, download files if needed.
-        mdb = MdbExomol(
-            local_path,
-            molecule=molecule,
-            name=databank_name,
-            local_databases=local_databases,
-            # nurange=[load_wavenum_min, load_wavenum_max],
-            engine="vaex",
-        )
-        # Load files
-        df = mdb.load(
-            local_files,
-            columns=columns_exomol,
-            lower_bound=([('nu_lines', load_wavenum_min)] if load_wavenum_min else []) + ([("Sij0", mdb.crit)] if not np.isneginf(mdb.crit) else []),
-            upper_bound=([('nu_lines', load_wavenum_max)] if load_wavenum_max else []),
-            output=output,
-        )
-
-
-    """
 
     # TODO : inherit from DatabaseManager or similar
 
@@ -543,7 +498,9 @@ class MdbExomol(DatabaseManager):
         engine="vaex",
         verbose=True,
     ):
-        """Molecular database for Exomol form
+        """molecular database of ExoMol
+
+        MdbExomol is a class for ExoMol.
 
         Parameters
         ----------
@@ -564,6 +521,48 @@ class MdbExomol(DatabaseManager):
         The trans/states files can be very large. For the first time to read it,
         we convert it to the feather or hdf5-format. After the second-time,
         we use the feather/hdf5 format instead.
+
+        Examples
+        --------
+        ::
+
+            # Init database, download files if needed.
+            mdb = MdbExomol(
+                local_path,
+                molecule=molecule,
+                name=databank_name,
+                local_databases=local_databases,
+                # nurange=[load_wavenum_min, load_wavenum_max],
+                engine="vaex",
+            )
+            # Load files
+            df = mdb.load(
+                local_files,
+                columns=columns_exomol,
+                lower_bound=([('nu_lines', load_wavenum_min)] if load_wavenum_min else []) + ([("Sij0", mdb.crit)] if not np.isneginf(mdb.crit) else []),
+                upper_bound=([('nu_lines', load_wavenum_max)] if load_wavenum_max else []),
+                output="jax", # or "pytables", "vaex"
+            )
+
+        .. minigallery:: radis.fetch_exomol
+
+
+        DataFrame columns
+        -----------------
+
+        nu_lines (nd array): line center (cm-1)
+        Sij0 (nd array): line strength at T=Tref (cm)
+        dev_nu_lines (np array): line center in device (cm-1)
+        logsij0 (np array): log line strength at T=Tref
+        A (np array): Einstein A coefficient
+        elower (np array): the lower state energy (cm-1)
+        gpp (np array): statistical weight
+        jlower (np array): J_lower
+        jupper (np array): J_upper
+        n_Tref (np array): temperature exponent
+        alpha_ref (np array): alpha_ref (gamma0)
+        n_Tref_def: default temperature exponent in .def file, used for jlower not given in .broad
+        alpha_ref_def: default alpha_ref (gamma0) in .def file, used for jlower not given in .broad
 
         """
         super().__init__(
@@ -594,6 +593,10 @@ class MdbExomol(DatabaseManager):
                     engine = "vaex"
 
         self.path = pathlib.Path(path)
+
+        if local_databases is not None:
+            self.path = pathlib.Path(local_databases).expanduser() / self.path
+
         t0 = self.path.parents[0].stem
         molec = t0 + "__" + str(self.path.stem)
         self.bkgdatm = bkgdatm
@@ -624,14 +627,13 @@ class MdbExomol(DatabaseManager):
         tag = molec.split("__")
         self.isotope_fullname = tag[0]
         self.molecule = e2s(tag[0])
-        self.isotope = 1  # Placeholder. TODO : impement parsing of other isotopes.
+        # self.isotope = 1  # Placeholder. TODO : impement parsing of other isotopes.
 
         # load def
         # @minou: I feel this next line should just update the self.stuff
         dic_def = exomolapi.read_def(self.def_file)  # approx. 3 ms
         self.n_Texp_def = dic_def["n_Texp"]
         self.alpha_ref_def = dic_def["alpha_ref"]
-        self.molmass = dic_def["molmass"]
 
         #  default n_Texp value if not given
         if self.n_Texp_def is None:
@@ -667,9 +669,6 @@ class MdbExomol(DatabaseManager):
                 self.states_file, dic_def, engine="vaex" if engine == "vaex" else "csv"
             )
             mgr.write(mgr.cache_file(self.states_file), states)
-        # ndstates = mgr.to_numpy(states)[
-        #     :, :4
-        # ]  # the i, E, g, J are in the 4 first columns
 
         # load pf
         pf = exomolapi.read_pf(self.pf_file)
@@ -752,41 +751,6 @@ class MdbExomol(DatabaseManager):
 
         # Database ready to be loaded.
         # Proceed with mdb.load()
-
-    def masking(self, mask, mask_needed=True):
-        """applying mask and (re)generate jnp.arrays
-
-        Args:
-           mask: mask to be applied. self.mask is updated.
-           mask_needed: whether mask needs to be applied or not
-
-        """
-        # TODO : with Vaex-HDF5, selection should happen on disk.
-
-        # numpy float 64 Do not convert them jnp array
-        if mask_needed:
-            self.nu_lines = self.nu_lines[mask]
-            self.Sij0 = self.Sij0[mask]
-            self._A = self._A[mask]
-            self._elower = self._elower[mask]
-            self._gpp = self._gpp[mask]
-            self._jlower = self._jlower[mask]
-            self._jupper = self._jupper[mask]
-            for key, array in self._quantumNumbers.items():
-                self._quantumNumbers[key] = array[mask]
-
-        # jnp arrays
-        self.dev_nu_lines = np.array(self.nu_lines)
-        self.logsij0 = np.array(np.log(self.Sij0))
-        self.A = np.array(self._A)
-        # self.gamma_natural = gn(self.A)   #  Natural Broadening neglected in RADIS
-        self.elower = np.array(self._elower)
-        self.gpp = np.array(self._gpp)
-        self.jlower = np.array(self._jlower, dtype=int)
-        self.jupper = np.array(self._jupper, dtype=int)
-
-        # ##Broadening parameters
-        # self.set_broadening()
 
     def set_broadening(self, df, alpha_ref_def=None, n_Texp_def=None):
         """setting broadening parameters
@@ -930,57 +894,6 @@ class MdbExomol(DatabaseManager):
 
         return PartFuncExoMol(self.isotope_fullname, self.T_gQT, self.gQT)
 
-    def to_df(self, attrs={}):
-        """Export Line Database to a RADIS-friendly Pandas DataFrame
-
-        Parameters
-        ----------
-        attrs: dict
-            add these as attributes of the DataFrame
-        """
-
-        ##Broadening parameters
-        self.set_broadening()
-
-        # TODO : define RADIS database format somewhere else; with description of the column names.
-        df = pd.DataFrame(
-            {
-                "wav": self.nu_lines,
-                "Sij0": self.Sij0,  #  linestrength (not corrected for isotopic abundance)
-                "A": self._A,
-                "airbrd": self.alpha_ref,  # temperature dependance exponent for air broadening
-                # "selbrd": None,                  # self-temperature dependant exponent. Not implementedi in ExoMol
-                "El": self._elower,
-                # "Tdpair": None,
-                # "Pshft": None,
-                "ju": self._jupper,
-                "jl": self._jlower,
-                "gpp": self._gpp,
-                "Tdpair": self.n_Texp,  # temperature dependance exponent. Here we use Tdair; no Tdpsel. TODO
-            }
-        )
-
-        # Check format :
-        for key, array in self._quantumNumbers.items():
-            try:
-                df[key] = pd.to_numeric(array, errors="raise")
-            except:
-                df[key] = array
-                df[key] = df[key].astype("str")
-
-        for k, v in attrs.items():
-            df.attrs[k] = v
-
-        assert self.Tref == 296  # default in RADIS
-
-        return df
-
-    def to_jax(self):
-        """Generate Jax arrays for use in ExoJax"""
-        # TODO Refactor: use DbManager output
-
-        pass  # TODO
-
 
 if __name__ == "__main__":
     # mdb=MdbExomol("/home/kawahara/exojax/data/CO/12C-16O/Li2015/")
@@ -1009,28 +922,151 @@ if __name__ == "__main__":
 
     # print("Testing factory:", pytest.main(["../test/io/test_exomol.py"]))
 
-    #%%
-
-    pass
+    #%% RADIS-like Example
+    # uses fetch_exomol() internally
 
     from radis import calc_spectrum
 
     s = calc_spectrum(
-        1080,
-        1320,  # cm-1
-        molecule="SiO",
+        wavelength_min=1.630e4,
+        wavelength_max=1.6305e4,
+        molecule="CH4",
         isotope="1",
         pressure=1.01325,  # bar
         Tgas=1000,  # K
         mole_fraction=0.1,
         path_length=1,  # cm
-        broadening_method="fft",  # @ dev: Doesn't work with 'voigt'
-        databank=("exomol", "EBJT"),  # Simply use 'exomol' for the recommended database
+        # broadening_method="fft",  # @ dev: Doesn't work with 'voigt'
+        databank=(
+            "exomol",
+            "YT10to10",
+        ),  # Simply use 'exomol' for the recommended database
     )
-    s.apply_slit(1, "cm-1")  # simulate an experimental slit
-    s.plot("radiance")
+    # s.apply_slit(1, "cm-1")  # simulate an experimental slit
+    s.plot("xsection")
 
-    # #%%
+    # %% Exojax like Example
+
+    class mdbExoMol:
+
+        # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
+        __slots__ = [
+            "Sij0",
+            "logsij0",
+            "nu_lines",
+            "A",
+            "elower",
+            "eupper",
+            "gupper",
+            "jlower",
+            "jupper",
+        ]
+
+        def __init__(
+            self,
+            molecule,
+            path,
+            nurange=[-np.inf, np.inf],
+            crit=-np.inf,
+            local_databases="~/exojax",
+        ):
+            """
+            Parameters
+            ----------
+            molecule: molecule name
+            path : local path, mirror of ExoMol path
+            nurange : TYPE, optional
+                DESCRIPTION. The default is [-np.inf, np.inf].
+            crit : TYPE, optional
+                DESCRIPTION. The default is -np.inf.
+
+            Returns
+            -------
+            DataFrame
+
+            Examples
+            --------
+            ::
+
+                mdbCH4 = mdbExoMol("CH4", '.database/CH4/12C-1H4/YT10to10/', nus, crit=1.e-30)
+                print(len(mdbCH4.nu_lines), "lines")
+                mdbCH4.elower
+
+            Available columns::
+
+                [
+                    "Sij0",
+                    "logsij0",
+                    "nu_lines",
+                    "A",
+                    "elower",
+                    "eupper",
+                    "gupper",
+                    "jlower",
+                    "jupper",
+                ]
+
+            """
+
+            wavenum_min, wavenum_max = np.min(nurange), np.max(nurange)
+            if wavenum_min == -np.inf:
+                wavenum_min = None
+            if wavenum_max == np.inf:
+                wavenum_max = None
+
+            # Set-up database, download files and set-up cache files if needed
+            mdb = MdbExomol(
+                path,
+                molecule=molecule,
+                local_databases=local_databases,
+                nurange=[wavenum_min, wavenum_max],
+            )
+
+            # Get cache files to load :
+            mgr = mdb.get_dframe_manager()
+            local_files = [mgr.cache_file(f) for f in mdb.trans_file]
+
+            # Load them:
+            jdict = mdb.load(
+                local_files,
+                columns=[k for k in self.__slots__ if k not in ["logsij0"]],
+                lower_bound=([("nu_lines", wavenum_min)] if wavenum_min else [])
+                + ([("Sij0", mdb.crit)] if not np.isneginf(mdb.crit) else []),
+                upper_bound=([("nu_lines", wavenum_max)] if wavenum_max else []),
+                output="jax",
+            )
+
+            # set attributes, accessible as e.g:  mdb.nu_lines
+            for k in jdict.keys():
+                setattr(self, k, jdict[k])
+
+    nus = np.linspace(1e7 / 1.630e4, 1e7 / 1.6305e4)
+
+    # Download new ExoMol repo (in ~/exomol)
+    mdbCH4 = mdbExoMol(
+        "CH4",
+        ".database/CH4/12C-1H4/YT10to10/",
+        nus,
+        crit=1.0e-30,
+        local_databases=".",  # use local folder
+    )
+
+    print(len(mdbCH4.nu_lines), "lines")
+    mdbCH4.elower
+
+    # Or use RADIS's folder  (# by default ~/.radisdb/exomol)
+    import radis
+
+    mdbCH4_2 = mdbExoMol(
+        "CH4",
+        "CH4/12C-1H4/YT10to10/",
+        nus,
+        crit=1.0e-30,
+        local_databases=pathlib.Path(radis.config["DEFAULT_DOWNLOAD_PATH"]) / "exomol",
+    )
+    # ... ready to run Jax calculations
+
+    #%%
 
     # """ExoMol lines can be downloaded and accessed separately using
     # :py:func:`~radis.io.exomol.fetch_exomol`
