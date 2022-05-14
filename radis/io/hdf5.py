@@ -282,7 +282,7 @@ class DFrameManager(object):
                 df = df.to_pandas_df(column_names=columns)
             elif output == "jax":
                 if columns == None:
-                    columns = ["wav", "int", "A", "El", "gpp"]
+                    columns = list(df.columns)
                 out = {}
                 try:
                     import jax.numpy as jnp
@@ -313,6 +313,9 @@ class DFrameManager(object):
                 raise NotImplementedError(f"output {output} for engine {engine}")
         else:
             raise NotImplementedError(output)
+
+        if output == "vaex":
+            df = df.extract()  # return DataFrame containing only the filtered rows
 
         return df
 

@@ -324,8 +324,10 @@ class DatabaseManager(object):
             self.verbose,
         )
 
-    def get_dframe_manager(self):
-        return DFrameManager(engine=self.engine)
+    def get_dframe_manager(self, engine=None):
+        if engine is None:
+            engine = self.engine
+        return DFrameManager(engine=engine)
 
     def download_and_parse(self, urlnames, local_files):
         all_local_files, _ = self.get_filenames()
@@ -511,6 +513,37 @@ class DatabaseManager(object):
         else:
             raise ValueError(engine)
         return nrows
+
+    def add_column(self, df, key, value):
+        """Create column ``key`` in DataFrame or dictionary ``df`` with value ``value``"""
+        from radis.misc.basics import is_number
+
+        if is_number(self.alpha_ref):
+            import vaex
+
+            if isinstance(df, vaex.dataframe.DataFrameLocal):
+                # see https://github.com/vaexio/vaex/pull/1570
+                df[key] = vaex.vconstant(float(value), length=len(df))
+            else:
+                df[key] = value
+        else:
+            df[key] = value
+
+    def rename_columns(self, df, rename_dict):
+        """Example::
+
+        mdb.rename_columns(df, {"nu_lines":"wav"})
+        """
+        import vaex
+
+        if isinstance(df, vaex.dataframe.DataFrameLocal):
+            for k, v in rename_dict.items():
+                df.rename(k, v)
+        elif isinstance(df, pd.DataFrame):
+            df.rename(columns=rename_dict, inplace=True)
+        elif isinstance(df, dict):
+            for k, v in rename_dict.items():
+                df[v] = df.pop(k)
 
 
 def register_database(databank_name, dict_entries, verbose):

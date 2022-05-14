@@ -425,11 +425,12 @@ def fetch_exomol(
         )
 
     # Add broadening
-    mdb.set_broadening(df)
+    mdb.set_broadening(df, output=output)
 
     # Specific for RADIS :
     # ... Get RADIS column names:
-    df.rename(columns={v: k for k, v in radis2exomol_columns.items()}, inplace=True)
+    exomol2radis_columns = {v: k for k, v in radis2exomol_columns.items()}
+    mdb.rename_columns(df, {k: v for k, v in exomol2radis_columns.items() if k in df})
 
     assert "wav" in df
 
@@ -447,11 +448,18 @@ def fetch_exomol(
 
         Ia = config["molparams"]["abundances"][molecule][str(isotope)]
 
-    df["Sij0"] *= Ia
-    df.rename(columns={"Sij0": "int"}, inplace=True)
+    if output == "jax":
+        try:
+            import jax.numpy as jnp
+        except:
+            import numpy as jnp
+        df["logsij0"] += jnp.log(Ia)
+    else:
+        df["Sij0"] *= Ia
+        mdb.rename_columns(df, {"Sij0": "int"})
 
     # Add Attributes of the DataFrame
-    if output != "jax":
+    if output == "pandas":  # no attribtes in "Jax" or "Vaex" mode
         from radis.db.classes import HITRAN_MOLECULES
 
         attrs = {}
@@ -466,8 +474,9 @@ def fetch_exomol(
             df.attrs[k] = v
 
     # Return:
-    out = [df]
-
+    out = df
+    if return_local_path or return_partition_function:
+        out = [out]
     if return_local_path:
         out.append(str(mdb.path))
     if return_partition_function:
@@ -538,6 +547,11 @@ class MdbExomol(DatabaseManager):
                 # nurange=[load_wavenum_min, load_wavenum_max],
                 engine="vaex",
             )
+
+            # Get cache files to load :
+            mgr = mdb.get_dframe_manager()
+            local_files = [mgr.cache_file(f) for f in mdb.trans_file]
+
             # Load files
             df = mdb.load(
                 local_files,
@@ -635,35 +649,33 @@ class MdbExomol(DatabaseManager):
         # self.isotope = 1  # Placeholder. TODO : impement parsing of other isotopes.
 
         # load def
-        # @minou: I feel this next line should just update the self.stuff
         dic_def = exomolapi.read_def(self.def_file)  # approx. 3 ms
         self.n_Texp_def = dic_def["n_Texp"]
         self.alpha_ref_def = dic_def["alpha_ref"]
 
         #  default n_Texp value if not given
         if self.n_Texp_def is None:
+            self.n_Texp_def = 0.5
             warnings.warn(
                 Warning(
-                    """
-                    No default broadening exponent in def file. Assigned n = 0.5
+                    f"""
+                    No default broadening exponent in def file. Assigned n = {self.n_Texp_def}
                     """
                 )
             )
-            self.n_Texp_def = 0.5
         #  default alpha_ref value if not given
         if self.alpha_ref_def is None:
+            self.alpha_ref_def = 0.07
             warnings.warn(
                 Warning(
-                    """
-                    No default broadening in def file. Assigned alpha_ref = 0.07
+                    f"""
+                    No default broadening in def file. Assigned alpha_ref = {self.alpha_ref_def}
                     """
                 )
             )
-            self.alpha_ref_def = 0.07
-
-        mgr = self.get_dframe_manager()
 
         # load states
+        mgr = self.get_dframe_manager()
         if cache == "regen" and mgr.cache_file(self.states_file).exists():
             if verbose:
                 print("Removing existing file ", mgr.cache_file(self.states_file))
@@ -775,7 +787,7 @@ class MdbExomol(DatabaseManager):
         # Database ready to be loaded.
         # Proceed with mdb.load()
 
-    def set_broadening(self, df, alpha_ref_def=None, n_Texp_def=None):
+    def set_broadening(self, df, alpha_ref_def=None, n_Texp_def=None, output=None):
         """setting broadening parameters
 
         Parameters
@@ -836,8 +848,9 @@ class MdbExomol(DatabaseManager):
             self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(df["jlower"]))
             self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df["jlower"]))
 
-        df["alpha_ref"] = self.alpha_ref
-        df["n_Texp"] = self.n_Texp
+        # Add values
+        self.add_column(df, "alpha_ref", self.alpha_ref)
+        self.add_column(df, "n_Texp", self.n_Texp)
 
     def QT_interp(self, T):
         """interpolated partition function

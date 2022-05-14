@@ -500,9 +500,10 @@ def is_number(s):
 
     try:
         float(s)
-        return True
-    except ValueError:
+    except (ValueError, TypeError):
         return False
+    else:
+        return True
 
 
 def to_str(a):
