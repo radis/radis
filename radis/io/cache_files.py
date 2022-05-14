@@ -37,9 +37,9 @@ from packaging.version import parse
 import radis
 
 try:
-    from .hdf5 import DFrameManager
+    from .hdf5 import DataFileManager
 except ImportError:  # if file is ran as a module
-    from radis.io.hdf5 import DFrameManager
+    from radis.io.hdf5 import DataFileManager
 from radis.misc.basics import compare_dict, is_float
 from radis.misc.printer import printm, printr
 from radis.misc.warning import DeprecatedFileWarning, IrrelevantFileWarning
@@ -179,7 +179,7 @@ def load_h5_cache_file(
         printm("Reading cache file ({0})".format(cachefile))
     try:
         # Load file :
-        manager = DFrameManager(engine)
+        manager = DataFileManager(engine)
         df = manager.read(cachefile, columns=columns, key="df")
 
     except KeyError as err:  # An error happened during file reading.
@@ -222,7 +222,7 @@ def get_cache_file(fcache, engine="pytables", verbose=True):
     # TODO @dev: refactor : we probably don't need this function (only used in astroquery)
 
     # Load file
-    manager = DFrameManager(engine)
+    manager = DataFileManager(engine)
     df = manager.read(fcache, key="df")
 
     # Check file
@@ -368,10 +368,10 @@ def check_not_deprecated(
         which HDF5 library to use. If ``'guess'``, try to guess.
     """
     if engine == "guess":
-        engine = DFrameManager.guess_engine(file)
+        engine = DataFileManager.guess_engine(file)
 
     # Get metadata :
-    manager = DFrameManager(engine)
+    manager = DataFileManager(engine)
 
     try:
         file_metadata = manager.read_metadata(file)
@@ -526,10 +526,10 @@ def check_relevancy(
 
     """
     if engine == "guess":
-        engine = DFrameManager.guess_engine(file)
+        engine = DataFileManager.guess_engine(file)
 
     # Get metadata :
-    manager = DFrameManager(engine)
+    manager = DataFileManager(engine)
     file_metadata = manager.read_metadata(file, key=key)
 
     for k, v in relevant_if_metadata_above.items():
@@ -621,7 +621,7 @@ def save_to_hdf(
         raise ValueError("File exist: {0}".format(fname))
 
     # start by exporting dataframe
-    manager = DFrameManager(engine)
+    manager = DataFileManager(engine)
     manager.write(fname, df, append=False, key=key)
 
     # Add metadata
@@ -686,7 +686,7 @@ def filter_metadata(arguments, discard_variables=["self", "verbose"]):
 
 
 def cache_file_name(fname, engine="pytables"):
-    raise DeprecationWarning("Use DFrameManager.cache_file() instead")
+    raise DeprecationWarning("Use DataFileManager.cache_file() instead")
 
 
 if __name__ == "__main__":

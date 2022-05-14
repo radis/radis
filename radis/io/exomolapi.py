@@ -252,7 +252,7 @@ def read_states(statesf, dic_def, engine="vaex"):
     if engine == "vaex":
         import vaex
 
-        # TODO Refactor: move in DFrameManager
+        # TODO Refactor: move in DataFileManager
         try:
             dat = vaex.from_csv(
                 statesf,

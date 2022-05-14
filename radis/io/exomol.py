@@ -386,7 +386,7 @@ def fetch_exomol(
     local_files = mdb.trans_file
     if not isinstance(local_files, list):
         local_files = [local_files]
-    mgr = mdb.get_dframe_manager()
+    mgr = mdb.get_datafile_manager()
     local_files = [mgr.cache_file(f) for f in local_files]
 
     # Specific for RADIS : rename columns
@@ -549,7 +549,7 @@ class MdbExomol(DatabaseManager):
             )
 
             # Get cache files to load :
-            mgr = mdb.get_dframe_manager()
+            mgr = mdb.get_datafile_manager()
             local_files = [mgr.cache_file(f) for f in mdb.trans_file]
 
             # Load files
@@ -675,7 +675,7 @@ class MdbExomol(DatabaseManager):
             )
 
         # load states
-        mgr = self.get_dframe_manager()
+        mgr = self.get_datafile_manager()
         if cache == "regen" and mgr.cache_file(self.states_file).exists():
             if verbose:
                 print("Removing existing file ", mgr.cache_file(self.states_file))
@@ -1059,7 +1059,7 @@ if __name__ == "__main__":
             )
 
             # Get cache files to load :
-            mgr = mdb.get_dframe_manager()
+            mgr = mdb.get_datafile_manager()
             local_files = [mgr.cache_file(f) for f in mdb.trans_file]
 
             # Load them:

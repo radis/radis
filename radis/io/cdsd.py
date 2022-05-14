@@ -24,7 +24,7 @@ from os.path import exists, getmtime
 
 import radis
 from radis.io.cache_files import load_h5_cache_file, save_to_hdf
-from radis.io.hdf5 import DFrameManager
+from radis.io.hdf5 import DataFileManager
 from radis.io.tools import (
     drop_object_format_columns,
     parse_hitran_file,
@@ -242,7 +242,7 @@ def cdsd2df(
         raise ValueError("Unknown CDSD version: {0}".format(version))
 
     # Use cache file if possible
-    fcache = str(DFrameManager(engine).cache_file(fname))
+    fcache = str(DataFileManager(engine).cache_file(fname))
     if cache and exists(fcache):
         relevant_if_metadata_above = (
             {"wavenum_max": load_wavenum_min} if load_wavenum_min else {}

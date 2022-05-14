@@ -16,9 +16,9 @@ from radis.misc.warning import DatabaseAlreadyExists, DeprecatedFileWarning
 
 try:
     from .cache_files import check_not_deprecated
-    from .hdf5 import DFrameManager
+    from .hdf5 import DataFileManager
 except ImportError:
-    from radis.io.hdf5 import DFrameManager
+    from radis.io.hdf5 import DataFileManager
     from radis.io.cache_files import check_not_deprecated
 
 from datetime import date
@@ -324,10 +324,10 @@ class DatabaseManager(object):
             self.verbose,
         )
 
-    def get_dframe_manager(self, engine=None):
+    def get_datafile_manager(self, engine=None):
         if engine is None:
             engine = self.engine
-        return DFrameManager(engine=engine)
+        return DataFileManager(engine=engine)
 
     def download_and_parse(self, urlnames, local_files):
         all_local_files, _ = self.get_filenames()
@@ -455,7 +455,7 @@ class DatabaseManager(object):
                 within=[("iso", isotope.split(","))]
         """
         engine = self.engine
-        mgr = self.get_dframe_manager()
+        mgr = self.get_datafile_manager()
         if engine in ["pytables", "feather"]:
             df_all = []
             for local_file in local_files:

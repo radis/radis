@@ -52,7 +52,7 @@ from radis.db.classes import (  # get_molecule_identifier,
 )
 from radis.io.cache_files import load_h5_cache_file, save_to_hdf
 from radis.io.dbmanager import DatabaseManager
-from radis.io.hdf5 import DFrameManager
+from radis.io.hdf5 import DataFileManager
 from radis.io.tools import (
     drop_object_format_columns,
     parse_hitran_file,
@@ -179,7 +179,7 @@ def hit2df(
     columns = columns_2004
 
     # Use cache file if possible
-    fcache = DFrameManager(engine).cache_file(fname)
+    fcache = DataFileManager(engine).cache_file(fname)
     if cache and exists(fcache):
         relevant_if_metadata_above = (
             {"wavenum_max": load_wavenum_min} if load_wavenum_min else {}
@@ -1172,7 +1172,7 @@ class HITRANDatabaseManager(DatabaseManager):
             molecule, tempdir
         )
 
-        writer = self.get_dframe_manager()
+        writer = self.get_datafile_manager()
 
         # Create HDF5 cache file for all isotopes
         Nlines = 0

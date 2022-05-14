@@ -31,7 +31,7 @@ def update_pytables_to_vaex(fname, remove_initial=False, verbose=True, key="df")
     df = pd.read_hdf(fname)
     df = vaex.from_pandas(df)
 
-    pytables_manager = DFrameManager(engine="pytables")
+    pytables_manager = DataFileManager(engine="pytables")
 
     # Read metadata
     file_metadata = pytables_manager.read_metadata(fname)
@@ -41,7 +41,7 @@ def update_pytables_to_vaex(fname, remove_initial=False, verbose=True, key="df")
     df.close()  # try to fix file not closed()  TODO: remove?
     del df  # same TODO
 
-    vaex_manager = DFrameManager(engine="vaex")
+    vaex_manager = DataFileManager(engine="vaex")
     vaex_manager.add_metadata(fname_vaex, file_metadata)
 
     if verbose:
@@ -58,10 +58,10 @@ def update_pytables_to_vaex(fname, remove_initial=False, verbose=True, key="df")
 
 class HDF5Manager(object):
     def __init__(*args, **kwargs):
-        raise DeprecationWarning("HDF5Manager replaced with DFrameManager")
+        raise DeprecationWarning("HDF5Manager replaced with DataFileManager")
 
 
-class DFrameManager(object):
+class DataFileManager(object):
     def __init__(self, engine=None):
         """Class to handle all DataFrame-librairies with one common API
 
@@ -824,11 +824,11 @@ def hdf2df(
     """
 
     if engine == "guess":
-        engine = DFrameManager.guess_engine(fname)
+        engine = DataFileManager.guess_engine(fname)
 
     t0 = time()
 
-    manager = DFrameManager(engine)
+    manager = DataFileManager(engine)
 
     df = manager.load(
         fname,

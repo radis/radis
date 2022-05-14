@@ -7,7 +7,7 @@ Created on Tue Jan 26 20:36:38 2021
 
 import pytest
 
-from radis.io.hdf5 import DFrameManager, hdf2df
+from radis.io.hdf5 import DataFileManager, hdf2df
 from radis.io.hitemp import fetch_hitemp
 from radis.misc.config import getDatabankEntries
 
@@ -39,7 +39,7 @@ def test_hdf5_io_engines(*args, **kwargs):
             f.create_dataset(c, data=df0[c])
 
     # Test Pytables engine : add_metadata ; load ; read_metadata
-    manager = DFrameManager(engine="pytables")
+    manager = DataFileManager(engine="pytables")
     manager.add_metadata("test_pytables.h5", metadata0)
 
     df = manager.read("test_pytables.h5")
@@ -47,7 +47,7 @@ def test_hdf5_io_engines(*args, **kwargs):
     assert manager.read_metadata("test_pytables.h5") == metadata0
 
     # Test h5py engine : add_metadata ; load ; read_metadata
-    manager = DFrameManager(engine="h5py")
+    manager = DataFileManager(engine="h5py")
     manager.add_metadata("test_h5py.h5", metadata0, key=None)
     df = manager.read("test_h5py.h5", key=None)
     assert (df == df0).all().all()
@@ -55,7 +55,7 @@ def test_hdf5_io_engines(*args, **kwargs):
 
     # Test vaex engine : add_metadata ; load ; read_
     # .. also able to read h5py files
-    manager = DFrameManager(engine="vaex")
+    manager = DataFileManager(engine="vaex")
     manager.add_metadata("test_h5py.h5", metadata0, key=None)
     df = manager.read("test_h5py.h5", key=None)
     # this time; df is a vaex DataFrame
