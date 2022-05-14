@@ -385,9 +385,8 @@ class GEISADatabaseManager(DatabaseManager):
         opener: an opener with an .open() command
         gfile : file handler. Filename: for info"""
 
-        molecule = self.molecule
-
-        Ntotal_lines_expected = GEISA_MOLECULES_Nlines[molecule.upper()]
+        # molecule = self.molecule
+        # Ntotal_lines_expected = GEISA_MOLECULES_Nlines[molecule.upper()]
 
         writer = self.get_hdf5_manager()
 
@@ -406,7 +405,7 @@ class GEISADatabaseManager(DatabaseManager):
         writer.combine_temp_batch_files(local_file)  # used for vaex mode only
 
         # Check number of lines is consistent
-        assert Nlines == Ntotal_lines_expected
+        # assert Nlines == Ntotal_lines_expected
 
         # Add metadata
         from radis import __version__
