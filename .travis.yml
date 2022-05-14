@@ -23,7 +23,9 @@ jobs:
         # Install Micromamba
         # We do this conditionally because it saves us some downloading if the
         # version is the same.
-        - wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
+        # For now use http instead of https according to this comment:
+        # https://github.com/mamba-org/mamba/issues/1675#issuecomment-1127160021
+        - wget -qO- http://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
         - ./bin/micromamba shell init -s bash -p ~/micromamba
         - source ~/.bashrc
         - micromamba activate base
@@ -51,6 +53,9 @@ jobs:
         # codecoverage
         - pip install codecov
         - codecov
+
+      before_script:
+        - export MPLBACKEND=Agg
 
     - stage: lint
       name: Code Quality Checks
