@@ -263,6 +263,7 @@ class HITEMPDatabaseManager(DatabaseManager):
                     f"End of file while parsing file {opener.abspath(urlname)}. May be due to download error. Delete file ?"
                 ) from err
             linereturnformat = _get_linereturnformat(b, columns)
+
         return linereturnformat
 
     def parse_to_local_file(

@@ -20,6 +20,8 @@ Routine Listing
 from copy import deepcopy
 from os.path import exists
 
+# from radis.db.classes import M
+
 try:  # Proper import
     from .base import get_waverange
     from .factory import SpectrumFactory
@@ -355,6 +357,38 @@ def calc_spectrum(
     """
 
     # Check inputs
+
+    # Check for unsupported GEISA isotopes
+
+    # In current version, GEISA parser uses HAPI partition function, which does not
+    # support some of GEISA's isotopes, as listed in GEISA_nw_iso below:
+    GEISA_ns_iso = {
+        "CO2": [0],
+        "H2O": [8, 9],
+        "N2O": [0],
+        "NO2": [2],
+    }
+
+    # Thus, in case the user does not specify isotope list (by default, "all"), or accidentially
+    # includes the unsupported isotopes, we send them a gentle reminder and set the list to '1,2,3'
+    if databank == "geisa" and molecule in GEISA_ns_iso.keys():
+
+        if isotope == "all":
+            alt_iso_set = [1, 2, 3]
+        else:
+            alt_iso_set = [int(iso) for iso in isotope.split(",")]
+        for nw_iso in GEISA_ns_iso[molecule]:
+            if nw_iso in alt_iso_set:
+                alt_iso_set.remove(nw_iso)
+        isotope = ",".join(str(k) for k in alt_iso_set)
+
+        # Gentle reminder here
+
+        print(
+            f"\nCurrently isotope ID {GEISA_ns_iso[molecule]} of molecule {molecule} "
+            "is not supported by GEISA parser. Please specify a proper isotope set instead "
+            'of "all" for this molecule. For this run, the isotope is set to {isotope}.\n'
+        )
 
     # ... wavelengths / wavenumbers
 
