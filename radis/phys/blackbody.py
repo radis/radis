@@ -31,7 +31,7 @@ from radis.phys.units import Unit as Q_
 from radis.phys.units import conv2
 
 
-def planck(lmbda, T, eps=1, unit="mW/sr/cm2/nm"):
+def planck(lmbda, T, eps=1, unit="mW/cm2/sr/nm"):
     r"""Planck function for blackbody radiation.
 
     .. math::
@@ -64,13 +64,13 @@ def planck(lmbda, T, eps=1, unit="mW/sr/cm2/nm"):
     )  # S.I  (W.sr-1.m-3)
     iplanck *= 1e-10  # W.sr-1.m-3 >>> mW.sr-1.cm-2.nm-1
 
-    if Q_(unit) != Q_("mW/sr/cm2/nm"):
-        iplanck = conv2(iplanck, "mW/sr/cm2/nm", unit)
+    if Q_(unit) != Q_("mW/cm2/sr/nm"):
+        iplanck = conv2(iplanck, "mW/cm2/sr/nm", unit)
 
     return iplanck
 
 
-def planck_wn(wavenum, T, eps=1, unit="mW/sr/cm2/cm-1"):
+def planck_wn(wavenum, T, eps=1, unit="mW/cm2/sr/cm-1"):
     r"""Planck function for blackbody radiation, wavenumber version.
 
     .. math::
@@ -109,8 +109,8 @@ def planck_wn(wavenum, T, eps=1, unit="mW/sr/cm2/cm-1"):
     # iplanck in erg/s/sr/cm2/cm-1
     iplanck *= 1e-4  # erg/s/sr/cm2/cm-1 > mW/sr/cm^2/cm-1
 
-    if Q_(unit) != Q_("mW/sr/cm2/cm-1"):
-        iplanck = conv2(iplanck, "mW/sr/cm2/cm-1", unit)
+    if Q_(unit) != Q_("mW/cm2/sr/cm-1"):
+        iplanck = conv2(iplanck, "mW/cm2/sr/cm-1", unit)
 
     return iplanck
 

@@ -88,19 +88,20 @@ from scipy.optimize import OptimizeResult
 from radis import version
 from radis.db import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
 from radis.db.classes import get_molecule, get_molecule_identifier
+from radis.phys.convert import cm2nm, cm2nm_air
 
 try:  # Proper import
     from .bands import BandFactory
-    from .base import get_waverange
+    from .base import get_wavenumber_range
 except ImportError:  # if ran from here
     from radis.lbl.bands import BandFactory
-    from radis.lbl.base import get_waverange
+    from radis.lbl.base import get_wavenumber_range
 
 from radis.misc.basics import flatten, is_float, is_range, list_if_float, round_off
 from radis.misc.utils import Default
 from radis.phys.constants import k_b
 from radis.phys.convert import conv2
-from radis.phys.units import convert_emi2nm, convert_rad2nm
+from radis.phys.units import convert_universal
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.spectrum import Spectrum
@@ -459,7 +460,7 @@ class SpectrumFactory(BandFactory):
         # --------------------
 
         # Get wavenumber, based on whatever was given as input.
-        wavenum_min, wavenum_max = get_waverange(
+        wavenum_min, wavenum_max, input_wunit = get_wavenumber_range(
             wmin,
             wmax,
             wunit,
@@ -468,7 +469,29 @@ class SpectrumFactory(BandFactory):
             wavelength_min,
             wavelength_max,
             medium,
+            return_input_wunit=True,
         )
+        # ... Make default output units consistent with the input waverange
+        # ... see https://github.com/radis/radis/issues/456
+        # (note: may be overwritten by user after Factory creation)
+        if input_wunit == "wavelength":
+            self.units["emisscoeff"] = "mW/cm3/sr/nm"
+            self.units["radiance_noslit"] = "mW/cm2/sr/nm"
+            if medium == "air":
+                self.units["waverange"] = "nm"
+            elif medium == "vacuum":
+                self.units["waverange"] = "nm_vac"
+            else:
+                raise ValueError(medium)
+        else:
+            assert input_wunit == "wavenumber"
+            assert (
+                self.units["emisscoeff"] == "mW/cm3/sr/cm-1"
+            )  # default in BaseFactory.units
+            assert (
+                self.units["radiance_noslit"] == "mW/cm2/sr/cm-1"
+            )  # default in BaseFactory.units
+            assert self.units["waverange"] == "cm-1"
 
         # Storing inital value of wstep if wstep != "auto"
         self._wstep = wstep
@@ -820,6 +843,7 @@ class SpectrumFactory(BandFactory):
         radiance_noslit = calc_radiance(
             wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
         )
+        assert self.units["abscoeff"] == "cm-1"
 
         self.profiler.stop(
             "calc_other_spectral_quan", "Calculated other spectral quantities"
@@ -873,17 +897,25 @@ class SpectrumFactory(BandFactory):
 
         # Spectral quantities
         quantities = {
-            "abscoeff": (wavenumber, abscoeff),
-            "absorbance": (wavenumber, absorbance),
-            "emissivity_noslit": (wavenumber, emissivity_noslit),
-            "transmittance_noslit": (wavenumber, transmittance_noslit),
-            # (mW/cm2/sr/nm)
-            "radiance_noslit": (wavenumber, radiance_noslit),
+            "abscoeff": abscoeff,
+            "absorbance": absorbance,
+            "emissivity_noslit": emissivity_noslit,
+            "transmittance_noslit": transmittance_noslit,
+            "radiance_noslit": radiance_noslit,
         }
         if I_continuum is not None and self._export_continuum:
-            quantities.update(
-                {"abscoeff_continuum": (wavenumber, I_continuum * density)}
-            )
+            quantities.update({"abscoeff_continuum": I_continuum * density})
+        if self.units["waverange"] == "cm-1":
+            quantities["wavenumber"] = wavenumber
+            conditions["waveunit"] = "cm-1"
+        elif self.units["waverange"] == "nm":
+            quantities["wavelength"] = cm2nm_air(wavenumber)
+            conditions["waveunit"] = "nm"
+        elif self.units["waverange"] == "nm_vac":
+            quantities["wavelength"] = cm2nm(wavenumber)
+            conditions["waveunit"] = "nm_vac"
+        else:
+            raise ValueError(self.units["wavespace"])
 
         # Store results in Spectrum class
         s = Spectrum(
@@ -893,13 +925,13 @@ class SpectrumFactory(BandFactory):
             lines=lines,
             units=self.units,
             cond_units=self.cond_units,
-            wunit=self.params.waveunit,  # cm-1
             # dont check input (much faster, and Spectrum
-            check_wavespace=False,
             # is freshly baken so probably in a good format
+            check_wavespace=False,
             name=name,
             references=dict(self.reftracker),
         )
+        # OPTION 2.  Change a posteriori using a Spectrum.method. More universal. Can it be slower?
 
         # update database if asked so
         if self.autoupdatedatabase:
@@ -1156,6 +1188,7 @@ class SpectrumFactory(BandFactory):
         radiance_noslit = calc_radiance(
             wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
         )
+        assert self.units["abscoeff"] == "cm-1"
 
         self.profiler.stop(
             "calc_other_spectral_quan", "Calculated other spectral quantities"
@@ -1203,15 +1236,25 @@ class SpectrumFactory(BandFactory):
 
         # Spectral quantities
         quantities = {
-            "abscoeff": (wavenumber, abscoeff),
-            "absorbance": (wavenumber, absorbance),
-            "emissivity": (wavenumber, emissivity),
-            "emissivity_noslit": (wavenumber, emissivity_noslit),
-            "transmittance_noslit": (wavenumber, transmittance_noslit),
-            # (mW/cm2/sr/nm)
-            "radiance_noslit": (wavenumber, radiance_noslit),
-            "transmittance": (wavenumber, transmittance),
+            "abscoeff": abscoeff,
+            "absorbance": absorbance,
+            "emissivity": emissivity,
+            "emissivity_noslit": emissivity_noslit,
+            "transmittance_noslit": transmittance_noslit,
+            "radiance_noslit": radiance_noslit,
+            "transmittance": transmittance,
         }
+        if self.units["waverange"] == "cm-1":
+            quantities["wavenumber"] = wavenumber
+            conditions["waveunit"] = "cm-1"
+        elif self.units["waverange"] == "nm":
+            quantities["wavelength"] = cm2nm_air(wavenumber)
+            conditions["waveunit"] = "nm"
+        elif self.units["waverange"] == "nm_vac":
+            quantities["wavelength"] = cm2nm(wavenumber)
+            conditions["waveunit"] = "nm_vac"
+        else:
+            raise ValueError(self.units["wavespace"])
 
         # Store results in Spectrum class
         s = Spectrum(
@@ -1220,7 +1263,6 @@ class SpectrumFactory(BandFactory):
             conditions=conditions,
             lines=lines,
             cond_units=self.cond_units,
-            wunit=self.params.waveunit,  # cm-1
             # dont check input (much faster, and Spectrum
             check_wavespace=False,
             # is freshly baken so probably in a good format
@@ -1645,9 +1687,6 @@ class SpectrumFactory(BandFactory):
         abscoeff = abscoeff_v * density  # cm-1
         emisscoeff = emisscoeff_v * density  # mW/sr/cm3/cm-1
 
-        # ... # TODO: if the code is extended to multi-species, then density has to be added
-        # ... before lineshape broadening (as it would not be constant for all species)
-
         # get absorbance (technically it's the optical depth `tau`,
         #                absorbance `A` being `A = tau/ln(10)` )
 
@@ -1668,14 +1707,25 @@ class SpectrumFactory(BandFactory):
             # Note that for k -> 0,
             radiance_noslit = emisscoeff * path_length  # (mW/sr/cm2/cm-1)
 
-        # Convert `radiance_noslit` from (mW/sr/cm2/cm-1) to (mW/sr/cm2/nm)
-        radiance_noslit = convert_rad2nm(
-            radiance_noslit, wavenumber, "mW/sr/cm2/cm-1", "mW/sr/cm2/nm"
+        # Convert `radiance_noslit` from (mW/sr/cm2/cm-1) to (mW/sr/cm2/nm or something else)
+        radiance_noslit = convert_universal(
+            radiance_noslit,
+            from_unit="mW/cm2/sr/cm-1",
+            to_unit=self.units["radiance_noslit"],
+            wavenum=wavenumber,
+            per_nm_is_like="mW/cm2/sr/nm",
+            per_cm_is_like="mW/cm2/sr/cm-1",
         )
-        # Convert 'emisscoeff' from (mW/sr/cm3/cm-1) to (mW/sr/cm3/nm)
-        emisscoeff = convert_emi2nm(
-            emisscoeff, wavenumber, "mW/sr/cm3/cm-1", "mW/sr/cm3/nm"
+        # Convert 'emisscoeff' from (mW/sr/cm3/cm-1) to (mW/sr/cm3/nm or something else)
+        emisscoeff = convert_universal(
+            emisscoeff,
+            from_unit="mW/cm3/sr/cm-1",
+            to_unit=self.units["emisscoeff"],
+            wavenum=wavenumber,
+            per_nm_is_like="mW/cm3/sr/nm",
+            per_cm_is_like="mW/cm3/sr/cm-1",
         )
+        assert self.units["abscoeff"] == "cm-1"
 
         self.profiler.stop(
             "calc_other_spectral_quan", "Calculated other spectral quantities"
@@ -1729,13 +1779,11 @@ class SpectrumFactory(BandFactory):
 
         # Spectral quantities
         quantities = {
-            "abscoeff": (wavenumber, abscoeff),
-            "absorbance": (wavenumber, absorbance),
-            # (mW/cm3/sr/nm)
-            "emisscoeff": (wavenumber, emisscoeff),
-            "transmittance_noslit": (wavenumber, transmittance_noslit),
-            # (mW/cm2/sr/nm)
-            "radiance_noslit": (wavenumber, radiance_noslit),
+            "abscoeff": abscoeff,
+            "absorbance": absorbance,
+            "emisscoeff": emisscoeff,
+            "transmittance_noslit": transmittance_noslit,
+            "radiance_noslit": radiance_noslit,
         }
         if k_continuum is not None and self._export_continuum:
             quantities.update(
@@ -1744,6 +1792,17 @@ class SpectrumFactory(BandFactory):
                     "emisscoeff_continuum": (wavenumber, j_continuum * density),
                 }
             )
+        if self.units["waverange"] == "cm-1":
+            quantities["wavenumber"] = wavenumber
+            conditions["waveunit"] = "cm-1"
+        elif self.units["waverange"] == "nm":
+            quantities["wavelength"] = cm2nm_air(wavenumber)
+            conditions["waveunit"] = "nm"
+        elif self.units["waverange"] == "nm_vac":
+            quantities["wavelength"] = cm2nm(wavenumber)
+            conditions["waveunit"] = "nm_vac"
+        else:
+            raise ValueError(self.units["wavespace"])
 
         # Store results in Spectrum class
         s = Spectrum(
@@ -1753,7 +1812,6 @@ class SpectrumFactory(BandFactory):
             lines=lines,
             units=self.units,
             cond_units=self.cond_units,
-            wunit=self.params.waveunit,  # cm-1
             # dont check input (much faster, and Spectrum
             check_wavespace=False,
             # is freshly baken so probably in a good format

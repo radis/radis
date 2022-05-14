@@ -70,13 +70,9 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
     (just used here as a performance monitoring)
 
     - neq 0.9.20: 18.7s
-
     - neq 0.9.20*: 15.4s   (removed 2nd loop on 1st isotope because of groupby().apply())
-
     - neq 0.9.20**: 11.7s  (after replacing fill_Evib with map() )
-
     - neq 0.9.21: 9.4s     (improve Qrot / nrot fetching performance)
-
     - neq 0.9.22: 8.4s
 
     Starting from RADIS 1.0.1, the test is run on [HITRAN-2020]_, which
@@ -88,6 +84,7 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
 
     - radis 0.9.20 : 2.49 s    on [HITRAN-2020]
                      4.05 s    on [CDSD-HITEMP-JMIN]
+    - radis 0.12.2 : 1.1s      on [HITRAN-2020]   (most time spent in the Evib, Erot look-up)
 
     """
     if verbose:
@@ -101,6 +98,8 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
     s = calc_spectrum(
         wavelength_min=4165,
         wavelength_max=4200,
+        # wavenum_min=1e7/4200,
+        # wavenum_max=1e7/4165,
         #                          databank='CDSD-HITEMP-JMIN',
         databank="hitran",  # not appropriate for these temperatures, but convenient for automatic testing
         # databank="HITRAN-CO2-TEST",  # to use, but only has 1 isotope. TODO add new test file with 2 isotopes
@@ -128,9 +127,9 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
     s.apply_slit((2, 2.5), "nm", shape="trapezoidal")
 
     if plot:
-        s.plot(wunit="nm")
+        s.plot(wunit="nm", Iunit="mW/cm2/sr/nm")
 
-    w, I = s.get("radiance", wunit="nm")
+    w, I = s.get("radiance", wunit="nm", Iunit="mW/cm2/sr/nm")
     # Compare against hardcoded results (neq 0.9.22, 28/06/18)
     #        I_ref = np.array([0.28694463, 0.29141711, 0.32461613, 0.32909566, 0.21939511, 0.18606445,
     #                          0.19740763, 0.16948599, 0.16780345, 0.15572173, 0.16770853, 0.14966064,
@@ -792,6 +791,34 @@ def test_calc_spectrum_multiple_molecules_wstep_auto(
     assert s.get_conditions()["wstep"] in ("N/A", 0.013)
 
 
+def test_check_wavelength_range(verbose=True, warnings=True, *args, **kwargs):
+    """Check that input wavelength is correctly taken into account.
+    See https://github.com/radis/radis/issues/214
+    """
+    if verbose:
+        printm("Testing calc_spectrum wavelength range")
+
+    wstep = 0.01
+
+    s = calc_spectrum(
+        wavelength_min=4348,  # nm
+        wavelength_max=5000,
+        molecule="CO",
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        Tvib=1700,  # K
+        Trot=1700,  # K
+        databank="HITRAN-CO-TEST",
+        wstep=wstep,
+    )
+    w, I = s.get("radiance_noslit", wunit="nm", Iunit="mW/sr/cm2/nm")
+
+    assert np.isclose(w.min(), 4348, atol=wstep)
+    assert np.isclose(w.max(), 5000, atol=wstep)
+
+    return True
+
+
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
     # Test sPlanck and conversion functions
@@ -824,33 +851,7 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     test_calc_spectrum_multiple_molecules_inputerror()
     test_calc_spectrum_multiple_molecules_wstep_auto()
 
-    return True
-
-
-def check_wavelength_range(verbose=True, warnings=True, *args, **kwargs):
-    """Check that input wavelength is correctly taken into account.
-    See https://github.com/radis/radis/issues/214
-    """
-    if verbose:
-        printm("Testing calc_spectrum wavelength range")
-
-    wstep = 0.01
-
-    s = calc_spectrum(
-        wavelength_min=4348,  # nm
-        wavelength_max=5000,
-        molecule="CO",
-        isotope="1,2,3",
-        pressure=1.01325,  # bar
-        Tvib=1700,  # K
-        Trot=1700,  # K
-        databank="HITRAN-CO-TEST",
-        wstep=wstep,
-    )
-    w, I = s.get("radiance_noslit", wunit="nm", Iunit="mW/sr/cm2/nm")
-
-    assert np.isclose(w.min(), 4348, atol=wstep)
-    assert np.isclose(w.max(), 5000, atol=wstep)
+    test_check_wavelength_range()
 
     return True
 
@@ -858,4 +859,5 @@ def check_wavelength_range(verbose=True, warnings=True, *args, **kwargs):
 # --------------------------
 if __name__ == "__main__":
 
-    printm("Testing calc.py: ", _run_testcases(verbose=True))
+    # printm("Testing calc.py: ", _run_testcases(verbose=True))
+    test_calc_spectrum()

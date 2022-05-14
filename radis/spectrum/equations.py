@@ -10,8 +10,9 @@ generate the spectrum) or the spectrum class (to recompute some quantities
 in post processing)
 """
 
-from radis.phys.blackbody import planck
+from radis.phys.blackbody import planck, planck_wn
 from radis.phys.convert import cm2nm
+from radis.phys.units import is_homogeneous
 
 # ------- Get radiance from emissivity
 
@@ -34,6 +35,9 @@ def calc_radiance(wavenumber, emissivity, Tgas, unit="mW/sr/cm2/nm"):
     :py:func:`~radis.phys.blackbody.planck`
     """
 
-    radiance = emissivity * planck(cm2nm(wavenumber), Tgas, unit=unit)
+    if is_homogeneous(unit, "mW/sr/cm2/nm"):
+        radiance = emissivity * planck(cm2nm(wavenumber), Tgas, unit=unit)
+    elif is_homogeneous(unit, "mW/sr/cm2/cm-1"):
+        radiance = emissivity * planck_wn(wavenumber, Tgas, unit=unit)
 
     return radiance

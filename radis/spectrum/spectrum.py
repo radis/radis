@@ -974,8 +974,6 @@ class Spectrum(object):
         :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance_noslit`,
         :ref:`the Spectrum page <label_spectrum>`
         """
-        # TODO: allow to get radiance in (W/sr/cm2/nm) or (W/sr/cm2) multiplying
-        # by FWHM.
 
         # check input
         if not var in self.get_vars():
@@ -1030,23 +1028,29 @@ class Spectrum(object):
                 # deal with the case where we want to get a radiance in per
                 # wavelength unit (~ W/sr/cm2/nm) in wavenumber units (~ W/sr/cm2/cm-1),
                 # or the other way round
+                w_cm = self.get_wavenumber(copy=False)
+                if trim_nan:
+                    w_cm = w_cm[m : M + 1]
                 I = convert_universal(
                     I,
                     Iunit0,
                     Iunit,
-                    self,
-                    per_nm_is_like="mW/sr/cm2/nm",
-                    per_cm_is_like="mW/sr/cm2/cm-1",
+                    w_cm,
+                    per_nm_is_like="mW/cm2/sr/nm",
+                    per_cm_is_like="mW/cm2/sr/cm-1",
                 )
             elif var in ["emisscoeff"]:
-                # idem for emisscoeff in (~ W/sr/cm3/nm) or (~ /sr/cm3/cm-1)
+                # idem for emisscoeff in (~ W/sr/cm3/nm) or (~ W/sr/cm3/cm-1)
+                w_cm = self.get_wavenumber(copy=False)
+                if trim_nan:
+                    w_cm = w_cm[m : M + 1]
                 I = convert_universal(
                     I,
                     Iunit0,
                     Iunit,
-                    self,
-                    per_nm_is_like="mW/sr/cm3/nm",
-                    per_cm_is_like="mW/sr/cm3/cm-1",
+                    w_cm,
+                    per_nm_is_like="mW/cm3/sr/nm",
+                    per_cm_is_like="mW/cm3/sr/cm-1",
                 )
             elif var in ["absorbance"]:  # no unit
                 assert Iunit in ["", "1"]
@@ -1249,9 +1253,12 @@ class Spectrum(object):
         elif self.file is not None:
             name = "{0}".format(basename(self.file))
         else:
-            name = "{0}spectrum{1}".format(
-                self.conditions.get("molecule", ""), id(self)
-            )
+            name_params = []
+            for (key, unit) in [("molecule", ""), ("dbformat", ""), ("Tgas", "K")]:
+                if key in self.conditions:
+                    name_params.append(f"{self.conditions[key]}{unit}")
+
+            name = "-".join(name_params) + "-#" + str(id(self))[-4:]
 
         return name
 
@@ -1721,6 +1728,7 @@ class Spectrum(object):
         Examples
         --------
         ::
+
             s.get_power('W/cm2/sr')
 
         .. minigallery:: radis.spectrum.spectrum.Spectrum.offset
@@ -1987,20 +1995,20 @@ class Spectrum(object):
         if not force and (fig.gca().get_xlabel().lower() not in ["", xlabel.lower()]):
             raise ValueError(
                 "Error while plotting {0}. Cannot plot ".format(var)
-                + "on a same figure with different xlabel: {0}, {1}".format(
+                + "on a same figure with different xlabel: Current: {0}, New: {1}".format(
                     clean_error_msg(fig.gca().get_xlabel()), clean_error_msg(xlabel)
                 )
-                + "Use force=True if you really want to plot"
+                + ". If it's a unit problem, change unit with `s.plot(..., wunit=...)`. Use force=True if you really want to plot as is."
             )
         label1 = clean_error_msg(fig.gca().get_ylabel().lower())
         label2 = clean_error_msg(ylabel.lower())
         if not force and (label1 not in ["", label2]):
             raise ValueError(
                 "Error while plotting {0}. Cannot plot ".format(var)
-                + "on a same figure with different ylabel: \n{0}\n{1}".format(
+                + "on a same figure with different ylabel: \nCurrent: {0}\nNew: {1}".format(
                     clean_error_msg(fig.gca().get_ylabel()), clean_error_msg(ylabel)
                 )
-                + "\nIf it's a unit problem, you can change the unit with `Iunit=`. Use `force=True` if you really want to plot with these units."
+                + "\nIf it's a unit problem, you can change the unit with `s.plot(..., Iunit=)`. Use `force=True` if you really want to plot with these units."
             )
 
         # Add extra plotting parameters

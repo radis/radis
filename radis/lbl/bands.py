@@ -60,16 +60,18 @@ from radis.lbl.labels import (
     vib_lvl_name_hitran_class1,
     vib_lvl_name_hitran_class5,
 )
+from radis.phys.convert import cm2nm, cm2nm_air
 
 try:  # Proper import
     from .loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
 except ImportError:  # if ran from here
     from radis.lbl.loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
+
 from radis.misc.basics import all_in, is_float
 from radis.misc.progress_bar import ProgressBar
 from radis.misc.warning import reset_warnings
 from radis.phys.constants import k_b
-from radis.phys.units import convert_emi2nm, convert_rad2nm
+from radis.phys.units import convert_universal
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.spectrum import Spectrum
@@ -321,6 +323,7 @@ class BandFactory(BroadenFactory):
                 Tgas,
                 unit=self.units["radiance_noslit"],
             )
+            assert self.units["abscoeff"] == "cm-1"
 
             # ----------------------------- Export:
 
@@ -354,33 +357,38 @@ class BandFactory(BroadenFactory):
                 add_attr("band_htrn")
                 add_attr("viblvl_l")
                 add_attr("viblvl_u")
+
+            quantities = {
+                "abscoeff": abscoeff,
+                "absorbance": absorbance,
+                "emissivity_noslit": emissivity_noslit,
+                "transmittance_noslit": transmittance_noslit,
+                "radiance_noslit": radiance_noslit,
+            }
+            if self.units["waverange"] == "cm-1":
+                quantities["wavenumber"] = wavenumber
+                conditions["waveunit"] = "cm-1"
+            elif self.units["waverange"] == "nm":
+                quantities["wavelength"] = cm2nm_air(wavenumber)
+                conditions["waveunit"] = "nm"
+            elif self.units["waverange"] == "nm_vac":
+                quantities["wavelength"] = cm2nm(wavenumber)
+                conditions["waveunit"] = "nm_vac"
+            else:
+                raise ValueError(self.units["wavespace"])
+
             s = Spectrum(
-                quantities={
-                    "abscoeff": (wavenumber, abscoeff),
-                    "absorbance": (wavenumber, absorbance),
-                    "emissivity_noslit": (wavenumber, emissivity_noslit),
-                    "transmittance_noslit": (wavenumber, transmittance_noslit),
-                    # (mW/cm2/sr/nm)
-                    "radiance_noslit": (wavenumber, radiance_noslit),
-                },
+                quantities=quantities,
                 conditions=conditions,
                 populations=populations,
                 lines=lines,
                 units=self.units,
                 cond_units=self.cond_units,
-                wunit=self.params.waveunit,  # cm-1
                 name=band,
                 # dont check input (much faster, and Spectrum
-                check_wavespace=False,
                 # is freshly baken so probably in a good format
+                check_wavespace=False,
             )
-
-            #            # update database if asked so
-            #            if self.autoupdatedatabase:
-            #                self.SpecDatabase.add(s)
-            #                                                     # Tvib=Trot=Tgas... but this way names in a database
-            #                                                     # generated with eq_spectrum are consistent with names
-            #                                                     # in one generated with non_eq_spectrum
 
             s_bands[band] = s
 
@@ -666,15 +674,25 @@ class BandFactory(BroadenFactory):
                 # Note that for k -> 0,
                 radiance_noslit = emisscoeff * path_length  # (mW/sr/cm2/cm-1)
 
-            # Convert `radiance_noslit` from (mW/sr/cm2/cm-1) to (mW/sr/cm2/nm)
-            radiance_noslit = convert_rad2nm(
-                radiance_noslit, wavenumber, "mW/sr/cm2/cm-1", "mW/sr/cm2/nm"
+            # Convert `radiance_noslit` from (mW/sr/cm2/cm-1) to (mW/sr/cm2/nm or something else)
+            radiance_noslit = convert_universal(
+                radiance_noslit,
+                from_unit="mW/cm2/sr/cm-1",
+                to_unit=self.units["radiance_noslit"],
+                wavenum=wavenumber,
+                per_nm_is_like="mW/cm2/sr/nm",
+                per_cm_is_like="mW/cm2/sr/cm-1",
             )
-            # Convert 'emisscoeff' from (mW/sr/cm3/cm-1) to (mW/sr/cm3/nm)
-            emisscoeff = convert_emi2nm(
-                emisscoeff, wavenumber, "mW/sr/cm3/cm-1", "mW/sr/cm3/nm"
+            # Convert 'emisscoeff' from (mW/sr/cm3/cm-1) to (mW/sr/cm3/nm or something else)
+            emisscoeff = convert_universal(
+                emisscoeff,
+                from_unit="mW/cm3/sr/cm-1",
+                to_unit=self.units["emisscoeff"],
+                wavenum=wavenumber,
+                per_nm_is_like="mW/cm3/sr/nm",
+                per_cm_is_like="mW/cm3/sr/cm-1",
             )
-            # Note: emissivity not defined under non equilibrium
+            assert self.units["abscoeff"] == "cm-1"
 
             # ----------------------------- Export:
 
@@ -710,31 +728,38 @@ class BandFactory(BroadenFactory):
             add_attr("band_htrn")
             add_attr("viblvl_l")
             add_attr("viblvl_u")
+
+            quantities = {
+                "abscoeff": abscoeff,
+                "absorbance": absorbance,
+                "emisscoeff": emisscoeff,
+                "transmittance_noslit": transmittance_noslit,
+                "radiance_noslit": radiance_noslit,
+            }
+            if self.units["waverange"] == "cm-1":
+                quantities["wavenumber"] = wavenumber
+                conditions["waveunit"] = "cm-1"
+            elif self.units["waverange"] == "nm":
+                quantities["wavelength"] = cm2nm_air(wavenumber)
+                conditions["waveunit"] = "nm"
+            elif self.units["waverange"] == "nm_vac":
+                quantities["wavelength"] = cm2nm(wavenumber)
+                conditions["waveunit"] = "nm_vac"
+            else:
+                raise ValueError(self.units["wavespace"])
+
             s = Spectrum(
-                quantities={
-                    "abscoeff": (wavenumber, abscoeff),
-                    "absorbance": (wavenumber, absorbance),
-                    # (mW/cm3/sr/nm)
-                    "emisscoeff": (wavenumber, emisscoeff),
-                    "transmittance_noslit": (wavenumber, transmittance_noslit),
-                    # (mW/cm2/sr/nm)
-                    "radiance_noslit": (wavenumber, radiance_noslit),
-                },
+                quantities=quantities,
                 conditions=conditions,
                 populations=populations,
                 lines=lines,
                 units=self.units,
                 cond_units=self.cond_units,
-                wunit=self.params.waveunit,  # cm-1
                 name=band,
                 # dont check input (much faster, and Spectrum
-                check_wavespace=False,
                 # is freshly baken so probably in a good format
+                check_wavespace=False,
             )
-
-            #            # update database if asked so
-            #            if self.autoupdatedatabase:
-            #                self.SpecDatabase.add(s, add_info=['Tvib', 'Trot'], add_date='%Y%m%d')
 
             s_bands[band] = s
 

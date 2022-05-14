@@ -23,11 +23,11 @@ from os.path import exists
 # from radis.db.classes import M
 
 try:  # Proper import
-    from .base import get_waverange
+    from .base import get_wavenumber_range
     from .factory import SpectrumFactory
 except ImportError:  # if ran from here
     from radis.lbl.factory import SpectrumFactory
-    from radis.lbl.base import get_waverange
+    from radis.lbl.base import get_wavenumber_range
 
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
@@ -361,7 +361,7 @@ def calc_spectrum(
     # ... wavelengths / wavenumbers
 
     # Get wavenumber, based on whatever was given as input.
-    wavenum_min, wavenum_max = get_waverange(
+    wavenum_min, wavenum_max, input_wunit = get_wavenumber_range(
         wmin,
         wmax,
         wunit,
@@ -370,6 +370,7 @@ def calc_spectrum(
         kwargs.pop("wavelength_min") if "wavelength_min" in kwargs else None,
         kwargs.pop("wavelength_max") if "wavelength_max" in kwargs else None,
         medium,
+        return_input_wunit=True,
     )
 
     # Deal with Multi-molecule mode:
@@ -510,6 +511,7 @@ def calc_spectrum(
         generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
             wavenum_max=wavenum_max,
+            input_wunit=input_wunit,
             Tgas=Tgas,
             Tvib=Tvib,
             Trot=Trot,
@@ -563,6 +565,7 @@ def calc_spectrum(
 def _calc_spectrum_one_molecule(
     wavenum_min,
     wavenum_max,
+    input_wunit,
     Tgas,
     Tvib,
     Trot,
@@ -589,7 +592,17 @@ def _calc_spectrum_one_molecule(
     return_factory=False,
     **kwargs,
 ) -> Spectrum:
-    """See :py:func:`~radis.lbl.calc.calc_spectrum`"""
+    """See :py:func:`~radis.lbl.calc.calc_spectrum`
+
+    Parameters
+    ----------
+    input_wunit: 'wavelength', 'wavenumber'
+        know if user initially gave inputs in wavelength or wavenumber, so as
+        to keep consistent output units
+    """
+
+    # Initialize Factory
+    # ------------------
 
     # Check inputs
 
@@ -653,6 +666,27 @@ def _calc_spectrum_one_molecule(
         export_lines=export_lines,
         **kwargs,
     )
+    # Have consistent output units
+    if input_wunit == "wavenumber":
+        assert sf.units["emisscoeff"] == "mW/cm3/sr/cm-1"
+        assert sf.units["radiance_noslit"] == "mW/cm2/sr/cm-1"
+        assert sf.units["waverange"] == "cm-1"
+    elif input_wunit == "wavelength":
+        sf.units["emisscoeff"] = "mW/cm3/sr/nm"
+        sf.units["radiance_noslit"] = "mW/cm2/sr/nm"
+        if medium == "air":
+            sf.units["waverange"] = "nm"
+        elif medium == "vacuum":
+            sf.units["waverange"] = "nm_vac"
+        else:
+            raise ValueError(medium)
+    else:
+        raise ValueError(input_wunit)
+
+    # Load databank
+    # -------------
+
+    # Get databank
     if (
         databank
         in [
@@ -807,6 +841,8 @@ def _calc_spectrum_one_molecule(
     if overpopulation is not None or overpopulation != {}:
         sf.misc.export_rovib_fraction = True  # required to compute Partition fucntions with overpopulation being taken into account
 
+    # Calculate Spectrum
+    # ------------------
     # Use the standard eq_spectrum / non_eq_spectrum functions
     if _equilibrium:
         if mode == "cpu":
