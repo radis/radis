@@ -11,11 +11,10 @@ GEISA database parser
 """
 
 
-import re
+# import re
 import time
 from collections import OrderedDict
-from os.path import abspath, basename, exists, expanduser, getmtime, join
-from typing import Union
+from os.path import abspath, exists, expanduser, getmtime, join
 
 import numpy as np
 
@@ -32,6 +31,9 @@ from radis.io.tools import (
 from radis.misc.progress_bar import ProgressBar
 
 from .hdf5 import update_pytables_to_vaex
+
+# from typing import Union
+
 
 # %% Parsing functions
 
@@ -309,50 +311,6 @@ def gei2df(
     return df
 
 
-def keep_only_relevant(
-    inputfiles,
-    wavenum_min=None,
-    wavenum_max=None,
-) -> Union[list, float, float]:
-    """Parser file names for ``wavenum_format`` (min and max) and only keep
-    relevant files if the requested range is ``[wavenum_min, wavenum_max]``
-
-    Returns
-    -------
-    relevant: list of relevant files
-    files_wmin, files_wmax: (float, float) : wavenum min & max of relevant range
-    """
-    wavenum_format = r"\d{5}"
-    relevantfiles = []
-    files_wmin = np.inf
-    files_wmax = 0
-    for filepath in inputfiles:
-        file = basename(filepath)
-        fname_wmin, fname_wmax = re.findall(wavenum_format, file)
-        relevant = False
-        if wavenum_min is not None and wavenum_max is not None:
-            if (float(fname_wmax) > wavenum_min) and (float(fname_wmin) < wavenum_max):
-                # strict '>' :  we exclude "CO2-02_02250-02500_HITEMP2010.h5'" if calculating 2500 - 3000 cm-1
-                # strict '<' :  we exclude "CO2-02_03000-03250_HITEMP2010.h5" if calculating 2500 - 3000 cm-1
-                relevant = True
-        elif wavenum_min is not None:
-            if float(fname_wmax) > wavenum_min:
-                # strict '>' :  we exclude "CO2-02_02250-02500_HITEMP2010.h5'" if calculating 2500 - 3000 cm-1
-                relevant = True
-        elif wavenum_max is not None:
-            if float(fname_wmin) < wavenum_max:
-                # strict '<' :  we exclude "CO2-02_03000-03250_HITEMP2010.h5" if calculating 2500 - 3000 cm-1
-                relevant = True
-        else:
-            relevant = True
-        if relevant:
-            relevantfiles.append(filepath)
-            files_wmin = min(float(fname_wmin), files_wmin)
-            files_wmax = max(float(fname_wmax), files_wmax)
-
-    return relevantfiles, files_wmin, files_wmax
-
-
 #%%
 def get_last(b):
     """Get non-empty lines of a chunk b, parsing the bytes."""
@@ -391,29 +349,6 @@ class GEISADatabaseManager(DatabaseManager):
         self.wmax = None
         self.urlnames = None
 
-    def fetch_url_Nlines(
-        self,
-        geisa_url="https://aeris-geisa.ipsl.fr/geisa_files/2020/Lines/line_GEISA2020_asc_gs08_v1.0_",
-    ):
-        """requires connexion"""
-
-        molecule = self.molecule
-
-        if self.base_url is not None and self.Nlines is not None:
-            return self.base_url, self.Nlines
-
-        else:
-
-            Nlines = GEISA_MOLECULES_Nlines[molecule]
-            url = geisa_url + molecule.lower()
-
-            self.base_url, self.Nlines = url, Nlines
-
-        print(url)
-        print(Nlines)
-
-        return url, Nlines
-
     def fetch_urlnames(self):
         """requires connexion"""
 
@@ -421,11 +356,12 @@ class GEISADatabaseManager(DatabaseManager):
             return self.urlnames
 
         molecule = self.molecule
+        geisa_url = "https://aeris-geisa.ipsl.fr/geisa_files/2020/Lines/line_GEISA2020_asc_gs08_v1.0_"
 
         print(f"Molecule: {molecule}")
 
         if molecule.upper() in GEISA_MOLECULES:
-            url, Ntotal_lines_expected = self.fetch_url_Nlines
+            url = geisa_url + molecule.lower()
             urlnames = [url]
         else:
             raise KeyError(
@@ -436,16 +372,9 @@ class GEISADatabaseManager(DatabaseManager):
 
         return urlnames
 
-    def keep_only_relevant(
-        self,
-        inputfiles,
-        wavenum_min=None,
-        wavenum_max=None,
-    ) -> list:
-
-        return inputfiles
-
     def get_linereturn_format(self, opener, urlname, columns):
+
+        print(f"The urlname used for this is: {urlname}")
 
         with opener.open(urlname) as gfile:  # locally downloaded file
             dt = _create_dtype(
@@ -495,7 +424,7 @@ class GEISADatabaseManager(DatabaseManager):
         Nlines = 0
         Nlines_raw = 0
         Nlines_tot = Nlines + pbar_Nlines_already
-        _, Ntotal_lines_expected = self.fetch_url_Nlines
+        Ntotal_lines_expected = GEISA_MOLECULES_Nlines[molecule]
         if pbar_Ntot_estimate_factor:
             # multiply Ntotal_lines_expected by pbar_Ntot_estimate_factor
             # (accounts for total lines divided in number of files, and
@@ -722,21 +651,17 @@ def fetch_geisa(
     local_files, urlnames = ldb.get_filenames()
 
     # Delete files if needed:
-    relevant_files = ldb.keep_only_relevant(
-        local_files, load_wavenum_min, load_wavenum_max
-    )
+
     if cache == "regen":
-        ldb.remove_local_files(relevant_files)
+        ldb.remove_local_files(local_files)
     ldb.check_deprecated_files(
-        ldb.get_existing_files(relevant_files),
+        ldb.get_existing_files(local_files),
         auto_remove=True if cache != "force" else False,
     )
 
     # Get missing files
     download_files = ldb.get_missing_files(local_files)
-    download_files = ldb.keep_only_relevant(
-        download_files, load_wavenum_min, load_wavenum_max
-    )
+
     # do not re-download files if they exist in another format :
     if engine in ["vaex", "auto", "default"]:
         # ... convert files if asked:
@@ -770,16 +695,11 @@ def fetch_geisa(
     if len(download_files) > 0 and clean_cache_files:
         ldb.clean_download_files()
 
-    # Load and return
-    files_loaded = ldb.keep_only_relevant(
-        local_files, load_wavenum_min, load_wavenum_max
-    )
-
     if isotope and type(isotope) == int:
         isotope = str(isotope)
 
     df = ldb.load(
-        files_loaded,  # filter other files,
+        local_files,  # filter other files,
         columns=columns,
         isotope=isotope,
         load_wavenum_min=load_wavenum_min,  # for relevant files, get only the right range
@@ -787,7 +707,7 @@ def fetch_geisa(
         output=output,
     )
 
-    return (df, files_loaded) if return_local_path else df
+    return df
 
 
 #%%
