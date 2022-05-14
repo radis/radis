@@ -393,10 +393,10 @@ class GEISADatabaseManager(DatabaseManager):
 
         with opener.open(urlname) as gfile:  # locally downloaded file
 
-            gfile
+            gfile  #  so the linter doesn't annoy us. We're not using this file anyway, just unzipping the cache file directly :
             df = gei2df(opener.abspath(urlname), drop_non_numeric=False, cache=False)
 
-            writer.write(local_file, df, append=True)
+            writer.write(local_file, df, append=False)
 
             self.wmin = df.wav.min()
             self.wmax = df.wav.max()
@@ -406,9 +406,7 @@ class GEISADatabaseManager(DatabaseManager):
         writer.combine_temp_batch_files(local_file)  # used for vaex mode only
 
         # Check number of lines is consistent
-        print(f"Nlines: {Nlines}")
-        print(f"Notal_lines_expected: {Ntotal_lines_expected}")
-        # assert Nlines == Ntotal_lines_expected
+        assert Nlines == Ntotal_lines_expected
 
         # Add metadata
         from radis import __version__
