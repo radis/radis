@@ -21,16 +21,7 @@ import numpy as np
 import radis
 from radis.io.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
 from radis.io.dbmanager import DatabaseManager
-from radis.io.tools import (
-    _create_dtype,
-    _get_linereturnformat,
-    _ndarray2df,
-    drop_object_format_columns,
-    parse_hitran_file,
-)
-from radis.misc.progress_bar import ProgressBar
-
-from .hdf5 import update_pytables_to_vaex
+from radis.io.tools import drop_object_format_columns, parse_hitran_file
 
 # from typing import Union
 
@@ -66,7 +57,7 @@ columns_GEISA = OrderedDict(
         ("A", ("a10", float, "Einstein A coefficient", "s-1")),
         ("selbrd", ("a7", float, "self-broadened half-width at 296K", "cm-1.atm-1")),
         ("Pshft", ("a9", float, "air pressure-induced line shift at 296K", "cm-1.atm-1")),
-        ("Tdppair", ("a6", float, "temperature-dependance exponent for air pressure-induced line shift", "")),
+        ("Tdpair", ("a6", float, "temperature-dependance exponent for air pressure-induced line shift", "")),
         ("ierrA", ("a10", float, "estimated accuracy on the line position", "cm-1")),
         ("ierrB", ("a11", str, "estimated accuracy on the intensity of the line", "cm-1/(molecule/cm-2)")),
         ("ierrC", ("a6", float, "estimated accuracy on the air collision halfwidth", "cm-1.atm-1")),
@@ -232,8 +223,6 @@ def gei2df(
         print("Opening file {0}, cache={1})".format(fname, cache))
         print("Last Modification time: {0}".format(metadata["last_modification"]))
 
-    parse_columns = columns_GEISA
-
     # Attempt to use cache file
     fcache = cache_file_name(fname, engine=engine)
     if cache and exists(fcache):
@@ -259,7 +248,7 @@ def gei2df(
             return df
 
     # If cache files are not found, commence reading of full file
-    df = parse_hitran_file(fname, parse_columns)
+    df = parse_hitran_file(fname, columns_GEISA)
 
     # Commence "D to E" conversion on 2nd and 20th columns, by using
     # df.columns.str.replace() which is much faster than Python loop.
@@ -372,24 +361,6 @@ class GEISADatabaseManager(DatabaseManager):
 
         return urlnames
 
-    def get_linereturn_format(self, opener, urlname, columns):
-
-        print(f"The urlname used for this is: {urlname}")
-
-        with opener.open(urlname) as gfile:  # locally downloaded file
-            dt = _create_dtype(
-                columns, "a2"
-            )  # 'a2' allocates space to get \n or \n\r for linereturn character
-            b = np.zeros(1, dtype=dt)
-            try:
-                gfile.readinto(b)
-            except EOFError as err:
-                raise ValueError(
-                    f"End of file while parsing file {opener.abspath(urlname)}. May be due to download error. Delete file ?"
-                ) from err
-            linereturnformat = _get_linereturnformat(b, columns)
-        return linereturnformat
-
     def parse_to_local_file(
         self,
         opener,
@@ -409,87 +380,27 @@ class GEISADatabaseManager(DatabaseManager):
         opener: an opener with an .open() command
         gfile : file handler. Filename: for info"""
 
-        # Get linereturn (depends on OS, but file may also have been generated
-        # on a different OS. Here we simply read the file to find out)
-        columns = columns_GEISA
-        chunksize = self.chunksize
-        verbose = self.verbose
         molecule = self.molecule
-
-        if not verbose:
-            pbar_active = False
-
-        linereturnformat = self.get_linereturn_format(opener, urlname, columns)
-
-        Nlines = 0
-        Nlines_raw = 0
-        Nlines_tot = Nlines + pbar_Nlines_already
         Ntotal_lines_expected = GEISA_MOLECULES_Nlines[molecule]
-        if pbar_Ntot_estimate_factor:
-            # multiply Ntotal_lines_expected by pbar_Ntot_estimate_factor
-            # (accounts for total lines divided in number of files, and
-            # not all files downloaded)
-            Ntotal_lines_expected = int(
-                Ntotal_lines_expected * pbar_Ntot_estimate_factor
-            )
-        pb = ProgressBar(N=Ntotal_lines_expected, active=pbar_active, t0=pbar_t0)
-        wmin = np.inf
-        wmax = 0
 
         writer = self.get_hdf5_manager()
 
         with opener.open(urlname) as gfile:  # locally downloaded file
 
-            dt = _create_dtype(columns, linereturnformat)
+            gfile  #  so the linter doesn't annoy us. We're not using this file anyway, just unzipping the cache file directly :
+            df = gei2df(opener.abspath(urlname), drop_non_numeric=False, cache=False)
 
-            if verbose:
-                print(f"Download complete. Parsing {molecule} database to {local_file}")
+            writer.write(local_file, df, append=False)
 
-            # assert not(exists(local_file))
+            self.wmin = df.wav.min()
+            self.wmax = df.wav.max()
 
-            b = np.zeros(chunksize, dtype=dt)  # receives the HITRAN 160-character data.
+            Nlines = len(df)
 
-            for nbytes in iter(lambda: gfile.readinto(b), 0):
-
-                if not b[-1]:
-                    # End of file flag within the chunk (but does not start
-                    # with End of file flag) so nbytes != 0
-                    b = get_last(b)
-
-                df = _ndarray2df(b, columns, linereturnformat)
-
-                writer.write(local_file, df, append=True)
-
-                wmin = np.min((wmin, df.wav.min()))
-                wmax = np.max((wmax, df.wav.max()))
-
-                Nlines += len(df)
-                Nlines_tot += len(df)
-                Nlines_raw += len(b)
-                if pbar_Ntot_estimate_factor is None:
-                    pbar_Ntot_message = f"{Ntotal_lines_expected:,} lines"
-                else:
-                    pbar_Ntot_message = f"~{Ntotal_lines_expected:,} lines (estimate)"
-                pb.update(
-                    Nlines_tot,
-                    message=f"  Parsed {Nlines_tot:,} / {pbar_Ntot_message}. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete.",
-                )
-                # Reinitialize for next read
-                b = np.zeros(
-                    chunksize, dtype=dt
-                )  # receives the HITRAN 160-character data.
         writer.combine_temp_batch_files(local_file)  # used for vaex mode only
-        if pbar_last:
-            pb.update(
-                Nlines_tot,
-                message=f"  Parsed {Nlines_tot:,} / {Nlines_tot:,} lines. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete.",
-            )
-            pb.done()
-        else:
-            print("")
 
         # Check number of lines is consistent
-        assert Nlines == Nlines_raw
+        assert Nlines == Ntotal_lines_expected
 
         # Add metadata
         from radis import __version__
@@ -497,11 +408,11 @@ class GEISADatabaseManager(DatabaseManager):
         writer.add_metadata(
             local_file,
             {
-                "wavenumber_min": wmin,
-                "wavenumber_max": wmax,
+                "wavenumber_min": self.wmin,
+                "wavenumber_max": self.wmax,
                 "download_date": self.get_today(),
                 "download_url": urlname,
-                "total_lines": Nlines_raw,
+                "total_lines": Nlines,
                 "version": __version__,
             },
         )
@@ -662,24 +573,6 @@ def fetch_geisa(
     # Get missing files
     download_files = ldb.get_missing_files(local_files)
 
-    # do not re-download files if they exist in another format :
-    if engine in ["vaex", "auto", "default"]:
-        # ... convert files if asked:
-        from radis import config
-
-        if config["AUTO_UPDATE_DATABASE"]:
-            converted = []
-            for f in download_files:
-                if exists(f.replace(".hdf5", ".h5")):
-                    update_pytables_to_vaex(f.replace(".hdf5", ".h5"))
-                    converted.append(f)
-            download_files = [f for f in download_files if f not in converted]
-        # do not re-download remaining files that exist. Let user decide what to do.
-        # (download & re-parsing is a long solution!)
-        download_files = [
-            f for f in download_files if not exists(f.replace(".hdf5", ".h5"))
-        ]
-
     # Download files
     if len(download_files) > 0:
         if urlnames is None:
@@ -707,7 +600,7 @@ def fetch_geisa(
         output=output,
     )
 
-    return df
+    return (df, local_files) if return_local_path else df
 
 
 #%%
