@@ -459,9 +459,16 @@ class HDF5Manager(object):
                     else:
                         try:
                             metadata = dict(hf[key].attrs)
-                        except KeyError as err:
-                            print(f"Error reading metadata from {fname}")
-                            raise err
+                        except (KeyError, OSError) as err:
+                            if key == r"/table":
+                                # backward compat : some old files were generated with key=None
+                                metadata = dict(hf.attrs)
+                                print(
+                                    f"Error reading metadata from {fname}. Regenerate file one day?"
+                                )
+                            else:
+                                print(f"Error reading metadata from {fname}")
+                                raise err
 
         else:
             raise NotImplementedError(

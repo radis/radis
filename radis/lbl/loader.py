@@ -51,7 +51,7 @@ key in :py:attr:`radis.config`
 
 import warnings
 from copy import deepcopy
-from os.path import exists, join
+from os.path import exists, expanduser, join
 from time import time
 from uuid import uuid1
 
@@ -1766,7 +1766,7 @@ class DatabankLoader(object):
             path = [path]
 
         # ... Parse all paths and read wildcards
-        path_list = path
+        path_list = [expanduser(p) for p in path]
         new_paths = []
         for pathrg in path_list:
             path = get_files_from_regex(pathrg)
