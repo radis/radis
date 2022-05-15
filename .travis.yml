@@ -20,23 +20,27 @@ jobs:
     - stage: test
       name: Test and Coverage
       install:
+        # Install Mamba (while Micromamba is down)
+        - wget -O Mambaforge.sh <https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-$(uname)-$>(uname -m).sh
+        - bash Mambaforge.sh -b
+        - source mambaforge/bin/activate
         # Install Micromamba
         # We do this conditionally because it saves us some downloading if the
         # version is the same.
-        - wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
-        - ./bin/micromamba shell init -s bash -p ~/micromamba
-        - source ~/.bashrc
-        - micromamba activate base
+        #- wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
+        #- ./bin/micromamba shell init -s bash -p ~/micromamba
+        #- source ~/.bashrc
+        #- micromamba activate base
         # Useful for debugging any issues with conda
-        - micromamba info
+        - mamba info
         # Update python version in environment
         - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
         # Create conda environment
-        - micromamba install xtensor -c conda-forge -y
-        - micromamba create -f environment.yml -y
+        - mamba install xtensor -c conda-forge -y
+        - mamba create -f environment.yml -y
         # Activate and install test-only dependencies
-        - micromamba activate radis-env
-        - micromamba list
+        - mamba activate radis-env
+        - mamba list
         - pip install pytest-cov
         - pip install -e . -v
 
