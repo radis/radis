@@ -2384,6 +2384,7 @@ class Spectrum(object):
         slit_dispersion=None,
         slit_dispersion_threshold=0.01,
         auto_recenter_crop=True,
+        assert_evenly_spaced=True,
         verbose=True,
         inplace=True,
         *args,
@@ -2444,6 +2445,11 @@ class Spectrum(object):
 
         Other Parameters
         ----------------
+        assert_evenly_spaced: boolean, or ``'resample'``
+            for the convolution to be accurate, ``w`` should be evenly spaced. If
+            ``assert_evenly_spaced=True``, then we check this is the case, and raise
+            an error if arrays is not evenly spaced. If ``'resample'``, then we resample
+            ``w`` and ``I`` if needed. Recommended, but it takes some time.
         auto_recenter_crop: bool
             if ``True``, recenter slit and crop zeros on the side when importing
             an experimental slit. Default ``True``.
@@ -2712,7 +2718,7 @@ class Spectrum(object):
                     mode=mode,
                     wunit=waveunit,
                     verbose=verbose,
-                    assert_evenly_spaced=False,
+                    assert_evenly_spaced=assert_evenly_spaced,
                     # assumes Spectrum is correct by construction
                     **kwargsconvolve,
                 )
