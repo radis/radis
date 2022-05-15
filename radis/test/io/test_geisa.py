@@ -46,7 +46,7 @@ def test_local_geisa_co(verbose=True, warnings=True, **kwargs):
     # 2. Check if the parser works correctly
     # Check for accurate parsing of parameters for equilibrium calculations
     assert list(
-        df.loc[3, ["wav", "int", "airbrd", "selbrd", "Pshft", "iso", "mol"]]
+        df.loc[3, ["wav", "int", "airbrd", "selbrd", "Pshft", "isoG", "iso", "mol"]]
     ) == [
         3.747902,
         1.1440e-27,
@@ -54,6 +54,7 @@ def test_local_geisa_co(verbose=True, warnings=True, **kwargs):
         0.086,
         -0.000265,
         27,
+        4,
         5,
     ]
 
@@ -76,7 +77,7 @@ def test_local_geisa_h2o(verbose=True, warnings=True, **kwargs):
     # 2. Check if the parser works correctly
     # Check for accurate parsing of parameters for equilibrium calculations
     assert list(
-        df.loc[3, ["wav", "int", "airbrd", "selbrd", "Pshft", "iso", "mol"]]
+        df.loc[3, ["wav", "int", "airbrd", "selbrd", "Pshft", "isoG", "iso", "mol"]]
     ) == [
         3.412985,
         2.4320e-32,
@@ -84,6 +85,7 @@ def test_local_geisa_h2o(verbose=True, warnings=True, **kwargs):
         0.2214,
         0.000000,
         171,
+        3,
         1,
     ]
 
@@ -106,7 +108,7 @@ def test_local_geisa_co2(verbose=True, warnings=True, **kwargs):
     # 2. Check if the parser works correctly
     # Check for accurate parsing of parameters for equilibrium calculations
     assert list(
-        df.loc[3, ["wav", "int", "airbrd", "selbrd", "Pshft", "iso", "mol"]]
+        df.loc[3, ["wav", "int", "airbrd", "selbrd", "Pshft", "isoG", "iso", "mol"]]
     ) == [
         397.727316,
         4.0280e-29,
@@ -114,6 +116,7 @@ def test_local_geisa_co2(verbose=True, warnings=True, **kwargs):
         0.1019,
         -0.000580,
         626,
+        1,
         2,
     ]
 
