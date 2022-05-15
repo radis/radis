@@ -962,4 +962,5 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    printm("test_broadening: ", _run_testcases(plot=True, verbose=True, debug=False))
+    # printm("test_broadening: ", _run_testcases(plot=True, verbose=True, debug=False))
+    printm("Testing broadening:", pytest.main(["test_broadening.py", "--pdb"]))

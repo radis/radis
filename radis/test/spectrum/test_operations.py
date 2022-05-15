@@ -236,8 +236,9 @@ def test_TestBaseline(plot=False, *args, **kwargs):
 @pytest.mark.fast
 def test_dimensioned_operations(*args, **kwargs):
 
-    import astropy.units as u
     import numpy as np
+
+    import radis.phys.units as u
 
     # Generate the equivalent of an experimental spectrum
     s = load_spec(getTestFile(r"CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
