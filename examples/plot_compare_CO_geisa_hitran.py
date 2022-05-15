@@ -9,9 +9,9 @@ the very first attemps to compare the spectra generated from the two databases.
 
 Auto-download and calculate CO spectrum from the GEISA database, and the HITRAN database.
 
-Output should be similar, but not exactly! By default these two databases provide
-different broadening coefficients. However, the Einstein coefficients & linestrengths
-should be the same, therefore the integrals under the lines should be similar.
+Output should be similar, but not exactly! By default these two databases provide different
+broadening coefficients. However, the Einstein coefficients & linestrengths should be
+approximately the same, therefore the integrals under the lines should be similar.
 
 You can see it by running the code below.
 
