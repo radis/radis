@@ -371,9 +371,15 @@ class BandFactory(BroadenFactory):
             elif self.units["waverange"] == "nm":
                 quantities["wavelength"] = cm2nm_air(wavenumber)
                 conditions["waveunit"] = "nm"
+                conditions[
+                    "waveunit_calc"
+                ] = "cm-1"  # helps apply_slit to generate slit in cm-1; instead of resampling. See https://github.com/radis/radis/pull/467
             elif self.units["waverange"] == "nm_vac":
                 quantities["wavelength"] = cm2nm(wavenumber)
                 conditions["waveunit"] = "nm_vac"
+                conditions[
+                    "waveunit_calc"
+                ] = "cm-1"  # helps apply_slit to generate slit in cm-1; instead of resampling. See https://github.com/radis/radis/pull/467
             else:
                 raise ValueError(self.units["wavespace"])
 
@@ -742,9 +748,15 @@ class BandFactory(BroadenFactory):
             elif self.units["waverange"] == "nm":
                 quantities["wavelength"] = cm2nm_air(wavenumber)
                 conditions["waveunit"] = "nm"
+                conditions[
+                    "waveunit_calc"
+                ] = "cm-1"  # helps apply_slit to generate slit in cm-1; instead of resampling. See https://github.com/radis/radis/pull/467
             elif self.units["waverange"] == "nm_vac":
                 quantities["wavelength"] = cm2nm(wavenumber)
                 conditions["waveunit"] = "nm_vac"
+                conditions[
+                    "waveunit_calc"
+                ] = "cm-1"  # helps apply_slit to generate slit in cm-1; instead of resampling. See https://github.com/radis/radis/pull/467
             else:
                 raise ValueError(self.units["wavespace"])
 

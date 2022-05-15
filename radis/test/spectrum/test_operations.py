@@ -328,6 +328,7 @@ def test_resample_even(*args, **kwargs):
     s.update()
 
     s_nm = s.resample(s.get_wavelength(), "nm", inplace=False)
+    assert s_nm.c["waveunit"] == "nm"
 
     # except failure if applying a slit function:
     with pytest.raises(ValueError) as err:
