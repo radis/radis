@@ -60,7 +60,6 @@ from radis.lbl.labels import (
     vib_lvl_name_hitran_class1,
     vib_lvl_name_hitran_class5,
 )
-from radis.phys.convert import cm2nm, cm2nm_air
 
 try:  # Proper import
     from .loader import KNOWN_DBFORMAT, KNOWN_LVLFORMAT
@@ -359,29 +358,14 @@ class BandFactory(BroadenFactory):
                 add_attr("viblvl_u")
 
             quantities = {
+                "wavenumber": wavenumber,
                 "abscoeff": abscoeff,
                 "absorbance": absorbance,
                 "emissivity_noslit": emissivity_noslit,
                 "transmittance_noslit": transmittance_noslit,
                 "radiance_noslit": radiance_noslit,
             }
-            if self.units["waverange"] == "cm-1":
-                quantities["wavenumber"] = wavenumber
-                conditions["waveunit"] = "cm-1"
-            elif self.units["waverange"] == "nm":
-                quantities["wavelength"] = cm2nm_air(wavenumber)
-                conditions["waveunit"] = "nm"
-                conditions[
-                    "waveunit_calc"
-                ] = "cm-1"  # helps apply_slit to generate slit in cm-1; instead of resampling. See https://github.com/radis/radis/pull/467
-            elif self.units["waverange"] == "nm_vac":
-                quantities["wavelength"] = cm2nm(wavenumber)
-                conditions["waveunit"] = "nm_vac"
-                conditions[
-                    "waveunit_calc"
-                ] = "cm-1"  # helps apply_slit to generate slit in cm-1; instead of resampling. See https://github.com/radis/radis/pull/467
-            else:
-                raise ValueError(self.units["wavespace"])
+            conditions["default_output_unit"] = self.input_wunit
 
             s = Spectrum(
                 quantities=quantities,
@@ -678,9 +662,9 @@ class BandFactory(BroadenFactory):
                 radiance_noslit[b] = emisscoeff[b] * path_length
             else:
                 # Note that for k -> 0,
-                radiance_noslit = emisscoeff * path_length  # (mW/sr/cm2/cm-1)
+                radiance_noslit = emisscoeff * path_length  # (mW/cm2/sr/cm-1)
 
-            # Convert `radiance_noslit` from (mW/sr/cm2/cm-1) to (mW/sr/cm2/nm or something else)
+            # Convert `radiance_noslit` from (mW/sr/cm2/cm-1) to output unit
             radiance_noslit = convert_universal(
                 radiance_noslit,
                 from_unit="mW/cm2/sr/cm-1",
@@ -689,7 +673,7 @@ class BandFactory(BroadenFactory):
                 per_nm_is_like="mW/cm2/sr/nm",
                 per_cm_is_like="mW/cm2/sr/cm-1",
             )
-            # Convert 'emisscoeff' from (mW/sr/cm3/cm-1) to (mW/sr/cm3/nm or something else)
+            # Convert 'emisscoeff' from (mW/sr/cm3/cm-1) to output unit
             emisscoeff = convert_universal(
                 emisscoeff,
                 from_unit="mW/cm3/sr/cm-1",
@@ -736,29 +720,14 @@ class BandFactory(BroadenFactory):
             add_attr("viblvl_u")
 
             quantities = {
+                "wavenumber": wavenumber,
                 "abscoeff": abscoeff,
                 "absorbance": absorbance,
                 "emisscoeff": emisscoeff,
                 "transmittance_noslit": transmittance_noslit,
                 "radiance_noslit": radiance_noslit,
             }
-            if self.units["waverange"] == "cm-1":
-                quantities["wavenumber"] = wavenumber
-                conditions["waveunit"] = "cm-1"
-            elif self.units["waverange"] == "nm":
-                quantities["wavelength"] = cm2nm_air(wavenumber)
-                conditions["waveunit"] = "nm"
-                conditions[
-                    "waveunit_calc"
-                ] = "cm-1"  # helps apply_slit to generate slit in cm-1; instead of resampling. See https://github.com/radis/radis/pull/467
-            elif self.units["waverange"] == "nm_vac":
-                quantities["wavelength"] = cm2nm(wavenumber)
-                conditions["waveunit"] = "nm_vac"
-                conditions[
-                    "waveunit_calc"
-                ] = "cm-1"  # helps apply_slit to generate slit in cm-1; instead of resampling. See https://github.com/radis/radis/pull/467
-            else:
-                raise ValueError(self.units["wavespace"])
+            conditions["default_output_unit"] = self.input_wunit
 
             s = Spectrum(
                 quantities=quantities,

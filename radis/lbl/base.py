@@ -3526,11 +3526,13 @@ def get_wavenumber_range(
     -------
     wavenum_min, wavenum_max: float
         wavenumbers
-    input_wunit: 'wavelength', 'wavenumber'
-        in which wavespace was the input given before conversion.
+    input_wunit: 'nm', 'nm_vac', 'cm-1'
+        in which wavespace was the input given before conversion (used to keep
+        default plot/get consistent with input units)
     """
 
     # Checking consistency of all input variables
+    assert medium in ["air", "vacuum"]
 
     w_present = wmin is not None and wmax is not None
     wavenum_present = wavenum_min is not None and wavenum_max is not None
@@ -3651,6 +3653,14 @@ def get_wavenumber_range(
             wavenum_max = nm2cm(wavelength_min)
 
     if return_input_wunit:
+        # get cm-1, nm, nm_vac
+        if input_wunit == "wavenumber":
+            input_wunit = "cm-1"
+        else:
+            assert input_wunit == "wavelength"
+            input_wunit = "nm" if medium == "air" else "nm_vac"
+
+        assert input_wunit in ["cm-1", "nm", "nm_vac"]
         return wavenum_min, wavenum_max, input_wunit
     else:
         return wavenum_min, wavenum_max

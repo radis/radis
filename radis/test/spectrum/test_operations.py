@@ -10,16 +10,7 @@ import pytest
 
 from radis.los import MergeSlabs, SerialSlabs
 from radis.spectrum.compare import get_diff, plot_diff
-from radis.spectrum.operations import (
-    Radiance,
-    Radiance_noslit,
-    Transmittance_noslit,
-    add_constant,
-    crop,
-    multiply,
-    offset,
-    sub_baseline,
-)
+from radis.spectrum.operations import add_constant, crop, multiply, offset, sub_baseline
 from radis.test.utils import getTestFile
 from radis.tools.database import load_spec
 
@@ -78,35 +69,34 @@ def test_cut_recombine(verbose=True, *args, **kwargs):
 @pytest.mark.fast
 def test_invariants(*args, **kwargs):
     """Ensures adding 0 or multiplying by 1 does not change the spectra"""
-    from radis import load_spec
-    from radis.test.utils import getTestFile
 
     s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"))
-    s.update()
-    s = Radiance_noslit(s)
+    s = s.take("radiance_noslit")
 
     assert s.compare_with(
         add_constant(s, 0, "W/cm2/sr/nm"), plot=False, spectra_only="radiance_noslit"
     )
     assert s.compare_with(multiply(s, 1), plot=False, spectra_only="radiance_noslit")
+    assert (s + 0) == s
 
     assert 3 * s / 3 == s
     assert (1 + s) - 1 == s
+
+    assert s.max().value == s._q["radiance_noslit"].max()
 
 
 @pytest.mark.fast
 def test_operations_inplace(verbose=True, *args, **kwargs):
 
-    from radis.spectrum.operations import Radiance_noslit
+    from radis.phys.units import Unit
 
     s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
-    s.update("radiance_noslit", verbose=False)
-    s = Radiance_noslit(s)
+    s = s.take("radiance_noslit")
 
     # Add 1, make sure it worked
-    I_max = s.get("radiance_noslit")[1].max()
-    s += 1
-    assert s.get("radiance_noslit")[1].max() == I_max + 1
+    I_max = s.get("radiance_noslit", Iunit="mW/cm2/sr/nm")[1].max()
+    s += 1 * Unit("mW/cm2/sr/nm")
+    assert s.get("radiance_noslit", Iunit="mW/cm2/sr/nm")[1].max() == I_max + 1
     if verbose:
         print("test_operations: s += 1: OK")
 
@@ -149,11 +139,11 @@ def test_multiplyAndAddition(verbose=True, plot=False, *args, **kwargs):
     s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
     s.update("radiance_noslit", verbose=False)
     s.apply_slit(0.1)
-    s = Radiance(s)
+    s = s.take("radiance")
     assert s.units["radiance"] == "mW/cm2/sr/nm"
 
     s_bis = add_constant(s, 1, "mW/cm2/sr/nm")
-    w, Idiff = get_diff(s_bis, s, "radiance")
+    w, Idiff = get_diff(s_bis, s, "radiance", Iunit="mW/cm2/sr/nm")
     test = Idiff[1] - 1
     assert np.all(test < 1e-10)
 
@@ -194,7 +184,7 @@ def test_other_algebraic_operations(verbose=True, plot=False, *args, **kwargs):
     (s // s).plot(nfig="same")
 
     # Test substraction of Spectra
-    s_tr = Transmittance_noslit(s)
+    s_tr = s.take("transmittance_noslit")
     assert (s_tr - 1.0 * s_tr).get_integral("transmittance_noslit") == 0
 
     # TODO: add test
@@ -208,7 +198,7 @@ def test_other_algebraic_operations(verbose=True, plot=False, *args, **kwargs):
         2 * s
 
     s.apply_slit(0.1, "nm")
-    s_rad = Radiance(s)
+    s_rad = s.take("radiance")
 
     # Test multiplication with float
     s.plot(lw=2, nfig="Multiplication (by scalar): 2*s", wunit="nm")
@@ -233,7 +223,7 @@ def test_TestBaseline(plot=False, *args, **kwargs):
     s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
     s.update("radiance_noslit", verbose=False)
     s.apply_slit(0.1)
-    s = Radiance_noslit(s)
+    s = s.take("radiance_noslit")
     assert s.units["radiance"] == "mW/cm2/sr/nm"
 
     s2 = sub_baseline(s, 2e-4, -2e-4)
@@ -249,29 +239,29 @@ def test_dimensioned_operations(*args, **kwargs):
     import astropy.units as u
     import numpy as np
 
-    from radis import Radiance, load_spec
-    from radis.spectrum import sub_baseline
-    from radis.test.utils import getTestFile
-
     # Generate the equivalent of an experimental spectrum
     s = load_spec(getTestFile(r"CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
     s.update()  # add radiance, etc.
     s.apply_slit(0.5)  # nm
-    s = Radiance(s)
+    s = s.take("radiance")
 
     # Test
     assert s.units["radiance"] == "mW/cm2/sr/nm"
-    Imax = s.get("radiance", trim_nan=True)[1].max()
+    Imax = s.get("radiance", Iunit="mW/cm2/sr/nm", trim_nan=True)[1].max()
 
     # add a baseline
     s += 0.1 * u.Unit("W/cm2/sr/nm")
 
-    assert np.isclose(s.get("radiance", trim_nan=True)[1].max(), Imax + 100)
+    assert np.isclose(
+        s.get("radiance", Iunit="mW/cm2/sr/nm", trim_nan=True)[1].max(), Imax + 100
+    )
 
     # remove a baseline (we could also have used s=-0.1, but we're testing another function here)
     s = sub_baseline(s, 0.1 * u.Unit("W/cm2/sr/nm"), 0.1 * u.Unit("W/cm2/sr/nm"))
 
-    assert np.isclose(s.get("radiance", trim_nan=True)[1].max(), Imax)
+    assert np.isclose(
+        s.get("radiance", Iunit="mW/cm2/sr/nm", trim_nan=True)[1].max(), Imax
+    )
 
     # Test division
     # Example : a manual normalization
@@ -293,9 +283,6 @@ def test_dimensioned_operations(*args, **kwargs):
 
 @pytest.mark.fast
 def test_get_baseline(plot=False, *args, **kwargs):
-
-    from radis import load_spec
-    from radis.test.utils import getTestFile
 
     s = load_spec(getTestFile(r"CO2_measured_spectrum_4-5um.spec"), binary=True)
 
@@ -320,9 +307,6 @@ def test_resample_even(*args, **kwargs):
     """Test :py:meth:`~radis.spectrum.spectrum.Spectrum.resample_even` ,
     and that :py:meth:`~radis.spectrum.spectrum.Spectrum.apply_slit` properly fails
     if Spectrum is not evenly distributed"""
-
-    from radis import load_spec
-    from radis.test.utils import getTestFile
 
     s = load_spec(getTestFile(r"CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
     s.update()

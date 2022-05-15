@@ -510,14 +510,14 @@ def test_get_wavenumber_range(*args, **kwargs):
 
     assert get_wavenumber_range(
         1 * u.um, 10 * u.um, medium="vacuum", return_input_wunit=True
-    ) == (1000, 10000, "wavelength")
+    ) == (1000, 10000, "nm_vac")
 
     # 'wunit' is none
     # ...'wmin/wmax' is none
     # ...... wavenumber is passed > should return the same wavenumbers
     assert get_wavenumber_range(
         wavenum_min=10, wavenum_max=20, wunit=Default("cm-1"), return_input_wunit=True
-    ) == (10, 20, "wavenumber")
+    ) == (10, 20, "cm-1")
 
     # ...... wavelength is passed > should convert and return the wavenumbers
     assert np.isclose(
@@ -730,9 +730,12 @@ def test_get_wavenumber_range(*args, **kwargs):
         get_wavenumber_range(wmin=1 * u.cm, wmax=2 * u.cm, wunit="cm-1")
 
 
-def test_input_wunit(*args, **kwargs):
+def test_input_wunit(plot=True, *args, **kwargs):
     """Test spectrum default units are properly when giving inputs in wavenumber
     or wavelength ; and test that intensity units are consistent too"""
+
+    if not plot:
+        raise ValueError("This test requires plotting")
 
     import matplotlib.pyplot as plt
 
@@ -748,6 +751,8 @@ def test_input_wunit(*args, **kwargs):
     assert s_from_wavenumber.units["radiance_noslit"] == "mW/cm2/sr/cm-1"
 
     #%%
+    # Compute the same spectrum, but with wavelength input (and compare that
+    # areas are the same at the end)
     wmin = s_from_wavenumber.get_wavelength().min()
     wmax = s_from_wavenumber.get_wavelength().max()
 
@@ -758,7 +763,8 @@ def test_input_wunit(*args, **kwargs):
 
     import matplotlib.pyplot as plt
 
-    assert s_fromwl.c["waveunit"] == "nm"
+    assert s_fromwl.c["waveunit"] == "cm-1"  # calculation unit
+    assert s_fromwl.c["default_output_unit"] == "nm"  # default get/plot unit
     assert plt.gca().get_xlabel() == "Wavelength (nm)"
     assert plt.gca().get_ylabel() == "radiance (mW/cm²/sr/nm)"
 
@@ -782,9 +788,23 @@ def test_input_wunit(*args, **kwargs):
     # TODO: change assertion with equality once #460 is fixed
     assert np.isclose(s_from_wavenumber.get_power(), s_fromwl.get_power(), rtol=1e-4)
 
+    # Check algebra & line-of-sight work
+    (s_from_wavenumber // s_fromwl).plot()
+    (s_from_wavenumber > s_fromwl).plot()
+    (
+        s_from_wavenumber.take("radiance_noslit") + s_fromwl.take("radiance_noslit")
+    ).plot()
+    assert np.isclose(
+        (
+            s_from_wavenumber.take("radiance_noslit") + s_fromwl.take("radiance_noslit")
+        ).max(),
+        2 * s_from_wavenumber.take("radiance_noslit").max(),
+    )
+
 
 def _run_testcases(verbose=True, plot=True):
 
+    test_input_wunit()
     test_linestrength_calculations()
     test_export_populations(plot=plot, verbose=verbose)
     test_export_rovib_fractions(plot=plot, verbose=verbose)
@@ -792,7 +812,6 @@ def _run_testcases(verbose=True, plot=True):
     test_optically_thick_limit_1iso(plot=plot, verbose=verbose)
     test_optically_thick_limit_2iso(plot=plot, verbose=verbose)
     test_get_wavenumber_range()
-    test_input_wunit()
 
 
 if __name__ == "__main__":

@@ -596,9 +596,9 @@ def _calc_spectrum_one_molecule(
 
     Parameters
     ----------
-    input_wunit: 'wavelength', 'wavenumber'
-        know if user initially gave inputs in wavelength or wavenumber, so as
-        to keep consistent output units
+    input_wunit: 'nm', 'nm_vac', 'cm-1'
+        in which wavespace was the input given before conversion (used to keep
+        default plot/get consistent with input units)
     """
 
     # Initialize Factory
@@ -667,21 +667,7 @@ def _calc_spectrum_one_molecule(
         **kwargs,
     )
     # Have consistent output units
-    if input_wunit == "wavenumber":
-        assert sf.units["emisscoeff"] == "mW/cm3/sr/cm-1"
-        assert sf.units["radiance_noslit"] == "mW/cm2/sr/cm-1"
-        assert sf.units["waverange"] == "cm-1"
-    elif input_wunit == "wavelength":
-        sf.units["emisscoeff"] = "mW/cm3/sr/nm"
-        sf.units["radiance_noslit"] = "mW/cm2/sr/nm"
-        if medium == "air":
-            sf.units["waverange"] = "nm"
-        elif medium == "vacuum":
-            sf.units["waverange"] = "nm_vac"
-        else:
-            raise ValueError(medium)
-    else:
-        raise ValueError(input_wunit)
+    sf.input_wunit = input_wunit
 
     # Load databank
     # -------------

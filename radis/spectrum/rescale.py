@@ -665,18 +665,27 @@ def rescale_abscoeff(
     # First get initial abscoeff
     # ---------------------
     if "abscoeff" in initial:
-        _, abscoeff_init = spec.get("abscoeff", wunit=wunit)
+        _, abscoeff_init = spec.get(
+            "abscoeff", wunit=wunit, Iunit=spec.units["abscoeff"], copy=False
+        )
     elif "absorbance" in initial and true_path_length:  # aka: true path_lengths given
         if __debug__:
             printdbg("... rescale: abscoeff k_1 = A_1/L_1")
-        _, A = spec.get("absorbance", wunit=wunit)
+        _, A = spec.get(
+            "absorbance", wunit=wunit, Iunit=spec.units["absorbance"], copy=False
+        )
         abscoeff_init = A / old_path_length  # recalculate initial
         unit = "cm-1"
     elif "transmittance_noslit" in initial and true_path_length:
         if __debug__:
             printdbg("... rescale: abscoeff k_1 = -ln(T_1)/L_1")
         # Get abscoeff from transmittance
-        _, T1 = spec.get("transmittance_noslit", wunit=wunit)
+        _, T1 = spec.get(
+            "transmittance_noslit",
+            wunit=wunit,
+            Iunit=spec.units["transmittance_noslit"],
+            copy=False,
+        )
 
         # We'll have a problem if the spectrum is optically thick
         b = T1 == 0  # no transmittance: optically thick mask
@@ -817,13 +826,11 @@ def rescale_emisscoeff(
 
     Parameters
     ----------
-
     spec: Spectrum
 
 
     References
     ----------
-
     If optically thin, compute from the radiance :
 
     .. math::
@@ -854,11 +861,14 @@ def rescale_emisscoeff(
 
     unit = None
 
-    def get_unit(unit_radiance):
+    def get_emisscoeff_unit(unit_radiance):
+        """Basically, convert "/cm2" to "/cm3"""
         if "/cm2" in unit_radiance:
             return unit_radiance.replace("/cm2", "/cm3")
         else:
-            return unit_radiance + "/cm"  # will be simplified by Pint afterwards
+            return (
+                unit_radiance + "/cm"
+            )  # will be simplified by Pint/Astropy.units afterwards
 
     # case where we recomputed it already (somehow... ex: no_change signaled)
     if "emisscoeff" in rescaled:
@@ -874,22 +884,24 @@ def rescale_emisscoeff(
         if __debug__:
             printdbg("... rescale: emisscoeff j1 = j1")
         _, emisscoeff_init = spec.get(
-            "emisscoeff", wunit=wunit, Iunit=units["emisscoeff"]
+            "emisscoeff", wunit=wunit, Iunit=units["emisscoeff"], copy=False
         )
 
     elif "radiance_noslit" in initial and true_path_length and optically_thin:
         if __debug__:
             printdbg("... rescale: emisscoeff j_1 = I_1/L_1")
-        _, I = spec.get("radiance_noslit", wunit=wunit, Iunit=units["radiance_noslit"])
+        _, I = spec.get(
+            "radiance_noslit", wunit=wunit, Iunit=units["radiance_noslit"], copy=False
+        )
         emisscoeff_init = I / old_path_length  # recalculate initial
-        unit = get_unit(units["radiance_noslit"])
+        unit = get_emisscoeff_unit(units["radiance_noslit"])
 
     elif "radiance_noslit" in initial and true_path_length and "abscoeff" in initial:
         if __debug__:
             printdbg("... rescale: emisscoeff j_1 = k_1*I_1/(1-exp(-k_1*L_1))")
         # get emisscoeff from (initial) abscoeff and (initial) radiance
         _, I = spec.get("radiance_noslit", wunit=wunit, Iunit=units["radiance_noslit"])
-        _, k = spec.get("abscoeff", wunit=wunit, Iunit=units["abscoeff"])
+        _, k = spec.get("abscoeff", wunit=wunit, Iunit=units["abscoeff"], copy=False)
 
         # Recalculate in the optically thin range (T=1) and elsewhere
         b = k == 0  # optically thin mask
@@ -904,7 +916,7 @@ def rescale_emisscoeff(
         # ... and solve the RTE on an homogeneous slab
         # recalculate (non opt thin)
         emisscoeff_init[~b] = k[~b] * I[~b] / (1 - T_b)
-        unit = get_unit(units["radiance_noslit"])
+        unit = get_emisscoeff_unit(units["radiance_noslit"])
 
     elif (
         "radiance_noslit" in initial
@@ -933,7 +945,7 @@ def rescale_emisscoeff(
         # ... and solve the RTE on an homogeneous slab
         # recalculate (non opt thin)
         emisscoeff_init[~b] = k_b * I[~b] / (1 - T_b)
-        unit = get_unit(units["radiance_noslit"])
+        unit = get_emisscoeff_unit(units["radiance_noslit"])
 
     else:
         if optically_thin:
@@ -1001,12 +1013,10 @@ def rescale_absorbance(
 
     Parameters
     ----------
-
     spec: Spectrum
 
     References
     ----------
-
     Rescale the absorbance:
 
     .. math::
@@ -1054,7 +1064,7 @@ def rescale_absorbance(
         if __debug__:
             printdbg("... rescale: absorbance A_2 = A_1*(x_2/x_1)*(L_2/L_1)")
         _, absorbance = spec.get(
-            "absorbance", wunit=waveunit, Iunit=units["absorbance"]
+            "absorbance", wunit=waveunit, Iunit=units["absorbance"], copy=True
         )
         absorbance *= new_mole_fraction / old_mole_fraction  # rescale x
         absorbance *= new_path_length / old_path_length  # rescale L
@@ -1071,7 +1081,12 @@ def rescale_absorbance(
         if __debug__:
             printdbg("... rescale: absorbance A_2 = -ln(T1)*(x_2/x_1)*(L_2/L_1)")
         # Get absorbance from transmittance
-        _, T1 = spec.get("transmittance_noslit", wunit=waveunit)
+        _, T1 = spec.get(
+            "transmittance_noslit",
+            wunit=waveunit,
+            Iunit=units["transmittance_noslit"],
+            copy=False,
+        )
 
         # We'll have a problem if the spectrum is optically thick
         b = T1 == 0  # no transmittance: optically thick mask
@@ -1133,13 +1148,11 @@ def rescale_transmittance_noslit(
 
     Parameters
     ----------
-
     spec: Spectrum
 
 
     References
     ----------
-
     Compute from the absorbance :
 
     .. math::
@@ -1208,7 +1221,10 @@ def rescale_transmittance_noslit(
             )
         # get transmittance from initial transmittance
         _, T1 = spec.get(
-            "transmittance_noslit", wunit=waveunit, Iunit=units["transmittance_noslit"]
+            "transmittance_noslit",
+            wunit=waveunit,
+            Iunit=units["transmittance_noslit"],
+            copy=False,
         )
 
         # We'll have a problem if the spectrum is optically thick
@@ -1268,7 +1284,6 @@ def rescale_transmittance(
 
     Parameters
     ----------
-
     spec: Spectrum
     """
 
@@ -1313,13 +1328,11 @@ def rescale_radiance_noslit(
 
     Parameters
     ----------
-
     spec: Spectrum
 
 
     References
     ----------
-
     If optically thin, calculate from the emission coefficient :
 
     .. math::
@@ -1432,7 +1445,7 @@ def rescale_radiance_noslit(
                 + "(optically thin)"
             )
         _, radiance_noslit = spec.get(
-            "radiance_noslit", wunit=waveunit, Iunit=units["radiance_noslit"]
+            "radiance_noslit", wunit=waveunit, Iunit=units["radiance_noslit"], copy=True
         )
         radiance_noslit *= new_mole_fraction / old_mole_fraction  # rescale
         radiance_noslit *= new_path_length / old_path_length  # rescale

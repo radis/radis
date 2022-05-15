@@ -516,17 +516,21 @@ def get_default_units(
         s1.get(var)
     if var not in s2.get_vars():
         s2.get(var)
+    if wunit == "default":
+        wunit = s1.get_waveunit()
+    wunit = cast_waveunit(wunit)
     if Iunit == "default":
         try:
-            Iunit = s1.units[var]
+            s1.units[var]
         except KeyError:  # unit not defined in dictionary
             raise KeyError(
                 "Iunit not defined in spectrum for variable {0}. ".format(var)
                 + "Cant use default unit. Specify unit in s.units['{0}'].".format(var)
             )
-    if wunit == "default":
-        wunit = s1.get_waveunit()
-    wunit = cast_waveunit(wunit)
+        # get default (note that defaut "Iunit" may depend on waveunit used. Let s.get() handle this)
+        _, _, _, Iunit = s1.get(
+            var, wunit=wunit, Iunit="default", copy=False, return_units="as_str"
+        )
 
     return var, wunit, Iunit
 
@@ -1187,7 +1191,7 @@ def compare_spectra(
             for error message
         """
 
-        from pandas.util.testing import assert_frame_equal
+        from pandas.testing import assert_frame_equal
 
         try:
             assert_frame_equal(
@@ -1254,8 +1258,8 @@ def compare_spectra(
         # Compare spectral arrays
         # -----------
         for k in vars:
-            w, q = first.get(k, wunit=wunit)
-            w0, q0 = other.get(k, wunit=wunit)
+            w, q = first.get(k, wunit=wunit, Iunit=first.units[k])
+            w0, q0 = other.get(k, wunit=wunit, Iunit=first.units[k])
             if len(w) != len(w0):
                 print(
                     "Wavespaces have different length (for {0}: {1} vs {2})".format(
@@ -1305,8 +1309,8 @@ def compare_spectra(
         # Compare spectral variables
         # -----------
         for k in vars:
-            w, q = first.get(k, wunit=wunit)
-            w0, q0 = other.get(k, wunit=wunit)
+            w, q = first.get(k, wunit=wunit, Iunit=first.units[k])
+            w0, q0 = other.get(k, wunit=wunit, Iunit=first.units[k])
             if len(w) != len(w0):
                 print(
                     "Wavespaces have different length (for {0}: {1} vs {2})".format(

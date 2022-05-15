@@ -88,7 +88,6 @@ from scipy.optimize import OptimizeResult
 from radis import version
 from radis.db import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
 from radis.db.classes import get_molecule, get_molecule_identifier
-from radis.phys.convert import cm2nm, cm2nm_air
 
 try:  # Proper import
     from .bands import BandFactory
@@ -471,27 +470,10 @@ class SpectrumFactory(BandFactory):
             medium,
             return_input_wunit=True,
         )
-        # ... Make default output units consistent with the input waverange
+        # ... Make default Spectrum's output unit consistent with the input waverange
         # ... see https://github.com/radis/radis/issues/456
         # (note: may be overwritten by user after Factory creation)
-        if input_wunit == "wavelength":
-            self.units["emisscoeff"] = "mW/cm3/sr/nm"
-            self.units["radiance_noslit"] = "mW/cm2/sr/nm"
-            if medium == "air":
-                self.units["waverange"] = "nm"
-            elif medium == "vacuum":
-                self.units["waverange"] = "nm_vac"
-            else:
-                raise ValueError(medium)
-        else:
-            assert input_wunit == "wavenumber"
-            assert (
-                self.units["emisscoeff"] == "mW/cm3/sr/cm-1"
-            )  # default in BaseFactory.units
-            assert (
-                self.units["radiance_noslit"] == "mW/cm2/sr/cm-1"
-            )  # default in BaseFactory.units
-            assert self.units["waverange"] == "cm-1"
+        self.input_wunit = input_wunit
 
         # Storing inital value of wstep if wstep != "auto"
         self._wstep = wstep
@@ -897,6 +879,7 @@ class SpectrumFactory(BandFactory):
 
         # Spectral quantities
         quantities = {
+            "wavenumber": wavenumber,
             "abscoeff": abscoeff,
             "absorbance": absorbance,
             "emissivity_noslit": emissivity_noslit,
@@ -905,23 +888,7 @@ class SpectrumFactory(BandFactory):
         }
         if I_continuum is not None and self._export_continuum:
             quantities.update({"abscoeff_continuum": I_continuum * density})
-        if self.units["waverange"] == "cm-1":
-            quantities["wavenumber"] = wavenumber
-            conditions["waveunit"] = "cm-1"
-        elif self.units["waverange"] == "nm":
-            quantities["wavelength"] = cm2nm_air(wavenumber)
-            conditions["waveunit"] = "nm"
-            conditions[
-                "waveunit_calc"
-            ] = "cm-1"  # helps apply_slit to generate slit in cm-1; instead of resampling. See https://github.com/radis/radis/pull/467
-        elif self.units["waverange"] == "nm_vac":
-            quantities["wavelength"] = cm2nm(wavenumber)
-            conditions["waveunit"] = "nm_vac"
-            conditions[
-                "waveunit_calc"
-            ] = "cm-1"  # helps apply_slit to generate slit in cm-1; instead of resampling. See https://github.com/radis/radis/pull/467
-        else:
-            raise ValueError(self.units["wavespace"])
+        conditions["default_output_unit"] = self.input_wunit
 
         # Store results in Spectrum class
         s = Spectrum(
@@ -1242,6 +1209,7 @@ class SpectrumFactory(BandFactory):
 
         # Spectral quantities
         quantities = {
+            "wavenumber": wavenumber,
             "abscoeff": abscoeff,
             "absorbance": absorbance,
             "emissivity": emissivity,
@@ -1250,23 +1218,7 @@ class SpectrumFactory(BandFactory):
             "radiance_noslit": radiance_noslit,
             "transmittance": transmittance,
         }
-        if self.units["waverange"] == "cm-1":
-            quantities["wavenumber"] = wavenumber
-            conditions["waveunit"] = "cm-1"
-        elif self.units["waverange"] == "nm":
-            quantities["wavelength"] = cm2nm_air(wavenumber)
-            conditions["waveunit"] = "nm"
-            conditions[
-                "waveunit_calc"
-            ] = "cm-1"  # helps apply_slit to generate slit in cm-1; instead of resampling. See https://github.com/radis/radis/pull/467
-        elif self.units["waverange"] == "nm_vac":
-            quantities["wavelength"] = cm2nm(wavenumber)
-            conditions["waveunit"] = "nm_vac"
-            conditions[
-                "waveunit_calc"
-            ] = "cm-1"  # helps apply_slit to generate slit in cm-1; instead of resampling. See https://github.com/radis/radis/pull/467
-        else:
-            raise ValueError(self.units["wavespace"])
+        conditions["default_output_unit"] = self.input_wunit
 
         # Store results in Spectrum class
         s = Spectrum(
@@ -1717,9 +1669,9 @@ class SpectrumFactory(BandFactory):
             radiance_noslit[b] = emisscoeff[b] * path_length
         else:
             # Note that for k -> 0,
-            radiance_noslit = emisscoeff * path_length  # (mW/sr/cm2/cm-1)
+            radiance_noslit = emisscoeff * path_length  # (mW/cm2/sr/cm-1)
 
-        # Convert `radiance_noslit` from (mW/sr/cm2/cm-1) to (mW/sr/cm2/nm or something else)
+        # Convert `radiance_noslit` from (mW/sr/cm2/cm-1) to output unit
         radiance_noslit = convert_universal(
             radiance_noslit,
             from_unit="mW/cm2/sr/cm-1",
@@ -1728,7 +1680,7 @@ class SpectrumFactory(BandFactory):
             per_nm_is_like="mW/cm2/sr/nm",
             per_cm_is_like="mW/cm2/sr/cm-1",
         )
-        # Convert 'emisscoeff' from (mW/sr/cm3/cm-1) to (mW/sr/cm3/nm or something else)
+        # Convert 'emisscoeff' from (mW/sr/cm3/cm-1) to output unit
         emisscoeff = convert_universal(
             emisscoeff,
             from_unit="mW/cm3/sr/cm-1",
@@ -1791,6 +1743,7 @@ class SpectrumFactory(BandFactory):
 
         # Spectral quantities
         quantities = {
+            "wavenumber": wavenumber,
             "abscoeff": abscoeff,
             "absorbance": absorbance,
             "emisscoeff": emisscoeff,
@@ -1800,27 +1753,11 @@ class SpectrumFactory(BandFactory):
         if k_continuum is not None and self._export_continuum:
             quantities.update(
                 {
-                    "abscoeff_continuum": (wavenumber, k_continuum * density),
-                    "emisscoeff_continuum": (wavenumber, j_continuum * density),
+                    "abscoeff_continuum": k_continuum * density,
+                    "emisscoeff_continuum": j_continuum * density,
                 }
             )
-        if self.units["waverange"] == "cm-1":
-            quantities["wavenumber"] = wavenumber
-            conditions["waveunit"] = "cm-1"
-        elif self.units["waverange"] == "nm":
-            quantities["wavelength"] = cm2nm_air(wavenumber)
-            conditions["waveunit"] = "nm"
-            conditions[
-                "waveunit_calc"
-            ] = "cm-1"  # helps apply_slit to generate slit in cm-1; instead of resampling. See https://github.com/radis/radis/pull/467
-        elif self.units["waverange"] == "nm_vac":
-            quantities["wavelength"] = cm2nm(wavenumber)
-            conditions["waveunit"] = "nm_vac"
-            conditions[
-                "waveunit_calc"
-            ] = "cm-1"  # helps apply_slit to generate slit in cm-1; instead of resampling. See https://github.com/radis/radis/pull/467
-        else:
-            raise ValueError(self.units["wavespace"])
+        conditions["default_output_unit"] = self.input_wunit
 
         # Store results in Spectrum class
         s = Spectrum(

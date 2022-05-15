@@ -281,6 +281,10 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
                 conditions[cond] = s.conditions[cond] + sn.conditions[cond]
                 if cond in s.cond_units and cond in sn.cond_units:
                     assert s.cond_units == sn.cond_units
+        # ... for the parmaeters below, if N/A, remove the value
+        for cond in ["default_output_unit"]:
+            if cond in conditions and conditions[cond] == "N/A":
+                conditions.pop(cond)
         cond_units = intersect(s.cond_units, sn.cond_units)
 
         # Update references
@@ -425,7 +429,7 @@ def resample_slabs(
         # defined on the same range)
         slabsk = [s for s in slabs if k in s.get_vars()]  # note that these are
         # references to the actual Spectrum copy
-        wl = [s.get(k, wunit=waveunit, copy=False)[0] for s in slabsk]
+        wl = [s.get(k, wunit=waveunit, Iunit=s.units[k], copy=False)[0] for s in slabsk]
         if not same_wavespace(wl):
             # resample slabs if allowed
             if resample_wavespace == "never":
@@ -666,6 +670,10 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
             conditions = intersect(conditions, s.conditions)
             cond_units = intersect(cond_units, s.cond_units)
             # units = intersect(units0, s.units)  # we're actually using [slabs0].units insteads
+        # ... for the parmaeters below, if N/A, remove the value
+        for cond in ["default_output_unit"]:
+            if cond in conditions and conditions[cond] == "N/A":
+                conditions.pop(cond)
         # ... Add extensive parameters
         for cond in ["molecule"]:  # list of all
             if in_all(cond, [s.conditions for s in slabs]):
