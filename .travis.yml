@@ -56,6 +56,9 @@ jobs:
         - pip install codecov
         - codecov
 
+      before_script:
+        - export MPLBACKEND=Agg
+
     - stage: lint
       name: Code Quality Checks
       install:
