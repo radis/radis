@@ -178,6 +178,10 @@ class HDF5Manager(object):
         file = expanduser(file)
         if self.engine == "vaex":
             if len(self._temp_batch_files) == 0:
+                # No temp file created. File is probably already created (append=False mode)
+                # Else, something unexpected happens --> raise error
+                if exists(file):
+                    return
                 raise ValueError(f"No batch temp files were written for {file}")
             if key == "default":
                 key = r"/table"
