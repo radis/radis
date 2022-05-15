@@ -50,7 +50,7 @@ from numpy import sqrt, trapz
 from scipy.interpolate import splev, splrep
 from scipy.signal import oaconvolve
 
-from radis.misc.arrays import anynan, evenly_distributed
+from radis.misc.arrays import anynan, evenly_distributed, evenly_distributed_fast
 from radis.misc.basics import is_float
 from radis.misc.debug import printdbg
 from radis.misc.signal import resample_even
@@ -674,19 +674,23 @@ def convolve_with_slit(
     #    evenly spaced
     # --------------
 
-    # ... Resample if not evenly spaced
-    # TODO: add a criteria based based on FWHM rather than absolute?
-    wstep = abs(np.diff(w)).min()  # spectrum wavelength spacing
-    if assert_evenly_spaced and not evenly_distributed(w, tolerance=wstep * 1e-3):
+    # check first & last spacing, always :
+    is_evenly_spaced = evenly_distributed_fast(w, rtolerance=1e-3)
+    wstep = w[1] - w[0]
+
+    # ... check with details
+    if is_evenly_spaced and assert_evenly_spaced:
+        wstep = abs(np.diff(w)).min()  # spectrum wavelength spacing
+        is_evenly_spaced = evenly_distributed(w, atolerance=wstep * 1e-3)
+
+    if not is_evenly_spaced:
         if assert_evenly_spaced == "resample":
-            # TODO: automatically find a resampling factor?
-            warn("Spectrum not evenly spaced. Resampling")
             w, I = resample_even(w, I, resfactor=2, print_conservation=True)
             wstep = abs(np.diff(w)).min()  # new spectrum wavelength spacing
-        else:
-            raise ValueError(
-                "Spectrum is not evenly spaced. Cannot apply slit function. Please resample with `s.resample()` or by using `s.apply_slit(..., assert_evenly_spaced='resample')` "
-            )
+
+        raise ValueError(
+            "Spectrum is not evenly spaced. Cannot apply slit function. Please resample with `convolve_with_slit(..., convolve_with_slit='resample')` ; or if using a Spectrum object `s`, with `s.resample_even()`"
+        )
 
     # ... Check that the slit is not reversed (interpolation requires objects are sorted)
     reverse = w_slit[-1] < w_slit[0]

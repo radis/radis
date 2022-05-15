@@ -315,6 +315,35 @@ def test_get_baseline(plot=False, *args, **kwargs):
         plt.legend()
 
 
+@pytest.mark.fast
+def test_resample_even(*args, **kwargs):
+    """Test :py:meth:`~radis.spectrum.spectrum.Spectrum.resample_even` ,
+    and that :py:meth:`~radis.spectrum.spectrum.Spectrum.apply_slit` properly fails
+    if Spectrum is not evenly distributed"""
+
+    from radis import load_spec
+    from radis.test.utils import getTestFile
+
+    s = load_spec(getTestFile(r"CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
+    s.update()
+
+    s_nm = s.resample(s.get_wavelength(), "nm", inplace=False)
+
+    # except failure if applying a slit function:
+    with pytest.raises(ValueError) as err:
+        s_nm.apply_slit(1.5, "nm")
+        assert "Spectrum is not evenly spaced" in str(err)
+
+    # test that it works after resampling :
+    s_nm.resample_even()
+    s_nm.apply_slit(1.5, "nm")
+
+    from radis.misc.arrays import evenly_distributed, evenly_distributed_fast
+
+    assert evenly_distributed(s_nm.get_wavelength())
+    assert evenly_distributed_fast(s_nm.get_wavelength())
+
+
 def _run_testcases(verbose=True, plot=False, *args, **kwargs):
     """Test procedures"""
 
@@ -329,6 +358,7 @@ def _run_testcases(verbose=True, plot=False, *args, **kwargs):
     test_TestBaseline(verbose=verbose, plot=plot, *args, **kwargs)
     test_dimensioned_operations(*args, **kwargs)
     test_get_baseline(plot=plot, *args, **kwargs)
+    test_resample_even()
 
     return True
 

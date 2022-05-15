@@ -109,7 +109,7 @@ def resample(
         reverse = True
     else:
         raise ValueError(
-            "Resampling requires wavespace to be sorted. It is not! Use .sort()? "
+            "Resampling requires wavespace to be sorted. It is not! If working with a Spectrum object, use `s.sort()`? "
         )
 
     if reverse:
@@ -249,39 +249,30 @@ def resample_even(
 
     Parameters
     ----------
-
     xspace: array
         space on which vector was generated
-
     vector: array
         quantity to resample
-
     resfactor: float
         increase of resolution. If 1, output vector has the same number of
         points as the input vector. Default 2.
-
     k: int
         order of spline interpolation. 3: cubic, 1: linear. Default 1.
-
     ext: 'error', 'extrapolate', 0
         Controls the value returned for elements of xspace_new not in the interval
         defined by xspace. If 'error', raise a ValueError. If 'extrapolate', well,
         extrapolate. If '0' or 0, then fill with 0. Default 'error'.
-
     energy_threshold: float
         if energy conservation (integrals) is above this threshold, raise an
         error
-
     print_conservation: boolean
         if True, prints energy conservation
 
 
     Returns
     -------
-
     xspace_new: array
         evenly spaced mapping of xspace (same min, same max)
-
     vector_new: array
         resampled vector on evenly spaced array. Number of element is conserved.
 
@@ -291,12 +282,14 @@ def resample_even(
 
     Examples
     --------
-
     Resample a :class:`~radis.spectrum.spectrum.Spectrum` radiance
     on an evenly spaced wavenumber space::
 
         w_nm, I_nm = s.get('radiance')
         w_cm, I_cm = resample_even(nm2cm(w_nm), I_nm)
+
+    You can also use :py:meth:`~radis.spectrum.spectrum.Spectrum.resample_even`
+    directly
     """
 
     # Get new evenly space array

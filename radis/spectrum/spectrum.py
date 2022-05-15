@@ -69,7 +69,7 @@ from radis.misc.arrays import (
 )
 from radis.misc.debug import printdbg
 from radis.misc.plot import split_and_plot_by_parts
-from radis.misc.signal import resample
+from radis.misc.signal import resample, resample_even
 from radis.phys.air import air2vacuum, vacuum2air
 from radis.phys.convert import cm2nm, conv2, nm2cm
 from radis.phys.units import Unit, convert_universal
@@ -3432,7 +3432,6 @@ class Spectrum(object):
 
                 s1.resample(s2.get_wavenumber())
                 s1.resample(s2)            # also valid
-
         unit: ``'same'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``
             unit of new wavespace. It ``'same'`` it is assumed to be the current
             waveunit. Default ``'same'``. The spectrum waveunit is changed to this
@@ -3470,11 +3469,15 @@ class Spectrum(object):
         Examples
         --------
 
+        Convert a Spectrum in wavenumber to wavelengths::
+
+            s_nm = s.resample(s.get_wavelength(), "nm", inplace=False)
+
         .. minigallery:: radis.spectrum.spectrum.Spectrum.resample
 
         See Also
         --------
-        :func:`radis.misc.signal.resample`
+        :func:`radis.misc.signal.resample`, :py:meth:`radis.spectrum.spectrum.Spectrum.resample_even`
         """
         # Check inputs (check for deprecated)
         if if_conflict_drop is not None:
@@ -3560,6 +3563,61 @@ class Spectrum(object):
                 print_conservation=False,
                 **kwargs,
             )
+
+            s._q[k] = Inew
+        # update wavespace
+        s._q["wavespace"] = w_new
+
+        return s
+
+    def resample_even(
+        self, energy_threshold=5e-3, print_conservation=False, inplace=True
+    ):
+        """Resample spectrum over the same waverange, but evenly spaced.
+
+        .. warning::
+            This may result in information loss. Resampling is done with
+            oversampling and spline interpolation. These parameters can be adjusted,
+            and energy conservation ensured with the appropriate parameters.
+
+        Parameters
+        ----------
+        energy_threshold: float or ``None``
+            if energy conservation (integrals on the intersecting range) is above
+            this threshold, raise an error. If ``None``, dont check for energy conservation
+            Default 5e-3 (0.5%)
+        print_conservation: boolean
+            if ``True``, prints energy conservation. Default ``False``.
+        inplace: boolean
+            if ``True``, modifies the Spectrum object directly. Else, returns
+            a copy. Default ``True``.
+        **kwargs: **dict
+            all other arguments are sent to :func:`radis.misc.signal.resample`
+
+        Returns
+        -------
+        Spectrum : resampled Spectrum object. If using ``inplace=True``, the Spectrum
+            object has been modified anyway.
+
+        Examples
+        --------
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.resample
+
+        See Also
+        --------
+        :func:`radis.misc.signal.resample_even`, :py:meth:`radis.spectrum.spectrum.Spectrum.resample`
+        """
+        if inplace:
+            s = self
+        else:
+            s = self.copy()
+
+        w = s._q["wavespace"]  # wavelength or wavenumber range
+        for (k, I) in s._q.items():
+            if k == "wavespace":
+                continue
+            w_new, Inew = resample_even(w, I, resfactor=2, print_conservation=True)
 
             s._q[k] = Inew
         # update wavespace
@@ -4109,12 +4167,12 @@ class Spectrum(object):
             else:
                 # Check Wavelength/wavenumber is evently spaced
                 if check_wavespace:
-                    if not evenly_distributed(w, tolerance=1e-5):
+                    if not evenly_distributed(w, atolerance=1e-5):
                         warn(
                             "Wavespace is not evenly spaced ({0:.3f}%) for {1}.".format(
                                 np.abs(np.diff(w)).max() / w.mean() * 100, name
                             )
-                            + " This may create problems when convolving with slit function"
+                            + " This may create problems if later convolving with slit function (`s.apply_slit()`). You can use `s.resample_even()`"
                         )
                 self._q["wavespace"] = np.array(w)  # copy
 
