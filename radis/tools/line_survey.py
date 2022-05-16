@@ -296,7 +296,7 @@ def LineSurvey(
         else:
             molecule = spec.conditions["molecule"]
             if isinstance(molecule, str):
-                id = get_molecule_identifier()
+                id = get_molecule_identifier(molecule)
                 molecule = get_molecule(id)
 
         try:
