@@ -1090,7 +1090,7 @@ def rescale_absorbance(
     old_path_length_cm,
     new_path_length_cm,
     waveunit,
-    units,
+    rescaled_units,
     extra,
     true_path_length,
 ):
@@ -1139,8 +1139,8 @@ def rescale_absorbance(
     if "absorbance" in rescaled:
         if __debug__:
             printdbg("... rescale: absorbance was scaled already")
-        assert "absorbance" in units
-        return rescaled, units
+        assert "absorbance" in rescaled_units
+        return rescaled, rescaled_units
 
     # Get scaled absorbance directly A1
     # ---------------------------------
@@ -1149,8 +1149,9 @@ def rescale_absorbance(
         if __debug__:
             printdbg("... rescale: absorbance A_2 = A_1*(x_2/x_1)*(L_2/L_1)")
         _, absorbance = spec.get(
-            "absorbance", wunit=waveunit, Iunit=units["absorbance"], copy=True
+            "absorbance", wunit=waveunit, Iunit=spec.units["absorbance"], copy=True
         )
+        assert spec.units["absorbance"] == ""
         absorbance *= new_mole_fraction / old_mole_fraction  # rescale x
         absorbance *= new_path_length_cm / old_path_length_cm  # rescale L
         unit = ""
@@ -1159,7 +1160,7 @@ def rescale_absorbance(
             printdbg("... rescale: absorbance A_2 = k_2*L_2")
         abscoeff = rescaled["abscoeff"]  # x already scaled
         absorbance = abscoeff * new_path_length_cm  # calculate L
-        assert spec.units["abscoeff"] == "cm-1"
+        assert rescaled_units["abscoeff"] == "cm-1"
         unit = ""
     elif "transmittance_noslit" in initial and true_path_length:
         if __debug__:
@@ -1168,7 +1169,7 @@ def rescale_absorbance(
         _, T1 = spec.get(
             "transmittance_noslit",
             wunit=waveunit,
-            Iunit=units["transmittance_noslit"],
+            Iunit=spec.units["transmittance_noslit"],
             copy=False,
         )
 
@@ -1208,10 +1209,10 @@ def rescale_absorbance(
     # Export rescaled value
     if absorbance is not None:
         rescaled["absorbance"] = absorbance
-    if unit is not None:
-        units["absorbance"] = unit
+    if rescaled_units is not None:
+        rescaled_units["absorbance"] = unit
 
-    return rescaled, units
+    return rescaled, rescaled_units
 
 
 # ... transmittance

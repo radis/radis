@@ -361,6 +361,8 @@ def get_residual(
         s2 = s2.take(var).normalize(
             wrange=wrange, normalize_how=normalize_how, wunit=wunit
         )
+        Iunit = s1.units[var]
+        assert Iunit == s2.units[var]
 
     var, wunit, Iunit = get_default_units(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
     wdiff, dI = get_diff(
