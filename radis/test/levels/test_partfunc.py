@@ -1049,4 +1049,4 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
 
 if __name__ == "__main__":
     # printm("Testing parfunc: {0}".format(_run_testcases()))
-    printm("Testing factory:", pytest.main(["test_partfunc.py", "--pdb"]))
+    printm("Testing partfunc.py:", pytest.main(["test_partfunc.py", "--pdb"]))

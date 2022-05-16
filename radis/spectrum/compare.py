@@ -270,6 +270,7 @@ def get_residual(
     normalize=False,
     normalize_how="max",
     wunit="default",
+    Iunit="default",
 ) -> float:
     # type: (Spectrum, Spectrum, str, bool, int) -> np.array, np.array
     """Returns L2 norm of ``s1`` and ``s2``
@@ -295,7 +296,7 @@ def get_residual(
     s1, s2: :class:`~radis.spectrum.spectrum.Spectrum` objects
         if not on the same range, ``s2`` is resampled on ``s1``.
     var: str
-        spectral quantity
+        spectral array
     norm: 'L2', 'L1'
         which norm to use
 
@@ -319,11 +320,12 @@ def get_residual(
         noisy experimental spectra. ``'area'`` will normalize the integral to 1.
         ``'mean'`` will normalize by the mean amplitude value
     wunit: str
-        used if normalized is a range
+        used if normalized is a range. If ``'default'``, use first spectrum unit.
+    Iunit: str
+        if ``'default'``, use first spectrum unit
 
     Notes
     -----
-
     0 values for I1 yield nans except if I2 = I1 = 0
 
     when s1 and s2 dont have the size wavespace range, they are automatically
@@ -352,15 +354,17 @@ def get_residual(
             wrange = normalize
         else:
             wrange = ()
-        var, wunit, Iunit = get_default_units(s1, s2, var=var, wunit=wunit)
+        var, wunit, Iunit = get_default_units(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
         s1 = s1.take(var).normalize(
             wrange=wrange, normalize_how=normalize_how, wunit=wunit
         )
         s2 = s2.take(var).normalize(
             wrange=wrange, normalize_how=normalize_how, wunit=wunit
         )
+        Iunit = s1.units[var]
+        assert Iunit == s2.units[var]
 
-    var, wunit, Iunit = get_default_units(s1, s2, var=var, wunit=wunit)
+    var, wunit, Iunit = get_default_units(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
     wdiff, dI = get_diff(
         s1,
         s2,
@@ -391,7 +395,14 @@ def get_residual(
     return output
 
 
-def get_residual_integral(s1: Spectrum, s2: Spectrum, var, ignore_nan=False) -> float:
+def get_residual_integral(
+    s1: Spectrum,
+    s2: Spectrum,
+    var,
+    ignore_nan=False,
+    wunit="default",
+    Iunit="default",
+) -> float:
     # type: (Spectrum, Spectrum, str, bool) -> float
     """Returns integral of the difference between two spectra s1 and s2,
     relatively to the integral of spectrum s1.
@@ -423,6 +434,11 @@ def get_residual_integral(s1: Spectrum, s2: Spectrum, var, ignore_nan=False) -> 
         if ``True``, ignore nan in the difference between s1 and s2 (ex: out of bound)
         when calculating residual. Default ``False``. Note: ``get_residual_integral``
         will still fail if there are nan in initial Spectrum.
+    wunit: str
+        If ``'default'``, use first spectrum unit.
+    Iunit: str
+        if ``'default'``, use first spectrum unit
+
 
     Notes
     -----
@@ -446,7 +462,7 @@ def get_residual_integral(s1: Spectrum, s2: Spectrum, var, ignore_nan=False) -> 
     :func:`~radis.spectrum.compare.plot_diff`,
     :meth:`~radis.spectrum.spectrum.compare_with`
     """
-    var, wunit, Iunit = get_default_units(s1, s2, var=var)
+    var, wunit, Iunit = get_default_units(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
 
     # Get data
     # ----
@@ -516,17 +532,21 @@ def get_default_units(
         s1.get(var)
     if var not in s2.get_vars():
         s2.get(var)
+    if wunit == "default":
+        wunit = s1.get_waveunit()
+    wunit = cast_waveunit(wunit)
     if Iunit == "default":
         try:
-            Iunit = s1.units[var]
+            s1.units[var]
         except KeyError:  # unit not defined in dictionary
             raise KeyError(
                 "Iunit not defined in spectrum for variable {0}. ".format(var)
                 + "Cant use default unit. Specify unit in s.units['{0}'].".format(var)
             )
-    if wunit == "default":
-        wunit = s1.get_waveunit()
-    wunit = cast_waveunit(wunit)
+        # get default (note that defaut "Iunit" may depend on waveunit used. Let s.get() handle this)
+        _, _, _, Iunit = s1.get(
+            var, wunit=wunit, Iunit="default", copy=False, return_units="as_str"
+        )
 
     return var, wunit, Iunit
 
@@ -1187,7 +1207,7 @@ def compare_spectra(
             for error message
         """
 
-        from pandas.util.testing import assert_frame_equal
+        from pandas.testing import assert_frame_equal
 
         try:
             assert_frame_equal(
@@ -1254,8 +1274,8 @@ def compare_spectra(
         # Compare spectral arrays
         # -----------
         for k in vars:
-            w, q = first.get(k, wunit=wunit)
-            w0, q0 = other.get(k, wunit=wunit)
+            w, q = first.get(k, wunit=wunit, Iunit=first.units[k])
+            w0, q0 = other.get(k, wunit=wunit, Iunit=first.units[k])
             if len(w) != len(w0):
                 print(
                     "Wavespaces have different length (for {0}: {1} vs {2})".format(
@@ -1305,8 +1325,8 @@ def compare_spectra(
         # Compare spectral variables
         # -----------
         for k in vars:
-            w, q = first.get(k, wunit=wunit)
-            w0, q0 = other.get(k, wunit=wunit)
+            w, q = first.get(k, wunit=wunit, Iunit=first.units[k])
+            w0, q0 = other.get(k, wunit=wunit, Iunit=first.units[k])
             if len(w) != len(w0):
                 print(
                     "Wavespaces have different length (for {0}: {1} vs {2})".format(

@@ -180,6 +180,10 @@ def test_spectrum(**kwargs):
 
     conditions.update(kwargs)
 
+    if "wmin" in kwargs and "wmax" in kwargs:
+        conditions.pop("wavenum_min")
+        conditions.pop("wavenum_max")
+
     s = calc_spectrum(**conditions)
     return s
 

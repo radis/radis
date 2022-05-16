@@ -621,4 +621,23 @@ def _run_testcases(
 
 
 if __name__ == "__main__":
-    print(("Test spectrum: ", _run_testcases(debug=False, close_plots=False)))
+    # print(("Test spectrum: ", _run_testcases(debug=False, close_plots=False)))
+
+    import radis
+
+    s = radis.test_spectrum()
+    assert s.c["default_output_unit"] == "cm-1"
+
+    assert (s.get("abscoeff")[0] == s.get_wavenumber()).all()
+
+    s.c["default_output_unit"] = "nm"
+
+    assert (s.get("abscoeff")[0] == s.get_wavelength()).all()
+    s.c["default_output_unit"] = "nm_vac"
+    assert (s.get("abscoeff")[0] == s.get_wavelength(medium="vacuum")).all()
+
+    #%%
+    from radis import load_spec
+    from radis.test.utils import getTestFile
+
+    s_exp = load_spec(getTestFile("CO2_measured_spectrum_4-5um.spec"), binary=True)
