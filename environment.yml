@@ -19,6 +19,7 @@ dependencies:
 - numba  # just-in-time compiler
 - pandas>=1.0.5
 - plotly>=2.5.1  # for line survey HTML output
+- pytables
 - psutil # for getting user RAM
 - scipy>=1.4.0
 - seaborn   # other matplotlib themes
