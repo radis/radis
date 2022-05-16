@@ -361,13 +361,13 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
         # MAke optically thick, and compare with Planck
 
         if plot:
-            s_plck.plot(wunit="nm", Iunit="mW/cm2/sr/cm-1", lw=2)
+            s_plck.plot(wunit="nm", Iunit="mW/cm2/sr/nm", lw=2)
         for s in [s_eq, s_2T, s_4T]:
 
             s.rescale_path_length(1e6)
 
             if plot:
-                s.plot(wunit="nm", nfig="same", lw=4)
+                s.plot(wunit="nm", Iunit="mW/cm2/sr/nm", nfig="same", lw=4)
 
             if verbose:
                 printm(
@@ -482,8 +482,8 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
 
                 nfig = "test_opt_thick_limit_2iso {0}".format(s.name)
                 plt.figure(nfig).clear()
-                s.plot(wunit="nm", nfig=nfig, lw=4)
-                s_plck.plot(wunit="nm", nfig=nfig, Iunit="mW/cm2/sr/cm-1", lw=2)
+                s.plot(wunit="nm", Iunit="mW/cm2/sr/nm", nfig=nfig, lw=4)
+                s_plck.plot(wunit="nm", nfig=nfig, Iunit="mW/cm2/sr/nm", lw=2)
                 plt.legend()
 
             if verbose:
@@ -571,7 +571,7 @@ def test_get_wavenumber_range(*args, **kwargs):
     # ...... passed neither wavenumber nor wavelength > should return wavenumber after converting wmin/wmax assuming default units
     assert get_wavenumber_range(
         wmin=10, wmax=20, wunit=Default("cm-1"), return_input_wunit=True
-    ) == (10.0, 20.0, "wavenumber")
+    ) == (10.0, 20.0, "cm-1")
 
     # ... 'wmin/wmax' are passed as values with accompanying units
     # ...... wavenumber is passed > should throw error due to multiple input wavespace values
