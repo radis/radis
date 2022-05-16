@@ -23,7 +23,7 @@ jobs:
         # Install Micromamba
         # We do this conditionally because it saves us some downloading if the
         # version is the same.
-        - wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
+        - wget -qO- http://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
         - ./bin/micromamba shell init -s bash -p ~/micromamba
         - source ~/.bashrc
         - micromamba activate base
