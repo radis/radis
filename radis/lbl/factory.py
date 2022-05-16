@@ -2412,6 +2412,7 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, neighbour_lines)
         on the final range `wavenumber`, i.e. : wavenumber_calc[woutrange[0]:woutrange[1]] = wavenumber
     """
     assert wavenum_min < wavenum_max
+    assert wstep > 0
 
     # Output range
     # generate the final vector of wavenumbers (shape M)
