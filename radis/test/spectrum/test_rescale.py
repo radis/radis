@@ -124,6 +124,231 @@ def test_get_recompute(verbose=True, *args, **kwargs):
     )
 
 
+def test_rescale_vs_direct_computation(verbose=True, *args, **kwargs):
+    """Compare spectral arrays initially computed with recomputed spectral arrays
+
+    Notes
+    -----
+    Use verbose=2 to get DEBUG_MODE output
+    """
+    if verbose >= 2:
+        DEBUG_MODE = radis.config["DEBUG_MODE"]
+        radis.config["DEBUG_MODE"] = True
+
+    # %%
+    # Equilibrium Spectrum
+    # -------------------
+    from radis import calc_spectrum
+
+    s = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=4200,
+        mole_fraction=1e-3,
+        path_length=0.3,
+        molecule="CO2",
+        isotope="1",
+        databank="HITRAN-CO2-TEST",
+        Tgas=600,
+        verbose=False,
+    )
+
+    s2 = s.copy()
+
+    import numpy as np
+
+    # 1. Compare initially computed with recomputed
+    for var in ["abscoeff", "radiance_noslit"]:
+
+        # default
+        Imax_computed = s.take(var).max()
+        # delete existing variables
+        del s2._q[var]
+        # recompute:
+        Imax_recomputed = s2.take(var).max()
+        # compare:
+        if verbose:
+            print("==>", var, Imax_computed)
+            print("==>", var, Imax_recomputed)
+        assert np.isclose(Imax_computed, Imax_recomputed)
+
+    # 2. Do this systematically, for all configurations where `s` can be recomputed from.
+    from radis.spectrum.rescale import _build_update_graph
+
+    """Typical :py:func:`radis.spectrum.rescale._build_update_graph(s)` result :
+    ::
+        {
+            "transmittance_noslit": [
+                ["absorbance"],
+                ["abscoeff"],
+                ["absorbance"],
+                ["emisscoeff"],
+                ["emissivity_noslit"],
+                ["transmittance"],
+                ["radiance"],
+                ["radiance_noslit"],
+                ["xsection"],
+            ],
+            "absorbance": [
+                ["transmittance_noslit"],
+                ["abscoeff"],
+                ["abscoeff"],
+                ["emisscoeff"],
+                ["emissivity_noslit"],
+                ["transmittance"],
+                ["radiance"],
+                ["radiance_noslit"],
+                ["transmittance_noslit"],
+                ["xsection"],
+            ],
+            "abscoeff": [
+                ["absorbance"],
+                ["xsection"],
+                ["absorbance"],
+                ["emisscoeff"],
+                ["emissivity_noslit"],
+                ["transmittance"],
+                ["radiance"],
+                ["radiance_noslit"],
+                ["transmittance_noslit"],
+                ["xsection"],
+            ],
+            "radiance_noslit": [
+                ["emisscoeff", "abscoeff"],
+                ["abscoeff"],
+                ["absorbance"],
+                ["emisscoeff"],
+                ["emissivity_noslit"],
+                ["transmittance"],
+                ["radiance"],
+                ["transmittance_noslit"],
+                ["xsection"],
+            ],
+            "emisscoeff": [
+                ["radiance_noslit", "abscoeff"],
+                ["abscoeff"],
+                ["absorbance"],
+                ["emissivity_noslit"],
+                ["transmittance"],
+                ["radiance"],
+                ["radiance_noslit"],
+                ["transmittance_noslit"],
+                ["xsection"],
+            ],
+            "xsection": [["abscoeff"]],
+            "emissivity_noslit": [
+                ["abscoeff"],
+                ["absorbance"],
+                ["emisscoeff"],
+                ["transmittance"],
+                ["radiance"],
+                ["radiance_noslit"],
+                ["transmittance_noslit"],
+                ["xsection"],
+            ],
+        }
+    """
+    from radis.misc.basics import all_in
+
+    for var, vars_needed_list in _build_update_graph(s).items():
+        for vars_needed in vars_needed_list:
+            if all_in(vars_needed, s.get_vars()):
+                if verbose:
+                    print(f"Recomputing {var} from {vars_needed} only")
+                s2 = s.copy()
+                for v in list(s2.get_vars()):
+                    if v not in vars_needed:
+                        del s2._q[v]
+                # recompute & compare:
+                try:
+                    s2.get(var)
+                except NotImplementedError:
+                    pass
+                else:
+                    assert np.isclose(s.take(var).max(), s2.take(var).max())
+                    if verbose:
+                        print(
+                            f"Checked {var} recomputed from {vars_needed} is the same"
+                        )
+
+    #%%
+    # Nonequilibrium spectrum, computed in wavenumber
+    # -----------------------------------------------
+
+    from radis import calc_spectrum
+
+    s = calc_spectrum(
+        wavenum_max=1e7 / 4165,
+        wavenum_min=1e7 / 4200,
+        mole_fraction=1e-3,
+        path_length=0.3,
+        molecule="CO2",
+        isotope="1",
+        databank="HITRAN-CO2-TEST",
+        Tvib=2000,
+        Trot=1000,
+        verbose=False,
+    )
+
+    import numpy as np
+
+    # Compare initially computed with recomputed
+    for var in ["transmittance_noslit", "emisscoeff", "radiance_noslit"]:
+
+        s2 = s.copy()
+
+        # default
+        Imax_computed = s.take(var).max()
+        # delete existing variables
+        del s2._q[var]
+        # recompute:
+        Imax_recomputed = s2.take(var).max()
+        # compare:
+        if verbose:
+            print("==>", var, Imax_computed)
+            print("==>", var, Imax_recomputed)
+        assert np.isclose(Imax_computed, Imax_recomputed)
+
+    """Typical :py:func:`radis.spectrum.rescale._build_update_graph(s)` result :
+    ::
+
+        {
+            "transmittance_noslit": [["absorbance"]],
+            "absorbance": [["transmittance_noslit"], ["abscoeff"]],
+            "abscoeff": [["absorbance"], ["xsection"]],
+            "radiance_noslit": [["emisscoeff", "abscoeff"]],
+            "emisscoeff": [["radiance_noslit", "abscoeff"]],
+            "xsection": [["abscoeff"]],
+        }
+    """
+
+    for var, vars_needed_list in _build_update_graph(s).items():
+        for vars_needed in vars_needed_list:
+            if all_in(vars_needed, s.get_vars()):
+                if verbose:
+                    print(f"Recomputing {var} from {vars_needed} only")
+                s2 = s.copy()
+                for v in list(s2.get_vars()):
+                    if v not in vars_needed:
+                        del s2._q[v]
+                # recompute & compare:
+                try:
+                    s2.get(var)
+                except NotImplementedError:
+                    pass
+                else:
+                    assert np.isclose(s.take(var).max(), s2.take(var).max())
+                    if verbose:
+                        print(
+                            f"Checked {var} recomputed from {vars_needed} is the same"
+                        )
+
+    #
+    if verbose >= 2:
+        radis.config["DEBUG_MODE"] = DEBUG_MODE
+
+    #%%
+
+
 def test_recompute_equilibrium(verbose=True, warnings=True, plot=True, *args, **kwargs):
     """Test that spectral quantities recomputed under equilibrium assumption
     yields the same output as with non equilibrium routines when Tvib = Trot"""
@@ -331,6 +556,7 @@ def _run_all_tests(verbose=True, warnings=True, *args, **kwargs):
     test_compression(verbose=verbose, warnings=warnings, *args, **kwargs)
     test_update_transmittance(verbose=verbose, warnings=warnings, *args, **kwargs)
     test_get_recompute(verbose=verbose, warnings=warnings, *args, **kwargs)
+    test_rescale_vs_direct_computation(verbose=verbose, *args, **kwargs)
     test_recompute_equilibrium(verbose=verbose, warnings=warnings, *args, **kwargs)
     test_rescale_all_quantities(verbose=verbose, *args, **kwargs)
     test_xsections(*args, **kwargs)

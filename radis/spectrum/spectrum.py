@@ -949,6 +949,14 @@ class Spectrum(object):
             For ``var="radiance"``, one can use per wavelength (~ 'W/m2/sr/nm')
             or per wavenumber (~ 'W/m2/sr/cm-1') units
 
+            .. note::
+
+                if using ``default``, the returned unit may be different from
+                Spectrum.units[var].  e.g, for a Spectrum with radiance stored
+                in 'mW/cm2/sr/nm', getting it with `wunit='cm-1', Iunit='default'`
+                will return Iunit in 'mW/cm2/sr/cm-1' for consistency.
+                Use ``return_units`` to be sure about which units are used.
+
         Other Parameters
         ----------------
         copy: bool
@@ -958,7 +966,10 @@ class Spectrum(object):
             if ``True``, removes ``nan`` on the sides of the spectral array
             (and corresponding wavespace). Default ``False``.
         return_units: bool
-            if ``True``, return `wunit` and `Iunit` used
+            if ``True``, return dimensioned Astropy arrays.
+            Is using ``return_units = 'as_str'``, return `wunit` and `Iunit`
+            as extra variables, i.e, ``w, I, wunit, Iunit = s.get(..., return_units='as_str')``
+            Default ``False``
 
         Returns
         -------
@@ -3831,12 +3842,27 @@ class Spectrum(object):
         #                                        # Spectrum() recreates a copy anyway
         if quantity == "all":
             quantities = dict(self._get_items())
-        else:
+        elif quantity in self.get_vars():
             quantities = {
                 quantity: self.get(
-                    quantity, wunit=self.get_waveunit(), Iunit=self.units[quantity]
+                    quantity,
+                    wunit=self.get_waveunit(),
+                    Iunit=self.units[quantity],
+                    copy=True,
                 )
-            }  # dict(self._get_items())
+            }
+        else:
+            self.update(quantity)  # needed to get self.units[quantity]
+            quantities = {
+                quantity: self.get(
+                    quantity,
+                    wunit=self.get_waveunit(),
+                    Iunit=self.units[quantity],
+                    copy=True,
+                )  # copy=True still needed as the waverange is the one of the original array
+            }
+            del self._q[quantity]  # no need to keep it in this Spectrum
+            # del self.units[quantity]   # we can keep the units (+ they'll be copied below)
 
         try:
             units = deepcopy(self.units)
@@ -4273,6 +4299,9 @@ class Spectrum(object):
             print(
                 " " * 2,
                 k,
+                f"\t[{self.units[k]}]"
+                if (k in self.units and self.units[k] != "")
+                else "",
                 "\t({0:,d} points{1})".format(
                     len(v),
                     ", {0} nans".format(count_nans(v)) if anynan(v) else "",
