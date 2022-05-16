@@ -20,23 +20,24 @@ jobs:
     - stage: test
       name: Test and Coverage
       install:
-        # Install Micromamba
+        # Install Anaconda
         # We do this conditionally because it saves us some downloading if the
         # version is the same.
-        - wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
-        - ./bin/micromamba shell init -s bash -p ~/micromamba
-        - source ~/.bashrc
-        - micromamba activate base
+        - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+        - bash miniconda.sh -b -p $HOME/miniconda
+        - export PATH="$HOME/miniconda/bin:$PATH"
+        - hash -r
+        - conda config --set always_yes yes --set changeps1 no
+        - conda update -q conda
         # Useful for debugging any issues with conda
-        - micromamba info
+        - conda info -a
         # Update python version in environment
         - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
         # Create conda environment
-        - micromamba install xtensor -c conda-forge -y
-        - micromamba create -f environment.yml -y
+        - conda env create -n radis-env -f environment.yml
         # Activate and install test-only dependencies
-        - micromamba activate radis-env
-        - micromamba list
+        - conda activate radis-env
+        - conda list
         - pip install pytest-cov
         - pip install -e . -v
 
@@ -51,6 +52,9 @@ jobs:
         # codecoverage
         - pip install codecov
         - codecov
+
+      before_script:
+        - export MPLBACKEND=Agg
 
     - stage: lint
       name: Code Quality Checks
