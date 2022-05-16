@@ -183,8 +183,15 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
         # Make all our slabs copies with the same wavespace range
         # (note: wavespace range may be different for different quantities, but
         # equal for all slabs)
+        copy_lines = False
         s, sn = resample_slabs(
-            waveunit, resample_wavespace, out_of_bounds, modify_inputs, s, sn
+            waveunit,
+            resample_wavespace,
+            out_of_bounds,
+            modify_inputs,
+            copy_lines,
+            s,
+            sn,
         )
         try:
             w = s._q["wavespace"]
@@ -348,7 +355,12 @@ def _has_quantity(quantity, *slabs):
 
 
 def resample_slabs(
-    waveunit, resample_wavespace, out_of_bounds="nan", modify_inputs=False, *slabs
+    waveunit,
+    resample_wavespace,
+    out_of_bounds="nan",
+    modify_inputs=False,
+    copy_lines=False,
+    *slabs
 ):
     # type: (str, str, str, *Spectrum) -> *Spectrum
     """Resample slabs on the same wavespace: if the range are differents,
@@ -408,7 +420,7 @@ def resample_slabs(
 
     # Work on copies
     if not modify_inputs:
-        slabs = [s.copy(copy_lines=False) for s in slabs]
+        slabs = [s.copy(copy_lines=copy_lines) for s in slabs]
 
     # Get all keys
     keys = merge_lists([s.get_vars() for s in slabs])
@@ -618,7 +630,7 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
             )
         return slabs[0]
 
-    else:  # calculate serial slabs
+    else:  # calculate merge slabs
 
         slabs = list(slabs)
 
@@ -640,13 +652,21 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
                 + "  (got {0})".format(path_lengths)
             )
 
+        # Save lines if lines are given in all input spectra
+        export_lines = all([s.lines is not None for s in slabs])
+
         # make sure we use the same wavespace type (even if sn is in 'nm' and s in 'cm-1')
         waveunit = slabs[0].get_waveunit()
         # Make all our slabs copies with the same wavespace range
         # (note: wavespace range may be different for different quantities, but
         # equal for all slabs)
         slabs = resample_slabs(
-            waveunit, resample_wavespace, out_of_bounds, modify_inputs, *slabs
+            waveunit,
+            resample_wavespace,
+            out_of_bounds,
+            modify_inputs,
+            export_lines,
+            *slabs
         )
         w_noconv = slabs[0]._get_wavespace()
 
@@ -702,6 +722,26 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
         references = slabs[0].references
         for s in slabs[1:]:
             references.update(s.references)
+
+        # Export lines
+        # -----------
+        if export_lines:
+            for s in slabs:
+                if not "id" in s.lines:
+                    # add molecule id to be able to differentiate many molecules in LineSurvey
+                    if "id" in s.lines.attrs:  # stored in attributes
+                        s.lines["id"] = s.lines.attrs["id"]
+                    else:  # add molecule from conditions
+                        try:
+                            from radis.db.molecules import get_molecule_id
+
+                            s.lines["id"] = get_molecule_id(s.c["molecule"])
+                        except:
+                            s.lines["id"] = s.c["molecule"]
+            import pandas as pd
+
+            lines = pd.concat([s.lines for s in slabs], ignore_index=True)
+            lines.sort_values("wav", inplace=True)
 
         # %% Get quantities that should be calculated
         # Try to keep all the quantities of the initial slabs:
@@ -762,6 +802,7 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
             conditions=conditions,
             cond_units=cond_units,
             units=units0,
+            lines=lines if export_lines else None,
             name=name,
             references=references,
         )

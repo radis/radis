@@ -1355,8 +1355,7 @@ class DatabankLoader(object):
 
         elif source == "geisa":
 
-            # self.reftracker.add(doi["GEISA-2020"], "line database")
-            # TODO: add GEISA-2020 DOI
+            self.reftracker.add(doi["GEISA-2020"], "line database")
 
             if memory_mapping_engine == "auto":
                 # temp fix for vaex not building on RTD

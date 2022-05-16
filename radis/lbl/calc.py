@@ -153,6 +153,9 @@ def calc_spectrum(
 
             databank=('exomol', 'EBJT')   # 'EBJT' is a specific ExoMol database name
 
+        - ``'geisa'``, to fetch the GEISA 2020 database
+          through :py:func:`~radis.io.geisa.fetch_geisa`. Downloads all lines
+          and all isotopes.
         - the name of a a valid database file, in which case the format is inferred.
           For instance, ``'.par'`` is recognized as ``hitran/hitemp`` format.
           Accepts wildcards ``'*'`` to select multiple files ::

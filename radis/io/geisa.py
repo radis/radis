@@ -527,7 +527,7 @@ def fetch_geisa(
             'Tdpgself', 'ierrS', 'Pshfts', 'ierrT', 'Tdppself', 'ierrU'],
             dtype='object')
 
-    .. minigallery:: radis.fetch_hitemp
+    .. minigallery:: radis.fetch_geisa
 
     Notes
     -----
