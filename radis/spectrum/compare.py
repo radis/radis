@@ -652,6 +652,7 @@ def plot_diff(
     title=None,
     nfig=None,
     normalize=False,
+    yscale="linear",
     verbose=True,
     save=False,
     show=True,
@@ -700,7 +701,9 @@ def plot_diff(
         Normalize the spectra to be ploted
 
     Other Parameters
-    ----------------
+    ----------------'
+        plot yscale
+    yscale: 'linear', 'log
     diff_window: int
         If non 0, calculates diff by offsetting s1 by ``diff_window`` number of
         units on either side, and returns the minimum. Kinda compensates for experimental
@@ -878,6 +881,7 @@ def plot_diff(
         lw=1 * lw_multiplier,
         label=label2
     )
+    ax0.set_yscale(yscale)
 
     # cosmetic changes
     Iunit = make_up_unit(Iunit, var)
@@ -950,6 +954,9 @@ def plot_diff(
                 bottom=((ymin - 1) * diff_scale_multiplier + 1),
                 top=((ymax - 1) * diff_scale_multiplier + 1),
             )
+        ax1[i].set_yscale(
+            yscale
+        ) if method != "ratio" else "linear"  # no log in 'ratio'
     #            ymax = max(abs(Idiff_sorted[len(Idiff_sorted)//100]-1),
     #                       abs(Idiff_sorted[len(-Idiff_sorted)//100]-1))
     #            ax1[i].set_ylim(ymax*diff_scale_multiplier+1, -ymax*diff_scale_multiplier+1)
