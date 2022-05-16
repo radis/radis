@@ -1355,8 +1355,7 @@ class DatabankLoader(object):
 
         elif source == "geisa":
 
-            # self.reftracker.add(doi["GEISA-2020"], "line database")
-            # TODO: add GEISA-2020 DOI
+            self.reftracker.add(doi["GEISA-2020"], "line database")
 
             if memory_mapping_engine == "auto":
                 # temp fix for vaex not building on RTD
@@ -1418,10 +1417,10 @@ class DatabankLoader(object):
         # Post-processing of the line database
         # (note : this is now done in 'fetch_hitemp' before saving to the disk)
         # spectroscopic quantum numbers will be needed for nonequilibrium calculations, and line survey.
-        if parse_local_global_quanta and "locu" in df:
+        if parse_local_global_quanta and "locu" in df and source != "geisa":
             df = parse_local_quanta(df, molecule, verbose=self.verbose)
         if (
-            parse_local_global_quanta and "globu" in df
+            parse_local_global_quanta and "globu" in df and source != "geisa"
         ):  # spectroscopic quantum numbers will be needed for nonequilibrium calculations :
             df = parse_global_quanta(df, molecule, verbose=self.verbose)
 

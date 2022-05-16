@@ -14,6 +14,7 @@ doi = {
     "HITRAN-2016": "10.1016/j.jqsrt.2017.06.038",
     "HITRAN-2020": "10.1016/j.jqsrt.2021.107949",
     "HITEMP-2010": "10.1016/j.jqsrt.2010.05.001",
+    "GEISA-2020": "10.1016/j.jms.2021.111510",
     "CDSD-4000": "10.1016/j.jqsrt.2011.03.005",
     "ExoMol-2020": "10.1016/j.jqsrt.2020.107228",
     # Tabulated Partition functions

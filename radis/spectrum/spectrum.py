@@ -1061,7 +1061,9 @@ class Spectrum(object):
                     "emisscoeff",
                     "emisscoeff_continuum",
                 ]:
-                    Iunit = self.units[var].replace("/cm-1", "/nm")
+                    Iunit = Iunit0.replace("/cm-1", "/nm")
+                else:
+                    Iunit = Iunit0
             elif wunit in ["cm-1"]:
                 if var in [
                     "radiance",
@@ -1069,7 +1071,9 @@ class Spectrum(object):
                     "emisscoeff",
                     "emisscoeff_continuum",
                 ]:
-                    Iunit = self.units[var].replace("/nm", "/cm-1")
+                    Iunit = Iunit0.replace("/nm", "/cm-1")
+                else:
+                    Iunit = Iunit0
 
         # Retrieve data (with correct unit)
         if Iunit != "default" and Iunit != Iunit0:
