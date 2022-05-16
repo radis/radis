@@ -178,6 +178,10 @@ class HDF5Manager(object):
         file = expanduser(file)
         if self.engine == "vaex":
             if len(self._temp_batch_files) == 0:
+                # No temp file created. File is probably already created (append=False mode)
+                # Else, something unexpected happens --> raise error
+                if exists(file):
+                    return
                 raise ValueError(f"No batch temp files were written for {file}")
             if key == "default":
                 key = r"/table"
@@ -455,9 +459,16 @@ class HDF5Manager(object):
                     else:
                         try:
                             metadata = dict(hf[key].attrs)
-                        except KeyError as err:
-                            print(f"Error reading metadata from {fname}")
-                            raise err
+                        except (KeyError, OSError) as err:
+                            if key == r"/table":
+                                # backward compat : some old files were generated with key=None
+                                metadata = dict(hf.attrs)
+                                print(
+                                    f"Error reading metadata from {fname}. Regenerate file one day?"
+                                )
+                            else:
+                                print(f"Error reading metadata from {fname}")
+                                raise err
 
         else:
             raise NotImplementedError(

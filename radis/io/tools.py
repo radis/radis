@@ -16,9 +16,9 @@ def parse_hitran_file(fname, columns, count=-1):
     Parameters
     ----------
     fname: str
-        filename
+        filename.
     columns: dict
-        list of columns and their format
+        list of columns and their format.
 
     Other Parameters
     ----------------
@@ -28,7 +28,7 @@ def parse_hitran_file(fname, columns, count=-1):
     Returns
     -------
     df: pandas DataFrame
-        dataframe with lines
+        dataframe with lines.
 
     See Also
     --------
@@ -176,8 +176,8 @@ def _cast_to_dtype(data, dtype):
     data: array to cast
     dtype: (ordered) list of (param, type)
     """
-    dt = _format_dtype(dtype)
 
+    dt = _format_dtype(dtype)
     try:
         data = np.array(data, dtype=dt)
     except ValueError as err:
@@ -235,7 +235,8 @@ def replace_PQR_with_m101(df):
     ----------
 
     df: pandas Dataframe
-        ``branch`` must be a column name
+        ``branch`` must be a column name.
+
 
     Returns
     -------

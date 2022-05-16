@@ -85,6 +85,8 @@ def keep_only_relevant(
             files_wmin = min(float(fname_wmin), files_wmin)
             files_wmax = max(float(fname_wmax), files_wmax)
 
+    print(f"HITEMP keep only relevant input files: {relevantfiles}")
+
     return relevantfiles, files_wmin, files_wmax
 
 
@@ -261,6 +263,7 @@ class HITEMPDatabaseManager(DatabaseManager):
                     f"End of file while parsing file {opener.abspath(urlname)}. May be due to download error. Delete file ?"
                 ) from err
             linereturnformat = _get_linereturnformat(b, columns)
+
         return linereturnformat
 
     def parse_to_local_file(
@@ -518,7 +521,8 @@ def fetch_hitemp(
     See Also
     --------
     :py:func:`~radis.io.hitran.fetch_hitran`, :py:func:`~radis.io.exomol.fetch_exomol`
-    :py:func:`~radis.io.hdf5.hdf2df`, :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`
+    :py:func:`~radis.io.geisa.fetch_geisa`, :py:func:`~radis.io.hdf5.hdf2df`
+    :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`
 
     """
 

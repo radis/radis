@@ -20,6 +20,8 @@ Routine Listing
 from copy import deepcopy
 from os.path import exists
 
+# from radis.db.classes import M
+
 try:  # Proper import
     from .base import get_waverange
     from .factory import SpectrumFactory
@@ -658,6 +660,7 @@ def _calc_spectrum_one_molecule(
             "hitran",
             "hitemp",
             "exomol",
+            "geisa",
         ]
         or (isinstance(databank, tuple) and databank[0] == "exomol")
         or (isinstance(databank, tuple) and databank[0] == "hitran")
@@ -685,6 +688,12 @@ def _calc_spectrum_one_molecule(
             conditions = {
                 "source": "exomol",
                 "parfuncfmt": "exomol",  # download & use Exo partition functions for equilibrium}
+            }
+        elif databank in ["geisa"]:
+            conditions = {
+                "source": "geisa",
+                "parfuncfmt": "hapi",
+                # TODO: replace with GEISA partition function someday.............
             }
         elif isinstance(databank, tuple) and databank[0] == "exomol":
             conditions = {
@@ -846,3 +855,5 @@ if __name__ == "__main__":
     from radis.test.lbl.test_calc import _run_testcases
 
     print(_run_testcases(verbose=True))
+
+# %%
