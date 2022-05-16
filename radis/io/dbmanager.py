@@ -134,7 +134,7 @@ class DatabaseManager(object):
                     .startswith(abspath(expanduser(local_databases).lower()))
                 ):  # TODO: replace with pathlib
                     raise ValueError(
-                        f"Databank `{self.name}` is already registered in radis.json but the declared path ({registered_path}) is not in the expected local databases folder ({local_databases}). Please fix/delete the radis.json entry, or change the default local databases path entry 'DEFAULT_DOWNLOAD_PATH' in `radis.config` or ~/radis.json"
+                        f"Databank `{self.name}` is already registered in radis.json but the declared path ({registered_path}) is not in the expected local databases folder ({local_databases}). Please fix/delete the radis.json entry, change the `databank_name`, or change the default local databases path entry 'DEFAULT_DOWNLOAD_PATH' in `radis.config` or ~/radis.json"
                     )
 
         self.downloadable = False  # by default
@@ -227,6 +227,8 @@ class DatabaseManager(object):
 
         if engine == "vaex":
             local_files = [fname.replace(".h5", ".hdf5") for fname in local_files]
+
+        local_files = [expanduser(f) for f in local_files]
 
         return local_files, urlnames
 
@@ -427,12 +429,16 @@ class DatabaseManager(object):
         columns,
         load_wavenum_min,
         load_wavenum_max,
+        output="pandas",
     ):
         """
         Other Parameters
         ----------------
         columns: list of str
             list of columns to load. If ``None``, returns all columns in the file.
+        output: 'pandas', 'vaex', 'jax'
+            format of the output DataFrame. If ``'jax'``, returns a dictionary of
+            jax arrays.
         """
         engine = self.engine
         if engine == "pytables":
@@ -447,6 +453,7 @@ class DatabaseManager(object):
                         load_wavenum_max=load_wavenum_max,
                         verbose=self.verbose,
                         engine=engine,
+                        output=output,
                     )
                 )
             return pd.concat(df_all)
@@ -461,6 +468,7 @@ class DatabaseManager(object):
                 load_wavenum_max=load_wavenum_max,
                 verbose=self.verbose,
                 engine=engine,
+                output=output,
             )
         else:
             raise NotImplementedError(engine)

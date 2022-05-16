@@ -493,7 +493,7 @@ def test_broadening_LDM_noneq(verbose=True, plot=False, *args, **kwargs):
     )
 
     # Compare
-    res = get_residual(s_ldm_eq, s_ldm_noneq, "radiance_noslit")
+    res = get_residual(s_ldm_eq, s_ldm_noneq, "radiance_noslit", Iunit="mW/cm2/sr/nm")
 
     if verbose:
         print("Residual:", res)
@@ -962,4 +962,5 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    printm("test_broadening: ", _run_testcases(plot=True, verbose=True, debug=False))
+    # printm("test_broadening: ", _run_testcases(plot=True, verbose=True, debug=False))
+    printm("Testing broadening:", pytest.main(["test_broadening.py", "--pdb"]))

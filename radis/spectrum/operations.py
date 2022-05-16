@@ -113,6 +113,9 @@ def Transmittance(s: Spectrum) -> Spectrum:
     :py:meth:`~radis.spectrum.Spectrum.take`
 
     """
+    warn(
+        "Transmittance(Spectrum) will be deprecated in future RADIS versions. Use Spectrum.take('transmittance')"
+    )
 
     return s.copy(copy_lines=True, quantity="transmittance")
 
@@ -152,6 +155,9 @@ def Transmittance_noslit(s: Spectrum) -> Spectrum:
     :py:meth:`~radis.spectrum.Spectrum.take`
 
     """
+    warn(
+        "Transmittance_noslit(Spectrum) will be deprecated in future RADIS versions. Use Spectrum.take('transmittance_noslit')"
+    )
 
     return s.copy(copy_lines=True, quantity="transmittance_noslit")
 
@@ -191,6 +197,9 @@ def Radiance(s: Spectrum) -> Spectrum:
     :py:meth:`~radis.spectrum.Spectrum.take`
 
     """
+    warn(
+        "Radiance(Spectrum) will be deprecated in future RADIS versions. Use Spectrum.take('radiance')"
+    )
 
     return s.copy(copy_lines=True, quantity="radiance")
 
@@ -230,6 +239,9 @@ def Radiance_noslit(s: Spectrum) -> Spectrum:
     :py:meth:`~radis.spectrum.Spectrum.take`
 
     """
+    warn(
+        "Radiance_noslit(Spectrum) will be deprecated in future RADIS versions. Use Spectrum.take('radiance_noslit')"
+    )
 
     return s.copy(copy_lines=True, quantity="radiance_noslit")
 
@@ -243,20 +255,13 @@ def PerfectAbsorber(s: Spectrum) -> Spectrum:
     Useful to get contribution of different slabs in line-of-sight
     calculations (see example).
 
-    .. note:
-
-        formerly named "Transmittance", but "Transmittance(s)" wouldnt
-        return the Transmittance exactly
-
     Parameters
     ----------
-
     s: Spectrum
         :class:`~radis.spectrum.spectrum.Spectrum` object
 
     Returns
     -------
-
     s_tr: Spectrum
         :class:`~radis.spectrum.spectrum.Spectrum` object, with only the ``transmittance``,
         ``absorbance`` and/or ``abscoeff`` part of ``s``, where ``radiance_noslit`` ,
@@ -264,7 +269,6 @@ def PerfectAbsorber(s: Spectrum) -> Spectrum:
 
     Examples
     --------
-
     Let's say you have a total line of sight::
 
         s_los = s1 > s2 > s3
@@ -279,7 +283,6 @@ def PerfectAbsorber(s: Spectrum) -> Spectrum:
         (s1 > PerfectAbsorber(s2>s3)).plot('radiance_noslit')
 
     See more examples in :ref:`Line-of-Sight module <label_los_index>`
-
     """
 
     s_tr = s.copy()
@@ -308,10 +311,8 @@ def crop(s: Spectrum, wmin=None, wmax=None, wunit=None, inplace=False) -> Spectr
 
     Parameters
     ----------
-
     s: Spectrum object
         object to crop
-
     wmin, wmax: float, or None
         boundaries of spectral range (in ``wunit``)
 
@@ -322,28 +323,23 @@ def crop(s: Spectrum, wmin=None, wmax=None, wunit=None, inplace=False) -> Spectr
 
     Other Parameters
     ----------------
-
     inplace: bool
         if ``True``, modifiy ``s`` directly. Else, returns a copy.
 
     Returns
     -------
-
     s_crop: Spectrum
         a cropped Spectrum.
         if using ``inplace``, then ``s_crop`` and ``s`` are still the same object
 
     Examples
     --------
-
     ::
 
         crop(s, 420, 480, 'nm', 'air')
-
     Or in ``cm-1``::
 
         crop(s, 2000, 2300, 'cm-1')
-
     """
 
     # Check inputs
@@ -492,7 +488,7 @@ def multiply(s, coef, unit=None, var=None, inplace=False):
         s = s.copy(quantity=var)
 
     # Multiply inplace       ( @dev: we have copied already if needed )
-    w, I = s.get(var, wunit=s.get_waveunit(), copy=False)
+    w, I = s.get(var, wunit=s.get_waveunit(), Iunit=s.units[var], copy=False)
     I *= coef  # @dev: updates the Spectrum directly because of copy=False
 
     # Convert Spectrum unit
@@ -555,7 +551,7 @@ def add_constant(s, cst, unit=None, var=None, inplace=False):
         s = s.copy(quantity=var)
 
     # Add inplace       ( @dev: we have copied already if needed )
-    w, I = s.get(var, wunit=s.get_waveunit(), copy=False)
+    w, I = s.get(var, wunit=s.get_waveunit(), Iunit=s.units[var], copy=False)
     I += cst
     # @dev: updates the Spectrum directly because of copy=False
 
@@ -631,7 +627,7 @@ def add_array(s, a, unit=None, var=None, inplace=False):
         s = s.copy(quantity=var)
 
     # Add inplace       ( @dev: we have copied already if needed )
-    w, I = s.get(var, wunit=s.get_waveunit(), copy=False)
+    w, I = s.get(var, wunit=s.get_waveunit(), Iunit=s.units[var], copy=False)
     I += a
     # @dev: updates the Spectrum directly because of copy=False
 
@@ -715,10 +711,8 @@ def sub_baseline(s, left, right, unit=None, var=None, inplace=False):
     if not inplace:
         s = s.copy(quantity=var)
 
-    # @EP:
-
     # Substract inplace       ( @dev: we have copied already if needed )
-    w, I = s.get(var, wunit=s.get_waveunit(), copy=False)
+    w, I = s.get(var, wunit=s.get_waveunit(), Iunit=s.units[var], copy=False)
     I -= np.linspace(left, right, num=np.size(I))
     # @dev: updates the Spectrum directly because of copy=False
 

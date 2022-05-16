@@ -50,7 +50,7 @@ using Astroquery (based on [HAPI]_). Output is a
                       Tgas=700,           # K
                       mole_fraction=0.1,
                       path_length=1,      # cm
-                      databank='hitran',  # or use 'hitemp'
+                      databank='hitran',  # or 'hitemp', 'geisa', 'exomol'
                       )
     s.apply_slit(0.5, 'nm')       # simulate an experimental slit
     s.plot('radiance')
@@ -71,7 +71,7 @@ store the CO(X) rovibrational energies): ::
                       Trot=300 * u.K,
                       mole_fraction=0.1,
                       path_length=1 * u.cm,
-                      databank='hitran',  # or use 'hitemp'
+                      databank='hitran',  # or 'hitemp', 'geisa', 'exomol'
                       )
     s2.apply_slit(0.5, 'nm')
     s2.plot('radiance', nfig='same')    # compare with previous

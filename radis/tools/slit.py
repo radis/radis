@@ -50,7 +50,7 @@ from numpy import sqrt, trapz
 from scipy.interpolate import splev, splrep
 from scipy.signal import oaconvolve
 
-from radis.misc.arrays import anynan, evenly_distributed
+from radis.misc.arrays import anynan, evenly_distributed, evenly_distributed_fast
 from radis.misc.basics import is_float
 from radis.misc.debug import printdbg
 from radis.misc.signal import resample_even
@@ -546,18 +546,15 @@ def convolve_with_slit(
     ----------------
     k: int
         order of spline interpolation. 3: cubic, 1: linear. Default 1.
-
     bplot: boolean
         if ``True``, plots the convolve slit function (for debugging)
-
     verbose: boolean
         more blabla
-
-    assert_evenly_spaced: boolean
+    assert_evenly_spaced: boolean, or ``'resample'``
         for the convolution to be accurate, ``w`` should be evenly spaced. If
-        ``assert_evenly_spaced=True``, then we check this is the case, and resample
+        ``assert_evenly_spaced=True``, then we check this is the case, and raise
+        an error if arrays is not evenly spaced. If ``'resample'``, then we resample
         ``w`` and ``I`` if needed. Recommended, but it takes some time.
-
     wunit: ``'nm'``, ``'cm-1'``
         just for printing messages. However, ``w`` and ``w_slit`` should be in the
         same wavespace.
@@ -677,15 +674,23 @@ def convolve_with_slit(
     #    evenly spaced
     # --------------
 
-    # ... Resample if not evenly spaced
-    # TODO: add a criteria based based on FWHM rather than absolute?
-    wstep = abs(np.diff(w)).min()  # spectrum wavelength spacing
-    if assert_evenly_spaced:
-        if not evenly_distributed(w, tolerance=wstep * 1e-3):
-            # TODO: automatically find a resampling factor?
-            warn("Spectrum not evenly spaced. Resampling")
+    # check first & last spacing, always :
+    is_evenly_spaced = evenly_distributed_fast(w, rtolerance=1e-3)
+    wstep = w[1] - w[0]
+
+    # ... check with details
+    if is_evenly_spaced and assert_evenly_spaced:
+        wstep = abs(np.diff(w)).min()  # spectrum wavelength spacing
+        is_evenly_spaced = evenly_distributed(w, atolerance=wstep * 1e-3)
+
+    if not is_evenly_spaced:
+        if assert_evenly_spaced == "resample":
             w, I = resample_even(w, I, resfactor=2, print_conservation=True)
             wstep = abs(np.diff(w)).min()  # new spectrum wavelength spacing
+
+        raise ValueError(
+            "Spectrum is not evenly spaced. Cannot apply slit function. Please resample with `convolve_with_slit(..., convolve_with_slit='resample')` ; or if using a Spectrum object `s`, with `s.resample_even()`"
+        )
 
     # ... Check that the slit is not reversed (interpolation requires objects are sorted)
     reverse = w_slit[-1] < w_slit[0]

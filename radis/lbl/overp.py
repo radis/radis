@@ -659,22 +659,17 @@ def rescale_updown_levels(
 
     Parameters
     ----------
-
     new_nu: float
         new upper state mole fraction
-
     old_nu: float
         current upper state mole fraction
-
     new_nl: float
         new lower state mole fraction
-
     old_nl: float
         current lower state mole fraction
 
     Other Parameters
     ----------------
-
     force: boolean
         if False, won't allow rescaling to 0 (not to loose information).
         Default ``False``
@@ -778,6 +773,7 @@ def rescale_updown_levels(
             units,
             extra,
             true_path_length,
+            assume_equilibrium=False,
         )
 
     if "emisscoeff" in recompute:

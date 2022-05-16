@@ -1224,6 +1224,25 @@ class PartFuncTIPS(RovibParFuncTabulator):
                     + f"Max range : {str(err)}"
                     + tip
                 )
+            elif isinstance(err, KeyError):
+                molecule = self.molecule
+                # In current version, GEISA parser uses HAPI partition function, which does not
+                # support some of GEISA's isotopes, as listed in GEISA_nw_iso below:
+                GEISA_ns_iso = {
+                    "CO2": [0],
+                    "H2O": [8, 9],
+                    "N2O": [0],
+                    "NO2": [2],
+                }
+                raise KeyError(
+                    "KeyError spotted! "
+                    + f"If you are computing GEISA spectra, this result might be because of an "
+                    + f"unsupported isotope. Currently isotope ID {GEISA_ns_iso[molecule]} "
+                    + f"of molecule {molecule} is not supported by HAPI partitional function, "
+                    + "thus stopping this spectrum calculation. Please select other isotopes "
+                    + "lists such as isotope='1,2,3'."
+                ) from err
+
             else:
                 raise
 

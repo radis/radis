@@ -1,6 +1,6 @@
-name: "💩Bug Report"
+name: "Bug Report"
 description: "Create a bug report to help us improve Radis \U0001F331"
-title: "💩 Bug Report: "
+title: "Bug Report: "
 labels: [bug]
 body:
   - type: markdown
@@ -24,15 +24,12 @@ body:
       label: "💡 Possible solutions"
       description: "Not obligatory, but suggest an idea for implementing addition or change"
       placeholder: "It actually ..."
-  - type: dropdown
+  - type: input
     id: radis-version
     attributes:
       label: "🎲 Radis version"
       description: "What version of Radis are you running?(radis.get_version())"
-      options:
-        - Version 1.0.0
-        - Version 0.9.18
-        - Version 0.9.19
+
     validations:
       required: true
   - type: dropdown

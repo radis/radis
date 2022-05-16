@@ -70,22 +70,26 @@ def conv2(quantity, fromunit, tounit):
     want to let the users choose another output unit
     """
 
-    import astropy.units as u
+    if fromunit == tounit:
+        return quantity
+    else:
 
-    try:
-        a = quantity * Unit(fromunit)
-        a = a.to(Unit(tounit))
+        import astropy.units as u
 
-    except u.UnitConversionError as err:
-        suggestion = ""
-        if fromunit == "" or tounit == "":
-            suggestion += " Is one of the two arrays normalized ?"
-        raise TypeError(
-            f"Cannot convert quantity `{fromunit}` to the specified unit `{tounit}`. Please check the dimensions."
-            + suggestion
-        ) from err
+        try:
+            a = quantity * Unit(fromunit)
+            a = a.to(Unit(tounit))
 
-    return a.value
+        except u.UnitConversionError as err:
+            suggestion = ""
+            if fromunit == "" or tounit == "":
+                suggestion += " Is one of the two arrays normalized ?"
+            raise TypeError(
+                f"Cannot convert quantity `{fromunit}` to the specified unit `{tounit}`. Please check the dimensions."
+                + suggestion
+            ) from err
+
+        return a.value
 
 
 def is_homogeneous(unit1, unit2):
@@ -97,13 +101,17 @@ def is_homogeneous(unit1, unit2):
         units
     """
 
-    import astropy.units as u
-
-    try:
-        1 * Unit(unit1) + 1 * Unit(unit2)
+    if unit1 == unit2:
         return True
-    except u.UnitConversionError:
-        return False
+    else:
+
+        import astropy.units as u
+
+        try:
+            1 * Unit(unit1) + 1 * Unit(unit2)
+            return True
+        except u.UnitConversionError:
+            return False
 
 
 # %% Emission density conversion functions (with changes from ~1/nm in ~1/cm-1)
@@ -213,7 +221,14 @@ def convert_emi2nm(j_cm, wavenum, Iunit0, Iunit):
 # %% Radiance conversion functions (with changes from ~1/nm in ~1/cm-1)
 
 
-def convert_rad2cm(l_nm, wavenum, Iunit0, Iunit):
+def convert_rad2cm(
+    l_nm,
+    wavenum,
+    Iunit0,
+    Iunit,
+    per_nm_is_like="mW/sr/cm2/nm",
+    per_cm_is_like="mW/sr/cm2/cm-1",
+):
     """Convert spectral radiance in wavelength base (~1/nm) to spectral
     radiance in wavenumber base (~1/cm-1)
 
@@ -253,7 +268,7 @@ def convert_rad2cm(l_nm, wavenum, Iunit0, Iunit):
     Both integrals are to be the same
     """
 
-    l_nm = conv2(l_nm, Iunit0, "mW/cm2/sr/nm")
+    l_nm = conv2(l_nm, Iunit0, per_nm_is_like)
 
     # Convert ''mW/cm2/sr/nm' to 'mW/cm2/sr/cm-1'
     l_cm = l_nm * 1e7 / wavenum**2
@@ -263,12 +278,19 @@ def convert_rad2cm(l_nm, wavenum, Iunit0, Iunit):
     # But both plots look alright
 
     # Convert to whatever was wanted
-    l_cm = conv2(l_cm, "mW/cm2/sr/cm-1", Iunit)
+    l_cm = conv2(l_cm, per_cm_is_like, Iunit)
 
     return l_cm
 
 
-def convert_rad2nm(l_cm, wavenum, Iunit0, Iunit):
+def convert_rad2nm(
+    l_cm,
+    wavenum,
+    Iunit0,
+    Iunit,
+    per_nm_is_like="mW/sr/cm2/nm",
+    per_cm_is_like="mW/sr/cm2/cm-1",
+):
     """Convert spectral radiance in wavenumber base (~1/cm-1) to spectral
     radiance in wavelength base (~1/nm)
 
@@ -296,7 +318,7 @@ def convert_rad2nm(l_cm, wavenum, Iunit0, Iunit):
     so        Lλ  = - Lν * 1e-7 * ν^2
     """
 
-    l_cm = conv2(l_cm, Iunit0, "mW/cm2/sr/cm-1")
+    l_cm = conv2(l_cm, Iunit0, per_cm_is_like)
 
     # Convert 'mW/cm2/sr/cm-1' to 'mW/cm2/sr/nm'
     l_nm = l_cm * 1e-7 * wavenum**2
@@ -306,7 +328,7 @@ def convert_rad2nm(l_cm, wavenum, Iunit0, Iunit):
     # But both plots look alright
 
     # Convert to whatever was wanted
-    l_nm = conv2(l_nm, "mW/cm2/sr/nm", Iunit)
+    l_nm = conv2(l_nm, per_nm_is_like, Iunit)
 
     return l_nm
 
@@ -315,9 +337,9 @@ def convert_universal(
     I,
     from_unit,
     to_unit,
-    spec=None,
-    per_nm_is_like="mW/sr/cm2/nm",
-    per_cm_is_like="mW/sr/cm2/cm-1",
+    wavenum,
+    per_nm_is_like="mW/cm2/sr/nm",
+    per_cm_is_like="mW/cm2/sr/cm-1",
 ):
     """Return variable var in whatever unit, and converts to to_unit Also deal
     with cases where var is in ~1/nm (per_nm_is_like) or ~1/cm-1
@@ -329,43 +351,52 @@ def convert_universal(
         variable to get. Usually 'radiance' or 'radiance_noslit'
     to_unit: str
         unit to convert variable to
-
-    Other Parameters
-    ----------------
-    spec: :class:`~radis.spectrum.spectrum.Spectrum` object
-        needed to get wavenumber in case we need to do a change of variable
-        within the integral
-
-    Notes
-    -----
-    wavenumber is needed in case we convert from ~1/nm to ~1/cm-1 (requires
-    a change of variable in the integral)
+    wavenum: array (cm-1)
+        wavenumber is needed in case we convert from ~1/nm to ~1/cm-1 (requires
+        a change of variable in the integral)
     """
-    import astropy.units as u
 
-    Iunit0 = from_unit
-    Iunit = to_unit
-    try:
-        if is_homogeneous(Iunit0, per_nm_is_like) and is_homogeneous(
-            Iunit, per_cm_is_like
-        ):
-            w_cm = spec.get_wavenumber()
-            I = convert_rad2cm(I, w_cm, Iunit0, Iunit)
-            # note that there may still be a new DimensionalityError
-            # raise here if the input was non-sense.
-        elif is_homogeneous(Iunit0, per_cm_is_like) and is_homogeneous(
-            Iunit, per_nm_is_like
-        ):
-            w_cm = spec.get_wavenumber()
-            I = convert_rad2nm(I, w_cm, Iunit0, Iunit)
-            # note that there may still be a new DimensionalityError
-            # raise here if the input was non-sense.
-        else:  # general case: just convert
-            I = conv2(I, Iunit0, Iunit)
-    except u.UnitConversionError:
-        raise TypeError(Iunit0, Iunit)
+    if from_unit == to_unit:
+        return I
+    else:
 
-    return I
+        import astropy.units as u
+
+        Iunit0 = from_unit
+        Iunit = to_unit
+        try:
+            if is_homogeneous(Iunit0, per_nm_is_like) and is_homogeneous(
+                Iunit, per_cm_is_like
+            ):
+                I = convert_rad2cm(
+                    I,
+                    wavenum,
+                    Iunit0,
+                    Iunit,
+                    per_nm_is_like=per_nm_is_like,
+                    per_cm_is_like=per_cm_is_like,
+                )
+                # note that there may still be a new DimensionalityError
+                # raise here if the input was non-sense.
+            elif is_homogeneous(Iunit0, per_cm_is_like) and is_homogeneous(
+                Iunit, per_nm_is_like
+            ):
+                I = convert_rad2nm(
+                    I,
+                    wavenum,
+                    Iunit0,
+                    Iunit,
+                    per_nm_is_like=per_nm_is_like,
+                    per_cm_is_like=per_cm_is_like,
+                )
+                # note that there may still be a new DimensionalityError
+                # raise here if the input was non-sense.
+            else:  # general case: just convert
+                I = conv2(I, Iunit0, Iunit)
+        except u.UnitConversionError:
+            raise TypeError(Iunit0, Iunit)
+
+        return I
 
 
 # %% Test

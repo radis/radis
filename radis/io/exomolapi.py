@@ -32,7 +32,6 @@ def read_def(deff):
     dat = pd.read_csv(deff, sep="#", names=("VAL", "COMMENT"))
     alpha_ref = None
     # texp = None
-    molmasssw = False
     n_Texp = None
     ntransf = 1
     maxnu = 0.0
@@ -42,18 +41,13 @@ def read_def(deff):
             alpha_ref = float(dat["VAL"][i])
         elif "Default value of temperature exponent" in com:
             n_Texp = float(dat["VAL"][i])
-        elif "Element symbol 2" in com:
-            molmasssw = True
         elif "No. of transition files" in com:
             ntransf = int(dat["VAL"][i])
         elif "Maximum wavenumber (in cm-1)" in com:
             maxnu = float(dat["VAL"][i])
             # maxnu=20000.0
-        elif molmasssw:
-            c = np.unique(dat["VAL"][i].strip(" ").split(" "))
-            c = np.array(c, dtype=np.float)
-            molmass = np.max(c)
-            molmasssw = False
+        elif "Isotopologue mass (Da) and (kg)" in com:
+            molmass = float(dat["VAL"][i].split()[0])  # in Da (atomic unit)
 
         elif "Lifetime availability" in com:
             lifetime = dat["VAL"][i] == 1
@@ -63,11 +57,46 @@ def read_def(deff):
         elif "Quantum label" in com:
             quantum_labels.append(dat["VAL"][i].strip(" "))
 
-        # SOME DEF FILES CONTAINS ERRORS. THESE ARE THE EXCEPTIONS
-        if deff.stem == "12C-16O2__UCL-4000":
-            ntransf = 20
-        if deff.stem == "14N-1H3__CoYuTe":
-            maxnu = 20000.0
+    # SOME DEF FILES CONTAINS ERRORS. THESE ARE THE EXCEPTIONS
+    if deff.stem == "12C-16O2__UCL-4000":
+        ntransf = 20
+    if deff.stem == "14N-1H3__CoYuTe":
+        maxnu = 20000.0
+    if deff.stem == "12C2-1H2__aCeTY":
+        if molmass == 12.0:
+            molmass = 26.0
+            print(
+                f"Known error in ExoMol def file, molmass corrected from 12.0 to {molmass}"
+            )
+        if quantum_labels == [
+            "totalSym",
+            "v1",
+            "v2",
+            "v3",
+            "v4",
+            "v5",
+            "v5",
+            "v7",
+            "vibSym",
+            "K",
+            "rotSym",
+        ]:
+            quantum_labels = [
+                "totalSym",
+                "v1",
+                "v2",
+                "v3",
+                "v4",
+                "v5",
+                "v6",
+                "v7",
+                "vibSym",
+                "K",
+                "rotSym",
+            ]
+            print(
+                f"Known error in ExoMol def file, quantum_labels corrected from '['totalSym', 'v1', 'v2', 'v3', 'v4', 'v5', 'v5', 'v7', 'vibSym', 'K', 'rotSym']' to {quantum_labels}"
+            )
 
     if ntransf > 1:
         dnufile = maxnu / ntransf
@@ -113,40 +142,49 @@ def read_pf(pff):
 
 def read_trans(transf, engine="vaex"):
     """Exomol IO for a transition file
-    Note:
+
+    Notes
+    -----
+
+    Transf format ::
+
         i_upper=Upper state counting number
         i_lower=Lower state counting number
         A=Einstein coefficient in s-1
         nu_lines=transition wavenumber in cm-1
-        See Table 12 in https://arxiv.org/pdf/1603.05890.pdf
 
-    Args:
-        transf: transition file
-        engine: parsing engine to use ('vaex', 'csv')
-    Returns:
-        transition data in pandas DataFrame
+    See Table 12 in https://arxiv.org/pdf/1603.05890.pdf [Exomol-2016]_
+
+    Parameters
+    ----------
+    transf: transition file
+    engine: parsing engine to use ('vaex', 'csv')
+
+    Returns
+    -------
+    transition data in vaex/pandas DataFrame
 
     """
     if engine == "vaex":
         import vaex
 
-        try:
+        try:  # bz2 compression
             dat = vaex.from_csv(
                 transf,
                 compression="bz2",
                 sep=r"\s+",
                 names=("i_upper", "i_lower", "A", "nu_lines"),
-                convert=True,
+                convert=False,  #  file is created by MdbMol
             )
         except:
             dat = vaex.read_csv(
                 transf,
                 sep=r"\s+",
                 names=("i_upper", "i_lower", "A", "nu_lines"),
-                convert=True,
+                convert=False,  #  file is created by MdbMol
             )
     elif engine == "csv":
-        try:
+        try:  # bz2 compression
             dat = pd.read_csv(
                 transf,
                 compression="bz2",
@@ -163,20 +201,30 @@ def read_trans(transf, engine="vaex"):
 
 def read_states(statesf, dic_def, engine="vaex"):
     """Exomol IO for a state file
-    Note:
+
+    Notes
+    -----
+
+    States f format ::
+
         i=state counting number
         E=state energy
         g=state degeneracy
         J=total angular momentum
-        See Table 11 in https://arxiv.org/pdf/1603.05890.pdf
 
-    Args:
-        statesf: state file
-        dic_def: Info from def file to read extra quantum numbers
-        engine: parsing engine to use ('vaex', 'csv')
-    Returns:
-        states data in pandas DataFrame
+    See Table 11 in https://arxiv.org/pdf/1603.05890.pdf
 
+    Parameters
+    ----------
+    statesf: state file
+    dic_def: Info from def file to read extra quantum numbers
+    engine: parsing engine to use ('vaex', 'csv')
+
+    Returns
+    -------
+    states data in pandas DataFrame
+
+    If ``'vaex'``, also writes a local hdf5 file `statesf.with_suffix('.hdf5')`
     """
     # we read first 4 columns for ("i", "E", "g", "J"),
     # skip lifetime, skip Landé g-factor,
@@ -229,21 +277,24 @@ def read_states(statesf, dic_def, engine="vaex"):
 
 
 def pickup_gE(ndstates, ndtrans, trans_file, dic_def, trans_lines=False):
-    """extract g_upper (gup), E_lower (elower), and J_lower and J_upper from states DataFrame and insert them to transition DataFrame.
+    """extract g_upper (gup), E_lower (elower), and J_lower and J_upper from states
+    DataFrame and insert them into the transition DataFrame.
 
-    Args:
-       ndstates: states numpy array    - the i, E, g, J are in the 4 first columns
-       ndtrans: transition numpy array
-       trans_file: name of the transition file
-       trans_lines: By default (False) we use nu_lines computed using the state file, i.e. E_upper - E_lower. If trans_nuline=True, we use the nu_lines in the transition file. Note that some trans files do not this info.
-       dic_def: Informations about additional quantum labels
+    Parameters
+    ----------
+    ndstates: states numpy array    - the i, E, g, J are in the 4 first columns
+    ndtrans: transition numpy array
+    trans_file: name of the transition file
+    trans_lines: By default (False) we use nu_lines computed using the state file, i.e. E_upper - E_lower. If trans_nuline=True, we use the nu_lines in the transition file. Note that some trans files do not this info.
+    dic_def: Informations about additional quantum labels
 
+    Returns
+    -------
+    A, nu_lines, elower, gup, jlower, jupper, mask, **quantum_labels
 
-    Returns:
-       A, nu_lines, elower, gup, jlower, jupper, mask, **quantum_labels
-
-    Note:
-       We first convert pandas DataFrame to ndarray. The state counting numbers in states DataFrame is used as indices of the new array for states (newstates). We remove the state count numbers as the column of newstate, i.e. newstates[:,k] k=0: E, 1: g, 2: J. Then, we can directly use the state counting numbers as mask.
+    Notes
+    -----
+    We first convert pandas DataFrame to ndarray. The state counting numbers in states DataFrame is used as indices of the new array for states (newstates). We remove the state count numbers as the column of newstate, i.e. newstates[:,k] k=0: E, 1: g, 2: J. Then, we can directly use the state counting numbers as mask.
 
 
     """
@@ -370,13 +421,17 @@ def pickup_gE(ndstates, ndtrans, trans_file, dic_def, trans_lines=False):
 
 def read_broad(broadf):
     """Reading braodening file (.broad)
-    Args:
-       broadf: .broad file
+    Parameters
+    ----------
+    broadf: .broad file
 
-    Return:
-       broadening info in bdat form (pandas), defined by this instance.
-    Note:
-       See Table 16 in https://arxiv.org/pdf/1603.05890.pdf
+    Returns
+    -------
+    broadening info in bdat form (pandas), defined by this instance.
+
+    Notes
+    -----
+    See Table 16 in https://arxiv.org/pdf/1603.05890.pdf
     """
     bdat = pd.read_csv(
         broadf,

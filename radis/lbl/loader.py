@@ -51,7 +51,7 @@ key in :py:attr:`radis.config`
 
 import warnings
 from copy import deepcopy
-from os.path import exists, join
+from os.path import exists, expanduser, join
 from time import time
 from uuid import uuid1
 
@@ -66,6 +66,9 @@ from radis.db.references import doi
 from radis.io.cache_files import cache_file_name
 from radis.io.cdsd import cdsd2df
 from radis.io.exomol import fetch_exomol
+from radis.io.geisa import fetch_geisa
+
+# from radis.io.geisa import gei2df
 from radis.io.hdf5 import hdf2df
 from radis.io.hitemp import fetch_hitemp
 from radis.io.hitran import (
@@ -108,15 +111,17 @@ KNOWN_DBFORMAT = [
     "cdsd-4000",
     "hitemp-radisdb",
     "hdf5-radisdb",
+    "geisa",
 ]
 """list: Known formats for Line Databases:
 
-- ``'hitran'`` : [HITRAN-2020]_ original .par format
-- ``'hitemp'`` : [HITEMP-2010]_ original format (same format as 'hitran')
-- ``'cdsd-hitemp'`` : CDSD-HITEMP original format (CO2 only, same lines as HITEMP-2010)
-- ``'cdsd-4000'`` : [CDSD-4000]_ original format (CO2 only)
+- ``'hitran'`` : [HITRAN-2020]_ original .par format.
+- ``'hitemp'`` : [HITEMP-2010]_ original format (same format as 'hitran').
+- ``'cdsd-hitemp'`` : CDSD-HITEMP original format (CO2 only, same lines as HITEMP-2010).
+- ``'cdsd-4000'`` : [CDSD-4000]_ original format (CO2 only).
 - ``'hitemp-radisdb'`` : HITEMP under RADISDB format (pytables-HDF5 with RADIS column names).
 - ``'hdf5-radisdb'`` : arbitrary HDF5 file with RADIS column names.
+- ``'geisa'`` : [GEISA-2020]_ original .par format.
 
 To install all databases manually see the :ref:`Configuration file <label_lbl_config_file>`
 and the :ref:`list of databases <label_line_databases>` .
@@ -163,6 +168,7 @@ drop_auto_columns_for_dbformat = {
     "cdsd-hitemp": ["wang2", "lsrc"],
     "hdf5-radisdb": [],
     "hitemp-radisdb": [],
+    "geisa": [],
 }
 """ dict: drop these columns if using ``drop_columns='auto'`` in load_databank
 Based on the value of ``dbformat=``, some of these columns won't be used.
@@ -172,6 +178,7 @@ See Also
 - 'hitran': (HITRAN / HITEMP) :data:`~radis.io.hitran.columns_2004`,
 - 'cdsd-hitemp' (CDSD HITEMP): :data:`~radis.io.cdsd.columns_hitemp`,
 - 'cdsd-4000': (CDSD 4000) :data:`~radis.io.cdsd.columns_4000`,
+- 'geisa': (GEISA 2020) :data:`~radis.io.geisa.columns_GEISA`,
 """
 drop_auto_columns_for_levelsfmt = {
     "radis": [],
@@ -1044,7 +1051,7 @@ class DatabankLoader(object):
                 )
             )
             source = "hitran"
-        if source not in ["hitran", "hitemp", "exomol"]:
+        if source not in ["hitran", "hitemp", "exomol", "geisa"]:
             raise NotImplementedError("source: {0}".format(source))
         if source == "hitran":
             dbformat = "hitran"
@@ -1060,6 +1067,10 @@ class DatabankLoader(object):
             dbformat = (
                 "exomol-radisdb"  # downloaded in RADIS local databases ~/.radisdb
             )
+        elif source == "geisa":
+            dbformat = "geisa"
+            if database == "default":
+                database = "full"
 
         local_databases = config["DEFAULT_DOWNLOAD_PATH"]
 
@@ -1342,6 +1353,55 @@ class DatabankLoader(object):
                 df = frames[0]
                 self.params.dbpath = local_paths[0]
 
+        elif source == "geisa":
+
+            self.reftracker.add(doi["GEISA-2020"], "line database")
+
+            if memory_mapping_engine == "auto":
+                # temp fix for vaex not building on RTD
+                # see https://github.com/radis/radis/issues/404
+                if any("READTHEDOCS" in name for name in environ):
+                    memory_mapping_engine = "pytables"
+                    if self.verbose >= 3:
+                        print(
+                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
+                        )
+                else:
+                    memory_mapping_engine = "vaex"
+
+            if database != "full":
+                raise ValueError(
+                    f"Got `database={database}`. When fetching GEISA, only the `database='full'` option is available."
+                )
+
+            # Download, setup local databases, and fetch (use existing if possible)
+
+            if isotope == "all":
+                isotope_list = None
+            else:
+                isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
+
+            df, local_paths = fetch_geisa(
+                molecule,
+                isotope=isotope_list,
+                local_databases=join(local_databases, "geisa"),
+                load_wavenum_min=wavenum_min,
+                load_wavenum_max=wavenum_max,
+                columns=columns,
+                cache=db_use_cached,
+                verbose=self.verbose,
+                return_local_path=True,
+                engine=memory_mapping_engine,
+                parallel=parallel,
+            )
+            self.params.dbpath = ",".join(local_paths)
+
+            # ... explicitely write all isotopes based on isotopes found in the database
+            if isotope == "all":
+                self.input.isotope = ",".join(
+                    [str(k) for k in self._get_isotope_list(df=df)]
+                )
+
         else:
             raise NotImplementedError("source: {0}".format(source))
 
@@ -1357,10 +1417,10 @@ class DatabankLoader(object):
         # Post-processing of the line database
         # (note : this is now done in 'fetch_hitemp' before saving to the disk)
         # spectroscopic quantum numbers will be needed for nonequilibrium calculations, and line survey.
-        if parse_local_global_quanta and "locu" in df:
+        if parse_local_global_quanta and "locu" in df and source != "geisa":
             df = parse_local_quanta(df, molecule, verbose=self.verbose)
         if (
-            parse_local_global_quanta and "globu" in df
+            parse_local_global_quanta and "globu" in df and source != "geisa"
         ):  # spectroscopic quantum numbers will be needed for nonequilibrium calculations :
             df = parse_global_quanta(df, molecule, verbose=self.verbose)
 
@@ -1705,7 +1765,7 @@ class DatabankLoader(object):
             path = [path]
 
         # ... Parse all paths and read wildcards
-        path_list = path
+        path_list = [expanduser(p) for p in path]
         new_paths = []
         for pathrg in path_list:
             path = get_files_from_regex(pathrg)

@@ -10,8 +10,10 @@ generate the spectrum) or the spectrum class (to recompute some quantities
 in post processing)
 """
 
-from radis.phys.blackbody import planck
+from radis.phys.blackbody import planck, planck_wn
+from radis.phys.constants import k_b
 from radis.phys.convert import cm2nm
+from radis.phys.units import is_homogeneous
 
 # ------- Get radiance from emissivity
 
@@ -34,6 +36,27 @@ def calc_radiance(wavenumber, emissivity, Tgas, unit="mW/sr/cm2/nm"):
     :py:func:`~radis.phys.blackbody.planck`
     """
 
-    radiance = emissivity * planck(cm2nm(wavenumber), Tgas, unit=unit)
+    if is_homogeneous(unit, "mW/sr/cm2/nm"):
+        radiance = emissivity * planck(cm2nm(wavenumber), Tgas, unit=unit)
+    elif is_homogeneous(unit, "mW/sr/cm2/cm-1"):
+        radiance = emissivity * planck_wn(wavenumber, Tgas, unit=unit)
 
     return radiance
+
+
+def abscoeff2xsection(abscoeff_cm1, Tgas_K, pressure_Pa, mole_fraction):
+    """Convert Absorption coefficient (cm-1) to Cross-section  (cm2)
+
+    Parameters
+    ----------
+    abscoeff_cm : cm-1
+    Tgas_K : K
+    pressure_Pa : Pa
+    mole_fraction : 0-1
+
+    Returns
+    -------
+    xsection: cm2
+    """
+
+    return abscoeff_cm1 * (k_b * Tgas_K / mole_fraction / pressure_Pa) * 1e6  # cm2

@@ -13,7 +13,7 @@ import pytest
 import radis
 from radis import get_residual, sPlanck
 from radis.lbl import SpectrumFactory
-from radis.lbl.base import get_waverange
+from radis.lbl.base import get_wavenumber_range
 from radis.misc.printer import printm
 from radis.misc.progress_bar import ProgressBar
 from radis.misc.utils import Default
@@ -367,7 +367,7 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
             s.rescale_path_length(1e6)
 
             if plot:
-                s.plot(wunit="nm", nfig="same", lw=4)
+                s.plot(wunit="nm", Iunit="mW/cm2/sr/nm", nfig="same", lw=4)
 
             if verbose:
                 printm(
@@ -482,7 +482,7 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
 
                 nfig = "test_opt_thick_limit_2iso {0}".format(s.name)
                 plt.figure(nfig).clear()
-                s.plot(wunit="nm", nfig=nfig, lw=4)
+                s.plot(wunit="nm", Iunit="mW/cm2/sr/nm", nfig=nfig, lw=4)
                 s_plck.plot(wunit="nm", nfig=nfig, Iunit="mW/cm2/sr/nm", lw=2)
                 plt.legend()
 
@@ -505,29 +505,34 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
         radis.config["DEBUG_MODE"] = DEBUG_MODE
 
 
-def test_get_waverange(*args, **kwargs):
+def test_get_wavenumber_range(*args, **kwargs):
+    """Test waverange conversions for various inputs"""
 
-    assert get_waverange(1 * u.um, 10 * u.um, medium="vacuum") == (1000, 10000)
+    assert get_wavenumber_range(
+        1 * u.um, 10 * u.um, medium="vacuum", return_input_wunit=True
+    ) == (1000, 10000, "nm_vac")
 
     # 'wunit' is none
     # ...'wmin/wmax' is none
     # ...... wavenumber is passed > should return the same wavenumbers
-    assert get_waverange(wavenum_min=10, wavenum_max=20, wunit=Default("cm-1")) == (
-        10,
-        20,
-    )
+    assert get_wavenumber_range(
+        wavenum_min=10, wavenum_max=20, wunit=Default("cm-1"), return_input_wunit=True
+    ) == (10, 20, "cm-1")
 
     # ...... wavelength is passed > should convert and return the wavenumbers
     assert np.isclose(
-        get_waverange(
-            wavelength_min=1, wavelength_max=2, medium="vacuum", wunit=Default("cm-1")
+        get_wavenumber_range(
+            wavelength_min=1,
+            wavelength_max=2,
+            medium="vacuum",
+            wunit=Default("cm-1"),
         ),
         (5000000.0, 10000000.0),
     ).all()
 
     # ....... passed both wavenumber and wavelength > should throw error
     with pytest.raises(ValueError):
-        get_waverange(
+        get_wavenumber_range(
             wavenum_min=1000,
             wavenum_max=2000,
             wavelength_min=1,
@@ -538,22 +543,22 @@ def test_get_waverange(*args, **kwargs):
 
     # ...... passed neither wavenumber nor wavlength > should throw error
     with pytest.raises(ValueError):
-        get_waverange(wunit=Default("cm-1"))
+        get_wavenumber_range(wunit=Default("cm-1"))
 
     # ... 'wmin/wmax' are passed as values without accompanying units
     # ...... wavenumber is passed > should throw error due to multiple input wavespace values
     with pytest.raises(ValueError):
-        get_waverange(
+        get_wavenumber_range(
             wavenum_min=1, wavenum_max=2, wmin=10, wmax=20, wunit=Default("cm-1")
         )
 
     # ...... wavelength is passed > should throw error due to multiple input wavespace values
     with pytest.raises(ValueError):
-        get_waverange(wmin=10, wmax=20, wavelength_min=1, wavelength_max=2)
+        get_wavenumber_range(wmin=10, wmax=20, wavelength_min=1, wavelength_max=2)
 
     # ...... passed both wavenumber and wavelength > should throw error due to multiple input wavespace values
     with pytest.raises(ValueError):
-        get_waverange(
+        get_wavenumber_range(
             wmin=1,
             wmax=2,
             wavenum_min=10,
@@ -564,12 +569,14 @@ def test_get_waverange(*args, **kwargs):
         )
 
     # ...... passed neither wavenumber nor wavelength > should return wavenumber after converting wmin/wmax assuming default units
-    assert get_waverange(wmin=10, wmax=20, wunit=Default("cm-1")) == (10.0, 20.0)
+    assert get_wavenumber_range(
+        wmin=10, wmax=20, wunit=Default("cm-1"), return_input_wunit=True
+    ) == (10.0, 20.0, "cm-1")
 
     # ... 'wmin/wmax' are passed as values with accompanying units
     # ...... wavenumber is passed > should throw error due to multiple input wavespace values
     with pytest.raises(ValueError):
-        get_waverange(
+        get_wavenumber_range(
             wavenum_min=10,
             wavenum_max=20,
             wmin=100 * (1 / u.cm),
@@ -579,7 +586,7 @@ def test_get_waverange(*args, **kwargs):
 
     # ...... wavelength is passed > should throw error due to multiple input wavespace values
     with pytest.raises(ValueError):
-        get_waverange(
+        get_wavenumber_range(
             wmin=100 * (1 / u.cm),
             wmax=200 * (1 / u.cm),
             wavelength_min=10,
@@ -589,7 +596,7 @@ def test_get_waverange(*args, **kwargs):
 
     # ...... passed both wavenumber and wavelength > should throw error due to multiple input wavespace values
     with pytest.raises(ValueError):
-        get_waverange(
+        get_wavenumber_range(
             wavenum_min=10,
             wavenum_max=20,
             wmin=100 * (1 / u.cm),
@@ -600,12 +607,12 @@ def test_get_waverange(*args, **kwargs):
         )
 
     # ...... passed neither wavenumber nor wavelength > should return wavenumber after converting wmin/wmax from accompanying unit
-    assert get_waverange(
+    assert get_wavenumber_range(
         wmin=100 * (1 / u.cm), wmax=200 * (1 / u.cm), wunit=Default("cm-1")
     ) == (100.0, 200.0)
 
     assert np.isclose(
-        get_waverange(
+        get_wavenumber_range(
             wmin=1 * u.cm, wmax=2 * u.cm, medium="vacuum", wunit=Default("cm-1")
         ),
         (0.5, 1.0),
@@ -615,15 +622,15 @@ def test_get_waverange(*args, **kwargs):
     # ... 'wmin/wmax' is none
     # ...... wavenumber is passed > should throw error as wunit can only be passed with wmin/wmax
     with pytest.raises(ValueError):
-        get_waverange(wavenum_min=1, wavenum_max=2, wunit="cm")
+        get_wavenumber_range(wavenum_min=1, wavenum_max=2, wunit="cm")
 
     # ...... wavelength is passed > should throw error as wunit can only be passed with wmin/wmax
     with pytest.raises(ValueError):
-        get_waverange(wavelength_min=1, wavelength_max=2, wunit="cm")
+        get_wavenumber_range(wavelength_min=1, wavelength_max=2, wunit="cm")
 
     # ...... passed both wavenumber and wavelength > should throw error as wunit can only be passed with wmin/wmax
     with pytest.raises(ValueError):
-        get_waverange(
+        get_wavenumber_range(
             wavenum_min=1,
             wavenum_max=2,
             wavelength_min=10,
@@ -633,20 +640,22 @@ def test_get_waverange(*args, **kwargs):
 
     # ...... passed neither wavenumber nor wavlength > should throw error
     with pytest.raises(ValueError):
-        get_waverange(wunit="cm")
+        get_wavenumber_range(wunit="cm")
 
     # ... 'wmin/wmax' are passed as values without accompanying units
     # ...... wavenumber is passed > should throw error as only one set of wavespace parameters can be passed
     with pytest.raises(ValueError):
-        get_waverange(wmin=1, wmax=2, wavenum_min=10, wavenum_max=20, wunit="cm")
+        get_wavenumber_range(wmin=1, wmax=2, wavenum_min=10, wavenum_max=20, wunit="cm")
 
     # ...... wavelength is passed > should throw error as only one set of wavespace parameters can be passed
     with pytest.raises(ValueError):
-        get_waverange(wmin=1, wmax=2, wavelength_min=10, wavelength_max=20, wunit="cm")
+        get_wavenumber_range(
+            wmin=1, wmax=2, wavelength_min=10, wavelength_max=20, wunit="cm"
+        )
 
     # ...... passed both wavenumber and wavelength > should throw error as only one set of wavespace parameters can be passed
     with pytest.raises(ValueError):
-        get_waverange(
+        get_wavenumber_range(
             wmin=1,
             wmax=2,
             wavenum_min=10,
@@ -658,22 +667,22 @@ def test_get_waverange(*args, **kwargs):
 
     # ...... passed neither wavenumber nor wavlength > should return wavenumber after converting wmin/wmax with given wunit
     assert np.isclose(
-        get_waverange(wmin=1, wmax=2, wunit="cm"),
+        get_wavenumber_range(wmin=1, wmax=2, wunit="cm"),
         (0.4998637271242577, 0.9997274542485038),
     ).all()
 
-    assert get_waverange(wmin=1, wmax=2, wunit="cm-1") == (1.0, 2.0)
+    assert get_wavenumber_range(wmin=1, wmax=2, wunit="cm-1") == (1.0, 2.0)
 
     # ... 'wmin/wmax' are passed as values with accompanying units
     # ...... wavenumber is passed > should throw error as only one set of wavespace parameters can be passed
     with pytest.raises(ValueError):
-        get_waverange(
+        get_wavenumber_range(
             wmin=1 * u.cm, wmax=2 * u.cm, wavenum_min=10, wavenum_max=20, wunit="cm"
         )
 
     # ...... wavelength is passed > should throw error as only one set of wavespace parameters can be passed
     with pytest.raises(ValueError):
-        get_waverange(
+        get_wavenumber_range(
             wmin=1 * u.cm,
             wmax=2 * u.cm,
             wavelength_min=10,
@@ -683,7 +692,7 @@ def test_get_waverange(*args, **kwargs):
 
     # ...... passed both wavenumber and wavelength > should throw error as only one set of wavespace parameters can be passed
     with pytest.raises(ValueError):
-        get_waverange(
+        get_wavenumber_range(
             wmin=1 * u.cm,
             wmax=2 * u.cm,
             wavenum_min=1,
@@ -695,20 +704,22 @@ def test_get_waverange(*args, **kwargs):
 
     # ...... passed neither wavenumber nor wavlength > should return wavenumber after converting wmin/wmax with given wunit
     assert np.isclose(
-        get_waverange(wmin=1 * u.cm, wmax=2 * u.cm, wunit="cm"),
+        get_wavenumber_range(wmin=1 * u.cm, wmax=2 * u.cm, wunit="cm"),
         (0.4998637271242577, 0.9997274542485038),
     ).all()
 
-    assert get_waverange(wmin=1 * (1 / u.cm), wmax=2 * (1 / u.cm), wunit="cm-1") == (
+    assert get_wavenumber_range(
+        wmin=1 * (1 / u.cm), wmax=2 * (1 / u.cm), wunit="cm-1"
+    ) == (
         1.0,
         2.0,
     )
     assert np.isclose(
-        get_waverange(wmin=1 * u.cm, wmax=2 * u.cm, wunit="cm"),
+        get_wavenumber_range(wmin=1 * u.cm, wmax=2 * u.cm, wunit="cm"),
         (0.4998637271242577, 0.9997274542485038),
     ).all()
     assert np.isclose(
-        get_waverange(
+        get_wavenumber_range(
             wavelength_min=1 * u.cm, wavelength_max=2 * u.cm, wunit=Default("cm-1")
         ),
         (0.4998637271242577, 0.9997274542485038),
@@ -716,18 +727,91 @@ def test_get_waverange(*args, **kwargs):
 
     # ... passed wmin/wmax with units different from wunit > should throw error due to conflicting units
     with pytest.raises(ValueError):
-        get_waverange(wmin=1 * u.cm, wmax=2 * u.cm, wunit="cm-1")
+        get_wavenumber_range(wmin=1 * u.cm, wmax=2 * u.cm, wunit="cm-1")
+
+
+def test_input_wunit(plot=True, *args, **kwargs):
+    """Test spectrum default units are properly when giving inputs in wavenumber
+    or wavelength ; and test that intensity units are consistent too"""
+
+    if not plot:
+        raise ValueError("This test requires plotting")
+
+    import matplotlib.pyplot as plt
+
+    from radis import test_spectrum
+
+    s_from_wavenumber = test_spectrum()
+    s_from_wavenumber.plot()
+
+    assert s_from_wavenumber.c["waveunit"] == "cm-1"
+    assert plt.gca().get_xlabel() == "Wavenumber (cm⁻¹)"
+    assert plt.gca().get_ylabel() == "radiance (mW/cm²/sr/cm⁻¹)"
+
+    assert s_from_wavenumber.units["radiance_noslit"] == "mW/cm2/sr/cm-1"
+
+    #%%
+    # Compute the same spectrum, but with wavelength input (and compare that
+    # areas are the same at the end)
+    wmin = s_from_wavenumber.get_wavelength().min()
+    wmax = s_from_wavenumber.get_wavelength().max()
+
+    import astropy.units as u
+
+    s_fromwl = test_spectrum(wmin=wmin * u.nm, wmax=wmax * u.nm)
+    s_fromwl.plot()
+
+    import matplotlib.pyplot as plt
+
+    assert s_fromwl.c["waveunit"] == "cm-1"  # calculation unit
+    assert s_fromwl.c["default_output_unit"] == "nm"  # default get/plot unit
+    assert plt.gca().get_xlabel() == "Wavelength (nm)"
+    assert plt.gca().get_ylabel() == "radiance (mW/cm²/sr/nm)"
+
+    # Check Python technical caveats do not apply :
+    # ... Check that units have not changed :
+    assert s_from_wavenumber.units["radiance_noslit"] == "mW/cm2/sr/cm-1"
+    # ... Check we're not sharing the same object:
+    assert s_from_wavenumber.units is not s_fromwl.units  # Python problems
+
+    #%%
+    import numpy as np
+
+    print(s_from_wavenumber.get_power())
+    print(s_fromwl.get_power())
+
+    print(s_from_wavenumber.get("radiance_noslit", Iunit="mW/cm2/sr/cm-1")[1])
+    print(s_fromwl.get("radiance_noslit", Iunit="mW/cm2/sr/cm-1")[1])
+
+    # Check power is approximately the same
+    # (note : should be exactly the same actually; see https://github.com/radis/radis/issues/460)
+    # TODO: change assertion with equality once #460 is fixed
+    assert np.isclose(s_from_wavenumber.get_power(), s_fromwl.get_power(), rtol=1e-4)
+
+    # Check algebra & line-of-sight work
+    (s_from_wavenumber // s_fromwl).plot()
+    (s_from_wavenumber > s_fromwl).plot()
+    (
+        s_from_wavenumber.take("radiance_noslit") + s_fromwl.take("radiance_noslit")
+    ).plot()
+    assert np.isclose(
+        (
+            s_from_wavenumber.take("radiance_noslit") + s_fromwl.take("radiance_noslit")
+        ).max(),
+        2 * s_from_wavenumber.take("radiance_noslit").max(),
+    )
 
 
 def _run_testcases(verbose=True, plot=True):
 
+    test_input_wunit()
     test_linestrength_calculations()
     test_export_populations(plot=plot, verbose=verbose)
     test_export_rovib_fractions(plot=plot, verbose=verbose)
     test_populations_CO2_hamiltonian(plot=plot, verbose=verbose)
     test_optically_thick_limit_1iso(plot=plot, verbose=verbose)
     test_optically_thick_limit_2iso(plot=plot, verbose=verbose)
-    test_get_waverange()
+    test_get_wavenumber_range()
 
 
 if __name__ == "__main__":

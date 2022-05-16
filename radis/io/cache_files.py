@@ -631,7 +631,7 @@ def save_to_hdf(
         version = radis.__version__
     metadata.update({"version": version})
 
-    manager.add_metadata(fname, metadata)
+    manager.add_metadata(fname, metadata, key=key)
 
     if verbose >= 3:
         print("... saved {0} with metadata: {1}".format(fname, metadata))

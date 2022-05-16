@@ -338,6 +338,11 @@ method to retrieve the quantity un the units you want::
     _, R = s.get('radiance_noslit', wunit='nm', Iunit='W/cm2/sr/nm',
                  medium='air')
 
+Use with `return_units` to get dimensioned Astropy Quantities ::
+
+    w, R  = s.get('radiance_noslit', return_units=True)
+    # w, R are astropy quantities
+
 See :ref:`spectral arrays <label_spectral _arrays>` for the list
 of spectral arrays.
 

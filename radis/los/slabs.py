@@ -137,7 +137,6 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
     # Check inputs, get defaults
     resample_wavespace = kwargs.pop("resample", "never")  # default 'never'
     out_of_bounds = kwargs.pop("out", "nan")  # default 'nan'
-    verbose = kwargs.pop("verbose", False)  # type: bool
     modify_inputs = kwargs.pop("modify_inputs", False)  # type: bool
     if len(kwargs) > 0:
         raise ValueError("Unexpected input: {0}".format(list(kwargs.keys())))
@@ -184,8 +183,15 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
         # Make all our slabs copies with the same wavespace range
         # (note: wavespace range may be different for different quantities, but
         # equal for all slabs)
+        copy_lines = False
         s, sn = resample_slabs(
-            waveunit, resample_wavespace, out_of_bounds, modify_inputs, s, sn
+            waveunit,
+            resample_wavespace,
+            out_of_bounds,
+            modify_inputs,
+            copy_lines,
+            s,
+            sn,
         )
         try:
             w = s._q["wavespace"]
@@ -198,57 +204,50 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
         # Get all data
         # -------------
 
-        I, In, T, Tn = None, None, None, None
-
         # To make it easier, the radiative transfer equation is solved with 'radiance_noslit' and
         # 'transmittance_noslit' only. Here we first try to get these quantities:
 
+        # ... if not given in the spectra, they are recomputed automatically
+        # ... starting from RADIS 0.12 https://github.com/radis/radis/pull/413
+
         # ... get sn quantities
         try:
-            sn.update("transmittance_noslit", verbose=verbose)
-        except ValueError:
-            pass
-        else:
             Tn = sn.get(
                 "transmittance_noslit",
                 wunit=waveunit,
                 Iunit=unitsn["transmittance_noslit"],
                 copy=False,
             )[1]
-        try:
-            sn.update("radiance_noslit", verbose=verbose)
         except ValueError:
-            pass
-        else:
+            Tn = None
+        try:
             In = sn.get(
                 "radiance_noslit",
                 wunit=waveunit,
                 Iunit=unitsn["radiance_noslit"],
                 copy=False,
             )[1]
+        except ValueError:
+            In = None
         # ... get s quantities
         try:
-            s.update("transmittance_noslit", verbose=verbose)
-        except ValueError:
-            pass
-        else:
             T = s.get(
                 "transmittance_noslit",
                 wunit=waveunit,
                 Iunit=unitsn["transmittance_noslit"],
                 copy=False,
             )[1]
-        try:
-            s.update("radiance_noslit", verbose=verbose)
         except ValueError:
-            pass
-        else:
+            T = None
+        try:
             I = s.get(
                 "radiance_noslit",
                 wunit=waveunit,
                 Iunit=unitsn["radiance_noslit"],
                 copy=False,
             )[1]
+        except ValueError:
+            I = None
 
         # Solve radiative transfer equation
         # ---------------------------------
@@ -281,10 +280,14 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
                 conditions[cond] = s.conditions[cond] + sn.conditions[cond]
                 if cond in s.cond_units and cond in sn.cond_units:
                     assert s.cond_units == sn.cond_units
+        # ... for the parmaeters below, if N/A, remove the value
+        for cond in ["default_output_unit"]:
+            if cond in conditions and conditions[cond] == "N/A":
+                conditions.pop(cond)
         cond_units = intersect(s.cond_units, sn.cond_units)
 
-        # Update references
-        # -----------------
+        # Update bibliography references
+        # ------------------------------
         # (just add everything)
         references = {**s.references, **sn.references}
 
@@ -352,7 +355,12 @@ def _has_quantity(quantity, *slabs):
 
 
 def resample_slabs(
-    waveunit, resample_wavespace, out_of_bounds="nan", modify_inputs=False, *slabs
+    waveunit,
+    resample_wavespace,
+    out_of_bounds="nan",
+    modify_inputs=False,
+    copy_lines=False,
+    *slabs
 ):
     # type: (str, str, str, *Spectrum) -> *Spectrum
     """Resample slabs on the same wavespace: if the range are differents,
@@ -412,7 +420,7 @@ def resample_slabs(
 
     # Work on copies
     if not modify_inputs:
-        slabs = [s.copy(copy_lines=False) for s in slabs]
+        slabs = [s.copy(copy_lines=copy_lines) for s in slabs]
 
     # Get all keys
     keys = merge_lists([s.get_vars() for s in slabs])
@@ -425,7 +433,7 @@ def resample_slabs(
         # defined on the same range)
         slabsk = [s for s in slabs if k in s.get_vars()]  # note that these are
         # references to the actual Spectrum copy
-        wl = [s.get(k, wunit=waveunit, copy=False)[0] for s in slabsk]
+        wl = [s.get(k, wunit=waveunit, Iunit=s.units[k], copy=False)[0] for s in slabsk]
         if not same_wavespace(wl):
             # resample slabs if allowed
             if resample_wavespace == "never":
@@ -622,7 +630,7 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
             )
         return slabs[0]
 
-    else:  # calculate serial slabs
+    else:  # calculate merge slabs
 
         slabs = list(slabs)
 
@@ -644,13 +652,21 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
                 + "  (got {0})".format(path_lengths)
             )
 
+        # Save lines if lines are given in all input spectra
+        export_lines = all([s.lines is not None for s in slabs])
+
         # make sure we use the same wavespace type (even if sn is in 'nm' and s in 'cm-1')
         waveunit = slabs[0].get_waveunit()
         # Make all our slabs copies with the same wavespace range
         # (note: wavespace range may be different for different quantities, but
         # equal for all slabs)
         slabs = resample_slabs(
-            waveunit, resample_wavespace, out_of_bounds, modify_inputs, *slabs
+            waveunit,
+            resample_wavespace,
+            out_of_bounds,
+            modify_inputs,
+            export_lines,
+            *slabs
         )
         w_noconv = slabs[0]._get_wavespace()
 
@@ -666,6 +682,10 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
             conditions = intersect(conditions, s.conditions)
             cond_units = intersect(cond_units, s.cond_units)
             # units = intersect(units0, s.units)  # we're actually using [slabs0].units insteads
+        # ... for the parmaeters below, if N/A, remove the value
+        for cond in ["default_output_unit"]:
+            if cond in conditions and conditions[cond] == "N/A":
+                conditions.pop(cond)
         # ... Add extensive parameters
         for cond in ["molecule"]:  # list of all
             if in_all(cond, [s.conditions for s in slabs]):
@@ -696,12 +716,32 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
         #  "mole_fractions":{'MergeSlabs':dict},  # make a dict, same for mole fractions?
         #  }
 
-        # Update references
-        # -----------------
+        # Update bibliography references
+        # ------------------------------
         # (just add everything)
         references = slabs[0].references
         for s in slabs[1:]:
             references.update(s.references)
+
+        # Export lines
+        # -----------
+        if export_lines:
+            for s in slabs:
+                if not "id" in s.lines:
+                    # add molecule id to be able to differentiate many molecules in LineSurvey
+                    if "id" in s.lines.attrs:  # stored in attributes
+                        s.lines["id"] = s.lines.attrs["id"]
+                    else:  # add molecule from conditions
+                        try:
+                            from radis.db.molecules import get_molecule_id
+
+                            s.lines["id"] = get_molecule_id(s.c["molecule"])
+                        except:
+                            s.lines["id"] = s.c["molecule"]
+            import pandas as pd
+
+            lines = pd.concat([s.lines for s in slabs], ignore_index=True)
+            lines.sort_values("wav", inplace=True)
 
         # %% Get quantities that should be calculated
         # Try to keep all the quantities of the initial slabs:
@@ -714,19 +754,10 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
             recompute.append("absorbance")
             recompute.append("transmittance_noslit")
 
-        # To make it easier, we start from abscoeff and emisscoeff of all slabs
-        # Let's recompute them all
-        # TODO: if that changes the initial Spectra, maybe we should just work on copies
-        for s in slabs:
-            if "abscoeff" in recompute and not "abscoeff" in list(s._q.keys()):
-                s.update("abscoeff", verbose=False)
-                # that may crash if Spectrum doesnt have the correct inputs.
-                # let update() handle that
-            if "emisscoeff" in recompute and not "emisscoeff" in list(s._q.keys()):
-                s.update("emisscoeff", verbose=False)
-                # same
-
         # %% Calculate total emisscoeff and abscoeff
+        # To make it easier, we start from abscoeff and emisscoeff of all slabs
+        # ... if not given in the spectra, they are recomputed automatically
+        # ... starting from RADIS 0.12 https://github.com/radis/radis/pull/413
         added = {}
 
         # ... absorption coefficient (cm-1)
@@ -736,7 +767,9 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
                 printdbg("... merge: calculating abscoeff k=sum(k_i)")
             abscoeff_eq = np.sum(
                 [
-                    s.get("abscoeff", wunit=waveunit, Iunit=units0["abscoeff"])[1]
+                    s.take("abscoeff").get(
+                        "abscoeff", wunit=waveunit, Iunit=units0["abscoeff"]
+                    )[1]
                     for s in slabs
                 ],
                 axis=0,
@@ -750,7 +783,9 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
                 printdbg("... merge: calculating emisscoeff j=sum(j_i)")
             emisscoeff_eq = np.sum(
                 [
-                    s.get("emisscoeff", wunit=waveunit, Iunit=units0["emisscoeff"])[1]
+                    s.take("emisscoeff").get(
+                        "emisscoeff", wunit=waveunit, Iunit=units0["emisscoeff"]
+                    )[1]
                     for s in slabs
                 ],
                 axis=0,
@@ -767,6 +802,7 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
             conditions=conditions,
             cond_units=cond_units,
             units=units0,
+            lines=lines if export_lines else None,
             name=name,
             references=references,
         )

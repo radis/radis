@@ -94,8 +94,12 @@ def cast_to_int64_with_missing_values(dg, keys):
     """replace missing values of int64 columns with -1"""
     for c in keys:
         if dg.dtypes[c] != int64:
-            dg.loc[dg[c] == "  ", c] = -1  # replace empty cells by -1, e.g. HCN
-            dg[c] = dg[c].fillna(-1).astype(int64)
+            dg[c].replace(
+                r"^\s+$", -1, regex=True, inplace=True
+            )  # replace empty strings by -1, e.g. HCN
+            # Warning: -1 may be a valid non-equilibirum quantum number for some
+            # molecules, e.g. H2O, see https://github.com/radis/radis/issues/280#issuecomment-896120510
+            dg[c] = dg[c].fillna(-1).astype(int64)  # replace nans with -1
 
 
 def hit2df(
@@ -1279,6 +1283,7 @@ def fetch_hitran(
     clean_cache_files=True,
     return_local_path=False,
     engine="default",
+    output="pandas",
     parallel=True,
     parse_quanta=True,
 ):
@@ -1319,6 +1324,9 @@ def fetch_hitran(
         if ``True``, also returns the path of the local database file.
     engine: 'pytables', 'vaex', 'default'
         which HDF5 library to use. If 'default' use the value from ~/radis.json
+    output: 'pandas', 'vaex', 'jax'
+        format of the output DataFrame. If ``'jax'``, returns a dictionary of
+        jax arrays.
     parallel: bool
         if ``True``, uses joblib.parallel to load database with multiple processes
     parse_quanta: bool
@@ -1412,6 +1420,7 @@ def fetch_hitran(
         isotope=isotope,
         load_wavenum_min=load_wavenum_min,  # for relevant files, get only the right range
         load_wavenum_max=load_wavenum_max,
+        output=output,
     )
 
     return (df, local_file) if return_local_path else df
