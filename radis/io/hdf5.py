@@ -16,6 +16,14 @@ import pandas as pd
 from tables.exceptions import NoSuchNodeError
 
 
+def vaexsafe_colname(name):
+    """replace '/' (forbidden in HDF5 vaex column names with '_'
+    https://github.com/radis/radis/issues/473
+    https://github.com/vaexio/vaex/issues/1255
+    """
+    return name.replace("/", "_")
+
+
 def update_pytables_to_vaex(fname, remove_initial=False, verbose=True, key="df"):
     """Convert a HDF5 file generated from PyTables to a
     Vaex-friendly HDF5 format, preserving metadata"""
@@ -148,6 +156,10 @@ class DataFileManager(object):
             # export dataframe
             df.to_hdf(file, key, format="fixed", mode="w", complevel=9, complib="blosc")
         elif self.engine == "vaex":
+
+            for c in df.columns:
+                df.rename(c, vaexsafe_colname(c))
+
             if key == "default":
                 key = r"/table"
             import vaex

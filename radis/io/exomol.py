@@ -21,7 +21,11 @@ except ImportError:  # if local import
     from radis.io.dbmanager import DatabaseManager
     from radis.io.exomol_utils import e2s
 
-from radis.db.classes import get_molecule_identifier
+from radis.db.classes import (
+    EXOMOL_MOLECULES,
+    EXOMOL_ONLY_ISOTOPES_NAMES,
+    get_molecule_identifier,
+)
 
 EXOMOL_URL = "http://www.exomol.com/db/"
 
@@ -50,7 +54,10 @@ def get_exomol_full_isotope_name(molecule, isotope):
     --------
     :py:func:`~radis.io.exomol.get_exomol_database_list`"""
 
-    from radis.db.classes import EXOMOL_ONLY_ISOTOPES_NAMES
+    if molecule not in EXOMOL_MOLECULES:
+        raise ValueError(
+            f"Molecule {molecule} not available in ExoMol. Change database, or choose one of ExoMol available molecules: {sorted(EXOMOL_MOLECULES)}"
+        )
 
     if (molecule, isotope) in EXOMOL_ONLY_ISOTOPES_NAMES:
         return EXOMOL_ONLY_ISOTOPES_NAMES[(molecule, isotope)]
@@ -226,6 +233,7 @@ def fetch_exomol(
     return_partition_function=False,
     engine="default",
     output="pandas",
+    add_quantum_labels=False,
 ):
     """Stream ExoMol file from EXOMOL website. Unzip and build a HDF5 file directly.
 
@@ -285,6 +293,8 @@ def fetch_exomol(
     output: 'pandas', 'vaex', 'jax'
         format of the output DataFrame. If ``'jax'``, returns a dictionary of
         jax arrays.
+    add_quantum_labels: bool . If True fetch all quantum labels defined in ExoMol definition
+        file, from states into transitions
 
     Returns
     -------
@@ -380,6 +390,7 @@ def fetch_exomol(
         ],
         engine=engine,
         cache=cache,
+        add_quantum_labels=add_quantum_labels,
     )
 
     # Get local files
@@ -509,6 +520,7 @@ class MdbExomol(DatabaseManager):
         engine="vaex",
         verbose=True,
         cache=True,
+        add_quantum_labels=False,
     ):
         """molecular database of ExoMol
 
@@ -526,6 +538,7 @@ class MdbExomol(DatabaseManager):
         Other Parameters
         ----------------
         engine: which memory mapping engine to use : 'vaex', 'pytables' (HDF5), 'feather'
+        add_quantum_labels: bool . If True fetch all quantum labels in dic_def['quantum_labels'] from states into transitions
 
         Notes
         -----
@@ -763,7 +776,9 @@ class MdbExomol(DatabaseManager):
                 # Complete transition data with lookup on upper & lower state :
                 # In particular, compute gup and elower
 
-                exomolapi.pickup_gE(states, trans, trans_file, dic_def)
+                exomolapi.pickup_gE(
+                    states, trans, trans_file, dic_def, add_quantum_labels=False
+                )
 
                 ##Recompute Line strength:
                 from radis.lbl.base import (  # TODO: move elsewhere

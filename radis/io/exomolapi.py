@@ -7,6 +7,11 @@ code (which you should also have a look at !), by @HajimeKawahara, under MIT Lic
 import numpy as np
 import pandas as pd
 
+try:
+    from .hdf5 import vaexsafe_colname
+except:
+    from radis.io.hdf5 import vaexsafe_colname
+
 
 def read_def(deff):
     """Exomol IO for a definition file
@@ -283,7 +288,9 @@ def read_states(statesf, dic_def, engine="vaex"):
     return dat
 
 
-def pickup_gE(states, trans, trans_file, dic_def, trans_lines=False):
+def pickup_gE(
+    states, trans, trans_file, dic_def, trans_lines=False, add_quantum_labels=False
+):
     """extract g_upper (gup), E_lower (elower), and J_lower and J_upper from states
     DataFrame and insert them into the transition DataFrame.
 
@@ -294,6 +301,7 @@ def pickup_gE(states, trans, trans_file, dic_def, trans_lines=False):
     trans_file: name of the transition file
     trans_lines: By default (False) we use nu_lines computed using the state file, i.e. E_upper - E_lower. If trans_nuline=True, we use the nu_lines in the transition file. Note that some trans files do not this info.
     dic_def: Informations about additional quantum labels
+    add_quantum_labels: bool . If True fetch all quantum labels in dic_def['quantum_labels'] from states into transitions
 
     Returns
     -------
@@ -328,7 +336,10 @@ def pickup_gE(states, trans, trans_file, dic_def, trans_lines=False):
         """
         try:  # pytable
             trans[new_col] = trans[trans_key].map(dict(states[col]))
-        except:  # vaex version  (TODO : replace with dict() approach in vaex too)
+        except:  # a priori, vaex version  (TODO : replace with dict() approach in vaex too)
+            col = vaexsafe_colname(col)
+            new_col = vaexsafe_colname(new_col)
+
             # WIP. First implementation with join(). Use Map() will probably be faster.
             trans.join(
                 states[states_key, col],
@@ -357,9 +368,10 @@ def pickup_gE(states, trans, trans_file, dic_def, trans_lines=False):
 
     ### Step 2. Extra quantum numbers (e/f parity, vib and rot numbers)
     # -----------------------------------------------------------------
-    for q in dic_def["quantum_labels"]:
-        map_add(q, f"{q}_l", "i_lower")
-        # map_add(q, f"{q}_u", "i_upper")
+    if add_quantum_labels:
+        for q in dic_def["quantum_labels"]:
+            map_add(q, f"{q}_l", "i_lower")
+            # map_add(q, f"{q}_u", "i_upper")
 
     return trans
 
@@ -542,69 +554,3 @@ def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None):
 
 if __name__ == "__main__":
     pass
-    # import pathlib
-    # import sys
-    # import time
-
-    # deff = pathlib.Path(
-    #     "/home/kawahara/exojax/examples/luhman16/.database/CO2/12C-16O2/UCL-4000/12C-16O2__UCL-4000.def"
-    # )
-    # n_Texp, alpha_ref, molmass, numinf, numtag = read_def(deff)
-    # print(numtag)
-    # sys.exit()
-    # # various broad file
-    # #    broadf="/home/kawahara/exojax/data/broad/12C-16O__H2.broad"
-    # broadf = "/home/kawahara/exojax/data/broad/1H2-16O__H2.broad"
-    # bdat = read_broad(broadf)
-    # codelv = check_bdat(bdat)
-    # print(codelv)
-    # if codelv == "a0":
-    #     j2alpha_ref, j2n_Texp = make_j2b(bdat, jlower_max=100)
-    # elif codelv == "a1":
-    #     j2alpha_ref, j2n_Texp = make_j2b(bdat, jlower_max=100)
-    #     jj2alpha_ref, jj2n_Texp = make_jj2b(bdat, j2alpha_ref, j2n_Texp, jupper_max=100)
-    #     print(jj2alpha_ref[1, 2])
-    #     print(jj2alpha_ref[1, 15])
-
-    # sys.exit()
-    # # broad file
-    # broadf = "/home/kawahara/exojax/data/CO/12C-16O/12C-16O__H2.broad"
-    # bdat = read_broad(broadf)
-    # j2alpha_ref, j2n_Texp = make_j2b(bdat, jlower_max=100)
-
-    # # partition file
-    # pff = "/home/kawahara/exojax/data/exomol/CO/12C-16O/Li2015/12C-16O__Li2015.pf"
-    # dat = read_pf(pff)
-
-    # check = False
-    # if check:
-    #     print("Checking compution of Elower and gupper.")
-    # statesf = (
-    #     "/home/kawahara/exojax/data/exomol/CO/12C-16O/Li2015/12C-16O__Li2015.states.bz2"
-    # )
-    # states = read_states(statesf)
-    # transf = (
-    #     "/home/kawahara/exojax/data/exomol/CO/12C-16O/Li2015/12C-16O__Li2015.trans.bz2"
-    # )
-    # trans = read_trans(transf)
-
-    # ts = time.time()
-    # A, nu_lines, elower, gup, jlower, jupper = pickup_gE(states, trans)
-    # #    for i in range(0,len(A)):
-    # #        print(jlower[i],"-",jupper[i])
-    # te = time.time()
-
-    # tsx = time.time()
-    # if check:
-    #     A_s, nu_lines_s, elower_s, gup_s = pickup_gEslow(states, trans)
-    # tex = time.time()
-    # print(te - ts, "sec")
-    # if check:
-    #     print(tex - tsx, "sec for the slow version")
-    #     print("CHECKING DIFFERENCES...")
-    #     print(np.sum((A_s - A) ** 2))
-    #     print(np.sum((nu_lines_s - nu_lines) ** 2))
-    #     print(np.sum((elower_s - elower) ** 2))
-    #     print(np.sum((gup_s - gup) ** 2))
-
-    # # computing alpha_ref, n_Texp
