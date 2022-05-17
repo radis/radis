@@ -129,6 +129,10 @@ class DataFileManager(object):
     ):
         """Write dataframe ``df`` to ``file``
 
+        Parameters
+        ----------
+        df: DataFrame
+
         Other Parameters
         ----------------
         key: str
@@ -156,13 +160,16 @@ class DataFileManager(object):
             # export dataframe
             df.to_hdf(file, key, format="fixed", mode="w", complevel=9, complib="blosc")
         elif self.engine == "vaex":
+            if isinstance(df, pd.DataFrame):
+                import vaex
 
-            for c in df.columns:
+                df = vaex.from_pandas(df)
+
+            for c in df.columns:  # remove "/" in columns (forbidden)
                 df.rename(c, vaexsafe_colname(c))
 
             if key == "default":
                 key = r"/table"
-            import vaex
 
             if append == True:
                 # In vaex we cannot append. Here we write lots of small files then combine them.
@@ -182,10 +189,7 @@ class DataFileManager(object):
                     os.remove(file)
                 self._temp_batch_files.append(file)
             # Write:
-            try:
-                df.export_hdf5(file, group=key, mode="w")
-            except AttributeError:  # case where df is not a Vaex dataFrame but (likely) a Pandas Dataframe
-                vaex.from_pandas(df).export_hdf5(file, group=key, mode="w")
+            df.export_hdf5(file, group=key, mode="w")
         elif self.engine == "feather":
             df.to_feather(file)
         else:
