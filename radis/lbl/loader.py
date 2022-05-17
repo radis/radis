@@ -51,7 +51,7 @@ key in :py:attr:`radis.config`
 
 import warnings
 from copy import deepcopy
-from os.path import exists, expanduser, join,splitext
+from os.path import exists, expanduser, join, splitext
 from time import time
 from uuid import uuid1
 
