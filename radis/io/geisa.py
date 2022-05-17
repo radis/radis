@@ -19,10 +19,17 @@ from os.path import abspath, exists, expanduser, getmtime, join
 import numpy as np
 
 import radis
-from radis.io.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
-from radis.io.dbmanager import DatabaseManager
-from radis.io.tools import drop_object_format_columns, parse_hitran_file
 
+try:
+    from .cache_files import load_h5_cache_file, save_to_hdf
+    from .dbmanager import DatabaseManager
+    from .hdf5 import DataFileManager
+    from .tools import drop_object_format_columns, parse_hitran_file
+except ImportError:
+    from radis.io.cache_files import load_h5_cache_file, save_to_hdf
+    from radis.io.dbmanager import DatabaseManager
+    from radis.io.hdf5 import DataFileManager
+    from radis.io.tools import drop_object_format_columns, parse_hitran_file
 # from typing import Union
 
 
@@ -229,7 +236,7 @@ def gei2df(
         print("Last Modification time: {0}".format(metadata["last_modification"]))
 
     # Attempt to use cache file
-    fcache = cache_file_name(fname, engine=engine)
+    fcache = DataFileManager(engine).cache_file(fname)
     if cache and exists(fcache):
         relevant_if_metadata_above = (
             {"wavenum_max": load_wavenum_min} if load_wavenum_min else {}
@@ -388,7 +395,7 @@ class GEISADatabaseManager(DatabaseManager):
         # molecule = self.molecule
         # Ntotal_lines_expected = GEISA_MOLECULES_Nlines[molecule.upper()]
 
-        writer = self.get_hdf5_manager()
+        writer = self.get_datafile_manager()
 
         with opener.open(urlname) as gfile:  # locally downloaded file
 

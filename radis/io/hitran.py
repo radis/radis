@@ -50,14 +50,26 @@ from radis.db.classes import (  # get_molecule_identifier,
     HITRAN_GROUP6,
     get_molecule,
 )
-from radis.io.cache_files import load_h5_cache_file, save_to_hdf
-from radis.io.dbmanager import DatabaseManager
-from radis.io.hdf5 import DataFileManager
-from radis.io.tools import (
-    drop_object_format_columns,
-    parse_hitran_file,
-    replace_PQR_with_m101,
-)
+
+try:
+    from .cache_files import load_h5_cache_file, save_to_hdf
+    from .dbmanager import DatabaseManager
+    from .hdf5 import DataFileManager
+    from .tools import (
+        drop_object_format_columns,
+        parse_hitran_file,
+        replace_PQR_with_m101,
+    )
+except ImportError:
+    from radis.io.cache_files import load_h5_cache_file, save_to_hdf
+    from radis.io.dbmanager import DatabaseManager
+    from radis.io.hdf5 import DataFileManager
+    from radis.io.tools import (
+        drop_object_format_columns,
+        parse_hitran_file,
+        replace_PQR_with_m101,
+    )
+
 
 # %% Parsing functions
 
