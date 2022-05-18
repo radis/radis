@@ -140,7 +140,12 @@ def get_exomol_database_list(molecule, isotope_full_name):
 
     databases = databases + databases_recommended
 
-    return databases, databases_recommended[0]
+    if len(databases_recommended) > 0:
+        recommended_database = databases_recommended[0]
+    else:
+        recommended_database = False
+
+    return databases, recommended_database
 
 
 # def fetch_exomol_molecule_list():
@@ -233,7 +238,7 @@ def fetch_exomol(
     return_partition_function=False,
     engine="default",
     output="pandas",
-    add_quantum_labels=False,
+    skip_optional_data=True,
 ):
     """Stream ExoMol file from EXOMOL website. Unzip and build a HDF5 file directly.
 
@@ -293,8 +298,22 @@ def fetch_exomol(
     output: 'pandas', 'vaex', 'jax'
         format of the output DataFrame. If ``'jax'``, returns a dictionary of
         jax arrays.
-    add_quantum_labels: bool . If True fetch all quantum labels defined in ExoMol definition
-        file, from states into transitions
+    skip_optional_data : bool 
+        If False, fetch all fields which are marked as available in the ExoMol definition
+        file. If True, load only the first 4 columns of the states file
+        ("i", "E", "g", "J"). The structure of the columns above 5 depend on the
+        the definitions file (*.def) and the Exomol version.
+        If ``skip_optional_data=False``, two errors may occur:
+            
+            - a field is marked as present/absent in the *.def field but is
+              absent/present in the *.states file (ie both files are inconsistent).
+            - in the updated version of Exomol, new fields have been added in the
+              states file of some species. But it has not been done for all species,
+              so both structures exist. For instance, the states file of
+              https://exomol.com/data/molecules/HCl/1H-35Cl/HITRAN-HCl/ follows the
+              structure described in [1]_, unlike the states file of
+              https://exomol.com/data/molecules/NO/14N-16O/XABC/ which follows the
+              structure described in [2]_.
 
     Returns
     -------
@@ -318,6 +337,12 @@ def fetch_exomol(
     fast access .HDF5 files (which will take a long time on first call). Only
     the expected wavenumber range & isotopes are returned. The .HFD5 parsing uses
     :py:func:`~radis.io.hdf5.hdf2df`
+    
+    References
+    ----------
+    
+    .. [1] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Barton, E. J., Chubb, K. L., Coles, P. A., … Zak, E. (2016). The ExoMol database: molecular line lists for exoplanet and other hot atmospheres. https://doi.org/10.1016/j.jms.2016.05.002
+    .. [2] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Clark, V. H. J., Chubb, K. L., Conway, E. K., … Yurchenko, O. P. (2020). The 2020 release of the ExoMol database: Molecular line lists for exoplanet and other hot atmospheres. Journal of Quantitative Spectroscopy and Radiative Transfer, 255, 107228. https://doi.org/10.1016/j.jqsrt.2020.107228
 
     See Also
     --------
@@ -390,7 +415,7 @@ def fetch_exomol(
         ],
         engine=engine,
         cache=cache,
-        add_quantum_labels=add_quantum_labels,
+        skip_optional_data=skip_optional_data,
     )
 
     # Get local files
@@ -520,7 +545,7 @@ class MdbExomol(DatabaseManager):
         engine="vaex",
         verbose=True,
         cache=True,
-        add_quantum_labels=False,
+        skip_optional_data=True,
     ):
         """molecular database of ExoMol
 
@@ -537,8 +562,24 @@ class MdbExomol(DatabaseManager):
 
         Other Parameters
         ----------------
-        engine: which memory mapping engine to use : 'vaex', 'pytables' (HDF5), 'feather'
-        add_quantum_labels: bool . If True fetch all quantum labels in dic_def['quantum_labels'] from states into transitions
+        engine : str
+            which memory mapping engine to use : 'vaex', 'pytables' (HDF5), 'feather'
+        skip_optional_data : bool 
+            If False, fetch all fields which are marked as available in the ExoMol definition
+            file. If True, load only the first 4 columns of the states file
+            ("i", "E", "g", "J"). The structure of the columns above 5 depend on the
+            the definitions file (*.def) and the Exomol version.
+            If ``skip_optional_data=False``, two errors may occur:
+                
+                - a field is marked as present/absent in the *.def field but is
+                  absent/present in the *.states file (ie both files are inconsistent).
+                - in the updated version of Exomol, new fields have been added in the
+                  states file of some species. But it has not been done for all species,
+                  so both structures exist. For instance, the states file of
+                  https://exomol.com/data/molecules/HCl/1H-35Cl/HITRAN-HCl/ follows the
+                  structure described in [1]_, unlike the states file of
+                  https://exomol.com/data/molecules/NO/14N-16O/XABC/ which follows the
+                  structure described in [2]_.
 
         Notes
         -----
@@ -593,6 +634,12 @@ class MdbExomol(DatabaseManager):
         alpha_ref (np array): alpha_ref (gamma0)
         n_Tref_def: default temperature exponent in .def file, used for jlower not given in .broad
         alpha_ref_def: default alpha_ref (gamma0) in .def file, used for jlower not given in .broad
+
+        References
+        ----------
+        
+        .. [1] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Barton, E. J., Chubb, K. L., Coles, P. A., … Zak, E. (2016). The ExoMol database: molecular line lists for exoplanet and other hot atmospheres. https://doi.org/10.1016/j.jms.2016.05.002
+        .. [2] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Clark, V. H. J., Chubb, K. L., Conway, E. K., … Yurchenko, O. P. (2020). The 2020 release of the ExoMol database: Molecular line lists for exoplanet and other hot atmospheres. Journal of Quantitative Spectroscopy and Radiative Transfer, 255, 107228. https://doi.org/10.1016/j.jqsrt.2020.107228
 
         """
         super().__init__(
@@ -704,7 +751,8 @@ class MdbExomol(DatabaseManager):
                 f"Note: Caching states data to the {engine} format. After the second time, it will become much faster."
             )
             states = exomolapi.read_states(
-                self.states_file, dic_def, engine="vaex" if engine == "vaex" else "csv"
+                self.states_file, dic_def, engine="vaex" if engine == "vaex" else "csv",
+                skip_optional_data=skip_optional_data
             )
             mgr.write(mgr.cache_file(self.states_file), states)
 
@@ -777,7 +825,7 @@ class MdbExomol(DatabaseManager):
                 # In particular, compute gup and elower
 
                 exomolapi.pickup_gE(
-                    states, trans, trans_file, dic_def, add_quantum_labels=False
+                    states, trans, trans_file, dic_def, skip_optional_data=skip_optional_data
                 )
 
                 ##Recompute Line strength:

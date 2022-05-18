@@ -4,6 +4,8 @@ Borrowed from the `Exojax <https://github.com/HajimeKawahara/exojax>`__
 code (which you should also have a look at !), by @HajimeKawahara, under MIT License.
 
 """
+import bz2
+import re
 import numpy as np
 import pandas as pd
 
@@ -12,6 +14,7 @@ try:
 except:
     from radis.io.hdf5 import vaexsafe_colname
 
+from radis.misc.warning import InconsistentDatabaseError
 
 def read_def(deff):
     """Exomol IO for a definition file
@@ -55,10 +58,9 @@ def read_def(deff):
             molmass = float(dat["VAL"][i].split()[0])  # in Da (atomic unit)
 
         elif "Lifetime availability" in com:
-            lifetime = dat["VAL"][i] == 1
+            lifetime = int(dat["VAL"][i]) == 1
         elif "Lande g-factor availability" in com:
-            lande = dat["VAL"][i] == 1
-
+            lande = int(dat["VAL"][i]) == 1
         elif "Quantum label" in com:
             quantum_labels.append(dat["VAL"][i].strip(" "))
 
@@ -206,7 +208,8 @@ def read_trans(transf, engine="vaex"):
     return dat
 
 
-def read_states(statesf, dic_def, engine="vaex"):
+def read_states(statesf, dic_def, engine="vaex",
+                skip_optional_data=True):
     """Exomol IO for a state file
 
     Notes
@@ -223,15 +226,42 @@ def read_states(statesf, dic_def, engine="vaex"):
 
     Parameters
     ----------
-    statesf: state file
-    dic_def: Info from def file to read extra quantum numbers
-    engine: parsing engine to use ('vaex', 'csv')
-
+    statesf: str
+        state file
+    dic_def: dict
+        Info from def file to read extra quantum numbers
+    engine: str
+        parsing engine to use ('vaex', 'csv')
+    skip_optional_data: bool
+        If False, fetch all fields which are marked as available in the ExoMol definition
+        file. If True, load only the first 4 columns of the states file
+        ("i", "E", "g", "J"). The structure of the columns above 5 depend on the
+        the definitions file (*.def) and the Exomol version.
+        If ``skip_optional_data=False``, two errors may occur:
+            
+            - a field is marked as present/absent in the *.def field but is
+              absent/present in the *.states file (ie both files are inconsistent).
+            - in the updated version of Exomol, new fields have been added in the
+              states file of some species. But it has not been done for all species,
+              so both structures exist. For instance, the states file of
+              https://exomol.com/data/molecules/HCl/1H-35Cl/HITRAN-HCl/ follows the
+              structure described in [1]_, unlike the states file of
+              https://exomol.com/data/molecules/NO/14N-16O/XABC/ which follows the
+              structure described in [2]_.
+              
     Returns
     -------
     states data in pandas DataFrame
 
     If ``'vaex'``, also writes a local hdf5 file `statesf.with_suffix('.hdf5')`
+    
+    
+    References
+    ----------
+    
+    .. [1] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Barton, E. J., Chubb, K. L., Coles, P. A., … Zak, E. (2016). The ExoMol database: molecular line lists for exoplanet and other hot atmospheres. https://doi.org/10.1016/j.jms.2016.05.002
+    .. [2] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Clark, V. H. J., Chubb, K. L., Conway, E. K., … Yurchenko, O. P. (2020). The 2020 release of the ExoMol database: Molecular line lists for exoplanet and other hot atmospheres. Journal of Quantitative Spectroscopy and Radiative Transfer, 255, 107228. https://doi.org/10.1016/j.jqsrt.2020.107228
+    
     """
     # we read first 4 columns for ("i", "E", "g", "J"),
     # skip lifetime, skip Landé g-factor,
@@ -239,20 +269,39 @@ def read_states(statesf, dic_def, engine="vaex"):
     N = np.size(dic_def["quantum_labels"])
     quantum_labels = dic_def["quantum_labels"]
 
-    usecol = np.arange(4)
-    names = ("i", "E", "g", "J")
-    if dic_def["Landé"] and dic_def["lifetime"]:
-        usecol = np.concatenate((usecol, 5 + 2 + np.arange(N)))
-        names = names + ("Lande", "lifetime") + tuple(quantum_labels)
-    elif dic_def["Landé"]:
-        usecol = np.concatenate((usecol, 5 + 1 + np.arange(N)))
-        names = names + ("Lande") + tuple(quantum_labels)
-    elif dic_def["lifetime"]:
-        usecol = np.concatenate((usecol, 5 + 1 + np.arange(N)))
-        names = names + ("lifetime") + tuple(quantum_labels)
-    else:  # no lifetime, nor landé according to the def file
-        usecol = np.concatenate((usecol, 5 + np.arange(N)))
-        names = names + tuple(quantum_labels)
+    mandatory_usecol = np.arange(4)
+    mandatory_fields = ("i", "E", "g", "J")
+    if skip_optional_data:
+        usecol = mandatory_usecol
+        names = mandatory_fields
+    else:
+        if dic_def["Landé"] and dic_def["lifetime"]:
+            usecol = np.concatenate((mandatory_usecol, 5 + 2 + np.arange(N)))
+            names = mandatory_fields + ("Lande", "lifetime") + tuple(quantum_labels)
+        elif dic_def["Landé"]:
+            usecol = np.concatenate((mandatory_usecol, 5 + 1 + np.arange(N)))
+            names = mandatory_fields + ("Lande",) + tuple(quantum_labels)
+        elif dic_def["lifetime"]:
+            usecol = np.concatenate((mandatory_usecol, 5 + 1 + np.arange(N)))
+            names = mandatory_fields + ("lifetime",) + tuple(quantum_labels)
+        else:  # no lifetime, nor landé according to the def file
+            usecol = np.concatenate((mandatory_usecol, 5 + np.arange(N)))
+            names = mandatory_fields + tuple(quantum_labels)
+        # The definitions file (*.def) specifies which fields are available
+        # in the states fiel (*.states). Check the number of available fields
+        # (see *.def) match the numbers of columns in the states file (*.states).
+        # Otherwise, both files are inconsistent.
+        with bz2.open(statesf, "rb") as f:
+            firstline = f.readline().decode('utf-8')  # read 1dt line
+            splitline = [x for x in re.split(r"\s+", firstline) if x != '']
+            # splitline = re.split(r"\s+", firstline)
+            f.close()
+        if len(splitline) != len(names):
+            raise InconsistentDatabaseError(
+                "The EXOMOL definitions and states files are inconsistent.\n" +
+                "Some data are specified as available by the *.def file, but are absent in the *.bz2 file.\n" +
+                "Set `skip_optional_data=False` in `fetch_exomol()` to load only the required data for a LTE computation.\n" +
+                "The problematic optional data/columns will be ignored.")
 
     if engine == "vaex":
         import vaex
@@ -289,7 +338,7 @@ def read_states(statesf, dic_def, engine="vaex"):
 
 
 def pickup_gE(
-    states, trans, trans_file, dic_def, trans_lines=False, add_quantum_labels=False
+    states, trans, trans_file, dic_def, trans_lines=False, skip_optional_data=True
 ):
     """extract g_upper (gup), E_lower (elower), and J_lower and J_upper from states
     DataFrame and insert them into the transition DataFrame.
@@ -368,7 +417,7 @@ def pickup_gE(
 
     ### Step 2. Extra quantum numbers (e/f parity, vib and rot numbers)
     # -----------------------------------------------------------------
-    if add_quantum_labels:
+    if not skip_optional_data:
         for q in dic_def["quantum_labels"]:
             map_add(q, f"{q}_l", "i_lower")
             # map_add(q, f"{q}_u", "i_upper")
