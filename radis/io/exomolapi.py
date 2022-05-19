@@ -25,15 +25,21 @@ def read_def(deff):
 
     Returns
     -------
-    temperature exponent n_Texp
-    broadening parameter alpha_ref
-    molecular mass
-    numinf: nu minimum for trans
-    numtag: tag for wavelength range
+    n_Texp : float
+        temperature exponent
+    alpha_ref : float
+        broadening parameter
+    molmass : float
+        molecular mass
+    numinf : List[float]
+        limit points (``[w(0), w(1), ..., w(n)]``, n+1 elements) defining
+        the spectral ranges appearing in the name of *.trans.bz2 files
+        (``["w(0)-w(1)", "w(1)-w(2)", ..., w(n-1)-w(n)]``, n elements)
+    numtag : List[str]
+        tag for wavelength ranges.
 
     Note:
        For some molecules, ExoMol provides multiple trans files. numinf and numtag are the ranges and identifiers for the multiple trans files.
-
 
     """
 

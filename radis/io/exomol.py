@@ -410,7 +410,7 @@ def fetch_exomol(
         name=databank_name,
         local_databases=local_databases,
         nurange=[
-            load_wavenum_min if load_wavenum_min is not None else -np.inf,
+            load_wavenum_min if load_wavenum_min is not None else 0.,
             load_wavenum_max if load_wavenum_max is not None else np.inf,
         ],
         engine=engine,
@@ -537,7 +537,7 @@ class MdbExomol(DatabaseManager):
         database=None,
         local_databases=None,
         name="EXOMOL-{molecule}",
-        nurange=[-np.inf, np.inf],
+        nurange=[0., np.inf],
         margin=1.0,
         crit=-np.inf,
         bkgdatm="Air",  # TODO: use Air whenever possible, to be consistent with HITRAN/HITEMP
@@ -779,12 +779,22 @@ class MdbExomol(DatabaseManager):
 
         # Case2 : Transitions are stored in multiple files:
         else:  # dic_def["numinf"] is not None
+            # dic_def["numinf"] contains the limit points ``[w(0), w(1), ..., w(n)]``
+            # (n+1 elements) defining the spectral ranges appearing in the list
+            # dic_def["numtag"] which looks like ``["w(0)-w(1)", "w(1)-w(2)", ..., w(n-1)-w(n)]``
+            # (n elements)
+            # imin :
+            # index i of the "w(i)-w(i+1)" element in dic_def["numtag"] such
+            # that nurange[0]<=w(i)
             imin = (
                 np.searchsorted(dic_def["numinf"], nurange[0], side="right") - 1
-            )  # left side
+            )
+            # imax :
+            # index i of the "w(i)-w(i+1)" element in dic_def["numtag"] such
+            # that w(i+1)<=nurange[1]
             imax = (
-                np.searchsorted(dic_def["numinf"], nurange[1], side="right") - 1
-            )  # left side
+                np.searchsorted(dic_def["numinf"], nurange[1], side="right") - 2
+            )
             self.trans_file = []
             self.num_tag = []
             for k, i in enumerate(range(imin, imax + 1)):
