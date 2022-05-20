@@ -6,6 +6,7 @@ code (which you should also have a look at !), by @HajimeKawahara, under MIT Lic
 """
 import bz2
 import re
+
 import numpy as np
 import pandas as pd
 
@@ -15,6 +16,7 @@ except:
     from radis.io.hdf5 import vaexsafe_colname
 
 from radis.misc.warning import InconsistentDatabaseError
+
 
 def read_def(deff):
     """Exomol IO for a definition file
@@ -190,12 +192,17 @@ def read_trans(transf, engine="vaex"):
                 convert=False,  #  file is created by MdbMol
             )
         except:
-            dat = vaex.read_csv(
-                transf,
-                sep=r"\s+",
-                names=("i_upper", "i_lower", "A", "nu_lines"),
-                convert=False,  #  file is created by MdbMol
-            )
+            try:
+                dat = vaex.read_csv(
+                    transf,
+                    sep=r"\s+",
+                    names=("i_upper", "i_lower", "A", "nu_lines"),
+                    convert=False,  #  file is created by MdbMol
+                )
+            except Exception as err:
+                raise Exception(
+                    f"Error reading {transf}. Maybe the file was corrupted during download ? You can try to delete it."
+                ) from err
     elif engine == "csv":
         try:  # bz2 compression
             dat = pd.read_csv(
@@ -205,17 +212,21 @@ def read_trans(transf, engine="vaex"):
                 names=("i_upper", "i_lower", "A", "nu_lines"),
             )
         except:
-            dat = pd.read_csv(
-                transf, sep=r"\s+", names=("i_upper", "i_lower", "A", "nu_lines")
-            )
+            try:
+                dat = pd.read_csv(
+                    transf, sep=r"\s+", names=("i_upper", "i_lower", "A", "nu_lines")
+                )
+            except Exception as err:
+                raise Exception(
+                    f"Error reading {transf}. Maybe the file was corrupted during download ? You can try to delete it."
+                ) from err
     else:
         raise NotImplementedError(engine)
 
     return dat
 
 
-def read_states(statesf, dic_def, engine="vaex",
-                skip_optional_data=True):
+def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
     """Exomol IO for a state file
 
     Notes
@@ -244,7 +255,7 @@ def read_states(statesf, dic_def, engine="vaex",
         ("i", "E", "g", "J"). The structure of the columns above 5 depend on the
         the definitions file (*.def) and the Exomol version.
         If ``skip_optional_data=False``, two errors may occur:
-            
+
             - a field is marked as present/absent in the *.def field but is
               absent/present in the *.states file (ie both files are inconsistent).
             - in the updated version of Exomol, new fields have been added in the
@@ -254,20 +265,20 @@ def read_states(statesf, dic_def, engine="vaex",
               structure described in [1]_, unlike the states file of
               https://exomol.com/data/molecules/NO/14N-16O/XABC/ which follows the
               structure described in [2]_.
-              
+
     Returns
     -------
     states data in pandas DataFrame
 
     If ``'vaex'``, also writes a local hdf5 file `statesf.with_suffix('.hdf5')`
-    
-    
+
+
     References
     ----------
-    
+
     .. [1] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Barton, E. J., Chubb, K. L., Coles, P. A., … Zak, E. (2016). The ExoMol database: molecular line lists for exoplanet and other hot atmospheres. https://doi.org/10.1016/j.jms.2016.05.002
     .. [2] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Clark, V. H. J., Chubb, K. L., Conway, E. K., … Yurchenko, O. P. (2020). The 2020 release of the ExoMol database: Molecular line lists for exoplanet and other hot atmospheres. Journal of Quantitative Spectroscopy and Radiative Transfer, 255, 107228. https://doi.org/10.1016/j.jqsrt.2020.107228
-    
+
     """
     # we read first 4 columns for ("i", "E", "g", "J"),
     # skip lifetime, skip Landé g-factor,
@@ -298,16 +309,17 @@ def read_states(statesf, dic_def, engine="vaex",
         # (see *.def) match the numbers of columns in the states file (*.states).
         # Otherwise, both files are inconsistent.
         with bz2.open(statesf, "rb") as f:
-            firstline = f.readline().decode('utf-8')  # read 1dt line
-            splitline = [x for x in re.split(r"\s+", firstline) if x != '']
+            firstline = f.readline().decode("utf-8")  # read 1dt line
+            splitline = [x for x in re.split(r"\s+", firstline) if x != ""]
             # splitline = re.split(r"\s+", firstline)
             f.close()
         if len(splitline) != len(names):
             raise InconsistentDatabaseError(
-                "The EXOMOL definitions and states files are inconsistent.\n" +
-                "Some data are specified as available by the *.def file, but are absent in the *.bz2 file.\n" +
-                "Set `skip_optional_data=False` in `fetch_exomol()` to load only the required data for a LTE computation.\n" +
-                "The problematic optional data/columns will be ignored.")
+                "The EXOMOL definitions and states files are inconsistent.\n"
+                + "Some data are specified as available by the *.def file, but are absent in the *.bz2 file.\n"
+                + "Set `skip_optional_data=False` in `fetch_exomol()` to load only the required data for a LTE computation.\n"
+                + "The problematic optional data/columns will be ignored."
+            )
 
     if engine == "vaex":
         import vaex
@@ -323,13 +335,19 @@ def read_states(statesf, dic_def, engine="vaex",
                 convert=False,  # written in MolDB
             )
         except:
-            dat = vaex.read_csv(
-                statesf,
-                sep=r"\s+",
-                usecols=usecol,
-                names=names,
-                convert=False,  # written in MolDB
-            )
+            try:
+                dat = vaex.read_csv(
+                    statesf,
+                    sep=r"\s+",
+                    usecols=usecol,
+                    names=names,
+                    convert=False,  # written in MolDB
+                )
+
+            except Exception as err:
+                raise Exception(
+                    f"Error reading {statesf}. Maybe the file was corrupted during download ? You can try to delete it."
+                ) from err
     elif engine == "csv":
         try:
             dat = pd.read_csv(
