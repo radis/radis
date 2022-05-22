@@ -568,7 +568,7 @@ class DataFileManager(object):
             if True, create an empty dataset to store the metadata as attribute
 
         """
-        from radis.io.cache_files import _h5_compatible
+        from radis.api.cache_files import _h5_compatible
 
         if self.engine in ["pytables", "pytables-fixed"]:
             fname = expanduser(fname)

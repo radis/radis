@@ -10,11 +10,7 @@ import re
 import numpy as np
 import pandas as pd
 
-try:
-    from .hdf5 import vaexsafe_colname
-except:
-    from radis.io.hdf5 import vaexsafe_colname
-
+from radis.api.hdf5 import vaexsafe_colname
 from radis.misc.warning import InconsistentDatabaseError
 
 
