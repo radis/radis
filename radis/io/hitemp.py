@@ -18,8 +18,6 @@ from typing import Union
 import numpy as np
 
 try:
-    from .dbmanager import DatabaseManager
-    from .hdf5 import update_pytables_to_vaex
     from .hitran import columns_2004, parse_global_quanta, parse_local_quanta
     from .tools import (
         _create_dtype,
@@ -28,9 +26,7 @@ try:
         replace_PQR_with_m101,
     )
 except ImportError:  # ran from here
-    from radis.io.dbmanager import DatabaseManager
     from radis.io.hitran import columns_2004, parse_global_quanta, parse_local_quanta
-    from radis.io.hdf5 import update_pytables_to_vaex
     from radis.io.tools import (
         _create_dtype,
         _get_linereturnformat,
@@ -38,6 +34,8 @@ except ImportError:  # ran from here
         replace_PQR_with_m101,
     )
 
+from radis.api.dbmanager import DatabaseManager
+from radis.api.hdf5 import update_pytables_to_vaex
 from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
 from radis.misc.progress_bar import ProgressBar
 

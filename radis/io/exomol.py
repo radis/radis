@@ -14,13 +14,12 @@ import numpy as np
 
 try:
     from . import exomolapi
-    from .dbmanager import DatabaseManager
     from .exomol_utils import e2s
 except ImportError:  # if local import
     from radis.io import exomolapi
-    from radis.io.dbmanager import DatabaseManager
     from radis.io.exomol_utils import e2s
 
+from radis.api.dbmanager import DatabaseManager
 from radis.db.classes import (
     EXOMOL_MOLECULES,
     EXOMOL_ONLY_ISOTOPES_NAMES,

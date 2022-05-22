@@ -63,6 +63,7 @@ import pandas as pd
 from numpy import exp
 
 import radis
+from radis.api.cache_files import load_h5_cache_file, save_to_hdf
 from radis.db.classes import (
     HITRAN_CLASS1,
     HITRAN_CLASS2,
@@ -72,7 +73,6 @@ from radis.db.classes import (
     get_molecule,
     get_molecule_identifier,
 )
-from radis.io.cache_files import load_h5_cache_file, save_to_hdf
 from radis.lbl.labels import vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5
 from radis.misc.basics import all_in
 from radis.misc.debug import printdbg

@@ -22,16 +22,13 @@ import radis
 
 try:
     from .cache_files import load_h5_cache_file, save_to_hdf
-    from .dbmanager import DatabaseManager
-    from .hdf5 import DataFileManager
     from .tools import drop_object_format_columns, parse_hitran_file
 except ImportError:
-    from radis.io.cache_files import load_h5_cache_file, save_to_hdf
-    from radis.io.dbmanager import DatabaseManager
-    from radis.io.hdf5 import DataFileManager
+    from radis.api.cache_files import load_h5_cache_file, save_to_hdf
     from radis.io.tools import drop_object_format_columns, parse_hitran_file
 # from typing import Union
-
+from radis.api.dbmanager import DatabaseManager
+from radis.api.hdf5 import DataFileManager
 
 # %% Parsing functions
 
@@ -203,7 +200,7 @@ def gei2df(
         will be left untouched.
     load_wavenum_min, load_wavenum_max: float
         if not ``'None'``, only load the cached file if it contains data for
-        wavenumbers above/below the specified value. See :py:func`~radis.io.cache_files.load_h5_cache_file`.
+        wavenumbers above/below the specified value. See :py:func`~radis.api.cache_files.load_h5_cache_file`.
         Default ``'None'``.
     engine: 'pytables', 'vaex'
         format for Hdf5 cache file, `pytables` by default.

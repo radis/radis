@@ -59,6 +59,9 @@ import numpy as np
 import pandas as pd
 
 from radis import config
+
+# from radis.io.geisa import gei2df
+from radis.api.hdf5 import hdf2df
 from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
 from radis.db.molparam import MOLPARAMS_EXTRA_PATH, MolParams
@@ -66,9 +69,6 @@ from radis.db.references import doi
 from radis.io.cdsd import cdsd2df
 from radis.io.exomol import fetch_exomol
 from radis.io.geisa import fetch_geisa
-
-# from radis.io.geisa import gei2df
-from radis.io.hdf5 import hdf2df
 from radis.io.hitemp import fetch_hitemp
 from radis.io.hitran import (
     fetch_hitran,
