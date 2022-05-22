@@ -3,11 +3,7 @@
 Functions to read/write Spectrum objects under HDF5 format
 """
 
-try:
-    from .hdf5 import HDF5Manager
-except ImportError:
-    from radis.io.hdf5 import HDF5Manager
-
+from radis.io.hdf5 import DataFileManager
 
 # Convert
 
@@ -18,7 +14,7 @@ def spec2hdf(s, file, engine="pytables"):
     df_arrays = s.to_pandas(copy=False)
 
     # Store
-    mgr = HDF5Manager(engine=engine)
+    mgr = DataFileManager(engine=engine)
 
     # Store spectral arrays and lines as Datasets
 
@@ -47,7 +43,7 @@ def hdf2spec(file, wmin=None, wmax=None, wunit=None, columns=None, engine="pytab
     """Read HDF5 file into a Spectrum object"""
     from radis import Spectrum
 
-    mgr = HDF5Manager(engine=engine)
+    mgr = DataFileManager(engine=engine)
 
     # Range selection
     # TODO : convert if stored in wavelength/wavenumber

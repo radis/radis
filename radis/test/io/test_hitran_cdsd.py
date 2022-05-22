@@ -36,8 +36,8 @@ from radis.test.utils import getTestFile, setup_test_line_databases
 
 @pytest.mark.fast
 def test_hitran_names_match(verbose=True, warnings=True, *args, **kwargs):
-    """Compare that HITRAN species defined in :mod:`radis.io.hitran` match
-    the nomenclature dictionary : :py:data:`radis.io.hitran.trans`.
+    """Compare that HITRAN species defined in :mod:`radis.api.hitranapi` match
+    the nomenclature dictionary : :py:data:`radis.api.hitranapi.trans`.
 
     This should be ensured by developers when adding new species.
     """

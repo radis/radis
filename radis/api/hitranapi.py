@@ -9,9 +9,9 @@ HITRAN database parser
 Routine Listing
 ---------------
 
-- :func:`~radis.io.hitran.hit2df`
-- :func:`~radis.io.hitran.parse_local_quanta`
-- :func:`~radis.io.hitran.parse_global_quanta`
+- :func:`~radis.api.hitranapi.hit2df`
+- :func:`~radis.api.hitranapi.parse_local_quanta`
+- :func:`~radis.api.hitranapi.parse_global_quanta`
 
 
 -------------------------------------------------------------------------------
@@ -179,7 +179,7 @@ def hit2df(
     See Also
     --------
 
-    :func:`~radis.io.cdsd.cdsd2df`
+    :func:`~radis.api.cdsdapi.cdsd2df`
     """
     metadata = {}
     # Last modification time of the original file :
@@ -1106,7 +1106,7 @@ class HITRANDatabaseManager(DatabaseManager):
         """Download from HITRAN and parse into ``local_file``.
         Also add metadata
 
-        Overwrites :py:meth:`radis.io.dbmanager.DatabaseManager.download_and_parse`
+        Overwrites :py:meth:`radis.api.dbmanager.DatabaseManager.download_and_parse`
         which downloads from a list of URL, because here we use [HAPI]_ to
         download the files.
 

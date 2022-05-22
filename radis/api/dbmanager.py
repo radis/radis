@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Aug  9 19:42:51 2021
 
-@author: erwan
 """
 import os
 import shutil
@@ -51,43 +49,6 @@ np.lib._datasource._file_openers._file_openers[".zip"] = open_zip
 
 
 class DatabaseManager(object):
-    """Line Database parser
-
-    Parameters
-    ----------
-    name: str
-        database name as registered in ~/radis.json
-    molecule: str
-    local_databases: str
-        path to local database
-    engine: 'vaex', 'pytables', 'h5py', or 'default'
-        memory-mapping library to use with this database. If 'default' use
-        the value from ~/radis.json
-
-    Other Parameters
-    ----------------
-    *input for :class:`~joblib.parallel.Parallel` loading of database*
-    parallel: bool
-        if ``True``, use parallel loading.
-        Default ``True``.
-    nJobs: int
-        Number of processors to use to load a database (useful for big
-        databases). BE CAREFUL, no check is done on processor use prior
-        to the execution ! Default ``-2``: use all but 1 processors.
-        Use ``1`` for single processor.
-    batch_size: int or ``'auto'``
-        The number of atomic tasks to dispatch at once to each
-        worker. When individual evaluations are very fast, dispatching
-        calls to workers can be slower than sequential computation because
-        of the overhead. Batching fast computations together can mitigate
-        this. Default: ``'auto'``
-    More information in :class:`joblib.parallel.Parallel`
-
-    """
-
-    # Should be as a close as possible to the content of the corresponding ~/radis.json entry
-    # Essentially a FileManager
-
     def __init__(
         self,
         name,
@@ -99,6 +60,43 @@ class DatabaseManager(object):
         nJobs=-2,
         batch_size="auto",
     ):
+        """Line Database parser
+
+        Parameters
+        ----------
+        name: str
+            database name as registered in ~/radis.json
+        molecule: str
+        local_databases: str
+            path to local database
+        engine: 'vaex', 'pytables', 'h5py', or 'default'
+            memory-mapping library to use with this database. If 'default' use
+            the value from ~/radis.json
+
+        Other Parameters
+        ----------------
+        *input for :class:`~joblib.parallel.Parallel` loading of database*
+        parallel: bool
+            if ``True``, use parallel loading.
+            Default ``True``.
+        nJobs: int
+            Number of processors to use to load a database (useful for big
+            databases). BE CAREFUL, no check is done on processor use prior
+            to the execution ! Default ``-2``: use all but 1 processors.
+            Use ``1`` for single processor.
+        batch_size: int or ``'auto'``
+            The number of atomic tasks to dispatch at once to each
+            worker. When individual evaluations are very fast, dispatching
+            calls to workers can be slower than sequential computation because
+            of the overhead. Batching fast computations together can mitigate
+            this. Default: ``'auto'``
+        More information in :class:`joblib.parallel.Parallel`
+
+        """
+
+        # Should be as a close as possible to the content of the corresponding ~/radis.json entry
+        # Essentially a FileManager
+
         from os import environ
 
         if engine == "default":
@@ -161,7 +159,7 @@ class DatabaseManager(object):
 
         See Also
         --------
-        :py:meth:`~radis.io.linedb.get_files_to_download`"""
+        :py:meth:`~radis.api.dbmanager.DatabaseManager.get_files_to_download`"""
         verbose = self.verbose
         local_databases = self.local_databases
         engine = self.engine
@@ -242,7 +240,7 @@ class DatabaseManager(object):
         -------
         list: list of urlnames
 
-        See for instance :py:meth:`radis.io.hitemp.HITEMPDatabaseManager"""
+        See for instance :py:class:`radis.api.hitempapi.HITEMPDatabaseManager"""
 
         raise NotImplementedError(
             "This function should be overwritten by the DatabaseManager subclass"
@@ -279,7 +277,7 @@ class DatabaseManager(object):
 
         See Also
         --------
-        :py:meth:`~radis.io.linedb.get_filenames`"""
+        :py:meth:`~radis.api.dbmanager.DatabaseManager.get_filenames`"""
         return [k for k in files if exists(k)]
 
     def get_missing_files(self, files):
@@ -292,7 +290,7 @@ class DatabaseManager(object):
 
         See Also
         --------
-        :py:meth:`~radis.io.linedb.get_filenames`"""
+        :py:meth:`~radis.api.dbmanager.DatabaseManager.get_filenames`"""
         return [k for k in files if not exists(k)]
 
     def remove_local_files(self, local_files):

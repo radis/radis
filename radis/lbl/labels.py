@@ -37,7 +37,7 @@ vib_lvl_name_cdsd_pcN
 
 def vib_lvl_name_hitran_class1(v1):
     """Write vibrational level for a HITRAN class 1 molecule: see
-    :data:`~radis.io.hitran.HITRAN_CLASS1`
+    :data:`~radis.api.hitranapi.HITRAN_CLASS1`
     """
     (v1,) = _format_str(v1)
     return "(" + v1 + ")"
@@ -45,7 +45,7 @@ def vib_lvl_name_hitran_class1(v1):
 
 def vib_lvl_name_hitran_class5(v1, v2, l2, v3):
     """Write vibrational level for a HITRAN class 5 molecule: see
-    :data:`~radis.io.hitran.HITRAN_CLASS5`
+    :data:`~radis.api.hitranapi.HITRAN_CLASS5`
     """
     v1, v2, l2, v3 = _format_str(v1, v2, l2, v3)
     return "(" + v1 + "," + v2 + "," + l2 + "," + v3 + ")"
@@ -53,7 +53,7 @@ def vib_lvl_name_hitran_class5(v1, v2, l2, v3):
 
 def vib_lvl_name_hitran_class5_short(v1, v2, l2, v3):
     """Write vibrational level for a HITRAN class 5 molecule: see
-    :data:`~radis.io.hitran.HITRAN_CLASS5`
+    :data:`~radis.api.hitranapi.HITRAN_CLASS5`
     """
     v1, v2, l2, v3 = _format_str(v1, v2, l2, v3)
     return v1 + v2 + "`" + l2 + "`" + v3

@@ -45,7 +45,7 @@ def fetch_exomol(
         ExoMol molecule
     database: ``str``
         database name. Ex:: ``POKAZATEL`` or ``BT2`` for ``H2O``. See
-        :py:data:`~radis.io.exomol.KNOWN_EXOMOL_DATABASE_NAMES`. If ``None`` and
+        :py:data:`~radis.api.exomolapi.KNOWN_EXOMOL_DATABASE_NAMES`. If ``None`` and
         there is only one database available, use it.
     local_databases: ``str``
         where to create the RADIS HDF5 files. Default ``"~/.radisdb/exomol"``.
@@ -131,7 +131,7 @@ def fetch_exomol(
     database is anyway downloaded and uncompressed to ``local_databases``
     fast access .HDF5 files (which will take a long time on first call). Only
     the expected wavenumber range & isotopes are returned. The .HFD5 parsing uses
-    :py:func:`~radis.io.hdf5.hdf2df`
+    :py:func:`~radis.api.hdf5.hdf2df`
 
     References
     ----------
@@ -142,7 +142,7 @@ def fetch_exomol(
     See Also
     --------
     :py:func:`~radis.io.hitran.fetch_hitran`, :py:func:`~radis.io.hitemp.fetch_hitemp`
-    :py:func:`~radis.io.hdf5.hdf2df`
+    :py:func:`~radis.api.hdf5.hdf2df`
 
     """
     # TODO: implement columns= ... to load only specific columns.

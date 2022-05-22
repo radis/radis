@@ -100,7 +100,7 @@ Parameters
 
 	See Also
 	--------
-	:py:func:`~radis.io.hdf5.hdf2df`
+	:py:func:`~radis.api.hdf5.hdf2df`
 
 
 "OLDEST_COMPATIBLE_VERSION": "0.9.1"
