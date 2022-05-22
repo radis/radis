@@ -50,13 +50,26 @@ from radis.db.classes import (  # get_molecule_identifier,
     HITRAN_GROUP6,
     get_molecule,
 )
-from radis.io.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
-from radis.io.dbmanager import DatabaseManager
-from radis.io.tools import (
-    drop_object_format_columns,
-    parse_hitran_file,
-    replace_PQR_with_m101,
-)
+
+try:
+    from .cache_files import load_h5_cache_file, save_to_hdf
+    from .dbmanager import DatabaseManager
+    from .hdf5 import DataFileManager
+    from .tools import (
+        drop_object_format_columns,
+        parse_hitran_file,
+        replace_PQR_with_m101,
+    )
+except ImportError:
+    from radis.io.cache_files import load_h5_cache_file, save_to_hdf
+    from radis.io.dbmanager import DatabaseManager
+    from radis.io.hdf5 import DataFileManager
+    from radis.io.tools import (
+        drop_object_format_columns,
+        parse_hitran_file,
+        replace_PQR_with_m101,
+    )
+
 
 # %% Parsing functions
 
@@ -178,7 +191,7 @@ def hit2df(
     columns = columns_2004
 
     # Use cache file if possible
-    fcache = cache_file_name(fname, engine=engine)
+    fcache = DataFileManager(engine).cache_file(fname)
     if cache and exists(fcache):
         relevant_if_metadata_above = (
             {"wavenum_max": load_wavenum_min} if load_wavenum_min else {}
@@ -1171,7 +1184,7 @@ class HITRANDatabaseManager(DatabaseManager):
             molecule, tempdir
         )
 
-        writer = self.get_hdf5_manager()
+        writer = self.get_datafile_manager()
 
         # Create HDF5 cache file for all isotopes
         Nlines = 0
@@ -1417,9 +1430,10 @@ def fetch_hitran(
     df = ldb.load(
         local_file,
         columns=columns,
-        isotope=isotope,
-        load_wavenum_min=load_wavenum_min,  # for relevant files, get only the right range
-        load_wavenum_max=load_wavenum_max,
+        within=[("iso", isotope)] if isotope is not None else [],
+        # for relevant files, get only the right range :
+        lower_bound=[("wav", load_wavenum_min)] if load_wavenum_min is not None else [],
+        upper_bound=[("wav", load_wavenum_max)] if load_wavenum_max is not None else [],
         output=output,
     )
 

@@ -248,7 +248,7 @@ def get_molecule_identifier(molecule_name):
     except KeyError:
         raise NotImplementedError(
             "Molecule '{0}' not supported. Choose one of {1}".format(
-                molecule_name, list(trans2.keys())
+                molecule_name, sorted(list(trans2.keys()))
             )
         )
 

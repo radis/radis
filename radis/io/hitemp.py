@@ -312,7 +312,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         wmin = np.inf
         wmax = 0
 
-        writer = self.get_hdf5_manager()
+        writer = self.get_datafile_manager()
 
         with opener.open(urlname) as gfile:  # locally downloaded file
 
@@ -622,9 +622,10 @@ def fetch_hitemp(
     df = ldb.load(
         files_loaded,  # filter other files,
         columns=columns,
-        isotope=isotope,
-        load_wavenum_min=load_wavenum_min,  # for relevant files, get only the right range
-        load_wavenum_max=load_wavenum_max,
+        within=[("iso", isotope)] if isotope is not None else [],
+        # for relevant files, get only the right range :
+        lower_bound=[("wav", load_wavenum_min)] if load_wavenum_min is not None else [],
+        upper_bound=[("wav", load_wavenum_max)] if load_wavenum_max is not None else [],
         output=output,
     )
 

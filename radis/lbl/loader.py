@@ -51,7 +51,7 @@ key in :py:attr:`radis.config`
 
 import warnings
 from copy import deepcopy
-from os.path import exists, expanduser, join
+from os.path import exists, expanduser, join, splitext
 from time import time
 from uuid import uuid1
 
@@ -63,7 +63,6 @@ from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
 from radis.db.molparam import MolParams
 from radis.db.references import doi
-from radis.io.cache_files import cache_file_name
 from radis.io.cdsd import cdsd2df
 from radis.io.exomol import fetch_exomol
 from radis.io.geisa import fetch_geisa
@@ -1289,7 +1288,7 @@ class DatabankLoader(object):
                 )
 
             # Download, setup local databases, and fetch (use existing if possible)
-            if memory_mapping_engine not in ["vaex", "feather"]:
+            if memory_mapping_engine not in ["vaex", "feather", "pytables"]:
                 raise NotImplementedError(
                     f"{memory_mapping_engine} with ExoMol files. Define radis.config['MEMORY_MAPPING_ENGINE'] = 'vaex' or 'feather'"
                 )
@@ -1779,8 +1778,14 @@ class DatabankLoader(object):
 
             filtered_path = [fname for fname in path]
             for fname in path:
-                if cache_file_name(fname) in path and cache_file_name(fname) != fname:
-                    filtered_path.remove(cache_file_name(fname))
+                for likely_fname_cache in [
+                    splitext(fname)[0] + ".h5",
+                    fname + ".h5",
+                    splitext(fname)[0] + ".hdf5",
+                    fname + ".hdf5",
+                ]:
+                    if likely_fname_cache in path and likely_fname_cache != fname:
+                        filtered_path.remove(likely_fname_cache)
             new_paths += filtered_path
 
             # Raise errors if no file / print which files were selected.
