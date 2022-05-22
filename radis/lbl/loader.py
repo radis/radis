@@ -64,6 +64,7 @@ from radis.api.cdsdapi import cdsd2df
 # from radis.io.geisa import gei2df
 from radis.api.hdf5 import hdf2df
 from radis.api.hitranapi import hit2df, parse_global_quanta, parse_local_quanta
+from radis.api.tools import drop_object_format_columns, replace_PQR_with_m101
 from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
 from radis.db.molparam import MOLPARAMS_EXTRA_PATH, MolParams
@@ -73,7 +74,6 @@ from radis.io.geisa import fetch_geisa
 from radis.io.hitemp import fetch_hitemp
 from radis.io.hitran import fetch_hitran
 from radis.io.query import fetch_astroquery
-from radis.io.tools import drop_object_format_columns, replace_PQR_with_m101
 from radis.levels.partfunc import (
     PartFunc_Dunham,
     PartFuncTIPS,
