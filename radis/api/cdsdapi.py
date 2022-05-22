@@ -23,8 +23,13 @@ from collections import OrderedDict
 from os.path import exists, getmtime
 
 import radis
-from radis.api.cache_files import load_h5_cache_file, save_to_hdf
-from radis.api.hdf5 import DataFileManager
+
+try:
+    from .cache_files import load_h5_cache_file, save_to_hdf
+    from .hdf5 import DataFileManager
+except ImportError:
+    from radis.api.cache_files import load_h5_cache_file, save_to_hdf
+    from radis.api.hdf5 import DataFileManager
 from radis.io.tools import (
     drop_object_format_columns,
     parse_hitran_file,

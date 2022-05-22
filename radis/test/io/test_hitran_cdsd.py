@@ -28,8 +28,8 @@ from warnings import warn
 import numpy as np
 import pytest
 
-from radis.io.cdsd import cdsd2df
-from radis.io.hitran import hit2df
+from radis.api.cdsdapi import cdsd2df
+from radis.api.hitranapi import hit2df
 from radis.misc.warning import IrrelevantFileWarning
 from radis.test.utils import getTestFile, setup_test_line_databases
 

@@ -51,7 +51,7 @@ import numpy as np
 import pandas as pd
 from numpy import exp
 
-from radis.io.hitran import HITRAN_CLASS1, get_molecule
+from radis.api.hitranapi import HITRAN_CLASS1, get_molecule
 from radis.lbl.broadening import BroadenFactory
 from radis.lbl.labels import (
     vib_lvl_name_cdsd_pc,
