@@ -1573,7 +1573,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
     def build_energy_levels_class1(self):  # , ZPE=0):
         """in the case where only Ediss is given. Deal with vmax, Jmax later.
 
-        Applies to molecules in :data:`~radis.io.hitran.HITRAN_CLASS1`
+        Applies to molecules in :data:`~radis.api.hitranapi.HITRAN_CLASS1`
 
         Returns
         -------
@@ -1710,7 +1710,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
     ):
         """in the case where only Ediss is given. Deal with vmax, Jmax later.
 
-        :data:`~radis.io.hitran.HITRAN_CLASS5` = ['CO2']
+        :data:`~radis.api.hitranapi.HITRAN_CLASS5` = ['CO2']
         # Linear triatomic with large Fermi resonance
 
         Parameters

@@ -697,7 +697,7 @@ def get_exomol_full_isotope_name(molecule, isotope):
 
     See Also
     --------
-    :py:func:`~radis.io.exomol.get_exomol_database_list`"""
+    :py:func:`~radis.api.exomolapi.get_exomol_database_list`"""
 
     if molecule not in EXOMOL_MOLECULES:
         raise ValueError(
@@ -722,7 +722,7 @@ def get_exomol_database_list(molecule, isotope_full_name):
     molecule: str
     isotope_full_name: str
         isotope full name (ex. ``12C-1H4`` for CH4,1). Get it from
-        :py:func:`radis.io.exomol.get_exomol_full_isotope_name`
+        :py:func:`radis.api.exomolapi.get_exomol_full_isotope_name`
 
     Returns
     -------
@@ -734,20 +734,20 @@ def get_exomol_database_list(molecule, isotope_full_name):
         databases, recommended = get_exomol_database_list("CH4", "12C-1H4")
         >>> ['xsec-YT10to10', 'YT10to10', 'YT34to10'], 'YT34to10'
 
-    Or combine with :py:func:`~radis.io.exomol.get_exomol_full_isotope_name` to
+    Or combine with :py:func:`~radis.api.exomolapi.get_exomol_full_isotope_name` to
     get the isopologue (sorted by terrestrial abundance) ::
 
-        from radis.io.exomol import get_exomol_database_list, get_exomol_full_isotope_name
+        from radis.api.exomolapi import get_exomol_database_list, get_exomol_full_isotope_name
         databases, recommended = get_exomol_database_list("CH4", get_exomol_full_isotope_name("CH4", 1))
         >>> ['xsec-YT10to10', 'YT10to10', 'YT34to10'], 'YT34to10'
 
 
-    .. minigallery:: radis.io.exomol.get_exomol_database_list
+    .. minigallery:: radis.api.exomolapi.get_exomol_database_list
 
 
     See Also
     --------
-    :py:func:`~radis.io.exomol.get_exomol_full_isotope_name`
+    :py:func:`~radis.api.exomolapi.get_exomol_full_isotope_name`
     """
 
     url = f"https://exomol.com/data/molecules/{molecule}/{isotope_full_name}"
@@ -801,7 +801,7 @@ def get_exomol_database_list(molecule, isotope_full_name):
 #     molecule: str
 #     isotope_full_name: str
 #         isotope full name (ex. ``12C-1H4`` for CH4,1). Get it from
-#         :py:func:`radis.io.exomol.get_exomol_full_isotope_name`
+#         :py:func:`radis.api.exomolapi.get_exomol_full_isotope_name`
 
 #     Returns
 #     -------
@@ -813,20 +813,20 @@ def get_exomol_database_list(molecule, isotope_full_name):
 #         databases, recommended = get_exomol_database_list("CH4", "12C-1H4")
 #         >>> ['xsec-YT10to10', 'YT10to10', 'YT34to10'], 'YT34to10'
 
-#     Or combine with :py:func:`~radis.io.exomol.get_exomol_full_isotope_name` to
+#     Or combine with :py:func:`~radis.api.exomolapi.get_exomol_full_isotope_name` to
 #     get the isopologue (sorted by terrestrial abundance) ::
 
-#         from radis.io.exomol import get_exomol_database_list, get_exomol_full_isotope_name
+#         from radis.api.exomolapi import get_exomol_database_list, get_exomol_full_isotope_name
 #         databases, recommended = get_exomol_database_list("CH4", get_exomol_full_isotope_name("CH4", 1))
 #         >>> ['xsec-YT10to10', 'YT10to10', 'YT34to10'], 'YT34to10'
 
 
-#     .. minigallery:: radis.io.exomol.get_exomol_database_list
+#     .. minigallery:: radis.api.exomolapi.get_exomol_database_list
 
 
 #     See Also
 #     --------
-#     :py:func:`~radis.io.exomol.get_exomol_full_isotope_name`
+#     :py:func:`~radis.api.exomolapi.get_exomol_full_isotope_name`
 #     """
 
 # url = f"https://exomol.com/data/molecules/"
@@ -1545,7 +1545,7 @@ if __name__ == "__main__":
 
     # #%%
     # # See the list of recommended databases for the 1st isotope of SiO :
-    # from radis.io.exomol import get_exomol_database_list, get_exomol_full_isotope_name
+    # from radis.api.exomolapi import get_exomol_database_list, get_exomol_full_isotope_name
 
     # databases, recommended = get_exomol_database_list(
     #     "SiO", get_exomol_full_isotope_name("SiO", 1)

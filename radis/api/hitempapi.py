@@ -249,7 +249,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         """For CO2 and H2O, return only relevant files for given wavenumber range.
 
         If other molecule, return the file anyway.
-        see :py:func:`radis.io.hitemp.keep_only_relevant`"""
+        see :py:func:`radis.api.hitempapi.keep_only_relevant`"""
         if self.molecule in ["CO2", "H2O"]:
             inputfiles, _, _ = keep_only_relevant(inputfiles, wavenum_min, wavenum_max)
         return inputfiles

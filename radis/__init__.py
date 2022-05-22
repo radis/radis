@@ -94,6 +94,10 @@ Parameters
 	    import radis
 	    radis.AUTO_UPDATE_DATABASE = True
 
+	See Also
+	--------
+	:py:func:`~radis.api.hdf5.hdf2df`
+
 
 "OLDEST_COMPATIBLE_VERSION": "0.9.1"
     str: forces to regenerate cache files that were created in a previous version

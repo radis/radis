@@ -4,7 +4,7 @@
 Routine Listing
 ---------------
 
-- :func:`~radis.io.cdsd.cdsd2df`
+- :func:`~radis.api.cdsdapi.cdsd2df`
 
 
 References
@@ -36,7 +36,7 @@ except ImportError:
     if __name__ == "__main__":  # running from this file, as a script
         from radis.api.cache_files import load_h5_cache_file, save_to_hdf
         from radis.api.hdf5 import DataFileManager
-        from radis.io.tools import (
+        from radis.api.tools import (
             drop_object_format_columns,
             parse_hitran_file,
             replace_PQR_with_m101,

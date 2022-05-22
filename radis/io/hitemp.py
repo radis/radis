@@ -107,7 +107,7 @@ def fetch_hitemp(
     database is anyway downloaded and uncompressed to ``local_databases``
     fast access .HDF5 files (which will take a long time on first call). Only
     the expected wavenumber range & isotopes are returned. The .HFD5 parsing uses
-    :py:func:`~radis.io.hdf5.hdf2df`
+    :py:func:`~radis.api.hdf5.hdf2df`
 
     See Also
     --------

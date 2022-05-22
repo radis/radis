@@ -127,7 +127,7 @@ The path to these test files can be retrieved using the :py:func:`~radis.test.ut
 Load a line database file ::
 
     from radis.test.utils import getTestFile
-    from radis.io.hitran import hit2df
+    from radis.api.hitranapi import hit2df
     df = hit2df(getTestFile("hitran_CO_fragment.par"))
 
     print(df)  # replace with your test code

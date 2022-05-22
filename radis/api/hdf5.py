@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jan 26 21:27:15 2021
-
-@author: erwan
+Defines the :py:class:`~radis.api.hdf5.DataFileManager` class
 """
 
 import os
@@ -96,9 +94,9 @@ class DataFileManager(object):
         ::
 
             file = 'CO.hdf5'
-            from radis.io.hdf5 import HDF5Manager
-            engine = HDF5Manager.guess_engine(file)
-            mgr = HDF5Manager(engine)
+            from radis.api.hdf5 import DataFileManager
+            engine = DataFileManager.guess_engine(file)
+            mgr = DataFileManager(engine)
             mgr.read_metadata(file)
 
 
@@ -141,7 +139,7 @@ class DataFileManager(object):
             root for `h5py` )
         data_columns : list
             only these column names will be searchable directly on disk to
-            load certain lines only. See :py:func:`~radis.io.hdf5.hdf2df`
+            load certain lines only. See :py:func:`~radis.api.hdf5.hdf2df`
         """
         file = expanduser(file)
         if self.engine == "pytables":

@@ -14,7 +14,7 @@ from radis.misc.config import getDatabankEntries
 
 @pytest.mark.fast
 def test_hdf5_io_engines(*args, **kwargs):
-    """Test different engines implemented in :py:class:`radis.io.hdf5.HDF5Manager`"""
+    """Test different engines implemented in :py:class:`radis.api.hdf5.DataFileManager`"""
 
     import os
     from os.path import exists
@@ -78,7 +78,7 @@ def test_hdf5_io_engines(*args, **kwargs):
 def test_local_hdf5_lines_loading(*args, **kwargs):
     """
     We use the OH HITEMP line database to test :py:func:`~radis.io.hitemp.fetch_hitemp`
-    and :py:func:`~radis.io.hdf5.hdf2df`
+    and :py:func:`~radis.api.hdf5.hdf2df`
 
     - Partial loading (only specific wavenumbers)
     - Only certain isotopes

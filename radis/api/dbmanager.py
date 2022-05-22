@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Aug  9 19:42:51 2021
 
-@author: erwan
 """
 import os
 import shutil
@@ -151,7 +149,7 @@ class DatabaseManager(object):
 
         See Also
         --------
-        :py:meth:`~radis.io.linedb.get_files_to_download`"""
+        :py:meth:`~radis.api.dbmanager.DatabaseManager.get_files_to_download`"""
         verbose = self.verbose
         local_databases = self.local_databases
         engine = self.engine
@@ -232,7 +230,7 @@ class DatabaseManager(object):
         -------
         list: list of urlnames
 
-        See for instance :py:meth:`radis.io.hitemp.HITEMPDatabaseManager"""
+        See for instance :py:class:`radis.api.hitempapi.HITEMPDatabaseManager"""
 
         raise NotImplementedError(
             "This function should be overwritten by the DatabaseManager subclass"
@@ -269,7 +267,7 @@ class DatabaseManager(object):
 
         See Also
         --------
-        :py:meth:`~radis.io.linedb.get_filenames`"""
+        :py:meth:`~radis.api.dbmanager.DatabaseManager.get_filenames`"""
         return [k for k in files if exists(k)]
 
     def get_missing_files(self, files):
@@ -282,7 +280,7 @@ class DatabaseManager(object):
 
         See Also
         --------
-        :py:meth:`~radis.io.linedb.get_filenames`"""
+        :py:meth:`~radis.api.dbmanager.DatabaseManager.get_filenames`"""
         return [k for k in files if not exists(k)]
 
     def remove_local_files(self, local_files):
