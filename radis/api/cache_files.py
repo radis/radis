@@ -39,7 +39,10 @@ import radis
 try:
     from .hdf5 import DataFileManager
 except ImportError:
-    from radis.api.hdf5 import DataFileManager
+    if __name__ == "__main__":  # running from this file, as a script
+        from radis.api.hdf5 import DataFileManager
+    else:
+        raise
 from radis.misc.basics import compare_dict, is_float
 from radis.misc.printer import printm, printr
 from radis.misc.warning import DeprecatedFileWarning, IrrelevantFileWarning

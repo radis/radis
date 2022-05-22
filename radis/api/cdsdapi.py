@@ -27,14 +27,22 @@ import radis
 try:
     from .cache_files import load_h5_cache_file, save_to_hdf
     from .hdf5 import DataFileManager
+    from .tools import (
+        drop_object_format_columns,
+        parse_hitran_file,
+        replace_PQR_with_m101,
+    )
 except ImportError:
-    from radis.api.cache_files import load_h5_cache_file, save_to_hdf
-    from radis.api.hdf5 import DataFileManager
-from radis.io.tools import (
-    drop_object_format_columns,
-    parse_hitran_file,
-    replace_PQR_with_m101,
-)
+    if __name__ == "__main__":  # running from this file, as a script
+        from radis.api.cache_files import load_h5_cache_file, save_to_hdf
+        from radis.api.hdf5 import DataFileManager
+        from radis.io.tools import (
+            drop_object_format_columns,
+            parse_hitran_file,
+            replace_PQR_with_m101,
+        )
+    else:
+        raise
 
 # fmt: off
 columns_cdsdhitemp = OrderedDict(

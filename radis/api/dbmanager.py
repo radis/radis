@@ -18,8 +18,11 @@ try:
     from .cache_files import check_not_deprecated
     from .hdf5 import DataFileManager
 except ImportError:
-    from radis.api.hdf5 import DataFileManager
-    from radis.api.cache_files import check_not_deprecated
+    if __name__ == "__main__":  # running from this file, as a script
+        from radis.api.cache_files import check_not_deprecated
+        from radis.api.hdf5 import DataFileManager
+    else:
+        raise
 
 from datetime import date
 
