@@ -298,13 +298,13 @@ def fetch_exomol(
     output: 'pandas', 'vaex', 'jax'
         format of the output DataFrame. If ``'jax'``, returns a dictionary of
         jax arrays.
-    skip_optional_data : bool 
+    skip_optional_data : bool
         If False, fetch all fields which are marked as available in the ExoMol definition
         file. If True, load only the first 4 columns of the states file
         ("i", "E", "g", "J"). The structure of the columns above 5 depend on the
         the definitions file (*.def) and the Exomol version.
         If ``skip_optional_data=False``, two errors may occur:
-            
+
             - a field is marked as present/absent in the *.def field but is
               absent/present in the *.states file (ie both files are inconsistent).
             - in the updated version of Exomol, new fields have been added in the
@@ -337,10 +337,10 @@ def fetch_exomol(
     fast access .HDF5 files (which will take a long time on first call). Only
     the expected wavenumber range & isotopes are returned. The .HFD5 parsing uses
     :py:func:`~radis.io.hdf5.hdf2df`
-    
+
     References
     ----------
-    
+
     .. [1] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Barton, E. J., Chubb, K. L., Coles, P. A., … Zak, E. (2016). The ExoMol database: molecular line lists for exoplanet and other hot atmospheres. https://doi.org/10.1016/j.jms.2016.05.002
     .. [2] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Clark, V. H. J., Chubb, K. L., Conway, E. K., … Yurchenko, O. P. (2020). The 2020 release of the ExoMol database: Molecular line lists for exoplanet and other hot atmospheres. Journal of Quantitative Spectroscopy and Radiative Transfer, 255, 107228. https://doi.org/10.1016/j.jqsrt.2020.107228
 
@@ -410,7 +410,7 @@ def fetch_exomol(
         name=databank_name,
         local_databases=local_databases,
         nurange=[
-            load_wavenum_min if load_wavenum_min is not None else 0.,
+            load_wavenum_min if load_wavenum_min is not None else 0.0,
             load_wavenum_max if load_wavenum_max is not None else np.inf,
         ],
         engine=engine,
@@ -537,7 +537,7 @@ class MdbExomol(DatabaseManager):
         database=None,
         local_databases=None,
         name="EXOMOL-{molecule}",
-        nurange=[0., np.inf],
+        nurange=[0.0, np.inf],
         margin=1.0,
         crit=-np.inf,
         bkgdatm="Air",  # TODO: use Air whenever possible, to be consistent with HITRAN/HITEMP
@@ -564,13 +564,13 @@ class MdbExomol(DatabaseManager):
         ----------------
         engine : str
             which memory mapping engine to use : 'vaex', 'pytables' (HDF5), 'feather'
-        skip_optional_data : bool 
+        skip_optional_data : bool
             If False, fetch all fields which are marked as available in the ExoMol definition
             file. If True, load only the first 4 columns of the states file
             ("i", "E", "g", "J"). The structure of the columns above 5 depend on the
             the definitions file (*.def) and the Exomol version.
             If ``skip_optional_data=False``, two errors may occur:
-                
+
                 - a field is marked as present/absent in the *.def field but is
                   absent/present in the *.states file (ie both files are inconsistent).
                 - in the updated version of Exomol, new fields have been added in the
@@ -637,7 +637,7 @@ class MdbExomol(DatabaseManager):
 
         References
         ----------
-        
+
         .. [1] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Barton, E. J., Chubb, K. L., Coles, P. A., … Zak, E. (2016). The ExoMol database: molecular line lists for exoplanet and other hot atmospheres. https://doi.org/10.1016/j.jms.2016.05.002
         .. [2] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Clark, V. H. J., Chubb, K. L., Conway, E. K., … Yurchenko, O. P. (2020). The 2020 release of the ExoMol database: Molecular line lists for exoplanet and other hot atmospheres. Journal of Quantitative Spectroscopy and Radiative Transfer, 255, 107228. https://doi.org/10.1016/j.jqsrt.2020.107228
 
@@ -751,8 +751,10 @@ class MdbExomol(DatabaseManager):
                 f"Note: Caching states data to the {engine} format. After the second time, it will become much faster."
             )
             states = exomolapi.read_states(
-                self.states_file, dic_def, engine="vaex" if engine == "vaex" else "csv",
-                skip_optional_data=skip_optional_data
+                self.states_file,
+                dic_def,
+                engine="vaex" if engine == "vaex" else "csv",
+                skip_optional_data=skip_optional_data,
             )
             mgr.write(mgr.cache_file(self.states_file), states)
 
@@ -786,15 +788,11 @@ class MdbExomol(DatabaseManager):
             # imin :
             # index i of the "w(i)-w(i+1)" element in dic_def["numtag"] such
             # that nurange[0]<=w(i)
-            imin = (
-                np.searchsorted(dic_def["numinf"], nurange[0], side="right") - 1
-            )
+            imin = np.searchsorted(dic_def["numinf"], nurange[0], side="right") - 1
             # imax :
             # index i of the "w(i)-w(i+1)" element in dic_def["numtag"] such
             # that w(i+1)<=nurange[1]
-            imax = (
-                np.searchsorted(dic_def["numinf"], nurange[1], side="right") - 2
-            )
+            imax = np.searchsorted(dic_def["numinf"], nurange[1], side="right") - 2
             self.trans_file = []
             self.num_tag = []
             for k, i in enumerate(range(imin, imax + 1)):
@@ -835,7 +833,11 @@ class MdbExomol(DatabaseManager):
                 # In particular, compute gup and elower
 
                 exomolapi.pickup_gE(
-                    states, trans, trans_file, dic_def, skip_optional_data=skip_optional_data
+                    states,
+                    trans,
+                    trans_file,
+                    dic_def,
+                    skip_optional_data=skip_optional_data,
                 )
 
                 ##Recompute Line strength:
