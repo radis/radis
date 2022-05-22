@@ -13,16 +13,9 @@ Run only tests for local files (tests that have a 'local' label)::
 -------------------------------------------------------------------------------
 """
 
-# import os
-# from os.path import getmtime
-# from warnings import warn
-
-# import numpy as np
 import pytest
 
-from radis.io.geisa import gei2df
-
-# from radis.misc.warning import IrrelevantFileWarning
+from radis.api.geisaapi import gei2df
 from radis.test.utils import getTestFile
 
 files = {
