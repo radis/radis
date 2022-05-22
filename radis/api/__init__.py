@@ -4,3 +4,11 @@
 -------------------------------------------------------------------------------
 
 """
+
+from .cdsdapi import cdsd2df
+from .hitranapi import hit2df
+
+__all__ = [
+    "cdsd2df",
+    "hit2df",
+]

@@ -225,6 +225,7 @@ from .spectrum import *  # Spectrum object
 from .test import *  # test
 from .tools import *  # slit, database, line survey, etc.
 
+__all__.extend(api.__all__)
 __all__.extend(db.__all__)
 __all__.extend(io.__all__)
 __all__.extend(lbl.__all__)
