@@ -7,7 +7,7 @@ Created on Tue Jan 26 20:36:38 2021
 
 import pytest
 
-from radis.io.hdf5 import DataFileManager, hdf2df
+from radis.api.hdf5 import DataFileManager, hdf2df
 from radis.io.hitemp import fetch_hitemp
 from radis.misc.config import getDatabankEntries
 
