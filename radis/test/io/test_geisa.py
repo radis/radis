@@ -12,9 +12,9 @@ Run all tests::
 -------------------------------------------------------------------------------
 """
 
-from radis.io.geisa import gei2df
+import pytest
 
-# from radis.misc.warning import IrrelevantFileWarning
+from radis.api.geisaapi import gei2df
 from radis.test.utils import getTestFile
 
 files = {
