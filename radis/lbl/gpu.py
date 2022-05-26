@@ -140,7 +140,7 @@ def py_calc_gaussian_envelope_params(log_2vMm, verbose=False):
 
 
 try:
-    from radis_cython_extensions import (
+    from radis_cython_extensions import (  # isort:skip
         calc_gaussian_envelope_params,
         calc_lorentzian_envelope_params,
     )
@@ -466,7 +466,7 @@ def gpu_init(
         from numpy import complex64, float32, zeros
 
         array = lambda arr: arr
-        from radis_cython_extensions import set_init_params
+        from radis_cython_extensions import set_init_params  # isort:skip
 
     init_h.v_min = np.min(v_arr)  # 2000.0
     init_h.v_max = np.max(v_arr)  # 2400.0
@@ -611,7 +611,7 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
         from numpy import complex64, float32, zeros
         from numpy.fft import irfft, rfft
 
-        from radis_cython_extensions import (
+        from radis_cython_extensions import (  # isort:skip
             applyGaussianSlit,
             applyLineshapes,
             calcTransmittanceNoslit,
