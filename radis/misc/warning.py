@@ -75,6 +75,10 @@ class EmptyDatabaseError(ValueError):
     pass
 
 
+class InconsistentDatabaseError(ValueError):
+    pass
+
+
 # Warnings
 
 

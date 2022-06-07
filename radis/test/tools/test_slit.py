@@ -402,7 +402,7 @@ def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **
     s.update()
     # spectrum convolved with area=1
     s.apply_slit(FWHM, norm_by="area", plot_slit=plot)
-    w_area, I_area = s.get("radiance")
+    w_area, I_area = s.get("radiance", wunit="nm")
     if plot:
         fig = plt.figure(fig_prefix + "Spectrum in cm-1 + slit in nm")
         fig.clear()
@@ -715,6 +715,7 @@ def test_resampling(rtol=1e-2, verbose=True, plot=True, warnings=True, *args, **
         w_nm, T_nm, wunit="nm"
     )  # a new spectrum stored in nm
     # sCO_nm = theoretical_spectrum(w_nm, I_nm, wunit='nm', Iunit='mW/cm2/sr/nm') #  a new spectrum stored in nm
+    sCO_nm.resample_even()
 
     if plot:
         fig = plt.figure(fig_prefix + "auto-resampling")
@@ -840,3 +841,4 @@ def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):
 
 if __name__ == "__main__":
     print(("Testing slit.py: ", _run_testcases(plot=True)))
+    # printm("Testing slit.py:", pytest.main(["test_slit.py", "--pdb"]))

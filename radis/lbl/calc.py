@@ -20,12 +20,14 @@ Routine Listing
 from copy import deepcopy
 from os.path import exists
 
+# from radis.db.classes import M
+
 try:  # Proper import
-    from .base import get_waverange
+    from .base import get_wavenumber_range
     from .factory import SpectrumFactory
 except ImportError:  # if ran from here
     from radis.lbl.factory import SpectrumFactory
-    from radis.lbl.base import get_waverange
+    from radis.lbl.base import get_wavenumber_range
 
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
@@ -151,6 +153,9 @@ def calc_spectrum(
 
             databank=('exomol', 'EBJT')   # 'EBJT' is a specific ExoMol database name
 
+        - ``'geisa'``, to fetch the GEISA 2020 database
+          through :py:func:`~radis.io.geisa.fetch_geisa`. Downloads all lines
+          and all isotopes.
         - the name of a a valid database file, in which case the format is inferred.
           For instance, ``'.par'`` is recognized as ``hitran/hitemp`` format.
           Accepts wildcards ``'*'`` to select multiple files ::
@@ -359,7 +364,7 @@ def calc_spectrum(
     # ... wavelengths / wavenumbers
 
     # Get wavenumber, based on whatever was given as input.
-    wavenum_min, wavenum_max = get_waverange(
+    wavenum_min, wavenum_max, input_wunit = get_wavenumber_range(
         wmin,
         wmax,
         wunit,
@@ -368,6 +373,7 @@ def calc_spectrum(
         kwargs.pop("wavelength_min") if "wavelength_min" in kwargs else None,
         kwargs.pop("wavelength_max") if "wavelength_max" in kwargs else None,
         medium,
+        return_input_wunit=True,
     )
 
     # Deal with Multi-molecule mode:
@@ -508,6 +514,7 @@ def calc_spectrum(
         generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
             wavenum_max=wavenum_max,
+            input_wunit=input_wunit,
             Tgas=Tgas,
             Tvib=Tvib,
             Trot=Trot,
@@ -561,6 +568,7 @@ def calc_spectrum(
 def _calc_spectrum_one_molecule(
     wavenum_min,
     wavenum_max,
+    input_wunit,
     Tgas,
     Tvib,
     Trot,
@@ -587,7 +595,17 @@ def _calc_spectrum_one_molecule(
     return_factory=False,
     **kwargs,
 ) -> Spectrum:
-    """See :py:func:`~radis.lbl.calc.calc_spectrum`"""
+    """See :py:func:`~radis.lbl.calc.calc_spectrum`
+
+    Parameters
+    ----------
+    input_wunit: 'nm', 'nm_vac', 'cm-1'
+        in which wavespace was the input given before conversion (used to keep
+        default plot/get consistent with input units)
+    """
+
+    # Initialize Factory
+    # ------------------
 
     # Check inputs
 
@@ -651,6 +669,13 @@ def _calc_spectrum_one_molecule(
         export_lines=export_lines,
         **kwargs,
     )
+    # Have consistent output units
+    sf.input_wunit = input_wunit
+
+    # Load databank
+    # -------------
+
+    # Get databank
     if (
         databank
         in [
@@ -658,6 +683,7 @@ def _calc_spectrum_one_molecule(
             "hitran",
             "hitemp",
             "exomol",
+            "geisa",
         ]
         or (isinstance(databank, tuple) and databank[0] == "exomol")
         or (isinstance(databank, tuple) and databank[0] == "hitran")
@@ -685,6 +711,12 @@ def _calc_spectrum_one_molecule(
             conditions = {
                 "source": "exomol",
                 "parfuncfmt": "exomol",  # download & use Exo partition functions for equilibrium}
+            }
+        elif databank in ["geisa"]:
+            conditions = {
+                "source": "geisa",
+                "parfuncfmt": "hapi",
+                # TODO: replace with GEISA partition function someday.............
             }
         elif isinstance(databank, tuple) and databank[0] == "exomol":
             conditions = {
@@ -798,6 +830,8 @@ def _calc_spectrum_one_molecule(
     if overpopulation is not None or overpopulation != {}:
         sf.misc.export_rovib_fraction = True  # required to compute Partition fucntions with overpopulation being taken into account
 
+    # Calculate Spectrum
+    # ------------------
     # Use the standard eq_spectrum / non_eq_spectrum functions
     if _equilibrium:
         if mode == "cpu":
@@ -846,3 +880,5 @@ if __name__ == "__main__":
     from radis.test.lbl.test_calc import _run_testcases
 
     print(_run_testcases(verbose=True))
+
+# %%

@@ -263,6 +263,7 @@ html_theme_options = {
     "fixed_sidebar": True,
     "analytics_id": "UA-113616205-1",
     "link": "#7A306C",
+    "extra_nav_links": {"RADIS Website": "https://radis.github.io/"},
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -436,7 +437,7 @@ texinfo_documents = [
         "RADIS Documentation",
         author,
         "RADIS",
-        "A fast line-by-line code for high resolution infrared molecular spectra",
+        "A fast line-by-line code for high resolution infrared molecular spectra: https://radis.github.io/",
         "Miscellaneous",
     ),
 ]

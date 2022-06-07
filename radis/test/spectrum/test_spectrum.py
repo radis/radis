@@ -309,27 +309,32 @@ def test_intensity_conversion(verbose=True, *args, **kwargs):
     assert allclose(I_cm, I, rtol=1e-3)
 
 
-# def test_emissivity_conversion(verbose=True, *args, **kwargs):
-#    ''' Test conversion of intensity cm-1 works:
-#
-#    - conversion of mW/sr/cm2/nm -> mW/sr/cm2/cm-1
-#
-#    '''
-#
-#    from radis.phys.units import convert_emi2nm
-#    from radis.test.utils import getTestFile
-#    from radis.tools.database import load_spec
-#
-#    s = load_spec(getTestFile('CO_Tgas1500K_mole_fraction0.01.spec'), binary=True)
-#    s.update()
-#
-#    # mW/sr/cm3/nm -> mW/sr/cm3/cm-1
-#
-#    w, I = s.get('emissivity_noslit', Iunit='mW/sr/cm3/cm-1')
-#    I_cm = convert_emi2nm(I, 'mW/sr/cm3/cm-1', 'mW/sr/m3/µm')
-#
+def test_emisscoeff_conversion(verbose=True, *args, **kwargs):
+    """Test conversion of intensity cm-1 works:
 
-# TODO: finish implementing emissivity_conversino above
+    - conversion of mW/sr/cm3/nm -> mW/sr/cm3/cm-1
+
+    """
+
+    # from radis.phys.units import convert_emi2nm
+    from radis.test.utils import getTestFile
+    from radis.tools.database import load_spec
+
+    s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
+    s.update()
+
+    # mW/sr/cm3/nm -> mW/sr/cm3/cm-1
+
+    w_nm, I_nm = s.get("emisscoeff", Iunit="mW/sr/cm3/nm", wunit="nm")
+
+    w_cm, I_cm = s.get("emisscoeff", Iunit="mW/sr/cm3/cm-1", wunit="cm-1")
+    # I_cm = convert_emi2nm(I, 'mW/sr/cm3/cm-1', 'mW/sr/m3/µm')
+
+    import numpy as np
+
+    # compare. Integral should be the same
+    assert (I_nm != I_cm).all()
+    assert abs(np.trapz(I_nm, w_nm) / np.trapz(I_cm, -w_cm) - 1) < 0.001
 
 
 def test_rescaling_function(verbose=True, *args, **kwargs):
@@ -592,6 +597,7 @@ def _run_testcases(
     # Test conversion of intensity cm-1 works
     # -------------
     test_intensity_conversion(debug=debug, verbose=verbose, *args, **kwargs)
+    test_emisscoeff_conversion(debug=debug, verbose=verbose, *args, **kwargs)
 
     # Test updating / rescaling functions (no self absorption)
     # ---------
@@ -615,4 +621,23 @@ def _run_testcases(
 
 
 if __name__ == "__main__":
-    print(("Test spectrum: ", _run_testcases(debug=False, close_plots=False)))
+    # print(("Test spectrum: ", _run_testcases(debug=False, close_plots=False)))
+
+    import radis
+
+    s = radis.test_spectrum()
+    assert s.c["default_output_unit"] == "cm-1"
+
+    assert (s.get("abscoeff")[0] == s.get_wavenumber()).all()
+
+    s.c["default_output_unit"] = "nm"
+
+    assert (s.get("abscoeff")[0] == s.get_wavelength()).all()
+    s.c["default_output_unit"] = "nm_vac"
+    assert (s.get("abscoeff")[0] == s.get_wavelength(medium="vacuum")).all()
+
+    #%%
+    from radis import load_spec
+    from radis.test.utils import getTestFile
+
+    s_exp = load_spec(getTestFile("CO2_measured_spectrum_4-5um.spec"), binary=True)

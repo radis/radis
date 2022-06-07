@@ -85,6 +85,8 @@ def keep_only_relevant(
             files_wmin = min(float(fname_wmin), files_wmin)
             files_wmax = max(float(fname_wmax), files_wmax)
 
+    print(f"HITEMP keep only relevant input files: {relevantfiles}")
+
     return relevantfiles, files_wmin, files_wmax
 
 
@@ -261,6 +263,7 @@ class HITEMPDatabaseManager(DatabaseManager):
                     f"End of file while parsing file {opener.abspath(urlname)}. May be due to download error. Delete file ?"
                 ) from err
             linereturnformat = _get_linereturnformat(b, columns)
+
         return linereturnformat
 
     def parse_to_local_file(
@@ -309,7 +312,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         wmin = np.inf
         wmax = 0
 
-        writer = self.get_hdf5_manager()
+        writer = self.get_datafile_manager()
 
         with opener.open(urlname) as gfile:  # locally downloaded file
 
@@ -436,6 +439,7 @@ def fetch_hitemp(
     clean_cache_files=True,
     return_local_path=False,
     engine="default",
+    output="pandas",
     parallel=True,
 ):
     """Stream HITEMP file from HITRAN website. Unzip and build a HDF5 file directly.
@@ -475,7 +479,10 @@ def fetch_hitemp(
     return_local_path: bool
         if ``True``, also returns the path of the local database file.
     engine: 'pytables', 'vaex', 'default'
-        which HDF5 library to use. If 'default' use the value from ~/radis.json
+        which HDF5 library to use to parse local files. If 'default' use the value from ~/radis.json
+    output: 'pandas', 'vaex', 'jax'
+        format of the output DataFrame. If ``'jax'``, returns a dictionary of
+        jax arrays.
     parallel: bool
         if ``True``, uses joblib.parallel to load database with multiple processes
 
@@ -514,7 +521,8 @@ def fetch_hitemp(
     See Also
     --------
     :py:func:`~radis.io.hitran.fetch_hitran`, :py:func:`~radis.io.exomol.fetch_exomol`
-    :py:func:`~radis.io.hdf5.hdf2df`, :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`
+    :py:func:`~radis.io.geisa.fetch_geisa`, :py:func:`~radis.io.hdf5.hdf2df`
+    :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`
 
     """
 
@@ -614,9 +622,11 @@ def fetch_hitemp(
     df = ldb.load(
         files_loaded,  # filter other files,
         columns=columns,
-        isotope=isotope,
-        load_wavenum_min=load_wavenum_min,  # for relevant files, get only the right range
-        load_wavenum_max=load_wavenum_max,
+        within=[("iso", isotope)] if isotope is not None else [],
+        # for relevant files, get only the right range :
+        lower_bound=[("wav", load_wavenum_min)] if load_wavenum_min is not None else [],
+        upper_bound=[("wav", load_wavenum_max)] if load_wavenum_max is not None else [],
+        output=output,
     )
 
     return (df, files_loaded) if return_local_path else df

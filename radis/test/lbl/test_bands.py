@@ -72,22 +72,26 @@ def test_plot_all_CO2_bandheads(verbose=True, plot=False, *args, **kwargs):
 
     assert len(s_bands) == 3
 
-    # Ensure that recombining gives the same
     s_merged = MergeSlabs(*list(s_bands.values()))
-    assert s_tot.compare_with(s_merged, "radiance_noslit", plot=False)
-
-    if verbose:
-        printm("Recombining bands give the same Spectrum")
+    s_merged.name = "Merged bands"
 
     # %%
     if plot:
         s_tot.apply_slit(1, "nm")
         s_tot.name = "Full spectrum"
-        s_tot.plot(wunit="nm", lw=3)
+        s_tot.plot("radiance", wunit="nm", lw=3)
         for band, s in s_bands.items():
             s.plot(wunit="nm", nfig="same")
+        s_merged.apply_slit(1, "nm")
+        s_merged.plot("radiance", wunit="nm", nfig="same", lw=2)
         plt.legend(loc="upper left")
         plt.ylim(ymax=0.25)
+
+    # Ensure that recombining gives the same
+    assert s_tot.compare_with(s_merged, "radiance_noslit", plot=False)
+
+    if verbose:
+        printm("Recombining bands give the same Spectrum")
 
     # %% Compare with equilibrium bands now
     s_bands_eq = sf.eq_bands(Tgas)

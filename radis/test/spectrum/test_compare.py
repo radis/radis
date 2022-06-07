@@ -115,7 +115,9 @@ def test_get_residual():
         mole_fraction=0.1,
     )
     s1.apply_slit(1, "nm")
-    w1, I1 = s1.get("radiance", copy=False, wunit=s1.get_waveunit())
+    w1, I1 = s1.get(
+        "radiance", copy=False, wunit=s1.get_waveunit(), Iunit="mW/cm2/sr/nm"
+    )
 
     # Fake experimental spectrum (identical)
     s_expe_1 = experimental_spectrum(w1, I1, Iunit="mW/cm2/sr/nm", wunit="cm-1")
@@ -126,12 +128,13 @@ def test_get_residual():
         # ignore_nan=False,
         normalize=True,
     )
-    assert residual1 == 0
+    assert residual1 < 1e-4
 
     # Fake experimental spectrum with a new unit (but identical)
     I2 = I1 * 1e-3
     s_expe_2 = experimental_spectrum(w1, I2, Iunit="W/cm2/sr/nm", wunit="cm-1")
 
+    assert np.isclose(s_expe_1.max(), s_expe_2.max())
     residual2 = get_residual(
         s1,
         s_expe_2,
@@ -149,7 +152,7 @@ def test_get_residual():
             normalize_how=bool_how,
         )
         # print('residu2 ={}'.format(residual2))
-        assert residual2_bis < 1e-13
+        assert residual2_bis < 1e-3
 
     # Fake experimental spectrum with a nan
     I3 = I1.copy()
@@ -157,7 +160,7 @@ def test_get_residual():
     s_expe_3 = experimental_spectrum(w1, I3, Iunit="W/cm2/sr/nm", wunit="cm-1")
 
     # Intrestingly, the "mean" method seams to be not adapted for spectra with nans
-    criterion = [1e-10, 2e-6, 2e-2]
+    criterion = [7e-5, 2e-6, 2e-2]
     for index, bool_how in enumerate(["max", "area", "mean"]):
         residual3 = get_residual(
             s1,
@@ -183,4 +186,5 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    print("Test_compare.py: ", _run_testcases())
+    # print("Test_compare.py: ", _run_testcases())
+    test_get_residual()

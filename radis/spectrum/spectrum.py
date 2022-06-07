@@ -69,7 +69,7 @@ from radis.misc.arrays import (
 )
 from radis.misc.debug import printdbg
 from radis.misc.plot import split_and_plot_by_parts
-from radis.misc.signal import resample
+from radis.misc.signal import resample, resample_even
 from radis.phys.air import air2vacuum, vacuum2air
 from radis.phys.convert import cm2nm, conv2, nm2cm
 from radis.phys.units import Unit, convert_universal
@@ -919,7 +919,15 @@ class Spectrum(object):
     # ----------------
     # XXX =====================================================================
 
-    def get(self, var, wunit="default", Iunit="default", copy=True, trim_nan=False):
+    def get(
+        self,
+        var,
+        wunit="default",
+        Iunit="default",
+        copy=True,
+        trim_nan=False,
+        return_units=False,
+    ):
         """Retrieve a spectral quantity from a Spectrum object. You can select
         wavespace unit, intensity unit, or propagation medium.
 
@@ -928,7 +936,7 @@ class Spectrum(object):
         var: variable (``'absorbance'``, ``'transmittance'``, ``'xsection'`` etc.)
             Should be a defined quantity among :data:`~radis.spectrum.utils.CONVOLUTED_QUANTITIES`
             or :data:`~radis.spectrum.utils.NON_CONVOLUTED_QUANTITIES`.
-            To get the full list of quantities defined in this Spectrum object use
+            To get the full list of spectral arrays defined in this Spectrum object use
             the :meth:`~radis.spectrum.spectrum.Spectrum.get_vars` method.
         wunit: ``'nm'``, ``'cm'``, ``'nm_vac'``.
             wavespace unit: wavelength in air (``'nm'``), wavenumber
@@ -941,6 +949,14 @@ class Spectrum(object):
             For ``var="radiance"``, one can use per wavelength (~ 'W/m2/sr/nm')
             or per wavenumber (~ 'W/m2/sr/cm-1') units
 
+            .. note::
+
+                if using ``default``, the returned unit may be different from
+                Spectrum.units[var].  e.g, for a Spectrum with radiance stored
+                in 'mW/cm2/sr/nm', getting it with `wunit='cm-1', Iunit='default'`
+                will return Iunit in 'mW/cm2/sr/cm-1' for consistency.
+                Use ``return_units`` to be sure about which units are used.
+
         Other Parameters
         ----------------
         copy: bool
@@ -949,6 +965,11 @@ class Spectrum(object):
         trim_nan: bool
             if ``True``, removes ``nan`` on the sides of the spectral array
             (and corresponding wavespace). Default ``False``.
+        return_units: bool
+            if ``True``, return dimensioned Astropy arrays.
+            Is using ``return_units = 'as_str'``, return `wunit` and `Iunit`
+            as extra variables, i.e, ``w, I, wunit, Iunit = s.get(..., return_units='as_str')``
+            Default ``False``
 
         Returns
         -------
@@ -968,14 +989,16 @@ class Spectrum(object):
 
             _, R = s.get('radiance_noslit', wunit='nm', Iunit='W/cm2/sr/nm')
 
+        Use with `return_units` to get dimensioned Astropy Quantities ::
+
+            w, R  = s.get('radiance_noslit', return_units=True)
+
         See Also
         --------
         :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance`,
         :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance_noslit`,
         :ref:`the Spectrum page <label_spectrum>`
         """
-        # TODO: allow to get radiance in (W/sr/cm2/nm) or (W/sr/cm2) multiplying
-        # by FWHM.
 
         # check input
         if not var in self.get_vars():
@@ -1002,7 +1025,10 @@ class Spectrum(object):
 
         # Get wavespace (in correct unit, and correct medium)
         if wunit == "default":
-            wunit = self.get_waveunit()
+            if "default_output_unit" in self.conditions:
+                wunit = self.c["default_output_unit"]
+            else:
+                wunit = self.get_waveunit()
         wunit = cast_waveunit(wunit)
         if wunit == "cm-1":
             w = self.get_wavenumber(copy=copy)
@@ -1025,28 +1051,59 @@ class Spectrum(object):
 
         # Convert y unit if necessary
         Iunit0 = self.units[var]
+        if Iunit == "default":
+            # Add unit consistent with the namespace
+            # https://github.com/radis/radis/issues/456
+            if wunit in ["nm", "nm_air"]:
+                if var in [
+                    "radiance",
+                    "radiance_noslit",
+                    "emisscoeff",
+                    "emisscoeff_continuum",
+                ]:
+                    Iunit = Iunit0.replace("/cm-1", "/nm")
+                else:
+                    Iunit = Iunit0
+            elif wunit in ["cm-1"]:
+                if var in [
+                    "radiance",
+                    "radiance_noslit",
+                    "emisscoeff",
+                    "emisscoeff_continuum",
+                ]:
+                    Iunit = Iunit0.replace("/nm", "/cm-1")
+                else:
+                    Iunit = Iunit0
+
+        # Retrieve data (with correct unit)
         if Iunit != "default" and Iunit != Iunit0:
             if var in ["radiance", "radiance_noslit"]:
                 # deal with the case where we want to get a radiance in per
                 # wavelength unit (~ W/sr/cm2/nm) in wavenumber units (~ W/sr/cm2/cm-1),
                 # or the other way round
+                w_cm = self.get_wavenumber(copy=False)
+                if trim_nan:
+                    w_cm = w_cm[m : M + 1]
                 I = convert_universal(
                     I,
                     Iunit0,
                     Iunit,
-                    self,
-                    per_nm_is_like="mW/sr/cm2/nm",
-                    per_cm_is_like="mW/sr/cm2/cm-1",
+                    w_cm,
+                    per_nm_is_like="mW/cm2/sr/nm",
+                    per_cm_is_like="mW/cm2/sr/cm-1",
                 )
             elif var in ["emisscoeff"]:
-                # idem for emisscoeff in (~ W/sr/cm3/nm) or (~ /sr/cm3/cm-1)
+                # idem for emisscoeff in (~ W/sr/cm3/nm) or (~ W/sr/cm3/cm-1)
+                w_cm = self.get_wavenumber(copy=False)
+                if trim_nan:
+                    w_cm = w_cm[m : M + 1]
                 I = convert_universal(
                     I,
                     Iunit0,
                     Iunit,
-                    self,
-                    per_nm_is_like="mW/sr/cm3/nm",
-                    per_cm_is_like="mW/sr/cm3/cm-1",
+                    w_cm,
+                    per_nm_is_like="mW/cm3/sr/nm",
+                    per_cm_is_like="mW/cm3/sr/cm-1",
                 )
             elif var in ["absorbance"]:  # no unit
                 assert Iunit in ["", "1"]
@@ -1059,7 +1116,12 @@ class Spectrum(object):
         else:
             pass
 
-        return w, I
+        if return_units == "as_str":  # only used internally
+            return w, I, wunit, Iunit
+        elif return_units:
+            return w * Unit(wunit), I * Unit(Iunit)
+        else:
+            return w, I
 
     def _get_wavespace(self, copy=True):
         """Return wavespace (if the same for all quantities)
@@ -1249,9 +1311,12 @@ class Spectrum(object):
         elif self.file is not None:
             name = "{0}".format(basename(self.file))
         else:
-            name = "{0}spectrum{1}".format(
-                self.conditions.get("molecule", ""), id(self)
-            )
+            name_params = []
+            for (key, unit) in [("molecule", ""), ("dbformat", ""), ("Tgas", "K")]:
+                if key in self.conditions:
+                    name_params.append(f"{self.conditions[key]}{unit}")
+
+            name = "-".join(name_params) + "-#" + str(id(self))[-4:]
 
         return name
 
@@ -1348,7 +1413,9 @@ class Spectrum(object):
                                     [2.71414065e-06, 2.88341489e-06, 3.06942277e-06, 3.27445689e-06,
                                      3.50121831e-06, 3.75290756e-06, 4.03334037e-06, 4.34709612e-06,
                                      4.69971017e-06, 5.09792551e-06],
-                                    'abscoeff', wunit='cm-1', Iunit='cm-1',
+                                    'abscoeff',
+                                    wunit='cm-1',
+                                    Iunit='cm-1',
                                     conditions={'path_length':1, # cm
                                                 'thermal_equilibrium':True,
                                                 'Tgas':700,  # K
@@ -1721,6 +1788,7 @@ class Spectrum(object):
         Examples
         --------
         ::
+
             s.get_power('W/cm2/sr')
 
         .. minigallery:: radis.spectrum.spectrum.Spectrum.offset
@@ -1938,20 +2006,13 @@ class Spectrum(object):
                 if var.replace("_noslit", "") in params:  # favour convolved quantities
                     var = var.replace("_noslit", "")
 
-        if wunit == "default":
-            wunit = self.get_waveunit()
-        wunit = cast_waveunit(wunit)
         # Get variable
-        x, y = self.get(var, wunit=wunit, Iunit=Iunit)
+        x, y, wunit, Iunit = self.get(
+            var, wunit=wunit, Iunit=Iunit, return_units="as_str"
+        )
 
         # Get labels
         xlabel = format_xlabel(wunit, show_medium)
-        if Iunit == "default":
-            try:
-                Iunit0 = self.units[var]
-            except KeyError:  # unit not defined in dictionary
-                Iunit0 = "a.u"
-            Iunit = Iunit0
 
         # cosmetic changes
         ylabel = "{0} ({1})".format(make_up(var), make_up_unit(Iunit, var))
@@ -1987,20 +2048,20 @@ class Spectrum(object):
         if not force and (fig.gca().get_xlabel().lower() not in ["", xlabel.lower()]):
             raise ValueError(
                 "Error while plotting {0}. Cannot plot ".format(var)
-                + "on a same figure with different xlabel: {0}, {1}".format(
+                + "on a same figure with different xlabel: Current: {0}, New: {1}".format(
                     clean_error_msg(fig.gca().get_xlabel()), clean_error_msg(xlabel)
                 )
-                + "Use force=True if you really want to plot"
+                + ". If it's a unit problem, change unit with `s.plot(..., wunit=...)`. Use force=True if you really want to plot as is."
             )
         label1 = clean_error_msg(fig.gca().get_ylabel().lower())
         label2 = clean_error_msg(ylabel.lower())
         if not force and (label1 not in ["", label2]):
             raise ValueError(
                 "Error while plotting {0}. Cannot plot ".format(var)
-                + "on a same figure with different ylabel: \n{0}\n{1}".format(
+                + "on a same figure with different ylabel: \nCurrent: {0}\nNew: {1}".format(
                     clean_error_msg(fig.gca().get_ylabel()), clean_error_msg(ylabel)
                 )
-                + "\nIf it's a unit problem, you can change the unit with `Iunit=`. Use `force=True` if you really want to plot with these units."
+                + "\nIf it's a unit problem, you can change the unit with `s.plot(..., Iunit=)`. Use `force=True` if you really want to plot with these units."
             )
 
         # Add extra plotting parameters
@@ -2376,6 +2437,7 @@ class Spectrum(object):
         slit_dispersion=None,
         slit_dispersion_threshold=0.01,
         auto_recenter_crop=True,
+        assert_evenly_spaced=True,
         verbose=True,
         inplace=True,
         *args,
@@ -2436,6 +2498,11 @@ class Spectrum(object):
 
         Other Parameters
         ----------------
+        assert_evenly_spaced: boolean, or ``'resample'``
+            for the convolution to be accurate, ``w`` should be evenly spaced. If
+            ``assert_evenly_spaced=True``, then we check this is the case, and raise
+            an error if arrays is not evenly spaced. If ``'resample'``, then we resample
+            ``w`` and ``I`` if needed. Recommended, but it takes some time.
         auto_recenter_crop: bool
             if ``True``, recenter slit and crop zeros on the side when importing
             an experimental slit. Default ``True``.
@@ -2704,7 +2771,7 @@ class Spectrum(object):
                     mode=mode,
                     wunit=waveunit,
                     verbose=verbose,
-                    assert_evenly_spaced=False,
+                    assert_evenly_spaced=assert_evenly_spaced,
                     # assumes Spectrum is correct by construction
                     **kwargsconvolve,
                 )
@@ -3059,15 +3126,8 @@ class Spectrum(object):
             transmittance)"""
 
             if isinstance(overlay, str):  # either get it from the Spectrum
-                if overlay not in self.get_vars():
-                    raise AttributeError(
-                        "{0} not in variables list: {1}".format(
-                            overlay, self.get_vars()
-                        )
-                    )
-                w, I = self.get(overlay, wunit=wunit)
+                w, I, _, units = self.get(overlay, wunit=wunit, return_units="as_str")
                 name = overlay
-                units = self.units[overlay]
                 return (w, I, name, units)
 
             else:  # Or use a given tuple or arrays
@@ -3424,7 +3484,6 @@ class Spectrum(object):
 
                 s1.resample(s2.get_wavenumber())
                 s1.resample(s2)            # also valid
-
         unit: ``'same'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``
             unit of new wavespace. It ``'same'`` it is assumed to be the current
             waveunit. Default ``'same'``. The spectrum waveunit is changed to this
@@ -3462,11 +3521,15 @@ class Spectrum(object):
         Examples
         --------
 
+        Convert a Spectrum in wavenumber to wavelengths::
+
+            s_nm = s.resample(s.get_wavelength(), "nm", inplace=False)
+
         .. minigallery:: radis.spectrum.spectrum.Spectrum.resample
 
         See Also
         --------
-        :func:`radis.misc.signal.resample`
+        :func:`radis.misc.signal.resample`, :py:meth:`radis.spectrum.spectrum.Spectrum.resample_even`
         """
         # Check inputs (check for deprecated)
         if if_conflict_drop is not None:
@@ -3551,6 +3614,63 @@ class Spectrum(object):
                 energy_threshold=energy_threshold,
                 print_conservation=False,
                 **kwargs,
+            )
+
+            s._q[k] = Inew
+        # update wavespace
+        s._q["wavespace"] = w_new
+
+        return s
+
+    def resample_even(
+        self, energy_threshold=5e-3, print_conservation=False, inplace=True
+    ):
+        """Resample spectrum over the same waverange, but evenly spaced.
+
+        .. warning::
+            This may result in information loss. Resampling is done with
+            oversampling and spline interpolation. These parameters can be adjusted,
+            and energy conservation ensured with the appropriate parameters.
+
+        Parameters
+        ----------
+        energy_threshold: float or ``None``
+            if energy conservation (integrals on the intersecting range) is above
+            this threshold, raise an error. If ``None``, dont check for energy conservation
+            Default 5e-3 (0.5%)
+        print_conservation: boolean
+            if ``True``, prints energy conservation. Default ``False``.
+        inplace: boolean
+            if ``True``, modifies the Spectrum object directly. Else, returns
+            a copy. Default ``True``.
+        **kwargs: **dict
+            all other arguments are sent to :func:`radis.misc.signal.resample`
+
+        Returns
+        -------
+        Spectrum : resampled Spectrum object. If using ``inplace=True``, the Spectrum
+            object has been modified anyway.
+
+        Examples
+        --------
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.resample
+
+        See Also
+        --------
+        :func:`radis.misc.signal.resample_even`, :py:meth:`radis.spectrum.spectrum.Spectrum.resample`
+        """
+        if inplace:
+            s = self
+        else:
+            s = self.copy()
+
+        w = s._q["wavespace"]  # wavelength or wavenumber range
+        for (k, I) in s._q.items():
+            if k == "wavespace":
+                continue
+            w_new, Inew = resample_even(
+                w, I, resfactor=2, print_conservation=print_conservation
             )
 
             s._q[k] = Inew
@@ -3726,10 +3846,27 @@ class Spectrum(object):
         #                                        # Spectrum() recreates a copy anyway
         if quantity == "all":
             quantities = dict(self._get_items())
-        else:
+        elif quantity in self.get_vars():
             quantities = {
-                quantity: self.get(quantity, wunit=self.get_waveunit())
-            }  # dict(self._get_items())
+                quantity: self.get(
+                    quantity,
+                    wunit=self.get_waveunit(),
+                    Iunit=self.units[quantity],
+                    copy=True,
+                )
+            }
+        else:
+            self.update(quantity)  # needed to get self.units[quantity]
+            quantities = {
+                quantity: self.get(
+                    quantity,
+                    wunit=self.get_waveunit(),
+                    Iunit=self.units[quantity],
+                    copy=True,
+                )  # copy=True still needed as the waverange is the one of the original array
+            }
+            del self._q[quantity]  # no need to keep it in this Spectrum
+            # del self.units[quantity]   # we can keep the units (+ they'll be copied below)
 
         try:
             units = deepcopy(self.units)
@@ -3771,6 +3908,7 @@ class Spectrum(object):
             wunit=waveunit,
             references=references,
             name=name,
+            check_wavespace=False,  # no need, as Spectrum was normally already properly defined
             warnings=False,  # saves about 3.5 ms on the Performance test object
         )
 
@@ -4101,12 +4239,12 @@ class Spectrum(object):
             else:
                 # Check Wavelength/wavenumber is evently spaced
                 if check_wavespace:
-                    if not evenly_distributed(w, tolerance=1e-5):
+                    if not evenly_distributed(w, atolerance=1e-5):
                         warn(
                             "Wavespace is not evenly spaced ({0:.3f}%) for {1}.".format(
                                 np.abs(np.diff(w)).max() / w.mean() * 100, name
                             )
-                            + " This may create problems when convolving with slit function"
+                            + " This may create problems if later convolving with slit function (`s.apply_slit()`). You can use `s.resample_even()`"
                         )
                 self._q["wavespace"] = np.array(w)  # copy
 
@@ -4165,6 +4303,9 @@ class Spectrum(object):
             print(
                 " " * 2,
                 k,
+                f"\t[{self.units[k]}]"
+                if (k in self.units and self.units[k] != "")
+                else "",
                 "\t({0:,d} points{1})".format(
                     len(v),
                     ", {0} nans".format(count_nans(v)) if anynan(v) else "",
@@ -4274,7 +4415,9 @@ class Spectrum(object):
         """
 
         var = self._get_unique_var(operation_name="max")
-        w, I = self.get(var, wunit=self.get_waveunit(), copy=False)
+        w, I = self.get(
+            var, wunit=self.get_waveunit(), Iunit=self.units[var], copy=False
+        )
         if value_only:
             return I[~np.isnan(I)].max()
         else:
@@ -4297,7 +4440,9 @@ class Spectrum(object):
         """
 
         var = self._get_unique_var(operation_name="min")
-        w, I = self.get(var, wunit=self.get_waveunit(), copy=False)
+        w, I = self.get(
+            var, wunit=self.get_waveunit(), Iunit=self.units[var], copy=False
+        )
         if value_only:
             return I[~np.isnan(I)].min()
         else:
@@ -4311,6 +4456,7 @@ class Spectrum(object):
         inplace=False,
         force=False,
         verbose=False,
+        return_norm=False,
     ):
         """Normalise the Spectrum, if only one spectral quantity is available.
 
@@ -4366,7 +4512,9 @@ class Spectrum(object):
 
         if wrange is not None and len(wrange) > 0:
             wmin, wmax = wrange
-            w, I = s.get(var, wunit=wunit, copy=False)  # (faster not to copy)
+            w, I = s.get(
+                var, wunit=wunit, Iunit=s.units[var], copy=False
+            )  # (faster not to copy)
             b = (w > wmin) & (w < wmax)
             if normalize_how == "max":
                 norm = np.nanmax(I[b])
@@ -4386,13 +4534,17 @@ class Spectrum(object):
 
         else:
             if normalize_how == "max":
-                norm = np.nanmax(s.get(var, copy=False)[1])
+                norm = np.nanmax(
+                    s.get(var, wunit=wunit, Iunit=s.units[var], copy=False)[1]
+                )
                 norm_unit = s.units[var]
             elif normalize_how == "mean":
-                norm = np.nanmean(s.get(var, copy=False)[1])
+                norm = np.nanmean(
+                    s.get(var, wunit=wunit, Iunit=s.units[var], copy=False)[1]
+                )
                 norm_unit = s.units[var]
             elif normalize_how == "area":
-                w, I = s.get(var, wunit=wunit, copy=False)
+                w, I = s.get(var, wunit=wunit, Iunit=s.units[var], copy=False)
                 norm = nantrapz(I, w)
                 norm_unit = Unit(s.units[var]) * Unit(wunit)
 
@@ -4404,6 +4556,8 @@ class Spectrum(object):
             out = multiply(s, 1 / (norm * Unit(norm_unit)), inplace=inplace)
         if verbose:
             print("Normalization factor : {0}".format(norm))
+        if return_norm:
+            return out, norm * Unit(norm_unit)
         return out
 
     def get_baseline(self, algorithm="als", **kwargs):
