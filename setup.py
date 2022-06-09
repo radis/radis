@@ -253,7 +253,7 @@ def run_setup(with_binary):
             "cython",
             "hitran-api",
             "lxml",  # parser used for ExoMol website
-            "numpy",
+            "numpy<=1.22.3 ",
             "matplotlib",  # ">=3.4.0" to suppress the Ruler warning, but only available for Python >= 3.7
             "habanero",  # CrossRef API to retrieve data from doi
             "h5py",  # HDF5
