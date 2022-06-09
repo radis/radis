@@ -2166,7 +2166,7 @@ class BroadenFactory(BaseFactory):
                     line_profile_LDM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_LDM(
                         df
                     )
-                    (wavenumber, absorption) = self._apply_lineshape_LDM(
+                    (wavenumber, abscoeff) = self._apply_lineshape_LDM(
                         df.S.values,
                         line_profile_LDM,
                         df.shiftwav.values,
