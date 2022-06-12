@@ -607,8 +607,9 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
         set_iter_params = constant_memory_setter(cuda_module, "iter_d")
 
     else:
+        # isort: off
         from numpy import complex64, float32, zeros
-
+        from numpy.fft import irfft, rfft
         from radis_cython_extensions import (
             applyGaussianSlit,
             applyLineshapes,
@@ -617,7 +618,7 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
             set_iter_params,
         )
 
-        from numpy.fft import irfft, rfft  # noqa: isort: skip
+        # isort: on
 
         asnumpy = lambda arr: arr
 
