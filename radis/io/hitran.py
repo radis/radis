@@ -1247,9 +1247,9 @@ class HITRANDatabaseManager(DatabaseManager):
             df_full = self.load(
                 local_files,
                 columns=["wav"],
-                isotope=None,
-                load_wavenum_min=None,
-                load_wavenum_max=None,
+                within=[],
+                lower_bound=[],
+                upper_bound=[],
             )
             self.wmin = df_full.wav.min()
             self.wmax = df_full.wav.max()
