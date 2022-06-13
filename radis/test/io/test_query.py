@@ -168,13 +168,18 @@ def test_calc_hitran_spectrum(verbose=True, plot=False, *args, **kwargs):
     )
 
     if plot:
+        import matplotlib.pyplot as plt
+
         from radis import plot_diff
 
-        plot_diff(s, s2)
+        # Make sure matplotlib is interactive so that test are not stuck in pytest
+        plt.ion()
+
+        plot_diff(s, s2, method="ratio")
 
     # assert s == s2
     # Note: tiny differences (0.56%) probably due to how data is stored on disk
-    assert s.compare_with(s2, spectra_only="abscoeff", method="ratio", rtol=0.007)
+    assert s.compare_with(s2, spectra_only="abscoeff", rtol=0.007, plot=plot)
 
     return
 
