@@ -27,7 +27,7 @@ conditions = {
     "wmin": 2002 / u.cm,
     "wmax": 2300 / u.cm,
     "molecule": "CO",
-    "isotope": "2",
+    "isotope": "1",
     "pressure": 1.01325,  # bar
     "Tgas": 1000,  # K
     "mole_fraction": 0.1,
@@ -37,7 +37,7 @@ conditions = {
 }
 
 s_exomol = calc_spectrum(
-    **conditions, databank="exomol", name="ExoMol's HITEMP (H2 broadened)"
+    **conditions, databank="exomol", name="ExoMol's HITEMP (default broadening)"
 )
 s_hitemp = calc_spectrum(
     **conditions,

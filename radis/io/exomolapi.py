@@ -4,8 +4,18 @@ Borrowed from the `Exojax <https://github.com/HajimeKawahara/exojax>`__
 code (which you should also have a look at !), by @HajimeKawahara, under MIT License.
 
 """
+import bz2
+import re
+
 import numpy as np
 import pandas as pd
+
+try:
+    from .hdf5 import vaexsafe_colname
+except:
+    from radis.io.hdf5 import vaexsafe_colname
+
+from radis.misc.warning import InconsistentDatabaseError
 
 
 def read_def(deff):
@@ -17,15 +27,21 @@ def read_def(deff):
 
     Returns
     -------
-    temperature exponent n_Texp
-    broadening parameter alpha_ref
-    molecular mass
-    numinf: nu minimum for trans
-    numtag: tag for wavelength range
+    n_Texp : float
+        temperature exponent
+    alpha_ref : float
+        broadening parameter
+    molmass : float
+        molecular mass
+    numinf : List[float]
+        limit points (``[w(0), w(1), ..., w(n)]``, n+1 elements) defining
+        the spectral ranges appearing in the name of *.trans.bz2 files
+        (``["w(0)-w(1)", "w(1)-w(2)", ..., w(n-1)-w(n)]``, n elements)
+    numtag : List[str]
+        tag for wavelength ranges.
 
     Note:
        For some molecules, ExoMol provides multiple trans files. numinf and numtag are the ranges and identifiers for the multiple trans files.
-
 
     """
 
@@ -50,10 +66,9 @@ def read_def(deff):
             molmass = float(dat["VAL"][i].split()[0])  # in Da (atomic unit)
 
         elif "Lifetime availability" in com:
-            lifetime = dat["VAL"][i] == 1
+            lifetime = int(dat["VAL"][i]) == 1
         elif "Lande g-factor availability" in com:
-            lande = dat["VAL"][i] == 1
-
+            lande = int(dat["VAL"][i]) == 1
         elif "Quantum label" in com:
             quantum_labels.append(dat["VAL"][i].strip(" "))
 
@@ -177,12 +192,17 @@ def read_trans(transf, engine="vaex"):
                 convert=False,  #  file is created by MdbMol
             )
         except:
-            dat = vaex.read_csv(
-                transf,
-                sep=r"\s+",
-                names=("i_upper", "i_lower", "A", "nu_lines"),
-                convert=False,  #  file is created by MdbMol
-            )
+            try:
+                dat = vaex.read_csv(
+                    transf,
+                    sep=r"\s+",
+                    names=("i_upper", "i_lower", "A", "nu_lines"),
+                    convert=False,  #  file is created by MdbMol
+                )
+            except Exception as err:
+                raise Exception(
+                    f"Error reading {transf}. Maybe the file was corrupted during download ? You can try to delete it."
+                ) from err
     elif engine == "csv":
         try:  # bz2 compression
             dat = pd.read_csv(
@@ -192,14 +212,21 @@ def read_trans(transf, engine="vaex"):
                 names=("i_upper", "i_lower", "A", "nu_lines"),
             )
         except:
-            dat = pd.read_csv(
-                transf, sep=r"\s+", names=("i_upper", "i_lower", "A", "nu_lines")
-            )
+            try:
+                dat = pd.read_csv(
+                    transf, sep=r"\s+", names=("i_upper", "i_lower", "A", "nu_lines")
+                )
+            except Exception as err:
+                raise Exception(
+                    f"Error reading {transf}. Maybe the file was corrupted during download ? You can try to delete it."
+                ) from err
+    else:
+        raise NotImplementedError(engine)
 
     return dat
 
 
-def read_states(statesf, dic_def, engine="vaex"):
+def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
     """Exomol IO for a state file
 
     Notes
@@ -216,15 +243,42 @@ def read_states(statesf, dic_def, engine="vaex"):
 
     Parameters
     ----------
-    statesf: state file
-    dic_def: Info from def file to read extra quantum numbers
-    engine: parsing engine to use ('vaex', 'csv')
+    statesf: str
+        state file
+    dic_def: dict
+        Info from def file to read extra quantum numbers
+    engine: str
+        parsing engine to use ('vaex', 'csv')
+    skip_optional_data: bool
+        If False, fetch all fields which are marked as available in the ExoMol definition
+        file. If True, load only the first 4 columns of the states file
+        ("i", "E", "g", "J"). The structure of the columns above 5 depend on the
+        the definitions file (*.def) and the Exomol version.
+        If ``skip_optional_data=False``, two errors may occur:
+
+            - a field is marked as present/absent in the *.def field but is
+              absent/present in the *.states file (ie both files are inconsistent).
+            - in the updated version of Exomol, new fields have been added in the
+              states file of some species. But it has not been done for all species,
+              so both structures exist. For instance, the states file of
+              https://exomol.com/data/molecules/HCl/1H-35Cl/HITRAN-HCl/ follows the
+              structure described in [1]_, unlike the states file of
+              https://exomol.com/data/molecules/NO/14N-16O/XABC/ which follows the
+              structure described in [2]_.
 
     Returns
     -------
     states data in pandas DataFrame
 
     If ``'vaex'``, also writes a local hdf5 file `statesf.with_suffix('.hdf5')`
+
+
+    References
+    ----------
+
+    .. [1] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Barton, E. J., Chubb, K. L., Coles, P. A., … Zak, E. (2016). The ExoMol database: molecular line lists for exoplanet and other hot atmospheres. https://doi.org/10.1016/j.jms.2016.05.002
+    .. [2] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Clark, V. H. J., Chubb, K. L., Conway, E. K., … Yurchenko, O. P. (2020). The 2020 release of the ExoMol database: Molecular line lists for exoplanet and other hot atmospheres. Journal of Quantitative Spectroscopy and Radiative Transfer, 255, 107228. https://doi.org/10.1016/j.jqsrt.2020.107228
+
     """
     # we read first 4 columns for ("i", "E", "g", "J"),
     # skip lifetime, skip Landé g-factor,
@@ -232,24 +286,45 @@ def read_states(statesf, dic_def, engine="vaex"):
     N = np.size(dic_def["quantum_labels"])
     quantum_labels = dic_def["quantum_labels"]
 
-    usecol = np.arange(4)
-    names = ("i", "E", "g", "J")
-    if dic_def["Landé"] and dic_def["lifetime"]:
-        usecol = np.concatenate((usecol, 5 + 2 + np.arange(N)))
-        names = names + ("Lande", "lifetime") + tuple(quantum_labels)
-    elif dic_def["Landé"]:
-        usecol = np.concatenate((usecol, 5 + 1 + np.arange(N)))
-        names = names + ("Lande") + tuple(quantum_labels)
-    elif dic_def["lifetime"]:
-        usecol = np.concatenate((usecol, 5 + 1 + np.arange(N)))
-        names = names + ("lifetime") + tuple(quantum_labels)
-    else:  # no lifetime, nor landé according to the def file
-        usecol = np.concatenate((usecol, 5 + np.arange(N)))
-        names = names + tuple(quantum_labels)
+    mandatory_usecol = np.arange(4)
+    mandatory_fields = ("i", "E", "g", "J")
+    if skip_optional_data:
+        usecol = mandatory_usecol
+        names = mandatory_fields
+    else:
+        if dic_def["Landé"] and dic_def["lifetime"]:
+            usecol = np.concatenate((mandatory_usecol, 5 + 2 + np.arange(N)))
+            names = mandatory_fields + ("Lande", "lifetime") + tuple(quantum_labels)
+        elif dic_def["Landé"]:
+            usecol = np.concatenate((mandatory_usecol, 5 + 1 + np.arange(N)))
+            names = mandatory_fields + ("Lande",) + tuple(quantum_labels)
+        elif dic_def["lifetime"]:
+            usecol = np.concatenate((mandatory_usecol, 5 + 1 + np.arange(N)))
+            names = mandatory_fields + ("lifetime",) + tuple(quantum_labels)
+        else:  # no lifetime, nor landé according to the def file
+            usecol = np.concatenate((mandatory_usecol, 5 + np.arange(N)))
+            names = mandatory_fields + tuple(quantum_labels)
+        # The definitions file (*.def) specifies which fields are available
+        # in the states fiel (*.states). Check the number of available fields
+        # (see *.def) match the numbers of columns in the states file (*.states).
+        # Otherwise, both files are inconsistent.
+        with bz2.open(statesf, "rb") as f:
+            firstline = f.readline().decode("utf-8")  # read 1dt line
+            splitline = [x for x in re.split(r"\s+", firstline) if x != ""]
+            # splitline = re.split(r"\s+", firstline)
+            f.close()
+        if len(splitline) != len(names):
+            raise InconsistentDatabaseError(
+                "The EXOMOL definitions and states files are inconsistent.\n"
+                + "Some data are specified as available by the *.def file, but are absent in the *.bz2 file.\n"
+                + "Set `skip_optional_data=False` in `fetch_exomol()` to load only the required data for a LTE computation.\n"
+                + "The problematic optional data/columns will be ignored."
+            )
 
     if engine == "vaex":
         import vaex
 
+        # TODO Refactor: move in DataFileManager
         try:
             dat = vaex.from_csv(
                 statesf,
@@ -257,12 +332,22 @@ def read_states(statesf, dic_def, engine="vaex"):
                 sep=r"\s+",
                 usecols=usecol,
                 names=names,
-                convert=True,
+                convert=False,  # written in MolDB
             )
         except:
-            dat = vaex.read_csv(
-                statesf, sep=r"\s+", usecols=usecol, names=names, convert=True
-            )
+            try:
+                dat = vaex.read_csv(
+                    statesf,
+                    sep=r"\s+",
+                    usecols=usecol,
+                    names=names,
+                    convert=False,  # written in MolDB
+                )
+
+            except Exception as err:
+                raise Exception(
+                    f"Error reading {statesf}. Maybe the file was corrupted during download ? You can try to delete it."
+                ) from err
     elif engine == "csv":
         try:
             dat = pd.read_csv(
@@ -276,17 +361,20 @@ def read_states(statesf, dic_def, engine="vaex"):
     return dat
 
 
-def pickup_gE(ndstates, ndtrans, trans_file, dic_def, trans_lines=False):
+def pickup_gE(
+    states, trans, trans_file, dic_def, trans_lines=False, skip_optional_data=True
+):
     """extract g_upper (gup), E_lower (elower), and J_lower and J_upper from states
     DataFrame and insert them into the transition DataFrame.
 
     Parameters
     ----------
-    ndstates: states numpy array    - the i, E, g, J are in the 4 first columns
-    ndtrans: transition numpy array
+    states: states DataFrame  - the i, E, g, J are in the 4 first columns
+    trans: transition numpy array
     trans_file: name of the transition file
     trans_lines: By default (False) we use nu_lines computed using the state file, i.e. E_upper - E_lower. If trans_nuline=True, we use the nu_lines in the transition file. Note that some trans files do not this info.
     dic_def: Informations about additional quantum labels
+    add_quantum_labels: bool . If True fetch all quantum labels in dic_def['quantum_labels'] from states into transitions
 
     Returns
     -------
@@ -296,89 +384,69 @@ def pickup_gE(ndstates, ndtrans, trans_file, dic_def, trans_lines=False):
     -----
     We first convert pandas DataFrame to ndarray. The state counting numbers in states DataFrame is used as indices of the new array for states (newstates). We remove the state count numbers as the column of newstate, i.e. newstates[:,k] k=0: E, 1: g, 2: J. Then, we can directly use the state counting numbers as mask.
 
+    States by default has columns ::
+
+        #       i      E             g    J    v
+        0       1      0.0           1    0    0
+        1       2      1.448467      3    1    0
+        2       3      4.345384      5    2    0
+        3       4      8.690712      7    3    0
+
 
     """
     ### Step 1. Essential quantum number for spectra
+    # ----------------------------------------------
 
-    iorig = np.array(ndstates[:, 0], dtype=int)
-    maxii = int(np.max(iorig) + 1)
-    newstates = np.zeros((maxii, np.shape(ndstates)[1] - 1), dtype=float)
-    newstates[iorig, :] = ndstates[:, 1:]
+    def map_add(col, new_col, trans_key, states_key="i"):
+        """Lookup `key` in states and add it in trans, using the level ``i``
+        for upper and lower state
 
-    i_upper = np.array(ndtrans[:, 0], dtype=int)
-    i_lower = np.array(ndtrans[:, 1], dtype=int)
+        Examples
+        --------
+        ::
+
+            map_add("E", "E_lower", "i_lower")
+        """
+        try:  # pytable
+            trans[new_col] = trans[trans_key].map(dict(states[col]))
+        except:  # a priori, vaex version  (TODO : replace with dict() approach in vaex too)
+            col = vaexsafe_colname(col)
+            new_col = vaexsafe_colname(new_col)
+
+            # WIP. First implementation with join(). Use Map() will probably be faster.
+            trans.join(
+                states[states_key, col],
+                left_on=trans_key,
+                right_on=states_key,
+                inplace=True,
+            )
+            trans.drop(states_key, inplace=True)
+            trans.rename(col, new_col)
+
+    map_add("g", "gup", "i_upper")
+    map_add("J", "jlower", "i_lower")
+    map_add("J", "jupper", "i_upper")
+
+    map_add("E", "elower", "i_lower")
+
+    def has_nan(column):
+        try:  # Vaex
+            return column.countnan() > 0
+        except AttributeError:  # Pandas
+            return column.hasnans
+
+    if not "nu_lines" in trans or has_nan(trans["nu_lines"]):
+        map_add("E", "eupper", "i_upper")
+        trans["nu_lines"] = trans["eupper"] - trans["elower"]
 
     ### Step 2. Extra quantum numbers (e/f parity, vib and rot numbers)
-    #!!! Todo: Awfull management of memory, i know! @minou
-    n0 = (
-        4 + dic_def["Landé"] + dic_def["lifetime"]
-    )  # we need to shift if these quantities exist
-    # ndstates_extra = ndstates.to_numpy()[
-    ndstates_extra = ndstates[:, n0:]  # the i, E, g, J are in the 4 first columns
-    a, b = np.shape(ndstates_extra)
-    dico_quantumNumbers = {}
-    if b != 0:
-        for index, label in enumerate(dic_def["quantum_labels"]):
-            if label == "K":  #!!!TODO: allow users to have other quantum numbers
-                dico_quantumNumbers["{}_l".format(label)] = ndstates_extra[
-                    i_lower, index
-                ]
-                # dico_quantumNumbers['{}_u'.format(label)] = ndstates_extra[index][i_upper]
+    # -----------------------------------------------------------------
+    if not skip_optional_data:
+        for q in dic_def["quantum_labels"]:
+            map_add(q, f"{q}_l", "i_lower")
+            # map_add(q, f"{q}_u", "i_upper")
 
-    # use the state counting numbers (upper and lower) as masking.
-    elower = newstates[i_lower, 0]
-    eupper = newstates[i_upper, 0]
-    gup = newstates[i_upper, 1]
-    jlower = np.array(newstates[i_lower, 2], dtype=int)
-    del i_lower
-    jupper = np.array(newstates[i_upper, 2], dtype=int)
-    del i_upper
-
-    A = ndtrans[:, 2]
-
-    if trans_lines:
-        nu_lines = ndtrans[:, 3]
-    else:
-        nu_lines = eupper - elower
-    del eupper
-
-    # ### MASKING ###
-    mask = nu_lines > 0.0
-    if False in mask:
-        len_org = len(nu_lines)
-
-        A = A[mask]
-        nu_lines = nu_lines[mask]
-        elower = elower[mask]
-        gup = gup[mask]
-        jlower = jlower[mask]
-        jupper = jupper[mask]
-        for key, array in dico_quantumNumbers.items():
-            dico_quantumNumbers[key] = array[mask]
-        print(
-            "WARNING: {0:,} transitions with the wavenumber=zero in {1} have been ignored.".format(
-                len_org - len(nu_lines), trans_file
-            )
-        )
-        if trans_lines:
-            print(
-                "This is because the value for the wavenumber column in the transition file is zero for those transitions."
-            )
-        else:
-            print(
-                "This is because the upper and lower state IDs in the transition file indicate the same energy level when referring to the states file for those transitions."
-            )
-
-    # See Issue exojax#16
-    # import matplotlib.pyplot as plt
-    # nu_lines_t=ndtrans[:,3]
-    # plt.plot(nu_lines_t-nu_lines,".",alpha=0.03)
-    # plt.ylabel("diff nu from trans and state (cm-1)")
-    # plt.xlabel("wavenuber (cm-1)")
-    # plt.savefig("nudiff.png", bbox_inches="tight", pad_inches=0.0)
-    # plt.show()
-
-    return A, nu_lines, elower, gup, jlower, jupper, mask, dico_quantumNumbers
+    return trans
 
 
 # def pickup_gEslow(states, trans):
@@ -559,69 +627,3 @@ def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None):
 
 if __name__ == "__main__":
     pass
-    # import pathlib
-    # import sys
-    # import time
-
-    # deff = pathlib.Path(
-    #     "/home/kawahara/exojax/examples/luhman16/.database/CO2/12C-16O2/UCL-4000/12C-16O2__UCL-4000.def"
-    # )
-    # n_Texp, alpha_ref, molmass, numinf, numtag = read_def(deff)
-    # print(numtag)
-    # sys.exit()
-    # # various broad file
-    # #    broadf="/home/kawahara/exojax/data/broad/12C-16O__H2.broad"
-    # broadf = "/home/kawahara/exojax/data/broad/1H2-16O__H2.broad"
-    # bdat = read_broad(broadf)
-    # codelv = check_bdat(bdat)
-    # print(codelv)
-    # if codelv == "a0":
-    #     j2alpha_ref, j2n_Texp = make_j2b(bdat, jlower_max=100)
-    # elif codelv == "a1":
-    #     j2alpha_ref, j2n_Texp = make_j2b(bdat, jlower_max=100)
-    #     jj2alpha_ref, jj2n_Texp = make_jj2b(bdat, j2alpha_ref, j2n_Texp, jupper_max=100)
-    #     print(jj2alpha_ref[1, 2])
-    #     print(jj2alpha_ref[1, 15])
-
-    # sys.exit()
-    # # broad file
-    # broadf = "/home/kawahara/exojax/data/CO/12C-16O/12C-16O__H2.broad"
-    # bdat = read_broad(broadf)
-    # j2alpha_ref, j2n_Texp = make_j2b(bdat, jlower_max=100)
-
-    # # partition file
-    # pff = "/home/kawahara/exojax/data/exomol/CO/12C-16O/Li2015/12C-16O__Li2015.pf"
-    # dat = read_pf(pff)
-
-    # check = False
-    # if check:
-    #     print("Checking compution of Elower and gupper.")
-    # statesf = (
-    #     "/home/kawahara/exojax/data/exomol/CO/12C-16O/Li2015/12C-16O__Li2015.states.bz2"
-    # )
-    # states = read_states(statesf)
-    # transf = (
-    #     "/home/kawahara/exojax/data/exomol/CO/12C-16O/Li2015/12C-16O__Li2015.trans.bz2"
-    # )
-    # trans = read_trans(transf)
-
-    # ts = time.time()
-    # A, nu_lines, elower, gup, jlower, jupper = pickup_gE(states, trans)
-    # #    for i in range(0,len(A)):
-    # #        print(jlower[i],"-",jupper[i])
-    # te = time.time()
-
-    # tsx = time.time()
-    # if check:
-    #     A_s, nu_lines_s, elower_s, gup_s = pickup_gEslow(states, trans)
-    # tex = time.time()
-    # print(te - ts, "sec")
-    # if check:
-    #     print(tex - tsx, "sec for the slow version")
-    #     print("CHECKING DIFFERENCES...")
-    #     print(np.sum((A_s - A) ** 2))
-    #     print(np.sum((nu_lines_s - nu_lines) ** 2))
-    #     print(np.sum((elower_s - elower) ** 2))
-    #     print(np.sum((gup_s - gup) ** 2))
-
-    # # computing alpha_ref, n_Texp

@@ -8,6 +8,7 @@ The RADIS modules are organized with the following flow chart
 .. image:: RADIS_flow_chart.*
     :alt: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
     :scale: 100 %
+    :height: 500px
 
 -------------------------------------------------------------------------
 

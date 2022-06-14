@@ -1972,6 +1972,10 @@ def _recalculate(
     # If no_change, just set everyone as rescaled already
     if no_change:
         for k in initial:
+            try:
+                spec.units[k]
+            except KeyError:
+                raise KeyError(f"Units for {k} must be defined")
             rescaled[k] = spec.get(k, wunit=spec.get_waveunit(), Iunit=spec.units[k])[
                 1
             ]  # note: creates a copy
