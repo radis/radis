@@ -50,13 +50,30 @@ from radis.db.classes import (  # get_molecule_identifier,
     HITRAN_GROUP6,
     get_molecule,
 )
-from radis.io.cache_files import cache_file_name, load_h5_cache_file, save_to_hdf
-from radis.io.dbmanager import DatabaseManager
-from radis.io.tools import (
-    drop_object_format_columns,
-    parse_hitran_file,
-    replace_PQR_with_m101,
-)
+
+try:
+    from .cache_files import load_h5_cache_file, save_to_hdf
+    from .dbmanager import DatabaseManager
+    from .hdf5 import DataFileManager
+    from .tools import (
+        drop_object_format_columns,
+        parse_hitran_file,
+        replace_PQR_with_m101,
+    )
+except ImportError:
+    from radis.io.cache_files import load_h5_cache_file, save_to_hdf
+    from radis.io.dbmanager import DatabaseManager
+    from radis.io.hdf5 import DataFileManager
+    from radis.io.tools import (
+        drop_object_format_columns,
+        parse_hitran_file,
+        replace_PQR_with_m101,
+    )
+    
+##global temp_df for adding  extra params columns for all isotopes of a molecule
+global temp_df
+temp_df = pd.DataFrame()
+##
 
 # %% Parsing functions
 
@@ -94,8 +111,12 @@ def cast_to_int64_with_missing_values(dg, keys):
     """replace missing values of int64 columns with -1"""
     for c in keys:
         if dg.dtypes[c] != int64:
-            dg.loc[dg[c] == "  ", c] = -1  # replace empty cells by -1, e.g. HCN
-            dg[c] = dg[c].fillna(-1).astype(int64)
+            dg[c].replace(
+                r"^\s+$", -1, regex=True, inplace=True
+            )  # replace empty strings by -1, e.g. HCN
+            # Warning: -1 may be a valid non-equilibirum quantum number for some
+            # molecules, e.g. H2O, see https://github.com/radis/radis/issues/280#issuecomment-896120510
+            dg[c] = dg[c].fillna(-1).astype(int64)  # replace nans with -1
 
 
 def hit2df(
@@ -174,7 +195,7 @@ def hit2df(
     columns = columns_2004
 
     # Use cache file if possible
-    fcache = cache_file_name(fname, engine=engine)
+    fcache = DataFileManager(engine).cache_file(fname)
     if cache and exists(fcache):
         relevant_if_metadata_above = (
             {"wavenum_max": load_wavenum_min} if load_wavenum_min else {}
@@ -1143,7 +1164,48 @@ class HITRANDatabaseManager(DatabaseManager):
                         )
                         os.remove(join(directory, file + ".data"))
                 try:
-                    fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax)
+                    extra_params = ['gamma_CO2','n_CO2']  #hard coding the extra params ,will make it dynamic
+                    if(len(extra_params) != 0):
+                        fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax, Parameters=extra_params) #fetching .data and .header file having extra params (comma separated in .data)
+                        
+                        from hapi import getColumn
+                        import numpy.ma as ma
+                        import pandas as pd
+                    
+                      #  global temp_df 
+                      #  temp_df = pd.DataFrame()
+                        file_params = {}  
+                        temp_dict = {}
+                        
+                        #print(getColumn(file, 'gamma_CO2'))
+                        
+                        
+                        for val in extra_params:
+                            a = ma.masked_equal(getColumn(file,val),1)
+                            a = ma.getdata(a)
+                            temp_dict[val] = a.tolist()
+                        
+                        #print(temp_dict)
+                        
+                        file_params[file + ".data"] = temp_dict  # { 'CO_1.data' : {'gamma_CO2':[....] , 'n_CO2':[....]}}
+                        #print(file_params)
+                                          
+                        for param,val in file_params[file +".data"].items():  #add extra params columns in global df
+                            temp_df[file+"_"+param] = pd.DataFrame(val)
+                    
+                    
+                        ######delete the extra params comma separated from .data file
+                        import fileinput 
+                    
+                        #local_path = join(directory, file + ".data")
+                        with fileinput.FileInput(join(directory,file +".data"), inplace=True) as temp_file:
+                            for line in temp_file:
+                                split_string = line.split(",",1)
+                                line = split_string[0]
+                                print(line)
+                        
+                    else:
+                        fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax)
                 except KeyError:
                     # Isotope not defined:
                     continue
@@ -1167,7 +1229,7 @@ class HITRANDatabaseManager(DatabaseManager):
             molecule, tempdir
         )
 
-        writer = self.get_hdf5_manager()
+        writer = self.get_datafile_manager()
 
         # Create HDF5 cache file for all isotopes
         Nlines = 0
@@ -1230,9 +1292,9 @@ class HITRANDatabaseManager(DatabaseManager):
             df_full = self.load(
                 local_files,
                 columns=["wav"],
-                isotope=None,
-                load_wavenum_min=None,
-                load_wavenum_max=None,
+                within=[],
+                lower_bound=[],
+                upper_bound=[],
             )
             self.wmin = df_full.wav.min()
             self.wmax = df_full.wav.max()
@@ -1279,6 +1341,7 @@ def fetch_hitran(
     clean_cache_files=True,
     return_local_path=False,
     engine="default",
+    output="pandas",
     parallel=True,
     parse_quanta=True,
 ):
@@ -1319,6 +1382,9 @@ def fetch_hitran(
         if ``True``, also returns the path of the local database file.
     engine: 'pytables', 'vaex', 'default'
         which HDF5 library to use. If 'default' use the value from ~/radis.json
+    output: 'pandas', 'vaex', 'jax'
+        format of the output DataFrame. If ``'jax'``, returns a dictionary of
+        jax arrays.
     parallel: bool
         if ``True``, uses joblib.parallel to load database with multiple processes
     parse_quanta: bool
@@ -1409,9 +1475,11 @@ def fetch_hitran(
     df = ldb.load(
         local_file,
         columns=columns,
-        isotope=isotope,
-        load_wavenum_min=load_wavenum_min,  # for relevant files, get only the right range
-        load_wavenum_max=load_wavenum_max,
+        within=[("iso", isotope)] if isotope is not None else [],
+        # for relevant files, get only the right range :
+        lower_bound=[("wav", load_wavenum_min)] if load_wavenum_min is not None else [],
+        upper_bound=[("wav", load_wavenum_max)] if load_wavenum_max is not None else [],
+        output=output,
     )
 
     return (df, local_file) if return_local_path else df
