@@ -71,8 +71,8 @@ except ImportError:
     )
     
 ##global temp_df for adding  extra params columns for all isotopes of a molecule
-global temp_df
 temp_df = pd.DataFrame()
+extra_params = ['gamma_CO2', 'n_CO2'] #hard coding the extra params ,will make it dynamic
 ##
 
 # %% Parsing functions
@@ -1140,6 +1140,7 @@ class HITRANDatabaseManager(DatabaseManager):
 
             """
             # create temp folder :
+               
             from radis.misc.basics import make_folders
 
             make_folders(*split(abspath(directory)))
@@ -1164,7 +1165,7 @@ class HITRANDatabaseManager(DatabaseManager):
                         )
                         os.remove(join(directory, file + ".data"))
                 try:
-                    extra_params = ['gamma_CO2','n_CO2']  #hard coding the extra params ,will make it dynamic
+                      
                     if(len(extra_params) != 0):
                         fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax, Parameters=extra_params) #fetching .data and .header file having extra params (comma separated in .data)
                         
@@ -1172,12 +1173,12 @@ class HITRANDatabaseManager(DatabaseManager):
                         import numpy.ma as ma
                         import pandas as pd
                     
-                      #  global temp_df 
-                      #  temp_df = pd.DataFrame()
+                    
                         file_params = {}  
                         temp_dict = {}
+                        local_df = pd.DataFrame()
+                        global temp_df
                         
-                        #print(getColumn(file, 'gamma_CO2'))
                         
                         
                         for val in extra_params:
@@ -1185,15 +1186,16 @@ class HITRANDatabaseManager(DatabaseManager):
                             a = ma.getdata(a)
                             temp_dict[val] = a.tolist()
                         
-                        #print(temp_dict)
+                        
                         
                         file_params[file + ".data"] = temp_dict  # { 'CO_1.data' : {'gamma_CO2':[....] , 'n_CO2':[....]}}
-                        #print(file_params)
+                        
                                           
                         for param,val in file_params[file +".data"].items():  #add extra params columns in global df
-                            temp_df[file+"_"+param] = pd.DataFrame(val)
+                            local_df[param] = pd.DataFrame(val)
                     
-                    
+                        temp_df = pd.concat([temp_df, local_df])
+                        
                         ######delete the extra params comma separated from .data file
                         import fileinput 
                     
@@ -1430,6 +1432,7 @@ def fetch_hitran(
 
     """
 
+    
     if r"{molecule}" in databank_name:
         databank_name = databank_name.format(**{"molecule": molecule})
 
@@ -1447,6 +1450,8 @@ def fetch_hitran(
         verbose=verbose,
         parallel=parallel,
     )
+
+
 
     # Get expected local files for this database:
     local_file = ldb.get_filenames()
@@ -1481,6 +1486,14 @@ def fetch_hitran(
         upper_bound=[("wav", load_wavenum_max)] if load_wavenum_max is not None else [],
         output=output,
     )
+
+    #creating consolidated .hdf5 file for extra_params of all isotopes of molecule 
+    if(len(extra_params) != 0):
+        import vaex
+        vaex_df = vaex.from_pandas(temp_df, copy_index=False)
+        vaex_df.export_hdf5(join(local_databases, molecule+"extra_params.hdf5"))
+        
+        
 
     return (df, local_file) if return_local_path else df
 
