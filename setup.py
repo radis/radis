@@ -253,7 +253,7 @@ def run_setup(with_binary):
             "cython",
             "hitran-api",
             "lxml",  # parser used for ExoMol website
-            "numpy",
+            "numpy<=1.22.3 ",
             "matplotlib",  # ">=3.4.0" to suppress the Ruler warning, but only available for Python >= 3.7
             "habanero",  # CrossRef API to retrieve data from doi
             "h5py",  # HDF5
@@ -277,7 +277,7 @@ def run_setup(with_binary):
             "seaborn",  # other matplotlib themes
             "scipy>=1.4.0",
             "tuna",  # to generate visual/interactive performance profiles
-            "vaex>=4.8.0",  # load HDF5 files  (version needed to fix issue with Spyder https://github.com/spyder-ide/spyder/issues/16183). #TODO : install only required sub-packages
+            "vaex>=4.9.2",  # load HDF5 files  (version needed to fix https://github.com/radis/radis/issues/486). #TODO : install only required sub-packages
         ],
         extras_require={
             "dev": [

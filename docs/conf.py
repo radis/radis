@@ -140,18 +140,19 @@ def setup(app):
 
 # Reference other packages
 intersphinx_mapping = {
-    "joblib": ("https://joblib.readthedocs.io/en/latest/", None),
-    "astroquery": ("https://astroquery.readthedocs.io/en/latest/", None),
-    "numpy": ("https://numpy.org/doc/stable/", None),
-    "matplotlib": ("https://matplotlib.org/", None),
-    "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
-    "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
-    "cantera": ("https://www.cantera.org/documentation/docs-2.4/sphinx/html/", None),
-    "pytexit": ("https://pytexit.readthedocs.io/en/latest/", None),
     "astropy": ("https://docs.astropy.org/en/stable/", None),
-    "habanero": ("https://habanero.readthedocs.io/en/latest/", None),
-    "seaborn": ("https://seaborn.pydata.org/", None),
+    "astroquery": ("https://astroquery.readthedocs.io/en/latest/", None),
+    "cantera": ("https://www.cantera.org/documentation/docs-2.4/sphinx/html/", None),
     "fitroom": ("https://fitroom.readthedocs.io/en/latest/", None),
+    "habanero": ("https://habanero.readthedocs.io/en/latest/", None),
+    "joblib": ("https://joblib.readthedocs.io/en/latest/", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "matplotlib": ("https://matplotlib.org/stable/", None),
+    "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
+    "pytexit": ("https://pytexit.readthedocs.io/en/latest/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
+    "seaborn": ("https://seaborn.pydata.org/", None),
+    "specutils": ("https://specutils.readthedocs.io/en/stable/", None),
 }
 
 napoleon_google_docstring = False
@@ -262,6 +263,7 @@ html_theme_options = {
     "fixed_sidebar": True,
     "analytics_id": "UA-113616205-1",
     "link": "#7A306C",
+    "extra_nav_links": {"RADIS Website": "https://radis.github.io/"},
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -435,7 +437,7 @@ texinfo_documents = [
         "RADIS Documentation",
         author,
         "RADIS",
-        "A fast line-by-line code for high resolution infrared molecular spectra",
+        "A fast line-by-line code for high resolution infrared molecular spectra: https://radis.github.io/",
         "Miscellaneous",
     ),
 ]

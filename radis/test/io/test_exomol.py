@@ -95,7 +95,7 @@ def test_calc_exomol_vs_hitemp(verbose=True, plot=True, *args, **kwargs):
     }
 
     s_exomol = calc_spectrum(
-        **conditions, databank="exomol", name="EXOMOL/HITEMP (H2 broadened)"
+        **conditions, databank="exomol", name="EXOMOL/HITEMP (default broadening)"
     )
     s_hitemp = calc_spectrum(
         **conditions,

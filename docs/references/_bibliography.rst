@@ -69,9 +69,20 @@ The latest HITEMP database version is automatically downloaded if using ``databa
                spectroscopic databank, Journal of Quantitative Spectroscopy and Radiative Transfer 112 (9) (2011)
                1403–1410, ISSN 00224073, `doi:10.1016/j.jqsrt.2011.03.005 <https://www.sciencedirect.com/science/article/pii/S0022407311001154>`__
 
+The latest ExoMol database is automatically downloaded if using ``databank='exomol'``. ExoMol contains
+multiple sub-databases per molecule. See :py:func:`~radis.io.exomol.fetch_exomol`
+
 .. [ExoMol-2020] Tennyson et al., The 2020 release of the ExoMol database: Molecular line lists for
                 exoplanet and other hot atmospheres, Journal of Quantitative Spectroscopy and Radiative Transfer 255,
                 (2020), 107228,  `doi:10.1016/j.jqsrt.2020.107228 <https://www.sciencedirect.com/science/article/abs/pii/S002240732030491X>`__
+
+.. [ExoMol-2016] Tennyson et al.,  The ExoMol database: molecular line lists for exoplanet and other hot atmospheres,
+                J. Molec. Spectrosc., 327, 73-94 (2016), `doi:10.1016/j.jms.2016.05.002 <https://arxiv.org/abs/1603.05890>`__
+
+The GEISA 2020 database is automatically downloaded with ``databank='geisa'``.
+
+.. [GEISA-2020] Delahaye et al, The 2020 edition of the GEISA spectroscopic database,
+                J. Molec. Spectrosc., 380, 111510 (2021) `doi:10.1016/j.jms.2021.111510 <https://www.sciencedirect.com/science/article/pii/S0022285221000928>`
 
 For download and configuration of line databases, see the :ref:`Line Databases section <label_line_databases>`
 

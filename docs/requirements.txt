@@ -1,3 +1,5 @@
+Cython
+numpy
 sphinx-autodoc-annotation
 sphinx_autodoc_defaultargs>=0.1.2
 sphinx>=1.7.0
