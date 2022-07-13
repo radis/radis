@@ -2146,7 +2146,7 @@ class BroadenFactory(BaseFactory):
 
         try:
             if chunksize is None:
-
+                # Deal with all lines directly (usually faster)
                 # printing estimated time
                 if self.verbose >= 2:
                     estimated_time = self.predict_time()
@@ -2209,16 +2209,32 @@ class BroadenFactory(BaseFactory):
                     pb.done()
                 elif optimization in ("simple", "min-RMS"):
                     self.reftracker.add(doi["DIT-2020"], "algorithm")
+                    # Running a separate loop for appending to the arrays.
                     for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
-                        (
-                            line_profile_LDM,
-                            wL,
-                            wG,
-                            wL_dat,
-                            wG_dat,
-                        ) = self._calc_lineshape_LDM(dg)
+                        if i == 0:
+                            (
+                                line_profile_LDM,
+                                wL,
+                                wG,
+                                wL_dat,
+                                wG_dat,
+                            ) = self._calc_lineshape_LDM(dg)
+                        else:
+                            (
+                                _,
+                                _,
+                                _,
+                                wL_dat_temp,
+                                wG_dat_temp,
+                            ) = self._calc_lineshape_LDM(dg)
+                            wL_dat, wG_dat = np.append(wL_dat, wL_dat_temp), np.append(
+                                wG_dat, wG_dat_temp
+                            )
+                        pb.update(i)
+                    # Feeding the updated arrays to _apply_lineshape_LDM
+                    for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
                         (wavenumber, absorption) = self._apply_lineshape_LDM(
-                            df.S.values,
+                            dg.S.values,
                             line_profile_LDM,
                             df.shiftwav.values,
                             wL,
@@ -2228,7 +2244,7 @@ class BroadenFactory(BaseFactory):
                             self.params.optimization,
                         )
                         abscoeff += absorption
-                        pb.update(i)
+
                     pb.done()
                 else:
                     raise ValueError(
