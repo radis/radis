@@ -1074,8 +1074,8 @@ class HITRANDatabaseManager(DatabaseManager):
         name,
         molecule,
         local_databases,
-        extra_params=None,
         engine="default",
+        extra_params=None,
         verbose=True,
         parallel=True,
     ):
@@ -1083,8 +1083,8 @@ class HITRANDatabaseManager(DatabaseManager):
             name,
             molecule,
             local_databases,
-            extra_params=extra_params,
             engine=engine,
+            extra_params=extra_params,
             verbose=verbose,
             parallel=parallel,
         )
@@ -1138,7 +1138,8 @@ class HITRANDatabaseManager(DatabaseManager):
 
             """
             import pandas as pd
-            extra_df = pd.DataFrame() # df that will contain extra paramters for a molcule
+             # df that will contain extra paramters for a molecule
+            extra_df = pd.DataFrame()
             
             # create temp folder :
             from radis.misc.basics import make_folders
@@ -1167,7 +1168,8 @@ class HITRANDatabaseManager(DatabaseManager):
                 try:
                       
                     if(extra_params is not None):
-                        fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax, Parameters=extra_params) #fetching .data and .header file having extra params (comma separated in .data)
+                        #fetching .data and .header file having extra params (comma separated in .data)
+                        fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax, Parameters=extra_params)
                         
                         from hapi import getColumn
                         import numpy.ma as ma
@@ -1183,10 +1185,10 @@ class HITRANDatabaseManager(DatabaseManager):
                             temp_dict[val] = a.tolist()
                         
                         
-                        file_params[file + ".data"] = temp_dict  # { 'CO_1.data' : {'gamma_CO2':[....] , 'n_CO2':[....]}}
+                        file_params[file + ".data"] = temp_dict
                         
-                                          
-                        for param,val in file_params[file +".data"].items():  #add extra params columns in extra_df
+                         #add extra params columns in extra_df                  
+                        for param,val in file_params[file +".data"].items(): 
                             local_df[param] = pd.DataFrame(val)
                     
                         extra_df = pd.concat([extra_df, local_df])
@@ -1450,8 +1452,8 @@ def fetch_hitran(
         databank_name,
         molecule=molecule,
         local_databases=local_databases,
-        extra_params=extra_params,
         engine=engine,
+        extra_params=extra_params,
         verbose=verbose,
         parallel=parallel,
     )
