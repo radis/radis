@@ -1449,8 +1449,8 @@ def fetch_hitran(
     ldb = HITRANDatabaseManager(
         databank_name,
         molecule=molecule,
-        extra_params=extra_params,
         local_databases=local_databases,
+        extra_params=extra_params,
         engine=engine,
         verbose=verbose,
         parallel=parallel,
