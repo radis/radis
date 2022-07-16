@@ -1073,8 +1073,8 @@ class HITRANDatabaseManager(DatabaseManager):
         self,
         name,
         molecule,
-        extra_params,
         local_databases,
+        extra_params=None,
         engine="default",
         verbose=True,
         parallel=True,
@@ -1082,8 +1082,8 @@ class HITRANDatabaseManager(DatabaseManager):
         super().__init__(
             name,
             molecule,
-            extra_params,
             local_databases,
+            extra_params=extra_params,
             engine=engine,
             verbose=verbose,
             parallel=parallel,
@@ -1138,11 +1138,8 @@ class HITRANDatabaseManager(DatabaseManager):
 
             """
             import pandas as pd
-
-            extra_df = (
-                pd.DataFrame()
-            )  # df that will contain extra paramters for a molcule
-
+            extra_df = pd.DataFrame() # df that will contain extra paramters for a molcule
+            
             # create temp folder :
             from radis.misc.basics import make_folders
 
@@ -1168,50 +1165,40 @@ class HITRANDatabaseManager(DatabaseManager):
                         )
                         os.remove(join(directory, file + ".data"))
                 try:
-
-                    if extra_params is not None:
-                        fetch(
-                            file,
-                            get_molecule_identifier(molecule),
-                            iso,
-                            wmin,
-                            wmax,
-                            Parameters=extra_params,
-                        )  # fetching .data and .header file having extra params (comma separated in .data)
-
-                        import numpy.ma as ma
+                      
+                    if(extra_params is not None):
+                        fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax, Parameters=extra_params) #fetching .data and .header file having extra params (comma separated in .data)
+                        
                         from hapi import getColumn
-
-                        file_params = {}
+                        import numpy.ma as ma
+                        
+                        file_params = {}  
                         temp_dict = {}
                         local_df = pd.DataFrame()
-
+                        
+                        
                         for val in extra_params:
-                            a = ma.masked_equal(getColumn(file, val), 1)
+                            a = ma.masked_equal(getColumn(file,val),1)
                             a = ma.getdata(a)
                             temp_dict[val] = a.tolist()
-
-                        file_params[
-                            file + ".data"
-                        ] = temp_dict  # { 'CO_1.data' : {'gamma_CO2':[....] , 'n_CO2':[....]}}
-
-                        for param, val in file_params[
-                            file + ".data"
-                        ].items():  # add extra params columns in extra_df
+                        
+                        
+                        file_params[file + ".data"] = temp_dict  # { 'CO_1.data' : {'gamma_CO2':[....] , 'n_CO2':[....]}}
+                        
+                                          
+                        for param,val in file_params[file +".data"].items():  #add extra params columns in extra_df
                             local_df[param] = pd.DataFrame(val)
-
+                    
                         extra_df = pd.concat([extra_df, local_df])
-                        # delete the extra params comma separated from .data file
-                        import fileinput
-
-                        with fileinput.FileInput(
-                            join(directory, file + ".data"), inplace=True
-                        ) as temp_file:
+                        #delete the extra params comma separated from .data file
+                        import fileinput 
+                    
+                        with fileinput.FileInput(join(directory,file +".data"), inplace=True) as temp_file:
                             for line in temp_file:
-                                split_string = line.split(",", 1)
+                                split_string = line.split(",",1)
                                 line = split_string[0]
                                 print(line)
-
+                        
                     else:
                         fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax)
                 except KeyError:
@@ -1221,18 +1208,15 @@ class HITRANDatabaseManager(DatabaseManager):
                     isotope_list.append(iso)
                     data_file_list.append(file + ".data")
                     header_file_list.append(file + ".header")
-
-            # creating consolidated .hdf5 file for extra_params of all isotopes of molecule
-            if extra_params is not None:
-                local_path = directory.split("\downloads__can_be_deleted")
+            
+             #creating consolidated .hdf5 file for extra_params of all isotopes of molecule    
+            if(extra_params is not None):
+                local_path=directory.split("\downloads__can_be_deleted")
                 import vaex
-
                 vaex_df = vaex.from_pandas(extra_df, copy_index=False)
-                extra_params_str = "_".join(map(str, extra_params))
-                vaex_df.export_hdf5(
-                    join(local_path[0], molecule + "_" + extra_params_str + ".hdf5")
-                )
-
+                extra_params_str = '_'.join(map(str,extra_params))
+                vaex_df.export_hdf5(join(local_path[0], molecule+"_"+extra_params_str+".hdf5"))
+            
             return isotope_list, data_file_list, header_file_list
 
         molecule = self.molecule
@@ -1366,6 +1350,7 @@ def fetch_hitran(
     output="pandas",
     parallel=True,
     parse_quanta=True,
+    
 ):
     """Download all HITRAN lines from HITRAN website. Unzip and build a HDF5 file directly.
 
