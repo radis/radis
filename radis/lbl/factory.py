@@ -1481,17 +1481,37 @@ class SpectrumFactory(BandFactory):
         Examples
         --------
         ::
+
             from radis import SpectrumFactory
             sf = SpectrumFactory(
             wavenum_min=2000,
             wavenum_max=3000,
             molecule="CO",
-            wstep=0.1,
+            isotope="1,2,3",
             )
-            sf.fetch_databank("hitemp")
+            sf.fetch_databank("hitemp", load_columns='noneq')
 
             s1 = sf.non_eq_spectrum(Tvib=2000, Trot=600, path_length=1, pressure=0.1)
             s2 = sf.non_eq_spectrum(Tvib=2000, Trot=600, path_length=1, pressure=0.1)
+
+        Multi-vibrational temperature. Below we compare non-LTE spectra of CO2 where all
+        vibrational temperatures are equal, or where the bending & symmetric modes are in
+        equilibrium with rotation ::
+
+            from radis import SpectrumFactory
+            sf = SpectrumFactory(
+            wavenum_min=2000,
+            wavenum_max=3000,
+            molecule="CO2",
+            isotope="1,2,3",
+            )
+            sf.fetch_databank("hitemp", load_columns='noneq')
+            # nonequilibrium between bending+symmetric and asymmetric modes :
+            s1 = sf.non_eq_spectrum(Tvib=(600, 600, 2000), Trot=600, path_length=1, pressure=1)
+            # all vibrational temperatures are equal :
+            s2 = sf.non_eq_spectrum(Tvib=(2000, 2000, 2000), Trot=600, path_length=1, pressure=1)
+
+
 
         .. minigallery:: radis.lbl.SpectrumFactory.non_eq_spectrum
             :add-heading:

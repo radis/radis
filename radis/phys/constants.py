@@ -11,14 +11,22 @@ Note : more units available in :
 
 # %% SI units
 
-eV = 1.60217657e-19  # J
-"""float: electron volt (J)"""
+eV = 1.602176634e-19  # J
+"""float: electron volt (J)
 
-h = 6.62606957e-34
-"""float: Planck constant (m2.kg.s-1 = J.s)"""
+https://physics.nist.gov/cgi-bin/cuu/Value?e
+"""
 
-k_b = 1.3806488e-23
-"""float: Boltzmann constant (m2.kg.s-2.K-1)"""
+h = 6.62607015e-34
+"""float: Planck constant (m2.kg.s-1 = J.s)
+
+https://physics.nist.gov/cgi-bin/cuu/Value?h|search_for=planck"""
+
+k_b = 1.380649e-23
+"""float: Boltzmann constant (m2.kg.s-2.K-1)
+
+https://physics.nist.gov/cgi-bin/cuu/Value?k|search_for=boltzmann
+"""
 
 c = 2.99792458e8
 """float: light velocity (m/s)"""
@@ -32,8 +40,10 @@ m_e = 9.10938291e-31
 Ry = 13.60569253
 """float: Rydberg unit of energy (eV)"""
 
-Av = 6.02214129e23
-"""float: Avogadro constant (molecules / mol)"""
+Av = 6.02214076e23
+"""float: Avogadro constant (molecules / mol)
+
+https://physics.nist.gov/cgi-bin/cuu/Value?na|search_for=avogadro"""
 Na = Av  # just an alias
 
 eps_0 = 8.854187817e-12
