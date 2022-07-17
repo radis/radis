@@ -69,7 +69,24 @@ def get_exomol_full_isotope_name(molecule, isotope):
         return mp.get(molecule, isotope, "isotope_name_exomol")
 
 
-def get_exomol_database_list(molecule, isotope_full_name):
+def get_list_of_known_isotopes(molecule):
+    """find all isotopes until error ensues"""
+
+    i = 1
+    isotope_list = []
+    while True:
+        try:
+            iso_name = get_exomol_full_isotope_name(molecule, i)
+        except:
+            break
+        else:
+            isotope_list.append(iso_name)
+        finally:
+            i += 1
+    return isotope_list
+
+
+def get_exomol_database_list(molecule, isotope_full_name=None):
     """Parse ExoMol website and return list of available databases, and recommended database
 
     Parameters
@@ -81,11 +98,13 @@ def get_exomol_database_list(molecule, isotope_full_name):
 
     Returns
     -------
+    list of databases, database recommended by ExoMol
 
     Examples
     --------
     Get CH4 from ExoMol :
     ::
+
         databases, recommended = get_exomol_database_list("CH4", "12C-1H4")
         >>> ['xsec-YT10to10', 'YT10to10', 'YT34to10'], 'YT34to10'
 
@@ -105,11 +124,20 @@ def get_exomol_database_list(molecule, isotope_full_name):
     :py:func:`~radis.io.exomol.get_exomol_full_isotope_name`
     """
 
+    if isotope_full_name is None:
+        raise ValueError(
+            f"Give isotope name. List of known isotopes for {molecule} : {get_list_of_known_isotopes(molecule)}"
+        )
+
     url = f"https://exomol.com/data/molecules/{molecule}/{isotope_full_name}"
     try:
         response = urlopen(url).read()
     except HTTPError as err:
-        raise ValueError(f"HTTPError opening url={url}") from err
+        if isotope_full_name not in get_list_of_known_isotopes(molecule):
+            extra = f". Isotope name {isotope_full_name} is not in list of known isotopes : {get_list_of_known_isotopes(molecule)}"
+        else:
+            extra = ""
+        raise ValueError(f"HTTPError opening url={url}" + extra) from err
 
     soup = BeautifulSoup(
         response, features="lxml"
@@ -524,6 +552,108 @@ def fetch_exomol(
 
 class MdbExomol(DatabaseManager):
 
+    """molecular database of ExoMol
+
+    MdbExomol is a class for ExoMol.
+
+    Parameters
+    ----------
+    path: str
+        path for Exomol data directory/tag. For instance, "/home/CO/12C-16O/Li2015"
+    nurange: array
+        wavenumber range list (cm-1) or wavenumber array
+    margin: float
+        margin for nurange (cm-1)
+    crit: float
+        line strength lower limit for extraction
+    bkgdatm: str
+        background atmosphere for broadening. e.g. H2, He,
+    broadf: bool
+        if False, the default broadening parameters in .def file is used
+
+    Other Parameters
+    ----------------
+    engine : str
+        which memory mapping engine to use : 'vaex', 'pytables' (HDF5), 'feather'
+    skip_optional_data : bool
+        If False, fetch all fields which are marked as available in the ExoMol definition
+        file. If True, load only the first 4 columns of the states file
+        ("i", "E", "g", "J"). The structure of the columns above 5 depend on the
+        the definitions file (*.def) and the Exomol version.
+        If ``skip_optional_data=False``, two errors may occur:
+
+            - a field is marked as present/absent in the *.def field but is
+              absent/present in the *.states file (ie both files are inconsistent).
+            - in the updated version of Exomol, new fields have been added in the
+              states file of some species. But it has not been done for all species,
+              so both structures exist. For instance, the states file of
+              https://exomol.com/data/molecules/HCl/1H-35Cl/HITRAN-HCl/ follows the
+              structure described in [1]_, unlike the states file of
+              https://exomol.com/data/molecules/NO/14N-16O/XABC/ which follows the
+              structure described in [2]_.
+
+    Notes
+    -----
+
+    The trans/states files can be very large. For the first time to read it,
+    we convert it to the feather or hdf5-format. After the second-time,
+    we use the feather/hdf5 format instead.
+
+    Examples
+    --------
+    ::
+
+        # Init database, download files if needed.
+        mdb = MdbExomol(
+            local_path,
+            molecule=molecule,
+            name=databank_name,
+            local_databases=local_databases,
+            # nurange=[load_wavenum_min, load_wavenum_max],
+            engine="vaex",
+        )
+
+        # Get cache files to load :
+        mgr = mdb.get_datafile_manager()
+        local_files = [mgr.cache_file(f) for f in mdb.trans_file]
+
+        # Load files
+        df = mdb.load(
+            local_files,
+            columns=columns_exomol,
+            lower_bound=([('nu_lines', load_wavenum_min)] if load_wavenum_min else []) + ([("Sij0", mdb.crit)] if not np.isneginf(mdb.crit) else []),
+            upper_bound=([('nu_lines', load_wavenum_max)] if load_wavenum_max else []),
+            output="jax", # or "pytables", "vaex"
+        )
+
+    .. minigallery:: radis.fetch_exomol
+
+
+    DataFrame columns
+    -----------------
+
+    nu_lines (nd array): line center (cm-1)
+    Sij0 (nd array): line strength at T=Tref (cm)
+    dev_nu_lines (np array): line center in device (cm-1)
+    logsij0 (np array): log line strength at T=Tref
+    A (np array): Einstein A coefficient
+    elower (np array): the lower state energy (cm-1)
+    gpp (np array): statistical weight
+    jlower (np array): J_lower
+    jupper (np array): J_upper
+    n_Tref (np array): temperature exponent
+    alpha_ref (np array): alpha_ref (gamma0)
+    n_Tref_def: default temperature exponent in .def file, used for jlower not given in .broad
+    alpha_ref_def: default alpha_ref (gamma0) in .def file, used for jlower not given in .broad
+
+    References
+    ----------
+
+    .. [1] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Barton, E. J., Chubb, K. L., Coles, P. A., … Zak, E. (2016). The ExoMol database: molecular line lists for exoplanet and other hot atmospheres. https://doi.org/10.1016/j.jms.2016.05.002
+    .. [2] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Clark, V. H. J., Chubb, K. L., Conway, E. K., … Yurchenko, O. P. (2020). The 2020 release of the ExoMol database: Molecular line lists for exoplanet and other hot atmospheres. Journal of Quantitative Spectroscopy and Radiative Transfer, 255, 107228. https://doi.org/10.1016/j.jqsrt.2020.107228
+
+    """
+
     # TODO : inherit from DatabaseManager or similar
 
     # @dev: In exojax this class is defined in exojax/spec/moldb.py
@@ -547,101 +677,6 @@ class MdbExomol(DatabaseManager):
         cache=True,
         skip_optional_data=True,
     ):
-        """molecular database of ExoMol
-
-        MdbExomol is a class for ExoMol.
-
-        Parameters
-        ----------
-        path: path for Exomol data directory/tag. For instance, "/home/CO/12C-16O/Li2015"
-        nurange: wavenumber range list (cm-1) or wavenumber array
-        margin: margin for nurange (cm-1)
-        crit: line strength lower limit for extraction
-        bkgdatm: background atmosphere for broadening. e.g. H2, He,
-        broadf: if False, the default broadening parameters in .def file is used
-
-        Other Parameters
-        ----------------
-        engine : str
-            which memory mapping engine to use : 'vaex', 'pytables' (HDF5), 'feather'
-        skip_optional_data : bool
-            If False, fetch all fields which are marked as available in the ExoMol definition
-            file. If True, load only the first 4 columns of the states file
-            ("i", "E", "g", "J"). The structure of the columns above 5 depend on the
-            the definitions file (*.def) and the Exomol version.
-            If ``skip_optional_data=False``, two errors may occur:
-
-                - a field is marked as present/absent in the *.def field but is
-                  absent/present in the *.states file (ie both files are inconsistent).
-                - in the updated version of Exomol, new fields have been added in the
-                  states file of some species. But it has not been done for all species,
-                  so both structures exist. For instance, the states file of
-                  https://exomol.com/data/molecules/HCl/1H-35Cl/HITRAN-HCl/ follows the
-                  structure described in [1]_, unlike the states file of
-                  https://exomol.com/data/molecules/NO/14N-16O/XABC/ which follows the
-                  structure described in [2]_.
-
-        Notes
-        -----
-
-        The trans/states files can be very large. For the first time to read it,
-        we convert it to the feather or hdf5-format. After the second-time,
-        we use the feather/hdf5 format instead.
-
-        Examples
-        --------
-        ::
-
-            # Init database, download files if needed.
-            mdb = MdbExomol(
-                local_path,
-                molecule=molecule,
-                name=databank_name,
-                local_databases=local_databases,
-                # nurange=[load_wavenum_min, load_wavenum_max],
-                engine="vaex",
-            )
-
-            # Get cache files to load :
-            mgr = mdb.get_datafile_manager()
-            local_files = [mgr.cache_file(f) for f in mdb.trans_file]
-
-            # Load files
-            df = mdb.load(
-                local_files,
-                columns=columns_exomol,
-                lower_bound=([('nu_lines', load_wavenum_min)] if load_wavenum_min else []) + ([("Sij0", mdb.crit)] if not np.isneginf(mdb.crit) else []),
-                upper_bound=([('nu_lines', load_wavenum_max)] if load_wavenum_max else []),
-                output="jax", # or "pytables", "vaex"
-            )
-
-        .. minigallery:: radis.fetch_exomol
-
-
-        DataFrame columns
-        -----------------
-
-        nu_lines (nd array): line center (cm-1)
-        Sij0 (nd array): line strength at T=Tref (cm)
-        dev_nu_lines (np array): line center in device (cm-1)
-        logsij0 (np array): log line strength at T=Tref
-        A (np array): Einstein A coefficient
-        elower (np array): the lower state energy (cm-1)
-        gpp (np array): statistical weight
-        jlower (np array): J_lower
-        jupper (np array): J_upper
-        n_Tref (np array): temperature exponent
-        alpha_ref (np array): alpha_ref (gamma0)
-        n_Tref_def: default temperature exponent in .def file, used for jlower not given in .broad
-        alpha_ref_def: default alpha_ref (gamma0) in .def file, used for jlower not given in .broad
-
-        References
-        ----------
-
-        .. [1] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Barton, E. J., Chubb, K. L., Coles, P. A., … Zak, E. (2016). The ExoMol database: molecular line lists for exoplanet and other hot atmospheres. https://doi.org/10.1016/j.jms.2016.05.002
-        .. [2] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Clark, V. H. J., Chubb, K. L., Conway, E. K., … Yurchenko, O. P. (2020). The 2020 release of the ExoMol database: Molecular line lists for exoplanet and other hot atmospheres. Journal of Quantitative Spectroscopy and Radiative Transfer, 255, 107228. https://doi.org/10.1016/j.jqsrt.2020.107228
-
-        """
         super().__init__(
             name,
             molecule,
