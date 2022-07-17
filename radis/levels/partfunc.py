@@ -1108,7 +1108,8 @@ class PartFuncExoMol(RovibParFuncTabulator):
     One can use :py:func:`~radis.io.exomol.fetch_exomol` which has the option to
     return a :py:class:`~radis.levels.partfunc.PartFuncExoMol` object ::
 
-        from radis.io.exomol import fetch_exomol, get_exomol_database_list
+        from radis.io.exomol import fetch_exomol
+        from radis.api.exomolapi import get_exomol_database_list
 
         print(get_exomol_database_list("SiO", "28Si-16O"))  # 'EBJT" is one database
         _, _, Z_exomol = fetch_exomol("SiO", "EBJT", return_local_path=True, return_partition_function=True)
