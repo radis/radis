@@ -91,6 +91,7 @@ class DatabaseManager(object):
         molecule,
         local_databases,
         engine,
+        extra_params=None,
         verbose=False,
         parallel=True,
         nJobs=-2,
@@ -118,6 +119,7 @@ class DatabaseManager(object):
         self.name = name
         self.molecule = molecule
         self.local_databases = local_databases
+        self.extra_params = extra_params
         # create folder if needed
         if not exists(local_databases):
             from radis.misc.basics import make_folders

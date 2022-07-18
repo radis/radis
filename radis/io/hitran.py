@@ -1075,6 +1075,7 @@ class HITRANDatabaseManager(DatabaseManager):
         molecule,
         local_databases,
         engine="default",
+        extra_params=None,
         verbose=True,
         parallel=True,
     ):
@@ -1083,6 +1084,7 @@ class HITRANDatabaseManager(DatabaseManager):
             molecule,
             local_databases,
             engine=engine,
+            extra_params=extra_params,
             verbose=verbose,
             parallel=parallel,
         )
@@ -1113,7 +1115,7 @@ class HITRANDatabaseManager(DatabaseManager):
         opener: an opener with an .open() command
         gfile : file handler. Filename: for info"""
 
-        from hapi import db_begin, fetch
+        from hapi import db_begin, fetch, LOCAL_TABLE_CACHE
 
         from radis import hit2df
         from radis.db.classes import get_molecule_identifier
@@ -1127,7 +1129,7 @@ class HITRANDatabaseManager(DatabaseManager):
         wmin = 1
         wmax = 40000
 
-        def download_all_hitran_isotopes(molecule, directory):
+        def download_all_hitran_isotopes(molecule, directory, extra_params):
             """Blindly try to download all isotpes 1 - 9 for the given molecule
 
             .. warning::
@@ -1160,7 +1162,10 @@ class HITRANDatabaseManager(DatabaseManager):
                         )
                         os.remove(join(directory, file + ".data"))
                 try:
-                    fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax)
+                    if extra_params is not None:
+                        fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax, Parameters=extra_params)
+                    else:
+                        fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax)
                 except KeyError:
                     # Isotope not defined:
                     continue
@@ -1177,11 +1182,12 @@ class HITRANDatabaseManager(DatabaseManager):
         # create database in a subfolder to isolate molecules from one-another
         # (HAPI doesn't check and may mix molecules --> see failure at https://app.travis-ci.com/github/radis/radis/jobs/548126303#L2676)
         tempdir = join(self.tempdir, molecule)
+        extra_params = self.extra_params
 
         # Use HAPI only to download the files, then we'll parse them with RADIS's
         # parsers, and convert to RADIS's fast HDF5 file formats.
         isotope_list, data_file_list, header_file_list = download_all_hitran_isotopes(
-            molecule, tempdir
+            molecule, tempdir, extra_params
         )
 
         writer = self.get_datafile_manager()
@@ -1189,11 +1195,25 @@ class HITRANDatabaseManager(DatabaseManager):
         # Create HDF5 cache file for all isotopes
         Nlines = 0
         for iso, data_file in zip(isotope_list, data_file_list):
-            df = hit2df(
-                join(tempdir, data_file),
-                cache=False,  # do not generate cache yet
-                parse_quanta=parse_quanta,
-            )
+            df =  data_file_name = data_file.split('.')
+            df = pd.DataFrame(LOCAL_TABLE_CACHE[data_file_name[0]]["data"])
+            df.rename(columns = {"molec_id":"id",
+           "local_iso_id":"iso",
+           "nu":"wav",
+           "sw":"int",
+           "a":"A",
+           "gamma_air":"airbrd",
+           "gamma_self":"selbrd",
+           "elower":"El",
+           "n_air":"Tdpair",
+           "delta_air":"Pshft",
+           "global_upper_quanta":"globu",
+           "global_lower_quanta":"globl",
+           "local_upper_quanta":"locu",
+           "local_lower_quanta":"locl",
+           "gp":"gp",
+           "gpp":"gpp"}, 
+          inplace=True)
             wmin_final = min(wmin_final, df.wav.min())
             wmax_final = max(wmax_final, df.wav.max())
             Nlines += len(df)
@@ -1285,6 +1305,7 @@ from os.path import abspath, expanduser
 # TODO: implement parallel=True for all isotopes ?
 def fetch_hitran(
     molecule,
+    extra_params=None,
     local_databases=None,
     databank_name="HITRAN-{molecule}",
     isotope=None,
@@ -1399,6 +1420,7 @@ def fetch_hitran(
         molecule=molecule,
         local_databases=local_databases,
         engine=engine,
+        extra_params=extra_params,
         verbose=verbose,
         parallel=parallel,
     )
