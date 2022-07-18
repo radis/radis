@@ -1115,7 +1115,7 @@ class HITRANDatabaseManager(DatabaseManager):
         opener: an opener with an .open() command
         gfile : file handler. Filename: for info"""
 
-        from hapi import db_begin, fetch, LOCAL_TABLE_CACHE
+        from hapi import LOCAL_TABLE_CACHE, db_begin, fetch
 
         from radis import hit2df
         from radis.db.classes import get_molecule_identifier
@@ -1163,7 +1163,14 @@ class HITRANDatabaseManager(DatabaseManager):
                         os.remove(join(directory, file + ".data"))
                 try:
                     if extra_params is not None:
-                        fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax, Parameters=extra_params)
+                        fetch(
+                            file,
+                            get_molecule_identifier(molecule),
+                            iso,
+                            wmin,
+                            wmax,
+                            Parameters=extra_params,
+                        )
                     else:
                         fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax)
                 except KeyError:
@@ -1195,25 +1202,29 @@ class HITRANDatabaseManager(DatabaseManager):
         # Create HDF5 cache file for all isotopes
         Nlines = 0
         for iso, data_file in zip(isotope_list, data_file_list):
-            df =  data_file_name = data_file.split('.')
+            df = data_file_name = data_file.split(".")
             df = pd.DataFrame(LOCAL_TABLE_CACHE[data_file_name[0]]["data"])
-            df.rename(columns = {"molec_id":"id",
-           "local_iso_id":"iso",
-           "nu":"wav",
-           "sw":"int",
-           "a":"A",
-           "gamma_air":"airbrd",
-           "gamma_self":"selbrd",
-           "elower":"El",
-           "n_air":"Tdpair",
-           "delta_air":"Pshft",
-           "global_upper_quanta":"globu",
-           "global_lower_quanta":"globl",
-           "local_upper_quanta":"locu",
-           "local_lower_quanta":"locl",
-           "gp":"gp",
-           "gpp":"gpp"}, 
-          inplace=True)
+            df.rename(
+                columns={
+                    "molec_id": "id",
+                    "local_iso_id": "iso",
+                    "nu": "wav",
+                    "sw": "int",
+                    "a": "A",
+                    "gamma_air": "airbrd",
+                    "gamma_self": "selbrd",
+                    "elower": "El",
+                    "n_air": "Tdpair",
+                    "delta_air": "Pshft",
+                    "global_upper_quanta": "globu",
+                    "global_lower_quanta": "globl",
+                    "local_upper_quanta": "locu",
+                    "local_lower_quanta": "locl",
+                    "gp": "gp",
+                    "gpp": "gpp",
+                },
+                inplace=True,
+            )
             wmin_final = min(wmin_final, df.wav.min())
             wmax_final = max(wmax_final, df.wav.max())
             Nlines += len(df)
