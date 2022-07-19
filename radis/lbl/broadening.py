@@ -2207,36 +2207,24 @@ class BroadenFactory(BaseFactory):
                         abscoeff += absorption
                         pb.update(i)
                     pb.done()
+
                 elif optimization in ("simple", "min-RMS"):
+
                     self.reftracker.add(doi["DIT-2020"], "algorithm")
-                    # Running a separate loop for appending to the arrays.
+                    # Iterating over the chunks of the line database
+                    # Using DIT Algorithm calculations for optimized loops
                     for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
-                        if i == 0:
-                            (
-                                line_profile_LDM,
-                                wL,
-                                wG,
-                                wL_dat,
-                                wG_dat,
-                            ) = self._calc_lineshape_LDM(dg)
-                        else:
-                            (
-                                _,
-                                _,
-                                _,
-                                wL_dat_temp,
-                                wG_dat_temp,
-                            ) = self._calc_lineshape_LDM(dg)
-                            wL_dat, wG_dat = np.append(wL_dat, wL_dat_temp), np.append(
-                                wG_dat, wG_dat_temp
-                            )
-                        pb.update(i)
-                    # Feeding the updated arrays to _apply_lineshape_LDM
-                    for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
+                        (
+                            line_profile_LDM,
+                            wL,
+                            wG,
+                            wL_dat,
+                            wG_dat,
+                        ) = self._calc_lineshape_LDM(dg)
                         (wavenumber, absorption) = self._apply_lineshape_LDM(
                             dg.S.values,
                             line_profile_LDM,
-                            df.shiftwav.values,
+                            dg.shiftwav.values,
                             wL,
                             wG,
                             wL_dat,
@@ -2244,7 +2232,7 @@ class BroadenFactory(BaseFactory):
                             self.params.optimization,
                         )
                         abscoeff += absorption
-
+                        pb.update(i)
                     pb.done()
                 else:
                     raise ValueError(
