@@ -2163,17 +2163,21 @@ class BroadenFactory(BaseFactory):
                     )
                 elif optimization in ("simple", "min-RMS"):
                     self.reftracker.add(doi["DIT-2020"], "algorithm")
-                    line_profile_LDM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_LDM(
-                        df
-                    )
+                    (
+                        line_profile_LDM,
+                        wL_i,
+                        wG_i,
+                        wL_dat_i,
+                        wG_dat_i,
+                    ) = self._calc_lineshape_LDM(df)
                     (wavenumber, abscoeff) = self._apply_lineshape_LDM(
                         df.S.values,
                         line_profile_LDM,
                         df.shiftwav.values,
-                        wL,
-                        wG,
-                        wL_dat,
-                        wG_dat,
+                        wL_i,
+                        wG_i,
+                        wL_dat_i,
+                        wG_dat_i,
                         self.params.optimization,
                     )
                 else:
@@ -2216,19 +2220,19 @@ class BroadenFactory(BaseFactory):
                     for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
                         (
                             line_profile_LDM,
-                            wL,
-                            wG,
-                            wL_dat,
-                            wG_dat,
+                            wL_i,
+                            wG_i,
+                            wL_dat_i,
+                            wG_dat_i,
                         ) = self._calc_lineshape_LDM(dg)
                         (wavenumber, absorption) = self._apply_lineshape_LDM(
                             dg.S.values,
                             line_profile_LDM,
                             dg.shiftwav.values,
-                            wL,
-                            wG,
-                            wL_dat,
-                            wG_dat,
+                            wL_i,
+                            wG_i,
+                            wL_dat_i,
+                            wG_dat_i,
                             self.params.optimization,
                         )
                         abscoeff += absorption
