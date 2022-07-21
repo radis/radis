@@ -1229,10 +1229,10 @@ class MdbExomol(DatabaseManager):
             df_jlower = df["jlower"]    
             df_jupper = df["jupper"]
         else:
-            warnings.warn("Unknown DataFrame")
-            df_jlower = df.jlower
-            df_jupper = df.jupper
-
+            warnings.warn("Unknown DataFrame.")
+            df_jlower = df["jlower"]    
+            df_jupper = df["jupper"]
+            
         if self.broadf:
             try:
                 print(".broad is used.")
