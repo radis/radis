@@ -22,6 +22,7 @@ import re
 from urllib.request import HTTPError, urlopen
 
 import pandas as pd
+import vaex
 from bs4 import BeautifulSoup
 
 from radis.api.hdf5 import vaexsafe_colname
@@ -1001,7 +1002,6 @@ class MdbExomol(DatabaseManager):
             engine,
             verbose=verbose,
         )
-
         assert cache  # cache only used for cache='regen' or cache='force' modes, cache=False is not expected
 
         if engine == "default":
@@ -1141,7 +1141,7 @@ class MdbExomol(DatabaseManager):
                 )
                 self.trans_file.append(trans_file)
                 self.num_tag.append(dic_def["numtag"][i])
-
+                
         # Look-up missing parameters and write file
         # -----------------------------------------
         for trans_file, num_tag in zip(self.trans_file, self.num_tag):
@@ -1150,9 +1150,8 @@ class MdbExomol(DatabaseManager):
                 if verbose:
                     print("Removing existing file ", mgr.cache_file(trans_file))
                 os.remove(mgr.cache_file(trans_file))
-
+            
             if not mgr.cache_file(trans_file).exists():
-
                 if cache == "force":
                     raise ValueError(
                         f"Cache file {str(mgr.cache_file(trans_file))} does not exist"
@@ -1171,7 +1170,7 @@ class MdbExomol(DatabaseManager):
 
                 # Complete transition data with lookup on upper & lower state :
                 # In particular, compute gup and elower
-
+                
                 pickup_gE(
                     states,
                     trans,
@@ -1198,15 +1197,19 @@ class MdbExomol(DatabaseManager):
                 trans["Sij0"] = self.Sij0
 
                 mgr.write(mgr.cache_file(trans_file), trans)
-
+                
         # Database ready to be loaded.
         # Proceed with mdb.load()
+        #self.set_broadening()
+        #
+        
 
     def set_broadening(self, df, alpha_ref_def=None, n_Texp_def=None, output=None):
         """setting broadening parameters
 
         Parameters
         ----------
+        df: data frame
         alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
         n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
 
@@ -1218,6 +1221,17 @@ class MdbExomol(DatabaseManager):
             self.alpha_ref_def = alpha_ref_def
         if n_Texp_def:
             self.n_Texp_def = n_Texp_def
+            
+        if isinstance(df,vaex.dataframe.DataFrameLocal):
+            df_jlower = df.jlower.values    
+            df_jupper = df.jupper.values            
+        elif isinstance(df,pd.core.frame.DataFrame):
+            df_jlower = df["jlower"]    
+            df_jupper = df["jupper"]
+        else:
+            warnings.warn("Unknown DataFrame")
+            df_jlower = df.jlower
+            df_jupper = df.jupper
 
         if self.broadf:
             try:
@@ -1230,38 +1244,38 @@ class MdbExomol(DatabaseManager):
                         bdat,
                         alpha_ref_default=self.alpha_ref_def,
                         n_Texp_default=self.n_Texp_def,
-                        jlower_max=np.max(df["jlower"]),
+                        jlower_max=np.max(df_jlower),
                     )
-                    self.alpha_ref = np.array(j2alpha_ref[df["jlower"]])
-                    self.n_Texp = np.array(j2n_Texp[df["jlower"]])
+                    self.alpha_ref = np.array(j2alpha_ref[df_jlower])
+                    self.n_Texp = np.array(j2n_Texp[df_jlower])
                 elif codelv == "a1":
                     j2alpha_ref, j2n_Texp = make_j2b(
                         bdat,
                         alpha_ref_default=self.alpha_ref_def,
                         n_Texp_default=self.n_Texp_def,
-                        jlower_max=np.max(df["jlower"]),
+                        jlower_max=np.max(df_jlower),
                     )
                     jj2alpha_ref, jj2n_Texp = make_jj2b(
                         bdat,
                         j2alpha_ref_def=j2alpha_ref,
                         j2n_Texp_def=j2n_Texp,
-                        jupper_max=np.max(df["jupper"]),
+                        jupper_max=np.max(df_jupper),
                     )
-                    self.alpha_ref = np.array(jj2alpha_ref[df["jlower"], df["jupper"]])
-                    self.n_Texp = np.array(jj2n_Texp[df["jlower"], df["jupper"]])
+                    self.alpha_ref = np.array(jj2alpha_ref[df_jlower, df_jupper])
+                    self.n_Texp = np.array(jj2n_Texp[df_jlower, df_jupper])
             except FileNotFoundError:
                 print(
                     "Warning: Cannot load .broad. The default broadening parameters are used."
                 )
                 self.alpha_ref = np.array(
-                    self.alpha_ref_def * np.ones_like(df["jlower"])
+                    self.alpha_ref_def * np.ones_like(df_jlower)
                 )
-                self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df["jlower"]))
+                self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df_jlower))
 
         else:
             print("The default broadening parameters are used.")
-            self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(df["jlower"]))
-            self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df["jlower"]))
+            self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(df_jlower))
+            self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df_jlower))
 
         # Add values
         self.add_column(df, "alpha_ref", self.alpha_ref)
