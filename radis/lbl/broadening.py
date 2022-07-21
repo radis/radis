@@ -2165,19 +2165,19 @@ class BroadenFactory(BaseFactory):
                     self.reftracker.add(doi["DIT-2020"], "algorithm")
                     (
                         line_profile_LDM,
-                        wL_i,
-                        wG_i,
-                        wL_dat_i,
-                        wG_dat_i,
+                        wL,
+                        wG,
+                        wL_dat,
+                        wG_dat,
                     ) = self._calc_lineshape_LDM(df)
                     (wavenumber, abscoeff) = self._apply_lineshape_LDM(
                         df.S.values,
                         line_profile_LDM,
                         df.shiftwav.values,
-                        wL_i,
-                        wG_i,
-                        wL_dat_i,
-                        wG_dat_i,
+                        wL,
+                        wG,
+                        wL_dat,
+                        wG_dat,
                         self.params.optimization,
                     )
                 else:

@@ -938,6 +938,57 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
     assert res < 5.2e-6
 
 
+def test_broadening_chunksize_eq(verbose=True, plot=False, *args, **kwargs):
+    """
+    Test an equilibrium spectrum with and without chunksize,
+    using different optimization strategies
+    and ensure that the residual is very small.
+
+    """
+    sf = SpectrumFactory(
+        wavelength_min=4000,
+        wavelength_max=4500,
+        cutoff=1e-27,
+        pressure=1,
+        isotope="1,2",
+        truncation=5,
+        neighbour_lines=5,
+        path_length=0.1,
+        mole_fraction=1e-3,
+        medium="vacuum",
+        optimization=None,
+        chunksize=None,
+        wstep=0.001,
+        verbose=False,
+    )
+    sf.load_databank("HITEMP-CO")
+    sf.params.broadening_method = "convolve"
+    Tgas = 2000
+    chunk_loop = 1000000
+    plot_diff_list = []
+    # Testing all 6 cases of chunksize with optimization
+    for chunksize in [None, chunk_loop]:
+        sf.misc["chunksize"] = chunksize  # Setting chunksize
+        s_new = sf.eq_spectrum(Tgas=Tgas)
+
+        for optimization in [None, "simple", "min-RMS"]:
+            sf.params["optimization"] = optimization  # Setting optimization
+            s = sf.eq_spectrum(Tgas=Tgas)
+            # Residual calculation
+            res = get_residual(s, s_new, "abscoeff")
+            assert res < 10e-5
+            print(
+                "Res for chunksize = {0}, optimization = {1} : {2}".format(
+                    chunksize, optimization, res
+                )
+            )
+            if plot:
+                plot_diff_list.append([s, s_new])
+    if plot:
+        for [i, j] in plot_diff_list:
+            plot_diff(i, j, "abscoeff")
+
+
 def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
     # Test broadening
@@ -950,6 +1001,7 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
     test_broadening_LDM_FT(plot=plot, verbose=3, *args, **kwargs)
     test_broadening_LDM_noneq(plot=plot, verbose=verbose, *args, **kwargs)
     test_truncations_and_neighbour_lines(*args, **kwargs)
+    test_broadening_chunksize_eq(plot=plot, verbose=verbose, *args, **kwargs)
 
     # Test warnings
     test_broadening_warnings(*args, **kwargs)
