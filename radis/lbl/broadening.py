@@ -2284,16 +2284,26 @@ class BroadenFactory(BaseFactory):
         optimization = self.params.optimization
 
         try:
-            if optimization in ("simple", "min-RMS"):
-                self.reftracker.add(doi["DIT-2020"], "algorithm")
-                # Use LDM
+            # Note @dev: typical results is:
+            # >>> abscoeff:
+            # ... Precomputed LDM lineshapes in 0.0s
+            # ... Initialized vectors in 0.0s
+            # ... Get closest matching line & fraction in 0.3s
+            # ... Distribute lines over LDM 2.1s
+            # ... Convolve and sum on spectral range 0.4s
+            # >>> emisscoeff
+            # ... Initialized vectors in 0.0s
+            # ... Get closest matching line & fraction in 0.2s
+            # ... Distribute lines over LDM 2.1s
+            # ... Convolve and sum on spectral range 0.3s
+            # @EP: #performance.
+            # unlike in the non LDM case, the nonequilibruum case here is ~2x
+            # the equilibrium case: only the closest matching line is common to the
+            # absorption & emission steps. The bottleneck is the distribution
+            # of the line over the LDM, which has to be done for both abscoeff & emisscoeff.
 
-                if self.misc.zero_padding < 0 or self.misc.zero_padding > len(
-                    self.wavenumber_calc
-                ):
-                    self.misc.zero_padding = len(self.wavenumber_calc)
-
-                line_profile_LDM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_LDM(df)
+            if chunksize is None:
+                # Deal with all lines directly (usually faster)
                 # printing estimated time
                 if self.verbose >= 2:
                     estimated_time = self.predict_time()
@@ -2302,55 +2312,8 @@ class BroadenFactory(BaseFactory):
                             estimated_time
                         )
                     )
-                (wavenumber, abscoeff) = self._apply_lineshape_LDM(
-                    df.S.values,
-                    line_profile_LDM,
-                    df.shiftwav.values,
-                    wL,
-                    wG,
-                    wL_dat,
-                    wG_dat,
-                    optimization,
-                )
-                (_, emisscoeff) = self._apply_lineshape_LDM(
-                    df.Ei.values,
-                    line_profile_LDM,
-                    df.shiftwav.values,
-                    wL,
-                    wG,
-                    wL_dat,
-                    wG_dat,
-                    optimization,
-                )
-                # Note @dev: typical results is:
-                # >>> abscoeff:
-                # ... Precomputed LDM lineshapes in 0.0s
-                # ... Initialized vectors in 0.0s
-                # ... Get closest matching line & fraction in 0.3s
-                # ... Distribute lines over LDM 2.1s
-                # ... Convolve and sum on spectral range 0.4s
-                # >>> emisscoeff
-                # ... Initialized vectors in 0.0s
-                # ... Get closest matching line & fraction in 0.2s
-                # ... Distribute lines over LDM 2.1s
-                # ... Convolve and sum on spectral range 0.3s
-                # @EP: #performance.
-                # unlike in the non LDM case, the nonequilibruum case here is ~2x
-                # the equilibrium case: only the closest matching line is common to the
-                # absorption & emission steps. The bottleneck is the distribution
-                # of the line over the LDM, which has to be done for both abscoeff & emisscoeff.
 
-            elif optimization is None:
-                # printing estimated time
-                if self.verbose >= 2:
-                    estimated_time = self.predict_time()
-                    print(
-                        "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
-                            estimated_time
-                        )
-                    )
-                if chunksize is None:
-                    # Deal with all lines directly (usually faster)
+                if optimization is None:
                     line_profile = self._calc_lineshape(df)  # usually the bottleneck
                     (wavenumber, abscoeff) = self._apply_lineshape(
                         df.S.values, line_profile, df.shiftwav.values
@@ -2358,28 +2321,118 @@ class BroadenFactory(BaseFactory):
                     (_, emisscoeff) = self._apply_lineshape(
                         df.Ei.values, line_profile, df.shiftwav.values
                     )
+                elif optimization in ("simple", "min-RMS"):
 
-                elif is_float(chunksize):
-                    # Cut lines in smaller bits for better memory handling
+                    self.reftracker.add(doi["DIT-2020"], "algorithm")  # Use LDM
+                    if self.misc.zero_padding < 0 or self.misc.zero_padding > len(
+                        self.wavenumber_calc
+                    ):
+                        self.misc.zero_padding = len(self.wavenumber_calc)
 
-                    # Get size of numpy array for vectorialization
-                    N = int(len(df) * len(wavenumber) / chunksize) + 1
-                    # Too big may be faster but overload memory.
-                    # See Performance for more information
+                    (
+                        line_profile_LDM,
+                        wL,
+                        wG,
+                        wL_dat,
+                        wG_dat,
+                    ) = self._calc_lineshape_LDM(df)
 
-                    abscoeff = zeros_like(self.wavenumber)
-                    emisscoeff = zeros_like(self.wavenumber)
+                    (wavenumber, abscoeff) = self._apply_lineshape_LDM(
+                        df.S.values,
+                        line_profile_LDM,
+                        df.shiftwav.values,
+                        wL,
+                        wG,
+                        wL_dat,
+                        wG_dat,
+                        optimization,
+                    )
+                    (_, emisscoeff) = self._apply_lineshape_LDM(
+                        df.Ei.values,
+                        line_profile_LDM,
+                        df.shiftwav.values,
+                        wL,
+                        wG,
+                        wL_dat,
+                        wG_dat,
+                        optimization,
+                    )
+                else:
+                    raise ValueError(
+                        "Unexpected value for optimization: {0}".format(optimization)
+                    )
 
-                    pb = ProgressBar(N, active=self.verbose)
+            elif is_float(chunksize):
+                # Cut lines in smaller bits for better memory handling
+                N = int(len(df) * len(wavenumber) / chunksize) + 1
+                # Too big may be faster but overload memory.
+                # See Performance for more information
+                abscoeff = zeros_like(self.wavenumber)
+                emisscoeff = zeros_like(self.wavenumber)
+
+                pb = ProgressBar(N, active=self.verbose)
+
+                # printing estimated time
+                if self.verbose >= 2:
+                    estimated_time = self.predict_time()
+                    print(
+                        "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
+                            estimated_time
+                        )
+                    )
+                if optimization is None:
                     for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
                         line_profile = self._calc_lineshape(dg)
                         (wavenumber, absorption) = self._apply_lineshape(
                             dg.S.values, line_profile, dg.shiftwav.values
                         )
                         (_, emission) = self._apply_lineshape(
-                            dg.Ei.values, line_profile, dg.shiftwav.values
+                            df.Ei.values, line_profile, df.shiftwav.values
                         )
-                        abscoeff += absorption  #
+                        abscoeff += absorption
+                        emisscoeff += emission
+                        pb.update(i)
+                    pb.done()
+
+                elif optimization in ("simple", "min-RMS"):
+
+                    self.reftracker.add(doi["DIT-2020"], "algorithm")
+
+                    if self.misc.zero_padding < 0 or self.misc.zero_padding > len(
+                        self.wavenumber_calc
+                    ):
+                        self.misc.zero_padding = len(self.wavenumber_calc)
+                    # Iterating over the chunks of the line database
+                    # Using DIT Algorithm calculations for optimized loops
+                    for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
+                        (
+                            line_profile_LDM,
+                            wL_i,
+                            wG_i,
+                            wL_dat_i,
+                            wG_dat_i,
+                        ) = self._calc_lineshape_LDM(dg)
+                        (wavenumber, absorption) = self._apply_lineshape_LDM(
+                            dg.S.values,
+                            line_profile_LDM,
+                            dg.shiftwav.values,
+                            wL_i,
+                            wG_i,
+                            wL_dat_i,
+                            wG_dat_i,
+                            self.params.optimization,
+                        )
+                        (_, emission) = self._apply_lineshape_LDM(
+                            dg.Ei.values,
+                            line_profile_LDM,
+                            dg.shiftwav.values,
+                            wL_i,
+                            wG_i,
+                            wL_dat_i,
+                            wG_dat_i,
+                            optimization,
+                        )
+                        abscoeff += absorption
                         emisscoeff += emission
                         pb.update(i)
                     pb.done()
