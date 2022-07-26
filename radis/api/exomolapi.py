@@ -1204,35 +1204,27 @@ class MdbExomol(DatabaseManager):
         #
         
 
-    def set_broadening(self, df, alpha_ref_def=None, n_Texp_def=None, output=None):
+    def set_broadening(self, jlower, jupper, alpha_ref_def=None, n_Texp_def=None, output=None):
         """setting broadening parameters
 
         Parameters
-        ----------
-        df: data frame
+        ----------        
+        jlower: jlower array
+        jupper: jupper array
         alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
         n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
 
         Returns
         -------
-        None. Updates ``df`` with ``alpha_ref``, ``n_Texp_def``
+        None. Store values in self.n_Texp and self.alpha_ref.
+        
+        
         """
         if alpha_ref_def:
             self.alpha_ref_def = alpha_ref_def
         if n_Texp_def:
             self.n_Texp_def = n_Texp_def
-            
-        if isinstance(df,vaex.dataframe.DataFrameLocal):
-            df_jlower = df.jlower.values    
-            df_jupper = df.jupper.values            
-        elif isinstance(df,pd.core.frame.DataFrame):
-            df_jlower = df["jlower"]    
-            df_jupper = df["jupper"]
-        else:
-            warnings.warn("Unknown DataFrame.")
-            df_jlower = df["jlower"]    
-            df_jupper = df["jupper"]
-            
+                
         if self.broadf:
             try:
                 print(".broad is used.")
@@ -1244,43 +1236,43 @@ class MdbExomol(DatabaseManager):
                         bdat,
                         alpha_ref_default=self.alpha_ref_def,
                         n_Texp_default=self.n_Texp_def,
-                        jlower_max=np.max(df_jlower),
+                        jlower_max=np.max(jlower),
                     )
-                    self.alpha_ref = np.array(j2alpha_ref[df_jlower])
-                    self.n_Texp = np.array(j2n_Texp[df_jlower])
+                    self.alpha_ref = np.array(j2alpha_ref[jlower])
+                    self.n_Texp = np.array(j2n_Texp[jlower])
                 elif codelv == "a1":
                     j2alpha_ref, j2n_Texp = make_j2b(
                         bdat,
                         alpha_ref_default=self.alpha_ref_def,
                         n_Texp_default=self.n_Texp_def,
-                        jlower_max=np.max(df_jlower),
+                        jlower_max=np.max(jlower),
                     )
                     jj2alpha_ref, jj2n_Texp = make_jj2b(
                         bdat,
                         j2alpha_ref_def=j2alpha_ref,
                         j2n_Texp_def=j2n_Texp,
-                        jupper_max=np.max(df_jupper),
+                        jupper_max=np.max(jupper),
                     )
-                    self.alpha_ref = np.array(jj2alpha_ref[df_jlower, df_jupper])
-                    self.n_Texp = np.array(jj2n_Texp[df_jlower, df_jupper])
+                    self.alpha_ref = np.array(jj2alpha_ref[jlower, jupper])
+                    self.n_Texp = np.array(jj2n_Texp[jlower, jupper])
             except FileNotFoundError:
                 print(
                     "Warning: Cannot load .broad. The default broadening parameters are used."
                 )
                 self.alpha_ref = np.array(
-                    self.alpha_ref_def * np.ones_like(df_jlower)
+                    self.alpha_ref_def * np.ones_like(jlower)
                 )
-                self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df_jlower))
+                self.n_Texp = np.array(self.n_Texp_def * np.ones_like(jlower))
 
         else:
             print("The default broadening parameters are used.")
-            self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(df_jlower))
-            self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df_jlower))
+            self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(jlower))
+            self.n_Texp = np.array(self.n_Texp_def * np.ones_like(jlower))
 
         # Add values
-        self.add_column(df, "alpha_ref", self.alpha_ref)
-        self.add_column(df, "n_Texp", self.n_Texp)
-
+        # self.add_column(df, "alpha_ref", self.alpha_ref)
+        # self.add_column(df, "n_Texp", self.n_Texp)
+        
     def QT_interp(self, T):
         """interpolated partition function
 
@@ -1446,7 +1438,6 @@ if __name__ == "__main__":
             molecule,
             path,
             nurange=[-np.inf, np.inf],
-            crit=-np.inf,
             local_databases="~/exojax",
         ):
             """
@@ -1505,7 +1496,7 @@ if __name__ == "__main__":
             mgr = mdb.get_datafile_manager()
             local_files = [mgr.cache_file(f) for f in mdb.trans_file]
 
-            # Load them:
+            # Load them: #temperature dependent criterion
             jdict = mdb.load(
                 local_files,
                 columns=[k for k in self.__slots__ if k not in ["logsij0"]],
