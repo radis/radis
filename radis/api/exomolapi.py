@@ -986,7 +986,7 @@ class MdbExomol(DatabaseManager):
         local_databases=None,
         name="EXOMOL-{molecule}",
         nurange=[0.0, np.inf],
-        margin=1.0,
+        margin=0.0,
         crit=-np.inf,
         bkgdatm="Air",  # TODO: use Air whenever possible, to be consistent with HITRAN/HITEMP
         broadf=True,
@@ -1012,7 +1012,6 @@ class MdbExomol(DatabaseManager):
                 engine = "vaex"
 
         self.path = pathlib.Path(path)
-
         if local_databases is not None:
             self.path = pathlib.Path(local_databases).expanduser() / self.path
 
@@ -1025,7 +1024,7 @@ class MdbExomol(DatabaseManager):
         self.crit = crit
         self.margin = margin
         self.nurange = [np.min(nurange), np.max(nurange)]
-        self.wmin, self.wmax = self.nurange
+        self.wmin, self.wmax = np.min(nurange), np.max(nurange)
         self.broadf = broadf
         # Where exomol files are
         self.states_file = self.path / pathlib.Path(molec + ".states.bz2")
@@ -1104,8 +1103,6 @@ class MdbExomol(DatabaseManager):
         self.T_gQT = pf["T"].to_numpy()  # T forgrid QT
 
         # trans file(s)
-        print("Reading transition file")
-
         # Compute linestrengths or retrieve them from cache
         self.Tref = 296.0
         self.QTref = np.array(self.QT_interp(self.Tref))
@@ -1128,13 +1125,14 @@ class MdbExomol(DatabaseManager):
             # imin :
             # index i of the "w(i)-w(i+1)" element in dic_def["numtag"] such
             # that nurange[0]<=w(i)
-            imin = np.searchsorted(dic_def["numinf"], nurange[0], side="right") - 1
+            imin = np.searchsorted(dic_def["numinf"], nurange[0]-margin, side="right") - 1
             # imax :
             # index i of the "w(i)-w(i+1)" element in dic_def["numtag"] such
             # that w(i+1)<=nurange[1]
-            imax = np.searchsorted(dic_def["numinf"], nurange[1], side="right") - 2
+            imax = np.searchsorted(dic_def["numinf"], nurange[1]+margin, side="right") - 1
             self.trans_file = []
             self.num_tag = []
+            
             for k, i in enumerate(range(imin, imax + 1)):
                 trans_file = self.path / pathlib.Path(
                     molec + "__" + dic_def["numtag"][i] + ".trans.bz2"
@@ -1144,8 +1142,9 @@ class MdbExomol(DatabaseManager):
                 
         # Look-up missing parameters and write file
         # -----------------------------------------
+        
         for trans_file, num_tag in zip(self.trans_file, self.num_tag):
-
+            print("Reading", trans_file)    
             if cache == "regen" and mgr.cache_file(trans_file).exists():
                 if verbose:
                     print("Removing existing file ", mgr.cache_file(trans_file))
@@ -1339,7 +1338,7 @@ class MdbExomol(DatabaseManager):
             for pfname in pfname_arr:
                 pfpath = url + pfname
                 os.makedirs(str(self.path), exist_ok=True)
-                print("Downloading " + pfpath)
+                print("Downloading " + pfpath + " and saving as " + str(self.path /pfname))
                 try:
                     urllib.request.urlretrieve(pfpath, str(self.path / pfname))
                 except HTTPError:
