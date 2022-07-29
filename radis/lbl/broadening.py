@@ -2126,6 +2126,53 @@ class BroadenFactory(BaseFactory):
             line dataframe
 
         See _calc_lineshape for more information
+
+        Examples
+        ----------
+        s = calc_spectrum(
+            2135,
+            2170,
+            molecule="CO",
+            isotope="1",
+            pressure=3,
+            Tgas=2000,
+            mole_fraction=0.1,
+            path_length=1,
+            databank="hitemp",
+            name="Chunksize=1e7",
+            chunksize=1e7,
+            optimization = "min-RMS",
+        )
+
+        Alternatively, you can also initialize a SpectrumFactory object and
+        include chunksize, as follows:
+
+        sf = SpectrumFactory(
+            wavelength_min=4000,
+            wavelength_max=4500,
+            cutoff=1e-27,
+            pressure=1,
+            isotope="1,2",
+            truncation=5,
+            neighbour_lines=5,
+            path_length=0.1,
+            mole_fraction=1e-3,
+            medium="vacuum",
+            optimization=None,
+            chunksize=1e7,
+            wstep=0.001,
+            verbose=False,
+        )
+        sf.load_databank("HITEMP-CO")
+
+        To plot:
+
+        s.plot("abscoeff")
+        plt.show()
+
+        To iterate over the entire dataframe at once (not recommended for large molecules
+        unless you have large RAM), just pass chunksize = None
+
         """
         # --------------------------
 
