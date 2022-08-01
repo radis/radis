@@ -940,9 +940,12 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
 
 def test_broadening_chunksize_eq(verbose=True, plot=False, *args, **kwargs):
     """
-    Test an equilibrium spectrum with and without chunksize,
+    Test equilibrium spectra with and without chunksize,
     using different optimization strategies
     and ensure that the residual is very small.
+
+    Tests the chunksize implementation introduced for calculation
+    of equilibrium spectra in https://github.com/radis/radis/pull/489/
 
     """
     sf = SpectrumFactory(
@@ -952,6 +955,7 @@ def test_broadening_chunksize_eq(verbose=True, plot=False, *args, **kwargs):
         pressure=1,
         isotope="1,2",
         truncation=5,
+        molecule="CO",
         neighbour_lines=5,
         path_length=0.1,
         mole_fraction=1e-3,
@@ -961,32 +965,30 @@ def test_broadening_chunksize_eq(verbose=True, plot=False, *args, **kwargs):
         wstep=0.001,
         verbose=False,
     )
-    sf.load_databank("HITEMP-CO")
+    sf.fetch_databank("hitemp")
     sf.params.broadening_method = "convolve"
     Tgas = 2000
-    chunk_loop = 1000000
-    plot_diff_list = []
-    # Testing all 6 cases of chunksize with optimization
-    for chunksize in [None, chunk_loop]:
-        sf.misc["chunksize"] = chunksize  # Setting chunksize
-        s_new = sf.eq_spectrum(Tgas=Tgas)
 
-        for optimization in [None, "simple", "min-RMS"]:
-            sf.params["optimization"] = optimization  # Setting optimization
-            s = sf.eq_spectrum(Tgas=Tgas)
-            # Residual calculation
-            res = get_residual(s, s_new, "abscoeff")
-            assert res < 10e-5
-            print(
-                "Res for chunksize = {0}, optimization = {1} : {2}".format(
-                    chunksize, optimization, res
-                )
+    # Testing chunksizes with different optimization strategies
+    for optimization in [None, "simple", "min-RMS"]:
+        sf.params["optimization"] = optimization  # Setting optimization
+        sf.misc["chunksize"] = None
+
+        s_chunk = sf.eq_spectrum(Tgas=Tgas)
+
+        sf.misc["chunksize"] = 1e5  # Setting chunksize
+        s_no_chunk = sf.eq_spectrum(Tgas=Tgas)
+
+        # Residual calculation
+        res = get_residual(s_no_chunk, s_chunk, "abscoeff")
+        assert res < 1e-6
+        print(
+            "Res for chunksize = {0}, optimization = {1} : {2}".format(
+                sf.misc.chunksize, optimization, res
             )
-            if plot:
-                plot_diff_list.append([s, s_new])
-    if plot:
-        for [i, j] in plot_diff_list:
-            plot_diff(i, j, "abscoeff")
+        )
+        if plot:
+            plot_diff(s_chunk, s_no_chunk, "abscoeff")
 
 
 def _run_testcases(plot=False, verbose=True, *args, **kwargs):
