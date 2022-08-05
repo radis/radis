@@ -974,12 +974,14 @@ def test_broadening_chunksize_eq(verbose=True, plot=False, *args, **kwargs):
         sf.params["optimization"] = optimization  # Setting optimization
         sf.misc["chunksize"] = None
         s_no_chunk = sf.eq_spectrum(Tgas=Tgas)
-        s_no_chunk.name  = "no chunksize"
-        assert s_no_chunk.c["chunksize"] is None  #make sure it was taken into account in Spectrum conditions
-        
+        s_no_chunk.name = "no chunksize"
+        assert (
+            s_no_chunk.c["chunksize"] is None
+        )  # make sure it was taken into account in Spectrum conditions
+
         sf.misc["chunksize"] = 1e5  # Setting chunksize
         s_chunk = sf.eq_spectrum(Tgas=Tgas)
-        s_chunk.name  = f"chunksize {chunksize:.1e}"
+        s_chunk.name = f"chunksize {sf.misc.chunksize:.1e}"
         assert s_chunk.c["chunksize"] == 1e5
 
         # Residual calculation
