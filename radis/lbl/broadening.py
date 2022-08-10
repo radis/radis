@@ -2194,16 +2194,17 @@ class BroadenFactory(BaseFactory):
         try:
             if chunksize is None:
                 # Deal with all lines directly (usually faster)
-                # printing estimated time
-                if self.verbose >= 2:
-                    estimated_time = self.predict_time()
-                    print(
-                        "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
-                            estimated_time
-                        )
-                    )
-
                 if optimization is None:
+
+                    # printing estimated time
+                    if self.verbose >= 2:
+                        estimated_time = self.predict_time()
+                        print(
+                            "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
+                                estimated_time
+                            )
+                        )
+
                     line_profile = self._calc_lineshape(df)  # usually the bottleneck
                     (wavenumber, abscoeff) = self._apply_lineshape(
                         df.S.values, line_profile, df.shiftwav.values
@@ -2217,6 +2218,16 @@ class BroadenFactory(BaseFactory):
                         wL_dat,
                         wG_dat,
                     ) = self._calc_lineshape_LDM(df)
+
+                    # printing estimated time
+                    if self.verbose >= 2:
+                        estimated_time = self.predict_time()
+                        print(
+                            "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
+                                estimated_time
+                            )
+                        )
+
                     (wavenumber, abscoeff) = self._apply_lineshape_LDM(
                         df.S.values,
                         line_profile_LDM,
@@ -2240,16 +2251,17 @@ class BroadenFactory(BaseFactory):
                 abscoeff = zeros_like(self.wavenumber)
                 pb = ProgressBar(N, active=self.verbose)
 
-                # printing estimated time
-                if self.verbose >= 2:
-                    estimated_time = self.predict_time()
-                    print(
-                        "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
-                            estimated_time
-                        )
-                    )
-
                 if optimization is None:
+
+                    # printing estimated time
+                    if self.verbose >= 2:
+                        estimated_time = self.predict_time()
+                        print(
+                            "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
+                                estimated_time
+                            )
+                        )
+
                     for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
                         line_profile = self._calc_lineshape(dg)
                         (wavenumber, absorption) = self._apply_lineshape(
