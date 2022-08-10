@@ -938,6 +938,64 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
     assert res < 5.2e-6
 
 
+def test_broadening_chunksize_eq(verbose=True, plot=False, *args, **kwargs):
+    """
+    Test equilibrium spectra with and without chunksize,
+    using different optimization strategies
+    and ensure that the residual is very small.
+
+    Tests the chunksize implementation introduced for calculation
+    of equilibrium spectra in https://github.com/radis/radis/pull/489/
+
+    """
+    sf = SpectrumFactory(
+        wavelength_min=4000,
+        wavelength_max=4500,
+        cutoff=1e-27,
+        pressure=1,
+        isotope="1,2",
+        truncation=5,
+        molecule="CO",
+        neighbour_lines=5,
+        path_length=0.1,
+        mole_fraction=1e-3,
+        medium="vacuum",
+        optimization=None,
+        chunksize=None,
+        wstep=0.001,
+        verbose=False,
+    )
+    sf.fetch_databank("hitemp")
+    sf.params.broadening_method = "convolve"
+    Tgas = 2000
+
+    # Testing chunksizes with different optimization strategies
+    for optimization in [None, "simple", "min-RMS"]:
+        sf.params["optimization"] = optimization  # Setting optimization
+        sf.misc["chunksize"] = None
+        s_no_chunk = sf.eq_spectrum(Tgas=Tgas)
+        s_no_chunk.name = "no chunksize"
+        assert (
+            s_no_chunk.c["chunksize"] is None
+        )  # make sure it was taken into account in Spectrum conditions
+
+        sf.misc["chunksize"] = 1e5  # Setting chunksize
+        s_chunk = sf.eq_spectrum(Tgas=Tgas)
+        s_chunk.name = f"chunksize {sf.misc.chunksize:.1e}"
+        assert s_chunk.c["chunksize"] == 1e5
+
+        # Residual calculation
+        res = get_residual(s_no_chunk, s_chunk, "abscoeff")
+        assert res < 1e-6
+        print(
+            "Res for chunksize = {0}, optimization = {1} : {2}".format(
+                sf.misc.chunksize, optimization, res
+            )
+        )
+        if plot:
+            plot_diff(s_chunk, s_no_chunk, "abscoeff")
+
+
 def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
     # Test broadening
@@ -950,6 +1008,7 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
     test_broadening_LDM_FT(plot=plot, verbose=3, *args, **kwargs)
     test_broadening_LDM_noneq(plot=plot, verbose=verbose, *args, **kwargs)
     test_truncations_and_neighbour_lines(*args, **kwargs)
+    test_broadening_chunksize_eq(plot=plot, verbose=verbose, *args, **kwargs)
 
     # Test warnings
     test_broadening_warnings(*args, **kwargs)
