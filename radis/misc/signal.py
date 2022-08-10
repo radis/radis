@@ -14,7 +14,10 @@ Resampling  & smoothing.
 
 """
 
+import math
+
 import numpy as np
+import scipy.linalg as LA
 from numpy import abs, isnan, linspace, nan, trapz, zeros_like
 from scipy.interpolate import splev, splrep
 from scipy.linalg import solveh_banded
@@ -386,6 +389,73 @@ def als_baseline(
     else:
         print("ALS did not converge in %d iterations" % max_iters)
     return z
+
+
+def baseline(y, deg=None, max_it=None, tol=None):
+    """
+    Computes the baseline of a given data.
+
+    Iteratively performs a polynomial fitting in the data to detect its
+    baseline. At every iteration, the fitting weights on the regions with
+    peaks are reduced to identify the baseline only.
+
+    Parameters
+    ----------
+    y : ndarray
+        Data to detect the baseline.
+    deg : int (default: 3)
+        Degree of the polynomial that will estimate the data baseline. A low
+        degree may fail to detect all the baseline present, while a high
+        degree may make the data too oscillatory, especially at the edges.
+    max_it : int (default: 100)
+        Maximum number of iterations to perform.
+    tol : float (default: 1e-3)
+        Tolerance to use when comparing the difference between the current
+        fit coefficients and the ones from the last iteration. The iteration
+        procedure will stop when the difference between them is lower than
+        *tol*.
+
+    Returns
+    -------
+    ndarray
+        Array with the baseline amplitude for every original point in *y*
+
+    References
+    -------
+    This function has been taken from the PeakUtils package.
+    Their source code can be found here: https://bitbucket.org/lucashnegri/peakutils
+    More info: https://peakutils.readthedocs.io/en/latest/
+    """
+    # for not repeating ourselves in `envelope`
+    if deg is None:
+        deg = 3
+    if max_it is None:
+        max_it = 100
+    if tol is None:
+        tol = 1e-3
+
+    order = deg + 1
+    coeffs = np.ones(order)
+
+    # try to avoid numerical issues
+    cond = math.pow(abs(y).max(), 1.0 / order)
+    x = np.linspace(0.0, cond, y.size)
+    base = y.copy()
+
+    vander = np.vander(x, order)
+    vander_pinv = LA.pinv(vander)
+
+    for _ in range(max_it):
+        coeffs_new = np.dot(vander_pinv, y)
+
+        if LA.norm(coeffs_new - coeffs) / LA.norm(coeffs) < tol:
+            break
+
+        coeffs = coeffs_new
+        base = np.dot(vander, coeffs)
+        y = np.minimum(y, base)
+
+    return base
 
 
 class WhittakerSmoother(object):
