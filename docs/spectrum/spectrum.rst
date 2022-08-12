@@ -647,21 +647,9 @@ and :py:func:`~radis.los.slabs.MergeSlabs` (``//``)
 
 Most of these functions will only work if there is only one
 `spectral arrays <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#spectral-quantities>`__
-defined in the Spectrum. If there is any ambiguity, the following
-functions can be used to discard all but one spectral arrays:
-
-- :py:func:`~radis.spectrum.operations.Transmittance`
-- :py:func:`~radis.spectrum.operations.Transmittance_noslit`
-- :py:func:`~radis.spectrum.operations.Radiance`
-- :py:func:`~radis.spectrum.operations.Radiance_noslit`
-
-For instance, the following line is a valid RADIS command to plot
+defined in the Spectrum. If there is any ambiguity, use the :py:meth:`~radis.spectrum.spectrum.Spectrum.take`
+method. For instance, the following line is a valid RADIS command to plot
 the spectral radiance of a spectrum with a low resolution::
-
-    (10*Radiance(s.apply_slit(10, 'nm'))).plot()
-
-The same can be achieved with the :py:meth:`~radis.spectrum.spectrum.Spectrum.take`
-method, which returns the spectrum with only one spectral arrays::
 
     (10*(s.apply_slit(10, 'nm')).take('radiance')).plot()
 
