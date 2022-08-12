@@ -219,7 +219,7 @@ class HITEMPDatabaseManager(DatabaseManager):
             base_url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
             response = urllib.request.urlopen(base_url)
             response_string = response.read().decode()
-            inputfiles = re.findall('href="(\S+.zip)"', response_string)
+            inputfiles = re.findall(r'href="(\S+.zip)"', response_string)
 
             urlnames = [join(base_url, f) for f in inputfiles]
 

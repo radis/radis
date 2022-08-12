@@ -210,7 +210,7 @@ class MolParams(object):
             pass  # old Python version
 
     def get(self, molecule, isotope, key):
-        """Get attribute of molecule, isotope.
+        r"""Get attribute of molecule, isotope.
 
         Parameters
         ----------
@@ -247,7 +247,7 @@ class MolParams(object):
 
 
 def _add_exomol_name(df):
-    """Convert HITRAN isotope name from :py:data:`~radis.db.molparam.isotope_name_dict`
+    r"""Convert HITRAN isotope name from :py:data:`~radis.db.molparam.isotope_name_dict`
     in ExoMol format
     """
 
@@ -257,13 +257,13 @@ def _add_exomol_name(df):
     def replace_parenthesis(s):
         s = str(s)
         # add parenthesis for hydrogen : Eg. H2 -> (1H)2,   H->(1H)
-        s = re.sub("H([1-9])*", r"(1H)\1", s)
+        s = re.sub(r"H([1-9])*", r"(1H)\1", s)
         # add parenthesis for deuterium : Eg. D2 -> (2H)2,   D->(2H)
-        s = re.sub("D([1-9])*", r"(2H)\1", s)
+        s = re.sub(r"D([1-9])*", r"(2H)\1", s)
 
         # Cut elements and replace parenthesis with - :
-        elements = re.findall("\(.*?\)[1-9]*", s)
-        elements = [e.replace("(", "").replace(")", "") for e in elements]
+        elements = re.findall(r"\(.*?\)[1-9]*", s)
+        elements = [e.replace(r"(", "").replace(")", "") for e in elements]
         s = "-".join(elements)
 
         return s
