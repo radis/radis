@@ -126,7 +126,7 @@ levelsZPE:                       #  zero-point-energy (cm-1): offset for all lev
                                  # energies. Default 0 (if not given)
 
 --------------------------"""
-"""str: Typical expected format of a ~/.radis entry::
+r"""str: Typical expected format of a ~/.radis entry::
 
     --------------------------
 
@@ -221,7 +221,7 @@ DBFORMATJSON = r"""
 }
 
 --------------------------"""
-"""str: Typical expected format of a ~/radis.json entry in "database" key::
+r"""str: Typical expected format of a ~/radis.json entry in "database" key::
 
     --------------------------
 
@@ -279,7 +279,7 @@ See Also
 
 
 def get_user_config_configformat():
-    """Read config file and returns it.
+    r"""Read config file and returns it.
 
     Config file name is harcoded: :ref:`~/.radis <label_lbl_config_file>`
     """
@@ -302,7 +302,7 @@ def get_user_config_configformat():
 
 
 def convertRadisToJSON(config_path_json, config_path_old=CONFIG_PATH_OLD):
-    """Converts the ~/.radis file into json formatted file ~/radis.json
+    r"""Converts the ~/.radis file into json formatted file ~/radis.json
 
     Example
     -------
@@ -375,7 +375,7 @@ def convertRadisToJSON(config_path_json, config_path_old=CONFIG_PATH_OLD):
 
 
 def init_radis_json(config_path_json, config_path_old=CONFIG_PATH_OLD):
-    """Checks whether ``config_path_json`` (usually `~/radis.json`) exists.
+    r"""Checks whether ``config_path_json`` (usually `~/radis.json`) exists.
 
     If not then we use
     :func:`~radis.misc.config.convertRadisToJSON`
@@ -445,7 +445,7 @@ def init_radis_json(config_path_json, config_path_old=CONFIG_PATH_OLD):
 
 
 def get_user_config(configpath=CONFIG_PATH_JSON):
-    """Read config file and returns it."""
+    r"""Read config file and returns it."""
 
     # First checking `~radis.json` exist or not, if not create it
     init_radis_json(configpath)
@@ -578,7 +578,7 @@ def getDatabankEntries_configformat(dbname, get_extra_keys=[]):
 
 
 def getDatabankList_configformat():
-    """Get all databanks available in :ref:`~/.radis <label_lbl_config_file>`."""
+    r"""Get all databanks available in :ref:`~/.radis <label_lbl_config_file>`."""
     warnings.warn(DeprecationWarning("config format changed to JSON in radis 0.9.29"))
 
     config = get_user_config_configformat()
@@ -601,7 +601,7 @@ def getDatabankList_configformat():
 
 
 def addDatabankEntries_configformat(dbname, dict_entries, verbose=True):
-    """Add database dbname with entries from dict_entries.
+    r"""Add database dbname with entries from dict_entries.
 
     If database already exists in :ref:`~/.radis <label_lbl_config_file>`, raises an error
 
@@ -688,7 +688,7 @@ def addDatabankEntries_configformat(dbname, dict_entries, verbose=True):
 
 
 def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
-    """Compare two Databank entries under dict format (i.e: output of
+    r"""Compare two Databank entries under dict format (i.e: output of
     getDatabankEntries)
 
     Returns None if no differences are found, or the first different key
@@ -743,7 +743,7 @@ def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
 
 
 def printDatabankEntries_configformat(dbname, crop=200):
-    """Print databank info.
+    r"""Print databank info.
 
     Parameters
     ----------
@@ -916,13 +916,12 @@ def getDatabankList(configpath=CONFIG_PATH_JSON):
 
 
 def addDatabankEntries(dbname, dict_entries, verbose=True, configpath=CONFIG_PATH_JSON):
-    """Add database dbname with entries from dict_entries.
+    r"""Add database dbname with entries from dict_entries.
 
     If database already exists in :ref:`~/radis.json <label_lbl_config_file>`, raises an error
 
     Examples
     --------
-
     ::
 
         addDatabankEntries("HITEMP2010-CO2",
@@ -1010,7 +1009,7 @@ def addDatabankEntries(dbname, dict_entries, verbose=True, configpath=CONFIG_PAT
 
 
 def printDatabankEntries(dbname, crop=200, configpath=CONFIG_PATH_JSON):
-    """Print databank info.
+    r"""Print databank info.
 
     Parameters
     ----------

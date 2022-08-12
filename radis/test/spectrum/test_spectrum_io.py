@@ -12,7 +12,7 @@ from radis import Spectrum, get_residual, test_spectrum
 def test_specutils_io(verbose=True, plot=False, *args, **kwargs):
     """Test Radis/specutils  interface in particular when dealing with wavelengths
 
-    see https://github.com/radis/radis/pull/498
+    see https://github.com/radis/radis/pull/499
     """
 
     s = test_spectrum().take("transmittance_noslit")
