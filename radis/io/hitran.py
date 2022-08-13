@@ -97,11 +97,21 @@ columns_2004 = OrderedDict(
         ("lmix", ("a1", str, "flag indicating the presence of additional data and code relating to line-mixing", "")),
         ("gp", ("a7", float, "upper state degeneracy", "")),
         ("gpp", ("a7", float, "lower state degeneracy", "")),
+        ("gamma_CO2",("a3",float,"aa",""))
     ]
 )
 """ OrderedDict: parsing order of HITRAN 2004 format """
 # fmt: on
 
+
+PARAMETER_GROUPS_hitran = {
+    "par_line": "PARLIST_DOTPAR",
+    "id": "PARLIST_ID",
+    "standard": "PARLIST_STANDARD",
+    "labels": "PARLIST_LABELS",
+    "voigt": "PARLIST_VOIGT_ALL",
+    "ht": "PARLIST_HT_ALL",
+}
 
 def cast_to_int64_with_missing_values(dg, keys):
     """replace missing values of int64 columns with -1"""
@@ -1115,7 +1125,13 @@ class HITRANDatabaseManager(DatabaseManager):
         opener: an opener with an .open() command
         gfile : file handler. Filename: for info"""
 
-        from hapi import LOCAL_TABLE_CACHE, db_begin, fetch
+        from hapi import (
+            LOCAL_TABLE_CACHE,
+            PARAMETER_GROUPS,
+            PARAMETER_META,
+            db_begin,
+            fetch,
+        )
 
         from radis import hit2df
         from radis.db.classes import get_molecule_identifier
@@ -1163,13 +1179,14 @@ class HITRANDatabaseManager(DatabaseManager):
                         os.remove(join(directory, file + ".data"))
                 try:
                     if extra_params is not None:
+                        PARAMETER_META_LIST = [*PARAMETER_GROUPS_hitran]
                         fetch(
                             file,
                             get_molecule_identifier(molecule),
                             iso,
                             wmin,
                             wmax,
-                            Parameters=extra_params,
+                            ParameterGroups=PARAMETER_META_LIST,
                         )
                     else:
                         fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax)
@@ -1202,7 +1219,7 @@ class HITRANDatabaseManager(DatabaseManager):
         # Create HDF5 cache file for all isotopes
         Nlines = 0
         for iso, data_file in zip(isotope_list, data_file_list):
-            df = data_file_name = data_file.split(".")
+            data_file_name = data_file.split(".")
             df = pd.DataFrame(LOCAL_TABLE_CACHE[data_file_name[0]]["data"])
             df.rename(
                 columns={
@@ -1225,6 +1242,9 @@ class HITRANDatabaseManager(DatabaseManager):
                 },
                 inplace=True,
             )
+            ##clean NaN columns
+            df.dropna(axis=1, how="any", inplace=True)
+
             wmin_final = min(wmin_final, df.wav.min())
             wmax_final = max(wmax_final, df.wav.max())
             Nlines += len(df)
