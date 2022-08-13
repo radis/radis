@@ -18,8 +18,9 @@ underlying :py:mod:`vaex` library.
 
 from radis.io.hitemp import fetch_hitemp
 
-df = fetch_hitemp("CO", output="vaex")
-print(df.columns)
+df = fetch_hitemp("CO2", output="vaex", load_wavenum_min=2150, load_wavenum_max=2450)
+print(f"{len(df)} lines in HITEMP CO2; 2150 - 2450 cm-1")
+
 #%%
 # Note the use of `output='vaex'` in :py:func:`~radis.io.hitemp.fetch_hitemp` above.
 # The returned DataFrame is a Vaex DataFrame.
