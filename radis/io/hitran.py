@@ -97,7 +97,6 @@ columns_2004 = OrderedDict(
         ("lmix", ("a1", str, "flag indicating the presence of additional data and code relating to line-mixing", "")),
         ("gp", ("a7", float, "upper state degeneracy", "")),
         ("gpp", ("a7", float, "lower state degeneracy", "")),
-        ("gamma_CO2",("a3",float,"aa",""))
     ]
 )
 """ OrderedDict: parsing order of HITRAN 2004 format """
