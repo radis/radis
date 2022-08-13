@@ -325,7 +325,12 @@ def fetch_exomol(
         which memory-mapping library to use. If 'default' use the value from ~/radis.json
     output: 'pandas', 'vaex', 'jax'
         format of the output DataFrame. If ``'jax'``, returns a dictionary of
-        jax arrays.
+        jax arrays. If ``'vaex'``, output is a :py:class:`vaex.dataframe.DataFrameLocal`
+
+        .. note::
+            Vaex DataFrames are memory-mapped. They do not take any space in RAM
+            and are extremelly useful to deal with the largest databases.
+
     skip_optional_data : bool
         If False, fetch all fields which are marked as available in the ExoMol definition
         file. If True, load only the first 4 columns of the states file

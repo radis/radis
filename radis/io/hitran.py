@@ -1339,7 +1339,12 @@ def fetch_hitran(
         which HDF5 library to use. If 'default' use the value from ~/radis.json
     output: 'pandas', 'vaex', 'jax'
         format of the output DataFrame. If ``'jax'``, returns a dictionary of
-        jax arrays.
+        jax arrays. If ``'vaex'``, output is a :py:class:`vaex.dataframe.DataFrameLocal`
+
+        .. note::
+            Vaex DataFrames are memory-mapped. They do not take any space in RAM
+            and are extremelly useful to deal with the largest databases.
+
     parallel: bool
         if ``True``, uses joblib.parallel to load database with multiple processes
     parse_quanta: bool

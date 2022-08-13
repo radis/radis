@@ -184,6 +184,7 @@ intersphinx_mapping = {
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "seaborn": ("https://seaborn.pydata.org/", None),
     "specutils": ("https://specutils.readthedocs.io/en/stable/", None),
+    "vaex": ("https://vaex.readthedocs.io/en/latest/", None),
 }
 
 napoleon_google_docstring = False
