@@ -113,6 +113,7 @@ PARAMETER_GROUPS_hitran = {
     "ht": "PARLIST_HT_ALL",
 }
 
+
 def cast_to_int64_with_missing_values(dg, keys):
     """replace missing values of int64 columns with -1"""
     for c in keys:
@@ -1125,15 +1126,9 @@ class HITRANDatabaseManager(DatabaseManager):
         opener: an opener with an .open() command
         gfile : file handler. Filename: for info"""
 
-        from hapi import (
-            LOCAL_TABLE_CACHE,
-            PARAMETER_GROUPS,
-            PARAMETER_META,
-            db_begin,
-            fetch,
-        )
+        from hapi import LOCAL_TABLE_CACHE, db_begin, fetch
 
-        from radis import hit2df
+        # from radis import hit2df
         from radis.db.classes import get_molecule_identifier
 
         if isinstance(local_file, list):

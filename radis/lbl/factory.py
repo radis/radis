@@ -771,7 +771,6 @@ class SpectrumFactory(BandFactory):
         mole_fraction = self.input.mole_fraction
         path_length = self.input.path_length
         verbose = self.verbose
-        diluent = self.params.diluent
 
         # New Profiler object
         self._reset_profiler(verbose)

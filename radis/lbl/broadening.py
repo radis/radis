@@ -337,9 +337,7 @@ def pressure_broadening_HWHM(
         gamma_lb = 0
         for diluent_molecule, diluent_mole_fraction in diluent.items():
             if diluent_molecule != "air":
-                gamma_lb += (
-                    (Tref / Tgas) ** df["n_" + diluent_molecule.lower()]
-                ) * (
+                gamma_lb += ((Tref / Tgas) ** df["n_" + diluent_molecule.lower()]) * (
                     df["gamma_" + diluent_molecule.lower()]
                     * pressure_atm
                     * diluent_mole_fraction
@@ -357,9 +355,7 @@ def pressure_broadening_HWHM(
             )
         # print("Gamma LB value: ", gamma_lb)
     except KeyError as err:
-        raise KeyError(
-                "Column not found {0}".format(err)
-        )
+        raise KeyError("Column not found {0}".format(err))
 
     # if Tdpsel is None:
     #     gamma_lb = ((Tref / Tgas) ** Tdpair) * (
@@ -372,32 +368,6 @@ def pressure_broadening_HWHM(
     #     ) + ((Tref / Tgas) ** Tdpsel) * (selbrd * pressure_atm * mole_fraction)
 
     return gamma_lb
-
-
-def pressure_broadening_HWHM_diluent(
-    df, selbrd, Tdpsel, pressure_atm, mole_fraction, Tgas, Tref, diluent
-):
-
-    print("Diluent inside pressure_broadening_HWHM_diluent:", diluent)
-
-    gamma_n_diluent = []
-    n_diluent = []
-
-    for key, val in diluent.items():
-        gamma_n_diluent.append("gamma_" + key)
-        gamma_n_diluent.append("n_" + key)
-
-    # print("gamma_diluent:",gamma_diluent)
-    print("gamma_n_diluent:before lower", gamma_n_diluent)
-    print(df.columns)
-    gamma_n_diluent = [x.lower() for x in gamma_n_diluent]
-    print("gamma_n_diluent: after lower", gamma_n_diluent)
-
-    # check if gamma_diluent and n_diluent exists or not
-    if set(gamma_n_diluent).issubset(df.columns):
-        print("Columns is present : Yes")
-    else:
-        print("Columns is present : No")
 
 
 def lorentzian_lineshape(w_centered, gamma_lb):
@@ -1140,17 +1110,6 @@ class BroadenFactory(BaseFactory):
             df,
             diluent,
         )
-
-        # wl2 = pressure_broadening_HWHM_diluent(
-        #     df,
-        #     selbrd,
-        #     Tdpsel,
-        #     pressure_atm,
-        #     mole_fraction,
-        #     Tgas,
-        #     Tref,
-        #     diluent,
-        # )
 
         # Update dataframe
         df["hwhm_lorentz"] = wl
