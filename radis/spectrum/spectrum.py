@@ -540,7 +540,7 @@ class Spectrum(object):
         quantity: str
             spectral quantity name
         wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
-            unit of waverange:         wavelength in air (``'nm'``), wavenumber
+            unit of waverange:         wavelength in air (``'nm'`` or ``'nm_air'``), wavenumber
             (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
             If ``None``, then ``w`` must be a dimensionned array.
         Iunit: str
@@ -654,10 +654,7 @@ class Spectrum(object):
                     "``w`` must be a dimensionned array, or ``wunit=`` must be given."
                 )
         else:
-            if wunit is not None:
-                raise ValueError(
-                    f"``w`` is a dimensionned array (in {wunit.unit.to_string()}), therefore ``wunit`` cannot be given too (got {wunit}). Set ``wunit=None``"
-                )
+            wunit_input = wunit
             wunit = w.unit.to_string()
             if wunit not in WAVELEN_UNITS + WAVENUM_UNITS:
                 # Convert to something we know, for instance 'nm' :
@@ -669,6 +666,29 @@ class Spectrum(object):
                     wunit = "cm-1"
                 # else, an error will be raised anyway on Spectrum creation.
             w = w.value
+
+            # Check units.
+            # In particular, deal with confusions arising from "nm" being either "nm_vac" or "nm_air"  # TODO: generalize to "µm" too
+            if wunit_input is None:
+                if wunit == "nm":
+                    warn(
+                        "Input wunit not given, risk of confusion : RADIS assumes wavelengths are given as seen in air, not vacuum. To remove this warning be explicit by writing `Spectrum.from_array(..., wunit='nm_air')`"
+                    )
+                else:
+                    pass
+            else:
+                # Check units are the same
+                if wunit == "nm" and (
+                    wunit_input == "nm_vac" or wunit_input == "nm_air"
+                ):
+                    # extra precision given by the user, not an error. Use the input value
+                    wunit = wunit_input
+                elif wunit != wunit_input:
+                    raise ValueError(
+                        f"``w`` is a dimensionned array (in {wunit}), therefore ``wunit`` should not be given ( `wunit=None`), or be the same (got `wunit={wunit_input}`). Set ``wunit=None``"
+                    )
+                else:
+                    pass
 
         quantities = {quantity: (w, I)}
         units = {quantity: Iunit}
@@ -861,6 +881,12 @@ class Spectrum(object):
         """Convert a ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D`
         to a ``radis`` :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
+        Parameters
+        ----------
+        spectrum: a ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D`
+        var: str
+            spectral array, default ``"radiance"``
+
         Examples
         --------
 
@@ -904,14 +930,31 @@ class Spectrum(object):
 
         assert isinstance(spectrum, specutils.Spectrum1D)
 
+        if "waveunit" in spectrum.meta and spectrum.meta["waveunit"] in WAVELEN_UNITS:
+            raise ValueError(
+                f"Specutils only handles wavelengths in vacuum. Expected `spectrum.meta['waveunit']` to be one of {WAVELENVAC_UNITS}, got  {spectrum.meta['waveunit']}`"
+            )
+
+        conditions = spectrum.meta.copy()
+
+        if spectrum.spectral_axis.unit == "nm":
+            # note : in Specutils wavelengths are given as wavelength in vacuum (1e7/X conversion
+            # to wavenumbers)
+            waverange = spectrum.wavelength
+            waveunit = "nm_vac"
+            if "waveunit" in conditions:
+                conditions["waveunit"] = waveunit
+        else:
+            waverange = spectrum.spectral_axis
+            waveunit = None  # use default
+
         # Convert to radis Spectrum
-        # note : in Specutils wavelengths are given as wavelength in vacuum (1e7/X conversion
-        # to wavenumbers), so here we give the frequency unit.
         return Spectrum.from_array(
-            spectrum.wavelength.to("1 / cm"),
+            waverange,
             spectrum.flux,
             quantity=var,
-            conditions=spectrum.meta,
+            wunit=waveunit,
+            conditions=conditions,
         )
 
     # Public functions
@@ -1119,6 +1162,8 @@ class Spectrum(object):
         if return_units == "as_str":  # only used internally
             return w, I, wunit, Iunit
         elif return_units:
+            if wunit == "nm_vac":
+                wunit = "nm"  # fix for Astropy units
             return w * Unit(wunit), I * Unit(Iunit)
         else:
             return w, I
@@ -3373,12 +3418,19 @@ class Spectrum(object):
         ----------
         var: 'radiance', 'radiance_noslit', etc.
             which spectral array to convert. If ``None`` and only one spectral
-            arry is defined, use it
+            arry is defined, use it.
         wunit: ``'nm'``, ``'cm'``, ``'nm_vac'``.
             wavespace unit: wavelength in air (``'nm'``), wavenumber
             (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
             if ``"default"``, default unit for waveunit is used. See
             :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit`.
+
+            .. note::
+                ``specutils`` handles wavelengths in vacuum only. If using
+                ``'nm'`` wavelengths will be converted to wavelengths in vacuum.
+                We recommend using ``'nm_air'`` or ``'nm_vac'`` to avoid any
+                confusion.
+
         Iunit: unit for variable ``var``
             if ``"default"``, default unit for quantity `var` is used. See the
             :py:attr:`~radis.spectrum.spectrum.Spectrum.units` attribute.
@@ -3430,22 +3482,37 @@ class Spectrum(object):
                 "   pip install specutils"
             ) from err
 
+        meta = self.get_conditions().copy()
+
         if var is None:
             var = self._get_unique_var(operation_name="to_specutils")
         if wunit == "default":
             wunit = self.get_waveunit()
+            if wunit in WAVELEN_UNITS:  # wavlength units in air
+                # AFAIK, specutil's Spectrum1D will only handle wavelengths as seen in vacuum
+                # so below we request wavelengths in vac :
+                wunit = "nm_vac"
+        if wunit in WAVELEN_UNITS:  # wavlength units in air
+            raise ValueError(
+                f"specutil's Spectrum1D will only handle wavelengths as seen in vacuum. Use one of `s.to_specutils(..., wunit={WAVELENVAC_UNITS}`)"
+            )
+
+        # Update waveunit stored in conditions (in particular, update if wavelengths are in vacuum or air)
+        if "waveunit" in meta:
+            meta["waveunit"] = wunit
+
         if Iunit == "default":
             Iunit = self.units[var]
 
-        if wunit in WAVELEN_UNITS:
-            wunit = "nm_vac"  # AFAIK, specutil's Spectrum1D will only handle wavelengths as seen in vacuum
-            # so below we request wavelengths in vac :
+        w, I = self.get(
+            var, wunit=wunit, Iunit=Iunit, copy=True, trim_nan=True, return_units=True
+        )
+        # w, I are dimensionned arrays
 
-        w, I = self.get(var, wunit=wunit, Iunit=Iunit, copy=True, trim_nan=True)
         return Spectrum1D(
-            flux=I * u.Unit(Iunit),
-            spectral_axis=w * u.Unit(wunit),
-            meta=self.get_conditions(),
+            flux=I,
+            spectral_axis=w,
+            meta=meta,
         )
 
     def resample(
@@ -4021,7 +4088,7 @@ class Spectrum(object):
         )
 
     def cite(self, format="bibentry"):
-        """Prints bibliographic references used to compute this spectrum, as
+        r"""Prints bibliographic references used to compute this spectrum, as
         stored in the :py:attr:`~radis.spectrum.spectrum.Spectrum.references`
         dictionary. Default references known to RADIS are listed in :py:data:`radis.db.references.doi`.
 

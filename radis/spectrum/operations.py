@@ -1089,11 +1089,11 @@ def get_baseline(
     w1, I1 = s.get(var=var, wunit=wunit, Iunit=Iunit)
 
     if algorithm == "polynomial":
-        import peakutils
+        from radis.misc.signal import baseline
 
         polyargs = {"deg": 1, "max_it": 500}
         polyargs.update(kwargs)
-        baseline = peakutils.baseline(I1, **polyargs)
+        baseline = baseline(I1, **polyargs)
     elif algorithm == "als":
         from radis.misc.signal import als_baseline
 

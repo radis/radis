@@ -173,7 +173,7 @@ def setup(app):
 intersphinx_mapping = {
     "astropy": ("https://docs.astropy.org/en/stable/", None),
     "astroquery": ("https://astroquery.readthedocs.io/en/latest/", None),
-    "cantera": ("https://www.cantera.org/documentation/docs-2.6/sphinx/html/", None),
+    "cantera": ("https://www.cantera.org/documentation/docs-2.6/sphinx/", None),
     "fitroom": ("https://fitroom.readthedocs.io/en/latest/", None),
     "habanero": ("https://habanero.readthedocs.io/en/latest/", None),
     "joblib": ("https://joblib.readthedocs.io/en/latest/", None),
