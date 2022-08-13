@@ -248,7 +248,16 @@ def gaussian_FT(w_centered, hwhm):
 
 
 def pressure_broadening_HWHM(
-    airbrd, selbrd, Tdpair, Tdpsel, pressure_atm, mole_fraction, Tgas, Tref
+    airbrd,
+    selbrd,
+    Tdpair,
+    Tdpsel,
+    pressure_atm,
+    mole_fraction,
+    Tgas,
+    Tref,
+    df,
+    diluent,
 ):
     """Calculates collisional broadening HWHM over all lines by scaling
     tabulated HWHM for new pressure and mole fractions conditions [1]_
@@ -314,17 +323,81 @@ def pressure_broadening_HWHM(
     # | dev note: in that case we simplify the expression by calculation the
     # | power function once only.
 
-    if Tdpsel is None:
-        gamma_lb = ((Tref / Tgas) ** Tdpair) * (
-            (airbrd * pressure_atm * (1 - mole_fraction))
-            + (selbrd * pressure_atm * mole_fraction)
+    diluent_molecule = [key for key in diluent.keys()]
+
+    gamma_n_diluent = []
+
+    for key, val in diluent.items():
+        if key != "air":
+            gamma_n_diluent.append("gamma_" + key.lower())
+            gamma_n_diluent.append("n_" + key.lower())
+
+    # check if gamma_diluent and n_diluent exists or not
+    try:
+        gamma_lb = 0
+        for diluent_molecule, diluent_mole_fraction in diluent.items():
+            if diluent_molecule != "air":
+                gamma_lb += (
+                    (Tref / Tgas) ** df["n_" + diluent_molecule.lower()]
+                ) * (
+                    df["gamma_" + diluent_molecule.lower()]
+                    * pressure_atm
+                    * diluent_mole_fraction
+                )
+        # Adding air coefficient
+        gamma_lb += ((Tref / Tgas) ** Tdpair) * (
+            (airbrd * pressure_atm * diluent["air"])
         )
-    else:
-        gamma_lb = ((Tref / Tgas) ** Tdpair) * (
-            airbrd * pressure_atm * (1 - mole_fraction)
-        ) + ((Tref / Tgas) ** Tdpsel) * (selbrd * pressure_atm * mole_fraction)
+        # Adding self coefficient
+        if Tdpsel is None:
+            gamma_lb += selbrd * pressure_atm * mole_fraction
+        else:
+            gamma_lb += gamma_lb + ((Tref / Tgas) ** Tdpsel) * (
+                selbrd * pressure_atm * mole_fraction
+            )
+        # print("Gamma LB value: ", gamma_lb)
+    except KeyError as err:
+        raise KeyError(
+                "Column not found {0}".format(err)
+        )
+
+    # if Tdpsel is None:
+    #     gamma_lb = ((Tref / Tgas) ** Tdpair) * (
+    #         (airbrd * pressure_atm * (1 - mole_fraction))
+    #         + (selbrd * pressure_atm * mole_fraction)
+    #     )
+    # else:
+    #     gamma_lb = ((Tref / Tgas) ** Tdpair) * (
+    #         airbrd * pressure_atm * (1 - mole_fraction)
+    #     ) + ((Tref / Tgas) ** Tdpsel) * (selbrd * pressure_atm * mole_fraction)
 
     return gamma_lb
+
+
+def pressure_broadening_HWHM_diluent(
+    df, selbrd, Tdpsel, pressure_atm, mole_fraction, Tgas, Tref, diluent
+):
+
+    print("Diluent inside pressure_broadening_HWHM_diluent:", diluent)
+
+    gamma_n_diluent = []
+    n_diluent = []
+
+    for key, val in diluent.items():
+        gamma_n_diluent.append("gamma_" + key)
+        gamma_n_diluent.append("n_" + key)
+
+    # print("gamma_diluent:",gamma_diluent)
+    print("gamma_n_diluent:before lower", gamma_n_diluent)
+    print(df.columns)
+    gamma_n_diluent = [x.lower() for x in gamma_n_diluent]
+    print("gamma_n_diluent: after lower", gamma_n_diluent)
+
+    # check if gamma_diluent and n_diluent exists or not
+    if set(gamma_n_diluent).issubset(df.columns):
+        print("Columns is present : Yes")
+    else:
+        print("Columns is present : No")
 
 
 def lorentzian_lineshape(w_centered, gamma_lb):
@@ -815,6 +888,7 @@ class BroadenFactory(BaseFactory):
 
         Run this method before using `_calc_lineshape`
         """
+        diluent = self.params.diluent
         # Init variables
         df = self.df1
 
@@ -845,7 +919,7 @@ class BroadenFactory(BaseFactory):
         elif broadening_method in ["convolve", "fft"]:
             # Adds hwhm_lorentz:
             self._add_collisional_broadening_HWHM(
-                df, pressure_atm, mole_fraction, Tgas, Tref
+                df, pressure_atm, mole_fraction, Tgas, Tref, diluent
             )
             # Add hwhm_gauss:
             self._add_doppler_broadening_HWHM(df, Tgas)
@@ -1007,7 +1081,7 @@ class BroadenFactory(BaseFactory):
         return
 
     def _add_collisional_broadening_HWHM(
-        self, df, pressure_atm, mole_fraction, Tgas, Tref
+        self, df, pressure_atm, mole_fraction, Tgas, Tref, diluent
     ):
         """Update dataframe with collisional HWHM [1]_
 
@@ -1063,10 +1137,25 @@ class BroadenFactory(BaseFactory):
             mole_fraction,
             Tgas,
             Tref,
+            df,
+            diluent,
         )
+
+        # wl2 = pressure_broadening_HWHM_diluent(
+        #     df,
+        #     selbrd,
+        #     Tdpsel,
+        #     pressure_atm,
+        #     mole_fraction,
+        #     Tgas,
+        #     Tref,
+        #     diluent,
+        # )
 
         # Update dataframe
         df["hwhm_lorentz"] = wl
+
+        #####
 
         return
 
