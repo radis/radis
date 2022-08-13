@@ -64,6 +64,7 @@ def calc_spectrum(
     export_lines=False,
     verbose=True,
     return_factory=False,
+    diluent={},
     **kwargs,
 ) -> Spectrum:
     r"""Calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
@@ -539,6 +540,7 @@ def calc_spectrum(
             mode=mode,
             export_lines=export_lines,
             return_factory=return_factory,
+            diluent=diluent,
             **kwargs_molecule,
         )
         if return_factory:
@@ -593,6 +595,7 @@ def _calc_spectrum_one_molecule(
     mode,
     export_lines,
     return_factory=False,
+    diluent={},
     **kwargs,
 ) -> Spectrum:
     """See :py:func:`~radis.lbl.calc.calc_spectrum`
@@ -660,6 +663,7 @@ def _calc_spectrum_one_molecule(
         pressure=pressure,
         wstep=wstep,
         truncation=truncation,
+        mole_fraction=mole_fraction,
         neighbour_lines=neighbour_lines,
         cutoff=cutoff,
         parsum_mode=parsum_mode,
@@ -667,6 +671,7 @@ def _calc_spectrum_one_molecule(
         optimization=optimization,
         broadening_method=broadening_method,
         export_lines=export_lines,
+        diluent=diluent,
         **kwargs,
     )
     # Have consistent output units
@@ -749,6 +754,8 @@ def _calc_spectrum_one_molecule(
         conditions["load_energies"] = not _equilibrium
         # Details to identify lines
         conditions["parse_local_global_quanta"] = (not _equilibrium) or export_lines
+        # add diluent in conditions
+        conditions["diluent"] = diluent
         # Finally, LOAD :
         sf.fetch_databank(**conditions)
     elif exists(databank):

@@ -398,6 +398,7 @@ class SpectrumFactory(BandFactory):
         export_populations=None,
         export_lines=False,
         emulate_gpu=False,
+        diluent={},
         **kwargs,
     ):
 
@@ -454,6 +455,26 @@ class SpectrumFactory(BandFactory):
                 "export_populations must be one of 'vib', 'rovib', "
                 + "or 'False'. Got '{0}'".format(export_populations)
             )
+
+        # If molecule present in diluent, raise error
+        if molecule in diluent.keys():
+            raise KeyError(
+                "{0} is being called as molecule and diluent, please remove it from diluent.".format(
+                    molecule
+                )
+            )
+
+        # Checking mole_fraction of molecule and diluent
+        total_mole_fraction = mole_fraction + sum(list(diluent.values()))
+
+        if total_mole_fraction > 1:
+            raise ValueError(
+                "Total molefraction of molecule and diluents greater than 1."
+            )
+        elif total_mole_fraction < 1 and "air" not in diluent.keys():
+            diluent["air"] = 1 - total_mole_fraction
+        elif total_mole_fraction < 1:
+            raise ValueError("Total molefraction of molecule and diluents less than 1.")
 
         # calculate waveranges
         # --------------------
@@ -535,6 +556,7 @@ class SpectrumFactory(BandFactory):
         # Initialize computation variables
         self.params.wstep = wstep
         self.params.pseudo_continuum_threshold = pseudo_continuum_threshold
+        self.params.diluent = diluent
 
         if cutoff is None:
             # If None, use no cutoff : https://github.com/radis/radis/pull/259
@@ -648,7 +670,12 @@ class SpectrumFactory(BandFactory):
     # XXX =====================================================================
 
     def eq_spectrum(
-        self, Tgas, mole_fraction=None, path_length=None, pressure=None, name=None
+        self,
+        Tgas,
+        mole_fraction=None,
+        path_length=None,
+        pressure=None,
+        name=None,
     ) -> Spectrum:
         """Generate a spectrum at equilibrium.
 
@@ -705,7 +732,6 @@ class SpectrumFactory(BandFactory):
         --------
         :meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`
         """
-
         # %% Preprocessing
         # --------------------------------------------------------------------
 
@@ -745,6 +771,7 @@ class SpectrumFactory(BandFactory):
         mole_fraction = self.input.mole_fraction
         path_length = self.input.path_length
         verbose = self.verbose
+        diluent = self.params.diluent
 
         # New Profiler object
         self._reset_profiler(verbose)
