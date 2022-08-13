@@ -39,16 +39,19 @@ sf = SpectrumFactory(
     verbose=False,
 )
 sf.load_databank("HITEMP-CO2-TEST")
-#%%To explicitely identify the isotopes we can use the molparam attribute the Factory
+#%%
+# To explicitely identify the isotopes we can use the molparam attribute the Factory
 print(sf.molparam.get("CO2", 1, "isotope_name"))  # >> (12C)(16O)2
 print(sf.molparam.get("CO2", 2, "isotope_name"))  # >> (13C)(16O)2
 
 
-#%%Print the default abundance of the CO2 isotopes, compute a spectrum
+#%%
+# Print the default abundance of the CO2 isotopes, compute a spectrum
 print("Abundance of CO2[1,2]", sf.get_abundance("CO2", [1, 2]))
 sf.eq_spectrum(2000).plot("abscoeff")
 
-#%% Set the abundance of CO2(626) to 0.8; and the abundance of CO2(636) to 0.2 (arbitrary):
+#%%
+# Set the abundance of CO2(626) to 0.8; and the abundance of CO2(636) to 0.2 (arbitrary):
 sf.set_abundance("CO2", [1, 2], [0.8, 0.2])
 print("New abundance of CO2[1,2]", sf.get_abundance("CO2", [1, 2]))
 
