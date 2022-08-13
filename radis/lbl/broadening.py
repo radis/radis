@@ -2248,6 +2248,19 @@ class BroadenFactory(BaseFactory):
                 N = int(len(df) * len(wavenumber) / chunksize) + 1
                 # Too big may be faster but overload memory.
                 # See Performance for more information
+
+                # Raise performance warning if the chunks are bigger
+                # than the number of lines.
+                try:
+                    assert N < len(df)
+                except AssertionError:
+                    self.warn(
+                        "Chunksize is currently too small according"
+                        + " to the dataframe size. Please set a larger"
+                        + " value of chunksize.",
+                        "PerformanceWarning",
+                    )
+
                 abscoeff = zeros_like(self.wavenumber)
                 pb = ProgressBar(N, active=self.verbose)
 
