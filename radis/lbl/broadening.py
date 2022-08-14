@@ -2255,10 +2255,14 @@ class BroadenFactory(BaseFactory):
                     assert N < len(df)
                 except AssertionError:
                     self.warn(
-                        "Chunksize is currently too small according"
-                        + " to the dataframe size. Please set a larger"
-                        + " value of chunksize.",
-                        "PerformanceWarning",
+                        "There are currently more chunks ({0:.3e}) than lines ({1:.3e}),".format(
+                            N, len(df)
+                        )
+                        + " calculation times will be extremely slow. Try to have at least 10,000 - 100,000"
+                        + " lines per chunk. We suggest increasing chunksize to"
+                        + " {0:.1e} - {1:.1e}".format(
+                            10000 * len(wavenumber), 100000 * len(wavenumber)
+                        ),
                     )
 
                 abscoeff = zeros_like(self.wavenumber)
