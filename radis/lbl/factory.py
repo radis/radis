@@ -1837,7 +1837,7 @@ class SpectrumFactory(BandFactory):
 
         return s
 
-    def _generate_wavenumber_arrays(self, multisparsegrid=False):
+    def _generate_wavenumber_arrays(self, multisparsegrid=True):
         """define wavenumber grid vectors
 
         `SpectrumFactory.wavenumber` is the output spectral range and
@@ -1894,7 +1894,7 @@ class SpectrumFactory(BandFactory):
             )
         else:
             lineshape_half_width = (
-                3000 * wstep_calc_narrow
+                5000 * wstep_calc_narrow
             )  # TODO EP 13/08/22: update this 10
             (
                 wavenumber,

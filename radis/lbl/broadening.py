@@ -2193,7 +2193,7 @@ class BroadenFactory(BaseFactory):
             )
             LDM_ranges = {}
             LDM_reduced = {}
-            #  (note : could be combined faster by combining the ranges directly, rather than generating the boolean arrays?)
+            #  (note : could be made faster by combining the ranges directly, rather than generating the boolean arrays?)
             for param in all_keys:
                 b = np.zeros(len(w), dtype=bool)
                 I = np.zeros(len(w))
@@ -2516,7 +2516,7 @@ class BroadenFactory(BaseFactory):
 
         return wavenumber, abscoeff
 
-    def _broaden_lines_noneq(self, df, wavenumber_group):
+    def _broaden_lines_noneq(self, df, wavenumber_group=None):
         """Divide over chunks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
         lines are processed on the same core)
@@ -2558,7 +2558,9 @@ class BroadenFactory(BaseFactory):
                 ):
                     self.misc.zero_padding = len(wavenumber_calc)
 
-                line_profile_LDM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_LDM(df)
+                line_profile_LDM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_LDM(
+                    df, wavenumber_group
+                )
                 # printing estimated time
                 if self.verbose >= 2:
                     estimated_time = self.predict_time()
@@ -2576,6 +2578,7 @@ class BroadenFactory(BaseFactory):
                     wL_dat,
                     wG_dat,
                     optimization,
+                    wavenumber_group,
                 )
                 (_, emisscoeff) = self._apply_lineshape_LDM(
                     df.Ei.values,
@@ -2586,6 +2589,7 @@ class BroadenFactory(BaseFactory):
                     wL_dat,
                     wG_dat,
                     optimization,
+                    wavenumber_group,
                 )
                 # Note @dev: typical results is:
                 # >>> abscoeff:
@@ -2782,7 +2786,27 @@ class BroadenFactory(BaseFactory):
                 + " may be inverted"
             )
 
-        (wavenumber, abscoeff, emisscoeff) = self._broaden_lines_noneq(df)
+        if self._multisparsegrid:
+            # spectrum is split over multiple, discontinued spectral grids
+            # Deal with all of them
+            wavenumber, abscoeff, emisscoeff = [], [], []
+            assert len(self._ix_ranges) > 0
+            for wavenumber_group_i, lines_range_i in enumerate(self._ix_ranges):
+                (wavenumber_i, abscoeff_i, emisscoeff_i) = self._broaden_lines_noneq(
+                    df.iloc[lines_range_i[0] : lines_range_i[-1]], wavenumber_group_i
+                )
+                wavenumber.append(wavenumber_i)
+                abscoeff.append(abscoeff_i)
+                emisscoeff.append(emisscoeff_i)
+            wavenumber, abscoeff, emisscoeff = (
+                np.hstack(wavenumber),
+                np.hstack(abscoeff),
+                np.hstack(emisscoeff),
+            )
+        else:
+            (wavenumber, abscoeff, emisscoeff) = self._broaden_lines_noneq(
+                df, wavenumber_group_i
+            )
 
         self.profiler.stop("calc_line_broadening", "Calculated line broadening")
         return wavenumber, abscoeff, emisscoeff
