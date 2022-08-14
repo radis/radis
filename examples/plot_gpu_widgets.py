@@ -32,8 +32,8 @@ s_exp.crop(4120, 4790).plot(Iunit="mW/cm2/sr/nm")
 
 
 sf = SpectrumFactory(
-    2100,
-    2400,  # cm-1
+    2150,
+    2450,  # cm-1
     molecule="CO2",
     isotope="1,2,3",
     wstep=0.002,

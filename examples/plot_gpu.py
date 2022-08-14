@@ -17,8 +17,8 @@ Example using GPU calculation with :py:meth:`~radis.lbl.SpectrumFactory.eq_spect
 from radis import SpectrumFactory
 
 sf = SpectrumFactory(
-    2100,
-    2400,  # cm-1
+    2150,
+    2450,  # cm-1
     molecule="CO2",
     isotope="1,2,3",
     wstep=0.002,

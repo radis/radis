@@ -301,7 +301,7 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
             units=unitsn,
             name=name,
             references=references,
-            warnings=False,  # we already know waveranges are properly spaced, etc.
+            check_wavespace=False,  # we already know waveranges are properly spaced, etc.
         )
 
 
