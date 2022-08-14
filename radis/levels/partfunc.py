@@ -1346,6 +1346,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
     Examples
     --------
     Calculate partition function of CO using default spectroscopic constants::
+
         from radis.db.molecules import Molecules
         from radis.levels.partfunc import PartFunc_Dunham
 

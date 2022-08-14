@@ -293,6 +293,9 @@ def calc_spectrum(
         - Or the :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method to plot it
           directly.
         - See [1]_ to get an overview of all Spectrum methods
+    :py:class:`~radis.lbl.factory.SpectrumFactory` : if using ``return_factory=True``
+        if multiple molecules, a dictionary of factories is returned
+
 
     References
     ----------
@@ -562,6 +565,8 @@ def calc_spectrum(
         s.store(path=save_to, if_exists_then="replace", verbose=verbose)
 
     if return_factory:
+        if len(factory_dict) == 1:  # return unique element directly
+            factory_dict = factory_dict[list(factory_dict.keys())[0]]
         return s, factory_dict
     else:
         return s
