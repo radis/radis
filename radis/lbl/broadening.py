@@ -2251,9 +2251,7 @@ class BroadenFactory(BaseFactory):
 
                 # Raise performance warning if the chunks are bigger
                 # than the number of lines.
-                try:
-                    assert N < len(df)
-                except AssertionError:
+                if N >= len(df):
                     self.warn(
                         "There are currently more chunks ({0:.3e}) than lines ({1:.3e}),".format(
                             N, len(df)
@@ -2263,6 +2261,7 @@ class BroadenFactory(BaseFactory):
                         + " {0:.1e} - {1:.1e}".format(
                             10000 * len(wavenumber), 100000 * len(wavenumber)
                         ),
+                        "PerformanceWarning",
                     )
 
                 abscoeff = zeros_like(self.wavenumber)
