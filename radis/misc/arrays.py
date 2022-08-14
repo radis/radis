@@ -668,6 +668,10 @@ def non_zero_ranges_in_array(b):
         non_zero_ranges_in_array(b)
         >> ([2, 5, 7],
             [4, 6, 8])
+
+    See Also
+    --------
+    :py:func:`~radis.misc.arrays.boolean_array_from_ranges`
     """
 
     # build the list
@@ -703,9 +707,14 @@ def boolean_array_from_ranges(ranges, n):
     --------
     ::
 
-        L = np.array([[2,4], [5,6], [7,8]])
-        boolean_array_from_coordinates(*L.T, 8)
+        L = np.array([[2,4], [5,6], [7,8]], dtype=np.int64)
+        boolean_array_from_ranges(L.T, 8)
         >>> np.array([0, 0, 1, 1, 0, 1, 0, 1], dtype=bool)
+
+
+    See Also
+    --------
+    :py:func:`~radis.misc.arrays.non_zero_ranges_in_array`
 
     """
     # build the list
@@ -714,6 +723,57 @@ def boolean_array_from_ranges(ranges, n):
         b[ranges[i][0] : ranges[i][1]] = True
 
     return b
+
+
+def get_overlapping_ranges(wav_positions, half_width):
+    """Returns list of overlapping ranges for lines in ``wav_positions``
+    whose lineshapes have a (same) half_width ``half_width``
+
+    .. note::
+        wav_positions is assumed sorted.
+
+    Parameters
+    ----------
+    wav_positions: numpy array (typically wavenumbers)
+    half_width: float (typically cm-1)
+
+    Returns
+    -------
+    numpy array: list of (start, end) index so that all lines contained
+    in ``wav_positions[start_i, end_i]`` overlap
+
+    See Also
+    --------
+    Used to generate sparse wavenumber grids.
+
+    """
+
+    # Detect overlapping ranges :
+    start = wav_positions // (half_width)
+    end = start + 2 * half_width
+
+    # When line is separated by >2half-width from the next [1:] ;there is no overlap
+    b = (
+        start.values[1:] - end.values[:-1]
+    ) > 0  # detect large spaces in between two adjacent lines
+    i_end = np.hstack((b.nonzero()[0], [len(b) - 1]))
+    i_start = np.hstack(([0], i_end[:-1] + 1))
+
+    return np.vstack((i_start, i_end)).T
+
+
+"""
+ TODO : test when half_width is extremelly small; i.E.
+end up with tihngs like ::
+
+    array([[  0,   0],
+           [  0,   1],
+           [  1,   2],
+           ...,
+           [827, 828],
+           [829, 830],
+           [830, 831]], dtype=int64)
+"""
 
 
 @numba.njit(
