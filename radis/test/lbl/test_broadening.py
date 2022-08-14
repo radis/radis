@@ -948,9 +948,12 @@ def test_broadening_chunksize_eq(verbose=True, plot=False, *args, **kwargs):
     of equilibrium spectra in https://github.com/radis/radis/pull/489/
 
     """
+    if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
+        plt.ion()
+
     sf = SpectrumFactory(
-        wavelength_min=4000,
-        wavelength_max=4500,
+        wavenum_min=2000,
+        wavenum_max=2300,
         cutoff=1e-27,
         pressure=1,
         isotope="1,2",
@@ -959,30 +962,32 @@ def test_broadening_chunksize_eq(verbose=True, plot=False, *args, **kwargs):
         neighbour_lines=5,
         path_length=0.1,
         mole_fraction=1e-3,
-        medium="vacuum",
-        optimization=None,
-        chunksize=None,
         wstep=0.001,
-        verbose=False,
+        verbose=True,
     )
     sf.fetch_databank("hitemp")
-    sf.params.broadening_method = "convolve"
+    # sf.params.broadening_method = "convolve"
     Tgas = 2000
 
     # Testing chunksizes with different optimization strategies
-    for optimization in [None, "simple", "min-RMS"]:
+    for optimization in [None, "simple"]:
         sf.params["optimization"] = optimization  # Setting optimization
         sf.misc["chunksize"] = None
         s_no_chunk = sf.eq_spectrum(Tgas=Tgas)
-        s_no_chunk.name = "no chunksize"
+        s_no_chunk.name = f"no chunksize   ({s_no_chunk.c['calculation_time']:.1f}s)"
         assert (
             s_no_chunk.c["chunksize"] is None
         )  # make sure it was taken into account in Spectrum conditions
 
-        sf.misc["chunksize"] = 1e5  # Setting chunksize
+        sf.misc["chunksize"] = 1e8  # Setting chunksize
         s_chunk = sf.eq_spectrum(Tgas=Tgas)
-        s_chunk.name = f"chunksize {sf.misc.chunksize:.1e}"
-        assert s_chunk.c["chunksize"] == 1e5
+        s_chunk.name = (
+            f"chunksize {sf.misc.chunksize:.1e}  ({s_chunk.c['calculation_time']:.1f}s)"
+        )
+        assert s_chunk.c["chunksize"] == 1e8
+
+        # TODO @Sagar: add a way to check that number of chunks is not 1 (else
+        # we're just computing all lines at the same time and not checking anything)
 
         # Residual calculation
         res = get_residual(s_no_chunk, s_chunk, "abscoeff")
@@ -993,7 +998,9 @@ def test_broadening_chunksize_eq(verbose=True, plot=False, *args, **kwargs):
             )
         )
         if plot:
-            plot_diff(s_chunk, s_no_chunk, "abscoeff")
+            plot_diff(
+                s_chunk, s_no_chunk, "abscoeff", title=f"Optimization: {optimization}"
+            )
 
 
 def _run_testcases(plot=False, verbose=True, *args, **kwargs):
@@ -1021,5 +1028,5 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    # printm("test_broadening: ", _run_testcases(plot=True, verbose=True, debug=False))
+    printm("test_broadening: ", _run_testcases(plot=True, verbose=True, debug=False))
     printm("Testing broadening:", pytest.main(["test_broadening.py", "--pdb"]))
