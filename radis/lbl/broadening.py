@@ -1226,7 +1226,7 @@ class BroadenFactory(BaseFactory):
         self.profiler.stop("calc_hwhm", "Calculate broadening HWHM")
 
     def _calc_min_width(self, df):
-        """Calculates the minimum FWHW of the lines
+        """Calculates the minimum FWHM of the lines
         and stores in self._min_width
         """
         if "hwhm_voigt" in df:
@@ -2084,7 +2084,9 @@ class BroadenFactory(BaseFactory):
 
         return
 
-    def _apply_lineshape(self, broadened_param, line_profile, shifted_wavenum):
+    def _apply_lineshape(
+        self, broadened_param, line_profile, shifted_wavenum, wavenumber_group
+    ):
         """Multiply `broadened_param` by `line_profile` and project it on the
         correct wavelength given by `shifted_wavenum`
 
@@ -2098,6 +2100,13 @@ class BroadenFactory(BaseFactory):
                 (size B * N, B = width of lineshape)
         shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
             center wavelength (used to project broadened lineshapes )
+
+        Other Parameters
+        ----------------
+        wavenumber_group: int, or ``None``
+            in sparse wavenumber mode; wavenumber group to apply these lines on.
+            If ``None``, use full range.
+
 
         Returns
         -------

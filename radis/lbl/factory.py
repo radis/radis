@@ -1961,8 +1961,7 @@ class SpectrumFactory(BandFactory):
         ----------------
         check: bool
             check == False is used to bypass some stuff that isn't known at this point for GPU calculations
-
-
+        
         """
 
         import radis
