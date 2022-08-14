@@ -3976,7 +3976,7 @@ class Spectrum(object):
             references=references,
             name=name,
             check_wavespace=False,  # no need, as Spectrum was normally already properly defined
-            warnings=False,  # saves about 3.5 ms on the Performance test object
+            # saves about 3.5 ms on the Performance test object
         )
 
         # Add extra information
