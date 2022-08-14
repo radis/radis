@@ -24,8 +24,8 @@ import astropy.units as u
 from radis import calc_spectrum, plot_diff
 
 conditions = {
-    "wmin": 2002 / u.cm,
-    "wmax": 2300 / u.cm,
+    "wmin": 2062 / u.cm,
+    "wmax": 2093 / u.cm,
     "molecule": "CO",
     "isotope": "1",
     "pressure": 1.01325,  # bar
@@ -34,7 +34,13 @@ conditions = {
     "path_length": 1,  # cm
     "broadening_method": "fft",  # @ dev: Doesn't work with 'voigt'
     "verbose": True,
+    "neighbour_lines": 20,
 }
+
+
+#%%
+# Note that we account for the effect on neighbour_lines by computing ``20cm-1``
+# on the side (``neighbour_lines`` condition above)
 
 s_exomol = calc_spectrum(
     **conditions, databank="exomol", name="ExoMol's HITEMP (default broadening)"
@@ -45,11 +51,15 @@ s_hitemp = calc_spectrum(
     name="HITEMP (Air broadened)",
 )
 try:
-    plot_diff(s_exomol, s_hitemp, "xsection")
+    fig, [ax0, ax1] = plot_diff(s_exomol, s_hitemp, "xsection", yscale="log")
 except:
     # @dev: someone there is un expected error with this example on ReadThedocs.
     # Escaping for the moment. See https://github.com/radis/radis/issues/501
     pass
+else:
+    # Adjust diff plot to be in linear scale
+    ax1.set_yscale("linear")
+    ax0.set_ylim(ymax=ax0.get_ylim()[1] * 10)  # more space for legend
 
 #%%
 # Broadening coefficients are different in these databases, so lineshapes
