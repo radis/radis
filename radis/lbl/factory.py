@@ -2003,7 +2003,7 @@ class SpectrumFactory(BandFactory):
             )
         else:
             lineshape_half_width = (
-                3000 * wstep_calc_narrow
+                5000 * wstep_calc_narrow
             )  # TODO EP 13/08/22: update this 10
             (
                 wavenumber,
