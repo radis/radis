@@ -2938,21 +2938,19 @@ class Spectrum(object):
 
         Parameters
         ----------
-
         wunit: ``'nm'``, ``'cm-1'``, or ``None``
             plot slit in wavelength or wavenumber. If ``None``, use the unit
             the slit in which the slit function was given. Default ``None``
 
         Returns
         -------
-
         fix, ax: matplotlib objects
             figure and ax
 
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.plot_slit
 
         See Also
         --------
-
         :ref:`the Spectrum page <label_spectrum>`
         """
         # Deprecated inputs

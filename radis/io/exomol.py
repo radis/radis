@@ -692,24 +692,12 @@ class MdbExomol(DatabaseManager):
 
         assert cache  # cache only used for cache='regen' or cache='force' modes, cache=False is not expected
 
-        from os import environ
-
         if engine == "default":
             from radis import config
 
             engine = config["MEMORY_MAPPING_ENGINE"]
-            # Quick fix for #401, #404
             if engine == "auto":
-                # temp fix for vaex not building on RTD
-                # see https://github.com/radis/radis/issues/404
-                if any("READTHEDOCS" in name for name in environ):
-                    engine = "feather"
-                    if verbose >= 3:
-                        print(
-                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{engine}'. See https://github.com/radis/radis/issues/404"
-                        )
-                else:
-                    engine = "vaex"
+                engine = "vaex"
 
         self.path = pathlib.Path(path)
 
