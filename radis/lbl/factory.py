@@ -97,6 +97,7 @@ except ImportError:  # if ran from here
 
 from radis import config
 from radis.db.classes import is_atom, is_neutral
+from radis.misc.arrays import get_overlapping_ranges
 from radis.misc.basics import flatten, is_float, is_range, list_if_float, round_off
 from radis.misc.utils import Default
 from radis.phys.constants import k_b
@@ -1927,12 +1928,20 @@ class SpectrumFactory(BandFactory):
 
         return s
 
-    def _generate_wavenumber_arrays(self, checks=True):
+    def _generate_wavenumber_arrays(self, multisparsegrid=False, checks=True):
         """define wavenumber grid vectors
 
         `SpectrumFactory.wavenumber` is the output spectral range and
         ``SpectrumFactory.wavenumber_calc`` the spectral range used for calculation, that
-        includes neighbour lines within ``neighbour_lines`` distance."""
+        includes neighbour lines within ``neighbour_lines`` distance.
+        
+        Other Parameters
+        ----------------
+        check: bool
+            check == False is used to bypass some stuff that isn't known at this point for GPU calculations
+
+        
+        """
 
         import radis
 
@@ -1943,23 +1952,36 @@ class SpectrumFactory(BandFactory):
             self._calc_min_width(self.df1)
 
             # Setting wstep to optimal value and rounding it to a degree 3
-            if self._wstep == "auto" or type(self.params.wstep) == list:
-                wstep_calc = round_off(
-                    self.min_width
+            if self._wstep == "auto" or isinstance(self.params.wstep, list):
+
+                wstep_calc_narrow = round_off(
+                    self._min_width
                     / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
                 )
 
-                if type(self.params.wstep) == list:
-                    self.params.wstep = min(self.params.wstep[1], wstep_calc)
+                if (
+                    isinstance(self.params.wstep, list)
+                ):  # previously computed wstep; to keep a similar step when computing spectra with multiple molecules (and saving on interpolation)
+                    self.params.wstep = min(self.params.wstep[1], wstep_calc_narrow)
                 else:
-                    self.params.wstep = wstep_calc
+                    self.params.wstep = wstep_calc_narrow
 
-                self.warnings["AccuracyWarning"] = "ignore"
+                    self.warnings["AccuracyWarning"] = "ignore"
 
-        elif self._wstep == "auto" or type(self.params.wstep) == list:
-            self.warn(
-                "Current configuration incompatible with wstep='auto', please provide value for wstep"
-            )
+            if multisparsegrid:
+                wstep_calc_narrow = self.params.wstep
+                # wstep_calc_coarse1 = wstep_calc_narrow * 10
+                # wstep_calc_coarse2 = wstep_calc_narrow * 100
+
+        else: # check == False, used in GPU mode 
+            if self._wstep == "auto" or isinstance(self.params.wstep, list):
+                raise ValueError(
+                    "Current configuration incompatible with wstep='auto', please provide value for wstep"
+                )
+            if multisparsegrid:
+                raise ValueError(
+                    "Current configuration incompatible with multisparsegrid=True"
+                )
 
         truncation = self.params.truncation
         neighbour_lines = self.params.neighbour_lines
@@ -1972,12 +1994,33 @@ class SpectrumFactory(BandFactory):
                 "PerformanceWarning",
             )
 
-        wavenumber, wavenumber_calc, woutrange = _generate_wavenumber_range(
-            self.input.wavenum_min,
-            self.input.wavenum_max,
-            self.params.wstep,
-            neighbour_lines,
-        )
+        # TODO / save memory : do not build self.wavenumber; only use wavenumber_calc?
+        self._multisparsegrid = multisparsegrid
+        if not multisparsegrid:
+            wavenumber, wavenumber_calc, woutrange = _generate_wavenumber_range(
+                self.input.wavenum_min,
+                self.input.wavenum_max,
+                self.params.wstep,
+                neighbour_lines,
+            )
+        else:
+            lineshape_half_width = (
+                3000 * wstep_calc_narrow
+            )  # TODO EP 13/08/22: update this 10
+            (
+                wavenumber,
+                wavenumber_calc,
+                woutrange,
+                ix_ranges,
+            ) = _generate_wavenumber_range_sparse(
+                self.input.wavenum_min,
+                self.input.wavenum_max,
+                self.params.wstep,
+                neighbour_lines,
+                self.df1.wav,
+                lineshape_half_width,
+            )
+            self._ix_ranges = ix_ranges
 
         # Generate lineshape array
         if truncation is None:
@@ -2607,6 +2650,111 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, neighbour_lines)
     assert len(wavenumber_calc) == len(wavenumber) + 2 * len(w_out_of_range_left)
 
     return wavenumber, wavenumber_calc, woutrange
+
+
+def _generate_wavenumber_range_sparse(
+    wavenum_min,
+    wavenum_max,
+    wstep,
+    neighbour_lines,
+    line_positions,
+    lineshape_half_width,
+):
+    """define waverange vectors, with ``wavenumber`` the output spectral range
+    and ``wavenumber_calc`` the spectral range used for calculation, that
+    includes neighbour lines within ``neighbour_lines`` distance.
+
+    Sparse version of :py:func:`radis.lbl.factory._generate_wavenumber_range`;
+    i.e. intervals where there will be no lines; are removed.
+
+    .. note::
+        WIP
+
+    Parameters
+    ----------
+    wavenum_min, wavenum_max: float
+        wavenumber range limits (cm-1)
+    wstep: float
+        wavenumber step (cm-1)
+    neighbour_lines: float
+        wavenumber full width of broadening calculation: used to define which
+        neighbour lines shall be included in the calculation
+
+    Returns
+    -------
+    wavenumber: numpy array
+        an evenly spaced array between ``wavenum_min`` and ``wavenum_max`` with
+        a spacing of ``wstep``
+    wavenumber_calc: numpy array
+        an evenly spaced array between ``wavenum_min-neighbour_lines`` and
+        ``wavenum_max+neighbour_lines`` with a spacing of ``wstep``
+    woutrange: (wmin, wmax)
+        index to project the full range including neighbour lines `wavenumber_calc`
+        on the final range `wavenumber`, i.e. : wavenumber_calc[woutrange[0]:woutrange[1]] = wavenumber
+    """
+    assert wavenum_min < wavenum_max
+    assert wstep > 0
+    assert len(line_positions) > 0
+
+    i_ranges = get_overlapping_ranges(line_positions, lineshape_half_width)
+
+    wavenumber_list = []
+    wavenumber_calc_list = []
+    woutrange_list = []
+
+    for i, (i_start, i_end) in enumerate(i_ranges):
+        wavenum_min_i = max(
+            wavenum_min, line_positions.iloc[i_start] - lineshape_half_width
+        )
+        wavenum_max_i = min(
+            wavenum_max, line_positions.iloc[i_end] + lineshape_half_width
+        )
+
+        # Output range
+        # generate the final vector of wavenumbers (shape M)
+        wavenumber = arange(wavenum_min_i, wavenum_max_i + wstep, wstep)
+
+        # generate the calculation vector of wavenumbers (shape M + space on the side)
+        # ... Calculation range
+        wavenum_min_calc = wavenumber[0] - neighbour_lines  # cm-1
+        wavenum_max_calc = wavenumber[-1] + neighbour_lines  # cm-1
+        w_out_of_range_left = arange(
+            wavenumber[0] - wstep, wavenum_min_calc - wstep, -wstep
+        )[::-1]
+        w_out_of_range_right = arange(
+            wavenumber[-1] + wstep, wavenum_max_calc + wstep, wstep
+        )
+
+        # ... deal with rounding errors: 1 side may have 1 more point
+        if len(w_out_of_range_left) > len(w_out_of_range_right):
+            w_out_of_range_left = w_out_of_range_left[1:]
+        elif len(w_out_of_range_left) < len(w_out_of_range_right):
+            w_out_of_range_right = w_out_of_range_right[:-1]
+
+        wavenumber_calc = np.hstack(
+            (w_out_of_range_left, wavenumber, w_out_of_range_right)
+        )
+        if i == 0:
+            # remove left part
+            woutrange = len(w_out_of_range_left)
+        else:
+            # keep full array:
+            woutrange = 0
+        if i == len(i_ranges):
+            # remove right part
+            woutrange = woutrange, len(w_out_of_range_left) + len(wavenumber)
+        else:
+            # keep full array:
+            woutrange = woutrange, len(wavenumber_calc)
+
+        assert len(w_out_of_range_left) == len(w_out_of_range_right)
+        assert len(wavenumber_calc) == len(wavenumber) + 2 * len(w_out_of_range_left)
+
+        wavenumber_list.append(wavenumber)
+        wavenumber_calc_list.append(wavenumber_calc)
+        woutrange_list.append(woutrange)
+
+    return wavenumber_list, wavenumber_calc_list, woutrange_list, i_ranges
 
 
 def _generate_broadening_range(wstep, truncation):

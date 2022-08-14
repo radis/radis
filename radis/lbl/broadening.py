@@ -1218,8 +1218,8 @@ class BroadenFactory(BaseFactory):
         self.profiler.stop("calc_hwhm", "Calculate broadening HWHM")
 
     def _calc_min_width(self, df):
-        """Calculates the minimum FWHM of the lines
-        and stores in self.min_width
+        """Calculates the minimum FWHW of the lines
+        and stores in self._min_width
         """
         if "hwhm_voigt" in df:
             min_width = 2 * df.hwhm_voigt.min()
@@ -1231,7 +1231,7 @@ class BroadenFactory(BaseFactory):
             # but it's quite expensive to compute
             min_width = max(min_lorentz_fwhm, min_gauss_fwhm)
 
-        self.min_width = min_width
+        self._min_width = min_width
 
         return
 
@@ -1268,7 +1268,7 @@ class BroadenFactory(BaseFactory):
         # TODO: thresholds depend whether we're computing Transmittance/optically thin emission,
         # for a homogeneous slab, or self-absorbed radiance combined with other slabs.
 
-        min_width = self.min_width
+        min_width = self._min_width
 
         gridpoints_per_linewidth_error_threshold = radis.config[
             "GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD"
@@ -1777,7 +1777,7 @@ class BroadenFactory(BaseFactory):
 
         return line_profile
 
-    def _calc_lineshape_LDM(self, df):
+    def _calc_lineshape_LDM(self, df, wavenumber_group):
         """Generate the lineshape database using the steps defined by the
         parameters :py:attr:`~radis.lbl.loader.Parameters.dxL` and
         :py:attr:`~radis.lbl.loader.Parameters.dxG`.
@@ -1786,6 +1786,9 @@ class BroadenFactory(BaseFactory):
         ----------
         df: pandas DataFrame
             line database
+        wavenumber_group: int, or ``None``
+            in sparse wavenumber mode; wavenumber group to apply these lines on.
+            If ``None``, use full range.
 
         Returns
         -------
@@ -1887,7 +1890,10 @@ class BroadenFactory(BaseFactory):
         elif broadening_method == "fft":
             # Unlike real space methods ('convolve', 'voigt'), here we calculate
             # the lineshape on the full spectral range.
-            w = self.wavenumber_calc
+            if wavenumber_group is not None:
+                w = self.wavenumber_calc[wavenumber_group]
+            else:
+                w = self.wavenumber_calc
             wstep = self.params.wstep
             w_lineshape_ft = np.fft.rfftfreq(
                 2 * len(w), wstep
@@ -1996,7 +2002,9 @@ class BroadenFactory(BaseFactory):
 
         return
 
-    def _apply_lineshape(self, broadened_param, line_profile, shifted_wavenum):
+    def _apply_lineshape(
+        self, broadened_param, line_profile, shifted_wavenum, wavenumber_group
+    ):
         """Multiply `broadened_param` by `line_profile` and project it on the
         correct wavelength given by `shifted_wavenum`
 
@@ -2010,6 +2018,13 @@ class BroadenFactory(BaseFactory):
                 (size B * N, B = width of lineshape)
         shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
             center wavelength (used to project broadened lineshapes )
+
+        Other Parameters
+        ----------------
+        wavenumber_group: int, or ``None``
+            in sparse wavenumber mode; wavenumber group to apply these lines on.
+            If ``None``, use full range.
+
 
         Returns
         -------
@@ -2029,11 +2044,16 @@ class BroadenFactory(BaseFactory):
 
         self.profiler.start("init_vectors_apply", 3)
 
-        #        # Get spectrum range
+        # Get spectrum range
         wavenumber = self.wavenumber  # final vector of wavenumbers (shape W)
         wavenumber_calc = (
             self.wavenumber_calc
-        )  # calculation vector of wavenumbers (shape W + space B on the sides)
+        )  # calculation vector (shape W + space B on sides)
+        woutrange = self.woutrange
+        if wavenumber_group is not None:
+            wavenumber = wavenumber[wavenumber_group]
+            wavenumber_calc = wavenumber_calc[wavenumber_group]
+            woutrange = woutrange[wavenumber_group]
 
         # Vectorize the chunk of lines
         if isinstance(broadened_param, np.ndarray):
@@ -2135,7 +2155,7 @@ class BroadenFactory(BaseFactory):
         sumoflines_calc = sumoflines_calc[ioffset:-ioffset]
         assert len(sumoflines_calc) == len(wavenumber_calc)
         # Get valid range (discard neighbour lines)
-        sumoflines = sumoflines_calc[self.woutrange[0] : self.woutrange[1]]
+        sumoflines = sumoflines_calc[woutrange[0] : woutrange[1]]
 
         return wavenumber, sumoflines
 
@@ -2154,6 +2174,7 @@ class BroadenFactory(BaseFactory):
         wL_dat,
         wG_dat,
         optimization,
+        wavenumber_group,
     ):
         """Multiply `broadened_param` by `line_profile` and project it on the
         correct wavelength given by `shifted_wavenum`
@@ -2170,7 +2191,6 @@ class BroadenFactory(BaseFactory):
 
             If ``self.params.broadening_method == 'fft'``, templates are given
             in Fourier space.
-
         shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
             center wavelength (used to project broadened lineshapes )
         wL: array       (size DL)
@@ -2184,6 +2204,13 @@ class BroadenFactory(BaseFactory):
         optimization :
             if ``"min-RMS"`` weights optimized by analytical minimization of the RMS-error.
             Otherwise, weights equal to their relative position in the grid.
+
+        Other Parameters
+        ----------------
+        wavenumber_group: int, or ``None``
+            in sparse wavenumber mode; wavenumber group to apply these lines on.
+            If ``None``, use full range.
+
 
         Returns
         -------
@@ -2210,6 +2237,12 @@ class BroadenFactory(BaseFactory):
         # Get spectrum range
         wavenumber = self.wavenumber  # get vector of wavenumbers (shape W)
         wavenumber_calc = self.wavenumber_calc
+        woutrange = self.woutrange
+        if wavenumber_group is not None:
+            wavenumber = wavenumber[wavenumber_group]
+            wavenumber_calc = wavenumber_calc[wavenumber_group]
+            woutrange = woutrange[wavenumber_group]
+
         broadening_method = self.params.broadening_method
 
         # Get add-at method
@@ -2527,11 +2560,11 @@ class BroadenFactory(BaseFactory):
 
         self.profiler.stop("LDM_convolve", "Convolve and sum on spectral range")
         # Get valid range (discard wings)
-        sumoflines = sumoflines_calc[self.woutrange[0] : self.woutrange[1]]
+        sumoflines = sumoflines_calc[woutrange[0] : woutrange[1]]
 
         return wavenumber, sumoflines
 
-    def _broaden_lines(self, df):
+    def _broaden_lines(self, df, wavenumber_group=None):
         """Divide over chunks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
         lines are processed on the same core. )
@@ -2543,51 +2576,54 @@ class BroadenFactory(BaseFactory):
             contains the ``self.params.optimization`` parameter
         df: DataFrame
             line dataframe
-
-        See _calc_lineshape for more information
+        wavenumber_group: int, or ``None``
+            in sparse wavenumber mode; wavenumber group to apply these lines on.
+            If ``None``, use full range.
 
         Examples
         ----------
-        s = calc_spectrum(
-            2135,
-            2170,
-            molecule="CO",
-            isotope="1",
-            pressure=3,
-            Tgas=2000,
-            mole_fraction=0.1,
-            path_length=1,
-            databank="hitemp",
-            name="Chunksize=1e7",
-            chunksize=1e7,
-            optimization = "min-RMS",
-        )
+        ::
+
+            s = calc_spectrum(
+                2135,
+                2170,
+                molecule="CO",
+                isotope="1",
+                pressure=3,
+                Tgas=2000,
+                mole_fraction=0.1,
+                path_length=1,
+                databank="hitemp",
+                name="Chunksize=1e7",
+                chunksize=1e7,
+                optimization = "min-RMS",
+            )
 
         Alternatively, you can also initialize a SpectrumFactory object and
-        include chunksize, as follows:
+        include chunksize, as follows::
 
-        sf = SpectrumFactory(
-            wavelength_min=4000,
-            wavelength_max=4500,
-            cutoff=1e-27,
-            pressure=1,
-            isotope="1,2",
-            truncation=5,
-            neighbour_lines=5,
-            path_length=0.1,
-            mole_fraction=1e-3,
-            medium="vacuum",
-            optimization=None,
-            chunksize=1e7,
-            wstep=0.001,
-            verbose=False,
-        )
-        sf.load_databank("HITEMP-CO")
+            sf = SpectrumFactory(
+                wavelength_min=4000,
+                wavelength_max=4500,
+                cutoff=1e-27,
+                pressure=1,
+                isotope="1,2",
+                truncation=5,
+                neighbour_lines=5,
+                path_length=0.1,
+                mole_fraction=1e-3,
+                medium="vacuum",
+                optimization=None,
+                chunksize=1e7,
+                wstep=0.001,
+                verbose=False,
+            )
+            sf.load_databank("HITEMP-CO")
 
-        To plot:
+        To plot::
 
-        s.plot("abscoeff")
-        plt.show()
+            s.plot("abscoeff")
+            plt.show()
 
         To iterate over the entire dataframe at once (not recommended for large molecules
         unless you have large RAM), just pass chunksize = None
@@ -2600,15 +2636,18 @@ class BroadenFactory(BaseFactory):
 
         # Init arrays
         wavenumber = self.wavenumber
+        wavenumber_calc = self.wavenumber_calc
+        if wavenumber_group is not None:
+            wavenumber = wavenumber[wavenumber_group]
+            wavenumber_calc = wavenumber_calc[wavenumber_group]
+
         # Get number of groups for memory splitting
         chunksize = self.misc.chunksize
         # Get which optimization method to use:
         optimization = self.params.optimization
 
-        if self.misc.zero_padding < 0 or self.misc.zero_padding > len(
-            self.wavenumber_calc
-        ):
-            self.misc.zero_padding = len(self.wavenumber_calc)
+        if self.misc.zero_padding < 0 or self.misc.zero_padding > len(wavenumber_calc):
+            self.misc.zero_padding = len(wavenumber_calc)
 
         try:
             if chunksize is None:
@@ -2626,7 +2665,7 @@ class BroadenFactory(BaseFactory):
 
                     line_profile = self._calc_lineshape(df)  # usually the bottleneck
                     (wavenumber, abscoeff) = self._apply_lineshape(
-                        df.S.values, line_profile, df.shiftwav.values
+                        df.S.values, line_profile, df.shiftwav.values, wavenumber_group
                     )
                 elif optimization in ("simple", "min-RMS"):
                     self.reftracker.add(doi["DIT-2020"], "algorithm")
@@ -2636,7 +2675,7 @@ class BroadenFactory(BaseFactory):
                         wG,
                         wL_dat,
                         wG_dat,
-                    ) = self._calc_lineshape_LDM(df)
+                    ) = self._calc_lineshape_LDM(df, wavenumber_group)
 
                     # printing estimated time
                     if self.verbose >= 2:
@@ -2656,6 +2695,7 @@ class BroadenFactory(BaseFactory):
                         wL_dat,
                         wG_dat,
                         self.params.optimization,
+                        wavenumber_group,
                     )
                 else:
                     raise ValueError(
@@ -2684,7 +2724,7 @@ class BroadenFactory(BaseFactory):
                         "PerformanceWarning",
                     )
 
-                abscoeff = zeros_like(self.wavenumber)
+                abscoeff = zeros_like(wavenumber)
                 pb = ProgressBar(N, active=self.verbose)
 
                 if optimization is None:
@@ -2746,6 +2786,7 @@ class BroadenFactory(BaseFactory):
                             wL_dat_i,
                             wG_dat_i,
                             self.params.optimization,
+                            wavenumber_group,
                         )
                         abscoeff += absorption
                         pb.update(i)
@@ -2775,10 +2816,17 @@ class BroadenFactory(BaseFactory):
 
         return wavenumber, abscoeff
 
-    def _broaden_lines_noneq(self, df):
+    def _broaden_lines_noneq(self, df, wavenumber_group):
         """Divide over chunks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
         lines are processed on the same core)
+
+        Other Parameters
+        ----------
+        wavenumber_group: int, or ``None``
+            in sparse wavenumber mode; wavenumber group to apply these lines on.
+            If ``None``, use full range.
+
 
         See _calc_lineshape for more information
         """
@@ -2790,6 +2838,11 @@ class BroadenFactory(BaseFactory):
 
         # Init arrays
         wavenumber = self.wavenumber
+        wavenumber_calc = self.wavenumber_calc
+        if wavenumber_group is not None:
+            wavenumber = wavenumber[wavenumber_group]
+            wavenumber_calc = wavenumber_calc[wavenumber_group]
+
         # Get number of groups for memory splitting
         chunksize = self.misc.chunksize
         # Get which optimization method to use:
@@ -2801,9 +2854,9 @@ class BroadenFactory(BaseFactory):
                 # Use LDM
 
                 if self.misc.zero_padding < 0 or self.misc.zero_padding > len(
-                    self.wavenumber_calc
+                    wavenumber_calc
                 ):
-                    self.misc.zero_padding = len(self.wavenumber_calc)
+                    self.misc.zero_padding = len(wavenumber_calc)
 
                 line_profile_LDM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_LDM(df)
                 # printing estimated time
@@ -2879,8 +2932,8 @@ class BroadenFactory(BaseFactory):
                     # Too big may be faster but overload memory.
                     # See Performance for more information
 
-                    abscoeff = zeros_like(self.wavenumber)
-                    emisscoeff = zeros_like(self.wavenumber)
+                    abscoeff = zeros_like(wavenumber)
+                    emisscoeff = zeros_like(wavenumber)
 
                     pb = ProgressBar(N, active=self.verbose)
                     for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
@@ -2966,7 +3019,20 @@ class BroadenFactory(BaseFactory):
                 + " may be inverted"
             )
 
-        (wavenumber, abscoeff) = self._broaden_lines(df)
+        if self._multisparsegrid:
+            # spectrum is split over multiple, discontinued spectral grids
+            # Deal with all of them
+            wavenumber, abscoeff = [], []
+            assert len(self._ix_ranges) > 0
+            for wavenumber_group_i, lines_range_i in enumerate(self._ix_ranges):
+                (wavenumber_i, abscoeff_i) = self._broaden_lines(
+                    df.iloc[lines_range_i[0] : lines_range_i[-1]], wavenumber_group_i
+                )
+                wavenumber.append(wavenumber_i)
+                abscoeff.append(abscoeff_i)
+            wavenumber, abscoeff = np.hstack(wavenumber), np.hstack(abscoeff)
+        else:
+            (wavenumber, abscoeff) = self._broaden_lines(df)
         self.profiler.stop("calc_line_broadening", "Calculated line broadening")
 
         return wavenumber, abscoeff
@@ -3146,6 +3212,11 @@ class BroadenFactory(BaseFactory):
                 "Pseudo_continuum not needed anymore as RADIS is getting so fast🔥🔥🔥. This feature will be removed in future versions.",
                 DeprecationWarning,
             )
+
+            if self._multisparsegrid:
+                raise NotImplementedError(
+                    "Pseudo continuum not implemented with sparse wavenumber grid"
+                )
 
             self.profiler.start(
                 "calc_pseudo_continuum", 2, "... Calculating pseudo continuum"
