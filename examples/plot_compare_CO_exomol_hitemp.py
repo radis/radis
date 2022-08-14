@@ -50,16 +50,10 @@ s_hitemp = calc_spectrum(
     databank="hitemp",
     name="HITEMP (Air broadened)",
 )
-try:
-    fig, [ax0, ax1] = plot_diff(s_exomol, s_hitemp, "xsection", yscale="log")
-except:
-    # @dev: someone there is un expected error with this example on ReadThedocs.
-    # Escaping for the moment. See https://github.com/radis/radis/issues/501
-    pass
-else:
-    # Adjust diff plot to be in linear scale
-    ax1.set_yscale("linear")
-    ax0.set_ylim(ymax=ax0.get_ylim()[1] * 10)  # more space for legend
+fig, [ax0, ax1] = plot_diff(s_exomol, s_hitemp, "xsection", yscale="log")
+# Adjust diff plot to be in linear scale
+ax1.set_yscale("linear")
+ax0.set_ylim(ymax=ax0.get_ylim()[1] * 10)  # more space for legend
 
 #%%
 # Broadening coefficients are different in these databases, so lineshapes

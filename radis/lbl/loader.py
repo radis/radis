@@ -1129,8 +1129,6 @@ class DatabankLoader(object):
         # ---------------------
         self._reset_references()  # bibliographic references
 
-        from os import environ
-
         if source == "hitran":
             self.reftracker.add(doi["HITRAN-2020"], "line database")  # [HITRAN-2020]_
 
@@ -1138,16 +1136,7 @@ class DatabankLoader(object):
                 self.reftracker.add(doi["HAPI"], "data retrieval")  # [HAPI]_
 
                 if memory_mapping_engine == "auto":
-                    # temp fix for vaex not building on RTD
-                    # see https://github.com/radis/radis/issues/404
-                    if any("READTHEDOCS" in name for name in environ):
-                        memory_mapping_engine = "pytables"
-                        if self.verbose >= 3:
-                            print(
-                                f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
-                            )
-                    else:
-                        memory_mapping_engine = "vaex"
+                    memory_mapping_engine = "vaex"
 
                 if isotope == "all":
                     isotope_list = None
@@ -1224,16 +1213,7 @@ class DatabankLoader(object):
             self.reftracker.add(doi["HITEMP-2010"], "line database")  # [HITEMP-2010]_
 
             if memory_mapping_engine == "auto":
-                # temp fix for vaex not building on RTD
-                # see https://github.com/radis/radis/issues/404
-                if any("READTHEDOCS" in name for name in environ):
-                    memory_mapping_engine = "pytables"
-                    if self.verbose >= 3:
-                        print(
-                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
-                        )
-                else:
-                    memory_mapping_engine = "vaex"
+                memory_mapping_engine = "vaex"
 
             if database != "full":
                 raise ValueError(
@@ -1272,16 +1252,7 @@ class DatabankLoader(object):
             self.reftracker.add(doi["ExoMol-2020"], "line database")  # [ExoMol-2020]
 
             if memory_mapping_engine == "auto":
-                # temp fix for vaex not building on RTD
-                # see https://github.com/radis/radis/issues/404
-                if any("READTHEDOCS" in name for name in environ):
-                    memory_mapping_engine = "feather"
-                    if self.verbose >= 3:
-                        print(
-                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
-                        )
-                else:
-                    memory_mapping_engine = "vaex"
+                memory_mapping_engine = "vaex"
 
             if database in ["full", "range"]:
                 raise ValueError(
@@ -1358,16 +1329,7 @@ class DatabankLoader(object):
             self.reftracker.add(doi["GEISA-2020"], "line database")
 
             if memory_mapping_engine == "auto":
-                # temp fix for vaex not building on RTD
-                # see https://github.com/radis/radis/issues/404
-                if any("READTHEDOCS" in name for name in environ):
-                    memory_mapping_engine = "pytables"
-                    if self.verbose >= 3:
-                        print(
-                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
-                        )
-                else:
-                    memory_mapping_engine = "vaex"
+                memory_mapping_engine = "vaex"
 
             if database != "full":
                 raise ValueError(
