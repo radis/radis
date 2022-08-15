@@ -133,6 +133,11 @@ Parameters
 
     See more in  :py:meth:`radis.lbl.broadening.BroadenFactory._apply_lineshape_LDM`
 
+"RESAMPLING_TOLERANCE_THRESHOLD" 5e-3
+    an error if raises if areas do not match by a value above this threshold,
+    during resampling. See :py:meth:`~radis.spectrum.spectrum.Spectrum.resample`
+
+    Default ``5e-3``
 
 
 Notes
