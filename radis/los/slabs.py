@@ -218,7 +218,7 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
                 Iunit=unitsn["transmittance_noslit"],
                 copy=False,
             )[1]
-        except ValueError:
+        except (ValueError, KeyError):
             Tn = None
         try:
             In = sn.get(
@@ -227,7 +227,7 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
                 Iunit=unitsn["radiance_noslit"],
                 copy=False,
             )[1]
-        except ValueError:
+        except (ValueError, KeyError):
             In = None
         # ... get s quantities
         try:
@@ -237,7 +237,7 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
                 Iunit=unitsn["transmittance_noslit"],
                 copy=False,
             )[1]
-        except ValueError:
+        except (ValueError, KeyError):
             T = None
         try:
             I = s.get(
@@ -246,7 +246,7 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
                 Iunit=unitsn["radiance_noslit"],
                 copy=False,
             )[1]
-        except ValueError:
+        except (ValueError, KeyError):
             I = None
 
         # Solve radiative transfer equation
@@ -419,8 +419,9 @@ def resample_slabs(
             return True
 
     # Work on copies
+    # TODO : this is done all the time, and slow ; we could avoid it if same_wavespace()
     if not modify_inputs:
-        slabs = [s.copy(copy_lines=copy_lines) for s in slabs]
+        slabs = [s.copy(copy_lines=copy_lines, copy_arrays=True) for s in slabs]
 
     # Get all keys
     keys = merge_lists([s.get_vars() for s in slabs])
@@ -431,6 +432,9 @@ def resample_slabs(
         # first iteration. However, it also deals with cases where quantities
         # have different wavespaces (ex: radiance and radiance_noslit are not
         # defined on the same range)
+        # TODO EP 15/08/22 : this is no longer the case. ; slit & no_slit arrays
+        # now share the same wavespace. Can be removed.
+
         slabsk = [s for s in slabs if k in s.get_vars()]  # note that these are
         # references to the actual Spectrum copy
         wl = [s.get(k, wunit=waveunit, Iunit=s.units[k], copy=False)[0] for s in slabsk]
@@ -767,8 +771,8 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
                 printdbg("... merge: calculating abscoeff k=sum(k_i)")
             abscoeff_eq = np.sum(
                 [
-                    s.take("abscoeff").get(
-                        "abscoeff", wunit=waveunit, Iunit=units0["abscoeff"]
+                    s.take("abscoeff", copy_arrays=False).get(
+                        "abscoeff", wunit=waveunit, Iunit=units0["abscoeff"], copy=False
                     )[1]
                     for s in slabs
                 ],
@@ -783,8 +787,11 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
                 printdbg("... merge: calculating emisscoeff j=sum(j_i)")
             emisscoeff_eq = np.sum(
                 [
-                    s.take("emisscoeff").get(
-                        "emisscoeff", wunit=waveunit, Iunit=units0["emisscoeff"]
+                    s.take("emisscoeff", copy_arrays=False).get(
+                        "emisscoeff",
+                        wunit=waveunit,
+                        Iunit=units0["emisscoeff"],
+                        copy=False,
                     )[1]
                     for s in slabs
                 ],

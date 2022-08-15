@@ -451,26 +451,21 @@ class Isotope(Molecule):
 
     Parameters
     ----------
-
     molecule_name: str, or int
         molecule name or HITRAN identifier
-
     isotope: int
         isotope identifier, sorted by decreasing abundance (cf HITRAN
         nomenclature)
 
     Other Parameters
     ----------------
-
     isotope_name: str
         (optional) isotope name. Default ''
-
     abundance: float
         isotopologue abundance. Default ``None``
 
     See Also
     --------
-
     :py:class:`~radis.db.classes.ElectronicState`, :py:class:`~radis.db.classes.Molecule`,
     :py:func:`~radis.db.molecules.getMolecule`
     """
@@ -577,6 +572,13 @@ class ElectronicState(Isotope):
         if neither vmax nor Jmax are given
     kwargs: **dict
         forwarded to parent class
+
+    Examples
+    --------
+
+    .. minigallery:: radis.db.classes.ElectronicState
+        :add-heading:
+
 
     See Also
     --------

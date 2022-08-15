@@ -1940,6 +1940,9 @@ class Spectrum(object):
     ):
         """Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
+        .. note::
+            default plotting library and templates can be edited in :py:attr:`radis.config` ["plot"]
+
         Parameters
         ----------
         var: variable (`absorbance`, `transmittance`, `transmittance_noslit`, `xsection`, etc.)
@@ -1988,7 +1991,8 @@ class Spectrum(object):
             show figure. Default ``False``. Will still show the figure in
             interactive mode, e.g, `%matplotlib inline` in a Notebook.
         show_ruler: bool
-            if `True`, add a ruler tool to the Matplotlib toolbar.
+            if `True`, add a ruler tool to the Matplotlib toolbar. Convenient
+            to measure distances between peaks, etc.
 
             .. warning::
                 still experimental in 0.9.30 ! Try it, feedback welcome !
@@ -3518,7 +3522,7 @@ class Spectrum(object):
         w_new,
         unit="same",
         out_of_bounds="nan",
-        energy_threshold=5e-3,
+        energy_threshold="default",
         print_conservation=False,
         inplace=True,
         if_conflict_drop=None,
@@ -3566,10 +3570,11 @@ class Spectrum(object):
 
         Other Parameters
         ----------------
-        energy_threshold: float or ``None``
+        energy_threshold: float or ``None`` or ``'default'
             if energy conservation (integrals on the intersecting range) is above
-            this threshold, raise an error. If ``None``, dont check for energy conservation
-            Default 5e-3 (0.5%)
+            this threshold, raise an error. If ``None``, dont check for energy conservation.
+            If ``'default'``, look up the value in :py:attr:`radis.config` ["RESAMPLING_TOLERANCE_THRESHOLD"]
+            Default ``'default'``
         print_conservation: boolean
             if ``True``, prints energy conservation. Default ``False``.
         inplace: boolean
@@ -3857,7 +3862,7 @@ class Spectrum(object):
                 + "value manually with s.conditions['self_absorption']=..."
             )
 
-    def copy(self, copy_lines=True, quantity="all"):
+    def copy(self, copy_lines=True, quantity="all", copy_arrays=True):
         """Returns a copy of this Spectrum object (performs a smart deepcopy)
 
         Parameters
@@ -3866,6 +3871,10 @@ class Spectrum(object):
             default ``True``
         quantity: 'all', or one of 'radiance_noslit', 'absorbance', etc.
             if not 'all', copy only one quantity. Default ``'all'``
+        copy_arrays: bool
+            if ``False``, returned array's quantity is a pointer to the original
+            Spectrum. Faster, but warning, changing them will then change
+            the original Spectrum. Default ``True``
 
         Examples
         --------
@@ -3875,7 +3884,9 @@ class Spectrum(object):
 
         """
         try:
-            return self.__copy__(copy_lines=copy_lines, quantity=quantity)
+            return self.__copy__(
+                copy_lines=copy_lines, quantity=quantity, copy_arrays=copy_arrays
+            )
         except MemoryError:
             raise MemoryError(
                 "during copy of Spectrum. If you don't need them, "
@@ -3883,7 +3894,7 @@ class Spectrum(object):
                 + "del s.lines ; or, use copy_lines=False"
             )
 
-    def __copy__(self, copy_lines=True, quantity="all"):
+    def __copy__(self, copy_lines=True, quantity="all", copy_arrays=True):
         """Generate a new spectrum object.
 
         Note: using deepcopy would work but then the Spectrum object would be pickled
@@ -3895,6 +3906,10 @@ class Spectrum(object):
             default ``True``
         quantity: 'all', or one of 'radiance_noslit', 'absorbance', etc.
             if not 'all', copy only one quantity. Default ``'all'``
+        copy_arrays: bool
+            if ``False``, returned array's quantity is a pointer to the original
+            Spectrum. Faster, but warning, changing them will then change
+            the original Spectrum. Default ``True``
 
         Notes
         -----
@@ -3917,7 +3932,7 @@ class Spectrum(object):
                     quantity,
                     wunit=self.get_waveunit(),
                     Iunit=self.units[quantity],
-                    copy=True,
+                    copy=copy_arrays,
                 )
             }
         else:
@@ -3927,7 +3942,7 @@ class Spectrum(object):
                     quantity,
                     wunit=self.get_waveunit(),
                     Iunit=self.units[quantity],
-                    copy=True,
+                    copy=copy_arrays,
                 )  # copy=True still needed as the waverange is the one of the original array
             }
             del self._q[quantity]  # no need to keep it in this Spectrum
@@ -4393,12 +4408,21 @@ class Spectrum(object):
 
         return ""  # self.print_conditions()
 
-    def take(self, var, copy_lines=False):
+    def take(self, var, copy_lines=False, copy_arrays=True):
         """
         Parameters
         ----------
         var : str
             spectral quantity (``'absorbance'``, ``'transmittance'``, ``'xsection'`` etc.)
+
+        Other Parameters
+        ----------------
+        copy_lines: bool
+            if ``True``, export ``s.lines``. Default ``False``
+        copy_arrays: bool
+            if ``False``, returned array's quantity is a pointer to the original
+            Spectrum. Faster, but warning, changing them will then change
+            the original Spectrum. Default ``True``
 
         Returns
         -------
@@ -4416,7 +4440,7 @@ class Spectrum(object):
 
         """
 
-        return self.copy(quantity=var, copy_lines=copy_lines)
+        return self.copy(quantity=var, copy_lines=copy_lines, copy_arrays=copy_arrays)
 
     # %% Add min, max, normalize operations
 

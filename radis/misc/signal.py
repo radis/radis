@@ -38,7 +38,7 @@ def resample(
     xspace_new,
     k=1,
     ext="error",
-    energy_threshold=5e-3,
+    energy_threshold="default",
     print_conservation=True,
 ):
     """Resample (xspace, vector) on a new space (xspace_new) of evenly
@@ -69,10 +69,11 @@ def resample(
         defined by xspace. If 'error', raise a ValueError. If 'extrapolate', well,
         extrapolate. If '0' or 0, then fill with 0. If 1, fills with 1.
         Default 'error'.
-    energy_threshold: float or ``None``
+    energy_threshold: float or ``None`` or ``'default'
         if energy conservation (integrals on the intersecting range) is above
-        this threshold, raise an error. If ``None``, dont check for energy conservation
-        Default 5e-3 (0.5%)
+        this threshold, raise an error. If ``None``, dont check for energy conservation.
+        If ``'default'``, look up the value in :py:attr:`radis.config` ["RESAMPLING_TOLERANCE_THRESHOLD"]
+        Default ``'default'``
     print_conservation: boolean
         if True, prints energy conservation
 
@@ -104,6 +105,10 @@ def resample(
             "vector and xspace should have the same length. "
             + "Got {0}, {1}".format(len(vector), len(xspace))
         )
+    if energy_threshold == "default":
+        import radis
+
+        energy_threshold = radis.config["RESAMPLING_TOLERANCE_THRESHOLD"]
 
     # Check reversed (interpolation requires objects are sorted)
     if is_sorted(xspace):
@@ -216,11 +221,11 @@ def resample(
             plt.legend()
             raise ValueError(
                 "Error in resampling: "
-                + "energy conservation ({0:.5g}%) below tolerance level ({1:.5g}%)".format(
+                + "difference in areas (i.e. energy conservation ) ({0:.5g}%) is above the tolerance level ({1:.5g}%)".format(
                     (1 - energy_ratio) * 100, energy_threshold * 100
                 )
-                + ". Check graph 101. "
-                + "Increasing energy_threshold is possible but not recommended"
+                + ". Check graph 101. If resampling a low resolution spectrum on a high resolution spectrum, try the other way around. "
+                + "Increasing the tolerance threshold is possible but may result in accuracy errors. To increase the tolerance, set `resample(..., energy_threshold=...)`, or change the default global value in `radis.config['RESAMPLING_TOLERANCE_THRESHOLD']`"
             )
     if print_conservation:
         print("Resampling - Energy conservation: {0:.5g}%".format(energy_ratio * 100))
