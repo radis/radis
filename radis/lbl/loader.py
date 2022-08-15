@@ -474,7 +474,6 @@ class Parameters(ConditionDict):
         "wavenum_min_calc",
         "waveunit",
         "wstep",
-        "diluent",
     ]
 
     def __init__(self):
@@ -502,7 +501,6 @@ class Parameters(ConditionDict):
         self.wavenum_min_calc = None  #: float: minimum calculated wavenumber (cm-1) initialized by SpectrumFactory
         self.waveunit = "cm-1"  #: waverange unit: should be cm-1.
         self.wstep = None  #: float: spectral resolution (cm-1)
-        self.diluent = None  # dict: molecule : mole fraction
         self.dxL = _lorentzian_step(
             0.01
         )  #: float : Lorentzian step for LDM lineshape database. Default _lorentzian_step(0.01)
@@ -933,7 +931,6 @@ class DatabankLoader(object):
         memory_mapping_engine="default",
         load_columns="equilibrium",
         parallel=True,
-        diluent=None,
     ):
         """Fetch the latest databank files from HITRAN or HITEMP with the
         https://hitran.org/ API.
@@ -1168,7 +1165,6 @@ class DatabankLoader(object):
                     return_local_path=True,
                     engine=memory_mapping_engine,
                     parallel=parallel,
-                    extra_params=diluent,
                 )
                 self.params.dbpath = ",".join(local_paths)
 
