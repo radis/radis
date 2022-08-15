@@ -51,6 +51,8 @@ from radis.db.classes import (  # get_molecule_identifier,
     get_molecule,
 )
 
+from ..misc.warning import AccuracyWarning
+
 try:
     from .cache_files import load_h5_cache_file, save_to_hdf
     from .dbmanager import DatabaseManager
@@ -97,14 +99,13 @@ columns_2004 = OrderedDict(
         ("lmix", ("a1", str, "flag indicating the presence of additional data and code relating to line-mixing", "")),
         ("gp", ("a7", float, "upper state degeneracy", "")),
         ("gpp", ("a7", float, "lower state degeneracy", "")),
-        ("gamma_CO2",("a3",float,"aa",""))
     ]
 )
 """ OrderedDict: parsing order of HITRAN 2004 format """
 # fmt: on
 
 
-PARAMETER_GROUPS_hitran = {
+PARAMETER_GROUPS_HITRAN = {
     "par_line": "PARLIST_DOTPAR",
     "id": "PARLIST_ID",
     "standard": "PARLIST_STANDARD",
@@ -112,6 +113,7 @@ PARAMETER_GROUPS_hitran = {
     "voigt": "PARLIST_VOIGT_ALL",
     "ht": "PARLIST_HT_ALL",
 }
+
 
 def cast_to_int64_with_missing_values(dg, keys):
     """replace missing values of int64 columns with -1"""
@@ -1125,15 +1127,9 @@ class HITRANDatabaseManager(DatabaseManager):
         opener: an opener with an .open() command
         gfile : file handler. Filename: for info"""
 
-        from hapi import (
-            LOCAL_TABLE_CACHE,
-            PARAMETER_GROUPS,
-            PARAMETER_META,
-            db_begin,
-            fetch,
-        )
+        from hapi import LOCAL_TABLE_CACHE, db_begin, fetch
 
-        from radis import hit2df
+        # from radis import hit2df
         from radis.db.classes import get_molecule_identifier
 
         if isinstance(local_file, list):
@@ -1178,21 +1174,31 @@ class HITRANDatabaseManager(DatabaseManager):
                         )
                         os.remove(join(directory, file + ".data"))
                 try:
-                    if extra_params is not None:
-                        PARAMETER_META_LIST = [*PARAMETER_GROUPS_hitran]
+                    if extra_params == "all":
                         fetch(
                             file,
                             get_molecule_identifier(molecule),
                             iso,
                             wmin,
                             wmax,
-                            ParameterGroups=PARAMETER_META_LIST,
+                            ParameterGroups=[*PARAMETER_GROUPS_HITRAN],
                         )
-                    else:
+                    elif extra_params is None:
                         fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax)
-                except KeyError:
-                    # Isotope not defined:
-                    continue
+                    else:
+                        raise ValueError("extra_params can only be 'all' or None ")
+                except KeyError as err:
+                    list_pattern = ["(", ",", ")"]
+                    import re
+
+                    if (
+                        set(list_pattern).issubset(set(str(err)))
+                        and len(re.findall("\d", str(err))) >= 2
+                    ):
+                        # Isotope not defined, go to next isotope
+                        continue
+                    else:
+                        raise KeyError("Error: {0}".format(str(err)))
                 else:
                     isotope_list.append(iso)
                     data_file_list.append(file + ".data")
@@ -1242,8 +1248,6 @@ class HITRANDatabaseManager(DatabaseManager):
                 },
                 inplace=True,
             )
-            ##clean NaN columns
-            df.dropna(axis=1, how="any", inplace=True)
 
             wmin_final = min(wmin_final, df.wav.min())
             wmax_final = max(wmax_final, df.wav.max())
@@ -1462,6 +1466,29 @@ def fetch_hitran(
     # Delete files if needed:
     if cache == "regen":
         ldb.remove_local_files(local_file)
+    else:
+        # Raising AccuracyWarning if local_file exists and doesn't have extra columns in it
+        if ldb.get_existing_files(local_file):
+            import vaex
+
+            df = vaex.open(local_file)
+            extra = ["y_", "gamma_", "n_"]
+            found = False
+            for key in extra:
+                for column_name in df.columns:
+                    if key in column_name:
+                        found = True
+                        break
+            if not found:
+                import warnings
+
+                warnings.warn(
+                    AccuracyWarning(
+                        "All columns are not downloaded currently, if want to compute spectrum in non-air diluent, please use cache = 'regen' and extra_params='all'"
+                    )
+                )
+            df.close()
+
     ldb.check_deprecated_files(
         ldb.get_existing_files(local_file),
         auto_remove=True if cache != "force" else False,

@@ -213,6 +213,14 @@ class DataFileManager(object):
             import vaex
 
             df = vaex.open(self._temp_batch_files, group=key)
+            # Removing Nan values columns
+            import numpy as np
+
+            for column in df.columns:
+                col = df[column].values
+                if type(col[0]) in [np.int32, np.float64] and np.isnan(np.sum(col)):
+                    del df[column]
+
             if sort_values:
                 df.sort(by=sort_values).export_hdf5(file, group=key, mode="w")
             else:
