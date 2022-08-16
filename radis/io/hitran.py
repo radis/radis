@@ -349,7 +349,6 @@ def hit2df_hapi(
     load_wavenum_max=None,
     engine="pytables",
     parse_quanta=True,
-    data_file=None,
 ):
     """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe
 
@@ -407,8 +406,7 @@ def hit2df_hapi(
     """
     from hapi import LOCAL_TABLE_CACHE
 
-    data_file_name = data_file.split(".")
-    df = pd.DataFrame(LOCAL_TABLE_CACHE[data_file_name[0]]["data"])
+    df = pd.DataFrame(LOCAL_TABLE_CACHE[os.path.basename(fname).split(".")[0]]["data"])
     df.rename(
         columns={
             "molec_id": "id",
@@ -1379,6 +1377,9 @@ class HITRANDatabaseManager(DatabaseManager):
             .. warning::
                 this won't be able to download higher isotopes (ex : isotope 10-11-12 for CO2)
                 Neglected for the moment, they're irrelevant for most calculations anyway
+            .. Isotope Missing:
+                When an isotope is missing for a particular molecule then a key error `(molecule_id, isotope_id)
+                is raised. So the regex are cryptic.
 
             """
             # create temp folder :
@@ -1426,6 +1427,8 @@ class HITRANDatabaseManager(DatabaseManager):
                     if (
                         set(list_pattern).issubset(set(str(err)))
                         and len(re.findall("\d", str(err))) >= 2
+                        and get_molecule_identifier(molecule)
+                        == int(re.findall(r"[\w']+", str(err))[0])
                     ):
                         # Isotope not defined, go to next isotope
                         continue
@@ -1461,7 +1464,6 @@ class HITRANDatabaseManager(DatabaseManager):
                 join(tempdir, data_file),
                 cache=False,
                 parse_quanta=parse_quanta,
-                data_file=data_file,
             )
 
             wmin_final = min(wmin_final, df.wav.min())
@@ -1594,6 +1596,14 @@ def fetch_hitran(
         load only specific wavenumbers.
     columns: list of str
         list of columns to load. If ``None``, returns all columns in the file.
+    extra_params: 'all' or None
+        Downloads all additional columns available in the HAPI database for the molecule including
+        parameters like `gamma_co2`, `n_co2` that are required to calculate spectrum in co2 diluent.
+        For eg:
+        ```
+        from radis.io.hitran import fetch_hitran
+        df = fetch_hitran('CO', extra_params='all', cache='regen') # cache='regen' to regenerate new database with additional columns
+        ```
 
     Other Parameters
     ----------------
