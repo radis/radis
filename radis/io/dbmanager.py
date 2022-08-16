@@ -516,6 +516,27 @@ class DatabaseManager(object):
             raise ValueError(engine)
         return nrows
 
+    def get_columns(self, local_file):
+        """Get all columns (without loading all Dataframe"""
+        engine = self.engine
+        local_file = expanduser(local_file)
+        if engine == "vaex":
+            import vaex
+
+            # by default vaex does not load everything
+            df = vaex.open(local_file)
+            columns = df.columns
+            df.close()
+        elif engine == "pytables":
+            with pd.HDFStore(local_file, "r") as store:
+                columns = store.select("df", start=1, stop=1).columns
+        elif engine in ["h5py"]:
+            raise NotImplementedError
+        else:
+            raise ValueError(engine)
+
+        return columns
+
     def add_column(self, df, key, value):
         """Create column ``key`` in DataFrame or dictionary ``df`` with value ``value``"""
         from radis.misc.basics import is_number

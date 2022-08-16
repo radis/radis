@@ -1129,7 +1129,6 @@ class HITRANDatabaseManager(DatabaseManager):
 
         from hapi import LOCAL_TABLE_CACHE, db_begin, fetch
 
-        # from radis import hit2df
         from radis.db.classes import get_molecule_identifier
 
         if isinstance(local_file, list):
@@ -1468,26 +1467,25 @@ def fetch_hitran(
         ldb.remove_local_files(local_file)
     else:
         # Raising AccuracyWarning if local_file exists and doesn't have extra columns in it
-        if ldb.get_existing_files(local_file):
-            import vaex
+        if ldb.get_existing_files(local_file) and extra_params == "all":
 
-            df = vaex.open(local_file)
-            extra = ["y_", "gamma_", "n_"]
+            columns = ldb.get_columns(local_file[0])
+            extra_columns = ["y_", "gamma_", "n_"]
             found = False
-            for key in extra:
-                for column_name in df.columns:
+            for key in extra_columns:
+                for column_name in columns:
                     if key in column_name:
                         found = True
                         break
+
             if not found:
                 import warnings
 
                 warnings.warn(
                     AccuracyWarning(
-                        "All columns are not downloaded currently, if want to compute spectrum in non-air diluent, please use cache = 'regen' and extra_params='all'"
+                        "All columns are not downloaded currently, please use cache = 'regen' and extra_params='all' to download all columns."
                     )
                 )
-            df.close()
 
     ldb.check_deprecated_files(
         ldb.get_existing_files(local_file),
