@@ -227,79 +227,15 @@ def hit2df(
         if df is not None:
             return df
 
-    # Detect the molecule by reading the start of the file
-    try:
-        with open(fname) as f:
-            mol = get_molecule(int(f.read(2)))
-    except UnicodeDecodeError as err:
-        raise ValueError(
-            "You're trying to read a binary file {0} ".format(fname)
-            + "instead of an HITRAN file"
-        ) from err
-
-    # %% Start reading the full file
+    #  %% Start reading the full file
 
     df = parse_hitran_file(fname, columns)
 
-    # %% Post processing
-
-    # assert one molecule per database only. Else the groupbase data reading
-    # above doesnt make sense
-    nmol = len(df["id"].unique())
-    if nmol == 0:
-        raise ValueError("Databank looks empty")
-    elif nmol != 1:
-        # Crash, give explicity error messages
-        try:
-            secondline = df.iloc[1]
-        except IndexError:
-            secondline = ""
-        raise ValueError(
-            "Multiple molecules in database ({0} : {1}). Current ".format(
-                nmol, [get_molecule(idi) for idi in df["id"].unique()]
-            )
-            + "spectral code only computes 1 species at the time. Use MergeSlabs. "
-            + "Verify the parsing was correct by looking at the first row below: "
-            + "\n{0}".format(df.iloc[0])
-            + "\n----------------\nand the second row "
-            + "below: \n{0}".format(secondline)
-        )
-
-    if parse_quanta:
-        # Add local quanta attributes, based on the HITRAN group
-        try:
-            df = parse_local_quanta(df, mol, verbose=verbose)
-        except ValueError as err:
-            # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
-            # In this case, do not parse (makes non-equilibrium calculations impossible).
-            # see https://github.com/radis/radis/issues/211
-            if verbose:
-                print(str(err))
-                print("-" * 10)
-                print(
-                    f"Impossible to parse local quanta in {fname}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
-                )
-
-        # Add global quanta attributes, based on the HITRAN class
-        try:
-            df = parse_global_quanta(df, mol, verbose=verbose)
-        except ValueError as err:
-            # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
-            # In this case, do not parse (makes non-equilibrium calculations impossible).
-            # see https://github.com/radis/radis/issues/211
-            if verbose:
-                print(str(err))
-                print("-" * 10)
-                print(
-                    f"Impossible to parse global quanta in {fname}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
-                )
-
-    # Remove non numerical attributes
-    if drop_non_numeric:
-        if "branch" in df:
-            replace_PQR_with_m101(df)
-        df = drop_object_format_columns(df, verbose=verbose)
-
+    df = post_process_hitran_data(
+        df,
+        fname=fname,
+        parse_quanta=parse_quanta,
+    )
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:
         new_metadata = {
@@ -340,28 +276,19 @@ def hit2df(
     return df
 
 
-def hit2df_hapi(
+def post_process_hitran_data(
+    df,
     fname,
-    cache=True,
     verbose=True,
     drop_non_numeric=True,
-    load_wavenum_min=None,
-    load_wavenum_max=None,
-    engine="pytables",
     parse_quanta=True,
 ):
-    """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe
+    """Parsing non-equilibrum parameters in HITRAN/HITEMP [1]_ file to and return final Pandas Dataframe
 
     Parameters
     ----------
     fname: str
         HITRAN-HITEMP file name
-    cache: boolean, or ``'regen'`` or ``'force'``
-        if ``True``, a pandas-readable HDF5 file is generated on first access,
-        and later used. This saves on the datatype cast and conversion and
-        improves performances a lot (but changes in the database are not
-        taken into account). If False, no database is used. If ``'regen'``, temp
-        file are reconstructed. Default ``True``.
 
     Other Parameters
     ----------------
@@ -370,12 +297,6 @@ def hit2df_hapi(
         but make sure all the columns you need are converted to numeric formats
         before hand. Default ``True``. Note that if a cache file is loaded it
         will be left untouched.
-    load_wavenum_min, load_wavenum_max: float
-        if not ``'None'``, only load the cached file if it contains data for
-        wavenumbers above/below the specified value. See :py:func`~radis.io.cache_files.load_h5_cache_file`.
-        Default ``'None'``.
-    engine: 'pytables', 'vaex'
-        format for Hdf5 cache file. Default `pytables`
     parse_quanta: bool
         if ``True``, parse local & global quanta (required to identify lines
         for non-LTE calculations ; but sometimes lines are not labelled.)
@@ -404,64 +325,6 @@ def hit2df_hapi(
 
     :func:`~radis.io.cdsd.cdsd2df`
     """
-    from hapi import LOCAL_TABLE_CACHE
-
-    df = pd.DataFrame(LOCAL_TABLE_CACHE[os.path.basename(fname).split(".")[0]]["data"])
-    df.rename(
-        columns={
-            "molec_id": "id",
-            "local_iso_id": "iso",
-            "nu": "wav",
-            "sw": "int",
-            "a": "A",
-            "gamma_air": "airbrd",
-            "gamma_self": "selbrd",
-            "elower": "El",
-            "n_air": "Tdpair",
-            "delta_air": "Pshft",
-            "global_upper_quanta": "globu",
-            "global_lower_quanta": "globl",
-            "local_upper_quanta": "locu",
-            "local_lower_quanta": "locl",
-            "gp": "gp",
-            "gpp": "gpp",
-        },
-        inplace=True,
-    )
-
-    metadata = {}
-    # Last modification time of the original file :
-    metadata["last_modification"] = time.ctime(getmtime(fname))
-    if verbose >= 2:
-        print("Opening file {0} (cache={1})".format(fname, cache))
-        print("Last modification time: {0}".format(metadata["last_modification"]))
-    if load_wavenum_min and load_wavenum_max:
-        assert load_wavenum_min < load_wavenum_max
-
-    # Use cache file if possible
-    fcache = DataFileManager(engine).cache_file(fname)
-    if cache and exists(fcache):
-        relevant_if_metadata_above = (
-            {"wavenum_max": load_wavenum_min} if load_wavenum_min else {}
-        )  # not relevant if wavenum_max of file is < wavenum min required
-        relevant_if_metadata_below = (
-            {"wavenum_min": load_wavenum_max} if load_wavenum_max else {}
-        )  # not relevant if wavenum_min of file is > wavenum max required
-        from radis import __version__, config
-
-        df = load_h5_cache_file(
-            fcache,
-            cache,
-            valid_if_metadata_is=metadata,
-            relevant_if_metadata_above=relevant_if_metadata_above,
-            relevant_if_metadata_below=relevant_if_metadata_below,
-            current_version=__version__,
-            last_compatible_version=config["OLDEST_COMPATIBLE_VERSION"],
-            verbose=verbose,
-            engine=engine,
-        )
-        if df is not None:
-            return df
     # Detect the molecule by reading the start of the file
     try:
         with open(fname) as f:
@@ -530,43 +393,6 @@ def hit2df_hapi(
         if "branch" in df:
             replace_PQR_with_m101(df)
         df = drop_object_format_columns(df, verbose=verbose)
-
-    # cached file mode but cached file doesn't exist yet (else we had returned)
-    if cache:
-        new_metadata = {
-            # Last modification time of the original file :
-            "last_modification": time.ctime(getmtime(fname)),
-            "wavenum_min": df.wav.min(),
-            "wavenum_max": df.wav.max(),
-        }
-        if verbose:
-            print(
-                "Generating cache file {0} with metadata :\n{1}".format(
-                    fcache, new_metadata
-                )
-            )
-        from radis import __version__
-
-        try:
-            save_to_hdf(
-                df,
-                fcache,
-                metadata=new_metadata,
-                version=__version__,
-                overwrite=True,
-                verbose=verbose,
-                engine=engine,
-            )
-        except PermissionError:
-            if verbose:
-                print(sys.exc_info())
-                print("An error occured in cache file generation. Lookup access rights")
-            pass
-
-    # TODO : get only wavenum above/below 'load_wavenum_min', 'load_wavenum_max'
-    # by parsing df.wav.   Completely irrelevant files are discarded in 'load_h5_cache_file'
-    # but files that have partly relevant lines are fully loaded.
-    # Note : cache file is generated with the full line list.
 
     return df
 
@@ -1358,7 +1184,7 @@ class HITRANDatabaseManager(DatabaseManager):
         opener: an opener with an .open() command
         gfile : file handler. Filename: for info"""
 
-        from hapi import db_begin, fetch
+        from hapi import LOCAL_TABLE_CACHE, db_begin, fetch
 
         from radis.db.classes import get_molecule_identifier
 
@@ -1462,9 +1288,31 @@ class HITRANDatabaseManager(DatabaseManager):
         # Create HDF5 cache file for all isotopes
         Nlines = 0
         for iso, data_file in zip(isotope_list, data_file_list):
-            df = hit2df_hapi(
+            df = pd.DataFrame(LOCAL_TABLE_CACHE[data_file.split(".")[0]]["data"])
+            df.rename(
+                columns={
+                    "molec_id": "id",
+                    "local_iso_id": "iso",
+                    "nu": "wav",
+                    "sw": "int",
+                    "a": "A",
+                    "gamma_air": "airbrd",
+                    "gamma_self": "selbrd",
+                    "elower": "El",
+                    "n_air": "Tdpair",
+                    "delta_air": "Pshft",
+                    "global_upper_quanta": "globu",
+                    "global_lower_quanta": "globl",
+                    "local_upper_quanta": "locu",
+                    "local_lower_quanta": "locl",
+                    "gp": "gp",
+                    "gpp": "gpp",
+                },
+                inplace=True,
+            )
+            df = post_process_hitran_data(
+                df,
                 join(tempdir, data_file),
-                cache=False,
                 parse_quanta=parse_quanta,
             )
 
