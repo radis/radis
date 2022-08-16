@@ -931,6 +931,7 @@ class DatabankLoader(object):
         memory_mapping_engine="default",
         load_columns="equilibrium",
         parallel=True,
+        extra_params=None,
     ):
         """Fetch the latest databank files from HITRAN or HITEMP with the
         https://hitran.org/ API.
@@ -984,7 +985,7 @@ class DatabankLoader(object):
             If ``None``, non equilibrium calculations are not possible. Default ``'radis'``.
         load_energies: boolean
             if ``False``, dont load energy levels. This means that nonequilibrium
-            spectra cannot be calculated, but it saves some memory. Default ``True``
+            spectra cannot be calculated, but it saves some memory. Default ``False``
         include_neighbouring_lines: bool
             if ``True``, includes off-range, neighbouring lines that contribute
             because of lineshape broadening. The ``neighbour_lines``
@@ -1165,6 +1166,7 @@ class DatabankLoader(object):
                     return_local_path=True,
                     engine=memory_mapping_engine,
                     parallel=parallel,
+                    extra_params=extra_params,
                 )
                 self.params.dbpath = ",".join(local_paths)
 
