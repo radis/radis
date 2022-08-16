@@ -1379,7 +1379,7 @@ class HITRANDatabaseManager(DatabaseManager):
                 Neglected for the moment, they're irrelevant for most calculations anyway
             .. Isotope Missing:
                 When an isotope is missing for a particular molecule then a key error `(molecule_id, isotope_id)
-                is raised. So the regex are cryptic.
+                is raised.
 
             """
             # create temp folder :
@@ -1428,7 +1428,9 @@ class HITRANDatabaseManager(DatabaseManager):
                         set(list_pattern).issubset(set(str(err)))
                         and len(re.findall("\d", str(err))) >= 2
                         and get_molecule_identifier(molecule)
-                        == int(re.findall(r"[\w']+", str(err))[0])
+                        == int(
+                            re.findall(r"[\w']+", str(err))[0]
+                        )  # The regex are cryptic
                     ):
                         # Isotope not defined, go to next isotope
                         continue
@@ -1600,10 +1602,10 @@ def fetch_hitran(
         Downloads all additional columns available in the HAPI database for the molecule including
         parameters like `gamma_co2`, `n_co2` that are required to calculate spectrum in co2 diluent.
         For eg:
-        ```
-        from radis.io.hitran import fetch_hitran
-        df = fetch_hitran('CO', extra_params='all', cache='regen') # cache='regen' to regenerate new database with additional columns
-        ```
+        ::
+
+            from radis.io.hitran import fetch_hitran
+            df = fetch_hitran('CO', extra_params='all', cache='regen') # cache='regen' to regenerate new database with additional columns
 
     Other Parameters
     ----------------

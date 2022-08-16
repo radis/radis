@@ -517,7 +517,7 @@ class DatabaseManager(object):
         return nrows
 
     def get_columns(self, local_file):
-        """Get all columns (without loading all Dataframe"""
+        """Get all columns (without loading all Dataframe)"""
         engine = self.engine
         local_file = expanduser(local_file)
         if engine == "vaex":
