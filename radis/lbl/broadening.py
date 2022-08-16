@@ -2248,6 +2248,23 @@ class BroadenFactory(BaseFactory):
                 N = int(len(df) * len(wavenumber) / chunksize) + 1
                 # Too big may be faster but overload memory.
                 # See Performance for more information
+
+                # Raise performance warning if the chunks are bigger
+                # than the number of lines.
+                if N >= len(df):
+                    self.warn(
+                        "We suggest increasing chunksize to"
+                        + " {0:.1e} - {1:.1e}".format(
+                            10000 * len(wavenumber), 100000 * len(wavenumber)
+                        )
+                        + " to speed up calculations. Currently, there are more chunks"
+                        + " ({0:.3e}) than lines ({1:.3e}).".format(N, len(df))
+                        + " Hence, calculation times will be extremely slow, since broadening will be"
+                        + " calculated using only one line per iteration. Ideally, 10,000 - 100,000"
+                        + " lines per chunk are recommended.",
+                        "PerformanceWarning",
+                    )
+
                 abscoeff = zeros_like(self.wavenumber)
                 pb = ProgressBar(N, active=self.verbose)
 
