@@ -7,7 +7,6 @@ Created on Tue Jan 26 20:36:38 2021
 
 import pytest
 
-from radis.io.dbmanager import DatabaseManager
 from radis.io.hdf5 import DataFileManager, hdf2df
 from radis.io.hitemp import fetch_hitemp
 from radis.misc.config import getDatabankEntries
@@ -65,18 +64,14 @@ def test_hdf5_io_engines(*args, **kwargs):
     df.close()
     assert manager.read_metadata("test_h5py.h5", key=None) == metadata0
 
-    # Test get_columns function of DatabaseManager
+    # Test get_columns function of DataFileManager
     # For vaex
-    dbmanager = DatabaseManager(
-        name="test", local_databases="hitran", molecule="CO", engine="vaex"
-    )
-    assert list(dbmanager.get_columns("test_h5py.h5")) == ["a", "b"]
+    manager = DataFileManager(engine="vaex")
+    assert list(manager.get_columns("test_h5py.h5")) == ["a", "b"]
 
     # For pytables
-    dbmanager = DatabaseManager(
-        name="test", local_databases="hitran", molecule="CO", engine="pytables"
-    )
-    assert list(dbmanager.get_columns("test_pytables.h5")) == ["a", "b"]
+    manager = DataFileManager(engine="pytables")
+    assert list(manager.get_columns("test_pytables.h5")) == ["a", "b"]
 
 
 @pytest.mark.needs_connection
