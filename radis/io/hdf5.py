@@ -196,7 +196,31 @@ class DataFileManager(object):
             raise NotImplementedError(self.engine)
             # h5py is not designed to write Pandas DataFrames
 
-    def combine_temp_batch_files(self, file, key="default", sort_values=None):
+    def get_columns(self, local_file):
+        """Get all columns (without loading all Dataframe)"""
+        engine = self.engine
+        local_file = expanduser(local_file)
+        if engine == "vaex":
+            import vaex
+
+            # by default vaex does not load everything
+            df = vaex.open(local_file)
+            columns = df.columns
+            df.close()
+
+        elif engine == "pytables":
+            with pd.HDFStore(local_file, "r") as store:
+                columns = store.select("df", start=1, stop=1).columns
+        elif engine in ["h5py"]:
+            raise NotImplementedError
+        else:
+            raise ValueError(engine)
+
+        return columns
+
+    def combine_temp_batch_files(
+        self, file, key="default", sort_values=None, delete_nan_columns=True
+    ):
         """Combine all batch files in ``self._temp_batch_files`` into one.
         Removes all batch files.
         """
@@ -213,6 +237,15 @@ class DataFileManager(object):
             import vaex
 
             df = vaex.open(self._temp_batch_files, group=key)
+            # Removing Nan values columns
+            if delete_nan_columns:
+                import numpy as np
+
+                for column in df.columns:
+                    col = df[column].values
+                    if type(col[0]) in [np.int32, np.float64] and np.isnan(np.sum(col)):
+                        del df[column]
+
             if sort_values:
                 df.sort(by=sort_values).export_hdf5(file, group=key, mode="w")
             else:

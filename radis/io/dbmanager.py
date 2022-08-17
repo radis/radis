@@ -97,24 +97,12 @@ class DatabaseManager(object):
         nJobs=-2,
         batch_size="auto",
     ):
-        from os import environ
-
         if engine == "default":
             from radis import config
 
             engine = config["MEMORY_MAPPING_ENGINE"]  # 'pytables', 'vaex', 'feather'
-            # Quick fix for #401, #404
             if engine == "auto":
-                # temp fix for vaex not building on RTD
-                # see https://github.com/radis/radis/issues/404
-                if any("READTHEDOCS" in name for name in environ):
-                    engine = "pytables"  # for HITRAN and HITEMP databases
-                    if verbose >= 3:
-                        print(
-                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{engine}'. See https://github.com/radis/radis/issues/404"
-                        )
-                else:
-                    engine = "vaex"
+                engine = "vaex"
 
         self.name = name
         self.molecule = molecule
@@ -515,6 +503,10 @@ class DatabaseManager(object):
         else:
             raise ValueError(engine)
         return nrows
+
+    def get_columns(self, local_file):
+        """Get all columns using DataFileManager class get_columns function"""
+        return self.get_datafile_manager().get_columns(local_file)
 
     def add_column(self, df, key, value):
         """Create column ``key`` in DataFrame or dictionary ``df`` with value ``value``"""

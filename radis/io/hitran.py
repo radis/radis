@@ -51,6 +51,8 @@ from radis.db.classes import (  # get_molecule_identifier,
     get_molecule,
 )
 
+from ..misc.warning import AccuracyWarning
+
 try:
     from .cache_files import load_h5_cache_file, save_to_hdf
     from .dbmanager import DatabaseManager
@@ -103,7 +105,7 @@ columns_2004 = OrderedDict(
 # fmt: on
 
 
-PARAMETER_GROUPS_hitran = {
+PARAMETER_GROUPS_HITRAN = {
     "par_line": "PARLIST_DOTPAR",
     "id": "PARLIST_ID",
     "standard": "PARLIST_STANDARD",
@@ -225,6 +227,8 @@ def hit2df(
         if df is not None:
             return df
 
+    #  %% Start reading the full file
+
     # Detect the molecule by reading the start of the file
     try:
         with open(fname) as f:
@@ -235,69 +239,13 @@ def hit2df(
             + "instead of an HITRAN file"
         ) from err
 
-    # %% Start reading the full file
-
     df = parse_hitran_file(fname, columns)
 
-    # %% Post processing
-
-    # assert one molecule per database only. Else the groupbase data reading
-    # above doesnt make sense
-    nmol = len(df["id"].unique())
-    if nmol == 0:
-        raise ValueError("Databank looks empty")
-    elif nmol != 1:
-        # Crash, give explicity error messages
-        try:
-            secondline = df.iloc[1]
-        except IndexError:
-            secondline = ""
-        raise ValueError(
-            "Multiple molecules in database ({0} : {1}). Current ".format(
-                nmol, [get_molecule(idi) for idi in df["id"].unique()]
-            )
-            + "spectral code only computes 1 species at the time. Use MergeSlabs. "
-            + "Verify the parsing was correct by looking at the first row below: "
-            + "\n{0}".format(df.iloc[0])
-            + "\n----------------\nand the second row "
-            + "below: \n{0}".format(secondline)
-        )
-
-    if parse_quanta:
-        # Add local quanta attributes, based on the HITRAN group
-        try:
-            df = parse_local_quanta(df, mol, verbose=verbose)
-        except ValueError as err:
-            # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
-            # In this case, do not parse (makes non-equilibrium calculations impossible).
-            # see https://github.com/radis/radis/issues/211
-            if verbose:
-                print(str(err))
-                print("-" * 10)
-                print(
-                    f"Impossible to parse local quanta in {fname}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
-                )
-
-        # Add global quanta attributes, based on the HITRAN class
-        try:
-            df = parse_global_quanta(df, mol, verbose=verbose)
-        except ValueError as err:
-            # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
-            # In this case, do not parse (makes non-equilibrium calculations impossible).
-            # see https://github.com/radis/radis/issues/211
-            if verbose:
-                print(str(err))
-                print("-" * 10)
-                print(
-                    f"Impossible to parse global quanta in {fname}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
-                )
-
-    # Remove non numerical attributes
-    if drop_non_numeric:
-        if "branch" in df:
-            replace_PQR_with_m101(df)
-        df = drop_object_format_columns(df, verbose=verbose)
-
+    df = post_process_hitran_data(
+        df,
+        molecule=mol,
+        parse_quanta=parse_quanta,
+    )
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:
         new_metadata = {
@@ -334,6 +282,121 @@ def hit2df(
     # by parsing df.wav.   Completely irrelevant files are discarded in 'load_h5_cache_file'
     # but files that have partly relevant lines are fully loaded.
     # Note : cache file is generated with the full line list.
+
+    return df
+
+
+def post_process_hitran_data(
+    df,
+    molecule,
+    verbose=True,
+    drop_non_numeric=True,
+    parse_quanta=True,
+):
+    """Parsing non-equilibrum parameters in HITRAN/HITEMP [1]_ file to and return final Pandas Dataframe
+
+    Parameters
+    ----------
+    df: pandas Dataframe
+      dataframe containing generic parameters
+
+    molecule: str
+       molecule name
+
+    Other Parameters
+    ----------------
+    drop_non_numeric: boolean
+        if ``True``, non numeric columns are dropped. This improves performances,
+        but make sure all the columns you need are converted to numeric formats
+        before hand. Default ``True``. Note that if a cache file is loaded it
+        will be left untouched.
+    parse_quanta: bool
+        if ``True``, parse local & global quanta (required to identify lines
+        for non-LTE calculations ; but sometimes lines are not labelled.)
+
+    Returns
+    -------
+    df: pandas Dataframe
+        dataframe containing all lines and parameters
+
+
+    References
+    ----------
+
+    .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
+
+
+
+    Notes
+    -----
+
+    Performances: see CDSD-HITEMP parser
+
+
+    See Also
+    --------
+
+    :func:`~radis.io.cdsd.cdsd2df`
+    """
+
+    # %% Post processing
+
+    # assert one molecule per database only. Else the groupbase data reading
+    # above doesnt make sense
+    nmol = len(df["id"].unique())
+    if nmol == 0:
+        raise ValueError("Databank looks empty")
+    elif nmol != 1:
+        # Crash, give explicity error messages
+        try:
+            secondline = df.iloc[1]
+        except IndexError:
+            secondline = ""
+        raise ValueError(
+            "Multiple molecules in database ({0} : {1}). Current ".format(
+                nmol, [get_molecule(idi) for idi in df["id"].unique()]
+            )
+            + "spectral code only computes 1 species at the time. Use MergeSlabs. "
+            + "Verify the parsing was correct by looking at the first row below: "
+            + "\n{0}".format(df.iloc[0])
+            + "\n----------------\nand the second row "
+            + "below: \n{0}".format(secondline)
+        )
+
+    if parse_quanta:
+        # Add local quanta attributes, based on the HITRAN group
+        try:
+            df = parse_local_quanta(df, molecule, verbose=verbose)
+        except ValueError as err:
+            # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
+            # In this case, do not parse (makes non-equilibrium calculations impossible).
+            # see https://github.com/radis/radis/issues/211
+            if verbose:
+                print(str(err))
+                print("-" * 10)
+                print(
+                    f"Impossible to parse local quanta in {molecule}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
+                )
+
+        # Add global quanta attributes, based on the HITRAN class
+        try:
+            df = parse_global_quanta(df, molecule, verbose=verbose)
+        except ValueError as err:
+            # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
+            # In this case, do not parse (makes non-equilibrium calculations impossible).
+            # see https://github.com/radis/radis/issues/211
+            if verbose:
+                print(str(err))
+                print("-" * 10)
+                print(
+                    f"Impossible to parse global quanta in {molecule}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
+                )
+
+    # Remove non numerical attributes
+    if drop_non_numeric:
+        if "branch" in df:
+            replace_PQR_with_m101(df)
+        df = drop_object_format_columns(df, verbose=verbose)
 
     return df
 
@@ -1127,7 +1190,6 @@ class HITRANDatabaseManager(DatabaseManager):
 
         from hapi import LOCAL_TABLE_CACHE, db_begin, fetch
 
-        # from radis import hit2df
         from radis.db.classes import get_molecule_identifier
 
         if isinstance(local_file, list):
@@ -1145,6 +1207,9 @@ class HITRANDatabaseManager(DatabaseManager):
             .. warning::
                 this won't be able to download higher isotopes (ex : isotope 10-11-12 for CO2)
                 Neglected for the moment, they're irrelevant for most calculations anyway
+            .. Isotope Missing:
+                When an isotope is missing for a particular molecule then a key error `(molecule_id, isotope_id)
+                is raised.
 
             """
             # create temp folder :
@@ -1172,21 +1237,35 @@ class HITRANDatabaseManager(DatabaseManager):
                         )
                         os.remove(join(directory, file + ".data"))
                 try:
-                    if extra_params is not None:
-                        PARAMETER_META_LIST = [*PARAMETER_GROUPS_hitran]
+                    if extra_params == "all":
                         fetch(
                             file,
                             get_molecule_identifier(molecule),
                             iso,
                             wmin,
                             wmax,
-                            ParameterGroups=PARAMETER_META_LIST,
+                            ParameterGroups=[*PARAMETER_GROUPS_HITRAN],
                         )
-                    else:
+                    elif extra_params is None:
                         fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax)
-                except KeyError:
-                    # Isotope not defined:
-                    continue
+                    else:
+                        raise ValueError("extra_params can only be 'all' or None ")
+                except KeyError as err:
+                    list_pattern = ["(", ",", ")"]
+                    import re
+
+                    if (
+                        set(list_pattern).issubset(set(str(err)))
+                        and len(re.findall("\d", str(err))) >= 2
+                        and get_molecule_identifier(molecule)
+                        == int(
+                            re.findall(r"[\w']+", str(err))[0]
+                        )  # The regex are cryptic
+                    ):
+                        # Isotope not defined, go to next isotope
+                        continue
+                    else:
+                        raise KeyError("Error: {0}".format(str(err)))
                 else:
                     isotope_list.append(iso)
                     data_file_list.append(file + ".data")
@@ -1213,8 +1292,7 @@ class HITRANDatabaseManager(DatabaseManager):
         # Create HDF5 cache file for all isotopes
         Nlines = 0
         for iso, data_file in zip(isotope_list, data_file_list):
-            data_file_name = data_file.split(".")
-            df = pd.DataFrame(LOCAL_TABLE_CACHE[data_file_name[0]]["data"])
+            df = pd.DataFrame(LOCAL_TABLE_CACHE[data_file.split(".")[0]]["data"])
             df.rename(
                 columns={
                     "molec_id": "id",
@@ -1236,8 +1314,11 @@ class HITRANDatabaseManager(DatabaseManager):
                 },
                 inplace=True,
             )
-            ##clean NaN columns
-            df.dropna(axis=1, how="any", inplace=True)
+            df = post_process_hitran_data(
+                df,
+                molecule=molecule,
+                parse_quanta=parse_quanta,
+            )
 
             wmin_final = min(wmin_final, df.wav.min())
             wmax_final = max(wmax_final, df.wav.max())
@@ -1369,6 +1450,14 @@ def fetch_hitran(
         load only specific wavenumbers.
     columns: list of str
         list of columns to load. If ``None``, returns all columns in the file.
+    extra_params: 'all' or None
+        Downloads all additional columns available in the HAPI database for the molecule including
+        parameters like `gamma_co2`, `n_co2` that are required to calculate spectrum in co2 diluent.
+        For eg:
+        ::
+
+            from radis.io.hitran import fetch_hitran
+            df = fetch_hitran('CO', extra_params='all', cache='regen') # cache='regen' to regenerate new database with additional columns
 
     Other Parameters
     ----------------
@@ -1385,7 +1474,12 @@ def fetch_hitran(
         which HDF5 library to use. If 'default' use the value from ~/radis.json
     output: 'pandas', 'vaex', 'jax'
         format of the output DataFrame. If ``'jax'``, returns a dictionary of
-        jax arrays.
+        jax arrays. If ``'vaex'``, output is a :py:class:`vaex.dataframe.DataFrameLocal`
+
+        .. note::
+            Vaex DataFrames are memory-mapped. They do not take any space in RAM
+            and are extremelly useful to deal with the largest databases.
+
     parallel: bool
         if ``True``, uses joblib.parallel to load database with multiple processes
     parse_quanta: bool
@@ -1456,6 +1550,27 @@ def fetch_hitran(
     # Delete files if needed:
     if cache == "regen":
         ldb.remove_local_files(local_file)
+    else:
+        # Raising AccuracyWarning if local_file exists and doesn't have extra columns in it
+        if ldb.get_existing_files(local_file) and extra_params == "all":
+            columns = ldb.get_columns(local_file[0])
+            extra_columns = ["y_", "gamma_", "n_"]
+            found = False
+            for key in extra_columns:
+                for column_name in columns:
+                    if key in column_name:
+                        found = True
+                        break
+
+            if not found:
+                import warnings
+
+                warnings.warn(
+                    AccuracyWarning(
+                        "All columns are not downloaded currently, please use cache = 'regen' and extra_params='all' to download all columns."
+                    )
+                )
+
     ldb.check_deprecated_files(
         ldb.get_existing_files(local_file),
         auto_remove=True if cache != "force" else False,

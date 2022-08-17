@@ -219,7 +219,7 @@ class HITEMPDatabaseManager(DatabaseManager):
             base_url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
             response = urllib.request.urlopen(base_url)
             response_string = response.read().decode()
-            inputfiles = re.findall('href="(\S+.zip)"', response_string)
+            inputfiles = re.findall(r'href="(\S+.zip)"', response_string)
 
             urlnames = [join(base_url, f) for f in inputfiles]
 
@@ -482,7 +482,12 @@ def fetch_hitemp(
         which HDF5 library to use to parse local files. If 'default' use the value from ~/radis.json
     output: 'pandas', 'vaex', 'jax'
         format of the output DataFrame. If ``'jax'``, returns a dictionary of
-        jax arrays.
+        jax arrays. If ``'vaex'``, output is a :py:class:`vaex.dataframe.DataFrameLocal`
+
+        .. note::
+            Vaex DataFrames are memory-mapped. They do not take any space in RAM
+            and are extremelly useful to deal with the largest databases.
+
     parallel: bool
         if ``True``, uses joblib.parallel to load database with multiple processes
 

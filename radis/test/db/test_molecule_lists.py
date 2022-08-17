@@ -46,7 +46,7 @@ def test_ExoMol_molecules_list(verbose=True, *args, **kwargs):
 
     if verbose:
         print("ExoMol molecules, fetched online ")
-        print(molecules)
+        print(sorted(molecules))
 
         print("Comparing Radis hardcoded ExoMol molecules list to the ExoMol website: ")
 

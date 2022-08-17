@@ -32,7 +32,8 @@ s_exp = s + noise
 
 s_exp.plot()
 
-#%% Determine the noise level by selecting a noisy region from the graph above.
+#%%
+# Determine the noise level by selecting a noisy region from the graph above :
 
 spectrum = s_exp.to_specutils()
 
@@ -43,7 +44,8 @@ noise_region = SpectralRegion(2010.5 / u.cm, 2009.5 / u.cm)
 spectrum = noise_region_uncertainty(spectrum, noise_region)
 
 
-#%% Find lines :
+#%%
+# Find lines :
 
 from specutils.fitting import find_lines_threshold
 
@@ -61,7 +63,9 @@ s.plot(nfig="same")
 plt.axvspan(noise_region.lower.value, noise_region.upper.value, color="b", alpha=0.1)
 
 
-#%% Note: we can also create a RADIS spectrum object from the Specutils Spectrum1D :
+#%%
+# Note: we can also create a RADIS spectrum object from Specutils
+# :py:class:`specutils.spectra.spectrum1d.Spectrum1D` :
 
 from radis import Spectrum
 

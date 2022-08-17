@@ -34,6 +34,12 @@ An online environment for advanced spectrum processing and comparison with exper
 
 🌱 Try it : https://radis.github.io/radis-lab/
 
+.. note::
+
+    Radis-Lab allows you to share your session URL with colleagues.
+    They will access the latest saved version of your notebook as long
+    as your session is running.
+
 See more `on GitHub <https://github.com/radis/radis-lab>`__
 
 

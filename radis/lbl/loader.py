@@ -474,7 +474,6 @@ class Parameters(ConditionDict):
         "wavenum_min_calc",
         "waveunit",
         "wstep",
-        "diluent",
     ]
 
     def __init__(self):
@@ -502,7 +501,6 @@ class Parameters(ConditionDict):
         self.wavenum_min_calc = None  #: float: minimum calculated wavenumber (cm-1) initialized by SpectrumFactory
         self.waveunit = "cm-1"  #: waverange unit: should be cm-1.
         self.wstep = None  #: float: spectral resolution (cm-1)
-        self.diluent = None  # dict: molecule : mole fraction
         self.dxL = _lorentzian_step(
             0.01
         )  #: float : Lorentzian step for LDM lineshape database. Default _lorentzian_step(0.01)
@@ -933,16 +931,16 @@ class DatabankLoader(object):
         memory_mapping_engine="default",
         load_columns="equilibrium",
         parallel=True,
-        diluent=None,
+        extra_params=None,
     ):
-        """Fetch the latest databank files from HITRAN or HITEMP with the
-        https://hitran.org/ API.
+        """Fetch the latest files from [HITRAN-2020]_, [HITEMP-2010]_ (or newer),
+        [ExoMol-2020]_  or [GEISA-2020] , and store them locally in memory-mapping
+        formats for extremelly fast access.
 
         Parameters
         ----------
-        source: ``'hitran'``, ``'hitemp'``, ``'exomol'``
-            [Download database lines from the latest HITRAN (see [HITRAN-2020]_),
-            HITEMP (see [HITEMP-2010]_  )] or EXOMOL see [ExoMol-2020]_  ) databases.
+        source: ``'hitran'``, ``'hitemp'``, ``'exomol'``, ``'geisa'``
+            which database to use.
         database: ``'full'``, ``'range'``, name of an ExoMol database, or ``'default'``
             if fetching from HITRAN, ``'full'`` download the full database and register
             it, ``'range'`` download only the lines in the range of the molecule.
@@ -960,8 +958,9 @@ class DatabankLoader(object):
             to use. Keep ``'default'`` to use the recommended one. See all available databases
             with :py:func:`radis.io.exomol.get_exomol_database_list`
 
-            By default, databases are download in `~/.radisdb`.
-            Can be changed in ``radis.config["DEFAULT_DOWNLOAD_PATH"]`` or in ~/radis.json config file
+            By default, databases are download in ``~/.radisdb``.
+            Can be changed in ``radis.config["DEFAULT_DOWNLOAD_PATH"]`` or in
+            ``~/radis.json`` config file
 
 
         Other Parameters
@@ -987,7 +986,7 @@ class DatabankLoader(object):
             If ``None``, non equilibrium calculations are not possible. Default ``'radis'``.
         load_energies: boolean
             if ``False``, dont load energy levels. This means that nonequilibrium
-            spectra cannot be calculated, but it saves some memory. Default ``True``
+            spectra cannot be calculated, but it saves some memory. Default ``False``
         include_neighbouring_lines: bool
             if ``True``, includes off-range, neighbouring lines that contribute
             because of lineshape broadening. The ``neighbour_lines``
@@ -1027,14 +1026,14 @@ class DatabankLoader(object):
 
         Notes
         -----
-        HITRAN is fetched with Astroquery [1]_  and HITEMP with
+        HITRAN is fetched with Astroquery [1]_ or [HAPI]_,  and HITEMP with
         :py:func:`~radis.io.hitemp.fetch_hitemp`
         HITEMP files are generated in a ~/.radisdb database.
 
         See Also
         --------
-        - Load from local files: :meth:`~radis.lbl.loader.DatabankLoader.load_databank`
-        - Load when needed: :meth:`~radis.lbl.loader.DatabankLoader.init_databank`
+        :meth:`~radis.lbl.loader.DatabankLoader.load_databank`,
+        :meth:`~radis.lbl.loader.DatabankLoader.init_databank`
 
         References
         ----------
@@ -1131,8 +1130,6 @@ class DatabankLoader(object):
         # ---------------------
         self._reset_references()  # bibliographic references
 
-        from os import environ
-
         if source == "hitran":
             self.reftracker.add(doi["HITRAN-2020"], "line database")  # [HITRAN-2020]_
 
@@ -1140,16 +1137,7 @@ class DatabankLoader(object):
                 self.reftracker.add(doi["HAPI"], "data retrieval")  # [HAPI]_
 
                 if memory_mapping_engine == "auto":
-                    # temp fix for vaex not building on RTD
-                    # see https://github.com/radis/radis/issues/404
-                    if any("READTHEDOCS" in name for name in environ):
-                        memory_mapping_engine = "pytables"
-                        if self.verbose >= 3:
-                            print(
-                                f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
-                            )
-                    else:
-                        memory_mapping_engine = "vaex"
+                    memory_mapping_engine = "vaex"
 
                 if isotope == "all":
                     isotope_list = None
@@ -1168,7 +1156,7 @@ class DatabankLoader(object):
                     return_local_path=True,
                     engine=memory_mapping_engine,
                     parallel=parallel,
-                    extra_params=diluent,
+                    extra_params=extra_params,
                 )
                 self.params.dbpath = ",".join(local_paths)
 
@@ -1227,16 +1215,7 @@ class DatabankLoader(object):
             self.reftracker.add(doi["HITEMP-2010"], "line database")  # [HITEMP-2010]_
 
             if memory_mapping_engine == "auto":
-                # temp fix for vaex not building on RTD
-                # see https://github.com/radis/radis/issues/404
-                if any("READTHEDOCS" in name for name in environ):
-                    memory_mapping_engine = "pytables"
-                    if self.verbose >= 3:
-                        print(
-                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
-                        )
-                else:
-                    memory_mapping_engine = "vaex"
+                memory_mapping_engine = "vaex"
 
             if database != "full":
                 raise ValueError(
@@ -1275,16 +1254,7 @@ class DatabankLoader(object):
             self.reftracker.add(doi["ExoMol-2020"], "line database")  # [ExoMol-2020]
 
             if memory_mapping_engine == "auto":
-                # temp fix for vaex not building on RTD
-                # see https://github.com/radis/radis/issues/404
-                if any("READTHEDOCS" in name for name in environ):
-                    memory_mapping_engine = "feather"
-                    if self.verbose >= 3:
-                        print(
-                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
-                        )
-                else:
-                    memory_mapping_engine = "vaex"
+                memory_mapping_engine = "vaex"
 
             if database in ["full", "range"]:
                 raise ValueError(
@@ -1361,16 +1331,7 @@ class DatabankLoader(object):
             self.reftracker.add(doi["GEISA-2020"], "line database")
 
             if memory_mapping_engine == "auto":
-                # temp fix for vaex not building on RTD
-                # see https://github.com/radis/radis/issues/404
-                if any("READTHEDOCS" in name for name in environ):
-                    memory_mapping_engine = "pytables"
-                    if self.verbose >= 3:
-                        print(
-                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
-                        )
-                else:
-                    memory_mapping_engine = "vaex"
+                memory_mapping_engine = "vaex"
 
             if database != "full":
                 raise ValueError(

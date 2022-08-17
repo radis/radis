@@ -540,7 +540,7 @@ class Spectrum(object):
         quantity: str
             spectral quantity name
         wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
-            unit of waverange:         wavelength in air (``'nm'``), wavenumber
+            unit of waverange:         wavelength in air (``'nm'`` or ``'nm_air'``), wavenumber
             (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
             If ``None``, then ``w`` must be a dimensionned array.
         Iunit: str
@@ -654,10 +654,7 @@ class Spectrum(object):
                     "``w`` must be a dimensionned array, or ``wunit=`` must be given."
                 )
         else:
-            if wunit is not None:
-                raise ValueError(
-                    f"``w`` is a dimensionned array (in {wunit.unit.to_string()}), therefore ``wunit`` cannot be given too (got {wunit}). Set ``wunit=None``"
-                )
+            wunit_input = wunit
             wunit = w.unit.to_string()
             if wunit not in WAVELEN_UNITS + WAVENUM_UNITS:
                 # Convert to something we know, for instance 'nm' :
@@ -669,6 +666,29 @@ class Spectrum(object):
                     wunit = "cm-1"
                 # else, an error will be raised anyway on Spectrum creation.
             w = w.value
+
+            # Check units.
+            # In particular, deal with confusions arising from "nm" being either "nm_vac" or "nm_air"  # TODO: generalize to "µm" too
+            if wunit_input is None:
+                if wunit == "nm":
+                    warn(
+                        "Input wunit not given, risk of confusion : RADIS assumes wavelengths are given as seen in air, not vacuum. To remove this warning be explicit by writing `Spectrum.from_array(..., wunit='nm_air')`"
+                    )
+                else:
+                    pass
+            else:
+                # Check units are the same
+                if wunit == "nm" and (
+                    wunit_input == "nm_vac" or wunit_input == "nm_air"
+                ):
+                    # extra precision given by the user, not an error. Use the input value
+                    wunit = wunit_input
+                elif wunit != wunit_input:
+                    raise ValueError(
+                        f"``w`` is a dimensionned array (in {wunit}), therefore ``wunit`` should not be given ( `wunit=None`), or be the same (got `wunit={wunit_input}`). Set ``wunit=None``"
+                    )
+                else:
+                    pass
 
         quantities = {quantity: (w, I)}
         units = {quantity: Iunit}
@@ -861,6 +881,12 @@ class Spectrum(object):
         """Convert a ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D`
         to a ``radis`` :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
+        Parameters
+        ----------
+        spectrum: a ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D`
+        var: str
+            spectral array, default ``"radiance"``
+
         Examples
         --------
 
@@ -904,14 +930,31 @@ class Spectrum(object):
 
         assert isinstance(spectrum, specutils.Spectrum1D)
 
+        if "waveunit" in spectrum.meta and spectrum.meta["waveunit"] in WAVELEN_UNITS:
+            raise ValueError(
+                f"Specutils only handles wavelengths in vacuum. Expected `spectrum.meta['waveunit']` to be one of {WAVELENVAC_UNITS}, got  {spectrum.meta['waveunit']}`"
+            )
+
+        conditions = spectrum.meta.copy()
+
+        if spectrum.spectral_axis.unit == "nm":
+            # note : in Specutils wavelengths are given as wavelength in vacuum (1e7/X conversion
+            # to wavenumbers)
+            waverange = spectrum.wavelength
+            waveunit = "nm_vac"
+            if "waveunit" in conditions:
+                conditions["waveunit"] = waveunit
+        else:
+            waverange = spectrum.spectral_axis
+            waveunit = None  # use default
+
         # Convert to radis Spectrum
-        # note : in Specutils wavelengths are given as wavelength in vacuum (1e7/X conversion
-        # to wavenumbers), so here we give the frequency unit.
         return Spectrum.from_array(
-            spectrum.wavelength.to("1 / cm"),
+            waverange,
             spectrum.flux,
             quantity=var,
-            conditions=spectrum.meta,
+            wunit=waveunit,
+            conditions=conditions,
         )
 
     # Public functions
@@ -1119,6 +1162,8 @@ class Spectrum(object):
         if return_units == "as_str":  # only used internally
             return w, I, wunit, Iunit
         elif return_units:
+            if wunit == "nm_vac":
+                wunit = "nm"  # fix for Astropy units
             return w * Unit(wunit), I * Unit(Iunit)
         else:
             return w, I
@@ -1895,6 +1940,9 @@ class Spectrum(object):
     ):
         """Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
+        .. note::
+            default plotting library and templates can be edited in :py:attr:`radis.config` ["plot"]
+
         Parameters
         ----------
         var: variable (`absorbance`, `transmittance`, `transmittance_noslit`, `xsection`, etc.)
@@ -1943,7 +1991,8 @@ class Spectrum(object):
             show figure. Default ``False``. Will still show the figure in
             interactive mode, e.g, `%matplotlib inline` in a Notebook.
         show_ruler: bool
-            if `True`, add a ruler tool to the Matplotlib toolbar.
+            if `True`, add a ruler tool to the Matplotlib toolbar. Convenient
+            to measure distances between peaks, etc.
 
             .. warning::
                 still experimental in 0.9.30 ! Try it, feedback welcome !
@@ -2893,21 +2942,19 @@ class Spectrum(object):
 
         Parameters
         ----------
-
         wunit: ``'nm'``, ``'cm-1'``, or ``None``
             plot slit in wavelength or wavenumber. If ``None``, use the unit
             the slit in which the slit function was given. Default ``None``
 
         Returns
         -------
-
         fix, ax: matplotlib objects
             figure and ax
 
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.plot_slit
 
         See Also
         --------
-
         :ref:`the Spectrum page <label_spectrum>`
         """
         # Deprecated inputs
@@ -3373,12 +3420,19 @@ class Spectrum(object):
         ----------
         var: 'radiance', 'radiance_noslit', etc.
             which spectral array to convert. If ``None`` and only one spectral
-            arry is defined, use it
+            arry is defined, use it.
         wunit: ``'nm'``, ``'cm'``, ``'nm_vac'``.
             wavespace unit: wavelength in air (``'nm'``), wavenumber
             (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
             if ``"default"``, default unit for waveunit is used. See
             :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit`.
+
+            .. note::
+                ``specutils`` handles wavelengths in vacuum only. If using
+                ``'nm'`` wavelengths will be converted to wavelengths in vacuum.
+                We recommend using ``'nm_air'`` or ``'nm_vac'`` to avoid any
+                confusion.
+
         Iunit: unit for variable ``var``
             if ``"default"``, default unit for quantity `var` is used. See the
             :py:attr:`~radis.spectrum.spectrum.Spectrum.units` attribute.
@@ -3430,22 +3484,37 @@ class Spectrum(object):
                 "   pip install specutils"
             ) from err
 
+        meta = self.get_conditions().copy()
+
         if var is None:
             var = self._get_unique_var(operation_name="to_specutils")
         if wunit == "default":
             wunit = self.get_waveunit()
+            if wunit in WAVELEN_UNITS:  # wavlength units in air
+                # AFAIK, specutil's Spectrum1D will only handle wavelengths as seen in vacuum
+                # so below we request wavelengths in vac :
+                wunit = "nm_vac"
+        if wunit in WAVELEN_UNITS:  # wavlength units in air
+            raise ValueError(
+                f"specutil's Spectrum1D will only handle wavelengths as seen in vacuum. Use one of `s.to_specutils(..., wunit={WAVELENVAC_UNITS}`)"
+            )
+
+        # Update waveunit stored in conditions (in particular, update if wavelengths are in vacuum or air)
+        if "waveunit" in meta:
+            meta["waveunit"] = wunit
+
         if Iunit == "default":
             Iunit = self.units[var]
 
-        if wunit in WAVELEN_UNITS:
-            wunit = "nm_vac"  # AFAIK, specutil's Spectrum1D will only handle wavelengths as seen in vacuum
-            # so below we request wavelengths in vac :
+        w, I = self.get(
+            var, wunit=wunit, Iunit=Iunit, copy=True, trim_nan=True, return_units=True
+        )
+        # w, I are dimensionned arrays
 
-        w, I = self.get(var, wunit=wunit, Iunit=Iunit, copy=True, trim_nan=True)
         return Spectrum1D(
-            flux=I * u.Unit(Iunit),
-            spectral_axis=w * u.Unit(wunit),
-            meta=self.get_conditions(),
+            flux=I,
+            spectral_axis=w,
+            meta=meta,
         )
 
     def resample(
@@ -3453,7 +3522,7 @@ class Spectrum(object):
         w_new,
         unit="same",
         out_of_bounds="nan",
-        energy_threshold=5e-3,
+        energy_threshold="default",
         print_conservation=False,
         inplace=True,
         if_conflict_drop=None,
@@ -3501,10 +3570,11 @@ class Spectrum(object):
 
         Other Parameters
         ----------------
-        energy_threshold: float or ``None``
+        energy_threshold: float or ``None`` or ``'default'
             if energy conservation (integrals on the intersecting range) is above
-            this threshold, raise an error. If ``None``, dont check for energy conservation
-            Default 5e-3 (0.5%)
+            this threshold, raise an error. If ``None``, dont check for energy conservation.
+            If ``'default'``, look up the value in :py:attr:`radis.config` ["RESAMPLING_TOLERANCE_THRESHOLD"]
+            Default ``'default'``
         print_conservation: boolean
             if ``True``, prints energy conservation. Default ``False``.
         inplace: boolean
@@ -3792,7 +3862,7 @@ class Spectrum(object):
                 + "value manually with s.conditions['self_absorption']=..."
             )
 
-    def copy(self, copy_lines=True, quantity="all"):
+    def copy(self, copy_lines=True, quantity="all", copy_arrays=True):
         """Returns a copy of this Spectrum object (performs a smart deepcopy)
 
         Parameters
@@ -3801,6 +3871,10 @@ class Spectrum(object):
             default ``True``
         quantity: 'all', or one of 'radiance_noslit', 'absorbance', etc.
             if not 'all', copy only one quantity. Default ``'all'``
+        copy_arrays: bool
+            if ``False``, returned array's quantity is a pointer to the original
+            Spectrum. Faster, but warning, changing them will then change
+            the original Spectrum. Default ``True``
 
         Examples
         --------
@@ -3810,7 +3884,9 @@ class Spectrum(object):
 
         """
         try:
-            return self.__copy__(copy_lines=copy_lines, quantity=quantity)
+            return self.__copy__(
+                copy_lines=copy_lines, quantity=quantity, copy_arrays=copy_arrays
+            )
         except MemoryError:
             raise MemoryError(
                 "during copy of Spectrum. If you don't need them, "
@@ -3818,7 +3894,7 @@ class Spectrum(object):
                 + "del s.lines ; or, use copy_lines=False"
             )
 
-    def __copy__(self, copy_lines=True, quantity="all"):
+    def __copy__(self, copy_lines=True, quantity="all", copy_arrays=True):
         """Generate a new spectrum object.
 
         Note: using deepcopy would work but then the Spectrum object would be pickled
@@ -3830,6 +3906,10 @@ class Spectrum(object):
             default ``True``
         quantity: 'all', or one of 'radiance_noslit', 'absorbance', etc.
             if not 'all', copy only one quantity. Default ``'all'``
+        copy_arrays: bool
+            if ``False``, returned array's quantity is a pointer to the original
+            Spectrum. Faster, but warning, changing them will then change
+            the original Spectrum. Default ``True``
 
         Notes
         -----
@@ -3852,7 +3932,7 @@ class Spectrum(object):
                     quantity,
                     wunit=self.get_waveunit(),
                     Iunit=self.units[quantity],
-                    copy=True,
+                    copy=copy_arrays,
                 )
             }
         else:
@@ -3862,7 +3942,7 @@ class Spectrum(object):
                     quantity,
                     wunit=self.get_waveunit(),
                     Iunit=self.units[quantity],
-                    copy=True,
+                    copy=copy_arrays,
                 )  # copy=True still needed as the waverange is the one of the original array
             }
             del self._q[quantity]  # no need to keep it in this Spectrum
@@ -3909,7 +3989,7 @@ class Spectrum(object):
             references=references,
             name=name,
             check_wavespace=False,  # no need, as Spectrum was normally already properly defined
-            warnings=False,  # saves about 3.5 ms on the Performance test object
+            # saves about 3.5 ms on the Performance test object
         )
 
         # Add extra information
@@ -4021,7 +4101,7 @@ class Spectrum(object):
         )
 
     def cite(self, format="bibentry"):
-        """Prints bibliographic references used to compute this spectrum, as
+        r"""Prints bibliographic references used to compute this spectrum, as
         stored in the :py:attr:`~radis.spectrum.spectrum.Spectrum.references`
         dictionary. Default references known to RADIS are listed in :py:data:`radis.db.references.doi`.
 
@@ -4328,12 +4408,21 @@ class Spectrum(object):
 
         return ""  # self.print_conditions()
 
-    def take(self, var, copy_lines=False):
+    def take(self, var, copy_lines=False, copy_arrays=True):
         """
         Parameters
         ----------
         var : str
             spectral quantity (``'absorbance'``, ``'transmittance'``, ``'xsection'`` etc.)
+
+        Other Parameters
+        ----------------
+        copy_lines: bool
+            if ``True``, export ``s.lines``. Default ``False``
+        copy_arrays: bool
+            if ``False``, returned array's quantity is a pointer to the original
+            Spectrum. Faster, but warning, changing them will then change
+            the original Spectrum. Default ``True``
 
         Returns
         -------
@@ -4351,7 +4440,7 @@ class Spectrum(object):
 
         """
 
-        return self.copy(quantity=var, copy_lines=copy_lines)
+        return self.copy(quantity=var, copy_lines=copy_lines, copy_arrays=copy_arrays)
 
     # %% Add min, max, normalize operations
 

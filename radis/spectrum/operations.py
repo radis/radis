@@ -791,7 +791,7 @@ def add_spectra(s1, s2, var=None, force=False):
 
     name = s1.get_name() + "+" + s2.get_name()
 
-    sub = Spectrum.from_array(w1, I1 + I2, var, wunit=wunit1, unit=Iunit1, name=name)
+    sub = Spectrum.from_array(w1, I1 + I2, var, wunit=wunit1, Iunit=Iunit1, name=name)
     #    warn("Conditions of the left spectrum were copied in the substraction.", Warning)
     return sub
 
@@ -855,7 +855,7 @@ def substract_spectra(s1, s2, var=None):
 
     name = s1.get_name() + "-" + s2.get_name()
 
-    sub = Spectrum.from_array(w1, I1 - I2, var, wunit=wunit1, unit=Iunit1, name=name)
+    sub = Spectrum.from_array(w1, I1 - I2, var, wunit=wunit1, Iunit=Iunit1, name=name)
     #    warn("Conditions of the left spectrum were copied in the substraction.", Warning)
     return sub
 
@@ -1089,11 +1089,11 @@ def get_baseline(
     w1, I1 = s.get(var=var, wunit=wunit, Iunit=Iunit)
 
     if algorithm == "polynomial":
-        import peakutils
+        from radis.misc.signal import baseline
 
         polyargs = {"deg": 1, "max_it": 500}
         polyargs.update(kwargs)
-        baseline = peakutils.baseline(I1, **polyargs)
+        baseline = baseline(I1, **polyargs)
     elif algorithm == "als":
         from radis.misc.signal import als_baseline
 
@@ -1102,7 +1102,7 @@ def get_baseline(
         baseline = als_baseline(I1, **alsargs)
 
     baselineSpectrum = Spectrum.from_array(
-        w1, baseline, var, wunit=wunit, unit=Iunit, name=s.get_name() + "_baseline"
+        w1, baseline, var, wunit=wunit, Iunit=Iunit, name=s.get_name() + "_baseline"
     )
     return baselineSpectrum
 

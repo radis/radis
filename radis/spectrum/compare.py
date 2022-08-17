@@ -813,13 +813,15 @@ def plot_diff(
         ax0.set_yscale("log")
         ax0.set_ybound(ylim0)
 
+    .. minigallery:: radis.plot_diff
+
     See Also
     --------
-    :func:`~radis.spectrum.compare.get_diff`,
-    :func:`~radis.spectrum.compare.get_ratio`,
-    :func:`~radis.spectrum.compare.get_distance`,
-    :func:`~radis.spectrum.compare.get_residual`,
-    :meth:`~radis.spectrum.spectrum.compare_with`
+    :py:func:`~radis.spectrum.compare.get_diff`,
+    :py:func:`~radis.spectrum.compare.get_ratio`,
+    :py:func:`~radis.spectrum.compare.get_distance`,
+    :py:func:`~radis.spectrum.compare.get_residual`,
+    :py:meth:`~radis.spectrum.spectrum.Spectrum.compare_with`
     """
     import matplotlib.pyplot as plt
     from matplotlib import gridspec

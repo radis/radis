@@ -14,7 +14,10 @@ Resampling  & smoothing.
 
 """
 
+import math
+
 import numpy as np
+import scipy.linalg as LA
 from numpy import abs, isnan, linspace, nan, trapz, zeros_like
 from scipy.interpolate import splev, splrep
 from scipy.linalg import solveh_banded
@@ -35,7 +38,7 @@ def resample(
     xspace_new,
     k=1,
     ext="error",
-    energy_threshold=5e-3,
+    energy_threshold="default",
     print_conservation=True,
 ):
     """Resample (xspace, vector) on a new space (xspace_new) of evenly
@@ -66,10 +69,11 @@ def resample(
         defined by xspace. If 'error', raise a ValueError. If 'extrapolate', well,
         extrapolate. If '0' or 0, then fill with 0. If 1, fills with 1.
         Default 'error'.
-    energy_threshold: float or ``None``
+    energy_threshold: float or ``None`` or ``'default'
         if energy conservation (integrals on the intersecting range) is above
-        this threshold, raise an error. If ``None``, dont check for energy conservation
-        Default 5e-3 (0.5%)
+        this threshold, raise an error. If ``None``, dont check for energy conservation.
+        If ``'default'``, look up the value in :py:attr:`radis.config` ["RESAMPLING_TOLERANCE_THRESHOLD"]
+        Default ``'default'``
     print_conservation: boolean
         if True, prints energy conservation
 
@@ -101,6 +105,10 @@ def resample(
             "vector and xspace should have the same length. "
             + "Got {0}, {1}".format(len(vector), len(xspace))
         )
+    if energy_threshold == "default":
+        import radis
+
+        energy_threshold = radis.config["RESAMPLING_TOLERANCE_THRESHOLD"]
 
     # Check reversed (interpolation requires objects are sorted)
     if is_sorted(xspace):
@@ -213,11 +221,11 @@ def resample(
             plt.legend()
             raise ValueError(
                 "Error in resampling: "
-                + "energy conservation ({0:.5g}%) below tolerance level ({1:.5g}%)".format(
+                + "difference in areas (i.e. energy conservation ) ({0:.5g}%) is above the tolerance level ({1:.5g}%)".format(
                     (1 - energy_ratio) * 100, energy_threshold * 100
                 )
-                + ". Check graph 101. "
-                + "Increasing energy_threshold is possible but not recommended"
+                + ". Check graph 101. If resampling a low resolution spectrum on a high resolution spectrum, try the other way around. "
+                + "Increasing the tolerance threshold is possible but may result in accuracy errors. To increase the tolerance, set `resample(..., energy_threshold=...)`, or change the default global value in `radis.config['RESAMPLING_TOLERANCE_THRESHOLD']`"
             )
     if print_conservation:
         print("Resampling - Energy conservation: {0:.5g}%".format(energy_ratio * 100))
@@ -386,6 +394,73 @@ def als_baseline(
     else:
         print("ALS did not converge in %d iterations" % max_iters)
     return z
+
+
+def baseline(y, deg=None, max_it=None, tol=None):
+    """
+    Computes the baseline of a given data.
+
+    Iteratively performs a polynomial fitting in the data to detect its
+    baseline. At every iteration, the fitting weights on the regions with
+    peaks are reduced to identify the baseline only.
+
+    Parameters
+    ----------
+    y : ndarray
+        Data to detect the baseline.
+    deg : int (default: 3)
+        Degree of the polynomial that will estimate the data baseline. A low
+        degree may fail to detect all the baseline present, while a high
+        degree may make the data too oscillatory, especially at the edges.
+    max_it : int (default: 100)
+        Maximum number of iterations to perform.
+    tol : float (default: 1e-3)
+        Tolerance to use when comparing the difference between the current
+        fit coefficients and the ones from the last iteration. The iteration
+        procedure will stop when the difference between them is lower than
+        *tol*.
+
+    Returns
+    -------
+    ndarray
+        Array with the baseline amplitude for every original point in *y*
+
+    References
+    -------
+    This function has been taken from the PeakUtils package.
+    Their source code can be found here: https://bitbucket.org/lucashnegri/peakutils
+    More info: https://peakutils.readthedocs.io/en/latest/
+    """
+    # for not repeating ourselves in `envelope`
+    if deg is None:
+        deg = 3
+    if max_it is None:
+        max_it = 100
+    if tol is None:
+        tol = 1e-3
+
+    order = deg + 1
+    coeffs = np.ones(order)
+
+    # try to avoid numerical issues
+    cond = math.pow(abs(y).max(), 1.0 / order)
+    x = np.linspace(0.0, cond, y.size)
+    base = y.copy()
+
+    vander = np.vander(x, order)
+    vander_pinv = LA.pinv(vander)
+
+    for _ in range(max_it):
+        coeffs_new = np.dot(vander_pinv, y)
+
+        if LA.norm(coeffs_new - coeffs) / LA.norm(coeffs) < tol:
+            break
+
+        coeffs = coeffs_new
+        base = np.dot(vander, coeffs)
+        y = np.minimum(y, base)
+
+    return base
 
 
 class WhittakerSmoother(object):

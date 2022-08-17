@@ -194,7 +194,6 @@ class BaseFactory(DatabankLoader):
 
         Parameters
         ----------
-
         preprend: str
             just to text to display before printing conditions
         """
@@ -206,22 +205,18 @@ class BaseFactory(DatabankLoader):
 
         return print_conditions(conditions, self.cond_units, verbose=self.verbose)
 
-    def get_energy_levels(self, molecule, isotope, state, conditions=None):
+    def get_energy_levels(self, molecule, isotope, state="X", conditions=None):
         """Return energy levels database for given molecule > isotope > state
         (look up Factory.parsum_calc[molecule][iso][state])
 
         Parameters
         ----------
-
         molecule: str
             molecule name
-
         isotope: int
             isotope identifier
-
         state: str:
-            electronic state
-
+            electronic state. Default ``'X'`` (ground-state)
         conditions: str, or ``None``
             if not None, add conditions on which energies to retrieve, e.g:
 
@@ -232,14 +227,12 @@ class BaseFactory(DatabankLoader):
 
         Returns
         -------
-
         energies: pandas Dataframe
             a view of the energies stored in the Partition Function calculator
             for isotope iso. If conditions are applied, we get a copy
 
         See Also
         --------
-
         :meth:`~radis.lbl.base.BaseFactory.get_populations`
         """
 
@@ -252,7 +245,15 @@ class BaseFactory(DatabankLoader):
 
     def plot_linestrength_hist(self, cutoff=None):
         """Plot linestrength distribution (to help determine a cutoff
-        criteria)"""
+        criteria)
+
+        Examples
+        --------
+        ::
+
+            s, sf = calc_spectrum(..., return_factory=True)
+            sf.plot_linestrength_hist()
+        """
         return self.plot_hist("df1", "S", axvline=np.log10(cutoff))
 
     def plot_hist(self, dataframe="df0", what="int", axvline=None):
