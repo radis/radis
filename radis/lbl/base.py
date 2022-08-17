@@ -64,6 +64,9 @@ Most methods are written in inherited class with the following inheritance schem
 """
 # TODO: move all CDSD dependant functions _add_Evib123Erot to a specific file for CO2.
 
+import time
+from os.path import getmtime, splitext
+
 import numpy as np
 import pandas as pd
 from astropy import units as u
@@ -76,9 +79,13 @@ import radis
 from radis.db.classes import get_molecule, get_molecule_identifier
 
 try:  # Proper import
+    from .cache_files import save_to_hdf
+    from .hdf5 import DataFileManager
     from .loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
 except ImportError:  # if ran from here
     from radis.lbl.loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
+    from radis.io.cache_files import save_to_hdf
+    from radis.io.hdf5 import DataFileManager
 
 from radis.misc.arrays import anynan
 from radis.misc.basics import all_in, is_float, transfer_metadata
@@ -1432,7 +1439,9 @@ class BaseFactory(DatabankLoader):
 
         return None
 
-    def _calc_noneq_parameters(self, vib_distribution, singleTvibmode):
+    def _calc_noneq_parameters(
+        self, vib_distribution, singleTvibmode, cache=True, engine="pytables"
+    ):
         """Make sure database has non equilibrium quantities (Evib, Erot, etc.)
 
         Notes
@@ -1442,6 +1451,10 @@ class BaseFactory(DatabankLoader):
         the nonequilibrium energies)
         """
 
+        # Load variables
+        molecule = self.input.molecule
+        isotope = self.input.isotope
+        state = "X"
         # Checks and loads Energy level database
         if self.misc.load_energies == False:
             self._init_rovibrational_energies(self.levels, self.params.levelsfmt)
@@ -1525,6 +1538,52 @@ class BaseFactory(DatabankLoader):
         if not "Aul" in df:
             self.calc_weighted_trans_moment()
             self.calc_einstein_coefficients()
+
+        # Caching the non-equilibrium parameters Evib and Erot
+        # First, getting the Electronic States file through partition functions:
+        for isotope in self._get_isotope_list(molecule):
+            elec_state = self.get_partition_function_calculator(
+                molecule, isotope, state
+            ).ElecState
+            # fname = "{0}_{1}_{2}_EvibErot".format(elec_state.jsonfile, molecule, isotope)
+            fname = elec_state.jsonfile
+            f1 = splitext(elec_state.jsonfile)[0] + "_{0}_{1}_EvibErot".format(
+                molecule, isotope
+            )
+            fcache = DataFileManager(engine).cache_file(f1)
+            # Generate cache file for later use
+            if cache:
+                new_metadata = {
+                    # Last modification time of the original file :
+                    "last_modification": time.ctime(getmtime(fname)),
+                    "Evibu": df.Evibu,
+                    "Evibl": df.Evibl,
+                    "Erotu": df.Erotu,
+                    "Erotl": df.Erotl,
+                }
+                if self.verbose:
+                    print(
+                        "Generating cache file {0} with metadata :\n{1}".format(
+                            fcache, new_metadata
+                        )
+                    )
+                try:
+                    save_to_hdf(
+                        df,
+                        fcache,
+                        metadata=new_metadata,
+                        version=radis.__version__,
+                        key="df",
+                        overwrite=True,
+                        verbose=self.verbose,
+                        engine=engine,
+                    )
+                except PermissionError:
+                    if self.verbose:
+                        print(
+                            "An error occurred in cache file generation. Lookup access rights."
+                        )
+                    pass
 
         self.profiler.stop("check_non_eq_param", "Checked nonequilibrium parameters")
 
