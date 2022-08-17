@@ -229,11 +229,21 @@ def hit2df(
 
     #  %% Start reading the full file
 
+    # Detect the molecule by reading the start of the file
+    try:
+        with open(fname) as f:
+            mol = get_molecule(int(f.read(2)))
+    except UnicodeDecodeError as err:
+        raise ValueError(
+            "You're trying to read a binary file {0} ".format(fname)
+            + "instead of an HITRAN file"
+        ) from err
+
     df = parse_hitran_file(fname, columns)
 
     df = post_process_hitran_data(
         df,
-        fname=fname,
+        molecule=mol,
         parse_quanta=parse_quanta,
     )
     # cached file mode but cached file doesn't exist yet (else we had returned)
@@ -278,7 +288,7 @@ def hit2df(
 
 def post_process_hitran_data(
     df,
-    fname,
+    molecule,
     verbose=True,
     drop_non_numeric=True,
     parse_quanta=True,
@@ -287,8 +297,11 @@ def post_process_hitran_data(
 
     Parameters
     ----------
-    fname: str
-        HITRAN-HITEMP file name
+    df: pandas Dataframe
+      dataframe containing generic parameters
+
+    molecule: str
+       molecule name
 
     Other Parameters
     ----------------
@@ -325,15 +338,6 @@ def post_process_hitran_data(
 
     :func:`~radis.io.cdsd.cdsd2df`
     """
-    # Detect the molecule by reading the start of the file
-    try:
-        with open(fname) as f:
-            mol = get_molecule(int(f.read(2)))
-    except UnicodeDecodeError as err:
-        raise ValueError(
-            "You're trying to read a binary file {0} ".format(fname)
-            + "instead of an HITRAN file"
-        ) from err
 
     # %% Post processing
 
@@ -362,7 +366,7 @@ def post_process_hitran_data(
     if parse_quanta:
         # Add local quanta attributes, based on the HITRAN group
         try:
-            df = parse_local_quanta(df, mol, verbose=verbose)
+            df = parse_local_quanta(df, molecule, verbose=verbose)
         except ValueError as err:
             # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
             # In this case, do not parse (makes non-equilibrium calculations impossible).
@@ -371,12 +375,12 @@ def post_process_hitran_data(
                 print(str(err))
                 print("-" * 10)
                 print(
-                    f"Impossible to parse local quanta in {fname}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
+                    f"Impossible to parse local quanta in {molecule}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
                 )
 
         # Add global quanta attributes, based on the HITRAN class
         try:
-            df = parse_global_quanta(df, mol, verbose=verbose)
+            df = parse_global_quanta(df, molecule, verbose=verbose)
         except ValueError as err:
             # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
             # In this case, do not parse (makes non-equilibrium calculations impossible).
@@ -385,7 +389,7 @@ def post_process_hitran_data(
                 print(str(err))
                 print("-" * 10)
                 print(
-                    f"Impossible to parse global quanta in {fname}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
+                    f"Impossible to parse global quanta in {molecule}, probably an unlabelled line. Ignoring, but nonequilibrium calculations will not be possible. See details above."
                 )
 
     # Remove non numerical attributes
@@ -1312,7 +1316,7 @@ class HITRANDatabaseManager(DatabaseManager):
             )
             df = post_process_hitran_data(
                 df,
-                join(tempdir, data_file),
+                molecule=molecule,
                 parse_quanta=parse_quanta,
             )
 
@@ -1544,7 +1548,6 @@ def fetch_hitran(
     else:
         # Raising AccuracyWarning if local_file exists and doesn't have extra columns in it
         if ldb.get_existing_files(local_file) and extra_params == "all":
-
             columns = ldb.get_columns(local_file[0])
             extra_columns = ["y_", "gamma_", "n_"]
             found = False
