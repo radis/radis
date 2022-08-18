@@ -2232,7 +2232,7 @@ class Spectrum(object):
         warn(
             UserWarning(
                 """Populations valid for partition function calculation but sometimes NOT for spectra calculations, e.g. CO2.
-                         See help on how to use 's.lines.query' instead.
+                         See help on how to use 's.lines.query' instead, for instance in https://github.com/radis/radis/issues/508.
                          Turn off warning with 'show_warning=False'
                          """
             )
