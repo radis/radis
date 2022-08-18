@@ -2197,7 +2197,7 @@ class Spectrum(object):
         (If Spectrum generated with RADIS, structure should match that of
         SpectrumFactory.get_populations())
 
-        How to get spectral populations
+        Examples
         --------
 
         An example on how different are populations used for partition function and spectrum calculations ::
@@ -2218,6 +2218,15 @@ class Spectrum(object):
                                                            label="pops. of visible absorbing lines")
             plt.legend()
             plt.xlim((0,70))
+
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.get_populations
+
+        See Also
+        --------
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.plot_populations`,
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`
+
         """
         # Warn user on the meaning of these population
         warn(
@@ -2402,6 +2411,17 @@ class Spectrum(object):
             (as it is done during the calculation of emission integral)
         kwargs: **dict
             are forwarded to the plot
+
+        Examples
+        --------
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.plot_populations
+
+        See Also
+        --------
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.get_populations`,
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`,
+
         """
         import matplotlib.pyplot as plt
 
@@ -3099,50 +3119,54 @@ class Spectrum(object):
     def line_survey(
         self,
         overlay=None,
-        wunit="default",
-        writefile=None,
+        wunit="cm-1",
+        Iunit="hitran",
+        medium="air",
         cutoff=None,
+        plot="S",
+        lineinfo=["int", "A", "El"],
+        barwidth="hwhm_voigt",  # 0.01,
+        yscale="log",
+        writefile=None,
         *args,
         **kwargs,
     ):
         """Plot Line Survey (all linestrengths used for calculation) Output in
-        Plotly (html)
+            Plotly (html)
 
         Parameters
         ----------
-        spec: Spectrum
-            result from SpectrumFactory calculation (see spectrum.py)
-        overlay: 'absorbance', 'transmittance', 'radiance', etc... or list of the above, or None
-            overlay Linestrength with specified variable calculated
-            in `spec`.
-            Get the full list with the :meth:`~radis.spectrum.spectrum.Spectrum.get_vars`
-            method. Default ``None`` ::
+        overlay: tuple (w, I, [name], [units]), or list or tuples
+            plot (w, I) on a secondary axis. Useful to compare linestrength with
+            calculated / measured data::
 
-                s.lineSurvey(overlay='abscoeff')
-        wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``,
-            wavelength air, wavenumber, or wavelength vacuum. If ``'default'``,
-            Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit` is used.
-        medium: {'air', 'vacuum', 'default'}
-            Choose whether wavelength are shown in air or vacuum. If ``'default'``
-            lines are shown as stored in the spectrum.
+                LineSurvey(overlay='abscoeff')
+        wunit: ``'nm'``, ``'cm-1'``
+            wavelength / wavenumber units
+        Iunit: ``'hitran'``, ``'splot'``
+            Linestrength output units:
+
+            - ``'hitran'``: (cm-1/(molecule/cm-2))
+            - ``'splot'`` : (cm-1/atm)   (Spectraplot units [2]_)
+
+            Note: if not None, cutoff criteria is applied in this unit.
+            Not used if plot is not 'S'
+        medium: ``'air'``, ``'vacuum'``
+            show wavelength either in air or vacuum. Default ``'air'``
+        plot: str
+            what to plot. Default ``'S'`` (scaled line intensity). But it can be
+            any key in the lines, such as population (``'nu'``), or Einstein coefficient (``'Aul'``)
+        lineinfo: list, or ``'all'``
+            extra line information to plot. Should be a column name in the databank
+            (s.lines). For instance: ``'int'``, ``'selbrd'``, etc... Default [``'int'``]
 
         Other Parameters
         ----------------
         writefile: str
             if not ``None``, a valid filename to save the plot under .html format.
             If ``None``, use the ``fig`` object returned to show the plot.
-        kwargs:: dict
-            Other inputs are passed to :func:`~radis.tools.line_survey.LineSurvey`.
-            Example below (see :py:func:`~radis.tools.line_survey.LineSurvey`
-            documentation for more details):
-        Iunit: `hitran`, `splot`
-            Linestrength output units:
-
-            - `hitran`: (cm-1/(molecule/cm-2))
-            - `splot`: (cm-1/atm)   (Spectraplot units [2]_)
-
-            Note: if not None, cutoff criteria is applied in this unit.
-            Not used if plot is not 'S'
+        yscale: ``'log'``, ``'linear'``
+            Default ``'log'``
         barwidth: float or str
             if float, width of bars, in ``wunit``, as a fraction of full-range; i.e. ::
 
@@ -3153,50 +3177,48 @@ class Spectrum(object):
 
                 barwidth = 'hwhm_voigt'
 
+            Returns
+            -------
+            fig: a Plotly figure.
+                If using a Jupyter Notebook, the plot will appear. Else, use ``writefile``
+                to export to an html file.
+
+            Plot in Plotly. See Output in [1]_
 
 
-        Returns
-        -------
-        fig: a Plotly figure.
-            If using a Jupyter Notebook, the plot will appear. Else, use ``writefile``
-            to export to an html file.
+            Examples
+            --------
+            An example using the :class:`~radis.lbl.factory.SpectrumFactory` to generate a spectrum::
 
-        Plot in Plotly. See Output in [1]_
+                from radis import SpectrumFactory
+                sf = SpectrumFactory(
+                                     wavenum_min=2380,
+                                     wavenum_max=2400,
+                                     mole_fraction=400e-6,
+                                     path_length=100,  # cm
+                                     isotope=[1],
+                                     export_lines=True,    # required for LineSurvey!
+                                     db_use_cached=True)
+                sf.load_databank('HITRAN-CO2-TEST')
+                s = sf.eq_spectrum(Tgas=1500)
+                s.apply_slit(0.5)
+                s.line_survey(overlay='radiance_noslit', barwidth=0.01, lineinfo="all")  # or barwidth='hwhm_voigt'
 
+            See the output in :ref:`Examples <label_examples>`
 
-        Examples
-        --------
-        An example using the :class:`~radis.lbl.factory.SpectrumFactory` to generate a spectrum::
+            .. minigallery:: radis.spectrum.spectrum.Spectrum.line_survey
 
-            from radis import SpectrumFactory
-            sf = SpectrumFactory(
-                                 wavenum_min=2380,
-                                 wavenum_max=2400,
-                                 mole_fraction=400e-6,
-                                 path_length=100,  # cm
-                                 isotope=[1],
-                                 export_lines=True,    # required for LineSurvey!
-                                 db_use_cached=True)
-            sf.load_databank('HITRAN-CO2-TEST')
-            s = sf.eq_spectrum(Tgas=1500)
-            s.apply_slit(0.5)
-            s.line_survey(overlay='radiance_noslit', barwidth=0.01, lineinfo="all")  # or barwidth='hwhm_voigt'
+            References
+            ----------
+            .. [1] `RADIS Online Documentation (LineSurvey) <https://radis.readthedocs.io/en/latest/tools/line_survey.html>`__
 
-        See the output in :ref:`Examples <label_examples>`
-
-        .. minigallery:: radis.spectrum.spectrum.Spectrum.line_survey
-
-        References
-        ----------
-        .. [1] `RADIS Online Documentation (LineSurvey) <https://radis.readthedocs.io/en/latest/tools/line_survey.html>`__
-
-        .. [2] `SpectraPlot <http://www.spectraplot.com/survey>`__
+            .. [2] `SpectraPlot <http://www.spectraplot.com/survey>`__
 
 
-        See Also
-        --------
-        :func:`~radis.tools.line_survey.LineSurvey`,
-        :ref:`the Spectrum page <label_spectrum>`
+            See Also
+            --------
+            :func:`~radis.tools.line_survey.LineSurvey`,
+            :ref:`the Spectrum page <label_spectrum>`
         """
 
         from radis.tools.line_survey import LineSurvey
@@ -3230,20 +3252,21 @@ class Spectrum(object):
 
             overlay = [get_overlay(ov) for ov in overlay]
 
-            return LineSurvey(
-                self,
-                overlay=overlay,
-                wunit=wunit,
-                writefile=writefile,
-                cutoff=cutoff,
-                *args,
-                **kwargs,
-            )
-
-        else:
-            return LineSurvey(
-                self, wunit=wunit, writefile=writefile, cutoff=cutoff, *args, **kwargs
-            )
+        return LineSurvey(
+            self,
+            overlay=overlay,
+            wunit=wunit,
+            Iunit=Iunit,
+            medium=medium,
+            cutoff=cutoff,
+            plot=plot,
+            lineinfo=lineinfo,
+            barwidth=barwidth,
+            yscale=yscale,
+            writefile=writefile,
+            *args,
+            **kwargs,
+        )
 
     def get_conditions(self):
         """Get all physical / computational parameters.

@@ -127,7 +127,9 @@ def LineSurvey(
 
     Examples
     --------
-    An example using the :class:`~radis.lbl.factory.SpectrumFactory` to generate a spectrum::
+    An example using the :class:`~radis.lbl.factory.SpectrumFactory` to generate a spectrum,
+    using the Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey` method
+    directly ::
 
         from radis import SpectrumFactory
         sf = SpectrumFactory(
@@ -157,6 +159,10 @@ def LineSurvey(
     .. [1] `RADIS Online Documentation (LineSurvey) <https://radis.readthedocs.io/en/latest/tools/line_survey.html>`__
 
     .. [2] `SpectraPlot <http://www.spectraplot.com/survey>`__
+
+    See Also
+    --------
+    :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`
     """
 
     # Check inputs
@@ -295,7 +301,7 @@ def LineSurvey(
             if is_float(row[k]):
                 val = f"{row[k]:.3g}"
             else:
-                val = f"{k:.3g}"
+                val = f"{row[k]}"
             label += f"<br>{k} {name}: {val} {unit}"
             # If lower value, also show upper value on same line
             if k[-1] == "l" and k[:-1] + "u" in details:
@@ -308,7 +314,7 @@ def LineSurvey(
                 else:
                     label += (
                         "&nbsp;" * (30 - len(k) - len(val))
-                        + f"{k_up} {name}: {k_up:.3g} {unit}"
+                        + f"{k_up} {name}: {row[k_up]} {unit}"
                     )
 
         return label
