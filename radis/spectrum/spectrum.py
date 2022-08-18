@@ -2161,7 +2161,9 @@ class Spectrum(object):
 
         return line
 
-    def get_populations(self, molecule=None, isotope=None, electronic_state=None, show_warning=True):
+    def get_populations(
+        self, molecule=None, isotope=None, electronic_state=None, show_warning=True
+    ):
         """Return populations that are featured in the spectrum, either as
         upper or lower levels.
 
@@ -2218,11 +2220,15 @@ class Spectrum(object):
             plt.xlim((0,70))
         """
         # Warn user on the meaning of these population
-        warn(UserWarning("""Populations valid for partition function calculation but sometimes NOT for spectra calculations, e.g. CO2.
+        warn(
+            UserWarning(
+                """Populations valid for partition function calculation but sometimes NOT for spectra calculations, e.g. CO2.
                          See help on how to use 's.lines.query' instead.
                          Turn off warning with 'show_warning=False'
-                         """))
-        
+                         """
+            )
+        )
+
         # Check inputs, get default values
         populations = self.populations
         if populations is None or populations == {}:
@@ -3540,11 +3546,7 @@ class Spectrum(object):
         )
         # w, I are dimensionned arrays
 
-        return Spectrum1D(
-            flux=I,
-            spectral_axis=w,
-            meta=meta,
-        )
+        return Spectrum1D(flux=I, spectral_axis=w, meta=meta,)
 
     def resample(
         self,
@@ -4416,8 +4418,7 @@ class Spectrum(object):
                 if (k in self.units and self.units[k] != "")
                 else "",
                 "\t({0:,d} points{1})".format(
-                    len(v),
-                    ", {0} nans".format(count_nans(v)) if anynan(v) else "",
+                    len(v), ", {0} nans".format(count_nans(v)) if anynan(v) else "",
                 ),
             )
 
