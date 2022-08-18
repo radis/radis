@@ -2178,7 +2178,7 @@ class Spectrum(object):
             if None, only one electronic state must be defined. Else, an error
             is raised
         show_warning: bool
-            if False, turns off warning about meaning of populations, see Notes and discussion on https://github.com/radis/radis/issues/508. 
+            if False, turns off warning about meaning of populations, see Notes and discussion on https://github.com/radis/radis/issues/508.
 
         Returns
         -------
@@ -2196,23 +2196,23 @@ class Spectrum(object):
 
         (If Spectrum generated with RADIS, structure should match that of
         SpectrumFactory.get_populations())
-        
+
         How to get spectral populations
         --------
-    
+
         An example on how different are populations used for partition function and spectrum calculations ::
-    
+
             #%% CO2 example
             # For instance, plot populations of a given vibrational level, v1,v2,v3=(0,1,0)
             import radis
-            s = radis.test_spectrum(molecule="CO2", Tvib=3000, Trot=1000, 
-                                    export_lines=True, 
-                                    export_populations="rovib", 
+            s = radis.test_spectrum(molecule="CO2", Tvib=3000, Trot=1000,
+                                    export_lines=True,
+                                    export_populations="rovib",
                                     isotope=1)
             pops = s.get_populations("CO2")["rovib"]
-            
+
             import matplotlib.pyplot as plt
-            pops.query("v1==0 & v2==1 & v3==0").plot("j", "n", 
+            pops.query("v1==0 & v2==1 & v3==0").plot("j", "n",
                                                      label="pops. used to compute partition functions")
             s.lines.query("v1l==0 & v2l==1 & v3l==0").plot("jl", "nl", ax=plt.gca(), kind="scatter", color="r",
                                                            label="pops. of visible absorbing lines")
@@ -2232,7 +2232,9 @@ class Spectrum(object):
         # Check inputs, get default values
         populations = self.populations
         if populations is None or populations == {}:
-            raise ValueError("Populations not defined")
+            raise ValueError(
+                "Populations not defined. Use export_populations='vib' or 'rovib' in calc_spectrum"
+            )
         if type(populations) != dict:
             raise TypeError("Method defined for populations as dictionary")
         if molecule is None:
@@ -3178,7 +3180,7 @@ class Spectrum(object):
             sf.load_databank('HITRAN-CO2-TEST')
             s = sf.eq_spectrum(Tgas=1500)
             s.apply_slit(0.5)
-            s.line_survey(overlay='radiance_noslit', barwidth=0.01)  # or barwidth='hwhm_voigt'
+            s.line_survey(overlay='radiance_noslit', barwidth=0.01, lineinfo="all")  # or barwidth='hwhm_voigt'
 
         See the output in :ref:`Examples <label_examples>`
 
@@ -3546,7 +3548,11 @@ class Spectrum(object):
         )
         # w, I are dimensionned arrays
 
-        return Spectrum1D(flux=I, spectral_axis=w, meta=meta,)
+        return Spectrum1D(
+            flux=I,
+            spectral_axis=w,
+            meta=meta,
+        )
 
     def resample(
         self,
@@ -4418,7 +4424,8 @@ class Spectrum(object):
                 if (k in self.units and self.units[k] != "")
                 else "",
                 "\t({0:,d} points{1})".format(
-                    len(v), ", {0} nans".format(count_nans(v)) if anynan(v) else "",
+                    len(v),
+                    ", {0} nans".format(count_nans(v)) if anynan(v) else "",
                 ),
             )
 
