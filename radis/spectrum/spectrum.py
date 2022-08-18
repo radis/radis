@@ -2161,7 +2161,7 @@ class Spectrum(object):
 
         return line
 
-    def get_populations(self, molecule=None, isotope=None, electronic_state=None):
+    def get_populations(self, molecule=None, isotope=None, electronic_state=None, show_warning=True):
         """Return populations that are featured in the spectrum, either as
         upper or lower levels.
 
@@ -2175,6 +2175,8 @@ class Spectrum(object):
         electronic_state: str
             if None, only one electronic state must be defined. Else, an error
             is raised
+        show_warning: bool
+            if False, turns off warning about meaning of populations, see Notes and discussion on https://github.com/radis/radis/issues/508. 
 
         Returns
         -------
@@ -2192,8 +2194,35 @@ class Spectrum(object):
 
         (If Spectrum generated with RADIS, structure should match that of
         SpectrumFactory.get_populations())
+        
+        How to get spectral populations
+        --------
+    
+        An example on how different are populations used for partition function and spectrum calculations ::
+    
+            #%% CO2 example
+            # For instance, plot populations of a given vibrational level, v1,v2,v3=(0,1,0)
+            import radis
+            s = radis.test_spectrum(molecule="CO2", Tvib=3000, Trot=1000, 
+                                    export_lines=True, 
+                                    export_populations="rovib", 
+                                    isotope=1)
+            pops = s.get_populations("CO2")["rovib"]
+            
+            import matplotlib.pyplot as plt
+            pops.query("v1==0 & v2==1 & v3==0").plot("j", "n", 
+                                                     label="pops. used to compute partition functions")
+            s.lines.query("v1l==0 & v2l==1 & v3l==0").plot("jl", "nl", ax=plt.gca(), kind="scatter", color="r",
+                                                           label="pops. of visible absorbing lines")
+            plt.legend()
+            plt.xlim((0,70))
         """
-
+        # Warn user on the meaning of these population
+        warn(UserWarning("""Populations valid for partition function calculation but sometimes NOT for spectra calculations, e.g. CO2.
+                         See help on how to use 's.lines.query' instead.
+                         Turn off warning with 'show_warning=False'
+                         """))
+        
         # Check inputs, get default values
         populations = self.populations
         if populations is None or populations == {}:
