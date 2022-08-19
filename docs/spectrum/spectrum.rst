@@ -690,6 +690,10 @@ so they can be used directly with::
 By default, using methods that will modify the object in place, using the functions will
 generate a new Spectrum.
 
+
+.. minigallery:: radis.Spectrum.crop
+
+
 Normalize
 ---------
 

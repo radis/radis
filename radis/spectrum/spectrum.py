@@ -501,7 +501,22 @@ class Spectrum(object):
         any metadata you need to store with the Spectrum object.
         """
         self.populations = populations
+        """ populations of rovibrational levels used to compute partition
+        functions of the spectrum
+
+        See also :py:meth:`~radis.spectrum.spectrum.Spectrum.get_populations`,
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.plot_populations`
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.populations
+        """
         self.lines = lines
+        """ informations on emitting or absorbing lines that contribute to the spectrum.
+
+        See also :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.lines
+
+        """
         self.units = units
         """ dict: units for spectral quantities.
         """
@@ -1654,7 +1669,7 @@ class Spectrum(object):
             s.crop(s_exp.get_wavelength.min(), s_exp.get_wavelength.max(), 'nm')
             plot_diff(s_exp, s)
 
-        .. minigallery:: radis.spectrum.spectrum.Spectrum.crop
+        .. minigallery:: radis.Spectrum.crop
 
 
         See Also

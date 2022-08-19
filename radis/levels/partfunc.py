@@ -1163,6 +1163,8 @@ class PartFuncTIPS(RovibParFuncTabulator):
 
     See :ref:`online examples <label_examples_partition_functions>` for more.
 
+    .. minigallery:: radis.levels.partfunc.PartFuncTIPS
+
     References
     ----------
     Partition function are retrieved from [TIPS-2020]_ through [HAPI]_  (Hitran Python Interface) using
