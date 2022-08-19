@@ -394,10 +394,13 @@ But for comparing different spectra you may want to use
 Plot populations
 ----------------
 
-Use :py:meth:`~radis.spectrum.spectrum.Spectrum.plot_populations`::
+Get or plot populations computed in calculations.
+Use :py:meth:`~radis.spectrum.spectrum.Spectrum.get_populations`
+or :py:meth:`~radis.spectrum.spectrum.Spectrum.plot_populations`::
 
     s.plot_populations('vib', nunit='cm-3')
 
+.. minigallery:: radis.spectrum.spectrum.Spectrum.get_populations
 
 .. _label_spectrum_linesurvey:
 
