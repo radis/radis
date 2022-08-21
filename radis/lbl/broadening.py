@@ -325,8 +325,8 @@ def pressure_broadening_HWHM(
     # Note: if not Tdpsel in dg Tdpair is used. Lookup parent function
     # | dev note: in that case we simplify the expression by calculation the
     # | power function once only.
-    print("voigt broadening")
-    diluent_molecules = [key for key in diluent.keys()]
+
+    diluent_molecules = diluent.keys()
 
     gamma_n_diluent = []
 
@@ -352,12 +352,13 @@ def pressure_broadening_HWHM(
             )
         # Adding self coefficient
         if Tdpsel is None:
-            gamma_lb += selbrd * pressure_atm * mole_fraction
+            gamma_lb += ((Tref / Tgas) ** Tdpair) * (
+                (selbrd * pressure_atm * mole_fraction)
+            )
         else:
             gamma_lb += gamma_lb + ((Tref / Tgas) ** Tdpsel) * (
                 selbrd * pressure_atm * mole_fraction
             )
-        # print("Gamma LB value: ", gamma_lb)
     except KeyError as err:
         raise KeyError("Column not found {0}".format(err))
 
@@ -366,6 +367,7 @@ def pressure_broadening_HWHM(
     #         (airbrd * pressure_atm * (1 - mole_fraction))
     #         + (selbrd * pressure_atm * mole_fraction)
     #     )
+    #     print("GAMMA_LB _OLD: ", gamma_lb)
     # else:
     #     gamma_lb = ((Tref / Tgas) ** Tdpair) * (
     #         airbrd * pressure_atm * (1 - mole_fraction)
@@ -876,7 +878,7 @@ class BroadenFactory(BaseFactory):
 
         # Init variables
         df = self.df1
-        diluent = self.params.diluent
+        diluent = self._diluent
 
         if len(df) == 0:
             return  # no lines

@@ -233,6 +233,9 @@ class BandFactory(BroadenFactory):
 
         # Line broadening
 
+        # ... generates molefraction for diluents
+        self._generate_diluent_molefraction(mole_fraction)
+
         # ... calculate broadening  HWHM
         self._calc_broadening_HWHM()
 
@@ -555,6 +558,9 @@ class BandFactory(BroadenFactory):
         # ----------------------------------------------------------------------
 
         # Line broadening
+
+        # ... generates molefraction for diluents
+        self._generate_diluent_molefraction(mole_fraction)
 
         # ... calculate broadening  HWHM
         self._calc_broadening_HWHM()

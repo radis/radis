@@ -464,18 +464,6 @@ class SpectrumFactory(BandFactory):
                 )
             )
 
-        # Checking mole_fraction of molecule and diluent
-        total_mole_fraction = mole_fraction + sum(list(diluent.values()))
-
-        if total_mole_fraction > 1:
-            raise ValueError(
-                "Total molefraction of molecule and diluents greater than 1."
-            )
-        elif total_mole_fraction < 1 and "air" not in diluent.keys():
-            diluent["air"] = 1 - total_mole_fraction
-        elif total_mole_fraction < 1:
-            raise ValueError("Total molefraction of molecule and diluents less than 1.")
-
         # calculate waveranges
         # --------------------
 
@@ -557,6 +545,7 @@ class SpectrumFactory(BandFactory):
         self.params.wstep = wstep
         self.params.pseudo_continuum_threshold = pseudo_continuum_threshold
         self.params.diluent = diluent
+        self._diluent = None
 
         if cutoff is None:
             # If None, use no cutoff : https://github.com/radis/radis/pull/259
@@ -811,6 +800,9 @@ class SpectrumFactory(BandFactory):
 
         # ----------------------------------------------------------------------
         # Line broadening
+
+        # ... generates molefraction for diluents
+        self._generate_diluent_molefraction(mole_fraction)
 
         # ... calculate broadening  HWHM
         self._calc_broadening_HWHM()
@@ -1555,7 +1547,6 @@ class SpectrumFactory(BandFactory):
 
         # %% Preprocessing
         # --------------------------------------------------------------------
-
         # Convert units
         Tvib = convert_and_strip_units(Tvib, u.K)
         Trot = convert_and_strip_units(Trot, u.K)
@@ -1586,7 +1577,6 @@ class SpectrumFactory(BandFactory):
         self.input.overpopulation = overpopulation
         self.input.rot_distribution = rot_distribution
         self.input.vib_distribution = vib_distribution
-
         # Get translational temperature
         Tgas = Ttrans
         if Tgas is None:
@@ -1603,7 +1593,6 @@ class SpectrumFactory(BandFactory):
 
         # New Profiler object
         self._reset_profiler(verbose)
-
         # Check variables
         self._check_inputs(mole_fraction, max(flatten(Tgas, Tvib, Trot)))
 
@@ -1664,6 +1653,9 @@ class SpectrumFactory(BandFactory):
         # ----------------------------------------------------------------------
 
         # Line broadening
+
+        # ... generates molefraction for diluents
+        self._generate_diluent_molefraction(mole_fraction)
 
         # ... calculate broadening  HWHM
         self._calc_broadening_HWHM()
@@ -1920,6 +1912,28 @@ class SpectrumFactory(BandFactory):
             assert (wavenumber_calc[woutrange[0] : woutrange[1]] == wavenumber).all()
 
         return
+
+    def _generate_diluent_molefraction(self, mole_fraction):
+        diluents = self.params.diluent.copy()
+
+        # Checking mole_fraction of molecule and diluent
+        total_mole_fraction = mole_fraction + sum(list(diluents.values()))
+        if total_mole_fraction > 1:
+            raise ValueError(
+                "Total molefraction = {0} of molecule and diluents greater than 1.".format(
+                    total_mole_fraction
+                )
+            )
+        elif total_mole_fraction < 1 and "air" not in diluents.keys():
+            diluents["air"] = round(1 - total_mole_fraction, 6)
+        elif total_mole_fraction < 1:
+            raise ValueError(
+                "Total molefraction = {0} of molecule and diluents less than 1.".format(
+                    total_mole_fraction
+                )
+            )
+
+        self._diluent = diluents
 
     def predict_time(self):
         """predict_time(self) uses the input parameters like Spectral Range, Number of lines, wstep,
