@@ -1141,8 +1141,6 @@ class DatabankLoader(object):
         self.params.lvl_use_cached = lvl_use_cached
 
         # Which columns to load
-        print("LOAD COLUMNS", load_columns)
-        print("extra_params", extra_params)
         columns = []
         if "all" in load_columns:
             columns = None  # see fetch_hitemp, fetch_hitran, etc.

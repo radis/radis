@@ -690,6 +690,11 @@ def _calc_spectrum_one_molecule(
     # Have consistent output units
     sf.input_wunit = input_wunit
 
+    # Checking diluent other than air present
+    diluent_other_than_air = len(diluent) > 1 or (
+        len(diluent) == 1 and "air" not in diluent
+    )
+
     # Load databank
     # -------------
 
@@ -755,12 +760,6 @@ def _calc_spectrum_one_molecule(
             # constants (not all molecules are supported!)
             conditions["levelsfmt"] = "radis"
             conditions["lvl_use_cached"] = use_cached
-        print("DILUENT", diluent)
-
-        diluent_other_than_air = len(diluent) > 1 or (
-            len(diluent) == 1 and "air" not in diluent
-        )
-        print("diluent_other_than_air: ", diluent_other_than_air)
         # Columns to load
         if export_lines:
             conditions["load_columns"] = "all"
