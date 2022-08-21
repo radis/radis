@@ -287,6 +287,9 @@ def pressure_broadening_HWHM(
     Tref: float [K]
         reference temperature at which tabulated HWHM pressure
         broadening coefficients were tabulated
+    diluent: dictionary
+         contains diluent and their mole fraction
+
 
     Returns
     -------
@@ -322,8 +325,8 @@ def pressure_broadening_HWHM(
     # Note: if not Tdpsel in dg Tdpair is used. Lookup parent function
     # | dev note: in that case we simplify the expression by calculation the
     # | power function once only.
-
-    diluent_molecule = [key for key in diluent.keys()]
+    print("voigt broadening")
+    diluent_molecules = [key for key in diluent.keys()]
 
     gamma_n_diluent = []
 
@@ -343,9 +346,10 @@ def pressure_broadening_HWHM(
                     * diluent_mole_fraction
                 )
         # Adding air coefficient
-        gamma_lb += ((Tref / Tgas) ** Tdpair) * (
-            (airbrd * pressure_atm * diluent["air"])
-        )
+        if "air" in diluent_molecules:
+            gamma_lb += ((Tref / Tgas) ** Tdpair) * (
+                (airbrd * pressure_atm * diluent["air"])
+            )
         # Adding self coefficient
         if Tdpsel is None:
             gamma_lb += selbrd * pressure_atm * mole_fraction
@@ -451,6 +455,8 @@ def voigt_broadening_HWHM(
     mole_fraction,
     Tgas,
     Tref,
+    df,
+    diluent,
 ):
     """Calculate Voigt profile half-width at half-maximum (HWHM) from the
     Gaussian and Collisional broadening with the empirical formula of [Olivero-1977]_
@@ -517,7 +523,16 @@ def voigt_broadening_HWHM(
 
     # Collisional broadening HWHM
     gamma_lb = pressure_broadening_HWHM(
-        airbrd, selbrd, Tdpair, Tdpsel, pressure_atm, mole_fraction, Tgas, Tref
+        airbrd,
+        selbrd,
+        Tdpair,
+        Tdpsel,
+        pressure_atm,
+        mole_fraction,
+        Tgas,
+        Tref,
+        df,
+        diluent,
     )
 
     # Doppler Broadening HWHM:
@@ -858,9 +873,10 @@ class BroadenFactory(BaseFactory):
 
         Run this method before using `_calc_lineshape`
         """
-        diluent = self.params.diluent
+
         # Init variables
         df = self.df1
+        diluent = self.params.diluent
 
         if len(df) == 0:
             return  # no lines
@@ -885,7 +901,9 @@ class BroadenFactory(BaseFactory):
         # Get broadenings
         if broadening_method == "voigt":
             # Adds hwhm_voigt, hwhm_gauss, hwhm_lorentz:
-            self._add_voigt_broadening_HWHM(df, pressure_atm, mole_fraction, Tgas, Tref)
+            self._add_voigt_broadening_HWHM(
+                df, pressure_atm, mole_fraction, Tgas, Tref, diluent
+            )
         elif broadening_method in ["convolve", "fft"]:
             # Adds hwhm_lorentz:
             self._add_collisional_broadening_HWHM(
@@ -990,7 +1008,9 @@ class BroadenFactory(BaseFactory):
 
         return
 
-    def _add_voigt_broadening_HWHM(self, df, pressure_atm, mole_fraction, Tgas, Tref):
+    def _add_voigt_broadening_HWHM(
+        self, df, pressure_atm, mole_fraction, Tgas, Tref, diluent
+    ):
         """Update dataframe with Voigt HWHM.
 
         Returns
@@ -1041,6 +1061,8 @@ class BroadenFactory(BaseFactory):
             mole_fraction,
             Tgas,
             Tref,
+            df,
+            diluent,
         )
 
         # Update dataframe

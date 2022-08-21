@@ -18,6 +18,8 @@ Routine Listing
 
 
 from copy import deepcopy
+
+# from functools import cache
 from os.path import exists
 
 # from radis.db.classes import M
@@ -279,6 +281,8 @@ def calc_spectrum(
                 s, sf = calc_spectrum(..., return_factory=True)
                 sf.df1  # see the lines calculated
                 sf.eq_spectrum(...)  #  new calculation without reloading the database
+    diluent: dictionary
+       contains diluent name as key and its mole_fraction as value
     **kwargs: other inputs forwarded to SpectrumFactory
         For instance: ``warnings``.
         See :py:class:`~radis.lbl.factory.SpectrumFactory` documentation for more
@@ -751,20 +755,30 @@ def _calc_spectrum_one_molecule(
             # constants (not all molecules are supported!)
             conditions["levelsfmt"] = "radis"
             conditions["lvl_use_cached"] = use_cached
+        print("DILUENT", diluent)
 
+        diluent_other_than_air = len(diluent) > 1 or (
+            len(diluent) == 1 and "air" not in diluent
+        )
+        print("diluent_other_than_air: ", diluent_other_than_air)
         # Columns to load
         if export_lines:
             conditions["load_columns"] = "all"
+        elif not _equilibrium and diluent_other_than_air:
+            conditions["load_columns"] = ["noneq", "diluent"]
+            conditions["extra_params"] = "all"
         elif not _equilibrium:
             conditions["load_columns"] = "noneq"
+        elif diluent_other_than_air:
+            conditions["load_columns"] = ["equilibrium", "diluent"]
+            conditions["extra_params"] = "all"
         else:
             conditions["load_columns"] = "equilibrium"
 
         conditions["load_energies"] = not _equilibrium
         # Details to identify lines
         conditions["parse_local_global_quanta"] = (not _equilibrium) or export_lines
-        # add diluent in conditions
-        conditions["diluent"] = diluent
+
         # Finally, LOAD :
         sf.fetch_databank(**conditions)
     elif exists(databank):
@@ -809,8 +823,12 @@ def _calc_spectrum_one_molecule(
         # Columns to load
         if export_lines:
             conditions["load_columns"] = "all"
+        elif not _equilibrium and diluent_other_than_air:
+            conditions["load_columns"] = ["noneq", "diluent"]
         elif not _equilibrium:
             conditions["load_columns"] = "noneq"
+        elif diluent_other_than_air:
+            conditions["load_columns"] = ["equilibrium", "diluent"]
         else:
             conditions["load_columns"] = "equilibrium"
 
@@ -823,8 +841,12 @@ def _calc_spectrum_one_molecule(
         # Columns to load
         if export_lines:
             load_columns = "all"
+        elif not _equilibrium and diluent_other_than_air:
+            load_columns = ["noneq", "diluent"]
         elif not _equilibrium:
             load_columns = "noneq"
+        elif diluent_other_than_air:
+            load_columns = ["equilibrium", "diluent"]
         else:
             load_columns = "equilibrium"
 
