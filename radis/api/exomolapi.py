@@ -1056,7 +1056,8 @@ class MdbExomol(DatabaseManager):
         dic_def = read_def(self.def_file)  # approx. 3 ms
         self.n_Texp_def = dic_def["n_Texp"]
         self.alpha_ref_def = dic_def["alpha_ref"]
-
+        self.molmass = dic_def["molmass"]
+        
         #  default n_Texp value if not given
         if self.n_Texp_def is None:
             self.n_Texp_def = 0.5

@@ -212,7 +212,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         return url, Nlines, wmin, wmax
 
     def fetch_urlnames(self):
-        """requires connexion"""
+        """requires connection"""
 
         if self.urlnames is not None:
             return self.urlnames
