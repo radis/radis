@@ -7,7 +7,7 @@ See populations of computed levels
 Spectrum methods gives you access to the populations of levels used in a
 nonequilibrium spectrum :
 
-- :py:meth:`~radis.spectrum.spectrum.Spectrum.get_population` provides the populations
+- :py:meth:`~radis.spectrum.spectrum.Spectrum.get_populations` provides the populations
 of all levels of the molecule, used to compute the nonequilibrium partition function
 
 - :py:attr:`~radis.spectrum.spectrum.Spectrum.lines` returns all informations
@@ -40,7 +40,7 @@ s = calc_spectrum(
 
 #%%
 # Below we plot the populations
-# We could also have used :py:meth:`~radis.spectrum.spectrum.Spectrum.plot_population` directly
+# We could also have used :py:meth:`~radis.spectrum.spectrum.Spectrum.plot_populations` directly
 
 pops = s.get_populations("CO")["rovib"]
 
@@ -93,15 +93,14 @@ print(
 )
 
 
-"""
-
-:py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey` is also a convenient way to explore populatinos and other line
-parameters, for instance ::
-
-    s.line_survey(overlay="absorbance", barwidth=0.001, lineinfo="all")
-
-
-.. image:: https://user-images.githubusercontent.com/16088743/185366359-c6ecff54-95f2-4016-b762-649a7b4a9a1e.png
-    :alt: line survey output
-
-"""
+#%%
+#
+# :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey` is also a convenient way to explore populatinos and other line
+# parameters, for instance ::
+#
+#     s.line_survey(overlay="absorbance", barwidth=0.001, lineinfo="all")
+#
+#
+# .. image:: https://user-images.githubusercontent.com/16088743/185366359-c6ecff54-95f2-4016-b762-649a7b4a9a1e.png
+#     :alt: line survey output
+#

@@ -433,6 +433,7 @@ def load_spec(file, binary=True) -> Spectrum:  # , return_binary_status=False):
 
     Examples
     --------
+
     .. minigallery:: radis.load_spec
 
     See Also

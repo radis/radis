@@ -112,8 +112,8 @@ class DatabaseManager(object):
         if not exists(local_databases):
             from radis.misc.basics import make_folders
 
-            make_folders(*split(abspath(dirname(local_databases))))
-            make_folders(*split(abspath(local_databases)))
+            make_folders(*split(abspath(dirname(expanduser(local_databases)))))
+            make_folders(*split(abspath(expanduser(local_databases))))
 
         if self.is_registered():
             registered_paths = getDatabankEntries(self.name)["path"]
