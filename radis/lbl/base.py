@@ -1440,7 +1440,7 @@ class BaseFactory(DatabankLoader):
         return None
 
     def _calc_noneq_parameters(
-        self, vib_distribution, singleTvibmode, cache=True, engine="pytables"
+        self, vib_distribution, singleTvibmode, cache=True, engine="h5py"
     ):
         """Make sure database has non equilibrium quantities (Evib, Erot, etc.)
 
@@ -1455,16 +1455,62 @@ class BaseFactory(DatabankLoader):
         molecule = self.input.molecule
         isotope = self.input.isotope
         state = "X"
+
+        df = self.df0
+        if len(df) == 0:
+            return  # no lines
+
+        # Initializing a cache file for lookup later
+        filename = (
+            splitext(self.params.dbpath.split(",", 1)[0])[0].rsplit("/", 1)[0]
+            + "/ORIGINAL_FILE_new_columns"
+        )
+        if cache:
+            for isotope in self._get_isotope_list(molecule):
+
+                elec_state = self.get_partition_function_calculator(
+                    molecule, isotope, state
+                ).ElecState
+                fname = elec_state.jsonfile
+                # f1 = splitext(self.params.dbpath.split(",",1)[0])[0].rsplit("/",1)[0] + "/{0}".format(cache_file)
+                fcache = DataFileManager(engine).cache_file(filename)
+                # Generate cache file for later use
+                if cache:
+                    new_metadata = {
+                        # Last modification time of the original file :
+                        "last_modification": time.ctime(getmtime(fname)),
+                        "spectroscopic_constant_file": fname,
+                        "df_last_index": df.index[-1],
+                    }
+                    if self.verbose:
+                        print(
+                            "Generating cache file {0} with metadata :\n{1}".format(
+                                fcache, new_metadata
+                            )
+                        )
+                    try:
+                        save_to_hdf(
+                            df,
+                            fcache,
+                            metadata=new_metadata,
+                            version=radis.__version__,
+                            key="df",
+                            overwrite=True,
+                            verbose=self.verbose,
+                            engine=engine,
+                        )
+                    except PermissionError:
+                        if self.verbose:
+                            print(
+                                "An error occurred in cache file generation. Lookup access rights."
+                            )
+                        pass
         # Checks and loads Energy level database
         if self.misc.load_energies == False:
             self._init_rovibrational_energies(self.levels, self.params.levelsfmt)
             self.misc.load_energies = True
 
         self.profiler.start("check_non_eq_param", 2)
-
-        df = self.df0
-        if len(df) == 0:
-            return  # no lines
 
         # Check spectroscopic parameters required for non-equilibrium (to identify lines)
         for k in ["branch"]:
@@ -1541,49 +1587,6 @@ class BaseFactory(DatabankLoader):
 
         # Caching the non-equilibrium parameters Evib and Erot
         # First, getting the Electronic States file through partition functions:
-        for isotope in self._get_isotope_list(molecule):
-            elec_state = self.get_partition_function_calculator(
-                molecule, isotope, state
-            ).ElecState
-            # fname = "{0}_{1}_{2}_EvibErot".format(elec_state.jsonfile, molecule, isotope)
-            fname = elec_state.jsonfile
-            f1 = splitext(elec_state.jsonfile)[0] + "_{0}_{1}_EvibErot".format(
-                molecule, isotope
-            )
-            fcache = DataFileManager(engine).cache_file(f1)
-            # Generate cache file for later use
-            if cache:
-                new_metadata = {
-                    # Last modification time of the original file :
-                    "last_modification": time.ctime(getmtime(fname)),
-                    "Evibu": df.Evibu,
-                    "Evibl": df.Evibl,
-                    "Erotu": df.Erotu,
-                    "Erotl": df.Erotl,
-                }
-                if self.verbose:
-                    print(
-                        "Generating cache file {0} with metadata :\n{1}".format(
-                            fcache, new_metadata
-                        )
-                    )
-                try:
-                    save_to_hdf(
-                        df,
-                        fcache,
-                        metadata=new_metadata,
-                        version=radis.__version__,
-                        key="df",
-                        overwrite=True,
-                        verbose=self.verbose,
-                        engine=engine,
-                    )
-                except PermissionError:
-                    if self.verbose:
-                        print(
-                            "An error occurred in cache file generation. Lookup access rights."
-                        )
-                    pass
 
         self.profiler.stop("check_non_eq_param", "Checked nonequilibrium parameters")
 
