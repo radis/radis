@@ -1440,7 +1440,7 @@ class BaseFactory(DatabankLoader):
         return None
 
     def _calc_noneq_parameters(
-        self, vib_distribution, singleTvibmode, cache=True, engine="h5py"
+        self, vib_distribution, singleTvibmode, cache=True, engine="pytables"
     ):
         """Make sure database has non equilibrium quantities (Evib, Erot, etc.)
 
