@@ -138,9 +138,9 @@ __global__ void fillLDM(
                         // ... scale linestrengths under equilibrium
                         float Si = iter_d.N * S0[i] * (expf(iter_d.c2T * El[i]) - expf(iter_d.c2T * (El[i] + v0[i]))) / iter_d.Q[iso[i]];
 
-                        float avi = ki - k0i;
-                        float aGi = li - l0i;
-                        float aLi = mi - m0i;
+                        float avi = ki - (float)k0i;
+                        float aGi = li - (float)l0i;
+                        float aLi = mi - (float)m0i;
 
                         float aV00i = (1 - aGi) * (1 - aLi);
                         float aV01i = (1 - aGi) * aLi;
@@ -150,14 +150,14 @@ __global__ void fillLDM(
                         float Sv0i = Si * (1 - avi);
                         float Sv1i = Si * avi;
 
-                        agnostic_add(&S_klm[m0i + l0i * N_L + k0i * N_G * N_L], aV00i * Sv0i);
-                        agnostic_add(&S_klm[m0i + l0i * N_L + k1i * N_G * N_L], aV00i * Sv1i);
-                        agnostic_add(&S_klm[m0i + l1i * N_L + k0i * N_G * N_L], aV01i * Sv0i);
-                        agnostic_add(&S_klm[m0i + l1i * N_L + k1i * N_G * N_L], aV01i * Sv1i);
-                        agnostic_add(&S_klm[m1i + l0i * N_L + k0i * N_G * N_L], aV10i * Sv0i);
-                        agnostic_add(&S_klm[m1i + l0i * N_L + k1i * N_G * N_L], aV10i * Sv1i);
-                        agnostic_add(&S_klm[m1i + l1i * N_L + k0i * N_G * N_L], aV11i * Sv0i);
-                        agnostic_add(&S_klm[m1i + l1i * N_L + k1i * N_G * N_L], aV11i * Sv1i);
+                        agnostic_add(&S_klm[k0i * N_G * N_L + l0i * N_L + m0i], Sv0i * aV00i);
+                        agnostic_add(&S_klm[k0i * N_G * N_L + l0i * N_L + m1i], Sv0i * aV01i);
+                        agnostic_add(&S_klm[k0i * N_G * N_L + l1i * N_L + m0i], Sv0i * aV10i);
+                        agnostic_add(&S_klm[k0i * N_G * N_L + l1i * N_L + m1i], Sv0i * aV11i);
+                        agnostic_add(&S_klm[k1i * N_G * N_L + l0i * N_L + m0i], Sv1i * aV00i);
+                        agnostic_add(&S_klm[k1i * N_G * N_L + l0i * N_L + m1i], Sv1i * aV01i);
+                        agnostic_add(&S_klm[k1i * N_G * N_L + l1i * N_L + m0i], Sv1i * aV10i);
+                        agnostic_add(&S_klm[k1i * N_G * N_L + l1i * N_L + m1i], Sv1i * aV11i);
                     }
                 }
             }
