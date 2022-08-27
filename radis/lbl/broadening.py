@@ -256,8 +256,8 @@ def pressure_broadening_HWHM(
     mole_fraction,
     Tgas,
     Tref,
-    df,
     diluent,
+    diluent_broadening_coeff,
 ):
     """Calculates collisional broadening HWHM over all lines by scaling
     tabulated HWHM for new pressure and mole fractions conditions [1]_
@@ -327,7 +327,6 @@ def pressure_broadening_HWHM(
     # | power function once only.
 
     diluent_molecules = diluent.keys()
-
     gamma_n_diluent = []
 
     for key, val in diluent.items():
@@ -340,8 +339,11 @@ def pressure_broadening_HWHM(
         gamma_lb = 0
         for diluent_molecule, diluent_mole_fraction in diluent.items():
             if diluent_molecule != "air":
-                gamma_lb += ((Tref / Tgas) ** df["n_" + diluent_molecule.lower()]) * (
-                    df["gamma_" + diluent_molecule.lower()]
+                gamma_lb += (
+                    (Tref / Tgas)
+                    ** diluent_broadening_coeff["n_" + diluent_molecule.lower()]
+                ) * (
+                    diluent_broadening_coeff["gamma_" + diluent_molecule.lower()]
                     * pressure_atm
                     * diluent_mole_fraction
                 )
@@ -457,8 +459,8 @@ def voigt_broadening_HWHM(
     mole_fraction,
     Tgas,
     Tref,
-    df,
     diluent,
+    diluent_broadening_coeff,
 ):
     """Calculate Voigt profile half-width at half-maximum (HWHM) from the
     Gaussian and Collisional broadening with the empirical formula of [Olivero-1977]_
@@ -533,8 +535,8 @@ def voigt_broadening_HWHM(
         mole_fraction,
         Tgas,
         Tref,
-        df,
         diluent,
+        diluent_broadening_coeff,
     )
 
     # Doppler Broadening HWHM:
@@ -900,16 +902,37 @@ class BroadenFactory(BaseFactory):
             self.params.broadening_method
         )  # Lineshape broadening algorithm
 
+        # diluent and their broadening coeff dictionary
+        diluent_broadening_coeff = {}
+        for key in diluent:
+            if key != "air":
+                diluent_broadening_coeff["gamma_" + key.lower()] = df[
+                    "gamma_" + key.lower()
+                ]
+                diluent_broadening_coeff["n_" + key.lower()] = df["n_" + key.lower()]
+
         # Get broadenings
         if broadening_method == "voigt":
             # Adds hwhm_voigt, hwhm_gauss, hwhm_lorentz:
             self._add_voigt_broadening_HWHM(
-                df, pressure_atm, mole_fraction, Tgas, Tref, diluent
+                df,
+                pressure_atm,
+                mole_fraction,
+                Tgas,
+                Tref,
+                diluent,
+                diluent_broadening_coeff,
             )
         elif broadening_method in ["convolve", "fft"]:
             # Adds hwhm_lorentz:
             self._add_collisional_broadening_HWHM(
-                df, pressure_atm, mole_fraction, Tgas, Tref, diluent
+                df,
+                pressure_atm,
+                mole_fraction,
+                Tgas,
+                Tref,
+                diluent,
+                diluent_broadening_coeff,
             )
             # Add hwhm_gauss:
             self._add_doppler_broadening_HWHM(df, Tgas)
@@ -1011,7 +1034,14 @@ class BroadenFactory(BaseFactory):
         return
 
     def _add_voigt_broadening_HWHM(
-        self, df, pressure_atm, mole_fraction, Tgas, Tref, diluent
+        self,
+        df,
+        pressure_atm,
+        mole_fraction,
+        Tgas,
+        Tref,
+        diluent,
+        diluent_broadening_coeff,
     ):
         """Update dataframe with Voigt HWHM.
 
@@ -1063,8 +1093,8 @@ class BroadenFactory(BaseFactory):
             mole_fraction,
             Tgas,
             Tref,
-            df,
             diluent,
+            diluent_broadening_coeff,
         )
 
         # Update dataframe
@@ -1075,7 +1105,14 @@ class BroadenFactory(BaseFactory):
         return
 
     def _add_collisional_broadening_HWHM(
-        self, df, pressure_atm, mole_fraction, Tgas, Tref, diluent
+        self,
+        df,
+        pressure_atm,
+        mole_fraction,
+        Tgas,
+        Tref,
+        diluent,
+        diluent_broadening_coeff,
     ):
         """Update dataframe with collisional HWHM [1]_
 
@@ -1131,8 +1168,8 @@ class BroadenFactory(BaseFactory):
             mole_fraction,
             Tgas,
             Tref,
-            df,
             diluent,
+            diluent_broadening_coeff,
         )
 
         # Update dataframe

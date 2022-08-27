@@ -48,6 +48,7 @@ def calc_spectrum(
     molecule=None,
     isotope="all",
     mole_fraction=1,
+    diluent={},
     path_length=1,
     databank="hitran",
     medium="air",
@@ -67,7 +68,6 @@ def calc_spectrum(
     export_lines=False,
     verbose=True,
     return_factory=False,
-    diluent={},
     **kwargs,
 ) -> Spectrum:
     r"""Calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
@@ -131,6 +131,11 @@ def calc_spectrum(
         For multiple molecules, use a dictionary with molecule names as keys ::
 
             mole_fraction={'CO2': 0.8, 'CO':0.2}​
+
+    diluent: dictionary
+       contains diluent name as key and its mole_fraction as value.
+
+            diluent = { 'CO2': 0.6, 'H2O':0.4}
 
     path_length: float [:math:`cm`] or `~astropy.units.quantity.Quantity`
         slab size. Default ``1`` cm​. Use arbitrary units::
@@ -281,8 +286,6 @@ def calc_spectrum(
                 s, sf = calc_spectrum(..., return_factory=True)
                 sf.df1  # see the lines calculated
                 sf.eq_spectrum(...)  #  new calculation without reloading the database
-    diluent: dictionary
-       contains diluent name as key and its mole_fraction as value
     **kwargs: other inputs forwarded to SpectrumFactory
         For instance: ``warnings``.
         See :py:class:`~radis.lbl.factory.SpectrumFactory` documentation for more

@@ -662,6 +662,7 @@ class SpectrumFactory(BandFactory):
         self,
         Tgas,
         mole_fraction=None,
+        diluent={},
         path_length=None,
         pressure=None,
         name=None,
@@ -674,6 +675,8 @@ class SpectrumFactory(BandFactory):
             Gas temperature (K)
         mole_fraction: float
             database species mole fraction. If None, Factory mole fraction is used.
+        diluent: dictionary
+            contains diluent name as key and its mole_fraction as value.
         path_length: float or `~astropy.units.quantity.Quantity`
             slab size (cm). If ``None``, the default Factory
             :py:attr:`~radis.lbl.factory.SpectrumFactor.input.path_length` is used.
@@ -1440,6 +1443,7 @@ class SpectrumFactory(BandFactory):
         Trot,
         Ttrans=None,
         mole_fraction=None,
+        diluent={},
         path_length=None,
         pressure=None,
         vib_distribution="boltzmann",
@@ -1465,6 +1469,8 @@ class SpectrumFactory(BandFactory):
             which is the RT characteristic time)
         mole_fraction: float
             database species mole fraction. If None, Factory mole fraction is used.
+        diluent: dictionary
+            contains diluent name as key and its mole_fraction as value.
         path_length: float or `~astropy.units.quantity.Quantity`
             slab size (cm). If ``None``, the default Factory
             :py:attr:`~radis.lbl.factory.SpectrumFactor.input.path_length` is used.

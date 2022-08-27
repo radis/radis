@@ -1199,7 +1199,7 @@ class DatabankLoader(object):
                     extra_params=extra_params,
                 )
                 self.params.dbpath = ",".join(local_paths)
-                print("FETCH HITRAN:", df)
+
                 # ... explicitely write all isotopes based on isotopes found in the database
                 if isotope == "all":
                     self.input.isotope = ",".join(
