@@ -44,6 +44,7 @@ def test_eq_spectrum_emulated_gpu(emulate=True, plot=False, *args, **kwargs):
         format="cdsd-4000",
         parfuncfmt="hapi",
     )
+
     s_cpu = sf.eq_spectrum(Tgas=T, name="CPU")
     s_gpu = sf.eq_spectrum_gpu(
         Tgas=T, emulate=emulate, name="GPU (emulate)" if emulate else "GPU"

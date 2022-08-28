@@ -1357,46 +1357,21 @@ class SpectrumFactory(BandFactory):
                 gpu=(not s.conditions["emulate_gpu"]),
             )
 
-            # s._q["abscoeff"] = abscoeff
-            # s.update(var)    # adds required spectral array
-            # _, new_y = s.get(var)   # can also use wunits, Iunits, etc.
-
-            # TODO: the following should obviously be a self contained function..
-
-            if var == "abscoeff":
-                new_y = abscoeff
-            elif var == "transmittance":
-                new_y = transmittance
-            elif var in ["emissivity", "radiance"]:
-                emissivity = 1 - transmittance
-                if var == "emissivity":
-                    new_y = emissivity
-                else:  # var = 'radiance':
-                    new_y = calc_radiance(
-                        s.get_wavenumber(),
-                        emissivity,
-                        s.conditions["Tgas"],
-                        unit=self.units["radiance"],
-                    )
-            else:
-                absorbance = abscoeff * s.conditions["path_length"]
-                if var == "absorbance":
-                    new_y = absorbance
+            # This happen inside a Spectrum() method
+            for k in list(s._q.keys()):  # reset all quantities
+                if k in ["wavespace", "wavelength", "wavenumber"]:
+                    pass
+                elif k == "abscoeff":
+                    s._q["abscoeff"] = abscoeff
                 else:
-                    transmittance_noslit = exp(-absorbance)
-                    if var == "transmittance_noslit":
-                        new_y = transmittance_noslit
-                    else:
-                        emissivity_noslit = 1 - transmittance_noslit
-                        if var == "emissivity_noslit":
-                            new_y = emissivity_noslit
-                        else:
-                            new_y = calc_radiance(
-                                s.get_wavenumber(),
-                                emissivity_noslit,
-                                s.conditions["Tgas"],
-                                unit=self.units["radiance_noslit"],
-                            )
+                    del s._q[k]
+
+            _, new_y = s.get(
+                var,
+                copy=False,  # copy = False saves some time & memory, it's a pointer/reference to the real data, which is fine here as data is just plotted
+                wunit=plotkwargs.get("wunit", "default"),
+                Iunit=plotkwargs.get("Iunit", "default"),
+            )
 
             line.set_ydata(new_y)
             fig.canvas.draw_idle()
