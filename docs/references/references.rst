@@ -35,7 +35,7 @@ Line-by-line algorithm :
 
 - cite the line-by-line code as [RADIS-2018]_ |badge_article1|
 - if using the default optimization, cite the new spectral synthesis algorithm [Spectral-Synthesis-Algorithm]_ |badge_article2|
-- for reproducibility, mention the RADIS version number. Get your version with :py:func:`~radis.get_version`
+- for reproducibility, mention the RADIS version number. Get the version with :py:func:`radis.get_version`
   (latest version available is |badge_pypi|) ::
 
     import radis

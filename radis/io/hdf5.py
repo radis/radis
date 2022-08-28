@@ -8,7 +8,7 @@ Created on Tue Jan 26 21:27:15 2021
 import os
 import pathlib
 import sys
-from os.path import exists, expanduser, splitext
+from os.path import abspath, exists, expanduser, splitext
 from time import time
 
 import h5py
@@ -871,6 +871,8 @@ def hdf2df(
     Always check for existence !
 
     """
+
+    fname = abspath(expanduser(fname))
 
     if engine == "guess":
         engine = DataFileManager.guess_engine(fname)
