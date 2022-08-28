@@ -8,10 +8,6 @@ Real-time GPU Accelerated Spectra (Interactive)
 
 Example using GPU sliders and GPU calculation with :py:meth:`~radis.lbl.SpectrumFactory.eq_spectrum_gpu`
 
-This method requires CUDA compatible hardware to execute.
-For more information on how to setup your system to run GPU-accelerated methods
-using CUDA and Cython, check :ref: `GPU Spectrum Calculation on RADIS <label_radis_gpu>`
-
 .. note::
 
     in the example below, the GPU code runs on CPU, using the parameter ``emulate=True``.
@@ -22,8 +18,9 @@ using CUDA and Cython, check :ref: `GPU Spectrum Calculation on RADIS <label_rad
 
 from radis import SpectrumFactory
 from radis.test.utils import getTestFile
-from radis.tools.code_profiler import CodeProfiler
 from radis.tools.plot_tools import ParamRange
+
+##from radis.tools.code_profiler import CodeProfiler
 
 # This spectrum is significantly absorbed by atmospheric CO2
 # so it will never match the synthetic spectrum.
@@ -33,8 +30,6 @@ my_file = getTestFile("CO2_measured_spectrum_4-5um.spec")  # for the example her
 ##s_exp = load_spec(my_file)
 ##
 ##s_exp.crop(4120, 4790).plot(Iunit="mW/cm2/sr/nm")
-
-profiler = CodeProfiler()
 
 sf = SpectrumFactory(
     2150,
@@ -56,7 +51,5 @@ s = sf.eq_spectrum_gpu_interactive(
     # emulate=True,  # if True, runs CPU code on GPU. Set to False or remove to run on the GPU
     plotkwargs={"nfig": "same", "wunit": "nm"},
 )
-
-profiler.dump()
 
 print(s)

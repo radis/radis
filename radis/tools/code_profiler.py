@@ -1,5 +1,7 @@
+import atexit
 import inspect
 import sys
+from functools import partial
 from io import StringIO
 
 
@@ -9,6 +11,7 @@ class CodeProfiler:
         test_func=None,
         whitelist={"radis"},  # Look for these words in the file path.
         exclusions={"<"},  # Ignore <listcomp>, etc. in the function name.
+        filename="code_profiler_out.txt",
     ):
 
         self.dbg_out = StringIO()
@@ -19,6 +22,7 @@ class CodeProfiler:
         self.stack_level = 0
         self.white_list = whitelist
         self.exclusions = exclusions
+        atexit.register(partial(self.dump, filename=filename))
 
     def tracefunc(self, frame, event, arg):
 
@@ -37,7 +41,9 @@ class CodeProfiler:
                 if "self" in frame.f_locals:
                     module_name = frame.f_locals["self"].__class__.__module__
                     class_name = frame.f_locals["self"].__class__.__name__
-                    func_name = module_name + class_name + "." + frame.f_code.co_name
+                    func_name = (
+                        module_name + "." + class_name + "." + frame.f_code.co_name
+                    )
                 else:
                     module_name = inspect.getmodulename(frame.f_code.co_filename) + "."
                     func_name = module_name + frame.f_code.co_name
@@ -57,9 +63,9 @@ class CodeProfiler:
 
             self.stack_level -= 1
 
-    def dump(self, fname="code_profiler_out.txt"):
+    def dump(self, filename="code_profiler_out.txt"):
         ptr = self.dbg_out.tell()
         self.dbg_out.seek(0)
-        with open(fname, "w") as f:
+        with open(filename, "w") as f:
             f.write(self.dbg_out.read())
         self.dbg_out.seek(ptr)
