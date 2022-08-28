@@ -1624,6 +1624,19 @@ class BaseFactory(DatabankLoader):
         df["gu"] = df.gvibu * df.grotu
         df["gl"] = df.gvibl * df.grotl
 
+        # Check consistency if "gp" already existed
+        # https://github.com/radis/radis/pull/514#issuecomment-1229463074
+        if "gp" in df:
+            if (df["gp"] == df["gu"]).all():
+                self.warn(
+                    "'gu' was recomputed although 'gp' already in DataFrame. All values are equal",
+                    "PerformanceWarning",
+                )
+            else:
+                raise ValueError(
+                    "'gu' was recomputed although 'gp' already in DataFrame. Values are not equal ! Check calculations"
+                )
+
         return None  # dataframe updated directly
 
     def get_lines_abundance(self, df):
@@ -1680,46 +1693,27 @@ class BaseFactory(DatabankLoader):
         -------
         The molar mass of all the isotopes in the dataframe
 
-
-        Notes
-        -----
-
-        If molar mass is unknown, it can be temporarily added in the
-        :py:attr:`radis.lbl.loader.DatabankLoader._EXTRA_MOLAR_MASS` dictionary
         """
         molpar = self.molparam
 
         if "id" in df.columns:
-            raise NotImplementedError(">1 molecule")
-        elif "id" in df.attrs:
-            id = df.attrs["id"]
+            raise NotImplementedError(
+                "'id' still in DataFrame columsn. Is there more than 1 molecule ?"
+            )
+        if "id" in df.attrs:
+            molecule = df.attrs["id"]
         else:
-            # HARDCODED molar mass; for WIP ExoMol implementation, until MolParams
-            # is an attribute and can be updated with definitions from ExoMol.
-            # https://github.com/radis/radis/issues/321
-
-            # see :py:attr:`radis.lbl.loader.DatabankLoader._EXTRA_MOLAR_MASS`
-            try:
-                return self._EXTRA_MOLAR_MASS[df.attrs["molecule"]][
-                    str(df.attrs["iso"])
-                ]
-            except KeyError:
-                raise NotImplementedError(
-                    "Molar mass of {0} (isotope {1}) is unknown.".format(
-                        df.attrs["molecule"], df.attrs["iso"]
-                    )
-                    + " You can manually add it in your radis.json file {'molparams':{'molar_mass':{'molecule':{'ISOTOPE':...}}}}; or in the SpectrumFactory._EXTRA_MOLAR_MASS[molecule][isotope] = M (g/mol) dictionary. Please also report on GitHub so we can update !"
-                )
+            molecule = df.attrs["molecule"]
 
         if "iso" in df.columns:
             iso_set = df.iso.unique()
             molar_mass_dict = {}
             for iso in iso_set:
-                molar_mass_dict[iso] = molpar.get(id, iso, "mol_mass")
+                molar_mass_dict[iso] = molpar.get(molecule, iso, "mol_mass")
             molar_mass = df["iso"].map(molar_mass_dict)
         else:
             iso = df.attrs["iso"]
-            molar_mass = molpar.get(id, iso, "mol_mass")
+            molar_mass = molpar.get(molecule, iso, "mol_mass")
 
         return molar_mass
 

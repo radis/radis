@@ -594,6 +594,8 @@ def print_perf_profile(
 def generate_perf_profile(profiler):
     """Visual/interactive performance profile
 
+    Requires ``tuna`` to be installed.
+
     See typical output in https://github.com/radis/radis/pull/325
 
     .. image:: https://user-images.githubusercontent.com/16088743/128018032-6049be72-1881-46ac-9d7c-1ed89f9c4f42.png

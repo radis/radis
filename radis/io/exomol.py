@@ -508,14 +508,11 @@ def fetch_exomol(
     # corrected by isotopic abundance.
     # Below, replace Linestrength with Line Intensity taking into account
     # Terrestrial isotopic abundance (to be compatible with HITRAN/HITEMP/etc. )
-    from radis.db.molparam import MolParams
+    from radis.db.molparam import MOLPARAMS_EXTRA_PATH, MolParams
 
-    try:
-        Ia = MolParams().get(molecule, isotope, "abundance")
-    except NotImplementedError:
-        from radis import config
-
-        Ia = config["molparams"]["abundances"][molecule][str(isotope)]
+    Ia = MolParams(extra_file_json=MOLPARAMS_EXTRA_PATH).get(
+        molecule, isotope, "abundance"
+    )
 
     if output == "jax":
         try:
@@ -1035,194 +1032,13 @@ class MdbExomol(DatabaseManager):
 
 
 if __name__ == "__main__":
-    # mdb=MdbExomol("/home/kawahara/exojax/data/CO/12C-16O/Li2015/")
-    # mdb=MdbExomol("/home/kawahara/exojax/data/CH4/12C-1H4/YT34to10/",nurange=[6050.0,6150.0])
 
-    # %% Test  by overriding Spectrumfactory's DataFrame df0
-    # mdb = MdbExomol(".database/H2O/1H2-16O/POKAZATEL", [4310.0, 4320.0], crit=1.0e-45)
-    # df = mdb.to_df()
-    # from radis import SpectrumFactory
-    # sf = SpectrumFactory(
-    #     4310,
-    #     4320,
-    #     molecule="H2O",
-    #     isotope="1",
-    # )
-    # sf.fetch_databank(
-    #     "hitran"
-    # )  # placeholder. Load lines (will be replaced), load partition function.
-    # sf.df0 = df  # override.
-    # s = sf.eq_spectrum(500, name="ExoMol")
-    # # sf.fetch_databank('hitran')  # placeholder. Load lines (will be replaced), load partition function.
-    # # s_hit = sf.eq_spectrum(500, name='HITRAN')
-
-    #%% Test by direct caclulation
-    # import pytest
-
-    # print("Testing factory:", pytest.main(["../test/io/test_exomol.py"]))
-
-    #%% RADIS-like Example
-    # uses fetch_exomol() internally
-
-    from radis import calc_spectrum
-
-    s = calc_spectrum(
-        wavelength_min=1.630e4,
-        wavelength_max=1.6305e4,
-        molecule="CH4",
-        isotope="1",
-        pressure=1.01325,  # bar
-        Tgas=1000,  # K
-        mole_fraction=0.1,
-        path_length=1,  # cm
-        # broadening_method="fft",  # @ dev: Doesn't work with 'voigt'
-        databank=(
-            "exomol",
-            "YT10to10",
-        ),  # Simply use 'exomol' for the recommended database
-    )
-    # s.apply_slit(1, "cm-1")  # simulate an experimental slit
-    s.plot("xsection")
-
-    # %% Exojax like Example
-
-    class mdbExoMol:
-
-        # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
-        __slots__ = [
-            "Sij0",
-            "logsij0",
-            "nu_lines",
-            "A",
-            "elower",
-            "eupper",
-            "gupper",
-            "jlower",
-            "jupper",
-        ]
-
-        def __init__(
-            self,
-            molecule,
-            path,
-            nurange=[-np.inf, np.inf],
-            crit=-np.inf,
-            local_databases="~/exojax",
-        ):
-            """
-            Parameters
-            ----------
-            molecule: molecule name
-            path : local path, mirror of ExoMol path
-            nurange : TYPE, optional
-                DESCRIPTION. The default is [-np.inf, np.inf].
-            crit : TYPE, optional
-                DESCRIPTION. The default is -np.inf.
-
-            Returns
-            -------
-            DataFrame
-
-            Examples
-            --------
-            ::
-
-                mdbCH4 = mdbExoMol("CH4", '.database/CH4/12C-1H4/YT10to10/', nus, crit=1.e-30)
-                print(len(mdbCH4.nu_lines), "lines")
-                mdbCH4.elower
-
-            Available columns::
-
-                [
-                    "Sij0",
-                    "logsij0",
-                    "nu_lines",
-                    "A",
-                    "elower",
-                    "eupper",
-                    "gupper",
-                    "jlower",
-                    "jupper",
-                ]
-
-            """
-
-            wavenum_min, wavenum_max = np.min(nurange), np.max(nurange)
-            if wavenum_min == -np.inf:
-                wavenum_min = None
-            if wavenum_max == np.inf:
-                wavenum_max = None
-
-            # Set-up database, download files and set-up cache files if needed
-            mdb = MdbExomol(
-                path,
-                molecule=molecule,
-                local_databases=local_databases,
-                nurange=[wavenum_min, wavenum_max],
-            )
-
-            # Get cache files to load :
-            mgr = mdb.get_datafile_manager()
-            local_files = [mgr.cache_file(f) for f in mdb.trans_file]
-
-            # Load them:
-            jdict = mdb.load(
-                local_files,
-                columns=[k for k in self.__slots__ if k not in ["logsij0"]],
-                lower_bound=([("nu_lines", wavenum_min)] if wavenum_min else [])
-                + ([("Sij0", mdb.crit)] if not np.isneginf(mdb.crit) else []),
-                upper_bound=([("nu_lines", wavenum_max)] if wavenum_max else []),
-                output="jax",
-            )
-
-            # set attributes, accessible as e.g:  mdb.nu_lines
-            for k in jdict.keys():
-                setattr(self, k, jdict[k])
-
-    nus = np.linspace(1e7 / 1.630e4, 1e7 / 1.6305e4)
-
-    # Download new ExoMol repo (in ~/exomol)
-    mdbCH4 = mdbExoMol(
-        "CH4",
-        ".database/CH4/12C-1H4/YT10to10/",
-        nus,
-        crit=1.0e-30,
-        local_databases=".",  # use local folder
+    from radis.test.io.test_exomol import (
+        test_calc_exomol_spectrum,
+        test_calc_exomol_vs_hitemp,
+        test_exomol_parsing_functions,
     )
 
-    print(len(mdbCH4.nu_lines), "lines")
-    mdbCH4.elower
-
-    # Or use RADIS's folder  (# by default ~/.radisdb/exomol)
-    import radis
-
-    mdbCH4_2 = mdbExoMol(
-        "CH4",
-        "CH4/12C-1H4/YT10to10/",
-        nus,
-        crit=1.0e-30,
-        local_databases=pathlib.Path(radis.config["DEFAULT_DOWNLOAD_PATH"]) / "exomol",
-    )
-    # ... ready to run Jax calculations
-
-    #%%
-
-    # """ExoMol lines can be downloaded and accessed separately using
-    # :py:func:`~radis.io.exomol.fetch_exomol`
-    # """
-
-    # # See line data:
-    # from radis.io.exomol import fetch_exomol
-
-    # df = fetch_exomol("SiO", database="EBJT", isotope="1", load_wavenum_max=5000)
-    # print(df)
-
-    # #%%
-    # # See the list of recommended databases for the 1st isotope of SiO :
-    # from radis.io.exomol import get_exomol_database_list, get_exomol_full_isotope_name
-
-    # databases, recommended = get_exomol_database_list(
-    #     "SiO", get_exomol_full_isotope_name("SiO", 1)
-    # )
-    # print("Databases for SiO: ", databases)
-    # print("Database recommended by ExoMol: ", recommended)
+    test_exomol_parsing_functions()
+    test_calc_exomol_spectrum()
+    test_calc_exomol_vs_hitemp()

@@ -2351,10 +2351,14 @@ class SpectrumFactory(BandFactory):
 
     def generate_perf_profile(self):
         """Generate a visual/interactive performance profile diagram for
-        the last calculated spectrum
+        the last calculated spectrum, with ``tuna``.
 
-        .. note:
-            requires a `profiler` key with in Spectrum.conditions
+        Requires a `profiler` key with in Spectrum.conditions, and ``tuna``
+        installed.
+
+        .. note::
+            :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile` is an
+            ascii-version which does not require ``tuna``.
 
         Examples
         --------

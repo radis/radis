@@ -103,7 +103,7 @@ Parameters
 "USE_CYTHON": True
     bool: try to use Cython functions when possible
 
-    See more in : :py:func:`~radis.misc.arrays.add_at`
+    See more in :py:func:`radis.misc.arrays.add_at`
 
 
 "GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD": 3

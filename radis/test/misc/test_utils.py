@@ -35,6 +35,9 @@ def test_files_from_regex_1(*args, **kwargs):
         "hitran_co_3iso_2000_2300cm.par",
         "hitran_CO2_fragment.par",
     ]
+
+    assert len(path_test) == len(path_actual)
+
     path_actual.sort()
     path_test.sort()
 
