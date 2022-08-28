@@ -1632,6 +1632,24 @@ class Spectrum(object):
             verbose=verbose,
         )
 
+    def _update_all_vars_from_abscoeff(self, new_abscoeff):
+        from numpy import exp
+
+        from radis.spectrum.equations import calc_radiance
+
+        self._q["abscoeff"] = new_abscoeff
+        self._q["absorbance"] = new_abscoeff * self.conditions["path_length"]
+        self._q["transmittance_noslit"] = exp(-self._q["absorbance"])
+        self._q["emissivity_noslit"] = (
+            1 - self._q["transmittance_noslit"]
+        )  # TO-DO: Only true for Equilibirum!
+        self._q["radiance_noslit"] = calc_radiance(
+            self.get_wavenumber(),  # TO-DO: Only true for Equilibirum!
+            self._q["emissivity_noslit"],
+            self.conditions["Tgas"],
+            unit=self.units["radiance_noslit"],
+        )
+
     def crop(self, wmin=None, wmax=None, wunit="default", inplace=True):
         """Crop spectrum to ``wmin-wmax`` range in ``wunit``   (inplace)
 
