@@ -936,7 +936,7 @@ class SpectrumFactory(BandFactory):
         .. note::
             This method requires CUDA compatible hardware to execute.
             For more information on how to setup your system to run GPU-accelerated methods
-            using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`
+            using CUDA and Cython, check :ref: `GPU Spectrum Calculation on RADIS <label_radis_gpu>`
 
         Parameters
         ----------
@@ -1065,7 +1065,7 @@ class SpectrumFactory(BandFactory):
         for iso in iso_list:
             if iso in iso_set:
                 params = molpar.df.loc[(mol_id, iso)]
-                molarmass_arr[iso] = params.mol_mass
+                molarmass_arr[iso] = params.molar_mass
                 parsum = self.get_partition_function_interpolator(molecule, iso, state)
                 Q_interp_list.append(parsum.at)
             else:
@@ -2364,10 +2364,14 @@ class SpectrumFactory(BandFactory):
 
     def generate_perf_profile(self):
         """Generate a visual/interactive performance profile diagram for
-        the last calculated spectrum
+        the last calculated spectrum, with ``tuna``.
 
-        .. note:
-            requires a `profiler` key with in Spectrum.conditions
+        Requires a `profiler` key with in Spectrum.conditions, and ``tuna``
+        installed.
+
+        .. note::
+            :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile` is an
+            ascii-version which does not require ``tuna``.
 
         Examples
         --------

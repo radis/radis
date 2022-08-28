@@ -61,7 +61,7 @@ import pandas as pd
 from radis import config
 from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
-from radis.db.molparam import MolParams
+from radis.db.molparam import MOLPARAMS_EXTRA_PATH, MolParams
 from radis.db.references import doi
 from radis.io.cdsd import cdsd2df
 from radis.io.exomol import fetch_exomol
@@ -717,34 +717,11 @@ class DatabankLoader(object):
         self._autoretrieveignoreconditions = []  # HACK. See _retrieve_from_database
 
         # Molecular parameters
-        self.molparam = MolParams()
+        self.molparam = MolParams(extra_file_json=MOLPARAMS_EXTRA_PATH)
         """MolParam: contains information about molar mass; isotopic abundance.
 
         See :py:class:`~radis.db.molparam.MolParams`"""
         # TODO @dev : Refactor : turn it into a Dictinoary? (easier to store as JSON Etc.)
-
-        # Extra paramaters :
-        # HARDCODED molar mass; for WIP ExoMol implementation, until MolParams
-        # is an attribute and can be updated with definitions from ExoMol.
-        # https://github.com/radis/radis/issues/321
-
-        self._EXTRA_MOLAR_MASS = config["molparams"]["molar_mass"]
-        """Extra molar mass when not found in HITRAN molecular parameter database
-        ::
-            self._EXTRA_MOLAR_MASS[molecule][isotope] = M (g/mol)
-
-        See :py:func:`radis.lbl.base.BaseFactory.get_molar_mass`
-        """
-
-        # HARDCODED isotopic abundance; for WIP ExoMol implementation, until MolParams
-        # is an attribute and can be updated with definitions from ExoMol.
-        # https://github.com/radis/radis/issues/321
-        self._EXTRA_ABUNDANCES = config["molparams"]["abundances"]
-        """Extra isotopic abundances when not found in HITRAN molecular parameter database
-        ::
-            self._EXTRA_ABUNDANCES[molecule][isotope] = Ia
-
-        """
 
         # Profiler
         self.profiler = None

@@ -6,6 +6,10 @@ GPU Accelerated Spectra
 
 Example using GPU calculation with :py:meth:`~radis.lbl.SpectrumFactory.eq_spectrum_gpu`
 
+This method requires CUDA compatible hardware to execute.
+For more information on how to setup your system to run GPU-accelerated methods
+using CUDA and Cython, check :ref: `GPU Spectrum Calculation on RADIS <label_radis_gpu>`
+
 .. note::
 
     in the example below, the GPU code runs on CPU, using the parameter ``emulate=True``.

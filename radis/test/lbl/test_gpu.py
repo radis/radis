@@ -9,14 +9,14 @@ Created on Sun Aug 22 13:34:42 2020
 """
 import pytest
 
-from radis import SpectrumFactory
+from radis import SpectrumFactory, get_residual
 from radis.misc.printer import printm
 from radis.test.utils import getTestFile
 
 
-def test_eq_spectrum_emulated_gpu(emulate=True):
+def test_eq_spectrum_emulated_gpu(emulate=True, plot=False, *args, **kwargs):
 
-    print(emulate)
+    print("Emulate: ", emulate)
     T = 1000
     p = 0.1
     wstep = 0.001
@@ -44,18 +44,23 @@ def test_eq_spectrum_emulated_gpu(emulate=True):
         format="cdsd-4000",
         parfuncfmt="hapi",
     )
-    s_cpu = sf.eq_spectrum(Tgas=T)
-    s_gpu = sf.eq_spectrum_gpu(Tgas=T, emulate=emulate)
+
+    s_cpu = sf.eq_spectrum(Tgas=T, name="CPU")
+    s_gpu = sf.eq_spectrum_gpu(
+        Tgas=T, emulate=emulate, name="GPU (emulate)" if emulate else "GPU"
+    )
     s_cpu.crop(wmin=2284.2, wmax=2284.8)  # remove edge lines
     s_gpu.crop(wmin=2284.2, wmax=2284.8)
-    assert s_cpu.compare_with(
-        s_gpu, spectra_only=True, rtol=0.07, plot=False
-    )  # set the appropriate tolerance
+    if plot:
+        s_cpu.compare_with(s_gpu, spectra_only=True, plot=plot)
+    assert get_residual(s_cpu, s_gpu, "abscoeff") < 1.4e-5
+    assert get_residual(s_cpu, s_gpu, "radiance_noslit") < 7.3e-6
+    assert get_residual(s_cpu, s_gpu, "transmittance_noslit") < 1.4e-5
 
 
 @pytest.mark.needs_cuda
-def test_eq_spectrum_gpu():
-    test_eq_spectrum_emulated_gpu(emulate=False)
+def test_eq_spectrum_gpu(plot, *args, **kwargs):
+    test_eq_spectrum_emulated_gpu(emulate=False, plot=plot, *args, **kwargs)
 
 
 # --------------------------
