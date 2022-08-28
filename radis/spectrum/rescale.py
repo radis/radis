@@ -100,7 +100,9 @@ def _build_update_graph(
     Returns
     -------
     derivation: dict
-        {spectral_quantity: [list of combinations of spectral quantities needed to calculate it]}
+        Format::
+
+            {spectral_quantity: [list of combinations of spectral quantities needed to calculate it]}
 
     Examples
     --------
@@ -149,6 +151,7 @@ def _build_update_graph(
         _build_update_graph(s)
 
     Outputs ::
+
         {'transmittance_noslit': [['absorbance'],
           ['abscoeff'],
           ['absorbance'],
@@ -253,7 +256,6 @@ def _build_update_graph(
 
         Examples
         --------
-
         Radiance can be infered from emisscoeff if optically thin::
 
             derives_from('radiance_noslit', 'emisscoeff')
@@ -308,14 +310,15 @@ def _build_update_graph(
         derives_from("radiance", ["radiance_noslit"])
         derives_from("transmittance", ["transmittance_noslit"])
         derives_from("emissivity", ["emissivity_noslit"])
+
+    # At equilibrium, any non-slit spectral array can be recomputed from any other
     if equilibrium == True:
         if __debug__:
             printdbg("... build_graph: equilibrium > all keys derive from one")
-        # Anything can be recomputed from anything
         for key in all_keys:
             if key in NON_CONVOLUTED_QUANTITIES and key != "xsection":
                 # except from xsection, where we still need P & T
-                all_but_k = [[k] for k in all_keys if k != key]
+                all_but_k = [[k] for k in NON_CONVOLUTED_QUANTITIES if k != key]
                 derives_from(key, *all_but_k)
 
     # ------------------------------------------------------------
@@ -467,17 +470,17 @@ def get_recompute(spec, wanted, no_change=False, true_path_length=None):
         spec, path_length=true_path_length, no_change=no_change
     )
 
-    #    activated = dict().fromkeys(ordered_keys, False)
-    # Store two dictionaries, that characterize, at a given instant, all quantities
-    # that we had to recompute, and all quantities that can be recomputed from these
+    # Create dictionary which contains all quantities
+    # that we have to recompute
     recompute = dict().fromkeys(ordered_keys, False)
     for k in spec.get_vars():  # start from all quantities we have
         recompute[k] = True
     for k in wanted:  # add all quantities we want
         recompute[k] = True
-    #    reachable = dict().fromkeys(ordered_keys, False)
-    #    for k in spec.get_vars():   # start from all quantities we have
-    #        reachable[k] = True
+    # Add non-slit quantities if the convoluted array is wanted
+    for k in CONVOLUTED_QUANTITIES:
+        if k in wanted:
+            recompute[k + "_noslit"] = True
 
     def parse_tree(recompute):
         for key in ordered_keys:
@@ -498,20 +501,6 @@ def get_recompute(spec, wanted, no_change=False, true_path_length=None):
                                 key, [k for k in from_keys if recompute[k]]
                             )
                         )
-                    #                    # cant recompute this quantity. Let's force recomputation
-                    #                    def get_best_path():
-                    #                        new_recompute_set = recompute.copy()
-                    #                        for k in ordered_keys:
-                    #                            # let's add a new quantity to recompute
-                    #                            if new_recompute_set[k]:
-                    #                                # we already have this quantity
-                    #                                continue
-                    #                            elif not any([k in from_keys for from_keys in derivation_graph[key]]):
-                    #                                # this quantity (k) doesnt participate in calculating from_keys
-                    #                                continue
-                    #                            else:
-                    #                                # let's calculate it
-                    #
                     # cant recompute this quantity. Let's force recomputation
                     # of a given path. We'll arbitrary use the one will the fewer
                     # amount of not already recomputed quantities
@@ -2193,10 +2182,13 @@ def _recalculate(
                 del spec._q[k]
                 del spec.units[k]
 
-    # Save (only) the ones that we want, unless we want everything ('greedy')
-    for q in rescaled:
-        if q in wanted:  # or greedy:
+    # Save (only) the ones that we want
+    for q in wanted:
+        if q in rescaled:
             spec._q[q] = rescaled[q]
+            # # also add non-convoluted array until we apply slit
+        elif apply_slit and q in CONVOLUTED_QUANTITIES and q + "_noslit" in rescaled:
+            spec._q[q + "_noslit"] = rescaled[q + "_noslit"]
 
     # Update units
     spec.units.update(rescaled_units)
@@ -2241,6 +2233,11 @@ def _recalculate(
                 norm_by=norm_by,
                 verbose=verbose,
             )
+
+        # Remove unwanted non-convoluted arrays
+        for q in rescaled:
+            if q in CONVOLUTED_QUANTITIES and q + "_noslit" not in wanted:
+                del spec._q[q + "_noslit"]
 
     # Final checks
 

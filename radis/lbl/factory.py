@@ -1347,10 +1347,12 @@ class SpectrumFactory(BandFactory):
         fig = line.figure
 
         def update_plot(val):
+            # TODO : refactor this function and the update() mechanism. Ensure conditions are correct.
             # Update conditions
             # ... at equilibirum, temperatures remain equal :
             s.conditions["Tvib"] = s.conditions["Tgas"]
             s.conditions["Trot"] = s.conditions["Tgas"]
+            s.conditions["slit_function"] = s.conditions["slit_FWHM"]
 
             abscoeff, transmittance, iter_params = gpu_iterate(
                 s.conditions["pressure"],
