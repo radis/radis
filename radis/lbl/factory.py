@@ -1060,6 +1060,9 @@ class SpectrumFactory(BandFactory):
         molarmass_arr = np.empty_like(
             iso_list, dtype=np.float32
         )  # molar mass of each isotope
+
+        print("!!!!!!!!!!!!!!", iso_list, iso_set)
+
         Q_interp_list = []
         for iso in iso_list:
             if iso in iso_set:
@@ -1084,8 +1087,13 @@ class SpectrumFactory(BandFactory):
 
         # load the data
         df = self.df0
-        iso = df["iso"].to_numpy(dtype=np.uint8)
         v0 = df["wav"].to_numpy(dtype=np.float32)
+
+        if len(iso_set) > 1:
+            iso = df["iso"].to_numpy(dtype=np.uint8)
+        elif len(iso_set) == 1:
+            iso = np.full(len(v0), iso_set[0], dtype=np.uint8)
+
         da = df["Pshft"].to_numpy(dtype=np.float32)
         El = df["El"].to_numpy(dtype=np.float32)
         na = df["Tdpair"].to_numpy(dtype=np.float32)
