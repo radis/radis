@@ -51,8 +51,8 @@ def test_eq_spectrum_emulated_gpu(emulate=True):
         s_gpu, spectra_only=True, rtol=0.07, plot=False
     )  # set the appropriate tolerance
 
-    s_cpu.plot()
-    s_gpu.plot(nfig="same")
+    # s_cpu.plot()
+    # s_gpu.plot(nfig='same')
 
 
 @pytest.mark.needs_cuda
