@@ -3,7 +3,7 @@
 Summary
 -------
 
-Runs tests for neq/phys so that they can be accessed by pytest (and hopefully
+Runs tests for radis/phys so that they can be accessed by pytest (and hopefully
 the CI test suite)
 
 Examples
@@ -80,7 +80,7 @@ def test_convert(verbose=True, *args, **kwargs):
 
     E = 250  # nm
     assert isclose(nm2eV(E), cm2eV(nm2cm(E)))
-    assert eV2nm(nm2eV(E)) == E
+    assert isclose(eV2nm(nm2eV(E)), E)
     assert hz2nm(nm2hz(E)) == E
 
     fwhm = 1.5  # nm

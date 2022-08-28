@@ -55,7 +55,9 @@ s = calc_spectrum(
 )
 
 
-#%% Plot low and high resolution spectrum
+#%%
+# Plot low and high resolution spectra on the same graph :
+#
 s.apply_slit(10, "nm")
 import matplotlib.pyplot as plt
 
@@ -64,7 +66,10 @@ s.plot("transmittance_noslit", wunit="nm", color="k", alpha=0.1, nfig="same")
 s.plot("transmittance", wunit="nm", color="k", nfig="same")
 
 
-#%% Print some details about the computed spectrum :
+#%%
+# Print some details about the computed spectrum :
+# We could also simply use `print(s)`
+
 print("Number of grid points: ", len(s))
 print(
     "Number of lines: ", s.c["total_lines"]

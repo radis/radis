@@ -2126,6 +2126,53 @@ class BroadenFactory(BaseFactory):
             line dataframe
 
         See _calc_lineshape for more information
+
+        Examples
+        ----------
+        s = calc_spectrum(
+            2135,
+            2170,
+            molecule="CO",
+            isotope="1",
+            pressure=3,
+            Tgas=2000,
+            mole_fraction=0.1,
+            path_length=1,
+            databank="hitemp",
+            name="Chunksize=1e7",
+            chunksize=1e7,
+            optimization = "min-RMS",
+        )
+
+        Alternatively, you can also initialize a SpectrumFactory object and
+        include chunksize, as follows:
+
+        sf = SpectrumFactory(
+            wavelength_min=4000,
+            wavelength_max=4500,
+            cutoff=1e-27,
+            pressure=1,
+            isotope="1,2",
+            truncation=5,
+            neighbour_lines=5,
+            path_length=0.1,
+            mole_fraction=1e-3,
+            medium="vacuum",
+            optimization=None,
+            chunksize=1e7,
+            wstep=0.001,
+            verbose=False,
+        )
+        sf.load_databank("HITEMP-CO")
+
+        To plot:
+
+        s.plot("abscoeff")
+        plt.show()
+
+        To iterate over the entire dataframe at once (not recommended for large molecules
+        unless you have large RAM), just pass chunksize = None
+
         """
         # --------------------------
 
@@ -2145,56 +2192,93 @@ class BroadenFactory(BaseFactory):
             self.misc.zero_padding = len(self.wavenumber_calc)
 
         try:
-            if optimization in ("simple", "min-RMS"):
-                self.reftracker.add(doi["DIT-2020"], "algorithm")
-                # Use LDM
+            if chunksize is None:
+                # Deal with all lines directly (usually faster)
+                if optimization is None:
 
-                line_profile_LDM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_LDM(df)
-                # printing estimated time
-                if self.verbose >= 2:
-                    estimated_time = self.predict_time()
-                    print(
-                        "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
-                            estimated_time
+                    # printing estimated time
+                    if self.verbose >= 2:
+                        estimated_time = self.predict_time()
+                        print(
+                            "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
+                                estimated_time
+                            )
                         )
-                    )
-                (wavenumber, abscoeff) = self._apply_lineshape_LDM(
-                    df.S.values,
-                    line_profile_LDM,
-                    df.shiftwav.values,
-                    wL,
-                    wG,
-                    wL_dat,
-                    wG_dat,
-                    self.params.optimization,
-                )
 
-            elif optimization is None:
-                # printing estimated time
-                if self.verbose >= 2:
-                    estimated_time = self.predict_time()
-                    print(
-                        "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
-                            estimated_time
-                        )
-                    )
-                if chunksize is None:
-
-                    # Deal with all lines directly (usually faster)
                     line_profile = self._calc_lineshape(df)  # usually the bottleneck
                     (wavenumber, abscoeff) = self._apply_lineshape(
                         df.S.values, line_profile, df.shiftwav.values
                     )
+                elif optimization in ("simple", "min-RMS"):
+                    self.reftracker.add(doi["DIT-2020"], "algorithm")
+                    (
+                        line_profile_LDM,
+                        wL,
+                        wG,
+                        wL_dat,
+                        wG_dat,
+                    ) = self._calc_lineshape_LDM(df)
 
-                elif is_float(chunksize):
-                    # Cut lines in smaller bits for better memory handling
-                    N = int(len(df) * len(wavenumber) / chunksize) + 1
-                    # Too big may be faster but overload memory.
-                    # See Performance for more information
+                    # printing estimated time
+                    if self.verbose >= 2:
+                        estimated_time = self.predict_time()
+                        print(
+                            "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
+                                estimated_time
+                            )
+                        )
 
-                    abscoeff = zeros_like(self.wavenumber)
+                    (wavenumber, abscoeff) = self._apply_lineshape_LDM(
+                        df.S.values,
+                        line_profile_LDM,
+                        df.shiftwav.values,
+                        wL,
+                        wG,
+                        wL_dat,
+                        wG_dat,
+                        self.params.optimization,
+                    )
+                else:
+                    raise ValueError(
+                        "Unexpected value for optimization: {0}".format(optimization)
+                    )
 
-                    pb = ProgressBar(N, active=self.verbose)
+            elif is_float(chunksize):
+                # Cut lines in smaller bits for better memory handling
+                N = int(len(df) * len(wavenumber) / chunksize) + 1
+                # Too big may be faster but overload memory.
+                # See Performance for more information
+
+                # Raise performance warning if the chunks are bigger
+                # than the number of lines.
+                if N >= len(df):
+                    self.warn(
+                        "We suggest increasing chunksize to"
+                        + " {0:.1e} - {1:.1e}".format(
+                            10000 * len(wavenumber), 100000 * len(wavenumber)
+                        )
+                        + " to speed up calculations. Currently, there are more chunks"
+                        + " ({0:.3e}) than lines ({1:.3e}).".format(N, len(df))
+                        + " Hence, calculation times will be extremely slow, since broadening will be"
+                        + " calculated using only one line per iteration. Ideally, 10,000 - 100,000"
+                        + " lines per chunk are recommended.",
+                        "PerformanceWarning",
+                    )
+
+                abscoeff = zeros_like(self.wavenumber)
+                pb = ProgressBar(N, active=self.verbose)
+
+                if optimization is None:
+
+                    # printing estimated time
+                    if self.verbose >= 2:
+                        estimated_time = self.predict_time()
+                        print(
+                            "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
+                                estimated_time
+                            )
+                        )
+
                     for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
                         line_profile = self._calc_lineshape(dg)
                         (wavenumber, absorption) = self._apply_lineshape(
@@ -2203,14 +2287,41 @@ class BroadenFactory(BaseFactory):
                         abscoeff += absorption
                         pb.update(i)
                     pb.done()
+
+                elif optimization in ("simple", "min-RMS"):
+
+                    self.reftracker.add(doi["DIT-2020"], "algorithm")
+                    # Iterating over the chunks of the line database
+                    # Using DIT Algorithm calculations for optimized loops
+                    for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
+                        (
+                            line_profile_LDM,
+                            wL_i,
+                            wG_i,
+                            wL_dat_i,
+                            wG_dat_i,
+                        ) = self._calc_lineshape_LDM(dg)
+                        (wavenumber, absorption) = self._apply_lineshape_LDM(
+                            dg.S.values,
+                            line_profile_LDM,
+                            dg.shiftwav.values,
+                            wL_i,
+                            wG_i,
+                            wL_dat_i,
+                            wG_dat_i,
+                            self.params.optimization,
+                        )
+                        abscoeff += absorption
+                        pb.update(i)
+                    pb.done()
                 else:
                     raise ValueError(
-                        "Unexpected value for chunksize: {0}".format(chunksize)
+                        "Unexpected value for optimization: {0}".format(optimization)
                     )
 
             else:
                 raise ValueError(
-                    "Unexpected value for optimization: {0}".format(optimization)
+                    "Unexpected value for chunksize: {0}".format(chunksize)
                 )
 
         except MemoryError as err:

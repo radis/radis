@@ -160,38 +160,92 @@ isotope_name_dict = {
 # even if HITRAN eventually changes the conventions and labels.
 
 
+#%%
+# Read Extra parameters taken from molparams_extra.json
+# TODO : Refactor : have either .json either .txt, but not both
+
+from json import JSONDecodeError
+from os.path import exists, join
+
+import hjson
+
+from radis.misc.utils import getProjectRoot
+
+# %% Functions to parse radis/config.json
+
+MOLPARAMS_EXTRA_PATH = join(getProjectRoot(), "db", "molparams_extra.json")
+assert exists(MOLPARAMS_EXTRA_PATH)
+
+
+def get_extra_molparams(path=MOLPARAMS_EXTRA_PATH):
+    """Read the extra molecular parameters in
+    :py:attr:`~radis.db.molparam.MOLPARAMS_EXTRA_PATH` to complement the
+    HITRAN molecular parameters of molparam.txt"""
+
+    with open(path) as f:
+        try:
+            molparams_dict = hjson.load(f)
+            # read with Hjson to allow comments in MOLPARAMS_EXTRA_PATH
+        except JSONDecodeError as err:
+            raise JSONDecodeError(
+                "Error reading '{0}' (line {2} col {3}): \n{1}".format(
+                    path, err.msg, err.lineno, err.colno
+                ),
+                err.doc,
+                err.pos,
+            ) from err
+
+    return molparams_dict
+
+
+#%%
+
+
 class MolParams(object):
-    __slots__ = ["df", "terrestrial_abundances"]
+    """Easy access to molecular parameters taken from HITRAN `molparam.txt`.
 
-    def __init__(self, file=None, terrestrial_abundances=True):
-        """Easy access to molecular parameters taken from HITRAN molparam.txt.
+    .. note::
+        Starting from Radis 0.13.1 MolParams can also read extra parameters
+        from a .json file
 
-        Parameters
-        ----------
-        file: str
-            if None the one in RADIS is taken. See https://github.com/radis/radis/blob/master/radis/db/molparam.txt
+    Parameters
+    ----------
+    file: str
+        if None the one in RADIS is taken. See https://github.com/radis/radis/blob/master/radis/db/molparam.txt
+    extra_file_json: str
+        if not ``None``, read extra molecular parameters from a Json file, for
+        molecules not implemented in HITRAN  `molparam.txt`.
+        See :py:attr:`~radis.db.molparam.MOLPARAMS_EXTRA_PATH`
 
-        Examples
-        --------
-        Get earth abundance of CO2, isotope 1::
+    Examples
+    --------
+    Get earth abundance of CO2, isotope 1::
 
-            from radis.db.molparam import MolParams
-            molpar = MolParams()
-            molpar.get(2, 1, 'abundance')         # 2 for CO2, 1 for isotope 1
+        from radis.db.molparam import MolParams
+        molpar = MolParams()
+        molpar.get(2, 1, 'abundance')         # 2 for CO2, 1 for isotope 1
 
-        .. minigallery:: radis.db.molparam.MolParams
-        :add-heading:
+    .. minigallery:: radis.db.molparam.MolParams
+    :add-heading:
 
-        Note
-        ----
-        Isotope number was derived manually assuming the isonames were ordered in the database
-        The isotope name (ex: CO2 626) is kept for comparison if ever needed
+    Note
+    ----
+    Isotope number was derived manually assuming the isonames were ordered in the database
+    The isotope name (ex: CO2 626) is kept for comparison if ever needed
 
-        References
-        ----------
-        http://hitran.org/media/molparam.txt
-        """
+    References
+    ----------
+    http://hitran.org/media/molparam.txt
+    """
 
+    __slots__ = ["df", "terrestrial_abundances", "extra_molparams"]
+
+    def __init__(
+        self,
+        file=None,
+        terrestrial_abundances=True,
+        extra_file_json=MOLPARAMS_EXTRA_PATH,
+    ):
         if file is None:
             file = getFile("molparam.txt")
 
@@ -202,6 +256,10 @@ class MolParams(object):
 
         self.df = df
         self.terrestrial_abundances = terrestrial_abundances
+        self.extra_molparams = {}
+
+        if extra_file_json is not None:
+            self.extra_molparams.update(get_extra_molparams(extra_file_json))
 
         # ------
         try:  # Add hints (Python >3.6 only)
@@ -209,8 +267,25 @@ class MolParams(object):
         except AttributeError:
             pass  # old Python version
 
+    def _get_molecule_list(self):
+        """Returns list of [molecule_id, molecule_name] in loaded molparam dataframe
+
+        Examples
+        --------
+        ::
+
+            [1,  'H2O',  2,  'CO2',  3,  'O3', 4, 'N2O',  etc.  ]
+        """
+        from radis.db.classes import get_molecule
+
+        return [
+            item
+            for m in self.df.reset_index(inplace=False)["id"].unique()
+            for item in [m, get_molecule(m)]
+        ]
+
     def get(self, molecule, isotope, key):
-        """Get attribute of molecule, isotope.
+        r"""Get attribute of molecule, isotope.
 
         Parameters
         ----------
@@ -235,19 +310,55 @@ class MolParams(object):
             :add-heading:
 
         """
+        if key == "mol_mass":  # backward compatibility >=0.13.1
+            key = "molar_mass"
+
+        if key not in self.df.columns:
+            raise ValueError(
+                f"Unknown molecular parameter : {key}. Use one of {self.df.columns}"
+            )
+
         M = molecule
         try:
-            float(M)
-        except ValueError:
-            # not a number
-            from radis.db.classes import get_molecule_identifier
+            try:
+                float(M)
+            except ValueError:
+                # M is not a number (i.e. not the HITRAN molecule id)
+                from radis.db.classes import get_molecule_identifier
 
-            M = get_molecule_identifier(M)
-        return self.df.loc[(M, isotope), key]
+                M = get_molecule_identifier(M)
+        except NotImplementedError:
+            # Molecule not in HITRAN . Try to read from extra parameters
+            if key in self.extra_molparams and M in self.extra_molparams[key]:
+                try:
+                    return self.extra_molparams[key][M][str(isotope)]
+                except KeyError:
+
+                    raise NotImplementedError(
+                        f"{key} for isotope `{str(isotope)}` for molecule {M} not supported"
+                        + "\nChoose one of{0}".format(
+                            list(self.extra_molparams[key][M].keys())
+                        )
+                        + f"\nYou can manually add it in the {MOLPARAMS_EXTRA_PATH} file"
+                        + "{'molparams':{'molar_mass':{'molecule':{'ISOTOPE':...}}}}; or in the `SpectrumFactory.molpar.extra_molparams[key][molecule][isotope]` dictionary. Please also report on GitHub so we can update !"
+                    )
+            else:
+                raise NotImplementedError(
+                    f"{key} for molecule '{M}' not supported"
+                    + "\nChoose one of{0}".format(self._get_molecule_list())
+                    + "\nor `\n{0}".format(
+                        list(self.extra_molparams.get(key, {}).keys())
+                    )
+                    + f"\nYou can manually add it in the {MOLPARAMS_EXTRA_PATH} file"
+                    + "{'molparams':{'molar_mass':{'molecule':{'ISOTOPE':...}}}}; or in the `SpectrumFactory.molpar.extra_molparams[key][molecule][isotope]` dictionary. Please also report on GitHub so we can update !"
+                )
+
+        else:
+            return self.df.loc[(M, isotope), key]
 
 
 def _add_exomol_name(df):
-    """Convert HITRAN isotope name from :py:data:`~radis.db.molparam.isotope_name_dict`
+    r"""Convert HITRAN isotope name from :py:data:`~radis.db.molparam.isotope_name_dict`
     in ExoMol format
     """
 
@@ -257,13 +368,13 @@ def _add_exomol_name(df):
     def replace_parenthesis(s):
         s = str(s)
         # add parenthesis for hydrogen : Eg. H2 -> (1H)2,   H->(1H)
-        s = re.sub("H([1-9])*", r"(1H)\1", s)
+        s = re.sub(r"H([1-9])*", r"(1H)\1", s)
         # add parenthesis for deuterium : Eg. D2 -> (2H)2,   D->(2H)
-        s = re.sub("D([1-9])*", r"(2H)\1", s)
+        s = re.sub(r"D([1-9])*", r"(2H)\1", s)
 
         # Cut elements and replace parenthesis with - :
-        elements = re.findall("\(.*?\)[1-9]*", s)
-        elements = [e.replace("(", "").replace(")", "") for e in elements]
+        elements = re.findall(r"\(.*?\)[1-9]*", s)
+        elements = [e.replace(r"(", "").replace(")", "") for e in elements]
         s = "-".join(elements)
 
         return s

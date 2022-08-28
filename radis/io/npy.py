@@ -14,7 +14,6 @@ def npy2df(keywords, verbose=True):
 
     Parameters
     ----------
-
     keywords: dict
 
         npy2df({'wav':'PATH/TO/v0.npy',
@@ -26,7 +25,6 @@ def npy2df(keywords, verbose=True):
 
     Examples
     --------
-
     ::
 
         npy2df({'wav':'PATH/TO/v0.npy',
@@ -36,7 +34,7 @@ def npy2df(keywords, verbose=True):
           'Tdpair':'PATH/TO/Tdpair.npy',
           'El':'PATH/TO/Tdpair.npy'}
 
-    See definitions for instance in :py:data:`~radis.io.hitran.column_2004`
+    See definitions for instance in :py:data:`~radis.io.hitran.columns_2004`
     """
 
     database = keywords  # this has to change. Now database should be a dictionary (cf Example) # TODO

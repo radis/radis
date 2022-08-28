@@ -501,7 +501,22 @@ class Spectrum(object):
         any metadata you need to store with the Spectrum object.
         """
         self.populations = populations
+        """ populations of rovibrational levels used to compute partition
+        functions of the spectrum
+
+        See also :py:meth:`~radis.spectrum.spectrum.Spectrum.get_populations`,
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.plot_populations`
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.populations
+        """
         self.lines = lines
+        """ informations on emitting or absorbing lines that contribute to the spectrum.
+
+        See also :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.lines
+
+        """
         self.units = units
         """ dict: units for spectral quantities.
         """
@@ -540,7 +555,7 @@ class Spectrum(object):
         quantity: str
             spectral quantity name
         wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
-            unit of waverange:         wavelength in air (``'nm'``), wavenumber
+            unit of waverange:         wavelength in air (``'nm'`` or ``'nm_air'``), wavenumber
             (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
             If ``None``, then ``w`` must be a dimensionned array.
         Iunit: str
@@ -654,10 +669,7 @@ class Spectrum(object):
                     "``w`` must be a dimensionned array, or ``wunit=`` must be given."
                 )
         else:
-            if wunit is not None:
-                raise ValueError(
-                    f"``w`` is a dimensionned array (in {wunit.unit.to_string()}), therefore ``wunit`` cannot be given too (got {wunit}). Set ``wunit=None``"
-                )
+            wunit_input = wunit
             wunit = w.unit.to_string()
             if wunit not in WAVELEN_UNITS + WAVENUM_UNITS:
                 # Convert to something we know, for instance 'nm' :
@@ -669,6 +681,29 @@ class Spectrum(object):
                     wunit = "cm-1"
                 # else, an error will be raised anyway on Spectrum creation.
             w = w.value
+
+            # Check units.
+            # In particular, deal with confusions arising from "nm" being either "nm_vac" or "nm_air"  # TODO: generalize to "µm" too
+            if wunit_input is None:
+                if wunit == "nm":
+                    warn(
+                        "Input wunit not given, risk of confusion : RADIS assumes wavelengths are given as seen in air, not vacuum. To remove this warning be explicit by writing `Spectrum.from_array(..., wunit='nm_air')`"
+                    )
+                else:
+                    pass
+            else:
+                # Check units are the same
+                if wunit == "nm" and (
+                    wunit_input == "nm_vac" or wunit_input == "nm_air"
+                ):
+                    # extra precision given by the user, not an error. Use the input value
+                    wunit = wunit_input
+                elif wunit != wunit_input:
+                    raise ValueError(
+                        f"``w`` is a dimensionned array (in {wunit}), therefore ``wunit`` should not be given ( `wunit=None`), or be the same (got `wunit={wunit_input}`). Set ``wunit=None``"
+                    )
+                else:
+                    pass
 
         quantities = {quantity: (w, I)}
         units = {quantity: Iunit}
@@ -861,6 +896,12 @@ class Spectrum(object):
         """Convert a ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D`
         to a ``radis`` :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
+        Parameters
+        ----------
+        spectrum: a ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D`
+        var: str
+            spectral array, default ``"radiance"``
+
         Examples
         --------
 
@@ -904,14 +945,31 @@ class Spectrum(object):
 
         assert isinstance(spectrum, specutils.Spectrum1D)
 
+        if "waveunit" in spectrum.meta and spectrum.meta["waveunit"] in WAVELEN_UNITS:
+            raise ValueError(
+                f"Specutils only handles wavelengths in vacuum. Expected `spectrum.meta['waveunit']` to be one of {WAVELENVAC_UNITS}, got  {spectrum.meta['waveunit']}`"
+            )
+
+        conditions = spectrum.meta.copy()
+
+        if spectrum.spectral_axis.unit == "nm":
+            # note : in Specutils wavelengths are given as wavelength in vacuum (1e7/X conversion
+            # to wavenumbers)
+            waverange = spectrum.wavelength
+            waveunit = "nm_vac"
+            if "waveunit" in conditions:
+                conditions["waveunit"] = waveunit
+        else:
+            waverange = spectrum.spectral_axis
+            waveunit = None  # use default
+
         # Convert to radis Spectrum
-        # note : in Specutils wavelengths are given as wavelength in vacuum (1e7/X conversion
-        # to wavenumbers), so here we give the frequency unit.
         return Spectrum.from_array(
-            spectrum.wavelength.to("1 / cm"),
+            waverange,
             spectrum.flux,
             quantity=var,
-            conditions=spectrum.meta,
+            wunit=waveunit,
+            conditions=conditions,
         )
 
     # Public functions
@@ -1010,7 +1068,7 @@ class Spectrum(object):
             else:
                 # Try to compute it automatically :
                 try:
-                    self.update(var)
+                    self.update(var, verbose=False)
                 except ValueError as err:
                     raise ValueError(
                         f"{var} not in Spectrum arrays {self.get_vars()}. An error occured while trying to recompute it from the available arrays and conditions. See above"
@@ -1054,7 +1112,7 @@ class Spectrum(object):
         if Iunit == "default":
             # Add unit consistent with the namespace
             # https://github.com/radis/radis/issues/456
-            if wunit in ["nm", "nm_air"]:
+            if wunit in ["nm", "nm_air", "nm_vac"]:
                 if var in [
                     "radiance",
                     "radiance_noslit",
@@ -1074,6 +1132,8 @@ class Spectrum(object):
                     Iunit = Iunit0.replace("/nm", "/cm-1")
                 else:
                     Iunit = Iunit0
+            else:
+                raise ValueError(wunit)
 
         # Retrieve data (with correct unit)
         if Iunit != "default" and Iunit != Iunit0:
@@ -1119,6 +1179,8 @@ class Spectrum(object):
         if return_units == "as_str":  # only used internally
             return w, I, wunit, Iunit
         elif return_units:
+            if wunit == "nm_vac":
+                wunit = "nm"  # fix for Astropy units
             return w * Unit(wunit), I * Unit(Iunit)
         else:
             return w, I
@@ -1609,7 +1671,7 @@ class Spectrum(object):
             s.crop(s_exp.get_wavelength.min(), s_exp.get_wavelength.max(), 'nm')
             plot_diff(s_exp, s)
 
-        .. minigallery:: radis.spectrum.spectrum.Spectrum.crop
+        .. minigallery:: radis.Spectrum.crop
 
 
         See Also
@@ -1895,6 +1957,9 @@ class Spectrum(object):
     ):
         """Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
+        .. note::
+            default plotting library and templates can be edited in :py:attr:`radis.config` ["plot"]
+
         Parameters
         ----------
         var: variable (`absorbance`, `transmittance`, `transmittance_noslit`, `xsection`, etc.)
@@ -1943,7 +2008,8 @@ class Spectrum(object):
             show figure. Default ``False``. Will still show the figure in
             interactive mode, e.g, `%matplotlib inline` in a Notebook.
         show_ruler: bool
-            if `True`, add a ruler tool to the Matplotlib toolbar.
+            if `True`, add a ruler tool to the Matplotlib toolbar. Convenient
+            to measure distances between peaks, etc.
 
             .. warning::
                 still experimental in 0.9.30 ! Try it, feedback welcome !
@@ -2112,7 +2178,9 @@ class Spectrum(object):
 
         return line
 
-    def get_populations(self, molecule=None, isotope=None, electronic_state=None):
+    def get_populations(
+        self, molecule=None, isotope=None, electronic_state=None, show_warning=True
+    ):
         """Return populations that are featured in the spectrum, either as
         upper or lower levels.
 
@@ -2126,6 +2194,8 @@ class Spectrum(object):
         electronic_state: str
             if None, only one electronic state must be defined. Else, an error
             is raised
+        show_warning: bool
+            if False, turns off warning about meaning of populations, see Notes and discussion on https://github.com/radis/radis/issues/508.
 
         Returns
         -------
@@ -2143,12 +2213,54 @@ class Spectrum(object):
 
         (If Spectrum generated with RADIS, structure should match that of
         SpectrumFactory.get_populations())
+
+        Examples
+        --------
+
+        An example on how different are populations used for partition function and spectrum calculations ::
+
+            #%% CO2 example
+            # For instance, plot populations of a given vibrational level, v1,v2,v3=(0,1,0)
+            import radis
+            s = radis.test_spectrum(molecule="CO2", Tvib=3000, Trot=1000,
+                                    export_lines=True,
+                                    export_populations="rovib",
+                                    isotope=1)
+            pops = s.get_populations("CO2")["rovib"]
+
+            import matplotlib.pyplot as plt
+            pops.query("v1==0 & v2==1 & v3==0").plot("j", "n",
+                                                     label="pops. used to compute partition functions")
+            s.lines.query("v1l==0 & v2l==1 & v3l==0").plot("jl", "nl", ax=plt.gca(), kind="scatter", color="r",
+                                                           label="pops. of visible absorbing lines")
+            plt.legend()
+            plt.xlim((0,70))
+
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.get_populations
+
+        See Also
+        --------
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.plot_populations`,
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`
+
         """
+        # Warn user on the meaning of these population
+        warn(
+            UserWarning(
+                """Populations valid for partition function calculation but sometimes NOT for spectra calculations, e.g. CO2.
+                         See help on how to use 's.lines.query' instead, for instance in https://github.com/radis/radis/issues/508.
+                         Turn off warning with 'show_warning=False'
+                         """
+            )
+        )
 
         # Check inputs, get default values
         populations = self.populations
         if populations is None or populations == {}:
-            raise ValueError("Populations not defined")
+            raise ValueError(
+                "Populations not defined. Use export_populations='vib' or 'rovib' in calc_spectrum"
+            )
         if type(populations) != dict:
             raise TypeError("Method defined for populations as dictionary")
         if molecule is None:
@@ -2316,6 +2428,17 @@ class Spectrum(object):
             (as it is done during the calculation of emission integral)
         kwargs: **dict
             are forwarded to the plot
+
+        Examples
+        --------
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.plot_populations
+
+        See Also
+        --------
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.get_populations`,
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`,
+
         """
         import matplotlib.pyplot as plt
 
@@ -2893,21 +3016,19 @@ class Spectrum(object):
 
         Parameters
         ----------
-
         wunit: ``'nm'``, ``'cm-1'``, or ``None``
             plot slit in wavelength or wavenumber. If ``None``, use the unit
             the slit in which the slit function was given. Default ``None``
 
         Returns
         -------
-
         fix, ax: matplotlib objects
             figure and ax
 
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.plot_slit
 
         See Also
         --------
-
         :ref:`the Spectrum page <label_spectrum>`
         """
         # Deprecated inputs
@@ -3015,50 +3136,54 @@ class Spectrum(object):
     def line_survey(
         self,
         overlay=None,
-        wunit="default",
-        writefile=None,
+        wunit="cm-1",
+        Iunit="hitran",
+        medium="air",
         cutoff=None,
+        plot="S",
+        lineinfo=["int", "A", "El"],
+        barwidth="hwhm_voigt",  # 0.01,
+        yscale="log",
+        writefile=None,
         *args,
         **kwargs,
     ):
         """Plot Line Survey (all linestrengths used for calculation) Output in
-        Plotly (html)
+            Plotly (html)
 
         Parameters
         ----------
-        spec: Spectrum
-            result from SpectrumFactory calculation (see spectrum.py)
-        overlay: 'absorbance', 'transmittance', 'radiance', etc... or list of the above, or None
-            overlay Linestrength with specified variable calculated
-            in `spec`.
-            Get the full list with the :meth:`~radis.spectrum.spectrum.Spectrum.get_vars`
-            method. Default ``None`` ::
+        overlay: tuple (w, I, [name], [units]), or list or tuples
+            plot (w, I) on a secondary axis. Useful to compare linestrength with
+            calculated / measured data::
 
-                s.lineSurvey(overlay='abscoeff')
-        wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``,
-            wavelength air, wavenumber, or wavelength vacuum. If ``'default'``,
-            Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit` is used.
-        medium: {'air', 'vacuum', 'default'}
-            Choose whether wavelength are shown in air or vacuum. If ``'default'``
-            lines are shown as stored in the spectrum.
+                LineSurvey(overlay='abscoeff')
+        wunit: ``'nm'``, ``'cm-1'``
+            wavelength / wavenumber units
+        Iunit: ``'hitran'``, ``'splot'``
+            Linestrength output units:
+
+            - ``'hitran'``: (cm-1/(molecule/cm-2))
+            - ``'splot'`` : (cm-1/atm)   (Spectraplot units [2]_)
+
+            Note: if not None, cutoff criteria is applied in this unit.
+            Not used if plot is not 'S'
+        medium: ``'air'``, ``'vacuum'``
+            show wavelength either in air or vacuum. Default ``'air'``
+        plot: str
+            what to plot. Default ``'S'`` (scaled line intensity). But it can be
+            any key in the lines, such as population (``'nu'``), or Einstein coefficient (``'Aul'``)
+        lineinfo: list, or ``'all'``
+            extra line information to plot. Should be a column name in the databank
+            (s.lines). For instance: ``'int'``, ``'selbrd'``, etc... Default [``'int'``]
 
         Other Parameters
         ----------------
         writefile: str
             if not ``None``, a valid filename to save the plot under .html format.
             If ``None``, use the ``fig`` object returned to show the plot.
-        kwargs:: dict
-            Other inputs are passed to :func:`~radis.tools.line_survey.LineSurvey`.
-            Example below (see :py:func:`~radis.tools.line_survey.LineSurvey`
-            documentation for more details):
-        Iunit: `hitran`, `splot`
-            Linestrength output units:
-
-            - `hitran`: (cm-1/(molecule/cm-2))
-            - `splot`: (cm-1/atm)   (Spectraplot units [2]_)
-
-            Note: if not None, cutoff criteria is applied in this unit.
-            Not used if plot is not 'S'
+        yscale: ``'log'``, ``'linear'``
+            Default ``'log'``
         barwidth: float or str
             if float, width of bars, in ``wunit``, as a fraction of full-range; i.e. ::
 
@@ -3069,50 +3194,48 @@ class Spectrum(object):
 
                 barwidth = 'hwhm_voigt'
 
+            Returns
+            -------
+            fig: a Plotly figure.
+                If using a Jupyter Notebook, the plot will appear. Else, use ``writefile``
+                to export to an html file.
+
+            Plot in Plotly. See Output in [1]_
 
 
-        Returns
-        -------
-        fig: a Plotly figure.
-            If using a Jupyter Notebook, the plot will appear. Else, use ``writefile``
-            to export to an html file.
+            Examples
+            --------
+            An example using the :class:`~radis.lbl.factory.SpectrumFactory` to generate a spectrum::
 
-        Plot in Plotly. See Output in [1]_
+                from radis import SpectrumFactory
+                sf = SpectrumFactory(
+                                     wavenum_min=2380,
+                                     wavenum_max=2400,
+                                     mole_fraction=400e-6,
+                                     path_length=100,  # cm
+                                     isotope=[1],
+                                     export_lines=True,    # required for LineSurvey!
+                                     db_use_cached=True)
+                sf.load_databank('HITRAN-CO2-TEST')
+                s = sf.eq_spectrum(Tgas=1500)
+                s.apply_slit(0.5)
+                s.line_survey(overlay='radiance_noslit', barwidth=0.01, lineinfo="all")  # or barwidth='hwhm_voigt'
 
+            See the output in :ref:`Examples <label_examples>`
 
-        Examples
-        --------
-        An example using the :class:`~radis.lbl.factory.SpectrumFactory` to generate a spectrum::
+            .. minigallery:: radis.spectrum.spectrum.Spectrum.line_survey
 
-            from radis import SpectrumFactory
-            sf = SpectrumFactory(
-                                 wavenum_min=2380,
-                                 wavenum_max=2400,
-                                 mole_fraction=400e-6,
-                                 path_length=100,  # cm
-                                 isotope=[1],
-                                 export_lines=True,    # required for LineSurvey!
-                                 db_use_cached=True)
-            sf.load_databank('HITRAN-CO2-TEST')
-            s = sf.eq_spectrum(Tgas=1500)
-            s.apply_slit(0.5)
-            s.line_survey(overlay='radiance_noslit', barwidth=0.01)  # or barwidth='hwhm_voigt'
+            References
+            ----------
+            .. [1] `RADIS Online Documentation (LineSurvey) <https://radis.readthedocs.io/en/latest/tools/line_survey.html>`__
 
-        See the output in :ref:`Examples <label_examples>`
-
-        .. minigallery:: radis.spectrum.spectrum.Spectrum.line_survey
-
-        References
-        ----------
-        .. [1] `RADIS Online Documentation (LineSurvey) <https://radis.readthedocs.io/en/latest/tools/line_survey.html>`__
-
-        .. [2] `SpectraPlot <http://www.spectraplot.com/survey>`__
+            .. [2] `SpectraPlot <http://www.spectraplot.com/survey>`__
 
 
-        See Also
-        --------
-        :func:`~radis.tools.line_survey.LineSurvey`,
-        :ref:`the Spectrum page <label_spectrum>`
+            See Also
+            --------
+            :func:`~radis.tools.line_survey.LineSurvey`,
+            :ref:`the Spectrum page <label_spectrum>`
         """
 
         from radis.tools.line_survey import LineSurvey
@@ -3146,20 +3269,21 @@ class Spectrum(object):
 
             overlay = [get_overlay(ov) for ov in overlay]
 
-            return LineSurvey(
-                self,
-                overlay=overlay,
-                wunit=wunit,
-                writefile=writefile,
-                cutoff=cutoff,
-                *args,
-                **kwargs,
-            )
-
-        else:
-            return LineSurvey(
-                self, wunit=wunit, writefile=writefile, cutoff=cutoff, *args, **kwargs
-            )
+        return LineSurvey(
+            self,
+            overlay=overlay,
+            wunit=wunit,
+            Iunit=Iunit,
+            medium=medium,
+            cutoff=cutoff,
+            plot=plot,
+            lineinfo=lineinfo,
+            barwidth=barwidth,
+            yscale=yscale,
+            writefile=writefile,
+            *args,
+            **kwargs,
+        )
 
     def get_conditions(self):
         """Get all physical / computational parameters.
@@ -3373,12 +3497,19 @@ class Spectrum(object):
         ----------
         var: 'radiance', 'radiance_noslit', etc.
             which spectral array to convert. If ``None`` and only one spectral
-            arry is defined, use it
+            arry is defined, use it.
         wunit: ``'nm'``, ``'cm'``, ``'nm_vac'``.
             wavespace unit: wavelength in air (``'nm'``), wavenumber
             (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
             if ``"default"``, default unit for waveunit is used. See
             :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit`.
+
+            .. note::
+                ``specutils`` handles wavelengths in vacuum only. If using
+                ``'nm'`` wavelengths will be converted to wavelengths in vacuum.
+                We recommend using ``'nm_air'`` or ``'nm_vac'`` to avoid any
+                confusion.
+
         Iunit: unit for variable ``var``
             if ``"default"``, default unit for quantity `var` is used. See the
             :py:attr:`~radis.spectrum.spectrum.Spectrum.units` attribute.
@@ -3430,22 +3561,37 @@ class Spectrum(object):
                 "   pip install specutils"
             ) from err
 
+        meta = self.get_conditions().copy()
+
         if var is None:
             var = self._get_unique_var(operation_name="to_specutils")
         if wunit == "default":
             wunit = self.get_waveunit()
+            if wunit in WAVELEN_UNITS:  # wavlength units in air
+                # AFAIK, specutil's Spectrum1D will only handle wavelengths as seen in vacuum
+                # so below we request wavelengths in vac :
+                wunit = "nm_vac"
+        if wunit in WAVELEN_UNITS:  # wavlength units in air
+            raise ValueError(
+                f"specutil's Spectrum1D will only handle wavelengths as seen in vacuum. Use one of `s.to_specutils(..., wunit={WAVELENVAC_UNITS}`)"
+            )
+
+        # Update waveunit stored in conditions (in particular, update if wavelengths are in vacuum or air)
+        if "waveunit" in meta:
+            meta["waveunit"] = wunit
+
         if Iunit == "default":
             Iunit = self.units[var]
 
-        if wunit in WAVELEN_UNITS:
-            wunit = "nm_vac"  # AFAIK, specutil's Spectrum1D will only handle wavelengths as seen in vacuum
-            # so below we request wavelengths in vac :
+        w, I = self.get(
+            var, wunit=wunit, Iunit=Iunit, copy=True, trim_nan=True, return_units=True
+        )
+        # w, I are dimensionned arrays
 
-        w, I = self.get(var, wunit=wunit, Iunit=Iunit, copy=True, trim_nan=True)
         return Spectrum1D(
-            flux=I * u.Unit(Iunit),
-            spectral_axis=w * u.Unit(wunit),
-            meta=self.get_conditions(),
+            flux=I,
+            spectral_axis=w,
+            meta=meta,
         )
 
     def resample(
@@ -3453,7 +3599,7 @@ class Spectrum(object):
         w_new,
         unit="same",
         out_of_bounds="nan",
-        energy_threshold=5e-3,
+        energy_threshold="default",
         print_conservation=False,
         inplace=True,
         if_conflict_drop=None,
@@ -3501,10 +3647,11 @@ class Spectrum(object):
 
         Other Parameters
         ----------------
-        energy_threshold: float or ``None``
+        energy_threshold: float or ``None`` or ``'default'
             if energy conservation (integrals on the intersecting range) is above
-            this threshold, raise an error. If ``None``, dont check for energy conservation
-            Default 5e-3 (0.5%)
+            this threshold, raise an error. If ``None``, dont check for energy conservation.
+            If ``'default'``, look up the value in :py:attr:`radis.config` ["RESAMPLING_TOLERANCE_THRESHOLD"]
+            Default ``'default'``
         print_conservation: boolean
             if ``True``, prints energy conservation. Default ``False``.
         inplace: boolean
@@ -3740,8 +3887,6 @@ class Spectrum(object):
                 assert conditions["overpopulation"] is None
             assert conditions["self_absorption"]  # is True
 
-            guess = True
-
         except AssertionError:
             guess = False
             if verbose:
@@ -3761,6 +3906,8 @@ class Spectrum(object):
                 )
             )
             guess = not equilibrium
+        else:
+            guess = True
 
         if equilibrium != guess:
             msg = (
@@ -3792,7 +3939,7 @@ class Spectrum(object):
                 + "value manually with s.conditions['self_absorption']=..."
             )
 
-    def copy(self, copy_lines=True, quantity="all"):
+    def copy(self, copy_lines=True, quantity="all", copy_arrays=True):
         """Returns a copy of this Spectrum object (performs a smart deepcopy)
 
         Parameters
@@ -3801,6 +3948,10 @@ class Spectrum(object):
             default ``True``
         quantity: 'all', or one of 'radiance_noslit', 'absorbance', etc.
             if not 'all', copy only one quantity. Default ``'all'``
+        copy_arrays: bool
+            if ``False``, returned array's quantity is a pointer to the original
+            Spectrum. Faster, but warning, changing them will then change
+            the original Spectrum. Default ``True``
 
         Examples
         --------
@@ -3810,7 +3961,9 @@ class Spectrum(object):
 
         """
         try:
-            return self.__copy__(copy_lines=copy_lines, quantity=quantity)
+            return self.__copy__(
+                copy_lines=copy_lines, quantity=quantity, copy_arrays=copy_arrays
+            )
         except MemoryError:
             raise MemoryError(
                 "during copy of Spectrum. If you don't need them, "
@@ -3818,7 +3971,7 @@ class Spectrum(object):
                 + "del s.lines ; or, use copy_lines=False"
             )
 
-    def __copy__(self, copy_lines=True, quantity="all"):
+    def __copy__(self, copy_lines=True, quantity="all", copy_arrays=True):
         """Generate a new spectrum object.
 
         Note: using deepcopy would work but then the Spectrum object would be pickled
@@ -3830,6 +3983,10 @@ class Spectrum(object):
             default ``True``
         quantity: 'all', or one of 'radiance_noslit', 'absorbance', etc.
             if not 'all', copy only one quantity. Default ``'all'``
+        copy_arrays: bool
+            if ``False``, returned array's quantity is a pointer to the original
+            Spectrum. Faster, but warning, changing them will then change
+            the original Spectrum. Default ``True``
 
         Notes
         -----
@@ -3852,7 +4009,7 @@ class Spectrum(object):
                     quantity,
                     wunit=self.get_waveunit(),
                     Iunit=self.units[quantity],
-                    copy=True,
+                    copy=copy_arrays,
                 )
             }
         else:
@@ -3862,7 +4019,7 @@ class Spectrum(object):
                     quantity,
                     wunit=self.get_waveunit(),
                     Iunit=self.units[quantity],
-                    copy=True,
+                    copy=copy_arrays,
                 )  # copy=True still needed as the waverange is the one of the original array
             }
             del self._q[quantity]  # no need to keep it in this Spectrum
@@ -3909,7 +4066,7 @@ class Spectrum(object):
             references=references,
             name=name,
             check_wavespace=False,  # no need, as Spectrum was normally already properly defined
-            warnings=False,  # saves about 3.5 ms on the Performance test object
+            # saves about 3.5 ms on the Performance test object
         )
 
         # Add extra information
@@ -4021,7 +4178,7 @@ class Spectrum(object):
         )
 
     def cite(self, format="bibentry"):
-        """Prints bibliographic references used to compute this spectrum, as
+        r"""Prints bibliographic references used to compute this spectrum, as
         stored in the :py:attr:`~radis.spectrum.spectrum.Spectrum.references`
         dictionary. Default references known to RADIS are listed in :py:data:`radis.db.references.doi`.
 
@@ -4328,12 +4485,21 @@ class Spectrum(object):
 
         return ""  # self.print_conditions()
 
-    def take(self, var, copy_lines=False):
+    def take(self, var, copy_lines=False, copy_arrays=True):
         """
         Parameters
         ----------
         var : str
             spectral quantity (``'absorbance'``, ``'transmittance'``, ``'xsection'`` etc.)
+
+        Other Parameters
+        ----------------
+        copy_lines: bool
+            if ``True``, export ``s.lines``. Default ``False``
+        copy_arrays: bool
+            if ``False``, returned array's quantity is a pointer to the original
+            Spectrum. Faster, but warning, changing them will then change
+            the original Spectrum. Default ``True``
 
         Returns
         -------
@@ -4351,7 +4517,7 @@ class Spectrum(object):
 
         """
 
-        return self.copy(quantity=var, copy_lines=copy_lines)
+        return self.copy(quantity=var, copy_lines=copy_lines, copy_arrays=copy_arrays)
 
     # %% Add min, max, normalize operations
 

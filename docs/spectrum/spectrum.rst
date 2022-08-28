@@ -394,10 +394,13 @@ But for comparing different spectra you may want to use
 Plot populations
 ----------------
 
-Use :py:meth:`~radis.spectrum.spectrum.Spectrum.plot_populations`::
+Get or plot populations computed in calculations.
+Use :py:meth:`~radis.spectrum.spectrum.Spectrum.get_populations`
+or :py:meth:`~radis.spectrum.spectrum.Spectrum.plot_populations`::
 
     s.plot_populations('vib', nunit='cm-3')
 
+.. minigallery:: radis.spectrum.spectrum.Spectrum.get_populations
 
 .. _label_spectrum_linesurvey:
 
@@ -647,21 +650,9 @@ and :py:func:`~radis.los.slabs.MergeSlabs` (``//``)
 
 Most of these functions will only work if there is only one
 `spectral arrays <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#spectral-quantities>`__
-defined in the Spectrum. If there is any ambiguity, the following
-functions can be used to discard all but one spectral arrays:
-
-- :py:func:`~radis.spectrum.operations.Transmittance`
-- :py:func:`~radis.spectrum.operations.Transmittance_noslit`
-- :py:func:`~radis.spectrum.operations.Radiance`
-- :py:func:`~radis.spectrum.operations.Radiance_noslit`
-
-For instance, the following line is a valid RADIS command to plot
+defined in the Spectrum. If there is any ambiguity, use the :py:meth:`~radis.spectrum.spectrum.Spectrum.take`
+method. For instance, the following line is a valid RADIS command to plot
 the spectral radiance of a spectrum with a low resolution::
-
-    (10*Radiance(s.apply_slit(10, 'nm'))).plot()
-
-The same can be achieved with the :py:meth:`~radis.spectrum.spectrum.Spectrum.take`
-method, which returns the spectrum with only one spectral arrays::
 
     (10*(s.apply_slit(10, 'nm')).take('radiance')).plot()
 
@@ -698,6 +689,10 @@ so they can be used directly with::
 
 By default, using methods that will modify the object in place, using the functions will
 generate a new Spectrum.
+
+
+.. minigallery:: radis.Spectrum.crop
+
 
 Normalize
 ---------

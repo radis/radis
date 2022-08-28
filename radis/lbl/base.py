@@ -194,7 +194,6 @@ class BaseFactory(DatabankLoader):
 
         Parameters
         ----------
-
         preprend: str
             just to text to display before printing conditions
         """
@@ -206,22 +205,18 @@ class BaseFactory(DatabankLoader):
 
         return print_conditions(conditions, self.cond_units, verbose=self.verbose)
 
-    def get_energy_levels(self, molecule, isotope, state, conditions=None):
+    def get_energy_levels(self, molecule, isotope, state="X", conditions=None):
         """Return energy levels database for given molecule > isotope > state
         (look up Factory.parsum_calc[molecule][iso][state])
 
         Parameters
         ----------
-
         molecule: str
             molecule name
-
         isotope: int
             isotope identifier
-
         state: str:
-            electronic state
-
+            electronic state. Default ``'X'`` (ground-state)
         conditions: str, or ``None``
             if not None, add conditions on which energies to retrieve, e.g:
 
@@ -232,14 +227,12 @@ class BaseFactory(DatabankLoader):
 
         Returns
         -------
-
         energies: pandas Dataframe
             a view of the energies stored in the Partition Function calculator
             for isotope iso. If conditions are applied, we get a copy
 
         See Also
         --------
-
         :meth:`~radis.lbl.base.BaseFactory.get_populations`
         """
 
@@ -252,7 +245,15 @@ class BaseFactory(DatabankLoader):
 
     def plot_linestrength_hist(self, cutoff=None):
         """Plot linestrength distribution (to help determine a cutoff
-        criteria)"""
+        criteria)
+
+        Examples
+        --------
+        ::
+
+            s, sf = calc_spectrum(..., return_factory=True)
+            sf.plot_linestrength_hist()
+        """
         return self.plot_hist("df1", "S", axvline=np.log10(cutoff))
 
     def plot_hist(self, dataframe="df0", what="int", axvline=None):
@@ -1623,6 +1624,19 @@ class BaseFactory(DatabankLoader):
         df["gu"] = df.gvibu * df.grotu
         df["gl"] = df.gvibl * df.grotl
 
+        # Check consistency if "gp" already existed
+        # https://github.com/radis/radis/pull/514#issuecomment-1229463074
+        if "gp" in df:
+            if (df["gp"] == df["gu"]).all():
+                self.warn(
+                    "'gu' was recomputed although 'gp' already in DataFrame. All values are equal",
+                    "PerformanceWarning",
+                )
+            else:
+                raise ValueError(
+                    "'gu' was recomputed although 'gp' already in DataFrame. Values are not equal ! Check calculations"
+                )
+
         return None  # dataframe updated directly
 
     def get_lines_abundance(self, df):
@@ -1679,46 +1693,27 @@ class BaseFactory(DatabankLoader):
         -------
         The molar mass of all the isotopes in the dataframe
 
-
-        Notes
-        -----
-
-        If molar mass is unknown, it can be temporarily added in the
-        :py:attr:`radis.lbl.loader.DatabankLoader._EXTRA_MOLAR_MASS` dictionary
         """
         molpar = self.molparam
 
         if "id" in df.columns:
-            raise NotImplementedError(">1 molecule")
-        elif "id" in df.attrs:
-            id = df.attrs["id"]
+            raise NotImplementedError(
+                "'id' still in DataFrame columsn. Is there more than 1 molecule ?"
+            )
+        if "id" in df.attrs:
+            molecule = df.attrs["id"]
         else:
-            # HARDCODED molar mass; for WIP ExoMol implementation, until MolParams
-            # is an attribute and can be updated with definitions from ExoMol.
-            # https://github.com/radis/radis/issues/321
-
-            # see :py:attr:`radis.lbl.loader.DatabankLoader._EXTRA_MOLAR_MASS`
-            try:
-                return self._EXTRA_MOLAR_MASS[df.attrs["molecule"]][
-                    str(df.attrs["iso"])
-                ]
-            except KeyError:
-                raise NotImplementedError(
-                    "Molar mass of {0} (isotope {1}) is unknown.".format(
-                        df.attrs["molecule"], df.attrs["iso"]
-                    )
-                    + " You can manually add it in your radis.json file {'molparams':{'molar_mass':{'molecule':{'ISOTOPE':...}}}}; or in the SpectrumFactory._EXTRA_MOLAR_MASS[molecule][isotope] = M (g/mol) dictionary. Please also report on GitHub so we can update !"
-                )
+            molecule = df.attrs["molecule"]
 
         if "iso" in df.columns:
             iso_set = df.iso.unique()
             molar_mass_dict = {}
             for iso in iso_set:
-                molar_mass_dict[iso] = molpar.get(id, iso, "mol_mass")
+                molar_mass_dict[iso] = molpar.get(molecule, iso, "mol_mass")
             molar_mass = df["iso"].map(molar_mass_dict)
         else:
             iso = df.attrs["iso"]
-            molar_mass = molpar.get(id, iso, "mol_mass")
+            molar_mass = molpar.get(molecule, iso, "mol_mass")
 
         return molar_mass
 
@@ -2015,7 +2010,16 @@ class BaseFactory(DatabankLoader):
 
         self.profiler.start("scaled_S0", 2, "... Scaling equilibrium linestrength")
 
-        gp = df0["gp"]
+        try:
+            gp = df0["gp"]
+        except (KeyError):
+
+            if not "gu" in df0:
+                if not "ju" in df0:
+                    self._add_ju(df0)
+                self._calc_degeneracies(df0)
+            gp = df0["gu"]
+
         A = df0["A"]
         wav = df0["wav"]
         Ia = self.get_lines_abundance(df0)

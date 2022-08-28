@@ -51,7 +51,7 @@ key in :py:attr:`radis.config`
 
 import warnings
 from copy import deepcopy
-from os.path import exists, expanduser, join
+from os.path import exists, expanduser, join, splitext
 from time import time
 from uuid import uuid1
 
@@ -61,9 +61,8 @@ import pandas as pd
 from radis import config
 from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
-from radis.db.molparam import MolParams
+from radis.db.molparam import MOLPARAMS_EXTRA_PATH, MolParams
 from radis.db.references import doi
-from radis.io.cache_files import cache_file_name
 from radis.io.cdsd import cdsd2df
 from radis.io.exomol import fetch_exomol
 from radis.io.geisa import fetch_geisa
@@ -718,34 +717,11 @@ class DatabankLoader(object):
         self._autoretrieveignoreconditions = []  # HACK. See _retrieve_from_database
 
         # Molecular parameters
-        self.molparam = MolParams()
+        self.molparam = MolParams(extra_file_json=MOLPARAMS_EXTRA_PATH)
         """MolParam: contains information about molar mass; isotopic abundance.
 
         See :py:class:`~radis.db.molparam.MolParams`"""
         # TODO @dev : Refactor : turn it into a Dictinoary? (easier to store as JSON Etc.)
-
-        # Extra paramaters :
-        # HARDCODED molar mass; for WIP ExoMol implementation, until MolParams
-        # is an attribute and can be updated with definitions from ExoMol.
-        # https://github.com/radis/radis/issues/321
-
-        self._EXTRA_MOLAR_MASS = config["molparams"]["molar_mass"]
-        """Extra molar mass when not found in HITRAN molecular parameter database
-        ::
-            self._EXTRA_MOLAR_MASS[molecule][isotope] = M (g/mol)
-
-        See :py:func:`radis.lbl.base.BaseFactory.get_molar_mass`
-        """
-
-        # HARDCODED isotopic abundance; for WIP ExoMol implementation, until MolParams
-        # is an attribute and can be updated with definitions from ExoMol.
-        # https://github.com/radis/radis/issues/321
-        self._EXTRA_ABUNDANCES = config["molparams"]["abundances"]
-        """Extra isotopic abundances when not found in HITRAN molecular parameter database
-        ::
-            self._EXTRA_ABUNDANCES[molecule][isotope] = Ia
-
-        """
 
         # Profiler
         self.profiler = None
@@ -932,15 +908,16 @@ class DatabankLoader(object):
         memory_mapping_engine="default",
         load_columns="equilibrium",
         parallel=True,
+        extra_params=None,
     ):
-        """Fetch the latest databank files from HITRAN or HITEMP with the
-        https://hitran.org/ API.
+        """Fetch the latest files from [HITRAN-2020]_, [HITEMP-2010]_ (or newer),
+        [ExoMol-2020]_  or [GEISA-2020] , and store them locally in memory-mapping
+        formats for extremelly fast access.
 
         Parameters
         ----------
-        source: ``'hitran'``, ``'hitemp'``, ``'exomol'``
-            [Download database lines from the latest HITRAN (see [HITRAN-2020]_),
-            HITEMP (see [HITEMP-2010]_  )] or EXOMOL see [ExoMol-2020]_  ) databases.
+        source: ``'hitran'``, ``'hitemp'``, ``'exomol'``, ``'geisa'``
+            which database to use.
         database: ``'full'``, ``'range'``, name of an ExoMol database, or ``'default'``
             if fetching from HITRAN, ``'full'`` download the full database and register
             it, ``'range'`` download only the lines in the range of the molecule.
@@ -958,8 +935,9 @@ class DatabankLoader(object):
             to use. Keep ``'default'`` to use the recommended one. See all available databases
             with :py:func:`radis.io.exomol.get_exomol_database_list`
 
-            By default, databases are download in `~/.radisdb`.
-            Can be changed in ``radis.config["DEFAULT_DOWNLOAD_PATH"]`` or in ~/radis.json config file
+            By default, databases are download in ``~/.radisdb``.
+            Can be changed in ``radis.config["DEFAULT_DOWNLOAD_PATH"]`` or in
+            ``~/radis.json`` config file
 
 
         Other Parameters
@@ -985,7 +963,7 @@ class DatabankLoader(object):
             If ``None``, non equilibrium calculations are not possible. Default ``'radis'``.
         load_energies: boolean
             if ``False``, dont load energy levels. This means that nonequilibrium
-            spectra cannot be calculated, but it saves some memory. Default ``True``
+            spectra cannot be calculated, but it saves some memory. Default ``False``
         include_neighbouring_lines: bool
             if ``True``, includes off-range, neighbouring lines that contribute
             because of lineshape broadening. The ``neighbour_lines``
@@ -1025,14 +1003,14 @@ class DatabankLoader(object):
 
         Notes
         -----
-        HITRAN is fetched with Astroquery [1]_  and HITEMP with
+        HITRAN is fetched with Astroquery [1]_ or [HAPI]_,  and HITEMP with
         :py:func:`~radis.io.hitemp.fetch_hitemp`
         HITEMP files are generated in a ~/.radisdb database.
 
         See Also
         --------
-        - Load from local files: :meth:`~radis.lbl.loader.DatabankLoader.load_databank`
-        - Load when needed: :meth:`~radis.lbl.loader.DatabankLoader.init_databank`
+        :meth:`~radis.lbl.loader.DatabankLoader.load_databank`,
+        :meth:`~radis.lbl.loader.DatabankLoader.init_databank`
 
         References
         ----------
@@ -1129,8 +1107,6 @@ class DatabankLoader(object):
         # ---------------------
         self._reset_references()  # bibliographic references
 
-        from os import environ
-
         if source == "hitran":
             self.reftracker.add(doi["HITRAN-2020"], "line database")  # [HITRAN-2020]_
 
@@ -1138,16 +1114,7 @@ class DatabankLoader(object):
                 self.reftracker.add(doi["HAPI"], "data retrieval")  # [HAPI]_
 
                 if memory_mapping_engine == "auto":
-                    # temp fix for vaex not building on RTD
-                    # see https://github.com/radis/radis/issues/404
-                    if any("READTHEDOCS" in name for name in environ):
-                        memory_mapping_engine = "pytables"
-                        if self.verbose >= 3:
-                            print(
-                                f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
-                            )
-                    else:
-                        memory_mapping_engine = "vaex"
+                    memory_mapping_engine = "vaex"
 
                 if isotope == "all":
                     isotope_list = None
@@ -1166,6 +1133,7 @@ class DatabankLoader(object):
                     return_local_path=True,
                     engine=memory_mapping_engine,
                     parallel=parallel,
+                    extra_params=extra_params,
                 )
                 self.params.dbpath = ",".join(local_paths)
 
@@ -1224,16 +1192,7 @@ class DatabankLoader(object):
             self.reftracker.add(doi["HITEMP-2010"], "line database")  # [HITEMP-2010]_
 
             if memory_mapping_engine == "auto":
-                # temp fix for vaex not building on RTD
-                # see https://github.com/radis/radis/issues/404
-                if any("READTHEDOCS" in name for name in environ):
-                    memory_mapping_engine = "pytables"
-                    if self.verbose >= 3:
-                        print(
-                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
-                        )
-                else:
-                    memory_mapping_engine = "vaex"
+                memory_mapping_engine = "vaex"
 
             if database != "full":
                 raise ValueError(
@@ -1272,16 +1231,7 @@ class DatabankLoader(object):
             self.reftracker.add(doi["ExoMol-2020"], "line database")  # [ExoMol-2020]
 
             if memory_mapping_engine == "auto":
-                # temp fix for vaex not building on RTD
-                # see https://github.com/radis/radis/issues/404
-                if any("READTHEDOCS" in name for name in environ):
-                    memory_mapping_engine = "feather"
-                    if self.verbose >= 3:
-                        print(
-                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
-                        )
-                else:
-                    memory_mapping_engine = "vaex"
+                memory_mapping_engine = "vaex"
 
             if database in ["full", "range"]:
                 raise ValueError(
@@ -1289,7 +1239,7 @@ class DatabankLoader(object):
                 )
 
             # Download, setup local databases, and fetch (use existing if possible)
-            if memory_mapping_engine not in ["vaex", "feather"]:
+            if memory_mapping_engine not in ["vaex", "feather", "pytables"]:
                 raise NotImplementedError(
                     f"{memory_mapping_engine} with ExoMol files. Define radis.config['MEMORY_MAPPING_ENGINE'] = 'vaex' or 'feather'"
                 )
@@ -1358,16 +1308,7 @@ class DatabankLoader(object):
             self.reftracker.add(doi["GEISA-2020"], "line database")
 
             if memory_mapping_engine == "auto":
-                # temp fix for vaex not building on RTD
-                # see https://github.com/radis/radis/issues/404
-                if any("READTHEDOCS" in name for name in environ):
-                    memory_mapping_engine = "pytables"
-                    if self.verbose >= 3:
-                        print(
-                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{memory_mapping_engine}'. See https://github.com/radis/radis/issues/404"
-                        )
-                else:
-                    memory_mapping_engine = "vaex"
+                memory_mapping_engine = "vaex"
 
             if database != "full":
                 raise ValueError(
@@ -1779,8 +1720,14 @@ class DatabankLoader(object):
 
             filtered_path = [fname for fname in path]
             for fname in path:
-                if cache_file_name(fname) in path and cache_file_name(fname) != fname:
-                    filtered_path.remove(cache_file_name(fname))
+                for likely_fname_cache in [
+                    splitext(fname)[0] + ".h5",
+                    fname + ".h5",
+                    splitext(fname)[0] + ".hdf5",
+                    fname + ".hdf5",
+                ]:
+                    if likely_fname_cache in path and likely_fname_cache != fname:
+                        filtered_path.remove(likely_fname_cache)
             new_paths += filtered_path
 
             # Raise errors if no file / print which files were selected.

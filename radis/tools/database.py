@@ -433,6 +433,7 @@ def load_spec(file, binary=True) -> Spectrum:  # , return_binary_status=False):
 
     Examples
     --------
+
     .. minigallery:: radis.load_spec
 
     See Also
@@ -1560,7 +1561,7 @@ class SpecList(object):
 
         See Also
         --------
-        :meth:`~radis.tools.database.SpecList.to_dict`,
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`,
         :meth:`~radis.tools.database.SpecList.get`,
         :py:meth:`~radis.tools.database.SpecList.create_fname_grid`
         """
@@ -1630,7 +1631,7 @@ class SpecList(object):
         :meth:`~radis.tools.database.SpecList.keys`,
         :meth:`~radis.tools.database.SpecList.values`,
         :meth:`~radis.tools.database.SpecList.items`,
-        :meth:`~radis.tools.database.SpecList.to_dict`
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`
         """
 
         return self.get(inplace=True).__iter__()
@@ -1643,7 +1644,7 @@ class SpecList(object):
 
         :meth:`~radis.tools.database.SpecList.values`,
         :meth:`~radis.tools.database.SpecList.items`,
-        :meth:`~radis.tools.database.SpecList.to_dict`
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`
         """
 
         return list(self.to_dict().keys())
@@ -1656,7 +1657,7 @@ class SpecList(object):
 
         :meth:`~radis.tools.database.SpecList.keys`,
         :meth:`~radis.tools.database.SpecList.items`,
-        :meth:`~radis.tools.database.SpecList.to_dict`
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`
         """
 
         return list(self.to_dict().values())
@@ -1684,7 +1685,7 @@ class SpecList(object):
         --------
         :meth:`~radis.tools.database.SpecList.keys`,
         :meth:`~radis.tools.database.SpecList.values`,
-        :meth:`~radis.tools.database.SpecList.to_dict`
+        :meth:`~radis.tools.database.SpecDatabase.to_dict`
         """
 
         return list(self.to_dict().items())
@@ -1719,7 +1720,7 @@ class SpecList(object):
 
         See Also
         --------
-        Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method
+        Spectrum's :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method
         """
 
         import matplotlib.pyplot as plt
@@ -2163,7 +2164,9 @@ class SpecDatabase(SpecList):
 
         Examples
         --------
-        >>> db.find_duplicates(columns={'x_e', 'x_N_II'})
+        ::
+
+            db.find_duplicates(columns={'x_e', 'x_N_II'})
 
             Out[34]:
             file
@@ -2171,8 +2174,8 @@ class SpecDatabase(SpecList):
             20180710_103.spec    True
             dtype: bool
 
-        You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
-        of the website.
+        You can see more examples in the :ref:`Spectrum Database section <label_spectrum_database>`
+
         """
         dg = self.see(columns=columns).astype(str).duplicated()
         # need to convert eveything as a str to avoid comparaison problems (Minou)
@@ -2224,8 +2227,10 @@ class SpecDatabase(SpecList):
             are forwarded to Spectrum.store() method. See the :meth:`~radis.spectrum.spectrum.Spectrum.store`
             method for more information.
 
-        *Other :py:meth:`~radis.spectrum.spectrum.Spectrum.store` parameters can be given
-        as kwargs arguments:*
+            .. note::
+
+                Other :py:meth:`~radis.spectrum.spectrum.Spectrum.store` parameters can be given
+                as kwargs arguments. See below :
 
         compress: 0, 1, 2
             if ``True`` or 1, save the spectrum in a compressed form
@@ -2267,7 +2272,7 @@ class SpecDatabase(SpecList):
         :meth:`~radis.tools.database.SpecList.get`,
         :meth:`~radis.tools.database.SpecList.get_unique`,
         :meth:`~radis.tools.database.SpecList.get_closest`,
-        :meth:`~spectrum.spectrum.Spectrum.update`
+        :meth:`~radis.tools.database.SpecDatabase.update`
         """
 
         # Check inputs
@@ -2350,7 +2355,8 @@ class SpecDatabase(SpecList):
         return file
 
     def interpolate(self, **kwconditions):
-        """Interpolate existing spectra from the database to generate a new spectrum with conditions kwargs
+        """Interpolate existing spectra from the database to generate a new spectrum
+        with conditions kwargs
 
         Examples
         --------
@@ -2469,7 +2475,7 @@ class SpecDatabase(SpecList):
             db.fit_spectrum(s_exp, get_residual=lambda s_exp, s: get_residual(s_exp, s, var='transmittance'))
 
         You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
-        of the website. More advanced tools for interactive fitting of multi-dimensional, multi-slabs
+        More advanced tools for interactive fitting of multi-dimensional, multi-slabs
         spectra can be found in :py:mod:`fitroom`.
 
         See Also

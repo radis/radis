@@ -8,17 +8,9 @@ Examples
 --------
 Run all tests::
         pytest       (in command line, in project folder)
-Run only tests for local files (tests that have a 'local' label)::
-        pytest -m local
+
 -------------------------------------------------------------------------------
 """
-
-# import os
-# from os.path import getmtime
-# from warnings import warn
-
-# import numpy as np
-import pytest
 
 from radis.io.geisa import gei2df
 
@@ -32,7 +24,6 @@ files = {
 }
 
 
-@pytest.mark.local
 def test_local_geisa_co(verbose=True, warnings=True, **kwargs):
 
     # 1. Load local file
@@ -63,7 +54,6 @@ def test_local_geisa_co(verbose=True, warnings=True, **kwargs):
     return True
 
 
-@pytest.mark.local
 def test_local_geisa_h2o(verbose=True, warnings=True, **kwargs):
 
     # 1. Load local file
@@ -94,7 +84,6 @@ def test_local_geisa_h2o(verbose=True, warnings=True, **kwargs):
     return True
 
 
-@pytest.mark.local
 def test_local_geisa_co2(verbose=True, warnings=True, **kwargs):
 
     # 1. Load local file

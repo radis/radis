@@ -1,8 +1,8 @@
 .. _label_line_by_line:
 
-=========================
-Line-by-line (LBL) module
-=========================
+===================
+Line-by-line module
+===================
 
 This is the core of RADIS: it calculates the spectral densities for a homogeneous
 slab of gas, and returns a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
@@ -295,11 +295,14 @@ for more information.
 Configuration file
 ------------------
 
-The ``~/radis.json`` configuration file is used to store the list and attributes of the Line databases
-available on your computer. It is also used to change global user preferences,
-such as plotting styles and libraries, or warnings thresholds, or default algorithms.
+The ``~/radis.json`` configuration file is used to initialize your :py:attr:`radis.config`.
+It will :
+
+- store the list and attributes of the Line databases available on your computer.
+- change global user preferences, such as plotting styles and libraries, or warnings thresholds, or default algorithms.
+
 The list of all available parameters is given in the `default_radis.json <https://github.com/radis/radis/blob/develop/radis/default_radis.json>`__
-file. Any key added to your ``~/radis.json`` will override the value in
+file. Any key added to your ``~/radis.json`` will override the value of
 ``default_radis.json``.
 
 .. note::
@@ -311,21 +314,6 @@ file. Any key added to your ``~/radis.json`` will override the value in
     Although it is recommended to simply edit your ``~/radis.json`` file.
 
 
-Without a configuration file, you can still:
-
-- download the corresponding [HITRAN-2020]_ line database automatically,
-  either with the (default) ``databank='hitran'`` option in :py:func:`~radis.lbl.calc.calc_spectrum`,
-  or the :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank` method of
-  :py:class:`~radis.lbl.factory.SpectrumFactory`,
-- same for ``'hitemp'`` and ``'exomol'``
-- give a single file as an input to the ``databank=`` parameter of :py:func:`~radis.lbl.calc.calc_spectrum`
-
-A configuration file will help to:
-
-- handle line databases that contains multiple files
-- use custom tabulated partition functions for equilibrium calculations
-- use custom, precomputed energy levels for nonequilibrium calculations
-
 Databases downloaded from 'hitran', 'hitemp' and 'exomol' with  :py:func:`~radis.lbl.calc.calc_spectrum`
 or :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank` are automatically
 registered in the ``~/radis.json`` configuration file. The default download path
@@ -334,10 +322,21 @@ key, or (recommended) by adding a ``DEFAULT_DOWNLOAD_PATH`` key in your ``~/radi
 configuration file.
 
 
+The configuration file will help to:
+
+- handle local line databases that contains multiple files
+- use custom tabulated partition functions for equilibrium calculations
+- use custom, precomputed energy levels for nonequilibrium calculations
+
+
 .. note::
 
-    it is also possible to give :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank` the line database path,
-    format, and partition function format directly, but this is not recommended and should only be used if for some
+    it is also possible to work with local line databases without a configuration file,
+    either by giving a file to the `databank=...` parameter of :py:func:`~radis.lbl.calc.calc_spectrum` ,
+    or by giving to :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank` the line database path,
+    format, and partition function format directly.
+
+    However, this is not recommended and should only be used if for some
     reason you cannot create a configuration file.
 
 
@@ -540,13 +539,13 @@ An example of how to use your own spectroscopic constants::
     s = calc_spectrum(...)
 
 
-.. minigallery:: radis.db.molecules.getMolecule
+.. minigallery:: radis.getMolecule
 
 
 Vibrational bands
 -----------------
 
-To calculate vibrational bands of a given spectrum separately, use the
+To calculate vibrational bands of a given spectrum separately (vibrational-state-specific calculations), use the
 :meth:`~radis.lbl.bands.BandFactory.eq_bands` and  :meth:`~radis.lbl.bands.BandFactory.non_eq_bands`
 methods. See the :py:func:`~radis.test.lbl.test_bands.test_plot_all_CO2_bandheads` example in
 ``radis/test/lbl/test_bands.py`` for more information.

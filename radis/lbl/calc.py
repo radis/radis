@@ -55,6 +55,7 @@ def calc_spectrum(
     cutoff=1e-27,
     parsum_mode="full summation",
     optimization="simple",
+    chunksize=None,
     broadening_method="voigt",
     overpopulation=None,
     name=None,
@@ -292,6 +293,9 @@ def calc_spectrum(
         - Or the :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method to plot it
           directly.
         - See [1]_ to get an overview of all Spectrum methods
+    :py:class:`~radis.lbl.factory.SpectrumFactory` : if using ``return_factory=True``
+        if multiple molecules, a dictionary of factories is returned
+
 
     References
     ----------
@@ -532,6 +536,7 @@ def calc_spectrum(
             cutoff=cutoff,
             parsum_mode=parsum_mode,
             optimization=optimization,
+            chunksize=chunksize,
             broadening_method=broadening_method,
             name=name,
             use_cached=use_cached,
@@ -560,6 +565,8 @@ def calc_spectrum(
         s.store(path=save_to, if_exists_then="replace", verbose=verbose)
 
     if return_factory:
+        if len(factory_dict) == 1:  # return unique element directly
+            factory_dict = factory_dict[list(factory_dict.keys())[0]]
         return s, factory_dict
     else:
         return s
@@ -586,6 +593,7 @@ def _calc_spectrum_one_molecule(
     cutoff,
     parsum_mode,
     optimization,
+    chunksize,
     broadening_method,
     name,
     use_cached,
@@ -628,8 +636,8 @@ def _calc_spectrum_one_molecule(
         # factory is used once only
         kwargs["save_memory"] = True
 
-    if "chunksize" in kwargs:
-        raise DeprecationWarning("use optimization= instead of chunksize=")
+    # if "chunksize" in kwargs:
+    #     raise DeprecationWarning("use optimization= instead of chunksize=")
 
     def _is_at_equilibrium():
         try:
@@ -665,6 +673,7 @@ def _calc_spectrum_one_molecule(
         parsum_mode=parsum_mode,
         verbose=verbose,
         optimization=optimization,
+        chunksize=chunksize,
         broadening_method=broadening_method,
         export_lines=export_lines,
         **kwargs,

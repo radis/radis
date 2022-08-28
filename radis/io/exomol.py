@@ -6,23 +6,26 @@ Initial code borrowed from the `Exojax <https://github.com/HajimeKawahara/exojax
 code (which you should also have a look at !), by @HajimeKawahara, under MIT License.
 
 """
+import os
 import pathlib
 import warnings
 
 import numpy as np
 
-# from exojax.spec import hapi, exomolapi, exomol
-# from exojax.spec.hitran import gamma_natural as gn
-import pandas as pd
-
 try:
     from . import exomolapi
+    from .dbmanager import DatabaseManager
     from .exomol_utils import e2s
 except ImportError:  # if local import
     from radis.io import exomolapi
+    from radis.io.dbmanager import DatabaseManager
     from radis.io.exomol_utils import e2s
 
-from radis.db.classes import get_molecule_identifier
+from radis.db.classes import (
+    EXOMOL_MOLECULES,
+    EXOMOL_ONLY_ISOTOPES_NAMES,
+    get_molecule_identifier,
+)
 
 EXOMOL_URL = "http://www.exomol.com/db/"
 
@@ -51,7 +54,10 @@ def get_exomol_full_isotope_name(molecule, isotope):
     --------
     :py:func:`~radis.io.exomol.get_exomol_database_list`"""
 
-    from radis.db.classes import EXOMOL_ONLY_ISOTOPES_NAMES
+    if molecule not in EXOMOL_MOLECULES:
+        raise ValueError(
+            f"Molecule {molecule} not available in ExoMol. Change database, or choose one of ExoMol available molecules: {sorted(EXOMOL_MOLECULES)}"
+        )
 
     if (molecule, isotope) in EXOMOL_ONLY_ISOTOPES_NAMES:
         return EXOMOL_ONLY_ISOTOPES_NAMES[(molecule, isotope)]
@@ -63,7 +69,24 @@ def get_exomol_full_isotope_name(molecule, isotope):
         return mp.get(molecule, isotope, "isotope_name_exomol")
 
 
-def get_exomol_database_list(molecule, isotope_full_name):
+def get_list_of_known_isotopes(molecule):
+    """find all isotopes until error ensues"""
+
+    i = 1
+    isotope_list = []
+    while True:
+        try:
+            iso_name = get_exomol_full_isotope_name(molecule, i)
+        except:
+            break
+        else:
+            isotope_list.append(iso_name)
+        finally:
+            i += 1
+    return isotope_list
+
+
+def get_exomol_database_list(molecule, isotope_full_name=None):
     """Parse ExoMol website and return list of available databases, and recommended database
 
     Parameters
@@ -75,11 +98,13 @@ def get_exomol_database_list(molecule, isotope_full_name):
 
     Returns
     -------
+    list of databases, database recommended by ExoMol
 
     Examples
     --------
     Get CH4 from ExoMol :
     ::
+
         databases, recommended = get_exomol_database_list("CH4", "12C-1H4")
         >>> ['xsec-YT10to10', 'YT10to10', 'YT34to10'], 'YT34to10'
 
@@ -99,11 +124,20 @@ def get_exomol_database_list(molecule, isotope_full_name):
     :py:func:`~radis.io.exomol.get_exomol_full_isotope_name`
     """
 
+    if isotope_full_name is None:
+        raise ValueError(
+            f"Give isotope name. List of known isotopes for {molecule} : {get_list_of_known_isotopes(molecule)}"
+        )
+
     url = f"https://exomol.com/data/molecules/{molecule}/{isotope_full_name}"
     try:
         response = urlopen(url).read()
     except HTTPError as err:
-        raise ValueError(f"HTTPError opening url={url}") from err
+        if isotope_full_name not in get_list_of_known_isotopes(molecule):
+            extra = f". Isotope name {isotope_full_name} is not in list of known isotopes : {get_list_of_known_isotopes(molecule)}"
+        else:
+            extra = ""
+        raise ValueError(f"HTTPError opening url={url}" + extra) from err
 
     soup = BeautifulSoup(
         response, features="lxml"
@@ -134,7 +168,12 @@ def get_exomol_database_list(molecule, isotope_full_name):
 
     databases = databases + databases_recommended
 
-    return databases, databases_recommended[0]
+    if len(databases_recommended) > 0:
+        recommended_database = databases_recommended[0]
+    else:
+        recommended_database = False
+
+    return databases, recommended_database
 
 
 # def fetch_exomol_molecule_list():
@@ -226,6 +265,8 @@ def fetch_exomol(
     return_local_path=False,
     return_partition_function=False,
     engine="default",
+    output="pandas",
+    skip_optional_data=True,
 ):
     """Stream ExoMol file from EXOMOL website. Unzip and build a HDF5 file directly.
 
@@ -270,9 +311,9 @@ def fetch_exomol(
 
     Other Parameters
     ----------------
-    cache: bool, or ``'regen'``
+    cache: bool, or ``'regen'`` or ``'force'``
         if ``True``, use existing HDF5 file. If ``False`` or ``'regen'``, rebuild it.
-        Default ``True``.
+        If ``'force'``, crash if not cache file found. Default ``True``.
     verbose: bool
     clean_cache_files: bool
         if ``True`` clean downloaded cache files after HDF5 are created.
@@ -282,6 +323,30 @@ def fetch_exomol(
         if ``True``, also returns a :py:class:`~radis.levels.partfunc.PartFuncExoMol` object.
     engine: 'vaex', 'feather'
         which memory-mapping library to use. If 'default' use the value from ~/radis.json
+    output: 'pandas', 'vaex', 'jax'
+        format of the output DataFrame. If ``'jax'``, returns a dictionary of
+        jax arrays. If ``'vaex'``, output is a :py:class:`vaex.dataframe.DataFrameLocal`
+
+        .. note::
+            Vaex DataFrames are memory-mapped. They do not take any space in RAM
+            and are extremelly useful to deal with the largest databases.
+
+    skip_optional_data : bool
+        If False, fetch all fields which are marked as available in the ExoMol definition
+        file. If True, load only the first 4 columns of the states file
+        ("i", "E", "g", "J"). The structure of the columns above 5 depend on the
+        the definitions file (*.def) and the Exomol version.
+        If ``skip_optional_data=False``, two errors may occur:
+
+            - a field is marked as present/absent in the *.def field but is
+              absent/present in the *.states file (ie both files are inconsistent).
+            - in the updated version of Exomol, new fields have been added in the
+              states file of some species. But it has not been done for all species,
+              so both structures exist. For instance, the states file of
+              https://exomol.com/data/molecules/HCl/1H-35Cl/HITRAN-HCl/ follows the
+              structure described in [1]_, unlike the states file of
+              https://exomol.com/data/molecules/NO/14N-16O/XABC/ which follows the
+              structure described in [2]_.
 
     Returns
     -------
@@ -305,6 +370,12 @@ def fetch_exomol(
     fast access .HDF5 files (which will take a long time on first call). Only
     the expected wavenumber range & isotopes are returned. The .HFD5 parsing uses
     :py:func:`~radis.io.hdf5.hdf2df`
+
+    References
+    ----------
+
+    .. [1] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Barton, E. J., Chubb, K. L., Coles, P. A., … Zak, E. (2016). The ExoMol database: molecular line lists for exoplanet and other hot atmospheres. https://doi.org/10.1016/j.jms.2016.05.002
+    .. [2] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Clark, V. H. J., Chubb, K. L., Conway, E. K., … Yurchenko, O. P. (2020). The 2020 release of the ExoMol database: Molecular line lists for exoplanet and other hot atmospheres. Journal of Quantitative Spectroscopy and Radiative Transfer, 255, 107228. https://doi.org/10.1016/j.jqsrt.2020.107228
 
     See Also
     --------
@@ -363,41 +434,115 @@ def fetch_exomol(
         / database
     )
 
-    if load_wavenum_min is None:
-        load_wavenum_min = -np.inf
-    if load_wavenum_max is None:
-        load_wavenum_max = np.inf
-    mdb = MdbExomol(local_path, [load_wavenum_min, load_wavenum_max], engine=engine)
+    # TODO: add deprecation if missing columns in cache file
 
-    # Attributes of the DataFrame
-    from radis.db.classes import HITRAN_MOLECULES
+    # Init database, download files if needed.
+    mdb = MdbExomol(
+        local_path,
+        molecule=molecule,
+        name=databank_name,
+        local_databases=local_databases,
+        nurange=[
+            load_wavenum_min if load_wavenum_min is not None else 0.0,
+            load_wavenum_max if load_wavenum_max is not None else np.inf,
+        ],
+        engine=engine,
+        cache=cache,
+        skip_optional_data=skip_optional_data,
+    )
 
-    attrs = {}
-    if molecule in HITRAN_MOLECULES:
-        attrs["id"] = get_molecule_identifier(
-            molecule
-        )  # HITRAN id-number (if available)
-    attrs["molecule"] = molecule
-    attrs["iso"] = isotope
+    # Get local files
+    local_files = mdb.trans_file
+    if not isinstance(local_files, list):
+        local_files = [local_files]
+    mgr = mdb.get_datafile_manager()
+    local_files = [mgr.cache_file(f) for f in local_files]
 
-    df = mdb.to_df(attrs=attrs)
+    # Specific for RADIS : rename columns
+    radis2exomol_columns = {
+        "wav": "nu_lines",
+        "airbrd": "alpha_ref",
+        "El": "elower",
+        "ju": "jupper",
+        "jl": "jlower",
+        "gp": "gupper",
+        "gpp": "glower",
+        "Tdpair": "n_Texp",
+    }
+    # get column name converting to exomol/exojax format if possible, else use the same
+    if columns is not None:
+        columns_exomol = [radis2exomol_columns.get(c, c) for c in columns] + [
+            "Sij0",
+            "jlower",
+            "jupper",
+        ]  # needed for broadening
+    else:
+        columns_exomol = None
 
-    # Replace Linestrength with Line Intensity taking into account Terrestrial isotopic abundance
-    from radis.db.molparam import MolParams
+    df = mdb.load(
+        local_files,
+        columns=columns_exomol,
+        lower_bound=([("nu_lines", load_wavenum_min)] if load_wavenum_min else [])
+        + ([("Sij0", mdb.crit)] if not np.isneginf(mdb.crit) else []),
+        upper_bound=([("nu_lines", load_wavenum_max)] if load_wavenum_max else []),
+        output=output,
+    )
 
-    try:
-        Ia = MolParams().get(molecule, isotope, "abundance")
-    except NotImplementedError:
-        from radis import config
+    if "jlower" not in df:
+        raise KeyError(
+            f"jlower not found. Maybe try to delete cache file {local_files} and restart?"
+        )
 
-        Ia = config["molparams"]["abundances"][molecule][str(isotope)]
+    # Add broadening
+    mdb.set_broadening(df, output=output)
 
-    df["Sij0"] *= Ia
-    df.rename(columns={"Sij0": "int"}, inplace=True)
+    # Specific for RADIS :
+    # ... Get RADIS column names:
+    exomol2radis_columns = {v: k for k, v in radis2exomol_columns.items()}
+    mdb.rename_columns(df, {k: v for k, v in exomol2radis_columns.items() if k in df})
+
+    assert "wav" in df
+
+    # ... include isotopic abundance in linestrength :
+    # Note : ExoMol treats isotopes as independant molecules ; linestrength is not
+    # corrected by isotopic abundance.
+    # Below, replace Linestrength with Line Intensity taking into account
+    # Terrestrial isotopic abundance (to be compatible with HITRAN/HITEMP/etc. )
+    from radis.db.molparam import MOLPARAMS_EXTRA_PATH, MolParams
+
+    Ia = MolParams(extra_file_json=MOLPARAMS_EXTRA_PATH).get(
+        molecule, isotope, "abundance"
+    )
+
+    if output == "jax":
+        try:
+            import jax.numpy as jnp
+        except:
+            import numpy as jnp
+        df["logsij0"] += jnp.log(Ia)
+    else:
+        df["Sij0"] *= Ia
+        mdb.rename_columns(df, {"Sij0": "int"})
+
+    # Add Attributes of the DataFrame
+    if output == "pandas":  # no attribtes in "Jax" or "Vaex" mode
+        from radis.db.classes import HITRAN_MOLECULES
+
+        attrs = {}
+        if molecule in HITRAN_MOLECULES:
+            attrs["id"] = get_molecule_identifier(
+                molecule
+            )  # HITRAN id-number (if available)
+        attrs["molecule"] = molecule
+        attrs["iso"] = isotope
+
+        for k, v in attrs.items():
+            df.attrs[k] = v
 
     # Return:
-    out = [df]
-
+    out = df
+    if return_local_path or return_partition_function:
+        out = [out]
     if return_local_path:
         out.append(str(mdb.path))
     if return_partition_function:
@@ -407,13 +552,88 @@ def fetch_exomol(
     return out
 
 
-class MdbExomol(object):
+class MdbExomol(DatabaseManager):
+
     """molecular database of ExoMol
 
     MdbExomol is a class for ExoMol.
 
     Parameters
     ----------
+    path: str
+        path for Exomol data directory/tag. For instance, "/home/CO/12C-16O/Li2015"
+    nurange: array
+        wavenumber range list (cm-1) or wavenumber array
+    margin: float
+        margin for nurange (cm-1)
+    crit: float
+        line strength lower limit for extraction
+    bkgdatm: str
+        background atmosphere for broadening. e.g. H2, He,
+    broadf: bool
+        if False, the default broadening parameters in .def file is used
+
+    Other Parameters
+    ----------------
+    engine : str
+        which memory mapping engine to use : 'vaex', 'pytables' (HDF5), 'feather'
+    skip_optional_data : bool
+        If False, fetch all fields which are marked as available in the ExoMol definition
+        file. If True, load only the first 4 columns of the states file
+        ("i", "E", "g", "J"). The structure of the columns above 5 depend on the
+        the definitions file (*.def) and the Exomol version.
+        If ``skip_optional_data=False``, two errors may occur:
+
+            - a field is marked as present/absent in the *.def field but is
+              absent/present in the *.states file (ie both files are inconsistent).
+            - in the updated version of Exomol, new fields have been added in the
+              states file of some species. But it has not been done for all species,
+              so both structures exist. For instance, the states file of
+              https://exomol.com/data/molecules/HCl/1H-35Cl/HITRAN-HCl/ follows the
+              structure described in [1]_, unlike the states file of
+              https://exomol.com/data/molecules/NO/14N-16O/XABC/ which follows the
+              structure described in [2]_.
+
+    Notes
+    -----
+
+    The trans/states files can be very large. For the first time to read it,
+    we convert it to the feather or hdf5-format. After the second-time,
+    we use the feather/hdf5 format instead.
+
+    Examples
+    --------
+    ::
+
+        # Init database, download files if needed.
+        mdb = MdbExomol(
+            local_path,
+            molecule=molecule,
+            name=databank_name,
+            local_databases=local_databases,
+            # nurange=[load_wavenum_min, load_wavenum_max],
+            engine="vaex",
+        )
+
+        # Get cache files to load :
+        mgr = mdb.get_datafile_manager()
+        local_files = [mgr.cache_file(f) for f in mdb.trans_file]
+
+        # Load files
+        df = mdb.load(
+            local_files,
+            columns=columns_exomol,
+            lower_bound=([('nu_lines', load_wavenum_min)] if load_wavenum_min else []) + ([("Sij0", mdb.crit)] if not np.isneginf(mdb.crit) else []),
+            upper_bound=([('nu_lines', load_wavenum_max)] if load_wavenum_max else []),
+            output="jax", # or "pytables", "vaex"
+        )
+
+    .. minigallery:: radis.fetch_exomol
+
+
+    DataFrame columns
+    -----------------
+
     nu_lines (nd array): line center (cm-1)
     Sij0 (nd array): line strength at T=Tref (cm)
     dev_nu_lines (np array): line center in device (cm-1)
@@ -428,7 +648,11 @@ class MdbExomol(object):
     n_Tref_def: default temperature exponent in .def file, used for jlower not given in .broad
     alpha_ref_def: default alpha_ref (gamma0) in .def file, used for jlower not given in .broad
 
-    .. minigallery:: radis.fetch_exomol
+    References
+    ----------
+
+    .. [1] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Barton, E. J., Chubb, K. L., Coles, P. A., … Zak, E. (2016). The ExoMol database: molecular line lists for exoplanet and other hot atmospheres. https://doi.org/10.1016/j.jms.2016.05.002
+    .. [2] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Clark, V. H. J., Chubb, K. L., Conway, E. K., … Yurchenko, O. P. (2020). The 2020 release of the ExoMol database: Molecular line lists for exoplanet and other hot atmospheres. Journal of Quantitative Spectroscopy and Radiative Transfer, 255, 107228. https://doi.org/10.1016/j.jqsrt.2020.107228
 
     """
 
@@ -441,64 +665,42 @@ class MdbExomol(object):
     def __init__(
         self,
         path,
-        nurange=[-np.inf, np.inf],
+        molecule,
+        database=None,
+        local_databases=None,
+        name="EXOMOL-{molecule}",
+        nurange=[0.0, np.inf],
         margin=1.0,
         crit=-np.inf,
-        bkgdatm="H2",  # TODO: use Air whenever possible, to be consistent with HITRAN/HITEMP
+        bkgdatm="Air",  # TODO: use Air whenever possible, to be consistent with HITRAN/HITEMP
         broadf=True,
         engine="vaex",
         verbose=True,
+        cache=True,
+        skip_optional_data=True,
     ):
-        """Molecular database for Exomol form
+        super().__init__(
+            name,
+            molecule,
+            local_databases,
+            engine,
+            verbose=verbose,
+        )
 
-        Parameters
-        ----------
-        path: path for Exomol data directory/tag. For instance, "/home/CO/12C-16O/Li2015"
-        nurange: wavenumber range list (cm-1) or wavenumber array
-        margin: margin for nurange (cm-1)
-        crit: line strength lower limit for extraction
-        bkgdatm: background atmosphere for broadening. e.g. H2, He,
-        broadf: if False, the default broadening parameters in .def file is used
-
-        Notes
-        -----
-
-        The trans/states files can be very large. For the first time to read it,
-        we convert it to the feather or hdf5-format. After the second-time,
-        we use the feather/hdf5 format instead.
-
-        """
-        from os import environ
+        assert cache  # cache only used for cache='regen' or cache='force' modes, cache=False is not expected
 
         if engine == "default":
             from radis import config
 
             engine = config["MEMORY_MAPPING_ENGINE"]
-            # Quick fix for #401, #404
             if engine == "auto":
-                # temp fix for vaex not building on RTD
-                # see https://github.com/radis/radis/issues/404
-                if any("READTHEDOCS" in name for name in environ):
-                    engine = "feather"
-                    if verbose >= 3:
-                        print(
-                            f"ReadTheDocs environment detected. Memory-mapping-engine set to '{engine}'. See https://github.com/radis/radis/issues/404"
-                        )
-                else:
-                    engine = "vaex"
-
-        if engine == "vaex":
-            import vaex
-        elif engine == "feather":
-            pass
-            # vaex will be the future default, but it still fails on some systems
-            # Ex : on Spyder : See https://github.com/spyder-ide/spyder/issues/16183
-            # We keep "feather" as backup)
-        else:
-            raise NotImplementedError(f"{engine} is not implemented")
-        self.engine = engine  # which memory mapping engine to use : 'vaex', 'pytables' (HDF5), 'feather'
+                engine = "vaex"
 
         self.path = pathlib.Path(path)
+
+        if local_databases is not None:
+            self.path = pathlib.Path(local_databases).expanduser() / self.path
+
         t0 = self.path.parents[0].stem
         molec = t0 + "__" + str(self.path.stem)
         self.bkgdatm = bkgdatm
@@ -508,6 +710,7 @@ class MdbExomol(object):
         self.crit = crit
         self.margin = margin
         self.nurange = [np.min(nurange), np.max(nurange)]
+        self.wmin, self.wmax = self.nurange
         self.broadf = broadf
         # Where exomol files are
         self.states_file = self.path / pathlib.Path(molec + ".states.bz2")
@@ -528,62 +731,57 @@ class MdbExomol(object):
         tag = molec.split("__")
         self.isotope_fullname = tag[0]
         self.molecule = e2s(tag[0])
-        self.isotope = 1  # Placeholder. TODO : impement parsing of other isotopes.
+        # self.isotope = 1  # Placeholder. TODO : impement parsing of other isotopes.
 
         # load def
-        # @minou: I feel this next line should just update the self.stuff
         dic_def = exomolapi.read_def(self.def_file)  # approx. 3 ms
         self.n_Texp_def = dic_def["n_Texp"]
         self.alpha_ref_def = dic_def["alpha_ref"]
-        self.molmass = dic_def["molmass"]
 
         #  default n_Texp value if not given
         if self.n_Texp_def is None:
+            self.n_Texp_def = 0.5
             warnings.warn(
                 Warning(
-                    """
-                    No default broadening exponent in def file. Assigned n = 0.5
+                    f"""
+                    No default broadening exponent in def file. Assigned n = {self.n_Texp_def}
                     """
                 )
             )
-            self.n_Texp_def = 0.5
         #  default alpha_ref value if not given
         if self.alpha_ref_def is None:
+            self.alpha_ref_def = 0.07
             warnings.warn(
                 Warning(
-                    """
-                    No default broadening in def file. Assigned alpha_ref = 0.07
+                    f"""
+                    No default broadening in def file. Assigned alpha_ref = {self.alpha_ref_def}
                     """
                 )
             )
-            self.alpha_ref_def = 0.07
 
         # load states
-        if engine == "feather":
-            if self.states_file.with_suffix(".feather").exists():
-                states = pd.read_feather(self.states_file.with_suffix(".feather"))
-            else:
-                print(
-                    "Note: Caching states data to the feather format. After the second time, it will become much faster."
+        mgr = self.get_datafile_manager()
+        if cache == "regen" and mgr.cache_file(self.states_file).exists():
+            if verbose:
+                print("Removing existing file ", mgr.cache_file(self.states_file))
+            os.remove(mgr.cache_file(self.states_file))
+        if mgr.cache_file(self.states_file).exists():
+            states = mgr.read(mgr.cache_file(self.states_file))
+        else:
+            if cache == "force":
+                raise ValueError(
+                    f"Cache file {str(mgr.cache_file(self.states_file))} does not exist"
                 )
-                states = exomolapi.read_states(self.states_file, dic_def, engine="csv")
-                states.to_feather(self.states_file.with_suffix(".feather"))
-            ndstates = states.to_numpy()[
-                :, :4
-            ]  # the i, E, g, J are in the 4 first columns
-        elif engine == "vaex":
-            if self.states_file.with_suffix(".bz2.hdf5").exists():
-                states_file_cache = self.states_file.with_suffix(".bz2.hdf5")
-                states = vaex.open(states_file_cache)
-            elif self.states_file.with_suffix(".hdf5").exists():
-                states_file_cache = self.states_file.with_suffix(".hdf5")
-                states = vaex.open(states_file_cache)
-            else:
-                print(
-                    "Note: Caching states data to the hdf5 format with vaex. After the second time, it will become much faster."
-                )
-                states = exomolapi.read_states(self.states_file, dic_def, engine="vaex")
-            ndstates = vaex.array_types.to_numpy(states)
+            print(
+                f"Note: Caching states data to the {engine} format. After the second time, it will become much faster."
+            )
+            states = exomolapi.read_states(
+                self.states_file,
+                dic_def,
+                engine="vaex" if engine == "vaex" else "csv",
+                skip_optional_data=skip_optional_data,
+            )
+            mgr.write(mgr.cache_file(self.states_file), states)
 
         # load pf
         pf = exomolapi.read_pf(self.pf_file)
@@ -597,354 +795,109 @@ class MdbExomol(object):
         self.Tref = 296.0
         self.QTref = np.array(self.QT_interp(self.Tref))
 
+        # Download files
+
+        # Generate list of files
+        # ---------------------
         # Case1 : transitions are stored in a single file
         if dic_def["numinf"] is None:
-            self.trans_file = self.path / pathlib.Path(molec + ".trans.bz2")
-            if not self.trans_file.exists():
-                self.download(molec, [".trans.bz2"])
+            self.trans_file = [self.path / pathlib.Path(molec + ".trans.bz2")]
+            self.num_tag = [None]
 
-            if engine == "vaex":
-                if self.trans_file.with_suffix(".hdf5").exists():
-                    trans = vaex.open(self.trans_file.with_suffix(".hdf5"))
-                    # Apply filter
-                    cdt = 1
-                    if not np.isneginf(self.nurange[0]):
-                        cdt *= trans.nu_lines > self.nurange[0] - self.margin
-                    if not np.isinf(self.nurange[1]):
-                        cdt *= trans.nu_lines < self.nurange[1] - self.margin
-                    if not np.isneginf(self.crit):
-                        cdt *= trans.Sij0 > self.crit
-                    if cdt != 1:
-                        trans = trans[cdt]
+        # Case2 : Transitions are stored in multiple files:
+        else:  # dic_def["numinf"] is not None
+            # dic_def["numinf"] contains the limit points ``[w(0), w(1), ..., w(n)]``
+            # (n+1 elements) defining the spectral ranges appearing in the list
+            # dic_def["numtag"] which looks like ``["w(0)-w(1)", "w(1)-w(2)", ..., w(n-1)-w(n)]``
+            # (n elements)
+            # imin :
+            # index i of the "w(i)-w(i+1)" element in dic_def["numtag"] such
+            # that nurange[0]<=w(i)
+            imin = np.searchsorted(dic_def["numinf"], nurange[0], side="right") - 1
+            # imax :
+            # index i of the "w(i)-w(i+1)" element in dic_def["numtag"] such
+            # that w(i+1)<=nurange[1]
+            imax = np.searchsorted(dic_def["numinf"], nurange[1], side="right") - 2
+            self.trans_file = []
+            self.num_tag = []
+            for k, i in enumerate(range(imin, imax + 1)):
+                trans_file = self.path / pathlib.Path(
+                    molec + "__" + dic_def["numtag"][i] + ".trans.bz2"
+                )
+                self.trans_file.append(trans_file)
+                self.num_tag.append(dic_def["numtag"][i])
 
-                    # mask has been alraedy applied
-                    mask_needed = False
+        # Look-up missing parameters and write file
+        # -----------------------------------------
+        for trans_file, num_tag in zip(self.trans_file, self.num_tag):
 
-                else:
-                    print(
-                        "Note: Caching line transition data to the HDF5 format with vaex. After the second time, it will become much faster."
+            if cache == "regen" and mgr.cache_file(trans_file).exists():
+                if verbose:
+                    print("Removing existing file ", mgr.cache_file(trans_file))
+                os.remove(mgr.cache_file(trans_file))
+
+            if not mgr.cache_file(trans_file).exists():
+
+                if cache == "force":
+                    raise ValueError(
+                        f"Cache file {str(mgr.cache_file(trans_file))} does not exist"
                     )
-                    trans = exomolapi.read_trans(self.trans_file, engine="vaex")
 
-                    # Check validity
-                    b = trans.nu_lines.isnan()  # TODO: check if can be made faster?
-                    if b.sum() > 0:
-                        raise NotImplementedError(
-                            "transition wavenumber not given. Has to be computed from upper/lower level energy look up"
-                        )
-                    # mask needs to be applied
-                    mask_needed = True
+                if not trans_file.exists():
+                    self.download(molec, extension=[".trans.bz2"], numtag=num_tag)
+                    # TODO: add option to delete file at the end
 
-                # TODO Load extra columns (precomputed Sij0, etc.)
-                # trans_file_extra = self.trans_file.with_name(
-                #    self.trans_file.stem + "_extra" + self.trans_file.suffix
-                # )
-                # if trans_file_extra.exists():
-                #    trans_extra = vaex.open(trans_file_extra)
-                #    # trans = trans.join(trans_extra)  # merge without column name will merge on rows basis
+                print(
+                    f"Note: Caching line transition data to the {engine} format. After the second time, it will become much faster."
+                )
+                trans = exomolapi.read_trans(
+                    trans_file, engine="vaex" if engine == "vaex" else "csv"
+                )
 
-                ndtrans = vaex.array_types.to_numpy(trans)
+                # Complete transition data with lookup on upper & lower state :
+                # In particular, compute gup and elower
 
-            elif engine == "feather":
-                if self.trans_file.with_suffix(".feather").exists():
-                    trans = pd.read_feather(self.trans_file.with_suffix(".feather"))
-                else:
-                    print(
-                        "Note: Caching line transition data to the feather format. After the second time, it will become much faster."
-                    )
-                    trans = exomolapi.read_trans(self.trans_file, engine="csv")
-                    trans.to_feather(self.trans_file.with_suffix(".feather"))
-                ndtrans = trans.to_numpy()
-                # mask needs to be applied   (in feather mode we don't sleect wavneumbers)
-                mask_needed = True
+                exomolapi.pickup_gE(
+                    states,
+                    trans,
+                    trans_file,
+                    dic_def,
+                    skip_optional_data=skip_optional_data,
+                )
 
-            # compute extra parameters (Sij0, gup and elower, etc.)
-            (
-                self._A,
-                self.nu_lines,
-                self._elower,
-                self._gpp,
-                self._jlower,
-                self._jupper,
-                mask_zeronu,
-                self._quantumNumbers,
-            ) = exomolapi.pickup_gE(ndstates, ndtrans, self.trans_file, dic_def)
-
-            if engine == "vaex" and self.trans_file.with_suffix(".hdf5").exists():
-                # if engine == 'feather' we recompute all the time
-                # Todo : we should get the column name instead ?
-                self.Sij0 = ndtrans[:, 4]  # TODO: Refactor remove array index lookups.
-                # TODO Refactor. Add extra here:   trans = trans.join(trans_extra)
-            else:
-                ##Line strength:
+                ##Recompute Line strength:
                 from radis.lbl.base import (  # TODO: move elsewhere
                     linestrength_from_Einstein,
                 )
 
                 self.Sij0 = linestrength_from_Einstein(
-                    A=self._A,
-                    gu=self._gpp,
-                    El=self._elower,
+                    A=trans["A"],
+                    gu=trans["gup"],
+                    El=trans["elower"],
                     Ia=1,  #  Sij0 is a linestrength calculated without taking into account isotopic abundance (unlike line intensity parameter of HITRAN. In RADIS this is corrected for in fetch_exomol()  )
-                    nu=self.nu_lines,
+                    nu=trans["nu_lines"],
                     Q=self.QTref,
                     T=self.Tref,
                 )
 
-                trans["nu_positive"] = mask_zeronu
-                if engine == "vaex":
-                    # exclude the lines whose nu_lines evaluated inside exomolapi.pickup_gE (thus sometimes different from the "nu_lines" column in trans) is not positive
-
-                    trans = trans[trans.nu_positive].extract()
-                    trans.drop("nu_positive", inplace=True)
-                else:
-                    if False in mask_zeronu:
-                        raise NotImplementedError(
-                            "some wavenumber is not defined;  masking not impleemtend so far in 'feather' engine"
-                        )
-
-                trans["nu_lines"] = self.nu_lines
                 trans["Sij0"] = self.Sij0
 
-                if engine == "vaex":
-                    trans.export(self.trans_file.with_suffix(".hdf5"))
-                #  TODO : implement masking in 'feather' mode
+                mgr.write(mgr.cache_file(trans_file), trans)
 
-        # Case2 : Transitions are stored in multiple files:
-        else:  # dic_def["numinf"] is not None
-            imin = (
-                np.searchsorted(dic_def["numinf"], nurange[0], side="right") - 1
-            )  # left side
-            imax = (
-                np.searchsorted(dic_def["numinf"], nurange[1], side="right") - 1
-            )  # left side
-            self.trans_file = []
-            for k, i in enumerate(range(imin, imax + 1)):
-                trans_file = self.path / pathlib.Path(
-                    molec + "__" + dic_def["numtag"][i] + ".trans.bz2"
-                )
-                if not trans_file.exists():
-                    self.download(
-                        molec, extension=[".trans.bz2"], numtag=dic_def["numtag"][i]
-                    )
-                if engine == "feather":
-                    trans_feather_path = trans_file.with_suffix(".bz2.feather")
-                    if trans_feather_path.exists():
-                        trans = pd.read_feather(trans_feather_path)
-                    else:
-                        print(
-                            "Note: Caching line transition data to the feather format. After the second time, it will become much faster."
-                        )
-                        trans = exomolapi.read_trans(trans_file, engine="csv")
-                        trans.to_feather(trans_feather_path)
-                        #!!TODO:restrict NOW the trans size to avoid useless overload of memory and CPU
-                        # trans = trans[(trans['nu'] > self.nurange[0] - self.margin) & (trans['nu'] < self.nurange[1] + self.margin)]
-                    ndtrans = trans.to_numpy()
-                    # mask needs to be applied   (in feather mode we don't sleect wavneumbers)
-                    mask_needed = True
-                elif engine == "vaex":
-                    if trans_file.with_suffix(".hdf5").exists():
-                        trans = vaex.open(trans_file.with_suffix(".hdf5"))
-                        cdt = 1
-                        if not np.isneginf(self.nurange[0]):
-                            cdt *= trans.nu_lines > self.nurange[0] - self.margin
-                        if not np.isinf(self.nurange[1]):
-                            cdt *= trans.nu_lines < self.nurange[1] - self.margin
-                        if not np.isneginf(self.crit):
-                            cdt *= trans.Sij0 > self.crit
-                        if cdt != 1:
-                            trans = trans[cdt]
+        # Database ready to be loaded.
+        # Proceed with mdb.load()
 
-                        # mask has been already applied
-                        mask_needed = False
-                    else:
-                        print(
-                            "Note: Caching line transition data to the HDF5 format with vaex. After the second time, it will become much faster."
-                        )
-                        trans = exomolapi.read_trans(trans_file, engine="vaex")
-
-                        # Check validity
-                        b = trans.nu_lines.isnan()  # TODO: check if can be made faster?
-                        if b.sum() > 0:
-                            raise NotImplementedError(
-                                "transition wavenumber not given. Has to be computed from upper/lower level energy look up"
-                            )
-
-                        # TODO Load extra columns (precomputed Sij0, etc.)
-                        # trans_file_extra = self.trans_file.with_name(
-                        #    self.trans_file.stem + "_extra" + self.trans_file.suffix
-                        # )
-                        # if trans_file_extra.exists():
-                        #    trans_extra = vaex.open(trans_file_extra)
-                        #    trans = trans.join(
-                        #        trans_extra
-                        #    )  # merge without column name will merge on rows basis
-
-                        # mask needs to be applied
-                        mask_needed = True
-
-                    ndtrans = vaex.array_types.to_numpy(trans)
-                self.trans_file.append(trans_file)
-
-                # Complete transition data with lookup on upper & lower state :
-                # In particular, compute gup and elower
-                if k == 0:
-                    (
-                        self._A,
-                        self.nu_lines,
-                        self._elower,
-                        self._gpp,
-                        self._jlower,
-                        self._jupper,
-                        mask_zeronu,
-                        self._quantumNumbers,
-                    ) = exomolapi.pickup_gE(ndstates, ndtrans, trans_file, dic_def)
-
-                    if engine == "vaex" and trans_file.with_suffix(".hdf5").exists():
-                        # Sij0x already stored in cache file
-                        self.Sij0 = ndtrans[:, 4]
-                    else:
-                        ##Recompute Line strength:
-                        from radis.lbl.base import (  # TODO: move elsewhere
-                            linestrength_from_Einstein,
-                        )
-
-                        self.Sij0 = linestrength_from_Einstein(
-                            A=self._A,
-                            gu=self._gpp,
-                            El=self._elower,
-                            Ia=1,  #  Sij0 is a linestrength calculated without taking into account isotopic abundance (unlike line intensity parameter of HITRAN. In RADIS this is corrected for in fetch_exomol()  )
-                            nu=self.nu_lines,
-                            Q=self.QTref,
-                            T=self.Tref,
-                        )
-
-                        # exclude the lines whose nu_lines evaluated inside exomolapi.pickup_gE (thus sometimes different from the "nu_lines" column in trans) is not positive
-                        if engine == "vaex":
-                            trans["nu_positive"] = mask_zeronu
-                            trans = trans[trans.nu_positive].extract()
-                            trans.drop("nu_positive", inplace=True)
-                        else:
-                            if False in mask_zeronu:
-                                raise NotImplementedError(
-                                    "some wavenumber is not defined;  masking not impleemtend so far in 'feather' engine"
-                                )
-
-                        trans["nu_lines"] = self.nu_lines
-                        trans["Sij0"] = self.Sij0
-                else:  # k!=0
-
-                    (
-                        Ax,
-                        nulx,
-                        elowerx,
-                        gppx,
-                        jlowerx,
-                        jupperx,
-                        mask_zeronu,
-                        quantumNumbersx,
-                    ) = exomolapi.pickup_gE(ndstates, ndtrans, trans_file, dic_def)
-                    if engine == "vaex" and trans_file.with_suffix(".hdf5").exists():
-                        # Sij0x already stored in cache file
-                        Sij0x = ndtrans[:, 4]
-                    else:
-                        ##Recompute Line strength:
-                        from radis.lbl.base import (  # TODO: move elsewhere
-                            linestrength_from_Einstein,
-                        )
-
-                        Sij0x = linestrength_from_Einstein(
-                            A=Ax,
-                            gu=gppx,
-                            El=elowerx,
-                            Ia=1,  #  Sij0 is a linestrength calculated without taking into account isotopic abundance (unlike line intensity parameter of HITRAN. In RADIS this is corrected for in fetch_exomol()  )
-                            nu=nulx,
-                            Q=self.QTref,
-                            T=self.Tref,
-                        )
-
-                        # exclude the lines whose nu_lines evaluated inside exomolapi.pickup_gE (thus sometimes different from the "nu_lines" column in trans) is not positive
-                        if engine == "vaex":
-                            trans["nu_positive"] = mask_zeronu
-                            trans = trans[trans.nu_positive].extract()
-                            trans.drop("nu_positive", inplace=True)
-                        else:
-                            if False in mask_zeronu:
-                                raise NotImplementedError(
-                                    "some wavenumber is not defined;  masking not impleemtend so far in 'feather' engine"
-                                )
-
-                        trans["nu_lines"] = nulx
-                        trans["Sij0"] = Sij0x
-
-                    self._A = np.hstack([self._A, Ax])
-                    self.nu_lines = np.hstack([self.nu_lines, nulx])
-                    self.Sij0 = np.hstack([self.Sij0, Sij0x])
-                    self._elower = np.hstack([self._elower, elowerx])
-                    self._gpp = np.hstack([self._gpp, gppx])
-                    self._jlower = np.hstack([self._jlower, jlowerx])
-                    self._jupper = np.hstack([self._jupper, jupperx])
-                    for key in self._quantumNumbers.keys():
-                        self._quantumNumbers[key] = np.hstack(
-                            [self._quantumNumbers[key], quantumNumbersx[key]]
-                        )
-
-                    #  TODO refactpr : store into "extra" file ; create column if needed ;if it did exist already make sure the value was computed for ALL lines
-                    if (
-                        engine == "vaex"
-                        and not trans_file.with_suffix(".hdf5").exists()
-                    ):
-                        trans.export(trans_file.with_suffix(".hdf5"))
-
-        ### MASKING ###
-        mask = (
-            (self.nu_lines > self.nurange[0] - self.margin)
-            * (self.nu_lines < self.nurange[1] + self.margin)
-            * (self.Sij0 > self.crit)
-        )
-
-        self.masking(mask, mask_needed)
-
-    def masking(self, mask, mask_needed=True):
-        """applying mask and (re)generate jnp.arrays
-
-        Args:
-           mask: mask to be applied. self.mask is updated.
-           mask_needed: whether mask needs to be applied or not
-
-        """
-        # TODO : with Vaex-HDF5, selection should happen on disk.
-
-        # numpy float 64 Do not convert them jnp array
-        if mask_needed:
-            self.nu_lines = self.nu_lines[mask]
-            self.Sij0 = self.Sij0[mask]
-            self._A = self._A[mask]
-            self._elower = self._elower[mask]
-            self._gpp = self._gpp[mask]
-            self._jlower = self._jlower[mask]
-            self._jupper = self._jupper[mask]
-            for key, array in self._quantumNumbers.items():
-                self._quantumNumbers[key] = array[mask]
-
-        # jnp arrays
-        self.dev_nu_lines = np.array(self.nu_lines)
-        self.logsij0 = np.array(np.log(self.Sij0))
-        self.A = np.array(self._A)
-        # self.gamma_natural = gn(self.A)   #  Natural Broadening neglected in RADIS
-        self.elower = np.array(self._elower)
-        self.gpp = np.array(self._gpp)
-        self.jlower = np.array(self._jlower, dtype=int)
-        self.jupper = np.array(self._jupper, dtype=int)
-        ##Broadening parameters
-        self.set_broadening()
-
-    def set_broadening(self, alpha_ref_def=None, n_Texp_def=None):
+    def set_broadening(self, df, alpha_ref_def=None, n_Texp_def=None, output=None):
         """setting broadening parameters
 
-        Args:
-           alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
-           n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
+        Parameters
+        ----------
+        alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
+        n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
+
+        Returns
+        -------
+        None. Updates ``df`` with ``alpha_ref``, ``n_Texp_def``
         """
         if alpha_ref_def:
             self.alpha_ref_def = alpha_ref_def
@@ -962,38 +915,42 @@ class MdbExomol(object):
                         bdat,
                         alpha_ref_default=self.alpha_ref_def,
                         n_Texp_default=self.n_Texp_def,
-                        jlower_max=np.max(self._jlower),
+                        jlower_max=np.max(df["jlower"]),
                     )
-                    self.alpha_ref = np.array(j2alpha_ref[self._jlower])
-                    self.n_Texp = np.array(j2n_Texp[self._jlower])
+                    self.alpha_ref = np.array(j2alpha_ref[df["jlower"]])
+                    self.n_Texp = np.array(j2n_Texp[df["jlower"]])
                 elif codelv == "a1":
                     j2alpha_ref, j2n_Texp = exomolapi.make_j2b(
                         bdat,
                         alpha_ref_default=self.alpha_ref_def,
                         n_Texp_default=self.n_Texp_def,
-                        jlower_max=np.max(self._jlower),
+                        jlower_max=np.max(df["jlower"]),
                     )
                     jj2alpha_ref, jj2n_Texp = exomolapi.make_jj2b(
                         bdat,
                         j2alpha_ref_def=j2alpha_ref,
                         j2n_Texp_def=j2n_Texp,
-                        jupper_max=np.max(self._jupper),
+                        jupper_max=np.max(df["jupper"]),
                     )
-                    self.alpha_ref = np.array(jj2alpha_ref[self._jlower, self._jupper])
-                    self.n_Texp = np.array(jj2n_Texp[self._jlower, self._jupper])
-            except:
+                    self.alpha_ref = np.array(jj2alpha_ref[df["jlower"], df["jupper"]])
+                    self.n_Texp = np.array(jj2n_Texp[df["jlower"], df["jupper"]])
+            except FileNotFoundError:
                 print(
                     "Warning: Cannot load .broad. The default broadening parameters are used."
                 )
                 self.alpha_ref = np.array(
-                    self.alpha_ref_def * np.ones_like(self._jlower)
+                    self.alpha_ref_def * np.ones_like(df["jlower"])
                 )
-                self.n_Texp = np.array(self.n_Texp_def * np.ones_like(self._jlower))
+                self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df["jlower"]))
 
         else:
             print("The default broadening parameters are used.")
-            self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(self._jlower))
-            self.n_Texp = np.array(self.n_Texp_def * np.ones_like(self._jlower))
+            self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(df["jlower"]))
+            self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df["jlower"]))
+
+        # Add values
+        self.add_column(df, "alpha_ref", self.alpha_ref)
+        self.add_column(df, "n_Texp", self.n_Texp)
 
     def QT_interp(self, T):
         """interpolated partition function
@@ -1064,88 +1021,24 @@ class MdbExomol(object):
                 print("Downloading " + pfpath)
                 try:
                     urllib.request.urlretrieve(pfpath, str(self.path / pfname))
-                except:
-                    print("Error: Couldn't download " + ext + " file and save.")
+                except HTTPError:
+                    print(f"Error: Couldn't download {ext} file at {pfpath} and save.")
 
     def to_partition_function_tabulator(self):
+        """Generate a :py:class:`~radis.levels.partfunc.PartFuncExoMol` object"""
         from radis.levels.partfunc import PartFuncExoMol
 
         return PartFuncExoMol(self.isotope_fullname, self.T_gQT, self.gQT)
 
-    def to_df(self, attrs={}):
-        """Export Line Database to a RADIS-friendly Pandas DataFrame
-
-        Parameters
-        ----------
-        attrs: dict
-            add these as attributes of the DataFrame
-        """
-
-        ##Broadening parameters
-        self.set_broadening()
-
-        # TODO : define RADIS database format somewhere else; with description of the column names.
-        df = pd.DataFrame(
-            {
-                "wav": self.nu_lines,
-                "Sij0": self.Sij0,  #  linestrength (not corrected for isotopic abundance)
-                "A": self._A,
-                "airbrd": self.alpha_ref,  # temperature dependance exponent for air broadening
-                # "selbrd": None,                  # self-temperature dependant exponent. Not implementedi in ExoMol
-                "El": self._elower,
-                # "Tdpair": None,
-                # "Pshft": None,
-                "ju": self._jupper,
-                "jl": self._jlower,
-                "gpp": self._gpp,
-                "Tdpair": self.n_Texp,  # temperature dependance exponent. Here we use Tdair; no Tdpsel. TODO
-            }
-        )
-
-        # Check format :
-        for key, array in self._quantumNumbers.items():
-            try:
-                df[key] = pd.to_numeric(array, errors="raise")
-            except:
-                df[key] = array
-                df[key] = df[key].astype("str")
-
-        for k, v in attrs.items():
-            df.attrs[k] = v
-
-        assert self.Tref == 296  # default in RADIS
-
-        return df
-
-    def to_jax(self):
-        """Generate Jax arrays for use in ExoJax"""
-
-        pass  # TODO
-
 
 if __name__ == "__main__":
-    # mdb=MdbExomol("/home/kawahara/exojax/data/CO/12C-16O/Li2015/")
-    # mdb=MdbExomol("/home/kawahara/exojax/data/CH4/12C-1H4/YT34to10/",nurange=[6050.0,6150.0])
 
-    # %% Test  by overriding Spectrumfactory's DataFrame df0
-    # mdb = MdbExomol(".database/H2O/1H2-16O/POKAZATEL", [4310.0, 4320.0], crit=1.0e-45)
-    # df = mdb.to_df()
-    # from radis import SpectrumFactory
-    # sf = SpectrumFactory(
-    #     4310,
-    #     4320,
-    #     molecule="H2O",
-    #     isotope="1",
-    # )
-    # sf.fetch_databank(
-    #     "hitran"
-    # )  # placeholder. Load lines (will be replaced), load partition function.
-    # sf.df0 = df  # override.
-    # s = sf.eq_spectrum(500, name="ExoMol")
-    # # sf.fetch_databank('hitran')  # placeholder. Load lines (will be replaced), load partition function.
-    # # s_hit = sf.eq_spectrum(500, name='HITRAN')
+    from radis.test.io.test_exomol import (
+        test_calc_exomol_spectrum,
+        test_calc_exomol_vs_hitemp,
+        test_exomol_parsing_functions,
+    )
 
-    #%% Test by direct caclulation
-    import pytest
-
-    print("Testing factory:", pytest.main(["../test/io/test_exomol.py"]))
+    test_exomol_parsing_functions()
+    test_calc_exomol_spectrum()
+    test_calc_exomol_vs_hitemp()

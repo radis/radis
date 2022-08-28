@@ -1099,6 +1099,24 @@ class PartFuncExoMol(RovibParFuncTabulator):
     ----------
     name: str
         exomol isotope full name
+    T_range, Q_range: array
+        initial references values to be tabulated.
+
+    Examples
+    --------
+
+    One can use :py:func:`~radis.io.exomol.fetch_exomol` which has the option to
+    return a :py:class:`~radis.levels.partfunc.PartFuncExoMol` object ::
+
+        from radis.io.exomol import fetch_exomol, get_exomol_database_list
+
+        print(get_exomol_database_list("SiO", "28Si-16O"))  # 'EBJT" is one database
+        _, _, Z_exomol = fetch_exomol("SiO", "EBJT", return_local_path=True, return_partition_function=True)
+
+
+        # Get temperature at 2000 K
+        print(Z_exomol.at(2000))
+
 
     See Also
     --------
@@ -1144,6 +1162,8 @@ class PartFuncTIPS(RovibParFuncTabulator):
         print(Q.at(T=1500))
 
     See :ref:`online examples <label_examples_partition_functions>` for more.
+
+    .. minigallery:: radis.levels.partfunc.PartFuncTIPS
 
     References
     ----------
@@ -1328,6 +1348,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
     Examples
     --------
     Calculate partition function of CO using default spectroscopic constants::
+
         from radis.db.molecules import Molecules
         from radis.levels.partfunc import PartFunc_Dunham
 

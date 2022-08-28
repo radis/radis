@@ -19,7 +19,7 @@ from radis.phys.units import is_homogeneous
 
 
 def calc_radiance(wavenumber, emissivity, Tgas, unit="mW/sr/cm2/nm"):
-    """Derive radiance (:math:`mW/cm^2/sr/nm`) from the emissivity.
+    r"""Derive radiance (:math:`mW/cm^2/sr/nm`) from the emissivity.
 
     .. math::
         I(\lambda) = \epsilon(\lambda) \cdot L_0(\lambda, T)
@@ -45,7 +45,7 @@ def calc_radiance(wavenumber, emissivity, Tgas, unit="mW/sr/cm2/nm"):
 
 
 def abscoeff2xsection(abscoeff_cm1, Tgas_K, pressure_Pa, mole_fraction):
-    """Convert Absorption coefficient (cm-1) to Cross-section  (cm2)
+    r"""Convert Absorption coefficient (cm-1) to Cross-section  (cm2)
 
     Parameters
     ----------
@@ -60,3 +60,9 @@ def abscoeff2xsection(abscoeff_cm1, Tgas_K, pressure_Pa, mole_fraction):
     """
 
     return abscoeff_cm1 * (k_b * Tgas_K / mole_fraction / pressure_Pa) * 1e6  # cm2
+
+
+if __name__ == "__main__":
+    from radis.test.spectrum.test_equations import test_equations
+
+    test_equations()

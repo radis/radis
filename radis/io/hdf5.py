@@ -6,13 +6,22 @@ Created on Tue Jan 26 21:27:15 2021
 """
 
 import os
+import pathlib
 import sys
-from os.path import exists, expanduser, splitext
+from os.path import abspath, exists, expanduser, splitext
 from time import time
 
 import h5py
 import pandas as pd
 from tables.exceptions import NoSuchNodeError
+
+
+def vaexsafe_colname(name):
+    """replace '/' (forbidden in HDF5 vaex column names with '_'
+    https://github.com/radis/radis/issues/473
+    https://github.com/vaexio/vaex/issues/1255
+    """
+    return name.replace("/", "_")
 
 
 def update_pytables_to_vaex(fname, remove_initial=False, verbose=True, key="df"):
@@ -30,7 +39,7 @@ def update_pytables_to_vaex(fname, remove_initial=False, verbose=True, key="df")
     df = pd.read_hdf(fname)
     df = vaex.from_pandas(df)
 
-    pytables_manager = HDF5Manager(engine="pytables")
+    pytables_manager = DataFileManager(engine="pytables")
 
     # Read metadata
     file_metadata = pytables_manager.read_metadata(fname)
@@ -40,7 +49,7 @@ def update_pytables_to_vaex(fname, remove_initial=False, verbose=True, key="df")
     df.close()  # try to fix file not closed()  TODO: remove?
     del df  # same TODO
 
-    vaex_manager = HDF5Manager(engine="vaex")
+    vaex_manager = DataFileManager(engine="vaex")
     vaex_manager.add_metadata(fname_vaex, file_metadata)
 
     if verbose:
@@ -56,8 +65,13 @@ def update_pytables_to_vaex(fname, remove_initial=False, verbose=True, key="df")
 
 
 class HDF5Manager(object):
+    def __init__(*args, **kwargs):
+        raise DeprecationWarning("HDF5Manager replaced with DataFileManager")
+
+
+class DataFileManager(object):
     def __init__(self, engine=None):
-        """Class to handle all memory-mapping-librairies with one common API
+        """Class to handle all DataFrame-librairies with one common API
 
         All functions may not be fully implemetned, will raise a NotImplementedError
         if that's not the case.
@@ -67,13 +81,14 @@ class HDF5Manager(object):
             'vaex'     > HDF5,  column-based
             'pytables' > Pandas's HDF5,  row-based
             'h5py'     > HDF5
+            'feather'  > feather
 
         Functions ::
 
             add_metadata
             read_metadata
             write
-            load
+            read
             guess_engine
 
         Examples
@@ -107,12 +122,16 @@ class HDF5Manager(object):
         self,
         file,
         df,
-        append=True,
+        append=False,
         key="default",
         format="table",
-        data_columns=["iso", "wav"],
+        data_columns=["iso", "wav", "nu_lines"],
     ):
         """Write dataframe ``df`` to ``file``
+
+        Parameters
+        ----------
+        df: DataFrame
 
         Other Parameters
         ----------------
@@ -141,9 +160,16 @@ class HDF5Manager(object):
             # export dataframe
             df.to_hdf(file, key, format="fixed", mode="w", complevel=9, complib="blosc")
         elif self.engine == "vaex":
+            if isinstance(df, pd.DataFrame):
+                import vaex
+
+                df = vaex.from_pandas(df)
+
+            for c in df.columns:  # remove "/" in columns (forbidden)
+                df.rename(c, vaexsafe_colname(c))
+
             if key == "default":
                 key = r"/table"
-            import vaex
 
             if append == True:
                 # In vaex we cannot append. Here we write lots of small files then combine them.
@@ -163,15 +189,38 @@ class HDF5Manager(object):
                     os.remove(file)
                 self._temp_batch_files.append(file)
             # Write:
-            try:
-                df.export_hdf5(file, group=key, mode="w")
-            except AttributeError:  # case where df is not a Vaex dataFrame but (likely) a Pandas Dataframe
-                vaex.from_pandas(df).export_hdf5(file, group=key, mode="w")
+            df.export_hdf5(file, group=key, mode="w")
+        elif self.engine == "feather":
+            df.to_feather(file)
         else:
             raise NotImplementedError(self.engine)
             # h5py is not designed to write Pandas DataFrames
 
-    def combine_temp_batch_files(self, file, key="default", sort_values=None):
+    def get_columns(self, local_file):
+        """Get all columns (without loading all Dataframe)"""
+        engine = self.engine
+        local_file = expanduser(local_file)
+        if engine == "vaex":
+            import vaex
+
+            # by default vaex does not load everything
+            df = vaex.open(local_file)
+            columns = df.columns
+            df.close()
+
+        elif engine == "pytables":
+            with pd.HDFStore(local_file, "r") as store:
+                columns = store.select("df", start=1, stop=1).columns
+        elif engine in ["h5py"]:
+            raise NotImplementedError
+        else:
+            raise ValueError(engine)
+
+        return columns
+
+    def combine_temp_batch_files(
+        self, file, key="default", sort_values=None, delete_nan_columns=True
+    ):
         """Combine all batch files in ``self._temp_batch_files`` into one.
         Removes all batch files.
         """
@@ -188,6 +237,15 @@ class HDF5Manager(object):
             import vaex
 
             df = vaex.open(self._temp_batch_files, group=key)
+            # Removing Nan values columns
+            if delete_nan_columns:
+                import numpy as np
+
+                for column in df.columns:
+                    col = df[column].values
+                    if type(col[0]) in [np.int32, np.float64] and np.isnan(np.sum(col)):
+                        del df[column]
+
             if sort_values:
                 df.sort(by=sort_values).export_hdf5(file, group=key, mode="w")
             else:
@@ -216,6 +274,104 @@ class HDF5Manager(object):
         self,
         fname,
         columns=None,
+        lower_bound=[],
+        upper_bound=[],
+        within=[],
+        output="pandas",
+        **store_kwargs,
+    ):
+        """
+        Other Parameters
+        ----------------
+        columns: list of str
+            list of columns to load. If ``None``, returns all columns in the file.
+        output: 'pandas', 'vaex', 'jax'
+            format of the output DataFrame. If ``'jax'``, returns a dictionary of
+            jax arrays.
+        lower_bound: list of tuples [(column, lower_bound), etc.]
+            ::
+
+                lower_bound =[("wav", load_wavenum_min)]
+        upper_bound_bound: list of tuples [(column, upper_bound), etc.]
+            ::
+
+                upper_bound=[("wav", load_wavenum_max)]
+        within: list of tuples [(column, within_list), etc.]
+            ::
+
+                within=[("iso", isotope.split(","))]
+        """
+        if not lower_bound and not upper_bound and not within:
+            df = self.read(
+                fname,
+                columns,
+                **store_kwargs,
+            )
+        else:
+            df = self.read_filter(
+                fname,
+                columns,
+                lower_bound=lower_bound,
+                upper_bound=upper_bound,
+                within=within,
+                **store_kwargs,
+            )
+
+        # Load
+        # Convert to output format
+        engine = self.engine
+
+        if engine == output:
+            df = df
+        elif engine == "vaex":
+            # in vaex, column selection has to happen now
+            if columns:  # load only these columns (if they exist)
+                columns = [c for c in columns if c in df.columns]
+            if output == "pandas":
+                df = df.to_pandas_df(column_names=columns)
+            elif output == "jax":
+                if columns == None:
+                    columns = list(df.columns)
+                out = {}
+                try:
+                    import jax.numpy as jnp
+                except ImportError:
+                    print("Jax not found. Using Numpy.")
+                    import numpy as jnp
+                for c in columns:
+                    if (
+                        c == "Sij0"
+                    ):  # (special case for Sij0 : we store logSij0 instead, to store them as jax np.32 arrays)
+                        import numpy as np
+
+                        out["logsij0"] = jnp.array(np.log(df[c].values))
+                    else:
+                        out[c] = jnp.array(df[c].values)
+                df = out
+            else:
+                raise NotImplementedError(f"output {output} for engine {engine}")
+        elif engine == "pytables":
+            if output == "pandas":
+                df = df
+            else:
+                raise NotImplementedError(f"output {output} for engine {engine}")
+        elif engine == "feather":
+            if output == "pandas":
+                df = df
+            else:
+                raise NotImplementedError(f"output {output} for engine {engine}")
+        else:
+            raise NotImplementedError(output)
+
+        if output == "vaex":
+            df = df.extract()  # return DataFrame containing only the filtered rows
+
+        return df
+
+    def read(
+        self,
+        fname,
+        columns=None,
         where=None,
         key="default",
         none_if_empty=False,
@@ -224,6 +380,7 @@ class HDF5Manager(object):
         """
         Parameters
         ----------
+        fname: str
         columns: list of str
             list of columns to load. If ``None``, returns all columns in the file.
         where: list of str
@@ -290,7 +447,7 @@ class HDF5Manager(object):
                 except (FileNotFoundError, OSError) as err:
                     # error message with suggestion on how to convert from existing file
                     for f in fname_list:
-                        if exists(f.replace(".hdf5", ".h5")):
+                        if f.endswith(".hdf5") and exists(f.replace(".hdf5", ".h5")):
                             raise FileNotFoundError(
                                 f"`{f}` not found but `{f.replace('.hdf5', '.h5')}` exists (probably a row-based pytables HDF5 file). Try (1) using engine='pytables' in the calling function (`hdf2df`, `fetch_hitemp`, etc.)  ; (2) delete the file to re-download and re-parse it (this may take a lot of time !) ;  or (3, recommended) set `import radis; radis.config['AUTO_UPDATE_DATABASE']= True` in your script to auto-update to Vaex HDF5 file"
                             ) from err
@@ -322,10 +479,106 @@ class HDF5Manager(object):
                     out[k] = f[k][()]
             return pd.DataFrame(out)
 
+        elif self.engine == "feather":
+            assert where is None
+            fname = expanduser(fname)
+            return pd.read_feather(fname)
+
         else:
             raise NotImplementedError(self.engine)
 
         return df
+
+    def read_filter(
+        self,
+        fname,
+        columns=None,
+        lower_bound=[],
+        upper_bound=[],
+        within=[],
+        **store_kwargs,
+    ):
+        """
+        Parameters
+        ----------
+        fname: str
+        columns: list of str
+            list of columns to load. If ``None``, returns all columns in the file.
+        lower_bound: list of tuples [(column, lower_bound), etc.]
+            ::
+
+                lower_bound =[("wav", load_wavenum_min)]
+        upper_bound_bound: list of tuples [(column, upper_bound), etc.]
+            ::
+
+                upper_bound=[("wav", load_wavenum_max)]
+        within: list of tuples [(column, within_list), etc.]
+            ::
+
+                within=[("iso", isotope.split(","))]
+
+        """
+
+        # Selection
+        if self.engine == "pytables":
+            # Selection
+            where = []
+            for (column, lbound) in lower_bound:
+                where.append(f"{column} > {lbound}")
+            for (column, ubound) in upper_bound:
+                where.append(f"{column} < {ubound}")
+            for (column, withinv) in within:
+                where.append(f"{column} in {withinv.split(',')}")
+
+        elif self.engine in ["vaex", "feather"]:
+            # Selection is done after opening the file time in vaex
+            # see end of this function
+            where = None
+        else:
+            raise NotImplementedError(self.engine)
+
+        # Load :
+        df = self.read(fname, columns=columns, where=where, **store_kwargs)
+
+        #  Selection in vaex
+        if self.engine in ["vaex", "feather"]:
+            # (note that in Vaex, the selection happens on disk whereas Feather
+            # is already loaded as a Pandas DataFrame in RAM)
+
+            # Selection
+            b = True
+            for (column, lbound) in lower_bound:
+                b *= df[column] > lbound
+            for (column, ubound) in upper_bound:
+                b *= df[column] < ubound
+            for (column, withinv) in within:
+                b2 = False
+                for val in withinv.split(","):
+                    b2 += df[column] == float(val)
+                b *= b2
+            if b is not True and False in b:
+                df = df[
+                    b
+                ]  # note in Vaex mode, this is a vaex Expression, not the DataFrame yet
+
+        return df
+
+    def cache_file(self, fname):
+        """Return the corresponding cache file name for fname.
+
+        Other Parameters
+        ----------------
+        engine: ``'h5py'``, ``'pytables'``, ``'vaex'``
+           which HDF5 library to use. Default ``pytables``
+        """
+        if self.engine in ["pytables", "pytables-fixed"]:
+            return pathlib.Path(fname).with_suffix(".h5")
+        elif self.engine in ["h5py", "vaex"]:
+            return pathlib.Path(fname).with_suffix(".hdf5")
+        elif self.engine == "feather":
+            return pathlib.Path(fname).with_suffix(".feather")
+        else:
+            raise ValueError(self.engine)
 
     def add_metadata(
         self, fname: str, metadata: dict, key="default", create_empty_dataset=False
@@ -424,6 +677,14 @@ class HDF5Manager(object):
                 except KeyError as err:
                     print(f"Error reading metadata from {fname}")
                     raise err
+                except AttributeError as err:
+                    if "Attribute 'metadata' does not exist" in str(err):
+                        metadata = {}
+                    else:
+                        raise err
+
+        elif self.engine == "feather":
+            return {}  # no metadata
 
         elif self.engine == "h5py":
             fname = expanduser(fname)
@@ -477,6 +738,18 @@ class HDF5Manager(object):
 
         return metadata
 
+    def to_numpy(self, df):
+        """Convert DataFrame to numpy"""
+
+        if self.engine == "vaex":
+            import vaex
+
+            return vaex.array_types.to_numpy(df)
+        elif self.engine == "feather":
+            return df.to_numpy()
+        else:
+            raise NotImplementedError(self.engine)
+
     @classmethod
     def guess_engine(self, file, verbose=True):
         """Guess which HDF5 library ``file`` is compatible with
@@ -496,25 +769,37 @@ class HDF5Manager(object):
             mgr.read_metadata(file)
 
         """
-        # See if it looks like PyTables
-        import tables
-
-        if tables.is_pytables_file(file):
-            engine = "pytables"
+        if file.endswith(".feather"):
+            engine = "feather"
         else:
-            # Try Vaex
-            file = expanduser(file)
-            with h5py.File(file, mode="r") as hf:
-                try:
-                    hf[r"/table"]
-                except KeyError:
-                    engine = "h5py"
-                else:
-                    engine = "vaex"
+            # See if it looks like PyTables
+            import tables
+
+            if tables.is_pytables_file(file):
+                engine = "pytables"
+            else:
+                # Try Vaex
+                file = expanduser(file)
+                with h5py.File(file, mode="r") as hf:
+                    try:
+                        hf[r"/table"]
+                    except KeyError:
+                        engine = "h5py"
+                    else:
+                        engine = "vaex"
         if verbose:
-            print(f"Guessed that {file} was compatible with `{engine}` hdf5 engine")
+            print(f"Guessed that {file} was compatible with `{engine}` engine")
         # raise
         return engine
+
+    def has_nan(self, column):
+        if self.engine == "vaex":
+            b = column.isnan()  # TODO: check if can be made faster?
+            return b.sum() > 0
+        elif self.engine in ["pytables", "feather"]:
+            return column.hasnans
+        else:
+            raise NotImplementedError(self.engine)
 
 
 def hdf2df(
@@ -557,7 +842,7 @@ def hdf2df(
 
     Returns
     -------
-    df: pandas Dataframe
+    df: pandas Dataframe, or vaex DataFrameLocal, or dictionary of Jax arrays
         dataframe containing all lines or energy levels
 
     Examples
@@ -587,89 +872,29 @@ def hdf2df(
 
     """
 
+    fname = abspath(expanduser(fname))
+
     if engine == "guess":
-        engine = HDF5Manager.guess_engine(fname)
+        engine = DataFileManager.guess_engine(fname)
 
     t0 = time()
 
-    # Selection
-    selection = False
-    if engine == "pytables":
-        # Selection
-        selection = True
-        where = []
-        if load_wavenum_min is not None:
-            where.append(f"wav > {load_wavenum_min}")
-        if load_wavenum_max is not None:
-            where.append(f"wav < {load_wavenum_max}")
-        if isotope:
-            where.append(f'iso in {isotope.split(",")}')
+    manager = DataFileManager(engine)
 
-    elif engine == "vaex":
-        # Selection is done after opening the file time in vaex
-        # see end of this function
-        where = None
-    else:
-        raise NotImplementedError(engine)
-
-    # Load :
-    manager = HDF5Manager(engine)
-    df = manager.load(fname, columns=columns, where=where, **store_kwargs)
-
-    #  Selection in vaex
-    if engine == "vaex":
-
-        # Selection
-        selection = True
-        b = True
-        if load_wavenum_min is not None:
-            b *= df.wav > load_wavenum_min
-        if load_wavenum_max is not None:
-            b *= df.wav < load_wavenum_max
-        if isotope is not None:
-            from radis.misc.basics import is_float
-
-            if is_float(isotope):
-                b *= df.iso == int(isotope)
-            else:
-                b2 = False
-                for iso in isotope.split(","):
-                    b2 += df.iso == int(iso)
-                b *= b2
-        if b != True and False in b:
-            df = df[b]  # note that this is a vaex Expression, not the DataFrame yet
-
-        # Load
-        if columns:  # load only these columns (if they exist)
-            columns = [c for c in columns if c in df.columns]
-
-    # Convert to output format
-    if output == "pandas" and engine == "vaex":
-        df = df.to_pandas_df(column_names=columns)
-    elif output == "vaex" and engine == "pytables":
-        raise NotImplementedError
-    elif output == "jax":
-        if columns == None:
-            columns = ["wav", "int", "A", "El", "gpp"]
-        out = {}
-        try:
-            import jax as jnp
-        except ImportError:
-            import numpy as jnp
-        for c in columns:
-            out[c] = jnp.array(df[c].values)
-        df = out
-    elif output == engine or (
-        engine == "pytables" and output == "pandas"
-    ):  # pandas > pandas; vaex -> vaex
-        df = df
-    else:
-        raise NotImplementedError(output)
+    df = manager.load(
+        fname,
+        columns,
+        lower_bound=[("wav", load_wavenum_min)] if load_wavenum_min is not None else [],
+        upper_bound=[("wav", load_wavenum_max)] if load_wavenum_max is not None else [],
+        within=[("iso", isotope)] if isotope is not None else [],
+        output=output,
+    )
 
     # Read and add metadata in the DataFrame
     metadata = manager.read_metadata(fname)
 
     # Sanity Checks if loading the full file
+    selection = isotope or load_wavenum_min or load_wavenum_max
     if not selection:
         if "total_lines" in metadata:
             assert len(df) == metadata["total_lines"]
@@ -679,7 +904,7 @@ def hdf2df(
             assert df["wav"].max() == metadata["wavenumber_max"]
 
     # Update metadata
-    if output != "jax":
+    if output != "jax":  # metadata not given in Jax output
         if isinstance(metadata, list):
             metadata_dict = {}
             for k, v in metadata[0].items():

@@ -15,7 +15,7 @@ dependencies:
 - h5py   # load HDF5
 - joblib  # for parallel loading of SpecDatabase
 - matplotlib
-- numpy
+- numpy<=1.22.3
 - numba  # just-in-time compiler
 - pandas>=1.0.5
 - plotly>=2.5.1  # for line survey HTML output
@@ -24,7 +24,7 @@ dependencies:
 - seaborn   # other matplotlib themes
 - termcolor  # terminal colors
 - specutils
-- vaex>=4.8.0   # load HDF5 files  (version needed to fix issue with Spyder https://github.com/spyder-ide/spyder/issues/16183). #TODO : install only required sub-packages
+- vaex>=4.9.2   # load HDF5 files  (version needed to fix https://github.com/radis/radis/issues/486). #TODO : install only required sub-packages
 - pip
 - pip:
   - beautifulsoup4 # parse ExoMol website
@@ -36,6 +36,6 @@ dependencies:
   - json-tricks>=3.15.0  # to deal with non jsonable formats
   - mpldatacursor
   - progressbar2    # used in vaex
-  - tuna           # to generate visual/interactive performance profiles
+  #- tuna           # to generate visual/interactive performance profiles
   - tables  # for pandas to HDF5 export
   - habanero  # CrossRef API to retrieve data from doi

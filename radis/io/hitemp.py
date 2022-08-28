@@ -219,7 +219,7 @@ class HITEMPDatabaseManager(DatabaseManager):
             base_url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
             response = urllib.request.urlopen(base_url)
             response_string = response.read().decode()
-            inputfiles = re.findall('href="(\S+.zip)"', response_string)
+            inputfiles = re.findall(r'href="(\S+.zip)"', response_string)
 
             urlnames = [join(base_url, f) for f in inputfiles]
 
@@ -312,7 +312,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         wmin = np.inf
         wmax = 0
 
-        writer = self.get_hdf5_manager()
+        writer = self.get_datafile_manager()
 
         with opener.open(urlname) as gfile:  # locally downloaded file
 
@@ -482,7 +482,12 @@ def fetch_hitemp(
         which HDF5 library to use to parse local files. If 'default' use the value from ~/radis.json
     output: 'pandas', 'vaex', 'jax'
         format of the output DataFrame. If ``'jax'``, returns a dictionary of
-        jax arrays.
+        jax arrays. If ``'vaex'``, output is a :py:class:`vaex.dataframe.DataFrameLocal`
+
+        .. note::
+            Vaex DataFrames are memory-mapped. They do not take any space in RAM
+            and are extremelly useful to deal with the largest databases.
+
     parallel: bool
         if ``True``, uses joblib.parallel to load database with multiple processes
 
@@ -622,9 +627,10 @@ def fetch_hitemp(
     df = ldb.load(
         files_loaded,  # filter other files,
         columns=columns,
-        isotope=isotope,
-        load_wavenum_min=load_wavenum_min,  # for relevant files, get only the right range
-        load_wavenum_max=load_wavenum_max,
+        within=[("iso", isotope)] if isotope is not None else [],
+        # for relevant files, get only the right range :
+        lower_bound=[("wav", load_wavenum_min)] if load_wavenum_min is not None else [],
+        upper_bound=[("wav", load_wavenum_max)] if load_wavenum_max is not None else [],
         output=output,
     )
 

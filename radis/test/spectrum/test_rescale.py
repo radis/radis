@@ -481,13 +481,11 @@ def test_xsections(*args, **kwargs):
     # Get spectrum
     s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
 
-    N = s.c["pressure_mbar"] * 1e2 / k_b / s.c["Tgas"] * 1e-6  # cm-3
-
     p = s.c["pressure_mbar"] * u("mbar")
-    k_b = k_b * u("J/K")
+    kb = k_b * u("J/K")
     T = s.c["Tgas"] * u("K")
 
-    N = p / k_b / T
+    N = p / kb / T
 
     assert s.c["pressure_mbar"] == 1013.25
     assert s.c["Tgas"] == 1500
@@ -497,7 +495,7 @@ def test_xsections(*args, **kwargs):
 
     N_x = N * 0.01
 
-    assert s.take("abscoeff").max() == s.take("xsection").max() * N_x
+    assert np.isclose(s.take("abscoeff").max(), s.take("xsection").max() * N_x)
 
     # Test again for x =1
 
