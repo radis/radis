@@ -25,8 +25,6 @@ from radis import SpectrumFactory
 # from radis.test.utils import getTestFile
 from radis.tools.plot_tools import ParamRange
 
-##from radis.tools.code_profiler import CodeProfiler
-
 # This spectrum is significantly absorbed by atmospheric CO2
 # so it will never match the synthetic spectrum.
 # TODO: find different spectrum for this example.
@@ -54,7 +52,7 @@ s = sf.eq_spectrum_gpu_interactive(
     path_length=ParamRange(0, 1, 0.2),  # cm
     slit_FWHM=ParamRange(0, 1.5, 0.24),  # cm-1
     emulate=True,  # if True, runs CPU code on GPU. Set to False or remove to run on the GPU
-    plotkwargs={"nfig": "same", "wunit": "nm"},
+    plotkwargs={"wunit": "nm"},  # "nfig": "same",
 )
 
 print(s)

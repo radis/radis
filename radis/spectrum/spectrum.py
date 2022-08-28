@@ -3885,8 +3885,6 @@ class Spectrum(object):
                 assert conditions["overpopulation"] is None
             assert conditions["self_absorption"]  # is True
 
-            guess = True
-
         except AssertionError:
             guess = False
             if verbose:
@@ -3906,6 +3904,8 @@ class Spectrum(object):
                 )
             )
             guess = not equilibrium
+        else:
+            guess = True
 
         if equilibrium != guess:
             msg = (
