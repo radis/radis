@@ -516,8 +516,6 @@ except (ModuleNotFoundError, ValueError):
 # we may consider escaping this.
 else:
     add_at = rcx.add_at
-    """Wrapper to :py:func`radis.misc.arrays.numpy_add_at` or to the Radis
-    Cython version (here, the Cython version was loaded)"""
 
 
 # @numba.njit
