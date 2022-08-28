@@ -1624,6 +1624,19 @@ class BaseFactory(DatabankLoader):
         df["gu"] = df.gvibu * df.grotu
         df["gl"] = df.gvibl * df.grotl
 
+        # Check consistency if "gp" already existed
+        # https://github.com/radis/radis/pull/514#issuecomment-1229463074
+        if "gp" in df:
+            if (df["gp"] == df["gu"]).all():
+                self.warn(
+                    "'gu' was recomputed although 'gp' already in DataFrame. All values are equal",
+                    "PerformanceWarning",
+                )
+            else:
+                raise ValueError(
+                    "'gu' was recomputed although 'gp' already in DataFrame. Values are not equal ! Check calculations"
+                )
+
         return None  # dataframe updated directly
 
     def get_lines_abundance(self, df):
