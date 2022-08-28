@@ -1112,7 +1112,7 @@ class Spectrum(object):
         if Iunit == "default":
             # Add unit consistent with the namespace
             # https://github.com/radis/radis/issues/456
-            if wunit in ["nm", "nm_air"]:
+            if wunit in ["nm", "nm_air", "nm_vac"]:
                 if var in [
                     "radiance",
                     "radiance_noslit",
@@ -1132,6 +1132,8 @@ class Spectrum(object):
                     Iunit = Iunit0.replace("/nm", "/cm-1")
                 else:
                     Iunit = Iunit0
+            else:
+                raise ValueError(wunit)
 
         # Retrieve data (with correct unit)
         if Iunit != "default" and Iunit != Iunit0:

@@ -231,7 +231,7 @@ def _build_update_graph(
         and "norm_by" in spec.conditions
     )
 
-    all_keys = [
+    all_usual_keys = [
         "abscoeff",
         "absorbance",
         "emisscoeff",
@@ -242,7 +242,10 @@ def _build_update_graph(
         "transmittance_noslit",
         "xsection",
     ]
-    assert all_in(all_keys, CONVOLUTED_QUANTITIES + NON_CONVOLUTED_QUANTITIES)
+    all_usual_keys_nonconvoluted = [
+        k for k in all_usual_keys if k in NON_CONVOLUTED_QUANTITIES
+    ]
+    assert all_in(all_usual_keys, CONVOLUTED_QUANTITIES + NON_CONVOLUTED_QUANTITIES)
 
     # Build edges of relationships
     derivation = {  # {keys, [list of keys]}
@@ -286,7 +289,7 @@ def _build_update_graph(
     # no change: case where we are rescaling without changing path length nor
     # mole fractions, i.e, all initial quantities can be recomputed from themselves...
     if no_change:
-        for k in all_keys:
+        for k in all_usual_keys:
             derives_from(k, [k])
 
     # Deal with case where we know path_length:
@@ -311,14 +314,14 @@ def _build_update_graph(
         derives_from("transmittance", ["transmittance_noslit"])
         derives_from("emissivity", ["emissivity_noslit"])
 
-    # At equilibrium, any non-slit spectral array can be recomputed from any other
+    # At equilibrium, any usual spectral array can be recomputed from any other
     if equilibrium == True:
         if __debug__:
             printdbg("... build_graph: equilibrium > all keys derive from one")
-        for key in all_keys:
+        for key in all_usual_keys:
             if key in NON_CONVOLUTED_QUANTITIES and key != "xsection":
                 # except from xsection, where we still need P & T
-                all_but_k = [[k] for k in NON_CONVOLUTED_QUANTITIES if k != key]
+                all_but_k = [[k] for k in all_usual_keys_nonconvoluted if k != key]
                 derives_from(key, *all_but_k)
 
     # ------------------------------------------------------------
@@ -357,9 +360,6 @@ def get_redundant(spec):
     for key in ordered_keys[::-1]:  # roots
         if key in derivation_graph:
             for from_keys in derivation_graph[key]:
-                #                if [key] == from_keys:
-                #                    # that you can be recomputed from yourself doesnt make you redundant
-                #                    continue
                 if all([activated[k] and not redundant[k] for k in from_keys]):
                     redundant[key] = True  # declare redundant
                     continue
