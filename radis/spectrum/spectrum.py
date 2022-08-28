@@ -1068,7 +1068,7 @@ class Spectrum(object):
             else:
                 # Try to compute it automatically :
                 try:
-                    self.update(var)
+                    self.update(var, verbose=False)
                 except ValueError as err:
                     raise ValueError(
                         f"{var} not in Spectrum arrays {self.get_vars()}. An error occured while trying to recompute it from the available arrays and conditions. See above"
@@ -1112,7 +1112,7 @@ class Spectrum(object):
         if Iunit == "default":
             # Add unit consistent with the namespace
             # https://github.com/radis/radis/issues/456
-            if wunit in ["nm", "nm_air"]:
+            if wunit in ["nm", "nm_air", "nm_vac"]:
                 if var in [
                     "radiance",
                     "radiance_noslit",
@@ -1132,6 +1132,8 @@ class Spectrum(object):
                     Iunit = Iunit0.replace("/nm", "/cm-1")
                 else:
                     Iunit = Iunit0
+            else:
+                raise ValueError(wunit)
 
         # Retrieve data (with correct unit)
         if Iunit != "default" and Iunit != Iunit0:
@@ -3885,8 +3887,6 @@ class Spectrum(object):
                 assert conditions["overpopulation"] is None
             assert conditions["self_absorption"]  # is True
 
-            guess = True
-
         except AssertionError:
             guess = False
             if verbose:
@@ -3906,6 +3906,8 @@ class Spectrum(object):
                 )
             )
             guess = not equilibrium
+        else:
+            guess = True
 
         if equilibrium != guess:
             msg = (
