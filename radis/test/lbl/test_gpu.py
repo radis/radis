@@ -7,6 +7,8 @@ Created on Sun Aug 22 13:34:42 2020
 ------------------------------------------------------------------------
 
 """
+from functools import partial
+
 import pytest
 
 from radis import SpectrumFactory
@@ -14,8 +16,7 @@ from radis.misc.printer import printm
 from radis.test.utils import getTestFile
 
 
-@pytest.mark.needs_cuda
-def test_eq_spectrum_gpu():
+def test_eq_spectrum_emulated_gpu(emulate=True):
     T = 1000
     p = 0.1
     wstep = 0.001
@@ -43,12 +44,20 @@ def test_eq_spectrum_gpu():
         parfuncfmt="hapi",
     )
     s_cpu = sf.eq_spectrum(Tgas=T)
-    s_gpu = sf.eq_spectrum_gpu(Tgas=T)
+    s_gpu = sf.eq_spectrum_gpu(Tgas=T, emulate=emulate)
     s_cpu.crop(wmin=2284.2, wmax=2284.8)  # remove edge lines
     s_gpu.crop(wmin=2284.2, wmax=2284.8)
     assert s_cpu.compare_with(
         s_gpu, spectra_only=True, rtol=0.07, plot=False
     )  # set the appropriate tolerance
+
+    s_cpu.plot()
+    s_gpu.plot(nfig="same")
+
+
+@pytest.mark.needs_cuda
+def test_eq_spectrum_gpu():
+    partial(test_eq_spectrum_emulated_gpu, emulate=False)()
 
 
 # --------------------------
