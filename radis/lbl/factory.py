@@ -1061,8 +1061,6 @@ class SpectrumFactory(BandFactory):
             iso_list, dtype=np.float32
         )  # molar mass of each isotope
 
-        print("!!!!!!!!!!!!!!", iso_list, iso_set)
-
         Q_interp_list = []
         for iso in iso_list:
             if iso in iso_set:
