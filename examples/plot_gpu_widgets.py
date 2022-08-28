@@ -10,7 +10,7 @@ Example using GPU sliders and GPU calculation with :py:meth:`~radis.lbl.Spectrum
 
 This method requires CUDA compatible hardware to execute.
 For more information on how to setup your system to run GPU-accelerated methods
-using CUDA and Cython, check :ref: `GPU Spectrum Calculation on RADIS <label_radis_gpu>`
+using CUDA and Cython, check :ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>`
 
 .. note::
 

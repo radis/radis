@@ -825,15 +825,26 @@ def rescale_abscoeff(
 # ... all, if equilibrium and abscoeff was rescaled
 
 
-def _recompute_all_at_equilibrium(
-    spec, rescaled, wavenumber, Tgas, new_path_length_cm, true_path_length, units
+def _recompute_from_abscoeff_at_equilibrium(
+    spec,
+    rescaled,
+    wavenumber,
+    Tgas,
+    new_path_length_cm,
+    true_path_length,
+    units,
+    recompute,
 ):
     """
 
     Parameters
     ----------
     rescaled: dict
-        abscoeff must be rescaled already
+        abscoeff must be rescaled
+
+    Other Parameters
+    ----------------
+    recompute: list of arrays that needs to be recomputed.
     """
 
     def get_unit_radiance():
@@ -850,43 +861,77 @@ def _recompute_all_at_equilibrium(
         if "/cm2" in unit_radiance:
             return unit_radiance.replace("/cm2", "/cm3")
         else:
-            return unit_radiance + "/cm"  # will be simplified by Pint afterwards
+            return (
+                unit_radiance + "/cm"
+            )  # will be simplified by Pint/Astropy.units afterwards
 
     assert true_path_length
 
-    abscoeff = rescaled["abscoeff"]
-    path_length_cm = new_path_length_cm
-
-    absorbance = abscoeff * path_length_cm
-
-    # Generate output quantities
-    Iunit_radiance = get_unit_radiance()
-    transmittance_noslit = exp(-absorbance)
-    emissivity_noslit = 1 - transmittance_noslit
-    radiance_noslit = calc_radiance(
-        wavenumber, emissivity_noslit, Tgas, unit=Iunit_radiance
-    )
-    b = transmittance_noslit == 1  # optically thin mask
-    emisscoeff = np.empty_like(abscoeff)
-    emisscoeff[b] = radiance_noslit[b] / path_length_cm  # recalculate (opt thin)
-    emisscoeff[~b] = (
-        radiance_noslit[~b] / (1 - transmittance_noslit[~b]) * abscoeff[~b]
-    )  # recalculate (non opt thin)
-
     # ----------------------------------------------------------------------
 
-    rescaled["absorbance"] = absorbance
-    rescaled["transmittance_noslit"] = transmittance_noslit
-    rescaled["emissivity_noslit"] = emissivity_noslit
-    rescaled["radiance_noslit"] = radiance_noslit
-    rescaled["emisscoeff"] = emisscoeff
-
+    abscoeff = rescaled["abscoeff"]
+    # Store:
     units["abscoeff"] = "cm-1"
-    units["absorbance"] = ""
-    units["transmittance_noslit"] = ""
-    units["emissivity_noslit"] = ""
-    units["radiance_noslit"] = Iunit_radiance
-    units["emisscoeff"] = get_unit_emisscoeff(units["radiance_noslit"])
+
+    if (
+        "absorbance" in recompute
+        or "transmittance_noslit" in recompute
+        or "emissivity_noslit" in recompute
+        or "radiance_noslit" in recompute
+        or "emisscoeff" in recompute
+    ):
+        # Calculate absorbance
+        absorbance = abscoeff * new_path_length_cm
+        # Store:
+        rescaled["absorbance"] = absorbance
+        units["absorbance"] = ""
+
+    if (
+        "transmittance_noslit" in recompute
+        or "emissivity_noslit" in recompute
+        or "radiance_noslit" in recompute
+        or "emisscoeff" in recompute
+    ):
+        # Calculate transmittance
+        transmittance_noslit = exp(-absorbance)
+        # Store:
+        rescaled["transmittance_noslit"] = transmittance_noslit
+        units["transmittance_noslit"] = ""
+
+    if (
+        "emissivity_noslit" in recompute
+        or "radiance_noslit" in recompute
+        or "emisscoeff" in recompute
+    ):
+        # Calculate emissivity
+        emissivity_noslit = 1 - transmittance_noslit
+        # Store:
+        rescaled["emissivity_noslit"] = emissivity_noslit
+        units["emissivity_noslit"] = ""
+
+    if "radiance_noslit" in recompute or "emisscoeff" in recompute:
+        # Calculate radiance
+        Iunit_radiance = get_unit_radiance()
+        radiance_noslit = calc_radiance(
+            wavenumber, emissivity_noslit, Tgas, unit=Iunit_radiance
+        )
+        # Store:
+        rescaled["radiance_noslit"] = radiance_noslit
+        units["radiance_noslit"] = Iunit_radiance
+
+    if "emisscoeff" in recompute:
+        # Calculate emission coefficient
+        b = transmittance_noslit == 1  # optically thin mask
+        emisscoeff = np.empty_like(abscoeff)
+        emisscoeff[b] = (
+            radiance_noslit[b] / new_path_length_cm
+        )  # recalculate (opt thin)
+        emisscoeff[~b] = (
+            radiance_noslit[~b] / (1 - transmittance_noslit[~b]) * abscoeff[~b]
+        )  # recalculate (non opt thin)
+        # Store:
+        rescaled["emisscoeff"] = emisscoeff
+        units["emisscoeff"] = get_unit_emisscoeff(units["radiance_noslit"])
 
     return rescaled, units
 
@@ -1936,7 +1981,7 @@ def _recalculate(
 
     # list of quantities that are needed to recompute what we want
     # ... (we're just analysing how to compute them here, the actual calculation
-    # ... will be done laters)
+    # ... will be done later)
     try:
         recompute = get_recompute(
             spec, wanted, no_change, true_path_length=true_path_length
@@ -2013,7 +2058,7 @@ def _recalculate(
             )
         wavenumber = spec.get_wavenumber()
         Tgas = spec.conditions["Tgas"]
-        rescaled, rescaled_units = _recompute_all_at_equilibrium(
+        rescaled, rescaled_units = _recompute_from_abscoeff_at_equilibrium(
             spec,
             rescaled,
             wavenumber,
@@ -2021,6 +2066,7 @@ def _recalculate(
             new_path_length_cm,
             true_path_length,
             rescaled_units,
+            recompute,
         )
         apply_slit = "radiance" in recompute or "transmittance" in recompute
 
@@ -2479,3 +2525,33 @@ if __name__ == "__main__":
     from radis.test.spectrum.test_rescale import _run_all_tests
 
     print(("Test rescale.py: ", _run_all_tests(verbose=True)))
+
+    def test_recompute_transmittance():
+
+        import radis
+
+        s = radis.test_spectrum()
+        s.update("all")
+        assert set(s.get_vars()) == set(
+            [
+                "abscoeff",
+                "radiance_noslit",
+                "absorbance",
+                "transmittance_noslit",
+                "emissivity_noslit",
+                "emisscoeff",
+                "xsection",
+            ]
+        )
+
+        for k in list(s._q.keys()):
+            if k == "wavespace":
+                pass
+            elif k == "abscoeff":
+                pass
+            else:
+                del s._q[k]
+
+        s.get("transmittance_noslit")
+        print(s._q.keys())
+        assert set(s.get_vars()) == set(("abscoeff", "transmittance_noslit"))

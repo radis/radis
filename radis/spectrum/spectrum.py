@@ -1068,7 +1068,7 @@ class Spectrum(object):
             else:
                 # Try to compute it automatically :
                 try:
-                    self.update(var)
+                    self.update(var, verbose=False)
                 except ValueError as err:
                     raise ValueError(
                         f"{var} not in Spectrum arrays {self.get_vars()}. An error occured while trying to recompute it from the available arrays and conditions. See above"
