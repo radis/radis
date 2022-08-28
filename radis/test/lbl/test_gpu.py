@@ -7,8 +7,6 @@ Created on Sun Aug 22 13:34:42 2020
 ------------------------------------------------------------------------
 
 """
-from functools import partial
-
 import pytest
 
 from radis import SpectrumFactory
@@ -17,11 +15,14 @@ from radis.test.utils import getTestFile
 
 
 def test_eq_spectrum_emulated_gpu(emulate=True):
+
+    print(emulate)
     T = 1000
     p = 0.1
     wstep = 0.001
     wmin = 2284.0  # cm-1
     wmax = 2285.0  # cm-1
+
     sf = SpectrumFactory(
         wavenum_min=wmin,
         wavenum_max=wmax,
@@ -29,7 +30,7 @@ def test_eq_spectrum_emulated_gpu(emulate=True):
         path_length=1,  # doesnt change anything
         wstep=wstep,
         pressure=p,
-        isotope="1",
+        isotope="1,2",
         warnings={
             "MissingSelfBroadeningWarning": "ignore",
             "NegativeEnergiesWarning": "ignore",
@@ -51,13 +52,10 @@ def test_eq_spectrum_emulated_gpu(emulate=True):
         s_gpu, spectra_only=True, rtol=0.07, plot=False
     )  # set the appropriate tolerance
 
-    # s_cpu.plot()
-    # s_gpu.plot(nfig='same')
-
 
 @pytest.mark.needs_cuda
 def test_eq_spectrum_gpu():
-    partial(test_eq_spectrum_emulated_gpu, emulate=False)()
+    test_eq_spectrum_emulated_gpu(emulate=False)
 
 
 # --------------------------
