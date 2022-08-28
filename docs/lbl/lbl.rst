@@ -1,8 +1,8 @@
 .. _label_line_by_line:
 
-=========================
-Line-by-line (LBL) module
-=========================
+===================
+Line-by-line module
+===================
 
 This is the core of RADIS: it calculates the spectral densities for a homogeneous
 slab of gas, and returns a :py:class:`~radis.spectrum.spectrum.Spectrum` object.

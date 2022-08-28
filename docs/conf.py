@@ -295,7 +295,10 @@ html_theme_options = {
     "fixed_sidebar": True,
     "analytics_id": "UA-113616205-1",
     "link": "#7A306C",
-    "extra_nav_links": {"RADIS Website": "https://radis.github.io/"},
+    "extra_nav_links": {
+        "RADIS Website": "https://radis.github.io/",
+        "Video Tutorials": "https://www.youtube.com/channel/UCO-7NXkubTAiGGxXmvtQlsA",
+    },
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
