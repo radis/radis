@@ -2151,7 +2151,16 @@ class BaseFactory(DatabankLoader):
 
         self.profiler.start("scaled_S0", 2, "... Scaling equilibrium linestrength")
 
-        gp = df0["gp"]
+        try:
+            gp = df0["gp"]
+        except (KeyError):
+
+            if not "gu" in df0:
+                if not "ju" in df0:
+                    self._add_ju(df0)
+                self._calc_degeneracies(df0)
+            gp = df0["gu"]
+
         A = df0["A"]
         wav = df0["wav"]
         Ia = self.get_lines_abundance(df0)

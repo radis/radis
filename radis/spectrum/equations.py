@@ -60,3 +60,9 @@ def abscoeff2xsection(abscoeff_cm1, Tgas_K, pressure_Pa, mole_fraction):
     """
 
     return abscoeff_cm1 * (k_b * Tgas_K / mole_fraction / pressure_Pa) * 1e6  # cm2
+
+
+if __name__ == "__main__":
+    from radis.test.spectrum.test_equations import test_equations
+
+    test_equations()
