@@ -1476,6 +1476,7 @@ class SpectrumFactory(BandFactory):
             wavenum_max=3000,
             molecule="CO",
             isotope="1,2,3",
+            wstep="auto"
             )
             sf.fetch_databank("hitemp", load_columns='noneq')
 

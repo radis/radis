@@ -1000,6 +1000,9 @@ class DatabankLoader(object):
             .. warning::
                 if using ``'equilibrium'``, not all parameters will be available
                 for a Spectrum :py:func:`~radis.spectrum.spectrum.Spectrum.line_survey`.
+                If you are calculating equilibrium (LTE) spectra, it is recommended to
+                use ``'equilibrium'``. If you are calculating non-LTE spectra, it is
+                recommended to use ``'noneq'``.
 
         Notes
         -----
