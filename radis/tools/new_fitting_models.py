@@ -5,7 +5,8 @@ from radis import get_residual
 # General model for LTE spectra. This model will be heavily modified during
 # benchmarking process to see which one works best.
 
-def residual_LTE(params, conditions, s_data, sf, log, verbose = True):
+
+def residual_LTE(params, conditions, s_data, sf, log, verbose=True):
     """A cost function that calculates an LTE spectrum based on the
     initial conditions and values of fit parameters, then returning a
     scalar containing difference between experimental and data spectra.
@@ -24,8 +25,8 @@ def residual_LTE(params, conditions, s_data, sf, log, verbose = True):
         the SpectrumFactory object used for modeling spectra, generated
         before the minimize loop occurs.
     log: list
-        a Dictionary storing runtime log of the fitting process that are 
-        not quite covered by the Minimizer, including: residual and fit 
+        a Dictionary storing runtime log of the fitting process that are
+        not quite covered by the Minimizer, including: residual and fit
         values after each fitting loop, and total time elapsed.
 
     Other parameters
@@ -55,7 +56,7 @@ def residual_LTE(params, conditions, s_data, sf, log, verbose = True):
     for param in params:
         if param not in ignore_keys:
             kwargs[param] = float(params[param])
-    
+
     # Model spectrum calculation
     s_model = sf.eq_spectrum(**kwargs)
 
@@ -67,10 +68,8 @@ def residual_LTE(params, conditions, s_data, sf, log, verbose = True):
         offset_value = float(params["offsetcm1"])
         s_model = s_model.offset(offset_value, "cm-1")
 
-
-
     # FURTHER REFINE THE MODELED SPECTRUM BEFORE CALCULATING DIFF
-    
+
     pipeline = conditions["pipeline"]
     model = conditions["model"]
 
@@ -105,21 +104,14 @@ def residual_LTE(params, conditions, s_data, sf, log, verbose = True):
         if pipeline["normalize"]:
             s_model = s_model.normalize()
 
-
     # ACQUIRE AND RETURN DIFF, ALSO LOG FITTING HISTORY
 
     # Acquire diff
-    residual = get_residual(
-        s_model, 
-        s_data, 
-        fit_var, 
-        norm = "L2",
-        ignore_nan = "True"
-    )
-    
+    residual = get_residual(s_model, s_data, fit_var, norm="L2", ignore_nan="True")
+
     # Log the current residual
     log["residual"].append(residual)
-    
+
     # Log the current fitting values of fit parameters
     current_fitvals = []
     for param in params:
@@ -132,10 +124,10 @@ def residual_LTE(params, conditions, s_data, sf, log, verbose = True):
             print(f"{param} = {float(params[param])}")
         print(f"\nResidual = {residual}\n")
 
-
     return residual
 
-def residual_NonLTE(params, conditions, s_data, sf, log, verbose = True):
+
+def residual_NonLTE(params, conditions, s_data, sf, log, verbose=True):
     """A cost function that calculates a non-LTE spectrum based on the
     initial conditions and values of fit parameters, then returning a
     scalar containing difference between experimental and data spectra.
@@ -154,8 +146,8 @@ def residual_NonLTE(params, conditions, s_data, sf, log, verbose = True):
         the SpectrumFactory object used for modeling spectra, generated
         before the minimize loop occurs.
     log: list
-        a Dictionary storing runtime log of the fitting process that are 
-        not quite covered by the Minimizer, including: residual and fit 
+        a Dictionary storing runtime log of the fitting process that are
+        not quite covered by the Minimizer, including: residual and fit
         values after each fitting loop, and total time elapsed.
 
     Other parameters
@@ -187,14 +179,14 @@ def residual_NonLTE(params, conditions, s_data, sf, log, verbose = True):
             kwargs[param] = float(params[param])
 
     # Deal with the case of multiple Tvib temperatures
-    if "Tvib0" in kwargs:       # There is trace of a "Tvib fragmentation" before
+    if "Tvib0" in kwargs:  # There is trace of a "Tvib fragmentation" before
         Tvib = []
         for kw in kwargs:
-            if "Tvib" in kw:                # Such as "Tvib0", "Tvib1" or so
-                Tvib.append(kwargs[kw])     # Bring them altogether, uwu
-                kwargs.pop(kw)              # Dispose the fragmented one in kwargs
-        kwargs["Tvib"] = tuple(Tvib)        # Finally, we have the tuple of Tvib
-    
+            if "Tvib" in kw:  # Such as "Tvib0", "Tvib1" or so
+                Tvib.append(kwargs[kw])  # Bring them altogether, uwu
+                kwargs.pop(kw)  # Dispose the fragmented one in kwargs
+        kwargs["Tvib"] = tuple(Tvib)  # Finally, we have the tuple of Tvib
+
     # Model spectrum calculation
     s_model = sf.non_eq_spectrum(**kwargs)
 
@@ -206,9 +198,8 @@ def residual_NonLTE(params, conditions, s_data, sf, log, verbose = True):
         offset_value = float(params["offsetcm-1"])
         s_model = s_model.offset(offset_value, "cm-1")
 
-
     # FURTHER REFINE THE MODELED SPECTRUM BEFORE CALCULATING DIFF
-    
+
     pipeline = conditions["pipeline"]
     model = conditions["model"]
 
@@ -243,21 +234,14 @@ def residual_NonLTE(params, conditions, s_data, sf, log, verbose = True):
         if pipeline["normalize"]:
             s_model = s_model.normalize()
 
-
     # ACQUIRE AND RETURN DIFF, ALSO LOG FITTING HISTORY
 
     # Acquire diff
-    residual = get_residual(
-        s_data, 
-        s_model, 
-        fit_var, 
-        norm = "L2",
-        ignore_nan = "True"
-    )
-    
+    residual = get_residual(s_data, s_model, fit_var, norm="L2", ignore_nan="True")
+
     # Log the current residual
     log["residual"].append(residual)
-    
+
     # Log the current fitting values of fit parameters
     current_fitvals = []
     for param in params:
@@ -269,6 +253,5 @@ def residual_NonLTE(params, conditions, s_data, sf, log, verbose = True):
         for param in params:
             print(f"{param} = {float(params[param])}")
         print(f"\nResidual = {residual}\n")
-
 
     return residual

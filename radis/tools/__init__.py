@@ -5,6 +5,8 @@
 
 from .database import SpecDatabase, load_spec, plot_spec, save
 from .gascomp import get_eq_mole_fraction
+from .new_fitting import fit_spectrum, get_conditions, spectrum_refinement
+from .new_fitting_models import residual_LTE, residual_NonLTE
 from .slit import (
     convolve_with_slit,
     crop_slit,
@@ -12,15 +14,6 @@ from .slit import (
     get_FWHM,
     plot_slit,
     recenter_slit,
-)
-from .new_fitting import (
-    get_conditions,
-    spectrum_refinement,
-    fit_spectrum,
-)
-from .new_fitting_models import (
-    residual_LTE,
-    residual_NonLTE,
 )
 
 __all__ = [

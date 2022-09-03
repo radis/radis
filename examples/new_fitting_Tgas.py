@@ -38,9 +38,9 @@ This example features fitting an experimental spectrum with Tgas, using new fitt
 
 """
 
-from radis.tools.new_fitting import fit_spectrum
-from radis.test.utils import getTestFile
 from radis import load_spec
+from radis.test.utils import getTestFile
+from radis.tools.new_fitting import fit_spectrum
 
 # Load an experimental spectrum. You can prepare yours, or fetch one of them in the radis/test/files directory.
 my_spec = getTestFile("synth-NH3-1-500-2000cm-P10-mf0.01-p1.spec")
@@ -48,47 +48,50 @@ s_experimental = load_spec(my_spec)
 
 # Experimental conditions which will be used for spectrum modeling. Basically, these are known ground-truths.
 experimental_conditions = {
-    "molecule" : "NH3",         # Molecule ID
-    "isotope" : "1",            # Isotope ID, can have multiple at once
-    "wmin" : 1000,              # Starting wavelength/wavenumber to be cropped out from the original experimental spectrum.
-    "wmax" : 1100,              # Ending wavelength/wavenumber for the cropping range.
-    "wunit" : "cm-1",           # Accompanying unit of those 2 wavelengths/wavenumbers above.
-    "mole_fraction" : 0.01,     # Species mole fraction, from 0 to 1.
-    "pressure" : 10,            # Partial pressure of gas, in "bar" unit.
-    "path_length" : 1,          # Experimental path length, in "cm" unit.
-    "slit" : "1 nm",            # Experimental slit, must be a blank space separating slit amount and unit.
-    "offset" : "-0.2 nm",       # Experimental offset, must be a blank space separating offset amount and unit.
-    "databank" : "hitran"       # Databank used for the spectrum calculation. Must be stated.
+    "molecule": "NH3",  # Molecule ID
+    "isotope": "1",  # Isotope ID, can have multiple at once
+    "wmin": 1000,  # Starting wavelength/wavenumber to be cropped out from the original experimental spectrum.
+    "wmax": 1100,  # Ending wavelength/wavenumber for the cropping range.
+    "wunit": "cm-1",  # Accompanying unit of those 2 wavelengths/wavenumbers above.
+    "mole_fraction": 0.01,  # Species mole fraction, from 0 to 1.
+    "pressure": 10,  # Partial pressure of gas, in "bar" unit.
+    "path_length": 1,  # Experimental path length, in "cm" unit.
+    "slit": "1 nm",  # Experimental slit, must be a blank space separating slit amount and unit.
+    "offset": "-0.2 nm",  # Experimental offset, must be a blank space separating offset amount and unit.
+    "databank": "hitran",  # Databank used for the spectrum calculation. Must be stated.
 }
 
 # List of parameters to be fitted, accompanied by their initial values.
 fit_parameters = {
-    "Tgas" : 700,               # Gas temperature, in K.
+    "Tgas": 700,  # Gas temperature, in K.
 }
 
 # List of bounding ranges applied for those fit parameters above.
 # You can skip this step and let it use default bounding ranges, but this is not recommended.
 bounding_ranges = {
-    "Tgas" : [500, 2000],       # Bounding range must be at format [<lower bound>, <upper bound>]
+    "Tgas": [
+        500,
+        2000,
+    ],  # Bounding range must be at format [<lower bound>, <upper bound>]
 }
 
 # Fitting pipeline setups.
 fit_properties = {
-    "method" : "lbfgsb",        # Preferred fitting method from the 17 confirmed methods of LMFIT stated in week 4 blog. By default, "leastsq".
-    "fit_var" : "radiance",     # Spectral quantity to be extracted for fitting process, such as "radiance", "absorbance", etc.
-    "normalize" : False,        # Either applying normalization on both spectra or not.
-    "max_loop" : 150,           # Max number of loops allowed. By default, 200.
-    "tol" : 1e-15               # Fitting tolerance, only applicable for "lbfgsb" method.
+    "method": "lbfgsb",  # Preferred fitting method from the 17 confirmed methods of LMFIT stated in week 4 blog. By default, "leastsq".
+    "fit_var": "radiance",  # Spectral quantity to be extracted for fitting process, such as "radiance", "absorbance", etc.
+    "normalize": False,  # Either applying normalization on both spectra or not.
+    "max_loop": 150,  # Max number of loops allowed. By default, 200.
+    "tol": 1e-15,  # Fitting tolerance, only applicable for "lbfgsb" method.
 }
 
 
 # Conduct the fitting process!
 s_best, result, log = fit_spectrum(
-    s_exp = s_experimental,
-    fit_params = fit_parameters,
-    bounds = bounding_ranges,
-    model = experimental_conditions,
-    pipeline = fit_properties
+    s_exp=s_experimental,
+    fit_params=fit_parameters,
+    bounds=bounding_ranges,
+    model=experimental_conditions,
+    pipeline=fit_properties,
 )
 
 
@@ -102,4 +105,4 @@ for fit_val in log["fit_vals"]:
     print(fit_val)
 
 print("\nTotal fitting time: ")
-print(log["time_fitting"], end = " s\n")
+print(log["time_fitting"], end=" s\n")
