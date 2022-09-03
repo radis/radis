@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tools : database of spectra, line survey, interface with Cantera.
+"""Tools : database of spectra, line survey, interface with Cantera, and new fitting modules.
 """
 
 
@@ -13,6 +13,15 @@ from .slit import (
     plot_slit,
     recenter_slit,
 )
+from .new_fitting import (
+    get_conditions,
+    spectrum_refinement,
+    fit_spectrum,
+)
+from .new_fitting_models import (
+    residual_LTE,
+    residual_NonLTE,
+)
 
 __all__ = [
     "SpecDatabase",
@@ -23,4 +32,9 @@ __all__ = [
     "plot_slit",
     "get_effective_FWHM",
     "get_FWHM",
+    "get_conditions",
+    "spectrum_refinement",
+    "fit_spectrum",
+    "residual_LTE",
+    "residual_NonLTE",
 ]
