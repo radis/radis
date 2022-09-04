@@ -278,6 +278,7 @@ def run_setup(with_binary):
             "scipy>=1.4.0",
             # "tuna",  # to generate visual/interactive performance profiles
             "vaex>=4.9.2",  # load HDF5 files  (version needed to fix https://github.com/radis/radis/issues/486). #TODO : install only required sub-packages
+            "lmfit",  # for new fitting modules
         ],
         extras_require={
             "dev": [

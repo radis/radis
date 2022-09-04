@@ -68,16 +68,17 @@ fit_parameters = {
 
 # List of bounding ranges applied for those fit parameters above.
 # You can skip this step and let it use default bounding ranges, but this is not recommended.
+# Bounding range must be at format [<lower bound>, <upper bound>].
 bounding_ranges = {
     "Tgas": [
         500,
         2000,
-    ],  # Bounding range must be at format [<lower bound>, <upper bound>]
+    ],
 }
 
 # Fitting pipeline setups.
 fit_properties = {
-    "method": "lbfgsb",  # Preferred fitting method from the 17 confirmed methods of LMFIT stated in week 4 blog. By default, "leastsq".
+    "method": "leastsq",  # Preferred fitting method from the 17 confirmed methods of LMFIT stated in week 4 blog. By default, "leastsq".
     "fit_var": "radiance",  # Spectral quantity to be extracted for fitting process, such as "radiance", "absorbance", etc.
     "normalize": False,  # Either applying normalization on both spectra or not.
     "max_loop": 150,  # Max number of loops allowed. By default, 200.
@@ -87,15 +88,16 @@ fit_properties = {
 
 # Conduct the fitting process!
 s_best, result, log = fit_spectrum(
-    s_exp=s_experimental,
-    fit_params=fit_parameters,
-    bounds=bounding_ranges,
-    model=experimental_conditions,
-    pipeline=fit_properties,
+    s_exp=s_experimental,  # Experimental spectrum.
+    fit_params=fit_parameters,  # Fit parameters.
+    bounds=bounding_ranges,  # Bounding ranges for those fit parameters.
+    model=experimental_conditions,  # Experimental ground-truths conditions.
+    pipeline=fit_properties,  # Fitting pipeline references.
+    verbose=False,  # If you want a clean result, stay False. If you want to see more about each loop, True.
 )
 
 
-# Now investigate the result logs
+# Now investigate the result logs for additional information about what's going on during the fitting process
 
 print("\nResidual history: \n")
 print(log["residual"])

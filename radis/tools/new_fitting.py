@@ -27,11 +27,269 @@ import numpy as np
 from lmfit import Parameters, fit_report, minimize
 from lmfit.minimizer import MinimizerResult
 
-# Load models
-from new_fitting_models import residual_LTE, residual_NonLTE
-
-from radis import Spectrum, SpectrumFactory, plot_diff
+from radis import Spectrum, SpectrumFactory
+from radis.spectrum import plot_diff
+from radis.spectrum.compare import get_residual
 from radis.tools.database import load_spec
+
+# --------------------- MODELS / COST FUNCTIONS --------------------- #
+
+
+def residual_LTE(params, conditions, s_data, sf, log, verbose):
+    """A cost function that calculates an LTE spectrum based on the
+    initial conditions and values of fit parameters, then returning a
+    scalar containing difference between experimental and data spectra.
+
+    Parameters
+    ----------
+    params : LMFIT.Parameters
+        basically a dict containing fit parameters that will be varied
+        during the minimization.
+    conditions: dict
+        a dict containing conditions (fixed parameters) for generating
+        model spectra.
+    s_data: Spectrum
+        data spectrum, loaded from the directory stated in JSON file.
+    sf: SpectrumFactory
+        the SpectrumFactory object used for modeling spectra, generated
+        before the minimize loop occurs.
+    log: list
+        a Dictionary storing runtime log of the fitting process that are
+        not quite covered by the Minimizer, including: residual and fit
+        values after each fitting loop, and total time elapsed.
+
+    Other parameters
+    ----------------
+    verbose : bool
+        if True, will print out result of each fitting loop.
+
+    Returns
+    -------
+    residual: float
+        residuals of the two spectra, using RADIS's get_residual().
+
+    """
+
+    # GENERATE LTE SPECTRUM BASED ON THOSE PARAMETERS
+
+    # Load initial values of fit parameters
+
+    # These keys must be ignored when parsing parameters. They will be dealt with separately
+    ignore_keys = [
+        "offsetnm",
+        "offsetcm1",
+    ]
+
+    # Retrieve current values of parameters, for calculating model spectrum
+    kwargs = {}
+    for param in params:
+        if param not in ignore_keys:
+            kwargs[param] = float(params[param])
+
+    # Model spectrum calculation
+    s_model = sf.eq_spectrum(**kwargs)
+
+    # Deal with "offset"
+    if "offsetnm" in params:
+        offset_value = float(params["offsetnm"])
+        s_model = s_model.offset(offset_value, "nm")
+    if "offsetcm1" in params:
+        offset_value = float(params["offsetcm1"])
+        s_model = s_model.offset(offset_value, "cm-1")
+
+    # FURTHER REFINE THE MODELED SPECTRUM BEFORE CALCULATING DIFF
+
+    pipeline = conditions["pipeline"]
+    model = conditions["model"]
+
+    # Apply slit stated in "model"
+    if "slit" in model:
+
+        slit_model = model["slit"]
+
+        # The user uses simple format of "[value] [unit]", such as "-0.2 nm"
+        if isinstance(slit_model, str):
+            slit_val, slit_unit = slit_model.split()
+            s_model = s_model.apply_slit(float(slit_val), slit_unit)
+
+        # The user uses a dict with complex format of slit function, unit, shape, center wavespace, dispersion, etc.
+        if isinstance(slit_model, dict):
+            kwargs = {}
+            for cond in slit_model:
+                kwargs[cond] = slit_model[cond]
+            s_model = s_model.apply_slit(**kwargs)
+
+    # Take spectral quantity
+    fit_var = pipeline["fit_var"]
+    s_model = s_model.take(fit_var)
+
+    # Apply offset stated in "model"
+    if "offset" in model:
+        off_val, off_unit = model["offset"].split()
+        s_model = s_model.offset(float(off_val), off_unit)
+
+    # Apply normalization
+    if "normalize" in pipeline:
+        if pipeline["normalize"]:
+            s_model = s_model.normalize()
+
+    # ACQUIRE AND RETURN DIFF, ALSO LOG FITTING HISTORY
+
+    # Acquire diff
+    residual = get_residual(s_model, s_data, fit_var, norm="L2", ignore_nan="True")
+
+    # Log the current residual
+    log["residual"].append(residual)
+
+    # Log the current fitting values of fit parameters
+    current_fitvals = []
+    for param in params:
+        current_fitvals.append(float(params[param]))
+    log["fit_vals"].append(current_fitvals)
+
+    # Print information of fitting process
+    if verbose:
+        for param in params:
+            print(f"{param} = {float(params[param])}")
+        print(f"\nResidual = {residual}\n")
+
+    return residual
+
+
+def residual_NonLTE(params, conditions, s_data, sf, log, verbose):
+    """A cost function that calculates a non-LTE spectrum based on the
+    initial conditions and values of fit parameters, then returning a
+    scalar containing difference between experimental and data spectra.
+
+    Parameters
+    ----------
+    params : LMFIT.Parameters
+        basically a dict containing fit parameters that will be varied
+        during the minimization.
+    conditions: dict
+        a dict containing conditions (fixed parameters) for generating
+        model spectra.
+    s_data: Spectrum
+        data spectrum, loaded from the directory stated in JSON file.
+    sf: SpectrumFactory
+        the SpectrumFactory object used for modeling spectra, generated
+        before the minimize loop occurs.
+    log: list
+        a Dictionary storing runtime log of the fitting process that are
+        not quite covered by the Minimizer, including: residual and fit
+        values after each fitting loop, and total time elapsed.
+
+    Other parameters
+    ----------------
+    verbose : bool
+        if True, will print out result of each fitting loop.
+
+    Returns
+    -------
+    residual: float
+        residuals of the two spectra, using RADIS's get_residual().
+
+    """
+
+    # GENERATE NON-LTE SPECTRUM BASED ON THOSE PARAMETERS
+
+    # Load initial values of fit parameters
+
+    # These keys must be ignored when parsing parameters. They will be dealt with separately
+    ignore_keys = [
+        "offsetnm",
+        "offsetcm-1",
+    ]
+
+    # Retrieve current values of parameters, for calculating model spectrum
+    kwargs = {}
+    for param in params:
+        if param not in ignore_keys:
+            kwargs[param] = float(params[param])
+
+    # Deal with the case of multiple Tvib temperatures
+    if "Tvib0" in kwargs:  # There is trace of a "Tvib fragmentation" before
+        Tvib = []
+        for kw in kwargs:
+            if "Tvib" in kw:  # Such as "Tvib0", "Tvib1" or so
+                Tvib.append(kwargs[kw])  # Bring them altogether, uwu
+                kwargs.pop(kw)  # Dispose the fragmented one in kwargs
+        kwargs["Tvib"] = tuple(Tvib)  # Finally, we have the tuple of Tvib
+
+    # Model spectrum calculation
+    s_model = sf.non_eq_spectrum(**kwargs)
+
+    # Deal with "offset"
+    if "offsetnm" in params:
+        offset_value = float(params["offsetnm"])
+        s_model = s_model.offset(offset_value, "nm")
+    if "offsetcm-1" in params:
+        offset_value = float(params["offsetcm-1"])
+        s_model = s_model.offset(offset_value, "cm-1")
+
+    # FURTHER REFINE THE MODELED SPECTRUM BEFORE CALCULATING DIFF
+
+    pipeline = conditions["pipeline"]
+    model = conditions["model"]
+
+    # Apply slit stated in "model"
+    if "slit" in model:
+
+        slit_model = model["slit"]
+
+        # The user uses simple format of "[value] [unit]", such as "-0.2 nm"
+        if isinstance(slit_model, str):
+            slit_val, slit_unit = slit_model.split()
+            s_model = s_model.apply_slit(float(slit_val), slit_unit)
+
+        # The user uses a dict with complex format of slit function, unit, shape, center wavespace, dispersion, etc.
+        if isinstance(slit_model, dict):
+            kwargs = {}
+            for cond in slit_model:
+                kwargs[cond] = slit_model[cond]
+            s_model = s_model.apply_slit(**kwargs)
+
+    # Take spectral quantity
+    fit_var = pipeline["fit_var"]
+    s_model = s_model.take(fit_var)
+
+    # Apply offset
+    if "offset" in model:
+        off_val, off_unit = model["offset"].split()
+        s_model = s_model.offset(float(off_val), off_unit)
+
+    # Apply normalization
+    if "normalize" in pipeline:
+        if pipeline["normalize"]:
+            s_model = s_model.normalize()
+
+    # ACQUIRE AND RETURN DIFF, ALSO LOG FITTING HISTORY
+
+    # Acquire diff
+    residual = get_residual(s_data, s_model, fit_var, norm="L2", ignore_nan="True")
+
+    # Log the current residual
+    log["residual"].append(residual)
+
+    # Log the current fitting values of fit parameters
+    current_fitvals = []
+    for param in params:
+        current_fitvals.append(float(params[param]))
+    log["fit_vals"].append(current_fitvals)
+
+    # Print information of fitting process
+    if verbose:
+        for param in params:
+            print(f"{param} = {float(params[param])}")
+        print(f"\nResidual = {residual}\n")
+
+    return residual
+
+
+# ----------------------------------------------------------------------- #
+
+
+# --------------------- FITTING METHODS / FUNCTIONS --------------------- #
 
 
 def get_conditions(
@@ -196,6 +454,9 @@ def get_conditions(
     return conditions, params
 
 
+# -------------------------------------------------------------------------------------------- #
+
+
 def spectrum_refinement(s_data, conditions, verbose=True) -> Union[Spectrum, dict]:
     """Receive an experimental spectrum and further refine it according to the provided pipeline
     and ground-truths. Refinement process includes extracting the desired spectrum quantity,
@@ -238,7 +499,7 @@ def spectrum_refinement(s_data, conditions, verbose=True) -> Union[Spectrum, dic
     s_data_wav, s_data_val = s_data.get(fit_var)
 
     if verbose:
-        print(f"Acquired spectral quantity '{fit_var}' from the spectrum.")
+        print(f"\nAcquired spectral quantity '{fit_var}' from the spectrum.")
 
     # Remove NaN values. A wise man once said, "Nan is good but only in India"
 
@@ -248,7 +509,7 @@ def spectrum_refinement(s_data, conditions, verbose=True) -> Union[Spectrum, dic
     s_data_mtr = s_data_mtr[:, ~np.isnan(s_data_mtr).any(axis=0)]  # Purge NaN pairs
 
     if verbose:
-        print(f"NaN values successfully purged.")
+        print(f"NaN values successfully purged.", end="")
         print(f"Number of data points left: {len(s_data_mtr[0])} points.")
 
     # Recreate the data spectrum with the spectral quantity
@@ -277,6 +538,9 @@ def spectrum_refinement(s_data, conditions, verbose=True) -> Union[Spectrum, dic
     return s_refined, conditions
 
 
+# -------------------------------------------------------------------------------------------- #
+
+
 def fit_spectrum(
     s_exp=None,
     fit_params=None,
@@ -284,7 +548,7 @@ def fit_spectrum(
     pipeline=None,
     bounds=None,
     input_file=None,
-    verbose=True,
+    verbose=False,
 ) -> Union[Spectrum, MinimizerResult, dict]:
     """Fit an experimental spectrum (from here referred as "data spectrum") with a modeled one,
     then derive the fit results. Data spectrum is loaded from the path stated in the JSON file,
@@ -312,7 +576,7 @@ def fit_spectrum(
     Other parameters
     ----------
     verbose : bool
-        by default, True, print details about the fitting progress.
+        print details about each loop of the fitting process. By default, False.
 
     Returns
     -------
@@ -383,8 +647,7 @@ def fit_spectrum(
     end_exp_load = time.time()
     time_exp_load = end_exp_load - begin
 
-    if verbose:
-        print(f"\nSuccessfully retrieved the experimental data in {time_exp_load}s.\n")
+    print(f"\nSuccessfully retrieved the experimental data in {time_exp_load}s.\n")
 
     # Further refine the data spectrum before calculating diff
 
@@ -397,9 +660,9 @@ def fit_spectrum(
     end_exp_refine = time.time()
     time_exp_refine = end_exp_refine - end_exp_load
 
+    print(f"Successfully refined the experimental data in {time_exp_refine}s.")
     if verbose:
         s_data.plot(show=True)
-        print(f"Successfully refined the experimental data in {time_exp_refine}s.")
 
     # PRE-MINIMIZATION SETUP
 
@@ -475,7 +738,7 @@ def fit_spectrum(
             residual_LTE,
             params,
             method=method,
-            args=[conditions, s_data, sf, log],
+            args=[conditions, s_data, sf, log, verbose],
             **fit_kws,
         )
 
@@ -489,17 +752,9 @@ def fit_spectrum(
             residual_NonLTE,
             params,
             method=method,
-            args=[conditions, s_data, sf, log],
+            args=[conditions, s_data, sf, log, verbose],
             **fit_kws,
         )
-
-    # Log the time mark when fitting is over
-    end_fitting = time.time()
-    time_fitting = end_fitting - begin_fitting
-
-    if verbose:
-        print(f"\nSuccesfully finished the fitting process in {time_fitting}s.")
-        log["time_fitting"] = time_fitting
 
     # POST-MINIMIZATION REPORT
 
@@ -561,23 +816,31 @@ def fit_spectrum(
         if pipeline["normalize"]:
             s_result = s_result.normalize()
 
+    # Log the time mark when fitting is over
+    end_fitting = time.time()
+    time_fitting = float(end_fitting - begin_fitting)
+
+    print(f"\nSuccesfully finished the fitting process in {time_fitting}s.")
+    log["time_fitting"] = time_fitting
+
     # PLOT THE DIFFERENCE BETWEEN THE TWO
 
-    if verbose:
-        plot_diff(
-            s_data,
-            s_result,
-            fit_var,
-            method=["diff", "ratio"],
-            show=True,
-        )
+    # We must show this plot regardless of verbose
+    plot_diff(
+        s_data,
+        s_result,
+        fit_var,
+        method=["diff", "ratio"],
+        show=True,
+    )
 
     return s_result, result, log
 
 
-if __name__ == "__main__":
+# ----------------------------------------------------------------------- #
 
-    print("Will be updated further.")
+
+# if __name__ == "__main__":
 
 #     spec_list = [
 #         "CO2_measured_spectrum_4-5um",                                      # 0
