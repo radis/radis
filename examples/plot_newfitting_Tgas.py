@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 
-===================================================================
-Fit a spectrum with Tgas as fit parameter using new fitting modules
-===================================================================
+================================================================================
+Fit an equilibrium spectrum with Tgas as fit parameter using new fitting modules
+================================================================================
 
 RADIS has its own fitting feature, as shown in 1 temperature fit example, where you have
 to manually create the spectrum model, input the experimental spectrum and other ground-truths
