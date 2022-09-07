@@ -1456,16 +1456,15 @@ class BaseFactory(DatabankLoader):
         molecule = self.input.molecule
         isotope = self.input.isotope
         state = "X"
-
         df = self.df0
         if len(df) == 0:
             return  # no lines
 
         # Initializing a cache file for lookup later
         filename = (
-            splitext(self.params.dbpath.split(",", 1)[0])[0].rsplit("/", 1)[0]
-            + "/ORIGINAL_FILE_{molecule}_{iso}_EvibErot"
+            splitext(self.params.dbpath.split(",", 1)[0])[0] + "_extra_columns_EvibErot"
         )
+        cache_filename = DataFileManager(engine).cache_file(filename)
         # Checks and loads Energy level database
         if self.misc.load_energies == False:
             self._init_rovibrational_energies(self.levels, self.params.levelsfmt)
@@ -1518,60 +1517,100 @@ class BaseFactory(DatabankLoader):
                 required_columns = ["Evib1l", "Evib2l", "Evib3l"]
 
         if not all_in(required_columns, df):
-            # Checking if the cache files exist or not, retrieving data
+            # Checking if the cache file exists or not, retrieving data
             # if it's present else regenerating the files.
-            for isotope in self._get_isotope_list(molecule):
-                cache_filename = DataFileManager(engine).cache_file(
-                    filename.format(molecule=molecule, iso=isotope)
+            if exists(cache_filename):
+                existing_file_metadata = DataFileManager(engine).read_metadata(
+                    cache_filename
                 )
-                if exists(cache_filename):
-                    existing_file_metadata = DataFileManager(engine).read_metadata(
-                        cache_filename
-                    )
-                    cache_file_data = DataFileManager(engine).read(cache_filename)
-                    # Checking whether the right columns and indices are present in the cache file
-                    try:
-                        if existing_file_metadata["df_last_index"] == df.index[-1]:
-                            # Read and compare file data with current df data
-                            if set(["Evibu", "Evibl", "Erotu", "Erotl"]).issubset(
-                                cache_file_data.columns
-                            ):
-                                # Set the noneq columns in dataframe
-                                df.loc[
-                                    :, ["Evibu", "Evibl", "Erotu", "Erotl"]
-                                ] = cache_file_data.loc[
-                                    :, ["Evibu", "Evibl", "Erotu", "Erotl"]
-                                ]
+                cache_file_data = DataFileManager(engine).read(cache_filename)
+                # Checking whether the right columns and indices are present in the cache file
+                try:
+                    # Checking if the same isotopes are present in the cache file as required
+                    if existing_file_metadata["isotope"] == isotope:
+                        # assert existing_file_metadata["number_of_lines"] >= (df.index[-1] - df.index[0])
 
+                        # Checking if the dataframe indices are present in the correct
+                        # range, otherwise regenerating cache file
+                        if existing_file_metadata["df_last_index"] == df.index[-1]:
+
+                            if "number_of_lines" in existing_file_metadata:
+                                assert len(df) == existing_file_metadata["total_lines"]
+                            if "wavenumber_min" in existing_file_metadata:
+                                assert (
+                                    df["wav"].min()
+                                    == existing_file_metadata["wavenumber_min"]
+                                )
+                            if "wavenumber_max" in existing_file_metadata:
+                                assert (
+                                    df["wav"].max()
+                                    == existing_file_metadata["wavenumber_max"]
+                                )
+                            if existing_file_metadata["df_first_index"] == df.index[0]:
+                                # Read and compare file data with current df data
+                                if set(["Evibu", "Evibl", "Erotu", "Erotl"]).issubset(
+                                    cache_file_data.columns
+                                ):
+                                    if self.verbose:
+                                        print(
+                                            "Saving the Non-equilibrium columns of the cache file dataframe to df0"
+                                        )
+                                    # Set the noneq columns in dataframe
+                                    df.loc[
+                                        :, ["Evibu", "Evibl", "Erotu", "Erotl"]
+                                    ] = cache_file_data.loc[
+                                        df.index[0] : df.index[-1],
+                                        ["Evibu", "Evibl", "Erotu", "Erotl"],
+                                    ]
+                                else:
+                                    # Regenerate cache file later with correct columns
+                                    if self.verbose:
+                                        print(
+                                            "Required non-equilibrium columns Evibu, Evibl, Erotu, Erotl "
+                                            + "absent from the cache file, hence removing existing file {0} and regenerating ahead.".format(
+                                                cache_filename
+                                            )
+                                        )
+                                    os.remove(cache_filename)
                             else:
                                 # Regenerate cache file later with correct columns
                                 if self.verbose:
-                                    print("Removing existing file ", cache_filename)
+                                    print(
+                                        "Cache file dataframe does not have the correct index range, "
+                                        + "the first index of the dataframe does not match with the first index "
+                                        + "of the cache file dataframe. Removing existing file {0} and regenerating ahead.".format(
+                                            cache_filename
+                                        )
+                                    )
                                 os.remove(cache_filename)
                         else:
-                            if existing_file_metadata["df_last_index"] < df.index[-1]:
-                                # Cache file dataframe size is smaller than
-                                # what we require, hence regenerating the file later
+                            # Regenerate cache file later with correct columns
+                            if self.verbose:
                                 print(
-                                    "Regenerating the cache file {0}, since the range of the current dataframe is bigger than the range of the cache file dataframe.".format(
+                                    "Cache file dataframe does not have the correct index range, "
+                                    + "the dataframe last index does not match with the last index of the cache file "
+                                    + "dataframe. Removing existing file {0} and regenerating ahead.".format(
                                         cache_filename
                                     )
                                 )
-                                os.remove(cache_filename)
-                            else:
-                                df[
-                                    ["Evibu", "Evibl", "Erotu", "Erotl"]
-                                ] = cache_file_data.loc[
-                                    df.index[0] : df.index[-1],
-                                    ["Evibu", "Evibl", "Erotu", "Erotl"],
-                                ]
-                    except KeyError:
-                        os.remove(cache_filename)
-                        raise KeyError(
-                            "Cache file {0} not stored with correct metadata, regenerating it.".format(
-                                cache_filename
+                            os.remove(cache_filename)
+                    else:
+                        # Regenerate the cache file if the isotopes are different
+                        if self.verbose:
+                            print(
+                                "Isotopes present in the cache file are different than the ones "
+                                + "present in the Dataframe. Removing the existing file {0} and regenerating ahead.".format(
+                                    cache_filename
+                                )
                             )
+                        os.remove(cache_filename)
+                except KeyError:
+                    os.remove(cache_filename)
+                    raise KeyError(
+                        "Cache file {0} not stored with correct metadata, regenerating it.".format(
+                            cache_filename
                         )
+                    )
 
         # If the cache file didn't have the proper columns,
         # we check again and compute the non-eq parameters.
@@ -1587,12 +1626,8 @@ class BaseFactory(DatabankLoader):
                     calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic,
                 )
             # Deleting file to update cache ahead
-            for isotope in self._get_isotope_list(molecule):
-                cache_file = DataFileManager(engine).cache_file(
-                    filename.format(molecule=molecule, iso=isotope)
-                )
-                if exists(cache_file):
-                    os.remove(cache_file)
+            if exists(cache_filename):
+                os.remove(cache_filename)
 
             assert all_in(required_columns, df)
 
@@ -1616,56 +1651,57 @@ class BaseFactory(DatabankLoader):
         # Here, we regenerate the cache file if it doesn't exist.
         # If it exists, then the required parameters have already been added to the dataframe.
         if cache:
-            for isotope in self._get_isotope_list(molecule):
-                cachefile = DataFileManager(engine).cache_file(
-                    filename.format(molecule=molecule, iso=isotope)
-                )
-                # Generate cache file for later use.
-                # Ignore if cache file already exists
-                if exists(cachefile):
-                    continue
-                else:
-                    # First, getting the Electronic States file through partition functions:
-                    elec_state = self.get_partition_function_calculator(
-                        molecule, isotope, state
-                    ).ElecState
-                    spectroscopic_constant_file = elec_state.jsonfile
-                    # Copying the non-equilibrium parameters into a temporary dataframe for caching
-                    temp_df = df[["Evibl", "Evibu", "Erotl", "Erotu"]].copy()
-                    # Setting the relevant metadata
-                    new_metadata = {
-                        # Last modification time of the original file :
-                        "last_modification": time.ctime(
-                            getmtime(spectroscopic_constant_file)
-                        ),
-                        "spectroscopic_constant_file": spectroscopic_constant_file,
-                        "levels": self.levels,
-                        "lvlformat": self.params.levelsfmt,
-                        "df_last_index": df.index[-1],
-                    }
+            # Generate cache file for later use.
+            # Ignore if cache file already exists
+            if not exists(cache_filename):
+                # First, getting the Electronic States file through partition functions:
+                elec_state = self.get_partition_function_calculator(
+                    molecule, self._get_isotope_list(molecule)[0], state
+                ).ElecState
+                spectroscopic_constant_file = elec_state.jsonfile
+                # Copying the non-equilibrium parameters into a temporary dataframe for caching
+                temp_df = df[["Evibl", "Evibu", "Erotl", "Erotu"]]
+                # Setting the relevant metadata
+                new_metadata = {
+                    # Last modification time of the original file :
+                    "last_modification": time.ctime(
+                        getmtime(spectroscopic_constant_file)
+                    ),
+                    "spectroscopic_constant_file": spectroscopic_constant_file,
+                    "levels": self.levels,
+                    "lvlformat": self.params.levelsfmt,
+                    "df_first_index": df.index[0],
+                    "df_last_index": df.index[-1],
+                    "number_of_lines": df.index[-1] - df.index[0],
+                    "isotope": isotope,
+                    "neighbour_lines": self.params.neighbour_lines,
+                    "wavenumber_min": self.input.wavenum_min,
+                    "wavenumber_max": self.input.wavenum_max,
+                    "cutoff": self.params.cutoff,
+                }
+                if self.verbose:
+                    print(
+                        "Generating cache file {0} with metadata :\n{1}".format(
+                            cache_filename, new_metadata
+                        )
+                    )
+                try:
+                    save_to_hdf(
+                        temp_df,
+                        cache_filename,
+                        metadata=new_metadata,
+                        version=radis.__version__,
+                        key="df",
+                        overwrite=True,
+                        verbose=self.verbose,
+                        engine=engine,
+                    )
+                except PermissionError:
                     if self.verbose:
                         print(
-                            "Generating cache file {0} with metadata :\n{1}".format(
-                                cachefile, new_metadata
-                            )
+                            "An error occurred in cache file generation. Lookup access rights."
                         )
-                    try:
-                        save_to_hdf(
-                            temp_df,
-                            cachefile,
-                            metadata=new_metadata,
-                            version=radis.__version__,
-                            key="df",
-                            overwrite=True,
-                            verbose=self.verbose,
-                            engine=engine,
-                        )
-                    except PermissionError:
-                        if self.verbose:
-                            print(
-                                "An error occurred in cache file generation. Lookup access rights."
-                            )
-                        pass
+                    pass
 
         self.profiler.stop("check_non_eq_param", "Checked nonequilibrium parameters")
 
