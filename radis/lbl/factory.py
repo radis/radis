@@ -1039,6 +1039,9 @@ class SpectrumFactory(BandFactory):
 
         verbose = self.verbose
 
+        # ... generates molefraction for diluents
+        self._generate_diluent_molefraction(mole_fraction)
+
         # New Profiler object
         self._reset_profiler(verbose)
 
