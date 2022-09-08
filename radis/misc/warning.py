@@ -79,6 +79,10 @@ class InconsistentDatabaseError(ValueError):
     pass
 
 
+class MoleFractionError(ValueError):
+    pass
+
+
 # Warnings
 
 
