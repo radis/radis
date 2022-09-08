@@ -398,7 +398,7 @@ class SpectrumFactory(BandFactory):
         export_populations=None,
         export_lines=False,
         emulate_gpu=False,
-        diluent={},
+        diluent=None,
         **kwargs,
     ):
 
@@ -456,13 +456,15 @@ class SpectrumFactory(BandFactory):
                 + "or 'False'. Got '{0}'".format(export_populations)
             )
 
-        # If molecule present in diluent, raise error
-        if molecule in diluent.keys():
-            raise KeyError(
-                "{0} is being called as molecule and diluent, please remove it from diluent.".format(
-                    molecule
+        # Checking Default value of diluent
+        if diluent != None:
+            # If molecule present in diluent, raise error
+            if molecule in diluent.keys():
+                raise KeyError(
+                    "{0} is being called as molecule and diluent, please remove it from diluent.".format(
+                        molecule
+                    )
                 )
-            )
 
         # calculate waveranges
         # --------------------
@@ -662,7 +664,6 @@ class SpectrumFactory(BandFactory):
         self,
         Tgas,
         mole_fraction=None,
-        diluent={},
         path_length=None,
         pressure=None,
         name=None,
@@ -871,6 +872,7 @@ class SpectrumFactory(BandFactory):
                 "lines_cutoff": self._Nlines_cutoff,
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": True,
+                "diluents": self._diluent,
                 "radis_version": version,
                 "spectral_points": (
                     self.params.wavenum_max_calc - self.params.wavenum_min_calc
@@ -1208,6 +1210,7 @@ class SpectrumFactory(BandFactory):
                 ],
                 "lines_calculated": _Nlines_calculated,
                 "thermal_equilibrium": True,
+                "diluents": self._diluent,
                 "radis_version": version,
                 "emulate_gpu": emulate,
                 "spectral_points": (
@@ -1443,7 +1446,6 @@ class SpectrumFactory(BandFactory):
         Trot,
         Ttrans=None,
         mole_fraction=None,
-        diluent={},
         path_length=None,
         pressure=None,
         vib_distribution="boltzmann",
@@ -1760,6 +1762,7 @@ class SpectrumFactory(BandFactory):
                 "lines_cutoff": self._Nlines_cutoff,
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": False,  # dont even try to guess if it's at equilibrium
+                "diluents": self._diluent,
                 "radis_version": version,
                 "spectral_points": (
                     self.params.wavenum_max_calc - self.params.wavenum_min_calc
@@ -1920,21 +1923,22 @@ class SpectrumFactory(BandFactory):
         return
 
     def _generate_diluent_molefraction(self, mole_fraction):
-        diluents = self.params.diluent.copy()
-
+        # If diluent is None, then add remaining molefraction as 'air'
+        if self.params.diluent == None:
+            diluents = {"air": 1 - mole_fraction}
+        else:
+            diluents = self.params.diluent.copy()
         # Checking mole_fraction of molecule and diluent
         total_mole_fraction = mole_fraction + sum(list(diluents.values()))
         if total_mole_fraction > 1:
             raise ValueError(
-                "Total molefraction = {0} of molecule and diluents greater than 1.".format(
+                "Total molefraction = {0} of molecule and diluents greater than 1. Please set appropriate molefraction value of molecule and diluents.".format(
                     total_mole_fraction
                 )
             )
-        elif total_mole_fraction < 1 and "air" not in diluents.keys():
-            diluents["air"] = round(1 - total_mole_fraction, 6)
         elif total_mole_fraction < 1:
             raise ValueError(
-                "Total molefraction = {0} of molecule and diluents less than 1.".format(
+                "Total molefraction = {0} of molecule and diluents less than 1. Please set appropriate molefraction value of molecule and diluents".format(
                     total_mole_fraction
                 )
             )
