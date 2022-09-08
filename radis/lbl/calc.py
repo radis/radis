@@ -48,7 +48,7 @@ def calc_spectrum(
     molecule=None,
     isotope="all",
     mole_fraction=1,
-    diluent={},
+    diluent=None,
     path_length=1,
     databank="hitran",
     medium="air",
@@ -610,7 +610,7 @@ def _calc_spectrum_one_molecule(
     mode,
     export_lines,
     return_factory=False,
-    diluent={},
+    diluent=None,
     **kwargs,
 ) -> Spectrum:
     """See :py:func:`~radis.lbl.calc.calc_spectrum`
@@ -694,9 +694,12 @@ def _calc_spectrum_one_molecule(
     sf.input_wunit = input_wunit
 
     # Checking diluent other than air present
-    diluent_other_than_air = len(diluent) > 1 or (
-        len(diluent) == 1 and "air" not in diluent
-    )
+    if diluent == None:
+        diluent_other_than_air = False
+    else:
+        diluent_other_than_air = len(diluent) > 1 or (
+            len(diluent) == 1 and "air" not in diluent
+        )
 
     # Load databank
     # -------------

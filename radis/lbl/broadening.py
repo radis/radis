@@ -288,7 +288,9 @@ def pressure_broadening_HWHM(
         reference temperature at which tabulated HWHM pressure
         broadening coefficients were tabulated
     diluent: dictionary
-         contains diluent and their mole fraction
+        contains diluent and their mole fraction
+    diluent_broadening_coeff: dictionary
+        contains all non air diluents broadening coefficients
 
 
     Returns
@@ -327,12 +329,6 @@ def pressure_broadening_HWHM(
     # | power function once only.
 
     diluent_molecules = diluent.keys()
-    gamma_n_diluent = []
-
-    for key, val in diluent.items():
-        if key != "air":
-            gamma_n_diluent.append("gamma_" + key.lower())
-            gamma_n_diluent.append("n_" + key.lower())
 
     # check if gamma_diluent and n_diluent exists or not
     try:
@@ -369,12 +365,10 @@ def pressure_broadening_HWHM(
     #         (airbrd * pressure_atm * (1 - mole_fraction))
     #         + (selbrd * pressure_atm * mole_fraction)
     #     )
-    #     print("GAMMA_LB _OLD: ", gamma_lb)
     # else:
     #     gamma_lb = ((Tref / Tgas) ** Tdpair) * (
     #         airbrd * pressure_atm * (1 - mole_fraction)
     #     ) + ((Tref / Tgas) ** Tdpsel) * (selbrd * pressure_atm * mole_fraction)
-
     return gamma_lb
 
 
