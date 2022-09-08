@@ -1465,6 +1465,11 @@ class BaseFactory(DatabankLoader):
             splitext(self.params.dbpath.split(",", 1)[0])[0] + "_extra_columns_EvibErot"
         )
         cache_filename = DataFileManager(engine).cache_file(filename)
+        # Getting the Electronic States file through partition functions:
+        elec_state = self.get_partition_function_calculator(
+            molecule, self._get_isotope_list(molecule)[0], state
+        ).ElecState
+        spectroscopic_constant_file = elec_state.jsonfile
         # Checks and loads Energy level database
         if self.misc.load_energies == False:
             self._init_rovibrational_energies(self.levels, self.params.levelsfmt)
@@ -1533,9 +1538,11 @@ class BaseFactory(DatabankLoader):
                         # Checking if the dataframe indices are present in the correct
                         # range, otherwise regenerating cache file
                         if existing_file_metadata["df_last_index"] == df.index[-1]:
-
+                            # Checking that all cache file metadata is correct:
                             if "number_of_lines" in existing_file_metadata:
-                                assert len(df) == existing_file_metadata["total_lines"]
+                                assert (
+                                    len(df) == existing_file_metadata["number_of_lines"]
+                                )
                             if "wavenumber_min" in existing_file_metadata:
                                 assert (
                                     df["wav"].min()
@@ -1546,6 +1553,29 @@ class BaseFactory(DatabankLoader):
                                     df["wav"].max()
                                     == existing_file_metadata["wavenumber_max"]
                                 )
+                            if "spectroscopic_constant_file" in existing_file_metadata:
+                                assert (
+                                    spectroscopic_constant_file
+                                    == existing_file_metadata[
+                                        "spectroscopic_constant_file"
+                                    ]
+                                )
+                            if "last_modification" in existing_file_metadata:
+                                assert (
+                                    time.ctime(getmtime(spectroscopic_constant_file))
+                                    == existing_file_metadata["last_modification"]
+                                )
+                            if "neighbour_lines" in existing_file_metadata:
+                                assert (
+                                    self.params.neighbour_lines
+                                    == existing_file_metadata["neighbour_lines"]
+                                )
+                            if "cutoff" in existing_file_metadata:
+                                assert (
+                                    self.params.cutoff
+                                    == existing_file_metadata["cutoff"]
+                                )
+
                             if existing_file_metadata["df_first_index"] == df.index[0]:
                                 # Read and compare file data with current df data
                                 if set(["Evibu", "Evibl", "Erotu", "Erotl"]).issubset(
@@ -1654,11 +1684,6 @@ class BaseFactory(DatabankLoader):
             # Generate cache file for later use.
             # Ignore if cache file already exists
             if not exists(cache_filename):
-                # First, getting the Electronic States file through partition functions:
-                elec_state = self.get_partition_function_calculator(
-                    molecule, self._get_isotope_list(molecule)[0], state
-                ).ElecState
-                spectroscopic_constant_file = elec_state.jsonfile
                 # Copying the non-equilibrium parameters into a temporary dataframe for caching
                 temp_df = df[["Evibl", "Evibu", "Erotl", "Erotu"]]
                 # Setting the relevant metadata
@@ -1672,7 +1697,7 @@ class BaseFactory(DatabankLoader):
                     "lvlformat": self.params.levelsfmt,
                     "df_first_index": df.index[0],
                     "df_last_index": df.index[-1],
-                    "number_of_lines": df.index[-1] - df.index[0],
+                    "number_of_lines": len(df),
                     "isotope": isotope,
                     "neighbour_lines": self.params.neighbour_lines,
                     "wavenumber_min": self.input.wavenum_min,
