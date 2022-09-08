@@ -549,6 +549,7 @@ def fit_spectrum(
     bounds=None,
     input_file=None,
     verbose=False,
+    show_plot=True,
 ) -> Union[Spectrum, MinimizerResult, dict]:
     """Fit an experimental spectrum (from here referred as "data spectrum") with a modeled one,
     then derive the fit results. Data spectrum is loaded from the path stated in the JSON file,
@@ -577,6 +578,10 @@ def fit_spectrum(
     ----------
     verbose : bool
         print details about each loop of the fitting process. By default, False.
+    show_plot : bool
+        show experimental spectrum before and after being fitted. By default, True. Showing the plot
+        will pause the runtime, so if you are running benchmark which involves multiple fitting cases,
+        set it to False.
 
     Returns
     -------
@@ -592,6 +597,8 @@ def fit_spectrum(
     """
 
     begin = time.time()  # Start the fitting time counter
+
+    print("\n======================= COMMENCE FITTING PROCESS =======================")
 
     # ACQUIRE AND REFINE EXPERIMENTAL SPECTRUM s_data
 
@@ -647,7 +654,7 @@ def fit_spectrum(
     end_exp_load = time.time()
     time_exp_load = end_exp_load - begin
 
-    print(f"\nSuccessfully retrieved the experimental data in {time_exp_load}s.\n")
+    print(f"\nSuccessfully retrieved the experimental data in {time_exp_load}s.")
 
     # Further refine the data spectrum before calculating diff
 
@@ -661,7 +668,7 @@ def fit_spectrum(
     time_exp_refine = end_exp_refine - end_exp_load
 
     print(f"Successfully refined the experimental data in {time_exp_refine}s.")
-    if verbose:
+    if show_plot:
         s_data.plot(show=True)
 
     # PRE-MINIMIZATION SETUP
@@ -733,7 +740,7 @@ def fit_spectrum(
 
         sf.fetch_databank(databank, load_columns="equilibrium")
 
-        print("\nCommence fitting process for LTE spectrum!")
+        print("\nCommence fitting process for LTE spectrum!\n")
         result = minimize(
             residual_LTE,
             params,
@@ -758,7 +765,7 @@ def fit_spectrum(
 
     # POST-MINIMIZATION REPORT
 
-    print(fit_report(result))  # Report the fitting result
+    print(fit_report(result), end="\n")  # Report the fitting result
 
     # REGENERATE THE BEST-FIT SPECTRUM, AS A RESULT FROM THE MINIMIZER
 
@@ -825,13 +832,18 @@ def fit_spectrum(
 
     # PLOT THE DIFFERENCE BETWEEN THE TWO
 
-    # We must show this plot regardless of verbose
-    plot_diff(
-        s_data,
-        s_result,
-        fit_var,
-        method=["diff", "ratio"],
-        show=True,
+    # If show_plot = True by default, show the diff plot
+    if show_plot:
+        plot_diff(
+            s_data,
+            s_result,
+            fit_var,
+            method=["diff", "ratio"],
+            show=True,
+        )
+
+    print(
+        "\n======================== END OF FITTING PROCESS ========================\n"
     )
 
     return s_result, result, log
