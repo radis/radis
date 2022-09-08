@@ -2,7 +2,7 @@
 """
 
 ================================================================================
-Fit a non-LTE spectrum with multiple fit parameters
+Fit a non-LTE spectrum with multiple fit parameters using new fitting module
 ================================================================================
 
 With the new fitting module introduced in :py:func:`~radis.tools.new_fitting.fit_spectrum` function,
@@ -12,10 +12,11 @@ performance for equilibrium condition.
 This example features how new fitting module can fit non-equilibrium spectrum, with multiple fit
 parameters, such as vibrational/rotational temperatures, or mole fraction, etc.
 
-This is a real fitting case introduced by Mr. Corentin Grimaldi, featuring CO molecule emitting on
-a wide range of spectrum. This case also features a user-defined trapezoid slit function, which is
-accounted by the distorion (dispersion) of the slit, as a result of the influences from experimental
-parameters and spectrometer dispersion parameters during the experiment.
+This is a real fitting case introduced by Mr. Corentin Grimaldi, a scientist and member of RADIS
+community. This case features CO molecule emitting on a wide range of spectrum. This case also includes
+a user-defined trapezoid slit function, which is accounted by the distorion (dispersion) of the slit,
+as a result of the influences from experimental parameters and spectrometer dispersion parameters
+during the experiment.
 
 """
 
@@ -58,11 +59,17 @@ base_slit_nm = base_slit_um * 1e-3 * dispersion * 1.33
 # ------------------------ End of Mr. Grimaldi's script ------------------------ #
 
 
-# Load experimental spectrum.
+# ------------------------------------ Step 1. Load experimental spectrum ------------------------------------ #
+
+
 specName = (
     "Corentin_0_100cm_DownSampled_20cm_10pctCO2_1-wc-gw450-gr300-sl1500-acc5000-.spec"
 )
 s_experimental = load_spec(getTestFile(specName)).offset(-0.6, "nm")
+
+
+# ------------------------------------ Step 2. Fill ground-truths and data ------------------------------------ #
+
 
 # Experimental conditions which will be used for spectrum modeling. Basically, these are known ground-truths.
 experimental_conditions = {
@@ -110,6 +117,9 @@ fit_properties = {
     "max_loop": 300,  # Max number of loops allowed. By default, 200.
     "tol": 1e-20,  # Fitting tolerance, only applicable for "lbfgsb" method.
 }
+
+
+# ------------------------------------ Step 3. Run the fitting and retrieve results ------------------------------------ #
 
 
 # Conduct the fitting process!

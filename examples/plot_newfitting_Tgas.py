@@ -42,9 +42,16 @@ from radis import load_spec
 from radis.test.utils import getTestFile
 from radis.tools.new_fitting import fit_spectrum
 
+# ------------------------------------ Step 1. Load experimental spectrum ------------------------------------ #
+
+
 # Load an experimental spectrum. You can prepare yours, or fetch one of them in the radis/test/files directory.
 my_spec = getTestFile("synth-NH3-1-500-2000cm-P10-mf0.01-p1.spec")
 s_experimental = load_spec(my_spec)
+
+
+# ------------------------------------ Step 2. Fill ground-truths and data ------------------------------------ #
+
 
 # Experimental conditions which will be used for spectrum modeling. Basically, these are known ground-truths.
 experimental_conditions = {
@@ -85,6 +92,9 @@ fit_properties = {
     "max_loop": 150,  # Max number of loops allowed. By default, 200.
     "tol": 1e-15,  # Fitting tolerance, only applicable for "lbfgsb" method.
 }
+
+
+# ------------------------------------ Step 3. Run the fitting and retrieve results ------------------------------------ #
 
 
 # Conduct the fitting process!
