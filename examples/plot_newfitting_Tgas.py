@@ -86,7 +86,7 @@ bounding_ranges = {
 
 # Fitting pipeline setups.
 fit_properties = {
-    "method": "leastsq",  # Preferred fitting method from the 17 confirmed methods of LMFIT stated in week 4 blog. By default, "leastsq".
+    "method": "least_squares",  # Preferred fitting method from the 17 confirmed methods of LMFIT stated in week 4 blog. By default, "leastsq".
     "fit_var": "radiance",  # Spectral quantity to be extracted for fitting process, such as "radiance", "absorbance", etc.
     "normalize": False,  # Either applying normalization on both spectra or not.
     "max_loop": 150,  # Max number of loops allowed. By default, 200.
@@ -105,6 +105,7 @@ s_best, result, log = fit_spectrum(
     model=experimental_conditions,  # Experimental ground-truths conditions.
     pipeline=fit_properties,  # Fitting pipeline references.
     verbose=False,  # If you want a clean result, stay False. If you want to see more about each loop, True.
+    fit_kws={"gtol": 1e-12},
 )
 
 

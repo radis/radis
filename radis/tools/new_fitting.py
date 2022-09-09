@@ -550,6 +550,7 @@ def fit_spectrum(
     input_file=None,
     verbose=False,
     show_plot=True,
+    fit_kws={},
 ) -> Union[Spectrum, MinimizerResult, dict]:
     """Fit an experimental spectrum (from here referred as "data spectrum") with a modeled one,
     then derive the fit results. Data spectrum is loaded from the path stated in the JSON file,
@@ -582,6 +583,8 @@ def fit_spectrum(
         show experimental spectrum before and after being fitted. By default, True. Showing the plot
         will pause the runtime, so if you are running benchmark which involves multiple fitting cases,
         set it to False.
+    fit_kws: dict
+        Options to pass to the minimizer being used. See :py:func:`~lmfit.minimizer.minimize`
 
     Returns
     -------
@@ -628,17 +631,12 @@ def fit_spectrum(
 
         # Merge all separated dict inputs into a single dict first
 
-        conditions = {"model": {}, "fit": {}, "bounds": {}, "pipeline": {}}
-
-        for key in model:
-            conditions["model"][key] = model[key]
-        for key in fit_params:
-            conditions["fit"][key] = fit_params[key]
-        if bounds != None:
-            for key in bounds:
-                conditions["bounds"][key] = bounds[key]
-        for key in pipeline:
-            conditions["pipeline"][key] = pipeline[key]
+        conditions = {
+            "model": model,
+            "fit": fit_params,
+            "bounds": bounds if bounds is not None else {},
+            "pipeline": pipeline,
+        }
 
         # Load data, create Parameters object, from the above dict
         conditions, params = get_conditions(conditions)
@@ -713,11 +711,13 @@ def fit_spectrum(
 
     # Determine additional fitting conditions for the minimizer
 
-    fit_kws = {
-        "max_nfev": pipeline["max_loop"]
-        if "max_loop" in pipeline
-        else 200,  # Default max number of loops: 200
-    }
+    fit_kws.update(
+        {
+            "max_nfev": pipeline["max_loop"]
+            if "max_loop" in pipeline
+            else 200,  # Default max number of loops: 200
+        }
+    )
 
     if "tol" in pipeline:
         if pipeline["method"] == "lbfgsb":
@@ -759,7 +759,6 @@ def fit_spectrum(
             residual_NonLTE,
             params,
             method=method,
-            args=[conditions, s_data, sf, log, verbose],
             **fit_kws,
         )
 
