@@ -398,7 +398,7 @@ class SpectrumFactory(BandFactory):
         export_populations=None,
         export_lines=False,
         emulate_gpu=False,
-        diluent=None,
+        diluent="air",
         **kwargs,
     ):
 
@@ -455,16 +455,6 @@ class SpectrumFactory(BandFactory):
                 "export_populations must be one of 'vib', 'rovib', "
                 + "or 'False'. Got '{0}'".format(export_populations)
             )
-
-        # Checking Default value of diluent
-        if diluent != None:
-            # If molecule present in diluent, raise error
-            if molecule in diluent.keys():
-                raise KeyError(
-                    "{0} is being called as molecule and diluent, please remove it from diluent.".format(
-                        molecule
-                    )
-                )
 
         # calculate waveranges
         # --------------------
@@ -524,6 +514,16 @@ class SpectrumFactory(BandFactory):
         # Store isotope identifier in str format (list wont work in database queries)
         if not isinstance(isotope, str):
             isotope = ",".join([str(k) for k in list_if_float(isotope)])
+
+        # If molecule present in diluent, raise error
+        if (isinstance(diluent, str) and diluent == molecule) or (
+            isinstance(diluent, dict) and molecule in diluent.keys()
+        ):
+            raise KeyError(
+                "{0} is being called as molecule and diluent, please remove it from diluent.".format(
+                    molecule
+                )
+            )
 
         # Initialize input conditions
         self.input.wavenum_min = wavenum_min
@@ -665,6 +665,7 @@ class SpectrumFactory(BandFactory):
         Tgas,
         mole_fraction=None,
         path_length=None,
+        diluent=None,
         pressure=None,
         name=None,
     ) -> Spectrum:
@@ -676,7 +677,7 @@ class SpectrumFactory(BandFactory):
             Gas temperature (K)
         mole_fraction: float
             database species mole fraction. If None, Factory mole fraction is used.
-        diluent: dictionary
+        diluent: str or dictionary
             contains diluent name as key and its mole_fraction as value.
         path_length: float or `~astropy.units.quantity.Quantity`
             slab size (cm). If ``None``, the default Factory
@@ -806,7 +807,7 @@ class SpectrumFactory(BandFactory):
         # Line broadening
 
         # ... generates molefraction for diluents
-        self._generate_diluent_molefraction(mole_fraction)
+        self._generate_diluent_molefraction(mole_fraction, diluent)
 
         # ... calculate broadening  HWHM
         self._calc_broadening_HWHM()
@@ -948,6 +949,7 @@ class SpectrumFactory(BandFactory):
         self,
         Tgas,
         mole_fraction=None,
+        diluent=None,
         path_length=None,
         pressure=None,
         name=None,
@@ -1040,7 +1042,7 @@ class SpectrumFactory(BandFactory):
         verbose = self.verbose
 
         # ... generates molefraction for diluents
-        self._generate_diluent_molefraction(mole_fraction)
+        self._generate_diluent_molefraction(mole_fraction, diluent)
 
         # New Profiler object
         self._reset_profiler(verbose)
@@ -1450,6 +1452,7 @@ class SpectrumFactory(BandFactory):
         Ttrans=None,
         mole_fraction=None,
         path_length=None,
+        diluent=None,
         pressure=None,
         vib_distribution="boltzmann",
         rot_distribution="boltzmann",
@@ -1666,7 +1669,7 @@ class SpectrumFactory(BandFactory):
         # Line broadening
 
         # ... generates molefraction for diluents
-        self._generate_diluent_molefraction(mole_fraction)
+        self._generate_diluent_molefraction(mole_fraction, diluent)
 
         # ... calculate broadening  HWHM
         self._calc_broadening_HWHM()
@@ -1925,14 +1928,33 @@ class SpectrumFactory(BandFactory):
 
         return
 
-    def _generate_diluent_molefraction(self, mole_fraction):
+    def _generate_diluent_molefraction(self, mole_fraction, diluent):
         from radis.misc.warning import MoleFractionError
 
-        # If diluent is None, then add remaining molefraction as 'air'
-        if self.params.diluent == None:
-            diluents = {"air": 1 - mole_fraction}
+        molecule = self.input.molecule
+        # Check if diluent is same as molecule or not
+        if (isinstance(diluent, str) and diluent == molecule) or (
+            isinstance(diluent, dict) and molecule in diluent.keys()
+        ):
+            raise KeyError(
+                "{0} is being called as molecule and diluent, please remove it from diluent.".format(
+                    molecule
+                )
+            )
+
+        # Using Spectrum Factory values of diluents
+        if diluent is None:
+            # If diluent is air, then add remaining molefraction as 'air'
+            if isinstance(self.params.diluent, str):
+                diluents = {self.params.diluent: 1 - mole_fraction}
+            else:
+                diluents = self.params.diluent.copy()
         else:
-            diluents = self.params.diluent.copy()
+            if isinstance(diluent, str):
+                diluents = {diluent: 1 - mole_fraction}
+            else:
+                diluents = diluent.copy()
+
         # Checking mole_fraction of molecule and diluent
         total_mole_fraction = mole_fraction + sum(list(diluents.values()))
         if total_mole_fraction > 1:

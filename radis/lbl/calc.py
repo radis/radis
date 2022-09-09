@@ -48,7 +48,7 @@ def calc_spectrum(
     molecule=None,
     isotope="all",
     mole_fraction=1,
-    diluent=None,
+    diluent="air",
     path_length=1,
     databank="hitran",
     medium="air",
@@ -132,7 +132,7 @@ def calc_spectrum(
 
             mole_fraction={'CO2': 0.8, 'CO':0.2}​
 
-    diluent: dictionary
+    diluent: str or dictionary
        contains diluent name as key and its mole_fraction as value.
 
             diluent = { 'CO2': 0.6, 'H2O':0.4}
@@ -610,7 +610,7 @@ def _calc_spectrum_one_molecule(
     mode,
     export_lines,
     return_factory=False,
-    diluent=None,
+    diluent="air",
     **kwargs,
 ) -> Spectrum:
     """See :py:func:`~radis.lbl.calc.calc_spectrum`
@@ -694,8 +694,11 @@ def _calc_spectrum_one_molecule(
     sf.input_wunit = input_wunit
 
     # Checking diluent other than air present
-    if diluent == None:
-        diluent_other_than_air = False
+    if isinstance(diluent, str):
+        if diluent == "air":
+            diluent_other_than_air = False
+        else:
+            diluent_other_than_air = True
     else:
         diluent_other_than_air = len(diluent) > 1 or (
             len(diluent) == 1 and "air" not in diluent
