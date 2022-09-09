@@ -78,8 +78,9 @@ experimental_conditions = {
     "wmin": 2270,  # Starting wavelength/wavenumber to be cropped out from the original experimental spectrum.
     "wmax": 2400,  # Ending wavelength/wavenumber for the cropping range.
     "wunit": "nm",  # Accompanying unit of those 2 wavelengths/wavenumbers above.
-    "pressure": 1.01325,  # Partial pressure of gas, in "bar" unit.
-    "path_length": 1 / 195,  # Experimental path length, in "cm" unit.
+    "pressure": 1.01325,  # Partial pressure of gas, in "bar" unit by default, but you can also use Astropy units.
+    "path_length": 1
+    / 195,  # Experimental path length, in "cm" unit by default, but you can also use Astropy units.
     "slit": {  # Experimental slit. In simple form: "[value] [unit]", i.e. "-0.2 nm". In complex form: a dict with parameters of apply_slit()
         "slit_function": (top_slit_nm, base_slit_nm),
         "unit": "nm",
@@ -111,12 +112,19 @@ bounding_ranges = {
 
 # Fitting pipeline setups.
 fit_properties = {
-    "method": "lbfgsb",  # Preferred fitting method from the 17 confirmed methods of LMFIT stated in week 4 blog. By default, "leastsq".
+    "method": "lbfgsb",  # Preferred fitting method. By default, "leastsq".
     "fit_var": "radiance",  # Spectral quantity to be extracted for fitting process, such as "radiance", "absorbance", etc.
     "normalize": False,  # Either applying normalization on both spectra or not.
     "max_loop": 300,  # Max number of loops allowed. By default, 200.
     "tol": 1e-20,  # Fitting tolerance, only applicable for "lbfgsb" method.
 }
+
+"""
+
+For the fitting method, you can try one among 17 different fitting methods and algorithms of LMFIT,
+introduced in `LMFIT method list <https://lmfit.github.io/lmfit-py/fitting.html#choosing-different-fitting-methods>`.
+
+"""
 
 
 # ------------------------------------ Step 3. Run the fitting and retrieve results ------------------------------------ #

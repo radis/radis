@@ -5,23 +5,18 @@
 Compare performance between old 1T fitting example and new fitting module
 ================================================================================
 
-RADIS has its own fitting feature, as shown in 1 temperature fit example, where you have
-to manually create the spectrum model, input the experimental spectrum and other ground-truths
-into numerous RADIS native functions, as well as adjust the fitting pipeline yourself.
+This example will try to fit an experimental spectrum using two fitting pipelines:
 
-Now with the new fitting module implemented on September 6 2022, all you have to do is to prepare a
-.spec file containing your experimental spectrum, fill some JSON forms describing the ground-truth
-conditions just like how you fill your medical checkup paper, call the function fit_spectrum() and
-let it do all the work! If you are not satisfied with the result, you can simply adjust the parameters
-in your JSON, then recall the function again, until the results are satisfied.
+- Old fitting module of :py:func:`~radis.tools.fitting.fit_spectrum`, which is the
+  current RADIS fitting module. You can find the gallery example featuring it at
+  `1 temperature fit <https://radis.readthedocs.io/en/latest/auto_examples/plot_1T_fit.html>`.
+- New fitting module of :py:func:`~radis.tools.new_fitting.fit_spectrum`, a new
+  fitting interface for a more practical and interactive fitting experience. See
+  `1 temperature fit using new module <https://radis.readthedocs.io/en/latest/auto_examples/plot_newfitting_Tgas.html>`
 
-This is way easier and more convenient than dwelling into RADIS documentation to find out and
-learn how to use the current example, especially for new RADIS users. This new fitting module
-aims to provide an end-to-end fitting experience, with minimum amount of RADIS knowledge needed.
-
-This example will run both fitting methods on an experimental spectrum with the same ground-truth
-conditions, so you can compare their overall performance, including number of loops, fitting time,
-and final residuals between experimental and best-fit spectra, as an indicator of fit accuracy.
+With this, you can compare their overall performance, including number of loops,
+fitting time, and final residuals between experimental and best-fit spectra, as
+an indicator of fit accuracy.
 
 """
 
@@ -131,8 +126,9 @@ experimental_conditions = {
     "wmax": 4180,  # Ending wavelength/wavenumber for the cropping range.
     "wunit": "nm",  # Accompanying unit of those 2 wavelengths/wavenumbers above.
     "mole_fraction": 1,  # Species mole fraction, from 0 to 1.
-    "pressure": 1 * 1e-3,  # Partial pressure of gas, in "bar" unit.
-    "path_length": 10,  # Experimental path length, in "cm" unit.
+    "pressure": 1
+    * 1e-3,  # Partial pressure of gas, in "bar" unit by default, but you can also use Astropy units.
+    "path_length": 10,  # Experimental path length, in "cm" unit by default, but you can also use Astropy units.
     "slit": "1.4 nm",  # Experimental slit, must be a blank space separating slit amount and unit.
     "wstep": 0.001,  # Resolution of wavenumber grid, in cm-1.
     "databank": "hitran",  # Databank used for the spectrum calculation. Must be stated.
@@ -155,12 +151,19 @@ bounding_ranges = {
 
 # Fitting pipeline setups.
 fit_properties = {
-    "method": "lbfgsb",  # Preferred fitting method from the 17 confirmed methods of LMFIT stated in week 4 blog. By default, "leastsq".
+    "method": "lbfgsb",  # Preferred fitting method. By default, "leastsq".
     "fit_var": "radiance",  # Spectral quantity to be extracted for fitting process, such as "radiance", "absorbance", etc.
     "normalize": True,  # Either applying normalization on both spectra or not.
     "max_loop": 150,  # Max number of loops allowed. By default, 200.
     "tol": 1e-15,  # Fitting tolerance, only applicable for "lbfgsb" method.
 }
+
+"""
+
+For the fitting method, you can try one among 17 different fitting methods and algorithms of LMFIT,
+introduced in `LMFIT method list <https://lmfit.github.io/lmfit-py/fitting.html#choosing-different-fitting-methods>`.
+
+"""
 
 
 # ------------------------------------ Step 3. Run the fitting and retrieve results ------------------------------------ #

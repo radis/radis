@@ -10,8 +10,10 @@ function on September 6 2022, we can experience an easier-to-use, robust and com
 fitting.
 
 This example features performance comparison between 17 different fitting methods and algorithms
-of LMFIT, in fitting a specific spectrum. There are 2 variables to be compared: the last residual,
-and total number of loops required for the fitting process.
+of LMFIT, introduced in `LMFIT method list <https://lmfit.github.io/lmfit-py/fitting.html#choosing-different-fitting-methods>`.
+There are 2 variables to be compared: the last residual, and total number of loops required for
+the fitting process. A good fitting method should have small number of loops (robustness) and has
+low residual (fitting accuracy).
 
 """
 
@@ -35,8 +37,8 @@ experimental_conditions = {
     "wmax": 1050,  # Ending wavelength/wavenumber for the cropping range.
     "wunit": "cm-1",  # Accompanying unit of those 2 wavelengths/wavenumbers above.
     "mole_fraction": 0.01,  # Species mole fraction, from 0 to 1.
-    "pressure": 10,  # Partial pressure of gas, in "bar" unit.
-    "path_length": 1,  # Experimental path length, in "cm" unit.
+    "pressure": 10,  # Partial pressure of gas, in "bar" unit by default, but you can also use Astropy units.
+    "path_length": 1,  # Experimental path length, in "cm" unit by default, but you can also use Astropy units.
     "slit": "1 nm",  # Experimental slit, must be a blank space separating slit amount and unit.
     "offset": "-0.2 nm",  # Experimental offset, must be a blank space separating offset amount and unit.
     "wstep": 0.003,  # Resolution of wavenumber grid, in cm-1.
