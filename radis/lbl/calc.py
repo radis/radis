@@ -133,9 +133,15 @@ def calc_spectrum(
             mole_fraction={'CO2': 0.8, 'CO':0.2}​
 
     diluent: str or dictionary
-       contains diluent name as key and its mole_fraction as value.
+            can be a string of a single diluent or a dictionary containing diluent
+            name as key and its mole_fraction as value
+            For single diluent ::
 
-            diluent = { 'CO2': 0.6, 'H2O':0.4}
+            diluent = 'CO2'
+
+            For multiple diluents ::
+
+            diluent = { 'CO2': 0.6, 'H2O':0.2}
 
     path_length: float [:math:`cm`] or `~astropy.units.quantity.Quantity`
         slab size. Default ``1`` cm​. Use arbitrary units::

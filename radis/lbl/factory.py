@@ -155,6 +155,9 @@ class SpectrumFactory(BandFactory):
     medium: ``'air'``, ``'vacuum'``
         propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``.
         Does not change anything when giving inputs in wavenumber. Default ``'air'``
+    diluent: ``str`` or ``dictionary``
+            can be a string of a single diluent or a dictionary containing diluent
+            name as key and its mole_fraction as value. Default ``air``.
 
     Other Parameters
     ----------------
@@ -678,7 +681,8 @@ class SpectrumFactory(BandFactory):
         mole_fraction: float
             database species mole fraction. If None, Factory mole fraction is used.
         diluent: str or dictionary
-            contains diluent name as key and its mole_fraction as value.
+            can be a string of a single diluent or a dictionary containing diluent
+            name as key and its mole_fraction as value
         path_length: float or `~astropy.units.quantity.Quantity`
             slab size (cm). If ``None``, the default Factory
             :py:attr:`~radis.lbl.factory.SpectrumFactor.input.path_length` is used.
@@ -1040,9 +1044,6 @@ class SpectrumFactory(BandFactory):
         self.input.Trot = Tgas  # just for info
 
         verbose = self.verbose
-
-        # ... generates molefraction for diluents
-        self._generate_diluent_molefraction(mole_fraction, diluent)
 
         # New Profiler object
         self._reset_profiler(verbose)
@@ -1477,8 +1478,9 @@ class SpectrumFactory(BandFactory):
             which is the RT characteristic time)
         mole_fraction: float
             database species mole fraction. If None, Factory mole fraction is used.
-        diluent: dictionary
-            contains diluent name as key and its mole_fraction as value.
+        diluent: str or dictionary
+            can be a string of a single diluent or a dictionary containing diluent
+            name as key and its mole_fraction as value
         path_length: float or `~astropy.units.quantity.Quantity`
             slab size (cm). If ``None``, the default Factory
             :py:attr:`~radis.lbl.factory.SpectrumFactor.input.path_length` is used.
