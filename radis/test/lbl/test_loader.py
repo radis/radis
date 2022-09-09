@@ -59,6 +59,7 @@ def test_retrieve_from_database(
         sf.init_databank(
             "HITEMP-CO2-TEST",
             load_columns="noneq",
+            load_energies=True,
         )  # unlike load_databank, will automatically be built when needed
         db = sf.init_database(temp_database_name, autoretrieve=True)
 

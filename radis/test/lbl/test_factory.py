@@ -314,7 +314,7 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
             "HighTemperatureWarning": "ignore",
         }
     )
-    sf.load_databank("HITRAN-CO-TEST", db_use_cached=True)
+    sf.load_databank("HITRAN-CO-TEST", load_energies=True, db_use_cached=True)
     unit = "µW/sr/cm2"
     T = 600
 
@@ -626,7 +626,7 @@ def test_all_spectrum_using_wstep_auto(verbose=True, plot=False, *args, **kwargs
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.warnings["NegativeEnergiesWarning"] = "ignore"
     sf.warnings["HighTemperatureWarning"] = "ignore"
-    sf.load_databank("HITRAN-CO2-TEST")
+    sf.load_databank("HITRAN-CO2-TEST", load_energies=True)
 
     sf.eq_spectrum(Tgas)
     wstep_1 = sf.params.wstep

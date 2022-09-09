@@ -1532,51 +1532,21 @@ class BaseFactory(DatabankLoader):
                 # Checking whether the right columns and indices are present in the cache file
                 try:
                     # Checking if the same isotopes are present in the cache file as required
-                    if existing_file_metadata["isotope"] == isotope:
-                        # assert existing_file_metadata["number_of_lines"] >= (df.index[-1] - df.index[0])
-
+                    if (
+                        "isotope" in existing_file_metadata
+                        and existing_file_metadata["isotope"] == isotope
+                    ):
                         # Checking if the dataframe indices are present in the correct
                         # range, otherwise regenerating cache file
-                        if existing_file_metadata["df_last_index"] == df.index[-1]:
-                            # Checking that all cache file metadata is correct:
-                            if "number_of_lines" in existing_file_metadata:
-                                assert (
-                                    len(df) == existing_file_metadata["number_of_lines"]
-                                )
-                            if "wavenumber_min" in existing_file_metadata:
-                                assert (
-                                    df["wav"].min()
-                                    == existing_file_metadata["wavenumber_min"]
-                                )
-                            if "wavenumber_max" in existing_file_metadata:
-                                assert (
-                                    df["wav"].max()
-                                    == existing_file_metadata["wavenumber_max"]
-                                )
-                            if "spectroscopic_constant_file" in existing_file_metadata:
-                                assert (
-                                    spectroscopic_constant_file
-                                    == existing_file_metadata[
-                                        "spectroscopic_constant_file"
-                                    ]
-                                )
-                            if "last_modification" in existing_file_metadata:
-                                assert (
-                                    time.ctime(getmtime(spectroscopic_constant_file))
-                                    == existing_file_metadata["last_modification"]
-                                )
-                            if "neighbour_lines" in existing_file_metadata:
-                                assert (
-                                    self.params.neighbour_lines
-                                    == existing_file_metadata["neighbour_lines"]
-                                )
-                            if "cutoff" in existing_file_metadata:
-                                assert (
-                                    self.params.cutoff
-                                    == existing_file_metadata["cutoff"]
-                                )
-
-                            if existing_file_metadata["df_first_index"] == df.index[0]:
+                        if (
+                            "df_last_index" in existing_file_metadata
+                            and existing_file_metadata["df_last_index"] == df.index[-1]
+                        ):
+                            if (
+                                "df_first_index" in existing_file_metadata
+                                and existing_file_metadata["df_first_index"]
+                                == df.index[0]
+                            ):
                                 # Read and compare file data with current df data
                                 if set(["Evibu", "Evibl", "Erotu", "Erotl"]).issubset(
                                     cache_file_data.columns

@@ -5,6 +5,9 @@ Created on Mon May  7 17:34:52 2018
 @author: erwan
 """
 
+import time
+from os.path import exists, getmtime, splitext
+
 import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,6 +15,7 @@ import pytest
 
 import radis
 from radis import get_residual, sPlanck
+from radis.io.hdf5 import DataFileManager
 from radis.lbl import SpectrumFactory
 from radis.lbl.base import get_wavenumber_range
 from radis.misc.printer import printm
@@ -63,6 +67,7 @@ def test_linestrength_calculations(*args, **kwargs):
         path=getTestFile("hitran_co_3iso_2000_2300cm.par"),
         format="hitran",
         parfuncfmt="hapi",
+        load_energies=True,
     )
 
     # TODO : write an example of all the calculation steps in SpectrumFactory
@@ -118,7 +123,7 @@ def test_export_populations(plot=True, verbose=True, warnings=True, *args, **kwa
         verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-    sf.load_databank("HITRAN-CO-TEST")
+    sf.load_databank("HITRAN-CO-TEST", load_energies=True)
 
     # Populations cannot be calculated at equilibrium (no access to energy levels)
     s = sf.eq_spectrum(300)
@@ -183,7 +188,7 @@ def test_export_rovib_fractions(
         verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-    sf.load_databank("HITRAN-CO-TEST")
+    sf.load_databank("HITRAN-CO-TEST", load_energies=True)
     sf.misc.export_rovib_fraction = True  # required from 0.9.30
 
     # Calculate populations using the non-equilibrium module:
@@ -338,7 +343,7 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
             verbose=False,
         )
         sf.warnings["NegativeEnergiesWarning"] = "ignore"
-        sf.load_databank("HITEMP-CO2-TEST", load_columns="noneq")
+        sf.load_databank("HITEMP-CO2-TEST", load_energies=True, load_columns="noneq")
         pb = ProgressBar(3, active=verbose)
         s_eq = sf.eq_spectrum(Tgas=Tgas, mole_fraction=1, name="Equilibrium")
         pb.update(1)
@@ -450,7 +455,7 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
             pressure=P,
             verbose=False,
         )
-        sf.load_databank("HITEMP-CO2-TEST", load_columns="noneq")
+        sf.load_databank("HITEMP-CO2-TEST", load_energies=True, load_columns="noneq")
         sf.warnings["NegativeEnergiesWarning"] = "ignore"
         #        sf.warnings['MissingSelfBroadeningWarning'] = 'ignore'
         pb = ProgressBar(3, active=verbose)
@@ -802,6 +807,87 @@ def test_input_wunit(plot=True, *args, **kwargs):
     )
 
 
+def test_caching_noneq_params(verbose=True, plot=True, *args, **kwargs):
+    """
+    Test that the cache file generated during the computation of
+    non-equilibrium spectra is correct, and has the accurate metadata.
+    """
+
+    s = SpectrumFactory(
+        wavelength_min=1500,
+        wavelength_max=2000,
+        cutoff=1e-27,
+        pressure=1,
+        molecule="CO",
+        isotope="1,2",
+        truncation=5,
+        neighbour_lines=5,
+        path_length=0.1,
+        mole_fraction=1e-3,
+        medium="vacuum",
+        optimization=None,  # No optimization strategy used
+        chunksize=None,  # Initialising chunksize as None for comparison
+        wstep="auto",
+        verbose=2,
+    )
+    s.fetch_databank("hitemp", load_energies=True, load_columns="noneq")
+    s1 = s.non_eq_spectrum(Tvib=2000, Trot=3000)
+    s2 = s.non_eq_spectrum(Tvib=2000, Trot=3000)
+    # Loading variables
+    molecule = s.input.molecule
+    isotope = s.input.isotope
+    state = "X"
+    # Checking that the cache file exists
+    filename = splitext(s.params.dbpath.split(",", 1)[0])[0] + "_extra_columns_EvibErot"
+    engine = "pytables"
+    cache_filename = DataFileManager(engine).cache_file(filename)
+    assert exists(cache_filename)
+
+    elec_state = s.get_partition_function_calculator(
+        molecule, s._get_isotope_list(molecule)[0], state
+    ).ElecState
+    spectroscopic_constant_file = elec_state.jsonfile
+
+    existing_file_metadata = DataFileManager(engine).read_metadata(cache_filename)
+
+    # Checking that the metadata is correct
+    if "isotope" in existing_file_metadata:
+        assert isotope == existing_file_metadata["isotope"]
+    if "number_of_lines" in existing_file_metadata:
+        assert len(s.df0) == existing_file_metadata["number_of_lines"]
+    if "wavenumber_min" in existing_file_metadata:
+        assert s.df0["wav"].min() == existing_file_metadata["wavenumber_min"]
+    if "wavenumber_max" in existing_file_metadata:
+        assert s.df0["wav"].max() == existing_file_metadata["wavenumber_max"]
+    if "spectroscopic_constant_file" in existing_file_metadata:
+        assert (
+            spectroscopic_constant_file
+            == existing_file_metadata["spectroscopic_constant_file"]
+        )
+    if "last_modification" in existing_file_metadata:
+        assert (
+            time.ctime(getmtime(spectroscopic_constant_file))
+            == existing_file_metadata["last_modification"]
+        )
+    if "neighbour_lines" in existing_file_metadata:
+        assert s.params.neighbour_lines == existing_file_metadata["neighbour_lines"]
+    if "cutoff" in existing_file_metadata:
+        assert s.params.cutoff == existing_file_metadata["cutoff"]
+
+    res = get_residual(s1, s2, "radiance_noslit")
+    if verbose:
+        print(
+            "Res for non-equilibrium spectrum with molecule = {0}, wavenumber range = {1} to {2}: {3}".format(
+                s.input.molecule, s.df0["wav"].min(), s.df0["wav"].max(), res
+            )
+        )
+    assert res < 1e-6
+    if plot:
+        from radis import plot_diff
+
+        plot_diff(s1, s2, "radiance_noslit")
+
+
 def _run_testcases(verbose=True, plot=True):
 
     test_input_wunit()
@@ -812,6 +898,7 @@ def _run_testcases(verbose=True, plot=True):
     test_optically_thick_limit_1iso(plot=plot, verbose=verbose)
     test_optically_thick_limit_2iso(plot=plot, verbose=verbose)
     test_get_wavenumber_range()
+    test_caching_noneq_params(plot=plot, verbose=verbose)
 
 
 if __name__ == "__main__":

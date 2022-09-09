@@ -971,7 +971,7 @@ def test_parsum_mode_in_factory(verbose=True, plot=True, *args, **kwargs):
 
     # ... initialize tests :
     sf.params.parsum_mode = "full summation"  # default
-    sf.load_databank("HITEMP-CO2-TEST")
+    sf.load_databank("HITEMP-CO2-TEST", load_energies=True)
     sf._add_bands()
     _ = sf.non_eq_spectrum(**conditions)  # initialize energies, etc.
     # ... compare:
@@ -981,7 +981,7 @@ def test_parsum_mode_in_factory(verbose=True, plot=True, *args, **kwargs):
     # Now, again with tabulation:
     # ... init :
     sf.params.parsum_mode = "tabulation"
-    sf.load_databank("HITEMP-CO2-TEST")
+    sf.load_databank("HITEMP-CO2-TEST", load_energies=True)
     sf._add_bands()
     _ = sf.non_eq_spectrum(**conditions)  # initialize energies, first tabulation
     # ... compare:
