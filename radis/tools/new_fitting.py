@@ -68,6 +68,15 @@ def residual_LTE(params, conditions, s_data, sf, log, verbose):
     residual: float
         residuals of the two spectra, using RADIS's get_residual().
 
+    Examples
+    --------
+    .. minigallery:: radis.tools.new_fitting.residual_LTE
+
+    See Also
+    --------
+    :py:func:`~radis.tools.new_fitting.residual_NonLTE`
+    :py:func:`~radis.tools.fitting.LTEModel`
+
     """
 
     # GENERATE LTE SPECTRUM BASED ON THOSE PARAMETERS
@@ -188,6 +197,15 @@ def residual_NonLTE(params, conditions, s_data, sf, log, verbose):
     -------
     residual: float
         residuals of the two spectra, using RADIS's get_residual().
+
+    Examples
+    --------
+    .. minigallery:: radis.tools.new_fitting.residual_NonLTE
+
+    See Also
+    --------
+    :py:func:`~radis.tools.new_fitting.residual_LTE`
+    :py:func:`~radis.tools.fitting.radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel`
 
     """
 
@@ -313,12 +331,9 @@ def get_conditions(
     verbose: bool
         by default, True, print details about the fitting progress.
 
-    Returns
-    -------
-    conditions: dict
-        Dictionary object containing all ground-truth information.
-    params: Parameters
-        LMFIT.Parameters object that contains fit parameters.
+    Examples
+    --------
+    .. minigallery:: radis.tools.new_fitting.get_conditions
 
     """
 
@@ -484,6 +499,10 @@ def spectrum_refinement(s_data, conditions, verbose=True) -> Union[Spectrum, dic
     conditions : dict
         the input conditions that might have been added fit_var (in case user didn't).
 
+    Examples
+    --------
+    .. minigallery:: radis.tools.new_fitting.spectrum_refinement
+
     """
 
     # Extract spectrum
@@ -593,6 +612,75 @@ def fit_spectrum(
         a Dictionary storing runtime log of the fitting process that are
         not quite covered by the Minimizer, including: residual and fit
         values after each fitting loop, and total time elapsed.
+
+    Examples
+    --------
+    ::
+        from radis import load_spec
+        from radis.test.utils import getTestFile
+        from radis.tools.new_fitting import fit_spectrum
+
+        # Load an experimental spectrum. You can prepare yours, or fetch one of them in the radis/test/files directory.
+        my_spec = getTestFile("synth-NH3-1-500-2000cm-P10-mf0.01-p1.spec")
+        s_experimental = load_spec(my_spec)
+
+        # Experimental conditions which will be used for spectrum modeling. Basically, these are known ground-truths.
+        experimental_conditions = {
+            "molecule": "NH3",  # Molecule ID
+            "isotope": "1",  # Isotope ID, can have multiple at once
+            "wmin": 1000,  # Starting wavelength/wavenumber to be cropped out from the original experimental spectrum.
+            "wmax": 1050,  # Ending wavelength/wavenumber for the cropping range.
+            "wunit": "cm-1",  # Accompanying unit of those 2 wavelengths/wavenumbers above.
+            "mole_fraction": 0.01,  # Species mole fraction, from 0 to 1.
+            "pressure": 10,  # Partial pressure of gas, in "bar" unit by default, but you can also use Astropy units.
+            "path_length": 1,  # Experimental path length, in "cm" unit by default, but you can also use Astropy units.
+            "slit": "1 nm",  # Experimental slit, must be a blank space separating slit amount and unit.
+            "offset": "-0.2 nm",  # Experimental offset, must be a blank space separating offset amount and unit.
+            "wstep": 0.003,  # Resolution of wavenumber grid, in cm-1.
+            "databank": "hitran",  # Databank used for the spectrum calculation. Must be stated.
+        }
+
+        # List of parameters to be fitted, accompanied by their initial values.
+        fit_parameters = {
+            "Tgas": 700,  # Gas temperature, in K.
+        }
+
+        # List of bounding ranges applied for those fit parameters above.
+        bounding_ranges = {
+            "Tgas": [
+                500,
+                2000,
+            ],
+        }
+
+        # Fitting pipeline setups.
+        fit_properties = {
+            "method": "leastsq",  # Preferred fitting method. By default, "leastsq".
+            "fit_var": "radiance",  # Spectral quantity to be extracted for fitting process, such as "radiance", "absorbance", etc.
+            "normalize": False,  # Either applying normalization on both spectra or not.
+            "max_loop": 150,  # Max number of loops allowed. By default, 200.
+            "tol": 1e-15,  # Fitting tolerance, only applicable for "lbfgsb" method.
+        }
+
+        # Conduct the fitting process!
+        s_best, result, log = fit_spectrum(
+            s_exp=s_experimental,  # Experimental spectrum.
+            fit_params=fit_parameters,  # Fit parameters.
+            bounds=bounding_ranges,  # Bounding ranges for those fit parameters.
+            model=experimental_conditions,  # Experimental ground-truths conditions.
+            pipeline=fit_properties,  # Fitting pipeline references.
+            verbose=False,  # If you want a clean result, stay False. If you want to see more about each loop, True.
+        )
+    .. minigallery:: radis.tools.new_fitting.fit_spectrum
+    Notes
+    -----
+    For the fitting method, you can try one among 17 different fitting methods and algorithms of LMFIT, introduced
+    in `LMFIT method list <https://lmfit.github.io/lmfit-py/fitting.html#choosing-different-fitting-methods>`.
+    See Also
+    --------
+    :py:func:`~radis.tools.fitting.fit_spectrum()`,
+    :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`,
+    :py:mod:`fitroom`
 
     """
 
