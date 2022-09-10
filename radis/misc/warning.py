@@ -143,6 +143,15 @@ class MissingSelfBroadeningWarning(UserWarning):
     pass
 
 
+class ZeroBroadeningWarning(UserWarning):
+    """At least one line has a calculated broadening of 0
+
+    See :py:meth:`~radis.lbl.broadening.BroadenFactory._calc_lineshape_LDM`
+    """
+
+    pass
+
+
 class MissingPressureShiftWarning(UserWarning):
     """Pressure-shift coefficient is missing in Line Database."""
 
@@ -214,6 +223,7 @@ WarningClasses = {
     "NegativeEnergiesWarning": NegativeEnergiesWarning,
     "MissingSelfBroadeningTdepWarning": MissingSelfBroadeningTdepWarning,
     "MissingSelfBroadeningWarning": MissingSelfBroadeningWarning,
+    "ZeroBroadeningWarning": ZeroBroadeningWarning,
     "MissingPressureShiftWarning": MissingPressureShiftWarning,
     "LinestrengthCutoffWarning": LinestrengthCutoffWarning,
     "InputConditionsWarning": InputConditionsWarning,
@@ -261,6 +271,7 @@ default_warning_status = {
     # warning if self-broadening abs coefficnet missing (Air is used instead)
     "MissingSelfBroadeningTdepWarning": "warn",
     "MissingSelfBroadeningWarning": "warn",
+    "ZeroBroadeningWarning": "warn",
     "MissingPressureShiftWarning": "warn",
     "InputConditionsWarning": "warn",
     "DeprecatedFileWarning": "warn",
