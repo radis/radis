@@ -507,6 +507,8 @@ try:
     import radis_cython_extensions as rcx
 except (ModuleNotFoundError, ValueError):
     add_at = numpy_add_at
+    """Wrapper to :py:func`radis.misc.arrays.numpy_add_at` or to the Radis
+    Cython version  (here, the numpy version was loaded)"""
     #  or use radis.misc.utils.NotInstalled() ?
 # EP: Also got (after switching back to former Cython version) :
 #     File "radis\cython\radis_cython_extensions.pyx", line 1, in init radis_cython_extensions

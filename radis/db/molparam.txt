@@ -13,7 +13,7 @@
 # The isotope AFGL code (ex: CO2 626) is kept for comparison if ever needed
 #
 # -----------------------------------------------------
-id iso isoname abundance     Q_296K      gj    mol_mass
+id iso isoname abundance     Q_296K      gj    molar_mass
 #   H2O (1)
 1  1  161  .997317E+00    1.7464E+02    1     18.010565
 1  2  181  1.99983E-03    1.7511E+02    1     20.014811

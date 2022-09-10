@@ -9,9 +9,11 @@ include radis/test/files/*.spec
 include radis/test/files/*.par
 include radis/test/files/*.levels
 include radis/db/molparam.txt
+include radis/db/molparams_extra.json
 include radis/default_radis.json
 recursive-include radis/db *.json
 include radis/test/validation/test_CO2_3Tvib_vs_klarenaar_data/*.csv
 include radis/test/validation/test_compare_torch_CO2_data/*.dat
 include radis/test/validation/test_validation_vs_specair_noneqCO_data/*.spec
-include radis/cython/radis_cython_extensions.pyx
+include radis/cython/*.pyx
+include radis/cython/*.pxd

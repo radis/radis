@@ -284,9 +284,9 @@ def get_molecule(molecule_id):
 # %% ExoMol molecules
 
 
-from radis import config
+from radis.db.molparam import get_extra_molparams
 
-isotope_full_names = config["molparams"]["isotope_full_name"]
+isotope_full_names = get_extra_molparams()["isotope_full_name"]
 
 EXOMOL_ONLY_ISOTOPES_NAMES = {
     (molecule, int(iso_number)): iso_name

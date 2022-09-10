@@ -965,7 +965,7 @@ class SpectrumFactory(BandFactory):
         .. note::
             This method requires CUDA compatible hardware to execute.
             For more information on how to setup your system to run GPU-accelerated methods
-            using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`
+            using CUDA and Cython, check :ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>`
 
         Parameters
         ----------
@@ -1089,11 +1089,12 @@ class SpectrumFactory(BandFactory):
         molarmass_arr = np.empty_like(
             iso_list, dtype=np.float32
         )  # molar mass of each isotope
+
         Q_interp_list = []
         for iso in iso_list:
             if iso in iso_set:
                 params = molpar.df.loc[(mol_id, iso)]
-                molarmass_arr[iso] = params.mol_mass
+                molarmass_arr[iso] = params.molar_mass
                 parsum = self.get_partition_function_interpolator(molecule, iso, state)
                 Q_interp_list.append(parsum.at)
             else:
@@ -1113,8 +1114,13 @@ class SpectrumFactory(BandFactory):
 
         # load the data
         df = self.df0
-        iso = df["iso"].to_numpy(dtype=np.uint8)
         v0 = df["wav"].to_numpy(dtype=np.float32)
+
+        if len(iso_set) > 1:
+            iso = df["iso"].to_numpy(dtype=np.uint8)
+        elif len(iso_set) == 1:
+            iso = np.full(len(v0), iso_set[0], dtype=np.uint8)
+
         da = df["Pshft"].to_numpy(dtype=np.float32)
         El = df["El"].to_numpy(dtype=np.float32)
         na = df["Tdpair"].to_numpy(dtype=np.float32)
@@ -1371,6 +1377,13 @@ class SpectrumFactory(BandFactory):
         fig = line.figure
 
         def update_plot(val):
+            # TODO : refactor this function and the update() mechanism. Ensure conditions are correct.
+            # Update conditions
+            # ... at equilibirum, temperatures remain equal :
+            s.conditions["Tvib"] = s.conditions["Tgas"]
+            s.conditions["Trot"] = s.conditions["Tgas"]
+            s.conditions["slit_function"] = s.conditions["slit_FWHM"]
+
             abscoeff, transmittance, iter_params = gpu_iterate(
                 s.conditions["pressure"],
                 s.conditions["Tgas"],
@@ -1381,46 +1394,21 @@ class SpectrumFactory(BandFactory):
                 gpu=(not s.conditions["emulate_gpu"]),
             )
 
-            # s._q["abscoeff"] = abscoeff
-            # s.update(var)    # adds required spectral array
-            # _, new_y = s.get(var)   # can also use wunits, Iunits, etc.
-
-            # TODO: the following should obviously be a self contained function..
-
-            if var == "abscoeff":
-                new_y = abscoeff
-            elif var == "transmittance":
-                new_y = transmittance
-            elif var in ["emissivity", "radiance"]:
-                emissivity = 1 - transmittance
-                if var == "emissivity":
-                    new_y = emissivity
-                else:  # var = 'radiance':
-                    new_y = calc_radiance(
-                        s.get_wavenumber(),
-                        emissivity,
-                        s.conditions["Tgas"],
-                        unit=self.units["radiance"],
-                    )
-            else:
-                absorbance = abscoeff * s.conditions["path_length"]
-                if var == "absorbance":
-                    new_y = absorbance
+            # This happen inside a Spectrum() method
+            for k in list(s._q.keys()):  # reset all quantities
+                if k in ["wavespace", "wavelength", "wavenumber"]:
+                    pass
+                elif k == "abscoeff":
+                    s._q["abscoeff"] = abscoeff
                 else:
-                    transmittance_noslit = exp(-absorbance)
-                    if var == "transmittance_noslit":
-                        new_y = transmittance_noslit
-                    else:
-                        emissivity_noslit = 1 - transmittance_noslit
-                        if var == "emissivity_noslit":
-                            new_y = emissivity_noslit
-                        else:
-                            new_y = calc_radiance(
-                                s.get_wavenumber(),
-                                emissivity_noslit,
-                                s.conditions["Tgas"],
-                                unit=self.units["radiance_noslit"],
-                            )
+                    del s._q[k]
+
+            _, new_y = s.get(
+                var,
+                copy=False,  # copy = False saves some time & memory, it's a pointer/reference to the real data, which is fine here as data is just plotted
+                wunit=plotkwargs.get("wunit", "default"),
+                Iunit=plotkwargs.get("Iunit", "default"),
+            )
 
             line.set_ydata(new_y)
             fig.canvas.draw_idle()
@@ -1522,6 +1510,7 @@ class SpectrumFactory(BandFactory):
             wavenum_max=3000,
             molecule="CO",
             isotope="1,2,3",
+            wstep="auto"
             )
             sf.fetch_databank("hitemp", load_columns='noneq')
 
@@ -2430,10 +2419,14 @@ class SpectrumFactory(BandFactory):
 
     def generate_perf_profile(self):
         """Generate a visual/interactive performance profile diagram for
-        the last calculated spectrum
+        the last calculated spectrum, with ``tuna``.
 
-        .. note:
-            requires a `profiler` key with in Spectrum.conditions
+        Requires a `profiler` key with in Spectrum.conditions, and ``tuna``
+        installed.
+
+        .. note::
+            :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile` is an
+            ascii-version which does not require ``tuna``.
 
         Examples
         --------

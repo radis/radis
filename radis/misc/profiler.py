@@ -18,7 +18,7 @@ Routine Listing
 """
 
 from collections import OrderedDict
-from time import time
+from time import perf_counter
 
 from radis.misc.printer import printg
 
@@ -62,7 +62,7 @@ class Profiler(object):
     def start(self, key, verbose_level, optional=""):
         if __debug__:
             self.initial[key] = {
-                "start_time": time(),
+                "start_time": perf_counter(),
                 "verbose_level": verbose_level,
             }
 
@@ -109,7 +109,7 @@ class Profiler(object):
     def stop(self, key, details):
         if __debug__:
             items = self.initial.pop(key)
-            time_calculated = time() - items["start_time"]
+            time_calculated = perf_counter() - items["start_time"]
 
             if items["verbose_level"] == 1:
                 # Profiler ends; Deserializing to Dictionary format

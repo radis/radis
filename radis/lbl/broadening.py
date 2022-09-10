@@ -1537,6 +1537,15 @@ class BroadenFactory(BaseFactory):
 
         def _init_w_axis(w_dat, log_p):
             w_min = w_dat.min()
+            if w_min == 0:
+                self.warn(
+                    f"{(w_dat==0).sum()}"
+                    + " line(s) had a calculated broadening of 0 cm-1. Check the database. At least this line is faulty: \n\n"
+                    + "{}".format(self.df1.iloc[(w_min == 0).argmax()])
+                    + "\n\nIf you want to ignore, use `warnings['ZeroBroadeningWarning'] = 'ignore'`",
+                    category="ZeroBroadeningWarning",
+                )
+                w_min = w_dat[w_dat > 0].min()
             w_max = (
                 w_dat.max() + 1e-4
             )  # Add small number to prevent w_max falling outside of the grid

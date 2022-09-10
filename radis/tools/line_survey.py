@@ -23,6 +23,7 @@ from radis.io.hitran import (  # HITRAN_CLASS2,; HITRAN_CLASS3,; HITRAN_CLASS6,;
 )
 from radis.io.hitran import columns_2004 as hitrancolumns
 from radis.misc.basics import is_float
+from radis.misc.printer import superscript_map
 from radis.misc.utils import NotInstalled
 from radis.phys.air import vacuum2air
 from radis.phys.constants import k_b
@@ -126,7 +127,9 @@ def LineSurvey(
 
     Examples
     --------
-    An example using the :class:`~radis.lbl.factory.SpectrumFactory` to generate a spectrum::
+    An example using the :class:`~radis.lbl.factory.SpectrumFactory` to generate a spectrum,
+    using the Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey` method
+    directly ::
 
         from radis import SpectrumFactory
         sf = SpectrumFactory(
@@ -140,7 +143,7 @@ def LineSurvey(
         sf.load_databank('HITRAN-CO2-TEST')
         s = sf.eq_spectrum(Tgas=1500)
         s.apply_slit(0.5)
-        s.line_survey(overlay='radiance_noslit', barwidth=0.01)
+        s.line_survey(overlay='radiance_noslit', barwidth=0.01, lineinfo="all")
 
     See the output in :ref:`Examples <label_examples>`
 
@@ -156,6 +159,10 @@ def LineSurvey(
     .. [1] `RADIS Online Documentation (LineSurvey) <https://radis.readthedocs.io/en/latest/tools/line_survey.html>`__
 
     .. [2] `SpectraPlot <http://www.spectraplot.com/survey>`__
+
+    See Also
+    --------
+    :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`
     """
 
     # Check inputs
@@ -277,6 +284,41 @@ def LineSurvey(
     # Parse databank to get relevant information on each line
     # (one function per databank format)
 
+    def add_details(row, details):
+        """Add details in string; add on 2 columns if "upper" and "lower" value follow"
+
+        Example :  keep "gu", "gl" on the same line
+
+        Also add unit if known
+        """
+        label = ""
+        for k in details:
+            name, _, unit = details[k]
+            if k[-1] == "u" and k[:-1] + "l" in details:
+                continue  #  don't show "upper" value. Will be shown on same line as lower
+
+            name = f"({name})" if name else name
+            if is_float(row[k]):
+                val = f"{row[k]:.3g}"
+            else:
+                val = f"{row[k]}"
+            label += f"<br>{k} {name}: {val} {unit}"
+            # If lower value, also show upper value on same line
+            if k[-1] == "l" and k[:-1] + "u" in details:
+                k_up = k[:-1] + "u"
+                if is_float(row[k_up]):
+                    label += (
+                        "&nbsp;" * (30 - len(k) - len(val))
+                        + f"{k_up} {name}: {row[k_up]:.3g} {unit}"
+                    )
+                else:
+                    label += (
+                        "&nbsp;" * (30 - len(k) - len(val))
+                        + f"{k_up} {name}: {row[k_up]} {unit}"
+                    )
+
+        return label
+
     def get_label_hitran(row, details, attrs):
         """
         Todo
@@ -290,6 +332,7 @@ def LineSurvey(
 
         will be much faster!
         """
+
         if "id" in attrs:
             molecule = get_molecule(attrs["id"])
 
@@ -382,13 +425,33 @@ def LineSurvey(
                 else:
                     iso = "?"
 
-                label = "{molec} [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f} {rl:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f} {ru:.0f})".format(
+                label = "{molec} [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}{l2l}{v3l:.0f} r={rl})->({v1u:.0f}{v2u:.0f}{l2u}{v3u:.0f} r={ru})"
+                label = label.format(
                     **dict(
-                        [(k, row[k]) for k in add]
+                        [
+                            (k, row[k])
+                            for k in add
+                            if k not in ["l2l", "l2u", "ru", "rl"]
+                        ]
+                        +
+                        # Try to get l number as UTF-8 superscript (works if in superscript_map)
+                        [
+                            (
+                                k,
+                                superscript_map.get(
+                                    str(int(row[k])), f"`{row[k]:.0f}`"
+                                ),
+                            )
+                            for k in add
+                            if k in ["l2l", "l2u"]
+                        ]  # ignore missing params (like rl, ru ? )
                         + [
                             ("iso", iso),
                             ("molec", molecule),
                             ("branch", _fix_branch_format[row["branch"]]),
+                            # 'ru', 'rl' may be missing if not all columns loaded
+                            ("ru", f"{row['ru']:.0f}" if "ru" in row else "?"),
+                            ("rl", f"{row['rl']:.0f}" if "rl" in row else "?"),
                         ]
                     )
                 )
@@ -399,16 +462,17 @@ def LineSurvey(
                 )
 
             # Add details about some line properties
-            for k in details:
-                name, _, unit = details[k]
-                if is_float(row[k]):
-                    label += "<br>{0} {1}: {2:.3g} {3}".format(k, name, row[k], unit)
-                else:
-                    label += "<br>{0} {1}: {2} {3}".format(k, name, row[k], unit)
+            label += add_details(row, details)
 
-        except:
+            label += f"<br>s.lines index: {row.name}"
+
+        except KeyError as err:
+            print(
+                f"Error during customized Line survey labelling. Printing everything : \n{str(err)}"
+            )
 
             # Add everything we know
+            # raise
             label = row.to_string().replace("\n", "<br>")
             if "id" not in row:
                 label = "{molecule}<br>" + label
@@ -443,12 +507,7 @@ def LineSurvey(
             )
         )
 
-        for k in details:
-            name, _, unit = details[k]
-            if is_float(row[k]):
-                label += "<br>{0} {1}: {2:.3g} {3}".format(k, name, row[k], unit)
-            else:
-                label += "<br>{0} {1}: {2} {3}".format(name, k, row[k], unit)
+        label += add_details(row, details)
 
         return label
 
@@ -480,12 +539,9 @@ def LineSurvey(
             )
         )
 
-        for k in details:
-            name, _, unit = details[k]
-            if is_float(row[k]):
-                label += "<br>{0} {1}: {2:.3g} {3}".format(k, name, row[k], unit)
-            else:
-                label += "<br>{0} {1}: {2} {3}".format(name, k, row[k], unit)
+        label += add_details(row, details)
+
+        label += f"<br>s.lines index: {row.name}"
 
         return label
 
@@ -511,15 +567,15 @@ def LineSurvey(
     def get_label_all(row):
         """print all lines details"""
         # label = row.__repr__()
-        label = "<br>".join(
-            [f"{k}: {v}" for k, v in row.items() if k not in ["wav", "shiftwav"]]
-        )
+        label = "<br>".join([f"{k}: {v}" for k, v in row.items()])
         return label
 
     def get_label_none(row):
         return "unknown databank format. \ndetails cant be read"
 
     # add extra info to label
+    if lineinfo == "all":
+        lineinfo = sp.columns
     details = {}
     if columndescriptor:
         for k in lineinfo:
@@ -531,12 +587,13 @@ def LineSurvey(
                 )
             try:  # to find units and real name (if exists in initial databank)
                 _, ktype, name, unit = columndescriptor[k]
-                details[k] = (name, ktype, " [{0}]".format(unit))
-            except:
+            except KeyError:
                 details[k] = ("", None, "")  # keep short name
+            else:
+                details[k] = (name, ktype, " [{0}]".format(unit))
 
     # Get label
-    if dbformat in ["hitran", "hitemp", "radisdb-hitemp", "geisa"]:
+    if dbformat in ["hitran", "hitemp", "hitemp-radisdb", "radisdb-hitemp", "geisa"]:
         sp["label"] = sp.apply(lambda r: get_label_hitran(r, details, sp.attrs), axis=1)
     elif dbformat in ["cdsd-hitemp", "cdsd-4000"]:
         try:

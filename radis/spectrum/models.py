@@ -79,14 +79,14 @@ def calculated_spectrum(
 
     Examples
     --------
-
     ::
 
         # w, I are numpy arrays for wavelength and radiance
         from radis import calculated_spectrum
         s = calculated_spectrum(w, I, wunit='nm', Iunit='W/cm2/sr/nm')     # creates 'radiance_noslit'
 
-
+    .. minigallery:: radis.calculated_spectrum
+        :add-heading:
 
     See Also
     --------
@@ -148,6 +148,9 @@ def transmittance_spectrum(
         # w, T are numpy arrays for wavelength and transmittance
         from radis import transmittance_spectrum
         s2 = transmittance_spectrum(w, T, wunit='nm')                       # creates 'transmittance_noslit'
+
+    .. minigallery:: radis.transmittance_spectrum
+        :add-heading:
 
 
     See Also
@@ -212,6 +215,8 @@ def experimental_spectrum(
         s = experimental_spectrum(w, I, Iunit='mW/cm2/sr/nm')             # creates 'radiance'
         s.plot()
 
+    .. minigallery:: radis.experimental_spectrum
+        :add-heading:
 
     See Also
     --------
