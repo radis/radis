@@ -819,6 +819,53 @@ def test_check_wavelength_range(verbose=True, warnings=True, *args, **kwargs):
     return True
 
 
+def test_non_air_diluent_calc(verbose=True, warnings=True, *args, **kwargs):
+    from radis import plot_diff
+
+    if verbose:
+        printm("Regenerating database with all params, and calculating non_air diluent")
+
+    # Regenerating database of CO and calculating non_air_diluent spectrum
+    s1 = calc_spectrum(
+        wavenum_min=1900,
+        wavenum_max=2300,
+        Tgas=700,
+        path_length=0.1,
+        molecule="CO",
+        mole_fraction=0.2,
+        isotope=1,
+        broadening_method="voigt",
+        wstep=0.01,
+        databank="hitran",
+        Tvib=710,
+        Trot=710,
+        use_cached="regen",
+        diluent={"CO2": 0.2, "H2O": 0.1, "air": 0.5},
+    )
+
+    # Calculating spectrum with air as diluent
+    s2 = calc_spectrum(
+        wavenum_min=1900,
+        wavenum_max=2300,
+        Tgas=700,
+        path_length=0.1,
+        molecule="CO",
+        mole_fraction=0.2,
+        isotope=1,
+        broadening_method="voigt",
+        wstep=0.01,
+        databank="hitran",
+        Tvib=710,
+        Trot=710,
+    )
+
+    assert s1.get_conditions()["diluents"] == {"CO2": 0.2, "H2O": 0.1, "air": 0.5}
+    assert s2.get_conditions()["diluents"] == {"air": 0.8}
+
+    plot_diff(s1, s2, method=["diff", "ratio"])
+    return True
+
+
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
     # Test sPlanck and conversion functions
@@ -852,6 +899,7 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     test_calc_spectrum_multiple_molecules_wstep_auto()
 
     test_check_wavelength_range()
+    test_non_air_diluent_calc()
 
     return True
 

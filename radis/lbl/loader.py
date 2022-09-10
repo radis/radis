@@ -1038,7 +1038,7 @@ class DatabankLoader(object):
         parallel: bool
             if ``True``, uses joblib.parallel to load database with multiple processes
             (works only for HITEMP files)
-        load_columns: list, ``'all'``, ``'equilibrium'``, ``'noneq'``
+        load_columns: list, ``'all'``, ``'equilibrium'``, ``'noneq'``, ``diluent``,
             columns names to load.
             If ``'equilibrium'``, only load the columns required for equilibrium
             calculations. If ``'noneq'``, also load the columns required for
@@ -1046,6 +1046,8 @@ class DatabankLoader(object):
             If ``'all'``, load everything. Note that for performances, it is
             better to load only certain columsn rather than loading them all
             and dropping them with ``drop_columns``.
+            If ``diluent`` then all additional columns required for calculating spectrum
+            in that diluent is loaded.
             Default ``'equilibrium'``.
 
             .. warning::
