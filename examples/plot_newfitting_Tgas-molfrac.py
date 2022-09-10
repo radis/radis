@@ -48,7 +48,7 @@ experimental_conditions = {
     "wmin": 2010.6,  # Starting wavelength/wavenumber to be cropped out from the original experimental spectrum.
     "wmax": 2011.6,  # Ending wavelength/wavenumber for the cropping range.
     "wunit": "cm-1",  # Accompanying unit of those 2 wavelengths/wavenumbers above.
-    "pressure": 1,  # Partial pressure of gas, in "bar" unit by default, but you can use Astropy units too.
+    "pressure": 1,  # Total pressure of gas, in "bar" unit by default, but you can use Astropy units too.
     "path_length": 10,  # Experimental path length, in "cm" unit by default, but you can use Astropy units too.
     "wstep": 0.001,
     "databank": "hitemp",  # Databank used for calculation. Must be stated.

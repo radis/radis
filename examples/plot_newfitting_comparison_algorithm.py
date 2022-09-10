@@ -37,7 +37,7 @@ experimental_conditions = {
     "wmax": 1050,  # Ending wavelength/wavenumber for the cropping range.
     "wunit": "cm-1",  # Accompanying unit of those 2 wavelengths/wavenumbers above.
     "mole_fraction": 0.01,  # Species mole fraction, from 0 to 1.
-    "pressure": 10,  # Partial pressure of gas, in "bar" unit by default, but you can also use Astropy units.
+    "pressure": 10,  # Total pressure of gas, in "bar" unit by default, but you can also use Astropy units.
     "path_length": 1,  # Experimental path length, in "cm" unit by default, but you can also use Astropy units.
     "slit": "1 nm",  # Experimental slit, must be a blank space separating slit amount and unit.
     "offset": "-0.2 nm",  # Experimental offset, must be a blank space separating offset amount and unit.

@@ -36,6 +36,8 @@ This example features fitting an experimental spectrum with Tgas, using new fitt
 
 """
 
+import astropy.units as u
+
 from radis import load_spec
 from radis.test.utils import getTestFile
 from radis.tools.new_fitting import fit_spectrum
@@ -59,8 +61,10 @@ experimental_conditions = {
     "wmax": 1050,  # Ending wavelength/wavenumber for the cropping range.
     "wunit": "cm-1",  # Accompanying unit of those 2 wavelengths/wavenumbers above.
     "mole_fraction": 0.01,  # Species mole fraction, from 0 to 1.
-    "pressure": 10,  # Partial pressure of gas, in "bar" unit by default, but you can also use Astropy units.
-    "path_length": 1,  # Experimental path length, in "cm" unit by default, but you can also use Astropy units.
+    "pressure": 1e6
+    * u.Pa,  # Total pressure of gas, in "bar" unit by default, but you can also use Astropy units.
+    "path_length": 10
+    * u.mm,  # Experimental path length, in "cm" unit by default, but you can also use Astropy units.
     "slit": "1 nm",  # Experimental slit, must be a blank space separating slit amount and unit.
     "offset": "-0.2 nm",  # Experimental offset, must be a blank space separating offset amount and unit.
     "wstep": 0.003,  # Resolution of wavenumber grid, in cm-1.
@@ -109,7 +113,6 @@ s_best, result, log = fit_spectrum(
     bounds=bounding_ranges,  # Bounding ranges for those fit parameters.
     model=experimental_conditions,  # Experimental ground-truths conditions.
     pipeline=fit_properties,  # Fitting pipeline references.
-    verbose=False,  # If you want a clean result, stay False. If you want to see more about each loop, True.
     fit_kws={"gtol": 1e-12},
 )
 

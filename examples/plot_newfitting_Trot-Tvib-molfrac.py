@@ -78,7 +78,7 @@ experimental_conditions = {
     "wmin": 2270,  # Starting wavelength/wavenumber to be cropped out from the original experimental spectrum.
     "wmax": 2400,  # Ending wavelength/wavenumber for the cropping range.
     "wunit": "nm",  # Accompanying unit of those 2 wavelengths/wavenumbers above.
-    "pressure": 1.01325,  # Partial pressure of gas, in "bar" unit by default, but you can also use Astropy units.
+    "pressure": 1.01325,  # Total pressure of gas, in "bar" unit by default, but you can also use Astropy units.
     "path_length": 1
     / 195,  # Experimental path length, in "cm" unit by default, but you can also use Astropy units.
     "slit": {  # Experimental slit. In simple form: "[value] [unit]", i.e. "-0.2 nm". In complex form: a dict with parameters of apply_slit()

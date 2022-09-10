@@ -70,6 +70,7 @@ def residual_LTE(params, conditions, s_data, sf, log, verbose):
 
     Examples
     --------
+
     .. minigallery:: radis.tools.new_fitting.residual_LTE
 
     See Also
@@ -157,10 +158,10 @@ def residual_LTE(params, conditions, s_data, sf, log, verbose):
     log["fit_vals"].append(current_fitvals)
 
     # Print information of fitting process
-    if verbose:
-        for param in params:
-            print(f"{param} = {float(params[param])}")
-        print(f"\nResidual = {residual}\n")
+    # if verbose:
+    #     for param in params:
+    #         print(f"{param} = {float(params[param])}")
+    #    print(f"\nResidual = {residual}\n")
 
     return residual
 
@@ -200,6 +201,7 @@ def residual_NonLTE(params, conditions, s_data, sf, log, verbose):
 
     Examples
     --------
+
     .. minigallery:: radis.tools.new_fitting.residual_NonLTE
 
     See Also
@@ -296,10 +298,10 @@ def residual_NonLTE(params, conditions, s_data, sf, log, verbose):
     log["fit_vals"].append(current_fitvals)
 
     # Print information of fitting process
-    if verbose:
-        for param in params:
-            print(f"{param} = {float(params[param])}")
-        print(f"\nResidual = {residual}\n")
+    # if verbose:
+    #     for param in params:
+    #         print(f"{param} = {float(params[param])}")
+    #     print(f"\nResidual = {residual}\n")
 
     return residual
 
@@ -333,6 +335,7 @@ def get_conditions(
 
     Examples
     --------
+
     .. minigallery:: radis.tools.new_fitting.get_conditions
 
     """
@@ -472,7 +475,7 @@ def get_conditions(
 # -------------------------------------------------------------------------------------------- #
 
 
-def spectrum_refinement(s_data, conditions, verbose=True) -> Union[Spectrum, dict]:
+def spectrum_refinement(s_data, conditions, verbose) -> Union[Spectrum, dict]:
     """Receive an experimental spectrum and further refine it according to the provided pipeline
     and ground-truths. Refinement process includes extracting the desired spectrum quantity,
     removing NaN values, and other additional convolutions. Finally, a refined Spectrum object is
@@ -501,6 +504,7 @@ def spectrum_refinement(s_data, conditions, verbose=True) -> Union[Spectrum, dic
 
     Examples
     --------
+
     .. minigallery:: radis.tools.new_fitting.spectrum_refinement
 
     """
@@ -567,7 +571,7 @@ def fit_spectrum(
     pipeline=None,
     bounds=None,
     input_file=None,
-    verbose=False,
+    verbose=True,
     show_plot=True,
     fit_kws={},
 ) -> Union[Spectrum, MinimizerResult, dict]:
@@ -618,6 +622,7 @@ def fit_spectrum(
 
     Examples
     --------
+
     ::
         from radis import load_spec
         from radis.test.utils import getTestFile
@@ -635,7 +640,7 @@ def fit_spectrum(
             "wmax": 1050,  # Ending wavelength/wavenumber for the cropping range.
             "wunit": "cm-1",  # Accompanying unit of those 2 wavelengths/wavenumbers above.
             "mole_fraction": 0.01,  # Species mole fraction, from 0 to 1.
-            "pressure": 10,  # Partial pressure of gas, in "bar" unit by default, but you can also use Astropy units.
+            "pressure": 10,  # Total pressure of gas, in "bar" unit by default, but you can also use Astropy units.
             "path_length": 1,  # Experimental path length, in "cm" unit by default, but you can also use Astropy units.
             "slit": "1 nm",  # Experimental slit, must be a blank space separating slit amount and unit.
             "offset": "-0.2 nm",  # Experimental offset, must be a blank space separating offset amount and unit.
@@ -689,7 +694,10 @@ def fit_spectrum(
 
     begin = time.time()  # Start the fitting time counter
 
-    print("\n======================= COMMENCE FITTING PROCESS =======================")
+    if verbose:
+        print(
+            "\n======================= COMMENCE FITTING PROCESS ======================="
+        )
 
     # ACQUIRE AND REFINE EXPERIMENTAL SPECTRUM s_data
 
@@ -740,11 +748,12 @@ def fit_spectrum(
     end_exp_load = time.time()
     time_exp_load = end_exp_load - begin
 
-    print(f"\nSuccessfully retrieved the experimental data in {time_exp_load}s.")
+    if verbose:
+        print(f"\nSuccessfully retrieved the experimental data in {time_exp_load}s.")
 
     # Further refine the data spectrum before calculating diff
 
-    s_data, conditions = spectrum_refinement(s_data, conditions)
+    s_data, conditions = spectrum_refinement(s_data, conditions, verbose)
 
     pipeline = conditions["pipeline"]
     fit_var = pipeline["fit_var"]
@@ -753,7 +762,8 @@ def fit_spectrum(
     end_exp_refine = time.time()
     time_exp_refine = end_exp_refine - end_exp_load
 
-    print(f"Successfully refined the experimental data in {time_exp_refine}s.")
+    if verbose:
+        print(f"Successfully refined the experimental data in {time_exp_refine}s.")
     if show_plot:
         s_data.plot(show=True)
 
@@ -828,7 +838,9 @@ def fit_spectrum(
 
         sf.fetch_databank(databank, load_columns="equilibrium")
 
-        print("\nCommence fitting process for LTE spectrum!\n")
+        if verbose:
+            print("\nCommence fitting process for LTE spectrum!\n")
+
         result = minimize(
             residual_LTE,
             params,
@@ -842,7 +854,9 @@ def fit_spectrum(
 
         sf.fetch_databank(databank, load_columns="noneq")
 
-        print("\nCommence fitting process for non-LTE spectrum!")
+        if verbose:
+            print("\nCommence fitting process for non-LTE spectrum!")
+
         result = minimize(
             residual_NonLTE,
             params,
@@ -914,7 +928,9 @@ def fit_spectrum(
     end_fitting = time.time()
     time_fitting = float(end_fitting - begin_fitting)
 
-    print(f"\nSuccesfully finished the fitting process in {time_fitting}s.")
+    if verbose:
+        print(f"\nSuccessfully finished the fitting process in {time_fitting}s.")
+
     log["time_fitting"] = time_fitting
 
     # PLOT THE DIFFERENCE BETWEEN THE TWO
@@ -929,9 +945,10 @@ def fit_spectrum(
             show=True,
         )
 
-    print(
-        "\n======================== END OF FITTING PROCESS ========================\n"
-    )
+    if verbose:
+        print(
+            "\n======================== END OF FITTING PROCESS ========================\n"
+        )
 
     return s_result, result, log
 

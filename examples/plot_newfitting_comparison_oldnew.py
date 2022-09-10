@@ -127,7 +127,7 @@ experimental_conditions = {
     "wunit": "nm",  # Accompanying unit of those 2 wavelengths/wavenumbers above.
     "mole_fraction": 1,  # Species mole fraction, from 0 to 1.
     "pressure": 1
-    * 1e-3,  # Partial pressure of gas, in "bar" unit by default, but you can also use Astropy units.
+    * 1e-3,  # Total pressure of gas, in "bar" unit by default, but you can also use Astropy units.
     "path_length": 10,  # Experimental path length, in "cm" unit by default, but you can also use Astropy units.
     "slit": "1.4 nm",  # Experimental slit, must be a blank space separating slit amount and unit.
     "wstep": 0.001,  # Resolution of wavenumber grid, in cm-1.
