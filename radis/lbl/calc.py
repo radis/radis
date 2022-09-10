@@ -784,6 +784,7 @@ def _calc_spectrum_one_molecule(
         # Columns to load
         if export_lines:
             conditions["load_columns"] = "all"
+            conditions["extra_params"] = "all"
         elif not _equilibrium and diluent_other_than_air:
             conditions["load_columns"] = ["noneq", "diluent"]
             conditions["extra_params"] = "all"
