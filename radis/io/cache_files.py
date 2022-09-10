@@ -607,7 +607,11 @@ def save_to_hdf(
      ``None`` values are not stored
     """
     # Check file
-    assert str(fname).endswith(".h5") or str(fname).endswith(".hdf5")
+    assert (
+        str(fname).endswith(".h5")
+        or str(fname).endswith(".hdf5")
+        or str(fname).endswith(".h5.extra")
+    )
     assert "version" not in metadata
     # ... 'object' columns slow everything down (not fixed format strings!)
     if verbose >= 2:

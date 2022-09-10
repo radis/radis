@@ -1461,10 +1461,11 @@ class BaseFactory(DatabankLoader):
             return  # no lines
 
         # Initializing a cache file for lookup later
-        filename = (
-            splitext(self.params.dbpath.split(",", 1)[0])[0] + "_extra_columns_EvibErot"
+        cache_filename = (
+            splitext(self.params.dbpath.split(",", 1)[0])[0]
+            + "_extra_columns_EvibErot.h5.extra"
         )
-        cache_filename = DataFileManager(engine).cache_file(filename)
+        # cache_filename = DataFileManager(engine).cache_file(filename)
         # Getting the Electronic States file through partition functions:
         elec_state = self.get_partition_function_calculator(
             molecule, self._get_isotope_list(molecule)[0], state
@@ -1670,8 +1671,8 @@ class BaseFactory(DatabankLoader):
                     "number_of_lines": len(df),
                     "isotope": isotope,
                     "neighbour_lines": self.params.neighbour_lines,
-                    "wavenumber_min": self.input.wavenum_min,
-                    "wavenumber_max": self.input.wavenum_max,
+                    "wavenum_min": self.input.wavenum_min,
+                    "wavenum_max": self.input.wavenum_max,
                     "cutoff": self.params.cutoff,
                 }
                 if self.verbose:

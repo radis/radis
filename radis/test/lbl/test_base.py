@@ -838,9 +838,11 @@ def test_caching_noneq_params(verbose=True, plot=True, *args, **kwargs):
     isotope = s.input.isotope
     state = "X"
     # Checking that the cache file exists
-    filename = splitext(s.params.dbpath.split(",", 1)[0])[0] + "_extra_columns_EvibErot"
+    cache_filename = (
+        splitext(s.params.dbpath.split(",", 1)[0])[0]
+        + "_extra_columns_EvibErot.h5.extra"
+    )
     engine = "pytables"
-    cache_filename = DataFileManager(engine).cache_file(filename)
     assert exists(cache_filename)
 
     elec_state = s.get_partition_function_calculator(
@@ -855,10 +857,10 @@ def test_caching_noneq_params(verbose=True, plot=True, *args, **kwargs):
         assert isotope == existing_file_metadata["isotope"]
     if "number_of_lines" in existing_file_metadata:
         assert len(s.df0) == existing_file_metadata["number_of_lines"]
-    if "wavenumber_min" in existing_file_metadata:
-        assert s.df0["wav"].min() == existing_file_metadata["wavenumber_min"]
-    if "wavenumber_max" in existing_file_metadata:
-        assert s.df0["wav"].max() == existing_file_metadata["wavenumber_max"]
+    if "wavenum_min" in existing_file_metadata:
+        assert s.input.wavenum_min == existing_file_metadata["wavenum_min"]
+    if "wavenum_max" in existing_file_metadata:
+        assert s.input.wavenum_max == existing_file_metadata["wavenum_max"]
     if "spectroscopic_constant_file" in existing_file_metadata:
         assert (
             spectroscopic_constant_file

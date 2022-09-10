@@ -105,7 +105,7 @@ def test_ignore_cached_files():
     sf = SpectrumFactory(wavenum_min=2000, wavenum_max=3000, pressure=1)
 
     file_dir = getTestFile("cdsd_hitemp_09_fragment.txt")
-    test_file = file_dir[:-8] + "*"
+    test_file = file_dir[:-8] + "*.h5"
     sf.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
 
     try:
