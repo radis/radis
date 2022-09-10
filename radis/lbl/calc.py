@@ -413,6 +413,12 @@ def calc_spectrum(
     # (dealt with separately because we cannot use them to guess what are the input molecules)
     DICT_INPUT_DICT_ARGUMENTS = {"overpopulation": overpopulation}
 
+    # Check if mole_fraction is dictionary of multiple molecules and have non air diluent, if yes then raise NotImplementedError
+    if isinstance(mole_fraction, dict) and isinstance(diluent, dict):
+        raise NotImplementedError(
+            "Spectrum calculation for multiple molecules in multiple diluents is not yet implemented."
+        )
+
     def _check_molecules_are_consistent(
         molecule_reference_set, reference_name, new_argument, new_argument_name
     ):

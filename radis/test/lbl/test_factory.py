@@ -704,7 +704,7 @@ def test_diluents_molefraction(verbose=True, plot=False, *args, **kwargs):
         verbose=verbose,
         diluent={"CO2": 0.4, "air": 0.2},
     )
-    sf.load_databank("HITRAN-CO-TEST")
+    sf.load_databank("HITRAN-CO", load_columns=["diluent", "equilibrium"])
     # Molefraction (molecule + diluent) < 1
     with pytest.raises(MoleFractionError):
         sf.eq_spectrum(Tgas=300, mole_fraction=0.3)
