@@ -354,7 +354,7 @@ def pressure_broadening_HWHM(
                 (selbrd * pressure_atm * mole_fraction)
             )
         else:
-            gamma_lb += gamma_lb + ((Tref / Tgas) ** Tdpsel) * (
+            gamma_lb += ((Tref / Tgas) ** Tdpsel) * (
                 selbrd * pressure_atm * mole_fraction
             )
     except KeyError as err:
