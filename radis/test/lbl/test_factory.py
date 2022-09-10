@@ -706,11 +706,21 @@ def test_diluents_molefraction(verbose=True, plot=False, *args, **kwargs):
     )
     sf.load_databank("HITRAN-CO", load_columns=["diluent", "equilibrium"])
     # Molefraction (molecule + diluent) < 1
-    with pytest.raises(MoleFractionError):
+    with pytest.raises(MoleFractionError) as err:
         sf.eq_spectrum(Tgas=300, mole_fraction=0.3)
+    assert (
+        "of molecule and diluents less than 1. Please set appropriate molefraction value of molecule and diluents"
+        in str(err.value)
+    )
+
     # Molefraction (molecule + diluent) > 1
-    with pytest.raises(MoleFractionError):
+    with pytest.raises(MoleFractionError) as err:
         sf.eq_spectrum(Tgas=300, mole_fraction=0.6)
+    assert (
+        "of molecule and diluents greater than 1. Please set appropriate molefraction value of molecule and diluents."
+        in str(err.value)
+    )
+
     # Molefraction (molecule + diluent) == 1
     sf.eq_spectrum(Tgas=300, mole_fraction=0.4)
 

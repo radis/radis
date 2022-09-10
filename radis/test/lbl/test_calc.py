@@ -819,7 +819,7 @@ def test_check_wavelength_range(verbose=True, warnings=True, *args, **kwargs):
     return True
 
 
-def test_non_air_diluent_calc(verbose=True, warnings=True, *args, **kwargs):
+def test_non_air_diluent_calc(verbose=True, plot=False, warnings=True, *args, **kwargs):
     from radis import plot_diff
 
     if verbose:
@@ -827,43 +827,74 @@ def test_non_air_diluent_calc(verbose=True, warnings=True, *args, **kwargs):
 
     # Regenerating database of CO and calculating non_air_diluent spectrum
     s1 = calc_spectrum(
-        wavenum_min=1900,
-        wavenum_max=2300,
+        wavenum_min=2245,
+        wavenum_max=2250,
         Tgas=700,
         path_length=0.1,
         molecule="CO",
         mole_fraction=0.2,
         isotope=1,
-        broadening_method="voigt",
-        wstep=0.01,
         databank="hitran",
-        Tvib=710,
-        Trot=710,
         use_cached="regen",
         diluent={"CO2": 0.2, "H2O": 0.1, "air": 0.5},
+        export_lines=True,
     )
 
     # Calculating spectrum with air as diluent
     s2 = calc_spectrum(
-        wavenum_min=1900,
-        wavenum_max=2300,
+        wavenum_min=2245,
+        wavenum_max=2250,
         Tgas=700,
         path_length=0.1,
         molecule="CO",
         mole_fraction=0.2,
         isotope=1,
-        broadening_method="voigt",
-        wstep=0.01,
         databank="hitran",
-        Tvib=710,
-        Trot=710,
+        export_lines=True,
     )
 
     assert s1.get_conditions()["diluents"] == {"CO2": 0.2, "H2O": 0.1, "air": 0.5}
     assert s2.get_conditions()["diluents"] == {"air": 0.8}
 
-    plot_diff(s1, s2, method=["diff", "ratio"])
+    hwhm_voigt_s1 = s1.lines.hwhm_voigt
+    hwhm_voigt_s2 = s2.lines.hwhm_voigt
+
+    assert (hwhm_voigt_s2 < hwhm_voigt_s1).all()
+    assert np.isclose(hwhm_voigt_s2[0], 0.022718389546218788)
+    assert np.isclose(hwhm_voigt_s1[0], 0.02530070148135749)
+
+    if plot:
+        plot_diff(
+            s1,
+            s2,
+            method=["diff"],
+            label1="Diluent CO2, H2O, air",
+            label2="Diluent air",
+            title="Diluent CO2:0.2, H2O:0.1, air:0.5",
+        )
+
     return True
+
+
+def test_diluent_invalid(verbose=True, plot=False, *args, **kwargs):
+
+    with pytest.raises(KeyError) as err:
+        calc_spectrum(
+            wavenum_min=2245,
+            wavenum_max=2250,
+            Tgas=700,
+            path_length=0.1,
+            molecule="CO",
+            mole_fraction=0.2,
+            isotope=1,
+            databank="hitran",
+            diluent="CO",
+        )
+
+    assert (
+        "is being called as molecule and diluent, please remove it from diluent."
+        in str(err.value)
+    )
 
 
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
