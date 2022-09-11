@@ -50,7 +50,6 @@ experimental_conditions = {
     "wunit": "cm-1",  # Accompanying unit of those 2 wavelengths/wavenumbers above.
     "pressure": 1,  # Total pressure of gas, in "bar" unit by default, but you can use Astropy units too.
     "path_length": 10,  # Experimental path length, in "cm" unit by default, but you can use Astropy units too.
-    "wstep": 0.001,
     "databank": "hitemp",  # Databank used for calculation. Must be stated.
 }
 

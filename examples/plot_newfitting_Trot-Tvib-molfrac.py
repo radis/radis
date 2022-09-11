@@ -89,7 +89,6 @@ experimental_conditions = {
         "slit_dispersion": slit_dispersion,
         "inplace": False,
     },
-    "wstep": 0.001,  # Resolution of wavenumber grid, in cm-1.
     "cutoff": 0,  # (RADIS native) Discard linestrengths that are lower that this to reduce calculation time, in cm-1.
     "databank": "hitemp",  # Databank used for calculation. Must be stated.
 }

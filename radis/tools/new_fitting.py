@@ -861,6 +861,7 @@ def fit_spectrum(
             residual_NonLTE,
             params,
             method=method,
+            args=[conditions, s_data, sf, log, verbose],
             **fit_kws,
         )
 

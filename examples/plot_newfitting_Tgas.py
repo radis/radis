@@ -67,7 +67,6 @@ experimental_conditions = {
     * u.mm,  # Experimental path length, in "cm" unit by default, but you can also use Astropy units.
     "slit": "1 nm",  # Experimental slit, must be a blank space separating slit amount and unit.
     "offset": "-0.2 nm",  # Experimental offset, must be a blank space separating offset amount and unit.
-    "wstep": 0.003,  # Resolution of wavenumber grid, in cm-1.
     "databank": "hitran",  # Databank used for the spectrum calculation. Must be stated.
 }
 
