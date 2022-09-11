@@ -5,6 +5,7 @@ Created on Mon May  7 17:34:52 2018
 @author: erwan
 """
 
+import os
 import time
 from os.path import exists, getmtime, splitext
 
@@ -852,35 +853,51 @@ def test_caching_noneq_params(verbose=True, plot=True, *args, **kwargs):
 
     existing_file_metadata = DataFileManager(engine).read_metadata(cache_filename)
 
-    # Checking that the metadata is correct
+    # Checking that the metadata is correct, else regenerating the cache file
     if "isotope" in existing_file_metadata:
         assert isotope == existing_file_metadata["isotope"]
+    else:
+        os.remove(cache_filename)
     if "number_of_lines" in existing_file_metadata:
         assert len(s.df0) == existing_file_metadata["number_of_lines"]
+    else:
+        os.remove(cache_filename)
     if "wavenum_min" in existing_file_metadata:
         assert s.input.wavenum_min == existing_file_metadata["wavenum_min"]
+    else:
+        os.remove(cache_filename)
     if "wavenum_max" in existing_file_metadata:
         assert s.input.wavenum_max == existing_file_metadata["wavenum_max"]
+    else:
+        os.remove(cache_filename)
     if "spectroscopic_constant_file" in existing_file_metadata:
         assert (
             spectroscopic_constant_file
             == existing_file_metadata["spectroscopic_constant_file"]
         )
+    else:
+        os.remove(cache_filename)
     if "last_modification" in existing_file_metadata:
         assert (
             time.ctime(getmtime(spectroscopic_constant_file))
             == existing_file_metadata["last_modification"]
         )
+    else:
+        os.remove(cache_filename)
     if "neighbour_lines" in existing_file_metadata:
         assert s.params.neighbour_lines == existing_file_metadata["neighbour_lines"]
+    else:
+        os.remove(cache_filename)
     if "cutoff" in existing_file_metadata:
         assert s.params.cutoff == existing_file_metadata["cutoff"]
+    else:
+        os.remove(cache_filename)
 
     res = get_residual(s1, s2, "radiance_noslit")
     if verbose:
         print(
             "Res for non-equilibrium spectrum with molecule = {0}, wavenumber range = {1} to {2}: {3}".format(
-                s.input.molecule, s.df0["wav"].min(), s.df0["wav"].max(), res
+                s.input.molecule, s.input.wavenum_min, s.input.wavenum_max, res
             )
         )
     assert res < 1e-6
