@@ -349,7 +349,7 @@ def pressure_broadening_HWHM(
                 (airbrd * pressure_atm * diluent["air"])
             )
         # Adding self coefficient
-        if Tdpsel is None:
+        if Tdpsel is None:  # use Tdpair instead
             gamma_lb += ((Tref / Tgas) ** Tdpair) * (
                 (selbrd * pressure_atm * mole_fraction)
             )
@@ -360,15 +360,6 @@ def pressure_broadening_HWHM(
     except KeyError as err:
         raise KeyError("Column not found {0}".format(err))
 
-    # if Tdpsel is None:
-    #     gamma_lb = ((Tref / Tgas) ** Tdpair) * (
-    #         (airbrd * pressure_atm * (1 - mole_fraction))
-    #         + (selbrd * pressure_atm * mole_fraction)
-    #     )
-    # else:
-    #     gamma_lb = ((Tref / Tgas) ** Tdpair) * (
-    #         airbrd * pressure_atm * (1 - mole_fraction)
-    #     ) + ((Tref / Tgas) ** Tdpsel) * (selbrd * pressure_atm * mole_fraction)
     return gamma_lb
 
 

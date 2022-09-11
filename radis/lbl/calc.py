@@ -18,8 +18,6 @@ Routine Listing
 
 
 from copy import deepcopy
-
-# from functools import cache
 from os.path import exists
 
 # from radis.db.classes import M
@@ -137,11 +135,11 @@ def calc_spectrum(
             name as key and its mole_fraction as value
             For single diluent ::
 
-            diluent = 'CO2'
+                diluent = 'CO2'
 
             For multiple diluents ::
 
-            diluent = { 'CO2': 0.6, 'H2O':0.2}
+                diluent = { 'CO2': 0.6, 'H2O':0.2}
 
     path_length: float [:math:`cm`] or `~astropy.units.quantity.Quantity`
         slab size. Default ``1`` cm​. Use arbitrary units::
