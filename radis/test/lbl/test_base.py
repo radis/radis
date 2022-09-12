@@ -832,42 +832,75 @@ def test_caching_noneq_params(verbose=True, plot=True, *args, **kwargs):
         verbose=2,
     )
     s.fetch_databank("hitemp", load_energies=True, load_columns="noneq")
-    s1 = s.non_eq_spectrum(Tvib=2000, Trot=3000)
-    s2 = s.non_eq_spectrum(Tvib=2000, Trot=3000)
-    # Loading variables
-    molecule = s.input.molecule
-    isotope = s.input.isotope
-    state = "X"
-    # Checking that the cache file exists
+    # Checking that the cache file exists, removing if it does
     cache_filename = (
         splitext(s.params.dbpath.split(",", 1)[0])[0]
         + "_extra_columns_EvibErot.h5.extra"
     )
     engine = "pytables"
+    if exists(cache_filename):
+        last_modif = getmtime(cache_filename)
+        os.remove(cache_filename)
+    # Generating first spectrum
+    s1 = s.non_eq_spectrum(Tvib=2000, Trot=3000)
     assert exists(cache_filename)
+    # Generating second spectrum using another SpectrumFactory object:
+    sf = SpectrumFactory(
+        wavelength_min=1500,
+        wavelength_max=2000,
+        cutoff=1e-27,
+        pressure=1,
+        molecule="CO",
+        isotope="1,2",
+        truncation=5,
+        neighbour_lines=5,
+        path_length=0.1,
+        mole_fraction=1e-3,
+        medium="vacuum",
+        optimization=None,  # No optimization strategy used
+        chunksize=None,  # Initialising chunksize as None for comparison
+        wstep="auto",
+        verbose=2,
+    )
+    sf.fetch_databank("hitemp", load_energies=True, load_columns="noneq")
+    s2 = sf.non_eq_spectrum(Tvib=2000, Trot=3000)
+    # Checking proper regeneration of the cache file
+    assert exists(cache_filename)
+    assert getmtime(cache_filename) > last_modif
+
+    cache_file_data = DataFileManager(engine).read(cache_filename)
+    # Checking that the dataframe non-equilibrium columns are the same
+    assert sf.df0["Evibu"].equals(cache_file_data["Evibu"])
+    assert sf.df0["Evibl"].equals(cache_file_data["Evibl"])
+    assert sf.df0["Erotu"].equals(cache_file_data["Erotu"])
+    assert sf.df0["Erotl"].equals(cache_file_data["Erotl"])
+
+    # Loading variables
+    molecule = sf.input.molecule
+    isotope = sf.input.isotope
+    state = "X"
 
     elec_state = s.get_partition_function_calculator(
         molecule, s._get_isotope_list(molecule)[0], state
     ).ElecState
     spectroscopic_constant_file = elec_state.jsonfile
-
+    # Checking that the metadata is correct, else regenerating the cache file
     existing_file_metadata = DataFileManager(engine).read_metadata(cache_filename)
 
-    # Checking that the metadata is correct, else regenerating the cache file
     if "isotope" in existing_file_metadata:
         assert isotope == existing_file_metadata["isotope"]
     else:
         os.remove(cache_filename)
     if "number_of_lines" in existing_file_metadata:
-        assert len(s.df0) == existing_file_metadata["number_of_lines"]
+        assert len(sf.df0) == existing_file_metadata["number_of_lines"]
     else:
         os.remove(cache_filename)
     if "wavenum_min" in existing_file_metadata:
-        assert s.input.wavenum_min == existing_file_metadata["wavenum_min"]
+        assert sf.input.wavenum_min == existing_file_metadata["wavenum_min"]
     else:
         os.remove(cache_filename)
     if "wavenum_max" in existing_file_metadata:
-        assert s.input.wavenum_max == existing_file_metadata["wavenum_max"]
+        assert sf.input.wavenum_max == existing_file_metadata["wavenum_max"]
     else:
         os.remove(cache_filename)
     if "spectroscopic_constant_file" in existing_file_metadata:
@@ -885,11 +918,11 @@ def test_caching_noneq_params(verbose=True, plot=True, *args, **kwargs):
     else:
         os.remove(cache_filename)
     if "neighbour_lines" in existing_file_metadata:
-        assert s.params.neighbour_lines == existing_file_metadata["neighbour_lines"]
+        assert sf.params.neighbour_lines == existing_file_metadata["neighbour_lines"]
     else:
         os.remove(cache_filename)
     if "cutoff" in existing_file_metadata:
-        assert s.params.cutoff == existing_file_metadata["cutoff"]
+        assert sf.params.cutoff == existing_file_metadata["cutoff"]
     else:
         os.remove(cache_filename)
 
