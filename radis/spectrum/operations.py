@@ -72,6 +72,7 @@ from radis.phys.convert import (
     vacuum2air,
 )
 from radis.phys.units import Unit
+from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.spectrum import Spectrum
 
 # %% Filter Spectra
@@ -342,12 +343,43 @@ def crop(s: Spectrum, wmin=None, wmax=None, wunit=None, inplace=False) -> Spectr
         crop(s, 2000, 2300, 'cm-1')
     """
 
+    stored_waveunit = s.get_waveunit()
+
+    wlunit_list = {
+        "km": u.km,
+        "m": u.m,
+        "cm": u.cm,
+        "mm": u.mm,
+        "um": u.um,
+    }
+
     # Check inputs
+
     if wmin is None and wmax is None:
         raise ValueError("Choose at least `wmin=` or `wmax=`")
+
+    if (
+        type(wmin) == type(wmax) == u.quantity.Quantity
+    ):  # User states astropy units directly to wmin and wmax
+        # Convert wmin and wmax to nm unit for later Spectrum wavespace conversion
+        # The stored waveunit can only be nm or cm-1, but we don't need to deal with wavenumber unit conversion, only wavelength
+        # So I convert them all to nm
+        wmin = convert_and_strip_units(wmin, u.nm)
+        wmax = convert_and_strip_units(wmax, u.nm)
+
     if wunit is None:
         raise ValueError("Please precise unit for wmin and wmax with `unit=`")
-    assert wunit in ["nm", "cm-1"]
+    elif wunit not in ["nm", "cm-1"]:
+        if wunit in wlunit_list:
+            wmin = convert_and_strip_units(wmin * wlunit_list[wunit], u.nm)
+            wmax = convert_and_strip_units(wmax * wlunit_list[wunit], u.nm)
+            wunit = "nm"
+        else:
+            raise ValueError(
+                f"Unsupported wunit, should be cm-1, nm or {wlunit_list.keys}"
+            )
+    # assert wunit in ["nm", "cm-1"]
+
     if (wmin is not None and wmax is not None) and wmin >= wmax:
         raise ValueError(
             "wmin should be < wmax (Got: {0:.2f}, {1:.2f})".format(wmin, wmax)
@@ -359,7 +391,6 @@ def crop(s: Spectrum, wmin=None, wmax=None, wunit=None, inplace=False) -> Spectr
     # Convert wmin, wmax to Spectrum wavespace  (stored_waveunit)
     # (deal with cases where wavelength are given in 'air' or 'vacuum')
     # TODO @dev: rewrite with wunit='cm-1', 'nm_air', 'nm_vac'
-    stored_waveunit = s.get_waveunit()
     wmin0, wmax0 = wmin, wmax
     if stored_waveunit == "cm-1":
         # convert wmin, wmax to wavenumber
