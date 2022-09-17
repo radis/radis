@@ -342,6 +342,7 @@ EXOMOL_MOLECULES = [
     "KCl",
     "KF",
     "KOH",
+    "LaO",
     "LiCl",
     "LiF",
     "LiH",

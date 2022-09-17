@@ -62,6 +62,8 @@ def test_crop(verbose=True, *args, **kwargs):
     w3 = s3.get_wavelength()
     assert np.array_equal(w, w3)
 
+    print("Crop test cases passed successfully.")
+
     return True
 
 
