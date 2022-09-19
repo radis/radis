@@ -470,7 +470,7 @@ def calc_spectrum(
                             molecule,
                             argument_name,
                             molecule_reference_set,
-                            argument_dict.keys())
+                            set(argument_dict.keys()))
                     )
             else:  # argument_name is not a dictionary.
                 # Let's distribute the same value to every molecule:
