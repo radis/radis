@@ -461,17 +461,7 @@ def calc_spectrum(
         for argument_name, argument_dict in DICT_INPUT_ARGUMENTS.items():
             if isinstance(argument_dict, dict):
                 # Choose the correspond value
-                try:
-                    molecule_dict[molecule][argument_name] = argument_dict[molecule]
-                except KeyError:
-                    # KeyError is raised if a molecule is missing from the dictionary
-                    raise KeyError(
-                        "'{0}'' missing in '{1}=' argument. For reference, here are the molecules provided in the following arguments: 'molecule=' {2} and '{1}=' {3}".format(
-                            molecule,
-                            argument_name,
-                            molecule_reference_set,
-                            set(argument_dict.keys()))
-                    )
+                molecule_dict[molecule][argument_name] = argument_dict[molecule]
             else:  # argument_name is not a dictionary.
                 # Let's distribute the same value to every molecule:
                 molecule_dict[molecule][argument_name] = argument_dict
