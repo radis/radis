@@ -462,8 +462,6 @@ def calc_spectrum(
             if isinstance(argument_dict, dict):
                 # Choose the correspond value
                 molecule_dict[molecule][argument_name] = argument_dict[molecule]
-                # Will raise a KeyError if not defined. That's fine!
-                # TODO: maybe need to catch KeyError and raise a better error message?
             else:  # argument_name is not a dictionary.
                 # Let's distribute the same value to every molecule:
                 molecule_dict[molecule][argument_name] = argument_dict
