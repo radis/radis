@@ -173,7 +173,7 @@ class DatabaseManager(object):
 
             # Check that local files are the one we expect :
             for f in local_files:
-                local_file_abspath = abspath(expanduser(f))
+                local_file_abspath = abspath(expanduser(f)).lower()
                 local_databaes_abspath = abspath(expanduser(local_databases)).lower()
                 if not local_file_abspath.startswith(local_databaes_abspath):
                     raise ValueError(
