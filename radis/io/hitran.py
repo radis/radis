@@ -6,6 +6,7 @@ RADIS Hitran Functions; based on Common API hitranapi.py
 from os.path import abspath, expanduser, join
 
 from radis.api.hitranapi import HITRANDatabaseManager
+from radis.misc.warning import AccuracyWarning
 
 
 # TODO: implement parallel=True for all isotopes ?

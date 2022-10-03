@@ -22,7 +22,6 @@ import re
 from urllib.request import HTTPError, urlopen
 
 import pandas as pd
-import vaex
 from bs4 import BeautifulSoup
 
 from radis.api.hdf5 import vaexsafe_colname
@@ -139,17 +138,17 @@ def read_def(deff):
                 f"Known error in ExoMol def file, molmass corrected from 12.0 to {molmass}"
             )
         if quantum_labels == [
-                "totalSym",
-                "v1",
-                "v2",
-                "v3",
-                "v4",
-                "v5",
-                "v5",
-                "v7",
-                "vibSym",
-                "K",
-                "rotSym",
+            "totalSym",
+            "v1",
+            "v2",
+            "v3",
+            "v4",
+            "v5",
+            "v5",
+            "v7",
+            "vibSym",
+            "K",
+            "rotSym",
         ]:
             quantum_labels = [
                 "totalSym",
@@ -268,10 +267,9 @@ def read_trans(transf, engine="vaex"):
             )
         except:
             try:
-                dat = pd.read_csv(transf,
-                                  sep=r"\s+",
-                                  names=("i_upper", "i_lower", "A",
-                                         "nu_lines"))
+                dat = pd.read_csv(
+                    transf, sep=r"\s+", names=("i_upper", "i_lower", "A", "nu_lines")
+                )
             except Exception as err:
                 raise Exception(
                     f"Error reading {transf}. Maybe the file was corrupted during download ? You can try to delete it."
@@ -350,14 +348,13 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
     else:
         if dic_def["Landé"] and dic_def["lifetime"]:
             usecol = np.concatenate((mandatory_usecol, 5 + 2 + np.arange(N)))
-            names = mandatory_fields + ("Lande",
-                                        "lifetime") + tuple(quantum_labels)
+            names = mandatory_fields + ("Lande", "lifetime") + tuple(quantum_labels)
         elif dic_def["Landé"]:
             usecol = np.concatenate((mandatory_usecol, 5 + 1 + np.arange(N)))
-            names = mandatory_fields + ("Lande", ) + tuple(quantum_labels)
+            names = mandatory_fields + ("Lande",) + tuple(quantum_labels)
         elif dic_def["lifetime"]:
             usecol = np.concatenate((mandatory_usecol, 5 + 1 + np.arange(N)))
-            names = mandatory_fields + ("lifetime", ) + tuple(quantum_labels)
+            names = mandatory_fields + ("lifetime",) + tuple(quantum_labels)
         else:  # no lifetime, nor landé according to the def file
             usecol = np.concatenate((mandatory_usecol, 5 + np.arange(N)))
             names = mandatory_fields + tuple(quantum_labels)
@@ -372,11 +369,11 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
             f.close()
         if len(splitline) != len(names):
             raise InconsistentDatabaseError(
-                "The EXOMOL definitions and states files are inconsistent.\n" +
-                "Some data are specified as available by the *.def file, but are absent in the *.bz2 file.\n"
-                +
-                "Set `skip_optional_data=False` in `fetch_exomol()` to load only the required data for a LTE computation.\n"
-                + "The problematic optional data/columns will be ignored.")
+                "The EXOMOL definitions and states files are inconsistent.\n"
+                + "Some data are specified as available by the *.def file, but are absent in the *.bz2 file.\n"
+                + "Set `skip_optional_data=False` in `fetch_exomol()` to load only the required data for a LTE computation.\n"
+                + "The problematic optional data/columns will be ignored."
+            )
 
     if engine == "vaex":
         import vaex
@@ -407,11 +404,9 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
                 ) from err
     elif engine == "csv":
         try:
-            dat = pd.read_csv(statesf,
-                              compression="bz2",
-                              sep=r"\s+",
-                              usecols=usecol,
-                              names=names)
+            dat = pd.read_csv(
+                statesf, compression="bz2", sep=r"\s+", usecols=usecol, names=names
+            )
         except:  #!!!TODO What was the expected error?
             dat = pd.read_csv(statesf, sep=r"\s+", usecols=usecol, names=names)
     else:
@@ -420,12 +415,9 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
     return dat
 
 
-def pickup_gE(states,
-              trans,
-              trans_file,
-              dic_def,
-              trans_lines=False,
-              skip_optional_data=True):
+def pickup_gE(
+    states, trans, trans_file, dic_def, trans_lines=False, skip_optional_data=True
+):
     """extract g_upper (gup), E_lower (elower), and J_lower and J_upper from states
     DataFrame and insert them into the transition DataFrame.
 
@@ -596,6 +588,7 @@ def check_bdat(bdat):
     Returns:
        code level: None, a0, a1, other codes unavailable currently,
     """
+
     def checkcode(code):
         cmask = bdat["code"] == code
         if len(bdat["code"][cmask]) > 0:
@@ -611,10 +604,7 @@ def check_bdat(bdat):
     return codelv
 
 
-def make_j2b(bdat,
-             alpha_ref_default=0.07,
-             n_Texp_default=0.5,
-             jlower_max=None):
+def make_j2b(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
     """compute j2b (code a0, map from jlower to alpha_ref)
 
     Args:
@@ -795,23 +785,26 @@ def get_exomol_database_list(molecule, isotope_full_name=None):
             extra = ""
         raise ValueError(f"HTTPError opening url={url}" + extra) from err
 
-    soup = BeautifulSoup(response,
-                         features="lxml")  # make soup that is parse-able by bs
+    soup = BeautifulSoup(
+        response, features="lxml"
+    )  # make soup that is parse-able by bs
 
     # Recommended database
     rows = soup.find_all(
-        "a", {"class": "list-group-item link-list-group-item recommended"})
+        "a", {"class": "list-group-item link-list-group-item recommended"}
+    )
     databases_recommended = [r.get_attribute_list("title")[0] for r in rows]
 
     # All others
-    rows = soup.find_all("a",
-                         {"class": "list-group-item link-list-group-item"})
+    rows = soup.find_all("a", {"class": "list-group-item link-list-group-item"})
     databases = [r.get_attribute_list("title")[0] for r in rows]
 
     if len(databases_recommended) > 1:
         # Known exceptions :
-        if (isotope_full_name == "28Si-16O"
-                and databases_recommended[0] == "xsec-SiOUVenIR"):
+        if (
+            isotope_full_name == "28Si-16O"
+            and databases_recommended[0] == "xsec-SiOUVenIR"
+        ):
             # this is a cross-section dataset, shouldn't be used. Reverse and use the other one:
             databases_recommended = databases_recommended[::-1]
         else:
@@ -1186,28 +1179,33 @@ class MdbExomol(DatabaseManager):
         self.n_Texp_def = dic_def["n_Texp"]
         self.alpha_ref_def = dic_def["alpha_ref"]
         self.molmass = dic_def["molmass"]
-        
+
         #  default n_Texp value if not given
         if self.n_Texp_def is None:
             self.n_Texp_def = 0.5
             warnings.warn(
-                Warning(f"""
+                Warning(
+                    f"""
                     No default broadening exponent in def file. Assigned n = {self.n_Texp_def}
-                    """))
+                    """
+                )
+            )
         #  default alpha_ref value if not given
         if self.alpha_ref_def is None:
             self.alpha_ref_def = 0.07
             warnings.warn(
-                Warning(f"""
+                Warning(
+                    f"""
                     No default broadening in def file. Assigned alpha_ref = {self.alpha_ref_def}
-                    """))
+                    """
+                )
+            )
 
         # load states
         mgr = self.get_datafile_manager()
         if cache == "regen" and mgr.cache_file(self.states_file).exists():
             if verbose:
-                print("Removing existing file ",
-                      mgr.cache_file(self.states_file))
+                print("Removing existing file ", mgr.cache_file(self.states_file))
             os.remove(mgr.cache_file(self.states_file))
         if mgr.cache_file(self.states_file).exists():
             states = mgr.read(mgr.cache_file(self.states_file))
@@ -1255,20 +1253,24 @@ class MdbExomol(DatabaseManager):
             # imin :
             # index i of the "w(i)-w(i+1)" element in dic_def["numtag"] such
             # that nurange[0]<=w(i)
-            imin = np.searchsorted(
-                dic_def["numinf"], nurange[0] - margin, side="right") - 1
+            imin = (
+                np.searchsorted(dic_def["numinf"], nurange[0] - margin, side="right")
+                - 1
+            )
             # imax :
             # index i of the "w(i)-w(i+1)" element in dic_def["numtag"] such
             # that w(i+1)<=nurange[1]
-            imax = np.searchsorted(
-                dic_def["numinf"], nurange[1] + margin, side="right") - 1
+            imax = (
+                np.searchsorted(dic_def["numinf"], nurange[1] + margin, side="right")
+                - 1
+            )
             self.trans_file = []
             self.num_tag = []
 
             for k, i in enumerate(range(imin, imax + 1)):
-                trans_file = self.path / pathlib.Path(molec + "__" +
-                                                      dic_def["numtag"][i] +
-                                                      ".trans.bz2")
+                trans_file = self.path / pathlib.Path(
+                    molec + "__" + dic_def["numtag"][i] + ".trans.bz2"
+                )
                 self.trans_file.append(trans_file)
                 self.num_tag.append(dic_def["numtag"][i])
 
@@ -1279,8 +1281,7 @@ class MdbExomol(DatabaseManager):
             print("Reading", trans_file)
             if cache == "regen" and mgr.cache_file(trans_file).exists():
                 if verbose:
-                    print("Removing existing file ",
-                          mgr.cache_file(trans_file))
+                    print("Removing existing file ", mgr.cache_file(trans_file))
                 os.remove(mgr.cache_file(trans_file))
 
             if not mgr.cache_file(trans_file).exists():
@@ -1290,16 +1291,15 @@ class MdbExomol(DatabaseManager):
                     )
 
                 if not trans_file.exists():
-                    self.download(molec,
-                                  extension=[".trans.bz2"],
-                                  numtag=num_tag)
+                    self.download(molec, extension=[".trans.bz2"], numtag=num_tag)
                     # TODO: add option to delete file at the end
 
                 print(
                     f"Note: Caching line transition data to the {engine} format. After the second time, it will become much faster."
                 )
                 trans = read_trans(
-                    trans_file, engine="vaex" if engine == "vaex" else "csv")
+                    trans_file, engine="vaex" if engine == "vaex" else "csv"
+                )
 
                 # Complete transition data with lookup on upper & lower state :
                 # In particular, compute gup and elower
@@ -1314,14 +1314,14 @@ class MdbExomol(DatabaseManager):
 
                 ##Recompute Line strength:
                 from radis.lbl.base import (  # TODO: move elsewhere
-                    linestrength_from_Einstein, )
+                    linestrength_from_Einstein,
+                )
 
                 self.Sij0 = linestrength_from_Einstein(
                     A=trans["A"],
                     gu=trans["gup"],
                     El=trans["elower"],
-                    Ia=
-                    1,  #  Sij0 is a linestrength calculated without taking into account isotopic abundance (unlike line intensity parameter of HITRAN. In RADIS this is corrected for in fetch_exomol()  )
+                    Ia=1,  #  Sij0 is a linestrength calculated without taking into account isotopic abundance (unlike line intensity parameter of HITRAN. In RADIS this is corrected for in fetch_exomol()  )
                     nu=trans["nu_lines"],
                     Q=self.QTref,
                     T=self.Tref,
@@ -1333,18 +1333,14 @@ class MdbExomol(DatabaseManager):
 
         # Database ready to be loaded.
         # Proceed with mdb.load()
-        #self.set_broadening()
+        # self.set_broadening()
         #
 
-    def set_broadening(self,
-                       df,
-                       alpha_ref_def=None,
-                       n_Texp_def=None,
-                       output=None):
+    def set_broadening(self, df, alpha_ref_def=None, n_Texp_def=None, output=None):
         """setting broadening parameters
 
         Parameters
-        ----------        
+        ----------
         df: Data Frame
         alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
         n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
@@ -1352,27 +1348,26 @@ class MdbExomol(DatabaseManager):
         Returns
         -------
         None. Store values in Data Frame.
-        
+
         """
-        self.compute_broadening(jlower=df["jlower"],
-                                jupper=df["jupper"],
-                                alpha_ref_def=alpha_ref_def,
-                                n_Texp_def=n_Texp_def,
-                                output=output)
+        self.compute_broadening(
+            jlower=df["jlower"],
+            jupper=df["jupper"],
+            alpha_ref_def=alpha_ref_def,
+            n_Texp_def=n_Texp_def,
+            output=output,
+        )
         # Add values
         self.add_column(df, "alpha_ref", self.alpha_ref)
         self.add_column(df, "n_Texp", self.n_Texp)
 
-    def compute_broadening(self,
-                           jlower,
-                           jupper,
-                           alpha_ref_def=None,
-                           n_Texp_def=None,
-                           output=None):
+    def compute_broadening(
+        self, jlower, jupper, alpha_ref_def=None, n_Texp_def=None, output=None
+    ):
         """computing broadening parameters
 
         Parameters
-        ----------        
+        ----------
         jlower: jlower array
         jupper: jupper array
         alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
@@ -1381,7 +1376,7 @@ class MdbExomol(DatabaseManager):
         Returns
         -------
         None. Store values in self.n_Texp and self.alpha_ref.
-        
+
         """
 
         if alpha_ref_def:
@@ -1423,14 +1418,12 @@ class MdbExomol(DatabaseManager):
                 print(
                     "Warning: Cannot load .broad. The default broadening parameters are used."
                 )
-                self.alpha_ref = np.array(self.alpha_ref_def *
-                                          np.ones_like(jlower))
+                self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(jlower))
                 self.n_Texp = np.array(self.n_Texp_def * np.ones_like(jlower))
 
         else:
             print("The default broadening parameters are used.")
-            self.alpha_ref = np.array(self.alpha_ref_def *
-                                      np.ones_like(jlower))
+            self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(jlower))
             self.n_Texp = np.array(self.n_Texp_def * np.ones_like(jlower))
 
     def QT_interp(self, T):
@@ -1494,20 +1487,21 @@ class MdbExomol(DatabaseManager):
                 url = EXOMOL_URL + molname_simple + "/" + tag[0] + "/"
             else:
                 pfname_arr = [molec + ext]
-                url = EXOMOL_URL + molname_simple + "/" + tag[0] + "/" + tag[
-                    1] + "/"
+                url = EXOMOL_URL + molname_simple + "/" + tag[0] + "/" + tag[1] + "/"
 
             for pfname in pfname_arr:
                 pfpath = url + pfname
                 os.makedirs(str(self.path), exist_ok=True)
-                print("Downloading " + pfpath + " and saving as " +
-                      str(self.path / pfname))
+                print(
+                    "Downloading "
+                    + pfpath
+                    + " and saving as "
+                    + str(self.path / pfname)
+                )
                 try:
                     urllib.request.urlretrieve(pfpath, str(self.path / pfname))
                 except HTTPError:
-                    print(
-                        f"Error: Couldn't download {ext} file at {pfpath} and save."
-                    )
+                    print(f"Error: Couldn't download {ext} file at {pfpath} and save.")
 
     def to_partition_function_tabulator(self):
         """Generate a :py:class:`~radis.levels.partfunc.PartFuncExoMol` object"""
@@ -1581,7 +1575,6 @@ if __name__ == "__main__":
     s.plot("xsection")
 
     # %% Exojax like Example
-
 
     class mdbExoMol:
 
@@ -1665,11 +1658,9 @@ if __name__ == "__main__":
             jdict = mdb.load(
                 local_files,
                 columns=[k for k in self.__slots__ if k not in ["logsij0"]],
-                lower_bound=([("nu_lines",
-                               wavenum_min)] if wavenum_min else []) +
-                ([("Sij0", mdb.crit)] if not np.isneginf(mdb.crit) else []),
-                upper_bound=([("nu_lines",
-                               wavenum_max)] if wavenum_max else []),
+                lower_bound=([("nu_lines", wavenum_min)] if wavenum_min else [])
+                + ([("Sij0", mdb.crit)] if not np.isneginf(mdb.crit) else []),
+                upper_bound=([("nu_lines", wavenum_max)] if wavenum_max else []),
                 output="jax",
             )
 
@@ -1699,8 +1690,7 @@ if __name__ == "__main__":
         "CH4/12C-1H4/YT10to10/",
         nus,
         crit=1.0e-30,
-        local_databases=pathlib.Path(radis.config["DEFAULT_DOWNLOAD_PATH"]) /
-        "exomol",
+        local_databases=pathlib.Path(radis.config["DEFAULT_DOWNLOAD_PATH"]) / "exomol",
     )
     # ... ready to run Jax calculations
 

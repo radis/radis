@@ -85,8 +85,6 @@ from radis.misc.basics import is_float
 from radis.misc.debug import printdbg
 from radis.misc.plot import fix_style, set_style
 from radis.misc.progress_bar import ProgressBar
-
-# from radis.misc.warning import AccuracyError, AccuracyWarning
 from radis.misc.warning import reset_warnings
 from radis.phys.constants import Na, c_CGS, k_b_CGS
 

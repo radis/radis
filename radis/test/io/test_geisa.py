@@ -24,6 +24,7 @@ files = {
 }
 
 
+@pytest.mark.fast
 def test_local_geisa_co(verbose=True, warnings=True, **kwargs):
 
     # 1. Load local file
@@ -54,6 +55,7 @@ def test_local_geisa_co(verbose=True, warnings=True, **kwargs):
     return True
 
 
+@pytest.mark.fast
 def test_local_geisa_h2o(verbose=True, warnings=True, **kwargs):
 
     # 1. Load local file
@@ -84,6 +86,7 @@ def test_local_geisa_h2o(verbose=True, warnings=True, **kwargs):
     return True
 
 
+@pytest.mark.fast
 def test_local_geisa_co2(verbose=True, warnings=True, **kwargs):
 
     # 1. Load local file
