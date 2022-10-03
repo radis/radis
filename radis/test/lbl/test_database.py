@@ -105,7 +105,7 @@ def test_load_lines_pops(plot=False, verbose=True, warnings=True, *args, **kwarg
             verbose=verbose,
         )
         sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
-        sf.load_databank("HITRAN-CO-TEST")
+        sf.load_databank("HITRAN-CO-TEST", load_energies=True)
         s1 = sf.non_eq_spectrum(Tvib=300, Trot=300)
         s1.apply_slit(2, verbose=False)
         s1.update()

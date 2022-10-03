@@ -480,7 +480,7 @@ def test_broadening_LDM_noneq(verbose=True, plot=False, *args, **kwargs):
             "GaussianBroadeningWarning": "ignore",
         },
     )
-    sf.load_databank("HITRAN-CO2-TEST", load_columns="noneq")
+    sf.load_databank("HITRAN-CO2-TEST", load_energies=True, load_columns="noneq")
 
     # LDM:
     sf.params["optimization"] = "simple"
@@ -885,7 +885,7 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
         }
     )
     sf.fetch_databank(
-        "hitran", load_columns="noneq"
+        "hitran", load_columns="noneq", load_energies=True
     )  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
     sf._export_continuum = True  # activate it
 

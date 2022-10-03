@@ -110,7 +110,7 @@ def test_perf_profile_from_factory(*args, **kwargs):
         molecule="CO",
         verbose=3,
     )
-    sf.load_databank("HITRAN-CO-TEST")
+    sf.load_databank("HITRAN-CO-TEST", load_energies=True)
     sf.non_eq_spectrum(3000, 2000)
 
     # Test Console profiler

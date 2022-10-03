@@ -47,7 +47,7 @@ def test_populations(verbose=True, *args, **kwargs):
     sf.warnings.update(
         {"MissingSelfBroadeningWarning": "ignore", "VoigtBroadeningWarning": "ignore"}
     )
-    sf.load_databank("HITRAN-CO-TEST")
+    sf.load_databank("HITRAN-CO-TEST", load_energies=True)
     sf.misc.export_rovib_fraction = True
     # we test that "tabulation" and "export_population" are incompatible
     sf.params.parsum_mode = "tabulation"
@@ -118,7 +118,7 @@ def test_rescaling_path_length(
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     #        sf.warnings['NegativeEnergiesWarning'] = 'ignore'
-    sf.load_databank("HITRAN-CO-TEST")
+    sf.load_databank("HITRAN-CO-TEST", load_energies=True)
     s1 = sf.non_eq_spectrum(Tgas, Tgas, path_length=0.01)
     s2 = sf.non_eq_spectrum(Tgas, Tgas, path_length=3)
     s1.rescale_path_length(3)
@@ -175,7 +175,7 @@ def test_rescaling_mole_fraction(
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.warnings["NegativeEnergiesWarning"] = "ignore"
-    sf.load_databank("HITRAN-CO-TEST")
+    sf.load_databank("HITRAN-CO-TEST", load_energies=True)
     error = []
     N = [1e-3, 1e-2, 1e-1, 0.3, 0.6, 1]  # first is ref
     for Ni in N:
@@ -227,7 +227,7 @@ def test_medium(plot=False, verbose=True, debug=False, warnings=True, *args, **k
         isotope="1,2",
     )
     pl.warnings["MissingSelfBroadeningWarning"] = "ignore"
-    pl.load_databank("HITRAN-CO-TEST")
+    pl.load_databank("HITRAN-CO-TEST", load_energies=True)
     s = pl.non_eq_spectrum(Tvib=T, Trot=T)  # , Ttrans=300)
 
     pla = SpectrumFactory(
@@ -237,7 +237,7 @@ def test_medium(plot=False, verbose=True, debug=False, warnings=True, *args, **k
         medium="air",
         isotope="1,2",
     )
-    pla.load_databank("HITRAN-CO-TEST")
+    pla.load_databank("HITRAN-CO-TEST", load_energies=True)
     s_air = pla.non_eq_spectrum(Tvib=T, Trot=T)  # , Ttrans=300)
 
     if plot:

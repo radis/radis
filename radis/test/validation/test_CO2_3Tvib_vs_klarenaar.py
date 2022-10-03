@@ -87,7 +87,7 @@ def test_klarenaar_validation_case(
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     #        sf.load_databank('HITEMP-CO2-DUNHAM')
-    sf.load_databank("HITEMP-CO2-TEST")
+    sf.load_databank("HITEMP-CO2-TEST", load_energies=True)
 
     # Calculate with Klarenaar fitted values
     T12 = 517

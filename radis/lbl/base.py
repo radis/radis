@@ -64,6 +64,10 @@ Most methods are written in inherited class with the following inheritance schem
 """
 # TODO: move all CDSD dependant functions _add_Evib123Erot to a specific file for CO2.
 
+import os
+import time
+from os.path import exists, getmtime, splitext
+
 import numpy as np
 import pandas as pd
 from astropy import units as u
@@ -76,9 +80,13 @@ import radis
 from radis.db.classes import get_molecule, get_molecule_identifier
 
 try:  # Proper import
+    from .cache_files import save_to_hdf
+    from .hdf5 import DataFileManager
     from .loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
 except ImportError:  # if ran from here
     from radis.lbl.loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
+    from radis.io.cache_files import save_to_hdf
+    from radis.io.hdf5 import DataFileManager
 
 from radis.misc.arrays import anynan
 from radis.misc.basics import all_in, is_float, transfer_metadata
@@ -1432,7 +1440,9 @@ class BaseFactory(DatabankLoader):
 
         return None
 
-    def _calc_noneq_parameters(self, vib_distribution, singleTvibmode):
+    def _calc_noneq_parameters(
+        self, vib_distribution, singleTvibmode, cache=True, engine="pytables"
+    ):
         """Make sure database has non equilibrium quantities (Evib, Erot, etc.)
 
         Notes
@@ -1442,16 +1452,31 @@ class BaseFactory(DatabankLoader):
         the nonequilibrium energies)
         """
 
+        # Load variables
+        molecule = self.input.molecule
+        isotope = self.input.isotope
+        state = "X"
+        df = self.df0
+        if len(df) == 0:
+            return  # no lines
+
+        # Initializing a cache file for lookup later
+        cache_filename = (
+            splitext(self.params.dbpath.split(",", 1)[0])[0]
+            + "_extra_columns_EvibErot.h5.extra"
+        )
+        # cache_filename = DataFileManager(engine).cache_file(filename)
+        # Getting the Electronic States file through partition functions:
+        elec_state = self.get_partition_function_calculator(
+            molecule, self._get_isotope_list(molecule)[0], state
+        ).ElecState
+        spectroscopic_constant_file = elec_state.jsonfile
         # Checks and loads Energy level database
         if self.misc.load_energies == False:
             self._init_rovibrational_energies(self.levels, self.params.levelsfmt)
             self.misc.load_energies = True
 
         self.profiler.start("check_non_eq_param", 2)
-
-        df = self.df0
-        if len(df) == 0:
-            return  # no lines
 
         # Check spectroscopic parameters required for non-equilibrium (to identify lines)
         for k in ["branch"]:
@@ -1498,6 +1523,99 @@ class BaseFactory(DatabankLoader):
                 required_columns = ["Evib1l", "Evib2l", "Evib3l"]
 
         if not all_in(required_columns, df):
+            # Checking if the cache file exists or not, retrieving data
+            # if it's present else regenerating the files.
+            if exists(cache_filename):
+                existing_file_metadata = DataFileManager(engine).read_metadata(
+                    cache_filename
+                )
+                cache_file_data = DataFileManager(engine).read(cache_filename)
+                # Checking whether the right columns and indices are present in the cache file
+                try:
+                    # Checking if the same isotopes are present in the cache file as required
+                    if (
+                        "isotope" in existing_file_metadata
+                        and existing_file_metadata["isotope"] == isotope
+                    ):
+                        # Checking if the dataframe indices are present in the correct
+                        # range, otherwise regenerating cache file
+                        if (
+                            "df_last_index" in existing_file_metadata
+                            and existing_file_metadata["df_last_index"] == df.index[-1]
+                        ):
+                            if (
+                                "df_first_index" in existing_file_metadata
+                                and existing_file_metadata["df_first_index"]
+                                == df.index[0]
+                            ):
+                                # Read and compare file data with current df data
+                                if set(["Evibu", "Evibl", "Erotu", "Erotl"]).issubset(
+                                    cache_file_data.columns
+                                ):
+                                    if self.verbose:
+                                        print(
+                                            "Saving the Non-equilibrium columns of the cache file dataframe to df0"
+                                        )
+                                    # Set the noneq columns in dataframe
+                                    df.loc[
+                                        :, ["Evibu", "Evibl", "Erotu", "Erotl"]
+                                    ] = cache_file_data.loc[
+                                        df.index[0] : df.index[-1],
+                                        ["Evibu", "Evibl", "Erotu", "Erotl"],
+                                    ]
+                                else:
+                                    # Regenerate cache file later with correct columns
+                                    if self.verbose:
+                                        print(
+                                            "Required non-equilibrium columns Evibu, Evibl, Erotu, Erotl "
+                                            + "absent from the cache file, hence removing existing file {0} and regenerating ahead.".format(
+                                                cache_filename
+                                            )
+                                        )
+                                    os.remove(cache_filename)
+                            else:
+                                # Regenerate cache file later with correct columns
+                                if self.verbose:
+                                    print(
+                                        "Cache file dataframe does not have the correct index range, "
+                                        + "the first index of the dataframe does not match with the first index "
+                                        + "of the cache file dataframe. Removing existing file {0} and regenerating ahead.".format(
+                                            cache_filename
+                                        )
+                                    )
+                                os.remove(cache_filename)
+                        else:
+                            # Regenerate cache file later with correct columns
+                            if self.verbose:
+                                print(
+                                    "Cache file dataframe does not have the correct index range, "
+                                    + "the dataframe last index does not match with the last index of the cache file "
+                                    + "dataframe. Removing existing file {0} and regenerating ahead.".format(
+                                        cache_filename
+                                    )
+                                )
+                            os.remove(cache_filename)
+                    else:
+                        # Regenerate the cache file if the isotopes are different
+                        if self.verbose:
+                            print(
+                                "Isotopes present in the cache file are different than the ones "
+                                + "present in the Dataframe. Removing the existing file {0} and regenerating ahead.".format(
+                                    cache_filename
+                                )
+                            )
+                        os.remove(cache_filename)
+                except KeyError:
+                    os.remove(cache_filename)
+                    raise KeyError(
+                        "Cache file {0} not stored with correct metadata, regenerating it.".format(
+                            cache_filename
+                        )
+                    )
+
+        # If the cache file didn't have the proper columns,
+        # we check again and compute the non-eq parameters.
+        if not all_in(required_columns, df):
             if singleTvibmode:
                 self._add_EvibErot(
                     df,
@@ -1508,6 +1626,10 @@ class BaseFactory(DatabankLoader):
                     df,
                     calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic,
                 )
+            # Deleting file to update cache ahead
+            if exists(cache_filename):
+                os.remove(cache_filename)
+
             assert all_in(required_columns, df)
 
         # ... Check no negative energies
@@ -1525,6 +1647,57 @@ class BaseFactory(DatabankLoader):
         if not "Aul" in df:
             self.calc_weighted_trans_moment()
             self.calc_einstein_coefficients()
+
+        # Caching the non-equilibrium parameters Evib and Erot
+        # Here, we regenerate the cache file if it doesn't exist.
+        # If it exists, then the required parameters have already been added to the dataframe.
+        if cache:
+            # Generate cache file for later use.
+            # Ignore if cache file already exists
+            if not exists(cache_filename):
+                # Copying the non-equilibrium parameters into a temporary dataframe for caching
+                temp_df = df[["Evibl", "Evibu", "Erotl", "Erotu"]]
+                # Setting the relevant metadata
+                new_metadata = {
+                    # Last modification time of the original file :
+                    "last_modification": time.ctime(
+                        getmtime(spectroscopic_constant_file)
+                    ),
+                    "spectroscopic_constant_file": spectroscopic_constant_file,
+                    "levels": self.levels,
+                    "lvlformat": self.params.levelsfmt,
+                    "df_first_index": df.index[0],
+                    "df_last_index": df.index[-1],
+                    "number_of_lines": len(df),
+                    "isotope": isotope,
+                    "neighbour_lines": self.params.neighbour_lines,
+                    "wavenum_min": self.input.wavenum_min,
+                    "wavenum_max": self.input.wavenum_max,
+                    "cutoff": self.params.cutoff,
+                }
+                if self.verbose:
+                    print(
+                        "Generating cache file {0} with metadata :\n{1}".format(
+                            cache_filename, new_metadata
+                        )
+                    )
+                try:
+                    save_to_hdf(
+                        temp_df,
+                        cache_filename,
+                        metadata=new_metadata,
+                        version=radis.__version__,
+                        key="df",
+                        overwrite=True,
+                        verbose=self.verbose,
+                        engine=engine,
+                    )
+                except PermissionError:
+                    if self.verbose:
+                        print(
+                            "An error occurred in cache file generation. Lookup access rights."
+                        )
+                    pass
 
         self.profiler.stop("check_non_eq_param", "Checked nonequilibrium parameters")
 

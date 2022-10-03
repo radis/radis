@@ -86,9 +86,9 @@ def test_validation_vs_specair(rtol=1e-2, verbose=True, plot=False, *args, **kwa
     pl.warnings["MissingSelfBroadeningWarning"] = "ignore"
 
     if article_version:
-        pl.load_databank("HITEMP-CO-DUNHAM")
+        pl.load_databank("HITEMP-CO-DUNHAM", load_energies=True)
     else:
-        pl.load_databank("HITRAN-CO-TEST")
+        pl.load_databank("HITRAN-CO-TEST", load_energies=True)
         # Available on all systems, convenient for fast testing, but you
         # will be missing some small lines for T ~ 2000 K .
         print(
