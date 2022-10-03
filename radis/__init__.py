@@ -94,10 +94,17 @@ Parameters
 	    import radis
 	    radis.AUTO_UPDATE_DATABASE = True
 
+	See Also
+	--------
+	:py:func:`~radis.api.hdf5.hdf2df`
+
 
 "OLDEST_COMPATIBLE_VERSION": "0.9.1"
     str: forces to regenerate cache files that were created in a previous version
-    See also : :py:func:`~radis.io.cache_files.load_h5_cache_file`
+
+    See Also
+    --------
+    :py:func:`~radis.api.cache_files.load_h5_cache_file`
 
 
 "USE_CYTHON": True
@@ -209,8 +216,9 @@ __all__ = [
     "__version__",
 ]
 
-# prevent cyclic importants:
-from . import db, io, lbl, los, misc, phys, spectrum, tools
+# prevent cyclic imports:
+from . import api, db, io, lbl, los, misc, phys, spectrum, tools
+from .api import *  # input / output common with ExoJax
 from .db import *  # database of molecules
 from .io import *  # input / output
 from .lbl import *  # line-by-line module
@@ -221,6 +229,7 @@ from .spectrum import *  # Spectrum object
 from .test import *  # test
 from .tools import *  # slit, database, line survey, etc.
 
+__all__.extend(api.__all__)
 __all__.extend(db.__all__)
 __all__.extend(io.__all__)
 __all__.extend(lbl.__all__)

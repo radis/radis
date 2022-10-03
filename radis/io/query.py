@@ -29,7 +29,7 @@ from radis.db.classes import get_molecule, get_molecule_identifier
 try:
     from .cache_files import check_cache_file, get_cache_file, save_to_hdf
 except ImportError:
-    from radis.io.cache_files import check_cache_file, get_cache_file, save_to_hdf
+    from radis.api.cache_files import check_cache_file, get_cache_file, save_to_hdf
 from radis.misc import is_float
 from radis.misc.printer import printr
 

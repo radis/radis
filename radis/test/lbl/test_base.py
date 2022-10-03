@@ -29,7 +29,7 @@ def test_linestrength_calculations(*args, **kwargs):
     """
 
     # Test linestrength calculations
-    from radis.io.hitran import hit2df
+    from radis.api.hitranapi import hit2df
     from radis.test.utils import getTestFile
 
     df = hit2df(getTestFile("hitran_co_3iso_2000_2300cm.par"))

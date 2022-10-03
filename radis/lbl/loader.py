@@ -59,25 +59,19 @@ import numpy as np
 import pandas as pd
 
 from radis import config
+from radis.api.cdsdapi import cdsd2df
+from radis.api.hdf5 import hdf2df
+from radis.api.hitranapi import hit2df, parse_global_quanta, parse_local_quanta
+from radis.api.tools import drop_object_format_columns, replace_PQR_with_m101
 from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
 from radis.db.molparam import MOLPARAMS_EXTRA_PATH, MolParams
 from radis.db.references import doi
-from radis.io.cdsd import cdsd2df
 from radis.io.exomol import fetch_exomol
 from radis.io.geisa import fetch_geisa
-
-# from radis.io.geisa import gei2df
-from radis.io.hdf5 import hdf2df
 from radis.io.hitemp import fetch_hitemp
-from radis.io.hitran import (
-    fetch_hitran,
-    hit2df,
-    parse_global_quanta,
-    parse_local_quanta,
-)
+from radis.io.hitran import fetch_hitran
 from radis.io.query import fetch_astroquery
-from radis.io.tools import drop_object_format_columns, replace_PQR_with_m101
 from radis.levels.partfunc import (
     PartFunc_Dunham,
     PartFuncTIPS,
@@ -174,10 +168,10 @@ Based on the value of ``dbformat=``, some of these columns won't be used.
 
 See Also
 --------
-- 'hitran': (HITRAN / HITEMP) :data:`~radis.io.hitran.columns_2004`,
-- 'cdsd-hitemp' (CDSD HITEMP): :data:`~radis.io.cdsd.columns_hitemp`,
-- 'cdsd-4000': (CDSD 4000) :data:`~radis.io.cdsd.columns_4000`,
-- 'geisa': (GEISA 2020) :data:`~radis.io.geisa.columns_GEISA`,
+- 'hitran': (HITRAN / HITEMP) :data:`~radis.api.hitranapi.columns_2004`,
+- 'cdsd-hitemp' (CDSD HITEMP): :data:`~radis.api.cdsdapi.columns_hitemp`,
+- 'cdsd-4000': (CDSD 4000) :data:`~radis.api.cdsdapi.columns_4000`,
+- 'geisa': (GEISA 2020) :data:`~radis.api.geisaapi.columns_GEISA`,
 """
 drop_auto_columns_for_levelsfmt = {
     "radis": [],
@@ -191,10 +185,10 @@ Based on the value of ``lvlformat=``, some of these columns won't be used.
 
 See Also
 --------
-- 'radis': :data:`~radis.io.hitran.columns_2004`,
-- 'cdsd-pc': :data:`~radis.io.hitran.columns_2004`,
-- 'cdsd-pcN' (CDSD-HITEMP): :data:`~radis.io.cdsd.columns_hitemp`,
-- 'cdsd-hamil': :data:`~radis.io.cdsd.columns_4000`,
+- 'radis': :data:`~radis.api.hitranapi.columns_2004`,
+- 'cdsd-pc': :data:`~radis.api.hitranapi.columns_2004`,
+- 'cdsd-pcN' (CDSD-HITEMP): :data:`~radis.api.cdsdapi.columns_hitemp`,
+- 'cdsd-hamil': :data:`~radis.api.cdsdapi.columns_4000`,
 """
 # TODO @dev : switch from a model where we drop certain useless columns (RADIS==0.9.28)
 # to a model where we only-load the required ones initially (if possible with lazy-loading,
@@ -219,9 +213,9 @@ to identify lines with :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`
 
 See Also
 --------
-- 'hitran': (HITRAN / HITEMP) :data:`~radis.io.hitran.columns_2004`,
-- 'cdsd-hitemp' (CDSD HITEMP): :data:`~radis.io.cdsd.columns_hitemp`,
-- 'cdsd-4000': (CDSD 4000) :data:`~radis.io.cdsd.columns_4000`,
+- 'hitran': (HITRAN / HITEMP) :data:`~radis.api.hitranapi.columns_2004`,
+- 'cdsd-hitemp' (CDSD HITEMP): :data:`~radis.api.cdsdapi.columns_hitemp`,
+- 'cdsd-4000': (CDSD 4000) :data:`~radis.api.cdsdapi.columns_4000`,
 """
 required_non_eq = [
     "branch",

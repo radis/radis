@@ -1458,7 +1458,7 @@ class BaseFactory(DatabankLoader):
             if k not in df:
                 error_details = ""
                 if "globu" in df:
-                    error_details = ". However, it looks like `globu` is defined. Maybe HITRAN-like database wasn't fully parsed? See radis.io.hitran.hit2df"
+                    error_details = ". However, it looks like `globu` is defined. Maybe HITRAN-like database wasn't fully parsed? See radis.api.hitranapi.hit2df"
                 raise KeyError(
                     f"`{k}` not defined in database ({list(df.columns)}). "
                     + error_details

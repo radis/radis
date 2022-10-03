@@ -25,7 +25,7 @@ jobs:
         # version is the same.
         # For now use http instead of https according to this comment:
         # https://github.com/mamba-org/mamba/issues/1675#issuecomment-1127160021
-        - wget -qO- http://micromamba.snakepit.net/api/micromamba/linux-64/latest | tar -xvj bin/micromamba
+        - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/0.25.1 | tar -xvj bin/micromamba
         - ./bin/micromamba shell init -s bash -p ~/micromamba
         - source ~/.bashrc
         - micromamba activate base
