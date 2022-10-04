@@ -46,6 +46,7 @@ def calc_spectrum(
     molecule=None,
     isotope="all",
     mole_fraction=1,
+    diluent="air",
     path_length=1,
     databank="hitran",
     medium="air",
@@ -128,6 +129,17 @@ def calc_spectrum(
         For multiple molecules, use a dictionary with molecule names as keys ::
 
             mole_fraction={'CO2': 0.8, 'CO':0.2}​
+
+    diluent: str or dictionary
+            can be a string of a single diluent or a dictionary containing diluent
+            name as key and its mole_fraction as value
+            For single diluent ::
+
+                diluent = 'CO2'
+
+            For multiple diluents ::
+
+                diluent = { 'CO2': 0.6, 'H2O':0.2}
 
     path_length: float [:math:`cm`] or `~astropy.units.quantity.Quantity`
         slab size. Default ``1`` cm​. Use arbitrary units::
@@ -399,6 +411,12 @@ def calc_spectrum(
     # (dealt with separately because we cannot use them to guess what are the input molecules)
     DICT_INPUT_DICT_ARGUMENTS = {"overpopulation": overpopulation}
 
+    # Check if mole_fraction is dictionary of multiple molecules and have non air diluent, if yes then raise NotImplementedError
+    if isinstance(mole_fraction, dict) and isinstance(diluent, dict):
+        raise NotImplementedError(
+            "Spectrum calculation for multiple molecules in multiple diluents is not yet implemented."
+        )
+
     def _check_molecules_are_consistent(
         molecule_reference_set, reference_name, new_argument, new_argument_name
     ):
@@ -542,6 +560,7 @@ def calc_spectrum(
             mode=mode,
             export_lines=export_lines,
             return_factory=return_factory,
+            diluent=diluent,
             **kwargs_molecule,
         )
         if return_factory:
@@ -599,6 +618,7 @@ def _calc_spectrum_one_molecule(
     mode,
     export_lines,
     return_factory=False,
+    diluent="air",
     **kwargs,
 ) -> Spectrum:
     """See :py:func:`~radis.lbl.calc.calc_spectrum`
@@ -666,6 +686,7 @@ def _calc_spectrum_one_molecule(
         pressure=pressure,
         wstep=wstep,
         truncation=truncation,
+        mole_fraction=mole_fraction,
         neighbour_lines=neighbour_lines,
         cutoff=cutoff,
         parsum_mode=parsum_mode,
@@ -674,10 +695,22 @@ def _calc_spectrum_one_molecule(
         chunksize=chunksize,
         broadening_method=broadening_method,
         export_lines=export_lines,
+        diluent=diluent,
         **kwargs,
     )
     # Have consistent output units
     sf.input_wunit = input_wunit
+
+    # Checking diluent other than air present
+    if isinstance(diluent, str):
+        if diluent == "air":
+            diluent_other_than_air = False
+        else:
+            diluent_other_than_air = True
+    else:
+        diluent_other_than_air = len(diluent) > 1 or (
+            len(diluent) == 1 and "air" not in diluent
+        )
 
     # Load databank
     # -------------
@@ -744,18 +777,25 @@ def _calc_spectrum_one_molecule(
             # constants (not all molecules are supported!)
             conditions["levelsfmt"] = "radis"
             conditions["lvl_use_cached"] = use_cached
-
         # Columns to load
         if export_lines:
             conditions["load_columns"] = "all"
+            conditions["extra_params"] = "all"
+        elif not _equilibrium and diluent_other_than_air:
+            conditions["load_columns"] = ["noneq", "diluent"]
+            conditions["extra_params"] = "all"
         elif not _equilibrium:
             conditions["load_columns"] = "noneq"
+        elif diluent_other_than_air:
+            conditions["load_columns"] = ["equilibrium", "diluent"]
+            conditions["extra_params"] = "all"
         else:
             conditions["load_columns"] = "equilibrium"
 
         conditions["load_energies"] = not _equilibrium
         # Details to identify lines
         conditions["parse_local_global_quanta"] = (not _equilibrium) or export_lines
+
         # Finally, LOAD :
         sf.fetch_databank(**conditions)
     elif exists(databank):
@@ -800,8 +840,12 @@ def _calc_spectrum_one_molecule(
         # Columns to load
         if export_lines:
             conditions["load_columns"] = "all"
+        elif not _equilibrium and diluent_other_than_air:
+            conditions["load_columns"] = ["noneq", "diluent"]
         elif not _equilibrium:
             conditions["load_columns"] = "noneq"
+        elif diluent_other_than_air:
+            conditions["load_columns"] = ["equilibrium", "diluent"]
         else:
             conditions["load_columns"] = "equilibrium"
 
@@ -814,8 +858,12 @@ def _calc_spectrum_one_molecule(
         # Columns to load
         if export_lines:
             load_columns = "all"
+        elif not _equilibrium and diluent_other_than_air:
+            load_columns = ["noneq", "diluent"]
         elif not _equilibrium:
             load_columns = "noneq"
+        elif diluent_other_than_air:
+            load_columns = ["equilibrium", "diluent"]
         else:
             load_columns = "equilibrium"
 

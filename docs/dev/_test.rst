@@ -108,6 +108,9 @@ adding the following lines within your test function::
         import matplotlib.pyplot as plt
         plt.ion()   # dont get stuck with Matplotlib if executing through pytest
 
+You can refer to Pull Request: https://github.com/radis/radis/pull/495 to see
+how test cases are written when a new feature is added.
+
 See: https://github.com/statsmodels/statsmodels/issues/3697
 
 

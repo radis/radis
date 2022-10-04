@@ -239,6 +239,18 @@ required_non_eq = [
 ]
 """list: column names required for non-equilibrium calculations.
 See load_column= key of fetch_databank() and load_databank() """
+
+broadening_coeff = [
+    "gamma_co2",
+    "n_co2",
+    "gamma_h2o",
+    "n_h2o",
+    "gamma_he",
+    "n_he",
+    "gamma_h2",
+    "n_h2",
+]
+"""list: column names required for non-air diluent calculations."""
 # TODO refactor : directly go & parse the identifications names (globu, locu, etc.)
 # in radis.io.hitran ?
 # For the moment we just try to be exhaustive
@@ -468,6 +480,7 @@ class Parameters(ConditionDict):
         "wavenum_min_calc",
         "waveunit",
         "wstep",
+        "diluent",
     ]
 
     def __init__(self):
@@ -495,6 +508,7 @@ class Parameters(ConditionDict):
         self.wavenum_min_calc = None  #: float: minimum calculated wavenumber (cm-1) initialized by SpectrumFactory
         self.waveunit = "cm-1"  #: waverange unit: should be cm-1.
         self.wstep = None  #: float: spectral resolution (cm-1)
+        self.diluent = {}  # dict: molecule : mole fraction
         self.dxL = _lorentzian_step(
             0.01
         )  #: float : Lorentzian step for LDM lineshape database. Default _lorentzian_step(0.01)
@@ -885,6 +899,20 @@ class DatabankLoader(object):
         self.df0 = None  # type : pd.DataFrame
         self._reset_references()  # bibliographic references
 
+    def columns_list_to_load(self, load_columns_type):
+        # Which columns to load
+        if load_columns_type == "equilibrium":
+            columns = list(drop_all_but_these)
+        elif load_columns_type == "noneq":
+            columns = list(set(drop_all_but_these) | set(required_non_eq))
+        elif load_columns_type == "diluent":
+            columns = list(broadening_coeff)
+        else:
+            raise ValueError(
+                f"Expected a list or 'all' for `load_columns`, got `load_columns={load_columns_type}"
+            )
+        return columns
+
     def fetch_databank(
         self,
         source="hitran",
@@ -981,7 +1009,7 @@ class DatabankLoader(object):
         parallel: bool
             if ``True``, uses joblib.parallel to load database with multiple processes
             (works only for HITEMP files)
-        load_columns: list, ``'all'``, ``'equilibrium'``, ``'noneq'``
+        load_columns: list, ``'all'``, ``'equilibrium'``, ``'noneq'``, ``diluent``,
             columns names to load.
             If ``'equilibrium'``, only load the columns required for equilibrium
             calculations. If ``'noneq'``, also load the columns required for
@@ -989,6 +1017,8 @@ class DatabankLoader(object):
             If ``'all'``, load everything. Note that for performances, it is
             better to load only certain columsn rather than loading them all
             and dropping them with ``drop_columns``.
+            If ``diluent`` then all additional columns required for calculating spectrum
+            in that diluent is loaded.
             Default ``'equilibrium'``.
 
             .. warning::
@@ -1086,19 +1116,31 @@ class DatabankLoader(object):
         self.params.db_use_cached = db_use_cached
         self.params.lvl_use_cached = lvl_use_cached
 
-        # %% Which columns to load
-        if load_columns == "equilibrium":
-            columns = list(drop_all_but_these)
-        elif load_columns == "noneq":
-            columns = list(set(drop_all_but_these) | set(required_non_eq))
-        elif load_columns == "all":
+        # Which columns to load
+        columns = []
+        if "all" in load_columns:
             columns = None  # see fetch_hitemp, fetch_hitran, etc.
-        elif isinstance(load_columns, list):
-            columns = list(set(drop_all_but_these) | set(load_columns))
-        else:
+        elif isinstance(load_columns, str) and load_columns in ["equilibrium", "noneq"]:
+            columns = self.columns_list_to_load(load_columns)
+        elif load_columns == "diluent":
             raise ValueError(
-                f"Expected a list or 'all' for `load_columns`, got `load_columns={load_columns}"
+                "Please use diluent along with 'equilibrium' or 'noneq' in a list like ['diluent','noneq']"
             )
+
+        elif isinstance(load_columns, list) and "all" not in load_columns:
+            for load_columns_type in load_columns:
+                if load_columns_type in ["equilibrium", "noneq", "diluent"]:
+                    for col in self.columns_list_to_load(load_columns_type):
+                        columns.append(col)
+                elif load_columns_type in list(
+                    set(drop_all_but_these)
+                    | set(required_non_eq)
+                    | set(broadening_coeff)
+                ):
+                    columns.append(load_columns_type)
+                else:
+                    raise ValueError("invalid column name provided")
+            columns = list(set(columns))
 
         # %% Init Line database
         # ---------------------
@@ -2068,6 +2110,7 @@ class DatabankLoader(object):
         load_columns,
         include_neighbouring_lines=True,
     ) -> pd.DataFrame:
+
         """Loads all available database files and keep the relevant one.
         Returns a Pandas dataframe.
 
@@ -2114,7 +2157,6 @@ class DatabankLoader(object):
             because of lineshape broadening. The ``neighbour_lines``
             parameter is used to determine the limit. Default ``True``.
         """
-
         # Check inputs
         assert db_use_cached in [True, False, "regen", "force"]
 
@@ -2138,19 +2180,31 @@ class DatabankLoader(object):
                 + drop_auto_columns_for_levelsfmt[levelsfmt]
             )
 
-        # Which columns to load
-        if load_columns == "equilibrium":
-            columns = list(drop_all_but_these)
-        elif load_columns == "noneq":
-            columns = list(set(drop_all_but_these) | set(required_non_eq))
-        elif load_columns == "all":
+        # which columns to load
+        columns = []
+        if "all" in load_columns:
             columns = None  # see fetch_hitemp, fetch_hitran, etc.
-        elif isinstance(load_columns, list):
-            columns = list(set(drop_all_but_these) | set(load_columns))
-        else:
+        elif isinstance(load_columns, str) and load_columns in ["equilibrium", "noneq"]:
+            columns = self.columns_list_to_load(load_columns)
+        elif load_columns == "diluent":
             raise ValueError(
-                f"Expected a list or 'all' for `load_columns`, got `load_columns={load_columns}"
+                "Please use diluent along with 'equilibrium' or 'noneq' in a list like ['diluent','noneq']"
             )
+
+        elif isinstance(load_columns, list) and "all" not in load_columns:
+            for load_columns_type in load_columns:
+                if load_columns_type in ["equilibrium", "noneq", "diluent"]:
+                    for col in self.columns_list_to_load(load_columns_type):
+                        columns.append(col)
+                elif load_columns_type in list(
+                    set(drop_all_but_these)
+                    | set(required_non_eq)
+                    | set(broadening_coeff)
+                ):
+                    columns.append(load_columns_type)
+                else:
+                    raise ValueError("invalid column name provided")
+            columns = list(set(columns))
 
         # subroutine load_and_concat
         # --------------------------------------
