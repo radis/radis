@@ -32,7 +32,7 @@ def parse_hitran_file(fname, columns, count=-1):
 
     See Also
     --------
-    Used in :py:func:`~radis.io.hitran.hit2df` and :py:func:`~radis.io.cdsd.cdsd2df`
+    Used in :py:func:`~radis.api.hitranapi.hit2df` and :py:func:`~radis.api.cdsdapi.cdsd2df`
     """
 
     # To be faster, we read file totally in bytes mode with fromfiles. But that

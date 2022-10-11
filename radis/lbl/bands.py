@@ -51,7 +51,7 @@ import numpy as np
 import pandas as pd
 from numpy import exp
 
-from radis.io.hitran import HITRAN_CLASS1, get_molecule
+from radis.api.hitranapi import HITRAN_CLASS1, get_molecule
 from radis.lbl.broadening import BroadenFactory
 from radis.lbl.labels import (
     vib_lvl_name_cdsd_pc,
@@ -105,6 +105,7 @@ class BandFactory(BroadenFactory):
         self,
         Tgas,
         mole_fraction=None,
+        diluent=None,
         path_length=None,
         pressure=None,
         levels="all",
@@ -232,6 +233,9 @@ class BandFactory(BroadenFactory):
         # ----------------------------------------------------------------------
 
         # Line broadening
+
+        # ... generates molefraction for diluents
+        self._generate_diluent_molefraction(mole_fraction, diluent)
 
         # ... calculate broadening  HWHM
         self._calc_broadening_HWHM()
@@ -395,6 +399,7 @@ class BandFactory(BroadenFactory):
         Trot,
         Ttrans=None,
         mole_fraction=None,
+        diluent=None,
         path_length=None,
         pressure=None,
         vib_distribution="boltzmann",
@@ -555,6 +560,9 @@ class BandFactory(BroadenFactory):
         # ----------------------------------------------------------------------
 
         # Line broadening
+
+        # ... generates molefraction for diluents
+        self._generate_diluent_molefraction(mole_fraction, diluent)
 
         # ... calculate broadening  HWHM
         self._calc_broadening_HWHM()

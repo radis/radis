@@ -108,6 +108,9 @@ adding the following lines within your test function::
         import matplotlib.pyplot as plt
         plt.ion()   # dont get stuck with Matplotlib if executing through pytest
 
+You can refer to Pull Request: https://github.com/radis/radis/pull/495 to see
+how test cases are written when a new feature is added.
+
 See: https://github.com/statsmodels/statsmodels/issues/3697
 
 
@@ -127,7 +130,7 @@ The path to these test files can be retrieved using the :py:func:`~radis.test.ut
 Load a line database file ::
 
     from radis.test.utils import getTestFile
-    from radis.io.hitran import hit2df
+    from radis.api.hitranapi import hit2df
     df = hit2df(getTestFile("hitran_CO_fragment.par"))
 
     print(df)  # replace with your test code

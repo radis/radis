@@ -8,7 +8,12 @@ Created on Tue Feb  2 13:51:40 2021
 
 import pytest
 
-from radis.io.hitemp import HITEMP_MOLECULES, HITEMPDatabaseManager, fetch_hitemp
+from radis.api.hitempapi import (
+    HITEMP_MOLECULES,
+    HITEMPDatabaseManager,
+    keep_only_relevant,
+)
+from radis.io.hitemp import fetch_hitemp
 from radis.misc.config import getDatabankList
 
 
@@ -37,7 +42,6 @@ def test_no_redownload(*args, **kwargs):
 
 @pytest.mark.fast
 def test_relevant_files_filter():
-    from radis.io.hitemp import keep_only_relevant
 
     files = [
         "02_00000-00500_HITEMP2010.zip",
@@ -177,8 +181,6 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
 
     """
     from os.path import basename
-
-    from radis.io.hitemp import keep_only_relevant
 
     wmin = 2700
     wmax = 3000

@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jan 26 21:27:15 2021
-
-@author: erwan
+Defines the :py:class:`~radis.api.hdf5.DataFileManager` class
 """
 
 import os
@@ -96,9 +94,9 @@ class DataFileManager(object):
         ::
 
             file = 'CO.hdf5'
-            from radis.io.hdf5 import HDF5Manager
-            engine = HDF5Manager.guess_engine(file)
-            mgr = HDF5Manager(engine)
+            from radis.api.hdf5 import DataFileManager
+            engine = DataFileManager.guess_engine(file)
+            mgr = DataFileManager(engine)
             mgr.read_metadata(file)
 
 
@@ -141,7 +139,7 @@ class DataFileManager(object):
             root for `h5py` )
         data_columns : list
             only these column names will be searchable directly on disk to
-            load certain lines only. See :py:func:`~radis.io.hdf5.hdf2df`
+            load certain lines only. See :py:func:`~radis.api.hdf5.hdf2df`
         """
         file = expanduser(file)
         if self.engine == "pytables":
@@ -173,13 +171,15 @@ class DataFileManager(object):
 
             if append == True:
                 # In vaex we cannot append. Here we write lots of small files then combine them.
-                # self.combine_temp_batch_files() should be combined at the end.
+                # self.combine_temp_batch_files() should be called at the end.
+
+                # To start with, get an available temp file name :
                 base, ext = splitext(file)
                 i = 0
-                temp_batch_file = base + "_temp" + str(i).zfill(6) + ext
+                temp_batch_file = base + "_temp" + str(i).zfill(5) + ext
                 while temp_batch_file in self._temp_batch_files:
                     i += 1
-                    temp_batch_file = base + "_temp" + str(i).zfill(6) + ext
+                    temp_batch_file = base + "_temp" + str(i).zfill(5) + ext
                 file = temp_batch_file
                 # Check no remaining one from a non-cleaned previous run:
                 if exists(file):
@@ -318,7 +318,7 @@ class DataFileManager(object):
             )
 
         # Load
-        # Convert to output format
+        # Convert from reading format ("engine") to output format ("output")
         engine = self.engine
 
         if engine == output:
@@ -328,7 +328,9 @@ class DataFileManager(object):
             if columns:  # load only these columns (if they exist)
                 columns = [c for c in columns if c in df.columns]
             if output == "pandas":
-                df = df.to_pandas_df(column_names=columns)
+                df_pandas = df.to_pandas_df(column_names=columns)
+                df.close()
+                df = df_pandas
             elif output == "jax":
                 if columns == None:
                     columns = list(df.columns)
@@ -347,6 +349,7 @@ class DataFileManager(object):
                         out["logsij0"] = jnp.array(np.log(df[c].values))
                     else:
                         out[c] = jnp.array(df[c].values)
+                df.close()
                 df = out
             else:
                 raise NotImplementedError(f"output {output} for engine {engine}")
@@ -601,7 +604,7 @@ class DataFileManager(object):
             if True, create an empty dataset to store the metadata as attribute
 
         """
-        from radis.io.cache_files import _h5_compatible
+        from radis.api.cache_files import _h5_compatible
 
         if self.engine in ["pytables", "pytables-fixed"]:
             fname = expanduser(fname)

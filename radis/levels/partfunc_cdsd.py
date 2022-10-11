@@ -28,8 +28,8 @@ import pandas as pd
 from scipy.interpolate import splev, splrep
 
 import radis
+from radis.api.cache_files import filter_metadata, load_h5_cache_file, save_to_hdf
 from radis.db.molecules import ElectronicState
-from radis.io.cache_files import filter_metadata, load_h5_cache_file, save_to_hdf
 from radis.lbl.labels import (
     vib_lvl_name_cdsd_p,
     vib_lvl_name_cdsd_pc,

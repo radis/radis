@@ -155,6 +155,9 @@ class SpectrumFactory(BandFactory):
     medium: ``'air'``, ``'vacuum'``
         propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``.
         Does not change anything when giving inputs in wavenumber. Default ``'air'``
+    diluent: ``str`` or ``dictionary``
+            can be a string of a single diluent or a dictionary containing diluent
+            name as key and its mole_fraction as value. Default ``air``.
 
     Other Parameters
     ----------------
@@ -398,6 +401,7 @@ class SpectrumFactory(BandFactory):
         export_populations=None,
         export_lines=False,
         emulate_gpu=False,
+        diluent="air",
         **kwargs,
     ):
 
@@ -514,6 +518,16 @@ class SpectrumFactory(BandFactory):
         if not isinstance(isotope, str):
             isotope = ",".join([str(k) for k in list_if_float(isotope)])
 
+        # If molecule present in diluent, raise error
+        if (isinstance(diluent, str) and diluent == molecule) or (
+            isinstance(diluent, dict) and molecule in diluent.keys()
+        ):
+            raise KeyError(
+                "{0} is being called as molecule and diluent, please remove it from diluent.".format(
+                    molecule
+                )
+            )
+
         # Initialize input conditions
         self.input.wavenum_min = wavenum_min
         self.input.wavenum_max = wavenum_max
@@ -535,6 +549,8 @@ class SpectrumFactory(BandFactory):
         # Initialize computation variables
         self.params.wstep = wstep
         self.params.pseudo_continuum_threshold = pseudo_continuum_threshold
+        self.params.diluent = diluent
+        self._diluent = None
 
         if cutoff is None:
             # If None, use no cutoff : https://github.com/radis/radis/pull/259
@@ -648,7 +664,13 @@ class SpectrumFactory(BandFactory):
     # XXX =====================================================================
 
     def eq_spectrum(
-        self, Tgas, mole_fraction=None, path_length=None, pressure=None, name=None
+        self,
+        Tgas,
+        mole_fraction=None,
+        path_length=None,
+        diluent=None,
+        pressure=None,
+        name=None,
     ) -> Spectrum:
         """Generate a spectrum at equilibrium.
 
@@ -658,6 +680,9 @@ class SpectrumFactory(BandFactory):
             Gas temperature (K)
         mole_fraction: float
             database species mole fraction. If None, Factory mole fraction is used.
+        diluent: str or dictionary
+            can be a string of a single diluent or a dictionary containing diluent
+            name as key and its mole_fraction as value
         path_length: float or `~astropy.units.quantity.Quantity`
             slab size (cm). If ``None``, the default Factory
             :py:attr:`~radis.lbl.factory.SpectrumFactor.input.path_length` is used.
@@ -705,7 +730,6 @@ class SpectrumFactory(BandFactory):
         --------
         :meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`
         """
-
         # %% Preprocessing
         # --------------------------------------------------------------------
 
@@ -786,6 +810,9 @@ class SpectrumFactory(BandFactory):
         # ----------------------------------------------------------------------
         # Line broadening
 
+        # ... generates molefraction for diluents
+        self._generate_diluent_molefraction(mole_fraction, diluent)
+
         # ... calculate broadening  HWHM
         self._calc_broadening_HWHM()
 
@@ -850,6 +877,7 @@ class SpectrumFactory(BandFactory):
                 "lines_cutoff": self._Nlines_cutoff,
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": True,
+                "diluents": self._diluent,
                 "radis_version": version,
                 "spectral_points": (
                     self.params.wavenum_max_calc - self.params.wavenum_min_calc
@@ -925,6 +953,7 @@ class SpectrumFactory(BandFactory):
         self,
         Tgas,
         mole_fraction=None,
+        diluent=None,
         path_length=None,
         pressure=None,
         name=None,
@@ -1193,6 +1222,7 @@ class SpectrumFactory(BandFactory):
                 ],
                 "lines_calculated": _Nlines_calculated,
                 "thermal_equilibrium": True,
+                "diluents": self._diluent,
                 "radis_version": version,
                 "emulate_gpu": emulate,
                 "spectral_points": (
@@ -1411,6 +1441,7 @@ class SpectrumFactory(BandFactory):
         Ttrans=None,
         mole_fraction=None,
         path_length=None,
+        diluent=None,
         pressure=None,
         vib_distribution="boltzmann",
         rot_distribution="boltzmann",
@@ -1435,6 +1466,9 @@ class SpectrumFactory(BandFactory):
             which is the RT characteristic time)
         mole_fraction: float
             database species mole fraction. If None, Factory mole fraction is used.
+        diluent: str or dictionary
+            can be a string of a single diluent or a dictionary containing diluent
+            name as key and its mole_fraction as value
         path_length: float or `~astropy.units.quantity.Quantity`
             slab size (cm). If ``None``, the default Factory
             :py:attr:`~radis.lbl.factory.SpectrumFactor.input.path_length` is used.
@@ -1518,7 +1552,6 @@ class SpectrumFactory(BandFactory):
 
         # %% Preprocessing
         # --------------------------------------------------------------------
-
         # Convert units
         Tvib = convert_and_strip_units(Tvib, u.K)
         Trot = convert_and_strip_units(Trot, u.K)
@@ -1549,7 +1582,6 @@ class SpectrumFactory(BandFactory):
         self.input.overpopulation = overpopulation
         self.input.rot_distribution = rot_distribution
         self.input.vib_distribution = vib_distribution
-
         # Get translational temperature
         Tgas = Ttrans
         if Tgas is None:
@@ -1566,7 +1598,6 @@ class SpectrumFactory(BandFactory):
 
         # New Profiler object
         self._reset_profiler(verbose)
-
         # Check variables
         self._check_inputs(mole_fraction, max(flatten(Tgas, Tvib, Trot)))
 
@@ -1627,6 +1658,9 @@ class SpectrumFactory(BandFactory):
         # ----------------------------------------------------------------------
 
         # Line broadening
+
+        # ... generates molefraction for diluents
+        self._generate_diluent_molefraction(mole_fraction, diluent)
 
         # ... calculate broadening  HWHM
         self._calc_broadening_HWHM()
@@ -1725,6 +1759,7 @@ class SpectrumFactory(BandFactory):
                 "lines_cutoff": self._Nlines_cutoff,
                 "lines_in_continuum": self._Nlines_in_continuum,
                 "thermal_equilibrium": False,  # dont even try to guess if it's at equilibrium
+                "diluents": self._diluent,
                 "radis_version": version,
                 "spectral_points": (
                     self.params.wavenum_max_calc - self.params.wavenum_min_calc
@@ -1883,6 +1918,50 @@ class SpectrumFactory(BandFactory):
             assert (wavenumber_calc[woutrange[0] : woutrange[1]] == wavenumber).all()
 
         return
+
+    def _generate_diluent_molefraction(self, mole_fraction, diluent):
+        from radis.misc.warning import MoleFractionError
+
+        molecule = self.input.molecule
+        # Check if diluent is same as molecule or not
+        if (isinstance(diluent, str) and diluent == molecule) or (
+            isinstance(diluent, dict) and molecule in diluent.keys()
+        ):
+            raise KeyError(
+                "{0} is being called as molecule and diluent, please remove it from diluent.".format(
+                    molecule
+                )
+            )
+
+        # Using Spectrum Factory values of diluents
+        if diluent is None:
+            # If diluent is air, then add remaining molefraction as 'air'
+            if isinstance(self.params.diluent, str):
+                diluents = {self.params.diluent: 1 - mole_fraction}
+            else:
+                diluents = self.params.diluent.copy()
+        else:
+            if isinstance(diluent, str):
+                diluents = {diluent: 1 - mole_fraction}
+            else:
+                diluents = diluent.copy()
+
+        # Checking mole_fraction of molecule and diluent
+        total_mole_fraction = mole_fraction + sum(list(diluents.values()))
+        if total_mole_fraction > 1:
+            raise MoleFractionError(
+                "Total molefraction = {0} of molecule and diluents greater than 1. Please set appropriate molefraction value of molecule and diluents.".format(
+                    total_mole_fraction
+                )
+            )
+        elif total_mole_fraction < 1:
+            raise MoleFractionError(
+                "Total molefraction = {0} of molecule and diluents less than 1. Please set appropriate molefraction value of molecule and diluents".format(
+                    total_mole_fraction
+                )
+            )
+
+        self._diluent = diluents
 
     def predict_time(self):
         """predict_time(self) uses the input parameters like Spectral Range, Number of lines, wstep,
