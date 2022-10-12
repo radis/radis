@@ -122,13 +122,15 @@ s_experimental = load_spec(my_spec).offset(-0.2, "nm")
 experimental_conditions = {
     "molecule": "CO2",  # Molecule ID
     "isotope": "1,2",  # Isotope ID, can have multiple at once
-    "wmin": 4167,  # Starting wavelength/wavenumber to be cropped out from the original experimental spectrum.
-    "wmax": 4180,  # Ending wavelength/wavenumber for the cropping range.
-    "wunit": "nm",  # Accompanying unit of those 2 wavelengths/wavenumbers above.
+    "wmin": 4167
+    * u.nm,  # Starting wavelength/wavenumber to be cropped out from the original experimental spectrum.
+    "wmax": 4180 * u.nm,  # Ending wavelength/wavenumber for the cropping range.
     "mole_fraction": 1,  # Species mole fraction, from 0 to 1.
     "pressure": 1
-    * 1e-3,  # Total pressure of gas, in "bar" unit by default, but you can also use Astropy units.
-    "path_length": 10,  # Experimental path length, in "cm" unit by default, but you can also use Astropy units.
+    * 1e-3
+    * u.bar,  # Total pressure of gas, in "bar" unit by default, but you can also use Astropy units.
+    "path_length": 10
+    * u.cm,  # Experimental path length, in "cm" unit by default, but you can also use Astropy units.
     "slit": "1.4 nm",  # Experimental slit, must be a blank space separating slit amount and unit.
     "wstep": 0.001,  # Resolution of wavenumber grid, in cm-1.
     "databank": "hitran",  # Databank used for the spectrum calculation. Must be stated.

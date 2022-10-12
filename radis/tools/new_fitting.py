@@ -157,12 +157,6 @@ def residual_LTE(params, conditions, s_data, sf, log, verbose):
         current_fitvals.append(float(params[param]))
     log["fit_vals"].append(current_fitvals)
 
-    # Print information of fitting process
-    # if verbose:
-    #     for param in params:
-    #         print(f"{param} = {float(params[param])}")
-    #    print(f"\nResidual = {residual}\n")
-
     return residual
 
 
@@ -296,12 +290,6 @@ def residual_NonLTE(params, conditions, s_data, sf, log, verbose):
     for param in params:
         current_fitvals.append(float(params[param]))
     log["fit_vals"].append(current_fitvals)
-
-    # Print information of fitting process
-    # if verbose:
-    #     for param in params:
-    #         print(f"{param} = {float(params[param])}")
-    #     print(f"\nResidual = {residual}\n")
 
     return residual
 
@@ -540,7 +528,7 @@ def spectrum_refinement(s_data, conditions, verbose) -> Union[Spectrum, dict]:
     s_refined = (
         Spectrum(
             {fit_var: (s_data_mtr[0], s_data_mtr[1])},
-            wunit=conditions["model"]["wunit"],
+            wunit=s_data.get_waveunit(),
             units={fit_var: s_data.units[fit_var]},
         )
         .take(fit_var)
@@ -738,11 +726,17 @@ def fit_spectrum(
         conditions, params = get_conditions(conditions)
 
         # Load and crop the experimental spectrum
-        s_data = s_exp.crop(
-            conditions["model"]["wmin"],
-            conditions["model"]["wmax"],
-            conditions["model"]["wunit"],
-        )
+        if "wunit" in conditions["model"]:  # Users state wunit directly
+            s_data = s_exp.crop(
+                conditions["model"]["wmin"],
+                conditions["model"]["wmax"],
+                conditions["model"]["wunit"],
+            )
+        else:  # Users don't state wunit directly, probably astropy units
+            s_data = s_exp.crop(
+                conditions["model"]["wmin"],
+                conditions["model"]["wmax"],
+            )
 
     # Log the time mark when experimental data is retrieved
     end_exp_load = time.time()
@@ -952,47 +946,3 @@ def fit_spectrum(
         )
 
     return s_result, result, log
-
-
-# ----------------------------------------------------------------------- #
-
-
-# if __name__ == "__main__":
-
-#     spec_list = [
-#         "CO2_measured_spectrum_4-5um",                                      # 0
-#         "synth-CO-1-1800-2300-cm-1-P3-t1500-v-r-mf0.1-p1-sl1nm",            # 1
-#         "synth-CO2-1-500-1100-cm-1-P2-t900-v-r-mf0.5-p1-sl1nm",             # 2
-#         "synth-CO2-1-500-3000-cm-1-P93-t740-v-r-mf0.96-p1-sl1nm",           # 3
-#         "synth-CO2-1-3300-3700-cm-1-P0.005-t3000-v-r-mf0.01-p1-sl1.4nm",    # 4
-#         "synth-H2O-1-1000-2500-cm-1-P0.5-t1500-v-r-mf0.5-p1-sl1nm",         # 5
-#         "synth-NH3-1-500-2000-cm-1-P10-t1000-v-r-mf0.01-p1-sl1nm",          # 6
-#         "synth-O2-1-7500-8000-cm-1-P1.01325-t298.15-v-r-mf0.21-p1-sl1nm",   # 7
-#     ]
-
-#     for i in range(len(spec_list)):
-#         input_path = f"../data/LTE/ground-truth/{spec_list[i]}.json"
-#         _, result, log, pipeline = fit_spectrum(input_path)
-#         json_data = {
-#             "fileName": f"{spec_list[i]}.spec",
-#             "pipeline": {
-#                 "method": pipeline["method"],
-# 	            "fit_var": "radiance",
-# 	            "normalize": pipeline["normalize"],
-# 	            "max_loop": 100
-#             },
-#             "result": {
-#                 "last_residual": log["residual"][-1],
-#                 "loops": result.nfev,
-#                 "time": log["time_fitting"]
-#             }
-#         }
-
-#         with open(f"../data/LTE/result/{spec_list[i]}/best_fit/pipeline.json", 'w') as f:
-#             json.dump(json_data, f, indent = 2)
-#             print("JSON file successfully created.")
-
-#         with open(f"../data/LTE/result/{spec_list[i]}/best_fit/log_residuals.txt", 'w') as f:
-#             for resi in log["residual"]:
-#                 f.write(f"{resi}\n")
-#             f.close()

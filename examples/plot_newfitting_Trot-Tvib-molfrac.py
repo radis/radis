@@ -20,6 +20,7 @@ during the experiment.
 
 """
 
+import astropy.units as u
 import numpy as np
 
 from radis import load_spec
@@ -75,12 +76,14 @@ s_experimental = load_spec(getTestFile(specName)).offset(-0.6, "nm")
 experimental_conditions = {
     "molecule": "CO",  # Molecule ID
     "isotope": "1,2,3",  # Isotope ID, can have multiple at once
-    "wmin": 2270,  # Starting wavelength/wavenumber to be cropped out from the original experimental spectrum.
-    "wmax": 2400,  # Ending wavelength/wavenumber for the cropping range.
-    "wunit": "nm",  # Accompanying unit of those 2 wavelengths/wavenumbers above.
-    "pressure": 1.01325,  # Total pressure of gas, in "bar" unit by default, but you can also use Astropy units.
+    "wmin": 2270
+    * u.nm,  # Starting wavelength/wavenumber to be cropped out from the original experimental spectrum.
+    "wmax": 2400 * u.nm,  # Ending wavelength/wavenumber for the cropping range.
+    "pressure": 1.01325
+    * u.bar,  # Total pressure of gas, in "bar" unit by default, but you can also use Astropy units.
     "path_length": 1
-    / 195,  # Experimental path length, in "cm" unit by default, but you can also use Astropy units.
+    / 195
+    * u.cm,  # Experimental path length, in "cm" unit by default, but you can also use Astropy units.
     "slit": {  # Experimental slit. In simple form: "[value] [unit]", i.e. "-0.2 nm". In complex form: a dict with parameters of apply_slit()
         "slit_function": (top_slit_nm, base_slit_nm),
         "unit": "nm",
