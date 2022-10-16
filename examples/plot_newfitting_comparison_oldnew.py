@@ -165,6 +165,9 @@ fit_properties = {
 For the fitting method, you can try one among 17 different fitting methods and algorithms of LMFIT,
 introduced in `LMFIT method list <https://lmfit.github.io/lmfit-py/fitting.html#choosing-different-fitting-methods>`.
 
+You can see the benchmark result of these algorithms here:
+`RADIS Newfitting Algorithm Benchmark <https://github.com/radis/radis-benchmark/blob/master/manual_benchmarks/plot_newfitting_comparison_algorithm.py>`.
+
 """
 
 
