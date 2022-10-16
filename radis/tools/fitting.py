@@ -49,6 +49,7 @@ def LTEModel(factory, fittable_parameters, fixed_parameters={}) -> Spectrum:
     See Also
     --------
     :py:func:`~radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel`
+    :py:func:`~radis.tools.new_fitting.residual_LTE`
 
     """
 
@@ -103,6 +104,7 @@ def Tvib12Tvib3Trot_NonLTEModel(
     See Also
     --------
     :py:func:`~radis.tools.fitting.LTEModel`
+    :py:func:`~radis.tools.new_fitting.residual_NonLTE`
     """
 
     fittable_parameters = fittable_parameters.copy()
@@ -207,6 +209,7 @@ def fit_spectrum(
     See Also
     --------
     :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`,
+    :py:func:`~radis.tools.new_fitting.fit_spectrum`,
     :py:mod:`fitroom`
     """
 

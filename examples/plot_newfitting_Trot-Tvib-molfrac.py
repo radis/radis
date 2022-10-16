@@ -2,7 +2,7 @@
 """
 
 ================================================================================
-Fit a non-LTE spectrum with multiple fit parameters
+Fit a non-LTE spectrum with multiple fit parameters using new fitting module
 ================================================================================
 
 With the new fitting module introduced in :py:func:`~radis.tools.new_fitting.fit_spectrum` function,
@@ -12,13 +12,15 @@ performance for equilibrium condition.
 This example features how new fitting module can fit non-equilibrium spectrum, with multiple fit
 parameters, such as vibrational/rotational temperatures, or mole fraction, etc.
 
-This is a real fitting case introduced by Mr. Corentin Grimaldi, featuring CO molecule emitting on
-a wide range of spectrum. This case also features a user-defined trapezoid slit function, which is
-accounted by the distorion (dispersion) of the slit, as a result of the influences from experimental
-parameters and spectrometer dispersion parameters during the experiment.
+This is a real fitting case introduced by Mr. Corentin Grimaldi, a scientist and member of RADIS
+community. This case features CO molecule emitting on a wide range of spectrum. This case also includes
+a user-defined trapezoid slit function, which is accounted by the distorion (dispersion) of the slit,
+as a result of the influences from experimental parameters and spectrometer dispersion parameters
+during the experiment.
 
 """
 
+import astropy.units as u
 import numpy as np
 
 from radis import load_spec
@@ -58,21 +60,30 @@ base_slit_nm = base_slit_um * 1e-3 * dispersion * 1.33
 # ------------------------ End of Mr. Grimaldi's script ------------------------ #
 
 
-# Load experimental spectrum.
+# ------------------------------------ Step 1. Load experimental spectrum ------------------------------------ #
+
+
 specName = (
     "Corentin_0_100cm_DownSampled_20cm_10pctCO2_1-wc-gw450-gr300-sl1500-acc5000-.spec"
 )
 s_experimental = load_spec(getTestFile(specName)).offset(-0.6, "nm")
 
+
+# ------------------------------------ Step 2. Fill ground-truths and data ------------------------------------ #
+
+
 # Experimental conditions which will be used for spectrum modeling. Basically, these are known ground-truths.
 experimental_conditions = {
     "molecule": "CO",  # Molecule ID
     "isotope": "1,2,3",  # Isotope ID, can have multiple at once
-    "wmin": 2270,  # Starting wavelength/wavenumber to be cropped out from the original experimental spectrum.
-    "wmax": 2400,  # Ending wavelength/wavenumber for the cropping range.
-    "wunit": "nm",  # Accompanying unit of those 2 wavelengths/wavenumbers above.
-    "pressure": 1.01325,  # Partial pressure of gas, in "bar" unit.
-    "path_length": 1 / 195,  # Experimental path length, in "cm" unit.
+    "wmin": 2270
+    * u.nm,  # Starting wavelength/wavenumber to be cropped out from the original experimental spectrum.
+    "wmax": 2400 * u.nm,  # Ending wavelength/wavenumber for the cropping range.
+    "pressure": 1.01325
+    * u.bar,  # Total pressure of gas, in "bar" unit by default, but you can also use Astropy units.
+    "path_length": 1
+    / 195
+    * u.cm,  # Experimental path length, in "cm" unit by default, but you can also use Astropy units.
     "slit": {  # Experimental slit. In simple form: "[value] [unit]", i.e. "-0.2 nm". In complex form: a dict with parameters of apply_slit()
         "slit_function": (top_slit_nm, base_slit_nm),
         "unit": "nm",
@@ -81,7 +92,6 @@ experimental_conditions = {
         "slit_dispersion": slit_dispersion,
         "inplace": False,
     },
-    "wstep": 0.001,  # Resolution of wavenumber grid, in cm-1.
     "cutoff": 0,  # (RADIS native) Discard linestrengths that are lower that this to reduce calculation time, in cm-1.
     "databank": "hitemp",  # Databank used for calculation. Must be stated.
 }
@@ -104,12 +114,25 @@ bounding_ranges = {
 
 # Fitting pipeline setups.
 fit_properties = {
-    "method": "lbfgsb",  # Preferred fitting method from the 17 confirmed methods of LMFIT stated in week 4 blog. By default, "leastsq".
+    "method": "lbfgsb",  # Preferred fitting method. By default, "leastsq".
     "fit_var": "radiance",  # Spectral quantity to be extracted for fitting process, such as "radiance", "absorbance", etc.
     "normalize": False,  # Either applying normalization on both spectra or not.
     "max_loop": 300,  # Max number of loops allowed. By default, 200.
     "tol": 1e-20,  # Fitting tolerance, only applicable for "lbfgsb" method.
 }
+
+"""
+
+For the fitting method, you can try one among 17 different fitting methods and algorithms of LMFIT,
+introduced in `LMFIT method list <https://lmfit.github.io/lmfit-py/fitting.html#choosing-different-fitting-methods>`.
+
+You can see the benchmark result of these algorithms here:
+`RADIS Newfitting Algorithm Benchmark <https://github.com/radis/radis-benchmark/blob/master/manual_benchmarks/plot_newfitting_comparison_algorithm.py>`.
+
+"""
+
+
+# ------------------------------------ Step 3. Run the fitting and retrieve results ------------------------------------ #
 
 
 # Conduct the fitting process!

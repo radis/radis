@@ -68,6 +68,16 @@ def residual_LTE(params, conditions, s_data, sf, log, verbose):
     residual: float
         residuals of the two spectra, using RADIS's get_residual().
 
+    Examples
+    --------
+
+    .. minigallery:: radis.tools.new_fitting.residual_LTE
+
+    See Also
+    --------
+    :py:func:`~radis.tools.new_fitting.residual_NonLTE`
+    :py:func:`~radis.tools.fitting.LTEModel`
+
     """
 
     # GENERATE LTE SPECTRUM BASED ON THOSE PARAMETERS
@@ -147,12 +157,6 @@ def residual_LTE(params, conditions, s_data, sf, log, verbose):
         current_fitvals.append(float(params[param]))
     log["fit_vals"].append(current_fitvals)
 
-    # Print information of fitting process
-    if verbose:
-        for param in params:
-            print(f"{param} = {float(params[param])}")
-        print(f"\nResidual = {residual}\n")
-
     return residual
 
 
@@ -188,6 +192,16 @@ def residual_NonLTE(params, conditions, s_data, sf, log, verbose):
     -------
     residual: float
         residuals of the two spectra, using RADIS's get_residual().
+
+    Examples
+    --------
+
+    .. minigallery:: radis.tools.new_fitting.residual_NonLTE
+
+    See Also
+    --------
+    :py:func:`~radis.tools.new_fitting.residual_LTE`
+    :py:func:`~radis.tools.fitting.radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel`
 
     """
 
@@ -277,12 +291,6 @@ def residual_NonLTE(params, conditions, s_data, sf, log, verbose):
         current_fitvals.append(float(params[param]))
     log["fit_vals"].append(current_fitvals)
 
-    # Print information of fitting process
-    if verbose:
-        for param in params:
-            print(f"{param} = {float(params[param])}")
-        print(f"\nResidual = {residual}\n")
-
     return residual
 
 
@@ -313,12 +321,10 @@ def get_conditions(
     verbose: bool
         by default, True, print details about the fitting progress.
 
-    Returns
-    -------
-    conditions: dict
-        Dictionary object containing all ground-truth information.
-    params: Parameters
-        LMFIT.Parameters object that contains fit parameters.
+    Examples
+    --------
+
+    .. minigallery:: radis.tools.new_fitting.get_conditions
 
     """
 
@@ -457,7 +463,7 @@ def get_conditions(
 # -------------------------------------------------------------------------------------------- #
 
 
-def spectrum_refinement(s_data, conditions, verbose=True) -> Union[Spectrum, dict]:
+def spectrum_refinement(s_data, conditions, verbose) -> Union[Spectrum, dict]:
     """Receive an experimental spectrum and further refine it according to the provided pipeline
     and ground-truths. Refinement process includes extracting the desired spectrum quantity,
     removing NaN values, and other additional convolutions. Finally, a refined Spectrum object is
@@ -483,6 +489,11 @@ def spectrum_refinement(s_data, conditions, verbose=True) -> Union[Spectrum, dic
         the refined spectrum.
     conditions : dict
         the input conditions that might have been added fit_var (in case user didn't).
+
+    Examples
+    --------
+
+    .. minigallery:: radis.tools.new_fitting.spectrum_refinement
 
     """
 
@@ -517,7 +528,7 @@ def spectrum_refinement(s_data, conditions, verbose=True) -> Union[Spectrum, dic
     s_refined = (
         Spectrum(
             {fit_var: (s_data_mtr[0], s_data_mtr[1])},
-            wunit=conditions["model"]["wunit"],
+            wunit=s_data.get_waveunit(),
             units={fit_var: s_data.units[fit_var]},
         )
         .take(fit_var)
@@ -548,7 +559,9 @@ def fit_spectrum(
     pipeline=None,
     bounds=None,
     input_file=None,
-    verbose=False,
+    verbose=True,
+    show_plot=True,
+    fit_kws={},
 ) -> Union[Spectrum, MinimizerResult, dict]:
     """Fit an experimental spectrum (from here referred as "data spectrum") with a modeled one,
     then derive the fit results. Data spectrum is loaded from the path stated in the JSON file,
@@ -577,6 +590,12 @@ def fit_spectrum(
     ----------
     verbose : bool
         print details about each loop of the fitting process. By default, False.
+    show_plot : bool
+        show experimental spectrum before and after being fitted. By default, True. Showing the plot
+        will pause the runtime, so if you are running benchmark which involves multiple fitting cases,
+        set it to False.
+    fit_kws: dict
+        Options to pass to the minimizer being used. See :py:func:`~lmfit.minimizer.minimize`
 
     Returns
     -------
@@ -589,9 +608,84 @@ def fit_spectrum(
         not quite covered by the Minimizer, including: residual and fit
         values after each fitting loop, and total time elapsed.
 
+    Examples
+    --------
+
+    ::
+        from radis import load_spec
+        from radis.test.utils import getTestFile
+        from radis.tools.new_fitting import fit_spectrum
+
+        # Load an experimental spectrum. You can prepare yours, or fetch one of them in the radis/test/files directory.
+        my_spec = getTestFile("synth-NH3-1-500-2000cm-P10-mf0.01-p1.spec")
+        s_experimental = load_spec(my_spec)
+
+        # Experimental conditions which will be used for spectrum modeling. Basically, these are known ground-truths.
+        experimental_conditions = {
+            "molecule": "NH3",  # Molecule ID
+            "isotope": "1",  # Isotope ID, can have multiple at once
+            "wmin": 1000,  # Starting wavelength/wavenumber to be cropped out from the original experimental spectrum.
+            "wmax": 1050,  # Ending wavelength/wavenumber for the cropping range.
+            "wunit": "cm-1",  # Accompanying unit of those 2 wavelengths/wavenumbers above.
+            "mole_fraction": 0.01,  # Species mole fraction, from 0 to 1.
+            "pressure": 10,  # Total pressure of gas, in "bar" unit by default, but you can also use Astropy units.
+            "path_length": 1,  # Experimental path length, in "cm" unit by default, but you can also use Astropy units.
+            "slit": "1 nm",  # Experimental slit, must be a blank space separating slit amount and unit.
+            "offset": "-0.2 nm",  # Experimental offset, must be a blank space separating offset amount and unit.
+            "wstep": 0.003,  # Resolution of wavenumber grid, in cm-1.
+            "databank": "hitran",  # Databank used for the spectrum calculation. Must be stated.
+        }
+
+        # List of parameters to be fitted, accompanied by their initial values.
+        fit_parameters = {
+            "Tgas": 700,  # Gas temperature, in K.
+        }
+
+        # List of bounding ranges applied for those fit parameters above.
+        bounding_ranges = {
+            "Tgas": [
+                500,
+                2000,
+            ],
+        }
+
+        # Fitting pipeline setups.
+        fit_properties = {
+            "method": "leastsq",  # Preferred fitting method. By default, "leastsq".
+            "fit_var": "radiance",  # Spectral quantity to be extracted for fitting process, such as "radiance", "absorbance", etc.
+            "normalize": False,  # Either applying normalization on both spectra or not.
+            "max_loop": 150,  # Max number of loops allowed. By default, 200.
+            "tol": 1e-15,  # Fitting tolerance, only applicable for "lbfgsb" method.
+        }
+
+        # Conduct the fitting process!
+        s_best, result, log = fit_spectrum(
+            s_exp=s_experimental,  # Experimental spectrum.
+            fit_params=fit_parameters,  # Fit parameters.
+            bounds=bounding_ranges,  # Bounding ranges for those fit parameters.
+            model=experimental_conditions,  # Experimental ground-truths conditions.
+            pipeline=fit_properties,  # Fitting pipeline references.
+            verbose=False,  # If you want a clean result, stay False. If you want to see more about each loop, True.
+        )
+    .. minigallery:: radis.tools.new_fitting.fit_spectrum
+    Notes
+    -----
+    For the fitting method, you can try one among 17 different fitting methods and algorithms of LMFIT, introduced
+    in `LMFIT method list <https://lmfit.github.io/lmfit-py/fitting.html#choosing-different-fitting-methods>`.
+    See Also
+    --------
+    :py:func:`~radis.tools.fitting.fit_spectrum()`,
+    :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`,
+    :py:mod:`fitroom`
+
     """
 
     begin = time.time()  # Start the fitting time counter
+
+    if verbose:
+        print(
+            "\n======================= COMMENCE FITTING PROCESS ======================="
+        )
 
     # ACQUIRE AND REFINE EXPERIMENTAL SPECTRUM s_data
 
@@ -621,37 +715,39 @@ def fit_spectrum(
 
         # Merge all separated dict inputs into a single dict first
 
-        conditions = {"model": {}, "fit": {}, "bounds": {}, "pipeline": {}}
-
-        for key in model:
-            conditions["model"][key] = model[key]
-        for key in fit_params:
-            conditions["fit"][key] = fit_params[key]
-        if bounds != None:
-            for key in bounds:
-                conditions["bounds"][key] = bounds[key]
-        for key in pipeline:
-            conditions["pipeline"][key] = pipeline[key]
+        conditions = {
+            "model": model,
+            "fit": fit_params,
+            "bounds": bounds if bounds is not None else {},
+            "pipeline": pipeline,
+        }
 
         # Load data, create Parameters object, from the above dict
         conditions, params = get_conditions(conditions)
 
         # Load and crop the experimental spectrum
-        s_data = s_exp.crop(
-            conditions["model"]["wmin"],
-            conditions["model"]["wmax"],
-            conditions["model"]["wunit"],
-        )
+        if "wunit" in conditions["model"]:  # Users state wunit directly
+            s_data = s_exp.crop(
+                conditions["model"]["wmin"],
+                conditions["model"]["wmax"],
+                conditions["model"]["wunit"],
+            )
+        else:  # Users don't state wunit directly, probably astropy units
+            s_data = s_exp.crop(
+                conditions["model"]["wmin"],
+                conditions["model"]["wmax"],
+            )
 
     # Log the time mark when experimental data is retrieved
     end_exp_load = time.time()
     time_exp_load = end_exp_load - begin
 
-    print(f"\nSuccessfully retrieved the experimental data in {time_exp_load}s.\n")
+    if verbose:
+        print(f"\nSuccessfully retrieved the experimental data in {time_exp_load}s.")
 
     # Further refine the data spectrum before calculating diff
 
-    s_data, conditions = spectrum_refinement(s_data, conditions)
+    s_data, conditions = spectrum_refinement(s_data, conditions, verbose)
 
     pipeline = conditions["pipeline"]
     fit_var = pipeline["fit_var"]
@@ -660,8 +756,9 @@ def fit_spectrum(
     end_exp_refine = time.time()
     time_exp_refine = end_exp_refine - end_exp_load
 
-    print(f"Successfully refined the experimental data in {time_exp_refine}s.")
     if verbose:
+        print(f"Successfully refined the experimental data in {time_exp_refine}s.")
+    if show_plot:
         s_data.plot(show=True)
 
     # PRE-MINIMIZATION SETUP
@@ -706,11 +803,13 @@ def fit_spectrum(
 
     # Determine additional fitting conditions for the minimizer
 
-    fit_kws = {
-        "max_nfev": pipeline["max_loop"]
-        if "max_loop" in pipeline
-        else 200,  # Default max number of loops: 200
-    }
+    fit_kws.update(
+        {
+            "max_nfev": pipeline["max_loop"]
+            if "max_loop" in pipeline
+            else 200,  # Default max number of loops: 200
+        }
+    )
 
     if "tol" in pipeline:
         if pipeline["method"] == "lbfgsb":
@@ -733,7 +832,9 @@ def fit_spectrum(
 
         sf.fetch_databank(databank, load_columns="equilibrium")
 
-        print("\nCommence fitting process for LTE spectrum!")
+        if verbose:
+            print("\nCommence fitting process for LTE spectrum!\n")
+
         result = minimize(
             residual_LTE,
             params,
@@ -747,7 +848,9 @@ def fit_spectrum(
 
         sf.fetch_databank(databank, load_columns="noneq")
 
-        print("\nCommence fitting process for non-LTE spectrum!")
+        if verbose:
+            print("\nCommence fitting process for non-LTE spectrum!")
+
         result = minimize(
             residual_NonLTE,
             params,
@@ -758,7 +861,7 @@ def fit_spectrum(
 
     # POST-MINIMIZATION REPORT
 
-    print(fit_report(result))  # Report the fitting result
+    print(fit_report(result), end="\n")  # Report the fitting result
 
     # REGENERATE THE BEST-FIT SPECTRUM, AS A RESULT FROM THE MINIMIZER
 
@@ -820,62 +923,26 @@ def fit_spectrum(
     end_fitting = time.time()
     time_fitting = float(end_fitting - begin_fitting)
 
-    print(f"\nSuccesfully finished the fitting process in {time_fitting}s.")
+    if verbose:
+        print(f"\nSuccessfully finished the fitting process in {time_fitting}s.")
+
     log["time_fitting"] = time_fitting
 
     # PLOT THE DIFFERENCE BETWEEN THE TWO
 
-    # We must show this plot regardless of verbose
-    plot_diff(
-        s_data,
-        s_result,
-        fit_var,
-        method=["diff", "ratio"],
-        show=True,
-    )
+    # If show_plot = True by default, show the diff plot
+    if show_plot:
+        plot_diff(
+            s_data,
+            s_result,
+            fit_var,
+            method=["diff", "ratio"],
+            show=True,
+        )
+
+    if verbose:
+        print(
+            "\n======================== END OF FITTING PROCESS ========================\n"
+        )
 
     return s_result, result, log
-
-
-# ----------------------------------------------------------------------- #
-
-
-# if __name__ == "__main__":
-
-#     spec_list = [
-#         "CO2_measured_spectrum_4-5um",                                      # 0
-#         "synth-CO-1-1800-2300-cm-1-P3-t1500-v-r-mf0.1-p1-sl1nm",            # 1
-#         "synth-CO2-1-500-1100-cm-1-P2-t900-v-r-mf0.5-p1-sl1nm",             # 2
-#         "synth-CO2-1-500-3000-cm-1-P93-t740-v-r-mf0.96-p1-sl1nm",           # 3
-#         "synth-CO2-1-3300-3700-cm-1-P0.005-t3000-v-r-mf0.01-p1-sl1.4nm",    # 4
-#         "synth-H2O-1-1000-2500-cm-1-P0.5-t1500-v-r-mf0.5-p1-sl1nm",         # 5
-#         "synth-NH3-1-500-2000-cm-1-P10-t1000-v-r-mf0.01-p1-sl1nm",          # 6
-#         "synth-O2-1-7500-8000-cm-1-P1.01325-t298.15-v-r-mf0.21-p1-sl1nm",   # 7
-#     ]
-
-#     for i in range(len(spec_list)):
-#         input_path = f"../data/LTE/ground-truth/{spec_list[i]}.json"
-#         _, result, log, pipeline = fit_spectrum(input_path)
-#         json_data = {
-#             "fileName": f"{spec_list[i]}.spec",
-#             "pipeline": {
-#                 "method": pipeline["method"],
-# 	            "fit_var": "radiance",
-# 	            "normalize": pipeline["normalize"],
-# 	            "max_loop": 100
-#             },
-#             "result": {
-#                 "last_residual": log["residual"][-1],
-#                 "loops": result.nfev,
-#                 "time": log["time_fitting"]
-#             }
-#         }
-
-#         with open(f"../data/LTE/result/{spec_list[i]}/best_fit/pipeline.json", 'w') as f:
-#             json.dump(json_data, f, indent = 2)
-#             print("JSON file successfully created.")
-
-#         with open(f"../data/LTE/result/{spec_list[i]}/best_fit/log_residuals.txt", 'w') as f:
-#             for resi in log["residual"]:
-#                 f.write(f"{resi}\n")
-#             f.close()
