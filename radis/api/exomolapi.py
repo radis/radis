@@ -129,6 +129,8 @@ def read_def(deff):
     # SOME DEF FILES CONTAINS ERRORS. THESE ARE THE EXCEPTIONS
     if deff.stem == "12C-16O2__UCL-4000":
         ntransf = 20
+    if deff.stem == "1H3-16O_p__eXeL":
+        ntransf = 100
     if deff.stem == "14N-1H3__CoYuTe":
         maxnu = 20000.0
     if deff.stem == "12C2-1H2__aCeTY":
