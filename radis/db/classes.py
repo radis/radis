@@ -329,6 +329,7 @@ EXOMOL_MOLECULES = [
     "FeH",
     "H2",
     "H2CO",
+    "H2CS",
     "H2O",
     "H2O2",
     "H2S",
