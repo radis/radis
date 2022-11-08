@@ -28,16 +28,16 @@ from warnings import warn
 import numpy as np
 import pytest
 
-from radis.io.cdsd import cdsd2df
-from radis.io.hitran import hit2df
+from radis.api.cdsdapi import cdsd2df
+from radis.api.hitranapi import hit2df
 from radis.misc.warning import IrrelevantFileWarning
 from radis.test.utils import getTestFile, setup_test_line_databases
 
 
 @pytest.mark.fast
 def test_hitran_names_match(verbose=True, warnings=True, *args, **kwargs):
-    """Compare that HITRAN species defined in :mod:`radis.io.hitran` match
-    the nomenclature dictionary : :py:data:`radis.io.hitran.trans`.
+    """Compare that HITRAN species defined in :mod:`radis.api.hitranapi` match
+    the nomenclature dictionary : :py:data:`radis.api.hitranapi.trans`.
 
     This should be ensured by developers when adding new species.
     """

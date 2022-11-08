@@ -644,6 +644,87 @@ def test_all_spectrum_using_wstep_auto(verbose=True, plot=False, *args, **kwargs
     assert sf._wstep == "auto"
 
 
+@pytest.mark.fast
+def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
+
+    sf = SpectrumFactory(
+        wavelength_min=4200,
+        wavelength_max=4500,
+        cutoff=1e-23,
+        molecule="CO",
+        isotope="1,2",
+        truncation=5,
+        neighbour_lines=10,
+        path_length=0.1,
+        mole_fraction=0.1,
+        medium="vacuum",
+        optimization=None,
+        verbose=verbose,
+    )
+    sf.warnings.update(
+        {
+            "MissingSelfBroadeningWarning": "ignore",
+            "NegativeEnergiesWarning": "ignore",
+            "LinestrengthCutoffWarning": "ignore",
+            "HighTemperatureWarning": "ignore",
+            "AccuracyWarning": "ignore",
+            "PerformanceWarning": "ignore",
+        }
+    )
+
+    sf.load_databank("HITRAN-CO", load_columns=["diluent", "equilibrium"])
+
+    # Calculating spectrum for different diluents
+    sf.eq_spectrum(Tgas=2000)
+    wl1 = sf.df1["hwhm_lorentz"]
+    assert sf._diluent == {"air": 0.9}
+
+    sf.eq_spectrum(Tgas=2000, diluent={"CO2": 0.4, "air": 0.5})
+    wl2 = sf.df1["hwhm_lorentz"]
+    assert sf._diluent == {"CO2": 0.4, "air": 0.5}
+
+    sf.eq_spectrum(Tgas=2000, diluent="CO2")
+    wl3 = sf.df1["hwhm_lorentz"]
+    assert sf._diluent == {"CO2": 0.9}
+
+    assert (wl1 < wl2).all() and (wl2 < wl3).all()
+
+
+@pytest.mark.fast
+def test_diluents_molefraction(verbose=True, plot=False, *args, **kwargs):
+    from radis.misc.warning import MoleFractionError
+
+    sf = SpectrumFactory(
+        wavelength_min=4300,
+        wavelength_max=4500,
+        wstep=0.01,
+        cutoff=1e-30,
+        pressure=1,
+        isotope=[1],
+        verbose=verbose,
+        diluent={"CO2": 0.4, "air": 0.2},
+    )
+    sf.load_databank("HITRAN-CO", load_columns=["diluent", "equilibrium"])
+    # Molefraction (molecule + diluent) < 1
+    with pytest.raises(MoleFractionError) as err:
+        sf.eq_spectrum(Tgas=300, mole_fraction=0.3)
+    assert (
+        "of molecule and diluents less than 1. Please set appropriate molefraction value of molecule and diluents"
+        in str(err.value)
+    )
+
+    # Molefraction (molecule + diluent) > 1
+    with pytest.raises(MoleFractionError) as err:
+        sf.eq_spectrum(Tgas=300, mole_fraction=0.6)
+    assert (
+        "of molecule and diluents greater than 1. Please set appropriate molefraction value of molecule and diluents."
+        in str(err.value)
+    )
+
+    # Molefraction (molecule + diluent) == 1
+    sf.eq_spectrum(Tgas=300, mole_fraction=0.4)
+
+
 # --------------------------
 if __name__ == "__main__":
 

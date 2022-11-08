@@ -4,7 +4,7 @@
 Routine Listing
 ---------------
 
-- :func:`~radis.io.cdsd.cdsd2df`
+- :func:`~radis.api.cdsdapi.cdsd2df`
 
 
 References
@@ -23,13 +23,26 @@ from collections import OrderedDict
 from os.path import exists, getmtime
 
 import radis
-from radis.io.cache_files import load_h5_cache_file, save_to_hdf
-from radis.io.hdf5 import DataFileManager
-from radis.io.tools import (
-    drop_object_format_columns,
-    parse_hitran_file,
-    replace_PQR_with_m101,
-)
+
+try:
+    from .cache_files import load_h5_cache_file, save_to_hdf
+    from .hdf5 import DataFileManager
+    from .tools import (
+        drop_object_format_columns,
+        parse_hitran_file,
+        replace_PQR_with_m101,
+    )
+except ImportError:
+    if __name__ == "__main__":  # running from this file, as a script
+        from radis.api.cache_files import load_h5_cache_file, save_to_hdf
+        from radis.api.hdf5 import DataFileManager
+        from radis.api.tools import (
+            drop_object_format_columns,
+            parse_hitran_file,
+            replace_PQR_with_m101,
+        )
+    else:
+        raise
 
 # fmt: off
 columns_cdsdhitemp = OrderedDict(
@@ -154,7 +167,7 @@ def cdsd2df(
         will be left untouched.
     load_wavenum_min, load_wavenum_max: float
         if not ``'None'``, only load the cached file if it contains data for
-        wavenumbers above/below the specified value. See :py:func`~radis.io.cache_files.load_h5_cache_file`.
+        wavenumbers above/below the specified value. See :py:func`~radis.api.cache_files.load_h5_cache_file`.
         Default ``'None'``.
     engine: 'pytables', 'vaex'
         format for Hdf5 cache file. Default `pytables`

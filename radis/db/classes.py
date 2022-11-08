@@ -300,6 +300,7 @@ assert EXOMOL_ONLY_ISOTOPES_NAMES[("FeH", 1)] == "56Fe-1H"
 assert EXOMOL_ONLY_ISOTOPES_NAMES[("SiO", 1)] == "28Si-16O"
 assert EXOMOL_ONLY_ISOTOPES_NAMES[("CN", 1)] == "12C-14N"
 
+
 EXOMOL_MOLECULES = [
     "AlCl",
     "AlF",
@@ -328,6 +329,7 @@ EXOMOL_MOLECULES = [
     "FeH",
     "H2",
     "H2CO",
+    "H2CS",
     "H2O",
     "H2O2",
     "H2S",
@@ -342,6 +344,7 @@ EXOMOL_MOLECULES = [
     "KCl",
     "KF",
     "KOH",
+    "LaO",
     "LiCl",
     "LiF",
     "LiH",

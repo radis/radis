@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Aug  9 19:42:51 2021
 
-@author: erwan
 """
 import os
 import shutil
@@ -18,8 +16,11 @@ try:
     from .cache_files import check_not_deprecated
     from .hdf5 import DataFileManager
 except ImportError:
-    from radis.io.hdf5 import DataFileManager
-    from radis.io.cache_files import check_not_deprecated
+    if __name__ == "__main__":  # running from this file, as a script
+        from radis.api.cache_files import check_not_deprecated
+        from radis.api.hdf5 import DataFileManager
+    else:
+        raise
 
 from datetime import date
 
@@ -118,13 +119,13 @@ class DatabaseManager(object):
         if self.is_registered():
             registered_paths = getDatabankEntries(self.name)["path"]
             for registered_path in registered_paths:
-                if (
-                    not abspath(expanduser(registered_path))
-                    .lower()
-                    .startswith(abspath(expanduser(local_databases).lower()))
+                registered_path_abspath = abspath(expanduser(registered_path)).lower()
+                local_databases_abspath = abspath(expanduser(local_databases).lower())
+                if not registered_path_abspath.startswith(
+                    local_databases_abspath
                 ):  # TODO: replace with pathlib
                     raise ValueError(
-                        f"Databank `{self.name}` is already registered in radis.json but the declared path ({registered_path}) is not in the expected local databases folder ({local_databases}). Please fix/delete the radis.json entry, change the `databank_name`, or change the default local databases path entry 'DEFAULT_DOWNLOAD_PATH' in `radis.config` or ~/radis.json"
+                        f"Databank `{self.name}` is already registered in radis.json but the declared path ({registered_path_abspath}) is not in the expected local databases folder ({local_databases_abspath}). Please fix/delete the radis.json entry, change the `databank_name`, or change the default local databases path entry 'DEFAULT_DOWNLOAD_PATH' in `radis.config` or ~/radis.json"
                     )
 
         self.downloadable = False  # by default
@@ -148,7 +149,7 @@ class DatabaseManager(object):
 
         See Also
         --------
-        :py:meth:`~radis.io.linedb.get_files_to_download`"""
+        :py:meth:`~radis.api.dbmanager.DatabaseManager.get_files_to_download`"""
         verbose = self.verbose
         local_databases = self.local_databases
         engine = self.engine
@@ -172,13 +173,11 @@ class DatabaseManager(object):
 
             # Check that local files are the one we expect :
             for f in local_files:
-                if (
-                    not abspath(expanduser(f))
-                    .lower()
-                    .startswith(abspath(expanduser(local_databases)).lower())
-                ):
+                local_file_abspath = abspath(expanduser(f)).lower()
+                local_databaes_abspath = abspath(expanduser(local_databases)).lower()
+                if not local_file_abspath.startswith(local_databaes_abspath):
                     raise ValueError(
-                        f"Database {self.name} is inconsistent : it should be stored in {local_databases} but files registered in ~/radis.json contains {f}. Please fix or delete the ~/radis.json entry."
+                        f"Database {self.name} is inconsistent : it should be stored in {local_databaes_abspath} but files registered in ~/radis.json contains {local_file_abspath}. Please fix or delete the ~/radis.json entry."
                     )
 
         elif self.is_downloadable():
@@ -229,7 +228,7 @@ class DatabaseManager(object):
         -------
         list: list of urlnames
 
-        See for instance :py:meth:`radis.io.hitemp.HITEMPDatabaseManager"""
+        See for instance :py:class:`radis.api.hitempapi.HITEMPDatabaseManager"""
 
         raise NotImplementedError(
             "This function should be overwritten by the DatabaseManager subclass"
@@ -266,7 +265,7 @@ class DatabaseManager(object):
 
         See Also
         --------
-        :py:meth:`~radis.io.linedb.get_filenames`"""
+        :py:meth:`~radis.api.dbmanager.DatabaseManager.get_filenames`"""
         return [k for k in files if exists(k)]
 
     def get_missing_files(self, files):
@@ -279,7 +278,7 @@ class DatabaseManager(object):
 
         See Also
         --------
-        :py:meth:`~radis.io.linedb.get_filenames`"""
+        :py:meth:`~radis.api.dbmanager.DatabaseManager.get_filenames`"""
         return [k for k in files if not exists(k)]
 
     def remove_local_files(self, local_files):

@@ -85,8 +85,6 @@ from radis.misc.basics import is_float
 from radis.misc.debug import printdbg
 from radis.misc.plot import fix_style, set_style
 from radis.misc.progress_bar import ProgressBar
-
-# from radis.misc.warning import AccuracyError, AccuracyWarning
 from radis.misc.warning import reset_warnings
 from radis.phys.constants import Na, c_CGS, k_b_CGS
 
@@ -248,7 +246,16 @@ def gaussian_FT(w_centered, hwhm):
 
 
 def pressure_broadening_HWHM(
-    airbrd, selbrd, Tdpair, Tdpsel, pressure_atm, mole_fraction, Tgas, Tref
+    airbrd,
+    selbrd,
+    Tdpair,
+    Tdpsel,
+    pressure_atm,
+    mole_fraction,
+    Tgas,
+    Tref,
+    diluent,
+    diluent_broadening_coeff,
 ):
     """Calculates collisional broadening HWHM over all lines by scaling
     tabulated HWHM for new pressure and mole fractions conditions [1]_
@@ -278,6 +285,11 @@ def pressure_broadening_HWHM(
     Tref: float [K]
         reference temperature at which tabulated HWHM pressure
         broadening coefficients were tabulated
+    diluent: dictionary
+        contains diluent and their mole fraction
+    diluent_broadening_coeff: dictionary
+        contains all non air diluents broadening coefficients
+
 
     Returns
     -------
@@ -314,15 +326,37 @@ def pressure_broadening_HWHM(
     # | dev note: in that case we simplify the expression by calculation the
     # | power function once only.
 
-    if Tdpsel is None:
-        gamma_lb = ((Tref / Tgas) ** Tdpair) * (
-            (airbrd * pressure_atm * (1 - mole_fraction))
-            + (selbrd * pressure_atm * mole_fraction)
-        )
-    else:
-        gamma_lb = ((Tref / Tgas) ** Tdpair) * (
-            airbrd * pressure_atm * (1 - mole_fraction)
-        ) + ((Tref / Tgas) ** Tdpsel) * (selbrd * pressure_atm * mole_fraction)
+    diluent_molecules = diluent.keys()
+
+    # check if gamma_diluent and n_diluent exists or not
+    try:
+        gamma_lb = 0
+        for diluent_molecule, diluent_mole_fraction in diluent.items():
+            if diluent_molecule != "air":
+                gamma_lb += (
+                    (Tref / Tgas)
+                    ** diluent_broadening_coeff["n_" + diluent_molecule.lower()]
+                ) * (
+                    diluent_broadening_coeff["gamma_" + diluent_molecule.lower()]
+                    * pressure_atm
+                    * diluent_mole_fraction
+                )
+        # Adding air coefficient
+        if "air" in diluent_molecules:
+            gamma_lb += ((Tref / Tgas) ** Tdpair) * (
+                (airbrd * pressure_atm * diluent["air"])
+            )
+        # Adding self coefficient
+        if Tdpsel is None:  # use Tdpair instead
+            gamma_lb += ((Tref / Tgas) ** Tdpair) * (
+                (selbrd * pressure_atm * mole_fraction)
+            )
+        else:
+            gamma_lb += ((Tref / Tgas) ** Tdpsel) * (
+                selbrd * pressure_atm * mole_fraction
+            )
+    except KeyError as err:
+        raise KeyError("Column not found {0}".format(err))
 
     return gamma_lb
 
@@ -408,6 +442,8 @@ def voigt_broadening_HWHM(
     mole_fraction,
     Tgas,
     Tref,
+    diluent,
+    diluent_broadening_coeff,
 ):
     """Calculate Voigt profile half-width at half-maximum (HWHM) from the
     Gaussian and Collisional broadening with the empirical formula of [Olivero-1977]_
@@ -474,7 +510,16 @@ def voigt_broadening_HWHM(
 
     # Collisional broadening HWHM
     gamma_lb = pressure_broadening_HWHM(
-        airbrd, selbrd, Tdpair, Tdpsel, pressure_atm, mole_fraction, Tgas, Tref
+        airbrd,
+        selbrd,
+        Tdpair,
+        Tdpsel,
+        pressure_atm,
+        mole_fraction,
+        Tgas,
+        Tref,
+        diluent,
+        diluent_broadening_coeff,
     )
 
     # Doppler Broadening HWHM:
@@ -815,8 +860,10 @@ class BroadenFactory(BaseFactory):
 
         Run this method before using `_calc_lineshape`
         """
+
         # Init variables
         df = self.df1
+        diluent = self._diluent
 
         if len(df) == 0:
             return  # no lines
@@ -838,14 +885,37 @@ class BroadenFactory(BaseFactory):
             self.params.broadening_method
         )  # Lineshape broadening algorithm
 
+        # diluent and their broadening coeff dictionary
+        diluent_broadening_coeff = {}
+        for key in diluent:
+            if key != "air":
+                diluent_broadening_coeff["gamma_" + key.lower()] = df[
+                    "gamma_" + key.lower()
+                ]
+                diluent_broadening_coeff["n_" + key.lower()] = df["n_" + key.lower()]
+
         # Get broadenings
         if broadening_method == "voigt":
             # Adds hwhm_voigt, hwhm_gauss, hwhm_lorentz:
-            self._add_voigt_broadening_HWHM(df, pressure_atm, mole_fraction, Tgas, Tref)
+            self._add_voigt_broadening_HWHM(
+                df,
+                pressure_atm,
+                mole_fraction,
+                Tgas,
+                Tref,
+                diluent,
+                diluent_broadening_coeff,
+            )
         elif broadening_method in ["convolve", "fft"]:
             # Adds hwhm_lorentz:
             self._add_collisional_broadening_HWHM(
-                df, pressure_atm, mole_fraction, Tgas, Tref
+                df,
+                pressure_atm,
+                mole_fraction,
+                Tgas,
+                Tref,
+                diluent,
+                diluent_broadening_coeff,
             )
             # Add hwhm_gauss:
             self._add_doppler_broadening_HWHM(df, Tgas)
@@ -946,7 +1016,16 @@ class BroadenFactory(BaseFactory):
 
         return
 
-    def _add_voigt_broadening_HWHM(self, df, pressure_atm, mole_fraction, Tgas, Tref):
+    def _add_voigt_broadening_HWHM(
+        self,
+        df,
+        pressure_atm,
+        mole_fraction,
+        Tgas,
+        Tref,
+        diluent,
+        diluent_broadening_coeff,
+    ):
         """Update dataframe with Voigt HWHM.
 
         Returns
@@ -997,6 +1076,8 @@ class BroadenFactory(BaseFactory):
             mole_fraction,
             Tgas,
             Tref,
+            diluent,
+            diluent_broadening_coeff,
         )
 
         # Update dataframe
@@ -1007,7 +1088,14 @@ class BroadenFactory(BaseFactory):
         return
 
     def _add_collisional_broadening_HWHM(
-        self, df, pressure_atm, mole_fraction, Tgas, Tref
+        self,
+        df,
+        pressure_atm,
+        mole_fraction,
+        Tgas,
+        Tref,
+        diluent,
+        diluent_broadening_coeff,
     ):
         """Update dataframe with collisional HWHM [1]_
 
@@ -1063,10 +1151,14 @@ class BroadenFactory(BaseFactory):
             mole_fraction,
             Tgas,
             Tref,
+            diluent,
+            diluent_broadening_coeff,
         )
 
         # Update dataframe
         df["hwhm_lorentz"] = wl
+
+        #####
 
         return
 
@@ -1434,6 +1526,15 @@ class BroadenFactory(BaseFactory):
 
         def _init_w_axis(w_dat, log_p):
             w_min = w_dat.min()
+            if w_min == 0:
+                self.warn(
+                    f"{(w_dat==0).sum()}"
+                    + " line(s) had a calculated broadening of 0 cm-1. Check the database. At least this line is faulty: \n\n"
+                    + "{}".format(self.df1.iloc[(w_min == 0).argmax()])
+                    + "\n\nIf you want to ignore, use `warnings['ZeroBroadeningWarning'] = 'ignore'`",
+                    category="ZeroBroadeningWarning",
+                )
+                w_min = w_dat[w_dat > 0].min()
             w_max = (
                 w_dat.max() + 1e-4
             )  # Add small number to prevent w_max falling outside of the grid

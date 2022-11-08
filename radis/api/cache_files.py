@@ -7,15 +7,15 @@ Routine Listing
 ---------------
 
 
-- :func:`~radis.io.cache_files.check_cache_file`
-- :func:`~radis.io.cache_files.check_not_deprecated`
-- :func:`~radis.io.cache_files.save_to_hdf`
+- :func:`~radis.api.cache_files.check_cache_file`
+- :func:`~radis.api.cache_files.check_not_deprecated`
+- :func:`~radis.api.cache_files.save_to_hdf`
 
 See Also
 --------
 
-:py:func:`~radis.io.hitran.hit2df`,
-:py:func:`~radis.io.cdsd.cdsd2df`
+:py:func:`~radis.api.hitranapi.hit2df`,
+:py:func:`~radis.api.cdsdapi.cdsd2df`
 
 -------------------------------------------------------------------------------
 """
@@ -38,8 +38,11 @@ import radis
 
 try:
     from .hdf5 import DataFileManager
-except ImportError:  # if file is ran as a module
-    from radis.io.hdf5 import DataFileManager
+except ImportError:
+    if __name__ == "__main__":  # running from this file, as a script
+        from radis.api.hdf5 import DataFileManager
+    else:
+        raise
 from radis.misc.basics import compare_dict, is_float
 from radis.misc.printer import printm, printr
 from radis.misc.warning import DeprecatedFileWarning, IrrelevantFileWarning
@@ -251,7 +254,7 @@ def check_cache_file(
     - if ``'force'``, raise an error if file doesnt exist.
 
     Then look if it is deprecated (we just look at the attributes, the file
-    is never fully read). Deprecation is done by :py:func:`~radis.io.cache_files.check_not_deprecated`
+    is never fully read). Deprecation is done by :py:func:`~radis.api.cache_files.check_not_deprecated`
     comparing the ``metadata=`` content.
 
     - if deprecated, deletes it to regenerate later unless 'force' was used
@@ -282,7 +285,7 @@ def check_cache_file(
     See Also
     --------
 
-    :py:func:`~radis.io.cache_files.check_not_deprecated`
+    :py:func:`~radis.api.cache_files.check_not_deprecated`
     """
 
     # Test existence of file:
