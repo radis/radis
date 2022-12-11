@@ -364,10 +364,9 @@ def pressure_broadening_HWHM(
 def get_xiFactor(pressure_bar, mole_fraction, Tgas, Tref):
     
     """    
-    Calculate Xi factor for far wing correction based on Westlye et al. (2022)
+    Calculate xi-factor for far-wing correction based on the Westlye et al. (2022)
     
-    References
-    ----------
+    Reference: 
     Westlye et al. (2022), "Evaluation of spectral radiative properties of gases in high-pressure combustion"
     Journal of Quantitative Spectroscopy & Radiative Transfer 280 (2022) 108089
     """
@@ -375,19 +374,18 @@ def get_xiFactor(pressure_bar, mole_fraction, Tgas, Tref):
     pbar_ref = 1.0
     pbar = pressure_bar
     XCO2 = mole_fraction
-    
         
-    # empirical cosntants used by Westlye et al. (2022)
     empirical_constant_1 = 3.10 # Westlye et al. value: 3.66
     empirical_constant_2 = 0.23 # Westlye et al. value: 0.23
-            
-    aP = (np.exp(1-pbar_ref/(pbar**0.1)) - 1.0) # see Westlye et al. (2022)
-    bT = empirical_constant_1*(Tref / Tgas)**empirical_constant_2  # see Westlye et al. (2022); bT varies depending on CO2 concentration
     
-    xi_factor = 2+aP*bT # 100%CO2 Eqn (7)-Westlye et al. (2022)
+    # empirical correlations of Westlye et al. (2022)
+    aP = (np.exp(1-pbar_ref/(pbar**0.1)) - 1.0) 
+    bT = empirical_constant_1*(Tref / Tgas)**empirical_constant_2  # bT varies depending on CO2 concentration
+    
+    xi_factor = 2+aP*bT # 100% CO2 Eqn (7)-Westlye et al. (2022)
     
     if mole_fraction < 0.25:
-        xi_factor = 2+aP*bT*(1.0-XCO2) # 0-20%CO2 Eqn (8)-Westlye et al. (2022)
+        xi_factor = 2+aP*bT*(1.0-XCO2) # 0-20% CO2 Eqn (8)-Westlye et al. (2022)
     
         
     if xi_factor < 2.0 or pressure_bar < 1.0:
@@ -400,11 +398,21 @@ def get_xiFactor(pressure_bar, mole_fraction, Tgas, Tref):
 def pseudo_lorentzian_lineshape(w_centered, gamma_lb, xi_factor):
     r"""Computes collisional broadening over all lines [1]_
 
+    pseudo-lorentzian lineshape uses xi_factor for modeling 
+    far-wing profile for CO2 with Convolve broadening method    
+        
     .. math::
-
-        lorentzian_lineshape with xi-factor
+        
         see Westlye et al. (2022)
 
+        Reference: Westlye et al. (2022), "Evaluation of spectral radiative properties of gases in high-pressure combustion"
+        Journal of Quantitative Spectroscopy & Radiative Transfer 280 (2022) 108089
+        
+        input:
+            if xi_factor = None,  call get_xiFactor method to calculate xi_factor
+            for Lorentzian profile, set xi_factor = 2.0
+            
+        
     Parameters
     ----------
     w_centered: 2D array       [one per line: shape W x N]
@@ -1385,13 +1393,12 @@ class BroadenFactory(BaseFactory):
         # Gokul; Dec 11, 2022
         if self.input.molecule == "CO2":
             if self.params.xi_factor == None:
-                xi_factor = get_xiFactor(pressure_mbar*1e-3, mole_fraction, Tgas, Tref) # method in factory.py
-                print('\n****calculated xi_factor = ', xi_factor)
+                xi_factor = get_xiFactor(pressure_mbar*1e-3, mole_fraction, Tgas, Tref) 
                 self.params.xi_factor = xi_factor
                 
             else:
                 xi_factor = self.params.xi_factor
-                print('\n****input xi_factor = ', xi_factor)
+                
         else:
             xi_factor = 2.0
             self.params.xi_factor = xi_factor
@@ -1767,13 +1774,12 @@ class BroadenFactory(BaseFactory):
             # Gokul; Dec 11, 2022
             if self.input.molecule == "CO2":
                 if self.params.xi_factor == None:
-                    xi_factor = get_xiFactor(pressure_mbar*1e-3, mole_fraction, Tgas, Tref) # method in factory.py
-                    print('\n****calculated xi_factor = ', xi_factor)
+                    xi_factor = get_xiFactor(pressure_mbar*1e-3, mole_fraction, Tgas, Tref) 
                     self.params.xi_factor = xi_factor
                     
                 else:
                     xi_factor = self.params.xi_factor
-                    print('\n****input xi_factor = ', xi_factor)
+                    
             else:
                 xi_factor = 2.0
                 self.params.xi_factor = xi_factor
