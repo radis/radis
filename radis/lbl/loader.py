@@ -481,6 +481,7 @@ class Parameters(ConditionDict):
         "waveunit",
         "wstep",
         "diluent",
+        "xi_factor", # PGK
     ]
 
     def __init__(self):

@@ -361,6 +361,162 @@ def pressure_broadening_HWHM(
     return gamma_lb
 
 
+def get_xiFactor(pressure_bar, mole_fraction, Tgas, Tref):
+    
+    """    
+    Calculate Xi factor for far wing correction based on Westlye et al. (2022)
+    
+    References
+    ----------
+    Westlye et al. (2022), "Evaluation of spectral radiative properties of gases in high-pressure combustion"
+    Journal of Quantitative Spectroscopy & Radiative Transfer 280 (2022) 108089
+    """
+    
+    pbar_ref = 1.0
+    pbar = pressure_bar
+    XCO2 = mole_fraction
+    
+        
+    # empirical cosntants used by Westlye et al. (2022)
+    empirical_constant_1 = 3.10 # Westlye et al. value: 3.66
+    empirical_constant_2 = 0.23 # Westlye et al. value: 0.23
+            
+    aP = (np.exp(1-pbar_ref/(pbar**0.1)) - 1.0) # see Westlye et al. (2022)
+    bT = empirical_constant_1*(Tref / Tgas)**empirical_constant_2  # see Westlye et al. (2022); bT varies depending on CO2 concentration
+    
+    xi_factor = 2+aP*bT # 100%CO2 Eqn (7)-Westlye et al. (2022)
+    
+    if mole_fraction < 0.25:
+        xi_factor = 2+aP*bT*(1.0-XCO2) # 0-20%CO2 Eqn (8)-Westlye et al. (2022)
+    
+        
+    if xi_factor < 2.0 or pressure_bar < 1.0:
+        xi_factor =  2.0
+    
+    
+    return xi_factor
+
+
+def pseudo_lorentzian_lineshape(w_centered, gamma_lb, xi_factor):
+    r"""Computes collisional broadening over all lines [1]_
+
+    .. math::
+
+        lorentzian_lineshape with xi-factor
+        see Westlye et al. (2022)
+
+    Parameters
+    ----------
+    w_centered: 2D array       [one per line: shape W x N]
+        waverange (nm / cm-1) (centered on 0)
+    gamma_lb: array   (cm-1)        [length N]
+        half-width half maximum coefficient (HWHM) for pressure broadening
+        calculation
+
+    Returns
+    -------
+    array :  [shape N x W]
+        line profile
+
+    References
+    ----------
+    .. [1] `Rothman 1998 (HITRAN 1996) eq (A.14) <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`_
+
+    Notes
+    -----
+    *formula generated from the Python equation with* :py:func:`~pytexit.pytexit.py2tex`
+
+    See Also
+    --------
+    :py:func:`~radis.lbl.broadening.pressure_broadening_HWHM`,
+    :py:func:`~radis.lbl.broadening.gaussian_lineshape`,
+    :py:func:`~radis.lbl.broadening.voigt_lineshape`,
+    :py:func:`~radis.lbl.broadening.lorentzian_FT`
+    """
+    
+    # Calculate broadening
+    # -------
+    #lineshape = 1 / pi * gamma_lb / ((gamma_lb**2) + (w_centered**2))
+    
+    # based on Westlye et al. (2022); Eqn(6) and (5)
+    alpha_xi = xi_factor*np.sin(np.pi/xi_factor)/(2*np.pi*gamma_lb) 
+    lineshape = alpha_xi / (1 + abs(w_centered/gamma_lb)**xi_factor) 
+        
+
+    return lineshape
+
+
+
+def lorentzian_lineshape(w_centered, gamma_lb):
+    r"""Computes collisional broadening over all lines [1]_
+
+    .. math::
+
+        \frac{1}{\pi} \frac{\gamma_{lb}}{\gamma_{lb}^2+w_{centered}^2}
+
+    Parameters
+    ----------
+    w_centered: 2D array       [one per line: shape W x N]
+        waverange (nm / cm-1) (centered on 0)
+    gamma_lb: array   (cm-1)        [length N]
+        half-width half maximum coefficient (HWHM) for pressure broadening
+        calculation
+
+    Returns
+    -------
+    array :  [shape N x W]
+        line profile
+
+    References
+    ----------
+    .. [1] `Rothman 1998 (HITRAN 1996) eq (A.14) <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`_
+
+    Notes
+    -----
+    *formula generated from the Python equation with* :py:func:`~pytexit.pytexit.py2tex`
+
+    See Also
+    --------
+    :py:func:`~radis.lbl.broadening.pressure_broadening_HWHM`,
+    :py:func:`~radis.lbl.broadening.gaussian_lineshape`,
+    :py:func:`~radis.lbl.broadening.voigt_lineshape`,
+    :py:func:`~radis.lbl.broadening.lorentzian_FT`
+    """
+
+    # Calculate broadening
+    # -------
+    lineshape = 1 / pi * gamma_lb / ((gamma_lb**2) + (w_centered**2))
+
+    return lineshape
+
+
+def lorentzian_FT(w_centered, gamma_lb):
+    r"""Fourier Transform of a Lorentzian lineshape.
+
+    .. math::
+        \operatorname{exp}\left(-2\pi w_{centered} \gamma_{lb}\right)
+
+    Parameters
+    ----------
+    w_centered: 2D array       [one per line: shape W x N]
+        waverange (nm / cm-1) (centered on 0)
+    gamma_lb: array   (cm-1)        [length N]
+        half-width half maximum coefficient (HWHM) for pressure broadening
+        calculation
+
+    Returns
+    -------
+    array
+
+    See Also
+    --------
+    :py:func:`~radis.lbl.broadening.lorentzian_lineshape`
+    """
+
+    I = np.exp(-2 * np.pi * w_centered * gamma_lb)
+    return I
+
+
 def lorentzian_lineshape(w_centered, gamma_lb):
     r"""Computes collisional broadening over all lines [1]_
 
@@ -1217,7 +1373,33 @@ class BroadenFactory(BaseFactory):
 
         # Calculate broadening for all lines
         # -------
-        lineshape = lorentzian_lineshape(wbroad_centered, gamma_lb)
+        #lineshape = lorentzian_lineshape(wbroad_centered, gamma_lb)
+        
+        
+        #Gokul; Dec 11, 2022
+        Tgas = self.input.Tgas
+        pressure_mbar = self.input.pressure_mbar
+        mole_fraction = self.input.mole_fraction
+        Tref = self.input.Tref
+        
+        # Gokul; Dec 11, 2022
+        if self.input.molecule == "CO2":
+            if self.params.xi_factor == None:
+                xi_factor = get_xiFactor(pressure_mbar*1e-3, mole_fraction, Tgas, Tref) # method in factory.py
+                print('\n****calculated xi_factor = ', xi_factor)
+                self.params.xi_factor = xi_factor
+                
+            else:
+                xi_factor = self.params.xi_factor
+                print('\n****input xi_factor = ', xi_factor)
+        else:
+            xi_factor = 2.0
+            self.params.xi_factor = xi_factor
+                
+        
+        lineshape = pseudo_lorentzian_lineshape(wbroad_centered, gamma_lb, xi_factor)
+        
+        
 
         # Normalize
         # ---------
@@ -1574,12 +1756,35 @@ class BroadenFactory(BaseFactory):
 
         elif broadening_method == "convolve":
             wbroad_centered = self.wbroad_centered
+                        
+            #Gokul; Dec 11, 2022
+            Tgas = self.input.Tgas
+            pressure_mbar = self.input.pressure_mbar
+            mole_fraction = self.input.mole_fraction
+            Tref = self.input.Tref
+            
+                    
+            # Gokul; Dec 11, 2022
+            if self.input.molecule == "CO2":
+                if self.params.xi_factor == None:
+                    xi_factor = get_xiFactor(pressure_mbar*1e-3, mole_fraction, Tgas, Tref) # method in factory.py
+                    print('\n****calculated xi_factor = ', xi_factor)
+                    self.params.xi_factor = xi_factor
+                    
+                else:
+                    xi_factor = self.params.xi_factor
+                    print('\n****input xi_factor = ', xi_factor)
+            else:
+                xi_factor = 2.0
+                self.params.xi_factor = xi_factor
+            
 
             IG = [
                 gaussian_lineshape(wbroad_centered, wG[l] / 2) for l in range(len(wG))
             ]  # FWHM>HWHM
             IL = [
-                lorentzian_lineshape(wbroad_centered, wL[m] / 2) for m in range(len(wL))
+                #lorentzian_lineshape(wbroad_centered, wL[m] / 2) for m in range(len(wL))
+                pseudo_lorentzian_lineshape(wbroad_centered, wL[m] / 2, xi_factor) for m in range(len(wL))
             ]  # FWHM>HWHM
             # Non vectorized. See Voigt for vectorized.
 

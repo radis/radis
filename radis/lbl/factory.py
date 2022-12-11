@@ -402,6 +402,7 @@ class SpectrumFactory(BandFactory):
         export_lines=False,
         emulate_gpu=False,
         diluent="air",
+        xi_factor = None,
         **kwargs,
     ):
 
@@ -648,6 +649,8 @@ class SpectrumFactory(BandFactory):
         # Set default values for warnings thresholds
         self.misc.warning_linestrength_cutoff = 1e-2
         self.misc.warning_broadening_threshold = 1e-2
+        
+        self.params.xi_factor = xi_factor
 
         return
 
