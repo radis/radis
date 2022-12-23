@@ -369,9 +369,11 @@ def get_xiFactor(pressure_bar, mole_fraction, Tgas, Tref):
     xi_factor correction can be used with Voigt and Convolve lineshape.
     
     input:
-        If xi_factor = None,  this function will be called to calculate xi_factor.
-        For regular Lorentzian or Voigt profiles, set xi_factor = 2.0 in the input.
+        xi_factor = None -->  this function will be called to calculate xi_factor.
+        note: for regular Lorentzian or Voigt profiles, set xi_factor = 2.0 in the input.
     
+    output:
+        s.get_conditions()['xi_factor']
     
     Reference: 
     Westlye et al. (2022), "Evaluation of spectral radiative properties of gases in high-pressure combustion"
@@ -1965,12 +1967,12 @@ class BroadenFactory(BaseFactory):
         if self.input.molecule == "CO2":
             if self.params.xi_factor == None:
                 xi_factor = get_xiFactor(pressure_mbar*1e-3, mole_fraction, Tgas, Tref)
-                print('\n****calculated xi_factor = ', xi_factor)
+                #print('\n****calculated xi_factor = ', xi_factor)
                 self.params.xi_factor = xi_factor
                 
             else:
                 xi_factor = self.params.xi_factor
-                print('\n****input xi_factor = ', xi_factor)
+                #print('\n****input xi_factor = ', xi_factor)
         else:
             xi_factor = 2.0
             self.params.xi_factor = xi_factor
