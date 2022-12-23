@@ -366,6 +366,13 @@ def get_xiFactor(pressure_bar, mole_fraction, Tgas, Tref):
     """    
     Calculate xi-factor for far-wing correction based on the Westlye et al. (2022)
     
+    xi_factor correction can be used with Voigt and Convolve lineshape.
+    
+    input:
+        If xi_factor = None,  this function will be called to calculate xi_factor.
+        For regular Lorentzian or Voigt profiles, set xi_factor = 2.0 in the input.
+    
+    
     Reference: 
     Westlye et al. (2022), "Evaluation of spectral radiative properties of gases in high-pressure combustion"
     Journal of Quantitative Spectroscopy & Radiative Transfer 280 (2022) 108089
@@ -395,7 +402,7 @@ def get_xiFactor(pressure_bar, mole_fraction, Tgas, Tref):
     return xi_factor
 
 
-def pseudo_lorentzian_lineshape(w_centered, gamma_lb, xi_factor):
+def lorentzian_lineshape_xiFactor(w_centered, gamma_lb, xi_factor):
     r"""Computes collisional broadening over all lines [1]_
 
     pseudo-lorentzian lineshape uses xi_factor for modeling 
@@ -809,6 +816,72 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
     return lineshape
 
 
+def voigt_lineshape_xiFactor(w_centered, hwhm_lorentz, hwhm_voigt, xi_factor, jit=True):
+    """Calculates Voigt lineshape using the approximation of the Voigt profile
+    of [NEQAIR-1996]_, [Whiting-1968]_ that maintains a good accuracy in the far wings.
+    Exact for a pure Gaussian and pure Lorentzian.
+
+    Parameters
+    ----------
+    w_centered: 2D array       [one per line: shape W x N]
+        waverange (nm / cm-1) (centered on 0)
+    hwhm_lorentz: array   (cm-1)        [length N]
+        half-width half maximum coefficient (HWHM) for Lorentzian broadening
+    hwhm_voigt: array   (cm-1)        [length N]
+        half-width half maximum coefficient (HWHM) for Voigt broadening,
+        calculated by :py:func:`~radis.lbl.broadening.voigt_broadening_HWHM`
+
+    Other Parameters
+    ----------------
+    jit: boolean
+        if ``True``, use just in time compiler. Usually faster when > 10k lines.
+        Default ``True``.
+
+    Returns
+    -------
+    lineshape: pandas Series        [shape N x W]
+        line profile
+
+    References
+    ----------
+    .. [NEQAIR-1996] `NEQAIR 1996 User Manual, Appendix D <https://ntrs.nasa.gov/search.jsp?R=19970004690>`_
+
+    See Also
+    --------
+    :py:func:`~radis.lbl.broadening.voigt_broadening_HWHM`
+    :py:func:`~radis.lbl.broadening.whiting1968`
+    """
+
+    # Note: Whiting and Olivero use FWHM. Here we keep HWHM in all public function
+    # arguments for consistency.
+    wl = 2 * hwhm_lorentz  # HWHM > FWHM
+    wv = 2 * hwhm_voigt  # HWHM > FWHM
+
+    if jit:
+        #lineshape = _whiting_jit(w_centered, wl, wv)
+        lineshape = _whiting_jit_xiFactor(w_centered, wl, wv, xi_factor)
+    else:
+        #lineshape = whiting1968(w_centered, wl, wv)
+        lineshape = whiting1968_xiFactor(w_centered, wl, wv, xi_factor)
+
+    # Normalization
+    #    integral = wv*(1.065+0.447*(wl/wv)+0.058*(wl/wv)**2)
+    # ... approximation used by Whiting, equation (7)
+    # ... performance: ~ 6µs vs ~84µs for np.trapz(lineshape, w_centered) ):
+    # ... But not used because:
+    # ... - it may yield wrong results when the broadening range is not refined enough
+    # ... - it is defined for wavelengths only. Here we may have wavenumbers as well
+
+    integral = np.trapz(lineshape, w_centered, axis=0)
+    # Normalize
+    lineshape /= integral
+
+    # assert not anynan(lineshape).any()
+
+    return lineshape
+
+
+
 def voigt_FT(w_lineshape_ft, hwhmG, hwhmL):
     """Fourier Transform of a Voigt lineshape
 
@@ -891,11 +964,91 @@ def whiting1968(w_centered, wl, wv):
     return lineshape
 
 
+def whiting1968_xiFactor(w_centered, wl, wv, xi_factor):
+    r"""A pseudo-voigt analytical approximation.
+
+    .. math::
+        \Phi(w)=\left(1-\frac{w_l}{w_v}\right) \operatorname{exp}\left(-2.772{\left(\frac{w}{w_v}\right)}^{2.25}\right)+\frac{1\frac{w_l}{w_v}}{1+4{\left(\frac{w}{w_v}\right)}^{2.25}}+0.016\left(1-\frac{w_l}{w_v}\right) \frac{w_l}{w_v} \left(\operatorname{exp}\left(-0.4w_{wv,225}\right)-\frac{10}{10+{\left(\frac{w}{w_v}\right)}^{2.25}}\right)
+
+    for xi_factor correction see Westlye et al. (2022)
+
+    Reference: Westlye et al. (2022), "Evaluation of spectral radiative properties of gases in high-pressure combustion"
+    Journal of Quantitative Spectroscopy & Radiative Transfer 280 (2022) 108089
+    
+
+    Parameters
+    ----------
+    w_centered: 2D array
+        broadening spectral range for all lines
+    wl: array
+        Lorentzian FWHM
+    wv: array
+        Voigt FWHM
+
+    References
+    ----------
+    .. [Whiting-1968] `Whiting 1968 "An empirical approximation to the Voigt profile", JQSRT <https://www.sciencedirect.com/science/article/pii/0022407368900812>`_
+
+    Used in the expression of [Olivero-1977]_
+
+    Notes
+    -----
+    Performances:
+
+    using @jit yield a performance increase from 8.9s down to 5.1s
+    on a 50k lines, 250k wavegrid case (performances.py)
+
+    See Also
+    --------
+    :py:func:`~radis.lbl.broadening.olivero_1977`
+
+    """
+    # Calculate some temporary arrays
+    # ... fasten up the calculation by 25% (ex: test on 20 cm-1, ~6000 lines:
+    # ... 20.5.s > 16.5s) on the total eq_spectrum calculation
+    # ... w_wv is typically a (10.001, 1997) array
+    w_wv = w_centered / wv  # w_centered can be ~500 Mb
+    w_wv_2 = w_wv**2
+    wl_wv = wl / wv
+    w_wv_225 = np.abs(w_wv) ** 2.25
+    
+    # xi_factor correction for pseudo-Lorentzian of Westlye et al.(2022)
+    gamma_v = wv/2 # Voigt half-width
+    alpha_xi = xi_factor*np.sin(np.pi/xi_factor)/(2*np.pi*gamma_v) # see see Westlye et al. (2022); Eqn(6)
+    lineshape_L = alpha_xi / (1 + abs(w_centered/gamma_v)**xi_factor) # see see Westlye et al. (2022); Eqn(5)
+    
+
+    # Calculate!  (>>> this is the performance bottleneck <<< : ~ 2/3 of the time spent
+    #              on lineshape equation below + temp array calculation above
+    #              In particular exp(...) and ()**2.25 are very expensive <<< )
+    # ... Voigt 1st order approximation
+    #lineshape = (
+    #    (1 - wl_wv) * exp(-2.772 * w_wv_2)
+    #    + wl_wv * 1 / (1 + 4 * w_wv_2)
+        # ... 2nd order correction
+    #    + 0.016 * (1 - wl_wv) * wl_wv * (exp(-0.4 * w_wv_225) - 10 / (10 + w_wv_225))
+    #)
+    
+    
+    lineshape = (
+        (1 - wl_wv) * exp(-2.772 * w_wv_2)
+        + wl_wv * lineshape_L
+        # ... 2nd order correction
+        + 0.016 * (1 - wl_wv) * wl_wv * (exp(-0.4 * w_wv_225) - 10 / (10 + w_wv_225))
+    )
+    
+        
+    return lineshape
+
+
+
 @jit(
     float64[:, :](float64[:, :], float64[:, :], float64[:, :]),
     nopython=True,
     cache=True,
 )
+
+
 def _whiting_jit(w_centered, wl, wv):
     """
     Parameters
@@ -923,6 +1076,7 @@ def _whiting_jit(w_centered, wl, wv):
     w_wv_2 = w_wv**2
     wl_wv = wl / wv
     w_wv_225 = np.abs(w_wv) ** 2.25
+        
 
     # Calculate!  (>>> this is the performance bottleneck <<< : ~ 2/3 of the time spent
     #              on lineshape equation below + temp array calculation above
@@ -933,9 +1087,69 @@ def _whiting_jit(w_centered, wl, wv):
         (1 - wl_wv) * exp(-2.772 * w_wv_2)
         + wl_wv * 1 / (1 + 4 * w_wv_2)
         # ... 2nd order correction
+         + 0.016 * (1 - wl_wv) * wl_wv * (exp(-0.4 * w_wv_225) - 10 / (10 + w_wv_225))
+    )
+                
+    return lineshape
+
+
+def _whiting_jit_xiFactor(w_centered, wl, wv, xi_factor):
+    """
+    Parameters
+    ----------
+    wl: array
+        Lorentzian FWHM
+    wv: array
+        Voigt FWHM
+    w_centered: 2D array
+        broadening spectral range for all lines
+
+    Notes
+    -----
+    Performances:
+
+    using @jit yield a performance increase from 8.9s down to 5.1s
+    on a 50k lines, 250k wavegrid case (performances.py)
+    """
+    # Calculate some temporary arrays
+    # ... fasten up the calculation by 25% (ex: test on 20 cm-1, ~6000 lines:
+    # ... 20.5.s > 16.5s) on the total eq_spectrum calculation
+    # ... w_wv is typically a (10.001, 1997) array
+
+    w_wv = w_centered / wv  # w_centered can be ~500 Mb
+    w_wv_2 = w_wv**2
+    wl_wv = wl / wv
+    w_wv_225 = np.abs(w_wv) ** 2.25
+    
+    
+     # xi_factor correction for pseudo-Lorentzian of Westlye et al.(2022)
+    gamma_v = wv/2 # Voigt half-width
+    alpha_xi = xi_factor*np.sin(np.pi/xi_factor)/(2*np.pi*gamma_v) # see see Westlye et al. (2022); Eqn(6)
+    lineshape_L = alpha_xi / (1 + abs(w_centered/gamma_v)**xi_factor) # see see Westlye et al. (2022); Eqn(5)
+    
+
+    # Calculate!  (>>> this is the performance bottleneck <<< : ~ 2/3 of the time spent
+    #              on lineshape equation below + temp array calculation above
+    #              In particular exp(...) and ()**2.25 are very expensive <<< )
+    # ... Voigt 1st order approximation
+
+    #lineshape = (
+    #    (1 - wl_wv) * exp(-2.772 * w_wv_2)
+    #    + wl_wv * 1 / (1 + 4 * w_wv_2)
+        # ... 2nd order correction
+    #    + 0.016 * (1 - wl_wv) * wl_wv * (exp(-0.4 * w_wv_225) - 10 / (10 + w_wv_225))
+    #)
+    
+    
+    lineshape = (
+        (1 - wl_wv) * exp(-2.772 * w_wv_2)
+        + wl_wv * lineshape_L
+        # ... 2nd order correction
         + 0.016 * (1 - wl_wv) * wl_wv * (exp(-0.4 * w_wv_225) - 10 / (10 + w_wv_225))
     )
+        
     return lineshape
+
 
 
 # %% Tools
@@ -1404,9 +1618,8 @@ class BroadenFactory(BaseFactory):
             self.params.xi_factor = xi_factor
                 
         
-        lineshape = pseudo_lorentzian_lineshape(wbroad_centered, gamma_lb, xi_factor)
-        
-        
+        lineshape = lorentzian_lineshape_xiFactor(wbroad_centered, gamma_lb, xi_factor)
+                
 
         # Normalize
         # ---------
@@ -1743,6 +1956,25 @@ class BroadenFactory(BaseFactory):
 
         # Calculate the Lineshape
         # -----------------------
+        # get xi_factor; Gokul; Dec 22, 2022
+        Tgas = self.input.Tgas
+        pressure_mbar = self.input.pressure_mbar
+        mole_fraction = self.input.mole_fraction
+        Tref = self.input.Tref
+
+        if self.input.molecule == "CO2":
+            if self.params.xi_factor == None:
+                xi_factor = get_xiFactor(pressure_mbar*1e-3, mole_fraction, Tgas, Tref)
+                print('\n****calculated xi_factor = ', xi_factor)
+                self.params.xi_factor = xi_factor
+                
+            else:
+                xi_factor = self.params.xi_factor
+                print('\n****input xi_factor = ', xi_factor)
+        else:
+            xi_factor = 2.0
+            self.params.xi_factor = xi_factor
+        
 
         line_profile_LDM = {}
         broadening_method = self.params.broadening_method
@@ -1756,41 +1988,19 @@ class BroadenFactory(BaseFactory):
                 line_profile_LDM[l] = {}
                 for m in range(len(wL)):
                     wV_ij = olivero_1977(wG[l], wL[m])  # FWHM
-                    lineshape = voigt_lineshape(
-                        wbroad_centered, wL[m] / 2, wV_ij / 2, jit=jit
-                    )  # FWHM > HWHM
+                    #lineshape = voigt_lineshape(wbroad_centered, wL[m] / 2, wV_ij / 2, jit=jit)  # FWHM > HWHM
+                    lineshape = voigt_lineshape_xiFactor(wbroad_centered, wL[m] / 2, wV_ij / 2, xi_factor, jit=jit)  # with xi_factor
                     line_profile_LDM[l][m] = lineshape
 
         elif broadening_method == "convolve":
             wbroad_centered = self.wbroad_centered
-                        
-            #Gokul; Dec 11, 2022
-            Tgas = self.input.Tgas
-            pressure_mbar = self.input.pressure_mbar
-            mole_fraction = self.input.mole_fraction
-            Tref = self.input.Tref
-            
-                    
-            # Gokul; Dec 11, 2022
-            if self.input.molecule == "CO2":
-                if self.params.xi_factor == None:
-                    xi_factor = get_xiFactor(pressure_mbar*1e-3, mole_fraction, Tgas, Tref) 
-                    self.params.xi_factor = xi_factor
-                    
-                else:
-                    xi_factor = self.params.xi_factor
-                    
-            else:
-                xi_factor = 2.0
-                self.params.xi_factor = xi_factor
-            
 
             IG = [
                 gaussian_lineshape(wbroad_centered, wG[l] / 2) for l in range(len(wG))
             ]  # FWHM>HWHM
             IL = [
                 #lorentzian_lineshape(wbroad_centered, wL[m] / 2) for m in range(len(wL))
-                pseudo_lorentzian_lineshape(wbroad_centered, wL[m] / 2, xi_factor) for m in range(len(wL))
+                lorentzian_lineshape_xiFactor(wbroad_centered, wL[m] / 2, xi_factor) for m in range(len(wL))
             ]  # FWHM>HWHM
             # Non vectorized. See Voigt for vectorized.
 
