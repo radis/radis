@@ -2096,10 +2096,16 @@ class Spectrum(object):
             Iunit = "norm"
 
         set_style()
-        if nfig == "same":
-            nfig = plt.gcf().number
-        fig = plt.figure(nfig)
-
+        
+        
+        fig, ax = plt.subplots(constrained_layout=True)
+            
+        # if nfig== "same":
+        #     ax=fig.subplot(nfig)
+        #     print(ax)
+        # else:
+        #     ax=fig.add_subplot()
+        
         # If figure exist, ensures xlabel and ylabel are the same (prevents some
         # users errors if plotting difference units!)... Note that since
         # 'radiance' and 'radiance_noslit' are now plotted under the same name,
@@ -2140,22 +2146,39 @@ class Spectrum(object):
         # Actual plot :
         # ... note: '-k' by default with style origin for first plot
         if not plot_by_parts:
-            (line,) = plt.plot(x, y, label=label, **kwargs)
+            (line,) = ax.plot(x, y, label=label, **kwargs)
         else:
             (line,) = split_and_plot_by_parts(x, y, ax=fig.gca(), label=label, **kwargs)
             # note: split_and_plot_by_parts pops 'cutwing' & 'split_threshold' from kwargs
 
         if show_points:
-            plt.plot(x, y, "o", color="lightgrey", **kwargs)
+            ax.plot(x, y, "o", color="lightgrey", **kwargs)
 
+    
         # Labels
-        plt.ticklabel_format(useOffset=False, axis="x")
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        plt.yscale(yscale)
+        ax.ticklabel_format(useOffset=False, axis="x")
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.set_yscale(yscale)
         if "label" in kwargs:
-            plt.legend()
+            ax.legend()
         fix_style()
+
+        def waveLength2waveNumber(x):
+            return 1e4/x
+
+        def waveNumber2waveLength(x):
+            return 1e4/x
+
+        print(xlabel)
+        print(ylabel)
+
+        if "cm⁻¹" in ylabel:
+            secx=ax.secondary_xaxis('top',functions=(waveNumber2waveLength, waveLength2waveNumber))
+            secx.set_xlabel('Wavelength (μm)')
+        elif "μm" in ylabel:
+            secx=ax.secondary_xaxis('top',functions=(waveLength2waveNumber, waveNumber2waveLength))
+            secx.set_xlabel('wavenumber (cm⁻¹)')
 
         # Add plotting tools
         # ... Add cursor
