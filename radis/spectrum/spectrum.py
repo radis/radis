@@ -2098,14 +2098,11 @@ class Spectrum(object):
         set_style()
         
         
-        fig, ax = plt.subplots(constrained_layout=True)
             
-        # if nfig== "same":
-        #     ax=fig.subplot(nfig)
-        #     print(ax)
-        # else:
-        #     ax=fig.add_subplot()
-        
+        if nfig == "same":
+            nfig = plt.gcf().number
+        fig = plt.figure(nfig)
+
         # If figure exist, ensures xlabel and ylabel are the same (prevents some
         # users errors if plotting difference units!)... Note that since
         # 'radiance' and 'radiance_noslit' are now plotted under the same name,
@@ -2142,6 +2139,9 @@ class Spectrum(object):
         # Add a label. Not shown by default but User can set it if using plt.legend()
         # (useful when plotting multiple plots on same figure)
         label = kwargs.pop("label", self.get_name())
+
+
+        ax=fig.gca()
 
         # Actual plot :
         # ... note: '-k' by default with style origin for first plot
