@@ -391,6 +391,9 @@ EXOMOL_MOLECULES = [
     "YO",
     "cis-P2H2",
     "trans-P2H2",
+    "ZrO",
+    "K",
+    "Na",
 ]
 EXOMOL_ONLY_MOLECULES = sorted(
     list(set([M for M, iso in EXOMOL_ONLY_ISOTOPES_NAMES.keys()]))
