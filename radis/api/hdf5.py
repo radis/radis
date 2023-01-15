@@ -205,7 +205,7 @@ class DataFileManager(object):
 
             # by default vaex does not load everything
             df = vaex.open(local_file)
-            columns = df.columns
+            columns = df.column_names
             df.close()
 
         elif engine == "pytables":
