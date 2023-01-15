@@ -2163,21 +2163,17 @@ class Spectrum(object):
         if "label" in kwargs:
             ax.legend()
         fix_style()
-
-        def waveLength2waveNumber(x):
-            return 1e4/x
-
-        def waveNumber2waveLength(x):
-            return 1e4/x
-
-        print(xlabel)
-        print(ylabel)
-
+        
+        from radis.phys.convert import cm2nm , nm2cm
         if "cm⁻¹" in ylabel:
-            secx=ax.secondary_xaxis('top',functions=(waveNumber2waveLength, waveLength2waveNumber))
-            secx.set_xlabel('Wavelength (μm)')
-        elif "μm" in ylabel:
-            secx=ax.secondary_xaxis('top',functions=(waveLength2waveNumber, waveNumber2waveLength))
+            secx=ax.secondary_xaxis('top',functions=(cm2nm, nm2cm))
+            secx.set_xlabel('Wavelength (nm)')
+        elif "nm" in ylabel:
+            if wunit=="nm" or wunit=="nm_air":
+                secx=ax.secondary_xaxis('top',functions=(nm2cm, cm2nm))
+            else:
+                from radis.phys.convert import cm2nm_air,nm_air2cm
+                secx=ax.secondary_xaxis('top',functions=(nm_air2cm, cm2nm_air))
             secx.set_xlabel('wavenumber (cm⁻¹)')
 
         # Add plotting tools
