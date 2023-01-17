@@ -1267,6 +1267,8 @@ class MdbExomol(DatabaseManager):
                 np.searchsorted(dic_def["numinf"], nurange[1] + margin, side="right")
                 - 1
             )
+            # not to exceed index out of the range
+            imax = np.min([imax, len(dic_def["numinf"])-2])
             self.trans_file = []
             self.num_tag = []
 
