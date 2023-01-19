@@ -1268,7 +1268,7 @@ class MdbExomol(DatabaseManager):
                 - 1
             )
             # not to exceed index out of the range
-            imax = np.min([imax, len(dic_def["numinf"])-2])
+            imax = np.min([imax, len(dic_def["numinf"]) - 2])
             self.trans_file = []
             self.num_tag = []
 

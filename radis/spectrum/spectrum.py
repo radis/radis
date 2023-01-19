@@ -2096,9 +2096,7 @@ class Spectrum(object):
             Iunit = "norm"
 
         set_style()
-        
-        
-            
+
         if nfig == "same":
             nfig = plt.gcf().number
         fig = plt.figure(nfig)
@@ -2140,8 +2138,7 @@ class Spectrum(object):
         # (useful when plotting multiple plots on same figure)
         label = kwargs.pop("label", self.get_name())
 
-
-        ax=fig.gca()
+        ax = fig.gca()
 
         # Actual plot :
         # ... note: '-k' by default with style origin for first plot
@@ -2154,7 +2151,6 @@ class Spectrum(object):
         if show_points:
             ax.plot(x, y, "o", color="lightgrey", **kwargs)
 
-    
         # Labels
         ax.ticklabel_format(useOffset=False, axis="x")
         ax.set_xlabel(xlabel)
@@ -2163,18 +2159,20 @@ class Spectrum(object):
         if "label" in kwargs:
             ax.legend()
         fix_style()
-        
-        from radis.phys.convert import cm2nm , nm2cm
+
+        from radis.phys.convert import cm2nm, nm2cm
+
         if "cm⁻¹" in ylabel:
-            secx=ax.secondary_xaxis('top',functions=(cm2nm, nm2cm))
-            secx.set_xlabel('Wavelength (nm)')
+            secx = ax.secondary_xaxis("top", functions=(cm2nm, nm2cm))
+            secx.set_xlabel("Wavelength (nm)")
         elif "nm" in ylabel:
-            if wunit=="nm" or wunit=="nm_air":
-                secx=ax.secondary_xaxis('top',functions=(nm2cm, cm2nm))
+            if wunit == "nm" or wunit == "nm_air":
+                secx = ax.secondary_xaxis("top", functions=(nm2cm, cm2nm))
             else:
-                from radis.phys.convert import cm2nm_air,nm_air2cm
-                secx=ax.secondary_xaxis('top',functions=(nm_air2cm, cm2nm_air))
-            secx.set_xlabel('wavenumber (cm⁻¹)')
+                from radis.phys.convert import cm2nm_air, nm_air2cm
+
+                secx = ax.secondary_xaxis("top", functions=(nm_air2cm, cm2nm_air))
+            secx.set_xlabel("wavenumber (cm⁻¹)")
 
         # Add plotting tools
         # ... Add cursor
