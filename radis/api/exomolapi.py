@@ -106,6 +106,7 @@ def read_def(deff):
     ntransf = 1
     maxnu = 0.0
     quantum_labels = []
+    unc=False
     for i, com in enumerate(dat["COMMENT"]):
         if "Default value of Lorentzian half-width" in com:
             alpha_ref = float(dat["VAL"][i])
@@ -183,7 +184,6 @@ def read_def(deff):
     else:
         numinf = None
         numtag = ""
-
     output = {
         "n_Texp": n_Texp,
         "alpha_ref": alpha_ref,
@@ -358,6 +358,9 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
         label = np.array(["unc","lifetime","Lande"])
         mask = np.array([dic_def["unc"], dic_def["Landé"], dic_def["lifetime"]])
         N_except = np.sum(mask)
+        print(mask)
+        print(N_except)
+        print(label[mask])
         usecol = np.arange(0, N_mandatory_fields + N_except + N_otherfields)
         names = mandatory_fields + tuple(label[mask]) + tuple(quantum_labels)
 
@@ -416,6 +419,9 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
             dat = pd.read_csv(statesf, sep=r"\s+", usecols=usecol, names=names)
     else:
         raise NotImplementedError(engine)
+    print("*_*_*")
+    print(dat)
+    print("*_*_*")
     return dat
 
 
