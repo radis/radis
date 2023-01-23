@@ -106,7 +106,7 @@ def read_def(deff):
     ntransf = 1
     maxnu = 0.0
     quantum_labels = []
-    unc=False
+    unc = False
     for i, com in enumerate(dat["COMMENT"]):
         if "Default value of Lorentzian half-width" in com:
             alpha_ref = float(dat["VAL"][i])
@@ -128,7 +128,7 @@ def read_def(deff):
             quantum_labels.append(dat["VAL"][i].strip(" "))
         elif "Uncertainty availability" in com:
             unc = int(dat["VAL"][i]) == 1
-    
+
     # SOME DEF FILES CONTAINS ERRORS. THESE ARE THE EXCEPTIONS
     if deff.stem == "12C-16O2__UCL-4000":
         ntransf = 20
@@ -196,7 +196,7 @@ def read_def(deff):
         "quantum_labels": quantum_labels,  # array
         "Landé": lande,  # bool
         "lifetime": lifetime,  # bool
-        "unc": unc, #bool uncertainty of line center availability
+        "unc": unc,  #bool uncertainty of line center availability
     }
     return output
 
@@ -353,20 +353,16 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
     mandatory_fields = ("i", "E", "g", "J")
     N_mandatory_fields = len(mandatory_fields)
     mandatory_usecol = np.arange(N_mandatory_fields)
-    print(dic_def,"dic_def")
     if skip_optional_data:
         usecol = mandatory_usecol
         names = mandatory_fields
     else:
-        label = np.array(["unc","lifetime","Lande"])
-        mask = np.array([dic_def["unc"], dic_def["Landé"], dic_def["lifetime"]])
+        label = np.array(["unc", "lifetime", "Lande"])
+        mask = np.array(
+            [dic_def["unc"], dic_def["Landé"], dic_def["lifetime"]])
         N_except = np.sum(mask)
-        print(mask)
-        print(N_except)
-        print(label[mask])
         usecol = np.arange(0, N_mandatory_fields + N_except + N_otherfields)
         names = mandatory_fields + tuple(label[mask]) + tuple(quantum_labels)
-
         # The definitions file (*.def) specifies which fields are available
         # in the states fiel (*.states). Check the number of available fields
         # (see *.def) match the numbers of columns in the states file (*.states).
@@ -376,7 +372,10 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
             splitline = [x for x in re.split(r"\s+", firstline) if x != ""]
             # splitline = re.split(r"\s+", firstline)
             f.close()
-        #if len(splitline) != len(names):
+        if len(splitline) != len(names):
+            warnings.warn(
+                "There appear to be further additional columns in .state file,"
+                + "which are not defined in .def file. We skip them.")
         #   raise InconsistentDatabaseError(
         #        "The EXOMOL definitions and states files are inconsistent.\n" +
         #        "Some data are specified as available by the *.def file, but are absent in the *.bz2 file.\n"
@@ -422,9 +421,6 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
             dat = pd.read_csv(statesf, sep=r"\s+", usecols=usecol, names=names)
     else:
         raise NotImplementedError(engine)
-    print("*_*_*")
-    print(dat)
-    print("*_*_*")
     return dat
 
 
