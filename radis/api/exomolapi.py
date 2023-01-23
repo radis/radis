@@ -508,7 +508,7 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True):
     if not skip_optional_data:
         for q in dic_def["quantum_labels"]:
             map_add(q, f"{q}_l", "i_lower")
-            # map_add(q, f"{q}_u", "i_upper")
+            map_add(q, f"{q}_u", "i_upper")
 
     return trans
 
