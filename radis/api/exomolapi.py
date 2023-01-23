@@ -376,13 +376,7 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
             warnings.warn(
                 "There appear to be further additional columns in .state file,"
                 + "which are not defined in .def file. We skip them.")
-        #   raise InconsistentDatabaseError(
-        #        "The EXOMOL definitions and states files are inconsistent.\n" +
-        #        "Some data are specified as available by the *.def file, but are absent in the *.bz2 file.\n"
-        #        +
-        #        "Set `skip_optional_data=False` in `fetch_exomol()` to load only the required data for a LTE computation.\n"
-        #        + "The problematic optional data/columns will be ignored.")
-
+    
     if engine == "vaex":
         import vaex
 
@@ -433,7 +427,7 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True):
     states: states DataFrame  - the i, E, g, J are in the 4 first columns
     trans: transition numpy array
     dic_def: Informations about additional quantum labels
-    add_quantum_labels: bool . If True fetch all quantum labels in dic_def['quantum_labels'] from states into transitions
+    skip_optional_data: bool . If True fetch all quantum labels in dic_def['quantum_labels'] from states into transitions (_l for lower, _u for upper states)
 
     Returns
     -------
@@ -487,11 +481,6 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True):
     map_add("J", "jlower", "i_lower")
     map_add("J", "jupper", "i_upper")
     map_add("E", "elower", "i_lower")
-
-    #print("TEST")
-    #print(states)
-    #map_add("v", "nulower", "i_lower")
-    #map_add("v", "nuupper", "i_upper")
 
     def has_nan(column):
         try:  # Vaex
