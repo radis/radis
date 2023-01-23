@@ -128,7 +128,7 @@ def read_def(deff):
             quantum_labels.append(dat["VAL"][i].strip(" "))
         elif "Uncertainty availability" in com:
             unc = int(dat["VAL"][i]) == 1
-
+    
     # SOME DEF FILES CONTAINS ERRORS. THESE ARE THE EXCEPTIONS
     if deff.stem == "12C-16O2__UCL-4000":
         ntransf = 20
@@ -137,6 +137,9 @@ def read_def(deff):
         ntransf = 100
     if deff.stem == "14N-1H3__CoYuTe":
         maxnu = 20000.0
+    if deff.stem == "40Ca-16O-1H__OYT6":
+        ntransf = 18
+        maxnu = 36000.0
     if deff.stem == "12C2-1H2__aCeTY":
         if molmass == 12.0:
             molmass = 26.0
