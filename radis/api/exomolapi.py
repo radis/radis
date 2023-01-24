@@ -140,6 +140,8 @@ def read_def(deff):
     if deff.stem == "40Ca-16O-1H__OYT6":
         ntransf = 18
         maxnu = 36000.0
+    if deff.stem == "1H-35Cl__HITRAN-HCl":
+        quantum_labels={"v"} # See https://github.com/HajimeKawahara/exojax/issues/330
     if deff.stem == "12C2-1H2__aCeTY":
         if molmass == 12.0:
             molmass = 26.0
@@ -290,7 +292,7 @@ def read_trans(transf, engine="vaex"):
     return dat
 
 
-def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
+def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True, print_states=False):
     """Exomol IO for a state file
 
     Notes
@@ -329,6 +331,9 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
               structure described in [1]_, unlike the states file of
               https://exomol.com/data/molecules/NO/14N-16O/XABC/ which follows the
               structure described in [2]_.
+    print_states: bool
+        print some info. When .def file looks inconsistent with .states file, turn ON and report them in Issue.
+
 
     Returns
     -------
@@ -415,6 +420,8 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
             dat = pd.read_csv(statesf, sep=r"\s+", usecols=usecol, names=names)
     else:
         raise NotImplementedError(engine)
+    if print_states:
+        print(dat)
     return dat
 
 
