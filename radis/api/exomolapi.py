@@ -25,7 +25,6 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 from radis.api.hdf5 import vaexsafe_colname
-from radis.misc.warning import InconsistentDatabaseError
 
 
 def e2s(molname_exact):
@@ -141,7 +140,9 @@ def read_def(deff):
         ntransf = 18
         maxnu = 36000.0
     if deff.stem == "1H-35Cl__HITRAN-HCl":
-        quantum_labels={"v"} # See https://github.com/HajimeKawahara/exojax/issues/330
+        quantum_labels = {
+            "v"
+        }  # See https://github.com/HajimeKawahara/exojax/issues/330
     if deff.stem == "12C2-1H2__aCeTY":
         if molmass == 12.0:
             molmass = 26.0
@@ -292,7 +293,11 @@ def read_trans(transf, engine="vaex"):
     return dat
 
 
-def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True, print_states=False):
+def read_states(statesf,
+                dic_def,
+                engine="vaex",
+                skip_optional_data=True,
+                print_states=False):
     """Exomol IO for a state file
 
     Notes
@@ -381,7 +386,7 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True, print_
             warnings.warn(
                 "There appear to be further additional columns in .state file,"
                 + "which are not defined in .def file. We skip them.")
-    
+
     if engine == "vaex":
         import vaex
 
