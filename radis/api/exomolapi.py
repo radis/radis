@@ -140,9 +140,10 @@ def read_def(deff):
         ntransf = 18
         maxnu = 36000.0
     if deff.stem == "1H-35Cl__HITRAN-HCl":
-        quantum_labels = {
-            "v"
-        }  # See https://github.com/HajimeKawahara/exojax/issues/330
+        quantum_labels = ["v"]
+        # See https://github.com/HajimeKawahara/exojax/issues/330
+    if deff.stem == "16O-1H__MoLLIST":
+        quantum_labels = ["e/f", "v", "F1/F2", "Es"]
     if deff.stem == "12C2-1H2__aCeTY":
         if molmass == 12.0:
             molmass = 26.0
