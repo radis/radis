@@ -25,21 +25,21 @@ Assuming you have Python installed with pip then use this command to install::
 
     pip install radis -v
 
-if you want to install **radis** through conda then follow this steps::
+if you want to install **radis** through *conda* then follow this steps:
 
-1.Start by adding the conda-forge channel to your conda configuration:
+1.Start by adding the conda-forge channel to your conda configuration::
 
     conda config --add channels conda-forge
 
-2.Next, set the channel priority to strict:
+2.Next, set the channel priority to strict::
 
     conda config --set channel_priority strict 
 
-3.Finally, install radis using the following command:
+3.Finally, install radis using the following command::
 
     conda install radis
 
-or with *mamba*:
+or with *mamba*::
 
     mamba install radis
 
