@@ -25,7 +25,6 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 from radis.api.hdf5 import vaexsafe_colname
-from radis.misc.warning import InconsistentDatabaseError
 
 
 def e2s(molname_exact):
@@ -106,6 +105,7 @@ def read_def(deff):
     ntransf = 1
     maxnu = 0.0
     quantum_labels = []
+    unc = False
     for i, com in enumerate(dat["COMMENT"]):
         if "Default value of Lorentzian half-width" in com:
             alpha_ref = float(dat["VAL"][i])
@@ -125,6 +125,8 @@ def read_def(deff):
             lande = int(dat["VAL"][i]) == 1
         elif "Quantum label" in com:
             quantum_labels.append(dat["VAL"][i].strip(" "))
+        elif "Uncertainty availability" in com:
+            unc = int(dat["VAL"][i]) == 1
 
     # SOME DEF FILES CONTAINS ERRORS. THESE ARE THE EXCEPTIONS
     if deff.stem == "12C-16O2__UCL-4000":
@@ -134,6 +136,14 @@ def read_def(deff):
         ntransf = 100
     if deff.stem == "14N-1H3__CoYuTe":
         maxnu = 20000.0
+    if deff.stem == "40Ca-16O-1H__OYT6":
+        ntransf = 18
+        maxnu = 36000.0
+    if deff.stem == "1H-35Cl__HITRAN-HCl":
+        quantum_labels = ["v"]
+        # See https://github.com/HajimeKawahara/exojax/issues/330
+    if deff.stem == "16O-1H__MoLLIST":
+        quantum_labels = ["e/f", "v", "F1/F2", "Es"]
     if deff.stem == "12C2-1H2__aCeTY":
         if molmass == 12.0:
             molmass = 26.0
@@ -181,7 +191,6 @@ def read_def(deff):
     else:
         numinf = None
         numtag = ""
-
     output = {
         "n_Texp": n_Texp,
         "alpha_ref": alpha_ref,
@@ -191,6 +200,7 @@ def read_def(deff):
         "quantum_labels": quantum_labels,  # array
         "Landé": lande,  # bool
         "lifetime": lifetime,  # bool
+        "unc": unc,  # bool uncertainty of line center availability
     }
     return output
 
@@ -283,7 +293,9 @@ def read_trans(transf, engine="vaex"):
     return dat
 
 
-def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
+def read_states(
+    statesf, dic_def, engine="vaex", skip_optional_data=True, print_states=False
+):
     """Exomol IO for a state file
 
     Notes
@@ -322,6 +334,9 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
               structure described in [1]_, unlike the states file of
               https://exomol.com/data/molecules/NO/14N-16O/XABC/ which follows the
               structure described in [2]_.
+    print_states: bool
+        print some info. When .def file looks inconsistent with .states file, turn ON and report them in Issue.
+
 
     Returns
     -------
@@ -340,27 +355,21 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
     # we read first 4 columns for ("i", "E", "g", "J"),
     # skip lifetime, skip Landé g-factor,
     # read quantum numbers
-    N = np.size(dic_def["quantum_labels"])
+    N_otherfields = np.size(dic_def["quantum_labels"])
     quantum_labels = dic_def["quantum_labels"]
 
-    mandatory_usecol = np.arange(4)
     mandatory_fields = ("i", "E", "g", "J")
+    N_mandatory_fields = len(mandatory_fields)
+    mandatory_usecol = np.arange(N_mandatory_fields)
     if skip_optional_data:
         usecol = mandatory_usecol
         names = mandatory_fields
     else:
-        if dic_def["Landé"] and dic_def["lifetime"]:
-            usecol = np.concatenate((mandatory_usecol, 5 + 2 + np.arange(N)))
-            names = mandatory_fields + ("Lande", "lifetime") + tuple(quantum_labels)
-        elif dic_def["Landé"]:
-            usecol = np.concatenate((mandatory_usecol, 5 + 1 + np.arange(N)))
-            names = mandatory_fields + ("Lande",) + tuple(quantum_labels)
-        elif dic_def["lifetime"]:
-            usecol = np.concatenate((mandatory_usecol, 5 + 1 + np.arange(N)))
-            names = mandatory_fields + ("lifetime",) + tuple(quantum_labels)
-        else:  # no lifetime, nor landé according to the def file
-            usecol = np.concatenate((mandatory_usecol, 5 + np.arange(N)))
-            names = mandatory_fields + tuple(quantum_labels)
+        label = np.array(["unc", "lifetime", "Lande"])
+        mask = np.array([dic_def["unc"], dic_def["Landé"], dic_def["lifetime"]])
+        N_except = np.sum(mask)
+        usecol = np.arange(0, N_mandatory_fields + N_except + N_otherfields)
+        names = mandatory_fields + tuple(label[mask]) + tuple(quantum_labels)
         # The definitions file (*.def) specifies which fields are available
         # in the states fiel (*.states). Check the number of available fields
         # (see *.def) match the numbers of columns in the states file (*.states).
@@ -371,11 +380,9 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
             # splitline = re.split(r"\s+", firstline)
             f.close()
         if len(splitline) != len(names):
-            raise InconsistentDatabaseError(
-                "The EXOMOL definitions and states files are inconsistent.\n"
-                + "Some data are specified as available by the *.def file, but are absent in the *.bz2 file.\n"
-                + "Set `skip_optional_data=False` in `fetch_exomol()` to load only the required data for a LTE computation.\n"
-                + "The problematic optional data/columns will be ignored."
+            warnings.warn(
+                "There appear to be further additional columns in .state file,"
+                + "which are not defined in .def file. We skip them."
             )
 
     if engine == "vaex":
@@ -414,13 +421,12 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
             dat = pd.read_csv(statesf, sep=r"\s+", usecols=usecol, names=names)
     else:
         raise NotImplementedError(engine)
-
+    if print_states:
+        print(dat)
     return dat
 
 
-def pickup_gE(
-    states, trans, trans_file, dic_def, trans_lines=False, skip_optional_data=True
-):
+def pickup_gE(states, trans, dic_def, skip_optional_data=True):
     """extract g_upper (gup), E_lower (elower), and J_lower and J_upper from states
     DataFrame and insert them into the transition DataFrame.
 
@@ -428,10 +434,8 @@ def pickup_gE(
     ----------
     states: states DataFrame  - the i, E, g, J are in the 4 first columns
     trans: transition numpy array
-    trans_file: name of the transition file
-    trans_lines: By default (False) we use nu_lines computed using the state file, i.e. E_upper - E_lower. If trans_nuline=True, we use the nu_lines in the transition file. Note that some trans files do not this info.
     dic_def: Informations about additional quantum labels
-    add_quantum_labels: bool . If True fetch all quantum labels in dic_def['quantum_labels'] from states into transitions
+    skip_optional_data: bool . If True fetch all quantum labels in dic_def['quantum_labels'] from states into transitions (_l for lower, _u for upper states)
 
     Returns
     -------
@@ -484,7 +488,6 @@ def pickup_gE(
     map_add("g", "gup", "i_upper")
     map_add("J", "jlower", "i_lower")
     map_add("J", "jupper", "i_upper")
-
     map_add("E", "elower", "i_lower")
 
     def has_nan(column):
@@ -502,7 +505,7 @@ def pickup_gE(
     if not skip_optional_data:
         for q in dic_def["quantum_labels"]:
             map_add(q, f"{q}_l", "i_lower")
-            # map_add(q, f"{q}_u", "i_upper")
+            map_add(q, f"{q}_u", "i_upper")
 
     return trans
 
@@ -1312,7 +1315,6 @@ class MdbExomol(DatabaseManager):
                 pickup_gE(
                     states,
                     trans,
-                    trans_file,
                     dic_def,
                     skip_optional_data=skip_optional_data,
                 )
