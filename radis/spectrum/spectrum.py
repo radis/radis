@@ -1951,7 +1951,7 @@ class Spectrum(object):
         normalize=False,
         force=False,
         plot_by_parts=False,
-        show=False,
+        show=True,
         show_ruler=False,
         **kwargs,
     ):
