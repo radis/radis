@@ -21,9 +21,17 @@ Getting Started
 Install
 -------
 
-Assuming you have Python installed with the `Anaconda <https://www.anaconda.com/download/>`_ distribution just use::
+Assuming you have Python installed with pip then use this command to install::
 
     pip install radis -v
+
+if you want to install **radis** through *conda* then use this command to ::
+
+    conda install radis -c conda-forge
+
+or with *mamba*::
+
+    mamba install radis
 
 **That's it!** You can now run your first example below.
 If you encounter any issue, or to upgrade the package later, please refer to the
