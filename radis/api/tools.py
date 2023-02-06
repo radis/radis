@@ -162,7 +162,7 @@ def _format_dtype(dtype):
         try:
             print("Data type")
             print("-" * 30)
-            for (k, c) in dtype:
+            for k, c in dtype:
                 print(str(k), "\t\t", c)
             print("-" * 30)
         finally:
@@ -269,4 +269,3 @@ def replace_PQR_with_m101(df):
             ),
             category=PerformanceWarning,
         )
-
