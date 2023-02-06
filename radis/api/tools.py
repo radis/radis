@@ -5,8 +5,12 @@
 """
 # TODO refactor : rename this file as hitran_utils.py
 
+from warnings import warn
+
 import numpy as np
 import pandas as pd
+
+from ..misc.warning import PerformanceWarning
 
 
 def parse_hitran_file(fname, columns, count=-1):
@@ -251,4 +255,18 @@ def replace_PQR_with_m101(df):
         new_col = df["branch"].replace(["P", "Q", "R"], [-1, 0, 1])
         df["branch"] = new_col
 
-    assert df.dtypes["branch"] == np.int64
+    try:
+        assert df.dtypes["branch"] == np.int64
+    except AssertionError:
+        warn(
+            message=(
+                f"Expected branch data type to be 'int64', "
+                f"got '{df.dtypes['branch']}' instead."
+                f"This warning is safe to ignore although it is going to "
+                f"reduce the performance of your calculations. "
+                f"For further details, see:"
+                f"https://github.com/radis/radis/issues/65"
+            ),
+            category=PerformanceWarning,
+        )
+
