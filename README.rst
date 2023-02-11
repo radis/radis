@@ -209,6 +209,21 @@ RADIS internals are described in the `Developer Guide <https://radis.readthedocs
      :alt: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
 
 
+### Matlab
+
+Matlab users can seamlessly access Python modules
+
+Here's what's you'll need:
+
+1. [Setup Python &harr; Matlab interface](https://www.scivision.dev/matlab-python-user-module-import/).
+2. Install RADIS in Python as at the top of this Readme.
+3. From Matlab, verify everything is working by:
+
+        ```
+        py.radis.calc_spectrum()
+        ```
+
+
 License
 -------
 
