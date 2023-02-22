@@ -239,6 +239,9 @@ Compute a Planck Blackbody radiation spectrum in Python using the RADIS
 The same function can  compute the Planck blackbody radiation against wavenumbers rather
 than wavelengths.
 
+
+.. _label_matlab_access:
+
 Access Matlab from RADIS
 ========================
 
