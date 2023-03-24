@@ -1765,7 +1765,7 @@ class DatabankLoader(object):
                     splitext(fname)[0] + ".hdf5",
                     fname + ".hdf5",
                 ]:
-                    if likely_fname_cache in path and likely_fname_cache != fname:
+                    if likely_fname_cache in filtered_path and likely_fname_cache != fname:
                         filtered_path.remove(likely_fname_cache)
             new_paths += filtered_path
 
