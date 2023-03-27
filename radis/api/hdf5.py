@@ -13,6 +13,7 @@ import h5py
 import pandas as pd
 from tables.exceptions import NoSuchNodeError
 
+from radis.db.classes import Isotope
 
 def vaexsafe_colname(name):
     """replace '/' (forbidden in HDF5 vaex column names with '_'
@@ -276,7 +277,7 @@ class DataFileManager(object):
         columns=None,
         lower_bound=[],
         upper_bound=[],
-        within=[],
+        within=[("iso", Isotope.split(","))],
         output="pandas",
         **store_kwargs,
     ):
