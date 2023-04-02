@@ -411,12 +411,6 @@ def calc_spectrum(
     # (dealt with separately because we cannot use them to guess what are the input molecules)
     DICT_INPUT_DICT_ARGUMENTS = {"overpopulation": overpopulation}
 
-    # Check if mole_fraction is dictionary of multiple molecules and have non air diluent, if yes then raise NotImplementedError
-    if isinstance(mole_fraction, dict) and isinstance(diluent, dict):
-        raise NotImplementedError(
-            "Spectrum calculation for multiple molecules in multiple diluents is not yet implemented."
-        )
-
     def _check_molecules_are_consistent(
         molecule_reference_set, reference_name, new_argument, new_argument_name
     ):
@@ -523,6 +517,23 @@ def calc_spectrum(
             float("inf"),
         ]  # Using a list to store minimum wstep value at 1st index
 
+    flag = False
+    # Check if mole_fraction is dictionary of multiple molecules and have non air diluent, if yes then set value of flag as true and update list of diluents
+    if isinstance(mole_fraction, dict) and isinstance(diluent, dict):
+        flag = True
+        for molecule, fraction in mole_fraction.items():
+            if molecule not in {"CO2", "H2O", "He", "H2"}:
+                import warnings
+
+                warnings.warn(
+                    "Broadening coefficient of "
+                    + molecule
+                    + " not present in the database using broadening coefficient of air instead."
+                )
+                diluent["air"] += fraction
+            else:
+                diluent[molecule] = fraction
+
     for molecule, dict_arguments in molecule_dict.items():
         kwargs_molecule = deepcopy(
             kwargs
@@ -530,6 +541,13 @@ def calc_spectrum(
 
         # We add all of the DICT_INPUT_ARGUMENTS values:
         kwargs_molecule.update(**dict_arguments)
+
+        t = kwargs_molecule["mole_fraction"]
+        if flag:
+            if molecule not in {"CO2", "H2O", "He", "H2"}:
+                diluent["air"] -= t
+            else:
+                diluent.pop(molecule)
 
         generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
@@ -563,6 +581,13 @@ def calc_spectrum(
             diluent=diluent,
             **kwargs_molecule,
         )
+
+        if flag:
+            if molecule not in {"CO2", "H2O", "He", "H2"}:
+                diluent["air"] += t
+            else:
+                diluent[molecule] = t
+
         if return_factory:
             factory_dict[molecule] = generated_spectrum[1]
             generated_spectrum = generated_spectrum[0]  # the spectrum
