@@ -33,6 +33,20 @@ or with *mamba*::
 
     mamba install radis
 
+
+**Remark**
+Depending on your platform you should write 
+
+# For Linux:
+pip install radis
+
+# For macOS:
+pip install -U radis --user
+
+# For Windows:
+python -m pip install radis
+
+
 **That's it!** You can now run your first example below.
 If you encounter any issue, or to upgrade the package later, please refer to the
 `detailed installation procedure <https://radis.readthedocs.io/en/latest/dev/developer.html#label-install>`__ .
