@@ -354,7 +354,9 @@ class MolParams(object):
                 )
 
         else:
-            return self.df.loc[(M, isotope), key]
+            out = self.df.loc[(M, isotope), key]
+            assert len(out) == 1
+            return out.iloc[0]
 
 
 def _add_exomol_name(df):
