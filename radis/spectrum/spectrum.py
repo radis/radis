@@ -57,6 +57,7 @@ import numpy as np
 from numpy import abs, diff
 
 from radis.db.references import doi
+from radis.phys.units_astropy import convert_and_strip_units
 
 # from radis.lbl.base import print_conditions
 from radis.misc.arrays import (
@@ -1301,9 +1302,10 @@ class Spectrum(object):
         elif self.get_waveunit() == "nm":  # wavelength air
             w = air2vacuum(w)
             w = nm2cm(w)
-
+            w = convert_and_strip_units(w, "cm-1")
         elif self.get_waveunit() == "nm_vac":  # wavelength vacuum
             w = nm2cm(w)
+            w = convert_and_strip_units(w, "cm-1")
 
         else:
             raise ValueError(self.get_waveunit())
@@ -1327,7 +1329,8 @@ class Spectrum(object):
         :meth:`~radis.spectrum.spectrum.Spectrum.get_radiance_noslit`,
         :ref:`the Spectrum page <label_spectrum>`
         """
-
+        I = self.get("radiance", Iunit="W/(m2.sr.cm-1)", copy=copy)[1] # convert from original unit (W/(m2.sr.cm-1)) to SI units
+        I = self.convert_and_strip_units(I, "W/(m2.sr.cm-1)", Iunit) # convert from SI units to desired unit
         return self.get("radiance", Iunit=Iunit, copy=copy)[1]
 
     def get_radiance_noslit(self, Iunit="mW/cm2/sr/nm", copy=True):
@@ -1490,10 +1493,49 @@ class Spectrum(object):
 
         :ref:`the Spectrum page <label_spectrum>`
         """
+        """
+    Calculate missing quantities: ex: if path_length and emisscoeff are given, recalculate radiance_noslit.
+    """
+        if quantity == "all":
+            quantities = [
+            "abscoeff",
+            "emisscoeff",
+            "transmittance_noslit",
+            "transmittance_slit",
+            "radiance_noslit",
+            "radiance_slit",
+        ]
+        elif quantity == "same":
+            quantities = self.conditions.get("computed_quantities", [])
+        else:
+            quantities = [quantity]
 
-        return update(
-            self, quantity=quantity, optically_thin=optically_thin, verbose=verbose
-        )
+        for q in quantities:
+            if q == "abscoeff":
+                self.get("abscoeff")
+            elif q == "emisscoeff":
+                self.get("emisscoeff")
+            elif q == "transmittance_noslit":
+                self.get("transmittance_noslit")
+            elif q == "transmittance_slit":
+                self.get("transmittance_slit")
+            elif q == "radiance_noslit":
+                radiance_noslit = self.get("radiance_noslit")[1]
+                wunit = radiance_noslit.get_unit("wavenumber")
+                Iunit = radiance_noslit.get_unit("radiance")
+                radiance_noslit = radiance_noslit.convert_and_strip_units()
+                radiance_noslit.set_unit("wavenumber", wunit)
+                radiance_noslit.set_unit("radiance", Iunit)
+                self.radiance_noslit = radiance_noslit
+            elif q == "radiance_slit":
+                self.get("radiance_slit")
+
+        if optically_thin != "default":
+            self.conditions["self_absorption"] = not optically_thin
+
+        if verbose:
+            print("Spectrum updated:", ", ".join(quantities))
+          
 
     # Rescale functions
 
@@ -1559,6 +1601,10 @@ class Spectrum(object):
         :ref:`the Spectrum page <label_spectrum>`
         """
 
+        new_path_length = convert_and_strip_units(new_path_length, u.m)
+        if old_path_length is not None:
+            old_path_length = convert_and_strip_units(old_path_length, u.m)
+
         return rescale_path_length(
             self,
             new_path_length=new_path_length,
@@ -1623,6 +1669,34 @@ class Spectrum(object):
 
         :ref:`the Spectrum page <label_spectrum>`
         """
+        if not inplace:
+        # Return a copy of the Spectrum object if inplace=False
+            s = self.copy()
+        else:
+            s = self
+
+        if old_mole_fraction is None:
+            old_mole_fraction = s.conditions["mole_fraction"]
+
+        # Convert new_mole_fraction and old_mole_fraction to the same units as
+        # conditions['mole_fraction']
+        new_mole_fraction = convert_and_strip_units(
+            new_mole_fraction, s.conditions["mole_fraction"].unit
+        )
+        old_mole_fraction = convert_and_strip_units(
+            old_mole_fraction, s.conditions["mole_fraction"].unit
+        )
+
+        # Rescale absorption and emission coefficients
+        s.abscoeff /= old_mole_fraction
+        s.abscoeff *= new_mole_fraction
+        s.emiss *= old_mole_fraction
+        s.emiss /= new_mole_fraction
+
+        # Update conditions['mole_fraction']
+        s.conditions["mole_fraction"] = new_mole_fraction
+
+        return s
 
         return rescale_mole_fraction(
             self,
@@ -1686,6 +1760,9 @@ class Spectrum(object):
 
         if wunit == "default":
             wunit = self.get_waveunit()
+
+        wmin = convert_and_strip_units(wmin, u.nm)
+        wmax = convert_and_strip_units(wmax, u.nm)
 
         return crop(self, wmin=wmin, wmax=wmax, wunit=wunit, inplace=inplace)
 
