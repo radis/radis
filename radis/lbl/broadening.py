@@ -328,35 +328,40 @@ def pressure_broadening_HWHM(
 
     diluent_molecules = diluent.keys()
 
-    # check if gamma_diluent and n_diluent exists or not
-    try:
-        gamma_lb = 0
-        for diluent_molecule, diluent_mole_fraction in diluent.items():
-            if diluent_molecule != "air":
-                gamma_lb += (
-                    (Tref / Tgas)
-                    ** diluent_broadening_coeff["n_" + diluent_molecule.lower()]
-                ) * (
-                    diluent_broadening_coeff["gamma_" + diluent_molecule.lower()]
-                    * pressure_atm
-                    * diluent_mole_fraction
+    # check if gamma_diluent and n_diluent exists or not and in case they are not present use broadening coefficient of air instead
+    gamma_lb = 0
+    for diluent_molecule, diluent_mole_fraction in diluent.items():
+            try:
+                    gamma_lb += (
+                        (Tref / Tgas)
+                        ** diluent_broadening_coeff["n_" + diluent_molecule.lower()]
+                    ) * (
+                        diluent_broadening_coeff["gamma_" + diluent_molecule.lower()]
+                        * pressure_atm
+                        * diluent_mole_fraction
+                    )
+            except:
+                import warnings
+                from radis.misc.warning import AccuracyWarning
+                if diluent_molecule != "air":
+                    warnings.warn(
+                        AccuracyWarning(
+                            "Broadening Coefficient of "+diluent_molecule+" not present in database using broadening coefficient of air instead."
+                        )
+                    )
+                gamma_lb += ((Tref / Tgas) ** Tdpair) * (
+                    (airbrd * pressure_atm * diluent["air"])
                 )
-        # Adding air coefficient
-        if "air" in diluent_molecules:
-            gamma_lb += ((Tref / Tgas) ** Tdpair) * (
-                (airbrd * pressure_atm * diluent["air"])
-            )
-        # Adding self coefficient
-        if Tdpsel is None:  # use Tdpair instead
+    # Adding self coefficient
+    if Tdpsel is None:  # use Tdpair instead
             gamma_lb += ((Tref / Tgas) ** Tdpair) * (
                 (selbrd * pressure_atm * mole_fraction)
             )
-        else:
+    else:
             gamma_lb += ((Tref / Tgas) ** Tdpsel) * (
                 selbrd * pressure_atm * mole_fraction
             )
-    except KeyError as err:
-        raise KeyError("Column not found {0}".format(err))
+        # raise KeyError("Column not found {0}".format(err))
 
     return gamma_lb
 
@@ -888,11 +893,20 @@ class BroadenFactory(BaseFactory):
         # diluent and their broadening coeff dictionary
         diluent_broadening_coeff = {}
         for key in diluent:
-            if key != "air":
+            try:
                 diluent_broadening_coeff["gamma_" + key.lower()] = df[
                     "gamma_" + key.lower()
                 ]
                 diluent_broadening_coeff["n_" + key.lower()] = df["n_" + key.lower()]
+            except:
+                    import warnings
+                    from radis.misc.warning import AccuracyWarning
+                    if key!= "air":
+                        warnings.warn(
+                            AccuracyWarning(
+                                "Broadening Coefficient of "+key+" not present in database using broadening coeffiecient of air instead."
+                            )
+                        )
 
         # Get broadenings
         if broadening_method == "voigt":
