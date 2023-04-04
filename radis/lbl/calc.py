@@ -517,10 +517,10 @@ def calc_spectrum(
             float("inf"),
         ]  # Using a list to store minimum wstep value at 1st index
 
-    is_Multi = False
+    is_multi_molecules_multi_diluents = False
     # Check if mole_fraction is dictionary of multiple molecules and have non air diluent, if yes then set value of flag as true and update list of diluents
     if isinstance(mole_fraction, dict) and isinstance(diluent, dict):
-        is_Multi = True
+        is_multi_molecules_multi_diluents = True
         for molecule, fraction in mole_fraction.items():
                 diluent[molecule] = fraction
 
@@ -532,9 +532,13 @@ def calc_spectrum(
         # We add all of the DICT_INPUT_ARGUMENTS values:
         kwargs_molecule.update(**dict_arguments)
 
-        fraction = kwargs_molecule["mole_fraction"]
-        if is_Multi:
-                diluent.pop(molecule)
+        if is_multi_molecules_multi_diluents:
+            diluent_for_this_molecule = {k:v  for k,v in diluent.items()}
+        else:
+            diluent_for_this_molecule=diluent
+
+        if is_multi_molecules_multi_diluents:
+            diluent_for_this_molecule.pop(molecule)
 
         generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
@@ -565,12 +569,9 @@ def calc_spectrum(
             mode=mode,
             export_lines=export_lines,
             return_factory=return_factory,
-            diluent=diluent,
+            diluent=diluent_for_this_molecule,
             **kwargs_molecule,
         )
-
-        if is_Multi:
-                diluent[molecule] = fraction
 
         if return_factory:
             factory_dict[molecule] = generated_spectrum[1]
