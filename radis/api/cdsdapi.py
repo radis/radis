@@ -322,10 +322,22 @@ def cdsd2df(
     # but files that have partly relevant lines are fully loaded.
     # Note : cache file is generated with the full line list.
 
+    def load_spectrum(h5_path, load_only_wavenum_above=None, load_only_wavenum_below=None):
+        df = load_h5_cache_file(h5_path)
+        if load_only_wavenum_above is not None:
+            df = df[df['wav'] > load_only_wavenum_above]
+        if load_only_wavenum_below is not None:
+            df = df[df['wav'] < load_only_wavenum_below]
+        return df
+
+    
+
     return df
+
 
 
 if __name__ == "__main__":
     from radis.test.io.test_hitran_cdsd import _run_testcases
-
     print("Testing cdsd: ", _run_testcases())
+
+# %%
