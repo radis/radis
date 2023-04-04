@@ -6,17 +6,17 @@ Calculate a High Temperature H20 Spectrum
 =========================================
 
 This example uses the calc_spectrum function to calculate the H20 spectra at 3000K using the 
-HITEMP databank. Wavenumbers are set between 2000 and 4000.
+HITEMP databank. Wavenumbers are set between 3125 and 3703 (corresponding to a wavelength range between 2700nm - 3200nm). 
 
-
+Warning: Please be aware that the HITEMP databank files for H20 is pretty large. Expect ~10Gb. See more under HITEMP [here](https://radis.readthedocs.io/en/latest/lbl/lbl.html#line-databases)
 """
 
 #%%
 
 from radis import calc_spectrum
 from astropy import units as u
-s = calc_spectrum(wavenum_min = 2000 / u.cm, 
-                  wavenum_max = 4000 / u.cm,
+s = calc_spectrum(wavenum_min = 3125 / u.cm, 
+                  wavenum_max = 3703 / u.cm,
                   molecule = 'H2O',
                   isotope = '1,2,3',
                   pressure = 1.01325 * u.bar,
