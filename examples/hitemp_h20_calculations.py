@@ -5,8 +5,10 @@
 Calculate a High Temperature H20 Spectrum
 =========================================
 
-This example uses the calc_spectrum function to calculate the H20 spectra at 3000K using the 
-HITEMP databank. Wavenumbers are set between 3125 and 3703 (corresponding to a wavelength range between 2700nm - 3200nm). 
+This example demonstrates using the calc_spectrum function to calculate the H20 spectra at 3000K using the 
+HITEMP databank. Due to HITEMP databank file size considerations, this example has been preset to using the HITRAN database instead. 
+To use HITEMP files for accurate results at high temperatures like the one in this example, modify databank='hitemp' in the code below. 
+Wavenumbers are set between 3125 and 3703 (corresponding to a wavelength range between 2700nm - 3200nm). 
 
 Warning: Please be aware that the HITEMP databank files for H20 is pretty large. Expect ~10Gb. See more under HITEMP [here](https://radis.readthedocs.io/en/latest/lbl/lbl.html#line-databases)
 """
@@ -23,7 +25,7 @@ s = calc_spectrum(wavenum_min = 3125 / u.cm,
                   mole_fraction = 1,
                   path_length = 1 * u.cm,
                   Tgas=3000, 
-                  databank='hitemp',
+                  databank='hitran',  #change to databank='hitemp' for accurate results, but be aware of size requirements (see warning above)
                   verbose=3,        # adding some extra info for the first computation
                   )
 #Without verbose=False this will show all the input parameters. 
