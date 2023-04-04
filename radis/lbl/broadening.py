@@ -340,7 +340,7 @@ def pressure_broadening_HWHM(
                         * pressure_atm
                         * diluent_mole_fraction
                     )
-            except:
+            except KeyError:
                 import warnings
                 from radis.misc.warning import AccuracyWarning
                 if diluent_molecule != "air":
@@ -898,14 +898,10 @@ class BroadenFactory(BaseFactory):
                     "gamma_" + key.lower()
                 ]
                 diluent_broadening_coeff["n_" + key.lower()] = df["n_" + key.lower()]
-            except:
-                    import warnings
-                    from radis.misc.warning import AccuracyWarning
+            except KeyError:
                     if key!= "air":
-                        warnings.warn(
-                            AccuracyWarning(
-                                "Broadening Coefficient of "+key+" not present in database using broadening coeffiecient of air instead."
-                            )
+                        self.warn(
+                                "Broadening Coefficient of "+key+" not present in database using broadening coefficient of air instead."
                         )
 
         # Get broadenings
