@@ -899,9 +899,11 @@ class BroadenFactory(BaseFactory):
                 ]
                 diluent_broadening_coeff["n_" + key.lower()] = df["n_" + key.lower()]
             except KeyError:
+                    self.warn()
                     if key!= "air":
                         self.warn(
-                                "Broadening Coefficient of "+key+" not present in database using broadening coefficient of air instead."
+                                message="Broadening Coefficient of "+key+" not present in database using broadening coefficient of air instead.",
+                                category="AccuracyWarning"
                         )
 
         # Get broadenings
