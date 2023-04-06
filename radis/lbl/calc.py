@@ -535,7 +535,7 @@ def calc_spectrum(
             else:
                diluent_for_this_molecule[diluent]=1-mole_fraction
 
-        # Getting diluents from mole_fraction   
+        # Adding the other molecules from the gas mixture as diluent for the calculation of this particular molecule 
         if isinstance(mole_fraction, dict):
             for other_molecule, other_fraction  in mole_fraction.items():
                 if other_molecule!=molecule:
