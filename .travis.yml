@@ -3,7 +3,9 @@ python:
   # We don't actually use the Travis Python, but this keeps it organized.
   #- "2.7"    # not tested anymore starting from 0.9.19
   - "3.8"
-os: linux
+os: 
+- linux
+- windows
 
 stages:
   - name: test
@@ -19,6 +21,9 @@ jobs:
   include:
     - stage: test
       name: Test and Coverage
+      before_install: 
+        # if the os is windows then
+         - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then choco install python --version 3.8.0 && python -m pip install --upgrade pip && set PATH=C:\Python38;C:\Python38\Scripts;%PATH%
       install:
         # Install Micromamba
         # We do this conditionally because it saves us some downloading if the
