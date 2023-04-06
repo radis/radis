@@ -517,13 +517,6 @@ def calc_spectrum(
             float("inf"),
         ]  # Using a list to store minimum wstep value at 1st index
 
-    is_multi_molecules_multi_diluents = False
-    # Check if mole_fraction is dictionary of multiple molecules and have non air diluent, if yes then set value of flag as true and update list of diluents
-    if isinstance(mole_fraction, dict) and isinstance(diluent, dict):
-        is_multi_molecules_multi_diluents = True
-        for molecule, fraction in mole_fraction.items():
-                diluent[molecule] = fraction
-
     for molecule, dict_arguments in molecule_dict.items():
         kwargs_molecule = deepcopy(
             kwargs
@@ -532,13 +525,24 @@ def calc_spectrum(
         # We add all of the DICT_INPUT_ARGUMENTS values:
         kwargs_molecule.update(**dict_arguments)
 
-        if is_multi_molecules_multi_diluents:
-            diluent_for_this_molecule = {k:v  for k,v in diluent.items()}
+        #getting diluents for this molecule 
+        diluent_for_this_molecule ={}
+        if isinstance(diluent,dict):
+            diluent_for_this_molecule=diluent.copy()
         else:
-            diluent_for_this_molecule=diluent
+            if isinstance(mole_fraction,dict):
+                diluent_for_this_molecule[diluent]=1-sum(list(mole_fraction.values()))
+            else:
+               diluent_for_this_molecule[diluent]=1-mole_fraction
 
-        if is_multi_molecules_multi_diluents:
-            diluent_for_this_molecule.pop(molecule)
+        # Getting diluents from mole_fraction   
+        if isinstance(mole_fraction, dict):
+            for other_molecule, other_fraction  in mole_fraction.items():
+                if other_molecule!=molecule:
+                    if other_molecule in diluent_for_this_molecule:
+                        diluent_for_this_molecule[other_molecule] += other_fraction
+                    else:
+                        diluent_for_this_molecule[other_molecule] = other_fraction
 
         generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
