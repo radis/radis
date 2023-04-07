@@ -3,7 +3,6 @@ python:
   # We don't actually use the Travis Python, but this keeps it organized.
   #- "2.7"    # not tested anymore starting from 0.9.19
   - "3.8"
-
 os: 
 - linux
 - windows
@@ -22,62 +21,92 @@ jobs:
   include:
     - stage: test
       name: Test and Coverage
-      install:
-        # Install Micromamba
-        # We do this conditionally because it saves us some downloading if the
-        # version is the same.
-        # For now use http instead of https according to this comment:
-        # https://github.com/mamba-org/mamba/issues/1675#issuecomment-1127160021
-        - |
-          if [ $TRAVIS_OS_NAME = "windows" ]; then
-            curl -L https://micromamba.snakepit.net/api/micromamba/win-64/latest/micromamba.exe -o micromamba.exe
-            ./micromamba.exe shell init -s powershell -p C:\tools\micromamba
-            C:\tools\micromamba\condabin\conda.bat activate
-          else
-            wget -qO- https://micromamba.snakepit.net/api/micromamba/linux-64/latest/micromamba-latest-Linux-x86_64.tar.bz2 | tar -xvj bin/micromamba
-            ./bin/micromamba shell init -s bash -p ~/micromamba
-            source ~/.bashrc
-            micromamba activate base
-          fi
-        # Useful for debugging any issues with conda/mamba
-        - micromamba info
-        - micromamba config list
-        # Update python version in environment
-        - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
-        # Create conda environment
-        - micromamba install xtensor -c conda-forge -y
-        - micromamba create -f environment.yml -y
-        # Activate and install test-only dependencies
-        - micromamba activate radis-env
-        - micromamba list
-        - pip install pytest-cov
-        - pip install -e . -v
+      matrix:
+         include:
+           - os: linux
+             install:
+             # Install Micromamba
+             # We do this conditionally because it saves us some downloading if the
+             # version is the same.
+             # For now use http instead of https according to this comment:
+             # https://github.com/mamba-org/mamba/issues/1675#issuecomment-1127160021
+             - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/0.25.1 | tar -xvj bin/micromamba
+             - ./bin/micromamba shell init -s bash -p ~/micromamba
+             - source ~/.bashrc
+             # we need micromamaba to install into windows 
+             - micromamba activate base
+             # Useful for debugging any issues with conda/mamba
+             - micromamba info
+             - micromamba config list
+             # Update python version in environment
+             - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
+             # Create conda environmen 
+             - micromamba install xtensor -c conda-forge -y
+             - micromamba create -f environment.yml -y
+             # Activate and install test-only dependencies
+             - micromamba activate radis-env
+             - micromamba list
+             - pip install pytest-cov
+             - pip install -e . -v
+             script:
+             # Your test script goes here
+             - echo ">>> Run tests"
+             # use XVFB to have headless display port, and still run the Matplotlib tests.
+             - xvfb-run -a pytest --cov=./ --durations=10
+             # --durations=N to print the slowest N tests
+             # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
 
-      script:
-        # Your test script goes here
-        - echo ">>> Run tests"
-        # use XVFB to have headless display port, and still run the Matplotlib tests.
-        - xvfb-run -a pytest --cov=./ --durations=10
-        - |
-          if [ $TRAVIS_OS_NAME = "windows" ]; then
-              pytest --cov=./ --durations=10
-          else
-             xvfb-run -a pytest --cov=./ --durations=10
-          fi
-        # --durations=N to print the slowest N tests
-        # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
+             services:
+             - xvfb
 
-      services:
-        - xvfb
+             after_success:
+             # codecoverage
+             - pip install codecov
+             - codecov
 
-      after_success:
-        # codecoverage
-        - pip install codecov
-        - codecov
+             before_script:
+             - export MPLBACKEND=Agg
+           - os: windows
+             install:
+               - choco install python --version 3.8.0
+               - python -m pip install --upgrade pip
+               - export PATH=/c/Python38:/c/Python38/Scripts:$PATH
+               - pip3 install --upgrade pip
+               - wget -qO- https://micromamba.snakepit.net/api/micromamba/win-64/latest | tar -xvj micromamba.exe
+               - ./micromamba.exe shell init -s powershell -p c:\micromamba
+               - micromamba activate base
+              # Useful for debugging any issues with conda/mamba
+               - micromamba info
+               - micromamba config list
+               # Update python version in environment
+               - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
+               # Create conda environmen 
+               - micromamba install xtensor -c conda-forge -y
+               - micromamba create -f environment.yml -y
+               # Activate and install test-only dependencies
+               - micromamba activate radis-env
+               - micromamba list
+               - pip install pytest-cov
+               - pip install -e . -v
+             script:
+             # Your test script goes here
+             - echo ">>> Run tests"
+             # use XVFB to have headless display port, and still run the Matplotlib tests.
+             -  pytest --cov=./ --durations=10
+             # --durations=N to print the slowest N tests
+             # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
 
-      before_script:
-        - export MPLBACKEND=Agg
+             services:
+             - xvfb
 
+             after_success:
+             # codecoverage
+             - pip install codecov
+             - codecov
+
+             before_script:
+             - export MPLBACKEND=Agg
+               
     - stage: lint
       name: Code Quality Checks
       install:
