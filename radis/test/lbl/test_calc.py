@@ -896,6 +896,20 @@ def test_diluent_invalid(verbose=True, plot=False, *args, **kwargs):
         in str(err.value)
     )
 
+def test_diluents_for_molecule():
+
+    from radis.lbl.calc import diluents_for_molecule
+    mole_fractions = { 'CO2': 0.2, 'CO':0.2 }
+    diluent = "air"
+    # loop that simulates the calc_spectrum loop 
+    for molecule, mole_fraction in mole_fractions.items():
+        diluent_for_this_molecule = diluents_for_molecule(mole_fractions, diluent, molecule)
+        #in the real code this is where calc_spectrum_one_molecule() is called 
+        if molecule == 'CO2':
+            assert diluent_for_this_molecule == {'air': 0.6, 'CO': 0.2}  # etc 
+        if molecule == 'CO':
+            assert diluent_for_this_molecule == {'air': 0.6, 'CO2': 0.2}  # etc 
+
 
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
@@ -931,6 +945,7 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
     test_check_wavelength_range()
     test_non_air_diluent_calc()
+    test_diluents_for_molecule()
 
     return True
 
