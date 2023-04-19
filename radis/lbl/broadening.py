@@ -346,9 +346,10 @@ def pressure_broadening_HWHM(
                 if diluent_molecule != "air":
                     warnings.warn(
                         AccuracyWarning(
-                            "Broadening Coefficient of "+diluent_molecule+" not present in database using broadening coefficient of air instead."
+                            "Broadening Coefficient of "+diluent_molecule+" not present in database using broadening coefficient of air instead. \n!!! Solution: Try using once `use_cached='regen'' in calc_spectrum!!!"
                         )
                     )
+                    
                 gamma_lb += ((Tref / Tgas) ** Tdpair) * (
                     (airbrd * pressure_atm * diluent["air"])
                 )
@@ -901,7 +902,7 @@ class BroadenFactory(BaseFactory):
             except KeyError:
                     if key!= "air":
                         self.warn(
-                                message="Broadening Coefficient of "+key+" not present in database using broadening coefficient of air instead.",
+                                message="Broadening Coefficient of "+key+" not present in database using broadening coefficient of air instead. \n!!! Solution: Try using once `use_cached='regen'' in calc_spectrum!!!",
                                 category="AccuracyWarning"
                         )
 
