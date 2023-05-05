@@ -341,15 +341,16 @@ def pressure_broadening_HWHM(
                         * diluent_mole_fraction
                     )
             except KeyError:
-                import warnings
-                from radis.misc.warning import AccuracyWarning
-                if diluent_molecule != "air":
-                    warnings.warn(
-                        AccuracyWarning(
-                            "Broadening Coefficient of "+diluent_molecule+" not present in database using broadening coefficient of air instead. \n!!! Solution: Try using once `use_cached='regen'' in calc_spectrum!!!"
-                        )
-                    )
-                    
+                # import warnings
+                # from radis.misc.warning import AccuracyWarning
+                # if diluent_molecule != "air":
+                #     warnings.warn(
+                #         AccuracyWarning(
+                #             "Broadening Coefficient of "+diluent_molecule+" not present in database using broadening coefficient of air instead. \n!!! Solution: Try using once `use_cached='regen'' in calc_spectrum!!!"
+                #         )
+                #     )
+                
+                ## A warning is normally raised already in '_calc_broadening_HWHM' when constructing the dict diluent_broadening_coef
                 gamma_lb += ((Tref / Tgas) ** Tdpair) * (
                     (airbrd * pressure_atm * diluent["air"])
                 )
@@ -900,11 +901,11 @@ class BroadenFactory(BaseFactory):
                 ]
                 diluent_broadening_coeff["n_" + key.lower()] = df["n_" + key.lower()]
             except KeyError:
-                    if key!= "air":
-                        self.warn(
-                                message="Broadening Coefficient of "+key+" not present in database using broadening coefficient of air instead. \n!!! Solution: Try using once `use_cached='regen'' in calc_spectrum!!!",
-                                category="AccuracyWarning"
-                        )
+                if key!= "air":
+                    self.warn(
+                            message="Broadening Coefficient of "+key+" not present in database using broadening coefficient of air instead. \n!!! Solution: Try using once `use_cached='regen'' in calc_spectrum!!!",
+                            category="AccuracyWarning"
+                    )
 
         # Get broadenings
         if broadening_method == "voigt":
