@@ -862,9 +862,9 @@ def test_non_air_diluent_calc(verbose=True, plot=False, warnings=True, *args, **
     assert (hwhm_voigt_s2 < hwhm_voigt_s1).all()
     assert np.isclose(hwhm_voigt_s2[0], 0.022718389546218788)
     assert np.isclose(hwhm_voigt_s1[0], 0.02530070148135749)
-    
-    #if broadenings are different, the peak intensity should be different
-    #if the assert does not pass, then the code took the same broadening for both
+
+    # if broadenings are different, the peak intensity should be different
+    # if the assert does not pass, then the code took the same broadening for both
     maxI_air = s1.get_radiance_noslit().max()
     maxI_dil = s2.get_radiance_noslit().max()
     assert not np.isclose(maxI_air, maxI_dil)
@@ -902,19 +902,23 @@ def test_diluent_invalid(verbose=True, plot=False, *args, **kwargs):
         in str(err.value)
     )
 
+
 def test_diluents_for_molecule():
 
     from radis.lbl.calc import diluents_for_molecule
-    mole_fractions = { 'CO2': 0.2, 'CO':0.2 }
+
+    mole_fractions = {"CO2": 0.2, "CO": 0.2}
     diluent = "air"
-    # loop that simulates the calc_spectrum loop 
+    # loop that simulates the calc_spectrum loop
     for molecule, mole_fraction in mole_fractions.items():
-        diluent_for_this_molecule = diluents_for_molecule(mole_fractions, diluent, molecule)
-        #in the real code this is where calc_spectrum_one_molecule() is called 
-        if molecule == 'CO2':
-            assert diluent_for_this_molecule == {'air': 0.6, 'CO': 0.2}  # etc 
-        if molecule == 'CO':
-            assert diluent_for_this_molecule == {'air': 0.6, 'CO2': 0.2}  # etc 
+        diluent_for_this_molecule = diluents_for_molecule(
+            mole_fractions, diluent, molecule
+        )
+        # in the real code this is where calc_spectrum_one_molecule() is called
+        if molecule == "CO2":
+            assert diluent_for_this_molecule == {"air": 0.6, "CO": 0.2}  # etc
+        if molecule == "CO":
+            assert diluent_for_this_molecule == {"air": 0.6, "CO2": 0.2}  # etc
 
 
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
