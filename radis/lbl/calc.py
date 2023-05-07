@@ -411,12 +411,6 @@ def calc_spectrum(
     # (dealt with separately because we cannot use them to guess what are the input molecules)
     DICT_INPUT_DICT_ARGUMENTS = {"overpopulation": overpopulation}
 
-    # Check if mole_fraction is dictionary of multiple molecules and have non air diluent, if yes then raise NotImplementedError
-    if isinstance(mole_fraction, dict) and isinstance(diluent, dict):
-        raise NotImplementedError(
-            "Spectrum calculation for multiple molecules in multiple diluents is not yet implemented."
-        )
-
     def _check_molecules_are_consistent(
         molecule_reference_set, reference_name, new_argument, new_argument_name
     ):
@@ -531,6 +525,9 @@ def calc_spectrum(
         # We add all of the DICT_INPUT_ARGUMENTS values:
         kwargs_molecule.update(**dict_arguments)
 
+        #getting diluents for this molecule 
+        diluent_for_this_molecule = diluents_for_molecule(mole_fraction,diluent,molecule)
+        
         generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
             wavenum_max=wavenum_max,
@@ -560,9 +557,10 @@ def calc_spectrum(
             mode=mode,
             export_lines=export_lines,
             return_factory=return_factory,
-            diluent=diluent,
+            diluent=diluent_for_this_molecule,
             **kwargs_molecule,
         )
+
         if return_factory:
             factory_dict[molecule] = generated_spectrum[1]
             generated_spectrum = generated_spectrum[0]  # the spectrum
@@ -928,6 +926,27 @@ def _calc_spectrum_one_molecule(
     else:
         return s
 
+# Function to get diluent(s) for a molecule    
+def diluents_for_molecule(mole_fraction,diluent,molecule):
+    diluent_for_this_molecule={}
+    if isinstance(diluent,dict):
+        diluent_for_this_molecule=diluent.copy()
+    else:
+        if isinstance(mole_fraction,dict):
+            diluent_for_this_molecule[diluent]=1-sum(list(mole_fraction.values()))
+        else:
+            diluent_for_this_molecule[diluent]=1-mole_fraction
+
+    # Adding the other molecules from the gas mixture as diluent for the calculation of this particular molecule 
+    if isinstance(mole_fraction, dict):
+        for other_molecule, other_fraction  in mole_fraction.items():
+            if other_molecule!=molecule:
+                if other_molecule in diluent_for_this_molecule:
+                    diluent_for_this_molecule[other_molecule] += other_fraction
+                else:
+                    diluent_for_this_molecule[other_molecule] = other_fraction
+
+    return diluent_for_this_molecule
 
 # --------------------------
 if __name__ == "__main__":
