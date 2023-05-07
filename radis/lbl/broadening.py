@@ -326,8 +326,6 @@ def pressure_broadening_HWHM(
     # | dev note: in that case we simplify the expression by calculation the
     # | power function once only.
 
-    diluent_molecules = diluent.keys()
-
     # check if gamma_diluent and n_diluent exists or not and in case they are not present use broadening coefficient of air instead
     gamma_lb = 0
     for diluent_molecule, diluent_mole_fraction in diluent.items():
