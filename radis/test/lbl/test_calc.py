@@ -786,7 +786,7 @@ def test_calc_spectrum_multiple_molecules_wstep_auto(
         verbose=verbose,
     )
     wstep_s = s.get_conditions()["wstep"]
-    
+
     s_CO = calc_spectrum(
         wavelength_min=4165,
         wavelength_max=5000,  # cm-1
@@ -800,7 +800,7 @@ def test_calc_spectrum_multiple_molecules_wstep_auto(
         verbose=verbose,
     )
     wstep_CO = s_CO.get_conditions()["wstep"]
-    
+
     s_CO2 = calc_spectrum(
         wavelength_min=4165,
         wavelength_max=5000,  # cm-1
@@ -814,10 +814,10 @@ def test_calc_spectrum_multiple_molecules_wstep_auto(
         verbose=verbose,
     )
     wstep_CO2 = s_CO2.get_conditions()["wstep"]
-    
+
     # Check calculation went fine:
     assert set(s.conditions["molecule"]) == set(["CO2", "CO"])
-    if not wstep_s == "N/A": #TODO: we should be able to know what is the new wstep
+    if not wstep_s == "N/A":  # TODO: we should be able to know what is the new wstep
         assert np.isclose(wstep_s, min(wstep_CO, wstep_CO2))
 
 
