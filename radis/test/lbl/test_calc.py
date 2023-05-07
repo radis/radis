@@ -953,39 +953,39 @@ def test_diluents_for_molecule():
 
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
-    # # Test sPlanck and conversion functions
-    # test_sPlanck_conversions()
+    # Test sPlanck and conversion functions
+    test_sPlanck_conversions()
 
-    # # Test calc_spectrum function
-    # test_calc_spectrum()
+    # Test calc_spectrum function
+    test_calc_spectrum()
 
-    # # Test calc_spectrum with overpopulation
-    # test_calc_spectrum_overpopulations(
-    #     verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
-    # )
+    # Test calc_spectrum with overpopulation
+    test_calc_spectrum_overpopulations(
+        verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
+    )
 
-    # # Compare all calc methods
-    # #    test_all_calc_methods_CO2(
-    # #        verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
-    # #    )
-    # test_all_calc_methods_CO2pcN(
-    #     verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
-    # )
+    # Compare all calc methods
+    #    test_all_calc_methods_CO2(
+    #        verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
+    #    )
+    test_all_calc_methods_CO2pcN(
+        verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
+    )
 
-    # # Compare same spectrum with two calculation methods
-    # test_eq_vs_noneq_isotope(
-    #     verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
-    # )
+    # Compare same spectrum with two calculation methods
+    test_eq_vs_noneq_isotope(
+        verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
+    )
 
-    # # Run test for multiple molecules
-    # test_calc_spectrum_multiple_molecules()
-    # test_calc_spectrum_multiple_molecules_otherinputs()
-    # test_calc_spectrum_multiple_molecules_inputerror()
+    # Run test for multiple molecules
+    test_calc_spectrum_multiple_molecules()
+    test_calc_spectrum_multiple_molecules_otherinputs()
+    test_calc_spectrum_multiple_molecules_inputerror()
     test_calc_spectrum_multiple_molecules_wstep_auto()
 
-    # test_check_wavelength_range()
-    # test_non_air_diluent_calc()
-    # test_diluents_for_molecule()
+    test_check_wavelength_range()
+    test_non_air_diluent_calc()
+    test_diluents_for_molecule()
 
     return True
 
