@@ -525,9 +525,11 @@ def calc_spectrum(
         # We add all of the DICT_INPUT_ARGUMENTS values:
         kwargs_molecule.update(**dict_arguments)
 
-        #getting diluents for this molecule 
-        diluent_for_this_molecule = diluents_for_molecule(mole_fraction,diluent,molecule)
-        
+        # getting diluents for this molecule
+        diluent_for_this_molecule = diluents_for_molecule(
+            mole_fraction, diluent, molecule
+        )
+
         generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
             wavenum_max=wavenum_max,
@@ -926,27 +928,29 @@ def _calc_spectrum_one_molecule(
     else:
         return s
 
-# Function to get diluent(s) for a molecule    
-def diluents_for_molecule(mole_fraction,diluent,molecule):
-    diluent_for_this_molecule={}
-    if isinstance(diluent,dict):
-        diluent_for_this_molecule=diluent.copy()
-    else:
-        if isinstance(mole_fraction,dict):
-            diluent_for_this_molecule[diluent]=1-sum(list(mole_fraction.values()))
-        else:
-            diluent_for_this_molecule[diluent]=1-mole_fraction
 
-    # Adding the other molecules from the gas mixture as diluent for the calculation of this particular molecule 
+# Function to get diluent(s) for a molecule
+def diluents_for_molecule(mole_fraction, diluent, molecule):
+    diluent_for_this_molecule = {}
+    if isinstance(diluent, dict):
+        diluent_for_this_molecule = diluent.copy()
+    else:
+        if isinstance(mole_fraction, dict):
+            diluent_for_this_molecule[diluent] = 1 - sum(list(mole_fraction.values()))
+        else:
+            diluent_for_this_molecule[diluent] = 1 - mole_fraction
+
+    # Adding the other molecules from the gas mixture as diluent for the calculation of this particular molecule
     if isinstance(mole_fraction, dict):
-        for other_molecule, other_fraction  in mole_fraction.items():
-            if other_molecule!=molecule:
+        for other_molecule, other_fraction in mole_fraction.items():
+            if other_molecule != molecule:
                 if other_molecule in diluent_for_this_molecule:
                     diluent_for_this_molecule[other_molecule] += other_fraction
                 else:
                     diluent_for_this_molecule[other_molecule] = other_fraction
 
     return diluent_for_this_molecule
+
 
 # --------------------------
 if __name__ == "__main__":
