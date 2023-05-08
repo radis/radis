@@ -317,44 +317,6 @@ class SpectrumFactory(BandFactory):
     .. minigallery:: radis.SpectrumFactory
         :add-heading:
 
-    Plotting
-    -----
-    
-    The `plot` method can be used to visualize the resulting spectrum. Available plot types are:
-    
-    - 'absorption': plot absorption coefficient vs. wavenumber
-    - 'transmittance': plot transmittance vs. wavenumber
-    - 'radiance': plot radiance vs. wavenumber
-    - 'intensity': plot spectral intensity vs. wavenumber
-    - 'lines': plot individual spectral lines
-    
-    Each plot type also has additional optional parameters that can be passed to `plot_options`.
-    
-    Parameters
-    ----------
-    kind : str, optional
-        The type of plot to generate. Defaults to 'absorption'.
-        Valid options are 'absorption', 'transmittance', 'radiance', 'intensity', and 'lines'.
-    plot_options : dict, optional
-        A dictionary of additional plot options. Valid keys and their descriptions are:
-        
-        - 'figsize' : (width, height) tuple in inches for the plot figure size. Defaults to (10, 6).
-        - 'xlim' : (xmin, xmax) tuple in cm-1 for the x-axis limits. Defaults to (0, 5000).
-        - 'ylim' : (ymin, ymax) tuple for the y-axis limits. Defaults to 'auto'.
-        - 'linewidth' : float value for the line width. Defaults to 1.0.
-        - 'color' : string or tuple value for the line color. Defaults to 'k'.
-        - 'title' : string value for the plot title. Defaults to an automatically generated title.
-        - 'xlabel' : string value for the x-axis label. Defaults to 'Wavenumber (cm$^{-1}$)'.
-        - 'ylabel' : string value for the y-axis label. Defaults to 'Absorption Coefficient (cm$^{-1}$/(molecule cm$^{-2}$))' for 'absorption' plots,
-                      'Transmittance' for 'transmittance' plots,
-                      'Radiance (W/(cm$^{-1}$ sr))' for 'radiance' plots,
-                      'Spectral Intensity (W/(cm$^{-1}$ sr))' for 'intensity' plots.
-    
-    def plot(self, kind='absorption', plot_options=None):
-
-
-    
-
     Notes
     -----
 
