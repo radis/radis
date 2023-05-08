@@ -3724,8 +3724,15 @@ class Spectrum(object):
                 w_new = w_new.get_wavenumber()
             else:
                 raise ValueError(unit)
+            wstep_new = w_new.conditions["wstep"]
         else:  # wavespace already given as array:
             w_new = w_new
+            diff = np.diff(w_new)
+            if not np.all(diff == diff[0]):
+                raise ValueError(
+                    "When resampling the spectrum, the new waverange had unequal spacing."
+                )
+            wstep_new = diff[0]
 
         # Get current waverange in output unit   -> w
         if unit == "nm":
@@ -3740,6 +3747,7 @@ class Spectrum(object):
         # Update stored_waveunit to new unit
         if unit != stored_waveunit:
             s.conditions["waveunit"] = unit
+        s.conditions["wstep"] = wstep_new
 
         # Now let's resample
         def get_filling(variable):
