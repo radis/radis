@@ -3716,6 +3716,7 @@ class Spectrum(object):
 
         # Get output wavespace (it's the w_new array, unless w_new is a Spectrum)
         if isinstance(w_new, Spectrum):
+            wstep_new = w_new.conditions["wstep"]
             if unit == "nm":
                 w_new = w_new.get_wavelength(medium="air")
             elif unit == "nm_vac":
@@ -3724,15 +3725,21 @@ class Spectrum(object):
                 w_new = w_new.get_wavenumber()
             else:
                 raise ValueError(unit)
-            wstep_new = w_new.conditions["wstep"]
         else:  # wavespace already given as array:
             w_new = w_new
             diff = np.diff(w_new)
             if not np.all(diff == diff[0]):
-                raise ValueError(
-                    "When resampling the spectrum, the new waverange had unequal spacing."
+                import warnings
+
+                warnings.warn(
+                    "When resampling the spectrum, the new waverange had unequal spacing.",
+                    UserWarning,
                 )
-            wstep_new = diff[0]
+                wstep_new = "Unequal spacing, average <wstep>={:.2f}".format(
+                    np.mean(diff)
+                )
+            else:
+                wstep_new = diff[0]
 
         # Get current waverange in output unit   -> w
         if unit == "nm":
