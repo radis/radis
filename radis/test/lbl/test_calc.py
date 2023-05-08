@@ -763,6 +763,7 @@ def test_calc_spectrum_multiple_molecules_inputerror(
     return True
 
 
+@pytest.mark.fast
 @pytest.mark.needs_connection
 def test_calc_spectrum_multiple_molecules_wstep_auto(
     verbose=True, plot=True, warnings=True, *args, **kwargs
@@ -777,7 +778,7 @@ def test_calc_spectrum_multiple_molecules_wstep_auto(
         wavelength_min=4165,
         wavelength_max=5000,  # cm-1
         isotope="1,2,3",
-        pressure=1.01325,  # bar
+        pressure=10.01325,  # bar
         Tgas=700,  # K
         mole_fraction={"CO": 0.1, "CO2": 0.1},
         path_length=1,  # cm
@@ -789,9 +790,9 @@ def test_calc_spectrum_multiple_molecules_wstep_auto(
         wavelength_min=4165,
         wavelength_max=5000,  # cm-1
         isotope="1,2,3",
-        pressure=1.01325,  # bar
+        pressure=10.01325,  # bar
         Tgas=700,  # K
-        mole_fraction={"CO": 0.1},
+        mole_fraction={"CO": 0.01},
         path_length=1,  # cm
         wstep="auto",
         databank="hitran",  # or use 'hitemp'
