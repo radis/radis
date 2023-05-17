@@ -777,10 +777,10 @@ def test_calc_spectrum_multiple_molecules_wstep_auto(
     s = calc_spectrum(
         wavelength_min=4165,
         wavelength_max=5000,  # cm-1
-        isotope="1,2,3",
+        isotope="1",
         pressure=10.01325,  # bar
         Tgas=700,  # K
-        mole_fraction={"CO": 0.1, "CO2": 0.1},
+        mole_fraction={"CO": 0.01, "CO2": 0.01},
         path_length=1,  # cm
         wstep="auto",
         databank="hitran",  # or use 'hitemp'
@@ -789,7 +789,7 @@ def test_calc_spectrum_multiple_molecules_wstep_auto(
     s_just_CO = calc_spectrum(
         wavelength_min=4165,
         wavelength_max=5000,  # cm-1
-        isotope="1,2,3",
+        isotope="1",
         pressure=10.01325,  # bar
         Tgas=700,  # K
         mole_fraction={"CO": 0.01},
@@ -798,10 +798,25 @@ def test_calc_spectrum_multiple_molecules_wstep_auto(
         databank="hitran",  # or use 'hitemp'
         verbose=verbose,
     )
+    s_just_CO2 = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,  # cm-1
+        isotope="1",
+        pressure=10.01325,  # bar
+        Tgas=700,  # K
+        mole_fraction={"CO2": 0.01},
+        path_length=1,  # cm
+        wstep="auto",
+        databank="hitran",  # or use 'hitemp'
+        verbose=verbose,
+    )
+    wCO = s_just_CO.get_conditions()["wstep"]
+    wCO2 = s_just_CO2.get_conditions()["wstep"]
 
     # Check calculation went fine:
     assert set(s.conditions["molecule"]) == set(["CO2", "CO"])
-    assert np.isclose(s.get_conditions()["wstep"], s_just_CO.get_conditions()["wstep"])
+    assert wCO < wCO2
+    assert np.isclose(s.get_conditions()["wstep"], wCO)
 
 
 def test_check_wavelength_range(verbose=True, warnings=True, *args, **kwargs):
@@ -936,39 +951,39 @@ def test_diluents_for_molecule():
 
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
-    # Test sPlanck and conversion functions
-    test_sPlanck_conversions()
+    # # Test sPlanck and conversion functions
+    # test_sPlanck_conversions()
 
-    # Test calc_spectrum function
-    test_calc_spectrum()
+    # # Test calc_spectrum function
+    # test_calc_spectrum()
 
-    # Test calc_spectrum with overpopulation
-    test_calc_spectrum_overpopulations(
-        verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
-    )
+    # # Test calc_spectrum with overpopulation
+    # test_calc_spectrum_overpopulations(
+    #     verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
+    # )
 
-    # Compare all calc methods
-    #    test_all_calc_methods_CO2(
-    #        verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
-    #    )
-    test_all_calc_methods_CO2pcN(
-        verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
-    )
+    # # Compare all calc methods
+    # #    test_all_calc_methods_CO2(
+    # #        verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
+    # #    )
+    # test_all_calc_methods_CO2pcN(
+    #     verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
+    # )
 
-    # Compare same spectrum with two calculation methods
-    test_eq_vs_noneq_isotope(
-        verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
-    )
+    # # Compare same spectrum with two calculation methods
+    # test_eq_vs_noneq_isotope(
+    #     verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
+    # )
 
-    # Run test for multiple molecules
-    test_calc_spectrum_multiple_molecules()
-    test_calc_spectrum_multiple_molecules_otherinputs()
-    test_calc_spectrum_multiple_molecules_inputerror()
+    # # Run test for multiple molecules
+    # test_calc_spectrum_multiple_molecules()
+    # test_calc_spectrum_multiple_molecules_otherinputs()
+    # test_calc_spectrum_multiple_molecules_inputerror()
     test_calc_spectrum_multiple_molecules_wstep_auto()
 
-    test_check_wavelength_range()
-    test_non_air_diluent_calc()
-    test_diluents_for_molecule()
+    # test_check_wavelength_range()
+    # test_non_air_diluent_calc()
+    # test_diluents_for_molecule()
 
     return True
 

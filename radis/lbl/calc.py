@@ -568,9 +568,9 @@ def calc_spectrum(
             generated_spectrum = generated_spectrum[0]  # the spectrum
         s_list.append(generated_spectrum)
 
-        if condition_multiple_wstep:
-            # Stores the minimum wstep value encountered
-            wstep[1] = generated_spectrum.get_conditions()["wstep"]
+        # if condition_multiple_wstep:
+        #     # Stores the minimum wstep value encountered
+        #     wstep[1] = generated_spectrum.get_conditions()["wstep"]
 
     # Stage 4: merge all molecules and return
     if condition_multiple_wstep:
