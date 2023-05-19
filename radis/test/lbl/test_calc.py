@@ -793,6 +793,7 @@ def test_calc_spectrum_multiple_molecules_wstep_auto(
         pressure=10.01325,  # bar
         Tgas=700,  # K
         mole_fraction={"CO": 0.01},
+        diluent={"CO2": 0.01, "air": 0.98},
         path_length=1,  # cm
         wstep="auto",
         databank="hitran",  # or use 'hitemp'
@@ -805,6 +806,7 @@ def test_calc_spectrum_multiple_molecules_wstep_auto(
         pressure=10.01325,  # bar
         Tgas=700,  # K
         mole_fraction={"CO2": 0.01},
+        diluent={"CO": 0.01, "air": 0.98},
         path_length=1,  # cm
         wstep="auto",
         databank="hitran",  # or use 'hitemp'
