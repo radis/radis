@@ -327,6 +327,7 @@ def calc_spectrum(
                           Tgas=1000,
                           mole_fraction=0.1,
                           databank='hitran',  # or 'hitemp'
+                          diluent = "air"     # or {'CO2': 0.1, 'air':0.8}
                           )
         s.apply_slit(0.5, 'nm')
         s.plot('radiance')
