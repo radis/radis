@@ -379,17 +379,17 @@ You can also show the conditions only with
 
 Plotting
     -----
-    
+
     The `plot` method can be used to visualize the resulting spectrum. Available plot types are:
-    
+
     - 'absorption': plot absorption coefficient vs. wavenumber
     - 'transmittance': plot transmittance vs. wavenumber
     - 'radiance': plot radiance vs. wavenumber
     - 'intensity': plot spectral intensity vs. wavenumber
     - 'lines': plot individual spectral lines
-    
+
     Each plot type also has additional optional parameters that can be passed to `plot_options`.
-    
+
     Parameters
     ----------
     var : str, optional
@@ -397,7 +397,7 @@ Plotting
         Valid options are 'absorption', 'transmittance', 'radiance', 'intensity', and 'lines'.
     plot_options : dict, optional
         A dictionary of additional plot options. Valid keys and their descriptions are:
-        
+
         - 'figsize' : (width, height) tuple in inches for the plot figure size. Defaults to (10, 6).
         - 'xlim' : (xmin, xmax) tuple in cm-1 for the x-axis limits. Defaults to (0, 5000).
         - 'ylim' : (ymin, ymax) tuple for the y-axis limits. Defaults to 'auto'.
@@ -409,7 +409,7 @@ Plotting
                       'Transmittance' for 'transmittance' plots,
                       'Radiance (W/(cm$^{-1}$ sr))' for 'radiance' plots,
                       'Spectral Intensity (W/(cm$^{-1}$ sr))' for 'intensity' plots.
-    
+
     def plot(self, var ='absorption', plot_options=None):
 
 Plot spectral arrays
