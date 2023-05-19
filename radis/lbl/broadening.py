@@ -968,7 +968,7 @@ class BroadenFactory(BaseFactory):
             if less than `1` grid point per spectral line
 
         .. note::
-            Warning and Error treshold reduced from `5, 2`  to `3, 1` in 0.9.29,
+            Warning and Error threshold reduced from `5, 2`  to `3, 1` in 0.9.29,
             because some outlier lines with very small lineshapes would systematically
             raise an error. Suggestion : ignore outlier lines (1% smallest?) in normal/performance
             mode.
