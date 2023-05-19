@@ -329,39 +329,37 @@ def pressure_broadening_HWHM(
     # check if gamma_diluent and n_diluent exists or not and in case they are not present use broadening coefficient of air instead
     gamma_lb = 0
     for diluent_molecule, diluent_mole_fraction in diluent.items():
-            try:
-                    gamma_lb += (
-                        (Tref / Tgas)
-                        ** diluent_broadening_coeff["n_" + diluent_molecule.lower()]
-                    ) * (
-                        diluent_broadening_coeff["gamma_" + diluent_molecule.lower()]
-                        * pressure_atm
-                        * diluent_mole_fraction
-                    )
-            except KeyError:
-                # import warnings
-                # from radis.misc.warning import AccuracyWarning
-                # if diluent_molecule != "air":
-                #     warnings.warn(
-                #         AccuracyWarning(
-                #             "Broadening Coefficient of "+diluent_molecule+" not present in database using broadening coefficient of air instead. \n!!! Solution: Try using once `use_cached='regen'' in calc_spectrum!!!"
-                #         )
-                #     )
-                
-                ## A warning is normally raised already in '_calc_broadening_HWHM' when constructing the dict diluent_broadening_coef
-                gamma_lb += ((Tref / Tgas) ** Tdpair) * (
-                    (airbrd * pressure_atm * diluent["air"])
-                )
+        try:
+            gamma_lb += (
+                (Tref / Tgas)
+                ** diluent_broadening_coeff["n_" + diluent_molecule.lower()]
+            ) * (
+                diluent_broadening_coeff["gamma_" + diluent_molecule.lower()]
+                * pressure_atm
+                * diluent_mole_fraction
+            )
+        except KeyError:
+            # import warnings
+            # from radis.misc.warning import AccuracyWarning
+            # if diluent_molecule != "air":
+            #     warnings.warn(
+            #         AccuracyWarning(
+            #             "Broadening Coefficient of "+diluent_molecule+" not present in database using broadening coefficient of air instead. \n!!! Solution: Try using once `use_cached='regen'' in calc_spectrum!!!"
+            #         )
+            #     )
+
+            ## A warning is normally raised already in '_calc_broadening_HWHM' when constructing the dict diluent_broadening_coef
+            gamma_lb += ((Tref / Tgas) ** Tdpair) * (
+                (airbrd * pressure_atm * diluent["air"])
+            )
     # Adding self coefficient
     if Tdpsel is None:  # use Tdpair instead
-            gamma_lb += ((Tref / Tgas) ** Tdpair) * (
-                (selbrd * pressure_atm * mole_fraction)
-            )
+        gamma_lb += ((Tref / Tgas) ** Tdpair) * (
+            (selbrd * pressure_atm * mole_fraction)
+        )
     else:
-            gamma_lb += ((Tref / Tgas) ** Tdpsel) * (
-                selbrd * pressure_atm * mole_fraction
-            )
-        # raise KeyError("Column not found {0}".format(err))
+        gamma_lb += ((Tref / Tgas) ** Tdpsel) * (selbrd * pressure_atm * mole_fraction)
+    # raise KeyError("Column not found {0}".format(err))
 
     return gamma_lb
 
@@ -899,10 +897,12 @@ class BroadenFactory(BaseFactory):
                 ]
                 diluent_broadening_coeff["n_" + key.lower()] = df["n_" + key.lower()]
             except KeyError:
-                if key!= "air":
+                if key != "air":
                     self.warn(
-                            message="Broadening Coefficient of "+key+" not present in database using broadening coefficient of air instead. \n!!! Solution: Try using once `use_cached='regen'' in calc_spectrum!!!",
-                            category="AccuracyWarning"
+                        message="Broadening Coefficient of "
+                        + key
+                        + " not present in database using broadening coefficient of air instead. \n!!! Solution: Try using once `use_cached='regen'' in calc_spectrum!!!",
+                        category="AccuracyWarning",
                     )
 
         # Get broadenings
@@ -968,7 +968,7 @@ class BroadenFactory(BaseFactory):
             if less than `1` grid point per spectral line
 
         .. note::
-            Warning and Error treshold reduced from `5, 2`  to `3, 1` in 0.9.29,
+            Warning and Error threshold reduced from `5, 2`  to `3, 1` in 0.9.29,
             because some outlier lines with very small lineshapes would systematically
             raise an error. Suggestion : ignore outlier lines (1% smallest?) in normal/performance
             mode.

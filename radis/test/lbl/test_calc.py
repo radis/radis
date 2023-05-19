@@ -763,6 +763,7 @@ def test_calc_spectrum_multiple_molecules_inputerror(
     return True
 
 
+@pytest.mark.fast
 @pytest.mark.needs_connection
 def test_calc_spectrum_multiple_molecules_wstep_auto(
     verbose=True, plot=True, warnings=True, *args, **kwargs
@@ -776,19 +777,48 @@ def test_calc_spectrum_multiple_molecules_wstep_auto(
     s = calc_spectrum(
         wavelength_min=4165,
         wavelength_max=5000,  # cm-1
-        isotope="1,2,3",
-        pressure=1.01325,  # bar
+        isotope="1",
+        pressure=10.01325,  # bar
         Tgas=700,  # K
-        mole_fraction={"CO": 0.1, "CO2": 0.1},
+        mole_fraction={"CO": 0.01, "CO2": 0.01},
         path_length=1,  # cm
         wstep="auto",
         databank="hitran",  # or use 'hitemp'
         verbose=verbose,
     )
+    s_just_CO = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,  # cm-1
+        isotope="1",
+        pressure=10.01325,  # bar
+        Tgas=700,  # K
+        mole_fraction={"CO": 0.01},
+        diluent={"CO2": 0.01, "air": 0.98},
+        path_length=1,  # cm
+        wstep="auto",
+        databank="hitran",  # or use 'hitemp'
+        verbose=verbose,
+    )
+    s_just_CO2 = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,  # cm-1
+        isotope="1",
+        pressure=10.01325,  # bar
+        Tgas=700,  # K
+        mole_fraction={"CO2": 0.01},
+        diluent={"CO": 0.01, "air": 0.98},
+        path_length=1,  # cm
+        wstep="auto",
+        databank="hitran",  # or use 'hitemp'
+        verbose=verbose,
+    )
+    wCO = s_just_CO.get_conditions()["wstep"]
+    wCO2 = s_just_CO2.get_conditions()["wstep"]
 
     # Check calculation went fine:
     assert set(s.conditions["molecule"]) == set(["CO2", "CO"])
-    assert s.get_conditions()["wstep"] in ("N/A", 0.013)
+    assert wCO < wCO2
+    assert np.isclose(s.get_conditions()["wstep"], wCO)
 
 
 def test_check_wavelength_range(verbose=True, warnings=True, *args, **kwargs):
@@ -862,9 +892,9 @@ def test_non_air_diluent_calc(verbose=True, plot=False, warnings=True, *args, **
     assert (hwhm_voigt_s2 < hwhm_voigt_s1).all()
     assert np.isclose(hwhm_voigt_s2[0], 0.022718389546218788)
     assert np.isclose(hwhm_voigt_s1[0], 0.02530070148135749)
-    
-    #if broadenings are different, the peak intensity should be different
-    #if the assert does not pass, then the code took the same broadening for both
+
+    # if broadenings are different, the peak intensity should be different
+    # if the assert does not pass, then the code took the same broadening for both
     maxI_air = s1.get_radiance_noslit().max()
     maxI_dil = s2.get_radiance_noslit().max()
     assert not np.isclose(maxI_air, maxI_dil)
@@ -902,56 +932,60 @@ def test_diluent_invalid(verbose=True, plot=False, *args, **kwargs):
         in str(err.value)
     )
 
+
 def test_diluents_for_molecule():
 
     from radis.lbl.calc import diluents_for_molecule
-    mole_fractions = { 'CO2': 0.2, 'CO':0.2 }
+
+    mole_fractions = {"CO2": 0.2, "CO": 0.2}
     diluent = "air"
-    # loop that simulates the calc_spectrum loop 
+    # loop that simulates the calc_spectrum loop
     for molecule, mole_fraction in mole_fractions.items():
-        diluent_for_this_molecule = diluents_for_molecule(mole_fractions, diluent, molecule)
-        #in the real code this is where calc_spectrum_one_molecule() is called 
-        if molecule == 'CO2':
-            assert diluent_for_this_molecule == {'air': 0.6, 'CO': 0.2}  # etc 
-        if molecule == 'CO':
-            assert diluent_for_this_molecule == {'air': 0.6, 'CO2': 0.2}  # etc 
+        diluent_for_this_molecule = diluents_for_molecule(
+            mole_fractions, diluent, molecule
+        )
+        # in the real code this is where calc_spectrum_one_molecule() is called
+        if molecule == "CO2":
+            assert diluent_for_this_molecule == {"air": 0.6, "CO": 0.2}  # etc
+        if molecule == "CO":
+            assert diluent_for_this_molecule == {"air": 0.6, "CO2": 0.2}  # etc
 
 
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
-    # Test sPlanck and conversion functions
-    test_sPlanck_conversions()
+    # # Test sPlanck and conversion functions
+    # test_sPlanck_conversions()
 
-    # Test calc_spectrum function
-    test_calc_spectrum()
+    # # Test calc_spectrum function
+    # test_calc_spectrum()
 
-    # Test calc_spectrum with overpopulation
-    test_calc_spectrum_overpopulations(
-        verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
-    )
+    # # Test calc_spectrum with overpopulation
+    # test_calc_spectrum_overpopulations(
+    #     verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
+    # )
 
-    # Compare all calc methods
-    #    test_all_calc_methods_CO2(
-    #        verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
-    #    )
-    test_all_calc_methods_CO2pcN(
-        verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
-    )
+    # # Compare all calc methods
+    # #    test_all_calc_methods_CO2(
+    # #        verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
+    # #    )
+    # test_all_calc_methods_CO2pcN(
+    #     verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
+    # )
 
-    # Compare same spectrum with two calculation methods
-    test_eq_vs_noneq_isotope(
-        verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
-    )
+    # # Compare same spectrum with two calculation methods
+    # test_eq_vs_noneq_isotope(
+    #     verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
+    # )
 
-    # Run test for multiple molecules
-    test_calc_spectrum_multiple_molecules()
-    test_calc_spectrum_multiple_molecules_otherinputs()
-    test_calc_spectrum_multiple_molecules_inputerror()
+    # # Run test for multiple molecules
+    # test_calc_spectrum_multiple_molecules()
+    # test_calc_spectrum_multiple_molecules_otherinputs()
+    # test_calc_spectrum_multiple_molecules_inputerror()
     test_calc_spectrum_multiple_molecules_wstep_auto()
 
-    test_check_wavelength_range()
-    test_non_air_diluent_calc()
-    test_diluents_for_molecule()
+    # test_check_wavelength_range()
+    # test_non_air_diluent_calc()
+    # test_diluents_for_molecule()
 
     return True
 
