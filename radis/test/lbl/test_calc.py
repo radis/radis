@@ -763,6 +763,7 @@ def test_calc_spectrum_multiple_molecules_inputerror(
     return True
 
 
+@pytest.mark.fast
 @pytest.mark.needs_connection
 def test_calc_spectrum_multiple_molecules_wstep_auto(
     verbose=True, plot=True, warnings=True, *args, **kwargs
@@ -776,49 +777,48 @@ def test_calc_spectrum_multiple_molecules_wstep_auto(
     s = calc_spectrum(
         wavelength_min=4165,
         wavelength_max=5000,  # cm-1
-        isotope="1,2,3",
-        pressure=1.01325,  # bar
+        isotope="1",
+        pressure=10.01325,  # bar
         Tgas=700,  # K
-        mole_fraction={"CO": 0.1, "CO2": 0.1},
+        mole_fraction={"CO": 0.01, "CO2": 0.01},
         path_length=1,  # cm
         wstep="auto",
         databank="hitran",  # or use 'hitemp'
         verbose=verbose,
     )
-    wstep_s = s.get_conditions()["wstep"]
-
-    s_CO = calc_spectrum(
+    s_just_CO = calc_spectrum(
         wavelength_min=4165,
         wavelength_max=5000,  # cm-1
-        isotope="1,2,3",
-        pressure=1.01325,  # bar
+        isotope="1",
+        pressure=10.01325,  # bar
         Tgas=700,  # K
-        mole_fraction={"CO": 0.1},
+        mole_fraction={"CO": 0.01},
+        diluent={"CO2": 0.01, "air": 0.98},
         path_length=1,  # cm
         wstep="auto",
         databank="hitran",  # or use 'hitemp'
         verbose=verbose,
     )
-    wstep_CO = s_CO.get_conditions()["wstep"]
-
-    s_CO2 = calc_spectrum(
+    s_just_CO2 = calc_spectrum(
         wavelength_min=4165,
         wavelength_max=5000,  # cm-1
-        isotope="1,2,3",
-        pressure=1.01325,  # bar
+        isotope="1",
+        pressure=10.01325,  # bar
         Tgas=700,  # K
-        mole_fraction={"CO2": 0.1},
+        mole_fraction={"CO2": 0.01},
+        diluent={"CO": 0.01, "air": 0.98},
         path_length=1,  # cm
         wstep="auto",
         databank="hitran",  # or use 'hitemp'
         verbose=verbose,
     )
-    wstep_CO2 = s_CO2.get_conditions()["wstep"]
+    wCO = s_just_CO.get_conditions()["wstep"]
+    wCO2 = s_just_CO2.get_conditions()["wstep"]
 
     # Check calculation went fine:
     assert set(s.conditions["molecule"]) == set(["CO2", "CO"])
-    if not wstep_s == "N/A":  # TODO: we should be able to know what is the new wstep
-        assert np.isclose(wstep_s, min(wstep_CO, wstep_CO2))
+    assert wCO < wCO2
+    assert np.isclose(s.get_conditions()["wstep"], wCO)
 
 
 def test_check_wavelength_range(verbose=True, warnings=True, *args, **kwargs):

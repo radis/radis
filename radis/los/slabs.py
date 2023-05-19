@@ -465,8 +465,8 @@ def resample_slabs(
                 # note: s.resample() fills with 0 when out of bounds
             elif resample_wavespace == "intersect":
                 # ... get bounds
-                wmin = max([w.min() for w in wl])  # maximum of all
-                wmax = min([w.max() for w in wl])  # minimum of all
+                wmin = max([w.min() for w in wl])  # minimum of all
+                wmax = min([w.max() for w in wl])  # maximum of all
                 dw = min([abs(diff(w)).min() for w in wl])  # highest density
                 wnew = arange(wmin, wmax + dw, dw)
                 if wnew[-1] > wmax:  # sometimes arange doesnt work as expected

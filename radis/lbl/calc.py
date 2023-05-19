@@ -327,6 +327,7 @@ def calc_spectrum(
                           Tgas=1000,
                           mole_fraction=0.1,
                           databank='hitran',  # or 'hitemp'
+                          diluent = "air"     # or {'CO2': 0.1, 'air':0.8}
                           )
         s.apply_slit(0.5, 'nm')
         s.plot('radiance')
@@ -568,9 +569,9 @@ def calc_spectrum(
             generated_spectrum = generated_spectrum[0]  # the spectrum
         s_list.append(generated_spectrum)
 
-        if condition_multiple_wstep:
-            # Stores the minimum wstep value encountered
-            wstep[1] = generated_spectrum.get_conditions()["wstep"]
+        # if condition_multiple_wstep:
+        #     # Stores the minimum wstep value encountered
+        #     wstep[1] = generated_spectrum.get_conditions()["wstep"]
 
     # Stage 4: merge all molecules and return
     if condition_multiple_wstep:

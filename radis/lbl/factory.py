@@ -788,9 +788,6 @@ class SpectrumFactory(BandFactory):
         self.profiler.start("spectrum_calculation", 1)
         self.profiler.start("spectrum_calc_before_obj", 2)
 
-        if verbose:
-            self.print_conditions("Calculating Equilibrium Spectrum")
-
         # Check database, reset populations, create line dataframe to be scaled
         # --------------------------------------------------------------------
         self._check_line_databank()
@@ -864,6 +861,10 @@ class SpectrumFactory(BandFactory):
         self.profiler.stop(
             "spectrum_calc_before_obj", "Spectrum calculated (before object generation)"
         )
+
+        if verbose:  # if wstep='auto' must be after wstep is calculated
+            self.print_conditions("Calculating Equilibrium Spectrum")
+
         self.profiler.start("generate_spectrum_obj", 2)
 
         # Get conditions
