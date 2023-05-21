@@ -139,6 +139,8 @@ def read_def(deff):
     if deff.stem == "40Ca-16O-1H__OYT6":
         ntransf = 18
         maxnu = 36000.0
+    if deff.stem == "32S-16O2__ExoAmes":
+        maxnu = 8000.0
     if deff.stem == "1H-35Cl__HITRAN-HCl":
         quantum_labels = ["v"]
         # See https://github.com/HajimeKawahara/exojax/issues/330
@@ -1171,7 +1173,7 @@ class MdbExomol(DatabaseManager):
             self.download(molec, extension=[".pf"])
         if not self.states_file.exists():
             self.download(molec, extension=[".states.bz2"])
-        if not self.broad_file.exists():
+        if (not self.broad_file.exists()) and self.broadf:
             self.download(molec, extension=[".broad"])
 
         # Add molecule name
