@@ -1175,7 +1175,7 @@ class HITRANDatabaseManager(DatabaseManager):
         else:
             raise NotImplementedError()
 
-    def download_and_parse(self, local_file, cache=True, parse_quanta=True):
+    def download_and_parse(self, local_file, cache=True, parse_quanta=True, drop_non_numeric=True):
         """Download from HITRAN and parse into ``local_file``.
         Also add metadata
 
@@ -1320,6 +1320,7 @@ class HITRANDatabaseManager(DatabaseManager):
                 df,
                 molecule=molecule,
                 parse_quanta=parse_quanta,
+                drop_non_numeric=drop_non_numeric
             )
 
             wmin_final = min(wmin_final, df.wav.min())
