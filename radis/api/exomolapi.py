@@ -135,7 +135,6 @@ def read_def(deff):
     if deff.stem == "16O-1H__MoLLIST":
         quantum_labels = ["e/f", "v", "F1/F2", "Es"]
 
-
     if ntransf > 1:
         dnufile = maxnu / ntransf
         numinf = dnufile * np.array(range(ntransf + 1))
