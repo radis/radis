@@ -349,6 +349,7 @@ EXOMOL_MOLECULES = [
     "LiF",
     "LiH",
     "LiH_p",
+    "LiOH",
     "MgF",
     "MgH",
     "MgO",
