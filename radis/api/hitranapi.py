@@ -292,7 +292,7 @@ def post_process_hitran_data(
     verbose=True,
     drop_non_numeric=True,
     parse_quanta=True,
-    add_HITRAN_uncertainty_code=False
+    add_HITRAN_uncertainty_code=False,
 ):
     """Parsing non-equilibrum parameters in HITRAN/HITEMP [1]_ file to and return final Pandas Dataframe
 
@@ -1180,7 +1180,13 @@ class HITRANDatabaseManager(DatabaseManager):
         else:
             raise NotImplementedError()
 
-    def download_and_parse(self, local_file, cache=True, parse_quanta=True, add_HITRAN_uncertainty_code=False):
+    def download_and_parse(
+        self,
+        local_file,
+        cache=True,
+        parse_quanta=True,
+        add_HITRAN_uncertainty_code=False,
+    ):
         """Download from HITRAN and parse into ``local_file``.
         Also add metadata
 
@@ -1325,7 +1331,7 @@ class HITRANDatabaseManager(DatabaseManager):
                 df,
                 molecule=molecule,
                 parse_quanta=parse_quanta,
-                add_HITRAN_uncertainty_code=add_HITRAN_uncertainty_code
+                add_HITRAN_uncertainty_code=add_HITRAN_uncertainty_code,
             )
 
             wmin_final = min(wmin_final, df.wav.min())
