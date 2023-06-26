@@ -90,7 +90,7 @@ def fetch_hitran(
 
     Returns
     -------
-    df: pd.DataFrame
+    df: pd.DataFrame or vaex.dataframe.DataFrameLocal 
         Line list
         A HDF5 file is also created in ``local_databases`` and referenced
         in the :ref:`RADIS config file <label_lbl_config_file>` with name

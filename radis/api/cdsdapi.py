@@ -136,6 +136,7 @@ def cdsd2df(
     load_wavenum_min=None,
     load_wavenum_max=None,
     engine="pytables",
+    output="pandas",
 ):
     """Convert a CDSD-HITEMP [1]_ or CDSD-4000 [2]_ file to a Pandas dataframe.
 
@@ -174,7 +175,7 @@ def cdsd2df(
 
     Returns
     -------
-    df: pandas Dataframe
+    df: pandas Dataframe or Vaex Dataframe
         dataframe containing all lines and parameters
 
     Notes
@@ -280,12 +281,12 @@ def cdsd2df(
 
     # %% Start reading the full file
 
-    df = parse_hitran_file(fname, columns)
+    df = parse_hitran_file(fname, columns,output=output)
 
     # Remove non numerical attributes
     if drop_non_numeric:
-        replace_PQR_with_m101(df)
-        df = drop_object_format_columns(df, verbose=verbose)
+        replace_PQR_with_m101(df,dataframe_type=output)
+        df = drop_object_format_columns(df, verbose=verbose, dataframe_type=output)
 
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:

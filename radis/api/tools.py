@@ -13,7 +13,7 @@ import pandas as pd
 from ..misc.warning import PerformanceWarning
 
 
-def parse_hitran_file(fname, columns, count=-1):
+def parse_hitran_file(fname, columns, count=-1,output="pandas"):
     """Parse a file under HITRAN ``par`` format. Parsing is done in binary
     format with :py:func:`numpy.fromfile` so it's as fast as possible.
 
@@ -29,9 +29,12 @@ def parse_hitran_file(fname, columns, count=-1):
     count: int
         number of lines to read. If ``-1`` reads all file.
 
+    output : str
+        specifies the output type
+
     Returns
     -------
-    df: pandas DataFrame
+    df: pandas DataFrame or Vaex Dataframe
         dataframe with lines.
 
     See Also
@@ -55,7 +58,13 @@ def parse_hitran_file(fname, columns, count=-1):
     data = _read_hitran_file(fname, columns, count, linereturnformat)
 
     # Return a Pandas dataframe
-    return _ndarray2df(data, columns, linereturnformat)
+    df = _ndarray2df(data, columns, linereturnformat)
+
+
+    import vaex 
+    if output == 'vaex':
+        df = vaex.from_pandas(df)
+    return df
 
 
 def _get_linereturnformat(data, columns, fname=""):
@@ -208,8 +217,8 @@ def _cast_to_dtype(data, dtype):
     return data
 
 
-def drop_object_format_columns(df, verbose=True):
-    """Remove 'object' columns in a pandas DataFrame.
+def drop_object_format_columns(df, verbose=True, dataframe_type='pandas'):
+    """Remove 'object' columns in a pandas DataFrame or Vaex Dataframe.
 
     They are not useful to us at this time, and they slow down all
     operations (as they are converted to 'object' in pandas DataFrame).
@@ -218,7 +227,10 @@ def drop_object_format_columns(df, verbose=True):
 
     objects = [k for k, v in df.dtypes.items() if v == object]
     for k in objects:
-        del df[k]
+        if dataframe_type == 'pandas':
+            del df[k]
+        elif dataframe_type == 'vaex' :
+            df.drop(k,inplace=True)
     if verbose >= 2 and len(objects) > 0:
         print(
             (
@@ -230,7 +242,7 @@ def drop_object_format_columns(df, verbose=True):
     return df
 
 
-def replace_PQR_with_m101(df):
+def replace_PQR_with_m101(df, dataframe_type="pandas"):
     """Return P, Q, R in column ``branch`` with -1, 0, 1 to get a fully numeric
     database. This improves performances quite a lot, as Pandas doesnt have a
     fixed-string dtype hence would use the slow ``object`` dtype.
@@ -238,7 +250,7 @@ def replace_PQR_with_m101(df):
     Parameters
     ----------
 
-    df: pandas Dataframe
+    df: pandas Dataframe or Vaex Dataframe
         ``branch`` must be a column name.
 
 
@@ -251,9 +263,22 @@ def replace_PQR_with_m101(df):
 
     # Note: somehow pandas updates dtype automatically. We have to check
     # We just have to replace the column:
-    if df.dtypes["branch"] != np.int64:
-        new_col = df["branch"].replace(["P", "Q", "R"], [-1, 0, 1])
+
+    if dataframe_type == 'pandas':
+        if df.dtypes["branch"] != np.int64:
+            new_col = df["branch"].replace(["P", "Q", "R"], [-1, 0, 1])
+            df["branch"] = new_col
+
+    elif dataframe_type == "vaex":
+        # Define the mapping dictionary
+        mapping = {'P': -1, 'Q': 0, 'R': 1}
+
+        # Create a new column with replaced values
+        new_col = df['branch'].map(mapping,allow_missing=True)
         df["branch"] = new_col
+    else:
+        raise NotImplementedError(dataframe_type)
+    
 
     try:
         assert df.dtypes["branch"] == np.int64

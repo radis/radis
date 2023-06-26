@@ -113,7 +113,7 @@ def load_h5_cache_file(
 
     Returns
     -------
-    df: pandas DataFrame, or None
+    df: pandas DataFrame or Vaex Dataframe or None
         None if no cache file was found, or if it was deleted
     """
     # TODO @dev: refactor to use HDF5Manager more

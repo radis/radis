@@ -234,7 +234,8 @@ def gaussian_FT(w_centered, hwhm):
 
     Returns
     -------
-    array
+    numpy array or vaex expression.
+    Depends upon the type of hwhm parameter, if it of vaex expression type then,returned value is vaex expression 
 
     See Also
     --------
@@ -293,7 +294,8 @@ def pressure_broadening_HWHM(
 
     Returns
     -------
-    pandas Series        [shape N]
+    pandas Series or Vaex Expression        [shape N] 
+        Depends on the engine used . Vaex Expression are memory efficient
         Lorentzian half-width at half-maximum (HWHM) for each line profile
 
     References
@@ -329,37 +331,39 @@ def pressure_broadening_HWHM(
     # check if gamma_diluent and n_diluent exists or not and in case they are not present use broadening coefficient of air instead
     gamma_lb = 0
     for diluent_molecule, diluent_mole_fraction in diluent.items():
-        try:
-            gamma_lb += (
-                (Tref / Tgas)
-                ** diluent_broadening_coeff["n_" + diluent_molecule.lower()]
-            ) * (
-                diluent_broadening_coeff["gamma_" + diluent_molecule.lower()]
-                * pressure_atm
-                * diluent_mole_fraction
-            )
-        except KeyError:
-            # import warnings
-            # from radis.misc.warning import AccuracyWarning
-            # if diluent_molecule != "air":
-            #     warnings.warn(
-            #         AccuracyWarning(
-            #             "Broadening Coefficient of "+diluent_molecule+" not present in database using broadening coefficient of air instead. \n!!! Solution: Try using once `use_cached='regen'' in calc_spectrum!!!"
-            #         )
-            #     )
-
-            ## A warning is normally raised already in '_calc_broadening_HWHM' when constructing the dict diluent_broadening_coef
-            gamma_lb += ((Tref / Tgas) ** Tdpair) * (
-                (airbrd * pressure_atm * diluent["air"])
-            )
+            try:
+                    gamma_lb += (
+                        (Tref / Tgas)
+                        ** diluent_broadening_coeff["n_" + diluent_molecule.lower()]
+                    ) * (
+                        diluent_broadening_coeff["gamma_" + diluent_molecule.lower()]
+                        * pressure_atm
+                        * diluent_mole_fraction
+                    )
+            except KeyError:
+                # import warnings
+                # from radis.misc.warning import AccuracyWarning
+                # if diluent_molecule != "air":
+                #     warnings.warn(
+                #         AccuracyWarning(
+                #             "Broadening Coefficient of "+diluent_molecule+" not present in database using broadening coefficient of air instead. \n!!! Solution: Try using once `use_cached='regen'' in calc_spectrum!!!"
+                #         )
+                #     )
+                
+                ## A warning is normally raised already in '_calc_broadening_HWHM' when constructing the dict diluent_broadening_coef
+                gamma_lb += ((Tref / Tgas) ** Tdpair) * (
+                    (airbrd * pressure_atm * diluent["air"])
+                )
     # Adding self coefficient
     if Tdpsel is None:  # use Tdpair instead
-        gamma_lb += ((Tref / Tgas) ** Tdpair) * (
-            (selbrd * pressure_atm * mole_fraction)
-        )
+            gamma_lb += ((Tref / Tgas) ** Tdpair) * (
+                (selbrd * pressure_atm * mole_fraction)
+            )
     else:
-        gamma_lb += ((Tref / Tgas) ** Tdpsel) * (selbrd * pressure_atm * mole_fraction)
-    # raise KeyError("Column not found {0}".format(err))
+            gamma_lb += ((Tref / Tgas) ** Tdpsel) * (
+                selbrd * pressure_atm * mole_fraction
+            )
+        # raise KeyError("Column not found {0}".format(err))
 
     return gamma_lb
 
@@ -890,19 +894,19 @@ class BroadenFactory(BaseFactory):
 
         # diluent and their broadening coeff dictionary
         diluent_broadening_coeff = {}
+        
         for key in diluent:
             try:
+                
                 diluent_broadening_coeff["gamma_" + key.lower()] = df[
                     "gamma_" + key.lower()
                 ]
                 diluent_broadening_coeff["n_" + key.lower()] = df["n_" + key.lower()]
-            except KeyError:
-                if key != "air":
+            except :
+                if key!= "air":
                     self.warn(
-                        message="Broadening Coefficient of "
-                        + key
-                        + " not present in database using broadening coefficient of air instead. \n!!! Solution: Try using once `use_cached='regen'' in calc_spectrum!!!",
-                        category="AccuracyWarning",
+                            message="Broadening Coefficient of "+key+" not present in database using broadening coefficient of air instead. \n!!! Solution: Try using once `use_cached='regen'' in calc_spectrum!!!",
+                            category="AccuracyWarning"
                     )
 
         # Get broadenings
@@ -1052,7 +1056,13 @@ class BroadenFactory(BaseFactory):
         """
 
         # Check self broadening is here
-        if not "Tdpsel" in list(df.keys()):
+
+        if self.dataframe_type == 'pandas':
+            columns = list(df.keys())
+        elif self.dataframe_type == 'vaex':
+            columns = df.column_names
+
+        if not "Tdpsel" in columns:
             self.warn(
                 "Self-broadening temperature coefficient Tdpsel not given in database: used Tdpair instead",
                 "MissingSelfBroadeningWarning",
@@ -1064,7 +1074,7 @@ class BroadenFactory(BaseFactory):
 
         molar_mass = self.get_molar_mass(df)
 
-        if not "selbrd" in list(df.keys()):
+        if not "selbrd" in columns:
             self.warn(
                 "Self-broadening coefficient selbrd not given in database: used airbrd instead",
                 "MissingSelfBroadeningWarning",
@@ -1131,7 +1141,11 @@ class BroadenFactory(BaseFactory):
         """
 
         # Check self broadening temperature-dependance coefficient is here
-        if not "Tdpsel" in list(df.keys()):
+        if self.dataframe_type == 'pandas':
+            columns = list(df.keys())
+        elif self.dataframe_type == 'vaex':
+            columns = df.column_names
+        if not "Tdpsel" in columns:
             self.warn(
                 "Self-broadening temperature coefficient `Tdpsel` not given in database: used `Tdpair` instead",
                 "MissingSelfBroadeningTdepWarning",
@@ -1142,7 +1156,7 @@ class BroadenFactory(BaseFactory):
             Tdpsel = df.Tdpsel
 
         # Check self broadening is here
-        if not "selbrd" in list(df.keys()):
+        if not "selbrd" in columns:
             self.warn(
                 "Self-broadening reference width `selbrd` not given in database: used air broadening reference width `airbrd` instead",
                 "MissingSelfBroadeningWarning",
@@ -1222,7 +1236,10 @@ class BroadenFactory(BaseFactory):
 
         # Prepare vectorized operations:
         try:  # make it a (1, N) row vector
-            gamma_lb = gamma_lb.values.reshape((1, -1))
+            if self.dataframe_type == 'pandas':
+                gamma_lb = gamma_lb.values.reshape((1, -1))
+            elif self.dataframe_type == 'vaex':
+                gamma_lb = gamma_lb.to_numpy().reshape((1, -1))               
         except AttributeError:  # probably not a dataframe: assert there is one line only.
             assert type(gamma_lb) is np.float64
 
@@ -1284,7 +1301,10 @@ class BroadenFactory(BaseFactory):
 
         # Prepare vectorized operations:
         try:  # make it a (1,N) row vector
-            gamma_db = gamma_db.values.reshape((1, -1))
+            if self.dataframe_type == 'pandas':
+                gamma_db = gamma_db.values.reshape((1, -1))
+            elif self.dataframe_type == 'vaex':
+                gamma_db = gamma_db.to_numpy().reshape((1, -1))               
         except AttributeError:  # probably not a dataframe: assert there is one line only.
             assert type(gamma_db) is np.float64
 
@@ -1350,12 +1370,19 @@ class BroadenFactory(BaseFactory):
 
         # Prepare coefficients, vectorize
         # ... get Voigt HWHM
-        if not "hwhm_voigt" in list(dg.keys()):
+        if self.dataframe_type == 'vaex':
+            columns = dg.column_names
+        elif self.dataframe_type == 'pandas':
+            columns = list(dg.keys())
+        else:
+            raise NotImplementedError(self.dataframe_type)
+        
+        if not "hwhm_voigt" in columns:
             raise KeyError(
                 "hwhm_voigt: Calculate broadening with "
                 + "calc_voigt_broadening_HWHM first"
             )
-        if not "hwhm_lorentz" in list(dg.keys()):
+        if not "hwhm_lorentz" in columns:
             raise KeyError(
                 "hwhm_lorentz: Calculate broadening with "
                 + "calc_voigt_broadening_HWHM first"
@@ -1366,11 +1393,16 @@ class BroadenFactory(BaseFactory):
 
         # Prepare vectorized operations: make (1, N) row vectors
         try:
-            hwhm_lorentz = hwhm_lorentz.values.reshape((1, -1))
-            hwhm_voigt = hwhm_voigt.values.reshape((1, -1))
+            if self.dataframe_type == 'pandas':
+                hwhm_lorentz = hwhm_lorentz.values.reshape((1, -1))
+                hwhm_voigt = hwhm_voigt.values.reshape((1, -1))
+            elif self.dataframe_type == 'vaex':
+                hwhm_lorentz = hwhm_lorentz.to_numpy().reshape((1, -1))
+                hwhm_voigt = hwhm_voigt.to_numpy().reshape((1, -1))               
         except AttributeError:  # probably not a dataframe: assert there is one line only.
-            assert type(hwhm_lorentz) is np.float64
-            assert type(hwhm_voigt) is np.float64
+            if self.dataframe_type == 'pandas':
+                assert type(hwhm_lorentz) is np.float64
+                assert type(hwhm_voigt) is np.float64
 
         # Calculate broadening for all lines
         # ----------------------------------
@@ -1555,8 +1587,12 @@ class BroadenFactory(BaseFactory):
         log_pL = self.params.dxL  # LDM user params
         log_pG = self.params.dxG  # LDM user params
 
-        wL_dat = df.hwhm_lorentz.values * 2  # FWHM
-        wG_dat = df.hwhm_gauss.values * 2  # FWHM
+        if self.dataframe_type == 'pandas':
+            wL_dat = df.hwhm_lorentz.values * 2.000  # FWHM
+            wG_dat = df.hwhm_gauss.values * 2.000  # FWHM
+        elif self.dataframe_type == 'vaex':
+            wL_dat = df.hwhm_lorentz * 2.000  # FWHM
+            wG_dat = df.hwhm_gauss * 2.000  # FWHM           
 
         wL = _init_w_axis(wL_dat, log_pL)  # FWHM
         self.NwL = len(wL)
@@ -1753,7 +1789,10 @@ class BroadenFactory(BaseFactory):
         )  # calculation vector of wavenumbers (shape W + space B on the sides)
 
         # Vectorize the chunk of lines
-        S = broadened_param.reshape((1, -1))
+        if self.dataframe_type == 'pandas':
+            S = broadened_param.reshape((1, -1))
+        elif self.dataframe_type == 'vaex':
+            S = broadened_param.to_numpy().reshape((1,-1))
         shifted_wavenum = shifted_wavenum.reshape((1, -1))  # make it a row vector
 
         # Get truncation array
@@ -1946,9 +1985,13 @@ class BroadenFactory(BaseFactory):
 
         # LDM : Next calculate how the line is distributed over the 2x2x2 bins.
         ki0, ki1, tvi = self._get_indices(shifted_wavenum, wavenumber_calc)
-        li0, li1, tGi = self._get_indices(np.log(wG_dat), np.log(wG))
-        mi0, mi1, tLi = self._get_indices(np.log(wL_dat), np.log(wL))
 
+        if self.dataframe_type == 'vaex':
+            li0, li1, tGi = self._get_indices((np.log(wG_dat)).to_numpy(), np.log(wG))
+            mi0, mi1, tLi = self._get_indices((np.log(wL_dat)).to_numpy(), np.log(wL))
+        elif self.dataframe_type == 'pandas':
+            li0, li1, tGi = self._get_indices(np.log(wG_dat), np.log(wG))
+            mi0, mi1, tLi = self._get_indices(np.log(wL_dat), np.log(wL))
         # Next assign simple weights:
         if optimization == "min-RMS":
 
@@ -2391,7 +2434,13 @@ class BroadenFactory(BaseFactory):
                             )
                         )
 
-                    for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
+                    if self.dataframe_type == 'pandas':
+                        df = df.groupby(arange(len(df)) % N)
+                    elif self.dataframe_type == 'vaex':
+                        df['idx'] = np.arange(len(df)) % N
+                        df = df.groupby(df.idx)
+
+                    for i, (_, dg) in enumerate(df):
                         line_profile = self._calc_lineshape(dg)
                         (wavenumber, absorption) = self._apply_lineshape(
                             dg.S.values, line_profile, dg.shiftwav.values
@@ -2405,7 +2454,14 @@ class BroadenFactory(BaseFactory):
                     self.reftracker.add(doi["DIT-2020"], "algorithm")
                     # Iterating over the chunks of the line database
                     # Using DIT Algorithm calculations for optimized loops
-                    for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
+
+                    if self.dataframe_type == 'pandas':
+                        df = df.groupby(arange(len(df)) % N)
+                    elif self.dataframe_type == 'vaex':
+                        df['idx'] = np.arange(len(df)) % N
+                        df = df.groupby(df.idx)
+
+                    for i, (_, dg) in enumerate(df):
                         (
                             line_profile_LDM,
                             wL_i,
@@ -2761,7 +2817,11 @@ class BroadenFactory(BaseFactory):
         #            plt.axvline(w, color='k', ls=ls)
 
         # ... Store weak line label in df
-        df["weak_line"] = line_is_weak
+
+        if self.dataframe_type == 'pandas':
+            df["weak_line"] = line_is_weak
+        elif self.dataframe_type == 'vaex':
+            df["weak_line"] = line_is_weak
 
         self.profiler.stop(
             "weak_lines",

@@ -368,6 +368,10 @@ class DataFileManager(object):
 
         if output == "vaex":
             df = df.extract()  # return DataFrame containing only the filtered rows
+            if columns:  # load only these columns (if they exist)
+                columns = [c for c in columns if c in df.columns]
+            if columns is not None:       
+                df = df[columns]
 
         return df
 
