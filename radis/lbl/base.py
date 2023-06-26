@@ -3299,7 +3299,7 @@ class BaseFactory(DatabankLoader):
         if self.dataframe_type == 'pandas':
             self.df1 = pd.DataFrame(df[~b])
         elif self.dataframe_type == 'vaex':
-            self.df1 = df[~b]
+            self.df1 = df[~b].materialize()    # If materialized is used time taken is reduced but memory efficiency is slightly reduced.
             self.df1.attrs = df.attrs
 
         #        df.drop(b.index, inplace=True)   # performance: was not faster
