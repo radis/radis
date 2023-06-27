@@ -304,11 +304,11 @@ def fetch_exomol(
         attrs["iso"] = isotope
 
         if output == "vaex":
-            df.attrs={}
-            df.attrs=attrs
+            df.attrs = {}
+            df.attrs = attrs
         elif output == "pandas":
             for k, v in attrs.items():
-                df.attrs[k] = v        
+                df.attrs[k] = v
     # Return:
     out = df
     if return_local_path or return_partition_function:

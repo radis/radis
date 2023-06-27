@@ -281,11 +281,11 @@ def cdsd2df(
 
     # %% Start reading the full file
 
-    df = parse_hitran_file(fname, columns,output=output)
+    df = parse_hitran_file(fname, columns, output=output)
 
     # Remove non numerical attributes
     if drop_non_numeric:
-        replace_PQR_with_m101(df,dataframe_type=output)
+        replace_PQR_with_m101(df, dataframe_type=output)
         df = drop_object_format_columns(df, verbose=verbose, dataframe_type=output)
 
     # cached file mode but cached file doesn't exist yet (else we had returned)

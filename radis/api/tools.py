@@ -13,7 +13,7 @@ import pandas as pd
 from ..misc.warning import PerformanceWarning
 
 
-def parse_hitran_file(fname, columns, count=-1,output="pandas"):
+def parse_hitran_file(fname, columns, count=-1, output="pandas"):
     """Parse a file under HITRAN ``par`` format. Parsing is done in binary
     format with :py:func:`numpy.fromfile` so it's as fast as possible.
 
@@ -60,9 +60,9 @@ def parse_hitran_file(fname, columns, count=-1,output="pandas"):
     # Return a Pandas dataframe
     df = _ndarray2df(data, columns, linereturnformat)
 
+    import vaex
 
-    import vaex 
-    if output == 'vaex':
+    if output == "vaex":
         df = vaex.from_pandas(df)
     return df
 
@@ -217,7 +217,7 @@ def _cast_to_dtype(data, dtype):
     return data
 
 
-def drop_object_format_columns(df, verbose=True, dataframe_type='pandas'):
+def drop_object_format_columns(df, verbose=True, dataframe_type="pandas"):
     """Remove 'object' columns in a pandas DataFrame or Vaex Dataframe.
 
     They are not useful to us at this time, and they slow down all
@@ -227,10 +227,10 @@ def drop_object_format_columns(df, verbose=True, dataframe_type='pandas'):
 
     objects = [k for k, v in df.dtypes.items() if v == object]
     for k in objects:
-        if dataframe_type == 'pandas':
+        if dataframe_type == "pandas":
             del df[k]
-        elif dataframe_type == 'vaex' :
-            df.drop(k,inplace=True)
+        elif dataframe_type == "vaex":
+            df.drop(k, inplace=True)
     if verbose >= 2 and len(objects) > 0:
         print(
             (
@@ -264,21 +264,20 @@ def replace_PQR_with_m101(df, dataframe_type="pandas"):
     # Note: somehow pandas updates dtype automatically. We have to check
     # We just have to replace the column:
 
-    if dataframe_type == 'pandas':
+    if dataframe_type == "pandas":
         if df.dtypes["branch"] != np.int64:
             new_col = df["branch"].replace(["P", "Q", "R"], [-1, 0, 1])
             df["branch"] = new_col
 
     elif dataframe_type == "vaex":
         # Define the mapping dictionary
-        mapping = {'P': -1, 'Q': 0, 'R': 1}
+        mapping = {"P": -1, "Q": 0, "R": 1}
 
         # Create a new column with replaced values
-        new_col = df['branch'].map(mapping,allow_missing=True)
+        new_col = df["branch"].map(mapping, allow_missing=True)
         df["branch"] = new_col
     else:
         raise NotImplementedError(dataframe_type)
-    
 
     try:
         assert df.dtypes["branch"] == np.int64

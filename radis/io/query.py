@@ -229,11 +229,13 @@ def fetch_astroquery(
             df = df.rename(columns=rename_columns)
         elif output == "vaex":
             import vaex
+
             df = vaex.from_astropy_table(tbl)
             df = df.rename(columns=rename_columns)
     else:
         df = pd.DataFrame(columns=list(rename_columns.values()))
-        import vaex 
+        import vaex
+
         df = vaex.from_pandas(df)
 
     # Cast type to float64

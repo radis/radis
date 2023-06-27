@@ -66,7 +66,7 @@ def calc_spectrum(
     export_lines=False,
     verbose=True,
     return_factory=False,
-    engine='pandas',
+    engine="pandas",
     **kwargs,
 ) -> Spectrum:
     r"""Calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
@@ -292,7 +292,7 @@ def calc_spectrum(
                 sf.df1  # see the lines calculated
                 sf.eq_spectrum(...)  #  new calculation without reloading the database
     engine : string
-        Vaex or Pandas . Default Pandas, if engine is vaex memory performance is improved 
+        Vaex or Pandas . Default Pandas, if engine is vaex memory performance is improved
     **kwargs: other inputs forwarded to SpectrumFactory
         For instance: ``warnings``.
         See :py:class:`~radis.lbl.factory.SpectrumFactory` documentation for more
@@ -876,7 +876,6 @@ def _calc_spectrum_one_molecule(
         else:
             load_columns = "equilibrium"
 
-        conditions["output"] = engine
         sf.load_databank(
             databank,
             load_energies=not _equilibrium,  # no need to load/calculate energies at eq.
