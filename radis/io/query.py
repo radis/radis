@@ -234,7 +234,7 @@ def fetch_astroquery(
     else:
         df = pd.DataFrame(columns=list(rename_columns.values()))
         import vaex 
-        df = vaex.from_pandas_df(df)
+        df = vaex.from_pandas(df)
 
     # Cast type to float64
     cast_type = {
