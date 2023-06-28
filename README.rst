@@ -33,6 +33,8 @@ or with *mamba*::
 
     mamba install radis
 
+
+
 **That's it!** You can now run your first example below.
 If you encounter any issue, or to upgrade the package later, please refer to the
 `detailed installation procedure <https://radis.readthedocs.io/en/latest/dev/developer.html#label-install>`__ .

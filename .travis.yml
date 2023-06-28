@@ -69,6 +69,8 @@ jobs:
         - pre-commit install
       script:
         - pre-commit run --all-files
+      after_failure: #better for checking the origin of a bug
+        - cat /home/travis/.cache/pre-commit/pre-commit.log
 
     - stage: deploy
       name: Deploy to PyPI

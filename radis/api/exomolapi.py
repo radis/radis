@@ -129,56 +129,11 @@ def read_def(deff):
             unc = int(dat["VAL"][i]) == 1
 
     # SOME DEF FILES CONTAINS ERRORS. THESE ARE THE EXCEPTIONS
-    if deff.stem == "12C-16O2__UCL-4000":
-        ntransf = 20
-    if deff.stem == "1H3-16O_p__eXeL":
-        # fixes https://github.com/radis/radis/pull/531
-        ntransf = 100
-    if deff.stem == "14N-1H3__CoYuTe":
-        maxnu = 20000.0
-    if deff.stem == "40Ca-16O-1H__OYT6":
-        ntransf = 18
-        maxnu = 36000.0
     if deff.stem == "1H-35Cl__HITRAN-HCl":
         quantum_labels = ["v"]
         # See https://github.com/HajimeKawahara/exojax/issues/330
     if deff.stem == "16O-1H__MoLLIST":
         quantum_labels = ["e/f", "v", "F1/F2", "Es"]
-    if deff.stem == "12C2-1H2__aCeTY":
-        if molmass == 12.0:
-            molmass = 26.0
-            print(
-                f"Known error in ExoMol def file, molmass corrected from 12.0 to {molmass}"
-            )
-        if quantum_labels == [
-            "totalSym",
-            "v1",
-            "v2",
-            "v3",
-            "v4",
-            "v5",
-            "v5",
-            "v7",
-            "vibSym",
-            "K",
-            "rotSym",
-        ]:
-            quantum_labels = [
-                "totalSym",
-                "v1",
-                "v2",
-                "v3",
-                "v4",
-                "v5",
-                "v6",
-                "v7",
-                "vibSym",
-                "K",
-                "rotSym",
-            ]
-            print(
-                f"Known error in ExoMol def file, quantum_labels corrected from '['totalSym', 'v1', 'v2', 'v3', 'v4', 'v5', 'v5', 'v7', 'vibSym', 'K', 'rotSym']' to {quantum_labels}"
-            )
 
     if ntransf > 1:
         dnufile = maxnu / ntransf
@@ -1171,7 +1126,7 @@ class MdbExomol(DatabaseManager):
             self.download(molec, extension=[".pf"])
         if not self.states_file.exists():
             self.download(molec, extension=[".states.bz2"])
-        if not self.broad_file.exists():
+        if (not self.broad_file.exists()) and self.broadf:
             self.download(molec, extension=[".broad"])
 
         # Add molecule name

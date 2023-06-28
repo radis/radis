@@ -1,19 +1,24 @@
 #cython: language_level=3
 import numpy as np
+
 cimport numpy as np
 
 import cython
+
 from cpython cimport array
-from cython.operator import dereference
 
 import ctypes
+
+from cython.operator import dereference
+
+from libc.math cimport log
+from libc.string cimport memcpy
 from libcpp cimport bool
 from libcpp.map cimport map as mapcpp
 from libcpp.set cimport set
 from libcpp.utility cimport pair
 from libcpp.vector cimport vector
-from libc.string cimport memcpy
-from libc.math cimport log
+
 #from libcpp.functional cimport greater
 
 # std::greater is currently not implemented in cython (but will be in the future)
@@ -224,6 +229,7 @@ def calc_gaussian_envelope_params(
 # Below are CPU functions extracted from the GPU module
 
 cimport cpu_gpu_agnostic as cga
+
 #from radis.lbl.gpu import initData, iterData
 
 cpdef void fillLDM(gridDim, blockDim, args):
