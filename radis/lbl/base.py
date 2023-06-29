@@ -3255,21 +3255,21 @@ class BaseFactory(DatabankLoader):
         if self.warnings["LinestrengthCutoffWarning"] != "ignore":
 
             if self.dataframe_type == "vaex":
-                error = df[b].S.sum() / df.S.sum() * 100
+                error_cutoff = df[b].sum(df[b].S) / df.sum(df.S) * 100
             else:
-                error = df.S[b].sum() / df.S.sum() * 100
+                error_cutoff = df.S[b].sum() / df.S.sum() * 100
 
             if verbose >= 2:
                 print(
                     "Discarded {0:.2f}% of lines (linestrength<{1}cm-1/(#.cm-2))".format(
                         Nlines_cutoff / len(df) * 100, cutoff
                     )
-                    + " Estimated error: {0:.2f}%".format(error)
+                    + " Estimated error: {0:.2f}%".format(error_cutoff)
                 )
-            if error > self.misc.warning_linestrength_cutoff:
+            if error_cutoff > self.misc.warning_linestrength_cutoff:
                 self.warn(
                     "Estimated error after discarding lines is large: {0:.2f}%".format(
-                        error
+                        error_cutoff
                     )
                     + ". Consider reducing cutoff",
                     "LinestrengthCutoffWarning",
