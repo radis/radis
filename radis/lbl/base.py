@@ -3262,7 +3262,7 @@ class BaseFactory(DatabankLoader):
             if verbose >= 2:
                 print(
                     "Discarded {0:.2f}% of lines (linestrength<{1}cm-1/(#.cm-2))".format(
-                        Nlines_cutoff / len(df.S) * 100, cutoff
+                        Nlines_cutoff / len(df) * 100, cutoff
                     )
                     + " Estimated error: {0:.2f}%".format(error)
                 )
