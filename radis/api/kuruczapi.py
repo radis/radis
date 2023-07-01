@@ -54,9 +54,12 @@ class AdBKurucz():
         pfTdat = pd.read_csv(io.StringIO(pfT_str), sep=',') 
         pfTdat = pd.Series(pfTdat.columns[1:]).astype('float64') # Converts the values to float64, skipping the first value
 
-        pffdata = pkgutil.get_data('exojax', 'data/atom/barklem_collet_2016_pff.txt')
-        pfdat = pd.read_csv(BytesIO(pffdata), sep='\s+', comment='#', names=pfTdat.index) 
+        # read the local file instead of the one in the exojax package
+        with open('./pfdat.txt', 'r') as f:
+            pfdat = pd.read_csv(f, sep='\s+', comment='#', names=pfTdat.index)
+
         #print(pfdat.head())
+        #print("pfdat", pfdat)
         print("len(pfdat)", len(pfdat))
         print("len(pfTdat)", len(pfTdat))
 
