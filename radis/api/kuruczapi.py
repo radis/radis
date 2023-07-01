@@ -1,3 +1,14 @@
+''' 
+The AdBKurucz class below is inspired by an Exojax class developed by Hiroyuki Tako ISHIKAWA.
+It allows loading data from the Kurucz database and performing several calculations on it.
+
+Author: Racim Menasria
+Date: June 2023
+'''
+
+
+
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -26,6 +37,7 @@ class AdBKurucz():
 
 
     def get_url(self, atomic_number, ionization_state):
+        ionization_state = str(ionization_state).zfill(2)
         return f"http://kurucz.harvard.edu/linelists/gfall/gf{atomic_number}{ionization_state}.all"
   
 
@@ -46,6 +58,7 @@ class AdBKurucz():
         pfdat = pd.read_csv(BytesIO(pffdata), sep='\s+', comment='#', names=pfTdat.index) 
         #print(pfdat.head())
         print("len(pfdat)", len(pfdat))
+        print("len(pfTdat)", len(pfTdat))
 
         return pfTdat, pfdat
 
@@ -306,9 +319,13 @@ class AdBKurucz():
         pfT_values = pfT_values.astype(float)
         pf_values = pf_values.astype(float)
 
+        #print("pfT_values:", pfT_values)
+        #print("pf_values:", pf_values)
+
+
         # Interpolate to find the partition function at the desired temperature
         Q = np.interp(T, pfT_values, pf_values)
-        print(f"Partition function: {Q}")
+        #print(f"Partition function: {Q}")
 
         return Q
 
@@ -322,7 +339,7 @@ class AdBKurucz():
 
         # Calculate energy/temperature ratio
         energy_temp_ratio = self.data["elower"] / (0.695 * temperature)
-        print(f'Energy/temp ratio: {energy_temp_ratio}')   # print the energy to temperature ratio for debugging
+        #print(f'Energy/temp ratio: {energy_temp_ratio}')   # print the energy to temperature ratio for debugging
 
         # Calculate level populations using Boltzmann statistics
         self.populations = np.exp(-energy_temp_ratio) / QT_atom
@@ -334,7 +351,7 @@ class AdBKurucz():
 
     def plot_spectrum(self,data, populations, temperature):
         intensities = data['A'] * populations 
-        print(f"Intensities: {intensities}")  
+        #print(f"Intensities: {intensities}")  
         plt.figure(figsize=(10, 6))
         plt.plot(data['nu_lines'], intensities)
         plt.title(f'Spectrum at {temperature}K')
