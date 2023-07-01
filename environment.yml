@@ -35,7 +35,7 @@ dependencies:
   - peakutils
   - json-tricks>=3.15.0  # to deal with non jsonable formats
   - mpldatacursor
-  - periodictable=1.6.1
+  - periodictable
   - progressbar2    # used in vaex
   #- tuna           # to generate visual/interactive performance profiles
   - tables  # for pandas to HDF5 export
