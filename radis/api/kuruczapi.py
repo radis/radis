@@ -14,7 +14,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import requests
 from tqdm import tqdm
-import os
 from contextlib import closing
 import pkgutil
 import io
@@ -65,37 +64,6 @@ class AdBKurucz():
 
         return pfTdat, pfdat
 
-
-
-    def Sij0(self, A, gupper, nu_lines, elower, QTref_284, QTmask, Irwin=False):
-        """Reference Line Strength in Tref=296K, S0.
-
-    Args:
-       A: Einstein coefficient (s-1)
-       gupper: the upper state statistical weight
-       nu_lines: line center wavenumber (cm-1)
-       elower: elower
-       QTref_284: partition function Q(Tref)
-       QTmask: mask to identify a rows of QTref_284 to apply for each line
-       Irwin: if True(1), the partition functions of Irwin1981 is used, otherwise those of Barklem&Collet2016
-
-    Returns:
-       Sij(T): Line strength (cm)
-    """
-
-    # Assign Q(Tref) for each line
-        QTref = np.zeros_like(QTmask, dtype=float)
-        for i, mask in enumerate(QTmask):
-            QTref[i] = QTref_284[mask]
-
-        # Use Irwin_1981 for Fe I (mask==76)  #test211013Tako
-        if Irwin == True:
-            QTref[np.where(QTmask == 76)[0]] = self.partfn_Fe(Tref_original)
-
-        S0 = -A*gupper*np.exp(-hcperk*elower/Tref_original)*np.expm1(-hcperk*nu_lines/Tref_original)\
-            / (8.0*np.pi*ccgs*nu_lines**2*QTref)
-
-        return S0
     
     def load_atomicdata(self):
         """load atomic data and solar composition.
@@ -270,19 +238,43 @@ class AdBKurucz():
 
 
         data_dict = {
-                "A": A,
-                "nu_lines": nu_lines,
-                "elower": elower,
-                "eupper": eupper,
-                "gupper": gupper,
-                "jlower": jlower,
-                "jupper": jupper,
-                "ielem": ielem,
-                "iion": iion,
-                "gamRad": gamRad,
-                "gamSta": gamSta,
-                "gamvdW": gamvdW,
-            }
+            "A": A,
+            "nu_lines": nu_lines,
+            "elower": elower,
+            "eupper": eupper,
+            "gupper": gupper,
+            "jlower": jlower,
+            "jupper": jupper,
+            "ielem": ielem,
+            "iion": iion,
+            "gamRad": gamRad,
+            "gamSta": gamSta,
+            "gamvdW": gamvdW,
+            "wlnmair": wlnmair,
+            "loggf": loggf,
+            "species": species,
+            "labellower": labellower,
+            "labelupper": labelupper,
+            "ref": ref,
+            "NLTElower": NLTElower,
+            "NLTEupper": NLTEupper,
+            "isonum": isonum,
+            "hyperfrac": hyperfrac,
+            "isonumdi": isonumdi,
+            "isofrac": isofrac,
+            "hypershiftlower": hypershiftlower,
+            "hypershiftupper": hypershiftupper,
+            "hyperFlower": hyperFlower,
+            "hypernotelower": hypernotelower,
+            "hyperFupper": hyperFupper,
+            "hypternoteupper": hypternoteupper,
+            "strenclass": strenclass,
+            "auto": auto,
+            "landeglower": landeglower,
+            "landegupper": landegupper,
+            "isoshiftmA": isoshiftmA
+        }
+            
 
         self.data = pd.DataFrame(data_dict)
         return self.data
