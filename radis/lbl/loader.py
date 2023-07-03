@@ -1359,12 +1359,9 @@ class DatabankLoader(object):
                             assert "iso" in df.attrs
                             import vaex
 
-                            iso = np.repeat(df.attrs["iso"], len(df))
-                            iso = vaex.from_arrays(iso=iso)
-                            # attrs=df.attrs
-                            # df = df.join(iso)
-                            df["iso"] = iso
-                            # df.attrs=attrs
+                            df["iso"] = vaex.vconstant(
+                                int(df.attrs["iso"]), length=df.length_unfiltered()
+                            )
                             Frames.append(df)
                     # Keep attributes:
                     from radis.misc.basics import intersect
@@ -1681,6 +1678,7 @@ class DatabankLoader(object):
         # %% Line database
         # ------------
         self._reset_references()  # bibliographic references
+        self.dataframe_type = output
 
         self.df0 = self._load_databank(
             path,
@@ -2305,6 +2303,12 @@ class DatabankLoader(object):
                                 "Missing doi for CDSD-HITEMP. Use HITEMP-2010?",
                                 "MissingReferenceWarning",
                             )
+
+                        if self.dataframe_type == "pandas":
+                            engine = "pytables"
+                        elif self.dataframe_type == "vaex":
+                            engine = "vaex"
+
                         df = cdsd2df(
                             filename,
                             version="hitemp" if dbformat == "cdsd-hitemp" else "4000",
@@ -2314,7 +2318,7 @@ class DatabankLoader(object):
                             drop_non_numeric=True,
                             load_wavenum_min=wavenum_min,
                             load_wavenum_max=wavenum_max,
-                            engine="pytables",
+                            engine=engine,
                             output=output,
                         )
                         # TODO: implement load_columns
@@ -2327,6 +2331,12 @@ class DatabankLoader(object):
                             self.reftracker.add(
                                 doi["HITEMP-2010"], "line database"
                             )  # [HITEMP-2010]_
+
+                        if self.dataframe_type == "pandas":
+                            engine = "pytables"
+                        elif self.dataframe_type == "vaex":
+                            engine = "vaex"
+
                         df = hit2df(
                             filename,
                             cache=db_use_cached,
@@ -2335,7 +2345,7 @@ class DatabankLoader(object):
                             drop_non_numeric=True,
                             load_wavenum_min=wavenum_min,
                             load_wavenum_max=wavenum_max,
-                            engine="pytables",
+                            engine=engine,
                             output=output,
                         )
                     elif dbformat in ["hdf5-radisdb", "hitemp-radisdb"]:
@@ -2348,6 +2358,12 @@ class DatabankLoader(object):
                                 f"Missing doi reference for database used {filename}",
                                 "MissingReferenceWarning",
                             )
+
+                        if self.dataframe_type == "pandas":
+                            engine = "guess"
+                        elif self.dataframe_type == "vaex":
+                            engine = "vaex"
+
                         df = hdf2df(
                             filename,
                             columns=columns,
@@ -2359,7 +2375,7 @@ class DatabankLoader(object):
                             else None,
                             load_wavenum_min=wavenum_min,
                             load_wavenum_max=wavenum_max,
-                            engine="guess",
+                            engine=engine,
                             output=output,
                         )
                     elif dbformat in ["exomol"]:
@@ -2488,7 +2504,11 @@ class DatabankLoader(object):
             # check no isotope shows 0 line in this range. Raise an warning if it
             # happens
             for k in isotope_list:
-                if not (sum(df.iso == k) > 0):
+                if self.dataframe_type == "pandas":
+                    iso_count = sum(df.iso == k)
+                elif self.dataframe_type == "vaex":
+                    iso_count = (df.iso == k).sum()
+                if not (iso_count > 0):
                     msg = (
                         "Reference databank ({0:.2f}-{1:.2f}cm-1)".format(
                             minwavdb, maxwavdb
