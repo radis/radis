@@ -118,7 +118,12 @@ PARAMETER_GROUPS_HITRAN = {
 def cast_to_int64_with_missing_values(dg, keys, dataframe_type="pandas"):
     """replace missing values of int64 columns with -1"""
     for c in keys:
-        if dg.dtypes[c] != int64:
+        if dataframe_type == "pandas":
+            dtype = dg.dtypes[c]
+        elif dataframe_type == "vaex":
+            dtype = dg.data_type(c)
+
+        if dtype != int64:
             if dataframe_type == "pandas":
                 dg[c].replace(
                     r"^\s+$", -1, regex=True, inplace=True
@@ -132,9 +137,24 @@ def cast_to_int64_with_missing_values(dg, keys, dataframe_type="pandas"):
                 )  # replace empty strings by -1, e.g. HCN
                 # Warning: -1 may be a valid non-equilibirum quantum number for some
                 # molecules, e.g. H2O, see https://github.com/radis/radis/issues/280#issuecomment-896120510
-                dg[c].astype("int64")
+                # dg[c] = dg[c].apply(lambda x : int(x))
             else:
                 raise NotImplementedError(dataframe_type)
+
+
+def cast_all_to_int64(df, keys):
+    for key in keys:
+        df[key] = df[key].apply(lambda x: int(x) if (x.strip()).isdigit() else x)
+
+
+def extract_columns(df, extracted_values, columns):
+    for column in columns:
+        df[column] = extracted_values.apply(lambda x: x.get(column))
+
+    cast_all_to_int64(df, columns)
+
+    for column in columns:
+        df[column] = df.evaluate(df[column])
 
 
 def hit2df(
@@ -462,14 +482,14 @@ def _parse_HITRAN_class1(df, verbose=True, dataframe_type="pandas"):
         extracted_values = df["globu"].str.extract_regex(
             pattern=r"[ ]{13}(?P<vu>[\d ]{2})"
         )
-        df["vu"] = extracted_values.apply(lambda x: x.get("globu"))
-        df["vu"] = df.evaluate(df["vu"])
+
+        extract_columns(df, extracted_values, ["vu"])
 
         extracted_values = df["globl"].str.extract_regex(
             pattern=r"[ ]{13}(?P<vl>[\d ]{2})"
         )
-        df["vl"] = extracted_values.get(df["globl"])
-        df["vl"] = df.evauate(df["vl"])
+
+        extract_columns(df, extracted_values, ["vl"])
 
         # 2. Convert to numeric
         cast_to_int64_with_missing_values(
@@ -625,23 +645,14 @@ def _parse_HITRAN_class4(df, verbose=True, dataframe_type="pandas"):
         extracted_values = df["globu"].str.extract_regex(
             pattern=r"[ ]{7}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})"
         )
-        df["v1u"] = extracted_values.apply(lambda x: x.get("v1u"))
-        df["v2u"] = extracted_values.apply(lambda x: x.get("v2u"))
-        df["l2u"] = extracted_values.apply(lambda x: x.get("l2u"))
-        df["v3u"] = extracted_values.apply(lambda x: x.get("v3u"))
 
-        df["v1u"] = df.evaluate(df["v1u"])
-        df["v2u"] = df.evaluate(df["l2u"])
-        df["l2u"] = df.evaluate(df["l2u"])
-        df["v3u"] = df.evaluate(df["v3u"])
+        extract_columns(df, extracted_values, ["v1u", "v2u", "l2u", "v3u"])
 
         extracted_values = df["globl"].str.extract_regex(
             pattern=r"[ ]{7}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})"
         )
-        df["v1l"] = extracted_values.apply(lambda x: x.get("v1l"))
-        df["v2l"] = extracted_values.apply(lambda x: x.get("v2l"))
-        df["l2l"] = extracted_values.apply(lambda x: x.get("l2l"))
-        df["v3l"] = extracted_values.apply(lambda x: x.get("v3l"))
+
+        extract_columns(df, extracted_values, ["v1l", "v2l", "l2l", "v3l"])
 
         # 2. Convert to numeric
         cast_to_int64_with_missing_values(
@@ -719,32 +730,13 @@ def _parse_HITRAN_class5(df, verbose=True, dataframe_type="pandas"):
             pattern=r"[ ]{6}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<ru>\d)"
         )
 
-        df["v1u"] = extracted_values.apply(lambda x: x.get("v1u"))
-        df["v2u"] = extracted_values.apply(lambda x: x.get("v2u"))
-        df["l2u"] = extracted_values.apply(lambda x: x.get("l2u"))
-        df["v3u"] = extracted_values.apply(lambda x: x.get("v3u"))
-        df["ru"] = extracted_values.apply(lambda x: x.get("ru"))
-
-        df["v1u"] = df.evaluate(df["v1u"])
-        df["v2u"] = df.evaluate(df["v2u"])
-        df["l2u"] = df.evaluate(df["l2u"])
-        df["v3u"] = df.evaluate(df["v3u"])
-        df["ru"] = df.evaluate(df["ru"])
+        extract_columns(df, extracted_values, ["v1u", "v2u", "l2u", "v3u", "ru"])
 
         extracted_values = df["globl"].str.extract_regex(
             pattern=r"[ ]{6}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})(?P<rl>\d)"
         )
-        df["v1l"] = extracted_values.apply(lambda x: x.get("v1l"))
-        df["v2l"] = extracted_values.apply(lambda x: x.get("v2l"))
-        df["l2l"] = extracted_values.apply(lambda x: x.get("l2l"))
-        df["v3l"] = extracted_values.apply(lambda x: x.get("v3l"))
-        df["rl"] = extracted_values.apply(lambda x: x.get("rl"))
 
-        df["v1l"] = df.evaluate(df["v1l"])
-        df["v2l"] = df.evaluate(df["v2l"])
-        df["l2l"] = df.evaluate(df["l2l"])
-        df["v3l"] = df.evaluate(df["v3l"])
-        df["rl"] = df.evaluate(df["rl"])
+        extract_columns(df, extracted_values, ["v1l", "v2l", "l2l", "v3l", "rl"])
 
         # 2. Convert to numeric
         cast_to_int64_with_missing_values(
@@ -834,24 +826,14 @@ def _parse_HITRAN_class6(df, verbose=True, dataframe_type="pandas"):
         extracted_values = df["globu"].str.extract_regex(
             pattern=r"[ ]{9}(?P<v1u>[\-\d ]{2})(?P<v2u>[\-\d ]{2})(?P<v3u>[\-\d ]{2})"
         )
-        df["v1u"] = extracted_values.apply(lambda x: x.get("v1u"))
-        df["v2u"] = extracted_values.apply(lambda x: x.get("v2u"))
-        df["v3u"] = extracted_values.apply(lambda x: x.get("v3u"))
 
-        df["v1u"] = df.evaluate(df["v1u"])
-        df["v2u"] = df.evaluate(df["v2u"])
-        df["v3u"] = df.evaluate(df["v3u"])
+        extract_columns(df, extracted_values, ["v1u", "v2u", "v3u"])
 
         extracted_values = df["globl"].str.extract_regex(
             pattern=r"[ ]{9}(?P<v1l>[\-\d ]{2})(?P<v2l>[\-\d ]{2})(?P<v3l>[\-\d ]{2})"
         )
-        df["v1l"] = extracted_values.apply(lambda x: x.get("v1l"))
-        df["v2l"] = extracted_values.apply(lambda x: x.get("v2l"))
-        df["v3l"] = extracted_values.apply(lambda x: x.get("v3l"))
 
-        df["v1l"] = df.evaluate(df["v1l"])
-        df["v2l"] = df.evaluate(df["v2l"])
-        df["v3l"] = df.evaluate(df["v3l"])
+        extract_columns(df, extracted_values, ["v1l", "v2l", "v3l"])
 
         # 2. Convert to numeric
         cast_to_int64_with_missing_values(
@@ -1034,17 +1016,8 @@ def _parse_HITRAN_group1(df, verbose=True, dataframe_type="pandas"):
         extracted_values = df["locu"].str.extract_regex(
             pattern=r"(?P<ju>[\d ]{3})(?P<Kau>[\-\d ]{3})(?P<Kcu>[\-\d ]{3})(?P<Fu>.{5})(?P<symu>.)"
         )
-        df["ju"] = extracted_values.apply(lambda x: x.get("ju"))
-        df["Kau"] = extracted_values.apply(lambda x: x.get("Kau"))
-        df["Kcu"] = extracted_values.apply(lambda x: x.get("Kcu"))
-        df["Fu"] = extracted_values.apply(lambda x: x.get("Fu"))
-        df["symu"] = extracted_values.apply(lambda x: x.get("symu"))
 
-        df["ju"] = df.evaluate(df["ju"])
-        df["Kau"] = df.evaluate(df["Kau"])
-        df["Kcu"] = df.evaluate(df["Kcu"])
-        df["Fu"] = df.evaluate(df["Fu"])
-        df["symu"] = df.evaluate(df["symu"])
+        extract_columns(df, extracted_values, ["ju", "Kau", "Kcu", "Fu", "symu"])
 
         # Ref [1] : locl
         # --------------
@@ -1054,12 +1027,8 @@ def _parse_HITRAN_group1(df, verbose=True, dataframe_type="pandas"):
         extracted_values = df["locl"].str.extract_regex(
             pattern=r"(?P<jl>[\d ]{3})(?P<Kal>[\-\d ]{3})(?P<Kcl>[\-\d ]{3})(?P<Fl>.{5})(?P<syml>.)"
         )
-        # Assign extracted values to new columns
-        df["jl"] = extracted_values.apply(lambda x: x.get("jl"))
-        df["Kal"] = extracted_values.apply(lambda x: x.get("Kal"))
-        df["Kcl"] = extracted_values.apply(lambda x: x.get("Kcl"))
-        df["Fl"] = extracted_values.apply(lambda x: x.get("Fl"))
-        df["syml"] = extracted_values.apply(lambda x: x.get("syml"))
+
+        extract_columns(df, extracted_values, ["jl", "Kal", "Kcl", "Fl", "syml"])
 
         # ... note @EP: in HITRAN H2O files, for iso=2, the Kau, Kcu can somehow
         # ... be negative. The regex above is adapted to catch negation signs with \-
@@ -1173,8 +1142,8 @@ def _parse_HITRAN_group2(df, verbose=True, dataframe_type="pandas"):
         return pd.concat([df, dgu, dgl], axis=1)
     elif dataframe_type == "vaex":
         # 1.Parse
-        df["Fu"] = df["locu"].str.extract_regex(pattern=r"[ ]{10}(?P<Fu>.{5})")
-        df["Fu"] = df.evaluate(df["Fu"])
+        extracted_values = df["locu"].str.extract_regex(pattern=r"[ ]{10}(?P<Fu>.{5})")
+        extract_columns(df, extracted_values, ["Fu"])
 
         # dgu = df["locu"].astype(str).str.extract(r"[ ]{10}(?P<Fu>.{5})", expand=True)
         # Ref [1] : locl
@@ -1185,28 +1154,17 @@ def _parse_HITRAN_group2(df, verbose=True, dataframe_type="pandas"):
         extracted_values = df["locl"].str.extract_regex(
             pattern=r"[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<syml>.)(?P<Fl>.{5})"
         )
-        df["branch"] = extracted_values.apply(lambda x: x.get("branch"))
-        df["jl"] = extracted_values.apply(lambda x: x.get("jl"))
-        df["syml"] = extracted_values.apply(lambda x: x.get("syml"))
-        df["Fl"] = extracted_values.apply(lambda x: x.get("Fl"))
 
-        df["branch"] = df.evaluate(df["branch"])
-        df["jl"] = df.evaluate(df["jl"])
-        df["syml"] = df.evaluate(df["syml"])
-        df["Fl"] = df.evaluate(df["Fl"])
+        extract_columns(df, extracted_values, ["branch", "jl", "syml", "Fl"])
 
         # 2. Convert to numeric
-        cast_to_int64_with_missing_values(df, ["jl"], dataframe_type=dataframe_type)
+        cast_to_int64_with_missing_values(
+            df, ["Fu", "branch", "jl", "syml", "Fl"], dataframe_type=dataframe_type
+        )
 
         # 3. Clean
         df.drop("locu", inplace=True)
         df.drop("locl", inplace=True)
-
-        frames = []
-        frames.append(df)
-        import vaex
-
-        df = vaex.concat(frames)
 
         return df
     else:
