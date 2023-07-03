@@ -292,7 +292,7 @@ def fetch_exomol(
         mdb.rename_columns(df, {"Sij0": "int"})
 
     # Add Attributes of the DataFrame
-    if output == "pandas":  # no attribtes in "Jax" or "Vaex" mode
+    if output in ["pandas", "vaex"]:  # no attribtes in "Jax" or "Vaex" mode
         from radis.db.classes import HITRAN_MOLECULES
 
         attrs = {}
