@@ -537,7 +537,7 @@ def check_relevancy(
 
     for k, v in relevant_if_metadata_above.items():
         # Note : check_not_deprecated already tested the existence of each key so we are safe
-        if file_metadata[k] < v:
+        if float(file_metadata[k]) < v:
             raise IrrelevantFileWarning(
                 "Database file {0} irrelevant: {1}={2} [file metadata] < {3} [expected], not loaded".format(
                     file, k, file_metadata[k], v
@@ -545,7 +545,7 @@ def check_relevancy(
             )
     for k, v in relevant_if_metadata_below.items():
         # Note : check_not_deprecated already tested the existence of each key so we are safe
-        if file_metadata[k] > v:
+        if float(file_metadata[k]) > v:
             raise IrrelevantFileWarning(
                 "Database file {0} irrelevant ({1}={2} [file metadata] > {3} [expected]), not loaded".format(
                     file, k, file_metadata[k], v
