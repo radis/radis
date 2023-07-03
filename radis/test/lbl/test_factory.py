@@ -775,6 +775,7 @@ def test_vaex_and_pandas_spectrum():
         for column in factory_s1.df1.columns:
             assert np.all(factory_s.df1[column].to_numpy() == factory_s1.df1[column])
 
+
 # --------------------------
 if __name__ == "__main__":
 
