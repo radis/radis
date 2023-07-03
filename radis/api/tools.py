@@ -270,12 +270,13 @@ def replace_PQR_with_m101(df, dataframe_type="pandas"):
             df["branch"] = new_col
 
     elif dataframe_type == "vaex":
-        # Define the mapping dictionary
-        mapping = {"P": -1, "Q": 0, "R": 1}
+        if df.dtypes["branch"] != np.int64:
+            mapping = {"P": -1, "Q": 0, "R": 1}
 
-        # Create a new column with replaced values
-        new_col = df["branch"].map(mapping, allow_missing=True)
-        df["branch"] = new_col
+            # Create a new column with replaced values
+            new_col = df["branch"].map(mapping, allow_missing=True)
+            df["branch"] = new_col
+
     else:
         raise NotImplementedError(dataframe_type)
 
