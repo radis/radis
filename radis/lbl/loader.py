@@ -1178,6 +1178,12 @@ class DatabankLoader(object):
                     extra_params=extra_params,
                 )
                 self.params.dbpath = ",".join(local_paths)
+                if output == "vaex" and df.length() < 200000:
+                    df_pandas = df.to_pandas_df()
+                    df.close()
+                    df = df_pandas
+                    output = "pandas"
+                    self.dataframe_type = "pandas"
 
                 df.attrs = {}
 
@@ -1271,6 +1277,13 @@ class DatabankLoader(object):
                 parallel=parallel,
             )
             self.params.dbpath = ",".join(local_paths)
+
+            if output == "vaex" and df.length() < 200000:
+                df_pandas = df.to_pandas_df()
+                df.close()
+                df = df_pandas
+                output = "pandas"
+                self.dataframe_type = "pandas"
 
             # ... explicitely write all isotopes based on isotopes found in the database
             if isotope == "all":
@@ -1375,6 +1388,14 @@ class DatabankLoader(object):
 
                     df = vaex.concat(Frames)  # reindex
                     df.attrs = attrs
+                    if df.length() < 200000:
+                        df_pandas = df.to_pandas_df()
+                        df.close()
+                        df = df_pandas
+                        df.attrs = attrs
+                        output = "pandas"
+                        self.dataframe_type = "pandas"
+
                     self.params.dbpath = ",".join(local_paths)
                 else:
                     raise NotImplementedError(output)
@@ -1416,6 +1437,13 @@ class DatabankLoader(object):
                 parallel=parallel,
             )
             self.params.dbpath = ",".join(local_paths)
+
+            if output == "vaex" and df.length() < 200000:
+                df_pandas = df.to_pandas_df()
+                df.close()
+                df = df_pandas
+                output = "pandas"
+                self.dataframe_type = "pandas"
 
             # ... explicitely write all isotopes based on isotopes found in the database
             if isotope == "all":
