@@ -1,4 +1,4 @@
-""" 
+"""
 The AdBKurucz class below is inspired by an Exojax class developed by Hiroyuki Tako ISHIKAWA.
 It allows loading data from the Kurucz database and performing several calculations on it.
 
