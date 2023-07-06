@@ -1396,7 +1396,7 @@ class DatabankLoader(object):
 
                     df = vaex.concat(Frames)  # reindex
                     df.attrs = attrs
-                    if df.length() < 200000:
+                    if df.length() < 900000:
                         df_pandas = df.to_pandas_df()
                         df.close()
                         df = df_pandas
@@ -1450,7 +1450,7 @@ class DatabankLoader(object):
             )
             self.params.dbpath = ",".join(local_paths)
 
-            if output == "vaex" and df.length() < 200000:
+            if output == "vaex" and df.length() < 900000:
                 df_pandas = df.to_pandas_df()
                 df.close()
                 df = df_pandas
