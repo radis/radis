@@ -516,7 +516,7 @@ class DatabaseManager(object):
 
             if isinstance(df, vaex.dataframe.DataFrameLocal):
                 # see https://github.com/vaexio/vaex/pull/1570
-                df[key] = vaex.vconstant(float(value), length=len(df))
+                df[key] = vaex.vconstant(float(value), length=df.length_unfiltered())
             else:
                 df[key] = value
         else:

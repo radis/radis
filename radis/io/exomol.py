@@ -117,7 +117,7 @@ def fetch_exomol(
 
     Returns
     -------
-    df: pd.DataFrame
+    df: pd.DataFrame or vaex.dataframe.DataFrameLocal
         Line list
         A HDF5 file is also created in ``local_databases`` and referenced
         in the :ref:`RADIS config file <label_lbl_config_file>` with name
@@ -292,7 +292,7 @@ def fetch_exomol(
         mdb.rename_columns(df, {"Sij0": "int"})
 
     # Add Attributes of the DataFrame
-    if output == "pandas":  # no attribtes in "Jax" or "Vaex" mode
+    if output in ["pandas", "vaex"]:  # no attribtes in "Jax" or "Vaex" mode
         from radis.db.classes import HITRAN_MOLECULES
 
         attrs = {}
@@ -303,9 +303,12 @@ def fetch_exomol(
         attrs["molecule"] = molecule
         attrs["iso"] = isotope
 
-        for k, v in attrs.items():
-            df.attrs[k] = v
-
+        if output == "vaex":
+            df.attrs = {}
+            df.attrs = attrs
+        elif output == "pandas":
+            for k, v in attrs.items():
+                df.attrs[k] = v
     # Return:
     out = df
     if return_local_path or return_partition_function:

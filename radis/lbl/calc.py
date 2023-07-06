@@ -66,6 +66,7 @@ def calc_spectrum(
     export_lines=False,
     verbose=True,
     return_factory=False,
+    engine="pandas",
     **kwargs,
 ) -> Spectrum:
     r"""Calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
@@ -290,6 +291,8 @@ def calc_spectrum(
                 s, sf = calc_spectrum(..., return_factory=True)
                 sf.df1  # see the lines calculated
                 sf.eq_spectrum(...)  #  new calculation without reloading the database
+    engine : string
+        Vaex or Pandas . Default Pandas, if engine is vaex memory performance is improved
     **kwargs: other inputs forwarded to SpectrumFactory
         For instance: ``warnings``.
         See :py:class:`~radis.lbl.factory.SpectrumFactory` documentation for more
@@ -561,6 +564,7 @@ def calc_spectrum(
             export_lines=export_lines,
             return_factory=return_factory,
             diluent=diluent_for_this_molecule,
+            engine=engine,
             **kwargs_molecule,
         )
 
@@ -620,6 +624,7 @@ def _calc_spectrum_one_molecule(
     export_lines,
     return_factory=False,
     diluent="air",
+    engine="pandas",
     **kwargs,
 ) -> Spectrum:
     """See :py:func:`~radis.lbl.calc.calc_spectrum`
@@ -715,6 +720,7 @@ def _calc_spectrum_one_molecule(
 
     # Load databank
     # -------------
+    sf.dataframe_type = engine
 
     # Get databank
     if (
@@ -798,6 +804,7 @@ def _calc_spectrum_one_molecule(
         conditions["parse_local_global_quanta"] = (not _equilibrium) or export_lines
 
         # Finally, LOAD :
+        conditions["output"] = engine
         sf.fetch_databank(**conditions)
     elif exists(databank):
         conditions = {
@@ -852,6 +859,7 @@ def _calc_spectrum_one_molecule(
 
         conditions["load_energies"] = not _equilibrium
         # Finally, LOAD :
+        conditions["output"] = engine
         sf.load_databank(**conditions)
 
     else:  # manual mode: get from user-defined line databases defined in ~/radis.json
@@ -873,6 +881,7 @@ def _calc_spectrum_one_molecule(
             load_energies=not _equilibrium,  # no need to load/calculate energies at eq.
             drop_columns=drop_columns,
             load_columns=load_columns,
+            output=engine,
         )
 
     #    # Get optimisation strategies

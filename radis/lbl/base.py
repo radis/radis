@@ -1408,13 +1408,21 @@ class BaseFactory(DatabankLoader):
         #        df.loc[df.branch==1,'ju'] += 1     # branch R
 
         #        # slightly less readable but ~ 20% faster than above:
-        dgb = df.groupby("branch")
-        df["ju"] = df.jl
-        for branch, idx in dgb.indices.items():
-            if branch == -1:  # 'P':
-                df.loc[idx, "ju"] -= 1
-            if branch == 1:  #'R':
-                df.loc[idx, "ju"] += 1
+
+        if self.dataframe_type == "pandas":
+            dgb = df.groupby("branch")
+            df["ju"] = df.jl
+            for branch, idx in dgb.indices.items():
+                if branch == -1:  # 'P':
+                    df.loc[idx, "ju"] -= 1
+                if branch == 1:  #'R':
+                    df.loc[idx, "ju"] += 1
+        elif self.dataframe_type == "vaex":
+
+            def fun(branch, j):
+                return j + branch
+
+            df["ju"] = df.apply(f=fun, arguments=[df.branch, df.ju])
 
         return None
 
@@ -1559,25 +1567,44 @@ class BaseFactory(DatabankLoader):
         if "iso" in df:  # multiple isotopes in database
             id = df.attrs["id"]
             dgb = df.groupby(by=["iso"])
-            for (iso), idx in dgb.indices.items():
-                _gs = gs(id, iso)
-                if isinstance(_gs, tuple):
-                    # Molecules that have alternating degeneracy.
-                    if id not in [2]:  # CO2
-                        raise NotImplementedError
-                    # normally we should find whether the rovibrational level is symmetric
-                    # or asymmetric. Here we just assume it's symmetric, because for
-                    # symmetric isotopes such as CO2(626), CO2 asymmetric levels
-                    # dont exist (gs=0) and they should not be in the line database.
-                    _gs = _gs[0]
+            if self.dataframe_type == "pandas":
+                for (iso), idx in dgb.indices.items():
+                    _gs = gs(id, iso)
+                    if isinstance(_gs, tuple):
+                        # Molecules that have alternating degeneracy.
+                        if id not in [2]:  # CO2
+                            raise NotImplementedError
+                        # normally we should find whether the rovibrational level is symmetric
+                        # or asymmetric. Here we just assume it's symmetric, because for
+                        # symmetric isotopes such as CO2(626), CO2 asymmetric levels
+                        # dont exist (gs=0) and they should not be in the line database.
+                        _gs = _gs[0]
 
-                dg = df.loc[idx]
-                _gi = gi(id, iso)
-                df.loc[idx, "grotu"] = dg.gju * _gs * _gi
-                df.loc[idx, "grotl"] = dg.gjl * _gs * _gi
+                    dg = df.loc[idx]
+                    _gi = gi(id, iso)
+                    df.loc[idx, "grotu"] = dg.gju * _gs * _gi
+                    df.loc[idx, "grotl"] = dg.gjl * _gs * _gi
 
-                if radis.config["DEBUG_MODE"]:
-                    assert (df.loc[idx, "iso"] == iso).all()
+                    if radis.config["DEBUG_MODE"]:
+                        assert (df.loc[idx, "iso"] == iso).all()
+            elif self.dataframe_type == "vaex":
+
+                def grot(gj):
+                    _gs = gs(id, iso)
+                    if isinstance(_gs, tuple):
+                        # Molecules that have alternating degeneracy.
+                        if id not in [2]:  # CO2
+                            raise NotImplementedError
+                        # normally we should find whether the rovibrational level is symmetric
+                        # or asymmetric. Here we just assume it's symmetric, because for
+                        # symmetric isotopes such as CO2(626), CO2 asymmetric levels
+                        # dont exist (gs=0) and they should not be in the line database.
+                        _gs = _gs[0]
+                    _gi = gi(id, iso)
+                    return gj * _gs * _gi
+
+                df["grotu"] = df.apply(f=grot, argumensts=[df.grotu])
+                df["grotl"] = df.apply(f=grot, argumensts=[df.grotl])
 
         else:
             id = df.attrs["id"]
@@ -1961,7 +1988,12 @@ class BaseFactory(DatabankLoader):
             df["shiftwav"] = df.wav
 
         # Sorted lines is needed for sparse wavenumber range algorithm.
-        df.sort_values("shiftwav", inplace=True)
+        if self.dataframe_type == "pandas":
+            df.sort_values("shiftwav", inplace=True)
+        elif self.dataframe_type == "vaex":
+            attrs = df.attrs
+            self.df1 = df.sort("shiftwav")
+            self.df1.attrs = attrs
 
         self.profiler.stop("calc_lineshift", "Calculated lineshift")
 
@@ -3214,26 +3246,32 @@ class BaseFactory(DatabankLoader):
         # Estimate error being made:
         if self.warnings["LinestrengthCutoffWarning"] != "ignore":
 
-            error = df.S[b].sum() / df.S.sum() * 100
+            if self.dataframe_type == "vaex":
+                error_cutoff = df[b].sum(df[b].S) / df.sum(df.S) * 100
+            else:
+                error_cutoff = df.S[b].sum() / df.S.sum() * 100
 
             if verbose >= 2:
                 print(
                     "Discarded {0:.2f}% of lines (linestrength<{1}cm-1/(#.cm-2))".format(
-                        Nlines_cutoff / len(df.S) * 100, cutoff
+                        Nlines_cutoff / len(df) * 100, cutoff
                     )
-                    + " Estimated error: {0:.2f}%".format(error)
+                    + " Estimated error: {0:.2f}%".format(error_cutoff)
                 )
-            if error > self.misc.warning_linestrength_cutoff:
+            if error_cutoff > self.misc.warning_linestrength_cutoff:
                 self.warn(
                     "Estimated error after discarding lines is large: {0:.2f}%".format(
-                        error
+                        error_cutoff
                     )
                     + ". Consider reducing cutoff",
                     "LinestrengthCutoffWarning",
                 )
 
         try:
-            assert sum(~b) > 0
+            if self.dataframe_type == "pandas":
+                assert sum(~b) > 0
+            elif self.dataframe_type == "vaex":
+                assert (~b).sum() > 0
         except AssertionError as err:
             self.plot_linestrength_hist(cutoff=cutoff)
             raise AssertionError(
@@ -3245,7 +3283,14 @@ class BaseFactory(DatabankLoader):
             ) from err
 
         # update df1:
-        self.df1 = pd.DataFrame(df[~b])
+        if self.dataframe_type == "pandas":
+            self.df1 = pd.DataFrame(df[~b])
+        elif self.dataframe_type == "vaex":
+            self.df1 = df[
+                ~b
+            ].materialize()  # If materialized is used time taken is reduced but memory efficiency is slightly reduced.
+            self.df1.attrs = df.attrs
+
         #        df.drop(b.index, inplace=True)   # performance: was not faster
         # ... @dev performance: quite long to select here, but I couldn't find a faster
         # ... alternative
@@ -3341,16 +3386,16 @@ class BaseFactory(DatabankLoader):
                 limit = mem / 2  # 50 % of user RAM
 
             # Note: the difference between deep=True and deep=False is around 4 times
+            if self.dataframe_type == "pandas":
+                df_size = self.df1.memory_usage(deep=False).sum()
 
-            df_size = self.df1.memory_usage(deep=False).sum()
-
-            if df_size > limit:
-                self.warn(
-                    "Line database is large: {0:.0f} Mb".format(df_size * 1e-6)
-                    + ". Consider using save_memory "
-                    + "option, if you don't need to reuse this factory to calculate new spectra",
-                    "MemoryUsageWarning",
-                )
+                if df_size > limit:
+                    self.warn(
+                        "Line database is large: {0:.0f} Mb".format(df_size * 1e-6)
+                        + ". Consider using save_memory "
+                        + "option, if you don't need to reuse this factory to calculate new spectra",
+                        "MemoryUsageWarning",
+                    )
         except ValueError:  # had some unexplained ValueError: __sizeof__() should return >= 0
             pass
 

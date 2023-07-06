@@ -45,6 +45,7 @@ def fetch_astroquery(
     cache=True,
     expected_metadata={},
     engine="pytables-fixed",
+    output="pandas",
 ):
     """Download a HITRAN line database to a Pandas DataFrame.
 
@@ -76,7 +77,8 @@ def fetch_astroquery(
         if ``cache=True``, check that the metadata in the cache file correspond
         to these attributes. Arguments ``molecule``, ``isotope``, ``wmin``, ``wmax``
         are already added by default.
-
+    output : str
+        specifies the type of returned data
     References
     ----------
     .. [1] `Astroquery <https://astroquery.readthedocs.io>`_
@@ -222,10 +224,19 @@ def fetch_astroquery(
             raise ValueError(
                 "Error while parsing HITRAN output : {}".format(response.text)
             ) from err
-        df = tbl.to_pandas()
-        df = df.rename(columns=rename_columns)
+        if output == "pandas":
+            df = tbl.to_pandas()
+            df = df.rename(columns=rename_columns)
+        elif output == "vaex":
+            import vaex
+
+            df = vaex.from_astropy_table(tbl)
+            df = df.rename(columns=rename_columns)
     else:
         df = pd.DataFrame(columns=list(rename_columns.values()))
+        import vaex
+
+        df = vaex.from_pandas(df)
 
     # Cast type to float64
     cast_type = {
