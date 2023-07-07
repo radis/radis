@@ -910,7 +910,7 @@ class BroadenFactory(BaseFactory):
                             + " not present in database using broadening coefficient of air instead. \n!!! Solution: Try using once `use_cached='regen'' in calc_spectrum!!!",
                             category="AccuracyWarning",
                         )
-            elif self.dataframe == "vaex":
+            elif self.dataframe_type == "vaex":
                 try:
                     diluent_broadening_coeff["gamma_" + key.lower()] = df[
                         "gamma_" + key.lower()
