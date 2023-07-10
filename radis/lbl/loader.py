@@ -1178,16 +1178,6 @@ class DatabankLoader(object):
                     extra_params=extra_params,
                 )
                 self.params.dbpath = ",".join(local_paths)
-                if output == "vaex" and df.length() < 900000:
-                    df_pandas = df.to_pandas_df()
-                    df.close()
-                    df = df_pandas
-                    output = "pandas"
-                    self.dataframe_type = "pandas"
-                    if self.verbose >= 1:
-                        print(
-                            "The spectrum is calculated with pandas (not vaex) which is faster for databases with less than 9e5 entries"
-                        )
 
                 df.attrs = {}
 
@@ -1281,17 +1271,6 @@ class DatabankLoader(object):
                 parallel=parallel,
             )
             self.params.dbpath = ",".join(local_paths)
-
-            if output == "vaex" and df.length() < 900000:
-                df_pandas = df.to_pandas_df()
-                df.close()
-                df = df_pandas
-                output = "pandas"
-                self.dataframe_type = "pandas"
-                if self.verbose >= 1:
-                    print(
-                        "The spectrum is calculated with pandas (not vaex) which is faster for databases with less than 9e5 entries"
-                    )
 
             # ... explicitely write all isotopes based on isotopes found in the database
             if isotope == "all":
@@ -1396,17 +1375,6 @@ class DatabankLoader(object):
 
                     df = vaex.concat(Frames)  # reindex
                     df.attrs = attrs
-                    if df.length() < 900000:
-                        df_pandas = df.to_pandas_df()
-                        df.close()
-                        df = df_pandas
-                        df.attrs = attrs
-                        output = "pandas"
-                        self.dataframe_type = "pandas"
-                        if self.verbose >= 1:
-                            print(
-                                "The spectrum is calculated with pandas (not vaex) which is faster for databases with less than 9e5 entries"
-                            )
 
                     self.params.dbpath = ",".join(local_paths)
                 else:
@@ -1449,17 +1417,6 @@ class DatabankLoader(object):
                 parallel=parallel,
             )
             self.params.dbpath = ",".join(local_paths)
-
-            if output == "vaex" and df.length() < 900000:
-                df_pandas = df.to_pandas_df()
-                df.close()
-                df = df_pandas
-                output = "pandas"
-                self.dataframe_type = "pandas"
-                if self.verbose >= 1:
-                    print(
-                        "The spectrum is calculated with pandas (not vaex) which is faster for databases with less than 9e5 entries"
-                    )
 
             # ... explicitely write all isotopes based on isotopes found in the database
             if isotope == "all":
