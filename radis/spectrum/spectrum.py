@@ -2160,18 +2160,24 @@ class Spectrum(object):
             ax.legend()
         fix_style()
 
-        from radis.phys.convert import cm2nm, nm2cm, div_safe
+        from radis.phys.convert import cm2nm, div_safe, nm2cm
 
         if "cm⁻¹" in ylabel:
-            secx = ax.secondary_xaxis("top", functions=(div_safe(cm2nm), div_safe(nm2cm)))
+            secx = ax.secondary_xaxis(
+                "top", functions=(div_safe(cm2nm), div_safe(nm2cm))
+            )
             secx.set_xlabel("Wavelength (nm)")
         elif "nm" in ylabel:
             if wunit == "nm" or wunit == "nm_air":
-                secx = ax.secondary_xaxis("top", functions=(div_safe(nm2cm), div_safe(cm2nm)))
+                secx = ax.secondary_xaxis(
+                    "top", functions=(div_safe(nm2cm), div_safe(cm2nm))
+                )
             else:
                 from radis.phys.convert import cm2nm_air, nm_air2cm
 
-                secx = ax.secondary_xaxis("top", functions=(div_safe(nm_air2cm), div_safe(cm2nm_air)))
+                secx = ax.secondary_xaxis(
+                    "top", functions=(div_safe(nm_air2cm), div_safe(cm2nm_air))
+                )
             secx.set_xlabel("wavenumber (cm⁻¹)")
 
         # Add plotting tools
