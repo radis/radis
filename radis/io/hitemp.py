@@ -141,7 +141,7 @@ def fetch_hitemp(
 
     # Delete files if needed:
     relevant_files = ldb.keep_only_relevant(
-        local_files, load_wavenum_min, load_wavenum_max
+        local_files, load_wavenum_min, load_wavenum_max, verbose=(verbose > 1)
     )
     if cache == "regen":
         ldb.remove_local_files(relevant_files)
@@ -153,7 +153,7 @@ def fetch_hitemp(
     # Get missing files
     download_files = ldb.get_missing_files(local_files)
     download_files = ldb.keep_only_relevant(
-        download_files, load_wavenum_min, load_wavenum_max
+        download_files, load_wavenum_min, load_wavenum_max, verbose=(verbose > 1)
     )
     # do not re-download files if they exist in another format :
     if engine in ["vaex", "auto", "default"]:
@@ -204,7 +204,7 @@ def fetch_hitemp(
 
     # Load and return
     files_loaded = ldb.keep_only_relevant(
-        local_files, load_wavenum_min, load_wavenum_max
+        local_files, load_wavenum_min, load_wavenum_max, verbose=verbose
     )
 
     if isotope and type(isotope) == int:
