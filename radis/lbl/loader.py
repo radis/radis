@@ -931,6 +931,7 @@ class DatabankLoader(object):
         load_columns="equilibrium",
         parallel=True,
         extra_params=None,
+        verbose=True,
     ):
         """Fetch the latest files from [HITRAN-2020]_, [HITEMP-2010]_ (or newer),
         [ExoMol-2020]_  or [GEISA-2020] , and store them locally in memory-mapping
@@ -1288,6 +1289,10 @@ class DatabankLoader(object):
                     "Please define isotope explicitely (cannot use 'all' with fetch_databank('exomol'))"
                 )
             isotope_list = self._get_isotope_list()
+
+            # Check the specific ExoMol database and print ONCE the list of databases available
+            if verbose and (database is None or database == "default"):
+                print("Using the recommended ExoMol databases for {}".format(molecule))
 
             local_paths = []
             frames = []  # lines for all isotopes

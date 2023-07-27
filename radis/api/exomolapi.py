@@ -223,7 +223,7 @@ def read_trans(transf, engine="vaex"):
                 )
             except Exception as err:
                 raise Exception(
-                    f"Error reading {transf}. Maybe the file was corrupted during download ? You can try to delete it."
+                    f"Error reading {transf}. Either the file does not exist on exomol.com, or was corrupted? You can try to delete it."
                 ) from err
     elif engine == "csv":
         try:  # bz2 compression
@@ -240,7 +240,7 @@ def read_trans(transf, engine="vaex"):
                 )
             except Exception as err:
                 raise Exception(
-                    f"Error reading {transf}. Maybe the file was corrupted during download ? You can try to delete it."
+                    f"Error reading {transf}. Either the file does not exist on exomol.com, or was corrupted? You can try to delete it."
                 ) from err
     else:
         raise NotImplementedError(engine)
@@ -365,7 +365,7 @@ def read_states(
 
             except Exception as err:
                 raise Exception(
-                    f"Error reading {statesf}. Maybe the file was corrupted during download ? You can try to delete it."
+                    f"Error reading {statesf}. Either the file does not exist on exomol.com, or was corrupted? You can try to delete it."
                 ) from err
     elif engine == "csv":
         try:
@@ -1106,7 +1106,6 @@ class MdbExomol(DatabaseManager):
         t0 = self.path.parents[0].stem
         molec = t0 + "__" + str(self.path.stem)
         self.bkgdatm = bkgdatm
-        print("Background atmosphere: ", self.bkgdatm)
         molecbroad = t0 + "__" + self.bkgdatm
 
         self.crit = crit
@@ -1237,14 +1236,28 @@ class MdbExomol(DatabaseManager):
                 self.trans_file.append(trans_file)
                 self.num_tag.append(dic_def["numtag"][i])
 
+        # some verbose
+        if verbose:
+            print("Molecule: ", molecule)
+            print("Isotopologue: ", self.isotope_fullname)
+            print("Background atmosphere: ", self.bkgdatm)
+            print("ExoMol database: ", database)
+            print("Local folder: ", self.path)
+            print("Transition files: ")
+
         # Look-up missing parameters and write file
         # -----------------------------------------
-
         for trans_file, num_tag in zip(self.trans_file, self.num_tag):
-            print("Reading", trans_file)
+            if verbose:
+                print(
+                    "\t => File {}".format(
+                        os.path.splitext(os.path.basename((trans_file)))[0]
+                    )
+                )
+
             if cache == "regen" and mgr.cache_file(trans_file).exists():
                 if verbose:
-                    print("Removing existing file ", mgr.cache_file(trans_file))
+                    print("\t\t => `regen = True`. Removing the file")
                 os.remove(mgr.cache_file(trans_file))
 
             if not mgr.cache_file(trans_file).exists():
@@ -1254,15 +1267,18 @@ class MdbExomol(DatabaseManager):
                     )
 
                 if not trans_file.exists():
-                    self.download(molec, extension=[".trans.bz2"], numtag=num_tag)
-                    # TODO: add option to delete file at the end
+                    self.download(
+                        molec, extension=[".trans.bz2"], numtag=num_tag, verbose=verbose
+                    )
 
                 print(
-                    f"Note: Caching line transition data to the {engine} format. After the second time, it will become much faster."
+                    f"\t\t => Caching the *.trans.bz2 file to the {engine} (*.h5) format. After the second time, it will become much faster."
                 )
                 trans = read_trans(
                     trans_file, engine="vaex" if engine == "vaex" else "csv"
                 )
+                # TODO: add option to delete file at the end
+                print(f"\t\t => You can deleted the 'trans.bz2' file by hand.")
 
                 # Complete transition data with lookup on upper & lower state :
                 # In particular, compute gup and elower
@@ -1293,37 +1309,9 @@ class MdbExomol(DatabaseManager):
 
                 mgr.write(mgr.cache_file(trans_file), trans)
 
-        # Database ready to be loaded.
-        # Proceed with mdb.load()
-        # self.set_broadening()
-        #
-
-    # def set_broadening_coef(self, df, alpha_ref_def=None, n_Texp_def=None, output=None):
-    #     """setting broadening parameters
-
-    #     Parameters
-    #     ----------
-    #     df: Data Frame
-    #     alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
-    #     n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
-
-    #     Returns
-    #     -------
-    #     None. Store values in Data Frame.
-
-    #     """
-    #     self.compute_broadening(
-    #         jlower=df["jlower"],
-    #         jupper=df["jupper"],
-    #         alpha_ref_def=alpha_ref_def,
-    #         n_Texp_def=n_Texp_def,
-    #         output=output,
-    #     )
-    #     # Add values
-    #     self.add_column(df, "alpha_ref", self.alpha_ref)
-    #     self.add_column(df, "n_Texp", self.n_Texp)
-
-    def set_broadening_coef(self, df, alpha_ref_def=None, n_Texp_def=None, output=None):
+    def set_broadening_coef(
+        self, df, alpha_ref_def=None, n_Texp_def=None, output=None, verbose=False
+    ):
         """setting broadening parameters
 
         Parameters
@@ -1345,12 +1333,21 @@ class MdbExomol(DatabaseManager):
 
         if self.broadf:
             try:
-                print(".broad is used.")
+                raise FileNotFoundError
                 bdat = read_broad(self.broad_file)
+                if verbose > 1:
+                    print(
+                        "The file `{}` is used.".format(
+                            os.path.basename(self.broad_file)
+                        )
+                    )
             except FileNotFoundError:
-                print(
-                    "Warning: Cannot load .broad. The default broadening parameters are used."
+                warnings.warn(
+                    "Could not load `{}`. The default broadening parameters are used.\n".format(
+                        os.path.basename(self.broad_file)
+                    )
                 )
+
                 self.alpha_ref = np.array(
                     self.alpha_ref_def * np.ones_like(df["jlower"])
                 )
@@ -1391,71 +1388,6 @@ class MdbExomol(DatabaseManager):
         self.add_column(df, "alpha_ref", self.alpha_ref)
         self.add_column(df, "n_Texp", self.n_Texp)
 
-    # def compute_broadening(
-    #     self, jlower, jupper, alpha_ref_def=None, n_Texp_def=None, output=None
-    # ):
-    #     """computing broadening parameters
-
-    #     Parameters
-    #     ----------
-    #     jlower: jlower array
-    #     jupper: jupper array
-    #     alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
-    #     n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
-
-    #     Returns
-    #     -------
-    #     None. Store values in self.n_Texp and self.alpha_ref.
-
-    #     """
-
-    #     if alpha_ref_def:
-    #         self.alpha_ref_def = alpha_ref_def
-    #     if n_Texp_def:
-    #         self.n_Texp_def = n_Texp_def
-
-    #     if self.broadf:
-    #         try:
-    #             print(".broad is used.")
-    #             bdat = read_broad(self.broad_file)
-    #             codelv = check_bdat(bdat)
-    #         except FileNotFoundError:
-    #             print(
-    #                 "Warning: Cannot load .broad. The default broadening parameters are used."
-    #             )
-    #             self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(jlower))
-    #             self.n_Texp = np.array(self.n_Texp_def * np.ones_like(jlower))
-    #         else:
-    #             print("Broadening code level=", codelv)
-    #             if codelv == "a0":
-    #                 j2alpha_ref, j2n_Texp = make_j2b(
-    #                     bdat,
-    #                     alpha_ref_default=self.alpha_ref_def,
-    #                     n_Texp_default=self.n_Texp_def,
-    #                     jlower_max=jlower.max(),
-    #                 )
-    #                 self.alpha_ref = np.array(j2alpha_ref[jlower])
-    #                 self.n_Texp = np.array(j2n_Texp[jlower])
-    #             elif codelv == "a1":
-    #                 j2alpha_ref, j2n_Texp = make_j2b(
-    #                     bdat,
-    #                     alpha_ref_default=self.alpha_ref_def,
-    #                     n_Texp_default=self.n_Texp_def,
-    #                     jlower_max=np.max(jlower),
-    #                 )
-    #                 jj2alpha_ref, jj2n_Texp = make_jj2b(
-    #                     bdat,
-    #                     j2alpha_ref_def=j2alpha_ref,
-    #                     j2n_Texp_def=j2n_Texp,
-    #                     jupper_max=np.max(jupper),
-    #                 )
-    #                 self.alpha_ref = np.array(jj2alpha_ref[jlower, jupper])
-    #                 self.n_Texp = np.array(jj2n_Texp[jlower, jupper])
-    #     else:
-    #         print("The default broadening parameters are used.")
-    #         self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(jlower))
-    #         self.n_Texp = np.array(self.n_Texp_def * np.ones_like(jlower))
-
     def QT_interp(self, T):
         """interpolated partition function
 
@@ -1484,7 +1416,7 @@ class MdbExomol(DatabaseManager):
         """
         return self.QT_interp(T) / self.QT_interp(self.Tref)
 
-    def download(self, molec, extension, numtag=None):
+    def download(self, molec, extension, numtag=None, verbose=False):
         """Downloading Exomol files
 
         Parameters
@@ -1503,7 +1435,7 @@ class MdbExomol(DatabaseManager):
 
         tag = molec.split("__")
         molname_simple = e2s(tag[0])
-
+        # TODO: add progress bar
         for ext in extension:
             if ext == ".trans.bz2" and numtag is not None:
                 ext = "__" + numtag + ext
@@ -1522,12 +1454,10 @@ class MdbExomol(DatabaseManager):
             for pfname in pfname_arr:
                 pfpath = url + pfname
                 os.makedirs(str(self.path), exist_ok=True)
-                print(
-                    "Downloading "
-                    + pfpath
-                    + " and saving as "
-                    + str(self.path / pfname)
-                )
+                if verbose:
+                    print(
+                        "\t\t => Downloading from {}".format(pfpath)
+                    )  # modify indent accordingly print in __init__
                 try:
                     urllib.request.urlretrieve(pfpath, str(self.path / pfname))
                 except HTTPError:

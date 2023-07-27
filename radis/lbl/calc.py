@@ -798,7 +798,7 @@ def _calc_spectrum_one_molecule(
         conditions["parse_local_global_quanta"] = (not _equilibrium) or export_lines
 
         # Finally, LOAD :
-        sf.fetch_databank(**conditions)
+        sf.fetch_databank(**conditions, verbose=verbose)
     elif exists(databank):
         conditions = {
             "path": databank,
