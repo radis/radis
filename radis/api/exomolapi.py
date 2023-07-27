@@ -1298,7 +1298,32 @@ class MdbExomol(DatabaseManager):
         # self.set_broadening()
         #
 
-    def set_broadening(self, df, alpha_ref_def=None, n_Texp_def=None, output=None):
+    # def set_broadening_coef(self, df, alpha_ref_def=None, n_Texp_def=None, output=None):
+    #     """setting broadening parameters
+
+    #     Parameters
+    #     ----------
+    #     df: Data Frame
+    #     alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
+    #     n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
+
+    #     Returns
+    #     -------
+    #     None. Store values in Data Frame.
+
+    #     """
+    #     self.compute_broadening(
+    #         jlower=df["jlower"],
+    #         jupper=df["jupper"],
+    #         alpha_ref_def=alpha_ref_def,
+    #         n_Texp_def=n_Texp_def,
+    #         output=output,
+    #     )
+    #     # Add values
+    #     self.add_column(df, "alpha_ref", self.alpha_ref)
+    #     self.add_column(df, "n_Texp", self.n_Texp)
+
+    def set_broadening_coef(self, df, alpha_ref_def=None, n_Texp_def=None, output=None):
         """setting broadening parameters
 
         Parameters
@@ -1312,34 +1337,6 @@ class MdbExomol(DatabaseManager):
         None. Store values in Data Frame.
 
         """
-        self.compute_broadening(
-            jlower=df["jlower"],
-            jupper=df["jupper"],
-            alpha_ref_def=alpha_ref_def,
-            n_Texp_def=n_Texp_def,
-            output=output,
-        )
-        # Add values
-        self.add_column(df, "alpha_ref", self.alpha_ref)
-        self.add_column(df, "n_Texp", self.n_Texp)
-
-    def compute_broadening(
-        self, jlower, jupper, alpha_ref_def=None, n_Texp_def=None, output=None
-    ):
-        """computing broadening parameters
-
-        Parameters
-        ----------
-        jlower: jlower array
-        jupper: jupper array
-        alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
-        n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
-
-        Returns
-        -------
-        None. Store values in self.n_Texp and self.alpha_ref.
-
-        """
 
         if alpha_ref_def:
             self.alpha_ref_def = alpha_ref_def
@@ -1350,6 +1347,15 @@ class MdbExomol(DatabaseManager):
             try:
                 print(".broad is used.")
                 bdat = read_broad(self.broad_file)
+            except FileNotFoundError:
+                print(
+                    "Warning: Cannot load .broad. The default broadening parameters are used."
+                )
+                self.alpha_ref = np.array(
+                    self.alpha_ref_def * np.ones_like(df["jlower"])
+                )
+                self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df["jlower"]))
+            else:
                 codelv = check_bdat(bdat)
                 print("Broadening code level=", codelv)
                 if codelv == "a0":
@@ -1357,36 +1363,98 @@ class MdbExomol(DatabaseManager):
                         bdat,
                         alpha_ref_default=self.alpha_ref_def,
                         n_Texp_default=self.n_Texp_def,
-                        jlower_max=np.max(jlower),
+                        jlower_max=df["jlower"].max(),
                     )
-                    self.alpha_ref = np.array(j2alpha_ref[jlower])
-                    self.n_Texp = np.array(j2n_Texp[jlower])
+                    self.alpha_ref = j2alpha_ref[df["jlower"].values]
+                    self.n_Texp = j2n_Texp[df["jlower"].values]
                 elif codelv == "a1":
                     j2alpha_ref, j2n_Texp = make_j2b(
                         bdat,
                         alpha_ref_default=self.alpha_ref_def,
                         n_Texp_default=self.n_Texp_def,
-                        jlower_max=np.max(jlower),
+                        jlower_max=np.max(df["jlower"]),
                     )
                     jj2alpha_ref, jj2n_Texp = make_jj2b(
                         bdat,
                         j2alpha_ref_def=j2alpha_ref,
                         j2n_Texp_def=j2n_Texp,
-                        jupper_max=np.max(jupper),
+                        jupper_max=np.max(df["jupper"]),
                     )
-                    self.alpha_ref = np.array(jj2alpha_ref[jlower, jupper])
-                    self.n_Texp = np.array(jj2n_Texp[jlower, jupper])
-            except FileNotFoundError:
-                print(
-                    "Warning: Cannot load .broad. The default broadening parameters are used."
-                )
-                self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(jlower))
-                self.n_Texp = np.array(self.n_Texp_def * np.ones_like(jlower))
-
+                    self.alpha_ref = np.array(jj2alpha_ref[df["jlower"], df["jupper"]])
+                    self.n_Texp = np.array(jj2n_Texp[df["jlower"], df["jupper"]])
         else:
             print("The default broadening parameters are used.")
-            self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(jlower))
-            self.n_Texp = np.array(self.n_Texp_def * np.ones_like(jlower))
+            self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(df["jlower"]))
+            self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df["jlower"]))
+
+        # Add values
+        self.add_column(df, "alpha_ref", self.alpha_ref)
+        self.add_column(df, "n_Texp", self.n_Texp)
+
+    # def compute_broadening(
+    #     self, jlower, jupper, alpha_ref_def=None, n_Texp_def=None, output=None
+    # ):
+    #     """computing broadening parameters
+
+    #     Parameters
+    #     ----------
+    #     jlower: jlower array
+    #     jupper: jupper array
+    #     alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
+    #     n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
+
+    #     Returns
+    #     -------
+    #     None. Store values in self.n_Texp and self.alpha_ref.
+
+    #     """
+
+    #     if alpha_ref_def:
+    #         self.alpha_ref_def = alpha_ref_def
+    #     if n_Texp_def:
+    #         self.n_Texp_def = n_Texp_def
+
+    #     if self.broadf:
+    #         try:
+    #             print(".broad is used.")
+    #             bdat = read_broad(self.broad_file)
+    #             codelv = check_bdat(bdat)
+    #         except FileNotFoundError:
+    #             print(
+    #                 "Warning: Cannot load .broad. The default broadening parameters are used."
+    #             )
+    #             self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(jlower))
+    #             self.n_Texp = np.array(self.n_Texp_def * np.ones_like(jlower))
+    #         else:
+    #             print("Broadening code level=", codelv)
+    #             if codelv == "a0":
+    #                 j2alpha_ref, j2n_Texp = make_j2b(
+    #                     bdat,
+    #                     alpha_ref_default=self.alpha_ref_def,
+    #                     n_Texp_default=self.n_Texp_def,
+    #                     jlower_max=jlower.max(),
+    #                 )
+    #                 self.alpha_ref = np.array(j2alpha_ref[jlower])
+    #                 self.n_Texp = np.array(j2n_Texp[jlower])
+    #             elif codelv == "a1":
+    #                 j2alpha_ref, j2n_Texp = make_j2b(
+    #                     bdat,
+    #                     alpha_ref_default=self.alpha_ref_def,
+    #                     n_Texp_default=self.n_Texp_def,
+    #                     jlower_max=np.max(jlower),
+    #                 )
+    #                 jj2alpha_ref, jj2n_Texp = make_jj2b(
+    #                     bdat,
+    #                     j2alpha_ref_def=j2alpha_ref,
+    #                     j2n_Texp_def=j2n_Texp,
+    #                     jupper_max=np.max(jupper),
+    #                 )
+    #                 self.alpha_ref = np.array(jj2alpha_ref[jlower, jupper])
+    #                 self.n_Texp = np.array(jj2n_Texp[jlower, jupper])
+    #     else:
+    #         print("The default broadening parameters are used.")
+    #         self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(jlower))
+    #         self.n_Texp = np.array(self.n_Texp_def * np.ones_like(jlower))
 
     def QT_interp(self, T):
         """interpolated partition function
