@@ -261,7 +261,7 @@ def fetch_exomol(
         )
 
     # Add broadening
-    mdb.set_broadening(df, output=output)
+    mdb.set_broadening_coef(df, output=output)
 
     # Specific for RADIS :
     # ... Get RADIS column names:
