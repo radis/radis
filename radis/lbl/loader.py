@@ -96,7 +96,9 @@ from radis.misc.warning import (
 from radis.phys.convert import cm2nm
 from radis.tools.database import SpecDatabase
 from radis.tools.track_ref import RefTracker
-
+from radis.api.kuruczapi import AdBKurucz
+import os
+import periodictable
 KNOWN_DBFORMAT = [
     "hitran",
     "hitemp",
@@ -105,6 +107,7 @@ KNOWN_DBFORMAT = [
     "hitemp-radisdb",
     "hdf5-radisdb",
     "geisa",
+    "kurucz"
 ]
 """list: Known formats for Line Databases:
 
@@ -162,6 +165,7 @@ drop_auto_columns_for_dbformat = {
     "hdf5-radisdb": [],
     "hitemp-radisdb": [],
     "geisa": [],
+    "kurucz":[],
 }
 """ dict: drop these columns if using ``drop_columns='auto'`` in load_databank
 Based on the value of ``dbformat=``, some of these columns won't be used.
@@ -395,6 +399,8 @@ class Input(ConditionDict):
         "wavelength_min",
         "wavenum_max",
         "wavenum_min",
+        "atom",
+        "ionization_state",
     ]
 
     def __init__(self):
@@ -420,6 +426,8 @@ class Input(ConditionDict):
         )
         self.wavenum_max = None  #: str: wavenumber max (cm-1)
         self.wavenum_min = None  #: str: wavenumber min (cm-1)
+        self.atom=None
+        self.ionization_state=None
 
 
 # TO-DO: these error estimations are horribly outdated...
@@ -2299,6 +2307,24 @@ class DatabankLoader(object):
                     elif dbformat in ["exomol"]:
                         # self.reftracker.add("10.1016/j.jqsrt.2020.107228", "line database")  # [ExoMol-2020]
                         raise NotImplementedError("use fetch_databank('exomol')")
+                    elif dbformat in ["kurucz"]:
+                        kurucz = AdBKurucz()
+                        atom = self.input.atom
+                        ionization_state = self.input.ionization_state
+                        atomic_number = getattr(periodictable, atom).number
+                        kurucz_file = f"gf{atomic_number}{ionization_state}.all"
+                        hdf5_file = f"gf{atomic_number}{ionization_state}.hdf5"
+                        kurucz.url = kurucz.get_url(atomic_number, ionization_state) # <--- Ici, vous devez affecter l'url à l'objet kurucz
+
+                        # If hdf5 file exists, read data from it
+                        if os.path.exists(hdf5_file):
+                            print("HDF5 file already exists, reading data from it.")
+                            df = kurucz.read_hdf5(hdf5_file)
+                        else :
+                            kuruczf = kurucz.download_file()
+                            df = kurucz.read_kurucz(kuruczf)
+                            kurucz.store_hdf5(df, kurucz.hdf5_file)
+                            df = kurucz.read_hdf5(hdf5_file)
 
                     else:
                         raise ValueError("Unknown dbformat: {0}".format(dbformat))
@@ -2325,6 +2351,7 @@ class DatabankLoader(object):
                 # Crop to the wavenumber of interest
                 # TODO : is it still needed since we use load_only_wavenum_above ?
                 df = df[(df.wav >= wavenum_min) & (df.wav <= wavenum_max)]
+                print(df)
 
                 if __debug__:
                     if len(df) == 0:
@@ -2381,7 +2408,7 @@ class DatabankLoader(object):
         minwavdb = df.wav.min()
 
         # ... Explicitely write molecule if not given
-        if self.input.molecule in [None, ""]:
+        if self.input.molecule in [None, ""] and self.input.atom not in [None,""]:
             id_set = df.id.unique()
             if len(id_set) > 1:
                 raise NotImplementedError(

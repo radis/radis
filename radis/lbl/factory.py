@@ -104,6 +104,9 @@ from radis.phys.units import convert_universal
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.spectrum import Spectrum
+from radis.api.kuruczapi import AdBKurucz
+import periodictable
+from periodictable import elements
 
 c_cm = c * 100
 
@@ -397,11 +400,14 @@ class SpectrumFactory(BandFactory):
         parsum_mode="full summation",
         verbose=True,
         warnings=True,
+        atom=None,
+        ionization_state=None,
         save_memory=False,
         export_populations=None,
         export_lines=False,
         emulate_gpu=False,
         diluent="air",
+        format=None,
         **kwargs,
     ):
 
@@ -545,6 +551,8 @@ class SpectrumFactory(BandFactory):
             isotope  # if 'all', will be overwritten after reading database
         )
         self.input.self_absorption = self_absorption
+        self.input.atom = atom
+        self.input.ionization_state= ionization_state
 
         # Initialize computation variables
         self.params.wstep = wstep
@@ -626,6 +634,8 @@ class SpectrumFactory(BandFactory):
         self.SpecDatabase = None  # the database to store spectra. Not to be confused
         # with the databank where lines are stored
         self.database = None  # path to previous database
+        self.format=format
+        
         # Warnings
         # --------
 
@@ -732,223 +742,381 @@ class SpectrumFactory(BandFactory):
         """
         # %% Preprocessing
         # --------------------------------------------------------------------
+        if self.input.atom == None : 
 
-        # Check inputs
-        if not self.input.self_absorption:
-            raise ValueError(
-                "Use non_eq_spectrum(Tgas, Tgas) to calculate spectra "
-                + "without self_absorption"
-            )
-
-        # Convert units
-        Tgas = convert_and_strip_units(Tgas, u.K)
-        path_length = convert_and_strip_units(path_length, u.cm)
-        pressure = convert_and_strip_units(pressure, u.bar)
-
-        # update defaults
-        if path_length is not None:
-            self.input.path_length = path_length
-        if mole_fraction is not None:
-            self.input.mole_fraction = mole_fraction
-        if pressure is not None:
-            self.input.pressure_mbar = pressure * 1e3
-        if not is_float(Tgas):
-            raise ValueError(
-                "Tgas should be float or Astropy unit. Got {0}".format(Tgas)
-            )
-        self.input.rot_distribution = "boltzmann"  # equilibrium
-        self.input.vib_distribution = "boltzmann"  # equilibrium
-
-        # Get temperatures
-        self.input.Tgas = Tgas
-        self.input.Tvib = Tgas  # just for info
-        self.input.Trot = Tgas  # just for info
-
-        # Init variables
-        pressure_mbar = self.input.pressure_mbar
-        mole_fraction = self.input.mole_fraction
-        path_length = self.input.path_length
-        verbose = self.verbose
-
-        # New Profiler object
-        self._reset_profiler(verbose)
-
-        # Check variables
-        self._check_inputs(mole_fraction, max(flatten(Tgas)))
-
-        # Retrieve Spectrum from database if it exists
-        if self.autoretrievedatabase:
-            s = self._retrieve_from_database()
-            if s is not None:
-                return s  # exit function
-
-        # %% Start
-        # --------------------------------------------------------------------
-
-        self.profiler.start("spectrum_calculation", 1)
-        self.profiler.start("spectrum_calc_before_obj", 2)
-
-        # Check database, reset populations, create line dataframe to be scaled
-        # --------------------------------------------------------------------
-        self._check_line_databank()
-        self._reinitialize()  # creates scaled dataframe df1 from df0
-
-        # --------------------------------------------------------------------
-
-        # First calculate the linestrength at given temperature
-        self.calc_linestrength_eq(Tgas)  # scales S0 to S (equivalent to S0 in code)
-        self._cutoff_linestrength()
-
-        # ----------------------------------------------------------------------
-
-        # Calculate line shift
-        self.calc_lineshift()  # scales wav to shiftwav (equivalent to v0)
-
-        # ----------------------------------------------------------------------
-        # Line broadening
-
-        # ... generates molefraction for diluents
-        self._generate_diluent_molefraction(mole_fraction, diluent)
-
-        # ... calculate broadening  HWHM
-        self._calc_broadening_HWHM()
-
-        # ... generates all wstep related entities
-        self._generate_wavenumber_arrays()
-
-        # ... find weak lines and calculate semi-continuum (optional)
-        I_continuum = self.calculate_pseudo_continuum()
-        # ... apply lineshape and get absorption coefficient
-        # ... (this is the performance bottleneck)
-        wavenumber, abscoeff_v = self._calc_broadening()
-        #    :         :
-        #   cm-1    1/(#.cm-2)
-
-        # ... add semi-continuum (optional)
-        abscoeff_v = self._add_pseudo_continuum(abscoeff_v, I_continuum)
-        # Calculate output quantities
-        # ----------------------------------------------------------------------
-
-        self.profiler.start("calc_other_spectral_quan", 2)
-
-        # incorporate density of molecules (see equation (A.16) )
-        density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
-        #  :
-        # (#/cm3)
-
-        abscoeff = abscoeff_v * density  # cm-1
-        # ... # TODO: if the code is extended to multi-species, then density has to be added
-        # ... before lineshape broadening (as it would not be constant for all species)
-
-        # get absorbance (technically it's the optical depth `tau`,
-        #                absorbance `A` being `A = tau/ln(10)` )
-        absorbance = abscoeff * path_length
-        # Generate output quantities
-        transmittance_noslit = exp(-absorbance)
-        emissivity_noslit = 1 - transmittance_noslit
-        radiance_noslit = calc_radiance(
-            wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
-        )
-        assert self.units["abscoeff"] == "cm-1"
-
-        self.profiler.stop(
-            "calc_other_spectral_quan", "Calculated other spectral quantities"
-        )
-
-        # %% Export
-        # --------------------------------------------------------------------
-
-        self.profiler.stop(
-            "spectrum_calc_before_obj", "Spectrum calculated (before object generation)"
-        )
-
-        if verbose:  # if wstep='auto' must be after wstep is calculated
-            self.print_conditions("Calculating Equilibrium Spectrum")
-
-        self.profiler.start("generate_spectrum_obj", 2)
-
-        # Get conditions
-        conditions = self.get_conditions(add_config=True)
-        conditions.update(
-            {
-                "calculation_time": self.profiler.final[list(self.profiler.final)[-1]][
-                    "spectrum_calc_before_obj"
-                ],
-                "lines_calculated": self._Nlines_calculated,
-                "lines_cutoff": self._Nlines_cutoff,
-                "lines_in_continuum": self._Nlines_in_continuum,
-                "thermal_equilibrium": True,
-                "diluents": self._diluent,
-                "radis_version": version,
-                "spectral_points": (
-                    self.params.wavenum_max_calc - self.params.wavenum_min_calc
+            # Check inputs
+            if not self.input.self_absorption:
+                raise ValueError(
+                    "Use non_eq_spectrum(Tgas, Tgas) to calculate spectra "
+                    + "without self_absorption"
                 )
-                / self.params.wstep,
-                "profiler": dict(self.profiler.final),
-            }
-        )
-        if self.params.optimization != None:
+
+            # Convert units
+            Tgas = convert_and_strip_units(Tgas, u.K)
+            path_length = convert_and_strip_units(path_length, u.cm)
+            pressure = convert_and_strip_units(pressure, u.bar)
+
+            # update defaults
+            if path_length is not None:
+                self.input.path_length = path_length
+            if mole_fraction is not None:
+                self.input.mole_fraction = mole_fraction
+            if pressure is not None:
+                self.input.pressure_mbar = pressure * 1e3
+            if not is_float(Tgas):
+                raise ValueError(
+                    "Tgas should be float or Astropy unit. Got {0}".format(Tgas)
+                )
+            self.input.rot_distribution = "boltzmann"  # equilibrium
+            self.input.vib_distribution = "boltzmann"  # equilibrium
+
+            # Get temperatures
+            self.input.Tgas = Tgas
+            self.input.Tvib = Tgas  # just for info
+            self.input.Trot = Tgas  # just for info
+
+            # Init variables
+            pressure_mbar = self.input.pressure_mbar
+            mole_fraction = self.input.mole_fraction
+            path_length = self.input.path_length
+            verbose = self.verbose
+
+            # New Profiler object
+            self._reset_profiler(verbose)
+
+            # Check variables
+            self._check_inputs(mole_fraction, max(flatten(Tgas)))
+
+            # Retrieve Spectrum from database if it exists
+            if self.autoretrievedatabase:
+                s = self._retrieve_from_database()
+                if s is not None:
+                    return s  # exit function
+
+            # %% Start
+            # --------------------------------------------------------------------
+
+            self.profiler.start("spectrum_calculation", 1)
+            self.profiler.start("spectrum_calc_before_obj", 2)
+
+            # Check database, reset populations, create line dataframe to be scaled
+            # --------------------------------------------------------------------
+            self._check_line_databank()
+            self._reinitialize()  # creates scaled dataframe df1 from df0
+
+            # --------------------------------------------------------------------
+
+            # First calculate the linestrength at given temperature
+            self.calc_linestrength_eq(Tgas)  # scales S0 to S (equivalent to S0 in code)
+            self._cutoff_linestrength()
+
+            # ----------------------------------------------------------------------
+
+            # Calculate line shift
+            self.calc_lineshift()  # scales wav to shiftwav (equivalent to v0)
+
+            # ----------------------------------------------------------------------
+            # Line broadening
+
+            # ... generates molefraction for diluents
+            self._generate_diluent_molefraction(mole_fraction, diluent)
+
+            # ... calculate broadening  HWHM
+            self._calc_broadening_HWHM()
+
+            # ... generates all wstep related entities
+            self._generate_wavenumber_arrays()
+
+            # ... find weak lines and calculate semi-continuum (optional)
+            I_continuum = self.calculate_pseudo_continuum()
+            # ... apply lineshape and get absorption coefficient
+            # ... (this is the performance bottleneck)
+            wavenumber, abscoeff_v = self._calc_broadening()
+            #    :         :
+            #   cm-1    1/(#.cm-2)
+
+            # ... add semi-continuum (optional)
+            abscoeff_v = self._add_pseudo_continuum(abscoeff_v, I_continuum)
+            # Calculate output quantities
+            # ----------------------------------------------------------------------
+
+            self.profiler.start("calc_other_spectral_quan", 2)
+
+            # incorporate density of molecules (see equation (A.16) )
+            density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
+            #  :
+            # (#/cm3)
+
+            abscoeff = abscoeff_v * density  # cm-1
+            # ... # TODO: if the code is extended to multi-species, then density has to be added
+            # ... before lineshape broadening (as it would not be constant for all species)
+
+            # get absorbance (technically it's the optical depth `tau`,
+            #                absorbance `A` being `A = tau/ln(10)` )
+            absorbance = abscoeff * path_length
+            # Generate output quantities
+            transmittance_noslit = exp(-absorbance)
+            emissivity_noslit = 1 - transmittance_noslit
+            radiance_noslit = calc_radiance(
+                wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
+            )
+            assert self.units["abscoeff"] == "cm-1"
+
+            self.profiler.stop(
+                "calc_other_spectral_quan", "Calculated other spectral quantities"
+            )
+
+            # %% Export
+            # --------------------------------------------------------------------
+
+            self.profiler.stop(
+                "spectrum_calc_before_obj", "Spectrum calculated (before object generation)"
+            )
+
+            if verbose:  # if wstep='auto' must be after wstep is calculated
+                self.print_conditions("Calculating Equilibrium Spectrum")
+
+            self.profiler.start("generate_spectrum_obj", 2)
+
+            # Get conditions
+            conditions = self.get_conditions(add_config=True)
             conditions.update(
                 {
-                    "NwL": self.NwL,
-                    "NwG": self.NwG,
+                    "calculation_time": self.profiler.final[list(self.profiler.final)[-1]][
+                        "spectrum_calc_before_obj"
+                    ],
+                    "lines_calculated": self._Nlines_calculated,
+                    "lines_cutoff": self._Nlines_cutoff,
+                    "lines_in_continuum": self._Nlines_in_continuum,
+                    "thermal_equilibrium": True,
+                    "diluents": self._diluent,
+                    "radis_version": version,
+                    "spectral_points": (
+                        self.params.wavenum_max_calc - self.params.wavenum_min_calc
+                    )
+                    / self.params.wstep,
+                    "profiler": dict(self.profiler.final),
                 }
             )
-        del self.profiler.final[list(self.profiler.final)[-1]][
-            "spectrum_calc_before_obj"
-        ]
+            if self.params.optimization != None:
+                conditions.update(
+                    {
+                        "NwL": self.NwL,
+                        "NwG": self.NwG,
+                    }
+                )
+            del self.profiler.final[list(self.profiler.final)[-1]][
+                "spectrum_calc_before_obj"
+            ]
 
-        # Get populations of levels as calculated in RovibrationalPartitionFunctions
-        # ... Populations cannot be calculated at equilibrium (needs energies).
-        # ... Use SpectrumFactory.non_eq_spectrum
-        populations = None
+            # Get populations of levels as calculated in RovibrationalPartitionFunctions
+            # ... Populations cannot be calculated at equilibrium (needs energies).
+            # ... Use SpectrumFactory.non_eq_spectrum
+            populations = None
 
-        # Get lines (intensities + populations)
-        lines = self.get_lines()
+            # Get lines (intensities + populations)
+            lines = self.get_lines()
 
-        # Spectral quantities
-        quantities = {
-            "wavenumber": wavenumber,
-            "abscoeff": abscoeff,
-            "absorbance": absorbance,
-            "emissivity_noslit": emissivity_noslit,
-            "transmittance_noslit": transmittance_noslit,
-            "radiance_noslit": radiance_noslit,
-        }
-        if I_continuum is not None and self._export_continuum:
-            quantities.update({"abscoeff_continuum": I_continuum * density})
-        conditions["default_output_unit"] = self.input_wunit
+            # Spectral quantities
+            quantities = {
+                "wavenumber": wavenumber,
+                "abscoeff": abscoeff,
+                "absorbance": absorbance,
+                "emissivity_noslit": emissivity_noslit,
+                "transmittance_noslit": transmittance_noslit,
+                "radiance_noslit": radiance_noslit,
+            }
+            if I_continuum is not None and self._export_continuum:
+                quantities.update({"abscoeff_continuum": I_continuum * density})
+            conditions["default_output_unit"] = self.input_wunit
 
-        # Store results in Spectrum class
-        s = Spectrum(
-            quantities=quantities,
+            # Store results in Spectrum class
+            s = Spectrum(
+                quantities=quantities,
+                conditions=conditions,
+                populations=populations,
+                lines=lines,
+                units=self.units,
+                cond_units=self.cond_units,
+                # dont check input (much faster, and Spectrum
+                # is freshly baken so probably in a good format
+                check_wavespace=False,
+                name=name,
+                references=dict(self.reftracker),
+            )
+            # OPTION 2.  Change a posteriori using a Spectrum.method. More universal. Can it be slower?
+
+            # update database if asked so
+            if self.autoupdatedatabase:
+                self.SpecDatabase.add(s, if_exists_then="increment")
+                # Tvib=Trot=Tgas... but this way names in a database
+                # generated with eq_spectrum are consistent with names
+                # in one generated with non_eq_spectrum
+
+            # Get generation & total calculation time
+            self.profiler.stop("generate_spectrum_obj", "Generated Spectrum object")
+
+            #  In the less verbose case, we print the total calculation+generation time:
+            self.profiler.stop("spectrum_calculation", "Spectrum calculated")
+
+            return s
+        else : 
+            verbose = self.verbose
+            self._reset_profiler(verbose)
+            self.profiler.start("spectrum_calculation", 1)
+            self.profiler.start("spectrum_calc_before_obj", 2)
+            
+            # Check database, reset populations, create line dataframe to be scaled
+            # --------------------------------------------------------------------
+            #self._check_line_databank()
+            #self._reinitialize()  # creates scaled dataframe df1 from df0
+
+            # --------------------------------------------------------------------
+
+            # First calculate the linestrength at given temperature
+            df=self.df0
+            Tref=296
+            # Convert atomic_number to element symbol
+            #atomic_number = getattr(periodictable, atom).number
+            #element_symbol = periodictable.elements[int(atomic_number)].symbol
+
+            # Construct the key
+
+            if self.input.ionization_state == "00":
+                key = self.input.atom + "_I"
+            elif self.input.ionization_state == "01":
+                key = self.input.atom+ "_II"
+            else:
+                key = self.input.atom + "_III"
+            #print("df",df.columns)
+            nu_lines = df['nu_lines']
+            elower = df['elower']
+            gupper=df['gupper']
+            A=df['A']
+
+            self.pfTdat=AdBKurucz.load_pf_Barklem2016(self)[0]
+            qr = AdBKurucz.partfcn(self,key,Tgas)/AdBKurucz.partfcn(self,key,Tref)
+            QTref=AdBKurucz.partfcn(self,key,Tref)
+            Sij0 =self.Sij0(A,gupper,nu_lines,elower,QTref)
+            line_strength=self.line_strength_numpy(Tgas,Sij0,nu_lines,elower,qr,Tref)
+            #self._cutoff_linestrength()
+
+            # ----------------------------------------------------------------------
+
+            # Calculate line shift
+            #self.calc_lineshift()  # scales wav to shiftwav (equivalent to v0)
+
+            # ----------------------------------------------------------------------
+            # Line broadening
+            element = elements.symbol(self.input.atom)
+            M=element.mass
+            #Assume ATMOSPHERE
+            NP=len(df["nu_lines"])
+            T0=3000. #10000. #3000. #1295.0 #K
+            Parr, dParr, k= AdBKurucz.pressure_layer(self,logPtop=-8.,
+                   logPbtm=2.,
+                   NP=NP,
+                   mode='ascending',
+                   reference_point=0.5)
+            H_He_HH_VMR = [0.0, 0.16, 0.84] #typical quasi-"solar-fraction"
+            Tarr = T0*(Parr)**0.1
+            kB = 1.38064852e-16
+
+            mmw=2.33 #mean molecular weight
+
+            PH = Parr* H_He_HH_VMR[0]
+            PHe = Parr* H_He_HH_VMR[1]
+            PHH = Parr* H_He_HH_VMR[2]
+            nH = PHH / (kB *Tarr)
+            vdWdamp = 10**(df['gamvdW']) * nH
+            print("gamvdW", df['gamvdW'])
+            df['vdWdamp']=vdWdamp
+            print('vdWdamp', vdWdamp)
+            df["nu_lines"] = 1 / df["wav"]
+
+            df_ionE = AdBKurucz.load_ionization_energies()
+            print("df_ionE",df_ionE.columns)
+            df_ionE.columns = df_ionE.columns.str.strip()
+            self.atomic_number = getattr(periodictable,self.input.atom).number
+            #filtered_df = df_ionE[(df_ionE['At. num'] == self.atomic_number) & (df_ionE['Ion Charge'] == int(self.input.ionization_state))]
+
+            #print("filtered_df", filtered_df)
+            print("wav",df["wav"])
+
+            #print("colonnes df_ionE", df_ionE)
+            ielem=self.atomic_number
+            iion=int(self.input.ionization_state)
+            #print("ielem:", ielem)
+            #print("iion:", iion)
+
+
+
+            
+            ionE = AdBKurucz.pick_ionE(ielem= self.atomic_number, iion= int(self.input.ionization_state)+1, df_ionE= df_ionE)
+            df["ionE"]=ionE
+            print("ionE",df["ionE"])
+
+            g_broadening = self.doppler_kurucz(df,Tgas,M)
+            l_broadening = self.gamma_vald3(df, Tgas, PH, PHH, PHe, enh_damp=1.0)
+
+            wg=2*g_broadening
+            wl=2*l_broadening
+            wv=self.olivero_1977(wg,wl)
+            print("les données",wv)
+            df["hwhm_gauss"]=wg/2
+            df["hwhm_lorentz"]=wl/2
+            df["hwhm_voigt"]=wv/2
+
+            #self.partfn=AdBKurucz.partfcn(self,key,Tgas)
+            #QT_atom = AdBKurucz.partfcn(self,key,Tgas)
+
+            populations=AdBKurucz().calculate_populations(key,Tgas,df)
+            voigt_profile = self.voigt_lineshape(df["nu_lines"],df["hwhm_lorentz"],df["hwhm_voigt"],jit=False)
+
+            quantities={
+                "wavenumber": df["nu_lines"],
+                "radiance": line_strength*voigt_profile,
+                "populations" : populations,
+                "intensity": df["A"]*populations,
+            }
+            
+             # Get conditions
+            conditions = self.get_conditions(add_config=True)
+            conditions.update(
+                {
+                    "calculation_time": self.profiler.final[list(self.profiler.final)[-1]][
+                        "spectrum_calc_before_obj"
+                    ],
+                    "thermal_equilibrium": True,
+                    "diluents": self._diluent,
+                    "radis_version": version,
+                    "spectral_points": (
+                        self.params.wavenum_max_calc - self.params.wavenum_min_calc
+                    )
+                    / self.params.wstep,
+                    "profiler": dict(self.profiler.final),
+                }
+            )
+            
+            del self.profiler.final[list(self.profiler.final)[-1]][
+                "spectrum_calc_before_obj"
+            ]
+            units={'radiance':'W/cm/sr/cm-1'}
+
+
+            lines=voigt_profile
+
+            s=Spectrum(quantities=quantities,
+            units=units,
             conditions=conditions,
-            populations=populations,
             lines=lines,
-            units=self.units,
             cond_units=self.cond_units,
             # dont check input (much faster, and Spectrum
-            # is freshly baken so probably in a good format
             check_wavespace=False,
+            # is freshly baken so probably in a good format
             name=name,
-            references=dict(self.reftracker),
-        )
-        # OPTION 2.  Change a posteriori using a Spectrum.method. More universal. Can it be slower?
-
-        # update database if asked so
-        if self.autoupdatedatabase:
-            self.SpecDatabase.add(s, if_exists_then="increment")
-            # Tvib=Trot=Tgas... but this way names in a database
-            # generated with eq_spectrum are consistent with names
-            # in one generated with non_eq_spectrum
-
-        # Get generation & total calculation time
-        self.profiler.stop("generate_spectrum_obj", "Generated Spectrum object")
-
-        #  In the less verbose case, we print the total calculation+generation time:
-        self.profiler.stop("spectrum_calculation", "Spectrum calculated")
-
-        return s
+            references=dict(self.reftracker),)
+            return s
 
     def eq_spectrum_gpu(
         self,

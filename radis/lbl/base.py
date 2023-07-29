@@ -92,6 +92,8 @@ from radis.phys.constants import c_CGS, h_CGS, hc_k
 from radis.phys.convert import cm2J, nm2cm, nm_air2cm
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.utils import print_conditions
+hcperk = 1.4387773538277202
+Tref_original=296
 
 
 class BaseFactory(DatabankLoader):
@@ -2179,6 +2181,55 @@ class BaseFactory(DatabankLoader):
             df1.attrs["Qref"] = Qref
             Qref_Qgas = Qref / Qgas
         return Qref_Qgas
+    
+    Tref_original=296
+    hcperk = 1.4387773538277202  # hc/kB (cm K)
+
+    def Sij0(self,A, g, nu_lines, elower, QTref):
+        """Reference Line Strength in Tref=296K, S0.
+
+        Note:
+        Tref=296K
+
+        Args:
+        A: Einstein coefficient (s-1)
+        g: the upper state statistical weight
+        nu_lines: line center wavenumber (cm-1)
+        elower: elower
+        QTref: partition function Q(Tref)
+        Mmol: molecular mass (normalized by m_u)
+
+        Returns:
+        Sij(T): Line strength (cm)
+        """
+        hcperk = 1.4387773538277202  # hc/kB (cm K)
+        ccgs = 29979245800.0
+        Tref = 296.0
+        S0 = -A*g*np.exp(-hcperk*elower/Tref)*np.expm1(-hcperk*nu_lines/Tref)\
+            / (8.0*np.pi*ccgs*nu_lines**2*QTref)
+        return S0
+
+    def line_strength_numpy(self,T, Sij0, nu_lines, elower, qr, Tref=Tref_original):
+        """Line strength as a function of temperature, numpy version
+
+        Args:
+            T: temperature (K)
+            Sij0: line strength at Tref=296K
+            elower: elower
+            nu_lines: line center wavenumber 
+            qr : partition function ratio qr(T) = Q(T)/Q(Tref)
+            Tref: reference temeparture
+
+        Returns:
+            line strength at Ttyp
+        """
+        return Sij0 / qr \
+            * np.exp(-hcperk*elower * (1./T - 1./Tref)) \
+            * np.expm1(-hcperk*nu_lines/T) / np.expm1(-hcperk*nu_lines/Tref_original)
+
+
+    
+
 
     def calc_linestrength_eq(self, Tgas):
         """Calculate linestrength at temperature Tgas correcting the database
@@ -2221,6 +2272,7 @@ class BaseFactory(DatabankLoader):
 
         Tref = self.input.Tref
         df1 = self.df1
+        print (df1.columns)
 
         if len(df1) == 0:
             return  # no lines

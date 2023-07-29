@@ -364,6 +364,59 @@ def pressure_broadening_HWHM(
     return gamma_lb
 
 
+import numpy as np
+import pandas as pd
+
+def gamma_vald3(df, T, PH, PHH, PHe, enh_damp=1.0):  # , vdW_meth="V"):
+    gamRad = df['gamRad'].replace(0., -99)
+    gamSta = df['gamSta'].replace(0., -99)
+    chi_lam = df['nu_lines']/eV2wn  # [cm-1] -> [eV]
+    chi = df['elower']/eV2wn  # [cm-1] -> [eV]
+
+    C6 = 0.3e-30 * ((1/(df['ionE']-chi-chi_lam)**2) - (1/(df['ionE']-chi)**2))
+    C6 = np.abs(C6)
+    gam6H = 1e20 * C6**0.4 * PH*1e6 / T**0.7
+    gam6He = 1e20 * C6**0.4 * PHe*1e6*0.41336 / T**0.7
+    gam6HH = 1e20 * C6**0.4 * PHH* 1e6*0.85 / T**0.7
+    gamma6 = enh_damp * (gam6H + gam6He + gam6HH)
+    gamma_case1 = (gamma6 + 10**gamRad + 10**gamSta) / (4*np.pi*ccgs)
+    gamma_case1 = gamma_case1.replace(np.nan, 0.)
+
+    Texp = 0.38  # Barklem+2000
+    gam6H = 10**df['vdWdamp'] * (T/10000.)**Texp * PH*1e6 / (kB*T)
+    gam6He = 10**df['vdWdamp'] * (T/10000.)**Texp * PHe*1e6*0.41336 / (kB*T)
+    gam6HH = 10**df['vdWdamp'] * (T/10000.)**Texp * df['PHH']*1e6*0.85 / (kB*T)
+    gamma6 = gam6H + gam6He + gam6HH
+    gamma_case2 = (gamma6 + 10**gamRad + 10**gamSta) / (4*np.pi*ccgs)
+
+    gamma = gamma_case1.where(df['vdWdamp'] >= 0., gamma_case2)
+
+    return gamma
+
+
+
+def doppler_kurucz(self, data_dict, Tgas, M):
+    """
+    Compute Doppler broadening based on the provided formula.
+    
+    Args:
+      data_dict: a dictionary containing various spectral line parameters.
+      Tgas: the translational temperature (K)
+      M: the molar mass of the emitter (g/mol)
+      
+    Returns:
+      delta_lambda_Doppler: Doppler broadening (in nm)
+    """
+    # Extract 𝜆𝑢𝑙[nm] from data dictionary
+    lambda_ul = data_dict["wlnmair"]
+
+    # Calculate Doppler broadening
+    delta_lambda_Doppler = 3.58e-7 * lambda_ul * np.sqrt(Tgas/M)
+
+    return delta_lambda_Doppler
+
+
+
 def lorentzian_lineshape(w_centered, gamma_lb):
     r"""Computes collisional broadening over all lines [1]_
 
@@ -435,6 +488,7 @@ def lorentzian_FT(w_centered, gamma_lb):
 
 
 def voigt_broadening_HWHM(
+    self,
     airbrd,
     selbrd,
     Tdpair,
@@ -510,23 +564,28 @@ def voigt_broadening_HWHM(
     :py:func:`~radis.lbl.broadening.doppler_broadening_HWHM`,
     :py:func:`~radis.lbl.broadening.voigt_lineshape`
     """
+    
+    if self.format == "kurucz":
+        gamma_lb= gamma_vald3(df)
+        gamma_db= doppler_kurucz(df)
+    else:
 
-    # Collisional broadening HWHM
-    gamma_lb = pressure_broadening_HWHM(
-        airbrd,
-        selbrd,
-        Tdpair,
-        Tdpsel,
-        pressure_atm,
-        mole_fraction,
-        Tgas,
-        Tref,
-        diluent,
-        diluent_broadening_coeff,
-    )
+        # Collisional broadening HWHM
+        gamma_lb = pressure_broadening_HWHM(
+            airbrd,
+            selbrd,
+            Tdpair,
+            Tdpsel,
+            pressure_atm,
+            mole_fraction,
+            Tgas,
+            Tref,
+            diluent,
+            diluent_broadening_coeff,
+        )
 
-    # Doppler Broadening HWHM:
-    gamma_db = doppler_broadening_HWHM(wav, molar_mass, Tgas)
+        # Doppler Broadening HWHM:
+        gamma_db = doppler_broadening_HWHM(wav, molar_mass, Tgas)
 
     # Calculate broadening
     # -------
@@ -585,7 +644,7 @@ def olivero_1977(wg, wl):
     return wv
 
 
-def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
+def voigt_lineshape(self,w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
     """Calculates Voigt lineshape using the approximation of the Voigt profile
     of [NEQAIR-1996]_, [Whiting-1968]_ that maintains a good accuracy in the far wings.
     Exact for a pure Gaussian and pure Lorentzian.
@@ -712,6 +771,8 @@ def whiting1968(w_centered, wl, wv):
     # ... fasten up the calculation by 25% (ex: test on 20 cm-1, ~6000 lines:
     # ... 20.5.s > 16.5s) on the total eq_spectrum calculation
     # ... w_wv is typically a (10.001, 1997) array
+    print("w_centered",w_centered)
+    print("wv",wv)
     w_wv = w_centered / wv  # w_centered can be ~500 Mb
     w_wv_2 = w_wv**2
     wl_wv = wl / wv
@@ -939,6 +1000,63 @@ class BroadenFactory(BaseFactory):
 
         self.profiler.stop("calc_hwhm", "Calculate broadening HWHM")
 
+    def gamma_vald3(self, df, T, PH, PHH, PHe, enh_damp=1.0):  # , vdW_meth="V"):
+        gamRad = df['gamRad'].replace(0., -99)
+        gamSta = df['gamSta'].replace(0., -99)
+        eV2wn = 8065.54  # 1[eV]=8065.54[cm^-1]
+        kB = 1.38064852e-16
+        ccgs = 29979245800.0  # c in cgs
+        chi_lam = df['nu_lines']/eV2wn  # [cm-1] -> [eV]
+        chi = df['elower']/eV2wn  # [cm-1] -> [eV]
+
+        C6 = 0.3e-30 * ((1/(df['ionE']-chi-chi_lam)**2) - (1/(df['ionE']-chi)**2))
+        C6 = np.abs(C6)
+        print("C6.size",C6.size)
+        #print("T.size",T.size)
+        print("C6",C6)
+        print("T",T)
+        print("PH",PH)
+        gam6H = 1e20 * C6**0.4 * PH*1e6 / T**0.7
+        gam6He = 1e20 * C6**0.4 * PHe*1e6*0.41336 / T**0.7
+        gam6HH = 1e20 * C6**0.4 * PHH*1e6*0.85 / T**0.7
+        gamma6 = enh_damp * (gam6H + gam6He + gam6HH)
+        gamma_case1 = (gamma6 + 10**gamRad + 10**gamSta) / (4*np.pi*ccgs)
+        gamma_case1 = gamma_case1.replace(np.nan, 0.)
+
+        Texp = 0.38  # Barklem+2000
+        gam6H = 10**df['vdWdamp'] * (T/10000.)**Texp * PH*1e6 / (kB*T)
+        gam6He = 10**df['vdWdamp'] * (T/10000.)**Texp * PHe*1e6*0.41336 / (kB*T)
+        gam6HH = 10**df['vdWdamp'] * (T/10000.)**Texp * PHH*1e6*0.85 / (kB*T)
+        gamma6 = gam6H + gam6He + gam6HH
+        gamma_case2 = (gamma6 + 10**gamRad + 10**gamSta) / (4*np.pi*ccgs)
+
+        gamma = gamma_case1.where(df['vdWdamp'] >= 0., gamma_case2)
+
+        return gamma
+
+
+
+    def doppler_kurucz(self, data_dict, Tgas, M):
+        """
+        Compute Doppler broadening based on the provided formula.
+        
+        Args:
+        data_dict: a dictionary containing various spectral line parameters.
+        Tgas: the translational temperature (K)
+        M: the molar mass of the emitter (g/mol)
+        
+        Returns:
+        delta_lambda_Doppler: Doppler broadening (in nm)
+        """
+        # Extract 𝜆𝑢𝑙[nm] from data dictionary
+        lambda_ul = data_dict["wlnmair"]
+
+        # Calculate Doppler broadening
+        delta_lambda_Doppler = 3.58e-7 * lambda_ul * np.sqrt(Tgas/M)
+
+        return delta_lambda_Doppler
+
+
     def _calc_min_width(self, df):
         """Calculates the minimum FWHW of the lines
         and stores in self.min_width
@@ -989,6 +1107,8 @@ class BroadenFactory(BaseFactory):
 
         # TODO: thresholds depend whether we're computing Transmittance/optically thin emission,
         # for a homogeneous slab, or self-absorbed radiance combined with other slabs.
+        min_width = None
+            
 
         min_width = self.min_width
 
@@ -1077,6 +1197,7 @@ class BroadenFactory(BaseFactory):
 
         # Calculate broadening FWHM
         wv, wl, wg = voigt_broadening_HWHM(
+            self, 
             df.airbrd,
             selbrd,
             df.Tdpair,
@@ -1095,8 +1216,55 @@ class BroadenFactory(BaseFactory):
         df["hwhm_voigt"] = wv
         df["hwhm_lorentz"] = wl
         df["hwhm_gauss"] = wg
+        print(df)
 
         return
+
+    def olivero_1977(self,wg, wl):
+        r"""Calculate approximate Voigt FWHM with [Olivero-1977]_.
+
+        also in NEQAIR 96 manual Eqn. (D2) Note that formula is given in wavelength (nm) [doesnt
+        change anything] and uses full width half maximum (FWHM) of Gaussian and
+        Lorentzian profiles.
+
+        For use with the Whiting formula of :py:func:`~radis.lbl.broadening.voigt_lineshape`.
+
+        Parameters
+        ----------
+        wg: numpy array
+            Gaussian profile FWHM
+        wl: numpy array
+            Lorentzian profile FWHM
+
+        Returns
+        -------
+        gamma_voigt: numpy array
+            Voigt FWHM
+
+        References
+        ----------
+        [Olivero-1977]_ uses FWHM.
+
+        .. math::
+            s_d=\frac{w_l-w_g}{w_l+w_g}
+
+            w_v=\left(1-0.18121\left(1-{s_d}^2\right)-\left(0.023665\operatorname{exp}\left(0.6s_d\right)+0.00418\operatorname{exp}\left(-1.9s_d\right)\right) sin\left(\pi s_d\right)\right) \left(w_l+w_g\right)
+
+        See Also
+        --------
+
+        :py:func:`~radis.lbl.broadening.voigt_broadening_HWHM`,
+        :py:func:`~radis.lbl.broadening.voigt_lineshape`
+        """
+        #    wv = wl/2 + sqrt((1/4*wl**2+wg**2))
+        sd = (wl - wg) / (wl + wg)
+        wv = (
+            1
+            - 0.18121 * (1 - sd**2)
+            - (0.023665 * exp(0.6 * sd) + 0.00418 * exp(-1.9 * sd)) * sin(pi * sd)
+        ) * (wl + wg)
+        return wv
+
 
     def _add_collisional_broadening_HWHM(
         self,
@@ -1194,6 +1362,70 @@ class BroadenFactory(BaseFactory):
         df["hwhm_gauss"] = wg
 
         return
+
+
+    def voigt_lineshape(self,w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
+        """Calculates Voigt lineshape using the approximation of the Voigt profile
+        of [NEQAIR-1996]_, [Whiting-1968]_ that maintains a good accuracy in the far wings.
+        Exact for a pure Gaussian and pure Lorentzian.
+
+        Parameters
+        ----------
+        w_centered: 2D array       [one per line: shape W x N]
+            waverange (nm / cm-1) (centered on 0)
+        hwhm_lorentz: array   (cm-1)        [length N]
+            half-width half maximum coefficient (HWHM) for Lorentzian broadening
+        hwhm_voigt: array   (cm-1)        [length N]
+            half-width half maximum coefficient (HWHM) for Voigt broadening,
+            calculated by :py:func:`~radis.lbl.broadening.voigt_broadening_HWHM`
+
+        Other Parameters
+        ----------------
+        jit: boolean
+            if ``True``, use just in time compiler. Usually faster when > 10k lines.
+            Default ``True``.
+
+        Returns
+        -------
+        lineshape: pandas Series        [shape N x W]
+            line profile
+
+        References
+        ----------
+        .. [NEQAIR-1996] `NEQAIR 1996 User Manual, Appendix D <https://ntrs.nasa.gov/search.jsp?R=19970004690>`_
+
+        See Also
+        --------
+        :py:func:`~radis.lbl.broadening.voigt_broadening_HWHM`
+        :py:func:`~radis.lbl.broadening.whiting1968`
+        """
+
+        # Note: Whiting and Olivero use FWHM. Here we keep HWHM in all public function
+        # arguments for consistency.
+        wl = 2 * hwhm_lorentz  # HWHM > FWHM
+        wv = 2 * hwhm_voigt  # HWHM > FWHM
+
+        if jit:
+            lineshape = _whiting_jit(w_centered, wl, wv)
+        else:
+            lineshape = whiting1968(w_centered, wl, wv)
+
+        # Normalization
+        #    integral = wv*(1.065+0.447*(wl/wv)+0.058*(wl/wv)**2)
+        # ... approximation used by Whiting, equation (7)
+        # ... performance: ~ 6µs vs ~84µs for np.trapz(lineshape, w_centered) ):
+        # ... But not used because:
+        # ... - it may yield wrong results when the broadening range is not refined enough
+        # ... - it is defined for wavelengths only. Here we may have wavenumbers as well
+
+        integral = np.trapz(lineshape, w_centered, axis=0)
+        # Normalize
+        lineshape /= integral
+
+        # assert not anynan(lineshape).any()
+
+        return lineshape
+
 
     def _collisional_lineshape(self, dg, wbroad_centered):
         """Computes collisional broadening over all lines + normalize and raise

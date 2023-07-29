@@ -6,7 +6,7 @@ Author: Racim Menasria
 Date: June 2023
 """
 
-
+import os
 import io
 import pkgutil
 from contextlib import closing
@@ -147,6 +147,11 @@ class AdBKurucz:
         # extracts the file's name from l'URL
         filename = self.url.split("/")[-1]
 
+        # Verify if the file exists already
+        if os.path.exists(filename):
+           print("File already exists, skipping download.")
+           return filename
+
         with closing(requests.get(self.url, stream=True)) as r:
             total_size = int(r.headers.get("content-length", 0))
             block_size = 1024
@@ -161,6 +166,7 @@ class AdBKurucz:
                     f.write(data)
                     pbar.update(len(data))
         return filename
+
 
     def air_to_vac(self, wlair):
         """Convert wavelengths [AA] in air into those in vacuum.
@@ -318,13 +324,14 @@ class AdBKurucz:
         data_dict = {
             "A": A,
             "nu_lines": nu_lines,
+            "wav": 10**7/nu_lines,
             "elower": elower,
             "eupper": eupper,
             "gupper": gupper,
             "jlower": jlower,
             "jupper": jupper,
-            "ielem": ielem,
-            "iion": iion,
+            "id": ielem,
+            "iso": iion,
             "gamRad": gamRad,
             "gamSta": gamSta,
             "gamvdW": gamvdW,
@@ -353,14 +360,36 @@ class AdBKurucz:
             "isoshiftmA": isoshiftmA,
         }
 
+        data_dict_radis = {
+        "id": ielem,  # Supposons que 'ielem' est l'identifiant de l'élément
+        "iso": iion,  # Supposons que 'iion' est l'identifiant de l'isotope
+        "wav": nu_lines,  
+        "int": A,  # Intensité de la transition
+        "A": A,  # Coefficient d'Einstein pour la transition
+        "airbrd": gamSta,  # Largeur de raie à pression d'air (HWHM) à 296 K en cm-1/atm. Ici je suppose que 'gamSta' correspond.
+        "selbrd": gamvdW,  # Largeur de raie de l'élargissement par auto-pression (HWHM) à 296 K en cm-1. Ici je suppose que 'gamvdW' correspond.
+        "El": elower,  # Énergie du niveau inférieur de la transition en cm-1
+        "Tdpair": gamRad,  # Température de dépendance de la pression d'air. Ici je suppose que 'gamRad' correspond.
+        "Pshft": wlnmair,  # Décalage de la pression d'air à 296 K en cm-1/atm. Ici je suppose que 'wlnmair' correspond.
+        # "globu": , # Manque l'information pour "globu"
+        # "globl": , # Manque l'information pour "globl"
+        # "locu": , # Manque l'information pour "locu"
+        # "locl": , # Manque l'information pour "locl"
+        # "lmix": , # Manque l'information pour "lmix"
+        # "gp": , # Manque l'information pour "gp"
+        # "gpp": , # Manque l'information pour "gpp"
+    }
+
+        df_radis = pd.DataFrame(data_dict)
+
         self.data = pd.DataFrame(data_dict)
-        return self.data
+        return df_radis
 
     def store_hdf5(self, data, output_path):
         """Store data in a HDF5 file."""
 
         # df = pd.DataFrame(data)
-        data.to_hdf(output_path, key="kurucz_data")
+        data.to_hdf(output_path, key="df", format='table',data_columns=True)
 
     def read_hdf5(self, file_path):
         """Read data from a HDF5 file."""
@@ -399,16 +428,56 @@ class AdBKurucz:
         # print(f"Partition function: {Q}")
 
         return Q
+    
+    def partfcn(self, key, T):
+        """Partition function from Barklem & Collet (2016).
 
-    def calculate_populations(self, atom, temperature):
+        Args:
+        atom: the atom name
+        T: temperature
+
+        Returns:
+        partition function Q
+        """
+        try : 
+            print(f"Température: {T}")
+            # Read the pfdat file
+            pfdat = pd.read_csv('./pfdat.txt', sep="\s+", header=None)
+            pfdat = pfdat.set_index(0)  
+
+            # Locate the row for the specific atom and ionization state
+            pf_atom = pfdat.loc[f"{key}"]
+            # Extract temperature and partition function values
+            pfT_values = self.pfTdat.values.flatten()[1:]  # Exclude the first value (it's the temperature unit)
+            pf_values = pf_atom.values[1:]  # Exclude the first value (it's the atomic number)
+
+            pfT_values = pfT_values.astype(float)
+            pf_values = pf_values.astype(float)
+
+            # print("pfT_values:", pfT_values)
+            # print("pf_values:", pf_values)
+
+            # Interpolate to find the partition function at the desired temperature
+            Q = np.interp(T, pfT_values, pf_values)
+            # print(f"Partition function: {Q}")
+
+            return Q
+        except KeyError:
+            print("pfdat",pfdat)
+            print(f"Key {key} not found in pfdat. Available keys: {pfdat.index.tolist()}")
+            raise
+
+    def calculate_populations(self, atom, temperature, data):
         # Select the partition function for the specific atom
         # atom_pf = self.pfdat.loc[f'{atom}_I']
 
         # Calculate the partition function at a certain temperature
-        QT_atom = self.partfn(atom, temperature)
+        #print(type(self.partfn))
+        QT_atom = self.partfcn(atom, temperature)
+        print("QT_atom",QT_atom)
 
         # Calculate energy/temperature ratio
-        energy_temp_ratio = self.data["elower"] / (0.695 * temperature)
+        energy_temp_ratio = data["elower"] / (0.695 * temperature)
         # print(f'Energy/temp ratio: {energy_temp_ratio}')   # print the energy to temperature ratio for debugging
 
         # Calculate level populations using Boltzmann statistics
@@ -426,26 +495,116 @@ class AdBKurucz:
         plt.ylabel("Intensity")
         plt.show()
 
-    def process(self, atomic_number, ionization_state, temperature):
-        self.kurucz_file = f"gf{atomic_number}{ionization_state}.all"
-        self.hdf5_file = f"gf{atomic_number}{ionization_state}.hdf5"
-        self.url = self.get_url(atomic_number, ionization_state)
-        self.kuruczf = self.download_file()
-        self.data = self.read_kurucz(self.kuruczf)
-        self.store_hdf5(self.data, self.hdf5_file)
-        self.data = self.read_hdf5(self.hdf5_file)
+    def pressure_layer(self,logPtop=-8.,
+                   logPbtm=2.,
+                   NP=20,
+                   mode='ascending',
+                   reference_point=0.5):
+        """generating the pressure layer.
+
+        Args:
+            logPtop: log10(P[bar]) at the top layer
+            logPbtm: log10(P[bar]) at the bottom layer
+            NP: the number of the layers
+            mode: ascending or descending
+            reference_point: reference point in the layer. 0.5:center, 1.0:lower boundary, 0.0:upper boundary
+            numpy: if True use numpy array instead of jnp array
+
+        Returns:
+            Parr: pressure layer
+            dParr: delta pressure layer
+            k: k-factor, P[i-1] = k*P[i]
+
+        Note:
+            dParr[i] = Parr[i] - Parr[i-1], dParr[0] = (1-k) Parr[0] for ascending mode
+        """
+        dlog10P = (logPbtm - logPtop) / (NP - 1)
+        k = 10**-dlog10P
+        
+        Parr = np.logspace(logPtop, logPbtm, NP)
+        
+        dParr = (1.0 - k**reference_point) * Parr
+        if mode == 'descending':
+            Parr = Parr[::-1]
+            dParr = dParr[::-1]
+
+        return Parr, dParr, k
+
+
+    def load_ionization_energies():
+        """Load atomic ionization energies.
+
+        Returns:
+            df_ionE (pd.DataFrame): table of ionization energies
+        """
+        # Spécifiez le chemin vers le fichier
+        fn_IonE = './NIST_iE.txt'
+        # Lisez le fichier en tant que dataframe
+        df_ionE = pd.read_csv(fn_IonE, sep='|', skiprows=6, header=0)
+        return df_ionE
+
+
+    def pick_ionE(ielem, iion, df_ionE):
+        """Pick up ionization energy of a specific atomic species.
+
+        Args:
+            ielem (int): atomic number (e.g., Fe=26)
+            iion (int): ionized level (e.g., neutral=1, singly ionized=2, etc.)
+            df_ionE (pd.DataFrame): table of ionization energies
+
+        Returns:
+            ionE (float): ionization energy
+
+        Note:
+            NIST_Atomic_Ionization_Energies.txt is in data/atom
+        """
+        def f_droppare(x): 
+            print(f'Before: {x}')
+            x = x.str.replace('(', '', regex=True)
+            print(f'After replacing (: {x}')
+            x = x.str.replace(')', '', regex=True)
+            print(f'After replacing ): {x}')
+            x = x.str.replace('[', '', regex=True)
+            print(f'After replacing [: {x}')
+            x = x.str.replace(']', '', regex=True)
+            print(f'After replacing ]: {x}')
+            x = x.str.replace(' ', '0', regex=True)
+            print(f'After replacing space: {x}')
+            return x
+
+        ionE = float(f_droppare(df_ionE[(df_ionE['At. num'] == ielem) & (
+        df_ionE['Ion Charge'] == iion-1)]['Ionization Energy (a) (eV)']))
+        return ionE
+
+    #def process(self, atomic_number, ionization_state, temperature):
+        #self.kurucz_file = f"gf{atomic_number}{ionization_state}.all"
+        #self.hdf5_file = f"gf{atomic_number}{ionization_state}.hdf5"
+        #self.url = self.get_url(atomic_number, ionization_state)
+
+        # If hdf5 file exists, read data from it
+        #if os.path.exists(self.hdf5_file):
+            #print("HDF5 file already exists, reading data from it.")
+            #self.data = self.read_hdf5(self.hdf5_file)
+        #else :
+
+            #self.kuruczf = self.download_file()
+            #self.data = self.read_kurucz(self.kuruczf)
+            #self.store_hdf5(self.data, self.hdf5_file)
+            #self.data = self.read_hdf5(self.hdf5_file)
 
         # Convert atomic_number to element symbol
-        element_symbol = periodictable.elements[int(atomic_number)].symbol
+        #element_symbol = periodictable.elements[int(atomic_number)].symbol
 
         # Construct the key
 
-        if ionization_state == "00":
-            key = element_symbol + "_I"
-        elif ionization_state == "01":
-            key = element_symbol + "_II"
-        else:
-            key = element_symbol + "_III"
+        #if ionization_state == "00":
+            #key = element_symbol + "_I"
+        #elif ionization_state == "01":
+            #key = element_symbol + "_II"
+        #else:
+            #key = element_symbol + "_III"
 
-        populations = self.calculate_populations(key, temperature)
-        self.plot_spectrum(self.data, populations, temperature)
+        #populations = self.calculate_populations(key, temperature)
+        #self.plot_spectrum(self.data, populations, temperature)
+
+        

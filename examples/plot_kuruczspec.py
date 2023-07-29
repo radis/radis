@@ -7,7 +7,7 @@ def main():
 
     # Select element and temperature
     # for instance 2600 stands for Fe and 1101 for Na+
-    atomic_number = "26"
+    atomic_number = "27"
     ionization_state = "00"
     temperature = 5000
 
