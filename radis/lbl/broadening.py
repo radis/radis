@@ -359,11 +359,7 @@ def pressure_broadening_HWHM(
     assert mole_fraction + sum(diluent.values()) == 1
 
     # Adding self (resonant) broadening and temperature dependance self coefficient
-
-    # if Tdpsel is not in `dg` then Tdpair is used. Lookup parent function
-    # @dev note: (minor optimisation) in that case we simplify the expression by calculation the
-    #     power function once only.
-
+    # ... if Tdpsel is not in `dg` then Tdpair is used.
     if Tdpsel is None:  # use Tdpair instead
         gamma_lb += ((Tref / Tgas) ** Tdpair) * (
             (selbrd * pressure_atm * mole_fraction)
@@ -900,11 +896,6 @@ class BroadenFactory(BaseFactory):
 
         # diluent and their broadening coeff dictionary
         diluent_broadening_coeff = {}
-        from radis.misc.warning import (
-            MissingDiluentBroadeningTdepWarning,
-            MissingDiluentBroadeningWarning,
-        )
-
         for key in diluent:
             if key == "air":
                 # no need to add broadening dictionary with air, as "airbrd" and "Tdpair" is already in the dataframe
@@ -914,14 +905,6 @@ class BroadenFactory(BaseFactory):
                 diluent_broadening_coeff["gamma_" + diluent_name] = df[
                     "gamma_" + diluent_name
                 ]
-            elif self.warnings["MissingDiluentBroadeningWarning"] == "error":
-                raise MissingDiluentBroadeningWarning(
-                    "Broadening Coefficient of "
-                    + key
-                    + " not present in database ("
-                    + self.params["dbpath"]
-                    + "). If you are sure the database should include these coefficients, it might be a cache error. Try removing the cache by using once `calc_spectrum(..., use_cached='regen')`. If not, you can silence this error by using `warnings['MissingDiluentBroadeningWarning']='warn'`.\nThe broadening coefficient of air is used instead."
-                )
             else:
                 self.warn(
                     message="Broadening Coefficient of "
@@ -935,14 +918,6 @@ class BroadenFactory(BaseFactory):
 
             if "n_" + diluent_name in df.columns:
                 diluent_broadening_coeff["n_" + diluent_name] = df["n_" + diluent_name]
-            elif self.warnings["MissingDiluentBroadeningTdepWarning"] == "error":
-                raise MissingDiluentBroadeningTdepWarning(
-                    "Temperature dependance of Broadening Coefficient of "
-                    + key
-                    + " not present in database ("
-                    + self.params["dbpath"]
-                    + "). If you are sure the database should include these coefficients, it might be a cache error. Try removing the cache by using once `calc_spectrum(..., use_cached='regen')`. If not, you can silence this error by using `warnings['MissingDiluentBroadeningTdepWarning']='warn'`.\nThe temperature-dependance coefficient of air is used instead."
-                )
             else:
                 self.warn(
                     message="Temperature dependance of Broadening Coefficient of "

@@ -1040,7 +1040,7 @@ def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
         "hitran",
         load_columns=["diluent", "equilibrium"],
         extra_params="all",
-        # db_use_cached="regen",
+        db_use_cached="regen",  # required to download extra broadening parameters
     )
     # set default behavior of missing custom broadneing to be an error:
     sf.warnings["MissingDiluentBroadeningWarning"] = "error"
@@ -1069,10 +1069,11 @@ def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
     with pytest.raises(MissingDiluentBroadeningWarning):
         sf.eq_spectrum(Tgas=2000, diluent="X")  # "X" is not a real molecule
 
-    # Ensure it still works by silencing the error (air broadening will be used instead)
+    # Ensure it still works and that the warning is raised (air broadening will be used instead)
     sf.warnings["MissingDiluentBroadeningWarning"] = "warn"
     sf.warnings["MissingDiluentBroadeningTdepWarning"] = "warn"
-    sf.eq_spectrum(Tgas=2000, diluent="X")  # "X" is not a real molecule
+    with pytest.warns(MissingDiluentBroadeningWarning):
+        sf.eq_spectrum(Tgas=2000, diluent="X")  # "X" is not a real molecule
 
 
 @pytest.mark.fast
@@ -1144,5 +1145,6 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
+
     printm("test_broadening: ", _run_testcases(plot=True, verbose=True, debug=False))
     printm("Testing broadening:", pytest.main(["test_broadening.py", "--pdb"]))
