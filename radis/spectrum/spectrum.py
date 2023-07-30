@@ -1861,8 +1861,14 @@ class Spectrum(object):
         :ref:`the Spectrum page <label_spectrum>`
         """
 
-        P = self.get_integral("radiance_noslit", wunit="nm", Iunit="mW/cm2/sr/nm")
-        # P is in mW/cm2/sr/nm * nm
+        # New calculation as suggested in bug #460:
+        P = self.get_integral("radiance_noslit", wunit="cm-1", Iunit="mW/cm2/sr/cm-1")
+
+        # Old calculation before bug #460.
+        # Mixes wavelengths in vacuum and air, which creates an error of 1.00027.
+        # P = self.get_integral("radiance_noslit", wunit="nm", Iunit="mW/cm2/sr/nm")
+
+        # P is in mW/cm2/sr/cm-1 * cm-1
         return conv2(P, "mW/cm2/sr", unit)
 
     def has_nan(self, ignore_wavespace=True) -> bool:
