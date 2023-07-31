@@ -17,6 +17,7 @@ Documentation of each module and each function in RADIS
    :toctree: gen_modules/
    :template: module.rst
 
+   api
    db
    io
    lbl
