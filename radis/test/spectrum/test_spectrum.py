@@ -32,6 +32,7 @@ fig_prefix = basename(__file__) + ": "
 # %% Test routines
 
 
+@pytest.mark.fast
 def test_spectrum_creation_method(*args, **kwargs):
     import pytest
 
@@ -87,6 +88,7 @@ def test_spectrum_creation_method(*args, **kwargs):
         Spectrum({"wavelength": w, "abscoeff": k}, wunit="cm-1")
 
 
+@pytest.mark.fast
 def test_spectrum_get_methods(
     verbose=True, plot=True, close_plots=True, *args, **kwargs
 ):
@@ -119,7 +121,7 @@ def test_spectrum_get_methods(
     assert s.get_waveunit() == "nm"
     assert np.isclose(
         s.get_power(unit="W/cm2/sr"),
-        s.get_integral("radiance_noslit", Iunit="W/cm2/sr/nm"),
+        s.get_integral("radiance_noslit", wunit="nm_vac", Iunit="W/cm2/sr/nm"),
     )
     assert s.get_conditions()["Tgas"] == 1500
     assert len(s.get_vars()) == 2
