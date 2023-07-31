@@ -25,4 +25,4 @@ formats:
 #    - epub
 
 conda:
-  environment: docs/doc_environment.yml
+  environment: docs/docs_environment.yml
