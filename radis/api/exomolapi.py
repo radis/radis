@@ -1270,15 +1270,15 @@ class MdbExomol(DatabaseManager):
                     self.download(
                         molec, extension=[".trans.bz2"], numtag=num_tag, verbose=verbose
                     )
-
-                print(
-                    f"\t\t => Caching the *.trans.bz2 file to the {engine} (*.h5) format. After the second time, it will become much faster."
-                )
+                if verbose:
+                    print(
+                        f"\t\t => Caching the *.trans.bz2 file to the {engine} (*.h5) format. After the second time, it will become much faster."
+                    )
+                    print(f"\t\t => You can deleted the 'trans.bz2' file by hand.")
                 trans = read_trans(
                     trans_file, engine="vaex" if engine == "vaex" else "csv"
                 )
                 # TODO: add option to delete file at the end
-                print(f"\t\t => You can deleted the 'trans.bz2' file by hand.")
 
                 # Complete transition data with lookup on upper & lower state :
                 # In particular, compute gup and elower

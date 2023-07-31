@@ -931,7 +931,6 @@ class DatabankLoader(object):
         load_columns="equilibrium",
         parallel=True,
         extra_params=None,
-        verbose=True,
     ):
         """Fetch the latest files from [HITRAN-2020]_, [HITEMP-2010]_ (or newer),
         [ExoMol-2020]_  or [GEISA-2020] , and store them locally in memory-mapping
@@ -1291,7 +1290,7 @@ class DatabankLoader(object):
             isotope_list = self._get_isotope_list()
 
             # Check the specific ExoMol database and print ONCE the list of databases available
-            if verbose and (database is None or database == "default"):
+            if self.verbose and (database is None or database == "default"):
                 print("Using the recommended ExoMol databases for {}".format(molecule))
 
             local_paths = []
@@ -2312,7 +2311,7 @@ class DatabankLoader(object):
                         raise
                     else:
                         # Irrelevant file, just print and continue.
-                        if verbose >= 2:
+                        if self.verbose >= 2:
                             printg(str(err))
                         continue
 
@@ -2324,7 +2323,7 @@ class DatabankLoader(object):
                     ):
                         del df[col]
                         dropped.append(col)
-                if verbose >= 2 and len(dropped) > 0:
+                if self.verbose >= 2 and len(dropped) > 0:
                     print("Dropped columns: {0}".format(dropped))
 
                 # Crop to the wavenumber of interest
