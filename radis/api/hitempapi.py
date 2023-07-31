@@ -12,7 +12,7 @@ https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 
 import re
 import urllib.request
-from os.path import basename, join
+from os.path import basename, commonpath, join
 from typing import Union
 
 import numpy as np
@@ -50,9 +50,7 @@ HITEMP_MOLECULES = ["H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"]
 
 
 def keep_only_relevant(
-    inputfiles,
-    wavenum_min=None,
-    wavenum_max=None,
+    inputfiles, wavenum_min=None, wavenum_max=None, verbose=True
 ) -> Union[list, float, float]:
     """Parser file names for ``wavenum_format`` (min and max) and only keep
     relevant files if the requested range is ``[wavenum_min, wavenum_max]``
@@ -90,7 +88,16 @@ def keep_only_relevant(
             files_wmin = min(float(fname_wmin), files_wmin)
             files_wmax = max(float(fname_wmax), files_wmax)
 
-    print(f"HITEMP keep only relevant input files: {relevantfiles}")
+    if verbose and relevantfiles != []:
+        if len(relevantfiles) > 1:
+            folder = commonpath(relevantfiles)
+            # file_list = [x.replace(folder+'\\', '') for x in relevantfiles]
+            # print(f"In {folder} keep only relevant input files: {file_list}")
+            print(f"In ``{folder}`` keep only relevant input files:")
+            for file in relevantfiles:
+                print(file.replace(folder + "\\", ""))
+        else:
+            print(f"Keep only relevant input file: {relevantfiles}")
 
     return relevantfiles, files_wmin, files_wmax
 
@@ -241,17 +248,16 @@ class HITEMPDatabaseManager(DatabaseManager):
         return urlnames
 
     def keep_only_relevant(
-        self,
-        inputfiles,
-        wavenum_min=None,
-        wavenum_max=None,
+        self, inputfiles, wavenum_min=None, wavenum_max=None, verbose=True
     ) -> list:
         """For CO2 and H2O, return only relevant files for given wavenumber range.
 
         If other molecule, return the file anyway.
         see :py:func:`radis.api.hitempapi.keep_only_relevant`"""
         if self.molecule in ["CO2", "H2O"]:
-            inputfiles, _, _ = keep_only_relevant(inputfiles, wavenum_min, wavenum_max)
+            inputfiles, _, _ = keep_only_relevant(
+                inputfiles, wavenum_min, wavenum_max, verbose
+            )
         return inputfiles
 
     def get_linereturn_format(self, opener, urlname, columns):
