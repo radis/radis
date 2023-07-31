@@ -3722,7 +3722,7 @@ class Spectrum(object):
 
         # Get output wavespace (it's the w_new array, unless w_new is a Spectrum)
         if isinstance(w_new, Spectrum):
-            wstep_new = w_new.conditions["wstep"]
+            wstep_new = w_new.conditions.get("wstep", None)
             if unit == "nm":
                 w_new = w_new.get_wavelength(medium="air")
             elif unit == "nm_vac":
@@ -3735,11 +3735,12 @@ class Spectrum(object):
             w_new = w_new
             diff = np.diff(w_new)
             if not np.all(diff == diff[0]):
-                import warnings
+                from radis.misc.warning import default_warning_status, warn
 
-                warnings.warn(
+                warn(
                     "When resampling the spectrum, the new waverange had unequal spacing.",
-                    UserWarning,
+                    "UnevenWaverangeWarning",
+                    status=default_warning_status,
                 )
                 wstep_new = "Unequal spacing, average <wstep>={:.2f}".format(
                     np.mean(diff)
@@ -3760,7 +3761,8 @@ class Spectrum(object):
         # Update stored_waveunit to new unit
         if unit != stored_waveunit:
             s.conditions["waveunit"] = unit
-        s.conditions["wstep"] = wstep_new
+        if wstep_new is not None:
+            s.conditions["wstep"] = wstep_new
 
         # Now let's resample
         def get_filling(variable):

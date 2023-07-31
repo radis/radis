@@ -195,6 +195,16 @@ class MissingReferenceWarning(UserWarning):
     pass
 
 
+# %% Spectrum object  warnings / errors
+# -------------------------------------
+
+
+class UnevenWaverangeWarning(UserWarning):
+    """Warning triggered when Spectrum has unevenly distributed waverange"""
+
+    pass
+
+
 # %% Config file warnings & errors
 
 
@@ -210,6 +220,7 @@ class DatabaseNotFoundError(FileNotFoundError):
 
 # @dev: list all your custom warnings below so they are handled by RADIS user params.
 WarningClasses = {
+    # Spectrum Calculation Warnings & Errors :
     "default": UserWarning,
     "AccuracyWarning": AccuracyWarning,
     "PerformanceWarning": PerformanceWarning,
@@ -235,6 +246,8 @@ WarningClasses = {
     "IrrelevantFileWarning": IrrelevantFileWarning,
     "OutOfBoundWarning": OutOfBoundWarning,
     "MissingReferenceWarning": MissingReferenceWarning,
+    # Spectrum Post-Processing Warnings & Errors :
+    "UnevenWaverangeWarning": UnevenWaverangeWarning,
 }
 """ dict: warnings used in RADIS Spectrum calculations.
 
@@ -255,6 +268,7 @@ See Also
 :py:data:`~radis.misc.warning.default_warning_status`
 """
 default_warning_status = {
+    # Spectrum Calculation Warnings & Errors :
     "default": "warn",  # default
     "AccuracyWarning": "warn",
     "AccuracyError": "error",
@@ -282,6 +296,8 @@ default_warning_status = {
     "IrrelevantFileWarning": "warn",
     "OutOfBoundWarning": "warn",
     "MissingReferenceWarning": "warn",
+    # Spectrum Post-Processing Warnings & Errors :
+    "UnevenWaverangeWarning": "warn",
 }
 """ dict: default status of warnings used in RADIS Spectrum calculations.
 

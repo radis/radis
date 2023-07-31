@@ -252,33 +252,31 @@ def run_setup(with_binary):
             "configparser",
             "cython",
             "hitran-api",
-            "lxml",  # parser used for ExoMol website
-            "numpy<=1.22.3 ",
-            "matplotlib",  # ">=3.4.0" to suppress the Ruler warning, but only available for Python >= 3.7
             "habanero",  # CrossRef API to retrieve data from doi
             "h5py",  # HDF5
             "hjson",
             "ipython>=7.0.0",
             "joblib",  # for parallel loading of SpecDatabase
             "json-tricks>=3.15.0",  # to deal with non jsonable formats
-            "pandas>=1.0.5",
-            "plotly>=2.5.1",
-            "progressbar2",  # used in vaex
-            "numba",
+            "lmfit",  # for new fitting modules
+            "lxml",  # parser used for ExoMol website
+            "matplotlib",  # ">=3.4.0" to suppress the Ruler warning, but only available for Python >= 3.7
+            "numba",  # just-in-time compiler
+            "numpy<=1.22.3 ",
             "mpldatacursor",
-            "publib>=0.3.2",  # Plotting styles for Matplotlib
-            "plotly>=2.5.1",  # for line survey HTML output
+            "pandas>=1.0.5",
             "peakutils",
+            "plotly>=2.5.1",  # for line survey HTML output
+            "progressbar2",  # used in vaex
+            "psutil",  # to get user RAM
+            "publib>=0.3.2",  # Plotting styles for Matplotlib
+            "pytest",  # to run test suite
             "termcolor",
             "tables",  # for pandas to HDF5 export
-            "pytest",  # to run test suite
-            "numba",  # just-in-time compiler
-            "psutil",  # for getting user RAM
             "seaborn",  # other matplotlib themes
             "scipy>=1.4.0",
             # "tuna",  # to generate visual/interactive performance profiles
             "vaex>=4.9.2",  # load HDF5 files  (version needed to fix https://github.com/radis/radis/issues/486). #TODO : install only required sub-packages
-            "lmfit",  # for new fitting modules
         ],
         extras_require={
             "dev": [
