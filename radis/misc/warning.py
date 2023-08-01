@@ -128,7 +128,7 @@ class NegativeEnergiesWarning(UserWarning):
 
 
 class MissingSelfBroadeningTdepWarning(UserWarning):
-    """Self broadening temperature dependance coefficient is missing in Line Database.
+    """Self broadening temperature-dependance-coefficient is missing in Line Database.
 
     Usually, use Air broadening temperature dependance coefficient instead. See
     :py:meth:`~radis.lbl.broadening.BroadenFactory._add_collisional_broadening_HWHM`
@@ -141,6 +141,26 @@ class MissingSelfBroadeningWarning(UserWarning):
     """Self broadening tabulated width is missing in Line Database.
 
     Usually, use Air broadening tabulated width instead. See
+    :py:meth:`~radis.lbl.broadening.BroadenFactory._add_collisional_broadening_HWHM`
+    """
+
+    pass
+
+
+class MissingDiluentBroadeningTdepWarning(UserWarning):
+    """Diluent broadening temperature-dependance-coefficient is missing in Line Database.
+
+    Usually, suggest user to use Air broadening temperature dependance coefficient instead. See
+    :py:meth:`~radis.lbl.broadening.BroadenFactory._add_collisional_broadening_HWHM`
+    """
+
+    pass
+
+
+class MissingDiluentBroadeningWarning(UserWarning):
+    """Diluent broadening tabulated width is missing in Line Database.
+
+    Usually, suggest user to use Air broadening tabulated width instead. See
     :py:meth:`~radis.lbl.broadening.BroadenFactory._add_collisional_broadening_HWHM`
     """
 
@@ -227,6 +247,8 @@ WarningClasses = {
     "NegativeEnergiesWarning": NegativeEnergiesWarning,
     "MissingSelfBroadeningTdepWarning": MissingSelfBroadeningTdepWarning,
     "MissingSelfBroadeningWarning": MissingSelfBroadeningWarning,
+    "MissingDiluentBroadeningWarning": MissingDiluentBroadeningWarning,
+    "MissingDiluentBroadeningTdepWarning": MissingDiluentBroadeningTdepWarning,
     "ZeroBroadeningWarning": ZeroBroadeningWarning,
     "MissingPressureShiftWarning": MissingPressureShiftWarning,
     "LinestrengthCutoffWarning": LinestrengthCutoffWarning,
@@ -275,6 +297,8 @@ default_warning_status = {
     # warning if self-broadening abs coefficnet missing (Air is used instead)
     "MissingSelfBroadeningTdepWarning": "warn",
     "MissingSelfBroadeningWarning": "warn",
+    "MissingDiluentBroadeningWarning": "warn",
+    "MissingDiluentBroadeningTdepWarning": "warn",
     "ZeroBroadeningWarning": "warn",
     "MissingPressureShiftWarning": "warn",
     "InputConditionsWarning": "warn",
