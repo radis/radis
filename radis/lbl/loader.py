@@ -946,8 +946,8 @@ class DatabankLoader(object):
 
             .. note::
                 ``'range'`` will be faster, but will require a new download each time
-                you'll change the range. ``'full'`` is slower and takes more memory, but
-                will be downloaded only once.
+                you'll change the range. ``'full'`` is slower the 1st time and takes
+                more on-disk memory, but will be faster over time.
 
             Default is ``'full'``.
 
@@ -1394,7 +1394,8 @@ class DatabankLoader(object):
         # Always sort line database by wavenumber (required to SPARSE_WAVERANGE mode)
         df.sort_values("wav", ignore_index=True, inplace=True)
 
-        # Post-processing of the line database
+        # %% Post-processing of the line database
+        # ------------------------------------
         # (note : this is now done in 'fetch_hitemp' before saving to the disk)
         # spectroscopic quantum numbers will be needed for nonequilibrium calculations, and line survey.
         if parse_local_global_quanta and "locu" in df and source != "geisa":
@@ -1618,8 +1619,8 @@ class DatabankLoader(object):
         )
         # Now that we're all set, let's load everything
 
-        # %% Line database
-        # ------------
+        # %% Load Line databases
+        # ----------------------
         self._reset_references()  # bibliographic references
 
         self.df0 = self._load_databank(
@@ -1641,8 +1642,8 @@ class DatabankLoader(object):
         else:
             self.input.molecule = get_molecule(self.df0.attrs["id"])  # get molecule
 
-        # %% Partition functions (with energies)
-        # ------------
+        # %% Load Partition functions (and energies if needed)
+        # ----------------------------------------------------
 
         self._init_equilibrium_partition_functions(parfunc, parfuncfmt)
 

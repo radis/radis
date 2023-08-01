@@ -168,6 +168,21 @@ def nm2hz(lbd_nm):
     return c * 1e9 / lbd_nm
 
 
+# Function for safe division
+
+
+def zero2inf(x):
+    try:
+        x[x == 0] = np.inf
+        return x
+    except (TypeError):
+        return x if x else np.inf
+
+
+def div_safe(f):
+    return lambda x: f(zero2inf(x))
+
+
 # Convert Broadenings
 
 
