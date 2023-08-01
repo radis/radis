@@ -24,5 +24,12 @@ formats:
     - pdf
 #    - epub
 
+python:
+  install:
+    - method: pip
+      path: .
+      # extra_requirements:   # not compatible with conda install
+
 conda:
-  environment: docs/docs_environment.yml
+  environment: environment.yml
+  #  note : ReadTheDocs installs Radis with "pip install .[docs]" so extra packages are read from setup.py  "docs"

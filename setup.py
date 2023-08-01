@@ -284,7 +284,16 @@ def run_setup(with_binary):
                 "black>=20.8b1",  # for code-linting in accordance to PEP8
                 "isort",  # for sorting imports
                 "pre-commit",  # to enforce Black before each commit
-            ]
+            ],
+            "docs": [
+                "sphinx-autodoc-annotation",
+                "sphinx_autodoc_defaultargs>=0.1.2",
+                "sphinx>=1.7.0",
+                "astroquery>=0.3.9",
+                "sphinxcontrib-apidoc",
+                "sphinx-gallery",
+                "lmfit",
+            ],
         },
         classifiers=[
             "Development Status :: 4 - Beta",
