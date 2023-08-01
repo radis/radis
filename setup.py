@@ -245,45 +245,15 @@ def run_setup(with_binary):
             "line-by-line",
         ],
         packages=find_packages(),
-        install_requires=[
-            "astropy",  # Unit aware calculations
-            "astroquery>=0.3.9",  # to fetch HITRAN databases
-            "beautifulsoup4",  # parse ExoMol website
-            "configparser",
-            "cython",
-            "hitran-api",
-            "habanero",  # CrossRef API to retrieve data from doi
-            "h5py",  # HDF5
-            "hjson",
-            "ipython>=7.0.0",
-            "joblib",  # for parallel loading of SpecDatabase
-            "json-tricks>=3.15.0",  # to deal with non jsonable formats
-            "lmfit",  # for new fitting modules
-            "lxml",  # parser used for ExoMol website
-            "matplotlib",  # ">=3.4.0" to suppress the Ruler warning, but only available for Python >= 3.7
-            "numba",  # just-in-time compiler
-            "numpy<=1.22.3 ",
-            "mpldatacursor",
-            "pandas>=1.0.5",
-            "peakutils",
-            "plotly>=2.5.1",  # for line survey HTML output
-            "progressbar2",  # used in vaex
-            "psutil",  # to get user RAM
-            "publib>=0.3.2",  # Plotting styles for Matplotlib
-            "pytest",  # to run test suite
-            "termcolor",
-            "tables",  # for pandas to HDF5 export
-            "seaborn",  # other matplotlib themes
-            "scipy>=1.4.0",
-            # "tuna",  # to generate visual/interactive performance profiles
-            "vaex>=4.9.2",  # load HDF5 files  (version needed to fix https://github.com/radis/radis/issues/486). #TODO : install only required sub-packages
-        ],
+        install_requires=[],
         extras_require={
             "dev": [
                 "numpydoc",  # for Jedi (autocompletion) to recognize
                 "black>=20.8b1",  # for code-linting in accordance to PEP8
                 "isort",  # for sorting imports
                 "pre-commit",  # to enforce Black before each commit
+                "pytest",  # to run test suite
+                "ipython>=7.0.0",  # useful for fast debugging
             ],
             "docs": [
                 "sphinx-autodoc-annotation",
