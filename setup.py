@@ -246,6 +246,7 @@ def run_setup(with_binary):
         ],
         packages=find_packages(),
         install_requires=[],
+        # note EP : generate a requirement.txt by Mamba & pip freeze for Pypi deployment ? see https://stackoverflow.com/a/75239980/5622825
         extras_require={
             "dev": [
                 "numpydoc",  # for Jedi (autocompletion) to recognize
@@ -263,6 +264,7 @@ def run_setup(with_binary):
                 "sphinxcontrib-apidoc",
                 "sphinx-gallery",
                 "lmfit",
+                "pytest",  # Sphinx autodoc also parses test suite
             ],
         },
         classifiers=[
