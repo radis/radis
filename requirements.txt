@@ -4,6 +4,7 @@ hjson          # Json with comments (for default_radis.json)
 publib>=0.3.2  # Plotting styles for Matplotlib
 hitran-api     # HAPI, used to access TIPS partition functions
 peakutils
+ruamel.yaml
 json-tricks>=3.15.0  # to deal with non jsonable formats
 mpldatacursor
-tuna            # to generate visual/interactive performance profiles
+# tuna            # to generate visual/interactive performance profiles
