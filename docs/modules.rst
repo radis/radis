@@ -1,7 +1,7 @@
-.. _radis_glr_api:
+.. _radis_glr_modules:
 
-API
-===
+MODULES
+=======
 
 Documentation of each module and each function in RADIS
 
