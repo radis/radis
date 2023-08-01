@@ -909,7 +909,7 @@ class BroadenFactory(BaseFactory):
                 self.warn(
                     message="Broadening Coefficient of "
                     + key
-                    + " not present in database. Broadening coefficient by air will be used instead. \nIf the database should include these coefficients, try removing the cache by using once `use_cached='regen'' in calc_spectrum. If not, you can silence this error by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.\nThe broadening coefficient of air is used instead.",
+                    + " not present in database. \nIf the database should include these coefficients, try removing the cache by using once `use_cached='regen'' in calc_spectrum. If not, you can silence this error by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.\nThe broadening coefficient of air is used instead.",
                     category="MissingDiluentBroadeningWarning",
                 )
                 diluent_broadening_coeff["gamma_" + diluent_name] = df[
@@ -922,7 +922,7 @@ class BroadenFactory(BaseFactory):
                 self.warn(
                     message="Temperature dependance of Broadening Coefficient of "
                     + key
-                    + " not present in database. Temperature dependance coefficient by air will be used instead. \nIf the database should include these coefficients, try removing the cache by using once `use_cached='regen'' in calc_spectrum. If not, you can silence this error by using `warnings['MissingDiluentBroadeningTdepWarning']='ignore'`.\nThe temperature-dependance coefficient of air is used instead.",
+                    + " not present in database. \nIf the database should include these coefficients, try removing the cache by using once `use_cached='regen'' in calc_spectrum. If not, you can silence this error by using `warnings['MissingDiluentBroadeningTdepWarning']='ignore'`.\nThe temperature-dependance coefficient of air is used instead.",
                     category="MissingDiluentBroadeningTdepWarning",
                 )
                 diluent_broadening_coeff["n_" + diluent_name] = df[
