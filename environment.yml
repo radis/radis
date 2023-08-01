@@ -34,4 +34,4 @@ dependencies:
 - vaex-viz
 - pip
 - pip:
-  - -r ./requirements.txt              # add all packages directly in requirements.txt
+  - -r requirements.txt              # add all packages directly in requirements.txt

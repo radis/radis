@@ -36,7 +36,10 @@ jobs:
         - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
         # Create conda environment
         - micromamba install xtensor -c conda-forge -y
-        - micromamba create -f environment.yml -y
+        # move requirements.txt to the /tmp folder
+        - pwd
+        - mv requirements.txt /tmp/requirements.txt
+        - micromamba create -f ./environment.yml -y
         # Activate and install test-only dependencies
         - micromamba activate radis-env
         - micromamba list
