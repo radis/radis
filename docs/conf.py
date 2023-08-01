@@ -92,7 +92,7 @@ extensions = [
     "sphinx_autodoc_defaultargs",
     "sphinx.ext.intersphinx",
     "sphinx.ext.inheritance_diagram",
-    "sphinxcontrib.apidoc",
+    # "sphinxcontrib.apidoc",  # not needed, we run run_apidoc() manually implemented below
     "sphinx.ext.linkcode",
 ]
 
@@ -172,7 +172,8 @@ def setup(app):
 intersphinx_mapping = {
     "astropy": ("https://docs.astropy.org/en/stable/", None),
     "astroquery": ("https://astroquery.readthedocs.io/en/latest/", None),
-    "cantera": ("https://www.cantera.org/documentation/docs-2.6/sphinx/", None),
+    "cantera": ("https://www.cantera.org/documentation/docs-2.6/sphinx/html/", None),
+    "exojax": ("https://secondearths.sakura.ne.jp/exojax/objects.inv", None),
     "fitroom": ("https://fitroom.readthedocs.io/en/latest/", None),
     "habanero": ("https://habanero.readthedocs.io/en/latest/", None),
     "joblib": ("https://joblib.readthedocs.io/en/latest/", None),
