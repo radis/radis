@@ -28,8 +28,8 @@ python:
   install:
     - method: pip
       path: .
-      # extra_requirements:   # not compatible with conda install
+      extra_requirements:
+      - docs      #  ReadTheDocs will install Radis with "pip install .[docs]" so extra packages are read from setup.py ["docs":....]
 
 conda:
   environment: environment.yml
-  #  note : ReadTheDocs installs Radis with "pip install .[docs]" so extra packages are read from setup.py  "docs"
