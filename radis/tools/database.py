@@ -2347,7 +2347,9 @@ class SpecDatabase(SpecList):
 
         # Now register the spectrum in the database :
         spectrum_conditions = self._load_new_file(file, binary=compress)
-        self.df = self.df.append(spectrum_conditions, ignore_index=True)
+        self.df = pd.concat(
+            [self.df, pd.DataFrame([spectrum_conditions])], ignore_index=True
+        )
 
         # Update index .csv
         self.print_index()
