@@ -1003,6 +1003,119 @@ def test_broadening_chunksize_eq(verbose=True, plot=False, *args, **kwargs):
             )
 
 
+@pytest.mark.fast
+def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
+    """Test collisinnal broadening by other species than air and self (resonant)
+
+    Here, broadening by CO2 yields larger Lorentzian HWHM than air. We check that.
+
+    Introduced in https://github.com/radis/radis/pull/495
+    """
+
+    sf = SpectrumFactory(
+        wavelength_min=4200,
+        wavelength_max=4500,
+        cutoff=1e-23,
+        molecule="CO",
+        isotope="1,2",
+        truncation=5,
+        neighbour_lines=10,
+        path_length=0.1,
+        mole_fraction=0.1,
+        medium="vacuum",
+        optimization=None,
+        verbose=verbose,
+    )
+    sf.warnings.update(
+        {
+            "MissingSelfBroadeningWarning": "ignore",
+            "NegativeEnergiesWarning": "ignore",
+            "LinestrengthCutoffWarning": "ignore",
+            "HighTemperatureWarning": "ignore",
+            "AccuracyWarning": "ignore",
+            "PerformanceWarning": "ignore",
+        }
+    )
+    sf.fetch_databank(
+        "hitran",
+        load_columns=["diluent", "equilibrium"],
+        extra_params="all",
+        db_use_cached="regen",  # required to download extra broadening parameters
+    )
+    # set default behavior of missing custom broadneing to be an error:
+    sf.warnings["MissingDiluentBroadeningWarning"] = "error"
+    sf.warnings["MissingDiluentBroadeningTdepWarning"] = "error"
+
+    # (1) Calculating spectrum for different diluents
+    sf.eq_spectrum(Tgas=2000)
+    wl1 = sf.df1["hwhm_lorentz"]
+    assert sf._diluent == {"air": 0.9}
+
+    sf.eq_spectrum(Tgas=2000, diluent={"CO2": 0.4, "air": 0.5})
+    wl2 = sf.df1["hwhm_lorentz"]
+    assert sf._diluent == {"CO2": 0.4, "air": 0.5}
+
+    sf.eq_spectrum(Tgas=2000, diluent="CO2")
+    wl3 = sf.df1["hwhm_lorentz"]
+    assert sf._diluent == {"CO2": 0.9}
+
+    # Assert that broadening by CO2 increased the broadening width :
+    assert (wl1 < wl2).all() and (wl2 < wl3).all()
+
+    # (2) Now, ensures that asking broadening by some species not in database raises
+    # an error
+    from radis.misc.warning import MissingDiluentBroadeningWarning
+
+    with pytest.raises(MissingDiluentBroadeningWarning):
+        sf.eq_spectrum(Tgas=2000, diluent="X")  # "X" is not a real molecule
+
+    # Ensure it still works and that the warning is raised (air broadening will be used instead)
+    sf.warnings["MissingDiluentBroadeningWarning"] = "warn"
+    sf.warnings["MissingDiluentBroadeningTdepWarning"] = "warn"
+    with pytest.warns(MissingDiluentBroadeningWarning):
+        sf.eq_spectrum(Tgas=2000, diluent="X")  # "X" is not a real molecule
+
+
+@pytest.mark.fast
+def test_diluents_molefraction(verbose=True, plot=False, *args, **kwargs):
+    """
+    Assert an error is raised when Molefraction (molecule + diluent) < 1 or > 1
+    Assert calculations run when Molefraction (molecule + diluent) == 1
+    """
+    from radis.misc.warning import MoleFractionError
+
+    sf = SpectrumFactory(
+        wavelength_min=4300,
+        wavelength_max=4500,
+        wstep=0.01,
+        cutoff=1e-30,
+        pressure=1,
+        isotope=[1],
+        verbose=verbose,
+        diluent={"CO2": 0.4, "air": 0.2},
+    )
+    sf.load_databank("HITRAN-CO", load_columns=["diluent", "equilibrium"])
+
+    # Assert an error is raised when Molefraction (molecule + diluent) < 1
+    with pytest.raises(MoleFractionError) as err:
+        sf.eq_spectrum(Tgas=300, mole_fraction=0.3)
+    assert (
+        "of molecule and diluents less than 1. Please set appropriate molefraction value of molecule and diluents"
+        in str(err.value)
+    )
+
+    # Assert an error is raised when Molefraction (molecule + diluent) > 1
+    with pytest.raises(MoleFractionError) as err:
+        sf.eq_spectrum(Tgas=300, mole_fraction=0.6)
+    assert (
+        "of molecule and diluents greater than 1. Please set appropriate molefraction value of molecule and diluents."
+        in str(err.value)
+    )
+
+    # Molefraction (molecule + diluent) == 1
+    sf.eq_spectrum(Tgas=300, mole_fraction=0.4)
+
+
 def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
     # Test broadening
@@ -1024,9 +1137,14 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
     test_abscoeff_continuum(plot=plot, verbose=verbose, *args, **kwargs)
     test_noneq_continuum(plot=plot, verbose=verbose, *args, **kwargs)
 
+    # Test diluent broadening
+    test_non_air_diluent(verbose=verbose, plot=plot, *args, **kwargs)
+    test_diluents_molefraction(verbose=verbose, plot=plot, *args, **kwargs)
+
     return True
 
 
 if __name__ == "__main__":
+
     printm("test_broadening: ", _run_testcases(plot=True, verbose=True, debug=False))
     printm("Testing broadening:", pytest.main(["test_broadening.py", "--pdb"]))
