@@ -481,6 +481,8 @@ class Parameters(ConditionDict):
         "waveunit",
         "wstep",
         "diluent",
+        "chi_correction",
+        "xi_factor", 
     ]
 
     def __init__(self):
@@ -521,7 +523,8 @@ class Parameters(ConditionDict):
         lines because of lineshape broadening. Default ``True``."""
         self.parsum_mode = "full summation"  #: int : "full summation" or "tabulation"  . calculation mode of parittion function. See :py:class:`~radis.levels.partfunc.RovibParFuncCalculator`
         self.sparse_ldm = "auto"  #: str: "auto", True, False  . Sparse LDM calculation. See :py:meth:`radis.lbl.broadening.BroadenFactory._apply_lineshape_LDM`
-
+        self.chi_correction = False # chi_correction for high-pressure CO2 broadening
+                
 
 class MiscParams(ConditionDict):
     """A class to hold Spectrum calculation descriptive parameters, under the attribute
