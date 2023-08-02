@@ -407,7 +407,6 @@ class SpectrumFactory(BandFactory):
         export_lines=False,
         emulate_gpu=False,
         diluent="air",
-        format=None,
         **kwargs,
     ):
 
@@ -634,7 +633,6 @@ class SpectrumFactory(BandFactory):
         self.SpecDatabase = None  # the database to store spectra. Not to be confused
         # with the databank where lines are stored
         self.database = None  # path to previous database
-        self.format=format
         
         # Warnings
         # --------

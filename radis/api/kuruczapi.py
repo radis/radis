@@ -16,6 +16,7 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import mendeleev
 import periodictable
 import requests
 from tqdm import tqdm
@@ -35,9 +36,9 @@ class AdBKurucz:
         self.populations = None
         self.atom=atom
         self.ionization_state=ionization_state
-        self.atomic_number = getattr(periodictable,self.atom).number
+        self.atomic_number = getattr(mendeleev,self.atom).atomic_number
         # Convert atomic_number to element symbol
-        self.element_symbol = periodictable.elements[int(self.atomic_number)].symbol
+        self.element_symbol = mendeleev.element(int(self.atomic_number)).symbol
 
         # Construct the key
 

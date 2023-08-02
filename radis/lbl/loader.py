@@ -99,6 +99,7 @@ from radis.tools.track_ref import RefTracker
 from radis.api.kuruczapi import AdBKurucz
 import os
 import periodictable
+import mendeleev
 KNOWN_DBFORMAT = [
     "hitran",
     "hitemp",
@@ -2311,7 +2312,7 @@ class DatabankLoader(object):
                         atom = self.input.atom
                         ionization_state = self.input.ionization_state
                         kurucz = AdBKurucz(atom,ionization_state)
-                        atomic_number = getattr(periodictable, atom).number
+                        atomic_number = getattr(mendeleev, atom).atomic_number
                         kurucz_file = f"gf{atomic_number}{ionization_state}.all"
                         hdf5_file = f"gf{atomic_number}{ionization_state}.hdf5"
                         kurucz.url = kurucz.get_url(atomic_number, ionization_state) 
