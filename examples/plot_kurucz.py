@@ -11,7 +11,7 @@ import numpy as np
 
 
 
-hdf5_path = fetch_kurucz('Fe',00) # replace 'Fe', 00 with your atom and ionization_state
+hdf5_path = fetch_kurucz('Fe',00)[0] # replace 'Fe', 00 with your atom and ionization_state
 
 
 # Define the parameters for SpectrumFactory

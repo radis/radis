@@ -32,6 +32,7 @@ def fetch_kurucz(atom, ionization_state):
     if os.path.exists(hdf5_file):
         print("HDF5 file already exists, reading data from it.")
         df = kurucz.read_hdf5(hdf5_file)
+        kurucz.add_airbrd(df)
     else:
         kuruczf = kurucz.download_file()
         df = kurucz.read_kurucz(kuruczf)
@@ -39,5 +40,6 @@ def fetch_kurucz(atom, ionization_state):
         print(kurucz.hdf5_file)
         kurucz.store_hdf5(df, kurucz.hdf5_file)
         df = kurucz.read_hdf5(hdf5_file)
+        kurucz.add_airbrd(df)
 
-    return hdf5_file
+    return hdf5_file,df

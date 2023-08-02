@@ -71,6 +71,7 @@ from radis.io.exomol import fetch_exomol
 from radis.io.geisa import fetch_geisa
 from radis.io.hitemp import fetch_hitemp
 from radis.io.hitran import fetch_hitran
+from radis.io.kurucz import fetch_kurucz
 from radis.io.query import fetch_astroquery
 from radis.levels.partfunc import (
     PartFunc_Dunham,
@@ -2309,24 +2310,10 @@ class DatabankLoader(object):
                         # self.reftracker.add("10.1016/j.jqsrt.2020.107228", "line database")  # [ExoMol-2020]
                         raise NotImplementedError("use fetch_databank('exomol')")
                     elif dbformat in ["kurucz"]:
-                        atom = self.input.atom
-                        ionization_state = self.input.ionization_state
-                        kurucz = AdBKurucz(atom,ionization_state)
-                        atomic_number = getattr(mendeleev, atom).atomic_number
-                        kurucz_file = f"gf{atomic_number}{ionization_state}.all"
-                        hdf5_file = f"gf{atomic_number}{ionization_state}.hdf5"
-                        kurucz.url = kurucz.get_url(atomic_number, ionization_state) 
-
-                        # If hdf5 file exists, read data from it
-                        if os.path.exists(hdf5_file):
-                            print("HDF5 file already exists, reading data from it.")
-                            df = kurucz.read_hdf5(hdf5_file)
-                        else :
-                            kuruczf = kurucz.download_file()
-                            df = kurucz.read_kurucz(kuruczf)
-                            kurucz.store_hdf5(df, kurucz.hdf5_file)
-                            df = kurucz.read_hdf5(hdf5_file)
-
+                        
+                        kurucz=AdBKurucz(self.input.atom,self.input.ionization_state)
+                        hdf5_file=fetch_kurucz(self.input.atom,self.input.ionization_state)[0]
+                        df=fetch_kurucz(self.input.atom,self.input.ionization_state)[1]
                         kurucz.add_airbrd(df)
                         #print("colonnes",df.columns)
 
