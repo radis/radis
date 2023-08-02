@@ -171,6 +171,7 @@ def fetch_geisa(
     if isotope and type(isotope) == int:
         isotope = str(isotope)
 
+    # Load and return
     df = ldb.load(
         local_files,  # filter other files,
         columns=columns,

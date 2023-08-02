@@ -20,7 +20,7 @@ Routine Listing
 from copy import deepcopy
 from os.path import exists
 
-# from radis.db.classes import M
+import numpy as np
 
 try:  # Proper import
     from .base import get_wavenumber_range
@@ -665,7 +665,7 @@ def _calc_spectrum_one_molecule(
 
     def _is_at_equilibrium():
         try:
-            assert Tvib is None or Tvib == Tgas
+            assert Tvib is None or (np.array(Tvib) == np.array(Tgas)).all()
             assert Trot is None or Trot == Tgas
             assert overpopulation is None
             if "self_absorption" in kwargs:

@@ -320,8 +320,8 @@ See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__   |badge_awe
                    :target: ./License.md
                    :alt: License
 
-.. |badge_travis| image:: https://img.shields.io/travis/radis/radis.svg
-                  :target: https://travis-ci.com/radis/radis
+.. |badge_travis| image:: https://app.travis-ci.com/radis/radis.svg?branch=develop
+                  :target: https://app.travis-ci.com/github/radis/radis
                   :alt: Tests
 
 .. |badge_coverage| image:: https://codecov.io/gh/radis/radis/branch/develop/graph/badge.svg
