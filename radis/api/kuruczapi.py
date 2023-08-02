@@ -1,6 +1,7 @@
 """
 The AdBKurucz class below is inspired by an Exojax class developed by Hiroyuki Tako ISHIKAWA.
 It allows loading data from the Kurucz database and performing several calculations on it.
+https://github.com/HajimeKawahara/exojax.git
 
 Author: Racim Menasria
 Date: June 2023
@@ -18,6 +19,7 @@ import pandas as pd
 import periodictable
 import requests
 from tqdm import tqdm
+from radis.phys.air import air2vacuum
 
 
 class AdBKurucz:
@@ -25,12 +27,30 @@ class AdBKurucz:
     ecgs = 4.80320450e-10
     mecgs = 9.10938356e-28
 
-    def __init__(self):
+    def __init__(self,atom,ionization_state):
         self.kurucz_url_base = "http://kurucz.harvard.edu/linelists/gfall/gf"
         self.hdf5_file = None
         self.data = None
         self.pfTdat, self.pfdat = self.load_pf_Barklem2016()
         self.populations = None
+        self.atom=atom
+        self.ionization_state=ionization_state
+        self.atomic_number = getattr(periodictable,self.atom).number
+        # Convert atomic_number to element symbol
+        self.element_symbol = periodictable.elements[int(self.atomic_number)].symbol
+
+        # Construct the key
+
+        if ionization_state == "00":
+            self.key = self.element_symbol + "_I"
+        elif ionization_state == "01":
+            self.key = self.element_symbol + "_II"
+        else:
+            self.key = self.element_symbol + "_III"
+
+
+
+        
 
     def get_url(self, atomic_number, ionization_state):
         ionization_state = str(ionization_state).zfill(2)
@@ -52,7 +72,7 @@ class AdBKurucz:
         )  # Converts the values to float64, skipping the first value
 
         # read the local file instead of the one in the exojax package
-        with open("./pfdat.txt", "r") as f:
+        with open("radis\db\kuruczpartfn.txt", "r") as f:
             pfdat = pd.read_csv(f, sep="\s+", comment="#", names=pfTdat.index)
 
         # print(pfdat.head())
@@ -93,6 +113,7 @@ class AdBKurucz:
         return ipccd
 
     def load_ionization_energies(self):
+        #Not used for now
         """Load atomic ionization energies.
 
         Returns:
@@ -119,7 +140,7 @@ class AdBKurucz:
             ionE (float): ionization energy
 
         Note:
-            NIST_Atomic_Ionization_Energies.txt is in data/atom
+            NIST_iE is for now is .NIST_iE.txt 
         """
 
         def f_droppare(x):
@@ -169,6 +190,7 @@ class AdBKurucz:
 
 
     def air_to_vac(self, wlair):
+        #Use air2vacuum instead
         """Convert wavelengths [AA] in air into those in vacuum.
 
         * See http://www.astro.uu.se/valdwiki/Air-to-vacuum%20conversion
@@ -189,6 +211,32 @@ class AdBKurucz:
         )
         wlvac = wlair * n
         return wlvac
+    
+
+    def Sij0(self,A, g, nu_lines, elower, QTref):
+        """Reference Line Strength in Tref=296K, S0.
+
+        Note:
+        Tref=296K
+
+        Args:
+        A: Einstein coefficient (s-1)
+        g: the upper state statistical weight
+        nu_lines: line center wavenumber (cm-1)
+        elower: elower
+        QTref: partition function Q(Tref)
+        Mmol: molecular mass (normalized by m_u)
+
+        Returns:
+        Sij(T): Line strength (cm)
+        """
+        hcperk = 1.4387773538277202  # hc/kB (cm K)
+        ccgs = 29979245800.0
+        Tref = 296.0
+        S0 = -A*g*np.exp(-hcperk*elower/Tref)*np.expm1(-hcperk*nu_lines/Tref)\
+            / (8.0*np.pi*ccgs*nu_lines**2*QTref)
+        return S0
+
 
     def read_kurucz(self, kuruczf):
         """Input Kurucz line list (http://kurucz.harvard.edu/linelists/)
@@ -300,7 +348,7 @@ class AdBKurucz:
         jlower = jlower_inverted
         jupper = jupper_inverted
 
-        wlaa = np.where(wlnmair < 200, wlnmair * 10, self.air_to_vac(wlnmair * 10))
+        wlaa = np.where(wlnmair < 200, wlnmair * 10, air2vacuum(wlnmair * 10))
         nu_lines = 1e8 / wlaa[::-1]  # [cm-1]<-[AA]
         loggf = loggf[::-1]
         ielem = ielem[::-1]
@@ -325,7 +373,7 @@ class AdBKurucz:
             "A": A,
             "nu_lines": nu_lines,
             "wav": 10**7/nu_lines,
-            "elower": elower,
+            "El": elower,
             "eupper": eupper,
             "gupper": gupper,
             "jlower": jlower,
@@ -335,6 +383,7 @@ class AdBKurucz:
             "gamRad": gamRad,
             "gamSta": gamSta,
             "gamvdW": gamvdW,
+            "Tdpair": 0.68,
             "wlnmair": wlnmair,
             "loggf": loggf,
             "species": species,
@@ -358,32 +407,29 @@ class AdBKurucz:
             "landeglower": landeglower,
             "landegupper": landegupper,
             "isoshiftmA": isoshiftmA,
+            "int":self.Sij0(A,gupper,nu_lines,elower,self.partfcn(self.key,296))
         }
-
-        data_dict_radis = {
-        "id": ielem,  # Supposons que 'ielem' est l'identifiant de l'élément
-        "iso": iion,  # Supposons que 'iion' est l'identifiant de l'isotope
-        "wav": nu_lines,  
-        "int": A,  # Intensité de la transition
-        "A": A,  # Coefficient d'Einstein pour la transition
-        "airbrd": gamSta,  # Largeur de raie à pression d'air (HWHM) à 296 K en cm-1/atm. Ici je suppose que 'gamSta' correspond.
-        "selbrd": gamvdW,  # Largeur de raie de l'élargissement par auto-pression (HWHM) à 296 K en cm-1. Ici je suppose que 'gamvdW' correspond.
-        "El": elower,  # Énergie du niveau inférieur de la transition en cm-1
-        "Tdpair": gamRad,  # Température de dépendance de la pression d'air. Ici je suppose que 'gamRad' correspond.
-        "Pshft": wlnmair,  # Décalage de la pression d'air à 296 K en cm-1/atm. Ici je suppose que 'wlnmair' correspond.
-        # "globu": , # Manque l'information pour "globu"
-        # "globl": , # Manque l'information pour "globl"
-        # "locu": , # Manque l'information pour "locu"
-        # "locl": , # Manque l'information pour "locl"
-        # "lmix": , # Manque l'information pour "lmix"
-        # "gp": , # Manque l'information pour "gp"
-        # "gpp": , # Manque l'information pour "gpp"
-    }
 
         df_radis = pd.DataFrame(data_dict)
 
         self.data = pd.DataFrame(data_dict)
         return df_radis
+    
+    def add_airbrd(self,data):
+        if "airbrd" not in data.columns :
+            print("self.atom=",self.atom)
+            #print("airbrd" in data.columns)
+            #TODO: adjust the coefficient to the atoms and adjust the value for neutral_hydrogen_number
+            
+            neutral_hydrogen_number=1
+            if self.atom=="H" :
+                airbrd=(10**data['gamvdW'])*data["Tdpair"]*neutral_hydrogen_number
+            elif self.atom== "He":
+                airbrd=(10**data['gamvdW'])*data["Tdpair"]*neutral_hydrogen_number*0.42
+            else :
+                airbrd=(10**data['gamvdW'])*data["Tdpair"]*neutral_hydrogen_number
+
+            data["airbrd"]=airbrd
 
     def store_hdf5(self, data, output_path):
         """Store data in a HDF5 file."""
@@ -430,6 +476,7 @@ class AdBKurucz:
         return Q
     
     def partfcn(self, key, T):
+        #So far ielem is used for id and iion for iso in eq_spectrum so this method is used when the linestrength is computed for data_dict
         """Partition function from Barklem & Collet (2016).
 
         Args:
@@ -440,9 +487,9 @@ class AdBKurucz:
         partition function Q
         """
         try : 
-            print(f"Température: {T}")
+            print(f"Temperature: {T}")
             # Read the pfdat file
-            pfdat = pd.read_csv('./pfdat.txt', sep="\s+", header=None)
+            pfdat = pd.read_csv('radis\db\kuruczpartfn.txt', sep="\s+", header=None)
             pfdat = pfdat.set_index(0)  
 
             # Locate the row for the specific atom and ionization state
@@ -486,6 +533,7 @@ class AdBKurucz:
         return self.populations
 
     def plot_spectrum(self, data, populations, temperature):
+        #Remove this method once SpectrumFactory is used instead
         intensities = data["A"] * populations
         # print(f"Intensities: {intensities}")
         plt.figure(figsize=(10, 6))
@@ -494,7 +542,8 @@ class AdBKurucz:
         plt.xlabel("Wave Number (cm-1)")
         plt.ylabel("Intensity")
         plt.show()
-
+    
+    #Initially from Exojax but no longer needed since pressure is handled by SpectrumFactory
     def pressure_layer(self,logPtop=-8.,
                    logPbtm=2.,
                    NP=20,
@@ -531,50 +580,7 @@ class AdBKurucz:
         return Parr, dParr, k
 
 
-    def load_ionization_energies():
-        """Load atomic ionization energies.
-
-        Returns:
-            df_ionE (pd.DataFrame): table of ionization energies
-        """
-        # Spécifiez le chemin vers le fichier
-        fn_IonE = './NIST_iE.txt'
-        # Lisez le fichier en tant que dataframe
-        df_ionE = pd.read_csv(fn_IonE, sep='|', skiprows=6, header=0)
-        return df_ionE
-
-
-    def pick_ionE(ielem, iion, df_ionE):
-        """Pick up ionization energy of a specific atomic species.
-
-        Args:
-            ielem (int): atomic number (e.g., Fe=26)
-            iion (int): ionized level (e.g., neutral=1, singly ionized=2, etc.)
-            df_ionE (pd.DataFrame): table of ionization energies
-
-        Returns:
-            ionE (float): ionization energy
-
-        Note:
-            NIST_Atomic_Ionization_Energies.txt is in data/atom
-        """
-        def f_droppare(x): 
-            print(f'Before: {x}')
-            x = x.str.replace('(', '', regex=True)
-            print(f'After replacing (: {x}')
-            x = x.str.replace(')', '', regex=True)
-            print(f'After replacing ): {x}')
-            x = x.str.replace('[', '', regex=True)
-            print(f'After replacing [: {x}')
-            x = x.str.replace(']', '', regex=True)
-            print(f'After replacing ]: {x}')
-            x = x.str.replace(' ', '0', regex=True)
-            print(f'After replacing space: {x}')
-            return x
-
-        ionE = float(f_droppare(df_ionE[(df_ionE['At. num'] == ielem) & (
-        df_ionE['Ion Charge'] == iion-1)]['Ionization Energy (a) (eV)']))
-        return ionE
+    
 
     #def process(self, atomic_number, ionization_state, temperature):
         #self.kurucz_file = f"gf{atomic_number}{ionization_state}.all"

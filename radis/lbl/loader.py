@@ -2308,13 +2308,13 @@ class DatabankLoader(object):
                         # self.reftracker.add("10.1016/j.jqsrt.2020.107228", "line database")  # [ExoMol-2020]
                         raise NotImplementedError("use fetch_databank('exomol')")
                     elif dbformat in ["kurucz"]:
-                        kurucz = AdBKurucz()
                         atom = self.input.atom
                         ionization_state = self.input.ionization_state
+                        kurucz = AdBKurucz(atom,ionization_state)
                         atomic_number = getattr(periodictable, atom).number
                         kurucz_file = f"gf{atomic_number}{ionization_state}.all"
                         hdf5_file = f"gf{atomic_number}{ionization_state}.hdf5"
-                        kurucz.url = kurucz.get_url(atomic_number, ionization_state) # <--- Ici, vous devez affecter l'url à l'objet kurucz
+                        kurucz.url = kurucz.get_url(atomic_number, ionization_state) 
 
                         # If hdf5 file exists, read data from it
                         if os.path.exists(hdf5_file):
@@ -2325,6 +2325,9 @@ class DatabankLoader(object):
                             df = kurucz.read_kurucz(kuruczf)
                             kurucz.store_hdf5(df, kurucz.hdf5_file)
                             df = kurucz.read_hdf5(hdf5_file)
+
+                        kurucz.add_airbrd(df)
+                        #print("colonnes",df.columns)
 
                     else:
                         raise ValueError("Unknown dbformat: {0}".format(dbformat))
@@ -2869,7 +2872,7 @@ class DatabankLoader(object):
         elec_state: str
         """
 
-        parsum = self.parsum_tab[molecule][isotope][elec_state]
+        parsum = self.[molecule][isotope][elec_state]
 
         # helps IDE find methods
         assert isinstance(parsum, RovibParFuncTabulator)
