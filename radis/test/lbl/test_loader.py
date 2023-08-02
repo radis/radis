@@ -343,7 +343,7 @@ def test_vaex_and_pandas_dataframe_load_databank():
     df1 = sf.df0
 
     # Loading in  pandas dataframe format
-    sf.load_databank("HITRAN-CO2-TEST")
+    sf.load_databank("HITRAN-CO2-TEST", output="pandas")
     df2 = sf.df0
 
     # Comparing both the dataframes

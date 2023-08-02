@@ -64,6 +64,9 @@ Formula in docstrings generated with :py:func:`~pytexit.pytexit.py2tex` ::
 from warnings import warn
 
 import numpy as np
+import pandas as pd
+import pyarrow 
+import vaex
 from numba import float64, jit
 from numpy import arange, exp
 from numpy import log as ln
@@ -1259,7 +1262,7 @@ class BroadenFactory(BaseFactory):
 
         # Prepare vectorized operations:
         try:  # make it a (1, N) row vector
-            if self.dataframe_type == "pandas":
+            if isinstance(gamma_lb, np.ndarray):
                 gamma_lb = gamma_lb.values.reshape((1, -1))
             elif self.dataframe_type == "vaex":
                 gamma_lb = gamma_lb.to_numpy().reshape((1, -1))
@@ -1494,8 +1497,12 @@ class BroadenFactory(BaseFactory):
         shifted_wavenum = dg.shiftwav
 
         try:  # make it a row vector
-            shifted_wavenum = shifted_wavenum.values.reshape((1, -1))
-            N = len(dg)
+            if self.dataframe_type == "pandas":
+                shifted_wavenum = shifted_wavenum.values.reshape((1, -1))
+                N = len(dg)
+            elif self.dataframe_type == "vaex":
+                shifted_wavenum = shifted_wavenum.to_numpy().reshape((1, -1))
+                N = len(dg)                
         except AttributeError:  # probably not a dataframe: one line only.
             assert type(shifted_wavenum) is np.float64
             N = 1
@@ -1812,10 +1819,13 @@ class BroadenFactory(BaseFactory):
         )  # calculation vector of wavenumbers (shape W + space B on the sides)
 
         # Vectorize the chunk of lines
-        if self.dataframe_type == "pandas":
+        if isinstance(broadened_param, np.ndarray):
             S = broadened_param.reshape((1, -1))
         elif self.dataframe_type == "vaex":
             S = broadened_param.to_numpy().reshape((1, -1))
+        else:
+            raise NotImplementedError
+
         shifted_wavenum = shifted_wavenum.reshape((1, -1))  # make it a row vector
 
         # Get truncation array
@@ -3045,7 +3055,7 @@ class BroadenFactory(BaseFactory):
         return abscoeff_v
 
 
-def project_lines_on_grid(df, wavenumber, wstep):
+def project_lines_on_grid(df, wavenumber, wstep, dataframe_type):
     """Quickly sums all lines on wavespace grid as rectangles of HWHM
     corresponding to ``hwhm_voigt`` and a spectral absorption coefficient value so
     that linestrength is conserved.
@@ -3076,9 +3086,14 @@ def project_lines_on_grid(df, wavenumber, wstep):
         ``wavenumber``. Size ``N``
     """
 
-    shiftwav = df.shiftwav.values  # cm-1  ,   size N (number of lines)
-    S = df.S.values  # cm/#  ~   cm-1/(#.cm-2)  ,   size N
-    wv = df.hwhm_voigt.values * 2  # HWHM > FWHM
+    if dataframe_type == "pandas":
+        shiftwav = df.shiftwav.values  # cm-1  ,   size N (number of lines)
+        S = df.S.values  # cm/#  ~   cm-1/(#.cm-2)  ,   size N
+        wv = df.hwhm_voigt.values * 2  # HWHM > FWHM
+    elif dataframe_type == "vaex":
+        shiftwav = df.shiftwav.to_numpy()  # cm-1  ,   size N (number of lines)
+        S = df.S.to_numpy()  # cm/#  ~   cm-1/(#.cm-2)  ,   size N
+        wv = df.hwhm_voigt.to_numpy() * 2  # HWHM > FWHM
 
     # ... First get closest matching line (left, and right):
     iwav_on_grid_left = np.searchsorted(wavenumber, shiftwav.T, side="left").ravel() - 1
@@ -3179,7 +3194,7 @@ def project_lines_on_grid(df, wavenumber, wstep):
     return k_rough_spectrum, S_density_on_grid, line2grid_projection_left
 
 
-def project_lines_on_grid_noneq(df, wavenumber, wstep):
+def project_lines_on_grid_noneq(df, wavenumber, wstep, dataframe_type):
     """Quickly sums all lines on wavespace grid as rectangles of HWHM
     corresponding to ``hwhm_voigt`` and a spectral absorption coefficient value so
     that linestrength is conserved.
@@ -3225,10 +3240,16 @@ def project_lines_on_grid_noneq(df, wavenumber, wstep):
     be recomputed from the linestrength).
     """
 
-    shiftwav = df.shiftwav.values  # cm-1  ,   size N (number of lines)
-    S = df.S.values  # cm/#  ~   cm-1/(#.cm-2)  ,   size N
-    Ei = df.Ei.values  # mW/cm3/sr
-    wv = df.hwhm_voigt.values * 2  # HWHM > FWHM
+    if dataframe_type == "pandas":
+        shiftwav = df.shiftwav.values  # cm-1  ,   size N (number of lines)
+        S = df.S.values  # cm/#  ~   cm-1/(#.cm-2)  ,   size N
+        Ei = df.Ei.values  # mW/cm3/sr
+        wv = df.hwhm_voigt.values * 2  # HWHM > FWHM
+    elif dataframe_type == "vaex":
+        shiftwav = df.shiftwav.to_numpy()  # cm-1  ,   size N (number of lines)
+        S = df.S.to_numpy()  # cm/#  ~   cm-1/(#.cm-2)  ,   size N
+        Ei = df.Ei.to_numpy()  # mW/cm3/sr
+        wv = df.hwhm_voigt.to_numpy() * 2  # HWHM > FWHM       
 
     # ... First get closest matching line (left, and right):
     iwav_on_grid_left = np.searchsorted(wavenumber, shiftwav.T, side="left").ravel() - 1

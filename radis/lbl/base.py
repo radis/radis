@@ -66,6 +66,7 @@ Most methods are written in inherited class with the following inheritance schem
 
 import numpy as np
 import pandas as pd
+import vaex 
 from astropy import units as u
 from numpy import exp, pi
 from psutil import virtual_memory
@@ -313,20 +314,30 @@ class BaseFactory(DatabankLoader):
         try:
             assert not anynan(df[column])
         except AssertionError as err:
-            index = np.isnan(df[column]).idxmax()
-            if self.input.molecule == "CO2":
-                fix_idea = (
-                    "If using HITEMP2010 for CO2, some lines are unlabelled and therefore cannot be used at "
-                    "equilibrium. This is a known issue of the HITEMP database and will soon be fixed in the "
-                    "edition. In the meantime you can use:\n 'sf.df0.drop(sf.df0.index[sf.df0['v1u']==-1], inplace=True)' "
-                    "where 'sf' is SpectrumFactory object"
-                )
-            raise AssertionError(
-                "{0}=NaN in line database at index {1}".format(column, index)
-                + " corresponding to Line:\n {0}".format(
-                    get_print_full(df.loc[index]) + fix_idea
-                )
-            ) from err
+            if isinstance(df, pd.DataFrame):
+                index = np.isnan(df[column]).idxmax()
+                if self.input.molecule == "CO2":
+                    fix_idea = (
+                        "If using HITEMP2010 for CO2, some lines are unlabelled and therefore cannot be used at "
+                        "equilibrium. This is a known issue of the HITEMP database and will soon be fixed in the "
+                        "edition. In the meantime you can use:\n 'sf.df0.drop(sf.df0.index[sf.df0['v1u']==-1], inplace=True)' "
+                        "where 'sf' is SpectrumFactory object"
+                    )
+                raise AssertionError(
+                    "{0}=NaN in line database at index {1}".format(column, index)
+                    + " corresponding to Line:\n {0}".format(
+                        get_print_full(df.loc[index]) + fix_idea
+                    )
+                ) from err
+            elif isinstance(df, vaex.dataframe.DataFrameLocal):
+                if self.input.molecule == "CO2":
+                    fix_idea = (
+                        "If using HITEMP2010 for CO2, some lines are unlabelled and therefore cannot be used at "
+                        "equilibrium. This is a known issue of the HITEMP database and will soon be fixed in the "
+                        "edition. In the meantime you can use:\n 'sf.df0.drop(sf.df0.index[sf.df0['v1u']==-1], inplace=True)' "
+                        "where 'sf' is SpectrumFactory object"
+                    )
+                raise AssertionError("Lines Have NaN Values")
 
     def _add_EvibErot(self, df, calc_Evib_harmonic_anharmonic=False):
         """Calculate Evib & Erot in Line dataframe.
@@ -666,31 +677,48 @@ class BaseFactory(DatabankLoader):
             energies.set_index(index, inplace=True)
             Evib_dict = dict(list(zip(energies.index, energies.Evib)))
 
-            # Add lower state energy
-            df_pcN = df.set_index(["polyl", "wangl", "rankl"])
-            df["Evibl"] = df_pcN.index.map(Evib_dict.get).values
-            # Add upper state energy
-            df_pcN = df.set_index(["polyu", "wangu", "ranku"])
-            df["Evibu"] = df_pcN.index.map(Evib_dict.get).values
+            if self.dataframe_type == "pandas":
+                # Add lower state energy
+                df_pcN = df.set_index(["polyl", "wangl", "rankl"])
+                df["Evibl"] = df_pcN.index.map(Evib_dict.get).values
+                # Add upper state energy
+                df_pcN = df.set_index(["polyu", "wangu", "ranku"])
+                df["Evibu"] = df_pcN.index.map(Evib_dict.get).values
 
-            return df.loc[:, ["Evibl", "Evibu"]]
+                return df.loc[:, ["Evibl", "Evibu"]]
+            elif self.dataframe_type == "vaex":
+                def get_evib(poly, wang, rank, evib, iso_df):
+                    if iso_df == iso :
+                        return Evib_dict.get(poly, wang, rank)
+                    else:
+                        return evib
+                    
+                df["Evibl"] = df.apply(get_evib, [df.polyl, df.wangl, df.rankl, df.Evibl, df.iso])
+                df["Evibu"] = df.apply(get_evib, [df.polyu, df.wangu, df.ranku, df.Evibu, df.iso])
+            
+        if self.dataframe_type == "pandas":
+            df["Evibl"] = np.nan
+            df["Evibu"] = np.nan
 
-        df["Evibl"] = np.nan
-        df["Evibu"] = np.nan
+            # multiple-isotopes in database
+            if "iso" in df:
+                for iso, idx in df.groupby("iso").indices.items():
+                    df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_CDSD_pcN_1iso(
+                        df.loc[idx], iso
+                    )
 
-        # multiple-isotopes in database
-        if "iso" in df:
-            for iso, idx in df.groupby("iso").indices.items():
-                df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_CDSD_pcN_1iso(
-                    df.loc[idx], iso
-                )
+                    if radis.config["DEBUG_MODE"]:
+                        assert (df.loc[idx, "iso"] == iso).all()
 
-                if radis.config["DEBUG_MODE"]:
-                    assert (df.loc[idx, "iso"] == iso).all()
+            else:
+                iso = df.attrs["iso"]
+                df.loc[:, ["Evibl", "Evibu"]] = get_Evib_CDSD_pcN_1iso(df, iso)
+        elif self.dataframe_type == "vaex":
+            df["Evibl"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            df["Evibu"] = vaex.vconstant(np.nan, df.length_unfiltered())
 
-        else:
-            iso = df.attrs["iso"]
-            df.loc[:, ["Evibl", "Evibu"]] = get_Evib_CDSD_pcN_1iso(df, iso)
+            for iso in list(df.iso.unique()):
+                get_Evib_CDSD_pcN_1iso(df, iso)
 
         # Get rotational energy: better recalculate than look up the database
         # (much faster!: perf ~25s -> 765µs)
@@ -778,40 +806,57 @@ class BaseFactory(DatabankLoader):
             energies = energies.set_index(index, inplace=False)
             Evib_dict = dict(list(zip(energies.index, energies.Evib)))
 
-            # Add lower state energy
-            df_pcJN = df.set_index(["polyl", "wangl", "jl", "rankl"])
-            #            for i in df.index:
-            #                df.loc[i, 'Evibl'] = energies.at[i, 'Evib']
-            # the map below is crazy fast compared to above loop
-            df.loc[:, "Evibl"] = df_pcJN.index.map(Evib_dict.get).values
-            # Add upper state energy
-            df_pcJN = df.set_index(["polyu", "wangu", "ju", "ranku"])
-            #            for i in df.index:
-            #                df.loc[i, 'Evibu'] = energies.at[i, 'Evib']
-            # the map below is crazy fast compared to above loop
-            df.loc[:, "Evibu"] = df_pcJN.index.map(Evib_dict.get).values
+            if self.dataframe_type == "pandas":
+                # Add lower state energy
+                df_pcJN = df.set_index(["polyl", "wangl", "jl", "rankl"])
+                #            for i in df.index:
+                #                df.loc[i, 'Evibl'] = energies.at[i, 'Evib']
+                # the map below is crazy fast compared to above loop
+                df.loc[:, "Evibl"] = df_pcJN.index.map(Evib_dict.get).values
+                # Add upper state energy
+                df_pcJN = df.set_index(["polyu", "wangu", "ju", "ranku"])
+                #            for i in df.index:
+                #                df.loc[i, 'Evibu'] = energies.at[i, 'Evib']
+                # the map below is crazy fast compared to above loop
+                df.loc[:, "Evibu"] = df_pcJN.index.map(Evib_dict.get).values
 
-            return df.loc[:, ["Evibl", "Evibu"]]
+                return df.loc[:, ["Evibl", "Evibu"]]
+            elif self.dataframe_type == "vaex":
+                def get_evib(poly, wang, j, rank, evib, iso_df):
+                    if iso_df == iso:
+                        return Evib_dict.get(poly, wang, j, rank)
+                    else:
+                        return evib
 
+                df["Evibl"] = df.apply(get_evib, [df.polyl, df.wangl, df.jl, df.rankl, df.Evibl, df.iso])
+                df["Evibu"] = df.apply(get_evib, [df.polyu, df.wangu, df.ju, df.ranku, df.Evibu, df.iso])
         #        df = df.groupby('iso').apply(lambda x: get_Evib_CDSD_pcJN_1iso(x, x.name))
 
-        # slower than the following:
-        df["Evibl"] = np.nan
-        df["Evibu"] = np.nan
 
-        # multiple-isotopes in database
-        if "iso" in df:
-            for iso, idx in df.groupby("iso").indices.items():
-                df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_CDSD_pcJN_1iso(
-                    df.loc[idx], iso
-                )
+        if self.dataframe_type == "pandas":
+            # slower than the following:
+            df["Evibl"] = np.nan
+            df["Evibu"] = np.nan
 
-                if radis.config["DEBUG_MODE"]:
-                    assert (df.loc[idx, "iso"] == iso).all()
+            # multiple-isotopes in database
+            if "iso" in df:
+                for iso, idx in df.groupby("iso").indices.items():
+                    df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_CDSD_pcJN_1iso(
+                        df.loc[idx], iso
+                    )
 
-        else:
-            iso = df.attrs["iso"]
-            df.loc[:, ["Evibl", "Evibu"]] = get_Evib_CDSD_pcJN_1iso(df, iso)
+                    if radis.config["DEBUG_MODE"]:
+                        assert (df.loc[idx, "iso"] == iso).all()
+
+            else:
+                iso = df.attrs["iso"]
+                df.loc[:, ["Evibl", "Evibu"]] = get_Evib_CDSD_pcJN_1iso(df, iso)
+        elif self.dataframe_type == "vaex":
+            df["Evibl"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            df["Evibu"] = vaex.vconstant(np.nan, df.length_unfiltered())
+
+            for iso in list(df.iso.unique()):
+                get_Evib_CDSD_pcJN_1iso(df, iso)
 
         # Get rotational energy: better recalculate than look up the database
         # (much faster!: perf ~25s -> 765µs)
@@ -1037,36 +1082,81 @@ class BaseFactory(DatabankLoader):
             energies.set_index(index, inplace=True)
             Evib_dict = dict(list(zip(energies.index, energies.Evib)))
 
-            # Add lower state energy
-            df_v = df.set_index(["vl"])
-            df["Evibl"] = df_v.index.map(Evib_dict.get).values
+            if self.dataframe_type == "pandas":
+                # Add lower state energy
+                df_v = df.set_index(["vl"])
+                df["Evibl"] = df_v.index.map(Evib_dict.get).values
 
-            # Add upper state energy
-            df_v = df.set_index(["vu"])
-            df["Evibu"] = df_v.index.map(Evib_dict.get).values
+                # Add upper state energy
+                df_v = df.set_index(["vu"])
+                df["Evibu"] = df_v.index.map(Evib_dict.get).values
 
-            return df.loc[:, ["Evibl", "Evibu"]]
+                return df.loc[:, ["Evibl", "Evibu"]]
+            elif self.dataframe_type == "vaex":
+                def get_evib(iso_df, v, Evib):
+                    if iso_df == iso:
+                        return Evib_dict.get(v)
+                    else:
+                        return Evib
+                
+                if "iso" in df:
+                    df["Evibl"] = df.apply(get_evib, arguments=[df.iso, df.vl, df.Evibl])
+                    df["Evibu"] = df.apply(get_evib, arguments=[df.iso, df.vu, df.Evibu])
+                else:
+                    df["Evibl"] = df["vl"].apply(lambda x : Evib_dict.get(x))
+                    df["Evibu"] = df["vu"].apply(lambda x : Evib_dict.get(x))
 
-        df["Evibl"] = np.nan
-        df["Evibu"] = np.nan
+                return df["Evibl"], df["Evibu"]
 
-        # multiple-isotopes in database
-        if "iso" in df:
-            for iso, idx in df.groupby("iso").indices.items():
-                df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_RADIS_cls1_1iso(
-                    df.loc[idx], iso
-                )
 
-        else:
-            iso = df.attrs["iso"]
-            df.loc[:, ["Evibl", "Evibu"]] = get_Evib_RADIS_cls1_1iso(df, iso)
+        if self.dataframe_type == "pandas":
+            df["Evibl"] = np.nan
+            df["Evibu"] = np.nan
+            # multiple-isotopes in database
+            if "iso" in df:
+                for iso, idx in df.groupby("iso").indices.items():
+                    df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_RADIS_cls1_1iso(
+                        df.loc[idx], iso
+                    )
+            else:
+                iso = df.attrs["iso"]
+                df.loc[:, ["Evibl", "Evibu"]] = get_Evib_RADIS_cls1_1iso(df, iso)
 
-        # Get rotational energy: better recalculate than look up the database (much faster!)
-        df["Erotu"] = df.Eu - df.Evibu
-        df["Erotl"] = df.El - df.Evibl
+            # Get rotational energy: better recalculate than look up the database (much faster!)
+            df["Erotu"] = df.Eu - df.Evibu
+            df["Erotl"] = df.El - df.Evibl
 
-        assert np.isnan(df.Evibu).sum() == 0
-        assert np.isnan(df.Evibl).sum() == 0
+            assert np.isnan(df.Evibu).sum() == 0
+            assert np.isnan(df.Evibl).sum() == 0
+
+        elif self.dataframe_type == "vaex":
+            df["Evibl"] = vaex.vconstant(np.nan, length=df.length_unfiltered())
+            df["Evibu"] = vaex.vconstant(np.nan, length=df.length_unfiltered())
+
+            # multiple-isotopes in database
+            if "iso" in df:
+                for iso in list(df.iso.unique()):
+                    # df["Evibl"], df["Evibu"] = get_Evib_RADIS_cls1_1iso(df, iso)
+                    get_Evib_RADIS_cls1_1iso(df, iso)
+            else:
+                iso = int(self.input.isotope)
+                get_Evib_RADIS_cls1_1iso(df, iso)
+            # if "iso" in df:
+            #     for iso, idx in df.groupby("iso").indices.items():
+            #         df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_RADIS_cls1_1iso(
+            #             df.loc[idx], iso
+            #         )
+
+            # else:
+            #     iso = df.attrs["iso"]
+            #     df.loc[:, ["Evibl", "Evibu"]] = get_Evib_RADIS_cls1_1iso(df, iso)
+
+            # Get rotational energy: better recalculate than look up the database (much faster!)
+            df["Erotu"] = df.Eu - df.Evibu
+            df["Erotl"] = df.El - df.Evibl
+
+            assert df.Evibu.isna().sum() == 0
+            assert df.Evibl.isna().sum() == 0
 
         self.profiler.stop(
             "fetch_energy_5", "Fetched energies for all {0} transitions".format(len(df))
@@ -1139,50 +1229,89 @@ class BaseFactory(DatabankLoader):
             Evib2_dict = dict(list(zip(energies.index, energies.Evib2)))
             Evib3_dict = dict(list(zip(energies.index, energies.Evib3)))
 
-            # Add lower state energy
-            df_v1v2l2v3 = df.set_index(["v1l", "v2l", "l2l", "v3l"])
-            #            for i in df.index:
-            #                df.loc[i, 'Evib1l'] = energies.at[i, 'Evib1']
-            # the map below is crazy fast compared to above loop
-            df["Evib1l"] = df_v1v2l2v3.index.map(Evib1_dict.get).values
-            df["Evib2l"] = df_v1v2l2v3.index.map(Evib2_dict.get).values
-            df["Evib3l"] = df_v1v2l2v3.index.map(Evib3_dict.get).values
-            # TODO @dev # performance: try getting all 3 values at the same time?
-            # with:  Evib123_dict = dict(list(zip(energies.index, (energies.Evib1, energies.Evib2, energies.Evib3))))
+            if self.dataframe_type == "pandas":
+                # Add lower state energy
+                df_v1v2l2v3 = df.set_index(["v1l", "v2l", "l2l", "v3l"])
+                #            for i in df.index:
+                #                df.loc[i, 'Evib1l'] = energies.at[i, 'Evib1']
+                # the map below is crazy fast compared to above loop
+                df["Evib1l"] = df_v1v2l2v3.index.map(Evib1_dict.get).values
+                df["Evib2l"] = df_v1v2l2v3.index.map(Evib2_dict.get).values
+                df["Evib3l"] = df_v1v2l2v3.index.map(Evib3_dict.get).values
+                # TODO @dev # performance: try getting all 3 values at the same time?
+                # with:  Evib123_dict = dict(list(zip(energies.index, (energies.Evib1, energies.Evib2, energies.Evib3))))
 
-            # Add upper state energy
-            df_v1v2l2v3 = df.set_index(["v1u", "v2u", "l2u", "v3u"])
-            df["Evib1u"] = df_v1v2l2v3.index.map(Evib1_dict.get).values
-            df["Evib2u"] = df_v1v2l2v3.index.map(Evib2_dict.get).values
-            df["Evib3u"] = df_v1v2l2v3.index.map(Evib3_dict.get).values
+                # Add upper state energy
+                df_v1v2l2v3 = df.set_index(["v1u", "v2u", "l2u", "v3u"])
+                df["Evib1u"] = df_v1v2l2v3.index.map(Evib1_dict.get).values
+                df["Evib2u"] = df_v1v2l2v3.index.map(Evib2_dict.get).values
+                df["Evib3u"] = df_v1v2l2v3.index.map(Evib3_dict.get).values
 
-            return df.loc[
-                :, ["Evib1l", "Evib2l", "Evib3l", "Evib1u", "Evib2u", "Evib3u"]
-            ]
+                return df.loc[
+                    :, ["Evib1l", "Evib2l", "Evib3l", "Evib1u", "Evib2u", "Evib3u"]
+                ]
+            elif self.dataframe_type == "vaex":
+                def get_evib1(v1, v2, l2, v3, evib1, iso_df):
+                    if iso_df == iso:
+                        return Evib1_dict.get(v1, v2, l2, v3)
+                    else:
+                        return evib1
+                    
+                def get_evib2(v1, v2, l2, v3, evib2, iso_df):
+                    if iso_df == iso:
+                        return Evib2_dict.get(v1, v2, l2, v3)
+                    else:
+                        return evib2
 
+                def get_evib3(v1, v2, l2, v3, evib3, iso_df):
+                    if iso_df == iso:
+                        return Evib3_dict.get(v1, v2, l2, v3)
+                    else:
+                        return evib3
+                    
+                # Add lower state energy
+                df["Evib1l"] = df.apply(get_evib1, [df.v1, df.v2, df.l2, df.v3, df.Evib1l, df.iso])
+                df["Evib2l"] = df.apply(get_evib2, [df.v1, df.v2, df.l2, df.v3, df.Evib2l, df.iso])
+                df["Evib3l"] = df.apply(get_evib3, [df.v1, df.v2, df.l2, df.v3, df.Evib3l, df.iso])
+
+                # Add upper state energy
+                df["Evib1u"] = df.apply(get_evib1, [df.v1, df.v2, df.l2, df.v3, df.Evib1l, df.iso])
+                df["Evib2u"] = df.apply(get_evib2, [df.v1, df.v2, df.l2, df.v3, df.Evib2l, df.iso])
+                df["Evib3u"] = df.apply(get_evib3, [df.v1, df.v2, df.l2, df.v3, df.Evib3l, df.iso])
         #        df = df.groupby('iso').apply(lambda x: get_Evib123_RADIS_cls5_1iso(x, x.name))
 
-        # Slower than the version below:
-        df["Evib1l"] = np.nan
-        df["Evib2l"] = np.nan
-        df["Evib3l"] = np.nan
-        df["Evib1u"] = np.nan
-        df["Evib2u"] = np.nan
-        df["Evib3u"] = np.nan
+        if self.dataframe_type == "pandas":
+            # Slower than the version below:
+            df["Evib1l"] = np.nan
+            df["Evib2l"] = np.nan
+            df["Evib3l"] = np.nan
+            df["Evib1u"] = np.nan
+            df["Evib2u"] = np.nan
+            df["Evib3u"] = np.nan
+            # multiple-isotopes in database
+            if "iso" in df:
+                for iso, idx in df.groupby("iso").indices.items():
+                    df.loc[
+                        idx, ["Evib1l", "Evib2l", "Evib3l", "Evib1u", "Evib2u", "Evib3u"]
+                    ] = get_Evib123_RADIS_cls5_1iso(df.loc[idx], iso)
 
-        # multiple-isotopes in database
-        if "iso" in df:
-            for iso, idx in df.groupby("iso").indices.items():
+            else:
+                iso = df.attrs["iso"]
                 df.loc[
-                    idx, ["Evib1l", "Evib2l", "Evib3l", "Evib1u", "Evib2u", "Evib3u"]
-                ] = get_Evib123_RADIS_cls5_1iso(df.loc[idx], iso)
+                    :,
+                    ["Evib1l", "Evib2l", "Evib3l", "Evib1u", "Evib2u", "Evib3u"],
+                ] = get_Evib123_RADIS_cls5_1iso(df, iso)
+        elif self.dataframe_type == "vaex":
+            df["Evib1l"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            df["Evib2l"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            df["Evib3l"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            df["Evib1u"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            df["Evib2u"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            df["Evib3u"] = vaex.vconstant(np.nan, df.length_unfiltered())
 
-        else:
-            iso = df.attrs["iso"]
-            df.loc[
-                :,
-                ["Evib1l", "Evib2l", "Evib3l", "Evib1u", "Evib2u", "Evib3u"],
-            ] = get_Evib123_RADIS_cls5_1iso(df, iso)
+            for iso in list(df.iso.unique()):
+                get_Evib123_RADIS_cls5_1iso(df, iso)
+
 
         # Add total vibrational energy too (doesnt cost much, and can plot populations in spectrum)
         df["Evibu"] = df.Evib1u + df.Evib2u + df.Evib3u
@@ -1267,26 +1396,71 @@ class BaseFactory(DatabankLoader):
             Evib3_h_dict = dict(list(zip(energies.index, energies.Evib3_h)))
             Evib3_a_dict = dict(list(zip(energies.index, energies.Evib3_a)))
 
-            # Add lower state energy
-            df_v1v2l2v3 = df.set_index(["v1l", "v2l", "l2l", "v3l"])
-            # the map below is crazy fast compared to above loop
-            df["Evib1l_h"] = df_v1v2l2v3.index.map(Evib1_h_dict.get).values
-            df["Evib1l_a"] = df_v1v2l2v3.index.map(Evib1_a_dict.get).values
-            df["Evib2l_h"] = df_v1v2l2v3.index.map(Evib2_h_dict.get).values
-            df["Evib2l_a"] = df_v1v2l2v3.index.map(Evib2_a_dict.get).values
-            df["Evib3l_h"] = df_v1v2l2v3.index.map(Evib3_h_dict.get).values
-            df["Evib3l_a"] = df_v1v2l2v3.index.map(Evib3_a_dict.get).values
-            # TODO @dev # performance: try getting all 3 values at the same time?
-            # with:  Evib123_dict = dict(list(zip(energies.index, (energies.Evib1, energies.Evib2, energies.Evib3))))
+            if self.dataframe_type == "pandas":
+                # Add lower state energy
+                df_v1v2l2v3 = df.set_index(["v1l", "v2l", "l2l", "v3l"])
+                # the map below is crazy fast compared to above loop
+                df["Evib1l_h"] = df_v1v2l2v3.index.map(Evib1_h_dict.get).values
+                df["Evib1l_a"] = df_v1v2l2v3.index.map(Evib1_a_dict.get).values
+                df["Evib2l_h"] = df_v1v2l2v3.index.map(Evib2_h_dict.get).values
+                df["Evib2l_a"] = df_v1v2l2v3.index.map(Evib2_a_dict.get).values
+                df["Evib3l_h"] = df_v1v2l2v3.index.map(Evib3_h_dict.get).values
+                df["Evib3l_a"] = df_v1v2l2v3.index.map(Evib3_a_dict.get).values
+                # TODO @dev # performance: try getting all 3 values at the same time?
+                # with:  Evib123_dict = dict(list(zip(energies.index, (energies.Evib1, energies.Evib2, energies.Evib3))))
 
-            # Add upper state energy
-            df_v1v2l2v3 = df.set_index(["v1u", "v2u", "l2u", "v3u"])
-            df["Evib1u_h"] = df_v1v2l2v3.index.map(Evib1_h_dict.get).values
-            df["Evib1u_a"] = df_v1v2l2v3.index.map(Evib1_a_dict.get).values
-            df["Evib2u_h"] = df_v1v2l2v3.index.map(Evib2_h_dict.get).values
-            df["Evib2u_a"] = df_v1v2l2v3.index.map(Evib2_a_dict.get).values
-            df["Evib3u_h"] = df_v1v2l2v3.index.map(Evib3_h_dict.get).values
-            df["Evib3u_a"] = df_v1v2l2v3.index.map(Evib3_a_dict.get).values
+                # Add upper state energy
+                df_v1v2l2v3 = df.set_index(["v1u", "v2u", "l2u", "v3u"])
+                df["Evib1u_h"] = df_v1v2l2v3.index.map(Evib1_h_dict.get).values
+                df["Evib1u_a"] = df_v1v2l2v3.index.map(Evib1_a_dict.get).values
+                df["Evib2u_h"] = df_v1v2l2v3.index.map(Evib2_h_dict.get).values
+                df["Evib2u_a"] = df_v1v2l2v3.index.map(Evib2_a_dict.get).values
+                df["Evib3u_h"] = df_v1v2l2v3.index.map(Evib3_h_dict.get).values
+                df["Evib3u_a"] = df_v1v2l2v3.index.map(Evib3_a_dict.get).values
+            elif self.dataframe_type == "vaex":
+                def get_Evib1_h(v1, v2, l2, v3, evib1_h, iso_df):
+                    if iso_df == iso:
+                        return Evib1_h_dict.get(v1, v2, l2, v3)
+                    else :
+                        return evib1_h
+                    
+                def get_Evib1_a(v1, v2, l2, v3, evib1_a, iso_df):
+                    if iso_df == iso:
+                        return Evib1_a_dict.get(v1, v2, l2, v3)
+                    else:
+                        return evib1_a
+                    
+                def get_Evib2_h(v1, v2, l2, v3, evib2_h, iso_df):
+                    if iso_df == iso:
+                        return Evib2_h_dict.get(v1, v2, l2, v3)
+                    else:
+                        return evib2_h
+
+                def get_Evib2_a(v1, v2, l2, v3, evib2_a, iso_df):
+                    if iso_df == iso:
+                        return Evib2_a_dict.get(v1, v2, l2, v3)
+                    else:
+                        return evib2_a
+                    
+                def get_Evib3_h(v1, v2, l2, v3, evib3_h, iso_df):
+                    if iso_df == iso:
+                        return Evib3_h_dict.get(v1, v2, l2, v3)
+                    else:
+                        return evib3_h
+
+                def get_Evib3_a(v1, v2, l2, v3, evib3_a, iso_df):
+                    if iso_df == iso:
+                        return Evib3_a_dict.get(v1, v2, l2, v3)
+                    else:
+                        return evib3_a
+
+                # Add lower state energy
+                df["Evib1l_h"] = df.apply(get_Evib1_h, [df.v1, df.v2, df.l2, df.v3, df.Evib1l_h])
+                df["Evib1l_a"] = df.apply(get_Evib1_a, [df.v1, df.v2, df.l2, df.v3, df.Evib1l_a])
+                df["Evib2l_h"] = df.apply(get_Evib2_h, [df.v1, df.v2, df.l2, df.v3, df.Evib2l_h])
+                df["Evib2l_a"] = df.apply(get_Evib2_a, [df.v1, df.v2, df.l2, df.v3, df.Evib2l_a])
+                df["Evib3l_h"] = df.apply(get_Evib3_h, [df.v1, df.v2, df.l2, df.v3, df.Evib3l_h])
+                df["Evib3l_a"] = df.apply(get_Evib3_a, [df.v1, df.v2, df.l2, df.v3, df.Evib3l_a])
 
             return df.loc[
                 :,
@@ -1306,37 +1480,55 @@ class BaseFactory(DatabankLoader):
                 ],
             ]
 
-        # Slower than the version below:
-        df["Evib1l_h"] = np.nan
-        df["Evib1l_a"] = np.nan
-        df["Evib2l_h"] = np.nan
-        df["Evib2l_a"] = np.nan
-        df["Evib3l_h"] = np.nan
-        df["Evib3l_a"] = np.nan
-        df["Evib1u_h"] = np.nan
-        df["Evib1u_a"] = np.nan
-        df["Evib2u_h"] = np.nan
-        df["Evib2u_a"] = np.nan
-        df["Evib3u_h"] = np.nan
-        df["Evib3u_a"] = np.nan
-        for iso, idx in df.groupby("iso").indices.items():
-            df.loc[
-                idx,
-                [
-                    "Evib1l_h",
-                    "Evib1l_a",
-                    "Evib2l_h",
-                    "Evib2l_a",
-                    "Evib3l_h",
-                    "Evib3l_a",
-                    "Evib1u_h",
-                    "Evib1u_a",
-                    "Evib2u_h",
-                    "Evib2u_a",
-                    "Evib3u_h",
-                    "Evib3u_a",
-                ],
-            ] = get_Evib123_RADIS_cls5_1iso_ah(df.loc[idx], iso)
+
+        if self.dataframe_type == "pandas":
+            # Slower than the version below:
+            df["Evib1l_h"] = np.nan
+            df["Evib1l_a"] = np.nan
+            df["Evib2l_h"] = np.nan
+            df["Evib2l_a"] = np.nan
+            df["Evib3l_h"] = np.nan
+            df["Evib3l_a"] = np.nan
+            df["Evib1u_h"] = np.nan
+            df["Evib1u_a"] = np.nan
+            df["Evib2u_h"] = np.nan
+            df["Evib2u_a"] = np.nan
+            df["Evib3u_h"] = np.nan
+            df["Evib3u_a"] = np.nan
+            for iso, idx in df.groupby("iso").indices.items():
+                df.loc[
+                    idx,
+                    [
+                        "Evib1l_h",
+                        "Evib1l_a",
+                        "Evib2l_h",
+                        "Evib2l_a",
+                        "Evib3l_h",
+                        "Evib3l_a",
+                        "Evib1u_h",
+                        "Evib1u_a",
+                        "Evib2u_h",
+                        "Evib2u_a",
+                        "Evib3u_h",
+                        "Evib3u_a",
+                    ],
+                ] = get_Evib123_RADIS_cls5_1iso_ah(df.loc[idx], iso)
+        elif self.dataframe_type == "vaex":
+            df["Evib1l_h"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            df["Evib1l_a"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            df["Evib2l_h"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            df["Evib2l_a"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            df["Evib3l_h"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            df["Evib3l_a"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            df["Evib1u_h"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            df["Evib1u_a"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            df["Evib2u_h"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            df["Evib2u_a"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            df["Evib2u_h"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            df["Evib2u_a"] = vaex.vconstant(np.nan, df.length_unfiltered())
+        
+            for iso in list(df.iso.unique()):
+                get_Evib123_RADIS_cls5_1iso_ah(df, iso)
 
         # Add total vibrational energy too (doesnt cost much, and can plot populations in spectrum)
         df["Evibu_a"] = df.Evib1u_a + df.Evib2u_a + df.Evib3u_a
@@ -1422,7 +1614,7 @@ class BaseFactory(DatabankLoader):
             def fun(branch, j):
                 return j + branch
 
-            df["ju"] = df.apply(f=fun, arguments=[df.branch, df.ju])
+            df["ju"] = df.apply(f=fun, arguments=[df.branch, df.jl])
 
         return None
 
@@ -1520,11 +1712,18 @@ class BaseFactory(DatabankLoader):
 
         # ... Check no negative energies
         tol = -1e-4  # tolerance for negative energies (in cm-1)
-        if not ((df.Erotu > tol).all() and (df.Erotl > tol).all()):
-            self.warn(
-                "There are negative rotational energies in the database",
-                "NegativeEnergiesWarning",
-            )
+        if self.dataframe_type == "pandas":
+            if not ((df.Erotu > tol).all() and (df.Erotl > tol).all()):
+                self.warn(
+                    "There are negative rotational energies in the database",
+                    "NegativeEnergiesWarning",
+                )
+        elif self.dataframe_type == "vaex":
+            if not ((df.Erotu > tol).sum() == len(df) and (df.Erotl > tol).sum() == len(df)):
+                self.warn(
+                    "There are negative rotational energies in the database",
+                    "NegativeEnergiesWarning",
+                )
 
         # ... Make sure degeneracies are calculated
         if not all_in(["gju", "gjl", "gvibu", "gvibl", "gu", "gl"], df):
@@ -1589,7 +1788,10 @@ class BaseFactory(DatabankLoader):
                         assert (df.loc[idx, "iso"] == iso).all()
             elif self.dataframe_type == "vaex":
 
-                def grot(gj):
+                _gs_dic = {}
+                _gi_dic = {}
+
+                for iso in list(df.iso.unique()):
                     _gs = gs(id, iso)
                     if isinstance(_gs, tuple):
                         # Molecules that have alternating degeneracy.
@@ -1600,15 +1802,18 @@ class BaseFactory(DatabankLoader):
                         # symmetric isotopes such as CO2(626), CO2 asymmetric levels
                         # dont exist (gs=0) and they should not be in the line database.
                         _gs = _gs[0]
-                    _gi = gi(id, iso)
-                    return gj * _gs * _gi
+                    _gs_dic[iso] = _gs
+                    _gi_dic[iso] = _gi = gi(id, iso)
 
-                df["grotu"] = df.apply(f=grot, argumensts=[df.grotu])
-                df["grotl"] = df.apply(f=grot, argumensts=[df.grotl])
+                def grot(gj,iso):
+                    return gj * _gs_dic[iso] * _gi_dic[iso]
+
+                df["grotu"] = df.apply(f=grot, arguments=[df.gju, df.iso])
+                df["grotl"] = df.apply(f=grot, arguments=[df.gjl, df.iso])
 
         else:
             id = df.attrs["id"]
-            isotope = df.attrs["iso"]
+            isotope = int(self.input.isotope)
             _gs = gs(id, isotope)
             if isinstance(_gs, tuple):
                 # Molecules that have alternating degeneracy.
@@ -1622,8 +1827,12 @@ class BaseFactory(DatabankLoader):
 
             dg = df
             _gi = gi(id, isotope)
-            df.loc[:, "grotu"] = dg.gju * _gs * _gi
-            df.loc[:, "grotl"] = dg.gjl * _gs * _gi
+            if self.dataframe_type == "pandas":
+                df.loc[:, "grotu"] = dg.gju * _gs * _gi
+                df.loc[:, "grotl"] = dg.gjl * _gs * _gi
+            elif self.dataframe_type == "vaex":
+                df["grotu"] = dg.gju * _gs * _gi
+                df["grotl"] = dg.gjl * _gs * _gi
 
         # %%
 
@@ -1640,8 +1849,12 @@ class BaseFactory(DatabankLoader):
             # Complete rovibrational assignment would not be True, for instance, for
             # bending levels of CO2 if all levels are considered degenerated
             # (with a v2+1 degeneracy)
-            df["gvibu"] = 1
-            df["gvibl"] = 1
+            if self.dataframe_type == "pandas":
+                df["gvibu"] = 1
+                df["gvibl"] = 1
+            elif self.dataframe_type == "vaex": 
+                df["gvibu"] = vaex.vconstant(1, length=df.length_unfiltered())
+                df["gvibl"] = vaex.vconstant(1, length=df.length_unfiltered())
         else:
             raise NotImplementedError(
                 "vibrational degeneracy assignation for dbformat={0}".format(dbformat)
@@ -1654,15 +1867,26 @@ class BaseFactory(DatabankLoader):
         # Check consistency if "gp" already existed
         # https://github.com/radis/radis/pull/514#issuecomment-1229463074
         if "gp" in df:
-            if (df["gp"] == df["gu"]).all():
-                self.warn(
-                    "'gu' was recomputed although 'gp' already in DataFrame. All values are equal",
-                    "PerformanceWarning",
-                )
-            else:
-                raise ValueError(
-                    "'gu' was recomputed although 'gp' already in DataFrame. Values are not equal ! Check calculations"
-                )
+            if self.dataframe_type == "pandas":
+                if (df["gp"] == df["gu"]).all():
+                    self.warn(
+                        "'gu' was recomputed although 'gp' already in DataFrame. All values are equal",
+                        "PerformanceWarning",
+                    )
+                else:
+                    raise ValueError(
+                        "'gu' was recomputed although 'gp' already in DataFrame. Values are not equal ! Check calculations"
+                    )
+            elif self.dataframe_type == "vaex":
+                print("hello")
+                # if (df["gp"] == df["gu"]).sum() == len(df):
+                #     self.warn(
+                #         "'gu' was recomputed although 'gp' already in DataFrame. All values are equal",
+                #     )                   
+                # else:
+                #     raise ValueError(
+                #         "'gu' was recomputed although 'gp' already in DataFrame. Values are not equal ! Check calculations"
+                #     )
 
         return None  # dataframe updated directly
 
@@ -2474,54 +2698,112 @@ class BaseFactory(DatabankLoader):
                     "PerformanceWarning",
                 )
 
-            dgb = df.groupby(by=["iso"])
-            for (iso), idx in dgb.indices.items():
+            if self.dataframe_type == "pandas":
+                dgb = df.groupby(by=["iso"])
+                for (iso), idx in dgb.indices.items():
 
-                # Get partition function for all lines
-                parsum = self.get_partition_function_calculator(molecule, iso, state)
+                    # Get partition function for all lines
+                    parsum = self.get_partition_function_calculator(molecule, iso, state)
 
-                if is_float(Tvib):
-                    Q, Qvib, dfQrot = parsum.at_noneq(
-                        Tvib,
-                        Trot,
-                        vib_distribution=vib_distribution,
-                        rot_distribution=rot_distribution,
-                        overpopulation=overpopulation,
-                        returnQvibQrot=True,
-                        update_populations=self.misc.export_populations,
-                    )
-                else:
-                    raise NotImplementedError(
-                        "Cannot return detail of Qvib, Qrot for 3-Tvib mode"
-                    )
+                    if is_float(Tvib):
+                        Q, Qvib, dfQrot = parsum.at_noneq(
+                            Tvib,
+                            Trot,
+                            vib_distribution=vib_distribution,
+                            rot_distribution=rot_distribution,
+                            overpopulation=overpopulation,
+                            returnQvibQrot=True,
+                            update_populations=self.misc.export_populations,
+                        )
+                    else:
+                        raise NotImplementedError(
+                            "Cannot return detail of Qvib, Qrot for 3-Tvib mode"
+                        )
 
-                # ... make sure PartitionFunction above is calculated with the same
-                # ... temperatures, rovibrational distributions and overpopulations
-                # ... as the populations of active levels (somewhere below)
-                df.loc[idx, "Qvib"] = Qvib
-                df.loc[idx, "Q"] = Q
+                    # ... make sure PartitionFunction above is calculated with the same
+                    # ... temperatures, rovibrational distributions and overpopulations
+                    # ... as the populations of active levels (somewhere below)
+                    print(df.columns)
+                    df.loc[idx, "Qvib"] = Qvib
+                    df.loc[idx, "Q"] = Q
 
-                # reindexing to get a direct access to Qrot database
-                # create the lookup dictionary
-                # dfQrot index is already 'viblvl'
-                dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
+                    # reindexing to get a direct access to Qrot database
+                    # create the lookup dictionary
+                    # dfQrot index is already 'viblvl'
+                    dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
 
-                dg = df.loc[idx]
+                    dg = df.loc[idx]
 
-                # Add lower state Qrot
-                dg_sorted = dg.set_index(["viblvl_l"], inplace=False)
-                df.loc[idx, "Qrotl"] = dg_sorted.index.map(dfQrot_dict.get).values
-                # Add upper state energy
-                dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
-                df.loc[idx, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
+                    # Add lower state Qrot
+                    dg_sorted = dg.set_index(["viblvl_l"], inplace=False)
+                    df.loc[idx, "Qrotl"] = dg_sorted.index.map(dfQrot_dict.get).values
+                    # Add upper state energy
+                    dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
+                    df.loc[idx, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
 
-                if radis.config["DEBUG_MODE"]:
-                    assert (df.loc[idx, "iso"] == iso).all()
+                    if radis.config["DEBUG_MODE"]:
+                        assert (df.loc[idx, "iso"] == iso).all()
+            elif self.dataframe_type == "vaex":
+                df["Qvib"] = vaex.vconstant(np.nan, df.length_unfiltered())
+                df["Q"] = vaex.vconstant(np.nan,  df.length_unfiltered())
+
+                Q_dict = {}
+                Qvib_dict = {}
+                dfQrot_dict = {}
+                for iso in iso_set:
+                   # Get partition function for all lines
+                    parsum = self.get_partition_function_calculator(molecule, iso, state)
+
+                    if is_float(Tvib):
+                        Q_dict[iso], Qvib_dict[iso], dfQrot = parsum.at_noneq(
+                            Tvib,
+                            Trot,
+                            vib_distribution=vib_distribution,
+                            rot_distribution=rot_distribution,
+                            overpopulation=overpopulation,
+                            returnQvibQrot=True,
+                            update_populations=self.misc.export_populations,
+                        )
+                    else:
+                        raise NotImplementedError(
+                            "Cannot return detail of Qvib, Qrot for 3-Tvib mode"
+                        )
+                    # reindexing to get a direct access to Qrot database
+                    # create the lookup dictionary
+                    # dfQrot index is already 'viblvl'
+                    dfQrot_dict[iso] = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
+
+                def update_Qvib(iso):
+                        return Qvib_dict[iso]
+
+                def update_Q(iso):
+                    return Q_dict[iso]
+
+                df["Qvib"] = df.apply(update_Qvib, arguments=[df.iso])
+                df["Q"] = df.apply(update_Q, arguments=[df.iso])
+
+                    # # Add lower state Qrot
+                    # dg_sorted = dg.set_index(["viblvl_l"], inplace=False)
+                    # df.loc[idx, "Qrotl"] = dg_sorted.index.map(dfQrot_dict.get).values
+                    # # Add upper state energy
+                    # dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
+                    # df.loc[idx, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
+                def update_Qrot(viblvl, iso):
+                        return dfQrot_dict[iso].get(viblvl)
+                        # if iso_df == iso:
+                        #     return dfQrot_dict.get(val)
+                        # else:
+                        #     return val
+
+                    # Add lower state Qrot
+                df["Qrotl"] =  df.apply(update_Qrot, arguments=[df.viblvl_l, df.iso])
+                    # Add upper state energy
+                df["Qrotu"] = df.apply(update_Qrot, arguments=[df.viblvl_u, df.iso])
 
             Q, Qvib, Qrotu, Qrotl = df.Q, df.Qvib, df.Qrotu, df.Qrotl
 
         else:
-            iso = df.attrs["iso"]
+            iso = int(self.input.isotope)
 
             parsum = self.get_partition_function_calculator(molecule, iso, state)
 
@@ -2553,14 +2835,21 @@ class BaseFactory(DatabankLoader):
             # dfQrot index is already 'viblvl'
             dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
 
-            dg = df.loc[:]
+            if self.dataframe_type == "pandas":
+                dg = df.loc[:]
 
-            # Add lower state Qrot
-            dg_sorted = dg.set_index(["viblvl_l"], inplace=False)
-            df.loc[:, "Qrotl"] = dg_sorted.index.map(dfQrot_dict.get).values
-            # Add upper state energy
-            dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
-            df.loc[:, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
+                # Add lower state Qrot
+                dg_sorted = dg.set_index(["viblvl_l"], inplace=False)
+                df.loc[:, "Qrotl"] = dg_sorted.index.map(dfQrot_dict.get).values
+                # Add upper state energy
+                dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
+                df.loc[:, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
+            elif self.dataframe_type == "vaex":
+                dg = df 
+                # Add lower state Qrot
+                df["Qrotl"] = df["viblvl_l"].apply(lambda x : dfQrot_dict.get(x))
+                # Add upper state energy
+                df["Qrotu"] = df["viblvl_u"].apply(lambda x : dfQrot_dict.get(x))
 
             Q, Qvib, Qrotu, Qrotl = Q, Qvib, df.Qrotu, df.Qrotl
 
@@ -2669,6 +2958,7 @@ class BaseFactory(DatabankLoader):
                 df,
                 dbformat=self.params.dbformat,
                 lvlformat=self.params.levelsfmt,
+                dataframe_type=self.dataframe_type,
                 verbose=self.verbose,
             )
             assert "viblvl_u" in df
@@ -3100,7 +3390,10 @@ class BaseFactory(DatabankLoader):
         nl = df.nl
         # ... remove Qref, nref, etc.
         # start from for tabulated linestrength
-        line_strength = df.int.copy()  # TODO: savememory; replace the "int" column
+        if self.dataframe_type == "pandas":
+            line_strength = df.int.copy()  # TODO: savememory; replace the "int" column
+        elif self.dataframe_type == "vaex":
+            line_strength = df.int
         if not self.molparam.terrestrial_abundances:
             raise NotImplementedError(
                 "Formula not corrected for non-terrestrial isotopic abundances"
@@ -3288,7 +3581,7 @@ class BaseFactory(DatabankLoader):
         elif self.dataframe_type == "vaex":
             self.df1 = df[
                 ~b
-            ].materialize()  # If materialized is used time taken is reduced but memory efficiency is slightly reduced.
+            ]
             self.df1.attrs = df.attrs
 
         #        df.drop(b.index, inplace=True)   # performance: was not faster
@@ -3369,35 +3662,36 @@ class BaseFactory(DatabankLoader):
 
         self.profiler.start("memory_usage_warning", 3)
         # Check memory size
-        try:
-            # Retrieving total user RAM
-            mem = virtual_memory()
-            mem = mem.total  # total physical memory available
-            # Checking if object type column exists
-            if "O" in self.df1.dtypes.unique():
-                limit = mem / 25  # 4% of user RAM
-                self.warn(
-                    "'object' type column found in database, calculations and "
-                    + "memory usage would be faster with a numeric type. Possible "
-                    + "solution is to not use 'save_memory' and convert the columns to dtype.",
-                    "PerformanceWarning",
-                )
-            else:
-                limit = mem / 2  # 50 % of user RAM
-
-            # Note: the difference between deep=True and deep=False is around 4 times
-            if self.dataframe_type == "pandas":
-                df_size = self.df1.memory_usage(deep=False).sum()
-
-                if df_size > limit:
+        if self.dataframe_type == "pandas":
+            try:
+                # Retrieving total user RAM
+                mem = virtual_memory()
+                mem = mem.total  # total physical memory available
+                # Checking if object type column exists
+                if "O" in self.df1.dtypes.unique():
+                    limit = mem / 25  # 4% of user RAM
                     self.warn(
-                        "Line database is large: {0:.0f} Mb".format(df_size * 1e-6)
-                        + ". Consider using save_memory "
-                        + "option, if you don't need to reuse this factory to calculate new spectra",
-                        "MemoryUsageWarning",
+                        "'object' type column found in database, calculations and "
+                        + "memory usage would be faster with a numeric type. Possible "
+                        + "solution is to not use 'save_memory' and convert the columns to dtype.",
+                        "PerformanceWarning",
                     )
-        except ValueError:  # had some unexplained ValueError: __sizeof__() should return >= 0
-            pass
+                else:
+                    limit = mem / 2  # 50 % of user RAM
+
+                # Note: the difference between deep=True and deep=False is around 4 times
+                if self.dataframe_type == "pandas":
+                    df_size = self.df1.memory_usage(deep=False).sum()
+
+                    if df_size > limit:
+                        self.warn(
+                            "Line database is large: {0:.0f} Mb".format(df_size * 1e-6)
+                            + ". Consider using save_memory "
+                            + "option, if you don't need to reuse this factory to calculate new spectra",
+                            "MemoryUsageWarning",
+                        )
+            except ValueError:  # had some unexplained ValueError: __sizeof__() should return >= 0
+                pass
 
         self.profiler.stop("memory_usage_warning", "Check Memory usage of database")
 

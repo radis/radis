@@ -17,6 +17,7 @@ Get equivalent width in nm of a 10cm-1 width at 380 nm
 """
 
 import numpy as np
+import vaex
 
 from radis.phys.air import air2vacuum, vacuum2air
 from radis.phys.constants import c, eV, h, hc_k, k_b
@@ -327,12 +328,27 @@ def atm2torr(p_atm):
 def atm2bar(p_atm):
     return p_atm * 1.01325
 
+def true_for_all(E):
+    if E.unique() == [ True ]:
+        return True
+    else:
+        return False
+    
+def false_for_all(E):
+    if E.unique() == [False]:
+        return True
+    else:
+        return False
+
 
 # %% Assert functions
 
 
 def _magn(x):
-    return np.round((np.log10(np.abs(x))))
+    if isinstance(x,vaex.expression.Expression):
+        return x.abs().log10().round()
+    else:
+        return np.round((np.log10(np.abs(x))))
 
 
 def _assertK(E):
@@ -345,12 +361,21 @@ def _assertK(E):
 
 
 def _assertcm(E):
-    if np.sum(np.abs(E)) != 0:  # check E != 0 for both floats and arrays
-        try:
-            m = _magn(E)
-            assert ((1 <= m) & (m <= 5)).all()
-        except AssertionError:
-            print(("Warning. Input values may not be in cm-1", E, "cm-1?"))
+    if isinstance(E, vaex.expression.Expression):
+        if E.abs().sum():  # check E != 0 for both floats and arrays
+            try:
+                m = _magn(E)
+                assert true_for_all(((1 <= m) & (m <= 5)))
+            except AssertionError:
+                print(("Warning. Input values may not be in cm-1", E, "cm-1?"))
+    else:
+        if np.sum(np.abs(E)) != 0:  # check E != 0 for both floats and arrays
+            try:
+                m = _magn(E)
+                assert ((1 <= m) & (m <= 5)).all()
+            except AssertionError:
+                print(("Warning. Input values may not be in cm-1", E, "cm-1?"))
+    
 
 
 def _asserteV(E):

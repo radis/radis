@@ -1100,7 +1100,7 @@ def docstring_parameter(*sub):
     return dec
 
 
-def add_bands(df, dbformat, lvlformat, verbose=True):
+def add_bands(df, dbformat, lvlformat, dataframe_type="pandas", verbose=True):
     """Assign all transitions to a vibrational band:
 
     Add 'band', 'viblvl_l' and 'viblvl_u' attributes for each line to allow
@@ -1277,9 +1277,14 @@ def add_bands(df, dbformat, lvlformat, verbose=True):
 
             vib_lvl_name = vib_lvl_name_hitran_class1
 
-            df.loc[:, "viblvl_l"] = vib_lvl_name(df["vl"])
-            df.loc[:, "viblvl_u"] = vib_lvl_name(df["vu"])
-            df.loc[:, "band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
+            if dataframe_type == "pandas":
+                df.loc[:, "viblvl_l"] = vib_lvl_name(df["vl"])
+                df.loc[:, "viblvl_u"] = vib_lvl_name(df["vu"])
+                df.loc[:, "band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
+            elif dataframe_type == "vaex":
+                df["viblvl_l"] = df.vl.apply(vib_lvl_name)
+                df["viblvl_u"] = df.vu.apply(vib_lvl_name)
+                df["band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
 
         else:
             raise NotImplementedError(

@@ -40,9 +40,11 @@ from math import ceil
 
 import numba
 import numpy as np
+import vaex
 from numba import bool_, float64, int32, int64
 from numpy import hstack
 from scipy.interpolate import interp1d
+from radis.phys.convert import true_for_all, false_for_all
 
 # Normalize
 
@@ -351,7 +353,11 @@ def anynan(a):
     Fastest implementation for arrays with >10^4 elements
     https://stackoverflow.com/a/45011547/5622825
     """
-    return np.isnan(np.dot(a, a))
+
+    if isinstance(a, np.ndarray):
+        return np.isnan(np.dot(a, a))
+    elif isinstance(a, vaex.expression.Expression):
+        return not false_for_all(a.isna())
 
 
 @numba.njit
