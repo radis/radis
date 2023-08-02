@@ -565,27 +565,24 @@ def voigt_broadening_HWHM(
     :py:func:`~radis.lbl.broadening.voigt_lineshape`
     """
     
-    if self.format == "kurucz":
-        gamma_lb= gamma_vald3(df)
-        gamma_db= doppler_kurucz(df)
-    else:
+    
 
-        # Collisional broadening HWHM
-        gamma_lb = pressure_broadening_HWHM(
-            airbrd,
-            selbrd,
-            Tdpair,
-            Tdpsel,
-            pressure_atm,
-            mole_fraction,
-            Tgas,
-            Tref,
-            diluent,
-            diluent_broadening_coeff,
-        )
+    # Collisional broadening HWHM
+    gamma_lb = pressure_broadening_HWHM(
+        airbrd,
+        selbrd,
+        Tdpair,
+        Tdpsel,
+        pressure_atm,
+        mole_fraction,
+        Tgas,
+        Tref,
+        diluent,
+        diluent_broadening_coeff,
+    )
 
-        # Doppler Broadening HWHM:
-        gamma_db = doppler_broadening_HWHM(wav, molar_mass, Tgas)
+    # Doppler Broadening HWHM:
+    gamma_db = doppler_broadening_HWHM(wav, molar_mass, Tgas)
 
     # Calculate broadening
     # -------
@@ -853,15 +850,6 @@ class BroadenFactory(BaseFactory):
     --------
     :class:`~radis.lbl.factory.SpectrumFactory`
     """
-
-    def __init__(self):
-
-        super(BroadenFactory, self).__init__()
-
-        # Name variables (initialized later in SpectrumFactory)
-        self.wbroad_centered = None
-
-        self.wavenumber = None
         self.wavenumber_calc = None
         self.woutrange = (None, None)
 
@@ -1000,61 +988,7 @@ class BroadenFactory(BaseFactory):
 
         self.profiler.stop("calc_hwhm", "Calculate broadening HWHM")
 
-    def gamma_vald3(self, df, T, PH, PHH, PHe, enh_damp=1.0):  # , vdW_meth="V"):
-        gamRad = df['gamRad'].replace(0., -99)
-        gamSta = df['gamSta'].replace(0., -99)
-        eV2wn = 8065.54  # 1[eV]=8065.54[cm^-1]
-        kB = 1.38064852e-16
-        ccgs = 29979245800.0  # c in cgs
-        chi_lam = df['nu_lines']/eV2wn  # [cm-1] -> [eV]
-        chi = df['elower']/eV2wn  # [cm-1] -> [eV]
 
-        C6 = 0.3e-30 * ((1/(df['ionE']-chi-chi_lam)**2) - (1/(df['ionE']-chi)**2))
-        C6 = np.abs(C6)
-        print("C6.size",C6.size)
-        #print("T.size",T.size)
-        print("C6",C6)
-        print("T",T)
-        print("PH",PH)
-        gam6H = 1e20 * C6**0.4 * PH*1e6 / T**0.7
-        gam6He = 1e20 * C6**0.4 * PHe*1e6*0.41336 / T**0.7
-        gam6HH = 1e20 * C6**0.4 * PHH*1e6*0.85 / T**0.7
-        gamma6 = enh_damp * (gam6H + gam6He + gam6HH)
-        gamma_case1 = (gamma6 + 10**gamRad + 10**gamSta) / (4*np.pi*ccgs)
-        gamma_case1 = gamma_case1.replace(np.nan, 0.)
-
-        Texp = 0.38  # Barklem+2000
-        gam6H = 10**df['vdWdamp'] * (T/10000.)**Texp * PH*1e6 / (kB*T)
-        gam6He = 10**df['vdWdamp'] * (T/10000.)**Texp * PHe*1e6*0.41336 / (kB*T)
-        gam6HH = 10**df['vdWdamp'] * (T/10000.)**Texp * PHH*1e6*0.85 / (kB*T)
-        gamma6 = gam6H + gam6He + gam6HH
-        gamma_case2 = (gamma6 + 10**gamRad + 10**gamSta) / (4*np.pi*ccgs)
-
-        gamma = gamma_case1.where(df['vdWdamp'] >= 0., gamma_case2)
-
-        return gamma
-
-
-
-    def doppler_kurucz(self, data_dict, Tgas, M):
-        """
-        Compute Doppler broadening based on the provided formula.
-        
-        Args:
-        data_dict: a dictionary containing various spectral line parameters.
-        Tgas: the translational temperature (K)
-        M: the molar mass of the emitter (g/mol)
-        
-        Returns:
-        delta_lambda_Doppler: Doppler broadening (in nm)
-        """
-        # Extract 𝜆𝑢𝑙[nm] from data dictionary
-        lambda_ul = data_dict["wlnmair"]
-
-        # Calculate Doppler broadening
-        delta_lambda_Doppler = 3.58e-7 * lambda_ul * np.sqrt(Tgas/M)
-
-        return delta_lambda_Doppler
 
 
     def _calc_min_width(self, df):
@@ -1810,7 +1744,7 @@ class BroadenFactory(BaseFactory):
                 line_profile_LDM[l] = {}
                 for m in range(len(wL)):
                     wV_ij = olivero_1977(wG[l], wL[m])  # FWHM
-                    lineshape = voigt_lineshape(
+                    lineshape = voigt_lineshape(self,
                         wbroad_centered, wL[m] / 2, wV_ij / 2, jit=jit
                     )  # FWHM > HWHM
                     line_profile_LDM[l][m] = lineshape
