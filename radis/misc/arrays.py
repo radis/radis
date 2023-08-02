@@ -44,7 +44,8 @@ import vaex
 from numba import bool_, float64, int32, int64
 from numpy import hstack
 from scipy.interpolate import interp1d
-from radis.phys.convert import true_for_all, false_for_all
+
+from radis.phys.convert import false_for_all
 
 # Normalize
 

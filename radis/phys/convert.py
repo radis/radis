@@ -328,12 +328,14 @@ def atm2torr(p_atm):
 def atm2bar(p_atm):
     return p_atm * 1.01325
 
+
 def true_for_all(E):
-    if E.unique() == [ True ]:
+    if E.unique() == [True]:
         return True
     else:
         return False
-    
+
+
 def false_for_all(E):
     if E.unique() == [False]:
         return True
@@ -345,7 +347,7 @@ def false_for_all(E):
 
 
 def _magn(x):
-    if isinstance(x,vaex.expression.Expression):
+    if isinstance(x, vaex.expression.Expression):
         return x.abs().log10().round()
     else:
         return np.round((np.log10(np.abs(x))))
@@ -375,7 +377,6 @@ def _assertcm(E):
                 assert ((1 <= m) & (m <= 5)).all()
             except AssertionError:
                 print(("Warning. Input values may not be in cm-1", E, "cm-1?"))
-    
 
 
 def _asserteV(E):

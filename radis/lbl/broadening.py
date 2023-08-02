@@ -64,9 +64,6 @@ Formula in docstrings generated with :py:func:`~pytexit.pytexit.py2tex` ::
 from warnings import warn
 
 import numpy as np
-import pandas as pd
-import pyarrow 
-import vaex
 from numba import float64, jit
 from numpy import arange, exp
 from numpy import log as ln
@@ -1502,7 +1499,7 @@ class BroadenFactory(BaseFactory):
                 N = len(dg)
             elif self.dataframe_type == "vaex":
                 shifted_wavenum = shifted_wavenum.to_numpy().reshape((1, -1))
-                N = len(dg)                
+                N = len(dg)
         except AttributeError:  # probably not a dataframe: one line only.
             assert type(shifted_wavenum) is np.float64
             N = 1
@@ -3249,7 +3246,7 @@ def project_lines_on_grid_noneq(df, wavenumber, wstep, dataframe_type):
         shiftwav = df.shiftwav.to_numpy()  # cm-1  ,   size N (number of lines)
         S = df.S.to_numpy()  # cm/#  ~   cm-1/(#.cm-2)  ,   size N
         Ei = df.Ei.to_numpy()  # mW/cm3/sr
-        wv = df.hwhm_voigt.to_numpy() * 2  # HWHM > FWHM       
+        wv = df.hwhm_voigt.to_numpy() * 2  # HWHM > FWHM
 
     # ... First get closest matching line (left, and right):
     iwav_on_grid_left = np.searchsorted(wavenumber, shiftwav.T, side="left").ravel() - 1
