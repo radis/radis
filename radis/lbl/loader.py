@@ -2872,7 +2872,7 @@ class DatabankLoader(object):
         elec_state: str
         """
 
-        parsum = self.[molecule][isotope][elec_state]
+        parsum = self.parsum_tab[molecule][isotope][elec_state]
 
         # helps IDE find methods
         assert isinstance(parsum, RovibParFuncTabulator)
