@@ -643,6 +643,108 @@ def test_all_spectrum_using_wstep_auto(verbose=True, plot=False, *args, **kwargs
     assert wstep_1 == wstep_2 == wstep_3 == wstep_4
     assert sf._wstep == "auto"
 
+def test_vaex_and_pandas_spectrum():
+    from radis import calc_spectrum
+    from radis.spectrum.utils import CONVOLUTED_QUANTITIES
+
+    databanks = ["hitran", "hitemp", "exomol", "geisa"]
+
+    for databank in databanks:
+        # computing spectrum in vaex dataframe format
+        s, factory_s = calc_spectrum(
+            1900,
+            2300,  # cm-1
+            molecule="CO",
+            isotope="1,2,3",
+            pressure=1.01325,  # bar
+            Tgas=700,  # K
+            # mole_fraction={'CO': 0.5, 'CO2': 0.3},
+            mole_fraction=0.1,
+            path_length=1,  # cm
+            databank=databank,  # or 'hitemp', 'geisa', 'exomol'
+            # use_cached=False,
+            engine="vaex",
+            return_factory=True,
+        )
+        s.apply_slit(0.5, "nm")  # simulate an experimental slit
+
+        # computin spectrum in pandas dataframe format
+        s1, factory_s1 = calc_spectrum(
+            1900,
+            2300,  # cm-1
+            molecule="CO",
+            isotope="1,2,3",
+            pressure=1.01325,  # bar
+            Tgas=700,  # K
+            mole_fraction=0.1,
+            path_length=1,  # cm
+            databank=databank,  # or 'hitemp', 'geisa', 'exomol'
+            # use_cached=False,
+            engine="pandas",
+            return_factory=True,
+        )
+        s1.apply_slit(0.5, "nm")  # simulate an experimental slit
+
+        for spec_quantity in CONVOLUTED_QUANTITIES:
+            assert np.allclose(
+                s.get(spec_quantity)[1], s1.get(spec_quantity)[1], equal_nan=True
+            )
+
+        for column in factory_s1.df1.columns:
+            assert np.all(factory_s.df1[column].to_numpy() == factory_s1.df1[column])
+
+    def test_vaex_and_pandas_spectrum_noneq():
+        from radis import calc_spectrum
+
+        import time
+        t0=time.time()
+
+        s, factory_s = calc_spectrum(1800, 1820,         # cm-1
+                            molecule='CO',
+                            isotope='1',
+                            pressure=1.01325,   # bar
+                            Tgas=700,           # K
+                            Tvib=710,
+                            Trot=710,
+                            mole_fraction=0.1,
+                            wstep='auto',
+                            path_length=1,      # cm
+                            databank='hitemp',  # or 'hitemp', 'geisa', 'exomol'
+                            optimization=None,
+                            engine='vaex',
+                            verbose=3,
+                            return_factory=True,
+                            )
+
+        s.apply_slit(0.5, 'nm')       # simulate an experimental slit
+
+        s1, factory_s1 = calc_spectrum(1800, 1820,         # cm-1
+                            molecule='CO',
+                            isotope='1',
+                            pressure=1.01325,   # bar
+                            Tgas=700,           # K
+                            Tvib=710,
+                            Trot=710,
+                            mole_fraction=0.1,
+                            wstep='auto',
+                            path_length=1,      # cm
+                            databank='hitemp',  # or 'hitemp', 'geisa', 'exomol'
+                            engine='pandas',
+                            verbose=3,
+                            return_factory=True,
+                            )
+
+        s1.apply_slit(0.5, 'nm')       # simulate an experimental slit
+
+        import numpy as np
+
+        assert np.allclose(s.get("radiance"),s1.get("radiance"), equal_nan=True)
+        assert np.allclose(s.get("absorbance"),s1.get("absorbance"), equal_nan=True)
+        assert np.allclose(s.get("transmittance"),s1.get("transmittance"), equal_nan=True)
+
+        for column in factory_s1.df1.columns:
+            assert np.all(factory_s1.df1[column] == factory_s.df1[column].to_numpy())
+
 # --------------------------
 if __name__ == "__main__":
 
