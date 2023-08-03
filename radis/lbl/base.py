@@ -312,9 +312,9 @@ class BaseFactory(DatabankLoader):
         from radis.misc.printer import get_print_full
 
         try:
-            assert not anynan(df[column])
+            assert not anynan(df[column], self.dataframe_type)
         except AssertionError as err:
-            if isinstance(df, pd.DataFrame):
+            if self.dataframe_type == "pandas":
                 index = np.isnan(df[column]).idxmax()
                 if self.input.molecule == "CO2":
                     fix_idea = (
@@ -329,7 +329,7 @@ class BaseFactory(DatabankLoader):
                         get_print_full(df.loc[index]) + fix_idea
                     )
                 ) from err
-            elif isinstance(df, vaex.dataframe.DataFrameLocal):
+            elif self.dataframe_type == "vaex":
                 if self.input.molecule == "CO2":
                     fix_idea = (
                         "If using HITEMP2010 for CO2, some lines are unlabelled and therefore cannot be used at "

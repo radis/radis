@@ -40,7 +40,6 @@ from math import ceil
 
 import numba
 import numpy as np
-import vaex
 from numba import bool_, float64, int32, int64
 from numpy import hstack
 from scipy.interpolate import interp1d
@@ -348,16 +347,16 @@ def evenly_distributed_fast(w, rtolerance=1e-5):
     return np.isclose(w[-1] - w[-2], w[1] - w[0], rtol=rtolerance)
 
 
-def anynan(a):
+def anynan(a, dataframe_type="pandas"):
     """Returns whether ``a`` has at least one :py:attr:`~numpy.nan`
 
     Fastest implementation for arrays with >10^4 elements
     https://stackoverflow.com/a/45011547/5622825
     """
 
-    if isinstance(a, np.ndarray):
+    if dataframe_type == "pandas":
         return np.isnan(np.dot(a, a))
-    elif isinstance(a, vaex.expression.Expression):
+    elif dataframe_type == "vaex":
         return not false_for_all(a.isna())
 
 

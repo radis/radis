@@ -1259,7 +1259,7 @@ class BroadenFactory(BaseFactory):
 
         # Prepare vectorized operations:
         try:  # make it a (1, N) row vector
-            if isinstance(gamma_lb, np.ndarray):
+            if isinstance(gamma_lb, np.ndarray) or self.dataframe_type == "pandas":
                 gamma_lb = gamma_lb.values.reshape((1, -1))
             elif self.dataframe_type == "vaex":
                 gamma_lb = gamma_lb.to_numpy().reshape((1, -1))
@@ -2822,7 +2822,7 @@ class BroadenFactory(BaseFactory):
         self.profiler.start("weak_lines", 2, "... classifying lines as weak or strong")
         # Get approximate spectral absorption coefficient
         rough_spectrum, S_density_on_grid, line2grid_proj_left = project_lines_on_grid(
-            df, wavenumber_calc, wstep
+            df, wavenumber_calc, wstep, self.dataframe_type
         )
 
         #     :
@@ -2935,7 +2935,7 @@ class BroadenFactory(BaseFactory):
             # Calculate continuum
             if noneq:
                 k_continuum, j_continuum, _, _, _ = project_lines_on_grid_noneq(
-                    df_weak_lines, wavenumber_calc, wstep
+                    df_weak_lines, wavenumber_calc, wstep, self.dataframe_type
                 )
 
                 if __debug__:
@@ -2958,7 +2958,7 @@ class BroadenFactory(BaseFactory):
 
             else:
                 k_continuum, _, _ = project_lines_on_grid(
-                    df_weak_lines, wavenumber_calc, wstep
+                    df_weak_lines, wavenumber_calc, wstep, self.dataframe_type
                 )
 
                 if __debug__:
@@ -3052,7 +3052,7 @@ class BroadenFactory(BaseFactory):
         return abscoeff_v
 
 
-def project_lines_on_grid(df, wavenumber, wstep, dataframe_type):
+def project_lines_on_grid(df, wavenumber, wstep, dataframe_type="pandas"):
     """Quickly sums all lines on wavespace grid as rectangles of HWHM
     corresponding to ``hwhm_voigt`` and a spectral absorption coefficient value so
     that linestrength is conserved.
@@ -3191,7 +3191,7 @@ def project_lines_on_grid(df, wavenumber, wstep, dataframe_type):
     return k_rough_spectrum, S_density_on_grid, line2grid_projection_left
 
 
-def project_lines_on_grid_noneq(df, wavenumber, wstep, dataframe_type):
+def project_lines_on_grid_noneq(df, wavenumber, wstep, dataframe_type="pandas"):
     """Quickly sums all lines on wavespace grid as rectangles of HWHM
     corresponding to ``hwhm_voigt`` and a spectral absorption coefficient value so
     that linestrength is conserved.
