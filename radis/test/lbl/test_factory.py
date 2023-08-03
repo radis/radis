@@ -669,7 +669,7 @@ def test_vaex_and_pandas_spectrum():
         )
         s.apply_slit(0.5, "nm")  # simulate an experimental slit
 
-        # computin spectrum in pandas dataframe format
+        # computing spectrum in pandas dataframe format
         s1, factory_s1 = calc_spectrum(
             1900,
             2300,  # cm-1
@@ -694,6 +694,38 @@ def test_vaex_and_pandas_spectrum():
         for column in factory_s1.df1.columns:
             assert np.all(factory_s.df1[column].to_numpy() == factory_s1.df1[column])
 
+    #%% Additional test with other options (cutoff, ...)
+    from radis import SpectrumFactory
+
+    sf_vaex = SpectrumFactory(
+        wavelength_min=4200,
+        wavelength_max=4500,
+        cutoff=1e-23,
+        molecule="CO2",
+        dataframe_type="vaex",
+    )
+    sf_vaex.fetch_databank("hitran")
+    s_vaex = sf_vaex.eq_spectrum(Tgas=2000)  # failing on the 08/03/2023 - minouHub
+
+    sf_pd = SpectrumFactory(
+        wavelength_min=4200,
+        wavelength_max=4500,
+        cutoff=1e-23,
+        molecule="CO2",
+        dataframe_type="pandas",
+    )
+    sf_pd.fetch_databank("hitran")
+    s_pd = sf_pd.eq_spectrum(Tgas=2000)
+
+    for column in sf_pd.df1.columns:
+        assert np.all(sf_vaex.df1[column].to_numpy() == sf_pd.df1[column])
+
+    for spec_quantity in CONVOLUTED_QUANTITIES:
+        assert np.allclose(
+            s_vaex.get(spec_quantity)[1], s_pd.get(spec_quantity)[1], equal_nan=True
+        )
+
+    #%%
     def test_vaex_and_pandas_spectrum_noneq():
 
         from radis import calc_spectrum
