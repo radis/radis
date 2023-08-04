@@ -76,6 +76,7 @@ from radis.io.query import fetch_astroquery
 from radis.levels.partfunc import (
     PartFunc_Dunham,
     PartFuncTIPS,
+    PartFuncKurucz,
     RovibParFuncCalculator,
     RovibParFuncTabulator,
 )
@@ -98,9 +99,6 @@ from radis.phys.convert import cm2nm
 from radis.tools.database import SpecDatabase
 from radis.tools.track_ref import RefTracker
 from radis.api.kuruczapi import AdBKurucz
-import os
-import periodictable
-import mendeleev
 KNOWN_DBFORMAT = [
     "hitran",
     "hitemp",
@@ -149,7 +147,7 @@ See Also
 :ref:`Configuration file <label_lbl_config_file>`
  """
 
-KNOWN_PARFUNCFORMAT = ["cdsd", "hapi"]
+KNOWN_PARFUNCFORMAT = ["cdsd", "hapi", "kurucz"]
 """list: Known formats for partition function (tabulated files to read), or 'hapi'
 to fetch Partition Functions using HITRAN Python interface instead of reading
 a tabulated file.
@@ -2314,8 +2312,7 @@ class DatabankLoader(object):
                         kurucz=AdBKurucz(self.input.atom,self.input.ionization_state)
                         hdf5_file=fetch_kurucz(self.input.atom,self.input.ionization_state)[0]
                         df=fetch_kurucz(self.input.atom,self.input.ionization_state)[1]
-                        kurucz.add_airbrd(df)
-                        #print("colonnes",df.columns)
+                        kurucz.add_airbrd(df)                    
 
                     else:
                         raise ValueError("Unknown dbformat: {0}".format(dbformat))
@@ -2342,7 +2339,6 @@ class DatabankLoader(object):
                 # Crop to the wavenumber of interest
                 # TODO : is it still needed since we use load_only_wavenum_above ?
                 df = df[(df.wav >= wavenum_min) & (df.wav <= wavenum_max)]
-                print(df)
 
                 if __debug__:
                     if len(df) == 0:
@@ -2520,7 +2516,7 @@ class DatabankLoader(object):
         df: pandas DataFrame, or ``None``
             line database to parse. Default ``None``
         """
-
+        
         if molecule is not None and self.input.molecule != molecule:
             raise ValueError(
                 "Expected molecule is {0} according to the inputs, but got {1} ".format(
@@ -2660,6 +2656,9 @@ class DatabankLoader(object):
             parsum = PartFuncTIPS(
                 M=molecule, I=isotope, path=parfunc, verbose=self.verbose
             )
+        elif parfuncfmt in ["kurucz"]:
+            parsum = PartFuncKurucz(self.input.atom,self.input.ionization_state)
+
         elif parfuncfmt == "cdsd":  # Use tabulated CDSD partition functions
             self.reftracker.add(doi["CDSD-4000"], "partition function")
             assert len(predefined_partition_functions) == 0
