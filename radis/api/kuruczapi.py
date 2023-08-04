@@ -13,11 +13,9 @@ import pkgutil
 from contextlib import closing
 from io import BytesIO
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import mendeleev
-import periodictable
 import requests
 from tqdm import tqdm
 from radis.phys.air import air2vacuum
@@ -76,10 +74,8 @@ class AdBKurucz:
         with open("radis\db\kuruczpartfn.txt", "r") as f:
             pfdat = pd.read_csv(f, sep="\s+", comment="#", names=pfTdat.index)
 
-        # print(pfdat.head())
-        # print("pfdat", pfdat)
-        print("len(pfdat)", len(pfdat))
-        print("len(pfTdat)", len(pfTdat))
+        #print("len(pfdat)", len(pfdat))
+        #print("len(pfTdat)", len(pfTdat))
 
         return pfTdat, pfdat
 
@@ -114,7 +110,7 @@ class AdBKurucz:
         return ipccd
 
     def load_ionization_energies(self):
-        #Not used for now
+        #Not used for now but will probably be for NIST database
         """Load atomic ionization energies.
 
         Returns:
@@ -189,32 +185,10 @@ class AdBKurucz:
                     pbar.update(len(data))
         return filename
 
-
-    def air_to_vac(self, wlair):
-        #Use air2vacuum instead
-        """Convert wavelengths [AA] in air into those in vacuum.
-
-        * See http://www.astro.uu.se/valdwiki/Air-to-vacuum%20conversion
-
-        Args:
-            wlair:  wavelengthe in air [Angstrom]
-            n:  Refractive Index in dry air at 1 atm pressure and 15ºC with 0.045% CO2 by volume (Birch and Downs, 1994, Metrologia, 31, 315)
-
-        Returns:
-            wlvac:  wavelength in vacuum [Angstrom]
-        """
-        s = 1e4 / wlair
-        n = (
-            1.0
-            + 0.00008336624212083
-            + 0.02408926869968 / (130.1065924522 - s * s)
-            + 0.0001599740894897 / (38.92568793293 - s * s)
-        )
-        wlvac = wlair * n
-        return wlvac
-    
+   
 
     def Sij0(self,A, g, nu_lines, elower, QTref):
+        # The int column of the df can be computed using this method but the default option option rather uses Radis linestrength_from_Einstein
         """Reference Line Strength in Tref=296K, S0.
 
         Note:
@@ -376,9 +350,9 @@ class AdBKurucz:
             "wav": 10**7/nu_lines,
             "El": elower,
             "eupper": eupper,
-            "gupper": gupper,
+            "gu": gupper,
             "jlower": jlower,
-            "jupper": jupper,
+            "ju": jupper,
             "id": ielem,
             "iso": iion,
             "gamRad": gamRad,
@@ -408,7 +382,8 @@ class AdBKurucz:
             "landeglower": landeglower,
             "landegupper": landegupper,
             "isoshiftmA": isoshiftmA,
-            "int":self.Sij0(A,gupper,nu_lines,elower,self.partfcn(self.key,296))
+            #"int":self.Sij0(A,gupper,nu_lines,elower,self.partfcn(self.key,296))
+            #if int parameter is used, calc_linestrength_eq will also use it
         }
 
         df_radis = pd.DataFrame(data_dict)
@@ -533,17 +508,6 @@ class AdBKurucz:
 
         return self.populations
 
-    def plot_spectrum(self, data, populations, temperature):
-        #Remove this method once SpectrumFactory is used instead
-        intensities = data["A"] * populations
-        # print(f"Intensities: {intensities}")
-        plt.figure(figsize=(10, 6))
-        plt.plot(data["nu_lines"], intensities)
-        plt.title(f"Spectrum at {temperature}K")
-        plt.xlabel("Wave Number (cm-1)")
-        plt.ylabel("Intensity")
-        plt.show()
-    
     #Initially from Exojax but no longer needed since pressure is handled by SpectrumFactory
     def pressure_layer(self,logPtop=-8.,
                    logPbtm=2.,
@@ -582,36 +546,5 @@ class AdBKurucz:
 
 
     
-
-    #def process(self, atomic_number, ionization_state, temperature):
-        #self.kurucz_file = f"gf{atomic_number}{ionization_state}.all"
-        #self.hdf5_file = f"gf{atomic_number}{ionization_state}.hdf5"
-        #self.url = self.get_url(atomic_number, ionization_state)
-
-        # If hdf5 file exists, read data from it
-        #if os.path.exists(self.hdf5_file):
-            #print("HDF5 file already exists, reading data from it.")
-            #self.data = self.read_hdf5(self.hdf5_file)
-        #else :
-
-            #self.kuruczf = self.download_file()
-            #self.data = self.read_kurucz(self.kuruczf)
-            #self.store_hdf5(self.data, self.hdf5_file)
-            #self.data = self.read_hdf5(self.hdf5_file)
-
-        # Convert atomic_number to element symbol
-        #element_symbol = periodictable.elements[int(atomic_number)].symbol
-
-        # Construct the key
-
-        #if ionization_state == "00":
-            #key = element_symbol + "_I"
-        #elif ionization_state == "01":
-            #key = element_symbol + "_II"
-        #else:
-            #key = element_symbol + "_III"
-
-        #populations = self.calculate_populations(key, temperature)
-        #self.plot_spectrum(self.data, populations, temperature)
 
         
