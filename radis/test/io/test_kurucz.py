@@ -3,7 +3,7 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
-
+from radis.levels.partfunc import PartFuncKurucz
 from radis.api.kuruczapi import AdBKurucz
 
 
@@ -22,27 +22,23 @@ def test_air_to_vac():
     assert round(wlvac, 5) == round(5001.39485, 5)
 
 
-def test_partfn():
-    kurucz = AdBKurucz()
-    with patch.object(kurucz, "pfdat") as mock_pfdat, patch.object(
-        kurucz, "pfTdat"
-    ) as mock_pfTdat:
-        # Assuming partition function values for corresponding temperatures
-        mock_pfdat.loc.__getitem__.return_value = pd.Series(
-            [2.0, 2.5, 3.0, 3.5, 4.0, 4.5]
-        )
-        # Temperature range from 2000K to 3000K
-        mock_pfTdat.values.flatten.return_value = np.array(
-            [2000.0, 2200.0, 2400.0, 2600.0, 2800.0, 3000.0]
-        )
-        key = "H_I"
-        T = 2500.0
-        Q = kurucz.partfn(key, T)
-        # As T = 2500 is exactly in the middle of [2400, 2600],
-        # the interpolated partition function value should be in the middle of [3.0, 3.5]
-        expected_Q = 3.25
-        assert Q == expected_Q
+def test_partfunckurucz():
+    atom = "Ca"
+    ionization_state = "00"
+    kurucz_data = PartFuncKurucz(atom, ionization_state)
 
+    temperatures = np.array([1e-05, 1e-04, 1e-03, 1e-02, 1e-01, 1.5e-01, 2e-01, 3e-01, 5e-01, 7e-01, 1.0, 1.3, 1.7, 2.0, 3.0, 5.0, 7.0, 10.0, 15.0, 20.0, 30.0, 50.0, 70.0, 100.0, 130.0, 170.0, 200.0, 250.0, 300.0, 500.0, 700.0, 1e03, 1.5e03, 2e03, 3e03, 4e03, 5e03, 6e03, 7e03, 8e03, 9e03, 1e04])
+    pf_values = np.array([1.0]*33 + [1.00016, 1.00701, 1.04991, 1.17173, 1.41809, 1.85725, 2.60365, 3.81954, 5.69578])
+    
+    for T, expected_pf in zip(temperatures, pf_values):
+        assert np.isclose(kurucz_data._at(T), expected_pf, atol=1e-4), f"Failed at T={T}"
+    
+    T_test = 3000  # Temperature at which to test interpolation
+
+    # Compute expected partition function value using np.interp directly on the original data
+    expected_pf = np.interp(T_test, temperatures , pf_values)
+
+    assert np.isclose(kurucz_data._at(T_test), expected_pf, atol=1e-4), f"Interpolation failed at T={T_test}"
 
 @pytest.mark.needs_connection
 def test_adbkurucz_external_data_functions():
