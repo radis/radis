@@ -124,6 +124,12 @@ class HITEMPDatabaseManager(DatabaseManager):
         chunksize=100000,
         parallel=True,
     ):
+        """
+        See Also
+        --------
+        HITEMPDatabaseManager is compatible with Exojax :py:class:`exojax.spec.api.MdbHitemp`
+
+        """
         super().__init__(
             name,
             molecule,
