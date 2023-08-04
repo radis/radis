@@ -436,7 +436,6 @@ def lorentzian_FT(w_centered, gamma_lb):
 
 
 def voigt_broadening_HWHM(
-    self,
     airbrd,
     selbrd,
     Tdpair,
@@ -716,8 +715,6 @@ def whiting1968(w_centered, wl, wv):
     # ... fasten up the calculation by 25% (ex: test on 20 cm-1, ~6000 lines:
     # ... 20.5.s > 16.5s) on the total eq_spectrum calculation
     # ... w_wv is typically a (10.001, 1997) array
-    print("w_centered",w_centered)
-    print("wv",wv)
     w_wv = w_centered / wv  # w_centered can be ~500 Mb
     w_wv_2 = w_wv**2
     wl_wv = wl / wv
@@ -997,7 +994,6 @@ class BroadenFactory(BaseFactory):
 
         # TODO: thresholds depend whether we're computing Transmittance/optically thin emission,
         # for a homogeneous slab, or self-absorbed radiance combined with other slabs.
-        min_width = None
             
 
         min_width = self.min_width
@@ -1086,8 +1082,7 @@ class BroadenFactory(BaseFactory):
             selbrd = df.selbrd
 
         # Calculate broadening FWHM
-        wv, wl, wg = voigt_broadening_HWHM(
-            self, 
+        wv, wl, wg = voigt_broadening_HWHM( 
             df.airbrd,
             selbrd,
             df.Tdpair,
@@ -1106,7 +1101,6 @@ class BroadenFactory(BaseFactory):
         df["hwhm_voigt"] = wv
         df["hwhm_lorentz"] = wl
         df["hwhm_gauss"] = wg
-        print(df)
 
         return 
 
@@ -1389,7 +1383,7 @@ class BroadenFactory(BaseFactory):
 
         # Calculate broadening for all lines
         # ----------------------------------
-        lineshape = voigt_lineshape(self,wbroad_centered, hwhm_lorentz, hwhm_voigt, jit=jit)
+        lineshape = voigt_lineshape(wbroad_centered, hwhm_lorentz, hwhm_voigt, jit=jit)
 
         return lineshape
 
