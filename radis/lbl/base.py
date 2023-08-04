@@ -92,8 +92,7 @@ from radis.phys.constants import c_CGS, h_CGS, hc_k
 from radis.phys.convert import cm2J, nm2cm, nm_air2cm
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.utils import print_conditions
-hcperk = 1.4387773538277202
-Tref=296
+
 
 
 class BaseFactory(DatabankLoader):
@@ -2182,8 +2181,6 @@ class BaseFactory(DatabankLoader):
             Qref_Qgas = Qref / Qgas
         return Qref_Qgas
     
-    Tref=296
-    hcperk = 1.4387773538277202  # hc/kB (cm K)
 
     
 
@@ -2228,7 +2225,6 @@ class BaseFactory(DatabankLoader):
 
         Tref = self.input.Tref
         df1 = self.df1
-        print (df1.columns)
 
         if len(df1) == 0:
             return  # no lines
@@ -2240,7 +2236,8 @@ class BaseFactory(DatabankLoader):
         # %% Calculate line strength at desired temperature
         # -------------------------------------------------
 
-        if self.molparam.terrestrial_abundances:
+        if self.molparam.terrestrial_abundances and self.input.atom is None :
+          
 
             # This calculation is based on equation (A11) in Rothman 1998: "JQSRT, vol.
             # 60, No. 5, pp. 665-710"
@@ -2266,7 +2263,6 @@ class BaseFactory(DatabankLoader):
                 if not "ju" in df1:
                     self._add_ju(df1)
                 self._calc_degeneracies(df1)
-
             Ia = self.get_lines_abundance(df1)
             df1["S"] = linestrength_from_Einstein(
                 df1.A, df1.gu, df1.El, Ia, df1.wav, self.Qgas(df1, Tgas), Tgas
