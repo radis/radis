@@ -1134,6 +1134,45 @@ class PartFuncExoMol(RovibParFuncTabulator):
 
     def _at(self, T):
         return np.interp(T, self.T_range, self.Q_range)
+    
+
+class PartFuncKurucz(RovibParFuncTabulator):
+    """Return partition function using interpolation of tabulated values of local file kuruczpartfn.txt
+
+    Parameters
+    ----------
+    atom: str
+        exomol isotope full name
+    ionization_state : int 
+
+    """
+
+    def __init__(self,atom,ionization_state):
+        super(PartFuncKurucz, self).__init__()
+        if ionization_state == "00":
+            self.key = atom + "_I"
+        elif ionization_state == "01":
+            self.key = atom + "_II"
+        else:
+            self.key = atom + "_III"
+        # Load data in constructor
+        pfdat = pd.read_csv('radis\db\kuruczpartfn.txt', sep="\s+", header=None)
+        self.pfdat = pfdat.set_index(0)  
+        # Locate the row for the specific atom and ionization state
+        pf_atom = self.pfdat.loc[f"{self.key}"]
+        self.pfT_values = pf_atom.index[1:].astype(float)  # Exclude the first value (it's the atomic number)
+        self.pf_values = pf_atom.values[1:].astype(float)  # Exclude the first value (it's the atomic number)
+
+    def _at(self, T):
+        # Interpolate to find the partition function at the desired temperature
+        try:
+            return np.interp(T, self.pfT_values, self.pf_values)
+        except KeyError:
+            print("pfdat", self.pfdat)
+            print(f"Key {self.key} not found in pfdat. Available keys: {self.pfdat.index.tolist()}")
+            raise
+
+
 
 
 class PartFuncTIPS(RovibParFuncTabulator):
