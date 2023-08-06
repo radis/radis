@@ -445,12 +445,10 @@ def post_process_hitran_data(
     # Remove non numerical attributes
     if drop_non_numeric:
         if "branch" in df:
-            replace_PQR_with_m101(df, dataframe_type=dataframe_type)
+            replace_PQR_with_m101(df)
         if ("ierr" in df) and add_HITRAN_uncertainty_code:
             df["ierr"] = df["ierr"].astype(int64)
-        df = drop_object_format_columns(
-            df, verbose=verbose, dataframe_type=dataframe_type
-        )
+        df = drop_object_format_columns(df, verbose=verbose)
 
     return df
 
@@ -503,10 +501,10 @@ def _parse_HITRAN_class1(df, verbose=True, dataframe_type="pandas"):
 
         extract_columns(df, extracted_values, ["vl"])
 
-        # 2. Convert to numeric
-        cast_to_int64_with_missing_values(
-            df, ["vu", "vl"], dataframe_type=dataframe_type
-        )
+        # # 2. Convert to numeric
+        # cast_to_int64_with_missing_values(
+        #     df, ["vu", "vl"], dataframe_type=dataframe_type
+        # )
 
         # 3. Clean
         df.drop("globu", inplace=True)
@@ -672,12 +670,12 @@ def _parse_HITRAN_class4(df, verbose=True, dataframe_type="pandas"):
 
         extract_columns(df, extracted_values, ["v1l", "v2l", "l2l", "v3l"])
 
-        # 2. Convert to numeric
-        cast_to_int64_with_missing_values(
-            df,
-            ["v1u", "v2u", "l2u", "v3u", "v1l", "v2l", "l2l", "v3l"],
-            dataframe_type=dataframe_type,
-        )
+        # # 2. Convert to numeric
+        # cast_to_int64_with_missing_values(
+        #     df,
+        #     ["v1u", "v2u", "l2u", "v3u", "v1l", "v2l", "l2l", "v3l"],
+        #     dataframe_type=dataframe_type,
+        # )
 
         # 3. Clean
         df.drop("globu", inplace=True)
@@ -761,12 +759,12 @@ def _parse_HITRAN_class5(df, verbose=True, dataframe_type="pandas"):
 
         extract_columns(df, extracted_values, ["v1l", "v2l", "l2l", "v3l", "rl"])
 
-        # 2. Convert to numeric
-        cast_to_int64_with_missing_values(
-            df,
-            ["v1u", "v2u", "l2u", "v3u", "ru", "v1l", "v2l", "l2l", "v3l", "rl"],
-            dataframe_type=dataframe_type,
-        )
+        # # 2. Convert to numeric
+        # cast_to_int64_with_missing_values(
+        #     df,
+        #     ["v1u", "v2u", "l2u", "v3u", "ru", "v1l", "v2l", "l2l", "v3l", "rl"],
+        #     dataframe_type=dataframe_type,
+        # )
 
         # 3. Clean
         df.drop("globu", inplace=True)
@@ -861,10 +859,10 @@ def _parse_HITRAN_class6(df, verbose=True, dataframe_type="pandas"):
 
         extract_columns(df, extracted_values, ["v1l", "v2l", "v3l"])
 
-        # 2. Convert to numeric
-        cast_to_int64_with_missing_values(
-            df, ["v1l", "v2l", "v3l", "v1u", "v2u", "v3u"]
-        )
+        # # 2. Convert to numeric
+        # cast_to_int64_with_missing_values(
+        #     df, ["v1l", "v2l", "v3l", "v1u", "v2u", "v3u"]
+        # )
 
         # 3. Clean
         df.drop("globu", inplace=True)
@@ -1058,10 +1056,10 @@ def _parse_HITRAN_group1(df, verbose=True, dataframe_type="pandas"):
 
         # ... note @EP: in HITRAN H2O files, for iso=2, the Kau, Kcu can somehow
         # ... be negative. The regex above is adapted to catch negation signs with \-
-        # 2. Convert to numeric
-        cast_to_int64_with_missing_values(
-            df, ["ju", "Kau", "Kcu", "Fu", "symu", "jl", "Kal", "Kcl", "Fl", "syml"]
-        )
+        # # 2. Convert to numeric
+        # cast_to_int64_with_missing_values(
+        #     df, ["ju", "Kau", "Kcu", "Fu", "symu", "jl", "Kal", "Kcl", "Fl", "syml"]
+        # )
 
         # 3. Clean
         df.drop("locu", inplace=True)
@@ -1191,10 +1189,10 @@ def _parse_HITRAN_group2(df, verbose=True, dataframe_type="pandas"):
 
         extract_columns(df, extracted_values, ["branch", "jl", "syml", "Fl"])
 
-        # 2. Convert to numeric
-        cast_to_int64_with_missing_values(
-            df, ["Fu", "branch", "jl", "syml", "Fl"], dataframe_type=dataframe_type
-        )
+        # # 2. Convert to numeric
+        # cast_to_int64_with_missing_values(
+        #     df, ["Fu", "branch", "jl", "syml", "Fl"], dataframe_type=dataframe_type
+        # )
 
         # 3. Clean
         df.drop("locu", inplace=True)

@@ -2255,7 +2255,7 @@ class BaseFactory(DatabankLoader):
 
         # Sorted lines is needed for sparse wavenumber range algorithm.
         if self.dataframe_type == "pandas":
-            df.sort_values("shiftwav", inplace=True)
+            df.sort_values("shiftwav", kind="mergesort", inplace=True)
         elif self.dataframe_type == "vaex":
             attrs = df.attrs
             self.df1 = df.sort("shiftwav")
@@ -2519,6 +2519,7 @@ class BaseFactory(DatabankLoader):
 
         Tref = self.input.Tref
         df1 = self.df1
+        df1.attrs = self.df1.attrs
 
         if len(df1) == 0:
             return  # no lines
@@ -3417,6 +3418,7 @@ class BaseFactory(DatabankLoader):
         """
 
         df = self.df1
+        df.attrs = self.df1.attrs
         Tref = self.input.Tref
 
         if len(df) == 0:
@@ -3690,6 +3692,7 @@ class BaseFactory(DatabankLoader):
             # ... Operate on a duplicate dataframe to make it possible to do different
             # ... runs without reloading database
             self.df1 = self.df0.copy()
+            self.df1.attrs = self.df0.attrs
 
             # abundance and molar_mass should have been copied even if they are attributes
             # (only 1 molecule, 1 isotope) and not a column (line specific) in the database

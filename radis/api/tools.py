@@ -9,6 +9,7 @@ from warnings import warn
 
 import numpy as np
 import pandas as pd
+import vaex
 
 from ..misc.warning import PerformanceWarning
 
@@ -217,20 +218,23 @@ def _cast_to_dtype(data, dtype):
     return data
 
 
-def drop_object_format_columns(df, verbose=True, dataframe_type="pandas"):
-    """Remove 'object' columns in a pandas DataFrame or Vaex Dataframe.
+def drop_object_format_columns(df, verbose=True):
+    """Remove 'object' columns in a pandas DataFrame. If Vaex Dataframe, there is by construction no object in the Dataframe
 
     They are not useful to us at this time, and they slow down all
     operations (as they are converted to 'object' in pandas DataFrame).
     If you want to keep them, better convert them to some numeric values
     """
 
+    df_type = type(df)
     objects = [k for k, v in df.dtypes.items() if v == object]
-    for k in objects:
-        if dataframe_type == "pandas":
-            del df[k]
-        elif dataframe_type == "vaex":
-            df.drop(k, inplace=True)
+    if df_type == pd.DataFrame:
+        df.drop(objects, axis=1)
+    elif df_type == vaex.dataframe.DataFrameLocal:  # no objects in vaex
+        pass
+    else:
+        raise NotImplementedError(df_type)
+
     if verbose >= 2 and len(objects) > 0:
         print(
             (
@@ -242,7 +246,7 @@ def drop_object_format_columns(df, verbose=True, dataframe_type="pandas"):
     return df
 
 
-def replace_PQR_with_m101(df, dataframe_type="pandas"):
+def replace_PQR_with_m101(df):
     """Return P, Q, R in column ``branch`` with -1, 0, 1 to get a fully numeric
     database. This improves performances quite a lot, as Pandas doesnt have a
     fixed-string dtype hence would use the slow ``object`` dtype.
@@ -264,21 +268,19 @@ def replace_PQR_with_m101(df, dataframe_type="pandas"):
     # Note: somehow pandas updates dtype automatically. We have to check
     # We just have to replace the column:
 
-    if dataframe_type == "pandas":
-        if df.dtypes["branch"] != np.int64:
-            new_col = df["branch"].replace(["P", "Q", "R"], [-1, 0, 1])
-            df["branch"] = new_col
+    # First checking if the input type is correct
+    df_type = type(df)
+    if not (df_type == pd.DataFrame or df_type == vaex.dataframe.DataFrameLocal):
+        raise NotImplementedError(df_type)
 
-    elif dataframe_type == "vaex":
-        if df.dtypes["branch"] != np.int64:
-            mapping = {"P": -1, "Q": 0, "R": 1}
-
-            # Create a new column with replaced values
+    # Then do the actual mapping
+    if df.dtypes["branch"] != np.int64:
+        mapping = {"P": -1, "Q": 0, "R": 1}
+        if df_type == pd.DataFrame:  # pandas
+            new_col = df["branch"].replace(mapping)
+        else:  # vaex
             new_col = df["branch"].map(mapping, allow_missing=True)
-            df["branch"] = new_col
-
-    else:
-        raise NotImplementedError(dataframe_type)
+        df["branch"] = new_col
 
     try:
         assert df.dtypes["branch"] == np.int64

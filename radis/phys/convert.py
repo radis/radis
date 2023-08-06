@@ -330,17 +330,11 @@ def atm2bar(p_atm):
 
 
 def true_for_all(E):
-    if E.unique() == [True]:
-        return True
-    else:
-        return False
+    return E.unique() == [True]
 
 
 def false_for_all(E):
-    if E.unique() == [False]:
-        return True
-    else:
-        return False
+    return E.unique() == [False]
 
 
 # %% Assert functions

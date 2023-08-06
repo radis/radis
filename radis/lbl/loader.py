@@ -1339,6 +1339,7 @@ class DatabankLoader(object):
                 if output == "pandas":
                     for df in frames:
                         if "iso" not in df.columns:
+                            # to save some memory, we have added "iso" as an attribute rather than a column if it is the same for all lines
                             assert "iso" in df.attrs
                             df["iso"] = df.attrs["iso"]
                     # Keep attributes:
@@ -1435,14 +1436,14 @@ class DatabankLoader(object):
 
         # Always sort line database by wavenumber (required to SPARSE_WAVERANGE mode)
         if output == "pandas":
-            df.sort_values("wav", ignore_index=True, inplace=True)
+            df.sort_values("wav", kind="mergesort", ignore_index=True, inplace=True)
         elif output == "vaex":
             try:
                 attrs = df.attrs
             except:
                 attrs = {}
             df = df.sort("wav", ascending=True)
-            df.attrs = attrs
+            df.attrs = attrs  # It is required because dataframe returned by sort_values doesn't have attrs, so I have to add it again.
         else:
             raise NotImplementedError(output)
 
@@ -1464,10 +1465,8 @@ class DatabankLoader(object):
         # Remove non numerical attributes
         if drop_non_numeric:
             if "branch" in df:
-                replace_PQR_with_m101(df, dataframe_type=output)
-            df = drop_object_format_columns(
-                df, verbose=self.verbose, dataframe_type=output
-            )
+                replace_PQR_with_m101(df)
+            df = drop_object_format_columns(df, verbose=self.verbose)
 
         self.df0 = df  # type : pd.DataFrame
         self.misc.total_lines = len(df)  # will be stored in Spectrum metadata

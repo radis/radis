@@ -535,7 +535,10 @@ class SpectrumFactory(BandFactory):
         self.input.Tref = convert_and_strip_units(Tref, u.K)
         self.input.pressure_mbar = convert_and_strip_units(pressure, u.bar) * 1e3
         self.input.mole_fraction = mole_fraction
-        self.dataframe_type = dataframe_type
+        if dataframe_type in ["pandas", "vaex"]:
+            self.dataframe_type = dataframe_type
+        else:
+            raise NotImplementedError
 
         self.input.path_length = convert_and_strip_units(path_length, u.cm)
         self.input.molecule = (

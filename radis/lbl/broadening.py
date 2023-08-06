@@ -64,6 +64,7 @@ Formula in docstrings generated with :py:func:`~pytexit.pytexit.py2tex` ::
 from warnings import warn
 
 import numpy as np
+import vaex
 from numba import float64, jit
 from numpy import arange, exp
 from numpy import log as ln
@@ -1397,8 +1398,6 @@ class BroadenFactory(BaseFactory):
             columns = dg.column_names
         elif self.dataframe_type == "pandas":
             columns = list(dg.keys())
-        else:
-            raise NotImplementedError(self.dataframe_type)
 
         if not "hwhm_voigt" in columns:
             raise KeyError(
@@ -2017,8 +2016,11 @@ class BroadenFactory(BaseFactory):
         ki0, ki1, tvi = self._get_indices(shifted_wavenum, wavenumber_calc)
 
         if self.dataframe_type == "vaex":
-            li0, li1, tGi = self._get_indices((np.log(wG_dat)).to_numpy(), np.log(wG))
-            mi0, mi1, tLi = self._get_indices((np.log(wL_dat)).to_numpy(), np.log(wL))
+            # TODO : check memory usage & if there is no other implementation without numpy conversion
+            wG_dat = wG_dat.to_numpy()
+            wL_dat = wL_dat.to_numpy()
+            li0, li1, tGi = self._get_indices(np.log(wG_dat), np.log(wG))
+            mi0, mi1, tLi = self._get_indices(np.log(wL_dat), np.log(wL))
         elif self.dataframe_type == "pandas":
             li0, li1, tGi = self._get_indices(np.log(wG_dat), np.log(wG))
             mi0, mi1, tLi = self._get_indices(np.log(wL_dat), np.log(wL))
@@ -2464,10 +2466,12 @@ class BroadenFactory(BaseFactory):
                             )
                         )
 
+                    # Cut lines in smaller bits for better memory handling
                     if self.dataframe_type == "pandas":
                         df = df.groupby(arange(len(df)) % N)
                     elif self.dataframe_type == "vaex":
-                        df["idx"] = np.arange(len(df)) % N
+                        # idx is added to as vaex don't have index column . Then df is divided into chunks
+                        df["idx"] = vaex.vrange(0, len(df)) % N
                         df = df.groupby(df.idx)
 
                     for i, (_, dg) in enumerate(df):
@@ -2485,10 +2489,12 @@ class BroadenFactory(BaseFactory):
                     # Iterating over the chunks of the line database
                     # Using DIT Algorithm calculations for optimized loops
 
+                    # Cut lines in smaller bits for better memory handlin
                     if self.dataframe_type == "pandas":
                         df = df.groupby(arange(len(df)) % N)
                     elif self.dataframe_type == "vaex":
-                        df["idx"] = np.arange(len(df)) % N
+                        # idx is added to as vaex don't have index column . Then df is divided into chunks
+                        df["idx"] = vaex.vrange(0, len(df)) % N
                         df = df.groupby(df.idx)
 
                     for i, (_, dg) in enumerate(df):
@@ -3088,6 +3094,7 @@ def project_lines_on_grid(df, wavenumber, wstep, dataframe_type="pandas"):
         S = df.S.values  # cm/#  ~   cm-1/(#.cm-2)  ,   size N
         wv = df.hwhm_voigt.values * 2  # HWHM > FWHM
     elif dataframe_type == "vaex":
+        # TODO : check memory usage & if there is no other implementation without numpy conversion
         shiftwav = df.shiftwav.to_numpy()  # cm-1  ,   size N (number of lines)
         S = df.S.to_numpy()  # cm/#  ~   cm-1/(#.cm-2)  ,   size N
         wv = df.hwhm_voigt.to_numpy() * 2  # HWHM > FWHM
@@ -3243,6 +3250,7 @@ def project_lines_on_grid_noneq(df, wavenumber, wstep, dataframe_type="pandas"):
         Ei = df.Ei.values  # mW/cm3/sr
         wv = df.hwhm_voigt.values * 2  # HWHM > FWHM
     elif dataframe_type == "vaex":
+        # TODO : check memory usage & if there is no other implementation without numpy conversion
         shiftwav = df.shiftwav.to_numpy()  # cm-1  ,   size N (number of lines)
         S = df.S.to_numpy()  # cm/#  ~   cm-1/(#.cm-2)  ,   size N
         Ei = df.Ei.to_numpy()  # mW/cm3/sr

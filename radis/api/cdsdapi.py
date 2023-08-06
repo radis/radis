@@ -285,8 +285,8 @@ def cdsd2df(
 
     # Remove non numerical attributes
     if drop_non_numeric:
-        replace_PQR_with_m101(df, dataframe_type=output)
-        df = drop_object_format_columns(df, verbose=verbose, dataframe_type=output)
+        replace_PQR_with_m101(df)
+        df = drop_object_format_columns(df, verbose=verbose)
 
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:
