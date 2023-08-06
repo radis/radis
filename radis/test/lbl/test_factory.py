@@ -704,8 +704,9 @@ def test_vaex_and_pandas_spectrum():
         molecule="CO2",
         dataframe_type="vaex",
     )
-    sf_vaex.fetch_databank("hitran")
+    sf_vaex.fetch_databank("hitran", output="vaex")
     s_vaex = sf_vaex.eq_spectrum(Tgas=2000)  # failing on the 08/03/2023 - minouHub
+    s_vaex.apply_slit(0.5, "nm")  # simulate an experimental slit
 
     sf_pd = SpectrumFactory(
         wavelength_min=4200,
@@ -714,8 +715,9 @@ def test_vaex_and_pandas_spectrum():
         molecule="CO2",
         dataframe_type="pandas",
     )
-    sf_pd.fetch_databank("hitran")
+    sf_pd.fetch_databank("hitran", output="pandas")
     s_pd = sf_pd.eq_spectrum(Tgas=2000)
+    s_pd.apply_slit(0.5, "nm")  # simulate an experimental slit
 
     for column in sf_pd.df1.columns:
         assert np.all(sf_vaex.df1[column].to_numpy() == sf_pd.df1[column])
