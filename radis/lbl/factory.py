@@ -105,7 +105,6 @@ from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.spectrum import Spectrum
 from radis.api.kuruczapi import AdBKurucz
-from periodictable import elements
 
 c_cm = c * 100
 

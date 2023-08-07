@@ -13,7 +13,6 @@ Defines :py:func:`~radis.io.fetch_kurucz` based on :py:class:`~AdBKurucz`
 
 from radis.api.kuruczapi import AdBKurucz
 import mendeleev
-import periodictable
 import os
 
 
