@@ -55,8 +55,7 @@ sphinx_gallery.gen_rst.EXAMPLE_HEADER = """
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath("."))
-# sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath(".."))
 
 
 # %% ------------------------------------
@@ -93,7 +92,7 @@ extensions = [
     "sphinx_autodoc_defaultargs",
     "sphinx.ext.intersphinx",
     "sphinx.ext.inheritance_diagram",
-    "sphinxcontrib.apidoc",
+    # "sphinxcontrib.apidoc",  # not needed, we run run_apidoc() manually implemented below
     "sphinx.ext.linkcode",
 ]
 
@@ -173,7 +172,8 @@ def setup(app):
 intersphinx_mapping = {
     "astropy": ("https://docs.astropy.org/en/stable/", None),
     "astroquery": ("https://astroquery.readthedocs.io/en/latest/", None),
-    "cantera": ("https://www.cantera.org/documentation/docs-2.6/sphinx/", None),
+    "cantera": ("https://www.cantera.org/documentation/docs-2.6/sphinx/html/", None),
+    "exojax": ("https://secondearths.sakura.ne.jp/exojax/objects.inv", None),
     "fitroom": ("https://fitroom.readthedocs.io/en/latest/", None),
     "habanero": ("https://habanero.readthedocs.io/en/latest/", None),
     "joblib": ("https://joblib.readthedocs.io/en/latest/", None),
@@ -231,7 +231,7 @@ release = __version__
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:

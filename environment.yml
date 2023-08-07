@@ -7,25 +7,31 @@ channels:
 - plotly
 dependencies:
 - python=3.8
-- astropy  # Unit aware calculations
-- astroquery>=0.3.9  # to fetch HITRAN databases
-- cantera   # for chemical equilibrium computations
+- astropy>=4.3.1  # Unit aware calculations
+- astroquery>=0.4.6  # to fetch HITRAN databases
+- beautifulsoup4>=4.10.0 # parse ExoMol website
+- cantera>=2.5.1   # for chemical equilibrium computations
 - configparser
-- cython
-- h5py   # load HDF5
+- cython          # EP : really needed? pipreqs doesn't say so
+- habanero>=1.2.0  # CrossRef API to retrieve data from doi
+- h5py>=3.2.1   # load HDF5
 - joblib  # for parallel loading of SpecDatabase
+- lmfit  # for new fitting modules
 - matplotlib
 - numpy
 - numba  # just-in-time compiler
-- pandas>=1.0.5
+- pandas<2.0.0   # not ready for 2.0 yet ; some breaking compatibility, see issue #600 
 - plotly>=2.5.1  # for line survey HTML output
-- psutil # for getting user RAM
+- progressbar2    # used in vaex
+- psutil # to get user RAM
+- pytables # for pandas to HDF5 export
 - scipy>=1.4.0
 - seaborn   # other matplotlib themes
 - termcolor  # terminal colors
 - specutils
-- vaex>=4.9.2   # load HDF5 files  (version needed to fix https://github.com/radis/radis/issues/486). #TODO : install only required sub-packages
-- pip
+- vaex-core>=4.17.0   # load HDF5 files  (version needed to fix https://github.com/radis/radis/issues/598)
+- vaex-hdf5
+- vaex-viz
 - pip:
   - beautifulsoup4 # parse ExoMol website
   - lxml           # parser used for ExoMol website
@@ -40,3 +46,4 @@ dependencies:
   #- tuna           # to generate visual/interactive performance profiles
   - tables  # for pandas to HDF5 export
   - habanero  # CrossRef API to retrieve data from doi
+  - -r requirements.txt              # add all packages directly in requirements.txt

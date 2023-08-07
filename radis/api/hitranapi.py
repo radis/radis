@@ -1157,6 +1157,11 @@ class HITRANDatabaseManager(DatabaseManager):
         verbose=True,
         parallel=True,
     ):
+        """
+        See Also
+        --------
+        HITRANDatabaseManager is compatible with Exojax :py:class:`exojax.spec.api.Mdbhitran`
+        """
         super().__init__(
             name,
             molecule,

@@ -972,6 +972,50 @@ def plot_spec(file, what="radiance", title=True, **kwargs):
 # ... loads a list of spectra and manipulate them
 
 
+def query(df, conditions="", **kwconditions):
+
+    # Find Spectrum that match conditions
+    if conditions != "":  # ... with input conditions query directly
+        dg = df.query(conditions)
+    else:  # ... first write input conditions query
+        query = []
+        for (k, v) in kwconditions.items():
+            if isinstance(v, str):
+                query.append("{0} == r'{1}'".format(k, v))
+            elif v is None:
+                # query "k == None" doesn't work. We use a workaround,
+                # checking if the column is different from itself (i.e. : is None):
+                # https://stackoverflow.com/a/32207819/5622825
+                query.append(f"{k} != {k}")
+            else:
+                #                    query.append('{0} == {1}'.format(k,v))
+                query.append("{0} == {1}".format(k, v.__repr__()))
+                # ... for som reason {1}.format() would remove some digit
+                # ... to floats in Python2. Calling .__repr__() keeps
+                # ... the correct format, and has no other consequences as far
+                # ... as I can tell
+
+        # There is a limitation in numpy: a max of 32 arguments is required.
+        # Below we write a workaround when the Spectrum has more than 32 conditions
+        if len(query) < 32:
+            query = " & ".join(query)
+            if __debug__:
+                printdbg("Database query: {0}".format(query))
+            dg = df.query(query)
+        else:
+            # cut in <32-long parts
+            N = len(query) // 32 + 1
+            querypart = " & ".join(query[::N])
+            dg = df.query(querypart)
+            for i in range(1, N + 1):
+                querypart = " & ".join(query[i::N])
+                if __debug__:
+                    printdbg("Database query: {0}".format(querypart))
+                dg = dg.query(querypart)
+
+    return dg
+
+
 class SpecList(object):
     def __init__(self, *spectra, **kwargs):
         """A list of Spectrum, with various methods to manage them.
@@ -1262,44 +1306,9 @@ class SpecList(object):
             out = list(self.df["Spectrum"])
 
         else:
-            # Find Spectrum that match conditions
-            if conditions != "":  # ... with input conditions query directly
-                dg = self.df.query(conditions)
-            else:  # ... first write input conditions query
-                query = []
-                for (k, v) in kwconditions.items():
-                    if isinstance(v, str):
-                        query.append("{0} == r'{1}'".format(k, v))
-                    elif v is None:
-                        # query "k == None" doesn't work. We use a workaround,
-                        # checking if the column is different from itself (i.e. : is None):
-                        # https://stackoverflow.com/a/32207819/5622825
-                        query.append(f"{k} != {k}")
-                    else:
-                        #                    query.append('{0} == {1}'.format(k,v))
-                        query.append("{0} == {1}".format(k, v.__repr__()))
-                        # ... for som reason {1}.format() would remove some digit
-                        # ... to floats in Python2. Calling .__repr__() keeps
-                        # ... the correct format, and has no other consequences as far
-                        # ... as I can tell
 
-                # There is a limitation in numpy: a max of 32 arguments is required.
-                # Below we write a workaround when the Spectrum has more than 32 conditions
-                if len(query) < 32:
-                    query = " & ".join(query)
-                    if __debug__:
-                        printdbg("Database query: {0}".format(query))
-                    dg = self.df.query(query)
-                else:
-                    # cut in <32-long parts
-                    N = len(query) // 32 + 1
-                    querypart = " & ".join(query[::N])
-                    dg = self.df.query(querypart)
-                    for i in range(1, N + 1):
-                        querypart = " & ".join(query[i::N])
-                        if __debug__:
-                            printdbg("Database query: {0}".format(querypart))
-                        dg = dg.query(querypart)
+            dg = query(self.df, conditions, **kwconditions)
+
             # Get all unloaded Spectrum objects and load them
             files = dg["file"][dg["Spectrum"].isnull()]
 
@@ -1429,7 +1438,22 @@ class SpecList(object):
                     )
                 )
 
-        dg = self.df.reindex(columns=[k for k in self.df.columns if k != "Spectrum"])
+        numeric_columns = self.df.select_dtypes(include=np.number).columns.tolist()
+
+        # For non numeric values, assert equal :
+        # ....
+        kwconditions_non_numeric = {
+            k: v
+            for (k, v) in kwconditions.items()
+            if k not in numeric_columns and k != "Spectrum"
+        }
+        if len(kwconditions_non_numeric) == 0:
+            df_num = self.df
+        else:
+            df_num = query(self.df, **kwconditions_non_numeric)
+
+        # For Numeric values : find distance
+        dg = df_num.reindex(columns=[k for k in df_num.columns if k in numeric_columns])
 
         if scale_if_possible:
             # Remove scalable inputs from distance calculation variables (unless
@@ -2347,7 +2371,9 @@ class SpecDatabase(SpecList):
 
         # Now register the spectrum in the database :
         spectrum_conditions = self._load_new_file(file, binary=compress)
-        self.df = self.df.append(spectrum_conditions, ignore_index=True)
+        self.df = pd.concat(
+            [self.df, pd.DataFrame([spectrum_conditions])], ignore_index=True
+        )
 
         # Update index .csv
         self.print_index()
