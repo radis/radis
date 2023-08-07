@@ -1861,8 +1861,14 @@ class Spectrum(object):
         :ref:`the Spectrum page <label_spectrum>`
         """
 
-        P = self.get_integral("radiance_noslit", wunit="nm", Iunit="mW/cm2/sr/nm")
-        # P is in mW/cm2/sr/nm * nm
+        # New calculation as suggested in bug #460:
+        P = self.get_integral("radiance_noslit", wunit="cm-1", Iunit="mW/cm2/sr/cm-1")
+
+        # Old calculation before bug #460.
+        # Mixes wavelengths in vacuum and air, which creates an error of 1.00027.
+        # P = self.get_integral("radiance_noslit", wunit="nm", Iunit="mW/cm2/sr/nm")
+
+        # P is in mW/cm2/sr/cm-1 * cm-1
         return conv2(P, "mW/cm2/sr", unit)
 
     def has_nan(self, ignore_wavespace=True) -> bool:
@@ -2160,18 +2166,24 @@ class Spectrum(object):
             ax.legend()
         fix_style()
 
-        from radis.phys.convert import cm2nm, nm2cm
+        from radis.phys.convert import cm2nm, div_safe, nm2cm
 
         if "cm⁻¹" in ylabel:
-            secx = ax.secondary_xaxis("top", functions=(cm2nm, nm2cm))
+            secx = ax.secondary_xaxis(
+                "top", functions=(div_safe(cm2nm), div_safe(nm2cm))
+            )
             secx.set_xlabel("Wavelength (nm)")
         elif "nm" in ylabel:
             if wunit == "nm" or wunit == "nm_air":
-                secx = ax.secondary_xaxis("top", functions=(nm2cm, cm2nm))
+                secx = ax.secondary_xaxis(
+                    "top", functions=(div_safe(nm2cm), div_safe(cm2nm))
+                )
             else:
                 from radis.phys.convert import cm2nm_air, nm_air2cm
 
-                secx = ax.secondary_xaxis("top", functions=(nm_air2cm, cm2nm_air))
+                secx = ax.secondary_xaxis(
+                    "top", functions=(div_safe(nm_air2cm), div_safe(cm2nm_air))
+                )
             secx.set_xlabel("wavenumber (cm⁻¹)")
 
         # Add plotting tools
@@ -3716,7 +3728,7 @@ class Spectrum(object):
 
         # Get output wavespace (it's the w_new array, unless w_new is a Spectrum)
         if isinstance(w_new, Spectrum):
-            wstep_new = w_new.conditions["wstep"]
+            wstep_new = w_new.conditions.get("wstep", None)
             if unit == "nm":
                 w_new = w_new.get_wavelength(medium="air")
             elif unit == "nm_vac":
@@ -3729,11 +3741,12 @@ class Spectrum(object):
             w_new = w_new
             diff = np.diff(w_new)
             if not np.all(diff == diff[0]):
-                import warnings
+                from radis.misc.warning import default_warning_status, warn
 
-                warnings.warn(
+                warn(
                     "When resampling the spectrum, the new waverange had unequal spacing.",
-                    UserWarning,
+                    "UnevenWaverangeWarning",
+                    status=default_warning_status,
                 )
                 wstep_new = "Unequal spacing, average <wstep>={:.2f}".format(
                     np.mean(diff)
@@ -3754,7 +3767,8 @@ class Spectrum(object):
         # Update stored_waveunit to new unit
         if unit != stored_waveunit:
             s.conditions["waveunit"] = unit
-        s.conditions["wstep"] = wstep_new
+        if wstep_new is not None:
+            s.conditions["wstep"] = wstep_new
 
         # Now let's resample
         def get_filling(variable):

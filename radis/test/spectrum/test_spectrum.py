@@ -32,6 +32,7 @@ fig_prefix = basename(__file__) + ": "
 # %% Test routines
 
 
+@pytest.mark.fast
 def test_spectrum_creation_method(*args, **kwargs):
     import pytest
 
@@ -87,6 +88,7 @@ def test_spectrum_creation_method(*args, **kwargs):
         Spectrum({"wavelength": w, "abscoeff": k}, wunit="cm-1")
 
 
+@pytest.mark.fast
 def test_spectrum_get_methods(
     verbose=True, plot=True, close_plots=True, *args, **kwargs
 ):
@@ -115,11 +117,11 @@ def test_spectrum_get_methods(
         == s.get("radiance_noslit", Iunit="W/m2/sr/nm")[1]
     )
     assert all(nm2cm(s.get_wavelength(medium="vacuum")) == s.get_wavenumber())
-    assert np.isclose(s.get_power(unit="W/cm2/sr"), 2631.6288408588148)
+    assert np.isclose(s.get_power(unit="W/cm2/sr"), 2632.311479516498)
     assert s.get_waveunit() == "nm"
     assert np.isclose(
         s.get_power(unit="W/cm2/sr"),
-        s.get_integral("radiance_noslit", Iunit="W/cm2/sr/nm"),
+        s.get_integral("radiance_noslit", wunit="nm_vac", Iunit="W/cm2/sr/nm"),
     )
     assert s.get_conditions()["Tgas"] == 1500
     assert len(s.get_vars()) == 2
@@ -621,23 +623,23 @@ def _run_testcases(
 
 
 if __name__ == "__main__":
-    # print(("Test spectrum: ", _run_testcases(debug=False, close_plots=False)))
+    print(("Test spectrum: ", _run_testcases(debug=False, close_plots=False)))
 
-    import radis
+    # import radis
 
-    s = radis.test_spectrum()
-    assert s.c["default_output_unit"] == "cm-1"
+    # s = radis.test_spectrum()
+    # assert s.c["default_output_unit"] == "cm-1"
 
-    assert (s.get("abscoeff")[0] == s.get_wavenumber()).all()
+    # assert (s.get("abscoeff")[0] == s.get_wavenumber()).all()
 
-    s.c["default_output_unit"] = "nm"
+    # s.c["default_output_unit"] = "nm"
 
-    assert (s.get("abscoeff")[0] == s.get_wavelength()).all()
-    s.c["default_output_unit"] = "nm_vac"
-    assert (s.get("abscoeff")[0] == s.get_wavelength(medium="vacuum")).all()
+    # assert (s.get("abscoeff")[0] == s.get_wavelength()).all()
+    # s.c["default_output_unit"] = "nm_vac"
+    # assert (s.get("abscoeff")[0] == s.get_wavelength(medium="vacuum")).all()
 
-    #%%
-    from radis import load_spec
-    from radis.test.utils import getTestFile
+    # #%%
+    # from radis import load_spec
+    # from radis.test.utils import getTestFile
 
-    s_exp = load_spec(getTestFile("CO2_measured_spectrum_4-5um.spec"), binary=True)
+    # s_exp = load_spec(getTestFile("CO2_measured_spectrum_4-5um.spec"), binary=True)

@@ -23,12 +23,22 @@ If you later want to update the package::
 **Developer version**: to modify the code and contribute to the
 project.
 
-We suggest that you fork the `RADIS repository <https://help.github.com/en/github/getting-started-with-github/fork-a-repo>`_ and use that url for the clone step below. This will make submitting changes easier in the long term for you:
+1. Fork the `RADIS repository <https://help.github.com/en/github/getting-started-with-github/fork-a-repo>`_ and use that url for the clone step below. This will make submitting changes easier in the long term for you:
 
-In a terminal, run::
+2. In a terminal, run::
 
-    git clone https://github.com/<GITHUB USERNAME>/radis.git
+    git clone https://github.com/<YOUR GITHUB USERNAME>/radis.git
+
+3. For a best experience, it is recommended to install Radis on top of an Anaconda Python distribution, in an
+isolated environment. We recommend to use the faster, local-optimization ``libmamba`` solver for Anaconda.
+You can create a radis environment with all dependencies with::
+
     cd radis
+    conda env create --file environment.yml --solver=libmamba
+
+4. Then install Radis in the `radis-env` environment::
+
+    conda activate radis-env
     pip install -e .[dev] -v
 
 - The ``-e`` (editable) argument creates a link from the local folder ``./`` into Python
@@ -40,18 +50,6 @@ In a terminal, run::
 To make sure the install worked, run the :ref:`first example <label_first_example>`
 from the Quick Start page. Then, you're all set.
 
-
-
-For a best experience, it is recommended to install Radis on an Anaconda Python distribution, in an
-isolated environment. You can create a radis environment with all dependencies with::
-
-    cd radis
-    conda env create --file environment.yml
-
-Then install radis in the `radis` environment::
-
-    conda activate radis
-    pip install -e .
 
 
 
