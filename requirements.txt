@@ -8,3 +8,4 @@ ruamel.yaml
 json-tricks>=3.15.0  # to deal with non jsonable formats
 mpldatacursor
 # tuna            # to generate visual/interactive performance profiles
+mendeleev
