@@ -8,7 +8,7 @@ from radis.api.kuruczapi import AdBKurucz
 
 
 def test_adbkurucz_functions():
-    kurucz = AdBKurucz()
+    kurucz = AdBKurucz("Fe","00")
 
     # Testing get_url function
     url = kurucz.get_url(26, 00)
