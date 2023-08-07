@@ -14,12 +14,6 @@ def test_adbkurucz_functions():
     url = kurucz.get_url(26, 00)
     assert url == "http://kurucz.harvard.edu/linelists/gfall/gf2600.all"
 
-#Unecessary,the method to use is radis air2vacuum
-def test_air_to_vac():
-    kurucz = AdBKurucz()
-    wlair = 5000
-    wlvac = kurucz.air_to_vac(wlair)
-    assert round(wlvac, 5) == round(5001.39485, 5)
 
 
 def test_partfunckurucz():
