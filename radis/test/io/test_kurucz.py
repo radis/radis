@@ -36,7 +36,7 @@ def test_partfunckurucz():
 
 @pytest.mark.needs_connection
 def test_adbkurucz_external_data_functions():
-    kurucz = AdBKurucz()
+    kurucz = AdBKurucz("Na","00")
 
     # Testing load_pf_Barklem2016 function
     pfTdat, pfdat = kurucz.load_pf_Barklem2016()
