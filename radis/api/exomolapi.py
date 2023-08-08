@@ -1164,7 +1164,7 @@ class MdbExomol(DatabaseManager):
         # load states
         mgr = self.get_datafile_manager()
         if cache == "regen" and mgr.cache_file(self.states_file).exists():
-            if verbose:
+            if self.verbose:
                 print("Removing existing file ", mgr.cache_file(self.states_file))
             os.remove(mgr.cache_file(self.states_file))
         if mgr.cache_file(self.states_file).exists():
@@ -1237,7 +1237,7 @@ class MdbExomol(DatabaseManager):
                 self.num_tag.append(dic_def["numtag"][i])
 
         # some verbose
-        if verbose:
+        if self.verbose:
             print("Molecule: ", molecule)
             print("Isotopologue: ", self.isotope_fullname)
             print("Background atmosphere: ", self.bkgdatm)
@@ -1248,7 +1248,7 @@ class MdbExomol(DatabaseManager):
         # Look-up missing parameters and write file
         # -----------------------------------------
         for trans_file, num_tag in zip(self.trans_file, self.num_tag):
-            if verbose:
+            if self.verbose:
                 print(
                     "\t => File {}".format(
                         os.path.splitext(os.path.basename((trans_file)))[0]
@@ -1256,7 +1256,7 @@ class MdbExomol(DatabaseManager):
                 )
 
             if cache == "regen" and mgr.cache_file(trans_file).exists():
-                if verbose:
+                if self.verbose:
                     print("\t\t => `regen = True`. Removing the file")
                 os.remove(mgr.cache_file(trans_file))
 
@@ -1267,10 +1267,8 @@ class MdbExomol(DatabaseManager):
                     )
 
                 if not trans_file.exists():
-                    self.download(
-                        molec, extension=[".trans.bz2"], numtag=num_tag, verbose=verbose
-                    )
-                if verbose:
+                    self.download(molec, extension=[".trans.bz2"], numtag=num_tag)
+                if self.verbose:
                     print(
                         f"\t\t => Caching the *.trans.bz2 file to the {engine} (*.h5) format. After the second time, it will become much faster."
                     )
@@ -1309,9 +1307,7 @@ class MdbExomol(DatabaseManager):
 
                 mgr.write(mgr.cache_file(trans_file), trans)
 
-    def set_broadening_coef(
-        self, df, alpha_ref_def=None, n_Texp_def=None, output=None, verbose=False
-    ):
+    def set_broadening_coef(self, df, alpha_ref_def=None, n_Texp_def=None, output=None):
         """setting broadening parameters
 
         Parameters
@@ -1333,9 +1329,8 @@ class MdbExomol(DatabaseManager):
 
         if self.broadf:
             try:
-                raise FileNotFoundError
                 bdat = read_broad(self.broad_file)
-                if verbose > 1:
+                if self.verbose > 1:
                     print(
                         "The file `{}` is used.".format(
                             os.path.basename(self.broad_file)
@@ -1416,7 +1411,7 @@ class MdbExomol(DatabaseManager):
         """
         return self.QT_interp(T) / self.QT_interp(self.Tref)
 
-    def download(self, molec, extension, numtag=None, verbose=False):
+    def download(self, molec, extension, numtag=None):
         """Downloading Exomol files
 
         Parameters
@@ -1454,7 +1449,7 @@ class MdbExomol(DatabaseManager):
             for pfname in pfname_arr:
                 pfpath = url + pfname
                 os.makedirs(str(self.path), exist_ok=True)
-                if verbose:
+                if self.verbose:
                     print(
                         "\t\t => Downloading from {}".format(pfpath)
                     )  # modify indent accordingly print in __init__
