@@ -71,7 +71,7 @@ class AdBKurucz:
         )  # Converts the values to float64, skipping the first value
 
         # read the local file instead of the one in the exojax package
-        with open("radis\db\kuruczpartfn.txt", "r") as f:
+        with open("radis/db/kuruczpartfn.txt", "r") as f:
             pfdat = pd.read_csv(f, sep="\s+", comment="#", names=pfTdat.index)
 
         #print("len(pfdat)", len(pfdat))
@@ -466,7 +466,7 @@ class AdBKurucz:
         try : 
             print(f"Temperature: {T}")
             # Read the pfdat file
-            pfdat = pd.read_csv('radis\db\kuruczpartfn.txt', sep="\s+", header=None)
+            pfdat = pd.read_csv('radis/db/kuruczpartfn.txt', sep="\s+", header=None)
             pfdat = pfdat.set_index(0)  
 
             # Locate the row for the specific atom and ionization state

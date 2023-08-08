@@ -1156,7 +1156,7 @@ class PartFuncKurucz(RovibParFuncTabulator):
         else:
             self.key = atom + "_III"
         # Load data in constructor
-        pfdat = pd.read_csv('radis\db\kuruczpartfn.txt', sep="\s+", header=None)
+        pfdat = pd.read_csv('radis/db/kuruczpartfn.txt', sep="\s+", header=None)
         self.pfdat = pfdat.set_index(0)  
         # Locate the row for the specific atom and ionization state
         pf_atom = self.pfdat.loc[f"{self.key}"]
