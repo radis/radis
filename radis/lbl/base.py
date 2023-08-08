@@ -550,48 +550,68 @@ class BaseFactory(DatabankLoader):
             #        df['Evibl'] = df.groupby('polyl','wangl','rankl').apply(Evibl, axis=1)
             #        %timeit: 43.4s per loop
 
-            # total:  ~ 15s on 460k lines   (probably faster since neq==0.9.20)
-            #            try:
-            # ~ 6.6 s (probably faster since neq==0.9.20 (radis<1.0)
-            df = df.groupby(by=["polyu", "wangu"]).apply(fillEvibu)
-            # ~ 6.6 s (probably faster since neq==0.9.20 (radis<1.0)
-            df = df.groupby(by=["polyl", "wangl"]).apply(fillEvibl)
-            # TODO : use map(dict) version (see _add_EvibErot_CDSD_pcN)
+            if self.dataframe_type == "pandas":
+                # total:  ~ 15s on 460k lines   (probably faster since neq==0.9.20)
+                #            try:
+                # ~ 6.6 s (probably faster since neq==0.9.20 (radis<1.0)
+                df = df.groupby(by=["polyu", "wangu"]).apply(fillEvibu)
+                # ~ 6.6 s (probably faster since neq==0.9.20 (radis<1.0)
+                df = df.groupby(by=["polyl", "wangl"]).apply(fillEvibl)
 
-            #            except KeyError:
-            #                import traceback
-            #                traceback.print_exc()
-            #                raise KeyError("{0} -> An error (see above) occured that usually ".format(sys.exc_info()[1]) +
-            #                               "happens when the energy level is not referenced in the database. " +
-            #                               "Check your partition function calculator, and energies " +
-            #                               "for isotope {0} (Factory.parsum_calc['CO2'][{0}]['X'].df)".format(iso))
+                # TODO : use map(dict) version (see _add_EvibErot_CDSD_pcN)
 
-            # Another version that failed because twice slower than apply() in that case
-            # ~ keep it for information
-            #        Evibdict = energies.set_index(['p','c','N'])['Evib']
-            #        Evibdict = Evibdict.drop_duplicates()
-            #        try:
-            #            dgb = df.groupby(by=['polyu', 'wangu', 'ranku'])
-            #            for (poly, wang, rank), idx in dgb.indices.items(): # ~ 3600 items for 460k lines -> total 15s
-            #                Evib = Evibdict[(poly, wang, rank)]             # ~ 7.15 µs
-            #                df.loc[idx, 'Evibu'] = Evib                     # ~ 4.38ms
-            #
-            #            dgb = df.groupby(by=['polyl', 'wangl', 'rankl'])
-            #            for (poly, wang, rank), idx in dgb.indices.items(): # ~ 3600 items for 460k lines -> total 15s
-            #                Evib = Evibdict[(poly, wang, rank)]             # ~ 7.15 µs
-            #                df.loc[idx, 'Evibl'] = Evib                     # ~ 4.38ms
+                #            except KeyError:
+                #                import traceback
+                #                traceback.print_exc()
+                #                raise KeyError("{0} -> An error (see above) occured that usually ".format(sys.exc_info()[1]) +
+                #                               "happens when the energy level is not referenced in the database. " +
+                #                               "Check your partition function calculator, and energies " +
+                #                               "for isotope {0} (Factory.parsum_calc['CO2'][{0}]['X'].df)".format(iso))
 
-            return df.loc[idx, ["Evibl", "Evibu"]]
+                # Another version that failed because twice slower than apply() in that case
+                # ~ keep it for information
+                #        Evibdict = energies.set_index(['p','c','N'])['Evib']
+                #        Evibdict = Evibdict.drop_duplicates()
+                #        try:
+                #            dgb = df.groupby(by=['polyu', 'wangu', 'ranku'])
+                #            for (poly, wang, rank), idx in dgb.indices.items(): # ~ 3600 items for 460k lines -> total 15s
+                #                Evib = Evibdict[(poly, wang, rank)]             # ~ 7.15 µs
+                #                df.loc[idx, 'Evibu'] = Evib                     # ~ 4.38ms
+                #
+                #            dgb = df.groupby(by=['polyl', 'wangl', 'rankl'])
+                #            for (poly, wang, rank), idx in dgb.indices.items(): # ~ 3600 items for 460k lines -> total 15s
+                #                Evib = Evibdict[(poly, wang, rank)]             # ~ 7.15 µs
+                #                df.loc[idx, 'Evibl'] = Evib                     # ~ 4.38ms
+
+                return df.loc[idx, ["Evibl", "Evibu"]]
+            
+            elif self.dataframe_type == "vaex":
+                def get_evib(poly, wang, evib, df_iso):
+                    if(df_iso == iso):
+                        return energies.at((poly,wang),"Evib")
+                    else:
+                        return evib
+
+                df["Evibu"] = df.apply(get_evib, [df.polyu, df.wangu, df.Evibu, df.iso])
+                df["Evibl"] = df.apply(get_evib, [df.polyl, df.wangl, df.Evibl, df.iso])
 
         #        df = df.groupby('iso').apply(lambda x: add_Evib_CDSD_pc_1iso(x, x.name))
 
-        df["Evibl"] = np.nan
-        df["Evibu"] = np.nan
-        for iso, idx in df.groupby("iso").indices.items():
-            df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_CDSD_pc_1iso(df.loc[idx], iso)
+        if self.dataframe_type == "pandas":
+            df["Evibl"] = np.nan
+            df["Evibu"] = np.nan
+            for iso, idx in df.groupby("iso").indices.items():
+                df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_CDSD_pc_1iso(df.loc[idx], iso)
 
-            if radis.config["DEBUG_MODE"]:
-                assert (df.loc[idx, "iso"] == iso).all()
+                if radis.config["DEBUG_MODE"]:
+                    assert (df.loc[idx, "iso"] == iso).all()
+        elif self.dataframe_type == "vaex":
+            df["Evibl"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            df["Evibu"] = vaex.vconstant(np.nan, df.length_unfiltered())
+            
+            for iso in list(df.iso.unique()):
+                get_Evib_CDSD_pc_1iso(df, iso)
+
 
         # Get rotational energy: better recalculate than look up the database
         # (much faster!: perf ~25s -> 765µs)
@@ -981,35 +1001,73 @@ class BaseFactory(DatabankLoader):
             #        df['Evibl'] = df.groupby('polyl','wangl','rankl').apply(Evibl, axis=1)
             #        %timeit: 43.4s per loop
 
-            #            try:  # total:  ~ 15s on 460k lines
-            # ~ 6.6 s   (probably faster since neq==0.9.20) (radis<1.0)
-            df = df.groupby(by=["polyu", "wangu"]).apply(fillEvib123u)
-            # ~ 6.6 s   (probably faster since neq==0.9.20) (radis<1.0)
-            df = df.groupby(by=["polyl", "wangl"]).apply(fillEvib123l)
-            #            except KeyError:
-            #                printr("{0} -> An error (see above) occured that usually ".format(sys.exc_info()[1]) +
-            #                       "happens when the energy level is not referenced in the database. " +
-            #                       "Check your partition function calculator, and energies " +
-            #                       "for isotope {0} (Factory.parsum_calc['CO2'][{0}]['X'].df)".format(iso))
-            #                raise
+            if self.dataframe_type == "pandas":
+                #            try:  # total:  ~ 15s on 460k lines
+                # ~ 6.6 s   (probably faster since neq==0.9.20) (radis<1.0)
+                df = df.groupby(by=["polyu", "wangu"]).apply(fillEvib123u)
+                # ~ 6.6 s   (probably faster since neq==0.9.20) (radis<1.0)
+                df = df.groupby(by=["polyl", "wangl"]).apply(fillEvib123l)
+                #            except KeyError:
+                #                printr("{0} -> An error (see above) occured that usually ".format(sys.exc_info()[1]) +
+                #                       "happens when the energy level is not referenced in the database. " +
+                #                       "Check your partition function calculator, and energies " +
+                #                       "for isotope {0} (Factory.parsum_calc['CO2'][{0}]['X'].df)".format(iso))
+                #                raise
 
-            return df.loc[
-                :, ["Evib1l", "Evib2l", "Evib3l", "Evib1u", "Evib2u", "Evib3u"]
-            ]
+                return df.loc[
+                    :, ["Evib1l", "Evib2l", "Evib3l", "Evib1u", "Evib2u", "Evib3u"]
+                ]
+            elif self.dataframe_type == "vaex":
+                def get_evib1(poly, wang, evib, df_iso):
+                    if df_iso == iso:
+                        return energies.at((poly, wang), "Evib1")
+                    else:
+                        return evib
+                    
+                def get_evib2(poly, wang, evib, df_iso):
+                    if df_iso == iso:
+                        return energies.at((poly, wang), "Evib2")
+                    else:
+                        return evib
+
+                def get_evib3(poly, wang, evib, df_iso):
+                    if df_iso == iso:
+                        return energies.at((poly, wang), "Evib3")
+                    else:
+                        return evib
+
+                df["Evib1u"] = df.apply(get_evib1, [df.polyl, df.wangl, df.Evib1u, df.iso])
+                df["Evib2u"] = df.apply(get_evib2, [df.polyl, df.wangl, df.Evib2u, df.iso])
+                df["Evib3u"] = df.apply(get_evib3, [df.polyl, df.wangl, df.Evib3u, df.iso])
+                df["Evib1l"] = df.apply(get_evib1, [df.polyl, df.wangl, df.Evib1l, df.iso])
+                df["Evib2l"] = df.apply(get_evib2, [df.polyl, df.wangl, df.Evib2l, df.iso])
+                df["Evib3l"] = df.apply(get_evib3, [df.polyl, df.wangl, df.Evib3l, df.iso])
+                
 
         #        df = df.groupby('iso').apply(lambda x: get_Evib123_CDSD_pc_1iso(x, x.name))
 
-        # Slower than the version below:
-        df["Evib1l"] = np.nan
-        df["Evib2l"] = np.nan
-        df["Evib3l"] = np.nan
-        df["Evib1u"] = np.nan
-        df["Evib2u"] = np.nan
-        df["Evib3u"] = np.nan
-        for iso, idx in df.groupby("iso").indices.items():
-            df.loc[
-                idx, ["Evib1l", "Evib2l", "Evib3l", "Evib1u", "Evib2u", "Evib3u"]
-            ] = get_Evib123_CDSD_pc_1iso(df.loc[idx], iso)
+        if self.dataframe_type == "pandas":
+            # Slower than the version below:
+            df["Evib1l"] = np.nan
+            df["Evib2l"] = np.nan
+            df["Evib3l"] = np.nan
+            df["Evib1u"] = np.nan
+            df["Evib2u"] = np.nan
+            df["Evib3u"] = np.nan
+            for iso, idx in df.groupby("iso").indices.items():
+                df.loc[
+                    idx, ["Evib1l", "Evib2l", "Evib3l", "Evib1u", "Evib2u", "Evib3u"]
+                ] = get_Evib123_CDSD_pc_1iso(df.loc[idx], iso)
+        elif self.dataframe_type == "vaex":
+            df["Evib1l"] = vaex.vconstant(np.nan, df.length_unfiltered)
+            df["Evib2l"] = vaex.vconstant(np.nan, df.length_unfiltered)
+            df["Evib3l"] = vaex.vconstant(np.nan, df.length_unfiltered)
+            df["Evib1u"] = vaex.vconstant(np.nan, df.length_unfiltered)
+            df["Evib2u"] = vaex.vconstant(np.nan, df.length_unfiltered)
+            df["Evib3u"] = vaex.vconstant(np.nan, df.length_unfiltered)
+
+            for iso in list(df.iso.unique()):
+                get_Evib123_CDSD_pc_1iso(df, iso)          
 
         # Add total vibrational energy too (doesnt cost much, and can plot populations in spectrum)
         df["Evibu"] = df.Evib1u + df.Evib2u + df.Evib3u
@@ -3737,6 +3795,8 @@ class BaseFactory(DatabankLoader):
                             + "option, if you don't need to reuse this factory to calculate new spectra",
                             "MemoryUsageWarning",
                         )
+                elif self.dataframe_type == "vaex":
+                    print("Using Vaex to save memory")
             except ValueError:  # had some unexplained ValueError: __sizeof__() should return >= 0
                 pass
 
