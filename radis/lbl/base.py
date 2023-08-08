@@ -584,11 +584,12 @@ class BaseFactory(DatabankLoader):
                 #                df.loc[idx, 'Evibl'] = Evib                     # ~ 4.38ms
 
                 return df.loc[idx, ["Evibl", "Evibu"]]
-            
+
             elif self.dataframe_type == "vaex":
+
                 def get_evib(poly, wang, evib, df_iso):
-                    if(df_iso == iso):
-                        return energies.at((poly,wang),"Evib")
+                    if df_iso == iso:
+                        return energies.at((poly, wang), "Evib")
                     else:
                         return evib
 
@@ -601,17 +602,18 @@ class BaseFactory(DatabankLoader):
             df["Evibl"] = np.nan
             df["Evibu"] = np.nan
             for iso, idx in df.groupby("iso").indices.items():
-                df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_CDSD_pc_1iso(df.loc[idx], iso)
+                df.loc[idx, ["Evibl", "Evibu"]] = get_Evib_CDSD_pc_1iso(
+                    df.loc[idx], iso
+                )
 
                 if radis.config["DEBUG_MODE"]:
                     assert (df.loc[idx, "iso"] == iso).all()
         elif self.dataframe_type == "vaex":
             df["Evibl"] = vaex.vconstant(np.nan, df.length_unfiltered())
             df["Evibu"] = vaex.vconstant(np.nan, df.length_unfiltered())
-            
+
             for iso in list(df.iso.unique()):
                 get_Evib_CDSD_pc_1iso(df, iso)
-
 
         # Get rotational energy: better recalculate than look up the database
         # (much faster!: perf ~25s -> 765µs)
@@ -1018,12 +1020,13 @@ class BaseFactory(DatabankLoader):
                     :, ["Evib1l", "Evib2l", "Evib3l", "Evib1u", "Evib2u", "Evib3u"]
                 ]
             elif self.dataframe_type == "vaex":
+
                 def get_evib1(poly, wang, evib, df_iso):
                     if df_iso == iso:
                         return energies.at((poly, wang), "Evib1")
                     else:
                         return evib
-                    
+
                 def get_evib2(poly, wang, evib, df_iso):
                     if df_iso == iso:
                         return energies.at((poly, wang), "Evib2")
@@ -1036,13 +1039,24 @@ class BaseFactory(DatabankLoader):
                     else:
                         return evib
 
-                df["Evib1u"] = df.apply(get_evib1, [df.polyl, df.wangl, df.Evib1u, df.iso])
-                df["Evib2u"] = df.apply(get_evib2, [df.polyl, df.wangl, df.Evib2u, df.iso])
-                df["Evib3u"] = df.apply(get_evib3, [df.polyl, df.wangl, df.Evib3u, df.iso])
-                df["Evib1l"] = df.apply(get_evib1, [df.polyl, df.wangl, df.Evib1l, df.iso])
-                df["Evib2l"] = df.apply(get_evib2, [df.polyl, df.wangl, df.Evib2l, df.iso])
-                df["Evib3l"] = df.apply(get_evib3, [df.polyl, df.wangl, df.Evib3l, df.iso])
-                
+                df["Evib1u"] = df.apply(
+                    get_evib1, [df.polyl, df.wangl, df.Evib1u, df.iso]
+                )
+                df["Evib2u"] = df.apply(
+                    get_evib2, [df.polyl, df.wangl, df.Evib2u, df.iso]
+                )
+                df["Evib3u"] = df.apply(
+                    get_evib3, [df.polyl, df.wangl, df.Evib3u, df.iso]
+                )
+                df["Evib1l"] = df.apply(
+                    get_evib1, [df.polyl, df.wangl, df.Evib1l, df.iso]
+                )
+                df["Evib2l"] = df.apply(
+                    get_evib2, [df.polyl, df.wangl, df.Evib2l, df.iso]
+                )
+                df["Evib3l"] = df.apply(
+                    get_evib3, [df.polyl, df.wangl, df.Evib3l, df.iso]
+                )
 
         #        df = df.groupby('iso').apply(lambda x: get_Evib123_CDSD_pc_1iso(x, x.name))
 
@@ -1067,7 +1081,7 @@ class BaseFactory(DatabankLoader):
             df["Evib3u"] = vaex.vconstant(np.nan, df.length_unfiltered)
 
             for iso in list(df.iso.unique()):
-                get_Evib123_CDSD_pc_1iso(df, iso)          
+                get_Evib123_CDSD_pc_1iso(df, iso)
 
         # Add total vibrational energy too (doesnt cost much, and can plot populations in spectrum)
         df["Evibu"] = df.Evib1u + df.Evib2u + df.Evib3u

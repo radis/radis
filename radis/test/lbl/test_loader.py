@@ -222,6 +222,8 @@ def test_custom_abundance(verbose=True, plot=False, *args, **kwargs):
     assert s.compare_with((3 * s3.take("abscoeff")), "abscoeff", rtol=0.5e-2, plot=True)
 
 
+# Added in https://github.com/radis/radis/pull/580
+# Compares dataframes fetched and manipulated with vaex with that of pandas. Every column of dataframe in vaex format is compared with corresponding column of dataframe in pandas format .
 def test_vaex_and_pandas_dataframe_fetch_databank():
     import numpy as np
 
@@ -324,6 +326,8 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
     assert compare_dataframe(df1, df2, df2.columns)
 
 
+# Added in https://github.com/radis/radis/pull/580
+# Compares dataframes fetched and manipulated with vaex with that of pandas. Every column of dataframe in vaex format is compared with corresponding column of dataframe in pandas format .
 def test_vaex_and_pandas_dataframe_load_databank():
     import numpy as np
 
