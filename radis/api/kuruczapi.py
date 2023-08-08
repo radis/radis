@@ -358,7 +358,7 @@ class AdBKurucz:
             "gamRad": gamRad,
             "gamSta": gamSta,
             "gamvdW": gamvdW,
-            "Tdpair": 0.68,
+            "Tdpair": 0.68, #placeholder to adjust
             "wlnmair": wlnmair,
             "loggf": loggf,
             "species": species,
@@ -393,17 +393,18 @@ class AdBKurucz:
     
     def add_airbrd(self,data):
         if "airbrd" not in data.columns :
-            print("self.atom=",self.atom)
-            #print("airbrd" in data.columns)
+            #placeholder for neutral_hydrogen_number and atomic_coeff
             #TODO: adjust the coefficient to the atoms and adjust the value for neutral_hydrogen_number
             
             neutral_hydrogen_number=1
+            atomic_coeff=1
+
             if self.atom=="H" :
                 airbrd=(10**data['gamvdW'])*data["Tdpair"]*neutral_hydrogen_number
             elif self.atom== "He":
                 airbrd=(10**data['gamvdW'])*data["Tdpair"]*neutral_hydrogen_number*0.42
             else :
-                airbrd=(10**data['gamvdW'])*data["Tdpair"]*neutral_hydrogen_number
+                airbrd=(10**data['gamvdW'])*data["Tdpair"]*neutral_hydrogen_number*atomic_coeff
 
             data["airbrd"]=airbrd
 
