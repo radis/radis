@@ -583,24 +583,32 @@ def make_j2b(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
     alpha_ref_arr = np.array(bdat["alpha_ref"][cmask])
     n_Texp_arr = np.array(bdat["n_Texp"][cmask])
 
+    # Determine the array size based on jlower_max
     if jlower_max is None:
         Nblower = np.max(jlower_arr) + 1
     else:
         Nblower = np.max([jlower_max, np.max(jlower_arr)]) + 1
-    j2alpha_ref = np.ones(Nblower) * alpha_ref_default
-    j2n_Texp = np.ones(Nblower) * n_Texp_default
 
+    # Initialize arrays with default alpha_ref and n_Texp
+    j2alpha_ref = np.full(Nblower, alpha_ref_default)
+    j2n_Texp = np.full(Nblower, n_Texp_default)
+
+    # Populate the mapping arrays using known broadening coefficients
     j2alpha_ref[jlower_arr] = alpha_ref_arr
     j2n_Texp[jlower_arr] = n_Texp_arr
 
-    Ndef = Nblower - (np.max(jlower_arr) + 1)
-    if Ndef > 0:
-        print(
-            "default broadening parameters are used for ",
-            Ndef,
-            " J lower states in ",
-            Nblower,
-            " states",
+    # Raise a minor warning if default values are used for high J values
+    if Nblower > (np.max(jlower_arr) + 1):
+        import warnings
+
+        from radis.misc.warning import AccuracyWarning
+
+        warnings.warn(
+            AccuracyWarning(
+                "The default broadening parameter (alpha = {2} cm^-1 and n = {3}) are used for J'' > {1} up to J'' = {0}".format(
+                    Nblower, np.max(jlower_arr), alpha_ref_default, n_Texp_default
+                )
+            )
         )
 
     return j2alpha_ref, j2n_Texp
@@ -1349,7 +1357,8 @@ class MdbExomol(DatabaseManager):
                 self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df["jlower"]))
             else:
                 codelv = check_bdat(bdat)
-                print("Broadening code level=", codelv)
+                if self.verbose:
+                    print("Broadening code level:", codelv)
                 if codelv == "a0":
                     j2alpha_ref, j2n_Texp = make_j2b(
                         bdat,
