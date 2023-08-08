@@ -1084,7 +1084,7 @@ class MdbExomol(DatabaseManager):
         nurange=[0.0, np.inf],
         margin=0.0,
         crit=-np.inf,
-        bkgdatm="Air",  # TODO: use Air whenever possible, to be consistent with HITRAN/HITEMP
+        bkgdatm="Air",  # TODO: use Air whenever possible (consistent with HITRAN/HITEMP). This is not a parameter for the moment.
         broadf=True,
         engine="vaex",
         verbose=True,
@@ -1113,7 +1113,7 @@ class MdbExomol(DatabaseManager):
 
         t0 = self.path.parents[0].stem
         molec = t0 + "__" + str(self.path.stem)
-        self.bkgdatm = bkgdatm
+        self.bkgdatm = bkgdatm  # TODO: for the moment, only air is possible in RADIS, although He and H are usually available in ExoMol
         molecbroad = t0 + "__" + self.bkgdatm
 
         self.crit = crit
