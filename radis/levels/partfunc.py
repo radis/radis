@@ -55,7 +55,7 @@ References
 
 
 import sys
-from os.path import exists
+from os.path import exists, join
 from warnings import warn
 
 import numpy as np
@@ -78,6 +78,7 @@ from radis.misc.basics import all_in
 from radis.misc.debug import printdbg
 from radis.misc.printer import printg
 from radis.misc.progress_bar import ProgressBar
+from radis.misc.utils import getProjectRoot
 from radis.misc.warning import OutOfBoundError
 from radis.phys.constants import hc_k  # ~ 1.44 cm.K
 
@@ -1134,7 +1135,7 @@ class PartFuncExoMol(RovibParFuncTabulator):
 
     def _at(self, T):
         return np.interp(T, self.T_range, self.Q_range)
-    
+
 
 class PartFuncKurucz(RovibParFuncTabulator):
     """Return partition function using interpolation of tabulated values of local file kuruczpartfn.txt
@@ -1143,11 +1144,11 @@ class PartFuncKurucz(RovibParFuncTabulator):
     ----------
     atom: str
         exomol isotope full name
-    ionization_state : int 
+    ionization_state : int
 
     """
 
-    def __init__(self,atom,ionization_state):
+    def __init__(self, atom, ionization_state):
         super(PartFuncKurucz, self).__init__()
         if ionization_state == "00":
             self.key = atom + "_I"
@@ -1156,12 +1157,60 @@ class PartFuncKurucz(RovibParFuncTabulator):
         else:
             self.key = atom + "_III"
         # Load data in constructor
-        pfdat = pd.read_csv('radis/db/kuruczpartfn.txt', sep="\s+", header=None)
-        self.pfdat = pfdat.set_index(0)  
+        path_partfn = join(getProjectRoot(), "db", "kuruczpartfn.txt")
+        pfdat = pd.read_csv(path_partfn, sep="\s+", header=None)
+        self.pfdat = pfdat.set_index(0)
         # Locate the row for the specific atom and ionization state
         pf_atom = self.pfdat.loc[f"{self.key}"]
-        self.pfT_values = np.array([1e-05, 1e-04, 1e-03, 1e-02, 1e-01, 1.5e-01, 2e-01, 3e-01, 5e-01, 7e-01, 1.0, 1.3, 1.7, 2.0, 3.0, 5.0, 7.0, 10.0, 15.0, 20.0, 30.0, 50.0, 70.0, 100.0, 130.0, 170.0, 200.0, 250.0, 300.0, 500.0, 700.0, 1e03, 1.5e03, 2e03, 3e03, 4e03, 5e03, 6e03, 7e03, 8e03, 9e03, 1e04])
-        self.pf_values = pf_atom.values[0:].astype(float)  # Exclude the first value (it's the atomic number)
+        self.pfT_values = np.array(
+            [
+                1e-05,
+                1e-04,
+                1e-03,
+                1e-02,
+                1e-01,
+                1.5e-01,
+                2e-01,
+                3e-01,
+                5e-01,
+                7e-01,
+                1.0,
+                1.3,
+                1.7,
+                2.0,
+                3.0,
+                5.0,
+                7.0,
+                10.0,
+                15.0,
+                20.0,
+                30.0,
+                50.0,
+                70.0,
+                100.0,
+                130.0,
+                170.0,
+                200.0,
+                250.0,
+                300.0,
+                500.0,
+                700.0,
+                1e03,
+                1.5e03,
+                2e03,
+                3e03,
+                4e03,
+                5e03,
+                6e03,
+                7e03,
+                8e03,
+                9e03,
+                1e04,
+            ]
+        )
+        self.pf_values = pf_atom.values[0:].astype(
+            float
+        )  # Exclude the first value (it's the atomic number)
 
     def _at(self, T):
         # Interpolate to find the partition function at the desired temperature
@@ -1169,10 +1218,10 @@ class PartFuncKurucz(RovibParFuncTabulator):
             return np.interp(T, self.pfT_values, self.pf_values)
         except KeyError:
             print("pfdat", self.pfdat)
-            print(f"Key {self.key} not found in pfdat. Available keys: {self.pfdat.index.tolist()}")
+            print(
+                f"Key {self.key} not found in pfdat. Available keys: {self.pfdat.index.tolist()}"
+            )
             raise
-
-
 
 
 class PartFuncTIPS(RovibParFuncTabulator):

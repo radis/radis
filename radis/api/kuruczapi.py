@@ -7,17 +7,19 @@ Author: Racim Menasria
 Date: June 2023
 """
 
-import os
 import io
+import os
 import pkgutil
 from contextlib import closing
 from io import BytesIO
 
+import mendeleev
 import numpy as np
 import pandas as pd
-import mendeleev
 import requests
 from tqdm import tqdm
+
+from radis.misc.utils import getProjectRoot
 from radis.phys.air import air2vacuum
 
 
@@ -26,15 +28,15 @@ class AdBKurucz:
     ecgs = 4.80320450e-10
     mecgs = 9.10938356e-28
 
-    def __init__(self,atom,ionization_state):
+    def __init__(self, atom, ionization_state):
         self.kurucz_url_base = "http://kurucz.harvard.edu/linelists/gfall/gf"
         self.hdf5_file = None
         self.data = None
         self.pfTdat, self.pfdat = self.load_pf_Barklem2016()
         self.populations = None
-        self.atom=atom
-        self.ionization_state=ionization_state
-        self.atomic_number = getattr(mendeleev,self.atom).atomic_number
+        self.atom = atom
+        self.ionization_state = ionization_state
+        self.atomic_number = getattr(mendeleev, self.atom).atomic_number
         # Convert atomic_number to element symbol
         self.element_symbol = mendeleev.element(int(self.atomic_number)).symbol
 
@@ -47,22 +49,24 @@ class AdBKurucz:
         else:
             self.key = self.element_symbol + "_III"
 
-
-
-        
-
     def get_url(self, atomic_number, ionization_state):
         ionization_state = str(ionization_state).zfill(2)
         return f"http://kurucz.harvard.edu/linelists/gfall/gf{atomic_number}{ionization_state}.all"
 
     def load_pf_Barklem2016(self):
-        """load a table of the partition functions for 284 atomic species.
+        """Load a table of the partition functions for 284 atomic species.
 
-        * See Table 8 of Barklem & Collet (2016); https://doi.org/10.1051/0004-6361/201526961
+        Returns
+        -------
+        pfTdat:  pd.DataFrame
+            Steps of temperature (K)
+        pfdat:  pd.DataFrame
+            Partition functions for 284 atomic species
 
-        Returns:
-            pfTdat (pd.DataFrame): steps of temperature (K)
-            pfdat (pd.DataFrame): partition functions for 284 atomic species
+        References
+        ----------
+        `Barklem & Collet (2016), Table 8 <https://doi.org/10.1051/0004-6361/201526961>`_
+
         """
         pfT_str = "T[K], 1.00000e-05, 1.00000e-04, 1.00000e-03, 1.00000e-02, 1.00000e-01, 1.50000e-01, 2.00000e-01, 3.00000e-01, 5.00000e-01, 7.00000e-01, 1.00000e+00, 1.30000e+00, 1.70000e+00, 2.00000e+00, 3.00000e+00, 5.00000e+00, 7.00000e+00, 1.00000e+01, 1.50000e+01, 2.00000e+01, 3.00000e+01, 5.00000e+01, 7.00000e+01, 1.00000e+02, 1.30000e+02, 1.70000e+02, 2.00000e+02, 2.50000e+02, 3.00000e+02, 5.00000e+02, 7.00000e+02, 1.00000e+03, 1.50000e+03, 2.00000e+03, 3.00000e+03, 4.00000e+03, 5.00000e+03, 6.00000e+03, 7.00000e+03, 8.00000e+03, 9.00000e+03, 1.00000e+04"
         pfTdat = pd.read_csv(io.StringIO(pfT_str), sep=",")
@@ -70,12 +74,8 @@ class AdBKurucz:
             "float64"
         )  # Converts the values to float64, skipping the first value
 
-        # read the local file instead of the one in the exojax package
-        with open("radis/db/kuruczpartfn.txt", "r") as f:
+        with open(os.path.join(getProjectRoot(), "db", "kuruczpartfn.txt"), "r") as f:
             pfdat = pd.read_csv(f, sep="\s+", comment="#", names=pfTdat.index)
-
-        #print("len(pfdat)", len(pfdat))
-        #print("len(pfTdat)", len(pfTdat))
 
         return pfTdat, pfdat
 
@@ -110,7 +110,7 @@ class AdBKurucz:
         return ipccd
 
     def load_ionization_energies(self):
-        #Not used for now but will probably be for NIST database
+        # Not used for now but will probably be for NIST database
         """Load atomic ionization energies.
 
         Returns:
@@ -137,7 +137,7 @@ class AdBKurucz:
             ionE (float): ionization energy
 
         Note:
-            NIST_iE is for now is .NIST_iE.txt 
+            NIST_iE is for now is .NIST_iE.txt
         """
 
         def f_droppare(x):
@@ -167,8 +167,8 @@ class AdBKurucz:
 
         # Verify if the file exists already
         if os.path.exists(filename):
-           print("File already exists, skipping download.")
-           return filename
+            print("File already exists, skipping download.")
+            return filename
 
         with closing(requests.get(self.url, stream=True)) as r:
             total_size = int(r.headers.get("content-length", 0))
@@ -185,9 +185,7 @@ class AdBKurucz:
                     pbar.update(len(data))
         return filename
 
-   
-
-    def Sij0(self,A, g, nu_lines, elower, QTref):
+    def Sij0(self, A, g, nu_lines, elower, QTref):
         # The int column of the df can be computed using this method but the default option option rather uses Radis linestrength_from_Einstein
         """Reference Line Strength in Tref=296K, S0.
 
@@ -208,10 +206,14 @@ class AdBKurucz:
         hcperk = 1.4387773538277202  # hc/kB (cm K)
         ccgs = 29979245800.0
         Tref = 296.0
-        S0 = -A*g*np.exp(-hcperk*elower/Tref)*np.expm1(-hcperk*nu_lines/Tref)\
-            / (8.0*np.pi*ccgs*nu_lines**2*QTref)
+        S0 = (
+            -A
+            * g
+            * np.exp(-hcperk * elower / Tref)
+            * np.expm1(-hcperk * nu_lines / Tref)
+            / (8.0 * np.pi * ccgs * nu_lines**2 * QTref)
+        )
         return S0
-
 
     def read_kurucz(self, kuruczf):
         """Input Kurucz line list (http://kurucz.harvard.edu/linelists/)
@@ -347,7 +349,7 @@ class AdBKurucz:
         data_dict = {
             "A": A,
             "nu_lines": nu_lines,
-            "wav": 10**7/nu_lines,
+            "wav": 10**7 / nu_lines,
             "El": elower,
             "eupper": eupper,
             "gu": gupper,
@@ -358,7 +360,7 @@ class AdBKurucz:
             "gamRad": gamRad,
             "gamSta": gamSta,
             "gamvdW": gamvdW,
-            "Tdpair": 0.68, #placeholder to adjust
+            "Tdpair": 0.68,  # placeholder to adjust
             "wlnmair": wlnmair,
             "loggf": loggf,
             "species": species,
@@ -382,37 +384,49 @@ class AdBKurucz:
             "landeglower": landeglower,
             "landegupper": landegupper,
             "isoshiftmA": isoshiftmA,
-            #"int":self.Sij0(A,gupper,nu_lines,elower,self.partfcn(self.key,296))
-            #if int parameter is used, calc_linestrength_eq will also use it
+            # "int":self.Sij0(A,gupper,nu_lines,elower,self.partfcn(self.key,296))
+            # if int parameter is used, calc_linestrength_eq will also use it
         }
 
         df_radis = pd.DataFrame(data_dict)
 
         self.data = pd.DataFrame(data_dict)
         return df_radis
-    
-    def add_airbrd(self,data):
-        if "airbrd" not in data.columns :
-            #placeholder for neutral_hydrogen_number and atomic_coeff
-            #TODO: adjust the coefficient to the atoms and adjust the value for neutral_hydrogen_number
-            
-            neutral_hydrogen_number=1
-            atomic_coeff=1
 
-            if self.atom=="H" :
-                airbrd=(10**data['gamvdW'])*data["Tdpair"]*neutral_hydrogen_number
-            elif self.atom== "He":
-                airbrd=(10**data['gamvdW'])*data["Tdpair"]*neutral_hydrogen_number*0.42
-            else :
-                airbrd=(10**data['gamvdW'])*data["Tdpair"]*neutral_hydrogen_number*atomic_coeff
+    def add_airbrd(self, data):
+        if "airbrd" not in data.columns:
+            # placeholder for neutral_hydrogen_number and atomic_coeff
+            # TODO: adjust the coefficient to the atoms and adjust the value for neutral_hydrogen_number
 
-            data["airbrd"]=airbrd
+            neutral_hydrogen_number = 1
+            atomic_coeff = 1
+
+            if self.atom == "H":
+                airbrd = (
+                    (10 ** data["gamvdW"]) * data["Tdpair"] * neutral_hydrogen_number
+                )
+            elif self.atom == "He":
+                airbrd = (
+                    (10 ** data["gamvdW"])
+                    * data["Tdpair"]
+                    * neutral_hydrogen_number
+                    * 0.42
+                )
+            else:
+                airbrd = (
+                    (10 ** data["gamvdW"])
+                    * data["Tdpair"]
+                    * neutral_hydrogen_number
+                    * atomic_coeff
+                )
+
+            data["airbrd"] = airbrd
 
     def store_hdf5(self, data, output_path):
         """Store data in a HDF5 file."""
 
         # df = pd.DataFrame(data)
-        data.to_hdf(output_path, key="df", format='table',data_columns=True)
+        data.to_hdf(output_path, key="df", format="table", data_columns=True)
 
     def read_hdf5(self, file_path):
         """Read data from a HDF5 file."""
@@ -451,9 +465,9 @@ class AdBKurucz:
         # print(f"Partition function: {Q}")
 
         return Q
-    
+
     def partfcn(self, key, T):
-        #So far ielem is used for id and iion for iso in eq_spectrum so this method is used when the linestrength is computed for data_dict
+        # So far ielem is used for id and iion for iso in eq_spectrum so this method is used when the linestrength is computed for data_dict
         """Partition function from Barklem & Collet (2016).
 
         Args:
@@ -463,17 +477,21 @@ class AdBKurucz:
         Returns:
         partition function Q
         """
-        try : 
+        try:
             print(f"Temperature: {T}")
             # Read the pfdat file
-            pfdat = pd.read_csv('radis/db/kuruczpartfn.txt', sep="\s+", header=None)
-            pfdat = pfdat.set_index(0)  
+            pfdat = pd.read_csv("radis/db/kuruczpartfn.txt", sep="\s+", header=None)
+            pfdat = pfdat.set_index(0)
 
             # Locate the row for the specific atom and ionization state
             pf_atom = pfdat.loc[f"{key}"]
             # Extract temperature and partition function values
-            pfT_values = self.pfTdat.values.flatten()[1:]  # Exclude the first value (it's the temperature unit)
-            pf_values = pf_atom.values[1:]  # Exclude the first value (it's the atomic number)
+            pfT_values = self.pfTdat.values.flatten()[
+                1:
+            ]  # Exclude the first value (it's the temperature unit)
+            pf_values = pf_atom.values[
+                1:
+            ]  # Exclude the first value (it's the atomic number)
 
             pfT_values = pfT_values.astype(float)
             pf_values = pf_values.astype(float)
@@ -487,8 +505,10 @@ class AdBKurucz:
 
             return Q
         except KeyError:
-            print("pfdat",pfdat)
-            print(f"Key {key} not found in pfdat. Available keys: {pfdat.index.tolist()}")
+            print("pfdat", pfdat)
+            print(
+                f"Key {key} not found in pfdat. Available keys: {pfdat.index.tolist()}"
+            )
             raise
 
     def calculate_populations(self, atom, temperature, data):
@@ -496,9 +516,9 @@ class AdBKurucz:
         # atom_pf = self.pfdat.loc[f'{atom}_I']
 
         # Calculate the partition function at a certain temperature
-        #print(type(self.partfn))
+        # print(type(self.partfn))
         QT_atom = self.partfcn(atom, temperature)
-        print("QT_atom",QT_atom)
+        print("QT_atom", QT_atom)
 
         # Calculate energy/temperature ratio
         energy_temp_ratio = data["elower"] / (0.695 * temperature)
@@ -509,12 +529,10 @@ class AdBKurucz:
 
         return self.populations
 
-    #Initially from Exojax but no longer needed since pressure is handled by SpectrumFactory
-    def pressure_layer(self,logPtop=-8.,
-                   logPbtm=2.,
-                   NP=20,
-                   mode='ascending',
-                   reference_point=0.5):
+    # Initially from Exojax but no longer needed since pressure is handled by SpectrumFactory
+    def pressure_layer(
+        self, logPtop=-8.0, logPbtm=2.0, NP=20, mode="ascending", reference_point=0.5
+    ):
         """generating the pressure layer.
 
         Args:
@@ -535,17 +553,12 @@ class AdBKurucz:
         """
         dlog10P = (logPbtm - logPtop) / (NP - 1)
         k = 10**-dlog10P
-        
+
         Parr = np.logspace(logPtop, logPbtm, NP)
-        
+
         dParr = (1.0 - k**reference_point) * Parr
-        if mode == 'descending':
+        if mode == "descending":
             Parr = Parr[::-1]
             dParr = dParr[::-1]
 
         return Parr, dParr, k
-
-
-    
-
-        
