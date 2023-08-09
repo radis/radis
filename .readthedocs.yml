@@ -1,15 +1,35 @@
 # .readthedocs.yml
+# Read the Docs configuration file for Sphinx projects
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
 
+# Required
+version: 2
+
+# Set the OS, Python version and other tools you might need
 build:
-    image: latest
+  os: ubuntu-22.04
+  tools:
+    python: "mambaforge-4.10"
+
+# Build documentation in the "docs/" directory with Sphinx
+sphinx:
+  configuration: docs/conf.py
+  # You can configure Sphinx to use a different builder, for instance use the dirhtml builder for simpler URLs
+  # builder: "dirhtml"
+  # Fail on all warnings to avoid broken references
+  # fail_on_warning: true
+
+# Optionally build your docs in additional formats such as PDF and ePub
+#formats:
+#    - pdf
+#    - epub
 
 python:
-  version: 3.8
-  pip_install: true
-  use_system_site_packages: true
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+      - docs      #  ReadTheDocs will install Radis with "pip install .[docs]" so extra packages are read from setup.py ["docs":....]
 
-requirements_file: docs/requirements.txt
-
-  # Build PDF
-formats:
-    - pdf
+conda:
+  environment: environment.yml

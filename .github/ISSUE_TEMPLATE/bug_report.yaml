@@ -1,12 +1,12 @@
 name: "Bug Report"
 description: "Create a bug report to help us improve Radis \U0001F331"
-title: "Bug Report: "
+title: ""
 labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to fill out our bug report form !!
+        Thanks for taking the time to fill out our bug report form !
   - type: textarea
     id: bug
     validations:
@@ -14,7 +14,7 @@ body:
     attributes:
       label: "🐛 Describe the bug"
       description: "Please describe the bug !!"
-      placeholder: "describe ... "
+      placeholder: "describe ... ``` Add minimal code to reproduce the bug ``` "
 
   - type: textarea
     id: actual-behavior

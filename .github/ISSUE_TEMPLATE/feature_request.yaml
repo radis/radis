@@ -1,6 +1,6 @@
 name: 🚀 Feature
 description: "Suggest an idea for Radis \U0001F331"
-title: "🚀 Feature: "
+title: "🚀 "
 labels: [enhancement]
 body:
   - type: markdown
