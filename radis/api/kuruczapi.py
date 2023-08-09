@@ -15,10 +15,11 @@ from io import BytesIO
 
 import numpy as np
 import pandas as pd
-import mendeleev
 import requests
 from tqdm import tqdm
 from radis.phys.air import air2vacuum
+from mendeleev import element
+
 
 
 class AdBKurucz:
@@ -26,30 +27,56 @@ class AdBKurucz:
     ecgs = 4.80320450e-10
     mecgs = 9.10938356e-28
 
-    def __init__(self,atom,ionization_state):
+    def __init__(self,species):
         self.kurucz_url_base = "http://kurucz.harvard.edu/linelists/gfall/gf"
         self.hdf5_file = None
         self.data = None
         self.pfTdat, self.pfdat = self.load_pf_Barklem2016()
         self.populations = None
-        self.atom=atom
-        self.ionization_state=ionization_state
-        self.atomic_number = getattr(mendeleev,self.atom).atomic_number
+        self.species=species
+        self.atomic_number=self.get_atomic_number(species)
+        self.ionization_state=self.get_ionization_state(species)
+        self.element_symbol=self.get_element_symbol(species)
+
+        #self.atomic_number = getattr(mendeleev,self.atom).atomic_number
         # Convert atomic_number to element symbol
-        self.element_symbol = mendeleev.element(int(self.atomic_number)).symbol
+        #self.element_symbol = mendeleev.element(int(self.atomic_number)).symbol
 
         # Construct the key
 
-        if ionization_state == "00":
-            self.key = self.element_symbol + "_I"
-        elif ionization_state == "01":
-            self.key = self.element_symbol + "_II"
-        else:
-            self.key = self.element_symbol + "_III"
 
 
+    def get_atomic_number(self,species):
+        """
+        Extracts the atomic_number from the species id
+        """
+        atomic_symbol = species.split('_')[0]
+        el = element(atomic_symbol)
+        atomic_number=el.atomic_number
+        return atomic_number
 
-        
+
+    def get_ionization_state(self,species):
+        """
+        Extracts the ionization_state from the species id
+        """
+        ionization_str = species.split('_')[1]
+        roman_to_int = {
+        'I': 0, 'II': 1, 'III': 2, 'IV': 3, 'V': 4, 
+        'VI': 5
+        }
+        ionization_int = roman_to_int.get(ionization_str, -1)
+        formatted_str = f"{ionization_int:02}"
+
+        return formatted_str
+    
+    def get_element_symbol(self,species):
+        atomic_symbol = species.split('_')[0]
+        el = element(atomic_symbol)
+        return el
+
+
+            
 
     def get_url(self, atomic_number, ionization_state):
         ionization_state = str(ionization_state).zfill(2)
@@ -78,36 +105,6 @@ class AdBKurucz:
         #print("len(pfTdat)", len(pfTdat))
 
         return pfTdat, pfdat
-
-    def load_atomicdata(self):
-        """load atomic data and solar composition.
-
-        * See  Asplund et al. 2009, Gerevesse et al. 1996
-
-        Returns:
-            ipccd (pd.DataFrame): table of atomic data
-
-        Note:
-            atomic.txt is in data/atom
-        """
-        ipccc = (
-            "ielem",
-            "ionizationE1",
-            "dam1",
-            "dam2",
-            "solarA",
-            "mass",
-            "ionizationE2",
-        )
-        adata = pkgutil.get_data("exojax", "data/atom/atomic.txt")
-        ipccd = pd.read_csv(
-            BytesIO(adata),
-            sep="\s+",
-            skiprows=1,
-            usecols=[1, 2, 3, 4, 5, 6, 7],
-            names=ipccc,
-        )
-        return ipccd
 
     def load_ionization_energies(self):
         #Not used for now but will probably be for NIST database
@@ -399,9 +396,9 @@ class AdBKurucz:
             neutral_hydrogen_number=1
             atomic_coeff=1
 
-            if self.atom=="H" :
+            if self.element_symbol=="H" :
                 airbrd=(10**data['gamvdW'])*data["Tdpair"]*neutral_hydrogen_number
-            elif self.atom== "He":
+            elif self.element_symbol== "He":
                 airbrd=(10**data['gamvdW'])*data["Tdpair"]*neutral_hydrogen_number*0.42
             else :
                 airbrd=(10**data['gamvdW'])*data["Tdpair"]*neutral_hydrogen_number*atomic_coeff
@@ -418,40 +415,7 @@ class AdBKurucz:
         """Read data from a HDF5 file."""
 
         return pd.read_hdf(file_path)
-
-    def partfn(self, key, T):
-        """Partition function from Barklem & Collet (2016).
-
-        Args:
-        atom: the atom name
-        T: temperature
-
-        Returns:
-        partition function Q
-        """
-        print(f"Température: {T}")
-        # Locate the row for the specific atom and ionization state
-        pf_atom = self.pfdat.loc[f"{key}"]
-        # Extract temperature and partition function values
-        pfT_values = self.pfTdat.values.flatten()[
-            1:
-        ]  # Exclude the first value (it's the temperature unit)
-        pf_values = pf_atom.values[
-            1:
-        ]  # Exclude the first value (it's the atomic number)
-
-        pfT_values = pfT_values.astype(float)
-        pf_values = pf_values.astype(float)
-
-        # print("pfT_values:", pfT_values)
-        # print("pf_values:", pf_values)
-
-        # Interpolate to find the partition function at the desired temperature
-        Q = np.interp(T, pfT_values, pf_values)
-        # print(f"Partition function: {Q}")
-
-        return Q
-    
+   
     def partfcn(self, key, T):
         #So far ielem is used for id and iion for iso in eq_spectrum so this method is used when the linestrength is computed for data_dict
         """Partition function from Barklem & Collet (2016).
@@ -490,60 +454,6 @@ class AdBKurucz:
             print("pfdat",pfdat)
             print(f"Key {key} not found in pfdat. Available keys: {pfdat.index.tolist()}")
             raise
-
-    def calculate_populations(self, atom, temperature, data):
-        # Select the partition function for the specific atom
-        # atom_pf = self.pfdat.loc[f'{atom}_I']
-
-        # Calculate the partition function at a certain temperature
-        #print(type(self.partfn))
-        QT_atom = self.partfcn(atom, temperature)
-        print("QT_atom",QT_atom)
-
-        # Calculate energy/temperature ratio
-        energy_temp_ratio = data["elower"] / (0.695 * temperature)
-        # print(f'Energy/temp ratio: {energy_temp_ratio}')   # print the energy to temperature ratio for debugging
-
-        # Calculate level populations using Boltzmann statistics
-        self.populations = np.exp(-energy_temp_ratio) / QT_atom
-
-        return self.populations
-
-    #Initially from Exojax but no longer needed since pressure is handled by SpectrumFactory
-    def pressure_layer(self,logPtop=-8.,
-                   logPbtm=2.,
-                   NP=20,
-                   mode='ascending',
-                   reference_point=0.5):
-        """generating the pressure layer.
-
-        Args:
-            logPtop: log10(P[bar]) at the top layer
-            logPbtm: log10(P[bar]) at the bottom layer
-            NP: the number of the layers
-            mode: ascending or descending
-            reference_point: reference point in the layer. 0.5:center, 1.0:lower boundary, 0.0:upper boundary
-            numpy: if True use numpy array instead of jnp array
-
-        Returns:
-            Parr: pressure layer
-            dParr: delta pressure layer
-            k: k-factor, P[i-1] = k*P[i]
-
-        Note:
-            dParr[i] = Parr[i] - Parr[i-1], dParr[0] = (1-k) Parr[0] for ascending mode
-        """
-        dlog10P = (logPbtm - logPtop) / (NP - 1)
-        k = 10**-dlog10P
-        
-        Parr = np.logspace(logPtop, logPbtm, NP)
-        
-        dParr = (1.0 - k**reference_point) * Parr
-        if mode == 'descending':
-            Parr = Parr[::-1]
-            dParr = dParr[::-1]
-
-        return Parr, dParr, k
 
 
     

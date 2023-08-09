@@ -398,8 +398,7 @@ class SpectrumFactory(BandFactory):
         parsum_mode="full summation",
         verbose=True,
         warnings=True,
-        atom=None,
-        ionization_state=None,
+        species=None,
         save_memory=False,
         export_populations=None,
         export_lines=False,
@@ -548,8 +547,7 @@ class SpectrumFactory(BandFactory):
             isotope  # if 'all', will be overwritten after reading database
         )
         self.input.self_absorption = self_absorption
-        self.input.atom = atom
-        self.input.ionization_state= ionization_state
+        self.input.species = species
 
         # Initialize computation variables
         self.params.wstep = wstep

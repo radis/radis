@@ -399,8 +399,8 @@ class Input(ConditionDict):
         "wavelength_min",
         "wavenum_max",
         "wavenum_min",
-        "atom",
-        "ionization_state",
+        "species",
+
     ]
 
     def __init__(self):
@@ -426,8 +426,7 @@ class Input(ConditionDict):
         )
         self.wavenum_max = None  #: str: wavenumber max (cm-1)
         self.wavenum_min = None  #: str: wavenumber min (cm-1)
-        self.atom=None
-        self.ionization_state=None
+        self.species=None
 
 
 # TO-DO: these error estimations are horribly outdated...
@@ -2310,9 +2309,9 @@ class DatabankLoader(object):
                         raise NotImplementedError("use fetch_databank('exomol')")
                     elif dbformat in ["kurucz"]:
                         
-                        kurucz=AdBKurucz(self.input.atom,self.input.ionization_state)
-                        hdf5_file=fetch_kurucz(self.input.atom,self.input.ionization_state)[0]
-                        df=fetch_kurucz(self.input.atom,self.input.ionization_state)[1]
+                        kurucz=AdBKurucz(self.input.species)
+                        hdf5_file=fetch_kurucz(self.input.species)[0]
+                        df=fetch_kurucz(self.input.species)[1]
                         kurucz.add_airbrd(df)                    
 
                     else:
@@ -2396,7 +2395,7 @@ class DatabankLoader(object):
         minwavdb = df.wav.min()
 
         # ... Explicitely write molecule if not given
-        if self.input.molecule in [None, ""] and self.input.atom not in [None,""]:
+        if self.input.molecule in [None, ""] and self.input.species not in [None,""]:
             id_set = df.id.unique()
             if len(id_set) > 1:
                 raise NotImplementedError(
@@ -2658,7 +2657,7 @@ class DatabankLoader(object):
                 M=molecule, I=isotope, path=parfunc, verbose=self.verbose
             )
         elif parfuncfmt in ["kurucz"]:
-            parsum = PartFuncKurucz(self.input.atom,self.input.ionization_state)
+            parsum = PartFuncKurucz(self.input.species)
 
         elif parfuncfmt == "cdsd":  # Use tabulated CDSD partition functions
             self.reftracker.add(doi["CDSD-4000"], "partition function")

@@ -3,17 +3,16 @@ import matplotlib.pyplot as plt
 from radis.io.kurucz import fetch_kurucz
 
 
-hdf5_path = fetch_kurucz('Fe',00)[0] # replace 'Fe', 00 with your atom and ionization_state
+hdf5_path = fetch_kurucz('Fe_I')[0] # replace 'Fe_I' with atom and ionization_state
 
 
 # Define the parameters for SpectrumFactory
 wavenum_min = 4000 # adjust as needed
 wavenum_max = 5000 # adjust as needed
-atom = 'Fe'  # adjust as needed
-ionization_state = '00'  # adjust as needed
+species="Fe_I"
 
 # Create a spectrum factory
-sf = SpectrumFactory(wavenum_min, wavenum_max, atom=atom, ionization_state=ionization_state, wstep="auto")
+sf = SpectrumFactory(wavenum_min, wavenum_max, species="Fe_I" , wstep="auto")
 sf.load_databank(path=hdf5_path, format='kurucz',parfuncfmt='kurucz')
 
 # Calculate the spectrum

@@ -18,13 +18,13 @@ import os
 
 
 
-def fetch_kurucz(atom, ionization_state):
-    kurucz = AdBKurucz(atom,ionization_state)
-    atomic_number = getattr(mendeleev, atom).atomic_number
-    ionization_state_str = str(ionization_state).zfill(2)
+def fetch_kurucz(species):
+    kurucz = AdBKurucz(species)
+    atomic_number =kurucz.get_atomic_number(species)
+    ionization_state_str = kurucz.get_ionization_state(species)
     kurucz_file = f"gf{atomic_number}{ionization_state_str}.all"
     hdf5_file = f"gf{atomic_number}{ionization_state_str}.hdf5"
-    kurucz.url = kurucz.get_url(atomic_number, ionization_state)
+    kurucz.url = kurucz.get_url(atomic_number, ionization_state_str)
     kurucz.hdf5_file = hdf5_file  # Set kurucz.hdf5_file to hdf5_file
 
     # If hdf5 file exists, read data from it
@@ -33,7 +33,7 @@ def fetch_kurucz(atom, ionization_state):
         df = kurucz.read_hdf5(hdf5_file)
         kurucz.add_airbrd(df)
     else:
-        kuruczf = kurucz.download_file()
+        kuruczf = kurucz.download_file() 
         df = kurucz.read_kurucz(kuruczf)
         #print(df)
         print(kurucz.hdf5_file)
