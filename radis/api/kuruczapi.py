@@ -390,10 +390,7 @@ class AdBKurucz:
             # if int parameter is used, calc_linestrength_eq will also use it
         }
 
-        df_radis = pd.DataFrame(data_dict)
-
         self.data = pd.DataFrame(data_dict)
-        return df_radis
 
     def add_airbrd(self, data):
         if "airbrd" not in data.columns:
