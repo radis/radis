@@ -3810,7 +3810,8 @@ class BaseFactory(DatabankLoader):
                             "MemoryUsageWarning",
                         )
                 elif self.dataframe_type == "vaex":
-                    print("Using Vaex to save memory")
+                    if self.verbose:
+                        print("Using Vaex to save memory")
             except ValueError:  # had some unexplained ValueError: __sizeof__() should return >= 0
                 pass
 

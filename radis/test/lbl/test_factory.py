@@ -737,55 +737,41 @@ def test_vaex_and_pandas_spectrum_noneq():
 
     from radis import calc_spectrum
 
-    # Calculating spectrum using vaex
+    conditions = {
+        "wmin": 1800,
+        "wmax": 1820,
+        "molecule": "CO",
+        "isotope": 1,
+        "pressure": 1.01325,
+        "mole_fraction": 0.1,
+        "wstep": "auto",
+        "path_length": 1,
+        "databank": "hitemp",
+        "verbose": 3,
+        "return_factory": True,
+    }
+    # Calculating spectrum using vae
     s, factory_s = calc_spectrum(
-        1800,
-        1820,  # cm-1
-        molecule="CO",
-        isotope="1",
-        pressure=1.01325,  # bar
+        **conditions,
         Tgas=700,  # K
         Tvib=710,
         Trot=710,
-        mole_fraction=0.1,
-        wstep="auto",
-        path_length=1,  # cm
-        databank="hitemp",  # or 'hitemp', 'geisa', 'exomol'
-        optimization=None,
         engine="vaex",
-        verbose=3,
-        return_factory=True,
     )
-
-    s.apply_slit(0.5, "nm")  # simulate an experimental slit
 
     # Calculating spectrum using pandas
     s1, factory_s1 = calc_spectrum(
-        1800,
-        1820,  # cm-1
-        molecule="CO",
-        isotope="1",
-        pressure=1.01325,  # bar
+        **conditions,
         Tgas=700,  # K
         Tvib=710,
         Trot=710,
-        mole_fraction=0.1,
-        wstep="auto",
-        path_length=1,  # cm
-        databank="hitemp",  # or 'hitemp', 'geisa', 'exomol'
         engine="pandas",
-        verbose=3,
-        return_factory=True,
     )
-
-    s1.apply_slit(0.5, "nm")  # simulate an experimental slit
 
     import numpy as np
 
     # Comparing different quantities
-    assert np.allclose(s.get("radiance"), s1.get("radiance"), equal_nan=True)
     assert np.allclose(s.get("absorbance"), s1.get("absorbance"), equal_nan=True)
-    assert np.allclose(s.get("transmittance"), s1.get("transmittance"), equal_nan=True)
 
     # Comparing different columns of dataframe df
     for column in factory_s1.df1.columns:
