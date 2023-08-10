@@ -1156,7 +1156,16 @@ class PartFuncKurucz(RovibParFuncTabulator):
         self.pfdat = pfdat.set_index(0)
         # Locate the row for the specific atom and ionization state
         pf_atom = self.pfdat.loc[f"{species}"]
-        self.pfT_values = np.array([1e-05, 1e-04, 1e-03, 1e-02, 1e-01, 1.5e-01, 2e-01, 3e-01, 5e-01, 7e-01, 1.0, 1.3, 1.7, 2.0, 3.0, 5.0, 7.0, 10.0, 15.0, 20.0, 30.0, 50.0, 70.0, 100.0, 130.0, 170.0, 200.0, 250.0, 300.0, 500.0, 700.0, 1e03, 1.5e03, 2e03, 3e03, 4e03, 5e03, 6e03, 7e03, 8e03, 9e03, 1e04])
+        # Read the file's content
+        with open("radis/levels/pfTKurucz_values.txt", 'r') as f:
+            content = f.read()
+
+        # Execute the content to get the pfT_values array
+        namespace = {}
+        exec(content, namespace)
+
+        # Assign the array to the class variable
+        self.pfT_values = namespace['pfT_values']
         self.pf_values = pf_atom.values[0:].astype(float)  # Exclude the first value (it's the atomic number)
 
     def _at(self, T):
