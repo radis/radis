@@ -237,7 +237,7 @@ class AdBKurucz:
         """
         with open(kuruczf) as f:
             lines = f.readlines()
-            num_lines=len(lines)
+        num_lines=len(lines)
         (
             wlnmair,
             loggf,
@@ -299,7 +299,7 @@ class AdBKurucz:
             np.zeros(num_lines),
             np.zeros(num_lines),
             np.zeros(num_lines),
-            np.zeros(num_lines),
+            np.zeros(num_lines))
         ielem, iion = np.zeros(num_lines, dtype=int), np.zeros(num_lines, dtype=int)
 
         for i, line in enumerate(lines):
@@ -385,6 +385,7 @@ class AdBKurucz:
         }
 
         self.data = pd.DataFrame(data_dict)
+        return self.data
 
     def add_airbrd(self, data):
         if "airbrd" not in data.columns:
