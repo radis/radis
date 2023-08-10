@@ -216,6 +216,10 @@ trans = {
 HITRAN_MOLECULES = list(trans.values())
 """ str: list of [HITRAN-2020]_ molecules. """
 
+def is_molecule(species):
+    if '_I' in species :
+        return True
+
 
 def get_molecule_identifier(molecule_name):
     r"""

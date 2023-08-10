@@ -13,7 +13,6 @@ import pkgutil
 from contextlib import closing
 from io import BytesIO
 
-import mendeleev
 import numpy as np
 import pandas as pd
 import requests
@@ -26,9 +25,8 @@ from mendeleev import element
 
 
 class AdBKurucz:
-    ccgs = 29979245800.0
-    ecgs = 4.80320450e-10
-    mecgs = 9.10938356e-28
+    from radis.phys.constants import c_CGS,ecgs,mecgs
+    
 
     def __init__(self,species):
         self.kurucz_url_base = "http://kurucz.harvard.edu/linelists/gfall/gf"
@@ -336,9 +334,9 @@ class AdBKurucz:
         A = (
             10**loggf
             / gupper
-            * (self.ccgs * nu_lines) ** 2
+            * (self.c_CGS * nu_lines) ** 2
             * (8 * np.pi**2 * self.ecgs**2)
-            / (self.mecgs * self.ccgs**3)
+            / (self.mecgs * self.c_CGS**3)
         )
         gamRad = gamRad[::-1]
         gamSta = gamSta[::-1]

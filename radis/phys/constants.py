@@ -22,6 +22,12 @@ h = 6.62607015e-34
 
 https://physics.nist.gov/cgi-bin/cuu/Value?h|search_for=planck"""
 
+ecgs = 4.80320450e-10  
+"""[esu]=[dyn^0.5*cm] #elementary charge"""
+
+mecgs = 9.10938356e-28  
+"""[g] !electron mass"""
+
 k_b = 1.3806490e-23
 """float: Boltzmann constant (m2.kg.s-2.K-1)
 
