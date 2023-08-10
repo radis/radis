@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Contains the :py:class:`~radis.lbl.factory.SpectrumFactory` class, which is
+"""Contains the :py:class:`~radimolecules.lbl.factory.SpectrumFactory` class, which is
 the core of the RADIS Line-by-Line module.
 
 Examples
@@ -105,6 +105,7 @@ from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.spectrum import Spectrum
 from radis.api.kuruczapi import AdBKurucz
+from radis.db.classes import is_molecule
 
 c_cm = c * 100
 
@@ -382,7 +383,6 @@ class SpectrumFactory(BandFactory):
         mole_fraction=1,
         path_length=1,
         wstep=0.01,
-        molecule=None,
         isotope="all",
         medium="air",
         truncation=Default(50),
@@ -408,12 +408,19 @@ class SpectrumFactory(BandFactory):
     ):
 
         # Initialize BandFactory object
-        super(SpectrumFactory, self).__init__()
+        super(SpectrumFactory, self).__init__()      
 
         # Check inputs (deal with deprecated format)
         if medium not in ["air", "vacuum"]:
             raise ValueError("Wavelength must be one of: 'air', 'vacuum'")
         kwargs0 = kwargs  # kwargs is used to deal with Deprecated names
+        if 'molecule' in kwargs:
+            print("Molecule is deprecated. Use species instead.")
+            if species is None:
+                species = kwargs['molecule']
+                molecule = species
+            kwargs0.pop('molecule')  # remove it from kwargs0 so it doesn't trigger the error later
+
         if "db_use_cached" in kwargs:
             warn(
                 DeprecationWarning(
@@ -496,39 +503,39 @@ class SpectrumFactory(BandFactory):
 
         # Init variables
         # --------------
-
         # Get molecule name
-        if isinstance(molecule, int):
-            molecule == get_molecule(molecule)
-        if molecule is not None:
-            if (
-                molecule
-                not in MOLECULES_LIST_EQUILIBRIUM + MOLECULES_LIST_NONEQUILIBRIUM
-            ):
-                raise ValueError(
-                    "Unsupported molecule: {0}.\n".format(molecule)
-                    + "Supported molecules are:\n - under equilibrium: {0}".format(
-                        MOLECULES_LIST_EQUILIBRIUM
+        if not is_molecule(species): 
+            if isinstance(species, int):
+                species == get_molecule(species)
+            if species is not None:
+                if (
+                    species
+                    not in MOLECULES_LIST_EQUILIBRIUM + MOLECULES_LIST_NONEQUILIBRIUM
+                ):
+                    raise ValueError(
+                        "Unsupported molecule: {0}.\n".format(species)
+                        + "Supported molecules are:\n - under equilibrium: {0}".format(
+                            MOLECULES_LIST_EQUILIBRIUM
+                        )
+                        + "\n- under nonequilibrium: {0}".format(
+                            MOLECULES_LIST_NONEQUILIBRIUM
+                        )
+                        + "\n\nNote that RADIS now has ExoMol support, but not all ExoMol molecules are referenced in RADIS. If a molecule is available in ExoMol but does not appear in RADIS yet, please contact the RADIS team or write on https://github.com/radis/radis/issues/319"
                     )
-                    + "\n- under nonequilibrium: {0}".format(
-                        MOLECULES_LIST_NONEQUILIBRIUM
+
+                # Store isotope identifier in str format (list wont work in database queries)
+                if not isinstance(isotope, str):
+                    isotope = ",".join([str(k) for k in list_if_float(isotope)])
+
+                # If molecule present in diluent, raise error
+                if (isinstance(diluent, str) and diluent == molecule) or (
+                    isinstance(diluent, dict) and molecule in diluent.keys()
+                ):
+                    raise KeyError(
+                        "{0} is being called as molecule and diluent, please remove it from diluent.".format(
+                            molecule
+                        )
                     )
-                    + "\n\nNote that RADIS now has ExoMol support, but not all ExoMol molecules are referenced in RADIS. If a molecule is available in ExoMol but does not appear in RADIS yet, please contact the RADIS team or write on https://github.com/radis/radis/issues/319"
-                )
-
-        # Store isotope identifier in str format (list wont work in database queries)
-        if not isinstance(isotope, str):
-            isotope = ",".join([str(k) for k in list_if_float(isotope)])
-
-        # If molecule present in diluent, raise error
-        if (isinstance(diluent, str) and diluent == molecule) or (
-            isinstance(diluent, dict) and molecule in diluent.keys()
-        ):
-            raise KeyError(
-                "{0} is being called as molecule and diluent, please remove it from diluent.".format(
-                    molecule
-                )
-            )
 
         # Initialize input conditions
         self.input.wavenum_min = wavenum_min
@@ -538,15 +545,16 @@ class SpectrumFactory(BandFactory):
         self.input.mole_fraction = mole_fraction
 
         self.input.path_length = convert_and_strip_units(path_length, u.cm)
-        self.input.molecule = (
-            molecule  # if None, will be overwritten after reading database
-        )
-        self.input.state = "X"  # for the moment only ground-state is used
-        # (but the code is electronic state aware)
-        self.input.isotope = (
-            isotope  # if 'all', will be overwritten after reading database
-        )
-        self.input.self_absorption = self_absorption
+        if not is_molecule(species) :
+            self.input.molecule = (
+                species  # if None, will be overwritten after reading database
+                )
+            self.input.state = "X"  # for the moment only ground-state is used
+            # (but the code is electronic state aware)
+            self.input.isotope = (
+                isotope  # if 'all', will be overwritten after reading database
+            )
+            self.input.self_absorption = self_absorption
         self.input.species = species
 
         # Initialize computation variables

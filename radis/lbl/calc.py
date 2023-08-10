@@ -43,7 +43,7 @@ def calc_spectrum(
     Tvib=None,
     Trot=None,
     pressure=1.01325,
-    molecule=None,
+    species=None,
     isotope="all",
     mole_fraction=1,
     diluent="air",
@@ -377,8 +377,16 @@ def calc_spectrum(
     """
 
     # Check inputs
+    if 'molecule' in kwargs:
+        print("Molecule is deprecated. Use species instead.")
+        species = kwargs['molecule']
+        molecule = species
+        #molecule= kwargs['molecule']
+    else : 
+        molecule=species
 
     # ... wavelengths / wavenumbers
+    
 
     # Get wavenumber, based on whatever was given as input.
     wavenum_min, wavenum_max, input_wunit = get_wavenumber_range(
@@ -392,7 +400,6 @@ def calc_spectrum(
         medium,
         return_input_wunit=True,
     )
-
     # Deal with Multi-molecule mode:
 
     from radis.los.slabs import MergeSlabs
@@ -455,7 +462,7 @@ def calc_spectrum(
         )
 
     # ... Now we are sure there are no contradctions. Just ensure we have molecules:
-    if molecule_reference_set is None:
+    if molecule_reference_set is None :
         raise ValueError(
             "Please enter the molecule(s) to calculate in the `molecule=` argument or as a dictionary in the following: {0}".format(
                 list(DICT_INPUT_ARGUMENTS.keys())
@@ -530,6 +537,8 @@ def calc_spectrum(
         diluent_for_this_molecule = diluents_for_molecule(
             mole_fraction, diluent, molecule
         )
+        if 'molecule' in kwargs_molecule:
+            del kwargs_molecule['molecule']
 
         generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
