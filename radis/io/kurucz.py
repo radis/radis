@@ -34,7 +34,7 @@ def fetch_kurucz(species):
         kurucz.add_airbrd(df)
     else:
         kuruczf = kurucz.download_file() 
-        df = kurucz.read_kurucz(kuruczf)
+        kurucz.read_kurucz(kuruczf)
         #print(df)
         print(kurucz.hdf5_file)
         kurucz.store_hdf5(df, kurucz.hdf5_file)
