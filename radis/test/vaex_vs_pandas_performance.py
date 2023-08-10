@@ -1,31 +1,31 @@
 import time
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 from radis import calc_spectrum
+from radis.misc.progress_bar import ProgressBar
 
 
-# Compares the time performance of pandas and Vaex
 def compare_vaex_pandas_time():
+    """
+    Compares the time performance of pandas and Vaex and generates a plot. This scripts takes several minutes to run.
+    This results shoud shown that vaex and pandas provide similar performances in term if speed.
+
+    Returns
+    -------
+    None.
+
+    """
     time_list, timeC_list, lines_list = [], [], []
     time_list_va, timeC_list_va, lines_list_va = [], [], []
     wmin = 1000
+    steps = 5
+    wmax_arr = np.geomspace(10, 1000, steps)
 
-    for engine in ["vaex", "pandas"]:
-        for w_range in [
-            10,
-            30,
-            100,
-            150,
-            500,
-            600,
-            700,
-            800,
-            900,
-            1000,
-            1500,
-            3000,
-        ]:  # [100, 200, 500, 900]:
+    pb = ProgressBar(N=2 * steps)
+    for i, engine in enumerate(["vaex", "pandas"]):
+        for j, w_range in enumerate(wmax_arr):
             t0 = time.time()
             s = calc_spectrum(
                 wmin,
@@ -36,7 +36,8 @@ def compare_vaex_pandas_time():
                 Tgas=1000,
                 mole_fraction=0.1,
                 databank="hitemp",  # or 'hitemp'
-                diluent="air",
+                wstep="auto",
+                cutoff=1e-28,
                 verbose=0,
                 engine=engine,
             )
@@ -51,7 +52,7 @@ def compare_vaex_pandas_time():
                 lines_list.append(s.conditions["lines_calculated"])
                 time_list.append(t1 - t0)
                 # lines_list.append(s.conditions['lines_calculated']+s.conditions['lines_cutoff'])
-
+            pb.update(i * steps + (j + 1))
     plt.figure()
     plt.plot(lines_list, time_list, "k", label="pandas total")
     plt.plot(lines_list, timeC_list, "k--", label="pandas computation")
@@ -64,28 +65,54 @@ def compare_vaex_pandas_time():
 
 # Compare the memory performance of Pandas and Vaex
 def compare_pandas_vs_vaex_memory():
+    """
+    Compare memory usage of `engine="vaex"` and `engine="pandas"` in calc_spectrum.
+    Expected behavior is "vaex" using much less memory. This function takes tens of seconds to run.
 
+    Returns
+    -------
+    None.
+
+    """
     import tracemalloc
 
-    # Change range of wav to obtain result for different number of lines , repeat same procedure both vaex and pandas
-    # Loop is not used because it gives better results for memory performance for vaex or pandas which one is used second time
-    tracemalloc.start()
-    s = calc_spectrum(
-        1000,
-        2800,  # cm-1
-        molecule="H2O",
-        isotope="1,2,3",
-        pressure=1.01325,  # bar
-        Tgas=1000,  # K
-        mole_fraction=0.1,
-        wstep="auto",
-        path_length=1,  # cm
-        databank="hitemp",  # or 'hitemp', 'geisa', 'exomol'
-        engine="vaex",
-    )
+    for engine in ["pandas", "vaex"]:
+        tracemalloc.start()
+        s = calc_spectrum(
+            1000,
+            1500,  # cm-1
+            molecule="H2O",
+            isotope="1,2,3",
+            pressure=1.01325,  # bar
+            Tgas=1000,  # K
+            mole_fraction=0.1,
+            wstep="auto",
+            databank="hitemp",  # or 'hitemp', 'geisa', 'exomol'
+            engine=engine,
+            verbose=0,
+        )
+        snapshot = tracemalloc.take_snapshot()
+        memory = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
 
-    s.apply_slit(0.5, "nm")  # simulate an experimental slit
-    memory = tracemalloc.get_traced_memory()
-    print((memory[1]))
-    tracemalloc.stop()
-    print(s.conditions["lines_calculated"])
+        # Some raw outputs
+        print("\n******** Engine = {} ***********".format(engine))
+        print(
+            "Peak, current = {:.1e}, {:.1e} for {:} lines calculated".format(
+                *memory, s.conditions["lines_calculated"]
+            )
+        )
+
+        # More sophisticated
+        print("*** List of biggest objects ***")
+        top_stats = snapshot.statistics("lineno")
+        for rank, stat in enumerate(top_stats[:3]):
+            print("#{}".format(rank + 1))
+            print(stat)
+
+        # Clear for next engine in the loop
+        tracemalloc.clear_traces()
+
+
+compare_vaex_pandas_time()
+compare_pandas_vs_vaex_memory()
