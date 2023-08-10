@@ -318,10 +318,10 @@ class AdBKurucz:
             gamSta[i] = float(line[86:92])
             gamvdW[i] = float(line[92:98])
 
- # Invert elower, eupper, jlower, and jupper where eupper - elower > 0
-condition = eupper - elower > 0
-elower[condition], eupper[condition] = eupper[condition], elower[condition]
-jlower[condition], jupper[condition] = jupper[condition], jlower[condition]
+        # Invert elower, eupper, jlower, and jupper where eupper - elower > 0
+        condition = eupper - elower > 0
+        elower[condition], eupper[condition] = eupper[condition], elower[condition]
+        jlower[condition], jupper[condition] = jupper[condition], jlower[condition]
 
         wlaa = np.where(wlnmair < 200, wlnmair * 10, air2vacuum(wlnmair * 10))
         nu_lines = 1e8 / wlaa[::-1]  # [cm-1]<-[AA]
