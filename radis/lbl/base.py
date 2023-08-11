@@ -92,6 +92,7 @@ from radis.phys.constants import c_CGS, h_CGS, hc_k
 from radis.phys.convert import cm2J, nm2cm, nm_air2cm
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.utils import print_conditions
+from radis.db.classes import is_atom
 
 
 
@@ -2236,9 +2237,7 @@ class BaseFactory(DatabankLoader):
         # %% Calculate line strength at desired temperature
         # -------------------------------------------------
 
-        if self.molparam.terrestrial_abundances and "_I" not in self.input.species :
-          
-
+        if self.molparam.terrestrial_abundances and not is_atom (self.input.species) :
             # This calculation is based on equation (A11) in Rothman 1998: "JQSRT, vol.
             # 60, No. 5, pp. 665-710"
 

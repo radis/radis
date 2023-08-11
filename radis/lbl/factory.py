@@ -105,7 +105,7 @@ from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.spectrum import Spectrum
 from radis.api.kuruczapi import AdBKurucz
-from radis.db.classes import is_molecule
+from radis.db.classes import is_atom
 
 c_cm = c * 100
 
@@ -504,7 +504,7 @@ class SpectrumFactory(BandFactory):
         # Init variables
         # --------------
         # Get molecule name
-        if not is_molecule(species): 
+        if not is_atom(species): 
             if isinstance(species, int):
                 species == get_molecule(species)
             if species is not None:
@@ -545,7 +545,7 @@ class SpectrumFactory(BandFactory):
         self.input.mole_fraction = mole_fraction
 
         self.input.path_length = convert_and_strip_units(path_length, u.cm)
-        if not is_molecule(species) :
+        if not is_atom(species) :
             self.input.molecule = (
                 species  # if None, will be overwritten after reading database
                 )

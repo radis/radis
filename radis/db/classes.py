@@ -216,7 +216,7 @@ trans = {
 HITRAN_MOLECULES = list(trans.values())
 """ str: list of [HITRAN-2020]_ molecules. """
 
-def is_molecule(species):
+def is_atom(species):
     if '_I' in species :
         return True
 
