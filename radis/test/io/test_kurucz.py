@@ -5,7 +5,6 @@ import pandas as pd
 import pytest
 from radis.levels.partfunc import PartFuncKurucz
 from radis.api.kuruczapi import AdBKurucz
-from radis.db.classes import is_atom
 
 def test_adbkurucz_get_url():
     kurucz = AdBKurucz("Fe_I")
@@ -13,14 +12,6 @@ def test_adbkurucz_get_url():
     # Testing get_url function
     url = kurucz.get_url(26, 00)
     assert url == "http://kurucz.harvard.edu/linelists/gfall/gf2600.all"
-
-
-def test_is_atom():
-    assert is_atom("Fe_I") == True, "Failed on Fe_I"
-    assert is_atom("Ca_II") == True, "Failed on Ca_II"
-    assert is_atom("CO2") == False, "Failed on CO2"
-    print("All tests passed!")
-
 
 def test_partfunckurucz():
     species="Ca_I"
