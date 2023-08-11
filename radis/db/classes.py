@@ -219,6 +219,8 @@ HITRAN_MOLECULES = list(trans.values())
 def is_atom(species):
     if '_I' in species :
         return True
+    else :
+        return False
 
 
 def get_molecule_identifier(molecule_name):
