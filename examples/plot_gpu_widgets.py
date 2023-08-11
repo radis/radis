@@ -52,7 +52,7 @@ s = sf.eq_spectrum_gpu_interactive(
     mole_fraction=ParamRange(0, 1, 0.8),
     path_length=ParamRange(0, 1, 0.2),  # cm
     slit_FWHM=ParamRange(0, 1.5, 0.24),  # cm-1
-    emulate=True,  # if True, runs CPU code on GPU. Set to False or remove to run on the GPU
+    emulate=False,  # if True, runs CPU code on GPU. Set to False or remove to run on the GPU
     plotkwargs={"wunit": "nm"},  # "nfig": "same",
 )
 
