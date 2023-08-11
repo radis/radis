@@ -6,14 +6,12 @@ Created on Tue Jul 31 18:00:54 2018
 """
 
 import pytest
-
 from radis.db.molecules import Molecules, getMolecule
 from radis.db.utils import (
     _get_rovib_coefficients,
     get_default_jsonfile,
     get_herzberg_coefficients,
 )
-
 
 @pytest.mark.fast  # this is a fast test. Run fast tests only with 'pytest -m fast'
 def test_herzberg_coefficients_CO2_json(verbose=True, *args, **kwargs):
@@ -124,7 +122,6 @@ def _run_testcases(verbose=True, *args, **kwargs):
     #    test_CO_energies_Herzberg_vs_Dunham(verbose=verbose, *args, **kwargs)
 
     return True
-
 
 if __name__ == "__main__":
 

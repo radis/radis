@@ -410,16 +410,6 @@ class AdBKurucz:
 
             data["airbrd"] = airbrd
 
-    def store_hdf5(self, data, output_path):
-        """Store data in a HDF5 file."""
-
-        # df = pd.DataFrame(data)
-        data.to_hdf(output_path, key="df", format="table", data_columns=True)
-
-    def read_hdf5(self, file_path):
-        """Read data from a HDF5 file."""
-
-        return pd.read_hdf(file_path)
    
     def partfcn(self, key, T):
         # So far ielem is used for id and iion for iso in eq_spectrum so this method is used when the linestrength is computed for data_dict
