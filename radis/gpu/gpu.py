@@ -1,13 +1,10 @@
 import ctypes
-from os.path import join
 
 import numpy as np
 from scipy.constants import N_A, c, h, k
 
 c_cm = 100 * c
 c2 = h * c_cm / k
-
-from radis.misc.utils import getProjectRoot
 
 
 class initData(ctypes.Structure):
@@ -370,16 +367,6 @@ def set_pTQ(p, T, mole_fraction, iter_h, l=1.0, slit_FWHM=0.0):
         iter_h.Q[i] = Q_interpolator_list[i](T)
 
 
-def constant_memory_setter(cuda_module, var_str):
-    def setter(var_h):
-        memptr_d = cuda_module.get_global(var_str)
-        ptr = ctypes.cast(ctypes.pointer(var_h), ctypes.c_void_p)
-        struct_size = ctypes.sizeof(var_h)
-        memptr_d.copy_from_host(ptr, struct_size)
-
-    return setter
-
-
 def gpu_init(
     v_arr,
     dxG,
@@ -442,31 +429,13 @@ def gpu_init(
     global iso_d, v0_d, da_d, S0_d, El_d, gamma_d, na_d
     global spectrum_in_d, transmittance_noslit_d, transmittance_FT_d
     global lorentzian_param_data, gaussian_param_data, Q_interpolator_list
-    global cuda_module, cuda_functions
+    global ctx, cuda_module
     # -----------------------------------------------------
 
-    if gpu:
-        from cupy import RawModule, array, complex64, float32, zeros
+    from radis.gpu.cuda_driver import cuArray, cuContext, cuModule
 
-        cuda_fname = join(getProjectRoot(), "lbl", "gpu.cpp")
-        with open(cuda_fname, "rb") as f:
-            cuda_code = f.read().decode()
-
-        cuda_module = RawModule(code=cuda_code)
-        cuda_functions = (
-            cuda_module.get_function("fillLDM"),
-            cuda_module.get_function("applyLineshapes"),
-            cuda_module.get_function("calcTransmittanceNoslit"),
-            cuda_module.get_function("applyGaussianSlit"),
-        )
-
-        set_init_params = constant_memory_setter(cuda_module, "init_d")
-
-    else:
-        from numpy import complex64, float32, zeros
-
-        array = lambda arr: arr
-        from radis_cython_extensions import set_init_params  # isort:skip
+    ctx = cuContext()
+    cuda_module = cuModule(ctx, "kernels.ptx")
 
     init_h.v_min = np.min(v_arr)  # 2000.0
     init_h.v_max = np.max(v_arr)  # 2400.0
@@ -509,18 +478,18 @@ def gpu_init(
     #     order="C",
     #     dtype=float32,
     # )
-    spectrum_in_d = zeros(init_h.N_v + 1, dtype=complex64)
-    transmittance_noslit_d = zeros(init_h.N_v * 2, dtype=float32)
-    transmittance_FT_d = zeros(init_h.N_v + 1, dtype=complex64)
+    spectrum_in_d = cuArray(np.zeros(init_h.N_v + 1, dtype=np.complex64))
+    transmittance_noslit_d = cuArray(np.zeros(init_h.N_v * 2, dtype=np.float32))
+    transmittance_FT_d = cuArray(np.zeros(init_h.N_v + 1, dtype=np.complex64))
 
     # #Copy spectral data to device
-    iso_d = array(iso)
-    v0_d = array(v0)
-    da_d = array(da)
-    S0_d = array(S0)
-    El_d = array(El)
-    gamma_d = array(gamma)
-    na_d = array(na)
+    iso_d = cuArray(iso)
+    v0_d = cuArray(v0)
+    da_d = cuArray(da)
+    S0_d = cuArray(S0)
+    El_d = cuArray(El)
+    gamma_d = cuArray(gamma)
+    na_d = cuArray(na)
 
     if verbose >= 2:
         print("done!")
@@ -542,7 +511,7 @@ def gpu_init(
 
     if verbose >= 2:
         print("Copying initialization parameters to device memory...")
-    set_init_params(init_h)
+    cuda_module.setConstant("init_d", init_h)
 
     if verbose >= 2:
         print("done!")
@@ -589,39 +558,11 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
     global init_h, iter_h
     global iso_d, v0_d, da_d, S0_d, El_d, gamma_d, na_d
     global spectrum_in_d, transmittance_noslit_d, transmittance_FT_d
-    global cuda_module, cuda_functions
+    global ctx, cuda_module
     global start, stop, elapsedTime
     # ------------------------------------------------------
 
-    if gpu:
-        from cupy import asnumpy, complex64, float32, zeros
-        from cupy.cuda.runtime import deviceSynchronize
-        from cupy.fft import irfft, rfft
-
-        (
-            fillLDM,
-            applyLineshapes,
-            calcTransmittanceNoslit,
-            applyGaussianSlit,
-        ) = cuda_functions
-        set_iter_params = constant_memory_setter(cuda_module, "iter_d")
-
-    else:
-        # isort: off
-        from numpy import complex64, float32, zeros
-        from numpy.fft import irfft, rfft
-
-        from radis_cython_extensions import (  # isort:skip
-            applyGaussianSlit,
-            applyLineshapes,
-            calcTransmittanceNoslit,
-            fillLDM,
-            set_iter_params,
-        )
-
-        # isort: on
-
-        asnumpy = lambda arr: arr
+    from radis.gpu.cuda_driver import cuArray, cuFFT
 
     if verbose >= 2:
         print("Copying iteration parameters to device...")
@@ -640,115 +581,111 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
         iter_h,
     )
 
-    set_iter_params(iter_h)
+    cuda_module.setConstant("iter_d", iter_h)
 
     if verbose >= 2:
         print("done!")
         print("Filling LDM...")
 
-    # S_klm_d.fill(0)
-
-    S_klm_d = zeros(
-        (2 * init_h.N_v, iter_h.N_G, iter_h.N_L),
-        order="C",
-        dtype=float32,
+    S_klm_d = cuArray(
+        np.zeros((2 * init_h.N_v, iter_h.N_G, iter_h.N_L), order="C", dtype=np.float32)
     )
 
-    spectrum_in_d.fill(0)
-    transmittance_FT_d.fill(0)
+    spectrum_in_d[:] = 0.0
+    transmittance_FT_d[:] = 0.0
 
     n_threads = init_h.N_threads_per_block
     n_blocks = init_h.N_lines // (n_threads * init_h.N_iterations_per_thread) + 1
 
-    fillLDM(
-        (n_blocks,),
-        (n_threads,),
-        (
-            iso_d,
-            v0_d,
-            da_d,
-            S0_d,
-            El_d,
-            gamma_d,
-            na_d,
-            S_klm_d,
-        ),
+    cuda_module.fillLDM(
+        iso_d,
+        v0_d,
+        da_d,
+        S0_d,
+        El_d,
+        gamma_d,
+        na_d,
+        S_klm_d,
+        blocks=(n_blocks, 1, 1),
+        threads=(n_threads, 1, 1),
     )
-    if gpu:
-        deviceSynchronize()
+
+    ctx.synchronize()
 
     if verbose >= 2:
         print("Applying lineshapes...")
 
-    S_klm_FT_d = rfft(S_klm_d, axis=0).astype(complex64)
+    S_klm_FT_d = cuArray(
+        np.zeros((init_h.N_v, iter_h.N_G, iter_h.N_L), order="C", dtype=np.float32)
+    )
 
-    if gpu:
-        deviceSynchronize()
+    fft_fwd = cuFFT(S_klm_d, S_klm_FT_d, direction="fwd")
+    fft_fwd.execute()
+
+    ctx.synchronize()
 
     n_threads = init_h.N_threads_per_block
     n_blocks = (init_h.N_v + 1) // n_threads + 1
-    applyLineshapes(
-        (n_blocks,),
-        (n_threads,),
-        (
-            S_klm_FT_d,
-            spectrum_in_d,
-        ),
+    cuda_module.applyLineshapes(
+        S_klm_FT_d, spectrum_in_d, blocks=(n_blocks, 1, 1), threads=(n_threads, 1, 1)
     )
 
-    if gpu:
-        deviceSynchronize()
+    ctx.synchronize()
 
-    spectrum_out_d = irfft(spectrum_in_d).astype(float32)
+    spectrum_out_d = cuArray(np.zeros(2 * init_h.N_v, dtype=np.float32))
 
-    if gpu:
-        deviceSynchronize()
+    fft_bwd = cuFFT(spectrum_in_d, spectrum_out_d, direction="bwd")
+    fft_bwd.execute()
+
+    ctx.synchronize()
 
     if verbose >= 2:
         print("Done!")
         print("Calculating transmittance...")
 
-    abscoeff_h = asnumpy(spectrum_out_d)[: init_h.N_v]
+    abscoeff_h = spectrum_out_d.d2h()[: init_h.N_v]
 
     ## Calc transmittance_noslit:
     n_threads = init_h.N_threads_per_block
     n_blocks = (2 * init_h.N_v) // n_threads + 1
-    calcTransmittanceNoslit(
-        (n_blocks,),
-        (n_threads,),
-        (spectrum_out_d, transmittance_noslit_d),
+    cuda_module.calcTransmittanceNoslit(
+        spectrum_out_d,
+        transmittance_noslit_d,
+        blocks=(n_blocks, 1, 1),
+        threads=(n_threads, 1, 1),
     )
 
-    if gpu:
-        deviceSynchronize()
+    ctx.synchronize()
 
     if verbose >= 2:
         print("Done!")
         print("Applying slit function...")
 
     ## Apply slit function:
-    transmittance_noslit_FT_d = rfft(transmittance_noslit_d).astype(complex64)
+    transmittance_noslit_FT_d = cuArray(np.zeros(init_h.N_v, dtype=np.complex64))
+    fft_fwd2 = cuFFT(transmittance_noslit_d, transmittance_noslit_FT_d, direction="fwd")
+    fft_fwd2.execute()
 
-    if gpu:
-        deviceSynchronize()
+    ctx.synchronize()
 
     n_threads = init_h.N_threads_per_block
     n_blocks = (init_h.N_v + 1) // n_threads + 1
-    applyGaussianSlit(
-        (n_blocks,),
-        (n_threads,),
-        (transmittance_noslit_FT_d, transmittance_FT_d),
+    cuda_module.applyGaussianSlit(
+        transmittance_noslit_FT_d,
+        transmittance_FT_d,
+        blocks=(n_blocks, 1, 1),
+        threads=(n_threads, 1, 1),
     )
 
-    if gpu:
-        deviceSynchronize()
+    ctx.synchronize()
 
-    transmittance_d = irfft(transmittance_FT_d).astype(float32)
+    transmittance_d = cuArray(np.zeros(2 * init_h.N_v, dtype=np.float32))
+    fft_bwd2 = cuFFT(transmittance_FT_d, transmittance_d, direction="bwd")
+    fft_bwd2.execute()
 
-    if gpu:
-        deviceSynchronize()
+    ctx.synchronize()
 
-    transmittance_h = asnumpy(transmittance_d)[: init_h.N_v]
+    transmittance_h = transmittance_d.d2h()[: init_h.N_v]
 
     if verbose >= 2:
         print("done!")
@@ -756,4 +693,5 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
     if verbose == 1:
         print("Finished calculating spectrum!")
 
+    ctx.destroy()
     return abscoeff_h, transmittance_h, iter_h

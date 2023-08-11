@@ -1,7 +1,9 @@
 
 #ifdef __CUDACC__
 
-#include<cupy/complex.cuh>
+#include <cuda/std/complex>
+using namespace cuda::std;
+
 #define agnostic_loop(i, max_i)
 #define agnostic_add(addr, val) atomicAdd((addr),(val))
 
@@ -34,8 +36,8 @@ extern "C"{
 using namespace std;
 #endif
 
-const float pi = 3.141592653589793f;
-const float r4log2 = 0.36067376022224085f; // = 1 / (4 * ln(2))
+//const float pi = 3.141592653589793f;
+//const float r4log2 = 0.36067376022224085f; // = 1 / (4 * ln(2))
 
 //TO-DO: These should really be in gpu.h but cupy fails to load this file if it's included.
 struct initData {
@@ -168,6 +170,9 @@ __global__ void fillLDM(
 
 __global__ void applyLineshapes(complex<float>* S_klm_FT, complex<float>* abscoeff) {
 
+    const float pi = 3.141592653589793f;
+    const float r4log2 = 0.36067376022224085f; // = 1 / (4 * ln(2))
+
     agnostic_loop(threadIdx.x, blockDim.x){
         agnostic_loop(blockIdx.x, gridDim.x){
             int k = threadIdx.x + blockDim.x * blockIdx.x;
@@ -213,6 +218,9 @@ __global__ void calcTransmittanceNoslit(float* abscoeff, float* transmittance_no
 }
 
 __global__ void applyGaussianSlit(complex<float>* transmittance_noslit_FT, complex<float>* transmittance_FT){
+
+    const float pi = 3.141592653589793f;
+    const float r4log2 = 0.36067376022224085f; // = 1 / (4 * ln(2))
 
     agnostic_loop(threadIdx.x, blockDim.x){
         agnostic_loop(blockIdx.x, gridDim.x){
