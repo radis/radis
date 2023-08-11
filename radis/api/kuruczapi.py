@@ -128,6 +128,9 @@ class AdBKurucz:
     def pick_ionE(self, ielem, iion, df_ionE):
         """Pick up ionization energy of a specific atomic species.
 
+        This method was extracted from exojax/src/exojax/spec/atomllapi.py
+        (https://github.com/HajimeKawahara/exojax.git)
+
         Args:
             ielem (int): atomic number (e.g., Fe=26)
             iion (int): ionized level (e.g., neutral=1, singly ionized=2, etc.)
@@ -216,7 +219,10 @@ class AdBKurucz:
         return S0
 
     def read_kurucz(self, kuruczf):
-        """Input Kurucz line list (http://kurucz.harvard.edu/linelists/)
+        """
+        This method was adapted from the original read_kurucz method in exojax/src/exojax/spec/atomllapi.py
+        (https://github.com/HajimeKawahara/exojax.git)
+        Input Kurucz line list (http://kurucz.harvard.edu/linelists/)
 
         Args:
             kuruczf: file path
