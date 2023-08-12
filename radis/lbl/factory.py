@@ -1142,7 +1142,7 @@ class SpectrumFactory(BandFactory):
             print("Initializing parameters...", end=" ")
 
         try:
-            from radis.gpu.gpu import gpu_init, gpu_iterate
+            from radis.lbl.gpu import gpu_init, gpu_iterate
         except (ModuleNotFoundError):
             print("Failed to load GPU module, exiting!")
             exit()
@@ -1343,7 +1343,7 @@ class SpectrumFactory(BandFactory):
         from matplotlib.widgets import Slider
 
         try:
-            from radis.gpu.gpu import gpu_iterate
+            from radis.lbl.gpu import gpu_iterate
         except (ModuleNotFoundError):
             print("Failed to load GPU module, exiting!")
             exit()
