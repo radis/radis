@@ -121,7 +121,7 @@ class CuContext:
 
 
 class CuArray:
-    def __init__(self, shape, dtype=np.float32, init="empty"):
+    def __init__(self, shape, dtype=np.float32, init="zeros"):
         self.lib = lib
         self.dev_ptr = c_void_p()
         self.resize(shape, dtype, init)
@@ -193,7 +193,7 @@ class CuFunction:
         self.sync = False
         self.context_obj = None
 
-    def set_grid(self, blocks=(1, 1, 1), threads=(1, 1, 1)):
+    def setGrid(self, blocks=(1, 1, 1), threads=(1, 1, 1)):
         self.blocks = blocks
         self.threads = threads
 
@@ -280,20 +280,44 @@ class CuFFT:
         self._arr = arr_in if direction == "fwd" else arr_out
         self.direction = direction
         self._cufftType = CUFFT_R2C if direction == "fwd" else CUFFT_C2R
-        self._batch = self._arr.shape[1] if len(self._arr.shape) > 1 else 1
+        self._batch = int(np.prod(self._arr.shape[1:]))
 
         self.plan_ptr = c_longlong(0)
         cu_print(lib_cufft.cufftCreate(byref(self.plan_ptr)), "fft.plan create")
 
         if plan_fft:
-            self.plan()
+            self.plan_1D()
 
-    def plan(self):
+    def planMany(self):
+
+        oneInt = 1 * c_int
+        n = oneInt(self._arr.shape[0])
+        stride = self._batch
+        # TODO: determine based on arr.strides
+        cu_print(
+            lib_cufft.cufftPlanMany(
+                byref(self.plan_ptr),
+                1,  # rank,
+                n,  # n
+                oneInt(0),  # inembed,
+                stride,  # istride
+                1,  # idist,
+                oneInt(0),  # onembed,
+                stride,  # ostride
+                1,  # odist,
+                self._cufftType,
+                self._batch,
+            ),
+            "fft.plan many",
+        )
+
+    def plan_1D(self):
         arr = self._arr
         n = (1 * c_int)(arr.shape[0])
         istride = arr.shape[1] if len(arr.shape) > 1 else 1
         ostride = istride
 
+        # TODO: determine based on arr.strides
         cu_print(
             lib_cufft.cufftPlanMany(
                 byref(self.plan_ptr),
@@ -308,7 +332,7 @@ class CuFFT:
                 self._cufftType,
                 self._batch,
             ),
-            "fft.plan many",
+            "fft.plan single",
         )
 
     def execute(self):
@@ -324,7 +348,7 @@ class CuFFT:
                 lib_cufft.cufftExecC2R(
                     self.plan_ptr, self.arr_in.dev_ptr, self.arr_out.dev_ptr
                 ),
-                "fft.bwd",
+                "fft.rev",
             )
 
     def destroy(self):

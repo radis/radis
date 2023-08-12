@@ -47,15 +47,8 @@ struct initData {
     int N_v;
     float dxG;
     float dxL;
-    int N_total;
-    int Max_lines;
     int N_lines;
-    int N_points_per_block;
-    int N_threads_per_block;
-    int N_blocks_per_grid;
-    int N_points_per_thread;
     int	N_iterations_per_thread;
-    int shared_size_floats;
     float log_c2Mm[16];
 };
 

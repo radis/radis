@@ -11,7 +11,7 @@
 .address_size 64
 
 	// .globl	fillLDM
-.const .align 4 .b8 init_d[124];
+.const .align 4 .b8 init_d[96];
 .const .align 4 .b8 iter_d[112];
 
 .visible .entry fillLDM(
@@ -40,7 +40,7 @@
 	ld.param.u64 	%rd16, [fillLDM_param_5];
 	ld.param.u64 	%rd17, [fillLDM_param_6];
 	ld.param.u64 	%rd18, [fillLDM_param_7];
-	ld.const.u32 	%r1, [init_d+52];
+	ld.const.u32 	%r1, [init_d+28];
 	setp.lt.s32 	%p1, %r1, 1;
 	@%p1 bra 	$L__BB0_10;
 
@@ -65,7 +65,7 @@
 	mov.u32 	%r58, 0;
 
 $L__BB0_2:
-	ld.const.u32 	%r55, [init_d+32];
+	ld.const.u32 	%r55, [init_d+24];
 	setp.ge.s32 	%p2, %r57, %r55;
 	@%p2 bra 	$L__BB0_9;
 
@@ -141,7 +141,7 @@ $L__BB0_6:
 	mul.wide.u32 	%rd24, %r23, 4;
 	mov.u64 	%rd25, init_d;
 	add.s64 	%rd26, %rd25, %rd24;
-	ld.const.f32 	%f56, [%rd26+60];
+	ld.const.f32 	%f56, [%rd26+32];
 	add.f32 	%f19, %f55, %f56;
 	shl.b64 	%rd27, %rd9, 2;
 	add.s64 	%rd28, %rd5, %rd27;
