@@ -222,10 +222,19 @@ def test_custom_abundance(verbose=True, plot=False, *args, **kwargs):
     assert s.compare_with((3 * s3.take("abscoeff")), "abscoeff", rtol=0.5e-2, plot=True)
 
 
-# Added in https://github.com/radis/radis/pull/580
-# Compares dataframes fetched and manipulated with vaex with that of pandas. Every column of dataframe in vaex format is compared with corresponding column of dataframe in pandas format .
 def test_vaex_and_pandas_dataframe_fetch_databank():
+    """
+    Compares dataframes fetched and manipulated with vaex with that of pandas.
+    Every column of dataframe in vaex format is compared with corresponding column
+    of dataframe in pandas format .
+    Here expected
+    - All columns are same for dataframe in pandas and vaex format
+    - Ensure dataframes are same across all the databanks available in RADIS
+    Added in https://github.com/radis/radis/pull/580
+    """
     import numpy as np
+    import pandas
+    import vaex
 
     from radis.lbl import SpectrumFactory
 
@@ -254,6 +263,7 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
         "hitran", memory_mapping_engine="vaex", output="vaex", load_columns="all"
     )
     df1 = sf.df0
+    assert isinstance(df1, vaex.dataframe.DataFrameLocal)
 
     # Fetching in Pandas dataframe format
     sf.dataframe_type = "pandas"
@@ -261,6 +271,7 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
         "hitran", memory_mapping_engine="vaex", output="pandas", load_columns="all"
     )
     df2 = sf.df0
+    assert isinstance(df2, pandas.core.frame.DataFrame)
 
     # Comparing the dataframe fetched from HITEMP
     assert compare_dataframe(df1, df2, df2.columns)
@@ -274,6 +285,7 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
         "hitemp", memory_mapping_engine="vaex", output="vaex", load_columns="all"
     )
     df1 = sf.df0
+    assert isinstance(df1, vaex.dataframe.DataFrameLocal)
 
     # Fetching in Pandas dataframe format
     sf.dataframe_type = "pandas"
@@ -281,6 +293,7 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
         "hitemp", memory_mapping_engine="vaex", output="pandas", load_columns="all"
     )
     df2 = sf.df0
+    assert isinstance(df2, pandas.core.frame.DataFrame)
 
     # Comparing the dataframe fetched from HITEMP
     assert compare_dataframe(df1, df2, df2.columns)
@@ -294,6 +307,7 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
         "exomol", memory_mapping_engine="vaex", output="vaex", load_columns="all"
     )
     df1 = sf.df0
+    assert isinstance(df1, vaex.dataframe.DataFrameLocal)
 
     # Fetching in Pandas dataframe format
     sf.dataframe_type = "pandas"
@@ -301,6 +315,7 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
         "exomol", memory_mapping_engine="vaex", output="pandas", load_columns="all"
     )
     df2 = sf.df0
+    assert isinstance(df1, vaex.dataframe.DataFrameLocal)
 
     # Comparing the dataframe fetched from EXOMOL
     assert compare_dataframe(df1, df2, df2.columns)
@@ -314,6 +329,7 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
         "geisa", memory_mapping_engine="vaex", output="vaex", load_columns="all"
     )
     df1 = sf.df0
+    assert isinstance(df1, vaex.dataframe.DataFrameLocal)
 
     # Fetching in Pandas dataframe format
     sf.dataframe_type = "pandas"
@@ -321,6 +337,7 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
         "geisa", memory_mapping_engine="vaex", output="pandas", load_columns="all"
     )
     df2 = sf.df0
+    assert isinstance(df1, vaex.dataframe.DataFrameLocal)
 
     # Comparing the dataframe fetched from GEISA
     assert compare_dataframe(df1, df2, df2.columns)

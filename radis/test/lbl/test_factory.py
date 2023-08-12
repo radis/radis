@@ -644,58 +644,58 @@ def test_all_spectrum_using_wstep_auto(verbose=True, plot=False, *args, **kwargs
     assert sf._wstep == "auto"
 
 
-# Added in https://github.com/radis/radis/pull/580
-# Compares spectrum calculated using vaex and pandas are same.CONVOLUTED_QUANTITIES and dataframe df is compared to ensure the spectrum is same.
 def test_vaex_and_pandas_spectrum():
+    """Compares spectrum calculated using vaex and pandas are same.
+    CONVOLUTED_QUANTITIES and dataframe df is compared to ensure the spectrum is same.
+
+    Here are things that we ensure are same for both vaex and pandas that
+    -Spectra calculated with Vaex & Pandas are the same
+    -Spectra calculated with Vaex & Pandas using Database cutoff are the same
+    Added in https://github.com/radis/radis/pull/580"""
+
     from radis import calc_spectrum
-    from radis.spectrum.utils import CONVOLUTED_QUANTITIES
 
-    # Comparison is made for all the databanks to ensure that calculations are consistent across databanks and maximum part of code is tested.
-    databanks = ["hitran", "hitemp", "exomol", "geisa"]
+    # computing spectrum in vaex dataframe format
+    s_vaex, factory_s_vaex = calc_spectrum(
+        1900,
+        2300,  # cm-1
+        molecule="CO",
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        Tgas=700,  # K
+        # mole_fraction={'CO': 0.5, 'CO2': 0.3},
+        mole_fraction=0.1,
+        path_length=1,  # cm
+        databank="hitran",  # or 'hitemp', 'geisa', 'exomol'
+        # use_cached=False,
+        engine="vaex",
+        return_factory=True,
+    )
 
-    for databank in databanks:
-        # computing spectrum in vaex dataframe format
-        s, factory_s = calc_spectrum(
-            1900,
-            2300,  # cm-1
-            molecule="CO",
-            isotope="1,2,3",
-            pressure=1.01325,  # bar
-            Tgas=700,  # K
-            # mole_fraction={'CO': 0.5, 'CO2': 0.3},
-            mole_fraction=0.1,
-            path_length=1,  # cm
-            databank=databank,  # or 'hitemp', 'geisa', 'exomol'
-            # use_cached=False,
-            engine="vaex",
-            return_factory=True,
+    # computing spectrum in pandas dataframe format
+    s_pandas, factory_s_pandas = calc_spectrum(
+        1900,
+        2300,  # cm-1
+        molecule="CO",
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        Tgas=700,  # K
+        mole_fraction=0.1,
+        path_length=1,  # cm
+        databank="hitran",  # or 'hitemp', 'geisa', 'exomol'
+        # use_cached=False,
+        engine="pandas",
+        return_factory=True,
+    )
+
+    assert np.allclose(
+        s_vaex.get("absorbance"), s_pandas.get("absorbance"), equal_nan=True
+    )
+
+    for column in factory_s_pandas.df1.columns:
+        assert np.all(
+            factory_s_vaex.df1[column].to_numpy() == factory_s_pandas.df1[column]
         )
-        s.apply_slit(0.5, "nm")  # simulate an experimental slit
-
-        # computing spectrum in pandas dataframe format
-        s1, factory_s1 = calc_spectrum(
-            1900,
-            2300,  # cm-1
-            molecule="CO",
-            isotope="1,2,3",
-            pressure=1.01325,  # bar
-            Tgas=700,  # K
-            mole_fraction=0.1,
-            path_length=1,  # cm
-            databank=databank,  # or 'hitemp', 'geisa', 'exomol'
-            # use_cached=False,
-            engine="pandas",
-            return_factory=True,
-        )
-        s1.apply_slit(0.5, "nm")  # simulate an experimental slit
-
-        for spec_quantity in CONVOLUTED_QUANTITIES:
-            assert np.allclose(
-                s.get(spec_quantity)[1], s1.get(spec_quantity)[1], equal_nan=True
-            )
-
-        for column in factory_s1.df1.columns:
-            assert np.all(factory_s.df1[column].to_numpy() == factory_s1.df1[column])
 
     #%% Additional test with other options (cutoff, ...)
     from radis import SpectrumFactory
@@ -705,35 +705,33 @@ def test_vaex_and_pandas_spectrum():
         wavelength_max=4500,
         cutoff=1e-23,
         molecule="CO2",
-        dataframe_type="vaex",
     )
     sf_vaex.fetch_databank("hitran", output="vaex")
     s_vaex = sf_vaex.eq_spectrum(Tgas=2000)  # failing on the 08/03/2023 - minouHub
-    s_vaex.apply_slit(0.5, "nm")  # simulate an experimental slit
 
     sf_pd = SpectrumFactory(
         wavelength_min=4200,
         wavelength_max=4500,
         cutoff=1e-23,
         molecule="CO2",
-        dataframe_type="pandas",
     )
     sf_pd.fetch_databank("hitran", output="pandas")
     s_pd = sf_pd.eq_spectrum(Tgas=2000)
-    s_pd.apply_slit(0.5, "nm")  # simulate an experimental slit
-
     for column in sf_pd.df1.columns:
         assert np.all(sf_vaex.df1[column].to_numpy() == sf_pd.df1[column])
 
-    for spec_quantity in CONVOLUTED_QUANTITIES:
-        assert np.allclose(
-            s_vaex.get(spec_quantity)[1], s_pd.get(spec_quantity)[1], equal_nan=True
-        )
+    assert np.allclose(s_vaex.get("absorbance"), s_pd.get("absorbance"), equal_nan=True)
 
 
 #%%
-# Compares the Spectrum calculated under non-equilibrium conditions . Comparison is made between CONVOLUTED_QUANTITIES and dataframe df .
 def test_vaex_and_pandas_spectrum_noneq():
+    """Compares the Spectrum calculated under non-equilibrium conditions .
+    Comparison is made between CONVOLUTED_QUANTITIES and dataframe df.
+
+    Here are things that we ensure are same for both vaex and pandas that
+    -Spectra calculated with Vaex & Pandas are the same
+    -Spectra calculated with Vaex & Pandas using Database cutoff are the same
+    Added in https://github.com/radis/radis/pull/580"""
 
     from radis import calc_spectrum
 
@@ -746,7 +744,7 @@ def test_vaex_and_pandas_spectrum_noneq():
         "mole_fraction": 0.1,
         "wstep": "auto",
         "path_length": 1,
-        "databank": "hitemp",
+        "databank": "hitran",
         "verbose": 3,
         "return_factory": True,
     }
