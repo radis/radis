@@ -166,20 +166,21 @@ def fetch_exomol(
     known_exomol_databases, recommended_database = get_exomol_database_list(
         molecule, full_molecule_name
     )
-
-    _exomol_use_hint = "Select one of them with `radis.fetch_exomol(DATABASE_NAME)`, `SpectrumFactory.fetch_databank('exomol', exomol_database=DATABASE_NAME')`, or `calc_spectrum(..., databank=('exomol', DATABASE_NAME))` \n"
+    if verbose:
+        print("\n========== Loading Exomol database [start] ==========")
+    _exomol_use_hint = "Select one of them with `fetch_exomol(DATABASE_NAME)`, `SpectrumFactory.fetch_databank('exomol', exomol_database=DATABASE_NAME')`, or `calc_spectrum(..., databank=('exomol', DATABASE_NAME))` \n"
     if database is None or database == "default":
         if len(known_exomol_databases) == 1:
-            database = known_exomol_databases[0]
-            if verbose:
-                print(f"Using ExoMol database {database} for {full_molecule_name}")
+            database = known_exomol_databases[
+                0
+            ]  # TODO: if there is only one, is it not the recommended one?
         elif recommended_database:
             database = recommended_database
-            if verbose:
+            if verbose > 1:
                 print(
-                    f"Using ExoMol database {database} for {full_molecule_name} (recommended by the ExoMol team). All available databases are {known_exomol_databases}. {_exomol_use_hint}"
+                    f"For {full_molecule_name}, the available databases are {known_exomol_databases}. {_exomol_use_hint}"
                 )
-        else:
+        else:  # TODO: Explain here when this case occurs...
             raise KeyError(
                 f"Choose one of the several databases available for {full_molecule_name} in ExoMol: {known_exomol_databases}. ({recommended_database} is recommended by the ExoMol team). {_exomol_use_hint}"
             )
@@ -207,6 +208,7 @@ def fetch_exomol(
     mdb = MdbExomol(
         local_path,
         molecule=molecule,
+        database=database,
         name=databank_name,
         local_databases=local_databases,
         nurange=[
@@ -216,6 +218,7 @@ def fetch_exomol(
         engine=engine,
         cache=cache,
         skip_optional_data=skip_optional_data,
+        verbose=verbose,
     )
 
     # Get local files
@@ -261,7 +264,7 @@ def fetch_exomol(
         )
 
     # Add broadening
-    mdb.set_broadening(df, output=output)
+    mdb.set_broadening_coef(df, output=output)
 
     # Specific for RADIS :
     # ... Get RADIS column names:
@@ -319,4 +322,6 @@ def fetch_exomol(
         assert return_local_path
         out.append(mdb.to_partition_function_tabulator())
 
+    if verbose:
+        print("========== Loading Exomol database [end] ==========\n")
     return out

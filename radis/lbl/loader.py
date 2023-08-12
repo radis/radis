@@ -1302,6 +1302,10 @@ class DatabankLoader(object):
                 )
             isotope_list = self._get_isotope_list()
 
+            # Check the specific ExoMol database and print ONCE the list of databases available
+            if self.verbose and (database is None or database == "default"):
+                print("Using the recommended ExoMol databases for {}".format(molecule))
+
             local_paths = []
             frames = []  # lines for all isotopes
             partition_function_exomol = {
@@ -2391,7 +2395,7 @@ class DatabankLoader(object):
                         raise
                     else:
                         # Irrelevant file, just print and continue.
-                        if verbose >= 2:
+                        if self.verbose >= 2:
                             printg(str(err))
                         continue
 
@@ -2407,6 +2411,7 @@ class DatabankLoader(object):
                         elif output == "vaex":
                             df.drop(col, inplace=True)
                 if verbose >= 2 and len(dropped) > 0:
+
                     print("Dropped columns: {0}".format(dropped))
 
                 # Crop to the wavenumber of interest
