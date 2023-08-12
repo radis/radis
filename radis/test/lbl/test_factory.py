@@ -744,7 +744,7 @@ def test_vaex_and_pandas_spectrum_noneq():
         "mole_fraction": 0.1,
         "wstep": "auto",
         "path_length": 1,
-        "databank": "hitran",
+        "databank": "hitemp",
         "verbose": 3,
         "return_factory": True,
     }
