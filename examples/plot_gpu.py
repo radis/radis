@@ -31,7 +31,7 @@ sf = SpectrumFactory(
 sf.fetch_databank("hitemp")
 
 s = sf.eq_spectrum_gpu(
-    Tgas=1100.0,  # K
+    Tgas=300.0,  # K
     pressure=1,  # bar
     mole_fraction=0.8,
     path_length=0.2,  # cm

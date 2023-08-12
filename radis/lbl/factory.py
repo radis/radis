@@ -959,6 +959,7 @@ class SpectrumFactory(BandFactory):
         pressure=None,
         name=None,
         emulate=False,
+        exit_gpu=True,
     ) -> Spectrum:
         """Generate a spectrum at equilibrium with calculation of lineshapes
         and broadening done on the GPU.
@@ -1142,7 +1143,7 @@ class SpectrumFactory(BandFactory):
             print("Initializing parameters...", end=" ")
 
         try:
-            from radis.gpu.gpu import gpu_init, gpu_iterate
+            from radis.gpu.gpu import gpu_exit, gpu_init, gpu_iterate
         except (ModuleNotFoundError):
             print("Failed to load GPU module, exiting!")
             exit()
@@ -1163,7 +1164,6 @@ class SpectrumFactory(BandFactory):
             verbose=verbose,
             gpu=(not emulate),
         )
-
         print("AFTER INIT")
 
         if verbose >= 2:
@@ -1183,6 +1183,12 @@ class SpectrumFactory(BandFactory):
             gpu=(not emulate),
         )
         print("AFTER ITER")
+
+        if exit_gpu:
+            gpu_exit()
+
+        print("EXIT")
+
         # Calculate output quantities
         # ----------------------------------------------------------------------
 
@@ -1360,6 +1366,7 @@ class SpectrumFactory(BandFactory):
                 self.interactive_params[key] = param_range
                 param_range.name = key
                 kwargs[key] = param_range.valinit
+        kwargs["exit_gpu"] = False
 
         s = self.eq_spectrum_gpu(*vargs, **kwargs)
 

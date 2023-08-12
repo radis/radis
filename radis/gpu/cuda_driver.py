@@ -1,4 +1,4 @@
-import sys
+# import sys
 from ctypes import (
     byref,
     c_char_p,
@@ -49,7 +49,7 @@ class CuContext:
 
         if deviceCount == 0:
             print("Error: no devices supporting CUDA\n")
-            sys.exit()
+            # sys.exit()
 
         self.device = c_long(0)
         lib.cuDeviceGet(byref(self.device), device_id)
@@ -59,7 +59,7 @@ class CuContext:
         if err != CUDA_SUCCESS:
             print("* Error initializing the CUDA context.")
             lib.cuCtxDestroy_v2(self.context)
-            sys.exit()
+            # sys.exit()
 
     @staticmethod
     def getDeviceList():
@@ -114,15 +114,17 @@ class CuContext:
         cu_print(lib.cuCtxSynchronize(), "ctx.sync")
 
     def destroy(self):
-        cu_print(lib.cuCtxDestroy_v2(self.context), "ctx.destroy")
+        try:
+            cu_print(lib.cuCtxDestroy_v2(self.context), "ctx.destroy")
+        except (AttributeError):
+            pass
 
     def __del__(self):
         self.destroy()
 
 
 class CuArray:
-    def __init__(self, shape, dtype=np.float32, init="zeros"):
-        self.lib = lib
+    def __init__(self, shape, dtype=np.float32, init="empty"):
         self.dev_ptr = c_void_p()
         self.resize(shape, dtype, init)
 
@@ -180,8 +182,10 @@ class CuArray:
 
     def __del__(self):
 
-        if self.dev_ptr is not None:
-            cu_print(self.lib.cuMemFree_v2(self.dev_ptr), "arr.free")
+        try:
+            cu_print(lib.cuMemFree_v2(self.dev_ptr), "arr.free")
+        except (AttributeError):
+            pass
 
 
 class CuFunction:
@@ -228,7 +232,7 @@ class CuModule:
                 "* Error loading the module {:s}\n".format(module_file.value.decode())
             )
             self.context_obj.destroy()
-            sys.exit()
+            # sys.exit()
 
         self.func_dict = {}
         self.global_dict = {}
@@ -249,7 +253,7 @@ class CuModule:
                     )
                 )
                 self.context_obj.destroy()
-                sys.exit()
+                # sys.exit()
 
             self.func_dict[attr] = CuFunction(function)
             self.func_dict[attr].context_obj = self.context_obj
@@ -280,20 +284,20 @@ class CuFFT:
         self._arr = arr_in if direction == "fwd" else arr_out
         self.direction = direction
         self._cufftType = CUFFT_R2C if direction == "fwd" else CUFFT_C2R
-        self._batch = int(np.prod(self._arr.shape[1:]))
 
         self.plan_ptr = c_longlong(0)
         cu_print(lib_cufft.cufftCreate(byref(self.plan_ptr)), "fft.plan create")
 
         if plan_fft:
-            self.plan_1D()
+            self.planMany()
 
     def planMany(self):
 
+        batch = int(np.prod(self._arr.shape[1:]))
         oneInt = 1 * c_int
         n = oneInt(self._arr.shape[0])
-        stride = self._batch
-        # TODO: determine based on arr.strides
+        stride = batch
+
         cu_print(
             lib_cufft.cufftPlanMany(
                 byref(self.plan_ptr),
@@ -306,33 +310,9 @@ class CuFFT:
                 stride,  # ostride
                 1,  # odist,
                 self._cufftType,
-                self._batch,
+                batch,
             ),
             "fft.plan many",
-        )
-
-    def plan_1D(self):
-        arr = self._arr
-        n = (1 * c_int)(arr.shape[0])
-        istride = arr.shape[1] if len(arr.shape) > 1 else 1
-        ostride = istride
-
-        # TODO: determine based on arr.strides
-        cu_print(
-            lib_cufft.cufftPlanMany(
-                byref(self.plan_ptr),
-                1,  # rank,
-                n,
-                (1 * c_int)(0),  # inembed,
-                istride,
-                1,  # idist,
-                (1 * c_int)(0),  # onembed,
-                ostride,
-                1,  # odist,
-                self._cufftType,
-                self._batch,
-            ),
-            "fft.plan single",
         )
 
     def execute(self):
@@ -352,7 +332,10 @@ class CuFFT:
             )
 
     def destroy(self):
-        cu_print(lib_cufft.cufftDestroy(self.plan_ptr), "fft.destroy")
+        try:
+            cu_print(lib_cufft.cufftDestroy(self.plan_ptr), "fft.destroy")
+        except (AttributeError):
+            pass
 
     def __del__(self):
         self.destroy()

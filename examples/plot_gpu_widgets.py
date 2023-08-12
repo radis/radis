@@ -19,7 +19,9 @@ using CUDA and Cython, check :ref:`GPU Spectrum Calculation on RADIS <label_radi
     or set  ``emulate=False`` (default)
 
 """
+import matplotlib.pyplot as plt
 
+plt.ion()
 from radis import SpectrumFactory
 
 # from radis.test.utils import getTestFile

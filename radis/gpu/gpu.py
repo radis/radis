@@ -2,8 +2,13 @@ import ctypes
 
 import numpy as np
 from scipy.constants import N_A, c, h, k
+from scipy.fft import next_fast_len
 
 from radis.misc.utils import getProjectRoot
+
+# import sys
+# import matplotlib.pyplot as plt
+
 
 c_cm = 100 * c
 c2 = h * c_cm / k
@@ -18,6 +23,8 @@ class initData(ctypes.Structure):
         ("v_max", ctypes.c_float),
         ("dv", ctypes.c_float),
         ("N_v", ctypes.c_int),
+        ("N_v_FT", ctypes.c_int),
+        ("N_x_FT", ctypes.c_int),
         ("dxG", ctypes.c_float),
         ("dxL", ctypes.c_float),
         ("N_lines", ctypes.c_int),
@@ -455,6 +462,8 @@ def gpu_init(
     init_h.v_max = np.max(v_arr)  # 2400.0
     init_h.dv = (v_arr[-1] - v_arr[0]) / (len(v_arr) - 1)  # 0.002
     init_h.N_v = len(v_arr)
+    init_h.N_v_FT = next_fast_len(2 * init_h.N_v)
+    init_h.N_x_FT = init_h.N_v_FT // 2 + 1
     init_h.dxG = dxG
     init_h.dxL = dxL
     init_h.N_lines = int(len(v0))
@@ -484,15 +493,17 @@ def gpu_init(
     if verbose >= 2:
         print("Allocating device memory and copying data...")
 
-    Ntpb = 1024  # threads per block
+    NvFT = init_h.N_v_FT
+    NxFT = NvFT // 2 + 1
+    Ntpb = 1024  # threads per block #TODO: determine dynamically
     Nipt = init_h.N_iterations_per_thread
-    Nv, Nli = init_h.N_v, init_h.N_lines
+    Nli = init_h.N_lines
     threads = (Ntpb, 1, 1)
 
     cu_mod.fillLDM.setGrid((Nli // (Ntpb * Nipt) + 1, 1, 1), threads)
-    cu_mod.applyLineshapes.setGrid(((Nv + 1) // Ntpb + 1, 1, 1), threads)
-    cu_mod.calcTransmittanceNoslit.setGrid(((2 * Nv) // Ntpb + 1, 1, 1), threads)
-    cu_mod.applyGaussianSlit.setGrid(((Nv + 1) // Ntpb + 1, 1, 1), threads)
+    cu_mod.applyLineshapes.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
+    cu_mod.calcTransmittanceNoslit.setGrid((NvFT // Ntpb + 1, 1, 1), threads)
+    cu_mod.applyGaussianSlit.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
 
     # Copy spectral data to device
     vars_d.iso = CuArray.fromArray(iso)  # malloc, copy
@@ -506,16 +517,14 @@ def gpu_init(
     vars_d.S_klm = CuArray(0, dtype=np.float32, init="defer")  # dev_ptr only
     vars_d.S_klm_FT = CuArray(0, dtype=np.complex64, init="defer")  # dev_ptr only
 
-    vars_d.spectrum_in = CuArray(init_h.N_v + 1, dtype=np.complex64)  # malloc
-    vars_d.spectrum_out = CuArray(2 * init_h.N_v, dtype=np.float32)  # malloc
+    vars_d.spectrum_in = CuArray(NxFT, dtype=np.complex64)  # malloc
+    vars_d.spectrum_out = CuArray(NvFT, dtype=np.float32)  # malloc
 
-    vars_d.transmittance_noslit = CuArray(init_h.N_v * 2, dtype=np.float32)  # malloc
-    vars_d.transmittance_noslit_FT = CuArray(
-        init_h.N_v + 1, dtype=np.complex64
-    )  # malloc
+    vars_d.transmittance_noslit = CuArray(NvFT, dtype=np.float32)  # malloc
+    vars_d.transmittance_noslit_FT = CuArray(NxFT, dtype=np.complex64)  # malloc
 
-    vars_d.transmittance_FT = CuArray(init_h.N_v + 1, dtype=np.complex64)  # malloc
-    vars_d.transmittance = CuArray(2 * init_h.N_v, dtype=np.float32)  # malloc
+    vars_d.transmittance_FT = CuArray(NxFT, dtype=np.complex64)  # malloc
+    vars_d.transmittance = CuArray(NvFT, dtype=np.float32)  # malloc
 
     vars_d.fft_fwd = CuFFT(
         vars_d.S_klm, vars_d.S_klm_FT, direction="fwd", plan_fft=False
@@ -527,6 +536,8 @@ def gpu_init(
     vars_d.fft_rev2 = CuFFT(
         vars_d.transmittance_FT, vars_d.transmittance, direction="rev"
     )
+
+    vars_d.v_arr = v_arr
 
     ctx.setCurrent()
 
@@ -597,11 +608,9 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
         print("Filling LDM...")
 
     vars_d.S_klm.resize(
-        (2 * init_h.N_v, iter_h.N_G, iter_h.N_L)
+        (init_h.N_v_FT, iter_h.N_G, iter_h.N_L), init="zeros"
     )  # resize, malloc, zeros
-    vars_d.S_klm_FT.resize((init_h.N_v + 1, iter_h.N_G, iter_h.N_L))  # resize, malloc
-
-    vars_d.S_klm.zeroFill()
+    vars_d.S_klm_FT.resize((init_h.N_x_FT, iter_h.N_G, iter_h.N_L))  # resize, malloc
 
     cu_mod.fillLDM(
         vars_d.iso,
@@ -615,39 +624,31 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
     )
 
     if verbose >= 2:
+        print("done!")
         print("Applying lineshapes...")
 
     vars_d.fft_fwd.planMany()  # replan because size may have changed
     vars_d.fft_fwd.execute()
-    ctx.setCurrent()
-
     cu_mod.applyLineshapes(vars_d.S_klm_FT, vars_d.spectrum_in)
-
     vars_d.fft_rev.execute()
-    ctx.setCurrent()
 
     if verbose >= 2:
         print("Done!")
         print("Calculating transmittance...")
 
-    ctx.synchronize()
+    # ctx.synchronize()
     abscoeff_h = vars_d.spectrum_out.getArray()[: init_h.N_v]
-
-    cu_mod.calcTransmittanceNoslit(vars_d.spectrum_out, vars_d.transmittance_noslit)
 
     if verbose >= 2:
         print("Done!")
         print("Applying slit function...")
 
+    cu_mod.calcTransmittanceNoslit(vars_d.spectrum_out, vars_d.transmittance_noslit)
     vars_d.fft_fwd2.execute()
-    ctx.setCurrent()
-
     cu_mod.applyGaussianSlit(vars_d.transmittance_noslit_FT, vars_d.transmittance_FT)
-
     vars_d.fft_rev2.execute()
-    ctx.setCurrent()
 
-    ctx.synchronize()
+    # ctx.synchronize()
     transmittance_h = vars_d.transmittance.getArray()[: init_h.N_v]
 
     if verbose >= 2:

@@ -1,8 +1,13 @@
 
+
+
 #ifdef __CUDACC__
 
 #include <cuda/std/complex>
+
 using namespace cuda::std;
+
+
 
 #define agnostic_loop(i, max_i)
 #define agnostic_add(addr, val) atomicAdd((addr),(val))
@@ -30,11 +35,16 @@ void set_dims(int blockDim_x, int gridDim_x){
 }
 #endif
 
+
+
+
+
 #ifdef __CUDACC__
 extern "C"{
 #else
 using namespace std;
 #endif
+
 
 //const float pi = 3.141592653589793f;
 //const float r4log2 = 0.36067376022224085f; // = 1 / (4 * ln(2))
@@ -43,8 +53,10 @@ using namespace std;
 struct initData {
     float v_min;
     float v_max;
-    float dv;
+    float dv; //TODO: Chec for all dv's used if it is changed by N_v_FT or N_x_FT
     int N_v;
+    int N_v_FT;
+    int N_x_FT;
     float dxG;
     float dxL;
     int N_lines;
@@ -169,8 +181,8 @@ __global__ void applyLineshapes(complex<float>* S_klm_FT, complex<float>* abscoe
     agnostic_loop(threadIdx.x, blockDim.x){
         agnostic_loop(blockIdx.x, gridDim.x){
             int k = threadIdx.x + blockDim.x * blockIdx.x;
-            if (k < init_d.N_v + 1) {
-                float x = k / (2 * init_d.N_v * init_d.dv);
+            if (k < init_d.N_x_FT) {
+                float x = k / (init_d.N_v_FT * init_d.dv);
                 float mul = 0.0;
                 complex<float> out_complex = 0;
                 // float out_re = 0.0;
@@ -181,9 +193,9 @@ __global__ void applyLineshapes(complex<float>* S_klm_FT, complex<float>* abscoe
                 for (int l = 0; l < iter_d.N_G; l++) {
                     wG = expf(iter_d.log_wG_min + l * init_d.dxG);
                     for (int m = 0; m < iter_d.N_L; m++) {
-                        index = k + l * (init_d.N_v+1) + m * iter_d.N_G * (init_d.N_v+1);
+                        index = k * iter_d.N_G * iter_d.N_L + l * iter_d.N_L + m;
                         wL = expf(iter_d.log_wL_min + m * init_d.dxL);
-                        mul = expf(-r4log2 * powf(pi * x * wG, 2) - pi * x * wL) / init_d.dv;
+                        mul = expf(-r4log2 * powf(pi * x * wG, 2) - pi * x * wL) * init_d.dv;
                         out_complex += mul * S_klm_FT[index];
                         //out_complex += LDM[index];
                     }
@@ -203,7 +215,7 @@ __global__ void calcTransmittanceNoslit(float* abscoeff, float* transmittance_no
             if (iv < init_d.N_v) {
                 transmittance_noslit[iv] = expf(-iter_d.l * abscoeff[iv]);
             }
-            else if (iv < init_d.N_v*2){
+            else if (iv < init_d.N_v_FT){
                 transmittance_noslit[iv] = 1.0;
             }
         }
@@ -218,10 +230,10 @@ __global__ void applyGaussianSlit(complex<float>* transmittance_noslit_FT, compl
     agnostic_loop(threadIdx.x, blockDim.x){
         agnostic_loop(blockIdx.x, gridDim.x){
             int iv = threadIdx.x + blockDim.x * blockIdx.x;
-            float x = iv / (2 * init_d.N_v * init_d.dv);
+            float x = iv / (init_d.N_v_FT * init_d.dv);
             float window = expf(-r4log2 * powf(pi * x * iter_d.slit_FWHM, 2));
 
-            if (iv < init_d.N_v + 1) {
+            if (iv < init_d.N_x_FT) {
                 transmittance_FT[iv] = transmittance_noslit_FT[iv] * window;
             }
         }
