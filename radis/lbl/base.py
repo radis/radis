@@ -81,7 +81,7 @@ try:  # Proper import
 except ImportError:  # if ran from here
     from radis.lbl.loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
 
-from radis.misc.arrays import anynan
+from radis.misc.arrays import anynan, anynan_vaex
 from radis.misc.basics import all_in, is_float, transfer_metadata
 from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
@@ -90,7 +90,7 @@ from radis.misc.printer import printg
 from radis.misc.utils import Default
 from radis.misc.warning import OutOfBoundError
 from radis.phys.constants import c_CGS, h_CGS, hc_k
-from radis.phys.convert import cm2J, nm2cm, nm_air2cm
+from radis.phys.convert import cm2J, cm2J_vaex, nm2cm, nm_air2cm
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.utils import print_conditions
 
@@ -312,7 +312,10 @@ class BaseFactory(DatabankLoader):
         from radis.misc.printer import get_print_full
 
         try:
-            assert not anynan(df[column], self.dataframe_type)
+            if self.dataframe_type == "pandas":
+                assert not anynan(df[column])
+            elif self.dataframe_type == "vaex":
+                assert not anynan_vaex(df[column])
         except AssertionError as err:
             if self.dataframe_type == "pandas":
                 index = np.isnan(df[column]).idxmax()
@@ -3593,7 +3596,10 @@ class BaseFactory(DatabankLoader):
 
         A_ul = df["Aul"]  # (s-1)
 
-        DeltaE = cm2J(df.wav)  # (cm-1) -> (J)
+        if self.dataframe_type == "pandas":
+            DeltaE = cm2J(df.wav)  # (cm-1) -> (J)
+        elif self.dataframe_type == "vaex":
+            DeltaE = cm2J_vaex(df.wav)  # (cm-1) -> (J)
         Ei = n_ua * A_ul / 4 / pi * DeltaE  # (W/sr)
 
         Ei *= 1e3  # (W/sr) -> (mW/sr)

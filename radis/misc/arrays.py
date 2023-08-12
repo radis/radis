@@ -44,8 +44,6 @@ from numba import bool_, float64, int32, int64
 from numpy import hstack
 from scipy.interpolate import interp1d
 
-from radis.phys.convert import false_for_all
-
 # Normalize
 
 
@@ -347,17 +345,17 @@ def evenly_distributed_fast(w, rtolerance=1e-5):
     return np.isclose(w[-1] - w[-2], w[1] - w[0], rtol=rtolerance)
 
 
-def anynan(a, dataframe_type="pandas"):
+def anynan(a):
     """Returns whether ``a`` has at least one :py:attr:`~numpy.nan`
 
     Fastest implementation for arrays with >10^4 elements
     https://stackoverflow.com/a/45011547/5622825
     """
+    return np.isnan(np.dot(a, a))
 
-    if dataframe_type == "pandas":
-        return np.isnan(np.dot(a, a))
-    elif dataframe_type == "vaex":
-        return not false_for_all(a.isna())
+
+def anynan_vaex(a):
+    return not (a.countnan() == 0)
 
 
 @numba.njit

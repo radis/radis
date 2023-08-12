@@ -93,6 +93,12 @@ def cm2J(E):
     return (E * 100) * (h * c)
 
 
+def cm2J_vaex(E):
+    """cm-1 to J."""
+    _assertcm_vaex(E)
+    return (E * 100) * (h * c)
+
+
 def cm2K(E):
     """cm-1 to K.
 
@@ -329,14 +335,6 @@ def atm2bar(p_atm):
     return p_atm * 1.01325
 
 
-def true_for_all(E):
-    return E.unique() == [True]
-
-
-def false_for_all(E):
-    return E.unique() == [False]
-
-
 # %% Assert functions
 
 
@@ -357,20 +355,21 @@ def _assertK(E):
 
 
 def _assertcm(E):
-    if isinstance(E, vaex.expression.Expression):
-        if E.abs().sum():  # check E != 0 for both floats and arrays
-            try:
-                m = _magn(E)
-                assert true_for_all(((1 <= m) & (m <= 5)))
-            except AssertionError:
-                print(("Warning. Input values may not be in cm-1", E, "cm-1?"))
-    else:
-        if np.sum(np.abs(E)) != 0:  # check E != 0 for both floats and arrays
-            try:
-                m = _magn(E)
-                assert ((1 <= m) & (m <= 5)).all()
-            except AssertionError:
-                print(("Warning. Input values may not be in cm-1", E, "cm-1?"))
+    if np.sum(np.abs(E)) != 0:  # check E != 0 for both floats and arrays
+        try:
+            m = _magn(E)
+            assert ((1 <= m) & (m <= 5)).all()
+        except AssertionError:
+            print(("Warning. Input values may not be in cm-1", E, "cm-1?"))
+
+
+def _assertcm_vaex(E):
+    if E.abs().sum():  # check E != 0 for both floats and arrays
+        try:
+            m = _magn(E)
+            assert (((1 <= m) & (m <= 5))).unique() == [True]
+        except AssertionError:
+            print(("Warning. Input values may not be in cm-1", E, "cm-1?"))
 
 
 def _asserteV(E):
