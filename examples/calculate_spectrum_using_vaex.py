@@ -2,15 +2,17 @@
 """
 .. _calculate_vaex:
 
-===============================
-Calculate spectrum using Vaex
-===============================
+================================================
+Out-of-RAM calculations for very large databases
+================================================
 
 Calculating a spectrum using pandas can be memory-intensive, as it loads data into memory
 for the computation. This can restrict the number of lines that can be processed on a
 device, especially for larger datasets. In such cases, Vaex is recommended as the engine.
 Vaex is a table management tool similar to PANDAS, but it utilizes memory mapping, a zero-
 memory-copy policy, and lazy computations for optimal performance.
+
+This means what whatever your RAM and whatever the size of the dataset, **you won't run out of memory**.
 """
 
 # To compute spectrum using vaex add an argument engine= "vaex" in calc_spectrum, similarly add output="vaex" in fetch_hitran method to fetch data in vaex format.
