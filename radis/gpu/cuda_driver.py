@@ -12,12 +12,19 @@ from ctypes import (
     windll,
 )
 
+import numpy as np
 from nvidia.cufft import __path__ as cufft_path
-
-from radis.gpu import __path__ as gpu_path
 
 lib = windll.LoadLibrary("nvcuda.dll")
 lib_cufft = windll.LoadLibrary(cufft_path[0] + "\\bin\\cufft64_11.dll")
+
+verbose = True
+
+
+def cu_print(*vargs):
+    global verbose
+    if verbose:
+        print(*vargs)
 
 
 # TODO: make compatible with linux/mac
@@ -33,7 +40,7 @@ CUFFT_R2C = 0x2A
 CUFFT_C2R = 0x2C
 
 
-class cuContext:
+class CuContext:
     def __init__(self, device_id=0, flags=0):
         err = lib.cuInit(0)
 
@@ -100,103 +107,119 @@ class cuContext:
             )
         )
 
+    def setCurrent(self):
+        cu_print(lib.cuCtxSetCurrent(self.context), "ctx.setcurrent")
+
     def synchronize(self):
-        lib.cuCtxSynchronize()
+        cu_print(lib.cuCtxSynchronize(), "ctx.sync")
 
     def destroy(self):
-        lib.cuCtxDestroy_v2(self.context)
+        cu_print(lib.cuCtxDestroy_v2(self.context), "ctx.destroy")
 
     def __del__(self):
         self.destroy()
 
 
-class cuArray:
-    def __init__(self, arr):
-        self.arr_h = arr
-        self.dtype = arr.dtype
-        self.size = arr.size
-        self.itemsize = arr.dtype.itemsize
-        self.bytesize = arr.itemsize * arr.size
-        self.shape = arr.shape
+class CuArray:
+    def __init__(self, shape, dtype=np.float32, init="empty"):
+        self.lib = lib
+        self.dev_ptr = c_void_p()
+        self.resize(shape, dtype, init)
 
-        self.arr_d = c_void_p()
-        lib.cuMemAlloc_v2(byref(self.arr_d), self.bytesize)
-        self.h2d()
-        self.is_uptodate = True
+    def resize(self, shape=None, dtype=None, init="empty"):
+        shape_tuple = shape if isinstance(shape, tuple) else (shape,)
+        self.shape = self.shape if shape is None else shape_tuple
+        self.dtype = self.dtype if dtype is None else np.dtype(dtype)
+        self.size = int(np.prod(shape))
+        self.itemsize = self.dtype.itemsize
+        self.bytesize = self.itemsize * self.size
 
-    def __getitem__(self, i):
-        if not self.is_uptodate:
-            self.d2h()
-            self.is_uptodate = True
-        return self.arr_h[i]
+        if init not in ("zeros", "empty"):
+            return
 
-    def __setitem__(self, i, a):
+        if self.dev_ptr.value is not None:
+            cu_print(lib.cuMemFree_v2(self.dev_ptr), "arr.free")
 
-        self.arr_h[i] = a
-        self.h2d()
+        cu_print(lib.cuMemAlloc_v2(byref(self.dev_ptr), self.bytesize), "arr.alloc")
 
-    def h2d(self):
+        if init == "zeros":
+            self.zeroFill()
 
-        lib.cuMemcpyHtoD_v2(self.arr_d, c_void_p(self.arr_h.ctypes.data), self.bytesize)
+    @staticmethod
+    def fromArray(arr):
 
-    def d2h(self):
+        obj = CuArray(arr.shape, arr.dtype, init=None)
+        obj.setArray(arr)
 
-        lib.cuMemcpyDtoH_v2(c_void_p(self.arr_h.ctypes.data), self.arr_d, self.bytesize)
-        return self.arr_h
+        return obj
 
-    # def __del__(self):
+    def zeroFill(self):
+        cu_print(lib.cuMemsetD8_v2(self.dev_ptr, 0, self.bytesize), "arr.zeros")
 
-    # lib.cuMemFree_v2(self.arr_d)
+    def setArray(self, arr):
+
+        params_changed = arr.shape != self.shape or arr.dtype != self.dtype
+        uninitialized_memory = self.dev_ptr.value is None
+        if params_changed or uninitialized_memory:
+            self.resize(arr.shape, arr.dtype, "empty")
+
+        cu_print(
+            lib.cuMemcpyHtoD_v2(self.dev_ptr, c_void_p(arr.ctypes.data), self.bytesize),
+            "arr.HtoD",
+        )
+
+    def getArray(self):
+
+        arr = np.empty(self.shape, dtype=self.dtype)
+        cu_print(
+            lib.cuMemcpyDtoH_v2(c_void_p(arr.ctypes.data), self.dev_ptr, self.bytesize),
+            "arr.DtoH",
+        )
+
+        return arr
+
+    def __del__(self):
+
+        if self.dev_ptr is not None:
+            cu_print(self.lib.cuMemFree_v2(self.dev_ptr), "arr.free")
 
 
-class cuFunction:
+class CuFunction:
     def __init__(self, fptr):
         self.fptr = fptr
         self.retvars = None
+        self.blocks = (1, 1, 1)
+        self.threads = (1, 1, 1)
+        self.sync = False
+        self.context_obj = None
 
     def set_grid(self, blocks=(1, 1, 1), threads=(1, 1, 1)):
         self.blocks = blocks
         self.threads = threads
 
-    def set_retvars(self, retvars):
-        self.retvars = retvars
+    def __call__(self, *vargs, blocks=None, threads=None, sync=None):
 
-    def __call__(self, *vargs, **kwargs):
-
-        try:
-            self.blocks = kwargs["blocks"]
-        except (KeyError):
-            pass
-
-        try:
-            self.threads = kwargs["threads"]
-        except (KeyError):
-            pass
-
-        try:
-            self.retvars = kwargs["retvars"]
-        except (KeyError):
-            pass
-
-        if self.retvars is None:
-            self.retvars = len(vargs) * [False]
-            self.retvars[-1] = True
+        self.blocks = self.blocks if blocks is None else blocks
+        self.threads = self.threads if threads is None else threads
+        self.sync = self.sync if sync is None else sync
 
         voidPtrArr = len(vargs) * c_void_p
-        cargs = voidPtrArr(*[cast(byref(arr.arr_d), c_void_p) for arr in vargs])
+        cargs = voidPtrArr(*[cast(byref(arr.dev_ptr), c_void_p) for arr in vargs])
 
-        lib.cuLaunchKernel(self.fptr, *self.blocks, *self.threads, 0, 0, cargs, 0)
+        cu_print(
+            lib.cuLaunchKernel(self.fptr, *self.blocks, *self.threads, 0, 0, cargs, 0),
+            "func.kernel",
+        )
 
-        for arr, is_retvar in zip(vargs, self.retvars):
-            if is_retvar:
-                arr.is_uptodate = False
+        if self.sync:
+            self.context_obj.synchronize()
 
 
-class cuModule:
-    def __init__(self, context, module_name):
-        self.module_name = gpu_path[0] + "\\" + module_name
+class CuModule:
+    def __init__(self, context_obj, module_name):
+        self.module_name = module_name
         module_file = c_char_p(self.module_name.encode())
-        self.context_obj = context
+        self.context_obj = context_obj
         self.module = c_longlong(0)
         err = lib.cuModuleLoad(byref(self.module), module_file)
         if err != CUDA_SUCCESS:
@@ -208,6 +231,7 @@ class cuModule:
             sys.exit()
 
         self.func_dict = {}
+        self.global_dict = {}
 
     def __getattr__(self, attr):
         try:
@@ -227,64 +251,84 @@ class cuModule:
                 self.context_obj.destroy()
                 sys.exit()
 
-            self.func_dict[attr] = cuFunction(function)
+            self.func_dict[attr] = CuFunction(function)
+            self.func_dict[attr].context_obj = self.context_obj
             return self.func_dict[attr]
 
     def setConstant(self, name, c_val):
-        var = c_void_p()
-        size = c_long()
+        try:
+            var, size = self.global_dict[name]
 
-        lib.cuModuleGetGlobal_v2(
-            byref(var), byref(size), self.module, c_char_p(name.encode())
-        )
-        lib.cuMemcpyHtoD_v2(var, byref(c_val), size)
+        except (KeyError):
+            var = c_void_p()
+            size = c_long()
+            cu_print(
+                lib.cuModuleGetGlobal_v2(
+                    byref(var), byref(size), self.module, c_char_p(name.encode())
+                ),
+                "mod.global",
+            )
+            self.global_dict[name] = (var, size)
+
+        cu_print(lib.cuMemcpyHtoD_v2(var, byref(c_val), size), "mod.HtoD")
 
 
-class cuFFT:
-    def __init__(self, arr_in, arr_out, direction="fwd"):
+class CuFFT:
+    def __init__(self, arr_in, arr_out, direction="fwd", plan_fft=True):
         self.arr_in = arr_in
         self.arr_out = arr_out
+        self._arr = arr_in if direction == "fwd" else arr_out
         self.direction = direction
-        self.plan = c_longlong(0)
+        self._cufftType = CUFFT_R2C if direction == "fwd" else CUFFT_C2R
+        self._batch = self._arr.shape[1] if len(self._arr.shape) > 1 else 1
 
-        lib_cufft.cufftCreate(byref(self.plan))
-        lib_cufft.cufftPlan1d(byref(self.plan), arr_in.size, CUFFT_R2C, 1)
+        self.plan_ptr = c_longlong(0)
+        cu_print(lib_cufft.cufftCreate(byref(self.plan_ptr)), "fft.plan create")
 
-        arr = arr_in if direction == "fwd" else arr_out
+        if plan_fft:
+            self.plan()
 
+    def plan(self):
+        arr = self._arr
         n = (1 * c_int)(arr.shape[0])
-        istride = arr.shape[1] if len(arr.shape) > 1 else 0
+        istride = arr.shape[1] if len(arr.shape) > 1 else 1
         ostride = istride
-        idist = 1
-        odist = 1
-        inembed = (1 * c_int)(0)
-        onembed = (1 * c_int)(0)
 
-        cufftType = CUFFT_R2C if direction == "fwd" else CUFFT_C2R
-        batch = arr.shape[1] if len(arr.shape) > 1 else 1
-
-        lib_cufft.cufftPlanMany(
-            byref(self.plan),
-            1,
-            n,
-            inembed,
-            istride,
-            idist,
-            onembed,
-            ostride,
-            odist,
-            cufftType,
-            batch,
+        cu_print(
+            lib_cufft.cufftPlanMany(
+                byref(self.plan_ptr),
+                1,  # rank,
+                n,
+                (1 * c_int)(0),  # inembed,
+                istride,
+                1,  # idist,
+                (1 * c_int)(0),  # onembed,
+                ostride,
+                1,  # odist,
+                self._cufftType,
+                self._batch,
+            ),
+            "fft.plan many",
         )
 
     def execute(self):
         if self.direction == "fwd":
-            lib_cufft.cufftExecR2C(self.plan, self.arr_in.arr_d, self.arr_out.arr_d)
+            cu_print(
+                lib_cufft.cufftExecR2C(
+                    self.plan_ptr, self.arr_in.dev_ptr, self.arr_out.dev_ptr
+                ),
+                "fft.fwd",
+            )
         else:
-            lib_cufft.cufftExecC2R(self.plan, self.arr_in.arr_d, self.arr_out.arr_d)
+            cu_print(
+                lib_cufft.cufftExecC2R(
+                    self.plan_ptr, self.arr_in.dev_ptr, self.arr_out.dev_ptr
+                ),
+                "fft.bwd",
+            )
 
     def destroy(self):
-        lib_cufft.cufftDestroy(self.plan)
+        cu_print(lib_cufft.cufftDestroy(self.plan_ptr), "fft.destroy")
 
     def __del__(self):
         self.destroy()
