@@ -36,7 +36,6 @@ import re
 import sys
 from os.path import abspath, dirname, exists, join
 
-from numpy import get_include
 from setuptools import Extension, find_packages, setup
 
 # Build description from README (PyPi compatible)
@@ -199,6 +198,8 @@ def get_ext_modules(with_binaries):
                 build_ext.build_extensions(self)
             except (CCompilerError, DistutilsExecError, DistutilsPlatformError) as err:
                 raise BuildFailed() from err
+
+    from numpy import get_include
 
     ext_modules.append(
         Extension(
