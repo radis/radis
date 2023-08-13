@@ -1814,7 +1814,7 @@ class BroadenFactory(BaseFactory):
 
         return line_profile
 
-    def _calc_lineshape_LDM(self, df, wavenumber_group):
+    def _calc_lineshape_LDM(self, df, wavenumber_group=None):
         """Generate the lineshape database using the steps defined by the
         parameters :py:attr:`~radis.lbl.loader.Parameters.dxL` and
         :py:attr:`~radis.lbl.loader.Parameters.dxG`.
