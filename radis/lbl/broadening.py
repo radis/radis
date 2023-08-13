@@ -3237,7 +3237,7 @@ class BroadenFactory(BaseFactory):
 
     # %% Generate absorption profile which includes linebroadening factors
 
-    def _interpolate_multisparsegrid(
+    def _interpolate_and_sum_multisparsegrid(
         self, wavenumber, abscoeff, regular_output_grid=True
     ):
         """Interpolate abscoeff arrays to a common grid.
@@ -3283,7 +3283,9 @@ class BroadenFactory(BaseFactory):
             # minimum and maximum wavenumber values
 
             # Get index of wavenumber groups in the common wavenumber array (will be used as a mask below to accelerate performances)
-            range_start_end = []
+            range_start_end = (
+                []
+            )  # (wavenumber_group_#1_start, wn#1_end, wn#2_start, wn#2_end, etc.)
             for i in range(len(wavenumber)):
                 for j in range(len(wavenumber[i])):
                     range_start_end.append(wavenumber[i][j][0])
@@ -3310,10 +3312,138 @@ class BroadenFactory(BaseFactory):
                     k += 2
                 abscoeff_common.append(abscoeff_grid)
 
+            # HACK STOP POINT For RADIS Community paper. Plot different abscoeff for all grids:
+            if False:
+                import matplotlib.pyplot as plt
+
+                from radis.tools.plot_tools import add_ruler
+
+                fig = plt.figure()
+                add_ruler(fig)
+                plt.xlabel("Wavenumber (cm-1")
+                plt.ylabel("Abscoeff")
+                for j, (wavenumber_j, abscoeff_j) in enumerate(
+                    zip(wavenumber, abscoeff)
+                ):
+                    plt.plot(
+                        np.hstack(wavenumber_j),
+                        np.hstack(abscoeff_j),
+                        "-o",
+                        ms=4,
+                        label=f"Grid {j}",
+                    )
+                # plt.legend()
+                plt.yscale("log")
+                plt.xlim((4179.499119875524, 4191.051825655655))
+                plt.plot(
+                    w_common,
+                    np.sum(abscoeff_common, axis=0),
+                    "-",
+                    color="lightgrey",
+                    lw=3,
+                    zorder=-1,
+                    label="Sum",
+                )
+                plt.legend()
+
+            # Sum over all grids
+            wavenumber = w_common
+            abscoeff = np.sum(abscoeff_common, axis=0)
+
         else:
+
+            def define_common_irregular_grid(wavenumber):
+                """
+                wavenumber:
+                    [0] = narrower
+                    [1] = coarser
+                    [2] = even coarser
+                    # etc
+                """
+
+                w_common = []
+                abscoeff_common = []
+
+                next_event = {}  # next start or end of a wavenumber group in this grid
+                grid_is_open = {}
+                indexes = np.zeros(len(wavenumber), dtype=np.int)
+                wavenumber_ranges = (
+                    {}
+                )  # (group1_start, group1_end), (group2_start, group2_end), etc. for each grid
+                grid_is_open = np.zeros(len(wavenumber), dtype=bool)
+                for i in range(len(wavenumber)):
+                    grid_is_open[i] = False
+                    wavenumber_ranges[i] = {}
+                    for j in range(len(wavenumber[i])):
+                        wavenumber_ranges[i][j] = (
+                            wavenumber[i][j][0],
+                            wavenumber[i][j][-1],
+                        )
+                    next_event[i] = wavenumber_ranges[i][0][
+                        0
+                    ]  # init next event with opening of first group
+
+                # 1st batch of numbers
+                # All grids are closed
+                i = 0
+                # j = 0
+
+                current_grid = min(next_event, key=next_event.get)
+                # min_current_group, max_current_group = wavenumber_ranges[current_grid].pop(indexes[current_grid])
+
+                while any(wavenumber_ranges[i] for i in wavenumber_ranges):
+                    i += 1
+                    igroup = indexes[current_grid]
+
+                    if grid_is_open[current_grid]:
+                        # Add to common grid
+                        w_common.append(wavenumber[current_grid][igroup])
+                        abscoeff_common.append(
+                            abscoeff[current_grid][igroup]
+                        )  # WIP 13/06/23 # TODO interpolate if needed, etc.
+                        # close grid :
+                        grid_is_open[current_grid] = False
+                        # print("==> BLA", i, "current grid", current_grid, "group", igroup, "IS now CLOSED")
+                        # reinitialize with next group start:
+                        if igroup + 1 in wavenumber_ranges[current_grid]:
+                            next_event[current_grid] = wavenumber_ranges[current_grid][
+                                igroup + 1
+                            ][0]
+                        else:
+                            del next_event[current_grid]
+                            # delete last group from ranges
+                            del wavenumber_ranges[current_grid][igroup]
+                            # print("==> BLA : finished next_event", current_grid)
+
+                    else:
+                        # open grid :
+                        grid_is_open[current_grid] = True
+                        # print("==> BLA", i, "current grid", current_grid, "group", igroup, "IS now OPEN")
+                        # remove group :
+                        min_current_group, max_current_group = wavenumber_ranges[
+                            current_grid
+                        ].pop(igroup)
+                        indexes[current_grid] += 1
+                        # reinitialize next event with end of group
+                        next_event[current_grid] = max_current_group
+
+                    for igrid in list(wavenumber_ranges.keys()):
+                        if not wavenumber_ranges[igrid]:
+                            del wavenumber_ranges[igrid]
+                            # print("==> BLA : finished grid", igrid)
+
+                    # Draw next grid event :
+                    if next_event:
+                        current_grid = min(next_event, key=next_event.get)
+
+                return w_common, abscoeff_common
+
+            w_common, abscoeff_common = define_common_irregular_grid(wavenumber)
+            wavenumber = np.hstack(w_common)
+            abscoeff = np.hstack(abscoeff_common)
             raise NotImplementedError
 
-        return w_common, abscoeff_common
+        return wavenumber, abscoeff
 
     def _calc_broadening(self):
         """Loop over all lines, calculate lineshape, and returns the sum of
@@ -3385,47 +3515,9 @@ class BroadenFactory(BaseFactory):
             self.profiler.start("interpolate_multigrids", 3)
 
             # Interpolate abscoeff arrays to a common grid
-            wavenumber_common, abscoeff_common = self._interpolate_multisparsegrid(
+            wavenumber, abscoeff = self._interpolate_and_sum_multisparsegrid(
                 wavenumber, abscoeff
             )
-            # HACK STOP POINT For RADIS Community paper. Plot different abscoeff for all grids:
-            if False:
-                import matplotlib.pyplot as plt
-
-                from radis.tools.plot_tools import add_ruler
-
-                fig = plt.figure()
-                add_ruler(fig)
-                plt.xlabel("Wavenumber (cm-1")
-                plt.ylabel("Abscoeff")
-                for j, (wavenumber_j, abscoeff_j) in enumerate(
-                    zip(wavenumber, abscoeff)
-                ):
-                    plt.plot(
-                        np.hstack(wavenumber_j),
-                        np.hstack(abscoeff_j),
-                        "-o",
-                        ms=4,
-                        label=f"Grid {j}",
-                    )
-                # plt.legend()
-                plt.yscale("log")
-                plt.xlim((4179.499119875524, 4191.051825655655))
-                plt.plot(
-                    wavenumber_common,
-                    np.sum(abscoeff_common, axis=0),
-                    "-",
-                    color="lightgrey",
-                    lw=3,
-                    zorder=-1,
-                    label="Sum",
-                )
-                plt.legend()
-
-            # Sum over all grids
-            wavenumber = wavenumber_common
-            abscoeff = np.sum(abscoeff_common, axis=0)
-
             self.profiler.stop(
                 "interpolate_multigrids", "Interpolated multiple, discontinued grids"
             )
