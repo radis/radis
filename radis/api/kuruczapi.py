@@ -98,7 +98,12 @@ class AdBKurucz:
         `Barklem & Collet (2016), Table 8 <https://doi.org/10.1051/0004-6361/201526961>`_
 
         """
-        pfT_str = "T[K], 1.00000e-05, 1.00000e-04, 1.00000e-03, 1.00000e-02, 1.00000e-01, 1.50000e-01, 2.00000e-01, 3.00000e-01, 5.00000e-01, 7.00000e-01, 1.00000e+00, 1.30000e+00, 1.70000e+00, 2.00000e+00, 3.00000e+00, 5.00000e+00, 7.00000e+00, 1.00000e+01, 1.50000e+01, 2.00000e+01, 3.00000e+01, 5.00000e+01, 7.00000e+01, 1.00000e+02, 1.30000e+02, 1.70000e+02, 2.00000e+02, 2.50000e+02, 3.00000e+02, 5.00000e+02, 7.00000e+02, 1.00000e+03, 1.50000e+03, 2.00000e+03, 3.00000e+03, 4.00000e+03, 5.00000e+03, 6.00000e+03, 7.00000e+03, 8.00000e+03, 9.00000e+03, 1.00000e+04"
+        file_path="radis/levels/pfTKurucz_values.txt"
+        with open(file_path, "r") as file:
+            lines = file.readlines()
+        pfT_values_line = [line for line in lines if "pfT_str" in line][0]
+        pfT_values_line = pfT_values_line.strip() 
+        pfT_str= pfT_values_line.replace('"', '')  # Removing quotation marks.
         pfTdat = pd.read_csv(io.StringIO(pfT_str), sep=",")
         pfTdat = pd.Series(pfTdat.columns[1:]).astype(
             "float64"
