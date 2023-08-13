@@ -27,6 +27,7 @@ import numpy as np
 import pytest
 
 import radis
+from radis import config
 from radis.lbl.factory import SpectrumFactory
 from radis.misc.printer import printm
 from radis.test.utils import setup_test_line_databases
@@ -656,6 +657,7 @@ def test_vaex_and_pandas_spectrum():
     from radis import calc_spectrum
 
     # computing spectrum in vaex dataframe format
+    config["DATAFRAME_ENGINE"] = "vaex"
     s_vaex, factory_s_vaex = calc_spectrum(
         1900,
         2300,  # cm-1
@@ -668,11 +670,11 @@ def test_vaex_and_pandas_spectrum():
         path_length=1,  # cm
         databank="hitran",  # or 'hitemp', 'geisa', 'exomol'
         # use_cached=False,
-        engine="vaex",
         return_factory=True,
     )
 
     # computing spectrum in pandas dataframe format
+    config["DATAFRAME_ENGINE"] = "pandas"
     s_pandas, factory_s_pandas = calc_spectrum(
         1900,
         2300,  # cm-1
@@ -684,7 +686,6 @@ def test_vaex_and_pandas_spectrum():
         path_length=1,  # cm
         databank="hitran",  # or 'hitemp', 'geisa', 'exomol'
         # use_cached=False,
-        engine="pandas",
         return_factory=True,
     )
 
@@ -700,22 +701,24 @@ def test_vaex_and_pandas_spectrum():
     #%% Additional test with other options (cutoff, ...)
     from radis import SpectrumFactory
 
+    config["DATAFRAME_ENGINE"] = "vaex"
     sf_vaex = SpectrumFactory(
         wavelength_min=4200,
         wavelength_max=4500,
         cutoff=1e-23,
         molecule="CO2",
     )
-    sf_vaex.fetch_databank("hitran", output="vaex")
+    sf_vaex.fetch_databank("hitran")
     s_vaex = sf_vaex.eq_spectrum(Tgas=2000)  # failing on the 08/03/2023 - minouHub
 
+    config["DATAFRAME_ENGINE"] = "pandas"
     sf_pd = SpectrumFactory(
         wavelength_min=4200,
         wavelength_max=4500,
         cutoff=1e-23,
         molecule="CO2",
     )
-    sf_pd.fetch_databank("hitran", output="pandas")
+    sf_pd.fetch_databank("hitran")
     s_pd = sf_pd.eq_spectrum(Tgas=2000)
     for column in sf_pd.df1.columns:
         assert np.all(sf_vaex.df1[column].to_numpy() == sf_pd.df1[column])
@@ -749,21 +752,21 @@ def test_vaex_and_pandas_spectrum_noneq():
         "return_factory": True,
     }
     # Calculating spectrum using vae
+    config["DATAFRAME_TYPE"] = "vaex"
     s, factory_s = calc_spectrum(
         **conditions,
         Tgas=700,  # K
         Tvib=710,
         Trot=710,
-        engine="vaex",
     )
 
     # Calculating spectrum using pandas
+    config["DATAFRAME_ENGINE"] = "pandas"
     s1, factory_s1 = calc_spectrum(
         **conditions,
         Tgas=700,  # K
         Tvib=710,
         Trot=710,
-        engine="pandas",
     )
 
     import numpy as np

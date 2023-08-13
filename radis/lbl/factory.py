@@ -96,6 +96,7 @@ except ImportError:  # if ran from here
     from radis.lbl.bands import BandFactory
     from radis.lbl.base import get_wavenumber_range
 
+from radis import config
 from radis.misc.basics import flatten, is_float, is_range, list_if_float, round_off
 from radis.misc.utils import Default
 from radis.phys.constants import k_b
@@ -104,7 +105,6 @@ from radis.phys.units import convert_universal
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.spectrum import Spectrum
-from radis import config
 
 c_cm = c * 100
 
@@ -535,7 +535,7 @@ class SpectrumFactory(BandFactory):
         self.input.Tref = convert_and_strip_units(Tref, u.K)
         self.input.pressure_mbar = convert_and_strip_units(pressure, u.bar) * 1e3
         self.input.mole_fraction = mole_fraction
-        if config["DATAFRAME_ENGINE"] in ["pandas","vaex"]:
+        if config["DATAFRAME_ENGINE"] in ["pandas", "vaex"]:
             self.dataframe_engine = config["DATAFRAME_ENGINE"]
         else:
             raise NotImplementedError

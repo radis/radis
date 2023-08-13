@@ -8,9 +8,9 @@ from radis import calc_spectrum
 def compare_vaex_pandas_time():
     """
     Compares the time performance of pandas and Vaex
-    .. warnings 
-    This function will download the full H2O HITEMP database which requires > 10 (?) GB 
-    and many minutes if not hours of parsing. It is not executed by default in the test 
+    .. warnings
+    This function will download the full H2O HITEMP database which requires > 10 (?) GB
+    and many minutes if not hours of parsing. It is not executed by default in the test
     suite (name doesn't start with test_*)
     """
     time_list, timeC_list, lines_list = [], [], []
@@ -71,7 +71,7 @@ def compare_vaex_pandas_time():
 # Compare the memory performance of Pandas and Vaex
 def compare_pandas_vs_vaex_memory():
     """
-    It is for comparing the memory performance of pandas and vaex. 
+    It is for comparing the memory performance of pandas and vaex.
     """
 
     import tracemalloc

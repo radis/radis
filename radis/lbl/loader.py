@@ -930,7 +930,6 @@ class DatabankLoader(object):
         lvl_use_cached=True,
         memory_mapping_engine="default",
         load_columns="equilibrium",
-        output="pandas",
         parallel=True,
         extra_params=None,
     ):
@@ -1095,6 +1094,9 @@ class DatabankLoader(object):
         isotope = self.input.isotope
         if not molecule:
             raise ValueError("Please define `molecule=` so the database can be fetched")
+
+        output = config["DATAFRAME_ENGINE"]
+        self.dataframe_type = output
 
         if include_neighbouring_lines:
             wavenum_min = self.params.wavenum_min_calc
@@ -1514,7 +1516,6 @@ class DatabankLoader(object):
         name=None,
         path=None,
         format=None,
-        output="pandas",
         parfunc=None,
         parfuncfmt=None,
         levels=None,
@@ -1629,6 +1630,9 @@ class DatabankLoader(object):
         """
         # %% Check inputs
         # ---------
+
+        output = config["DATAFRAME_ENGINE"]
+        self.dataframe_type = output
 
         # use radis default for calculations non equilibrium calculations
         # if the levelsfmt is not specified in the databank

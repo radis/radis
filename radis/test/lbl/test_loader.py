@@ -11,6 +11,7 @@ from shutil import rmtree
 import matplotlib.pyplot as plt
 import pytest
 
+from radis import config
 from radis.lbl import SpectrumFactory
 from radis.misc.printer import printm
 from radis.test.utils import getTestFile, setup_test_line_databases
@@ -258,18 +259,14 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
     # Comparing Vaex dataframe and Pandas dataframe fetched from HITRAN
 
     # Fetching in vaex dataframe format
-    sf.dataframe_type = "vaex"
-    sf.fetch_databank(
-        "hitran", memory_mapping_engine="vaex", output="vaex", load_columns="all"
-    )
+    config["DATAFRAME_ENGINE"] = "vaex"
+    sf.fetch_databank("hitran", memory_mapping_engine="vaex", load_columns="all")
     df1 = sf.df0
     assert isinstance(df1, vaex.dataframe.DataFrameLocal)
 
     # Fetching in Pandas dataframe format
-    sf.dataframe_type = "pandas"
-    sf.fetch_databank(
-        "hitran", memory_mapping_engine="vaex", output="pandas", load_columns="all"
-    )
+    config["DATAFRAME_ENGINE"] = "pandas"
+    sf.fetch_databank("hitran", memory_mapping_engine="vaex", load_columns="all")
     df2 = sf.df0
     assert isinstance(df2, pandas.core.frame.DataFrame)
 
@@ -280,18 +277,14 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
     # Comparing Vaex dataframe and Pandas dataframe fetched from HITEMP
 
     # Fetching in vaex dataframe format
-    sf.dataframe_type = "vaex"
-    sf.fetch_databank(
-        "hitemp", memory_mapping_engine="vaex", output="vaex", load_columns="all"
-    )
+    config["DATAFRAME_ENGINE"] = "vaex"
+    sf.fetch_databank("hitemp", memory_mapping_engine="vaex", load_columns="all")
     df1 = sf.df0
     assert isinstance(df1, vaex.dataframe.DataFrameLocal)
 
     # Fetching in Pandas dataframe format
-    sf.dataframe_type = "pandas"
-    sf.fetch_databank(
-        "hitemp", memory_mapping_engine="vaex", output="pandas", load_columns="all"
-    )
+    config["DATAFRAME_ENGINE"] = "pandas"
+    sf.fetch_databank("hitemp", memory_mapping_engine="vaex", load_columns="all")
     df2 = sf.df0
     assert isinstance(df2, pandas.core.frame.DataFrame)
 
@@ -302,18 +295,14 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
     # Comparing Vaex dataframe and Pandas dataframe fetched from EXOMOL
 
     # Fetching in vaex dataframe format
-    sf.dataframe_type = "vaex"
-    sf.fetch_databank(
-        "exomol", memory_mapping_engine="vaex", output="vaex", load_columns="all"
-    )
+    config["DATAFRAME_ENGINE"] = "vaex"
+    sf.fetch_databank("exomol", memory_mapping_engine="vaex", load_columns="all")
     df1 = sf.df0
     assert isinstance(df1, vaex.dataframe.DataFrameLocal)
 
     # Fetching in Pandas dataframe format
-    sf.dataframe_type = "pandas"
-    sf.fetch_databank(
-        "exomol", memory_mapping_engine="vaex", output="pandas", load_columns="all"
-    )
+    config["DATAFRAME_ENGINE"] = "pandas"
+    sf.fetch_databank("exomol", memory_mapping_engine="vaex", load_columns="all")
     df2 = sf.df0
     assert isinstance(df1, vaex.dataframe.DataFrameLocal)
 
@@ -324,18 +313,14 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
     # Comparing Vaex dataframe and Pandas dataframe fetched from GEISA
 
     # Fetching in vaex dataframe format
-    sf.dataframe_type = "vaex"
-    sf.fetch_databank(
-        "geisa", memory_mapping_engine="vaex", output="vaex", load_columns="all"
-    )
+    config["DATAFRAME_ENGINE"] = "vaex"
+    sf.fetch_databank("geisa", memory_mapping_engine="vaex", load_columns="all")
     df1 = sf.df0
     assert isinstance(df1, vaex.dataframe.DataFrameLocal)
 
     # Fetching in Pandas dataframe format
-    sf.dataframe_type = "pandas"
-    sf.fetch_databank(
-        "geisa", memory_mapping_engine="vaex", output="pandas", load_columns="all"
-    )
+    config["DATAFRAME_ENGINE"] = "pandas"
+    sf.fetch_databank("geisa", memory_mapping_engine="vaex", load_columns="all")
     df2 = sf.df0
     assert isinstance(df1, vaex.dataframe.DataFrameLocal)
 
@@ -343,9 +328,13 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
     assert compare_dataframe(df1, df2, df2.columns)
 
 
-# Added in https://github.com/radis/radis/pull/580
-# Compares dataframes fetched and manipulated with vaex with that of pandas. Every column of dataframe in vaex format is compared with corresponding column of dataframe in pandas format .
 def test_vaex_and_pandas_dataframe_load_databank():
+    """
+    Compares dataframes fetched and manipulated with vaex with that of pandas.
+    Every column of dataframe in vaex format is compared with corresponding column
+    of dataframe in pandas format .
+    Added in https://github.com/radis/radis/pull/580
+    """
     import numpy as np
 
     from radis import SpectrumFactory
@@ -360,11 +349,13 @@ def test_vaex_and_pandas_dataframe_load_databank():
     )
 
     # Loading in vaex dataframe format
-    sf.load_databank("HITRAN-CO2-TEST", output="vaex")
+    config["DATAFRAME_ENGINE"] = "vaex"
+    sf.load_databank("HITRAN-CO2-TEST")
     df1 = sf.df0
 
     # Loading in  pandas dataframe format
-    sf.load_databank("HITRAN-CO2-TEST", output="pandas")
+    config["DATAFRAME_ENGINE"] = "pandas"
+    sf.load_databank("HITRAN-CO2-TEST")
     df2 = sf.df0
 
     # Comparing both the dataframes
@@ -389,10 +380,12 @@ def test_vaex_and_pandas_dataframe_load_databank():
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
 
     # Loading in vaex dataframe format
-    sf.load_databank("HITEMP-CO2-TEST", output="vaex", load_columns="all")
+    config["DATAFRAME_ENGINE"] = "vaex"
+    sf.load_databank("HITEMP-CO2-TEST", load_columns="all")
     df1 = sf.df0
 
-    # Loadint in pandas dataframe format
+    # Loading in pandas dataframe format
+    config["DATAFRAME_ENGINE"] = "pandas"
     sf.load_databank("HITEMP-CO2-TEST", load_columns="all")
     df2 = sf.df0
 

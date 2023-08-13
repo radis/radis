@@ -533,7 +533,7 @@ def calc_spectrum(
         diluent_for_this_molecule = diluents_for_molecule(
             mole_fraction, diluent, molecule
         )
-        engine = config['DATAFRAME_ENGINE']
+        engine = config["DATAFRAME_ENGINE"]
 
         generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
