@@ -1678,7 +1678,7 @@ class BroadenFactory(BaseFactory):
 
     # %% Function to calculate lineshapes from HWHM
 
-    def _calc_lineshape(self, dg, wavenumber_group):
+    def _calc_lineshape(self, dg, wavenumber_group=None, wavenumber_group):
         """Sum over each line (trying to use vectorize operations to be faster)
 
         Parameters
@@ -2084,9 +2084,7 @@ class BroadenFactory(BaseFactory):
 
         return
 
-    def _apply_lineshape(
-        self, broadened_param, line_profile, shifted_wavenum, wavenumber_group
-    ):
+    def _apply_lineshape(self, broadened_param, line_profile, shifted_wavenum):
         """Multiply `broadened_param` by `line_profile` and project it on the
         correct wavelength given by `shifted_wavenum`
 
@@ -2100,13 +2098,6 @@ class BroadenFactory(BaseFactory):
                 (size B * N, B = width of lineshape)
         shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
             center wavelength (used to project broadened lineshapes )
-
-        Other Parameters
-        ----------------
-        wavenumber_group: int, or ``None``
-            in sparse wavenumber mode; wavenumber group to apply these lines on.
-            If ``None``, use full range.
-
 
         Returns
         -------

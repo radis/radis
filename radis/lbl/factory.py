@@ -2767,6 +2767,10 @@ def _generate_wavenumber_range_sparse(
     neighbour_lines: float
         wavenumber full width of broadening calculation: used to define which
         neighbour lines shall be included in the calculation
+    line_positions: array
+        position of line centers, to remove empty ranges
+    lineshape_half_width: float
+        half-linewidth of lines, to remove empty ranges
 
     Returns
     -------
@@ -2779,17 +2783,21 @@ def _generate_wavenumber_range_sparse(
     woutrange: (wmin, wmax)
         index to project the full range including neighbour lines `wavenumber_calc`
         on the final range `wavenumber`, i.e. : wavenumber_calc[woutrange[0]:woutrange[1]] = wavenumber
+    i_ranges: list of (i_start, i_end)
+        list of ranges of line_positions that are included in the calculation  # TODO : confirm description
     """
     assert wavenum_min < wavenum_max
     assert wstep > 0
     assert len(line_positions) > 0
 
-    i_ranges = get_overlapping_ranges(line_positions.values, lineshape_half_width)
+    # Get index of blocks of lines that will overlap:
+    # i_ranges = get_overlapping_ranges(line_positions.values, lineshape_half_width)
 
     wavenumber_list = []
     wavenumber_calc_list = []
     woutrange_list = []
 
+    # Create wavenumber arrays for each block of lines
     for i, (i_start, i_end) in enumerate(i_ranges):
         wavenum_min_i = max(
             wavenum_min, line_positions.iloc[i_start] - lineshape_half_width
