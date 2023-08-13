@@ -766,7 +766,9 @@ def olivero_1977(wg, wl):
     return wv
 
 
-def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
+def voigt_lineshape(
+    w_centered, hwhm_lorentz, hwhm_voigt, jit=True, exact_normalize=True
+):
     """Calculates Voigt lineshape using the approximation of the Voigt profile
     of [NEQAIR-1996]_, [Whiting-1968]_ that maintains a good accuracy in the far wings.
     Exact for a pure Gaussian and pure Lorentzian.
@@ -786,6 +788,10 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
     jit: boolean
         if ``True``, use just in time compiler. Usually faster when > 10k lines.
         Default ``True``.
+    exact_normalize: boolean
+        if ``True``, normalize the lineshape to 1. This ensures energy conservation
+        even if the grid resolution is not good enough. Else, use an analytical
+        expression to normalize. Default ``True``.
 
     Returns
     -------
@@ -813,15 +819,15 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
         lineshape = whiting1968(w_centered, wl, wv)
 
     # Normalization
-    #    integral = wv*(1.065+0.447*(wl/wv)+0.058*(wl/wv)**2)
+    if exact_normalize:
+        integral = np.trapz(lineshape, w_centered, axis=0)
+    else:
+        integral = wv * (1.065 + 0.447 * (wl / wv) + 0.058 * (wl / wv) ** 2)
     # ... approximation used by Whiting, equation (7)
     # ... performance: ~ 6µs vs ~84µs for np.trapz(lineshape, w_centered) ):
     # ... But not used because:
     # ... - it may yield wrong results when the broadening range is not refined enough
     # ... - it is defined for wavelengths only. Here we may have wavenumbers as well
-
-    integral = np.trapz(lineshape, w_centered, axis=0)
-
     # Normalize
     lineshape /= integral
 
@@ -1586,7 +1592,7 @@ class BroadenFactory(BaseFactory):
 
         return lineshape
 
-    def _voigt_broadening(self, dg, wbroad_centered, jit=True):
+    def _voigt_broadening(self, dg, wbroad_centered, jit=True, exact_normalize=True):
         """Computes voigt broadening over all lines + normalize.
 
         Uses an approximation of the Voigt profile [1]_, [2]_ that maintains a
@@ -1648,13 +1654,19 @@ class BroadenFactory(BaseFactory):
 
         # Calculate broadening for all lines
         # ----------------------------------
-        lineshape = voigt_lineshape(wbroad_centered, hwhm_lorentz, hwhm_voigt, jit=jit)
+        lineshape = voigt_lineshape(
+            wbroad_centered,
+            hwhm_lorentz,
+            hwhm_voigt,
+            jit=jit,
+            exact_normalize=exact_normalize,
+        )
 
         return lineshape
 
     # %% Function to calculate lineshapes from HWHM
 
-    def _calc_lineshape(self, dg):
+    def _calc_lineshape(self, dg, wavenumber_group=None):
         """Sum over each line (trying to use vectorize operations to be faster)
 
         Parameters
@@ -1663,6 +1675,12 @@ class BroadenFactory(BaseFactory):
             list of lines  (keys includes HWHM half-width half max coefficient
             `gamma_lb` for broadening calculation)
 
+        Other Parameters
+        ----------------
+        wavenumber_group: (int, int) or None
+            used for multisparsegrids : if not None, use the lineshape grid
+            corresponding to the specific wavenumber grid (i.e. : only the
+            center for the most resolved grid, only the wings for the coarser grid)
 
         Returns
         -------
@@ -1708,7 +1726,11 @@ class BroadenFactory(BaseFactory):
 
         # Generate broadening array (so that it is as large as `truncation`
         # in cm-1, and keeps the same spacing as the final output wavelength vector)
-        wbroad_centered_oneline = self.wbroad_centered  # size (B,)
+        if wavenumber_group is None:
+            wbroad_centered_oneline = self.wbroad_centered  # size (B,)
+        else:
+            gridnb = wavenumber_group[0]
+            wbroad_centered_oneline = self.wbroad_centered[gridnb]  # size (<B,)
 
         shifted_wavenum = dg.shiftwav
 
@@ -1737,7 +1759,10 @@ class BroadenFactory(BaseFactory):
         if broadening_method == "voigt":
             jit = True
             self.profiler.start("voigt_broadening", 3)
-            line_profile = self._voigt_broadening(dg, wbroad_centered, jit=jit)
+            # we normalize numerically only if using a single grid (else, we use an analytical expression)
+            line_profile = self._voigt_broadening(
+                dg, wbroad_centered, jit=jit, exact_normalize=(wavenumber_group is None)
+            )
             self.profiler.stop(
                 "voigt_broadening", f"Calculated Voigt profile (jit={jit})"
             )
@@ -1786,8 +1811,8 @@ class BroadenFactory(BaseFactory):
         ----------
         df: pandas DataFrame
             line database
-        wavenumber_group: int, or ``None``
-            in sparse wavenumber mode; wavenumber group to apply these lines on.
+        wavenumber_group: (int, int), or ``None``
+            in sparse wavenumber mode; wavenumber grid & group to apply these lines on.
             If ``None``, use full range.
 
         Returns
@@ -2002,9 +2027,7 @@ class BroadenFactory(BaseFactory):
 
         return
 
-    def _apply_lineshape(
-        self, broadened_param, line_profile, shifted_wavenum, wavenumber_group
-    ):
+    def _apply_lineshape(self, broadened_param, line_profile, shifted_wavenum):
         """Multiply `broadened_param` by `line_profile` and project it on the
         correct wavelength given by `shifted_wavenum`
 
@@ -2019,13 +2042,6 @@ class BroadenFactory(BaseFactory):
         shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
             center wavelength (used to project broadened lineshapes )
 
-        Other Parameters
-        ----------------
-        wavenumber_group: int, or ``None``
-            in sparse wavenumber mode; wavenumber group to apply these lines on.
-            If ``None``, use full range.
-
-
         Returns
         -------
         sumoflines: array (size W  = size of output wavenumbers)
@@ -2039,7 +2055,8 @@ class BroadenFactory(BaseFactory):
 
         See Also
         --------
-        :py:meth:`~radis.lbl.broadening.BroadenFactory._calc_lineshape`
+        :py:meth:`~radis.lbl.broadening.BroadenFactory._calc_lineshape`,
+        :py:meth:`~radis.lbl.broadening.BroadenFactory._apply_lineshape_multigrid`
         """
 
         self.profiler.start("init_vectors_apply", 3)
@@ -2050,10 +2067,6 @@ class BroadenFactory(BaseFactory):
             self.wavenumber_calc
         )  # calculation vector (shape W + space B on sides)
         woutrange = self.woutrange
-        if wavenumber_group is not None:
-            wavenumber = wavenumber[wavenumber_group]
-            wavenumber_calc = wavenumber_calc[wavenumber_group]
-            woutrange = woutrange[wavenumber_group]
 
         # Vectorize the chunk of lines
         if isinstance(broadened_param, np.ndarray):
@@ -2067,6 +2080,7 @@ class BroadenFactory(BaseFactory):
 
         # Get truncation array
         wbroad_centered = self.wbroad_centered  # size (B,)
+
         # index of truncation half width
         iwbroad_half = len(wbroad_centered) // 2
         ineighbour = arange_len(0, self.params.neighbour_lines, self.params.wstep)
@@ -2127,12 +2141,13 @@ class BroadenFactory(BaseFactory):
         #        # normal: ~ 36 ms  called 9 times
         #        # with @jit : ~ 200 ms called 9 times (worse!)
 
-        # summ all lines :
+        # sum all lines :
 
-        # I_low_in_left: lower wavenumber limit of the line, left grid point
-        # I_low_in_right: lower wavenumber limit of the line, right grid point
-        # I_high_in_left: higher wavenumber limit of the line, left grid point
-        # I_high_in_right: higher wavenumber limit of the line, right grid point
+        # Indices : (e.g. with examples for a line centered on 2325 cm-1, HWHM = 25cm-1)
+        # I_low_in_left: lower wavenumber limit of the line, left grid point (e.g 2300 cm-1)
+        # I_low_in_right: lower wavenumber limit of the line, right grid point (e.g 2300.01 cm-1)
+        # I_high_in_left: higher wavenumber limit of the line, left grid point (e.g. 2350 cm-1)
+        # I_high_in_right: higher wavenumber limit of the line, right grid point (e.g. 2350.01 cm-1)
         I_low_in_left = idcenter_left - iwbroad_half + ioffset
         I_low_in_right = idcenter_right - iwbroad_half + ioffset
         I_high_in_left = I_low_in_left + 2 * iwbroad_half
@@ -2145,11 +2160,258 @@ class BroadenFactory(BaseFactory):
                 fr_right * profS
             )
 
-        # Nomenclature for lines above:
-        # - low/high: start/end of a lineshape
-        # - left/right: closest spectral grid point on the left/right
-
         self.profiler.stop("aggregate__lines", "Aggregate lines")
+
+        # Get valid range (discard wings of line profiles)
+        sumoflines_calc = sumoflines_calc[ioffset:-ioffset]
+        assert len(sumoflines_calc) == len(wavenumber_calc)
+        # Get valid range (discard neighbour lines)
+        sumoflines = sumoflines_calc[woutrange[0] : woutrange[1]]
+
+        return wavenumber, sumoflines
+
+    def _apply_lineshape_multigrid(
+        self, broadened_param, line_profile, shifted_wavenum, wavenumber_group
+    ):
+        """Multiply `broadened_param` by `line_profile` and project it on the
+        correct wavelength given by `shifted_wavenum`
+
+        Parameters
+        ----------
+        broadened_param: pandas Series (or numpy array)   [size N = number of lines]
+            Series to apply lineshape to. Typically linestrength `S` for absorption,
+            or `nu * Aul / 4pi * DeltaE` for emission
+        line_profile:   (1/cm-1)        2D array of lines_profiles for all lines
+                (size B * N, B = width of lineshape)
+        shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
+            center wavelength (used to project broaded lineshapes )
+
+        Other Parameters
+        ----------------
+        wavenumber_group: (int, int), or ``None``
+            in sparse wavenumber mode; wavenumber grid & group to apply these lines on.
+            If ``None``, use full range.
+
+
+        Returns
+        -------
+        sumoflines: array (size W  = size of output wavenumbers)
+            sum of (broadened_param x line_profile)
+
+        Notes
+        -----
+        Units change during convolution::
+
+            [sumoflines] = [broadened_param] * cm
+
+        See Also
+        --------
+        :py:meth:`~radis.lbl.broadening.BroadenFactory._calc_lineshape`
+        """
+
+        self.profiler.start("init_vectors_apply_multigrid", 3)
+
+        # Get spectrum range
+        wavenumber = self.wavenumber  # final vector of wavenumbers (shape W)
+        wavenumber_calc = (
+            self.wavenumber_calc
+        )  # calculation vector (shape W + space B on sides)
+        woutrange = self.woutrange
+        if wavenumber_group is not None:  # multiple, discontinued grids
+            gridnb, groupnb = wavenumber_group
+            wavenumber = wavenumber[gridnb][groupnb]
+            wavenumber_calc = wavenumber_calc[gridnb][groupnb]
+            woutrange = woutrange[gridnb][groupnb]
+
+        # Vectorize the chunk of lines
+        S = broadened_param.reshape((1, -1))
+        shifted_wavenum = shifted_wavenum.reshape((1, -1))  # make it a row vector
+
+        # Get truncation array
+        gridnb = wavenumber_group[0]
+        wbroad_centered = self.wbroad_centered[gridnb]  # size (<B,)
+
+        # index of truncation half width
+        wstep = self._wstep_multigrid[gridnb]
+        truncation = self._truncation_multigrid[gridnb]
+        if wavenumber_group is not None:
+            nearest = (
+                0
+                if gridnb == 0
+                else self._truncation_multigrid[gridnb - 1]
+                - self._wstep_multigrid[gridnb - 1]
+            )  # should be consistent with definitions of hollow wavenumber ranges in radis.lbl.factory.SpectrumFactory._generate_broadening_range_multigrid
+        iwbroad_half = len(wbroad_centered) // 2
+        ineighbour = arange_len(
+            0, self.params.neighbour_lines, wstep
+        )  # TODO update; doesn't work with multigrid
+        if self.params.neighbour_lines > 0:
+            raise NotImplementedError("Neighbour lines with multigrid")
+        itruncation = arange_len(
+            0, truncation, wstep
+        )  # index of lineshape end in this grid
+        # ihollow_center = arange_len(0, nearest, wstep)           # index of the end of the lineshape hollow zone in this grid (starting from the center)
+        ihollow_center = int(
+            nearest // wstep
+        )  # index of the end of the lineshape hollow zone in this grid (starting from the center)
+
+        # Calculate matrix of broadened parameter (for all lines)
+        # ... Note @dev : this is the memory bottleneck !
+        profile_S = line_profile * S
+
+        # ---------------------------
+        # Apply line profile
+
+        self.profiler.stop("init_vectors_apply_multigrid", "Initialized vectors")
+        self.profiler.start("get_matching_line_multigrid", 3)
+        # ... First get closest matching line (on the left, and on the right)
+        # ... note @dev: wavenumber_calc must be sorted, which it is by construction.
+        idcenter_left = (
+            np.searchsorted(wavenumber_calc, shifted_wavenum.T, side="left").ravel() - 1
+        )
+        idcenter_right = np.minimum(idcenter_left + 1, len(wavenumber_calc) - 1)
+
+        # ... Get the fraction of each line distributed to the left and to the right.
+        frac_left = (
+            shifted_wavenum - wavenumber_calc[idcenter_left]
+        ).flatten()  # distance to left grid point
+        frac_right = (
+            wavenumber_calc[idcenter_right] - shifted_wavenum
+        ).flatten()  # distance to right grid point
+        dv = frac_left + frac_right
+        # fraction of intensity on each side:
+        frac_left, frac_right = frac_right / dv, frac_left / dv
+
+        # offset to account for out-of-bound truncation
+        ioffset = itruncation + 1
+
+        # ... Initialize array on which to distribute the lineshapes
+        sumoflines_calc = zeros(len(wavenumber_calc) + 2 * ioffset)
+
+        # Note on performance: it isn't straightforward to vectorize the summation
+        # of all lineshapes on the spectral range as some lines may be parly outside
+        # the spectral range.
+        # to avoid an If / Else condition in the loop, we do a vectorized
+        # comparison beforehand and run 3 different loops
+
+        # reminder: wavenumber_calc has size [neighbour_lines/wstep+vec_length+neighbour_lines/wstep]
+        vec_length = len(wavenumber)
+        assert (
+            len(wavenumber_calc) == vec_length + 2 * ineighbour
+        )  # self.params.neighbour_lines/self.params.wstep
+
+        self.profiler.stop(
+            "get_matching_line_multigrid", "Get closest matching line & fraction"
+        )
+        self.profiler.start("aggregate__lines_multigrid", 3)
+
+        #        # Performance for lines below
+        #        # ----------
+        #        #
+        #        # on test case: 6.5k lines x 18.6k grid length
+        #        # normal: ~ 36 ms  called 9 times
+        #        # with @jit : ~ 200 ms called 9 times (worse!)
+
+        # sum all lines :
+
+        # Indices : (e.g. with examples for a line centered on 2325 cm-1, HWHM = 25cm-1)
+        # I_low_in_left: lower wavenumber limit of the line, left grid point (e.g 2300 cm-1)
+        # I_low_in_right: lower wavenumber limit of the line, right grid point (e.g 2300.01 cm-1)
+        # I_high_in_left: higher wavenumber limit of the line, left grid point (e.g. 2350 cm-1)
+        # I_high_in_right: higher wavenumber limit of the line, right grid point (e.g. 2350.01 cm-1)
+        I_low_in_left = idcenter_left - iwbroad_half + ioffset
+        I_low_in_right = idcenter_right - iwbroad_half + ioffset
+        I_high_in_left = I_low_in_left + 2 * iwbroad_half
+        I_high_in_right = I_low_in_right + 2 * iwbroad_half
+        # Indices specific for multigrids with hollow-lineshapes (e.g. 10 cm-1 hollow zone centered around 25 cm-1):
+        # I_low_nearest_left: start on the hollow zone on the lower wavenumber limit of the line, left grid point (e.g 2315 cm-1)
+        # I_low_nearest_right: start on the hollow zone on the lower wavenumber limit of the line, right grid point (e.g 2315.01 cm-1)
+        # I_high_nearest_left : end of the hollow zone on the higher wavenumber limit of the line, left grid point (e.g 2335 cm-1)
+        # I_high_nearest_right : end of the hollow zone on the higher wavenumber limit of the line, right grid point (e.g 2335.01 cm-1)
+        I_low_nearest_left = idcenter_left - ihollow_center + ioffset
+        I_high_nearest_left = I_low_nearest_left + 2 * ihollow_center
+        I_low_nearest_right = idcenter_right - ihollow_center + ioffset
+        I_high_nearest_right = I_low_nearest_right + 2 * ihollow_center
+        if gridnb == 0:  # prevent center point from being counted twice :
+            I_low_nearest_left -= 1
+            I_low_nearest_right -= 1
+        for i, (fr_left, fr_right, profS) in enumerate(
+            zip(frac_left, frac_right, profile_S.T)
+        ):
+            if radis.config[
+                "DEBUG_MODE"
+            ]:  #  @dev: used to test the indices used in the multigrid boundary corrections
+                sumoflines_calc_0 = sumoflines_calc.copy()
+            sumoflines_calc[
+                np.r_[
+                    I_low_in_left[i] : I_low_nearest_left[i] + 1,
+                    I_high_nearest_left[i] : I_high_in_left[i] + 1,
+                ]
+            ] += (
+                fr_left * profS
+            )
+            sumoflines_calc[
+                np.r_[
+                    I_low_in_right[i] : I_low_nearest_right[i] + 1,
+                    I_high_nearest_right[i] : I_high_in_right[i] + 1,
+                ]
+            ] += (
+                fr_right * profS
+            )
+            # Fix boundary effects for hollow ranges :
+            # Fix linear interpolation effect, and add all of the linestrength
+            # to the boundary
+            # Model used : rather than distribute linearly over W, W+wstep with fractions fr_left, fr_right,
+            # we distribute over W, W+"wstep_narrower_grid" with fractions fr_left', fr_right'
+            # fr_left' = fr_left  * "wstep_narrower_grid"/wstep
+            # fr_right' = fr_right * "wstep_narrower_grid"/wstep
+            if gridnb > 0:
+                if radis.config["DEBUG_MODE"]:
+                    assert np.isclose(
+                        (sumoflines_calc - sumoflines_calc_0)[
+                            I_low_nearest_left[i] + 1
+                        ],
+                        fr_right * profS[len(profS) // 2 - 1],
+                    )  # used to check indices; debug mode
+                sumoflines_calc[I_low_nearest_left[i] + 1] -= (
+                    fr_right
+                    * profS[len(profS) // 2 - 1]
+                    * (wstep - self._wstep_multigrid[gridnb - 1])
+                    / wstep
+                )
+                sumoflines_calc[I_low_nearest_left[i]] += (
+                    fr_right
+                    * profS[len(profS) // 2 - 1]
+                    * (wstep - self._wstep_multigrid[gridnb - 1])
+                    / wstep
+                )
+                if radis.config["DEBUG_MODE"]:
+                    assert np.isclose(
+                        (sumoflines_calc - sumoflines_calc_0)[
+                            I_high_nearest_left[i] + 1
+                        ],
+                        fr_right * profS[len(profS) // 2]
+                        + fr_left * profS[len(profS) // 2 + 1],
+                    )  # used to check indices; debug mode
+                sumoflines_calc[I_high_nearest_left[i] + 1] -= (
+                    fr_right * profS[len(profS) // 2]
+                    + fr_left
+                    * profS[len(profS) // 2 + 1]
+                    * (wstep - self._wstep_multigrid[gridnb - 1])
+                    / wstep
+                )
+                sumoflines_calc[I_high_nearest_left[i] + 2] += (
+                    fr_right * profS[len(profS) // 2]
+                    + fr_left
+                    * profS[len(profS) // 2 + 1]
+                    * (wstep - self._wstep_multigrid[gridnb - 1])
+                    / wstep
+                )
+
+        # if gridnb == 1:
+        #     raise
+
+        self.profiler.stop("aggregate__lines_multigrid", "Aggregate lines")
 
         # Get valid range (discard wings of line profiles)
         sumoflines_calc = sumoflines_calc[ioffset:-ioffset]
@@ -2207,8 +2469,8 @@ class BroadenFactory(BaseFactory):
 
         Other Parameters
         ----------------
-        wavenumber_group: int, or ``None``
-            in sparse wavenumber mode; wavenumber group to apply these lines on.
+        wavenumber_group: (int, int), or ``None``
+            in sparse wavenumber mode; wavenumber grid & group to apply these lines on.
             If ``None``, use full range.
 
 
@@ -2239,9 +2501,10 @@ class BroadenFactory(BaseFactory):
         wavenumber_calc = self.wavenumber_calc
         woutrange = self.woutrange
         if wavenumber_group is not None:
-            wavenumber = wavenumber[wavenumber_group]
-            wavenumber_calc = wavenumber_calc[wavenumber_group]
-            woutrange = woutrange[wavenumber_group]
+            gridnb, groupnb = wavenumber_group
+            wavenumber = wavenumber[gridnb][groupnb]
+            wavenumber_calc = wavenumber_calc[gridnb][groupnb]
+            woutrange = woutrange[gridnb][groupnb]
 
         broadening_method = self.params.broadening_method
 
@@ -2576,8 +2839,8 @@ class BroadenFactory(BaseFactory):
             contains the ``self.params.optimization`` parameter
         df: DataFrame
             line dataframe
-        wavenumber_group: int, or ``None``
-            in sparse wavenumber mode; wavenumber group to apply these lines on.
+        wavenumber_group: (int, int), or ``None``
+            in sparse wavenumber mode; wavenumber grid & group to apply these lines on.
             If ``None``, use full range.
 
         Examples
@@ -2638,8 +2901,9 @@ class BroadenFactory(BaseFactory):
         wavenumber = self.wavenumber
         wavenumber_calc = self.wavenumber_calc
         if wavenumber_group is not None:
-            wavenumber = wavenumber[wavenumber_group]
-            wavenumber_calc = wavenumber_calc[wavenumber_group]
+            gridnb, groupnb = wavenumber_group
+            wavenumber = wavenumber[gridnb][groupnb]
+            wavenumber_calc = wavenumber_calc[gridnb][groupnb]
 
         # Get number of groups for memory splitting
         chunksize = self.misc.chunksize
@@ -2663,10 +2927,20 @@ class BroadenFactory(BaseFactory):
                             )
                         )
 
-                    line_profile = self._calc_lineshape(df)  # usually the bottleneck
-                    (wavenumber, abscoeff) = self._apply_lineshape(
-                        df.S.values, line_profile, df.shiftwav.values, wavenumber_group
-                    )
+                    line_profile = self._calc_lineshape(
+                        df, wavenumber_group=wavenumber_group
+                    )  # usually the bottleneck
+                    if wavenumber_group is None:
+                        (wavenumber, abscoeff) = self._apply_lineshape(
+                            df.S.values, line_profile, df.shiftwav.values
+                        )
+                    else:
+                        (wavenumber, abscoeff) = self._apply_lineshape_multigrid(
+                            df.S.values,
+                            line_profile,
+                            df.shiftwav.values,
+                            wavenumber_group,
+                        )
                 elif optimization in ("simple", "min-RMS"):
                     self.reftracker.add(doi["DIT-2020"], "algorithm")
                     (
@@ -2821,10 +3095,15 @@ class BroadenFactory(BaseFactory):
         same time (note that this is not where the parallelisation is done: all
         lines are processed on the same core)
 
-        Other Parameters
+        Parameters
         ----------
-        wavenumber_group: int, or ``None``
-            in sparse wavenumber mode; wavenumber group to apply these lines on.
+        df: DataFrame
+            line dataframe
+
+        Other Parameters
+        ----------------
+        wavenumber_group: (int, int), or ``None``
+            in sparse wavenumber mode; wavenumber grid & group to apply these lines on.
             If ``None``, use full range.
 
 
@@ -2840,8 +3119,9 @@ class BroadenFactory(BaseFactory):
         wavenumber = self.wavenumber
         wavenumber_calc = self.wavenumber_calc
         if wavenumber_group is not None:
-            wavenumber = wavenumber[wavenumber_group]
-            wavenumber_calc = wavenumber_calc[wavenumber_group]
+            gridnb, groupnb = wavenumber_group
+            wavenumber = wavenumber[gridnb][groupnb]
+            wavenumber_calc = wavenumber_calc[gridnb][groupnb]
 
         # Get number of groups for memory splitting
         chunksize = self.misc.chunksize
@@ -2980,6 +3260,84 @@ class BroadenFactory(BaseFactory):
 
     # %% Generate absorption profile which includes linebroadening factors
 
+    def _interpolate_multisparsegrid(
+        self, wavenumber, abscoeff, regular_output_grid=True
+    ):
+        """Interpolate abscoeff arrays to a common grid.
+
+        Parameters
+        ----------
+        wavenumber : list of list of arrays
+            List of wavenumber arrays for each group in each grid.
+        abscoeff : list of list of arrays
+            List of absorption coefficient arrays for each group in each grid.
+
+        Other Parameters
+        ----------------
+        regular_output_grid: bool
+            if ``True``, output grid is regularly spaced. Else, the output
+            wavenumber grid is adaptative : the narrowest grid is used for each
+            spectral range. An adaptative grid saves disk space and is recommended
+            for very large spectral ranges, however a regular grid is required
+            to apply an experimental slit function.
+            Note that regularizing the grid is possible a posteriori
+            using the Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.resample`
+            method.
+            Default ``False``
+
+        Returns
+        -------
+        tuple of arrays
+            Tuple containing the common wavenumber grid and the interpolated
+            absorption coefficient arrays for each grid.
+        """
+
+        if regular_output_grid:
+            from radis.lbl.factory import _generate_wavenumber_range
+
+            w_common, _, _ = _generate_wavenumber_range(
+                self.input.wavenum_min,
+                self.input.wavenum_max,
+                self.params.wstep,
+                self.params.neighbour_lines,
+            )
+            # Create a common grid by linearly interpolating the absorption coefficient
+            # arrays to a set of wavenumber values that are evenly spaced between the
+            # minimum and maximum wavenumber values
+
+            # Get index of wavenumber groups in the common wavenumber array (will be used as a mask below to accelerate performances)
+            range_start_end = []
+            for i in range(len(wavenumber)):
+                for j in range(len(wavenumber[i])):
+                    range_start_end.append(wavenumber[i][j][0])
+                    range_start_end.append(wavenumber[i][j][-1])
+            id_start_end = np.searchsorted(
+                w_common, range_start_end
+            )  # @dev 1 single search is faster than many during the loop
+
+            abscoeff_common = []
+            k = 0
+            # Loop over all grids :
+            for i in range(len(wavenumber)):
+                abscoeff_grid = np.zeros_like(w_common)
+                # Loop over all groups:
+                for j in range(len(wavenumber[i])):
+                    imin, imax = id_start_end[k : k + 2]
+                    abscoeff_grid[imin : imax + 1] += np.interp(
+                        w_common[imin : imax + 1],
+                        wavenumber[i][j],
+                        abscoeff[i][j],
+                        left=0,
+                        right=0,
+                    )
+                    k += 2
+                abscoeff_common.append(abscoeff_grid)
+
+        else:
+            raise NotImplementedError
+
+        return w_common, abscoeff_common
+
     def _calc_broadening(self):
         """Loop over all lines, calculate lineshape, and returns the sum of
         absorption coefficient k=S*f over all lines.
@@ -3023,20 +3381,80 @@ class BroadenFactory(BaseFactory):
                 + " may be inverted"
             )
 
-        if self._multisparsegrid:
+        if not self._multisparsegrid:
+            (wavenumber, abscoeff) = self._broaden_lines(df)
+        else:
             # spectrum is split over multiple, discontinued spectral grids
             # Deal with all of them
             wavenumber, abscoeff = [], []
             assert len(self._ix_ranges) > 0
-            for wavenumber_group_i, lines_range_i in enumerate(self._ix_ranges):
-                (wavenumber_i, abscoeff_i) = self._broaden_lines(
-                    df.iloc[lines_range_i[0] : lines_range_i[-1]], wavenumber_group_i
+            # loop over all grids :
+            for grid_number_j, grid_ranges in enumerate(self._ix_ranges):
+                # loop over all grid-ranges:
+                # Note : 1st grid is the most resolved, last grid is the coarsest
+                wavenumber_j = []
+                abscoeff_j = []
+                for wavenumber_group_i, lines_range_i in enumerate(grid_ranges):
+                    (wavenumber_i, abscoeff_i) = self._broaden_lines(
+                        df.iloc[lines_range_i[0] : lines_range_i[-1] + 1],
+                        (grid_number_j, wavenumber_group_i),
+                    )
+                    wavenumber_j.append(wavenumber_i)
+                    abscoeff_j.append(abscoeff_i)
+                wavenumber.append(wavenumber_j)
+                abscoeff.append(abscoeff_j)
+                # print("TEST", grid_number_j)
+                # if grid_number_j == 0:
+                #     raise
+
+            self.profiler.start("interpolate_multigrids", 3)
+
+            # Interpolate abscoeff arrays to a common grid
+            wavenumber_common, abscoeff_common = self._interpolate_multisparsegrid(
+                wavenumber, abscoeff
+            )
+            # HACK STOP POINT For RADIS Community paper. Plot different abscoeff for all grids:
+            if False:
+                import matplotlib.pyplot as plt
+
+                from radis.tools.plot_tools import add_ruler
+
+                fig = plt.figure()
+                add_ruler(fig)
+                plt.xlabel("Wavenumber (cm-1")
+                plt.ylabel("Abscoeff")
+                for j, (wavenumber_j, abscoeff_j) in enumerate(
+                    zip(wavenumber, abscoeff)
+                ):
+                    plt.plot(
+                        np.hstack(wavenumber_j),
+                        np.hstack(abscoeff_j),
+                        "-o",
+                        ms=4,
+                        label=f"Grid {j}",
+                    )
+                # plt.legend()
+                plt.yscale("log")
+                plt.xlim((4179.499119875524, 4191.051825655655))
+                plt.plot(
+                    wavenumber_common,
+                    np.sum(abscoeff_common, axis=0),
+                    "-",
+                    color="lightgrey",
+                    lw=3,
+                    zorder=-1,
+                    label="Sum",
                 )
-                wavenumber.append(wavenumber_i)
-                abscoeff.append(abscoeff_i)
-            wavenumber, abscoeff = np.hstack(wavenumber), np.hstack(abscoeff)
-        else:
-            (wavenumber, abscoeff) = self._broaden_lines(df)
+                plt.legend()
+
+            # Sum over all grids
+            wavenumber = wavenumber_common
+            abscoeff = np.sum(abscoeff_common, axis=0)
+
+            self.profiler.stop(
+                "interpolate_multigrids", "Interpolated multiple, discontinued grids"
+            )
+
         self.profiler.stop("calc_line_broadening", "Calculated line broadening")
 
         return wavenumber, abscoeff
