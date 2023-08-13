@@ -439,7 +439,7 @@ def gpu_init(
     global lorentzian_param_data, gaussian_param_data, Q_interpolator_list
     # -----------------------------------------------------
 
-    from radis.gpu.cuda_driver import CuArray, CuContext, CuFFT, CuModule
+    from radis.gpu.driver import CuArray, CuContext, CuFFT, CuModule
 
     if _cuda_context_open:
         # TODO: warn
@@ -506,36 +506,47 @@ def gpu_init(
     cu_mod.applyGaussianSlit.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
 
     # Copy spectral data to device
-    vars_d.iso = CuArray.fromArray(iso)  # malloc, copy
-    vars_d.v0 = CuArray.fromArray(v0)  # malloc, copy
-    vars_d.da = CuArray.fromArray(da)  # malloc, copy
-    vars_d.S0 = CuArray.fromArray(S0)  # malloc, copy
-    vars_d.El = CuArray.fromArray(El)  # malloc, copy
-    vars_d.gamma = CuArray.fromArray(gamma)  # malloc, copy
-    vars_d.na = CuArray.fromArray(na)  # malloc, copy
+    iso_d = CuArray.fromArray(iso)  # malloc, copy
+    v0_d = CuArray.fromArray(v0)  # malloc, copy
+    da_d = CuArray.fromArray(da)  # malloc, copy
+    S0_d = CuArray.fromArray(S0)  # malloc, copy
+    El_d = CuArray.fromArray(El)  # malloc, copy
+    gamma_d = CuArray.fromArray(gamma)  # malloc, copy
+    na_d = CuArray.fromArray(na)  # malloc, copy
 
-    vars_d.S_klm = CuArray(0, dtype=np.float32, init="defer")  # dev_ptr only
-    vars_d.S_klm_FT = CuArray(0, dtype=np.complex64, init="defer")  # dev_ptr only
+    S_klm_d = CuArray(0, dtype=np.float32, init="defer")  # dev_ptr only
+    S_klm_FT_d = CuArray(0, dtype=np.complex64, init="defer")  # dev_ptr only
 
-    vars_d.spectrum_in = CuArray(NxFT, dtype=np.complex64)  # malloc
-    vars_d.spectrum_out = CuArray(NvFT, dtype=np.float32)  # malloc
+    spectrum_in_d = CuArray(NxFT, dtype=np.complex64)  # malloc
+    spectrum_out_d = CuArray(NvFT, dtype=np.float32)  # malloc
 
-    vars_d.transmittance_noslit = CuArray(NvFT, dtype=np.float32)  # malloc
-    vars_d.transmittance_noslit_FT = CuArray(NxFT, dtype=np.complex64)  # malloc
+    transmittance_noslit_d = CuArray(NvFT, dtype=np.float32)  # malloc
+    transmittance_noslit_FT_d = CuArray(NxFT, dtype=np.complex64)  # malloc
 
-    vars_d.transmittance_FT = CuArray(NxFT, dtype=np.complex64)  # malloc
-    vars_d.transmittance = CuArray(NvFT, dtype=np.float32)  # malloc
+    transmittance_FT_d = CuArray(NxFT, dtype=np.complex64)  # malloc
+    transmittance_d = CuArray(NvFT, dtype=np.float32)  # malloc
 
-    vars_d.fft_fwd = CuFFT(
-        vars_d.S_klm, vars_d.S_klm_FT, direction="fwd", plan_fft=False
+    cu_mod.fillLDM.setArgs(
+        iso_d,
+        v0_d,
+        da_d,
+        S0_d,
+        El_d,
+        gamma_d,
+        na_d,
+        S_klm_d,
     )
-    vars_d.fft_rev = CuFFT(vars_d.spectrum_in, vars_d.spectrum_out, direction="rev")
-    vars_d.fft_fwd2 = CuFFT(
-        vars_d.transmittance_noslit, vars_d.transmittance_noslit_FT, direction="fwd"
+
+    cu_mod.applyLineshapes.setArgs(S_klm_FT_d, spectrum_in_d)
+    cu_mod.calcTransmittanceNoslit.setArgs(spectrum_out_d, transmittance_noslit_d)
+    cu_mod.applyGaussianSlit.setArgs(transmittance_noslit_FT_d, transmittance_FT_d)
+
+    cu_mod.fft_fwd = CuFFT(S_klm_d, S_klm_FT_d, direction="fwd", plan_fft=False)
+    cu_mod.fft_rev = CuFFT(spectrum_in_d, spectrum_out_d, direction="rev")
+    cu_mod.fft_fwd2 = CuFFT(
+        transmittance_noslit_d, transmittance_noslit_FT_d, direction="fwd"
     )
-    vars_d.fft_rev2 = CuFFT(
-        vars_d.transmittance_FT, vars_d.transmittance, direction="rev"
-    )
+    cu_mod.fft_rev2 = CuFFT(transmittance_FT_d, transmittance_d, direction="rev")
 
     vars_d.v_arr = v_arr
 
@@ -576,7 +587,7 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
     """
 
     # ----------- setup global variables -----------------
-    global init_h, iter_h, vars_d, ctx, cu_mod, _cuda_context_open
+    global init_h, iter_h, cu_mod, _cuda_context_open
     # ------------------------------------------------------
 
     if not _cuda_context_open:
@@ -607,49 +618,39 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
         print("done!")
         print("Filling LDM...")
 
-    vars_d.S_klm.resize(
-        (init_h.N_v_FT, iter_h.N_G, iter_h.N_L), init="zeros"
-    )  # resize, malloc, zeros
-    vars_d.S_klm_FT.resize((init_h.N_x_FT, iter_h.N_G, iter_h.N_L))  # resize, malloc
-
-    cu_mod.fillLDM(
-        vars_d.iso,
-        vars_d.v0,
-        vars_d.da,
-        vars_d.S0,
-        vars_d.El,
-        vars_d.gamma,
-        vars_d.na,
-        vars_d.S_klm,
-    )
+    S_klm_shape = (init_h.N_v_FT, iter_h.N_G, iter_h.N_L)
+    cu_mod.fillLDM.args[-1].resize(S_klm_shape, init="zeros")
+    cu_mod.fillLDM()
 
     if verbose >= 2:
         print("done!")
         print("Applying lineshapes...")
 
-    vars_d.fft_fwd.planMany()  # replan because size may have changed
-    vars_d.fft_fwd.execute()
-    cu_mod.applyLineshapes(vars_d.S_klm_FT, vars_d.spectrum_in)
-    vars_d.fft_rev.execute()
+    S_klm_FT_shape = (init_h.N_x_FT, iter_h.N_G, iter_h.N_L)
+    cu_mod.fft_fwd.arr_out.resize(S_klm_FT_shape)
+    cu_mod.fft_fwd.planMany()  # replan because size may have changed
+    cu_mod.fft_fwd()
+    cu_mod.applyLineshapes()
+    cu_mod.fft_rev()
 
     if verbose >= 2:
         print("Done!")
         print("Calculating transmittance...")
 
     # ctx.synchronize()
-    abscoeff_h = vars_d.spectrum_out.getArray()[: init_h.N_v]
+    abscoeff_h = cu_mod.fft_rev.arr_out.getArray()[: init_h.N_v]
 
     if verbose >= 2:
         print("Done!")
         print("Applying slit function...")
 
-    cu_mod.calcTransmittanceNoslit(vars_d.spectrum_out, vars_d.transmittance_noslit)
-    vars_d.fft_fwd2.execute()
-    cu_mod.applyGaussianSlit(vars_d.transmittance_noslit_FT, vars_d.transmittance_FT)
-    vars_d.fft_rev2.execute()
+    cu_mod.calcTransmittanceNoslit()
+    cu_mod.fft_fwd2()
+    cu_mod.applyGaussianSlit()
+    cu_mod.fft_rev2()
 
     # ctx.synchronize()
-    transmittance_h = vars_d.transmittance.getArray()[: init_h.N_v]
+    transmittance_h = cu_mod.fft_rev2.arr_out.getArray()[: init_h.N_v]
 
     if verbose >= 2:
         print("done!")

@@ -18,7 +18,7 @@ from nvidia.cufft import __path__ as cufft_path
 lib = windll.LoadLibrary("nvcuda.dll")
 lib_cufft = windll.LoadLibrary(cufft_path[0] + "\\bin\\cufft64_11.dll")
 
-verbose = True
+verbose = False
 
 
 def cu_print(*vargs):
@@ -196,19 +196,24 @@ class CuFunction:
         self.threads = (1, 1, 1)
         self.sync = False
         self.context_obj = None
+        self.args = []
 
     def setGrid(self, blocks=(1, 1, 1), threads=(1, 1, 1)):
         self.blocks = blocks
         self.threads = threads
 
+    def setArgs(self, *vargs):
+        self.args = vargs
+
     def __call__(self, *vargs, blocks=None, threads=None, sync=None):
 
+        self.args = self.args if not len(vargs) else vargs
         self.blocks = self.blocks if blocks is None else blocks
         self.threads = self.threads if threads is None else threads
         self.sync = self.sync if sync is None else sync
 
-        voidPtrArr = len(vargs) * c_void_p
-        cargs = voidPtrArr(*[cast(byref(arr.dev_ptr), c_void_p) for arr in vargs])
+        voidPtrArr = len(self.args) * c_void_p
+        cargs = voidPtrArr(*[cast(byref(arr.dev_ptr), c_void_p) for arr in self.args])
 
         cu_print(
             lib.cuLaunchKernel(self.fptr, *self.blocks, *self.threads, 0, 0, cargs, 0),
@@ -315,7 +320,7 @@ class CuFFT:
             "fft.plan many",
         )
 
-    def execute(self):
+    def __call__(self):
         if self.direction == "fwd":
             cu_print(
                 lib_cufft.cufftExecR2C(
