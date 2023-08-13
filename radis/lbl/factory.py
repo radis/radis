@@ -1926,7 +1926,7 @@ class SpectrumFactory(BandFactory):
 
         return s
 
-    def _generate_wavenumber_arrays(self, multisparsegrid=False, checks=True):
+    def _generate_wavenumber_arrays(self, checks=True):
         """define wavenumber grid vectors
 
         `SpectrumFactory.wavenumber` is the output spectral range and
@@ -1945,7 +1945,9 @@ class SpectrumFactory(BandFactory):
 
         self.profiler.start("generate_wavenumber_arrays", 2)
 
-        if checks:
+        multisparsegrid = radis.config["MULTI_SPARSE_GRID"]
+
+        if checks:  # check == False is used to bypass some stuff that isn't known at this point for GPU calculations
             # calculates minimum FWHM of lines
             self._calc_min_width(self.df1)
 
@@ -1966,11 +1968,6 @@ class SpectrumFactory(BandFactory):
 
                     self.warnings["AccuracyWarning"] = "ignore"
 
-            if multisparsegrid:
-                wstep_calc_narrow = self.params.wstep
-                # wstep_calc_coarse1 = wstep_calc_narrow * 10
-                # wstep_calc_coarse2 = wstep_calc_narrow * 100
-
         else: # check == False, used in GPU mode 
             if self._wstep == "auto" or isinstance(self.params.wstep, list):
                 raise ValueError(
@@ -1980,6 +1977,11 @@ class SpectrumFactory(BandFactory):
                 raise ValueError(
                     "Current configuration incompatible with multisparsegrid=True"
                 )
+
+        if multisparsegrid:
+            wstep_calc_narrow = self.params.wstep
+            # wstep_calc_coarse1 = wstep_calc_narrow * 10
+            # wstep_calc_coarse2 = wstep_calc_narrow * 100
 
         truncation = self.params.truncation
         neighbour_lines = self.params.neighbour_lines
