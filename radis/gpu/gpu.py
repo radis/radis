@@ -51,11 +51,6 @@ class iterData(ctypes.Structure):
     ]
 
 
-class DeviceVariables:
-    def __init__(self):
-        pass
-
-
 init_h = initData()
 iter_h = iterData()
 
@@ -449,17 +444,24 @@ def gpu_init(
         print("Number of lines loaded: {0}".format(len(v0)))
         print()
 
+    ## First a CUDA context is created, then the .ptx file is read
+    ## and made available as the CuModule object cu_mod
+
     ctx = CuContext()
     _cuda_context_open = True
     ptx_path = getProjectRoot() + "\\gpu\\"
     cu_mod = CuModule(ctx, ptx_path + "kernels.ptx")
 
+    ## Next, the GPU must be made aware of a number of parameters.
+    ## Parameters that don't change during iteration are stored
+    ## in iter_h. They are copied to the GPU through cu_mod.setConstant()
+
     if verbose >= 2:
         print("Copying initialization parameters to device memory...")
 
-    init_h.v_min = np.min(v_arr)  # 2000.0
-    init_h.v_max = np.max(v_arr)  # 2400.0
-    init_h.dv = (v_arr[-1] - v_arr[0]) / (len(v_arr) - 1)  # 0.002
+    init_h.v_min = np.min(v_arr)
+    init_h.v_max = np.max(v_arr)
+    init_h.dv = (v_arr[-1] - v_arr[0]) / (len(v_arr) - 1)  # TODO: get this from caller
     init_h.N_v = len(v_arr)
     init_h.N_v_FT = next_fast_len(2 * init_h.N_v)
     init_h.N_x_FT = init_h.N_v_FT // 2 + 1
@@ -489,6 +491,9 @@ def gpu_init(
     if verbose >= 2:
         print("done!")
 
+    ## Next the block- and thread size of the CUDA kernels are set.
+    ## This determines how the GPU internally divides up the work.
+
     if verbose >= 2:
         print("Allocating device memory and copying data...")
 
@@ -504,7 +509,10 @@ def gpu_init(
     cu_mod.calcTransmittanceNoslit.setGrid((NvFT // Ntpb + 1, 1, 1), threads)
     cu_mod.applyGaussianSlit.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
 
-    # Copy spectral data to device
+    ## Next the variables are initialized on the GPU. Constant variables
+    ## that don't change (i.e. pertaining to the database) are immediately
+    ## copied to the GPU through CuArray.fromArray().
+
     iso_d = CuArray.fromArray(iso)  # malloc, copy
     v0_d = CuArray.fromArray(v0)  # malloc, copy
     da_d = CuArray.fromArray(da)  # malloc, copy
@@ -512,6 +520,11 @@ def gpu_init(
     El_d = CuArray.fromArray(El)  # malloc, copy
     gamma_d = CuArray.fromArray(gamma)  # malloc, copy
     na_d = CuArray.fromArray(na)  # malloc, copy
+
+    ## Other variables are only allocated. S_klm_d and S_klm_FT_d are
+    ## special cases because their shape changes during iteration.
+    ## They are not allocated, only given a device pointer by which
+    ## they can be referenced later.
 
     S_klm_d = CuArray(0, dtype=np.float32, init="defer")  # dev_ptr only
     S_klm_FT_d = CuArray(0, dtype=np.complex64, init="defer")  # dev_ptr only
@@ -524,6 +537,8 @@ def gpu_init(
 
     transmittance_FT_d = CuArray(NxFT, dtype=np.complex64)  # malloc
     transmittance_d = CuArray(NvFT, dtype=np.float32)  # malloc
+
+    ## Then the variables are bound to their functions:
 
     cu_mod.fillLDM.setArgs(
         iso_d,
@@ -538,6 +553,9 @@ def gpu_init(
     cu_mod.applyLineshapes.setArgs(S_klm_FT_d, spectrum_in_d)
     cu_mod.calcTransmittanceNoslit.setArgs(spectrum_out_d, transmittance_noslit_d)
     cu_mod.applyGaussianSlit.setArgs(transmittance_noslit_FT_d, transmittance_FT_d)
+
+    ## FFT's are performed through the CuFFT object. The required functions are internally
+    ## loaded from the cufft library, not through the user kernels (.ptx files).
 
     cu_mod.fft_fwd = CuFFT(S_klm_d, S_klm_FT_d, direction="fwd", plan_fft=False)
     cu_mod.fft_rev = CuFFT(spectrum_in_d, spectrum_out_d, direction="rev")
@@ -592,6 +610,9 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
     if verbose >= 2:
         print("Copying iteration parameters to device...")
 
+    ## First a number of parameters that change during iteration
+    ## are computed and copied to the GPU.
+
     set_pTQ(p, T, mole_fraction, iter_h, l=l, slit_FWHM=slit_FWHM)
 
     calc_gaussian_params(
@@ -608,6 +629,9 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
 
     cu_mod.setConstant("iter_d", iter_h)
 
+    ## Next the S_klm_d variable is reshaped to the correct shape,
+    ## and filled with spectral data.
+
     if verbose >= 2:
         print("done!")
         print("Filling LDM...")
@@ -615,6 +639,11 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
     S_klm_shape = (init_h.N_v_FT, iter_h.N_G, iter_h.N_L)
     cu_mod.fillLDM.args[-1].resize(S_klm_shape, init="zeros")
     cu_mod.fillLDM()
+
+    ## Next the S_klm_FT_d is also reshaped, and the lineshapes are
+    ## applied. This consists of an FT of the LDM, a product by the
+    ## lineshape FTs & summing all G and L axes, and an inverse FT
+    ## on the accumulated spectra.
 
     if verbose >= 2:
         print("done!")
@@ -633,6 +662,10 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
 
     # ctx.synchronize()
     abscoeff_h = cu_mod.fft_rev.arr_out.getArray()[: init_h.N_v]
+
+    ## To apply a slit function, first the transmittance is calculated.
+    ## Then the convolution is applied by an FT, product with the
+    ## instrument function's FT, followed by an inverse FT.
 
     if verbose >= 2:
         print("Done!")
