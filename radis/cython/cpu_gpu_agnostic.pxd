@@ -1,7 +1,7 @@
 from numpy cimport complex64_t
 
 
-cdef extern from "../lbl/gpu.h":
+cdef extern from "../gpu/gpu.h":
 
     void fillLDM(unsigned char* iso, float* v0, float* da, float* S0, float* El, float* gamma, float* na, float* S_klm);
     void applyLineshapes(complex64_t* S_klm_FT, complex64_t* abscoeff);
