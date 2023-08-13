@@ -58,7 +58,6 @@ class DeviceVariables:
 
 init_h = initData()
 iter_h = iterData()
-vars_d = DeviceVariables()
 
 
 def py_calc_lorentzian_envelope_params(na, gamma, verbose=False):
@@ -435,7 +434,7 @@ def gpu_init(
     """
 
     # ----------- setup global variables -----------------
-    global init_h, vars_d, ctx, cu_mod, _cuda_context_open
+    global init_h, ctx, cu_mod, _cuda_context_open
     global lorentzian_param_data, gaussian_param_data, Q_interpolator_list
     # -----------------------------------------------------
 
@@ -536,7 +535,6 @@ def gpu_init(
         na_d,
         S_klm_d,
     )
-
     cu_mod.applyLineshapes.setArgs(S_klm_FT_d, spectrum_in_d)
     cu_mod.calcTransmittanceNoslit.setArgs(spectrum_out_d, transmittance_noslit_d)
     cu_mod.applyGaussianSlit.setArgs(transmittance_noslit_FT_d, transmittance_FT_d)
@@ -547,10 +545,6 @@ def gpu_init(
         transmittance_noslit_d, transmittance_noslit_FT_d, direction="fwd"
     )
     cu_mod.fft_rev2 = CuFFT(transmittance_FT_d, transmittance_d, direction="rev")
-
-    vars_d.v_arr = v_arr
-
-    ctx.setCurrent()
 
     if verbose >= 2:
         print("done!")
