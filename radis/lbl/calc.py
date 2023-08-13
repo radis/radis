@@ -29,6 +29,7 @@ except ImportError:  # if ran from here
     from radis.lbl.factory import SpectrumFactory
     from radis.lbl.base import get_wavenumber_range
 
+from radis import config
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
 from radis.spectrum.spectrum import Spectrum
@@ -66,7 +67,6 @@ def calc_spectrum(
     export_lines=False,
     verbose=True,
     return_factory=False,
-    engine="pandas",
     **kwargs,
 ) -> Spectrum:
     r"""Calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
@@ -533,6 +533,7 @@ def calc_spectrum(
         diluent_for_this_molecule = diluents_for_molecule(
             mole_fraction, diluent, molecule
         )
+        engine = config['DATAFRAME_ENGINE']
 
         generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
@@ -808,7 +809,6 @@ def _calc_spectrum_one_molecule(
         conditions["parse_local_global_quanta"] = (not _equilibrium) or export_lines
 
         # Finally, LOAD :
-        conditions["output"] = engine
         sf.fetch_databank(**conditions)
     elif exists(databank):
         conditions = {
@@ -863,7 +863,6 @@ def _calc_spectrum_one_molecule(
 
         conditions["load_energies"] = not _equilibrium
         # Finally, LOAD :
-        conditions["output"] = engine
         sf.load_databank(**conditions)
 
     else:  # manual mode: get from user-defined line databases defined in ~/radis.json
@@ -885,7 +884,6 @@ def _calc_spectrum_one_molecule(
             load_energies=not _equilibrium,  # no need to load/calculate energies at eq.
             drop_columns=drop_columns,
             load_columns=load_columns,
-            output=engine,
         )
 
     #    # Get optimisation strategies
