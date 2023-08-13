@@ -1,9 +1,8 @@
-import ctypes
-
 import numpy as np
 from scipy.constants import N_A, c, h, k
 from scipy.fft import next_fast_len
 
+from radis.gpu.types import initData, iterData
 from radis.misc.utils import getProjectRoot
 
 # import sys
@@ -14,41 +13,6 @@ c_cm = 100 * c
 c2 = h * c_cm / k
 
 _cuda_context_open = False
-
-
-# TODO: capitalize first letters
-class initData(ctypes.Structure):
-    _fields_ = [
-        ("v_min", ctypes.c_float),
-        ("v_max", ctypes.c_float),
-        ("dv", ctypes.c_float),
-        ("N_v", ctypes.c_int),
-        ("N_v_FT", ctypes.c_int),
-        ("N_x_FT", ctypes.c_int),
-        ("dxG", ctypes.c_float),
-        ("dxL", ctypes.c_float),
-        ("N_lines", ctypes.c_int),
-        ("N_iterations_per_thread", ctypes.c_int),
-        ("log_c2Mm", ctypes.c_float * 16),
-    ]
-
-
-class iterData(ctypes.Structure):
-    _fields_ = [
-        ("p", ctypes.c_float),
-        ("log_2p", ctypes.c_float),
-        ("hlog_T", ctypes.c_float),
-        ("log_rT", ctypes.c_float),
-        ("c2T", ctypes.c_float),
-        ("N", ctypes.c_float),
-        ("l", ctypes.c_float),
-        ("slit_FWHM", ctypes.c_float),
-        ("log_wG_min", ctypes.c_float),
-        ("log_wL_min", ctypes.c_float),
-        ("N_G", ctypes.c_int),
-        ("N_L", ctypes.c_int),
-        ("Q", ctypes.c_float * 16),
-    ]
 
 
 init_h = initData()

@@ -4,6 +4,7 @@ include requirements.txt
 include radis/__version__.txt
 include radis/gpu/gpu.cpp
 include radis/gpu/gpu.h
+include radis/gpu/.ptx
 include radis/phys/units.txt
 include radis/test/files/*.txt
 include radis/test/files/*.spec

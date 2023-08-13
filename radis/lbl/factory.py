@@ -1147,7 +1147,7 @@ class SpectrumFactory(BandFactory):
         except (ModuleNotFoundError):
             print("Failed to load GPU module, exiting!")
             exit()
-        print("BEFORE INIT")
+
         gpu_init(
             v_arr,
             dxG,
@@ -1164,7 +1164,6 @@ class SpectrumFactory(BandFactory):
             verbose=verbose,
             gpu=(not emulate),
         )
-        print("AFTER INIT")
 
         if verbose >= 2:
             print("Initialization complete!")
@@ -1174,7 +1173,6 @@ class SpectrumFactory(BandFactory):
         if verbose >= 2:
             print("Calculating spectra...", end=" ")
 
-        print("BEFORE ITER")
         abscoeff, transmittance, iter_params = gpu_iterate(
             pressure_mbar * 1e-3,
             Tgas,
@@ -1182,12 +1180,9 @@ class SpectrumFactory(BandFactory):
             verbose=verbose,
             gpu=(not emulate),
         )
-        print("AFTER ITER")
 
         if exit_gpu:
             gpu_exit()
-
-        print("EXIT")
 
         # Calculate output quantities
         # ----------------------------------------------------------------------
@@ -1369,7 +1364,6 @@ class SpectrumFactory(BandFactory):
         kwargs["exit_gpu"] = False
 
         s = self.eq_spectrum_gpu(*vargs, **kwargs)
-        print("--> Spectrum object is obtained")
 
         if is_range(slit_FWHM):
             self.interactive_params["slit_FWHM"] = slit_FWHM
@@ -1396,7 +1390,7 @@ class SpectrumFactory(BandFactory):
             s.conditions["Tvib"] = s.conditions["Tgas"]
             s.conditions["Trot"] = s.conditions["Tgas"]
             s.conditions["slit_function"] = s.conditions["slit_FWHM"]
-            print("BEFORE ITERATE")
+
             abscoeff, transmittance, iter_params = gpu_iterate(
                 s.conditions["pressure"],
                 s.conditions["Tgas"],
@@ -1406,7 +1400,7 @@ class SpectrumFactory(BandFactory):
                 verbose=False,
                 gpu=(not s.conditions["emulate_gpu"]),
             )
-            print("AFTER ITERATE")
+
             # This happen inside a Spectrum() method
             for k in list(s._q.keys()):  # reset all quantities
                 if k in ["wavespace", "wavelength", "wavenumber"]:
@@ -1444,8 +1438,6 @@ class SpectrumFactory(BandFactory):
 
         if not was_interactive:
             plt.ioff()
-
-        print("--> End of interactive")
 
         return s
 

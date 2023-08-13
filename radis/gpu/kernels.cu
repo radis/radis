@@ -1,55 +1,38 @@
-
-
-
 #ifdef __CUDACC__
 
 #include <cuda/std/complex>
 
 using namespace cuda::std;
 
-
-
-#define agnostic_loop(i, max_i)
-#define agnostic_add(addr, val) atomicAdd((addr),(val))
+#define LOOP(i, max_i)
+#define ADD(addr, val) atomicAdd((addr),(val))
 
 #else
 
 #include <complex>
 #include <cmath>
 
-#define agnostic_loop(i, max_i) for (i = 0; i < (max_i); i++)
-#define agnostic_add(addr, val) *(addr) += (val)
+#define LOOP(i, max_i) for (i = 0; i < (max_i); i++)
+#define ADD(addr, val) *(addr) += (val)
 
-#define __global__
-#define __device__
+#define __global__ __declspec(dllexport)
+#define __device__ __declspec(dllexport)
 #define __constant__
 
-struct threadIdx_t {int x; int y; int z;} threadIdx;
-struct blockDim_t {int x; int y; int z;} blockDim;
-struct blockIdx_t {int x; int y; int z;} blockIdx;
-struct gridDim_t {int x; int y; int z;} gridDim;
-
-void set_dims(int blockDim_x, int gridDim_x){
-    blockDim.x = blockDim_x;
-    gridDim.x = gridDim_x;
-}
-#endif
-
-
-
-
-
-#ifdef __CUDACC__
-extern "C"{
-#else
 using namespace std;
+
 #endif
 
 
-//const float pi = 3.141592653589793f;
-//const float r4log2 = 0.36067376022224085f; // = 1 / (4 * ln(2))
+extern "C"{
 
-//TO-DO: These should really be in gpu.h but cupy fails to load this file if it's included.
+#ifndef __CUDACC__
+__declspec(dllexport) struct threadIdx_t {int x; int y; int z;} threadIdx;
+__declspec(dllexport) struct blockDim_t {int x; int y; int z;} blockDim;
+__declspec(dllexport) struct blockIdx_t {int x; int y; int z;} blockIdx;
+__declspec(dllexport) struct gridDim_t {int x; int y; int z;} gridDim;
+#endif
+
 struct initData {
     float v_min;
     float v_max;
@@ -85,20 +68,6 @@ __device__ __constant__ struct initData init_d;
 __device__ __constant__ struct iterData iter_d;
 
 
-#ifndef __CUDACC__
-void* get_init_ptr(void){
-    return &init_d;
-}
-
-void* get_iter_ptr(void){
-    return &iter_d;
-}
-
-float get_T(){
-    return expf(2*iter_d.hlog_T);
-}
-#endif
-
 __global__ void fillLDM(
     unsigned char* iso,
     float* v0,
@@ -113,8 +82,8 @@ __global__ void fillLDM(
     int N_G = iter_d.N_G;
     int N_L = iter_d.N_L;
 
-    agnostic_loop(threadIdx.x, blockDim.x){
-        agnostic_loop(blockIdx.x, gridDim.x){
+    LOOP(threadIdx.x, blockDim.x){
+        LOOP(blockIdx.x, gridDim.x){
             for (int n = 0; n < init_d.N_iterations_per_thread; n++) {
 
                 int i = threadIdx.x + blockDim.x * (n + blockIdx.x * init_d.N_iterations_per_thread);
@@ -157,14 +126,14 @@ __global__ void fillLDM(
                         float Sv0i = Si * (1 - avi);
                         float Sv1i = Si * avi;
 
-                        agnostic_add(&S_klm[k0i * N_G * N_L + l0i * N_L + m0i], Sv0i * aV00i);
-                        agnostic_add(&S_klm[k0i * N_G * N_L + l0i * N_L + m1i], Sv0i * aV01i);
-                        agnostic_add(&S_klm[k0i * N_G * N_L + l1i * N_L + m0i], Sv0i * aV10i);
-                        agnostic_add(&S_klm[k0i * N_G * N_L + l1i * N_L + m1i], Sv0i * aV11i);
-                        agnostic_add(&S_klm[k1i * N_G * N_L + l0i * N_L + m0i], Sv1i * aV00i);
-                        agnostic_add(&S_klm[k1i * N_G * N_L + l0i * N_L + m1i], Sv1i * aV01i);
-                        agnostic_add(&S_klm[k1i * N_G * N_L + l1i * N_L + m0i], Sv1i * aV10i);
-                        agnostic_add(&S_klm[k1i * N_G * N_L + l1i * N_L + m1i], Sv1i * aV11i);
+                        ADD(&S_klm[k0i * N_G * N_L + l0i * N_L + m0i], Sv0i * aV00i);
+                        ADD(&S_klm[k0i * N_G * N_L + l0i * N_L + m1i], Sv0i * aV01i);
+                        ADD(&S_klm[k0i * N_G * N_L + l1i * N_L + m0i], Sv0i * aV10i);
+                        ADD(&S_klm[k0i * N_G * N_L + l1i * N_L + m1i], Sv0i * aV11i);
+                        ADD(&S_klm[k1i * N_G * N_L + l0i * N_L + m0i], Sv1i * aV00i);
+                        ADD(&S_klm[k1i * N_G * N_L + l0i * N_L + m1i], Sv1i * aV01i);
+                        ADD(&S_klm[k1i * N_G * N_L + l1i * N_L + m0i], Sv1i * aV10i);
+                        ADD(&S_klm[k1i * N_G * N_L + l1i * N_L + m1i], Sv1i * aV11i);
                     }
                 }
             }
@@ -178,8 +147,8 @@ __global__ void applyLineshapes(complex<float>* S_klm_FT, complex<float>* abscoe
     const float pi = 3.141592653589793f;
     const float r4log2 = 0.36067376022224085f; // = 1 / (4 * ln(2))
 
-    agnostic_loop(threadIdx.x, blockDim.x){
-        agnostic_loop(blockIdx.x, gridDim.x){
+    LOOP(threadIdx.x, blockDim.x){
+        LOOP(blockIdx.x, gridDim.x){
             int k = threadIdx.x + blockDim.x * blockIdx.x;
             if (k < init_d.N_x_FT) {
                 float x = k / (init_d.N_v_FT * init_d.dv);
@@ -209,8 +178,8 @@ __global__ void applyLineshapes(complex<float>* S_klm_FT, complex<float>* abscoe
 
 __global__ void calcTransmittanceNoslit(float* abscoeff, float* transmittance_noslit)  {
 
-    agnostic_loop(threadIdx.x, blockDim.x){
-        agnostic_loop(blockIdx.x, gridDim.x){
+    LOOP(threadIdx.x, blockDim.x){
+        LOOP(blockIdx.x, gridDim.x){
             int iv = threadIdx.x + blockDim.x * blockIdx.x;
             if (iv < init_d.N_v) {
                 transmittance_noslit[iv] = expf(-iter_d.l * abscoeff[iv]);
@@ -227,8 +196,8 @@ __global__ void applyGaussianSlit(complex<float>* transmittance_noslit_FT, compl
     const float pi = 3.141592653589793f;
     const float r4log2 = 0.36067376022224085f; // = 1 / (4 * ln(2))
 
-    agnostic_loop(threadIdx.x, blockDim.x){
-        agnostic_loop(blockIdx.x, gridDim.x){
+    LOOP(threadIdx.x, blockDim.x){
+        LOOP(blockIdx.x, gridDim.x){
             int iv = threadIdx.x + blockDim.x * blockIdx.x;
             float x = iv / (init_d.N_v_FT * init_d.dv);
             float window = expf(-r4log2 * powf(pi * x * iter_d.slit_FWHM, 2));
@@ -241,6 +210,4 @@ __global__ void applyGaussianSlit(complex<float>* transmittance_noslit_FT, compl
 }
 
 
-#ifdef __CUDACC__
 }
-#endif
