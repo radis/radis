@@ -1549,7 +1549,7 @@ class BroadenFactory(BaseFactory):
 
         return line_profile
 
-    def _calc_lineshape_LDM(self, df, wavenumber_group):
+    def _calc_lineshape_LDM(self, df, wavenumber_group=None):
         """Generate the lineshape database using the steps defined by the
         parameters :py:attr:`~radis.lbl.loader.Parameters.dxL` and
         :py:attr:`~radis.lbl.loader.Parameters.dxG`.
@@ -1623,7 +1623,11 @@ class BroadenFactory(BaseFactory):
         broadening_method = self.params.broadening_method
         if broadening_method == "voigt":
             jit = False  # not enough lines to make the just-in-time FORTRAN compilation useful
-            wbroad_centered = self.wbroad_centered
+            if wavenumber_group is None:
+                wbroad_centered = self.wbroad_centered
+            else:
+                gridnb = wavenumber_group[0]
+                wbroad_centered = self.wbroad_centered[gridnb]
 
             # Non vectorized loop. Probably slightly slower, but this is not the bottleneck anyway.
             # see commit 6474cb7e on 15/08/2019 for a vectorized version
@@ -1631,13 +1635,25 @@ class BroadenFactory(BaseFactory):
                 line_profile_LDM[l] = {}
                 for m in range(len(wL)):
                     wV_ij = olivero_1977(wG[l], wL[m])  # FWHM
+                    # we normalize numerically only if using a single grid (else, we use an analytical expression)
                     lineshape = voigt_lineshape(
-                        wbroad_centered, wL[m] / 2, wV_ij / 2, jit=jit
+                        wbroad_centered,
+                        wL[m] / 2,
+                        wV_ij / 2,
+                        jit=jit,
+                        exact_normalize=wavenumber_group is None,
                     )  # FWHM > HWHM
                     line_profile_LDM[l][m] = lineshape
 
         elif broadening_method == "convolve":
-            wbroad_centered = self.wbroad_centered
+            if wavenumber_group is None:
+                wbroad_centered = self.wbroad_centered
+            else:
+                gridnb = wavenumber_group[0]
+                wbroad_centered = self.wbroad_centered[gridnb]
+                raise NotImplementedError(
+                    "broadening_method == 'convolve'. Only broadening_method='voigt' is implemented with Multigrids"
+                )  # @dev in particular, exact normalization (/np.trapz() won't work if full lineshape is not given
 
             IG = [
                 gaussian_lineshape(wbroad_centered, wG[l] / 2) for l in range(len(wG))
@@ -1660,9 +1676,15 @@ class BroadenFactory(BaseFactory):
             # the lineshape on the full spectral range.
             if wavenumber_group is not None:
                 w = self.wavenumber_calc[wavenumber_group]
+                wstep = self.params.wstep
             else:
-                w = self.wavenumber_calc
-            wstep = self.params.wstep
+                gridnb = wavenumber_group[0]
+                w = self.wavenumber_calc[gridnb]
+                wstep = self._wstep_multigrid[gridnb]
+                raise NotImplementedError(
+                    "broadening_method == 'fft'. Only broadening_method='voigt' is implemented with Multigrids"
+                )
+
             w_lineshape_ft = np.fft.rfftfreq(
                 2 * len(w), wstep
             )  # TO-DO: add  + self.misc.zero_padding
@@ -1904,6 +1926,7 @@ class BroadenFactory(BaseFactory):
         # Get valid range (discard neighbour lines)
         sumoflines = sumoflines_calc[woutrange[0] : woutrange[1]]
 
+        assert len(wavenumber) == len(sumoflines)
         return wavenumber, sumoflines
 
     def _apply_lineshape_multigrid(
@@ -2155,6 +2178,7 @@ class BroadenFactory(BaseFactory):
         # Get valid range (discard neighbour lines)
         sumoflines = sumoflines_calc[woutrange[0] : woutrange[1]]
 
+        assert len(wavenumber) == len(sumoflines)
         return wavenumber, sumoflines
 
     def _get_indices(self, arr_i, axis):
@@ -2172,7 +2196,7 @@ class BroadenFactory(BaseFactory):
         wL_dat,
         wG_dat,
         optimization,
-        wavenumber_group,
+        wavenumber_group=None,
     ):
         """Multiply `broadened_param` by `line_profile` and project it on the
         correct wavelength given by `shifted_wavenum`
@@ -2236,11 +2260,25 @@ class BroadenFactory(BaseFactory):
         wavenumber = self.wavenumber  # get vector of wavenumbers (shape W)
         wavenumber_calc = self.wavenumber_calc
         woutrange = self.woutrange
+        wstep = self.params.wstep
+        truncation = self.params.truncation
         if wavenumber_group is not None:
+            # select wavenumber grid and group
             gridnb, groupnb = wavenumber_group
-            wavenumber = wavenumber[gridnb][groupnb]
-            wavenumber_calc = wavenumber_calc[gridnb][groupnb]
-            woutrange = woutrange[gridnb][groupnb]
+            if groupnb == "all":  # deal with all discontinued groups together
+                wavenumber = np.hstack(wavenumber[gridnb])
+                wavenumber_calc = np.hstack(
+                    wavenumber_calc[gridnb]
+                )  # TODO : Check it's ok when using neighbour_lines
+                if self.params.neighbour_lines != 0:
+                    raise NotImplementedError
+                # woutrange = (woutrange[gridnb][0], sum(woutrange[gridnb]))  # TODO : Check it's ok when using neighbour_lines
+            else:
+                wavenumber = wavenumber[gridnb][groupnb]
+                wavenumber_calc = wavenumber_calc[gridnb][groupnb]
+                woutrange = woutrange[gridnb][groupnb]
+            wstep = self._wstep_multigrid[gridnb]
+            truncation = self._truncation_multigrid[gridnb]
 
         broadening_method = self.params.broadening_method
 
@@ -2273,7 +2311,7 @@ class BroadenFactory(BaseFactory):
         # Next assign simple weights:
         if optimization == "min-RMS":
 
-            dv = self.params.wstep
+            dv = wstep
             dxvGi = dv / wG_dat
             dxG = self.params.dxG  # LDM user params
             dxL = self.params.dxL  # LDM user params
@@ -2401,7 +2439,7 @@ class BroadenFactory(BaseFactory):
                 LDM_ranges = {}
                 LDM_reduced = {}
                 for groupby_param, group in dgb:
-                    truncation_pts = int(self.params.truncation // self.params.wstep)
+                    truncation_pts = int(truncation // wstep)
                     # note: truncation can be unique for each point of the LDM basis
                     # (allow to have line-dependant truncation, at least as all
                     # lines with same truncation are grouped together in the LDM basis)
@@ -2534,15 +2572,21 @@ class BroadenFactory(BaseFactory):
                     Ildm_FT += np.fft.rfft(LDM[:, l, m]) * lineshape_FT
             # Back in real space:
             sumoflines_calc = np.fft.irfft(Ildm_FT)[: len(wavenumber_calc)]
-            sumoflines_calc /= self.params.wstep
+            sumoflines_calc /= wstep
 
         else:
             raise NotImplementedError(broadening_method)
 
         self.profiler.stop("LDM_convolve", "Convolve and sum on spectral range")
         # Get valid range (discard wings)
-        sumoflines = sumoflines_calc[woutrange[0] : woutrange[1]]
+        if wavenumber_group is not None and wavenumber_group[1] == "all":
+            if self.params.neighbour_lines != 0:
+                raise NotImplementedError
+            sumoflines = sumoflines_calc
+        else:
+            sumoflines = sumoflines_calc[woutrange[0] : woutrange[1]]
 
+        assert len(wavenumber) == len(sumoflines)
         return wavenumber, sumoflines
 
     def _broaden_lines(self, df, wavenumber_group=None):
@@ -2620,8 +2664,14 @@ class BroadenFactory(BaseFactory):
         wavenumber_calc = self.wavenumber_calc
         if wavenumber_group is not None:
             gridnb, groupnb = wavenumber_group
-            wavenumber = wavenumber[gridnb][groupnb]
-            wavenumber_calc = wavenumber_calc[gridnb][groupnb]
+            if groupnb == "all":  # deal with all discontinued groups together
+                wavenumber = np.hstack(wavenumber[gridnb])
+                wavenumber_calc = np.hstack(
+                    wavenumber_calc[gridnb]
+                )  # TODO : Check it's ok
+            else:
+                wavenumber = wavenumber[gridnb][groupnb]
+                wavenumber_calc = wavenumber_calc[gridnb][groupnb]
 
         # Get number of groups for memory splitting
         chunksize = self.misc.chunksize
@@ -2647,7 +2697,8 @@ class BroadenFactory(BaseFactory):
 
                     line_profile = self._calc_lineshape(
                         df, wavenumber_group=wavenumber_group
-                    )  # usually the bottleneck
+                    )
+                    # usually the bottleneck :
                     if wavenumber_group is None:
                         (wavenumber, abscoeff) = self._apply_lineshape(
                             df.S.values, line_profile, df.shiftwav.values
@@ -2789,6 +2840,7 @@ class BroadenFactory(BaseFactory):
                 )
             ) from err
 
+        assert len(wavenumber) == len(abscoeff)
         return wavenumber, abscoeff
 
     def _broaden_lines_noneq(self, df, wavenumber_group=None):
@@ -3169,6 +3221,115 @@ class BroadenFactory(BaseFactory):
 
         return wavenumber, abscoeff
 
+    def _interpolate_and_sum_multigrid(
+        self, wavenumber, abscoeff, regular_output_grid=True
+    ):
+        """Interpolate abscoeff arrays to a common grid.
+        (this version doesn't accept different groups')
+
+        Parameters
+        ----------
+        wavenumber : list of list of arrays
+            List of wavenumber arrays for each group in each grid.
+        abscoeff : list of list of arrays
+            List of absorption coefficient arrays for each group in each grid.
+
+        Other Parameters
+        ----------------
+        regular_output_grid: bool
+            if ``True``, output grid is regularly spaced. Else, the output
+            wavenumber grid is adaptative : the narrowest grid is used for each
+            spectral range. An adaptative grid saves disk space and is recommended
+            for very large spectral ranges, however a regular grid is required
+            to apply an experimental slit function.
+            Note that regularizing the grid is possible a posteriori
+            using the Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.resample`
+            method.
+            Default ``False``
+
+        Returns
+        -------
+        tuple of arrays
+            Tuple containing the common wavenumber grid and the interpolated
+            absorption coefficient arrays for each grid.
+        """
+
+        if regular_output_grid:
+            from radis.lbl.factory import _generate_wavenumber_range
+
+            w_common, _, _ = _generate_wavenumber_range(
+                self.input.wavenum_min,
+                self.input.wavenum_max,
+                self.params.wstep,
+                self.params.neighbour_lines,
+            )
+            # Create a common grid by linearly interpolating the absorption coefficient
+            # arrays to a set of wavenumber values that are evenly spaced between the
+            # minimum and maximum wavenumber values
+
+            # Get index of wavenumber groups in the common wavenumber array (will be used as a mask below to accelerate performances)
+            range_start_end = (
+                []
+            )  # (wavenumber_group_#1_start, wn#1_end, wn#2_start, wn#2_end, etc.)
+            for i in range(len(wavenumber)):
+                range_start_end.append(wavenumber[i][0])
+                range_start_end.append(wavenumber[i][-1])
+
+            abscoeff_common = []
+            # Loop over all grids :
+            for i in range(len(wavenumber)):
+                abscoeff_grid = np.interp(
+                    w_common,
+                    wavenumber[i],
+                    abscoeff[i],
+                    left=0,
+                    right=0,
+                )
+                abscoeff_common.append(abscoeff_grid)
+
+            # HACK STOP POINT For RADIS Community paper. Plot different abscoeff for all grids:
+            if False:
+                import matplotlib.pyplot as plt
+
+                from radis.tools.plot_tools import add_ruler
+
+                fig = plt.figure()
+                add_ruler(fig)
+                plt.xlabel("Wavenumber (cm-1")
+                plt.ylabel("Abscoeff")
+                for j, (wavenumber_j, abscoeff_j) in enumerate(
+                    zip(wavenumber, abscoeff)
+                ):
+                    plt.plot(
+                        np.hstack(wavenumber_j),
+                        np.hstack(abscoeff_j),
+                        "-o",
+                        ms=4,
+                        label=f"Grid {j}",
+                    )
+                # plt.legend()
+                plt.yscale("log")
+                plt.xlim((4179.499119875524, 4191.051825655655))
+                plt.plot(
+                    w_common,
+                    np.sum(abscoeff_common, axis=0),
+                    "-",
+                    color="lightgrey",
+                    lw=3,
+                    zorder=-1,
+                    label="Sum",
+                )
+                plt.legend()
+
+            # Sum over all grids
+            wavenumber = w_common
+            abscoeff = np.sum(abscoeff_common, axis=0)
+
+        else:
+            raise NotImplementedError
+
+        return wavenumber, abscoeff
+
     def _calc_broadening(self):
         """Loop over all lines, calculate lineshape, and returns the sum of
         absorption coefficient k=S*f over all lines.
@@ -3214,6 +3375,36 @@ class BroadenFactory(BaseFactory):
 
         if not self._multisparsegrid:
             (wavenumber, abscoeff) = self._broaden_lines(df)
+        elif (
+            self.params.optimization in ["simple", "min-RMS"]
+            and self.params.sparse_ldm == True
+        ):
+            # spectrum is split over multiple, discontinued spectral grids.
+            # To leverage the sparse LDM algorithm, treat all discontinued groups
+            # of a same wavenumber grid together
+            wavenumber, abscoeff = [], []
+            assert len(self._ix_ranges) > 0
+            # loop over all grids :
+            for grid_number_j, grid_ranges in enumerate(self._ix_ranges):
+                # loop over all grid-ranges:
+                # Note : 1st grid is the most resolved, last grid is the coarsest
+                (wavenumber_j, abscoeff_j) = self._broaden_lines(
+                    df,  # all lines appear in every grid
+                    (grid_number_j, "all"),
+                )
+                wavenumber.append(wavenumber_j)
+                abscoeff.append(abscoeff_j)
+
+            self.profiler.start("interpolate_multigrids", 3)
+
+            # Interpolate abscoeff arrays to a common grid
+            wavenumber, abscoeff = self._interpolate_and_sum_multigrid(
+                wavenumber, abscoeff
+            )
+            self.profiler.stop(
+                "interpolate_multigrids", "Interpolated multiple, discontinued grids"
+            )
+
         else:
             # spectrum is split over multiple, discontinued spectral grids
             # Deal with all of them
@@ -3234,18 +3425,16 @@ class BroadenFactory(BaseFactory):
                     abscoeff_j.append(abscoeff_i)
                 wavenumber.append(wavenumber_j)
                 abscoeff.append(abscoeff_j)
-                # print("TEST", grid_number_j)
-                # if grid_number_j == 0:
-                #     raise
 
-            self.profiler.start("interpolate_multigrids", 3)
+            self.profiler.start("interpolate_multisparsegrids", 3)
 
             # Interpolate abscoeff arrays to a common grid
             wavenumber, abscoeff = self._interpolate_and_sum_multisparsegrid(
                 wavenumber, abscoeff
             )
             self.profiler.stop(
-                "interpolate_multigrids", "Interpolated multiple, discontinued grids"
+                "interpolate_multisparsegrids",
+                "Interpolated multiple, discontinued grids",
             )
 
         self.profiler.stop("calc_line_broadening", "Calculated line broadening")
