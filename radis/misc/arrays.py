@@ -734,46 +734,57 @@ def get_overlapping_ranges(wav_positions, half_width):
 
     Parameters
     ----------
-    wav_positions: numpy array (typically wavenumbers)
+    wav_positions: numpy array (typically wavenumbers in cm-1)
     half_width: float (typically cm-1)
 
     Returns
     -------
     numpy array: list of (start, end) index so that all lines contained
-    in ``wav_positions[start_i, end_i]`` overlap
+        in ``wav_positions[start_i:end_i+1]`` overlap
+
+    Examples
+    --------
+    ::
+        # All lines contained within a same block :
+        get_overlapping_ranges(wav_positions=np.array([2300, 2305]), half_width=50.0)
+        >> np.array([(0,1)])
+
+        # 1 single line
+        get_overlapping_ranges(wav_positions=np.array([2300]), half_width=50.0)
+        >> np.array([(0,0)]))
+
+        # 2 distinct blocks :
+        get_overlapping_ranges(wav_positions=np.array([2300, 2301, 2305, 2500, 2505]), half_width=50.0)
+        >>> np.array([(0,2), (3,4)]))
+
+
+
 
     See Also
     --------
-    Used to generate sparse wavenumber grids.
+    Used to generate sparse wavenumber grids, see :py:func:`radis.lbl.factory._generate_wavenumber_range_sparse`
 
     """
 
-    # Detect overlapping ranges :
-    start = wav_positions // (half_width)
-    end = start + 2 * half_width
+    # We start by normalizing wavenumber array by half_width :
+    start = wav_positions // (half_width)  # start of lineshape on our new scale
+    end = start + 2  # end of lineshape
 
-    # When line is separated by >2half-width from the next [1:] ;there is no overlap
-    b = (
-        start.values[1:] - end.values[:-1]
-    ) > 0  # detect large spaces in between two adjacent lines
-    i_end = np.hstack((b.nonzero()[0], [len(b) - 1]))
+    # Now we identify the different groups :
+    # Starting from the 2nd line, doesn't it overlap with the previous line ?
+    # => When line is separated by >2half-width from the next [1:] ;there is no overlap
+    b = (start[1:] - end[:-1]) > 0
+    # b tells if line (starting from the 2nd line) is separated with the previous line
+
+    # Now let's build the ranges:
+    # ... 1st line is necessarily the start of a new block,
+    # ... b.nonzero() are the start of new blocks (starting from 2nd line) i.e.
+    # ... the end of the previous block
+    # ... last line is necesarily the end of the last block
+    i_end = np.hstack((b.nonzero()[0], [len(b)]))
     i_start = np.hstack(([0], i_end[:-1] + 1))
 
     return np.vstack((i_start, i_end)).T
-
-
-"""
- TODO : test when half_width is extremelly small; i.E.
-end up with tihngs like ::
-
-    array([[  0,   0],
-           [  0,   1],
-           [  1,   2],
-           ...,
-           [827, 828],
-           [829, 830],
-           [830, 831]], dtype=int64)
-"""
 
 
 @numba.njit(
