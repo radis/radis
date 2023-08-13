@@ -1369,6 +1369,7 @@ class SpectrumFactory(BandFactory):
         kwargs["exit_gpu"] = False
 
         s = self.eq_spectrum_gpu(*vargs, **kwargs)
+        print("--> Spectrum object is obtained")
 
         if is_range(slit_FWHM):
             self.interactive_params["slit_FWHM"] = slit_FWHM
@@ -1443,6 +1444,8 @@ class SpectrumFactory(BandFactory):
 
         if not was_interactive:
             plt.ioff()
+
+        print("--> End of interactive")
 
         return s
 

@@ -54,7 +54,7 @@ class iterData(ctypes.Structure):
 init_h = initData()
 iter_h = iterData()
 
-
+# TODO: the first two steps could be done on GPU if it makes it faster.
 def py_calc_lorentzian_envelope_params(na, gamma, verbose=False):
     """
 
@@ -452,7 +452,7 @@ def gpu_init(
     ptx_path = getProjectRoot() + "\\gpu\\"
     cu_mod = CuModule(ctx, ptx_path + "kernels.ptx")
 
-    ## Next, the GPU must be made aware of a number of parameters.
+    ## Next, the GPU is made aware of a number of parameters.
     ## Parameters that don't change during iteration are stored
     ## in iter_h. They are copied to the GPU through cu_mod.setConstant()
 
@@ -512,15 +512,6 @@ def gpu_init(
     ## Next the variables are initialized on the GPU. Constant variables
     ## that don't change (i.e. pertaining to the database) are immediately
     ## copied to the GPU through CuArray.fromArray().
-
-    iso_d = CuArray.fromArray(iso)  # malloc, copy
-    v0_d = CuArray.fromArray(v0)  # malloc, copy
-    da_d = CuArray.fromArray(da)  # malloc, copy
-    S0_d = CuArray.fromArray(S0)  # malloc, copy
-    El_d = CuArray.fromArray(El)  # malloc, copy
-    gamma_d = CuArray.fromArray(gamma)  # malloc, copy
-    na_d = CuArray.fromArray(na)  # malloc, copy
-
     ## Other variables are only allocated. S_klm_d and S_klm_FT_d are
     ## special cases because their shape changes during iteration.
     ## They are not allocated, only given a device pointer by which
@@ -538,16 +529,14 @@ def gpu_init(
     transmittance_FT_d = CuArray(NxFT, dtype=np.complex64)  # malloc
     transmittance_d = CuArray(NvFT, dtype=np.float32)  # malloc
 
-    ## Then the variables are bound to their functions:
-
     cu_mod.fillLDM.setArgs(
-        iso_d,
-        v0_d,
-        da_d,
-        S0_d,
-        El_d,
-        gamma_d,
-        na_d,
+        CuArray.fromArray(iso),
+        CuArray.fromArray(v0),
+        CuArray.fromArray(da),
+        CuArray.fromArray(S0),
+        CuArray.fromArray(El),
+        CuArray.fromArray(gamma),
+        CuArray.fromArray(na),
         S_klm_d,
     )
     cu_mod.applyLineshapes.setArgs(S_klm_FT_d, spectrum_in_d)

@@ -22,7 +22,7 @@ Nf = len(f_arr)
 Ntpb = 1024  # threads per block
 w0 = 0.2
 seed(0)
-Nl = 20
+Nl = 200
 
 
 def mock_spectrum(Nt, Nl):
@@ -48,15 +48,15 @@ def init():
     data_FT_d = CuArray(Nf, np.complex64)
     data_out_d = CuArray(Nt, np.float32)
 
+    cm.fft_fwd = CuFFT(data_in_d, data_FT_d, direction="fwd")
     cm.applyLineshapes.setArgs(data_FT_d)
     cm.applyLineshapes.setGrid((Nf // Ntpb + 1, 1, 1), (Ntpb, 1, 1))
+    cm.fft_rev = CuFFT(data_FT_d, data_out_d, direction="rev")
 
     cm.setConstant("Nt", c_longlong(Nt))
     cm.setConstant("Nf", c_longlong(Nf))
     cm.setConstant("dt", c_float(dt))
 
-    cm.fft_fwd = CuFFT(data_in_d, data_FT_d, direction="fwd")
-    cm.fft_rev = CuFFT(data_FT_d, data_out_d, direction="rev")
     print("Done!")
     return cm
 
