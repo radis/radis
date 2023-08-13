@@ -104,6 +104,7 @@ from radis.phys.units import convert_universal
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.spectrum import Spectrum
+from radis import config
 
 c_cm = c * 100
 
@@ -402,7 +403,6 @@ class SpectrumFactory(BandFactory):
         export_lines=False,
         emulate_gpu=False,
         diluent="air",
-        dataframe_type="pandas",
         **kwargs,
     ):
 
@@ -535,8 +535,8 @@ class SpectrumFactory(BandFactory):
         self.input.Tref = convert_and_strip_units(Tref, u.K)
         self.input.pressure_mbar = convert_and_strip_units(pressure, u.bar) * 1e3
         self.input.mole_fraction = mole_fraction
-        if dataframe_type in ["pandas", "vaex"]:
-            self.dataframe_type = dataframe_type
+        if config["DATAFRAME_ENGINE"] in ["pandas","vaex"]:
+            self.dataframe_engine = config["DATAFRAME_ENGINE"]
         else:
             raise NotImplementedError
 
