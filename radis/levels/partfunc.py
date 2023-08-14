@@ -1170,6 +1170,8 @@ class PartFuncKurucz(RovibParFuncTabulator):
 
     def _at(self, T):
         # Interpolate to find the partition function at the desired temperature
+        if T<10**(-5) or T>10**4:
+            raise ValueError(f"The temperature {T} is outside the accepted rannge [{10**(-5)}, {10**(4)}] K")
         try:
             return np.interp(T, self.pfT_values, self.pf_values)
         except KeyError:
