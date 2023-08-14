@@ -1678,7 +1678,7 @@ class BroadenFactory(BaseFactory):
 
     # %% Function to calculate lineshapes from HWHM
 
-    def _calc_lineshape(self, dg, wavenumber_group=None):
+    def _calc_lineshape(self, dg, wavenumber_group):
         """Sum over each line (trying to use vectorize operations to be faster)
 
         Parameters
@@ -1814,7 +1814,7 @@ class BroadenFactory(BaseFactory):
 
         return line_profile
 
-    def _calc_lineshape_LDM(self, df, wavenumber_group=None):
+    def _calc_lineshape_LDM(self, df, wavenumber_group):
         """Generate the lineshape database using the steps defined by the
         parameters :py:attr:`~radis.lbl.loader.Parameters.dxL` and
         :py:attr:`~radis.lbl.loader.Parameters.dxG`.
@@ -2029,29 +2029,53 @@ class BroadenFactory(BaseFactory):
         if Tgas is None:
             Tgas = self.input.Tgas
 
+        # Plot!
+        set_style()
+        plt.figure()
+
         # Get one line only:
         dg = self.df1.iloc[i]
-
         wbroad_centered = self.wbroad_centered
         wbroad = wbroad_centered + dg.shiftwav
         #        convolve_profile = self._calc_lineshape(dg)
         # Get Voigt from empirical approximation
-        if "hwhm_voigt" in dg:
-            voigt_profile = self._voigt_broadening(dg, wbroad_centered, jit=False)
-        # Get Voigt from convolution
-        pressure_profile = self._collisional_lineshape(dg, wbroad_centered)
-        gaussian_profile = self._gaussian_lineshape(dg, wbroad_centered)
-        line_profile = np.convolve(pressure_profile, gaussian_profile, "same")
-        line_profile /= trapezoid(line_profile.T, x=wbroad.T)  # normalize
+        if not self._multisparsegrid:
+            if "hwhm_voigt" in dg:
+                voigt_profile = self._voigt_broadening(dg, wbroad_centered, jit=False)
+            # Get Voigt from convolution
+            pressure_profile = self._collisional_lineshape(dg, wbroad_centered)
+            gaussian_profile = self._gaussian_lineshape(dg, wbroad_centered)
+            line_profile = np.convolve(pressure_profile, gaussian_profile, "same")
+            line_profile /= trapezoid(line_profile.T, x=wbroad.T)  # normalize
 
-        # Plot!
-        set_style()
-        plt.figure()
-        plt.plot(wbroad, pressure_profile, label="Pressure")
-        plt.plot(wbroad, gaussian_profile, label="Doppler")
-        plt.plot(wbroad, line_profile, label="Voigt (convolved)", lw=3)
-        if "hwhm_voigt" in dg:
-            plt.plot(wbroad, voigt_profile, label="Voigt (approximation)")
+            plt.plot(wbroad, pressure_profile, label="Pressure")
+            plt.plot(wbroad, gaussian_profile, label="Doppler")
+            plt.plot(wbroad, line_profile, label="Voigt (convolved)", lw=3)
+            if "hwhm_voigt" in dg:
+                plt.plot(wbroad, voigt_profile, label="Voigt (approximation)")
+        else:
+            for gridnb in len(range(self.wbroad_centered)):
+                if "hwhm_voigt" in dg:
+                    voigt_profile = self._voigt_broadening(
+                        dg, wbroad_centered[gridnb], jit=False
+                    )
+                # Get Voigt from convolution
+                pressure_profile = self._collisional_lineshape(
+                    dg, wbroad_centered[gridnb]
+                )
+                gaussian_profile = self._gaussian_lineshape(dg, wbroad_centered[gridnb])
+                line_profile = np.convolve(pressure_profile, gaussian_profile, "same")
+                line_profile /= trapz(line_profile.T, x=wbroad.T)  # normalize
+
+                plt.plot(wbroad[gridnb], pressure_profile, label="Pressure")
+                plt.plot(wbroad[gridnb], gaussian_profile, label="Doppler")
+                plt.plot(wbroad[gridnb], line_profile, label="Voigt (convolved)", lw=3)
+                if "hwhm_voigt" in dg:
+                    plt.plot(
+                        wbroad[gridnb], voigt_profile, label="Voigt (approximation)"
+                    )
+                # Must be unreadable, TODO update with fewer graphs
+
         plt.xlabel("Wavenumber (cm-1)")
         plt.ylabel("Broadening coefficient")
         plt.title(f"Line {i}, T={Tgas:.1f}K, P={pressure_atm:.2f}atm")
@@ -2372,10 +2396,10 @@ class BroadenFactory(BaseFactory):
         for i, (fr_left, fr_right, profS) in enumerate(
             zip(frac_left, frac_right, profile_S.T)
         ):
-            if radis.config[
-                "DEBUG_MODE"
-            ]:  #  @dev: used to test the indices used in the multigrid boundary corrections
-                sumoflines_calc_0 = sumoflines_calc.copy()
+            # if radis.config[
+            #     "DEBUG_MODE"
+            # ]:  #  @dev: used to test the indices used in the multigrid boundary corrections
+            #     sumoflines_calc_0 = sumoflines_calc.copy()
             sumoflines_calc[
                 np.r_[
                     I_low_in_left[i] : I_low_nearest_left[i] + 1,
@@ -2400,13 +2424,13 @@ class BroadenFactory(BaseFactory):
             # fr_left' = fr_left  * "wstep_narrower_grid"/wstep
             # fr_right' = fr_right * "wstep_narrower_grid"/wstep
             if gridnb > 0:
-                if radis.config["DEBUG_MODE"]:
-                    assert np.isclose(
-                        (sumoflines_calc - sumoflines_calc_0)[
-                            I_low_nearest_left[i] + 1
-                        ],
-                        fr_right * profS[len(profS) // 2 - 1],
-                    )  # used to check indices; debug mode
+                # if radis.config["DEBUG_MODE"]:
+                #     assert np.isclose(
+                #         (sumoflines_calc - sumoflines_calc_0)[
+                #             I_low_nearest_left[i] + 1
+                #         ],
+                #         fr_right * profS[len(profS) // 2 - 1],
+                #     )  # used to check indices; debug mode
                 sumoflines_calc[I_low_nearest_left[i] + 1] -= (
                     fr_right
                     * profS[len(profS) // 2 - 1]
@@ -2419,14 +2443,14 @@ class BroadenFactory(BaseFactory):
                     * (wstep - self._wstep_multigrid[gridnb - 1])
                     / wstep
                 )
-                if radis.config["DEBUG_MODE"]:
-                    assert np.isclose(
-                        (sumoflines_calc - sumoflines_calc_0)[
-                            I_high_nearest_left[i] + 1
-                        ],
-                        fr_right * profS[len(profS) // 2]
-                        + fr_left * profS[len(profS) // 2 + 1],
-                    )  # used to check indices; debug mode
+                # if radis.config["DEBUG_MODE"]:
+                #     assert np.isclose(
+                #         (sumoflines_calc - sumoflines_calc_0)[
+                #             I_high_nearest_left[i] + 1
+                #         ],
+                #         fr_right * profS[len(profS) // 2]
+                #         + fr_left * profS[len(profS) // 2 + 1],
+                #     )  # used to check indices; debug mode
                 sumoflines_calc[I_high_nearest_left[i] + 1] -= (
                     fr_right * profS[len(profS) // 2]
                     + fr_left
@@ -2441,9 +2465,6 @@ class BroadenFactory(BaseFactory):
                     * (wstep - self._wstep_multigrid[gridnb - 1])
                     / wstep
                 )
-
-        # if gridnb == 1:
-        #     raise
 
         self.profiler.stop("aggregate__lines_multigrid", "Aggregate lines")
 
@@ -3005,7 +3026,7 @@ class BroadenFactory(BaseFactory):
                         wG,
                         wL_dat,
                         wG_dat,
-                    ) = self._calc_lineshape_LDM(df, wavenumber_group)
+                    ) = self._calc_lineshape_LDM(df, wavenumber_group=wavenumber_group)
 
                     # printing estimated time
                     if self.verbose >= 2:
@@ -3071,10 +3092,21 @@ class BroadenFactory(BaseFactory):
                         df = df.groupby(df.idx)
 
                     for i, (_, dg) in enumerate(df):
-                        line_profile = self._calc_lineshape(dg)
-                        (wavenumber, absorption) = self._apply_lineshape(
-                            dg.S.values, line_profile, dg.shiftwav.values
+                        line_profile = self._calc_lineshape(
+                            dg, wavenumber_group=wavenumber_group
                         )
+                        # usually the bottleneck :
+                        if wavenumber_group is None:
+                            (wavenumber, absorption) = self._apply_lineshape(
+                                dg.S.values, line_profile, dg.shiftwav.values
+                            )
+                        else:
+                            (wavenumber, absorption) = self._apply_lineshape_multigrid(
+                                dg.S.values,
+                                line_profile,
+                                dg.shiftwav.values,
+                                wavenumber_group,
+                            )
                         abscoeff += absorption
                         pb.update(i)
                     pb.done()
@@ -3100,7 +3132,9 @@ class BroadenFactory(BaseFactory):
                             wG_i,
                             wL_dat_i,
                             wG_dat_i,
-                        ) = self._calc_lineshape_LDM(dg)
+                        ) = self._calc_lineshape_LDM(
+                            dg, wavenumber_group=wavenumber_group
+                        )
                         (wavenumber, absorption) = self._apply_lineshape_LDM(
                             dg.S.values,
                             line_profile_LDM,
@@ -3182,7 +3216,7 @@ class BroadenFactory(BaseFactory):
                     self.misc.zero_padding = len(wavenumber_calc)
 
                 line_profile_LDM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_LDM(
-                    df, wavenumber_group
+                    df, wavenumber_group=wavenumber_group
                 )
                 # printing estimated time
                 if self.verbose >= 2:
@@ -3239,13 +3273,30 @@ class BroadenFactory(BaseFactory):
                     )
                 if chunksize is None:
                     # Deal with all lines directly (usually faster)
-                    line_profile = self._calc_lineshape(df)  # usually the bottleneck
-                    (wavenumber, abscoeff) = self._apply_lineshape(
-                        df.S.values, line_profile, df.shiftwav.values
+                    line_profile = self._calc_lineshape(
+                        df, wavenumber_group=wavenumber_group
                     )
-                    (_, emisscoeff) = self._apply_lineshape(
-                        df.Ei.values, line_profile, df.shiftwav.values
-                    )
+                    # usually the bottleneck :
+                    if wavenumber_group is None:
+                        (wavenumber, abscoeff) = self._apply_lineshape(
+                            df.S.values, line_profile, df.shiftwav.values
+                        )
+                        (_, emisscoeff) = self._apply_lineshape(
+                            df.Ei.values, line_profile, df.shiftwav.values
+                        )
+                    else:
+                        (wavenumber, abscoeff) = self._apply_lineshape_multigrid(
+                            df.S.values,
+                            line_profile,
+                            df.shiftwav.values,
+                            wavenumber_group,
+                        )
+                        (_, emisscoeff) = self._apply_lineshape_multigrid(
+                            df.Ei.values,
+                            line_profile,
+                            df.shiftwav.values,
+                            wavenumber_group,
+                        )
 
                 elif is_float(chunksize):
                     # Cut lines in smaller bits for better memory handling
@@ -3260,13 +3311,27 @@ class BroadenFactory(BaseFactory):
 
                     pb = ProgressBar(N, active=self.verbose)
                     for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
-                        line_profile = self._calc_lineshape(dg)
-                        (wavenumber, absorption) = self._apply_lineshape(
-                            dg.S.values, line_profile, dg.shiftwav.values
-                        )
-                        (_, emission) = self._apply_lineshape(
-                            dg.Ei.values, line_profile, dg.shiftwav.values
-                        )
+                        line_profile = self._calc_lineshape(dg, wavenumber_group)
+                        if wavenumber_group is None:
+                            (wavenumber, absorption) = self._apply_lineshape(
+                                dg.S.values, line_profile, dg.shiftwav.values
+                            )
+                            (_, emission) = self._apply_lineshape(
+                                dg.Ei.values, line_profile, dg.shiftwav.values
+                            )
+                        else:
+                            (wavenumber, absorption) = self._apply_lineshape_multigrid(
+                                dg.S.values,
+                                line_profile,
+                                dg.shiftwav.values,
+                                wavenumber_group,
+                            )
+                            (_, emission) = self._apply_lineshape_multigrid(
+                                dg.Ei.values,
+                                line_profile,
+                                dg.shiftwav.values,
+                                wavenumber_group,
+                            )
                         abscoeff += absorption  #
                         emisscoeff += emission
                         pb.update(i)
