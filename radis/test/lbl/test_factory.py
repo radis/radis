@@ -739,15 +739,15 @@ def test_vaex_and_pandas_spectrum_noneq():
     from radis import calc_spectrum
 
     conditions = {
-        "wmin": 1800,
-        "wmax": 1820,
+        "wmin": 2300,
+        "wmax": 2320,
         "molecule": "CO",
         "isotope": 1,
         "pressure": 1.01325,
         "mole_fraction": 0.1,
         "wstep": "auto",
         "path_length": 1,
-        "databank": "hitemp",
+        "databank": "hitran",
         "verbose": 3,
         "return_factory": True,
     }
