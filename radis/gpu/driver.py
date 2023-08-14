@@ -232,7 +232,8 @@ class CuModule:
         self.module = c_longlong(0)
         err = lib.cuModuleLoad(byref(self.module), module_file)
         if err != CUDA_SUCCESS:
-            print(err)
+            if err == 222:
+                print("* CUDA Driver too old, please update driver\n")
             print(
                 "* Error loading the module {:s}\n".format(module_file.value.decode())
             )
