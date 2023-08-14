@@ -1,3 +1,5 @@
+import os.path
+
 import numpy as np
 from scipy.constants import N_A, c, h, k
 from scipy.fft import next_fast_len
@@ -413,8 +415,10 @@ def gpu_init(
 
     ctx = CuContext()
     _cuda_context_open = True
-    ptx_path = getProjectRoot() + "\\gpu\\"
-    cu_mod = CuModule(ctx, ptx_path + "kernels.ptx")
+    ptx_path = os.path.join(getProjectRoot(), "gpu", "kernels.ptx")
+    if not os.path.exists(ptx_path):
+        raise FileNotFoundError(ptx_path)
+    cu_mod = CuModule(ctx, ptx_path)
 
     ## Next, the GPU is made aware of a number of parameters.
     ## Parameters that don't change during iteration are stored
