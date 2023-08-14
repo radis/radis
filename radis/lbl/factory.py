@@ -1912,6 +1912,12 @@ class SpectrumFactory(BandFactory):
             truncation_multigrid = np.array(
                 [40 * self.params.wstep, 1000 * self.params.wstep, truncation]
             )
+            while truncation_multigrid[-2] > truncation_multigrid[-1]:
+                # 1st-before-last grid is wider than the last : remove last grid
+                wstep_multigrid = wstep_multigrid[:-1]
+                truncation_multigrid = truncation_multigrid[:-1]
+                truncation_multigrid[-1] = truncation
+
             # raise
             self._wstep_multigrid = wstep_multigrid  # TEMP. Save them here so they can be used by apply_lineshape(). TODO refactor
             self._truncation_multigrid = truncation_multigrid
