@@ -2006,22 +2006,64 @@ class SpectrumFactory(BandFactory):
                 neighbour_lines,
             )
         else:
-            lineshape_half_width = (
-                5000 * wstep_calc_narrow
-            )  # TODO EP 13/08/22: update this 10
-            (
-                wavenumber,
-                wavenumber_calc,
-                woutrange,
-                ix_ranges,
-            ) = _generate_wavenumber_range_sparse(
-                self.input.wavenum_min,
-                self.input.wavenum_max,
-                self.params.wstep,
-                neighbour_lines,
-                self.df1.wav,
-                lineshape_half_width,
+            # In the first Proof-of-concept, we set 3 grids based on wstep (which
+            # will be considered the minimum wstep ):
+            #    - wavecenter to 2 * wstep  : wstep  (typically 0.01 cm-1)
+            #    - 2 * wstep to 10*wstep : 10*wstep   (typically 0.1 cm-1)
+            #    - 10*wstep  to truncation (typically 50 cm-1) : 100*wstep (typically 1 cm-1)
+            # TODO : update to arbitrary number of grids?
+            wavenumber_list = []
+            wavenumber_calc_list = []
+            woutrange_list = []
+            ix_ranges_list = []
+
+            wstep_multigrid = np.array(
+                [self.params.wstep, 20 * self.params.wstep, 500 * self.params.wstep]
             )
+            truncation_multigrid = np.array(
+                [40 * self.params.wstep, 1000 * self.params.wstep, truncation]
+            )
+            while truncation_multigrid[-2] > truncation_multigrid[-1]:
+                # 1st-before-last grid is wider than the last : remove last grid
+                wstep_multigrid = wstep_multigrid[:-1]
+                truncation_multigrid = truncation_multigrid[:-1]
+                truncation_multigrid[-1] = truncation
+
+            # raise
+            self._wstep_multigrid = wstep_multigrid  # TEMP. Save them here so they can be used by apply_lineshape(). TODO refactor
+            self._truncation_multigrid = truncation_multigrid
+
+            for i, (wstep, lineshape_half_width) in enumerate(
+                zip(
+                    # [self.params.wstep, 10 * self.params.wstep, 100 * self.params.wstep],
+                    # [2 * self.params.wstep, 10 * self.params.wstep, truncation],
+                    wstep_multigrid,
+                    truncation_multigrid,
+                )
+            ):
+                (
+                    wavenumber,
+                    wavenumber_calc,
+                    woutrange,
+                    ix_ranges,
+                ) = _generate_wavenumber_range_sparse(
+                    self.input.wavenum_min,
+                    self.input.wavenum_max,
+                    wstep,
+                    neighbour_lines,
+                    self.df1.wav,
+                    lineshape_half_width,
+                )
+                wavenumber_list.append(wavenumber)
+                wavenumber_calc_list.append(wavenumber_calc)
+                woutrange_list.append(woutrange)
+                ix_ranges_list.append(ix_ranges)
+
+            wavenumber = wavenumber_list
+            wavenumber_calc = wavenumber_calc_list
+            woutrange = woutrange_list
+            ix_ranges = ix_ranges_list
+
             self._ix_ranges = ix_ranges
 
         # Generate lineshape array
