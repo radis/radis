@@ -7,7 +7,7 @@ Partition Functions from spectroscopic constants
 RADIS can calculate equilibrium and non-LTE Partition Functions from a given
 set of spectroscopic constants using a Dunham expansion.
 
-Calculations use the the :py:class:`~radis.levels.partfunc.PartFunc_Dunham` class
+Calculations use the :py:class:`~radis.levels.partfunc.PartFunc_Dunham` class
 
 Default spectroscopic constants and spectroscopic models used are given in
 :ref:`default spectroscopic constants <label_db_spectroscopic_constants>`.

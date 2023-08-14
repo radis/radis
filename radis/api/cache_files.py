@@ -158,7 +158,7 @@ def load_h5_cache_file(
             os.remove(cachefile)
             return None
 
-    # 4. File is not deprecated: read the the extremum wavenumbers.    raise
+    # 4. File is not deprecated: read the extremum wavenumbers.    raise
     if relevant_if_metadata_above is not None or relevant_if_metadata_below is not None:
         try:
             check_relevancy(
