@@ -6,7 +6,7 @@ Spectroscopic constants
 CO2
 ---
 
-Version 0.9 uses uses the CO2 spectrosopic coefficients of [Klarenaar2017]_ ,
+Version 0.9 uses the CO2 spectrosopic coefficients of [Klarenaar2017]_ ,
 Table 2,3 and the references therein. ⚠️ These constants have been compiled for Treanor distributions
 and may not be suited for Boltzmann distributions.
 
