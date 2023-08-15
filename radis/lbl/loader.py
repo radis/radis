@@ -519,7 +519,7 @@ class Parameters(ConditionDict):
         self.include_neighbouring_lines = True
         """bool: if ``True``, includes the contribution of off-range, neighbouring
         lines because of lineshape broadening. Default ``True``."""
-        self.parsum_mode = "full summation"  #: int : "full summation" or "tabulation"  . calculation mode of parittion function. See :py:class:`~radis.levels.partfunc.RovibParFuncCalculator`
+        self.parsum_mode = "full summation"  #: int : "full summation" or "tabulation"  . calculation mode of partition function. See :py:class:`~radis.levels.partfunc.RovibParFuncCalculator`
         self.sparse_ldm = "auto"  #: str: "auto", True, False  . Sparse LDM calculation. See :py:meth:`radis.lbl.broadening.BroadenFactory._apply_lineshape_LDM`
 
 
