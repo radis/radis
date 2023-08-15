@@ -1293,7 +1293,7 @@ class DatabankLoader(object):
             frames = []  # lines for all isotopes
             partition_function_exomol = {
                 molecule: {}
-            }  # partition function tabulators for all isotpes
+            }  # partition function tabulators for all isotopes
             for iso in isotope_list:
                 df, local_path, Z_exomol = fetch_exomol(
                     molecule,

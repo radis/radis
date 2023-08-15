@@ -1218,7 +1218,7 @@ class HITRANDatabaseManager(DatabaseManager):
         wmax = 40000
 
         def download_all_hitran_isotopes(molecule, directory, extra_params):
-            """Blindly try to download all isotpes 1 - 9 for the given molecule
+            """Blindly try to download all isotopes 1 - 9 for the given molecule
 
             .. warning::
                 this won't be able to download higher isotopes (ex : isotope 10-11-12 for CO2)
