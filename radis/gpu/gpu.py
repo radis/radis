@@ -4,7 +4,7 @@ import numpy as np
 from scipy.constants import N_A, c, h, k
 from scipy.fft import next_fast_len
 
-from radis.gpu.types import initData, iterData
+from radis.gpu.structs import initData, iterData
 from radis.misc.utils import getProjectRoot
 
 # import sys
