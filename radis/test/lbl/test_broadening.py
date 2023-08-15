@@ -527,7 +527,7 @@ def test_truncations_and_neighbour_lines(*args, **kwargs):
         "databank": "HITRAN-CO-TEST",
     }
 
-    # No Neighbourling lines, only truncation
+    # No Neighbouring lines, only truncation
     from radis import calc_spectrum
 
     s_lbl_voigt_trunc10 = calc_spectrum(
