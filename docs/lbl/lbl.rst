@@ -153,7 +153,7 @@ You can also compute the chemical equilibrium composition in
 other codes like [CANTERA]_, and feed the output to
 RADIS :py:func:`~radis.lbl.calc.calc_spectrum`. The
 :py:func:`~radis.tools.gascomp.get_eq_mole_fraction` function
-provides an interace to [CANTERA]_ directly from RADIS ::
+provides an interface to [CANTERA]_ directly from RADIS ::
 
     from radis import calc_spectrum, get_eq_mole_fraction
 
