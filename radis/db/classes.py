@@ -602,7 +602,7 @@ class ElectronicState(Isotope):
     # built-in Symmetry / species class, Sigma / Pi / Delta etc... where the energy
     # is calculated appropriately.  (ex: Rigid Rotor, Symmetric Top etc.)
 
-    # (major code rewritting ahead...)
+    # (major code rewriting ahead...)
     # That should be part of RADIS extension to non Sigma electronic states.
 
     def __init__(
