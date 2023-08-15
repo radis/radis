@@ -45,7 +45,7 @@ def test_merge_slabs(
     from radis.tools.database import load_spec
 
     if plot:
-        plt.ion()  # dont get stuck with Matplotlib if executing through pytest
+        plt.ion()  # dont get stuck with Matplotlib if executting through pytest
         if close_plots:
             plt.close("all")
 
@@ -132,7 +132,7 @@ def test_serial_slabs_transmittance(
     from radis.tools.database import load_spec
 
     if plot:
-        plt.ion()  # dont get stuck with Matplotlib if executing through pytest
+        plt.ion()  # dont get stuck with Matplotlib if executting through pytest
 
     # Get Some spectra
     s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.5.spec"), binary=True)
@@ -178,7 +178,7 @@ def test_serial_slabs_radiance(
     from radis.tools.database import load_spec
 
     if plot:
-        plt.ion()  # dont get stuck with Matplotlib if executing through pytest
+        plt.ion()  # dont get stuck with Matplotlib if executting through pytest
 
     # Get Some spectra
     s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)

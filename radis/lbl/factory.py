@@ -2245,7 +2245,7 @@ class SpectrumFactory(BandFactory):
         self.calc_emission_integral()
 
         #        # ----------------------------------------------------------------------
-        #        # Cutoff linestrength  (note that cuting linestrength doesnt make this
+        #        # Cutoff linestrength  (note that cutting linestrength doesnt make this
         #        # process faster here, but we still give this option to be consistent
         #        # with spectra)
         #        self._cutoff_linestrength()

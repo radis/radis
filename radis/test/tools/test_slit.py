@@ -55,7 +55,7 @@ fig_prefix = basename(__file__) + ": "
 
 def _clean(plot, close_plots):
     if plot:
-        plt.ion()  # dont get stuck with Matplotlib if executing through pytest
+        plt.ion()  # dont get stuck with Matplotlib if executting through pytest
         set_style()
         if close_plots:
             plt.close("all")

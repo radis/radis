@@ -106,7 +106,7 @@ adding the following lines within your test function::
 
     if plot:
         import matplotlib.pyplot as plt
-        plt.ion()   # dont get stuck with Matplotlib if executing through pytest
+        plt.ion()   # dont get stuck with Matplotlib if executting through pytest
 
 You can refer to Pull Request: https://github.com/radis/radis/pull/495 to see
 how test cases are written when a new feature is added.

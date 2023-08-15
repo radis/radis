@@ -53,7 +53,7 @@ def test_planck_nm(verbose=True, plot=True, *args, **kwargs):
     if plot:
         import matplotlib.pyplot as plt
 
-        plt.ion()  # dont get stuck with Matplotlib if executing through pytest
+        plt.ion()  # dont get stuck with Matplotlib if executting through pytest
 
     T = 2200
     eps = 0.36
@@ -126,7 +126,7 @@ def test_planck_cm(verbose=True, plot=True, *args, **kwargs):
     if plot:
         import matplotlib.pyplot as plt
 
-        plt.ion()  # dont get stuck with Matplotlib if executing through pytest
+        plt.ion()  # dont get stuck with Matplotlib if executting through pytest
 
     T = 287.2
     eps = 0.78
