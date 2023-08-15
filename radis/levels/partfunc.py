@@ -2050,7 +2050,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             Hence:
 
             - symmetric vibrational levels -> only even j numbers
-            - assymmetric vibrational levels -> only odd j numbers
+            - asymmetric vibrational levels -> only odd j numbers
 
             If oxygen atoms are different isotopologues (ex: CO2 628), then all
             levels exist
