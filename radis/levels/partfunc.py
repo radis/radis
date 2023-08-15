@@ -1846,7 +1846,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
                             # (can there be non null 'forbidden' levels as
                             # there are forbidden transitions?).
                             # Anyway, their linestrengths are very small,
-                            # and they wont be acounted for in the
+                            # and they wont be accounted for in the
                             # partition function because of gs=0
 
                             if not calc_Evib_harmonic_anharmonic:
