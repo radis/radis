@@ -572,10 +572,10 @@ class ElectronicState(Isotope):
     vmax, vmax_morse: int, or ``None``
         maximum vibrational number (required for partition function calculation)
         to be calculated with Dunham expansion, and Morse potential
-        If None, number will be infered from dissociation energy
+        If None, number will be inferred from dissociation energy
     Jmax: int, or ``None``
         maximum rotational number (required for partition function calculation)
-        If None, number will be infered from dissociation energy
+        If None, number will be inferred from dissociation energy
     Ediss: cm-1
         dissociation energy. Required for partition function calculation
         if neither vmax nor Jmax are given

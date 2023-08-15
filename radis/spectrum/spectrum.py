@@ -3957,7 +3957,7 @@ class Spectrum(object):
 
         if equilibrium != guess:
             msg = (
-                "Declared value of equilibrium ({0}) does not match the infered one ({1})".format(
+                "Declared value of equilibrium ({0}) does not match the inferred one ({1})".format(
                     equilibrium, guess
                 )
                 + ". Update your Spectrum conditions"

@@ -142,7 +142,7 @@ class SpectrumFactory(BandFactory):
         path length in cm. Default ``1``.
         use astropy.units to specify arbitrary length units.
     molecule: ``int``, ``str``, or ``None``
-        molecule id (HITRAN format) or name. If ``None``, the molecule can be infered
+        molecule id (HITRAN format) or name. If ``None``, the molecule can be inferred
         from the database files being loaded. See the list of supported molecules
         in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
         and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.

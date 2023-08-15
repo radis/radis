@@ -25,7 +25,7 @@ from radis.tools.database import load_spec
 
 @pytest.mark.fast
 def test_compression(verbose=True, warnings=True, *args, **kwargs):
-    """Test that redundant quantities are properly infered from already known
+    """Test that redundant quantities are properly inferred from already known
     spectral quantities"""
 
     # Get spectrum

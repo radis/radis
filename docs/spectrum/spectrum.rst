@@ -572,7 +572,7 @@ How to modify a Spectrum object?
 Calculate missing quantities
 ----------------------------
 
-Some spectral arrays can be infered from quantities stored in the Spectrum
+Some spectral arrays can be inferred from quantities stored in the Spectrum
 if enough conditions are given. For instance, transmittance can be recomputed
 from the spectral absorption coefficient if the path length is stored in the
 conditions.

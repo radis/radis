@@ -108,7 +108,7 @@ def calc_spectrum(
         molecule id (HITRAN format) or name. For multiple molecules, use a list.
         The ``'isotope'``, ``'mole_fraction'``, ``'databank'`` and ``'overpopulation'`` parameters must then
         be dictionaries.
-        If ``None``, the molecule can be infered
+        If ``None``, the molecule can be inferred
         from the database files being loaded. See the list of supported molecules
         in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
         and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
@@ -810,7 +810,7 @@ def _calc_spectrum_one_molecule(
         # Guess format
         if databank.endswith(".par"):
             if verbose:
-                print("Infered {0} is a HITRAN-format file.".format(databank))
+                print("Inferred {0} is a HITRAN-format file.".format(databank))
             conditions["format"] = "hitran"
             # If non-equilibrium we'll also need to load the energy levels.
             if not _equilibrium:
@@ -821,7 +821,7 @@ def _calc_spectrum_one_molecule(
         elif databank.endswith(".h5") or databank.endswith(".hdf5"):
             if verbose:
                 print(
-                    "Infered {0} is a HDF5 file with RADISDB columns format".format(
+                    "Inferred {0} is a HDF5 file with RADISDB columns format".format(
                         databank
                     )
                 )

@@ -254,12 +254,12 @@ def _build_update_graph(
     }
 
     def derives_from(what, *from_keys):
-        """Writes that quantity ``what`` can be infered by having all
+        """Writes that quantity ``what`` can be inferred by having all
         quantities ``from_keys``
 
         Examples
         --------
-        Radiance can be infered from emisscoeff if optically thin::
+        Radiance can be inferred from emisscoeff if optically thin::
 
             derives_from('radiance_noslit', 'emisscoeff')
 
