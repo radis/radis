@@ -4,7 +4,6 @@ from ctypes import (
     c_char_p,
     c_int,
     c_long,
-    c_longlong,
     c_size_t,
     c_void_p,
     cast,
@@ -308,7 +307,7 @@ class CuFFT:
         self._direction = direction
         self._arr = arr_in if direction == "fwd" else arr_out
         self._fft_type = CUFFT_R2C if direction == "fwd" else CUFFT_C2R
-        self._plan = c_longlong(0)
+        self._plan = c_void_p(0)
 
         cu_print(lib_cufft.cufftCreate(byref(self._plan)), "fft.plan create")
 
@@ -319,6 +318,7 @@ class CuFFT:
 
         batch = int(np.prod(self._arr.shape[1:]))
         oneInt = 1 * c_int
+        # dist = self._arr.shape[0]
         _n = oneInt(self._arr.shape[0])
         stride = batch
 

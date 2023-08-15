@@ -1,0 +1,209 @@
+import os.path
+from ctypes import (
+    POINTER,
+    byref,
+    c_char,
+    c_int,
+    c_longlong,
+    c_short,
+    c_void_p,
+    cast,
+    memmove,
+    sizeof,
+    windll,
+)
+
+import numpy as np
+from scipy.fft import irfft, rfft
+from structs import blockDim_t, gridDim_t
+
+from radis.misc.utils import getProjectRoot
+
+CUFFT_R2C = 0x2A
+CUFFT_C2R = 0x2C
+
+_lib_ext = [".dll", ".so"][0]  # TODO: Determine dynamically
+_blockDim = blockDim_t()
+_gridDim = gridDim_t()
+
+
+class CuContext:
+    def __init__(self, device_id=0, flags=0):
+
+        # private:
+        self._context = c_void_p(123)
+        self._device = c_void_p(456)
+
+    ##    @staticmethod
+    ##    def getDeviceList(): #TODO
+    ##    def printDeviceCapabilities(self): #TODO
+
+    def setCurrent(self):
+        pass
+
+    def synchronize(self):
+        pass
+
+    def destroy(self):
+        pass
+
+
+class CuModule:
+    def __init__(self, context, module_name):
+        # public:
+        self.module_name = os.path.splitext(module_name)[0] + _lib_ext
+        self.context = context
+
+        # private:
+        radis_path = getProjectRoot()
+        self._module = windll.LoadLibrary(
+            os.path.join(radis_path, "gpu", self.module_name)
+        )
+        self._func_dict = {}
+        self._global_dict = {}
+
+    def __getattr__(self, attr):
+        try:
+            self._func_dict[attr]
+            return self._func_dict[attr]
+
+        except (KeyError):
+            _function = getattr(self._module, attr)
+            self._func_dict[attr] = CuFunction(_function)
+            self._func_dict[attr].module = self
+            return self._func_dict[attr]
+
+    def setConstant(self, name, c_val):
+        try:
+            _var, _size = self._global_dict[name]
+
+        except (KeyError):
+            _var = type(c_val).in_dll(self._module, name)
+            _size = sizeof(c_val)
+            self._global_dict[name] = (_var, _size)
+
+        memmove(byref(_var), byref(c_val), _size)
+
+
+class CuFunction:
+    def __init__(self, _function):
+
+        # public:
+        self.module = None
+        self.args = []
+        self.blocks = (1, 1, 1)
+        self.threads = (1, 1, 1)
+        self.sync = False
+
+        # private:
+        self._function = _function
+
+    def setGrid(self, blocks=(1, 1, 1), threads=(1, 1, 1)):
+        self.blocks = blocks
+        self.threads = threads
+
+    def setArgs(self, *vargs):
+        self.args = vargs
+
+    def __call__(self, *vargs, blocks=None, threads=None, sync=None):
+
+        self.args = self.args if not len(vargs) else vargs
+        self.blocks = self.blocks if blocks is None else blocks
+        self.threads = self.threads if threads is None else threads
+        self.sync = self.sync if sync is None else sync
+
+        _blockDim.x = self.threads[0]
+        _blockDim.y = self.threads[1]
+        _blockDim.z = self.threads[2]
+        self.module.setConstant("blockDim", _blockDim)
+
+        _gridDim.x = self.blocks[0]
+        _gridDim.y = self.blocks[1]
+        _gridDim.z = self.blocks[2]
+        self.module.setConstant("gridDim", _gridDim)
+
+        c_args = [arr._ptr for arr in self.args]
+        self._function(*c_args)
+
+
+class CuArray:
+    def __init__(self, shape, dtype=np.float32, init="empty"):
+        self._ptr = c_void_p()
+        self.resize(shape, dtype, init)
+
+    def resize(self, shape=None, dtype=None, init="empty"):
+        shape_tuple = shape if isinstance(shape, tuple) else (shape,)
+        self.shape = self.shape if shape is None else shape_tuple
+        self.dtype = self.dtype if dtype is None else np.dtype(dtype)
+        self.size = int(np.prod(shape))
+        self.itemsize = self.dtype.itemsize
+        self.nbytes = self.itemsize * self.size
+
+        if init not in ("zeros", "empty"):
+            return
+
+        elif init == "empty":
+            arr = np.empty(self.shape, dtype=self.dtype)
+
+        elif init == "zeros":
+            arr = np.zeros(self.shape, dtype=self.dtype)
+
+        self._ptr = c_void_p(arr.ctypes.data)
+
+    @staticmethod
+    def fromArray(arr):
+
+        obj = CuArray(arr.shape, arr.dtype, init=None)
+        obj.setArray(arr)
+
+        return obj
+
+    def zeroFill(self):
+        self.getArray()[:] = 0
+
+    def setArray(self, arr):
+
+        params_changed = arr.shape != self.shape or arr.dtype != self.dtype
+        uninitialized_memory = self._ptr.value is None
+        if params_changed or uninitialized_memory:
+            self.resize(arr.shape, arr.dtype, None)
+        self._ptr = c_void_p(arr.ctypes.data)
+
+    def getArray(self):
+        my_ctype = {1: c_char, 2: c_short, 4: c_int, 8: c_longlong}[self.itemsize]
+        my_cptr = cast(self._ptr.value, POINTER(my_ctype))
+        arr = np.ctypeslib.as_array(my_cptr, self.shape).view(self.dtype)
+        return arr
+
+
+class CuFFT:
+    def __init__(self, arr_in, arr_out, direction="fwd", plan_fft=True):
+
+        # public:
+        self.arr_in = arr_in
+        self.arr_out = arr_out
+
+        # private:
+        self._direction = direction
+        self._arr = arr_in if direction == "fwd" else arr_out
+        self._fft_type = CUFFT_R2C if direction == "fwd" else CUFFT_C2R
+        self._plan = c_void_p(789)
+
+        if plan_fft:
+            self.planMany()
+
+    def planMany(self):
+        pass
+
+    def __call__(self):
+
+        np_arr_in = self.arr_in.getArray()
+        np_arr_out = self.arr_out.getArray()
+
+        if self._direction == "fwd":
+            np_arr_out[:] = rfft(np_arr_in, axis=0)
+        else:
+            np_arr_out[:] = irfft(np_arr_in, axis=0)
+
+    def destroy(self):
+        pass
