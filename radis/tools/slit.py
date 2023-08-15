@@ -1530,7 +1530,7 @@ def triangular_slit(
         wavelength step
 
     center: (nm)
-        center wavelength for the wavelength axs of the slit function
+        center wavelength for the wavelength axis of the slit function
 
     norm_by: ``'area'``, ``'max'``
         normalisation type. ``'area'`` conserves energy. ``'max'`` is what is
@@ -1660,7 +1660,7 @@ def trapezoidal_slit(
     Other Parameters
     ----------------
     center: (nm)
-        center wavelength for the wavelength axs of the slit function
+        center wavelength for the wavelength axis of the slit function
     norm_by: ``'area'``, ``'max'``
         normalisation type. ``'area'`` conserves energy. ``'max'`` is what is
         done in Specair and changes units. Default ``'area'``
@@ -1791,7 +1791,7 @@ def gaussian_slit(
     Other Parameters
     ----------------
     center: (nm)
-        center wavelength for the wavelength axs of the slit function
+        center wavelength for the wavelength axis of the slit function
     norm_by: ``'area'``, ``'max'``
         normalisation type. ``'area'`` conserves energy. ``'max'`` is what is
         done in Specair and changes units. Default ``'area'``
