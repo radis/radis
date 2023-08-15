@@ -10,94 +10,108 @@
 .target sm_52
 .address_size 64
 
-	// .globl	add_ints
+	// .globl	return_dims
+.const .align 4 .b8 params[8];
 .const .align 4 .b8 struct_obj[12];
+.const .align 8 .u64 N;
 .const .align 4 .u32 Nt;
 .const .align 4 .u32 Nf;
 .const .align 4 .f32 dt;
 .const .align 4 .f32 wL;
 
+.visible .entry return_dims(
+	.param .u64 return_dims_param_0
+)
+{
+	.reg .b32 	%r<3>;
+	.reg .b64 	%rd<3>;
+
+
+	ld.param.u64 	%rd1, [return_dims_param_0];
+	cvta.to.global.u64 	%rd2, %rd1;
+	mov.u32 	%r1, %ntid.x;
+	st.global.u32 	[%rd2], %r1;
+	mov.u32 	%r2, %nctaid.x;
+	st.global.u32 	[%rd2+4], %r2;
+	ret;
+
+}
+	// .globl	add_ints
 .visible .entry add_ints(
 	.param .u64 add_ints_param_0,
 	.param .u64 add_ints_param_1,
-	.param .u64 add_ints_param_2,
-	.param .u32 add_ints_param_3
+	.param .u64 add_ints_param_2
 )
 {
-	.reg .pred 	%p<6>;
-	.reg .b32 	%r<33>;
-	.reg .b64 	%rd<29>;
+	.reg .pred 	%p<2>;
+	.reg .b32 	%r<9>;
+	.reg .b64 	%rd<11>;
 
 
-	ld.param.u64 	%rd19, [add_ints_param_0];
-	ld.param.u64 	%rd20, [add_ints_param_1];
-	ld.param.u64 	%rd21, [add_ints_param_2];
-	ld.param.u32 	%r10, [add_ints_param_3];
-	cvta.to.global.u64 	%rd1, %rd21;
-	cvta.to.global.u64 	%rd2, %rd20;
-	cvta.to.global.u64 	%rd3, %rd19;
-	setp.lt.s32 	%p1, %r10, 1;
-	@%p1 bra 	$L__BB0_7;
+	ld.param.u64 	%rd1, [add_ints_param_0];
+	ld.param.u64 	%rd2, [add_ints_param_1];
+	ld.param.u64 	%rd3, [add_ints_param_2];
+	mov.u32 	%r2, %tid.x;
+	mov.u32 	%r3, %ctaid.x;
+	mov.u32 	%r4, %ntid.x;
+	mad.lo.s32 	%r1, %r4, %r3, %r2;
+	ld.const.u32 	%r5, [struct_obj];
+	setp.ge.s32 	%p1, %r1, %r5;
+	@%p1 bra 	$L__BB1_2;
 
-	add.s32 	%r12, %r10, -1;
-	and.b32  	%r32, %r10, 3;
-	setp.lt.u32 	%p2, %r12, 3;
-	mov.u32 	%r31, 0;
-	@%p2 bra 	$L__BB0_4;
+	cvta.to.global.u64 	%rd4, %rd1;
+	mul.wide.s32 	%rd5, %r1, 4;
+	add.s64 	%rd6, %rd4, %rd5;
+	cvta.to.global.u64 	%rd7, %rd2;
+	add.s64 	%rd8, %rd7, %rd5;
+	ld.global.u32 	%r6, [%rd8];
+	ld.global.u32 	%r7, [%rd6];
+	add.s32 	%r8, %r6, %r7;
+	cvta.to.global.u64 	%rd9, %rd3;
+	add.s64 	%rd10, %rd9, %rd5;
+	st.global.u32 	[%rd10], %r8;
 
-	sub.s32 	%r30, %r10, %r32;
-	mov.u64 	%rd23, %rd1;
-	mov.u64 	%rd24, %rd2;
-	mov.u64 	%rd25, %rd3;
+$L__BB1_2:
+	ret;
 
-$L__BB0_3:
-	ld.global.u32 	%r14, [%rd24];
-	ld.global.u32 	%r15, [%rd25];
-	add.s32 	%r16, %r14, %r15;
-	st.global.u32 	[%rd23], %r16;
-	ld.global.u32 	%r17, [%rd24+4];
-	ld.global.u32 	%r18, [%rd25+4];
-	add.s32 	%r19, %r17, %r18;
-	st.global.u32 	[%rd23+4], %r19;
-	ld.global.u32 	%r20, [%rd24+8];
-	ld.global.u32 	%r21, [%rd25+8];
-	add.s32 	%r22, %r20, %r21;
-	st.global.u32 	[%rd23+8], %r22;
-	ld.global.u32 	%r23, [%rd24+12];
-	ld.global.u32 	%r24, [%rd25+12];
-	add.s32 	%r25, %r23, %r24;
-	st.global.u32 	[%rd23+12], %r25;
-	add.s32 	%r31, %r31, 4;
-	add.s64 	%rd25, %rd25, 16;
-	add.s64 	%rd24, %rd24, 16;
-	add.s64 	%rd23, %rd23, 16;
-	add.s32 	%r30, %r30, -4;
-	setp.ne.s32 	%p3, %r30, 0;
-	@%p3 bra 	$L__BB0_3;
+}
+	// .globl	matSum
+.visible .entry matSum(
+	.param .u64 matSum_param_0,
+	.param .u64 matSum_param_1,
+	.param .u64 matSum_param_2
+)
+{
+	.reg .pred 	%p<2>;
+	.reg .b32 	%r<8>;
+	.reg .b64 	%rd<13>;
 
-$L__BB0_4:
-	setp.eq.s32 	%p4, %r32, 0;
-	@%p4 bra 	$L__BB0_7;
 
-	mul.wide.s32 	%rd22, %r31, 4;
-	add.s64 	%rd28, %rd1, %rd22;
-	add.s64 	%rd27, %rd2, %rd22;
-	add.s64 	%rd26, %rd3, %rd22;
+	ld.param.u64 	%rd2, [matSum_param_0];
+	ld.param.u64 	%rd3, [matSum_param_1];
+	ld.param.u64 	%rd4, [matSum_param_2];
+	mov.u32 	%r1, %ctaid.x;
+	cvt.s64.s32 	%rd1, %r1;
+	ld.const.u64 	%rd5, [N];
+	setp.le.u64 	%p1, %rd5, %rd1;
+	@%p1 bra 	$L__BB2_2;
 
-$L__BB0_6:
-	.pragma "nounroll";
-	ld.global.u32 	%r26, [%rd27];
-	ld.global.u32 	%r27, [%rd26];
-	add.s32 	%r28, %r26, %r27;
-	st.global.u32 	[%rd28], %r28;
-	add.s64 	%rd28, %rd28, 4;
-	add.s64 	%rd27, %rd27, 4;
-	add.s64 	%rd26, %rd26, 4;
-	add.s32 	%r32, %r32, -1;
-	setp.ne.s32 	%p5, %r32, 0;
-	@%p5 bra 	$L__BB0_6;
+	cvta.to.global.u64 	%rd6, %rd2;
+	shl.b64 	%rd7, %rd1, 2;
+	add.s64 	%rd8, %rd6, %rd7;
+	cvta.to.global.u64 	%rd9, %rd3;
+	add.s64 	%rd10, %rd9, %rd7;
+	ld.global.u32 	%r2, [%rd10];
+	ld.global.u32 	%r3, [%rd8];
+	add.s32 	%r4, %r2, %r3;
+	ld.const.u32 	%r5, [params+4];
+	ld.const.u32 	%r6, [params];
+	mad.lo.s32 	%r7, %r4, %r5, %r6;
+	cvta.to.global.u64 	%rd11, %rd4;
+	add.s64 	%rd12, %rd11, %rd7;
+	st.global.u32 	[%rd12], %r7;
 
-$L__BB0_7:
+$L__BB2_2:
 	ret;
 
 }
@@ -119,7 +133,7 @@ $L__BB0_7:
 	mad.lo.s32 	%r1, %r4, %r3, %r2;
 	ld.const.u32 	%r5, [Nf];
 	setp.ge.s32 	%p1, %r1, %r5;
-	@%p1 bra 	$L__BB1_2;
+	@%p1 bra 	$L__BB3_2;
 
 	cvta.to.global.u64 	%rd2, %rd1;
 	ld.const.u32 	%r6, [Nt];
@@ -156,7 +170,7 @@ $L__BB0_7:
 	fma.rn.f32 	%f30, %f24, %f25, 0f00000000;
 	st.global.v2.f32 	[%rd4], {%f30, %f29};
 
-$L__BB1_2:
+$L__BB3_2:
 	ret;
 
 }

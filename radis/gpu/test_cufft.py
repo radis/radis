@@ -1,8 +1,10 @@
-from ctypes import c_float, c_longlong
+from ctypes import c_float, c_int
 
 import matplotlib.pyplot as plt
 import numpy as np
-from driver import CuArray, CuContext, CuFFT, CuModule
+
+# from driver import CuArray, CuContext, CuFFT, CuModule
+from emulate import CuArray, CuContext, CuFFT, CuModule
 from numpy.fft import rfftfreq
 from numpy.random import rand, randint, seed
 from scipy.fft import next_fast_len
@@ -18,8 +20,8 @@ t_arr = np.linspace(0, t_max, Nt)
 dt = t_arr[1]
 f_arr = rfftfreq(Nt, dt)
 Nf = len(f_arr)
-Ntpb = 1024  # threads per block
-w0 = 0.2
+Ntpb = 1020  # threads per block
+wL = 0.2
 seed(0)
 Nl = 20
 
@@ -33,58 +35,37 @@ def mock_spectrum(Nt, Nl):
 
 
 I_arr = mock_spectrum(Nt, Nl)
-I_arr2 = mock_spectrum(Nt, Nl)
 
 
 ## CUDA application:
 
 
-def init():
-    print("Init....... ", end="")
-    ctx = CuContext()
-    mod = CuModule(ctx, "test_kernel.ptx")
+print("Init....... ", end="")
+ctx = CuContext()
+mod = CuModule(ctx, "test_kernel.ptx")
 
-    data_in1_d = CuArray.fromArray(I_arr)
-    data_in2_d = CuArray.fromArray(I_arr2)
+mod.setConstant("Nt", c_int(Nt))
+mod.setConstant("Nf", c_int(Nf))
+mod.setConstant("dt", c_float(dt))
 
-    data_FT_d = CuArray(Nf, np.complex64)
-    data_out_d = CuArray(Nt, np.float32)
+data_in_d = CuArray.fromArray(I_arr)
+data_FT_d = CuArray(Nf, np.complex64)
+data_out_d = CuArray(Nt, np.float32)
 
-    mod.applyLineshapes.setArgs(data_FT_d)
-    mod.applyLineshapes.setGrid((Nf // Ntpb + 1, 1, 1), (Ntpb, 1, 1))
-
-    mod.setConstant("Nt", c_longlong(Nt))
-    mod.setConstant("Nf", c_longlong(Nf))
-    mod.setConstant("dt", c_float(dt))
-
-    fft_fwd = CuFFT(data_in1_d, data_FT_d, direction="fwd")
-    fft_rev = CuFFT(data_FT_d, data_out_d, direction="rev")
-    print("Done!")
-    return mod, (data_in1_d, data_in2_d), (fft_fwd, fft_rev)
+fft_fwd = CuFFT(data_in_d, data_FT_d, direction="fwd")
+mod.applyLineshapes.setArgs(data_FT_d)
+mod.applyLineshapes.setGrid((Nf // Ntpb + 1, 1, 1), (Ntpb, 1, 1))
+fft_rev = CuFFT(data_FT_d, data_out_d, direction="rev")
+print("Done!")
 
 
-def iterate(mod, I_arr_d, ffts, wL):
+print("w = {:4.2f}... ".format(wL), end="\n")
+mod.setConstant("wL", c_float(wL))
+fft_fwd()
+mod.applyLineshapes()
+fft_rev()
+I_out = fft_rev.arr_out.getArray() * wL / Nt
+print("Done!")
 
-    print("w = {:4.2f}... ".format(wL), end="\n")
-    fft_fwd, fft_rev = ffts
-    fft_fwd.arr_in = I_arr_d
-    mod.setConstant("wL", c_float(wL))
-    fft_fwd()
-    mod.applyLineshapes()
-    fft_rev()
-    I_out = fft_rev.arr_out.getArray() * wL / Nt
-
-    print("Done!")
-
-    return I_out
-
-
-mod, data_d, ffts = init()
-plt.plot(t_arr, iterate(mod, data_d[0], ffts, w0))
-plt.plot(t_arr, iterate(mod, data_d[1], ffts, w0))
-
-##for w in [0.02, 0.05, 0.1, 0.2, 0.5]:
-##    I_out = iterate(mod, data_d, w)
-##    plt.plot(t_arr,I_out)
-
+plt.plot(I_out)
 plt.show()

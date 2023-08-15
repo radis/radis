@@ -17,7 +17,7 @@ from nvidia.cufft import __path__ as cufft_path
 lib = windll.LoadLibrary("nvcuda.dll")
 lib_cufft = windll.LoadLibrary(cufft_path[0] + "\\bin\\cufft64_11.dll")
 
-verbose = False
+verbose = True
 
 
 def cu_print(*vargs):

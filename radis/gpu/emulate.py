@@ -12,19 +12,18 @@ from ctypes import (
     sizeof,
     windll,
 )
+from os.path import dirname
 
 import numpy as np
 from scipy.fft import irfft, rfft
 from structs import blockDim_t, gridDim_t
 
-from radis.misc.utils import getProjectRoot
+# from radis.misc.utils import getProjectRoot
 
 CUFFT_R2C = 0x2A
 CUFFT_C2R = 0x2C
 
 _lib_ext = [".dll", ".so"][0]  # TODO: Determine dynamically
-_blockDim = blockDim_t()
-_gridDim = gridDim_t()
 
 
 class CuContext:
@@ -55,7 +54,7 @@ class CuModule:
         self.context = context
 
         # private:
-        radis_path = getProjectRoot()
+        radis_path = dirname(dirname(__file__))  # getProjectRoot()
         self._module = windll.LoadLibrary(
             os.path.join(radis_path, "gpu", self.module_name)
         )
@@ -83,6 +82,15 @@ class CuModule:
             self._global_dict[name] = (_var, _size)
 
         memmove(byref(_var), byref(c_val), _size)
+
+    def getConstant(self, name):
+        try:
+            _var, _size = self._global_dict[name]
+
+        except (KeyError):
+            pass  # TODO: catch exception
+
+        return _var
 
 
 class CuFunction:
@@ -112,15 +120,8 @@ class CuFunction:
         self.threads = self.threads if threads is None else threads
         self.sync = self.sync if sync is None else sync
 
-        _blockDim.x = self.threads[0]
-        _blockDim.y = self.threads[1]
-        _blockDim.z = self.threads[2]
-        self.module.setConstant("blockDim", _blockDim)
-
-        _gridDim.x = self.blocks[0]
-        _gridDim.y = self.blocks[1]
-        _gridDim.z = self.blocks[2]
-        self.module.setConstant("gridDim", _gridDim)
+        self.module.setConstant("blockDim", blockDim_t(*self.threads))
+        self.module.setConstant("gridDim", gridDim_t(*self.blocks))
 
         c_args = [arr._ptr for arr in self.args]
         self._function(*c_args)

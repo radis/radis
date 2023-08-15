@@ -1,8 +1,13 @@
 from ctypes import windll
 
+from structs import initData
+
 # import numpy as np
 
 lib = windll.LoadLibrary(r"C:\Users\dcmvd\Documents\GitHub\radis\radis\gpu\kernels.dll")
+
+init_d = initData.in_dll(lib, "init_d")
+
 ##adder = lib.add_ints
 
 ##N = 10

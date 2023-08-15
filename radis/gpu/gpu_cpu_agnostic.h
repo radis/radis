@@ -23,9 +23,10 @@ using namespace std;
 
 extern "C"{
 
-__declspec(dllexport) struct threadIdx_t {size_t x; size_t y; size_t z;} threadIdx;
+struct threadIdx_t {size_t x; size_t y; size_t z;} threadIdx;
+struct blockIdx_t {size_t x; size_t y; size_t z;} blockIdx;
+
 __declspec(dllexport) struct blockDim_t {size_t x; size_t y; size_t z;} blockDim;
-__declspec(dllexport) struct blockIdx_t {size_t x; size_t y; size_t z;} blockIdx;
 __declspec(dllexport) struct gridDim_t {size_t x; size_t y; size_t z;} gridDim;
 
 }
