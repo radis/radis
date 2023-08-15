@@ -1036,7 +1036,7 @@ class MdbExomol(DatabaseManager):
         tag = molec.split("__")
         self.isotope_fullname = tag[0]
         self.molecule = e2s(tag[0])
-        # self.isotope = 1  # Placeholder. TODO : impement parsing of other isotopes.
+        # self.isotope = 1  # Placeholder. TODO : implement parsing of other isotopes.
 
         # load def
         dic_def = read_def(self.def_file)  # approx. 3 ms
