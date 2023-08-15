@@ -597,7 +597,7 @@ def _fix_format(file, sload):
     """Test format / correct deprecated format: The goal is to still be able to
     load old format precomputed spectra, and fix their attribute names.
 
-    Save them again to fix the warnigns definitely.
+    Save them again to fix the warnings definitely.
 
     Returns
     -------
