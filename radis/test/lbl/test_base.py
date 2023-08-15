@@ -541,7 +541,7 @@ def test_get_wavenumber_range(*args, **kwargs):
             wunit=Default("cm-1"),
         )
 
-    # ...... passed neither wavenumber nor wavlength > should throw error
+    # ...... passed neither wavenumber nor wavelength > should throw error
     with pytest.raises(ValueError):
         get_wavenumber_range(wunit=Default("cm-1"))
 
@@ -638,7 +638,7 @@ def test_get_wavenumber_range(*args, **kwargs):
             wunit="cm",
         )
 
-    # ...... passed neither wavenumber nor wavlength > should throw error
+    # ...... passed neither wavenumber nor wavelength > should throw error
     with pytest.raises(ValueError):
         get_wavenumber_range(wunit="cm")
 
@@ -665,7 +665,7 @@ def test_get_wavenumber_range(*args, **kwargs):
             wunit="cm",
         )
 
-    # ...... passed neither wavenumber nor wavlength > should return wavenumber after converting wmin/wmax with given wunit
+    # ...... passed neither wavenumber nor wavelength > should return wavenumber after converting wmin/wmax with given wunit
     assert np.isclose(
         get_wavenumber_range(wmin=1, wmax=2, wunit="cm"),
         (0.4998637271242577, 0.9997274542485038),
@@ -702,7 +702,7 @@ def test_get_wavenumber_range(*args, **kwargs):
             wunit="cm",
         )
 
-    # ...... passed neither wavenumber nor wavlength > should return wavenumber after converting wmin/wmax with given wunit
+    # ...... passed neither wavenumber nor wavelength > should return wavenumber after converting wmin/wmax with given wunit
     assert np.isclose(
         get_wavenumber_range(wmin=1 * u.cm, wmax=2 * u.cm, wunit="cm"),
         (0.4998637271242577, 0.9997274542485038),

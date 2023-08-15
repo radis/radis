@@ -3596,11 +3596,11 @@ class Spectrum(object):
             var = self._get_unique_var(operation_name="to_specutils")
         if wunit == "default":
             wunit = self.get_waveunit()
-            if wunit in WAVELEN_UNITS:  # wavlength units in air
+            if wunit in WAVELEN_UNITS:  # wavelength units in air
                 # AFAIK, specutil's Spectrum1D will only handle wavelengths as seen in vacuum
                 # so below we request wavelengths in vac :
                 wunit = "nm_vac"
-        if wunit in WAVELEN_UNITS:  # wavlength units in air
+        if wunit in WAVELEN_UNITS:  # wavelength units in air
             raise ValueError(
                 f"specutil's Spectrum1D will only handle wavelengths as seen in vacuum. Use one of `s.to_specutils(..., wunit={WAVELENVAC_UNITS}`)"
             )
