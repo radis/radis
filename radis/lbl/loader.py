@@ -934,7 +934,7 @@ class DatabankLoader(object):
     ):
         """Fetch the latest files from [HITRAN-2020]_, [HITEMP-2010]_ (or newer),
         [ExoMol-2020]_  or [GEISA-2020] , and store them locally in memory-mapping
-        formats for extremelly fast access.
+        formats for extremely fast access.
 
         Parameters
         ----------

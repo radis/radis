@@ -96,7 +96,7 @@ def fetch_exomol(
 
         .. note::
             Vaex DataFrames are memory-mapped. They do not take any space in RAM
-            and are extremelly useful to deal with the largest databases.
+            and are extremely useful to deal with the largest databases.
 
     skip_optional_data : bool
         If False, fetch all fields which are marked as available in the ExoMol definition

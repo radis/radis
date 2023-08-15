@@ -234,7 +234,7 @@ def calc_spectrum(
 
         .. note::
             parsum_mode= 'tabulation'  is new in 0.9.30, and makes nonequilibrium
-            calculations of small spectra extremelly fast. Will become the default
+            calculations of small spectra extremely fast. Will become the default
             after 0.9.31.
     optimization : ``"simple"``, ``"min-RMS"``, ``None``
         If either ``"simple"`` or ``"min-RMS"`` LDM optimization for lineshape calculation is used:

@@ -203,7 +203,7 @@ class SpectrumFactory(BandFactory):
 
         .. note::
             parsum_mode= 'tabulation'  is new in 0.9.30, and makes nonequilibrium
-            calculations of small spectra extremelly fast. Will become the default
+            calculations of small spectra extremely fast. Will become the default
             after 0.9.31.
     pseudo_continuum_threshold: float
         if not ``0``, first calculate a rough approximation of the spectrum, then
