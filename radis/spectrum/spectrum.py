@@ -4171,7 +4171,7 @@ class Spectrum(object):
                 out = (~np.isclose(I, Ie, rtol=rtol, atol=0)).sum()/len(I) < ignore_outliers
 
         normalize: bool
-            Normalize the spectra to be ploted
+            Normalize the spectra to be plotted
 
         Other Parameters
         ----------------

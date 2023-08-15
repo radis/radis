@@ -718,7 +718,7 @@ def plot_diff(
             method=['diff', 'ratio']
 
     normalize: bool
-        Normalize the spectra to be ploted
+        Normalize the spectra to be plotted
 
     Other Parameters
     ----------------'
