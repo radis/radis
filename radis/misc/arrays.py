@@ -537,7 +537,10 @@ def numpy_aggregate_at_indices(
     return sumoflines_calc
 
 
-@numba.njit(fastmath=True)  # eq. O3, march-native,fastmath
+@numba.njit(
+    fastmath=True,  # eq. O3, march-native,fastmath
+    cache=True,
+)
 def numba_aggregate_at_indices(
     sumoflines_calc,
     I_low_in_left,
@@ -619,7 +622,10 @@ def numpy_aggregate_at_indices_hollow(
     return sumoflines_calc
 
 
-@numba.njit(fastmath=True)  # eq. O3, march-native,fastmath
+@numba.njit(
+    fastmath=True,  # eq. O3, march-native,fastmath
+    cache=True,
+)
 def numba_aggregate_at_indices_hollow(
     sumoflines_calc,
     I_low_in_left,
@@ -667,7 +673,7 @@ if (
     import radis_cython_extensions as rcx
 
     aggregate_at_indices = rcx.aggregate_at_indices_hollow_64
-# aggregate_at_indices = numpy_aggregate_at_indices
+# aggregate_at_indices_hollow = numpy_aggregate_at_indices_hollow
 aggregate_at_indices_hollow = numba_aggregate_at_indices_hollow
 
 
