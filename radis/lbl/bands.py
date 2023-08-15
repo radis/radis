@@ -99,7 +99,7 @@ class BandFactory(BroadenFactory):
     #
     # =========================================================================
 
-    # Vibrationaly specific calculations
+    # Vibrationally specific calculations
 
     def eq_bands(
         self,
