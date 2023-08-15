@@ -128,7 +128,7 @@ def curve_add(w1, I1, w2, I2, is_sorted=False, kind="linear"):
 
 
 def curve_substract(w1, I1, w2, I2, is_sorted=False, kind="linear"):
-    """Substracts curve (w2, I2) from (w1, I1) Linearly interpolates if the two
+    """Subtracts curve (w2, I2) from (w1, I1) Linearly interpolates if the two
     ranges dont match. Fills out of bound parameters with nan.
 
     Similar to OriginPro's "Simple Curve Math Subtract"
