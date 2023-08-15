@@ -316,7 +316,7 @@ def fit_spectrum(
 
         if blit:
             # cache the background
-            # ... rmeove data first:
+            # ... remove data first:
             s_diff = get_diff(s_exp, s0, var=fit_variable, wunit=wunit, Iunit=Iunit)
             lineSpec.set_data(s0.get(fit_variable)[0], s0.get(fit_variable)[1] * np.nan)
             lineDiff.set_data(s_diff[0], s_diff[1] * np.nan)
