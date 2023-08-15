@@ -828,9 +828,9 @@ class ElectronicState(Isotope):
 
                         self._Erovib = EvJ_co2
                         self._Ehaj = EvJah_co2
-                        self.Erovib = self._Erovib_default_coefs
+                        self.Erovib = self._Erovib_default_coeffs
                         #                        self.Erovib.__doc__ == EvJ_co2.__doc__
-                        self.Ehaj = self._Ehaj_default_coefs
+                        self.Ehaj = self._Ehaj_default_coeffs
                     #                        self.Ehaj.__doc__ == EvJah_co2.__doc__
                     else:
                         raise NotImplementedError(
@@ -890,7 +890,7 @@ class ElectronicState(Isotope):
             "Rovibrational energy not implemented for {0}".format(self.get_fullname)
         )  # @dev: see radis.db.classes.ElectronicState._assign_E
 
-    def _Erovib_default_coefs(self, *args, **kwargs):
+    def _Erovib_default_coeffs(self, *args, **kwargs):
         r"""Calculate rovibrational energy of molecule
 
         .. math::
@@ -939,7 +939,7 @@ class ElectronicState(Isotope):
 
         return self._Erovib(*args, **kwargs)
 
-    def _Ehaj_default_coefs(self, *args, **kwargs):
+    def _Ehaj_default_coeffs(self, *args, **kwargs):
         """Call default _Ehaj() function with default rovib_constants
         coefficients."""
 
