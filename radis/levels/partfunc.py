@@ -1078,8 +1078,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         Notes
         -----
 
-        assumes a complete rovibrational assigmnent but no hyperfine assignment
-        (i.e: all energy levels are returned!). If hyperfine assigmnent is given,
+        assumes a complete rovibrational assignment but no hyperfine assignment
+        (i.e: all energy levels are returned!). If hyperfine assignment is given,
         this method should be modified to return only the ``roviblvl`` unique
         keys
         """
