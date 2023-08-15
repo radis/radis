@@ -100,7 +100,7 @@ def test_spec_generation(
     Notes
     -----
 
-    Performance test. How long it tooks to calculate this Spectrum?
+    Performance test. How long it took to calculate this Spectrum?
     Test with cutoff 1e-25, broadening_max_width=10
 
     - 0.9.15: >>> 33s

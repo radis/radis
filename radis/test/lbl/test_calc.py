@@ -63,7 +63,7 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
 
     Notes
     -----
-    How long it tooks to calculate this Spectrum?
+    How long it took to calculate this Spectrum?
 
     Performance test on old NeQ package, with the [CDSD-HITEMP-JMIN] databank.
     See the caveats in the E. Pannier "Limits of CO2 NonEquilibrium Models" paper.
