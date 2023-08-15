@@ -884,7 +884,7 @@ def _calc_spectrum_one_molecule(
     #        sf.params['chunksize'] = lineshape_optimization
 
     if overpopulation is not None or overpopulation != {}:
-        sf.misc.export_rovib_fraction = True  # required to compute Partition fucntions with overpopulation being taken into account
+        sf.misc.export_rovib_fraction = True  # required to compute Partition functions with overpopulation being taken into account
 
     # Calculate Spectrum
     # ------------------
