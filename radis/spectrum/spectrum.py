@@ -5281,7 +5281,7 @@ def _cut_slices(w_spec_nm, w_slit_nm, slit_dispersion, slit_dispersion_threshold
     Parameters
     ----------
     w_spec_nm : numpy array
-        The warenage (reversed or not) to cut into slices.
+        The waverange (reversed or not) to cut into slices.
     w_slit_nm : numpy array
         The waverange of the slit function.
     slit_dispersion : function
