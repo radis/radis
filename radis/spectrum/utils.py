@@ -354,7 +354,7 @@ def print_conditions(
     )
 
     # TODO : add verbose level so that Trot, Tvib are not shown if equilibrium
-    # and verbose<2 . Same for rot_distriubtion; vib_distriubtion
+    # and verbose<2 . Same for rot_distribution; vib_distribution
 
     print("Physical Conditions")
     print("-" * 40)
