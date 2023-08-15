@@ -4960,7 +4960,7 @@ class Spectrum(object):
 
             return add_spectra(self, other)
         else:
-            #            warn("You should'nt use the '+'. See '//' or '>' for more details", Warning)
+            #            warn("You shouldn't use the '+'. See '//' or '>' for more details", Warning)
             raise NotImplementedError(
                 "+ not implemented for a Spectrum and a {0} object".format(type(other))
             )
@@ -4984,7 +4984,7 @@ class Spectrum(object):
 
             return add_array(self, other, inplace=True)
         else:
-            warn("You should'nt use the '+'. See '//' or '>' for more details", Warning)
+            warn("You shouldn't use the '+'. See '//' or '>' for more details", Warning)
             raise NotImplementedError(
                 "+ not implemented for a Spectrum and a {0} object".format(type(other))
             )
