@@ -155,7 +155,7 @@ class BandFactory(BroadenFactory):
 
         Process:
 
-        - Calculate line strenghts correcting the CDSD reference one.
+        - Calculate line strengths correcting the CDSD reference one.
         - Then call the main routine that sums over all lines
         """
 
