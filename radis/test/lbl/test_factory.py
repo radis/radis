@@ -195,7 +195,7 @@ def test_spec_generation(
         sf.plot_broadening(i=0)  # show broadening of one line
         plt.xlim((2267.20, 2268.30))
 
-    # Compare with harcoded results
+    # Compare with hardcoded results
     # ... code previously used to export hardcoded results:
     # ... and header contains all input conditions:
     #        np.savetxt('output.txt', np.vstack(s.get('abscoeff', wunit='nm')).T[::10])

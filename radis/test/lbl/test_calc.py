@@ -135,7 +135,7 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
     #                          0.19740763, 0.16948599, 0.16780345, 0.15572173, 0.16770853, 0.14966064,
     #                          0.13041356, 0.11751016, 0.10818072, 0.11592531, 0.04666677, 0.00177108,
     #                          0.00069339])
-    # Harcoded results changed for RADIS  with the change of
+    # Hardcoded results changed for RADIS  with the change of
     # database (HITEMP-2010 -> HITRAN-2016) and of Tvib model
     # CDSD with (P,C,Jmin,N) in CDSD polyad -> RADIS built-in constants)
     #        I_ref = np.array([ 0.29148768,  0.29646856,  0.32999337,  0.32249701,  0.2078451 ,
@@ -308,7 +308,7 @@ def test_calc_spectrum_overpopulations(
     #                          0.56727691, 0.60361258, 0.51549598, 0.51012651, 0.47133131,
     #                          0.50770568, 0.45093953, 0.39129824, 0.35125324, 0.32238316,
     #                          0.34542781, 0.13908073, 0.00506012, 0.00189535])
-    # Harcoded results changed for RADIS v1.0.1  with the change of
+    # Hardcoded results changed for RADIS v1.0.1  with the change of
     # database (HITEMP-2010 -> HITRAN-2016) and of Tvib model
     # CDSD with (P,C,Jmin,N) in CDSD polyad -> RADIS built-in constants)
     #

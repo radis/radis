@@ -1015,7 +1015,7 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
     test_calculatedQ_match_HAPI()
 
     # Test 3: compare calculated PartFunc to the tabulated one with CDSD
-    # Test 4: compare calculated PartFunc to harcoded references
+    # Test 4: compare calculated PartFunc to hardcoded references
     test_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
     test_CDSD_calc_vs_ref(warnings=warnings)
     test_reduced_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
