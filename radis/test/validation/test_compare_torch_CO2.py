@@ -177,7 +177,7 @@ def test_compare_torch_CO2(
     # Room absorption
     s0 = sf.eq_spectrum(Tgas=300, mole_fraction=330e-6, path_length=600)
     # Warning: This slab includes the CO2 emission from the 300 K air
-    # within the spectrometer. But experimentally it is substracted
+    # within the spectrometer. But experimentally it is subtracted
     # by there the chopper (this is corrected below)
     # ... see RADIS 2019 paper for more details
 
@@ -226,7 +226,7 @@ def test_compare_torch_CO2(
     sco.apply_slit(slit_function, unit="nm", norm_by=norm_by, shape="trapezoidal")
     stot.apply_slit(slit_function, unit="nm", norm_by=norm_by, shape="trapezoidal")
 
-    # Remove emission from within the spectrometer (substracted
+    # Remove emission from within the spectrometer (subtracted
     # by the chopper experimentally)
     # -------
     s0spectro = s0.copy()

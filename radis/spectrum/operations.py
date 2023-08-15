@@ -666,7 +666,7 @@ def add_array(s, a, unit=None, var=None, inplace=False):
 
 
 def sub_baseline(s, left, right, unit=None, var=None, inplace=False):
-    """Return a new spectrum with a baseline substracted to s[var]
+    """Return a new spectrum with a baseline subtracted to s[var]
 
     Parameters
     ----------
@@ -691,7 +691,7 @@ def sub_baseline(s, left, right, unit=None, var=None, inplace=False):
     -------
 
     s: Spectrum
-        Spectrum object where the baseline was substracted to intensity of s['var']
+        Spectrum object where the baseline was subtracted to intensity of s['var']
         If ``inplace=True``, ``s`` has been modified directly.
 
     Notes
@@ -828,7 +828,7 @@ def add_spectra(s1, s2, var=None, force=False):
 
 
 def substract_spectra(s1, s2, var=None):
-    """Return a new spectrum with ``s2`` substracted from ``s1``.
+    """Return a new spectrum with ``s2`` subtracted from ``s1``.
     Equivalent to::
 
         s1 - s2

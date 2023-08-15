@@ -173,7 +173,7 @@ def calc_diff(t1, v1, t2, v2):
     -------
 
     tdiff, vdiff: array_like
-        substracted vector and its abscissa
+        subtracted vector and its abscissa
     """
 
     t1, v1, t2, v2 = list(map(np.array, (t1, v1, t2, v2)))
