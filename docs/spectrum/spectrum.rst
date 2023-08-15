@@ -771,7 +771,7 @@ for the first command that allows it. i.e ::
 Remove a baseline
 -----------------
 
-Either use the :py:func:`~radis.spectrum.operations.add_constant` mentionned
+Either use the :py:func:`~radis.spectrum.operations.add_constant` mentioned
 above, which is implemented with the ``-`` operator::
 
     s2 = s - 0.1

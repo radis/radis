@@ -226,7 +226,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         ElecState = ElectronicState("CO2", isotope, "X", "1Σu+")
         super(PartFuncCO2_CDSDcalc, self).__init__(ElecState, mode=mode)
 
-        # Check inputs ('return' is not mentionned in signature. it will just return
+        # Check inputs ('return' is not mentioned in signature. it will just return
         # after cache name is given)
         assert use_cached in [True, False, "regen", "force", "return"]
         if isotope not in [1, 2]:

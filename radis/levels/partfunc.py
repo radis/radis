@@ -1414,7 +1414,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             electronic_state=electronic_state, mode=mode, verbose=verbose
         )
 
-        # Check inputs ('return' is not mentionned in signature. it will just return
+        # Check inputs ('return' is not mentioned in signature. it will just return
         # after cache name is given)
         assert use_cached in [True, False, "regen", "force", "return"]
 

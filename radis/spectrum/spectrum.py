@@ -3077,7 +3077,7 @@ class Spectrum(object):
         # Check inputs
         assert wunit in ["nm", "cm-1", "nm_vac", None]
         # @dev: note: wunit in 'nm_vac' also implemented for consistency,
-        # although not mentionned in docs.
+        # although not mentioned in docs.
         if wunit is None:
             wunit = self.conditions["slit_unit"]
 
