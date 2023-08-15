@@ -1099,7 +1099,7 @@ def get_baseline(
     Returns
     -------
     baseline: Spectrum
-        Spectrum object where intenisity is the baseline of s is computed by peakutils
+        Spectrum object where intensity is the baseline of s is computed by peakutils
 
     Examples
     --------

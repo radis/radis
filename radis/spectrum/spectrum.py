@@ -4799,7 +4799,7 @@ class Spectrum(object):
         Returns
         -------
         baseline: Spectrum
-            Spectrum object where intenisity is the baseline of s
+            Spectrum object where intensity is the baseline of s
 
         Examples
         --------
