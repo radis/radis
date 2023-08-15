@@ -22,6 +22,7 @@ from radis.misc.arrays import (
     find_first,
     find_nearest,
     first_nonnan_index,
+    get_overlapping_ranges,
     is_sorted,
     is_sorted_backward,
     last_nonnan_index,
@@ -362,6 +363,44 @@ def test_non_zero_values_around(*args, **kwargs):
     assert (
         boolean_array_from_ranges(L, 8)
         == np.array([0, 0, 1, 1, 0, 1, 0, 1], dtype=bool)
+    ).all()
+
+
+def test_overalapping_ranges(*args, **kwargs):
+    """Test :py:func:`radis.misc.arrays.overlapping_ranges`
+    For a given set of lines & lineshape width, make sure the function returns
+    the correct ranges of overlapping lines, for 3 conditons :
+        - all lines containe within a same blcok
+        - 2 distinct blocks
+        - 1 single line"""
+
+    # All lines contained within a same block :
+    # print(get_overlapping_ranges(wav_positions=np.array([2300, 2305]), half_width=50.0))
+    assert (
+        get_overlapping_ranges(wav_positions=np.array([2300, 2305]), half_width=50.0)
+        == np.array([(0, 1)])
+    ).all()
+
+    # 1 single line
+    # print(get_overlapping_ranges(wav_positions=np.array([2300]), half_width=50.0))
+    assert (
+        get_overlapping_ranges(wav_positions=np.array([2300]), half_width=50.0)
+        == np.array([(0, 0)])
+    ).all()
+
+    # print(get_overlapping_ranges(wav_positions=np.array([2300, 2305, 2400]), half_width=1.0))
+
+    # 2 distinct blocks :
+    # print(
+    #     get_overlapping_ranges(
+    #         wav_positions=np.array([2300, 2301, 2305, 2500, 2505]), half_width=50.0
+    #     )
+    # )
+    assert (
+        get_overlapping_ranges(
+            wav_positions=np.array([2300, 2301, 2305, 2500, 2505]), half_width=50.0
+        )
+        == np.array([(0, 2), (3, 4)])
     ).all()
 
 
