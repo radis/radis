@@ -1750,7 +1750,7 @@ class BroadenFactory(BaseFactory):
         line_profile:   (1/cm-1)        2D array of lines_profiles for all lines
                 (size B * N, B = width of lineshape)
         shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
-            center wavelength (used to project broaded lineshapes )
+            center wavelength (used to project broadened lineshapes )
 
         Returns
         -------
@@ -1907,7 +1907,7 @@ class BroadenFactory(BaseFactory):
             in Fourier space.
 
         shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
-            center wavelength (used to project broaded lineshapes )
+            center wavelength (used to project broadened lineshapes )
         wL: array       (size DL)
             array of all Lorentzian widths in LDM
         wG: array       (size DG)

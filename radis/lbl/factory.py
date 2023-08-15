@@ -2119,7 +2119,7 @@ class SpectrumFactory(BandFactory):
 
             this is a fast implementation that doesnt take into account
             the contribution of lines outside the given spectral range. It is valid for spectral ranges
-            surrounded by no lines, and spectral ranges much broaded than the typical
+            surrounded by no lines, and spectral ranges much broadened than the typical
             line broadening (~ 1-10 cm-1 in the infrared)
 
         If what you're looking for is an accurate simulation on a narrow spectral range
