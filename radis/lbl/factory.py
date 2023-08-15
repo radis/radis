@@ -85,7 +85,7 @@ from numpy import arange, exp
 from scipy.constants import c
 from scipy.optimize import OptimizeResult
 
-from radis import version
+from radis import config, version
 from radis.db import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
 from radis.db.classes import get_molecule, get_molecule_identifier
 
@@ -841,15 +841,16 @@ class SpectrumFactory(BandFactory):
         # ... # TODO: if the code is extended to multi-species, then density has to be added
         # ... before lineshape broadening (as it would not be constant for all species)
 
-        # get absorbance (technically it's the optical depth `tau`,
-        #                absorbance `A` being `A = tau/ln(10)` )
-        absorbance = abscoeff * path_length
-        # Generate output quantities
-        transmittance_noslit = exp(-absorbance)
-        emissivity_noslit = 1 - transmittance_noslit
-        radiance_noslit = calc_radiance(
-            wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
-        )
+        if config["PRECOMPUTE_ALL_QUANTITIES"]:
+            # get absorbance (technically it's the optical depth `tau`,
+            #                absorbance `A` being `A = tau/ln(10)` )
+            absorbance = abscoeff * path_length
+            # Generate output quantities
+            transmittance_noslit = exp(-absorbance)
+            emissivity_noslit = 1 - transmittance_noslit
+            radiance_noslit = calc_radiance(
+                wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
+            )
         assert self.units["abscoeff"] == "cm-1"
 
         self.profiler.stop(
@@ -911,11 +912,16 @@ class SpectrumFactory(BandFactory):
         quantities = {
             "wavenumber": wavenumber,
             "abscoeff": abscoeff,
-            "absorbance": absorbance,
-            "emissivity_noslit": emissivity_noslit,
-            "transmittance_noslit": transmittance_noslit,
-            "radiance_noslit": radiance_noslit,
         }
+        if config["PRECOMPUTE_ALL_QUANTITIES"]:
+            quantities.update(
+                {
+                    "absorbance": absorbance,
+                    "emissivity_noslit": emissivity_noslit,
+                    "transmittance_noslit": transmittance_noslit,
+                    "radiance_noslit": radiance_noslit,
+                }
+            )
         if I_continuum is not None and self._export_continuum:
             quantities.update({"abscoeff_continuum": I_continuum * density})
         conditions["default_output_unit"] = self.input_wunit
@@ -1188,16 +1194,17 @@ class SpectrumFactory(BandFactory):
         # ... # TODO: if the code is extended to multi-species, then density has to be added
         # ... before lineshape broadening (as it would not be constant for all species)
 
-        # get absorbance (technically it's the optical depth `tau`,
-        #                absorbance `A` being `A = tau/ln(10)` )
-        absorbance = abscoeff * path_length
-        # Generate output quantities
-        transmittance_noslit = exp(-absorbance)
-        emissivity = 1 - transmittance
-        emissivity_noslit = 1 - transmittance_noslit
-        radiance_noslit = calc_radiance(
-            wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
-        )
+        if config["PRECOMPUTE_ALL_QUANTITIES"]:
+            # get absorbance (technically it's the optical depth `tau`,
+            #                absorbance `A` being `A = tau/ln(10)` )
+            absorbance = abscoeff * path_length
+            # Generate output quantities
+            transmittance_noslit = exp(-absorbance)
+            emissivity = 1 - transmittance
+            emissivity_noslit = 1 - transmittance_noslit
+            radiance_noslit = calc_radiance(
+                wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
+            )
         assert self.units["abscoeff"] == "cm-1"
 
         self.profiler.stop(
@@ -1249,13 +1256,18 @@ class SpectrumFactory(BandFactory):
         quantities = {
             "wavenumber": wavenumber,
             "abscoeff": abscoeff,
-            "absorbance": absorbance,
-            "emissivity": emissivity,
-            "emissivity_noslit": emissivity_noslit,
-            "transmittance_noslit": transmittance_noslit,
-            "radiance_noslit": radiance_noslit,
-            "transmittance": transmittance,
         }
+        if config["PRECOMPUTE_ALL_QUANTITIES"]:
+            quantities.update(
+                {
+                    "absorbance": absorbance,
+                    "emissivity": emissivity,
+                    "emissivity_noslit": emissivity_noslit,
+                    "transmittance_noslit": transmittance_noslit,
+                    "radiance_noslit": radiance_noslit,
+                    "transmittance": transmittance,
+                }
+            )
         conditions["default_output_unit"] = self.input_wunit
 
         # Store results in Spectrum class
@@ -1700,31 +1712,32 @@ class SpectrumFactory(BandFactory):
         #                absorbance `A` being `A = tau/ln(10)` )
 
         # Generate output quantities
-        absorbance = abscoeff * path_length  # (adim)
-        transmittance_noslit = exp(-absorbance)
+        if config["PRECOMPUTE_ALL_QUANTITIES"]:
+            absorbance = abscoeff * path_length  # (adim)
+            transmittance_noslit = exp(-absorbance)
 
-        if self.input.self_absorption:
-            # Analytical output of computing RTE over a single slab of constant
-            # emissivity and absorption coefficient
-            b = abscoeff == 0  # optically thin mask
-            radiance_noslit = np.zeros_like(emisscoeff)
-            radiance_noslit[~b] = (
-                emisscoeff[~b] / abscoeff[~b] * (1 - transmittance_noslit[~b])
+            if self.input.self_absorption:
+                # Analytical output of computing RTE over a single slab of constant
+                # emissivity and absorption coefficient
+                b = abscoeff == 0  # optically thin mask
+                radiance_noslit = np.zeros_like(emisscoeff)
+                radiance_noslit[~b] = (
+                    emisscoeff[~b] / abscoeff[~b] * (1 - transmittance_noslit[~b])
+                )
+                radiance_noslit[b] = emisscoeff[b] * path_length
+            else:
+                # Note that for k -> 0,
+                radiance_noslit = emisscoeff * path_length  # (mW/cm2/sr/cm-1)
+
+            # Convert `radiance_noslit` from (mW/sr/cm2/cm-1) to output unit
+            radiance_noslit = convert_universal(
+                radiance_noslit,
+                from_unit="mW/cm2/sr/cm-1",
+                to_unit=self.units["radiance_noslit"],
+                wavenum=wavenumber,
+                per_nm_is_like="mW/cm2/sr/nm",
+                per_cm_is_like="mW/cm2/sr/cm-1",
             )
-            radiance_noslit[b] = emisscoeff[b] * path_length
-        else:
-            # Note that for k -> 0,
-            radiance_noslit = emisscoeff * path_length  # (mW/cm2/sr/cm-1)
-
-        # Convert `radiance_noslit` from (mW/sr/cm2/cm-1) to output unit
-        radiance_noslit = convert_universal(
-            radiance_noslit,
-            from_unit="mW/cm2/sr/cm-1",
-            to_unit=self.units["radiance_noslit"],
-            wavenum=wavenumber,
-            per_nm_is_like="mW/cm2/sr/nm",
-            per_cm_is_like="mW/cm2/sr/cm-1",
-        )
         # Convert 'emisscoeff' from (mW/sr/cm3/cm-1) to output unit
         emisscoeff = convert_universal(
             emisscoeff,
@@ -1791,11 +1804,16 @@ class SpectrumFactory(BandFactory):
         quantities = {
             "wavenumber": wavenumber,
             "abscoeff": abscoeff,
-            "absorbance": absorbance,
             "emisscoeff": emisscoeff,
-            "transmittance_noslit": transmittance_noslit,
-            "radiance_noslit": radiance_noslit,
         }
+        if config["PRECOMPUTE_ALL_QUANTITIES"]:
+            quantities.update(
+                {
+                    "absorbance": absorbance,
+                    "transmittance_noslit": transmittance_noslit,
+                    "radiance_noslit": radiance_noslit,
+                }
+            )
         if k_continuum is not None and self._export_continuum:
             quantities.update(
                 {
