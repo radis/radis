@@ -397,7 +397,7 @@ def fit_spectrum(
     maxiter = solver_options.get("maxiter", 300)
 
     if plot:
-        # we need to plot lineValues alreazdy to get the legend right:
+        # we need to plot lineValues already to get the legend right:
         lineValues = {}
         for i, k in enumerate(fit_params):
             lineValues[k] = axValues.plot(
