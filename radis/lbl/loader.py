@@ -2885,7 +2885,7 @@ class DatabankLoader(object):
                 "Error while Retrieving Partition Function of Molecule!"
                 + " Load the energies levels with SpectrumFactory.load_databank"
                 + "('path', load_energies=True). If using SpectrumFactory.fetch_databank()"
-                + " consider adding arguement load_energies=True"
+                + " consider adding argument load_energies=True"
             ) from err
 
         return parsum
