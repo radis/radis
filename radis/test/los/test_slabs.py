@@ -90,7 +90,7 @@ def test_merge_slabs(
 def test_equilibrium_condition():
     """See issue #370
 
-    'thermal_equilibrium' is used to reocmpute some spectral arrays from others,
+    'thermal_equilibrium' is used to recompute some spectral arrays from others,
     it is important to make sure a line-of-sight doesn't assume thermal equilibrium wrongly
     """
 
