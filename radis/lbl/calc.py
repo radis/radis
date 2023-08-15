@@ -75,7 +75,7 @@ def calc_spectrum(
     using either CPU or GPU.
 
     It is a wrapper to :py:class:`~radis.lbl.factory.SpectrumFactory` class.
-    For advanced used, please refer to the aforementionned class.
+    For advanced used, please refer to the aforementioned class.
 
 
     Parameters

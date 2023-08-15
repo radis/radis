@@ -841,7 +841,7 @@ to simply compare the spectra themselves, or even a particular quantity like
     s1.compare_with(s2, spectra_only=True)                    # compares all spectral arrays
     s1.compare_with(s2, spectra_only='transmittance_noslit')  # compares transmittance only
 
-The aforementionned methods will return a boolean array (True/False). If you
+The aforementioned methods will return a boolean array (True/False). If you
 need the difference, or ratio, or distance, between your two spectra, or simply
 want to plot the difference, you can use one of the predefined functions
 :func:`~radis.spectrum.compare.get_diff`, :func:`~radis.spectrum.compare.get_ratio`,
