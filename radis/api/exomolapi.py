@@ -504,7 +504,7 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True):
 
 
 def read_broad(broadf):
-    """Reading braodening file (.broad)
+    """Reading broadening file (.broad)
     Parameters
     ----------
     broadf: .broad file

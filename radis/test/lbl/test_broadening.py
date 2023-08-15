@@ -1042,7 +1042,7 @@ def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
         extra_params="all",
         db_use_cached="regen",  # required to download extra broadening parameters
     )
-    # set default behavior of missing custom broadneing to be an error:
+    # set default behavior of missing custom broadening to be an error:
     sf.warnings["MissingDiluentBroadeningWarning"] = "error"
     sf.warnings["MissingDiluentBroadeningTdepWarning"] = "error"
 
