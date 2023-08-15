@@ -266,7 +266,7 @@ assert compare_lists(drop_auto_columns_for_levelsfmt, KNOWN_LVLFORMAT) == 1
 class ConditionDict(dict):
     """A class to hold Spectrum calculation input conditions
     (:py:class:`~radis.lbl.loader.Input`), computation parameters
-    (:py:class:`~radis.lbl.loader.Parameters`), or miscalleneous parameters
+    (:py:class:`~radis.lbl.loader.Parameters`), or miscellaneous parameters
     (:py:class:`~radis.lbl.loader.MiscParams`).
     Works like a dict except you can also access attribute with::
         v = a.key   # equivalent to v = a[key]
@@ -655,7 +655,7 @@ class DatabankLoader(object):
         they may change the output of calculations (ex: threshold, cutoff, broadening methods, etc.)
         """
         self.misc = MiscParams()
-        """Miscelleneous parameters (:py:class:`~radis.lbl.loader.MiscParams`)
+        """Miscellaneous parameters (:py:class:`~radis.lbl.loader.MiscParams`)
         params that cannot change the output of calculations (ex: number of CPU, etc.)
         """
         # Setup individual warnings. Value of keys can be:

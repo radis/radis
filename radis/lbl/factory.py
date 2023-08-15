@@ -345,7 +345,7 @@ class SpectrumFactory(BandFactory):
 
     - :py:attr:`~radis.lbl.loader.DatabankLoader.input` : physical input
     - :py:attr:`~radis.lbl.loader.DatabankLoader.params` : computational parameters
-    - :py:attr:`~radis.lbl.loader.DatabankLoader.misc` : miscallenous parameters (don't change output)
+    - :py:attr:`~radis.lbl.loader.DatabankLoader.misc` : miscellaneous parameters (don't change output)
 
     See Also
     --------
