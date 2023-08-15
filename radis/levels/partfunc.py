@@ -2160,7 +2160,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         return gs(M, I)
 
     def gi(self, ElecState):
-        """Get state independant rotational degeneracy. Typically depends on
+        """Get state independent rotational degeneracy. Typically depends on
         the isotope.
 
         See Also

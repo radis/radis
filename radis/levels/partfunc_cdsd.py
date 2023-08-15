@@ -357,7 +357,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         gj = 2 * df.j + 1
         # ... state dependant (forbidden rotational level are not in the database):
         gs = 1
-        # ... state independant:
+        # ... state independent:
         gi = self.gi()
         grot = gj * gs * gi
 

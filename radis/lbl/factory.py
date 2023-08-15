@@ -258,7 +258,7 @@ class SpectrumFactory(BandFactory):
         Default: -1
     broadening_method: ``"voigt"``, ``"convolve"``, ``"fft"``
         Calculates broadening with a direct voigt approximation ('voigt') or
-        by convoluting independantly calculated Doppler and collisional
+        by convoluting independently calculated Doppler and collisional
         broadening ('convolve'). First is much faster, 2nd can be used to
         compare results. This SpectrumFactory parameter can be manually
         adjusted a posteriori with::

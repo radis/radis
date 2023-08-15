@@ -271,7 +271,7 @@ def fetch_exomol(
     assert "wav" in df
 
     # ... include isotopic abundance in linestrength :
-    # Note : ExoMol treats isotopes as independant molecules ; linestrength is not
+    # Note : ExoMol treats isotopes as independent molecules ; linestrength is not
     # corrected by isotopic abundance.
     # Below, replace Linestrength with Line Intensity taking into account
     # Terrestrial isotopic abundance (to be compatible with HITRAN/HITEMP/etc. )
