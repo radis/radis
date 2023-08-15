@@ -155,7 +155,7 @@ def calc_spectrum(
           only the required range). To use one mode or the other, use ::
 
             databank=('hitran', 'full')     # download and cache full database, all isotopes
-            databank=('hitran', 'range')    # download and cache required range, required isoope
+            databank=('hitran', 'range')    # download and cache required range, required isotope
 
         - ``'hitemp'``, to fetch the latest HITEMP version
           through :py:func:`~radis.io.hitemp.fetch_hitemp`. Downloads all lines
