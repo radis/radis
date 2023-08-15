@@ -157,7 +157,7 @@ def arange_len(wmin, wmax, wstep) -> int:
 
 
 def calc_diff(t1, v1, t2, v2):
-    """Substract two vectors that may have slightly offset abscissa
+    """Subtract two vectors that may have slightly offset abscissa
     interpolating the correct values.
 
     Parameters

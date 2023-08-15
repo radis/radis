@@ -742,7 +742,7 @@ def sub_baseline(s, left, right, unit=None, var=None, inplace=False):
     if not inplace:
         s = s.copy(quantity=var)
 
-    # Substract inplace       ( @dev: we have copied already if needed )
+    # Subtract inplace       ( @dev: we have copied already if needed )
     w, I = s.get(var, wunit=s.get_waveunit(), Iunit=s.units[var], copy=False)
     I -= np.linspace(left, right, num=np.size(I))
     # @dev: updates the Spectrum directly because of copy=False
@@ -880,7 +880,7 @@ def substract_spectra(s1, s2, var=None):
     # Resample s2 on s1
     s2 = s2.resample(s1, inplace=False)
 
-    # Substract
+    # Subtract
     w1, I1 = s1.get(var=var, Iunit=Iunit1, wunit=wunit1)
     w2, I2 = s2.get(var=var, Iunit=Iunit1, wunit=wunit1)
 
