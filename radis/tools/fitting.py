@@ -181,7 +181,7 @@ def fit_spectrum(
     ----------------
     plot: bool
         if ``True``, plot spectra as they are computed; and plot the convergence of
-        the residual. Defaut ``False``
+        the residual. Default ``False``
     verbose: bool, or ``2``
         use ``2`` for high verbose level.
     solver_options: dict
