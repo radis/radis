@@ -649,7 +649,7 @@ def filter_metadata(arguments, discard_variables=["self", "verbose"]):
 
     - remove variables in ``discard_variables``
     - remove variables that start with ``'_'``
-    - remove varibles whose value is ``None``
+    - remove variables whose value is ``None``
 
     Parameters
     ----------

@@ -1989,7 +1989,7 @@ class BaseFactory(DatabankLoader):
         Currently this value is only used in GPU calculations.
         It is one of the columns that is transferred to the GPU
         memory. The idea behind S0 is that it is scaled with all
-        variabled that do not change during iterations as to
+        variables that do not change during iterations as to
         minimize calculations.
 
         Units: cm-1/(molecules/cm-2
