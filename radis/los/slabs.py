@@ -363,7 +363,7 @@ def resample_slabs(
     *slabs
 ):
     # type: (str, str, str, *Spectrum) -> *Spectrum
-    """Resample slabs on the same wavespace: if the range are differents,
+    """Resample slabs on the same wavespace: if the range are different,
     depending on the mode we may fill with optically thin media, or raise an
     error
 

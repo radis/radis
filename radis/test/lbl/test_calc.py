@@ -679,7 +679,7 @@ def test_calc_spectrum_multiple_molecules(
 def test_calc_spectrum_multiple_molecules_otherinputs(
     verbose=True, plot=True, warnings=True, *args, **kwargs
 ):
-    """Test calculations with differnet kind of inputs for multiple molecules
+    """Test calculations with different kind of inputs for multiple molecules
 
     Note: try to keep the same wavelength ranges for each of the multi-molecule
     tests, so that databases are only downloaded once, and cached!"""
