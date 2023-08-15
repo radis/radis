@@ -990,7 +990,7 @@ def query(df, conditions="", **kwconditions):
             else:
                 #                    query.append('{0} == {1}'.format(k,v))
                 query.append("{0} == {1}".format(k, v.__repr__()))
-                # ... for som reason {1}.format() would remove some digit
+                # ... for some reason {1}.format() would remove some digit
                 # ... to floats in Python2. Calling .__repr__() keeps
                 # ... the correct format, and has no other consequences as far
                 # ... as I can tell
