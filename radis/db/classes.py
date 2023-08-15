@@ -236,7 +236,7 @@ def get_molecule_identifier(molecule_name):
     ----------
     .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
 
-    Function is from from https://github.com/nzhagen/hitran/blob/master/hitran.py
+    Function is from https://github.com/nzhagen/hitran/blob/master/hitran.py
 
     """
 

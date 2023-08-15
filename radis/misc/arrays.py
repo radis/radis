@@ -523,7 +523,7 @@ else:
 #     """return a boolean array of same size as ``a`` where each position ``i``
 #     is ``True`` if there are non-zero points less than ``n`` index position
 #     away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
-#     position away from from ``a[i]``
+#     position away from ``a[i]``
 #     """
 #     # # Cleaner version, but about 2x slower on real-life test cases:
 #     # #
@@ -549,7 +549,7 @@ def non_zero_values_around(a, n):
     """return a boolean array of same size as ``a`` where each position ``i``
     is ``True`` if there are non-zero points less than ``n`` index position
     away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
-    position away from from ``a[i]``
+    position away from ``a[i]``
     """
 
     # build the list
@@ -593,7 +593,7 @@ def non_zero_values_around(a, n):
 #     where each position ``i``
 #     is ``True`` if there are non-zero points less than ``n`` index position
 #     away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
-#     position away from from ``a[i]``
+#     position away from ``a[i]``
 
 #     Parameters
 #     ----------
@@ -636,7 +636,7 @@ def non_zero_values_around(a, n):
 #     """return a boolean array of same size as ``a`` where each position ``i``
 #     is ``True`` if there are non-zero points less than ``n`` index position
 #     away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
-#     position away from from ``a[i]``
+#     position away from ``a[i]``
 #     """
 #     L = non_zero_ranges_around(a, n)
 
