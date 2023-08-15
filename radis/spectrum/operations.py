@@ -325,7 +325,7 @@ def crop(s: Spectrum, wmin=None, wmax=None, wunit=None, inplace=False) -> Spectr
     Other Parameters
     ----------------
     inplace: bool
-        if ``True``, modifiy ``s`` directly. Else, returns a copy.
+        if ``True``, modify ``s`` directly. Else, returns a copy.
 
     Returns
     -------
