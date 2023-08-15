@@ -5119,7 +5119,7 @@ class Spectrum(object):
     def __truediv__(self, other):
         """Override '/' behavior Divide is defined as :
 
-        - for numeric values: divide algebrically (equivalent to optically thin scaling)
+        - for numeric values: divide algebraically (equivalent to optically thin scaling)
         """
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
@@ -5148,7 +5148,7 @@ class Spectrum(object):
     def __itruediv__(self, other):
         """Override '/=' behavior Divide is defined as :
 
-        - for numeric values: divide quantities algebrically
+        - for numeric values: divide quantities algebraically
         (equivalent to optically thin scaling)
         """
         if isinstance(other, float) or isinstance(other, int):

@@ -757,7 +757,7 @@ def add_spectra(s1, s2, var=None, force=False):
         s1 + s2
 
     .. warning::
-        we are just algebrically adding the quantities. If you want to merge
+        we are just algebraically adding the quantities. If you want to merge
         spectra while preserving the radiative transfer equation, see
         :func:`~radis.los.slabs.MergeSlabs` and :func:`~radis.los.slabs.SerialSlabs`
 
