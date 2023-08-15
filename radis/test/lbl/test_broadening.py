@@ -144,7 +144,7 @@ def test_broadening_methods_different_conditions(
     truncation = 1  # cm-1
 
     for (T, p, fwhm_lorentz, fwhm_gauss) in [
-        # K, bar, expected FWHM for Lotentz, gauss (cm-1)
+        # K, bar, expected FWHM for Lorentz, gauss (cm-1)
         (3000, 1, 0.02849411, 0.01594728),
         (300, 1, 0.16023415, 0.00504297),
         (3000, 0.01, 0.00028494, 0.01594728),
