@@ -2547,7 +2547,7 @@ class BroadenFactory(BaseFactory):
                 # ... Distribute lines over LDM 2.1s
                 # ... Convolve and sum on spectral range 0.3s
                 # @EP: #performance.
-                # unlike in the non LDM case, the nonequilibruum case here is ~2x
+                # unlike in the non LDM case, the nonequilibrium case here is ~2x
                 # the equilibrium case: only the closest matching line is common to the
                 # absorption & emission steps. The bottleneck is the distribution
                 # of the line over the LDM, which has to be done for both abscoeff & emisscoeff.
