@@ -788,7 +788,7 @@ class ElectronicState(Isotope):
             self.Ehaj = Ehaj
             if self.verbose >= 2:
                 print(
-                    "{0}: overwritting Energy calculation with {1}".format(
+                    "{0}: overriding Energy calculation with {1}".format(
                         self.get_fullname(), Erovib
                     )
                 )
