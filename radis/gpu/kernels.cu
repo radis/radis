@@ -1,37 +1,8 @@
-#ifdef __CUDACC__
 
-#include <cuda/std/complex>
-
-using namespace cuda::std;
-
-#define LOOP(i, max_i)
-#define ADD(addr, val) atomicAdd((addr),(val))
-
-#else
-
-#include <complex>
-#include <cmath>
-
-#define LOOP(i, max_i) for (i = 0; i < (max_i); i++)
-#define ADD(addr, val) *(addr) += (val)
-
-#define __global__ __declspec(dllexport)
-#define __device__ __declspec(dllexport)
-#define __constant__
-
-using namespace std;
-
-#endif
+#include "gpu_cpu_agnostic.h"
 
 
 extern "C"{
-
-#ifndef __CUDACC__
-__declspec(dllexport) struct threadIdx_t {int x; int y; int z;} threadIdx;
-__declspec(dllexport) struct blockDim_t {int x; int y; int z;} blockDim;
-__declspec(dllexport) struct blockIdx_t {int x; int y; int z;} blockIdx;
-__declspec(dllexport) struct gridDim_t {int x; int y; int z;} gridDim;
-#endif
 
 struct initData {
     float v_min;
@@ -208,6 +179,5 @@ __global__ void applyGaussianSlit(complex<float>* transmittance_noslit_FT, compl
         }
     }
 }
-
 
 }
