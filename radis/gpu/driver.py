@@ -42,6 +42,11 @@ CUFFT_C2R = 0x2C
 
 class CuContext:
     def __init__(self, device_id=0, flags=0):
+
+        # private:
+        self._context = c_longlong(0)
+        self._device = c_long(0)
+
         err = lib.cuInit(0)
 
         deviceCount = c_int(0)
@@ -51,71 +56,71 @@ class CuContext:
             print("Error: no devices supporting CUDA\n")
             # sys.exit()
 
-        self.device = c_long(0)
-        lib.cuDeviceGet(byref(self.device), device_id)
+        lib.cuDeviceGet(byref(self._device), device_id)
 
-        self.context = c_longlong(0)
-        err = lib.cuCtxCreate_v2(byref(self.context), flags, self.device)
+        err = lib.cuCtxCreate_v2(byref(self._context), flags, self._device)
         if err != CUDA_SUCCESS:
             print("* Error initializing the CUDA context.")
-            lib.cuCtxDestroy_v2(self.context)
+            lib.cuCtxDestroy_v2(self._context)
             # sys.exit()
 
     @staticmethod
     def getDeviceList():
         dev_list = []
-        deviceCount = c_int(0)
+        _deviceCount = c_int(0)
 
         lib.cuInit(0)
-        lib.cuDeviceGetCount(byref(deviceCount))
+        lib.cuDeviceGetCount(byref(_deviceCount))
 
-        for i in range(deviceCount.value):
+        for i in range(_deviceCount.value):
 
-            device = c_long(0)
-            lib.cuDeviceGet(byref(device), i)
+            _device = c_long(0)
+            lib.cuDeviceGet(byref(_device), i)
 
-            name = create_string_buffer(100)
-            lib.cuDeviceGetName(name, 100, device)
-            dev_list.append(name.value.decode())
+            _name = create_string_buffer(100)
+            lib.cuDeviceGetName(_name, 100, _device)
+            dev_list.append(_name.value.decode())
 
         return dev_list
 
     def printDeviceCapabilities(self):
 
-        major = c_long(0)
-        minor = c_long(0)
+        _major = c_long(0)
+        _minor = c_long(0)
         lib.cuDeviceGetAttribute(
-            byref(major), CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, self.device
+            byref(_major), CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, self._device
         )
         lib.cuDeviceGetAttribute(
-            byref(minor), CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, self.device
+            byref(_minor), CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, self._device
         )
         print(
             "> GPU Device has SM {:d}.{:d} compute capability".format(
-                major.value, minor.value
+                _major.value, _minor.value
             )
         )
 
-        totalGlobalMem = c_size_t(0)
-        lib.cuDeviceTotalMem_v2(byref(totalGlobalMem), self.device)
+        _totalGlobalMem = c_size_t(0)
+        lib.cuDeviceTotalMem_v2(byref(_totalGlobalMem), self._device)
         print(
-            "  Total amount of global memory:   {:d} bytes".format(totalGlobalMem.value)
+            "  Total amount of global memory:   {:d} bytes".format(
+                _totalGlobalMem.value
+            )
         )
         print(
             "  64-bit Memory Address:           {:s}".format(
-                "YES" if totalGlobalMem.value > (2 << 31) else "NO"
+                "YES" if _totalGlobalMem.value > (2 << 31) else "NO"
             )
         )
 
     def setCurrent(self):
-        cu_print(lib.cuCtxSetCurrent(self.context), "ctx.setcurrent")
+        cu_print(lib.cuCtxSetCurrent(self._context), "ctx.setcurrent")
 
     def synchronize(self):
         cu_print(lib.cuCtxSynchronize(), "ctx.sync")
 
     def destroy(self):
         try:
-            cu_print(lib.cuCtxDestroy_v2(self.context), "ctx.destroy")
+            cu_print(lib.cuCtxDestroy_v2(self._context), "ctx.destroy")
         except (AttributeError):
             pass
 
@@ -123,80 +128,81 @@ class CuContext:
         self.destroy()
 
 
-class CuArray:
-    def __init__(self, shape, dtype=np.float32, init="empty"):
-        self.dev_ptr = c_void_p()
-        self.resize(shape, dtype, init)
+class CuModule:
+    def __init__(self, context, module_name):
 
-    def resize(self, shape=None, dtype=None, init="empty"):
-        shape_tuple = shape if isinstance(shape, tuple) else (shape,)
-        self.shape = self.shape if shape is None else shape_tuple
-        self.dtype = self.dtype if dtype is None else np.dtype(dtype)
-        self.size = int(np.prod(shape))
-        self.itemsize = self.dtype.itemsize
-        self.bytesize = self.itemsize * self.size
+        # public:
+        self.module_name = module_name
+        self.context = context
 
-        if init not in ("zeros", "empty"):
-            return
+        # private:
+        self._module = c_longlong(0)
+        self._func_dict = {}
+        self._global_dict = {}
 
-        if self.dev_ptr.value is not None:
-            cu_print(lib.cuMemFree_v2(self.dev_ptr), "arr.free")
+        _module_name = c_char_p(self.module_name.encode())
+        err = lib.cuModuleLoad(byref(self._module), _module_name)
+        if err != CUDA_SUCCESS:
+            if err == 222:
+                print("* CUDA Driver too old, please update driver\n")
+            print(
+                "* Error loading the module {:s}\n".format(_module_name.value.decode())
+            )
+            self.context.destroy()
+            # sys.exit()
 
-        cu_print(lib.cuMemAlloc_v2(byref(self.dev_ptr), self.bytesize), "arr.alloc")
-
-        if init == "zeros":
-            self.zeroFill()
-
-    @staticmethod
-    def fromArray(arr):
-
-        obj = CuArray(arr.shape, arr.dtype, init=None)
-        obj.setArray(arr)
-
-        return obj
-
-    def zeroFill(self):
-        cu_print(lib.cuMemsetD8_v2(self.dev_ptr, 0, self.bytesize), "arr.zeros")
-
-    def setArray(self, arr):
-
-        params_changed = arr.shape != self.shape or arr.dtype != self.dtype
-        uninitialized_memory = self.dev_ptr.value is None
-        if params_changed or uninitialized_memory:
-            self.resize(arr.shape, arr.dtype, "empty")
-
-        cu_print(
-            lib.cuMemcpyHtoD_v2(self.dev_ptr, c_void_p(arr.ctypes.data), self.bytesize),
-            "arr.HtoD",
-        )
-
-    def getArray(self):
-
-        arr = np.empty(self.shape, dtype=self.dtype)
-        cu_print(
-            lib.cuMemcpyDtoH_v2(c_void_p(arr.ctypes.data), self.dev_ptr, self.bytesize),
-            "arr.DtoH",
-        )
-
-        return arr
-
-    def __del__(self):
-
+    def __getattr__(self, attr):
         try:
-            cu_print(lib.cuMemFree_v2(self.dev_ptr), "arr.free")
-        except (AttributeError):
-            pass
+            self._func_dict[attr]
+            return self._func_dict[attr]
+
+        except (KeyError):
+            _function = c_longlong(0)
+            _kernel_name = c_char_p(attr.encode())
+            err = lib.cuModuleGetFunction(byref(_function), self._module, _kernel_name)
+            if err != CUDA_SUCCESS:
+                print(
+                    "* Error getting kernel function {:s}".format(
+                        _kernel_name.value.decode()
+                    )
+                )
+                self.context.destroy()
+                # sys.exit()
+
+            self._func_dict[attr] = CuFunction(_function)
+            self._func_dict[attr].module = self
+            return self._func_dict[attr]
+
+    def setConstant(self, name, c_val):
+        try:
+            _var, _size = self._global_dict[name]
+
+        except (KeyError):
+            _var = c_void_p()
+            _size = c_long()
+            cu_print(
+                lib.cuModuleGetGlobal_v2(
+                    byref(_var), byref(_size), self._module, c_char_p(name.encode())
+                ),
+                "mod.global",
+            )
+            self._global_dict[name] = (_var, _size)
+
+        cu_print(lib.cuMemcpyHtoD_v2(_var, byref(c_val), _size), "mod.HtoD")
 
 
 class CuFunction:
-    def __init__(self, fptr):
-        self.fptr = fptr
-        self.retvars = None
+    def __init__(self, _function):
+
+        # public:
+        self.module = None
+        self.args = []
         self.blocks = (1, 1, 1)
         self.threads = (1, 1, 1)
         self.sync = False
-        self.context_obj = None
-        self.args = []
+
+        # private:
+        self._function = _function
 
     def setGrid(self, blocks=(1, 1, 1), threads=(1, 1, 1)):
         self.blocks = blocks
@@ -213,86 +219,98 @@ class CuFunction:
         self.sync = self.sync if sync is None else sync
 
         voidPtrArr = len(self.args) * c_void_p
-        cargs = voidPtrArr(*[cast(byref(arr.dev_ptr), c_void_p) for arr in self.args])
+        c_args = voidPtrArr(*[cast(byref(arr._ptr), c_void_p) for arr in self.args])
 
         cu_print(
-            lib.cuLaunchKernel(self.fptr, *self.blocks, *self.threads, 0, 0, cargs, 0),
+            lib.cuLaunchKernel(
+                self._function, *self.blocks, *self.threads, 0, 0, c_args, 0
+            ),
             "func.kernel",
         )
 
         if self.sync:
-            self.context_obj.synchronize()
+            self.module.context.synchronize()
 
 
-class CuModule:
-    def __init__(self, context_obj, module_name):
-        self.module_name = module_name
-        module_file = c_char_p(self.module_name.encode())
-        self.context_obj = context_obj
-        self.module = c_longlong(0)
-        err = lib.cuModuleLoad(byref(self.module), module_file)
-        if err != CUDA_SUCCESS:
-            if err == 222:
-                print("* CUDA Driver too old, please update driver\n")
-            print(
-                "* Error loading the module {:s}\n".format(module_file.value.decode())
-            )
-            self.context_obj.destroy()
-            # sys.exit()
+class CuArray:
+    def __init__(self, shape, dtype=np.float32, init="empty"):
+        self._ptr = c_void_p()
+        self.resize(shape, dtype, init)
 
-        self.func_dict = {}
-        self.global_dict = {}
+    def resize(self, shape=None, dtype=None, init="empty"):
+        shape_tuple = shape if isinstance(shape, tuple) else (shape,)
+        self.shape = self.shape if shape is None else shape_tuple
+        self.dtype = self.dtype if dtype is None else np.dtype(dtype)
+        self.size = int(np.prod(shape))
+        self.itemsize = self.dtype.itemsize
+        self.nbytes = self.itemsize * self.size
 
-    def __getattr__(self, attr):
+        if init not in ("zeros", "empty"):
+            return
+
+        if self._ptr.value is not None:
+            cu_print(lib.cuMemFree_v2(self._ptr), "arr.free")
+
+        cu_print(lib.cuMemAlloc_v2(byref(self._ptr), self.nbytes), "arr.alloc")
+
+        if init == "zeros":
+            self.zeroFill()
+
+    @staticmethod
+    def fromArray(arr):
+
+        obj = CuArray(arr.shape, arr.dtype, init=None)
+        obj.setArray(arr)
+
+        return obj
+
+    def zeroFill(self):
+        cu_print(lib.cuMemsetD8_v2(self._ptr, 0, self.nbytes), "arr.zeros")
+
+    def setArray(self, arr):
+
+        params_changed = arr.shape != self.shape or arr.dtype != self.dtype
+        uninitialized_memory = self._ptr.value is None
+        if params_changed or uninitialized_memory:
+            self.resize(arr.shape, arr.dtype, "empty")
+
+        cu_print(
+            lib.cuMemcpyHtoD_v2(self._ptr, c_void_p(arr.ctypes.data), self.nbytes),
+            "arr.HtoD",
+        )
+
+    def getArray(self):
+
+        arr = np.empty(self.shape, dtype=self.dtype)
+        cu_print(
+            lib.cuMemcpyDtoH_v2(c_void_p(arr.ctypes.data), self._ptr, self.nbytes),
+            "arr.DtoH",
+        )
+
+        return arr
+
+    def __del__(self):
+
         try:
-            self.func_dict[attr]
-            return self.func_dict[attr]
-
-        except (KeyError):
-            function = c_longlong(0)
-            kernel_name = c_char_p(attr.encode())
-            err = lib.cuModuleGetFunction(byref(function), self.module, kernel_name)
-            if err != CUDA_SUCCESS:
-                print(
-                    "* Error getting kernel function {:s}".format(
-                        kernel_name.value.decode()
-                    )
-                )
-                self.context_obj.destroy()
-                # sys.exit()
-
-            self.func_dict[attr] = CuFunction(function)
-            self.func_dict[attr].context_obj = self.context_obj
-            return self.func_dict[attr]
-
-    def setConstant(self, name, c_val):
-        try:
-            var, size = self.global_dict[name]
-
-        except (KeyError):
-            var = c_void_p()
-            size = c_long()
-            cu_print(
-                lib.cuModuleGetGlobal_v2(
-                    byref(var), byref(size), self.module, c_char_p(name.encode())
-                ),
-                "mod.global",
-            )
-            self.global_dict[name] = (var, size)
-
-        cu_print(lib.cuMemcpyHtoD_v2(var, byref(c_val), size), "mod.HtoD")
+            cu_print(lib.cuMemFree_v2(self._ptr), "arr.free")
+        except (AttributeError):
+            pass
 
 
 class CuFFT:
     def __init__(self, arr_in, arr_out, direction="fwd", plan_fft=True):
+
+        # public:
         self.arr_in = arr_in
         self.arr_out = arr_out
-        self._arr = arr_in if direction == "fwd" else arr_out
-        self.direction = direction
-        self._cufftType = CUFFT_R2C if direction == "fwd" else CUFFT_C2R
 
-        self.plan_ptr = c_longlong(0)
-        cu_print(lib_cufft.cufftCreate(byref(self.plan_ptr)), "fft.plan create")
+        # private:
+        self._direction = direction
+        self._arr = arr_in if direction == "fwd" else arr_out
+        self._fft_type = CUFFT_R2C if direction == "fwd" else CUFFT_C2R
+        self._plan = c_longlong(0)
+
+        cu_print(lib_cufft.cufftCreate(byref(self._plan)), "fft.plan create")
 
         if plan_fft:
             self.planMany()
@@ -301,45 +319,41 @@ class CuFFT:
 
         batch = int(np.prod(self._arr.shape[1:]))
         oneInt = 1 * c_int
-        n = oneInt(self._arr.shape[0])
+        _n = oneInt(self._arr.shape[0])
         stride = batch
 
         cu_print(
             lib_cufft.cufftPlanMany(
-                byref(self.plan_ptr),
+                byref(self._plan),
                 1,  # rank,
-                n,  # n
+                _n,  # n
                 oneInt(0),  # inembed,
                 stride,  # istride
                 1,  # idist,
                 oneInt(0),  # onembed,
                 stride,  # ostride
                 1,  # odist,
-                self._cufftType,
+                self._fft_type,
                 batch,
             ),
             "fft.plan many",
         )
 
     def __call__(self):
-        if self.direction == "fwd":
+        if self._direction == "fwd":
             cu_print(
-                lib_cufft.cufftExecR2C(
-                    self.plan_ptr, self.arr_in.dev_ptr, self.arr_out.dev_ptr
-                ),
+                lib_cufft.cufftExecR2C(self._plan, self.arr_in._ptr, self.arr_out._ptr),
                 "fft.fwd",
             )
         else:
             cu_print(
-                lib_cufft.cufftExecC2R(
-                    self.plan_ptr, self.arr_in.dev_ptr, self.arr_out.dev_ptr
-                ),
+                lib_cufft.cufftExecC2R(self._plan, self.arr_in._ptr, self.arr_out._ptr),
                 "fft.rev",
             )
 
     def destroy(self):
         try:
-            cu_print(lib_cufft.cufftDestroy(self.plan_ptr), "fft.destroy")
+            cu_print(lib_cufft.cufftDestroy(self._plan), "fft.destroy")
         except (AttributeError):
             pass
 
