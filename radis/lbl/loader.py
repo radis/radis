@@ -276,7 +276,7 @@ class ConditionDict(dict):
     -----
     for developers:
     Parameters and Input could also have simply derived from the (object) class,
-    but it may have missed some convenients functions implemented for dict.
+    but it may have missed some convenient functions implemented for dict.
     For instance, how to be picked / unpickled.
 
     See Also
