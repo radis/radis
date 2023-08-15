@@ -1479,7 +1479,7 @@ class SpecList(object):
                 #            #     a  ->   (a-mean)/std  € [0-1]
                 #            # Distance becomes:
                 #            #     d^2 ->  sum((a-target)/std)^2
-                #            # Problem when std == 0! That means this dimension is not discrimant
+                #            # Problem when std == 0! That means this dimension is not discriminant
                 #            # anyway
                 #            if std[k] == 0:
                 #                # for this conditions all parameters have the same value.
