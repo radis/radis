@@ -14,7 +14,7 @@ parameters, such as vibrational/rotational temperatures, or mole fraction, etc.
 
 This is a real fitting case introduced by Mr. Corentin Grimaldi, a scientist and member of RADIS
 community. This case features CO molecule emitting on a wide range of spectrum. This case also includes
-a user-defined trapezoid slit function, which is accounted by the distorion (dispersion) of the slit,
+a user-defined trapezoid slit function, which is accounted by the distortion (dispersion) of the slit,
 as a result of the influences from experimental parameters and spectrometer dispersion parameters
 during the experiment.
 
