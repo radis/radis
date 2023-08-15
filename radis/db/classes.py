@@ -45,6 +45,7 @@ Routine Listing
 """
 
 import re
+from mendeleev import element
 from os.path import dirname, exists, join
 
 from radis.db.conventions import get_convention
@@ -221,6 +222,31 @@ def is_atom(species):
         return True
     else :
         return False
+
+
+def to_conventional_name(species):
+
+    # If the charge is positive
+    if '+' in species:
+        # Count the number of positive charges
+        charge = species.count('+') + 1  # Add one to convert to conventional notation
+        # Get the element of the species without the charge
+        element_name = species.split('+')[0]
+        # Convert the charge to roman notation
+        charge_in_roman = {1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}.get(charge, "")
+        return f"{element_name}_{charge_in_roman}"
+
+    # If species is an element
+    else:
+        try:
+            el = element(species)
+            if el.symbol == species:  # check if symbols match
+                return f"{species}_I"
+            else:
+                return species
+        except:
+            return species
+
 
 
 def get_molecule_identifier(molecule_name):
