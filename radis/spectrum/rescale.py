@@ -996,7 +996,7 @@ def rescale_emisscoeff(
         assert "emisscoeff" in units
         return rescaled, units
 
-    # Firt get initial emisscoeff j1
+    # First get initial emisscoeff j1
     # -------------------
 
     if "emisscoeff" in initial:
