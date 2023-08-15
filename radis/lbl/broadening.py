@@ -2015,7 +2015,7 @@ class BroadenFactory(BaseFactory):
             ) / (2 * dxL)
 
         else:
-            # Simple weigths:
+            # Simple weights:
             avi = tvi
             aGi = tGi
             aLi = tLi
