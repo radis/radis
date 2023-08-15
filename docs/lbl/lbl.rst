@@ -569,7 +569,7 @@ Performance
 
 RADIS is very optimized, making use of C-compiled libraries (NumPy, Numba) for computationally intensive steps,
 and data analysis libraries (Pandas) to handle lines databases efficiently.
-Additionaly, different strategies and parameters are used to improve performances further:
+Additionally, different strategies and parameters are used to improve performances further:
 
 Line Database Reduction Strategies
 ----------------------------------

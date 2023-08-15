@@ -1901,7 +1901,7 @@ class DatabankLoader(object):
         compress: boolean, or 2
             if ``True``, Spectrum are read and written in binary format. This is faster,
             and takes less memory space. Default ``True``.
-            If ``2``, additionaly remove all redundant quantities.
+            If ``2``, additionally remove all redundant quantities.
 
         Other Parameters
         ----------------

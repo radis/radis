@@ -2128,7 +2128,7 @@ class SpecDatabase(SpecList):
             it is created.
         compress: boolean, or 2
             if ``True``, saves under binary format. Faster and takes less space.
-            If ``2``, additionaly remove all redundant quantities.
+            If ``2``, additionally remove all redundant quantities.
         if_exists_then: ``'increment'``, ``'replace'``, ``'error'``, ``'ignore'``
             what to do if file already exists. If ``'increment'`` an incremental digit
             is added. If ``'replace'`` file is replaced (!). If ``'ignore'`` the
