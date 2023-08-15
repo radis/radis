@@ -758,7 +758,7 @@ class DataFileManager(object):
         """Guess which HDF5 library ``file`` is compatible with
 
         .. note::
-            it still take about 1 ms for this functino to execute. For extreme
+            it still take about 1 ms for this function to execute. For extreme
             performance you want to directly give the correct engine
 
         Examples
