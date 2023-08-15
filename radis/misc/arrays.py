@@ -521,6 +521,103 @@ def numpy_add_at(LDM, k, l, m, I):
 # else:
 #     add_at = rcx.add_at
 
+# %%
+# Functions for legacy aggregation of lineshapes over an array
+
+
+def numpy_aggregate_at_indices(
+    sumoflines_calc,
+    I_low_in_left,
+    I_low_in_right,
+    I_high_in_left,
+    I_high_in_right,
+    I_low_nearest_left,
+    I_high_nearest_left,
+    I_low_nearest_right,
+    I_high_nearest_right,
+    profile_S_T,
+    frac_left,
+    frac_right,
+):
+    for i, (fr_left, fr_right, profS) in enumerate(
+        zip(frac_left, frac_right, profile_S_T)
+    ):
+        # if radis.config[
+        #     "DEBUG_MODE"
+        # ]:  #  @dev: used to test the indices used in the multigrid boundary corrections
+        #     sumoflines_calc_0 = sumoflines_calc.copy()
+        sumoflines_calc[
+            np.r_[
+                I_low_in_left[i] : I_low_nearest_left[i] + 1,
+                I_high_nearest_left[i] : I_high_in_left[i] + 1,
+            ]
+        ] += (
+            fr_left * profS
+        )
+        sumoflines_calc[
+            np.r_[
+                I_low_in_right[i] : I_low_nearest_right[i] + 1,
+                I_high_nearest_right[i] : I_high_in_right[i] + 1,
+            ]
+        ] += (
+            fr_right * profS
+        )
+    return sumoflines_calc
+
+
+@numba.njit(fastmath=True)  # eq. O3, march-native,fastmath
+def numba_aggregate_at_indices(
+    sumoflines_calc,
+    I_low_in_left,
+    I_low_in_right,
+    I_high_in_left,
+    I_high_in_right,
+    I_low_nearest_left,
+    I_high_nearest_left,
+    I_low_nearest_right,
+    I_high_nearest_right,
+    profile_S_T,
+    frac_left,
+    frac_right,
+):
+    N_lines = len(profile_S_T)
+
+    # loop over all lines
+    for i in range(N_lines):
+        # we keep track of 2 index: one `j` for the profile [0-len(profS)]
+        # and one `k` for the corresponding position in sumoflines_calc, which
+        # has jumps because the profile is hollow
+        j = 0
+        # Left side:
+        for k in range(I_low_in_left[i], I_low_nearest_left[i] + 1):
+            sumoflines_calc[k] += frac_left[i] * profile_S_T[i][j]
+            j += 1
+        for k in range(I_high_nearest_left[i], I_high_in_left[i] + 1):
+            sumoflines_calc[k] += frac_left[i] * profile_S_T[i][j]
+            j += 1
+        # Right side:
+        j = 0
+        for k in range(I_low_in_right[i], I_low_nearest_right[i] + 1):
+            sumoflines_calc[k] += frac_right[i] * profile_S_T[i][j]
+            j += 1
+        for k in range(I_high_nearest_right[i], I_high_in_right[i] + 1):
+            sumoflines_calc[k] += frac_right[i] * profile_S_T[i][j]
+            j += 1
+
+    return sumoflines_calc
+
+
+if False:
+    import radis_cython_extensions as rcx
+
+    aggregate_at_indices = (
+        rcx.aggregate_at_indices_64
+    )  # EP 15/08 : as of manual benchmark, Cython version is 10x slower than numba version
+# aggregate_at_indices = numpy_aggregate_at_indices
+aggregate_at_indices = numba_aggregate_at_indices
+
+
+# %%
 
 # @numba.njit
 # def non_zero_values_around2(a, n):
