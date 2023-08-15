@@ -2828,7 +2828,7 @@ class BroadenFactory(BaseFactory):
 
         The Weak line characterization [1]_ is only based on abscoeff. For strong
         nonequilibrium cases there may be lines considered as weak in terms
-        of absorption but not weaks in emission, or the other way around. It should
+        of absorption but not weak in emission, or the other way around. It should
         be negligible, though, so a dual conditioning (looking at both abscoeff
         and emisscoeff) was not implemented.
         See :func:`radis.lbl.broadening._find_weak_lines` if you want to change that
@@ -2860,7 +2860,7 @@ class BroadenFactory(BaseFactory):
             # ... only guess based on abscoeff. See Notes for noneq case.
             self._find_weak_lines(pseudo_continuum_threshold)
 
-            # Retrieve lines, separate weaks from strong
+            # Retrieve lines, separate weak from strong
             df = self.df1
             df_weak_lines = df[df.weak_line]
             df_strong_lines = df[~df.weak_line]
