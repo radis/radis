@@ -1274,7 +1274,7 @@ class DatabankLoader(object):
 
             if database in ["full", "range"]:
                 raise ValueError(
-                    f"Got `database={database}`. When fetching ExoMol, use the `database=` key to retrieve a specific database. Use `database='default'` to get the recommended database. See more informatino in radis.io.fetch_exomol()"
+                    f"Got `database={database}`. When fetching ExoMol, use the `database=` key to retrieve a specific database. Use `database='default'` to get the recommended database. See more information in radis.io.fetch_exomol()"
                 )
 
             # Download, setup local databases, and fetch (use existing if possible)
