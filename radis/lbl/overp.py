@@ -685,7 +685,7 @@ def rescale_updown_levels(
     should be recomputed
 
     IMPORTANT: if editing make sure you use the proper nu and nl. In particular
-    when infering emission quantities from absorption quantities this may
+    when inferring emission quantities from absorption quantities this may
     ends up in error in overpopulation rescaling.
     """
     # TODO: Add warning when too large rescaling
