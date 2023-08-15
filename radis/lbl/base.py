@@ -2242,7 +2242,7 @@ class BaseFactory(DatabankLoader):
                 df1.int
                 * self.Qref_Qgas_ratio(df1, Tgas, Tref)
                 *
-                # ratio of Boltzman populations
+                # ratio of Boltzmann populations
                 exp(-hc_k * df1.El * (1 / Tgas - 1 / Tref))
                 *
                 # effect of stimulated emission
