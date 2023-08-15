@@ -269,7 +269,7 @@ class SpectrumFactory(BandFactory):
         Fast fourier transform ``'fft'`` is only available if using the LDM lineshape
         calculation ``optimization``. Because the LDM convolves all lines at the same time,
         and thus operates on large arrays, ``'fft'`` becomes more appropriate than
-        convolutions in real space (``'voit'``, ``'convolve'`` )
+        convolutions in real space (``'voigt'``, ``'convolve'`` )
 
         By default, use ``"fft"`` for any ``optimization``, and ``"voigt"`` if
         optimization is ``None`` .
