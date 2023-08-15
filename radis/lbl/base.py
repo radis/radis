@@ -1006,7 +1006,6 @@ class BaseFactory(DatabankLoader):
             #        df['Evibl'] = df.groupby('polyl','wangl','rankl').apply(Evibl, axis=1)
             #        %timeit: 43.4s per loop
 
-
             if self.dataframe_type == "pandas":
                 #            try:  # total:  ~ 15s on 460k lines
                 # ~ 6.6 s   (probably faster since neq==0.9.20) (radis<1.0)

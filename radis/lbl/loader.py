@@ -1182,7 +1182,6 @@ class DatabankLoader(object):
                 )
                 self.params.dbpath = ",".join(local_paths)
 
-
                 df.attrs = {}
 
                 # ... explicitely write all isotopes based on isotopes found in the database
@@ -1508,7 +1507,6 @@ class DatabankLoader(object):
                     + "equilibrium spectra, try using 'load_energies=False' "
                     + "in fetch_databank"
                 )
-
 
         self._remove_unecessary_columns(df, output)
         return
@@ -2565,7 +2563,6 @@ class DatabankLoader(object):
                     time() - t0, len(df)
                 )
             )
-
 
         self._remove_unecessary_columns(df, output)
 

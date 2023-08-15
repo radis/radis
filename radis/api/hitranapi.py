@@ -158,6 +158,7 @@ def extract_columns(df, extracted_values, columns):
     for column in columns:
         df[column] = df.evaluate(df[column])
 
+
 def hit2df(
     fname,
     cache=True,
