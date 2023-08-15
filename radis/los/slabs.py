@@ -338,7 +338,7 @@ def _check_valid(s):
             k in ["transmittance_noslit", "radiance_noslit", "abscoeff", "emisscoeff"]
         ) and anynan(v):
             warn(
-                "Nans detected in Spectrum object for multi-slab operation. "
+                "NaNs detected in Spectrum object for multi-slab operation. "
                 + "Results may be wrong!"
             )
 

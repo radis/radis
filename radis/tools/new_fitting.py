@@ -512,7 +512,7 @@ def spectrum_refinement(s_data, conditions, verbose) -> Union[Spectrum, dict]:
     if verbose:
         print(f"\nAcquired spectral quantity '{fit_var}' from the spectrum.")
 
-    # Remove NaN values. A wise man once said, "Nan is good but only in India"
+    # Remove NaN values. A wise man once said, "NaN is good but only in India"
 
     s_data_mtr = np.vstack(
         (s_data_wav, s_data_val)

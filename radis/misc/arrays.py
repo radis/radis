@@ -123,7 +123,7 @@ def array_allclose(a, b, rtol=1e-5, atol=1e-8, equal_nan=True):
     rtol: float
     atol: float
     equal_nan: bool
-        whether to consider Nan's as equal. Contrary to the numpy version this
+        whether to consider NaN's as equal. Contrary to the numpy version this
         one is set to True by default
     """
 
@@ -422,7 +422,7 @@ def is_sorted_backward(a):
 
 def bining(I, ymin=None, ymax=None, axis=1):
     """Averages a I multi-dimensional array (typically an image) along the y
-    axis bining(I) corresponds to I.mean(axis=1) Nan are not taken into
+    axis bining(I) corresponds to I.mean(axis=1) NaN are not taken into
     account.
 
     Parameters
@@ -454,7 +454,7 @@ def bining(I, ymin=None, ymax=None, axis=1):
 
 
 def count_nans(a):
-    """Nan are good but only in India."""
+    """NaN are good but only in India."""
 
     return np.isnan(a).sum()
 

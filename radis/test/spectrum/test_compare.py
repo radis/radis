@@ -91,12 +91,12 @@ def test_plot_compare_with_nan(
     s = Radiance_noslit(s)
     s._q["radiance_noslit"][0] = np.nan
 
-    # Test Plot function when there are Nans in the spectrum:
+    # Test Plot function when there are NaNs in the spectrum:
     if plot:
         s.plot(normalize=True)
         s.plot(normalize=(2200, 2250))
 
-    # Test plot_diff function when there are Nans in the spectra:
+    # Test plot_diff function when there are NaNs in the spectra:
     if plot:
         plot_diff(s, s * 1.2, normalize=True)
         plot_diff(s, s * 1.2, "radiance_noslit", normalize=(2000, 2100))

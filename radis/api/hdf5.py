@@ -237,7 +237,7 @@ class DataFileManager(object):
             import vaex
 
             df = vaex.open(self._temp_batch_files, group=key)
-            # Removing Nan values columns
+            # Removing NaN values columns
             if delete_nan_columns:
                 import numpy as np
 

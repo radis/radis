@@ -280,7 +280,7 @@ class BaseFactory(DatabankLoader):
         df = getattr(self, dataframe)
         a = np.log10(np.array(df[what]))
         if np.isnan(a).any():
-            printwarn("Nan values in log10(lines)")
+            printwarn("NaN values in log10(lines)")
         plt.hist(np.round(a[~np.isnan(a)]))
         if axvline is not None:
             plt.axvline(axvline, color="r")
