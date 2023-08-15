@@ -159,7 +159,7 @@ def test_get_residual():
     I3[0] = np.nan
     s_expe_3 = experimental_spectrum(w1, I3, Iunit="W/cm2/sr/nm", wunit="cm-1")
 
-    # Intrestingly, the "mean" method seams to be not adapted for spectra with nans
+    # Interestingly, the "mean" method seams to be not adapted for spectra with nans
     criterion = [7e-5, 2e-6, 2e-2]
     for index, bool_how in enumerate(["max", "area", "mean"]):
         residual3 = get_residual(
