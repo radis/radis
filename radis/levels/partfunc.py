@@ -2061,7 +2061,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             See Section (2.3) in ``The CO2 Laser by Witteman 1987,
             ISBN 3540477446, 9783540477440``
 
-            Exemples
+            Examples
             --------
 
             Output of ``is_symmetric(v1, v2, l2, v3)`` for different levels::
