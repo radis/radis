@@ -1714,7 +1714,7 @@ def rescale_emissivity_noslit(spec, rescaled, rescaled_units, extra, true_path_l
     if "transmittance_noslit" in rescaled:
         if __debug__:
             printdbg("... rescale: emissivity_noslit e_2 = 1 - T_2")
-        # transmittivity already scaled
+        # transmissivity already scaled
         T2 = rescaled["transmittance_noslit"]
         emissivity_noslit = 1 - T2  # recalculate
     else:
