@@ -339,7 +339,7 @@ class LevelsList(object):
 
             # Get new population
             E_vib = vib_levels["Evib"]
-            g = 1  # explicitely calculate populations divided by degeneracy
+            g = 1  # explicitly calculate populations divided by degeneracy
             # this means we should only use ratios for rescaling
             if vib_distribution == "boltzmann":
                 nvibQvib = g * exp(-hc_k * E_vib / Tvib)
@@ -355,7 +355,7 @@ class LevelsList(object):
             E_vib1 = vib_levels["Evib1"]
             E_vib2 = vib_levels["Evib2"]
             E_vib3 = vib_levels["Evib3"]
-            g = 1  # explicitely calculate populations divided by degeneracy
+            g = 1  # explicitly calculate populations divided by degeneracy
             # this means we should only use ratios for rescaling
             if vib_distribution == "boltzmann":
                 nvibQvib = (

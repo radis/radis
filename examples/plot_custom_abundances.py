@@ -40,7 +40,7 @@ sf = SpectrumFactory(
 )
 sf.load_databank("HITEMP-CO2-TEST")
 #%%
-# To explicitely identify the isotopes we can use the molparam attribute the Factory
+# To explicitly identify the isotopes we can use the molparam attribute the Factory
 print(sf.molparam.get("CO2", 1, "isotope_name"))  # >> (12C)(16O)2
 print(sf.molparam.get("CO2", 2, "isotope_name"))  # >> (13C)(16O)2
 

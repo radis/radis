@@ -394,7 +394,7 @@ class Spectrum(object):
             conditions["waveunit"] = conditions["wavespace"]
             del conditions["wavespace"]
 
-        # ... make sure waveunit is given. Either implicitely, or explicitely:
+        # ... make sure waveunit is given. Either implicitely, or explicitly:
         if waveunit is None and not "waveunit" in conditions:
             if "wavelength" in quantities:
                 raise AssertionError(
@@ -3381,7 +3381,7 @@ class Spectrum(object):
             if a file name, then Spectrum is saved to this file and the later
             formatting options dont apply
         file: str
-            explicitely give a filename to save
+            explicitly give a filename to save
         compress: boolean
             if ``False``, save under text format, readable with any editor.
             if ``True``, saves under binary format. Faster and takes less space.

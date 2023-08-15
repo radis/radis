@@ -48,7 +48,7 @@ non_rescalable_keys = ["abscoeff_continuum", "emisscoeff_continuum"]
 """str:  variables that cannot be rescaled (or not implemented): """
 # ... Check we have everyone (safety check!):
 # ... if it fails here, then we may have added a new key without adding a scaling
-# ... method. Explicitely add it in non_rescalableçkeys so an error is raised
+# ... method. Explicitly add it in non_rescalableçkeys so an error is raised
 # ... if trying to rescale a Spectrum that has such a quantity
 assert (
     compare_lists(

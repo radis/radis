@@ -820,7 +820,7 @@ class DatabankLoader(object):
             parameter is used to determine the limit. Default ``True``.
         drop_columns: list
             columns names to drop from Line DataFrame after loading the file.
-            Not recommended to use, unless you explicitely want to drop information
+            Not recommended to use, unless you explicitly want to drop information
             (for instance if dealing with too large databases). If ``[]``, nothing
             is dropped. If ``'auto'``, parameters considered unnecessary
             are dropped. See :data:`~radis.lbl.loader.drop_auto_columns_for_dbformat`
@@ -1176,7 +1176,7 @@ class DatabankLoader(object):
                 )
                 self.params.dbpath = ",".join(local_paths)
 
-                # ... explicitely write all isotopes based on isotopes found in the database
+                # ... explicitly write all isotopes based on isotopes found in the database
                 if isotope == "all":
                     self.input.isotope = ",".join(
                         [str(k) for k in self._get_isotope_list(df=df)]
@@ -1190,7 +1190,7 @@ class DatabankLoader(object):
                 # Query one isotope at a time
                 if isotope == "all":
                     raise ValueError(
-                        "Please define isotope explicitely (cannot use 'all' with fetch_databank('hitran'))"
+                        "Please define isotope explicitly (cannot use 'all' with fetch_databank('hitran'))"
                     )
                 isotope_list = self._get_isotope_list()
 
@@ -1260,7 +1260,7 @@ class DatabankLoader(object):
             )
             self.params.dbpath = ",".join(local_paths)
 
-            # ... explicitely write all isotopes based on isotopes found in the database
+            # ... explicitly write all isotopes based on isotopes found in the database
             if isotope == "all":
                 self.input.isotope = ",".join(
                     [str(k) for k in self._get_isotope_list(df=df)]
@@ -1285,7 +1285,7 @@ class DatabankLoader(object):
 
             if isotope == "all":
                 raise ValueError(
-                    "Please define isotope explicitely (cannot use 'all' with fetch_databank('exomol'))"
+                    "Please define isotope explicitly (cannot use 'all' with fetch_databank('exomol'))"
                 )
             isotope_list = self._get_isotope_list()
 
@@ -1376,7 +1376,7 @@ class DatabankLoader(object):
             )
             self.params.dbpath = ",".join(local_paths)
 
-            # ... explicitely write all isotopes based on isotopes found in the database
+            # ... explicitly write all isotopes based on isotopes found in the database
             if isotope == "all":
                 self.input.isotope = ",".join(
                     [str(k) for k in self._get_isotope_list(df=df)]
@@ -1528,7 +1528,7 @@ class DatabankLoader(object):
         *Other arguments are related to how to open the files:*
         drop_columns: list
             columns names to drop from Line DataFrame after loading the file.
-            Not recommended to use, unless you explicitely want to drop information
+            Not recommended to use, unless you explicitly want to drop information
             (for instance if dealing with too large databases). If ``[]``, nothing
             is dropped. If ``'auto'``, parameters considered useless
             are dropped. See :data:`~radis.lbl.loader.drop_auto_columns_for_dbformat`
@@ -1891,7 +1891,7 @@ class DatabankLoader(object):
         autoupdate: boolean
             if ``True``, all spectra calculated by this Factory are automatically
             exported in database. Default ``True`` (but only if init_database is
-            explicitely called by user)
+            explicitly called by user)
         add_info: list, or ``None``/``False``
             append these parameters and their values if they are in conditions.
             Default ``['Tvib', 'Trot']``
@@ -2130,7 +2130,7 @@ class DatabankLoader(object):
             If ``'regen'`` regenerate existing cache files.
         drop_columns: list
             columns names to drop from Line DataFrame after loading the file.
-            Not recommended to use, unless you explicitely want to drop information
+            Not recommended to use, unless you explicitly want to drop information
             (for instance if dealing with too large databases). If ``[]``, nothing
             is dropped. If ``'auto'``, parameters considered useless
             are dropped. See :data:`~radis.lbl.loader.drop_auto_columns_for_dbformat`
@@ -2381,7 +2381,7 @@ class DatabankLoader(object):
         maxwavdb = df.wav.max()
         minwavdb = df.wav.min()
 
-        # ... Explicitely write molecule if not given
+        # ... Explicitly write molecule if not given
         if self.input.molecule in [None, ""]:
             id_set = df.id.unique()
             if len(id_set) > 1:
@@ -2392,7 +2392,7 @@ class DatabankLoader(object):
                 )
             self.input.molecule = get_molecule(id_set[0])
 
-        # ... explicitely write all isotopes based on isotopes found in the database
+        # ... explicitly write all isotopes based on isotopes found in the database
         if self.input.isotope == "all":
             self.input.isotope = ",".join(
                 [str(k) for k in self._get_isotope_list(df=df)]

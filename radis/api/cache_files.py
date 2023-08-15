@@ -186,7 +186,7 @@ def load_h5_cache_file(
         df = manager.read(cachefile, columns=columns, key="df")
 
     except KeyError as err:  # An error happened during file reading.
-        # Fail safe by deleting cache file (unless we explicitely wanted it
+        # Fail safe by deleting cache file (unless we explicitly wanted it
         # with 'force')
         if use_cached == "force":
             raise

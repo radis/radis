@@ -350,7 +350,7 @@ def post_process_hitran_data(
     if nmol == 0:
         raise ValueError("Databank looks empty")
     elif nmol != 1:
-        # Crash, give explicity error messages
+        # Crash, give explicitly error messages
         try:
             secondline = df.iloc[1]
         except IndexError:

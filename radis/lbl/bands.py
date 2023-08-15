@@ -263,7 +263,7 @@ class BandFactory(BroadenFactory):
             # Filter levels that feature the given energy levels. The rest
             # is stored in 'others'
             lines = self.df1
-            # We need levels to be explicitely stated for given molecule
+            # We need levels to be explicitly stated for given molecule
             assert hasattr(lines, "viblvl_u")
             assert hasattr(lines, "viblvl_l")
             # Get bands to remove
@@ -594,7 +594,7 @@ class BandFactory(BroadenFactory):
             # Filter levels that feature the given energy levels. The rest
             # is stored in 'others'
             lines = self.df1
-            # We need levels to be explicitely stated for given molecule
+            # We need levels to be explicitly stated for given molecule
             assert hasattr(lines, "viblvl_u")
             assert hasattr(lines, "viblvl_l")
             # Get bands to remove

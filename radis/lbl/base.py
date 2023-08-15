@@ -523,7 +523,7 @@ class BaseFactory(DatabankLoader):
                 ------
                 r.polyu.iloc[0],r.wangu.iloc[0],r.ranku.iloc[0]  : [0] because they're
                             all the same
-                r.ju.iloc[0]  not necessary (same Tvib) but explicitely mentionning it
+                r.ju.iloc[0]  not necessary (same Tvib) but explicitly mentionning it
                          yields a x20 on performances (60s -> 3s)
                 """
                 r["Evibu"] = energies.at[(r.polyu.iloc[0], r.wangu.iloc[0]), "Evib"]
@@ -905,7 +905,7 @@ class BaseFactory(DatabankLoader):
                 ------
                 r.polyu.iloc[0],r.wangu.iloc[0],r.ranku.iloc[0]  : [0] because they're
                             all the same
-                r.ju.iloc[0]  not necessary (same Tvib) but explicitely mentionning it
+                r.ju.iloc[0]  not necessary (same Tvib) but explicitly mentionning it
                          yields a x20 on performances (60s -> 3s)
                 (probably faster since neq==0.9.20) (radis<1.0)
                 """

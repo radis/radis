@@ -74,7 +74,7 @@ class Chdir:
 
 class Default:
     """Contains a value. Used to know whether a function argument equal to its
-    default value was explicitely given by the user or not. This allows to
+    default value was explicitly given by the user or not. This allows to
     prevent user errors.
 
     Examples
