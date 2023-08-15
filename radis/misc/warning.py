@@ -110,7 +110,7 @@ class EmptyDatabaseWarning(UserWarning):
 
 class OutOfRangeLinesWarning(UserWarning):
     """Trigger a warning if out of range neighbouring lines, that could have an
-    effect on the spectrume due to their broadening, cannot be found in the
+    effect on the spectrum due to their broadening, cannot be found in the
     database."""
 
     pass
