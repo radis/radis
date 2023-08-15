@@ -71,7 +71,7 @@ class DataFileManager(object):
     def __init__(self, engine=None):
         """Class to handle all DataFrame-librairies with one common API
 
-        All functions may not be fully implemetned, will raise a NotImplementedError
+        All functions may not be fully implemented, will raise a NotImplementedError
         if that's not the case.
 
         Librairies ::

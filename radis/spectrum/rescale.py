@@ -282,7 +282,7 @@ def _build_update_graph(
     #
     # Note for Developers: all derives_from relationship should correspond to a
     # rescale method that was implemented. Only the developer can know that!
-    # If a rescaled relationship is implemetend but not added here it wont be
+    # If a rescaled relationship is implemented but not added here it wont be
     # used by the code when trying to add all quantities. If a relationship is
     # added here but not implemented it will crash during rescale (and explain why)
 
