@@ -1085,7 +1085,7 @@ class SpecList(object):
         -----
 
         Makes the 'file' column the index, and also discard the 'Spectrum' column
-        (that holds all the data) for readibility
+        (that holds all the data) for readability
         """
 
         if len(self) == 0:
