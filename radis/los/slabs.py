@@ -685,7 +685,7 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
         for s in slabs[1:]:
             conditions = intersect(conditions, s.conditions)
             cond_units = intersect(cond_units, s.cond_units)
-            # units = intersect(units0, s.units)  # we're actually using [slabs0].units insteads
+            # units = intersect(units0, s.units)  # we're actually using [slabs0].units instead
         # ... for the parmaeters below, if N/A, remove the value
         for cond in ["default_output_unit"]:
             if cond in conditions and conditions[cond] == "N/A":

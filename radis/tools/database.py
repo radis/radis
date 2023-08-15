@@ -1964,7 +1964,7 @@ class SpecDatabase(SpecList):
         update_register_only=False,
     ):
         # TODO @devs: generate a SpecDatabase from a dict.
-        # use the key of the dict insted of the file.
+        # use the key of the dict instead of the file.
 
         # Assert name looks like a directory
         name, ext = splitext(str(path))
