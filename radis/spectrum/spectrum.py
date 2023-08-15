@@ -3526,7 +3526,7 @@ class Spectrum(object):
         ----------
         var: 'radiance', 'radiance_noslit', etc.
             which spectral array to convert. If ``None`` and only one spectral
-            arry is defined, use it.
+            array is defined, use it.
         wunit: ``'nm'``, ``'cm'``, ``'nm_vac'``.
             wavespace unit: wavelength in air (``'nm'``), wavenumber
             (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
