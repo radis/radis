@@ -15,7 +15,7 @@ Calculate a CO Spectrum, fetching the lines from HITRAN ::
                          cutoff=1e-30,   # for faster calculations. See
                                          # `plot_linestrength_hist` for more details
                          **kwargs)
-    sf.fetch_databank()        # autodownload from HITRAN
+    sf.fetch_databank()        # auto download from HITRAN
     s = sf.eq_spectrum(Tgas=300)
     s.plot('abscoeff')          # opacity
 
