@@ -227,7 +227,7 @@ def test_compare_torch_CO2(
     stot.apply_slit(slit_function, unit="nm", norm_by=norm_by, shape="trapezoidal")
 
     # Remove emission from within the spectrometer (substracted
-    # by the chopper experimentaly)
+    # by the chopper experimentally)
     # -------
     s0spectro = s0.copy()
     s0spectro.rescale_path_length(75 * 4)  # spectrometer length
