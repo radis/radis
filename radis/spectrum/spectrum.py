@@ -1803,7 +1803,7 @@ class Spectrum(object):
         Parameters
         ----------
         var: str
-            spectral quantity to integate
+            spectral quantity to integrate
         wunit: str
             over which waverange to integrated. If ``default``,
             use the default Spectrum wavespace defined with
