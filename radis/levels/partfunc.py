@@ -302,7 +302,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         import vaex  # import delayed until now (takes ~2s to import)
 
         df = vaex.from_pandas(self.df)
-        # Vaex processs may get stuck in Spyder IDE. https://github.com/radis/radis/issues/338
+        # Vaex process may get stuck in Spyder IDE. https://github.com/radis/radis/issues/338
         # Temp fix : >>> df.executor.async_method = "awaitio"     (doesn't always work here)
 
         epsilon = 1e-4  # prevent log(0)
@@ -498,7 +498,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         import vaex  # import delayed until now (takes ~2s to import)
 
         df = vaex.from_pandas(self.df)
-        # Vaex processs may get stuck in Spyder IDE. https://github.com/radis/radis/issues/338
+        # Vaex process may get stuck in Spyder IDE. https://github.com/radis/radis/issues/338
         # Temp fix : >>> df.executor.async_method = "awaitio"     (doesn't always work here)
 
         epsilon = 1e-4  # prevent log(0)
@@ -855,7 +855,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         import vaex  # import delayed until now (takes ~2s to import)
 
         df = vaex.from_pandas(self.df)
-        # Vaex processs may get stuck in Spyder IDE. https://github.com/radis/radis/issues/338
+        # Vaex process may get stuck in Spyder IDE. https://github.com/radis/radis/issues/338
         # Temp fix : >>> df.executor.async_method = "awaitio"     (doesn't always work here)
 
         epsilon = 1e-4  # prevent log(0)
