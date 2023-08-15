@@ -973,7 +973,7 @@ class BroadenFactory(BaseFactory):
             min_lorentz_fwhm = 2 * df.hwhm_lorentz.min()
             min_gauss_fwhm = 2 * df.hwhm_gauss.min()
             # We take the max of both. Note: could also have used
-            # Olivero1977 to get the Voigt-equivlaent width of all lines,
+            # Olivero1977 to get the Voigt-equivalent width of all lines,
             # but it's quite expensive to compute
             min_width = max(min_lorentz_fwhm, min_gauss_fwhm)
 
