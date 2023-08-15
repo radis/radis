@@ -613,7 +613,7 @@ def convolve_with_slit(
     Implementation of :func:`~radis.tools.slit.convolve_with_slit` is done in 5 steps:
 
     - Check input slit function: compare input slit spectral range to spectrum spectral range
-      if ranges are comparable, check FHWM and send a warning.
+      if ranges are comparable, check FWHM and send a warning.
     - Interpolate the slit function on the spectrum grid, resample it if not
       evenly spaced (in order to match physical distances)
     - Check slit aspect, plot slit if asked for

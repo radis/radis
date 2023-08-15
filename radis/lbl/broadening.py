@@ -964,7 +964,7 @@ class BroadenFactory(BaseFactory):
         self.profiler.stop("calc_hwhm", "Calculate broadening HWHM")
 
     def _calc_min_width(self, df):
-        """Calculates the minimum FWHW of the lines
+        """Calculates the minimum FWHM of the lines
         and stores in self.min_width
         """
         if "hwhm_voigt" in df:
