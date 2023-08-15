@@ -185,7 +185,7 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
     wmin = 2700
     wmax = 3000
 
-    # Check that we won't download all databae for a reduced range:
+    # Check that we won't download all database for a reduced range:
     # ... This is done at the HITEMPDatabaseManager level
     # ... unitest for this part:
     ldb = HITEMPDatabaseManager(
