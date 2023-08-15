@@ -2827,7 +2827,7 @@ class BroadenFactory(BaseFactory):
         in the Factory.
 
         The Weak line characterization [1]_ is only based on abscoeff. For strong
-        nonequilibrium cases there may be lines consired as weak in terms
+        nonequilibrium cases there may be lines considered as weak in terms
         of absorption but not weaks in emission, or the other way around. It should
         be negligible, though, so a dual conditioning (looking at both abscoeff
         and emisscoeff) was not implemented.
