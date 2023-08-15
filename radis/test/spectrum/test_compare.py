@@ -39,7 +39,7 @@ def test_compare_methods(verbose=True, plot=True, close_plots=True, *args, **kwa
 
     # limits to a single line, because get_distance()
     s.resample(np.linspace(2193, 2193.8, 100))
-    # is very computationaly heavy
+    # is very computationally heavy
     s.update("radiance_noslit")
     s_noabsorption = s.copy()
     s.name = "solve RTE"
