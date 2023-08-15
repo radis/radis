@@ -267,7 +267,7 @@ class LevelsList(object):
             k
         ) in (
             lvl_index
-        ):  # Note: do not fill directly in frmokeys or you'll get the same shared list
+        ):  # Note: do not fill directly in fromkeys or you'll get the same shared list
             lvl_index[k] = {"bands_where_low": [], "bands_where_up": []}
 
         self.lvl_index = lvl_index
