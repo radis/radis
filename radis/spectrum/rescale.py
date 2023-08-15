@@ -1225,7 +1225,7 @@ def rescale_absorbance(
         unit = ""
     else:
         msg = (
-            "Cant recalculate absorbance if scaled absoeff "
+            "Cant recalculate absorbance if scaled abscoeff "
             + "({0}) and true path_length ({1}) are not given".format(
                 "abscoeff" in rescaled, true_path_length
             )
