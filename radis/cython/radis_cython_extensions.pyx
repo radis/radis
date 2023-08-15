@@ -87,6 +87,90 @@ def add_at_32(np.ndarray[np.float32_t, ndim=3] arr,
 
     return arr
 
+# %%
+# Functions for aggregation of lineshapes over the spectrum array
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+def aggregate_at_indices_64(
+    np.ndarray[np.float64_t, ndim=1] sumoflines_calc,
+    np.ndarray[np.int64_t, ndim=1] I_low_in_left,
+    np.ndarray[np.int64_t, ndim=1] I_low_in_right,
+    np.ndarray[np.int64_t, ndim=1] I_high_in_left,
+    np.ndarray[np.int64_t, ndim=1] I_high_in_right,
+    np.ndarray[np.int64_t, ndim=1] I_low_nearest_left,
+    np.ndarray[np.int64_t, ndim=1] I_high_nearest_left,
+    np.ndarray[np.int64_t, ndim=1] I_low_nearest_right,
+    np.ndarray[np.int64_t, ndim=1] I_high_nearest_right,
+    np.ndarray[np.float64_t, ndim=2] profile_S_T,
+    np.ndarray[np.float64_t, ndim=1] frac_left,
+    np.ndarray[np.float64_t, ndim=1] frac_right
+    ):
+
+    cdef int N_lines = frac_left.size
+    cdef int i, j
+
+    #loop over all lines
+    for i in range(N_lines):
+        # we keep track of 2 index: one `j` for the profile [0-len(profS)]
+        # and one `k` for the corresponding position in sumoflines_calc, which
+        # has jumps because the profile is hollow
+        j = 0
+        # Left side:
+        for k in range(I_low_in_left[i], I_low_nearest_left[i] + 1):
+            sumoflines_calc[k] += frac_left[i] * profile_S_T[i][j]
+            j += 1
+        for k in range(I_high_nearest_left[i], I_high_in_left[i] + 1):
+            sumoflines_calc[k] += frac_left[i] * profile_S_T[i][j]
+            j += 1
+        # Right side:
+        j = 0
+        for k in range(I_low_in_right[i], I_low_nearest_right[i] + 1):
+            sumoflines_calc[k] += frac_right[i] * profile_S_T[i][j]
+            j += 1
+        for k in range(I_high_nearest_right[i], I_high_in_right[i] + 1):
+            sumoflines_calc[k] += frac_right[i] * profile_S_T[i][j]
+            j += 1
+
+    return sumoflines_calc
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+def aggregate_64(
+    np.ndarray[np.float64_t, ndim=1] sumoflines_calc,
+    np.ndarray[np.float64_t, ndim=2] profile_S_T
+    ):
+    """ Aggregate profile_S_T over sumoflines_calc.
+
+    Equivalent to ::
+
+        sumoflines_calc += profile_S_T.sum(axis=0)"""
+
+    # cdef int N_lines = frac_left.size
+    cdef np.npy_intp *dim = np.PyArray_DIMS(profile_S_T)
+    cdef np.npy_intp N_lines = dim[0]
+    cdef np.npy_intp profile_length = dim[1]
+    cdef int i, j, k
+
+    #loop over all lines
+    for i in range(N_lines):
+        # we keep track of 2 index: one `j` for the profile [0-len(profS)]
+        # and one `k` for the corresponding position in sumoflines_calc, which
+        # has jumps because the profile is hollow
+        j = 0
+        for k in range(profile_length):
+            sumoflines_calc[k] += profile_S_T[i][j]
+            j += 1
+        # TODO : sum over the other direction ??
+
+    return sumoflines_calc
+
+
+
+
 
 
 # Fast compiled functions for determining the min/max broadening envelope.

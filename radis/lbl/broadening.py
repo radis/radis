@@ -2118,37 +2118,41 @@ class BroadenFactory(BaseFactory):
         if gridnb == 0:  # prevent center point from being counted twice :
             I_low_nearest_left -= 1
             I_low_nearest_right -= 1
-        for i, (fr_left, fr_right, profS) in enumerate(
-            zip(frac_left, frac_right, profile_S.T)
+
+        from radis.misc.arrays import aggregate_at_indices
+
+        sumoflines_calc = aggregate_at_indices(
+            sumoflines_calc,
+            I_low_in_left,
+            I_low_in_right,
+            I_high_in_left,
+            I_high_in_right,
+            I_low_nearest_left,
+            I_high_nearest_left,
+            I_low_nearest_right,
+            I_high_nearest_right,
+            profile_S.T,
+            frac_left,
+            frac_right,
+        )
+
+        def fix_boundary_effects(
+            sumoflines_calc, profile_S_T, frac_left, frac_right, wstep_correction
         ):
-            # if radis.config[
-            #     "DEBUG_MODE"
-            # ]:  #  @dev: used to test the indices used in the multigrid boundary corrections
-            #     sumoflines_calc_0 = sumoflines_calc.copy()
-            sumoflines_calc[
-                np.r_[
-                    I_low_in_left[i] : I_low_nearest_left[i] + 1,
-                    I_high_nearest_left[i] : I_high_in_left[i] + 1,
-                ]
-            ] += (
-                fr_left * profS
-            )
-            sumoflines_calc[
-                np.r_[
-                    I_low_in_right[i] : I_low_nearest_right[i] + 1,
-                    I_high_nearest_right[i] : I_high_in_right[i] + 1,
-                ]
-            ] += (
-                fr_right * profS
-            )
-            # Fix boundary effects for hollow ranges :
-            # Fix linear interpolation effect, and add all of the linestrength
-            # to the boundary
-            # Model used : rather than distribute linearly over W, W+wstep with fractions fr_left, fr_right,
-            # we distribute over W, W+"wstep_narrower_grid" with fractions fr_left', fr_right'
-            # fr_left' = fr_left  * "wstep_narrower_grid"/wstep
-            # fr_right' = fr_right * "wstep_narrower_grid"/wstep
-            if gridnb > 0:
+            """
+            Fix boundary effects for hollow ranges :
+            Fix linear interpolation effect, and add all of the linestrength
+            to the boundary
+            Model used : rather than distribute linearly over W, W+wstep with fractions fr_left, fr_right,
+            we distribute over W, W+"wstep_narrower_grid" with fractions fr_left', fr_right'
+            ::
+
+                fr_left' = fr_left  * "wstep_narrower_grid"/wstep
+                fr_right' = fr_right * "wstep_narrower_grid"/wstep
+            """
+            for i in range(len(profile_S_T)):
+                center_index_i = len(profile_S_T[i]) // 2
+
                 # if radis.config["DEBUG_MODE"]:
                 #     assert np.isclose(
                 #         (sumoflines_calc - sumoflines_calc_0)[
@@ -2157,16 +2161,14 @@ class BroadenFactory(BaseFactory):
                 #         fr_right * profS[len(profS) // 2 - 1],
                 #     )  # used to check indices; debug mode
                 sumoflines_calc[I_low_nearest_left[i] + 1] -= (
-                    fr_right
-                    * profS[len(profS) // 2 - 1]
-                    * (wstep - self._wstep_multigrid[gridnb - 1])
-                    / wstep
+                    frac_right[i]
+                    * profile_S_T[i][center_index_i - 1]
+                    * wstep_correction
                 )
                 sumoflines_calc[I_low_nearest_left[i]] += (
-                    fr_right
-                    * profS[len(profS) // 2 - 1]
-                    * (wstep - self._wstep_multigrid[gridnb - 1])
-                    / wstep
+                    frac_right[i]
+                    * profile_S_T[i][center_index_i - 1]
+                    * wstep_correction
                 )
                 # if radis.config["DEBUG_MODE"]:
                 #     assert np.isclose(
@@ -2177,19 +2179,24 @@ class BroadenFactory(BaseFactory):
                 #         + fr_left * profS[len(profS) // 2 + 1],
                 #     )  # used to check indices; debug mode
                 sumoflines_calc[I_high_nearest_left[i] + 1] -= (
-                    fr_right * profS[len(profS) // 2]
-                    + fr_left
-                    * profS[len(profS) // 2 + 1]
-                    * (wstep - self._wstep_multigrid[gridnb - 1])
-                    / wstep
+                    frac_right[i] * profile_S_T[i][center_index_i]
+                    + frac_left[i]
+                    * profile_S_T[i][center_index_i + 1]
+                    * wstep_correction
                 )
                 sumoflines_calc[I_high_nearest_left[i] + 2] += (
-                    fr_right * profS[len(profS) // 2]
-                    + fr_left
-                    * profS[len(profS) // 2 + 1]
-                    * (wstep - self._wstep_multigrid[gridnb - 1])
-                    / wstep
+                    frac_right[i] * profile_S_T[i][center_index_i]
+                    + frac_left[i]
+                    * profile_S_T[i][center_index_i + 1]
+                    * wstep_correction
                 )
+            return sumoflines_calc
+
+        if gridnb > 0:
+            wstep_correction = (wstep - self._wstep_multigrid[gridnb - 1]) / wstep
+            sumoflines_calc = fix_boundary_effects(
+                sumoflines_calc, profile_S.T, frac_left, frac_right, wstep_correction
+            )
 
         self.profiler.stop("aggregate__lines_multigrid", "Aggregate lines")
 

@@ -1998,8 +1998,6 @@ class SpectrumFactory(BandFactory):
                     f"Sparsity (grid points/lines) = {sparsity:.1f}. Set sparse_ldm to {self.params['sparse_ldm']}"
                 )
 
-        self.profiler.stop("generate_wavenumber_arrays", "Generated Wavenumber Arrays")
-
         if radis.config["DEBUG_MODE"]:
             if not self._multisparsegrid:
                 assert (
@@ -2015,6 +2013,8 @@ class SpectrumFactory(BandFactory):
                         assert (
                             wavenumber_calc[woutrange[0] : woutrange[1]] == wavenumber
                         ).all()
+
+        self.profiler.stop("generate_wavenumber_arrays", "Generated Wavenumber Arrays")
 
         return
 
