@@ -112,7 +112,7 @@ def scale_to(a, b, k=1):
 
 
 def array_allclose(a, b, rtol=1e-5, atol=1e-8, equal_nan=True):
-    """Returns wheter a and b are all close (element wise). If not the same
+    """Returns whether a and b are all close (element wise). If not the same
     size, returns False (instead of crashing like the numpy version). Cf
     numpy.allclose docs for more information.
 
