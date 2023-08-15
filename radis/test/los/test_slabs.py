@@ -121,7 +121,7 @@ def test_equilibrium_condition():
 def test_serial_slabs_transmittance(
     verbose=True, plot=False, warnings=True, debug=False, *args, **kwargs
 ):
-    """Add some slabs in serie, ensure that overall transmittance decreases
+    """Add some slabs in series, ensure that overall transmittance decreases
     Also check that some quantities are propagated (like path length?)
 
     """
@@ -168,7 +168,7 @@ def test_serial_slabs_transmittance(
 def test_serial_slabs_radiance(
     verbose=True, plot=False, warnings=True, debug=False, *args, **kwargs
 ):
-    """Add some slabs in serie under optically thin conditions, ensures
+    """Add some slabs in series under optically thin conditions, ensures
     that radiance is about the sum of all.
     """
 
