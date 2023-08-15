@@ -2670,7 +2670,7 @@ class DatabankLoader(object):
             parsum.at_noneq(Tvib, Trot)
 
         Partition functions are calculated from energy levels. Populations for
-        all levels (independently of the spectral range) can optionaly be
+        all levels (independently of the spectral range) can optionally be
         calculated with argument ``update_populations=True``  (used to export
         populations of all states in Spectrum object)
 
