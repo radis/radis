@@ -1380,7 +1380,7 @@ class SpectrumFactory(BandFactory):
         def update_plot(val):
             # TODO : refactor this function and the update() mechanism. Ensure conditions are correct.
             # Update conditions
-            # ... at equilibirum, temperatures remain equal :
+            # ... at equilibrium, temperatures remain equal :
             s.conditions["Tvib"] = s.conditions["Tgas"]
             s.conditions["Trot"] = s.conditions["Tgas"]
             s.conditions["slit_function"] = s.conditions["slit_FWHM"]

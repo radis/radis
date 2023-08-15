@@ -85,7 +85,7 @@ class LevelsList(object):
         Parameters
         ----------
         bands: dict of bands
-            bands are Spectrum objects calculated at equilibrium or non-equilibrim.
+            bands are Spectrum objects calculated at equilibrium or non-equilibrium.
             Tgas, or (Tvib, Trot) must be given and the same in all bands conditions.
 
         """

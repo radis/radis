@@ -441,7 +441,7 @@ def test_calc_spectrum_overpopulations(
 #        fig = plt.figure(fig_prefix + "Compare all calc methods")
 #        s_bd.plot(nfig=fig.number, color="b", lw=5, label="from bands code")
 #        s_nq.plot(nfig=fig.number, lw=3, label="non eq code")
-#        s_eq.plot(nfig=fig.number, lw=2, color="r", label="equilibrum code")
+#        s_eq.plot(nfig=fig.number, lw=2, color="r", label="equilibrium code")
 #        plt.legend()
 #
 #    assert np.isclose(s_bd.get_power(), s_nq.get_power(), rtol=rtol)
@@ -546,7 +546,7 @@ def test_all_calc_methods_CO2pcN(
         fig = plt.figure(fig_prefix + "Compare all calc methods")
         s_bd.plot(nfig=fig.number, color="b", lw=5, label="from bands code")
         s_nq.plot(nfig=fig.number, lw=3, label="non eq code")
-        s_eq.plot(nfig=fig.number, lw=2, color="r", label="equilibrum code")
+        s_eq.plot(nfig=fig.number, lw=2, color="r", label="equilibrium code")
         plt.legend()
 
     assert np.isclose(
