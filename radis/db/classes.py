@@ -783,7 +783,7 @@ class ElectronicState(Isotope):
             )
 
         if Erovib is not None:
-            # overwrite energy calculation
+            # override energy calculation
             self.Erovib = Erovib
             self.Ehaj = Ehaj
             if self.verbose >= 2:
