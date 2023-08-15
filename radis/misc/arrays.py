@@ -157,23 +157,23 @@ def arange_len(wmin, wmax, wstep) -> int:
 
 
 def calc_diff(t1, v1, t2, v2):
-    """Substract two vectors that may have slightly offset abscisses
+    """Substract two vectors that may have slightly offset abscissa
     interpolating the correct values.
 
     Parameters
     ----------
 
     t1, v1: array_like
-        first vector and its abscisses
+        first vector and its abscissa
     t2, v2: array_like
-        second vector and its abscisses
+        second vector and its abscissa
 
 
     Returns
     -------
 
     tdiff, vdiff: array_like
-        substracted vector and its abscisses
+        substracted vector and its abscissa
     """
 
     t1, v1, t2, v2 = list(map(np.array, (t1, v1, t2, v2)))
