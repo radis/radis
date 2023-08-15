@@ -487,7 +487,7 @@ class SpectrumFactory(BandFactory):
 
         self._sparse_ldm = radis.config[
             "SPARSE_WAVERANGE"
-        ]  # target value (can be 'auto'), stored for next calculatinos
+        ]  # target value (can be 'auto'), stored for next calculations
         self.params["sparse_ldm"] = radis.config[
             "SPARSE_WAVERANGE"
         ]  # value evaluated at each new spectrum calculation

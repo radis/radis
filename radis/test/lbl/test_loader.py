@@ -156,7 +156,7 @@ def test_ignore_irrelevant_files(*args, **kwargs):
 
 @pytest.mark.fast
 def test_custom_abundance(verbose=True, plot=False, *args, **kwargs):
-    """Test calculatinos with custom abundances
+    """Test calculations with custom abundances
 
     set the terrestrial abundance to False to
     force computation of linestrength from Einstein coefficients instead

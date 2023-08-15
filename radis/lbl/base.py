@@ -97,7 +97,7 @@ from radis.spectrum.utils import print_conditions
 class BaseFactory(DatabankLoader):
 
     units = {
-        "waverange": "cm-1",  # should be "cm-1", "nm" [assumes in air], "nm_vac" [in vacuum]. Note that Radis caluclations will still happen in cm-1, units are converted at the export only.
+        "waverange": "cm-1",  # should be "cm-1", "nm" [assumes in air], "nm_vac" [in vacuum]. Note that Radis calculations will still happen in cm-1, units are converted at the export only.
         "absorbance": "",
         "abscoeff": "cm-1",
         "abscoeff_continuum": "cm-1",
