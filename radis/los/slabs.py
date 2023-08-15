@@ -280,7 +280,7 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
                 conditions[cond] = s.conditions[cond] + sn.conditions[cond]
                 if cond in s.cond_units and cond in sn.cond_units:
                     assert s.cond_units == sn.cond_units
-        # ... for the parmaeters below, if N/A, remove the value
+        # ... for the parameters below, if N/A, remove the value
         for cond in ["default_output_unit"]:
             if cond in conditions and conditions[cond] == "N/A":
                 conditions.pop(cond)
@@ -686,7 +686,7 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
             conditions = intersect(conditions, s.conditions)
             cond_units = intersect(cond_units, s.cond_units)
             # units = intersect(units0, s.units)  # we're actually using [slabs0].units instead
-        # ... for the parmaeters below, if N/A, remove the value
+        # ... for the parameters below, if N/A, remove the value
         for cond in ["default_output_unit"]:
             if cond in conditions and conditions[cond] == "N/A":
                 conditions.pop(cond)

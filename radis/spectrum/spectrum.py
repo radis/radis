@@ -4689,7 +4689,7 @@ class Spectrum(object):
         Other Parameters
         ----------------
         force: boolean
-            By default, normalizing some parametres such as transmittance
+            By default, normalizing some parameters such as transmittance
             is forbidden because considered non-physical. Use force=True
             if you really want to.
 
