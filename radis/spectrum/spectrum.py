@@ -5179,7 +5179,7 @@ class Spectrum(object):
         raise ArithmeticError(
             "A Spectrum cannot be evaluated as a boolean. "
             + "You may have tried using syntax such as `s1>s2>s3` "
-            + "which Python interpets as `s1>s2 and s2>s3`. "
+            + "which Python interprets as `s1>s2 and s2>s3`. "
             + "Use `(s1>s2)>s3)` or SerialSlabs(s1, s2, s3) instead."
         )
 
