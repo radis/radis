@@ -832,7 +832,7 @@ class DatabankLoader(object):
             calculations. If ``'noneq'``, also load the columns required for
             non-LTE calculations. See :data:`~radis.lbl.loader.drop_all_but_these`.
             If ``'all'``, load everything. Note that for performances, it is
-            better to load only certain columsn rather than loading them all
+            better to load only certain columns rather than loading them all
             and dropping them with ``drop_columns``.
             Default ``'equilibrium'``.
 
@@ -1015,7 +1015,7 @@ class DatabankLoader(object):
             calculations. If ``'noneq'``, also load the columns required for
             non-LTE calculations. See :data:`~radis.lbl.loader.drop_all_but_these`.
             If ``'all'``, load everything. Note that for performances, it is
-            better to load only certain columsn rather than loading them all
+            better to load only certain columns rather than loading them all
             and dropping them with ``drop_columns``.
             If ``diluent`` then all additional columns required for calculating spectrum
             in that diluent is loaded.
@@ -1544,7 +1544,7 @@ class DatabankLoader(object):
             calculations. If ``'noneq'``, also load the columns required for
             non-LTE calculations. See :data:`~radis.lbl.loader.drop_all_but_these`.
             If ``'all'``, load everything. Note that for performances, it is
-            better to load only certain columsn rather than loading them all
+            better to load only certain columns rather than loading them all
             and dropping them with ``drop_columns``.
             Default ``'equilibrium'``.
 
@@ -2145,7 +2145,7 @@ class DatabankLoader(object):
             calculations. If ``'noneq'``, also load the columns required for
             non-LTE calculations. See :data:`~radis.lbl.loader.drop_all_but_these`.
             If ``'all'``, load everything. Note that for performances, it is
-            better to load only certain columsn rather than loading them all
+            better to load only certain columns rather than loading them all
             and dropping them with ``drop_columns``.
             Default ``'equilibrium'``.
 

@@ -1698,7 +1698,7 @@ class BaseFactory(DatabankLoader):
 
         if "id" in df.columns:
             raise NotImplementedError(
-                "'id' still in DataFrame columsn. Is there more than 1 molecule ?"
+                "'id' still in DataFrame columns. Is there more than 1 molecule ?"
             )
         if "id" in df.attrs:
             molecule = df.attrs["id"]
