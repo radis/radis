@@ -3252,7 +3252,7 @@ class BaseFactory(DatabankLoader):
         # TODO: remove useless columns in df1 to save memory
         # Note @EP : with Vaex; the selection should be updated here
 
-        # Ensures abundance, molar mass and partition functions are transfered
+        # Ensures abundance, molar mass and partition functions are transferred
         # (needed if they are attributes and not isotopes)
         transfer_metadata(df, self.df1, [k for k in df_metadata if k in df.attrs])
         # assert len(self.df1.attrs) > 0
