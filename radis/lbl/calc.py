@@ -454,7 +454,7 @@ def calc_spectrum(
             molecule_reference_set, reference_name, argument, argument_name
         )
 
-    # ... Now we are sure there are no contradctions. Just ensure we have molecules:
+    # ... Now we are sure there are no contradictions. Just ensure we have molecules:
     if molecule_reference_set is None:
         raise ValueError(
             "Please enter the molecule(s) to calculate in the `molecule=` argument or as a dictionary in the following: {0}".format(
