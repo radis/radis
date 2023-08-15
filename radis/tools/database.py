@@ -271,7 +271,7 @@ def _format_to_jsondict(s: Spectrum, discard, compress, verbose=True):
                 )
             del sjson["conditions"][k]
 
-    # if compress>=2, remove unecessary spectral quantities (that can be recomputed
+    # if compress>=2, remove unnecessary spectral quantities (that can be recomputed
     # from the rest)
     if compress >= 2:
         sjson["_q"] = sjson["_q"].copy()

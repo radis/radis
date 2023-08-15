@@ -1444,7 +1444,7 @@ class DatabankLoader(object):
                     + "in fetch_databank"
                 )
 
-        self._remove_unecessary_columns(df)
+        self._remove_unnecessary_columns(df)
 
         return
 
@@ -1533,7 +1533,7 @@ class DatabankLoader(object):
             is dropped. If ``'auto'``, parameters considered useless
             are dropped. See :data:`~radis.lbl.loader.drop_auto_columns_for_dbformat`
             and :data:`~radis.lbl.loader.drop_auto_columns_for_levelsfmt`.
-            If ``'all'``, parameters considered unecessary for equilibrium calculations
+            If ``'all'``, parameters considered unnecessary for equilibrium calculations
             are dropped, including all information about lines that could be otherwise
             available in :py:meth:`~radis.spectrum.spectrum.Spectrum` method.
             Warning: nonequilibrium calculations are not possible in this mode.
@@ -2135,7 +2135,7 @@ class DatabankLoader(object):
             is dropped. If ``'auto'``, parameters considered useless
             are dropped. See :data:`~radis.lbl.loader.drop_auto_columns_for_dbformat`
             and :data:`~radis.lbl.loader.drop_auto_columns_for_levelsfmt`.
-            If ``'all'``, parameters considered unecessary for equilibrium calculations
+            If ``'all'``, parameters considered unnecessary for equilibrium calculations
             are dropped, including all information about lines that could be otherwise
             available in :py:meth:`~radis.spectrum.spectrum.Spectrum` method.
             Warning: nonequilibrium calculations are not possible in this mode.
@@ -2453,12 +2453,12 @@ class DatabankLoader(object):
                 )
             )
 
-        self._remove_unecessary_columns(df)
+        self._remove_unnecessary_columns(df)
 
         return df
 
-    def _remove_unecessary_columns(self, df):
-        """Remove unecessary columns and add values as attributes
+    def _remove_unnecessary_columns(self, df):
+        """Remove unnecessary columns and add values as attributes
 
         Returns
         -------

@@ -1473,7 +1473,7 @@ def import_experimental_slit(
         # note: if auto_crop is true we may be adding zeros just to remove them
         # right way. Fix that. Someday.
 
-    # remove unecessary zeros
+    # remove unnecessary zeros
     if auto_crop:  # (note that we know I_slit has zeros on each side already)
         w_slit, I_slit = crop_slit(w_slit, I_slit, verbose=verbose)
 

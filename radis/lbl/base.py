@@ -2986,7 +2986,7 @@ class BaseFactory(DatabankLoader):
                             assert "viblvl" in list(energies.keys())
                             # only get one entry per vibrational level
                             pop = energies.drop_duplicates("viblvl")  # is a copy
-                            # remove unecessary keys (all rotational specific)
+                            # remove unnecessary keys (all rotational specific)
                             for k in ["E", "j", "gj", "Erot", "grot", "n"]:
                                 try:
                                     del pop[k]

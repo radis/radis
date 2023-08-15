@@ -336,7 +336,7 @@ def fit_spectrum(
 
         s = generate_spectrum(fit_values)
 
-        # Delete unecessary variables (for a faster resampling)
+        # Delete unnecessary variables (for a faster resampling)
         for var in [k for k in s._q.keys() if k not in [fit_variable, "wavespace"]]:
             del s._q[var]
 
