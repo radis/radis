@@ -583,7 +583,7 @@ def fit_spectrum(
         a dict object, containing some preference properties of fitting process.
     input_file : str
         path to the JSON input file from the script calling it, by default, None. If this parameter
-        is defined, it means user uses JSON file for inputing everything, and so will discard all
+        is defined, it means user uses JSON file for inputting everything, and so will discard all
         other input parameters. For example:: "./test_dir/CO2_measured_spectrum_4-5um.json"
 
     Other parameters
