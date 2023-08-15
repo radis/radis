@@ -706,7 +706,7 @@ or ``db_use_cached=False, lvl_use_cached=False`` in :py:class:`~radis.lbl.factor
 
 You can also use :py:meth:`~radis.lbl.loader.DatabankLoader.init_databank` instead of the default
 :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank`. The former will save the line database parameter,
-and only load them if needed. This is useful if used in conjonction with
+and only load them if needed. This is useful if used in conjunction with
 :py:meth:`~radis.lbl.loader.DatabankLoader.init_database`, which will retrieve precomputed spectra from
 a database if they exist.
 

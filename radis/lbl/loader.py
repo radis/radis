@@ -844,7 +844,7 @@ class DatabankLoader(object):
 
         Notes
         -----
-        Useful in conjonction with :meth:`~radis.lbl.loader.DatabankLoader.init_database`
+        Useful in conjunction with :meth:`~radis.lbl.loader.DatabankLoader.init_database`
         when dealing with large line databanks when some of the spectra may have
         been precomputed in a spectrum database (:class:`~radis.tools.database.SpecDatabase`)
         Note that any previously loaded databank is discarded on the method call
