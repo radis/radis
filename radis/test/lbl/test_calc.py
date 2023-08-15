@@ -77,7 +77,7 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
 
     Starting from RADIS 1.0.1, the test is run on [HITRAN-2020]_, which
     is not valid for these temperatures but can be more conveniently
-    downloaded automatically and thus executed everytime with `Travis CI <https://travis-ci.com/radis/radis>`_
+    downloaded automatically and thus executed every time with `Travis CI <https://travis-ci.com/radis/radis>`_
 
     (we also expect the test to be much faster than above, but that's just
     because the database is smaller!)
@@ -258,7 +258,7 @@ def test_calc_spectrum_overpopulations(
 
     Starting from RADIS 1.0.1, the test is run on [HITRAN-2020]_, which
     is not valid for these temperatures but can be more conveniently
-    downloaded automatically and thus executed everytime with `Travis CI <https://travis-ci.com/radis/radis>`_
+    downloaded automatically and thus executed every time with `Travis CI <https://travis-ci.com/radis/radis>`_
 
     """
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
@@ -580,7 +580,7 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **k
 
     Starting from RADIS 1.0.1, the test is run on [HITRAN-2020]_, which
     is not valid for these temperatures but can be more conveniently
-    downloaded automatically and thus executed everytime with `Travis CI <https://travis-ci.com/radis/radis>`_
+    downloaded automatically and thus executed every time with `Travis CI <https://travis-ci.com/radis/radis>`_
 
     """
 

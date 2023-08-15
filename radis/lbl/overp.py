@@ -533,7 +533,7 @@ class LevelsList(object):
         #            for br in bands:
         #                pop_correction[br] = exp(-E_bands[br]*hc_k/Tvib)/exp(-E_bands[br]*hc_k/Tvib_ref)
 
-        # Recalculate populations from reference everytime
+        # Recalculate populations from reference every time
         vib_levels = self.vib_levels
 
         # Recalculate partition function
