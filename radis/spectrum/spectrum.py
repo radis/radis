@@ -4013,7 +4013,7 @@ class Spectrum(object):
         except MemoryError:
             raise MemoryError(
                 "during copy of Spectrum. If you don't need them, "
-                + "droping lines before copying may save a lot of space: "
+                + "dropping lines before copying may save a lot of space: "
                 + "del s.lines ; or, use copy_lines=False"
             )
 
