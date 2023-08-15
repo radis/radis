@@ -284,7 +284,7 @@ class Spectrum(object):
 
     Wavebase:
 
-        quantites are stored either in wavenum or wavelength base, but this doesnt
+        quantities are stored either in wavenum or wavelength base, but this doesnt
         matter as they are retrieved / plotted with the
         :meth:`~radis.spectrum.spectrum.Spectrum.get` and :meth:`~radis.spectrum.spectrum.Spectrum.plot`
         methods which have units as input arguments
