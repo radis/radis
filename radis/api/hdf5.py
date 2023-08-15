@@ -69,12 +69,12 @@ class HDF5Manager(object):
 
 class DataFileManager(object):
     def __init__(self, engine=None):
-        """Class to handle all DataFrame-librairies with one common API
+        """Class to handle all DataFrame-libraries with one common API
 
         All functions may not be fully implemented, will raise a NotImplementedError
         if that's not the case.
 
-        Librairies ::
+        Libraries ::
 
             'vaex'     > HDF5,  column-based
             'pytables' > Pandas's HDF5,  row-based
