@@ -299,7 +299,7 @@ default_warning_status = {
     "GaussianBroadeningWarning": "once",  # once per Spectrum calculation
     "CollisionalBroadeningWarning": "once",  # once per Spectrum calculation
     "VoigtBroadeningWarning": "once",  # once per Spectrum calculation
-    # see also self.misc.warning_broadening_threshold for the treshold value
+    # see also self.misc.warning_broadening_threshold for the threshold value
     "LinestrengthCutoffWarning": "warn",
     "MemoryUsageWarning": "warn",
     "EmptyDatabaseWarning": "warn",

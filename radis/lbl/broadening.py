@@ -1009,7 +1009,7 @@ class BroadenFactory(BaseFactory):
 
         """
         # TODO : make it a Method of a PhysicalHypothesis class, with a
-        # WarningTreshold and an ErrorThreshold ?
+        # WarningThreshold and an ErrorThreshold ?
 
         # TODO: thresholds depend whether we're computing Transmittance/optically thin emission,
         # for a homogeneous slab, or self-absorbed radiance combined with other slabs.

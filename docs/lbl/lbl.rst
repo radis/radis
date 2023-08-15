@@ -651,7 +651,7 @@ Check the [RADIS-2018]_ article for a quantitative assessment of the influence o
 Other strategies are possible, such as calculating the weak lines in a pseudo-continuum. This can
 result in orders of magnitude improvements in computation performances.:
 
-- The ``pseudo_continuum_threshold`` defines which treshold should be used.
+- The ``pseudo_continuum_threshold`` defines which threshold should be used.
 
 See the :py:func:`~radis.test.lbl.test_broadening.test_abscoeff_continuum` case in ``radis/test/lbl/test_broadening.py``
 for an example, which can be run with (you will need the CDSD-HITEMP database installed) ::

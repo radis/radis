@@ -256,11 +256,11 @@ def find_nearest(array, searched, return_bool=False):
     return out
 
 
-def find_first(arr, treshold):
+def find_first(arr, threshold):
     """Return the index of the first element of the array arr whose value is
-    more than the treshold."""
+    more than the threshold."""
 
-    return np.argmax(arr > treshold)
+    return np.argmax(arr > threshold)
 
 
 def autoturn(data, key=-1):
