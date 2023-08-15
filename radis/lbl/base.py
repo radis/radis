@@ -188,18 +188,18 @@ class BaseFactory(DatabankLoader):
     #
     # =========================================================================
 
-    def print_conditions(self, preprend=None):
+    def print_conditions(self, prepend=None):
         """Prints all physical / computational parameters. These are also
         stored in each result Spectrum.
 
         Parameters
         ----------
-        preprend: str
+        prepend: str
             just to text to display before printing conditions
         """
 
-        if preprend:
-            print(preprend)
+        if prepend:
+            print(prepend)
 
         conditions = self.get_conditions()
 
