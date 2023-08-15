@@ -1883,7 +1883,7 @@ class SpecDatabase(SpecList):
     *input for :class:`~joblib.parallel.Parallel` loading of database*
 
     nJobs: int
-        Number of processors to use to load a database (usefull for big
+        Number of processors to use to load a database (useful for big
         databases). BE CAREFULL, no check is done on processor use prior
         to the execution ! Default ``-2``: use all but 1 processors.
         Use ``1`` for single processor.
