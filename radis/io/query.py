@@ -71,7 +71,7 @@ def fetch_astroquery(
         :py:attr:`~astroquery.query.BaseQuery.cache_location`, that would match
         the requirements. If not found, downloads it and saves the line dataframe
         as a ``.h5`` file in the Astroquery.
-        If ``'regen'``, delete existing cache file to regerenate it.
+        If ``'regen'``, delete existing cache file to regenerate it.
     expected_metadata: dict
         if ``cache=True``, check that the metadata in the cache file correspond
         to these attributes. Arguments ``molecule``, ``isotope``, ``wmin``, ``wmax``
