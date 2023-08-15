@@ -577,6 +577,7 @@ if (
     False
 ):  # EP 15/08 : as of manual benchmark, Cython version is 10x slower than numba version. Deactivated
     import radis_cython_extensions as rcx
+    # TODO : remove fully?
 
     aggregate_at_indices = rcx.aggregate_at_indices_64
 # aggregate_at_indices = numpy_aggregate_at_indices
