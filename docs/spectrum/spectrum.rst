@@ -331,7 +331,7 @@ Get spectral arrays
 Spectral Arrays of a Spectrum object can be stored in arbitrary
 wavespace (wavenumbers, wavelengths in air, or wavelengths in vacuum) and arbitrary units.
 
-Therefore, it is recommendeded to use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get`
+Therefore, it is recommended to use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get`
 method to retrieve the quantity un the units you want::
 
     w, I = s.get('transmittance_noslit', wunit='cm-1')
