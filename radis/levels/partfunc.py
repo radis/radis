@@ -1151,6 +1151,7 @@ class PartFuncKurucz(RovibParFuncTabulator):
     def __init__(self,species):
         super(PartFuncKurucz, self).__init__()
         # Load data in constructor
+        self.species=species
         path_partfn = join(getProjectRoot(), "db", "kuruczpartfn.txt")
         pfdat = pd.read_csv(path_partfn, sep="\s+", header=None)
         self.pfdat = pfdat.set_index(0)
@@ -1171,7 +1172,7 @@ class PartFuncKurucz(RovibParFuncTabulator):
     def _at(self, T):
         # Interpolate to find the partition function at the desired temperature
         if T<10**(-5) or T>10**4:
-            raise ValueError(f"The temperature {T} is outside the accepted rannge [{10**(-5)}, {10**(4)}] K")
+            raise ValueError(f"The temperature {T} is outside the tabulated range of the Kurucz partition functions [{10**(-5)}, {10**(4)}] K")
         try:
             return np.interp(T, self.pfT_values, self.pf_values)
         except KeyError:
