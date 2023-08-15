@@ -1765,7 +1765,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         if Jmax is None:
             Jmax = ElecState.Jmax
 
-        #        if vmax is None: vmax = 100    # just to prevent infinite loop. Ediss should be limitant
+        #        if vmax is None: vmax = 100    # just to prevent infinite loop. Ediss should be limited
         if Jmax is None:
             Jmax = 1000
 
