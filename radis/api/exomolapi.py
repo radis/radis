@@ -543,7 +543,7 @@ def read_broad(broadf):
 
 
 def check_bdat(bdat):
-    """cheking codes in .broad
+    """checking codes in .broad
     Args:
        bdat: exomol .broad data given by exomolapi.read_broad
     Returns:
