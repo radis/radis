@@ -497,7 +497,7 @@ class Spectrum(object):
 
         # Finally, add our attributes
         self.conditions = self.c = conditions
-        """ dict: computation conditions, or experimetnal parameters, or
+        """ dict: computation conditions, or experimental parameters, or
         any metadata you need to store with the Spectrum object.
         """
         self.populations = populations
