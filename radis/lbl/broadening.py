@@ -2106,7 +2106,7 @@ class BroadenFactory(BaseFactory):
                 for groupby_param, group in dgb:
                     truncation_pts = int(self.params.truncation // self.params.wstep)
                     # note: truncation can be unique for each point of the LDM basis
-                    # (allow to have line-dependant truncatino, at least as all
+                    # (allow to have line-dependant truncation, at least as all
                     # lines with same truncation are grouped together in the LDM basis)
 
                     ki0 = group.ki0.values

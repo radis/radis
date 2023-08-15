@@ -511,7 +511,7 @@ def test_truncations_and_neighbour_lines(*args, **kwargs):
     So far: test that all functions work
     More assertion could be added.
     """
-    # TODO  . Check on databases with one line that truncatino is achieved, etc.
+    # TODO  . Check on databases with one line that truncation is achieved, etc.
 
     #%% Test truncation > lines
 
