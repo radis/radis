@@ -104,7 +104,7 @@ convenience function::
     s = Spectrum.from_array(w, T, 'transmittance_noslit',
                                wunit='nm', unit='') # adimensioned
 
-Dimensionned arrays can also be used directly ::
+Dimensioned arrays can also be used directly ::
 
     import astropy.units as u
     w = np.linspace(200, 300) * u.nm
@@ -331,7 +331,7 @@ Get spectral arrays
 Spectral Arrays of a Spectrum object can be stored in arbitrary
 wavespace (wavenumbers, wavelengths in air, or wavelengths in vacuum) and arbitrary units.
 
-Therefore, it is recommendeded to use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get`
+Therefore, it is recommended to use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get`
 method to retrieve the quantity un the units you want::
 
     w, I = s.get('transmittance_noslit', wunit='cm-1')
@@ -572,7 +572,7 @@ How to modify a Spectrum object?
 Calculate missing quantities
 ----------------------------
 
-Some spectral arrays can be infered from quantities stored in the Spectrum
+Some spectral arrays can be inferred from quantities stored in the Spectrum
 if enough conditions are given. For instance, transmittance can be recomputed
 from the spectral absorption coefficient if the path length is stored in the
 conditions.
@@ -696,7 +696,7 @@ For instance, remove a constant baseline in a given unit::
 
     s -= 0.1 * u.Unit('W/cm2/sr/nm')
 
-The :py:meth:`~radis.spectrum.spectrum.Spectrum.max` function returns a dimensionned
+The :py:meth:`~radis.spectrum.spectrum.Spectrum.max` function returns a dimensioned
 value, therefore it can be used to normalize a spectrum directly :  ::
 
     s /= s.max()
@@ -771,7 +771,7 @@ for the first command that allows it. i.e ::
 Remove a baseline
 -----------------
 
-Either use the :py:func:`~radis.spectrum.operations.add_constant` mentionned
+Either use the :py:func:`~radis.spectrum.operations.add_constant` mentioned
 above, which is implemented with the ``-`` operator::
 
     s2 = s - 0.1
@@ -841,7 +841,7 @@ to simply compare the spectra themselves, or even a particular quantity like
     s1.compare_with(s2, spectra_only=True)                    # compares all spectral arrays
     s1.compare_with(s2, spectra_only='transmittance_noslit')  # compares transmittance only
 
-The aforementionned methods will return a boolean array (True/False). If you
+The aforementioned methods will return a boolean array (True/False). If you
 need the difference, or ratio, or distance, between your two spectra, or simply
 want to plot the difference, you can use one of the predefined functions
 :func:`~radis.spectrum.compare.get_diff`, :func:`~radis.spectrum.compare.get_ratio`,

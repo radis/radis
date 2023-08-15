@@ -186,9 +186,9 @@ class HITEMPDatabaseManager(DatabaseManager):
             #         return [td.get_text(strip=True) for td in tr.find_all(coltag)]
             #     rows = []
             #     trs = table.find_all('tr')
-            #     headerow = rowgetDataText(trs[0], 'th')
-            #     if headerow: # if there is a header row include first
-            #         rows.append(headerow)
+            #     headerrow = rowgetDataText(trs[0], 'th')
+            #     if headerrow: # if there is a header row include first
+            #         rows.append(headerrow)
             #         trs = trs[1:]
             #     for tr in trs: # for every table row
             #         rows.append(rowgetDataText(tr, 'td') ) # data row

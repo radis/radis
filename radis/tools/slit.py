@@ -613,7 +613,7 @@ def convolve_with_slit(
     Implementation of :func:`~radis.tools.slit.convolve_with_slit` is done in 5 steps:
 
     - Check input slit function: compare input slit spectral range to spectrum spectral range
-      if ranges are comparable, check FHWM and send a warning.
+      if ranges are comparable, check FWHM and send a warning.
     - Interpolate the slit function on the spectrum grid, resample it if not
       evenly spaced (in order to match physical distances)
     - Check slit aspect, plot slit if asked for
@@ -1473,7 +1473,7 @@ def import_experimental_slit(
         # note: if auto_crop is true we may be adding zeros just to remove them
         # right way. Fix that. Someday.
 
-    # remove unecessary zeros
+    # remove unnecessary zeros
     if auto_crop:  # (note that we know I_slit has zeros on each side already)
         w_slit, I_slit = crop_slit(w_slit, I_slit, verbose=verbose)
 
@@ -1530,7 +1530,7 @@ def triangular_slit(
         wavelength step
 
     center: (nm)
-        center wavelength for the wavelength axs of the slit function
+        center wavelength for the wavelength axis of the slit function
 
     norm_by: ``'area'``, ``'max'``
         normalisation type. ``'area'`` conserves energy. ``'max'`` is what is
@@ -1630,7 +1630,7 @@ def triangular_slit(
     return w, I
 
 
-# trapezoidal instrumental broadening function of base base nm and top top nm
+# trapezoidal instrumental broadening function of base (nm) and top (nm)
 
 
 def trapezoidal_slit(
@@ -1660,7 +1660,7 @@ def trapezoidal_slit(
     Other Parameters
     ----------------
     center: (nm)
-        center wavelength for the wavelength axs of the slit function
+        center wavelength for the wavelength axis of the slit function
     norm_by: ``'area'``, ``'max'``
         normalisation type. ``'area'`` conserves energy. ``'max'`` is what is
         done in Specair and changes units. Default ``'area'``
@@ -1791,7 +1791,7 @@ def gaussian_slit(
     Other Parameters
     ----------------
     center: (nm)
-        center wavelength for the wavelength axs of the slit function
+        center wavelength for the wavelength axis of the slit function
     norm_by: ``'area'``, ``'max'``
         normalisation type. ``'area'`` conserves energy. ``'max'`` is what is
         done in Specair and changes units. Default ``'area'``

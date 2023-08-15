@@ -512,7 +512,7 @@ def spectrum_refinement(s_data, conditions, verbose) -> Union[Spectrum, dict]:
     if verbose:
         print(f"\nAcquired spectral quantity '{fit_var}' from the spectrum.")
 
-    # Remove NaN values. A wise man once said, "Nan is good but only in India"
+    # Remove NaN values. A wise man once said, "NaN is good but only in India"
 
     s_data_mtr = np.vstack(
         (s_data_wav, s_data_val)
@@ -583,7 +583,7 @@ def fit_spectrum(
         a dict object, containing some preference properties of fitting process.
     input_file : str
         path to the JSON input file from the script calling it, by default, None. If this parameter
-        is defined, it means user uses JSON file for inputing everything, and so will discard all
+        is defined, it means user uses JSON file for inputting everything, and so will discard all
         other input parameters. For example:: "./test_dir/CO2_measured_spectrum_4-5um.json"
 
     Other parameters

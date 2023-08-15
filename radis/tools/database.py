@@ -271,7 +271,7 @@ def _format_to_jsondict(s: Spectrum, discard, compress, verbose=True):
                 )
             del sjson["conditions"][k]
 
-    # if compress>=2, remove unecessary spectral quantities (that can be recomputed
+    # if compress>=2, remove unnecessary spectral quantities (that can be recomputed
     # from the rest)
     if compress >= 2:
         sjson["_q"] = sjson["_q"].copy()
@@ -497,7 +497,7 @@ def _json_to_spec(sload, file="") -> Spectrum:
     Parameters
     ----------
     sload: dict
-        Spectrum object content stored under a dictonary
+        Spectrum object content stored under a dictionary
 
     Returns
     -------
@@ -514,7 +514,7 @@ def _json_to_spec(sload, file="") -> Spectrum:
         }
         warn(
             "File {0}".format(basename(file))
-            + " has a deprecrated structure ("
+            + " has a deprecated structure ("
             + "quantities are stored with shared wavespace: uses less space). "
             + "Regenerate database ASAP.",
             DeprecationWarning,
@@ -597,7 +597,7 @@ def _fix_format(file, sload):
     """Test format / correct deprecated format: The goal is to still be able to
     load old format precomputed spectra, and fix their attribute names.
 
-    Save them again to fix the warnigns definitly.
+    Save them again to fix the warnings definitely.
 
     Returns
     -------
@@ -614,7 +614,7 @@ def _fix_format(file, sload):
     if "q" in sload:
         printr(
             "File {0}".format(basename(file))
-            + " has a deprecrated structure (key "
+            + " has a deprecated structure (key "
             + "q replaced with _q). Fixed this time, but regenerate "
             + "database ASAP."
         )  # , DeprecationWarning)
@@ -629,7 +629,7 @@ def _fix_format(file, sload):
         else:
             printr(
                 "File {0}".format(basename(file))
-                + " has a deprecrated structure (key "
+                + " has a deprecated structure (key "
                 + "_q_conv removed in 0.9.30). Fixed this time, but regenerate "
                 + "database for faster loading."
             )
@@ -666,7 +666,7 @@ def _fix_format(file, sload):
     if "medium" in sload["conditions"]:
         printr(
             "File {0}".format(basename(file))
-            + " has a deprecrated structure (key "
+            + " has a deprecated structure (key "
             + "medium removed in 0.9.22). Fixing this time, but regenerate "
             + "database ASAP."
         )  # , DeprecationWarning)
@@ -689,7 +689,7 @@ def _fix_format(file, sload):
     if "isotope_identifier" in sload["conditions"]:
         printr(
             "File {0}".format(basename(file))
-            + " has a deprecrated structure (key "
+            + " has a deprecated structure (key "
             + "isotope_identifier replaced with isotope). Fixed this time, but regenerate "
             + "database ASAP."
         )  # , DeprecationWarning)
@@ -699,7 +699,7 @@ def _fix_format(file, sload):
     if "air_pressure_mbar" in sload["conditions"]:
         printr(
             "File {0}".format(basename(file))
-            + " has a deprecrated structure (key "
+            + " has a deprecated structure (key "
             + "air_pressure_mbar replaced with pressure_mbar). Fixed this time, but regenerate "
             + "database ASAP."
         )  # , DeprecationWarning)
@@ -713,7 +713,7 @@ def _fix_format(file, sload):
         if not isinstance(isotope, str):
             printr(
                 "File {0}".format(basename(file))
-                + " has a deprecrated structure (key "
+                + " has a deprecated structure (key "
                 + "isotope is now a string). Fixed this time, but regenerate "
                 + "database ASAP."
             )  # , DeprecationWarning)
@@ -728,7 +728,7 @@ def _fix_format(file, sload):
         if not isinstance(dbpath, str):
             printr(
                 "File {0}".format(basename(file))
-                + " has a deprecrated structure (key "
+                + " has a deprecated structure (key "
                 + "dbpath is now a string). Fixed this time, but regenerate "
                 + "database ASAP."
             )  # , DeprecationWarning)
@@ -760,7 +760,7 @@ def _fix_format(file, sload):
             if path is not None and not isinstance(path, str):
                 printr(
                     "File {0}".format(basename(file))
-                    + " has a deprecrated structure (key "
+                    + " has a deprecated structure (key "
                     + "{0} is now a string). Fixed this time, but regenerate ".format(
                         key
                     )
@@ -825,7 +825,7 @@ def _fix_format(file, sload):
                 fixed = True
                 printr(
                     "File {0}".format(basename(file))
-                    + " has a deprecrated structure ("
+                    + " has a deprecated structure ("
                     + "thermal_equilibrium not defined). Fixed it this time (guessed {0})".format(
                         equilibrium
                     )
@@ -840,7 +840,7 @@ def _fix_format(file, sload):
         if "v1u" in lines and get_molecule(lines.id.iloc[0]) in HITRAN_CLASS1:
             printr(
                 "File {0}".format(basename(file))
-                + " has a deprecrated structure "
+                + " has a deprecated structure "
                 + "(v1u in lines is now called vu). Fixed this time, but regenerate "
                 + "database ASAP."
             )
@@ -856,7 +856,7 @@ def _fix_format(file, sload):
             if unit in ["I/I0", "-ln(I/I0)", "eps"]:
                 printr(
                     "File {0}".format(basename(file))
-                    + " has a deprecrated structure "
+                    + " has a deprecated structure "
                     + "(adimensioned units are now stored as ''). Fixed this time, but regenerate "
                     + "database ASAP."
                 )
@@ -864,7 +864,7 @@ def _fix_format(file, sload):
             if "cm_1" in unit:
                 printr(
                     "File {0}".format(basename(file))
-                    + " has a deprecrated structure "
+                    + " has a deprecated structure "
                     + "(cm_1 is now written cm-1''). Fixed this time, but regenerate "
                     + "database ASAP."
                 )
@@ -990,7 +990,7 @@ def query(df, conditions="", **kwconditions):
             else:
                 #                    query.append('{0} == {1}'.format(k,v))
                 query.append("{0} == {1}".format(k, v.__repr__()))
-                # ... for som reason {1}.format() would remove some digit
+                # ... for some reason {1}.format() would remove some digit
                 # ... to floats in Python2. Calling .__repr__() keeps
                 # ... the correct format, and has no other consequences as far
                 # ... as I can tell
@@ -1085,7 +1085,7 @@ class SpecList(object):
         -----
 
         Makes the 'file' column the index, and also discard the 'Spectrum' column
-        (that holds all the data) for readibility
+        (that holds all the data) for readability
         """
 
         if len(self) == 0:
@@ -1479,7 +1479,7 @@ class SpecList(object):
                 #            #     a  ->   (a-mean)/std  € [0-1]
                 #            # Distance becomes:
                 #            #     d^2 ->  sum((a-target)/std)^2
-                #            # Problem when std == 0! That means this dimension is not discrimant
+                #            # Problem when std == 0! That means this dimension is not discriminant
                 #            # anyway
                 #            if std[k] == 0:
                 #                # for this conditions all parameters have the same value.
@@ -1500,7 +1500,7 @@ class SpecList(object):
                     except TypeError as err2:
                         print(sys.exc_info())
                         raise TypeError(
-                            "An error occured (see above) when calculating "
+                            "An error occurred (see above) when calculating "
                             + f"(dg[{k}] - {v}). Example: "
                             + f"({dg[k].iloc[0]} - {v}). "
                             + "Check that your requested conditions match "
@@ -1883,7 +1883,7 @@ class SpecDatabase(SpecList):
     *input for :class:`~joblib.parallel.Parallel` loading of database*
 
     nJobs: int
-        Number of processors to use to load a database (usefull for big
+        Number of processors to use to load a database (useful for big
         databases). BE CAREFULL, no check is done on processor use prior
         to the execution ! Default ``-2``: use all but 1 processors.
         Use ``1`` for single processor.
@@ -1964,7 +1964,7 @@ class SpecDatabase(SpecList):
         update_register_only=False,
     ):
         # TODO @devs: generate a SpecDatabase from a dict.
-        # use the key of the dict insted of the file.
+        # use the key of the dict instead of the file.
 
         # Assert name looks like a directory
         name, ext = splitext(str(path))
@@ -2128,7 +2128,7 @@ class SpecDatabase(SpecList):
             it is created.
         compress: boolean, or 2
             if ``True``, saves under binary format. Faster and takes less space.
-            If ``2``, additionaly remove all redundant quantities.
+            If ``2``, additionally remove all redundant quantities.
         if_exists_then: ``'increment'``, ``'replace'``, ``'error'``, ``'ignore'``
             what to do if file already exists. If ``'increment'`` an incremental digit
             is added. If ``'replace'`` file is replaced (!). If ``'ignore'`` the
@@ -2202,7 +2202,7 @@ class SpecDatabase(SpecList):
 
         """
         dg = self.see(columns=columns).astype(str).duplicated()
-        # need to convert eveything as a str to avoid comparaison problems (Minou)
+        # need to convert everything as a str to avoid comparison problems (Minou)
         if columns is None:
             columns = "all"
 

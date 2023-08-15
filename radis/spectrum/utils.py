@@ -305,7 +305,7 @@ def print_conditions(
     """
 
     def align(a, space=20):
-        """fix alignement."""
+        """fix alignment."""
         return a + " " * max(1, (space - len(str(a))))
 
     def print_param(k):
@@ -354,7 +354,7 @@ def print_conditions(
     )
 
     # TODO : add verbose level so that Trot, Tvib are not shown if equilibrium
-    # and verbose<2 . Same for rot_distriubtion; vib_distriubtion
+    # and verbose<2 . Same for rot_distribution; vib_distribution
 
     print("Physical Conditions")
     print("-" * 40)

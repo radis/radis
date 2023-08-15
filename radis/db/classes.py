@@ -236,7 +236,7 @@ def get_molecule_identifier(molecule_name):
     ----------
     .. [1] `HITRAN 1996, Rothman et al., 1998 <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`__
 
-    Function is from from https://github.com/nzhagen/hitran/blob/master/hitran.py
+    Function is from https://github.com/nzhagen/hitran/blob/master/hitran.py
 
     """
 
@@ -572,10 +572,10 @@ class ElectronicState(Isotope):
     vmax, vmax_morse: int, or ``None``
         maximum vibrational number (required for partition function calculation)
         to be calculated with Dunham expansion, and Morse potential
-        If None, number will be infered from dissociation energy
+        If None, number will be inferred from dissociation energy
     Jmax: int, or ``None``
         maximum rotational number (required for partition function calculation)
-        If None, number will be infered from dissociation energy
+        If None, number will be inferred from dissociation energy
     Ediss: cm-1
         dissociation energy. Required for partition function calculation
         if neither vmax nor Jmax are given
@@ -602,7 +602,7 @@ class ElectronicState(Isotope):
     # built-in Symmetry / species class, Sigma / Pi / Delta etc... where the energy
     # is calculated appropriately.  (ex: Rigid Rotor, Symmetric Top etc.)
 
-    # (major code rewritting ahead...)
+    # (major code rewriting ahead...)
     # That should be part of RADIS extension to non Sigma electronic states.
 
     def __init__(
@@ -783,12 +783,12 @@ class ElectronicState(Isotope):
             )
 
         if Erovib is not None:
-            # overwrite energy calculation
+            # override energy calculation
             self.Erovib = Erovib
             self.Ehaj = Ehaj
             if self.verbose >= 2:
                 print(
-                    "{0}: overwritting Energy calculation with {1}".format(
+                    "{0}: overriding Energy calculation with {1}".format(
                         self.get_fullname(), Erovib
                     )
                 )
@@ -828,9 +828,9 @@ class ElectronicState(Isotope):
 
                         self._Erovib = EvJ_co2
                         self._Ehaj = EvJah_co2
-                        self.Erovib = self._Erovib_default_coefs
+                        self.Erovib = self._Erovib_default_coeffs
                         #                        self.Erovib.__doc__ == EvJ_co2.__doc__
-                        self.Ehaj = self._Ehaj_default_coefs
+                        self.Ehaj = self._Ehaj_default_coeffs
                     #                        self.Ehaj.__doc__ == EvJah_co2.__doc__
                     else:
                         raise NotImplementedError(
@@ -890,7 +890,7 @@ class ElectronicState(Isotope):
             "Rovibrational energy not implemented for {0}".format(self.get_fullname)
         )  # @dev: see radis.db.classes.ElectronicState._assign_E
 
-    def _Erovib_default_coefs(self, *args, **kwargs):
+    def _Erovib_default_coeffs(self, *args, **kwargs):
         r"""Calculate rovibrational energy of molecule
 
         .. math::
@@ -939,7 +939,7 @@ class ElectronicState(Isotope):
 
         return self._Erovib(*args, **kwargs)
 
-    def _Ehaj_default_coefs(self, *args, **kwargs):
+    def _Ehaj_default_coeffs(self, *args, **kwargs):
         """Call default _Ehaj() function with default rovib_constants
         coefficients."""
 

@@ -213,7 +213,7 @@ def init_lorentzian_params(na, gamma, verbose):
     if verbose >= 2:
         print("Initializing Lorentzian parameters ")
 
-    ##fname = "Lorenzian_minmax_" + str(len(gamma)) + ".dat"
+    ##fname = "Lorentzian_minmax_" + str(len(gamma)) + ".dat"
     ##
     ##    try:
     ##        with open(fname, "rb") as f:

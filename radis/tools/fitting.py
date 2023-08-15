@@ -181,7 +181,7 @@ def fit_spectrum(
     ----------------
     plot: bool
         if ``True``, plot spectra as they are computed; and plot the convergence of
-        the residual. Defaut ``False``
+        the residual. Default ``False``
     verbose: bool, or ``2``
         use ``2`` for high verbose level.
     solver_options: dict
@@ -316,7 +316,7 @@ def fit_spectrum(
 
         if blit:
             # cache the background
-            # ... rmeove data first:
+            # ... remove data first:
             s_diff = get_diff(s_exp, s0, var=fit_variable, wunit=wunit, Iunit=Iunit)
             lineSpec.set_data(s0.get(fit_variable)[0], s0.get(fit_variable)[1] * np.nan)
             lineDiff.set_data(s_diff[0], s_diff[1] * np.nan)
@@ -336,7 +336,7 @@ def fit_spectrum(
 
         s = generate_spectrum(fit_values)
 
-        # Delete unecessary variables (for a faster resampling)
+        # Delete unnecessary variables (for a faster resampling)
         for var in [k for k in s._q.keys() if k not in [fit_variable, "wavespace"]]:
             del s._q[var]
 
@@ -397,7 +397,7 @@ def fit_spectrum(
     maxiter = solver_options.get("maxiter", 300)
 
     if plot:
-        # we need to plot lineValues alreazdy to get the legend right:
+        # we need to plot lineValues already to get the legend right:
         lineValues = {}
         for i, k in enumerate(fit_params):
             lineValues[k] = axValues.plot(

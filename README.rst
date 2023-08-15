@@ -179,7 +179,7 @@ Cite
 Articles are available at |badge_article1| |badge_article2|
 
 For reproducibility, do not forget to cite the line database used, and the spectroscopic constants
-if running nonquilibrium  calculations. See `How to cite? <https://radis.readthedocs.io/en/latest/references/references.html#cite>`__
+if running nonequilibrium  calculations. See `How to cite? <https://radis.readthedocs.io/en/latest/references/references.html#cite>`__
 
 ---------------------------------------------------------------------
 

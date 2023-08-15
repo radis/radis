@@ -504,7 +504,7 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True):
 
 
 def read_broad(broadf):
-    """Reading braodening file (.broad)
+    """Reading broadening file (.broad)
     Parameters
     ----------
     broadf: .broad file
@@ -543,7 +543,7 @@ def read_broad(broadf):
 
 
 def check_bdat(bdat):
-    """cheking codes in .broad
+    """checking codes in .broad
     Args:
        bdat: exomol .broad data given by exomolapi.read_broad
     Returns:
@@ -1043,7 +1043,7 @@ class MdbExomol(DatabaseManager):
         tag = molec.split("__")
         self.isotope_fullname = tag[0]
         self.molecule = e2s(tag[0])
-        # self.isotope = 1  # Placeholder. TODO : impement parsing of other isotopes.
+        # self.isotope = 1  # Placeholder. TODO : implement parsing of other isotopes.
 
         # load def
         dic_def = read_def(self.def_file)  # approx. 3 ms
@@ -1413,7 +1413,7 @@ if __name__ == "__main__":
     # # sf.fetch_databank('hitran')  # placeholder. Load lines (will be replaced), load partition function.
     # # s_hit = sf.eq_spectrum(500, name='HITRAN')
 
-    #%% Test by direct caclulation
+    #%% Test by direct calculation
     # import pytest
 
     # print("Testing factory:", pytest.main(["../test/io/test_exomol.py"]))

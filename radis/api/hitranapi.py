@@ -158,7 +158,6 @@ def extract_columns(df, extracted_values, columns):
     for column in columns:
         df[column] = df.evaluate(df[column])
 
-
 def hit2df(
     fname,
     cache=True,
@@ -310,7 +309,9 @@ def hit2df(
         except PermissionError:
             if verbose:
                 print(sys.exc_info())
-                print("An error occured in cache file generation. Lookup access rights")
+                print(
+                    "An error occurred in cache file generation. Lookup access rights"
+                )
             pass
 
     # TODO : get only wavenum above/below 'load_wavenum_min', 'load_wavenum_max'
@@ -330,7 +331,7 @@ def post_process_hitran_data(
     add_HITRAN_uncertainty_code=False,
     dataframe_type="pandas",
 ):
-    """Parsing non-equilibrum parameters in HITRAN/HITEMP [1]_ file to and return final Pandas Dataframe
+    """Parsing non-equilibrium parameters in HITRAN/HITEMP [1]_ file to and return final Pandas Dataframe
 
     Parameters
     ----------
@@ -388,7 +389,7 @@ def post_process_hitran_data(
     if nmol == 0:
         raise ValueError("Databank looks empty")
     elif nmol != 1:
-        # Crash, give explicity error messages
+        # Crash, give explicitly error messages
         try:
             if dataframe_type == "pandas":
                 secondline = df.iloc[1]
@@ -1485,7 +1486,7 @@ class HITRANDatabaseManager(DatabaseManager):
         wmax = 40000
 
         def download_all_hitran_isotopes(molecule, directory, extra_params):
-            """Blindly try to download all isotpes 1 - 9 for the given molecule
+            """Blindly try to download all isotopes 1 - 9 for the given molecule
 
             .. warning::
                 this won't be able to download higher isotopes (ex : isotope 10-11-12 for CO2)

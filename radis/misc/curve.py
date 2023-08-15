@@ -96,7 +96,7 @@ def curve_add(w1, I1, w2, I2, is_sorted=False, kind="linear"):
     """Add curve (w2, I2) from (w1, I1) Linearly interpolates if the two ranges
     dont match. Fills out of bound parameters with nan.
 
-    Similar to OriginPro's "Simple Curve Math Substract"
+    Similar to OriginPro's "Simple Curve Math Subtract"
 
     .. note::
         for higher accuracy, choose (w2, I2) has the curve with the highest
@@ -128,10 +128,10 @@ def curve_add(w1, I1, w2, I2, is_sorted=False, kind="linear"):
 
 
 def curve_substract(w1, I1, w2, I2, is_sorted=False, kind="linear"):
-    """Substracts curve (w2, I2) from (w1, I1) Linearly interpolates if the two
+    """Subtracts curve (w2, I2) from (w1, I1) Linearly interpolates if the two
     ranges dont match. Fills out of bound parameters with nan.
 
-    Similar to OriginPro's "Simple Curve Math Substract"
+    Similar to OriginPro's "Simple Curve Math Subtract"
 
     .. note::
         for higher accuracy, choose (w2, I2) has the curve with the highest
@@ -166,7 +166,7 @@ def curve_multiply(w1, I1, w2, I2, is_sorted=False, kind="linear"):
     """Multiply curve (w2, I2) with (w1, I1) Linearly interpolates if the two
     ranges dont match. Fills out of bound parameters with nan.
 
-    Similar to OriginPro's "Simple Curve Math Substract"
+    Similar to OriginPro's "Simple Curve Math Subtract"
 
     .. note::
         for higher accuracy, choose (w2, I2) has the curve with the highest
@@ -200,7 +200,7 @@ def curve_divide(w1, I1, w2, I2, is_sorted=False, kind="linear", interpolation=1
     """Divides curve (w1, I1) by (w2, I2) Linearly interpolates if the two
     ranges dont match. Fills out of bound parameters with nan.
 
-    Similar to OriginPro's "Simple Curve Math Substract"
+    Similar to OriginPro's "Simple Curve Math Subtract"
 
     .. note::
         for higher accuracy, choose (w2, I2) has the curve with the highest
