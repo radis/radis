@@ -223,7 +223,7 @@ def test_populations(verbose=True, plot=True, close_plots=True, *args, **kwargs)
     if plot:
         import matplotlib.pyplot as plt
 
-        plt.ion()  # dont get stuck with Matplotlib if executting through pytest
+        plt.ion()  # dont get stuck with Matplotlib if executing through pytest
 
     if plot and close_plots:
         import matplotlib.pyplot as plt

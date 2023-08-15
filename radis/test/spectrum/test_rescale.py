@@ -356,7 +356,7 @@ def test_recompute_equilibrium(verbose=True, warnings=True, plot=True, *args, **
     if plot:
         import matplotlib.pyplot as plt
 
-        plt.ion()  # dont get stuck with Matplotlib if executting through pytest
+        plt.ion()  # dont get stuck with Matplotlib if executing through pytest
 
     # Get spectrum
     s1 = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"))
