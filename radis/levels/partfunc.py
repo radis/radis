@@ -48,7 +48,7 @@ References
 -------------------------------------------------------------------------------
 """
 
-# TODO: vectorize partition function caclulations for different temperatures. Would need
+# TODO: vectorize partition function calculations for different temperatures. Would need
 # stuff like E = df.E.values.reshape((1,-1)), etc.
 
 # TODO: store molecule_data.json in the H5 file metadata. If not done already.

@@ -1411,7 +1411,7 @@ if __name__ == "__main__":
     # # sf.fetch_databank('hitran')  # placeholder. Load lines (will be replaced), load partition function.
     # # s_hit = sf.eq_spectrum(500, name='HITRAN')
 
-    #%% Test by direct caclulation
+    #%% Test by direct calculation
     # import pytest
 
     # print("Testing factory:", pytest.main(["../test/io/test_exomol.py"]))
