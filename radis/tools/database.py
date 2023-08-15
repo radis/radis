@@ -514,7 +514,7 @@ def _json_to_spec(sload, file="") -> Spectrum:
         }
         warn(
             "File {0}".format(basename(file))
-            + " has a deprecrated structure ("
+            + " has a deprecated structure ("
             + "quantities are stored with shared wavespace: uses less space). "
             + "Regenerate database ASAP.",
             DeprecationWarning,
@@ -614,7 +614,7 @@ def _fix_format(file, sload):
     if "q" in sload:
         printr(
             "File {0}".format(basename(file))
-            + " has a deprecrated structure (key "
+            + " has a deprecated structure (key "
             + "q replaced with _q). Fixed this time, but regenerate "
             + "database ASAP."
         )  # , DeprecationWarning)
@@ -629,7 +629,7 @@ def _fix_format(file, sload):
         else:
             printr(
                 "File {0}".format(basename(file))
-                + " has a deprecrated structure (key "
+                + " has a deprecated structure (key "
                 + "_q_conv removed in 0.9.30). Fixed this time, but regenerate "
                 + "database for faster loading."
             )
@@ -666,7 +666,7 @@ def _fix_format(file, sload):
     if "medium" in sload["conditions"]:
         printr(
             "File {0}".format(basename(file))
-            + " has a deprecrated structure (key "
+            + " has a deprecated structure (key "
             + "medium removed in 0.9.22). Fixing this time, but regenerate "
             + "database ASAP."
         )  # , DeprecationWarning)
@@ -689,7 +689,7 @@ def _fix_format(file, sload):
     if "isotope_identifier" in sload["conditions"]:
         printr(
             "File {0}".format(basename(file))
-            + " has a deprecrated structure (key "
+            + " has a deprecated structure (key "
             + "isotope_identifier replaced with isotope). Fixed this time, but regenerate "
             + "database ASAP."
         )  # , DeprecationWarning)
@@ -699,7 +699,7 @@ def _fix_format(file, sload):
     if "air_pressure_mbar" in sload["conditions"]:
         printr(
             "File {0}".format(basename(file))
-            + " has a deprecrated structure (key "
+            + " has a deprecated structure (key "
             + "air_pressure_mbar replaced with pressure_mbar). Fixed this time, but regenerate "
             + "database ASAP."
         )  # , DeprecationWarning)
@@ -713,7 +713,7 @@ def _fix_format(file, sload):
         if not isinstance(isotope, str):
             printr(
                 "File {0}".format(basename(file))
-                + " has a deprecrated structure (key "
+                + " has a deprecated structure (key "
                 + "isotope is now a string). Fixed this time, but regenerate "
                 + "database ASAP."
             )  # , DeprecationWarning)
@@ -728,7 +728,7 @@ def _fix_format(file, sload):
         if not isinstance(dbpath, str):
             printr(
                 "File {0}".format(basename(file))
-                + " has a deprecrated structure (key "
+                + " has a deprecated structure (key "
                 + "dbpath is now a string). Fixed this time, but regenerate "
                 + "database ASAP."
             )  # , DeprecationWarning)
@@ -760,7 +760,7 @@ def _fix_format(file, sload):
             if path is not None and not isinstance(path, str):
                 printr(
                     "File {0}".format(basename(file))
-                    + " has a deprecrated structure (key "
+                    + " has a deprecated structure (key "
                     + "{0} is now a string). Fixed this time, but regenerate ".format(
                         key
                     )
@@ -825,7 +825,7 @@ def _fix_format(file, sload):
                 fixed = True
                 printr(
                     "File {0}".format(basename(file))
-                    + " has a deprecrated structure ("
+                    + " has a deprecated structure ("
                     + "thermal_equilibrium not defined). Fixed it this time (guessed {0})".format(
                         equilibrium
                     )
@@ -840,7 +840,7 @@ def _fix_format(file, sload):
         if "v1u" in lines and get_molecule(lines.id.iloc[0]) in HITRAN_CLASS1:
             printr(
                 "File {0}".format(basename(file))
-                + " has a deprecrated structure "
+                + " has a deprecated structure "
                 + "(v1u in lines is now called vu). Fixed this time, but regenerate "
                 + "database ASAP."
             )
@@ -856,7 +856,7 @@ def _fix_format(file, sload):
             if unit in ["I/I0", "-ln(I/I0)", "eps"]:
                 printr(
                     "File {0}".format(basename(file))
-                    + " has a deprecrated structure "
+                    + " has a deprecated structure "
                     + "(adimensioned units are now stored as ''). Fixed this time, but regenerate "
                     + "database ASAP."
                 )
@@ -864,7 +864,7 @@ def _fix_format(file, sload):
             if "cm_1" in unit:
                 printr(
                     "File {0}".format(basename(file))
-                    + " has a deprecrated structure "
+                    + " has a deprecated structure "
                     + "(cm_1 is now written cm-1''). Fixed this time, but regenerate "
                     + "database ASAP."
                 )
