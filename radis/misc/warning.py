@@ -308,7 +308,7 @@ default_warning_status = {
     "OutOfRangeLinesWarning": "warn",
     "HighTemperatureWarning": "warn",
     "NegativeEnergiesWarning": "warn",  # warning if negative energies in database
-    # warning if self-broadening abs coefficnet missing (Air is used instead)
+    # warning if self-broadening abs coefficient missing (Air is used instead)
     "MissingSelfBroadeningTdepWarning": "warn",
     "MissingSelfBroadeningWarning": "warn",
     "MissingDiluentBroadeningWarning": "warn",
