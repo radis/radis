@@ -557,10 +557,10 @@ class Spectrum(object):
         wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
             unit of waverange:         wavelength in air (``'nm'`` or ``'nm_air'``), wavenumber
             (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
-            If ``None``, then ``w`` must be a dimensionned array.
+            If ``None``, then ``w`` must be a dimensioned array.
         Iunit: str
             spectral quantity unit (arbitrary). Ex: ``'mW/cm2/sr/nm'`` for radiance_noslit
-            If ``None``, then ``I`` must be a dimensionned array.
+            If ``None``, then ``I`` must be a dimensioned array.
         *args, **kwargs
             see :class:`~radis.spectrum.spectrum.Spectrum` doc
 
@@ -600,7 +600,7 @@ class Spectrum(object):
             s = Spectrum.from_array(w, I, 'radiance_noslit',
                                    wunit='nm', unit='mW/cm2/sr/nm')
 
-        Dimensionned arrays can also be used directly ::
+        Dimensioned arrays can also be used directly ::
 
             import astropy.units as u
             w = np.linspace(200, 300) * u.nm
@@ -644,19 +644,19 @@ class Spectrum(object):
             )
             Iunit = unit
 
-        # Check if dimensionned arrays
+        # Check if dimensioned arrays
         try:
             I.unit
         except AttributeError:
             # dimensionless
             if Iunit is None:
                 raise ValueError(
-                    "I must be a dimensionned array, or ``Iunit=`` must be given."
+                    "I must be a dimensioned array, or ``Iunit=`` must be given."
                 )
         else:
             if Iunit is not None:
                 raise ValueError(
-                    f"I is a dimensionned array (in {Iunit.unit.to_string()}), therefore ``Iunit`` cannot be given too (got {Iunit}). Set ``Iunit=None``"
+                    f"I is a dimensioned array (in {Iunit.unit.to_string()}), therefore ``Iunit`` cannot be given too (got {Iunit}). Set ``Iunit=None``"
                 )
             Iunit = I.unit.to_string()
             I = I.value
@@ -666,7 +666,7 @@ class Spectrum(object):
             # dimensionless
             if wunit is None:
                 raise ValueError(
-                    "``w`` must be a dimensionned array, or ``wunit=`` must be given."
+                    "``w`` must be a dimensioned array, or ``wunit=`` must be given."
                 )
         else:
             wunit_input = wunit
@@ -700,7 +700,7 @@ class Spectrum(object):
                     wunit = wunit_input
                 elif wunit != wunit_input:
                     raise ValueError(
-                        f"``w`` is a dimensionned array (in {wunit}), therefore ``wunit`` should not be given ( `wunit=None`), or be the same (got `wunit={wunit_input}`). Set ``wunit=None``"
+                        f"``w`` is a dimensioned array (in {wunit}), therefore ``wunit`` should not be given ( `wunit=None`), or be the same (got `wunit={wunit_input}`). Set ``wunit=None``"
                     )
                 else:
                     pass
@@ -3615,7 +3615,7 @@ class Spectrum(object):
         w, I = self.get(
             var, wunit=wunit, Iunit=Iunit, copy=True, trim_nan=True, return_units=True
         )
-        # w, I are dimensionned arrays
+        # w, I are dimensioned arrays
 
         return Spectrum1D(
             flux=I,

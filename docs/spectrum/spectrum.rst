@@ -104,7 +104,7 @@ convenience function::
     s = Spectrum.from_array(w, T, 'transmittance_noslit',
                                wunit='nm', unit='') # adimensioned
 
-Dimensionned arrays can also be used directly ::
+Dimensioned arrays can also be used directly ::
 
     import astropy.units as u
     w = np.linspace(200, 300) * u.nm
@@ -696,7 +696,7 @@ For instance, remove a constant baseline in a given unit::
 
     s -= 0.1 * u.Unit('W/cm2/sr/nm')
 
-The :py:meth:`~radis.spectrum.spectrum.Spectrum.max` function returns a dimensionned
+The :py:meth:`~radis.spectrum.spectrum.Spectrum.max` function returns a dimensioned
 value, therefore it can be used to normalize a spectrum directly :  ::
 
     s /= s.max()
