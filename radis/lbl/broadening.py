@@ -2209,13 +2209,19 @@ class BroadenFactory(BaseFactory):
         I_low_in_right = idcenter_right - iwbroad_half + ioffset
         I_high_in_left = I_low_in_left + 2 * iwbroad_half
         I_high_in_right = I_low_in_right + 2 * iwbroad_half
-        for i, (fr_left, fr_right, profS) in enumerate(
-            zip(frac_left, frac_right, profile_S.T)
-        ):
-            sumoflines_calc[I_low_in_left[i] : I_high_in_left[i] + 1] += fr_left * profS
-            sumoflines_calc[I_low_in_right[i] : I_high_in_right[i] + 1] += (
-                fr_right * profS
-            )
+
+        from radis.misc.arrays import aggregate_at_indices
+
+        sumoflines_calc = aggregate_at_indices(
+            sumoflines_calc,
+            I_low_in_left,
+            I_low_in_right,
+            I_high_in_left,
+            I_high_in_right,
+            profile_S.T,
+            frac_left,
+            frac_right,
+        )
 
         self.profiler.stop("aggregate__lines", "Aggregate lines")
 
@@ -2394,9 +2400,9 @@ class BroadenFactory(BaseFactory):
             I_low_nearest_left -= 1
             I_low_nearest_right -= 1
 
-        from radis.misc.arrays import aggregate_at_indices
+        from radis.misc.arrays import aggregate_at_indices_hollow
 
-        sumoflines_calc = aggregate_at_indices(
+        sumoflines_calc = aggregate_at_indices_hollow(
             sumoflines_calc,
             I_low_in_left,
             I_low_in_right,
@@ -3004,7 +3010,9 @@ class BroadenFactory(BaseFactory):
                 if optimization is None:
 
                     # printing estimated time
-                    if self.verbose >= 2:
+                    if (
+                        self.verbose >= 2 and wavenumber_group is None
+                    ):  # does not work if using an adaptative grid with wavenumber groups
                         estimated_time = self.predict_time()
                         print(
                             f"Estimated time for calculating broadening: {estimated_time:.2f}s on 1 CPU"
