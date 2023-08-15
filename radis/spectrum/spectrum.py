@@ -2874,7 +2874,7 @@ class Spectrum(object):
         I_conv_slices = {}
         for qns in varlist:
             # Convolve and store the output in a new variable name (quantity name minus `_noslit`)
-            # Create if requireds
+            # Create if required
 
             q = qns[:-7]  # new name  (minus '_noslit')
             w_conv_slices = []
@@ -2908,7 +2908,7 @@ class Spectrum(object):
             # ---------
             for i, q in enumerate(I_conv_slices.keys()):
                 # Convolve and store the output in a new variable name (quantity name minus `_noslit`)
-                # Create if requireds
+                # Create if required
 
                 qns = q + "_noslit"
                 w_window = w[slice_window]
