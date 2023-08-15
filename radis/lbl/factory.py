@@ -242,7 +242,7 @@ class SpectrumFactory(BandFactory):
 
         Default ``"min-RMS"``
     folding_thresh: float
-        Folding is a correction procedure thet is applied when the lineshape is calculated with
+        Folding is a correction procedure that is applied when the lineshape is calculated with
         the ``fft`` broadening method and the linewidth is comparable to ``wstep``, that prevents
         sinc(v) modulation of the lineshape. Folding continues until the lineshape intensity
         is below ``folding_threshold``. Setting to 1 or higher effectively disables folding correction.
