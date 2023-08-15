@@ -2202,7 +2202,7 @@ class SpecDatabase(SpecList):
 
         """
         dg = self.see(columns=columns).astype(str).duplicated()
-        # need to convert eveything as a str to avoid comparaison problems (Minou)
+        # need to convert eveything as a str to avoid comparison problems (Minou)
         if columns is None:
             columns = "all"
 
