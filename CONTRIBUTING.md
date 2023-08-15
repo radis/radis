@@ -81,7 +81,7 @@ repo ``radis/radis`` as ``upstream``.
 One workflow is to have at least 2 branches locally :
 
 - one pointing to the latest developer version, e.g. named, ``upstream-develop``.
-- one per feature or fix you're currently working on, poiting to your own fork ``origin`` : could be ``develop``, ``fix/something``, ``this_new_idea_i_work_on`` , etc.
+- one per feature or fix you're currently working on, pointing to your own fork ``origin`` : could be ``develop``, ``fix/something``, ``this_new_idea_i_work_on`` , etc.
 
 A way to do this is to :
 
