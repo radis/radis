@@ -394,7 +394,7 @@ class Spectrum(object):
             conditions["waveunit"] = conditions["wavespace"]
             del conditions["wavespace"]
 
-        # ... make sure waveunit is given. Either implicitely, or explicitly:
+        # ... make sure waveunit is given. Either implicitly, or explicitly:
         if waveunit is None and not "waveunit" in conditions:
             if "wavelength" in quantities:
                 raise AssertionError(
