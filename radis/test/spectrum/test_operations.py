@@ -289,7 +289,7 @@ def test_dimensioned_operations(*args, **kwargs):
 
     # Test division
     # Example : a manual normalization
-    s /= s.max()  # no need to correct for  byunits anymore : * u.Unit("mW/cm2/sr/nm")
+    s /= s.max()  # no need to correct for by units anymore : * u.Unit("mW/cm2/sr/nm")
 
     assert s.units["radiance"] == ""  # normalized
     assert s.max() == 1.0
