@@ -204,7 +204,7 @@ def find_nearest(array, searched, return_bool=False):
     """Return the closest elements in array for each element in 'searched'
     array. In case of multiple elements in `array` having equal difference with
     `searched` element, one with least index is returned. Also returns a
-    boolean array with indices of elements occuring in output list set to true.
+    boolean array with indices of elements occurring in output list set to true.
 
     Examples
     --------
