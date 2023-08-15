@@ -305,7 +305,7 @@ def gei2df(
         except PermissionError:
             if verbose:
                 print(
-                    "An error occured in cache file generation. Lookup access rights."
+                    "An error occurred in cache file generation. Lookup access rights."
                 )
             pass
 

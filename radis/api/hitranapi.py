@@ -275,7 +275,9 @@ def hit2df(
         except PermissionError:
             if verbose:
                 print(sys.exc_info())
-                print("An error occured in cache file generation. Lookup access rights")
+                print(
+                    "An error occurred in cache file generation. Lookup access rights"
+                )
             pass
 
     # TODO : get only wavenum above/below 'load_wavenum_min', 'load_wavenum_max'

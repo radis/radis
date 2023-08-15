@@ -1500,7 +1500,7 @@ class SpecList(object):
                     except TypeError as err2:
                         print(sys.exc_info())
                         raise TypeError(
-                            "An error occured (see above) when calculating "
+                            "An error occurred (see above) when calculating "
                             + f"(dg[{k}] - {v}). Example: "
                             + f"({dg[k].iloc[0]} - {v}). "
                             + "Check that your requested conditions match "

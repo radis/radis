@@ -550,7 +550,7 @@ class BaseFactory(DatabankLoader):
             #            except KeyError:
             #                import traceback
             #                traceback.print_exc()
-            #                raise KeyError("{0} -> An error (see above) occured that usually ".format(sys.exc_info()[1]) +
+            #                raise KeyError("{0} -> An error (see above) occurred that usually ".format(sys.exc_info()[1]) +
             #                               "happens when the energy level is not referenced in the database. " +
             #                               "Check your partition function calculator, and energies " +
             #                               "for isotope {0} (Factory.parsum_calc['CO2'][{0}]['X'].df)".format(iso))
@@ -932,7 +932,7 @@ class BaseFactory(DatabankLoader):
             # ~ 6.6 s   (probably faster since neq==0.9.20) (radis<1.0)
             df = df.groupby(by=["polyl", "wangl"]).apply(fillEvib123l)
             #            except KeyError:
-            #                printr("{0} -> An error (see above) occured that usually ".format(sys.exc_info()[1]) +
+            #                printr("{0} -> An error (see above) occurred that usually ".format(sys.exc_info()[1]) +
             #                       "happens when the energy level is not referenced in the database. " +
             #                       "Check your partition function calculator, and energies " +
             #                       "for isotope {0} (Factory.parsum_calc['CO2'][{0}]['X'].df)".format(iso))

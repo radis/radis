@@ -151,7 +151,7 @@ def fetch_astroquery(
     except KeyError as err:
         raise KeyError(
             str(err)
-            + " <<w this error occured in Astroquery. Maybe these molecule "
+            + " <<w this error occurred in Astroquery. Maybe these molecule "
             + "({0}) and isotope ({1}) are not supported".format(molecule, isotope)
         ) from err
 
@@ -177,7 +177,7 @@ def fetch_astroquery(
                 )
         else:
             raise ValueError(
-                "An error occured during the download of HITRAN files "
+                "An error occurred during the download of HITRAN files "
                 + "for {0} (id={1}), iso={2} between {3:.2f}-{4:.2f}cm-1. ".format(
                     molecule, mol_id, isotope, wmin, wmax
                 )
@@ -271,7 +271,9 @@ def fetch_astroquery(
         except PermissionError:
             if verbose:
                 print(sys.exc_info())
-                print("An error occured in cache file generation. Lookup access rights")
+                print(
+                    "An error occurred in cache file generation. Lookup access rights"
+                )
             pass
 
     return df

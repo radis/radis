@@ -1071,7 +1071,7 @@ class Spectrum(object):
                     self.update(var, verbose=False)
                 except ValueError as err:
                     raise ValueError(
-                        f"{var} not in Spectrum arrays {self.get_vars()}. An error occured while trying to recompute it from the available arrays and conditions. See above"
+                        f"{var} not in Spectrum arrays {self.get_vars()}. An error occurred while trying to recompute it from the available arrays and conditions. See above"
                     ) from err
 
         # Get quantity
