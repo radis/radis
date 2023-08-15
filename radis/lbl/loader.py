@@ -2213,7 +2213,7 @@ class DatabankLoader(object):
         # subroutine load_and_concat
         # --------------------------------------
         def load_and_concat(files):
-            """Contatenate many files in RAM
+            """Concatenate many files in RAM
             Parameters
             ----------
             files: list of str
