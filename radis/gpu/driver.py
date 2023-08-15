@@ -44,8 +44,8 @@ class CuContext:
     def __init__(self, device_id=0, flags=0):
 
         # private:
-        self._context = c_longlong(0)
-        self._device = c_long(0)
+        self._context = c_void_p(0)
+        self._device = c_void_p(0)
 
         err = lib.cuInit(0)
 
@@ -136,7 +136,7 @@ class CuModule:
         self.context = context
 
         # private:
-        self._module = c_longlong(0)
+        self._module = c_void_p(0)
         self._func_dict = {}
         self._global_dict = {}
 
@@ -157,7 +157,7 @@ class CuModule:
             return self._func_dict[attr]
 
         except (KeyError):
-            _function = c_longlong(0)
+            _function = c_void_p(0)
             _kernel_name = c_char_p(attr.encode())
             err = lib.cuModuleGetFunction(byref(_function), self._module, _kernel_name)
             if err != CUDA_SUCCESS:
