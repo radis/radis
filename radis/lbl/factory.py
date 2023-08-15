@@ -225,9 +225,9 @@ class SpectrumFactory(BandFactory):
         necessary to later use :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`,
         but can take some space. Default ``False``.
     chunksize: int, or ``None``
-        Splits the lines database in several chuncks during calculation, else
+        Splits the lines database in several chunks during calculation, else
         the multiplication of lines over all spectral range takes too much memory
-        and slows the system down. Chunksize let you change the default chunck
+        and slows the system down. Chunksize let you change the default chunk
         size. If ``None``, all lines are processed directly. Usually faster but
         can create memory problems. Default ``None``
     optimization : ``"simple"``, ``"min-RMS"``, ``None``

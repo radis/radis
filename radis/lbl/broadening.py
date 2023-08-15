@@ -2249,7 +2249,7 @@ class BroadenFactory(BaseFactory):
         return wavenumber, sumoflines
 
     def _broaden_lines(self, df):
-        """Divide over chuncks not to process to many lines in memory at the
+        """Divide over chunks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
         lines are processed on the same core. )
 
@@ -2476,7 +2476,7 @@ class BroadenFactory(BaseFactory):
         return wavenumber, abscoeff
 
     def _broaden_lines_noneq(self, df):
-        """Divide over chuncks not to process to many lines in memory at the
+        """Divide over chunks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
         lines are processed on the same core)
 
