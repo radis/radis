@@ -72,7 +72,7 @@ def test_spectrum_creation_method(*args, **kwargs):
         Spectrum({"wavenumber": w, "abscoeff": np.hstack((k, k))}, wunit="cm-1")
     assert "Input arrays should have the same length" in str(err.value)
 
-    # ... units badly defeined :
+    # ... units badly defined :
     with pytest.raises(AssertionError) as err:
         Spectrum({"wavespace": w, "abscoeff": k})
     assert "waveunit ('nm', 'cm-1'?) has to be defined" in str(err.value)
