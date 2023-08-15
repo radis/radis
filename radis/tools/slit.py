@@ -1630,7 +1630,7 @@ def triangular_slit(
     return w, I
 
 
-# trapezoidal instrumental broadening function of base base nm and top top nm
+# trapezoidal instrumental broadening function of base (nm) and top (nm)
 
 
 def trapezoidal_slit(
