@@ -738,7 +738,7 @@ def rescale_updown_levels(
 
     # Choose which values to recompute
     # ----------
-    initial = spec.get_vars()  # quantities initialy in spectrum
+    initial = spec.get_vars()  # quantities initially in spectrum
     recompute = list(initial)  # quantities to recompute
     rescaled = {}  # quantities rescaled
 
