@@ -404,7 +404,7 @@ def test_rescale_all_quantities(verbose=True, warnings=True, *args, **kwargs):
     sscaled.rescale_mole_fraction(new_mole_fraction)
     sscaled.rescale_path_length(new_path_length)
     s0.conditions["thermal_equilibrium"] = False  # to prevent rescaling with Kirchoff
-    # remove emissivity_no_slit (speciifc to equilibrium)
+    # remove emissivity_no_slit (specific to equilibrium)
     del s0._q["emissivity_noslit"]
 
     # Determine all quantities that can be recomputed
