@@ -21,6 +21,9 @@ def compare_vaex_pandas_time():
     steps = 5
     wmax_arr = np.geomspace(10, 1000, steps)
 
+    initial_engine = config[
+        "DATAFRAME_ENGINE"
+    ]  # To make sure dataframe engine not changed after running this test
     pb = ProgressBar(N=2 * steps)
     for i, engine in enumerate(["vaex", "pandas"]):
         config["DATAFRAME_ENGINE"] = engine
@@ -60,6 +63,8 @@ def compare_vaex_pandas_time():
     plt.xlabel("Number of lines")
     plt.legend()
 
+    config["DATAFRAME_ENGINE"] = initial_engine
+
 
 # Compare the memory performance of Pandas and Vaex
 def compare_pandas_vs_vaex_memory():
@@ -73,6 +78,9 @@ def compare_pandas_vs_vaex_memory():
 
     import tracemalloc
 
+    initial_engine = config[
+        "DATAFRAME_ENGINE"
+    ]  # To make sure dataframe engine not changed after running this test
     for engine in ["pandas", "vaex"]:
         config["DATAFRAME_ENGINE"] = engine
         tracemalloc.start()
@@ -109,6 +117,8 @@ def compare_pandas_vs_vaex_memory():
 
         # Clear for next engine in the loop
         tracemalloc.clear_traces()
+
+    config["DATAFRAME_ENGINE"] = initial_engine
 
 
 compare_vaex_pandas_time()
