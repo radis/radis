@@ -167,7 +167,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
 
     Database format:
 
-    Taskhkun database updated with ranking number (n) & total rank (N) of
+    Tashkun database updated with ranking number (n) & total rank (N) of
     block, Evib and Erot (cm-1)  and jref
 
     For nonequilibrium, different strategies exist so as how to assign rotational and vibrational
