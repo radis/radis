@@ -305,7 +305,7 @@ def print_conditions(
     """
 
     def align(a, space=20):
-        """fix alignement."""
+        """fix alignment."""
         return a + " " * max(1, (space - len(str(a))))
 
     def print_param(k):
