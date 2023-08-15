@@ -2160,7 +2160,7 @@ class BroadenFactory(BaseFactory):
             )
             LDM_ranges = {}
             LDM_reduced = {}
-            #  (note : could be combined faster by combining the ranges directly, rather than geenrating the boolean arrays?)
+            #  (note : could be combined faster by combining the ranges directly, rather than generating the boolean arrays?)
             for param in all_keys:
                 b = np.zeros(len(w), dtype=bool)
                 I = np.zeros(len(w))
