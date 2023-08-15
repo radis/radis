@@ -1005,7 +1005,7 @@ def test_broadening_chunksize_eq(verbose=True, plot=False, *args, **kwargs):
 
 @pytest.mark.fast
 def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
-    """Test collisinnal broadening by other species than air and self (resonant)
+    """Test collisional broadening by other species than air and self (resonant)
 
     Here, broadening by CO2 yields larger Lorentzian HWHM than air. We check that.
 
