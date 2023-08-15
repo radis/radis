@@ -2815,7 +2815,7 @@ class Spectrum(object):
             if kw in kwargs:
                 kwargsconvolve.update({kw: kwargs.pop(kw)})
 
-        # For non evenyly distributed cases we take the minimum wstep among the
+        # For non evenly distributed cases we take the minimum wstep among the
         # spectral range (and resample in convolve_with_slit)
         # Note: by construction all variables now have the same wavespace
         w = self._q["wavespace"]  # non convoluted wavespace
@@ -4440,7 +4440,7 @@ class Spectrum(object):
                 # no need to check if wavespace is evenly spaced: we won't
                 # apply the slit function again
             else:
-                # Check Wavelength/wavenumber is evently spaced
+                # Check Wavelength/wavenumber is evenly spaced
                 if check_wavespace:
                     if not evenly_distributed(w, atolerance=1e-5):
                         warn(
