@@ -5217,7 +5217,7 @@ class Spectrum(object):
     #                    type(other)))
 
     def __floordiv__(self, other):
-        """Overloads '//' behavior not a divison here: we use it to say that
+        """Overloads '//' behavior not a division here: we use it to say that
         Slabs are ``in parallel``, i.e., as if their respective mole fractions
         were added in the same physical space.
 
