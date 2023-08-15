@@ -729,7 +729,7 @@ class DatabankLoader(object):
         """MolParam: contains information about molar mass; isotopic abundance.
 
         See :py:class:`~radis.db.molparam.MolParams`"""
-        # TODO @dev : Refactor : turn it into a Dictinoary? (easier to store as JSON Etc.)
+        # TODO @dev : Refactor : turn it into a Dictionary? (easier to store as JSON Etc.)
 
         # Profiler
         self.profiler = None

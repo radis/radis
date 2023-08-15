@@ -497,7 +497,7 @@ def _json_to_spec(sload, file="") -> Spectrum:
     Parameters
     ----------
     sload: dict
-        Spectrum object content stored under a dictonary
+        Spectrum object content stored under a dictionary
 
     Returns
     -------

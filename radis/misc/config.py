@@ -356,7 +356,7 @@ def convertRadisToJSON(config_path_json, config_path_old=CONFIG_PATH_OLD):
                 else:
                     temp[j] = config[i][j]
             else:
-                # Adding to `temp` dictionaru
+                # Adding to `temp` dictionary
                 temp[j] = config[i][j]
 
         config_json[i] = temp
