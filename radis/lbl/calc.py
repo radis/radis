@@ -875,7 +875,7 @@ def _calc_spectrum_one_molecule(
             load_columns=load_columns,
         )
 
-    #    # Get optimisation strategies
+    #    # Get optimization strategies
     #    if lineshape_optimization == 'auto':        # NotImplemented: finally we use DLM all the time as default.
     #        if len(sf.df0) > 1e5:
     #            lineshape_optimization = 'DLM'

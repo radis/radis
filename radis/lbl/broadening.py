@@ -2047,7 +2047,7 @@ class BroadenFactory(BaseFactory):
             if self.params.sparse_ldm == True:
                 if self.verbose >= 2:
                     print(
-                        "SPARSE optimisation not implemented with 'fft' mode. Use 'voigt' for analytical voigt, or radis.config['SPARSE_WAVERANGE'] = False"
+                        "SPARSE optimization not implemented with 'fft' mode. Use 'voigt' for analytical voigt, or radis.config['SPARSE_WAVERANGE'] = False"
                     )
             LDM = np.zeros(
                 (

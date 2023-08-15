@@ -209,7 +209,7 @@ case::
     cd radis
     python radis/test/benchmark/radis_vs_hapi_CH4_full_spectrum.py
 
-Using the different :ref:`Performance <label_lbl_performance>` optimisations available in RADIS,
+Using the different :ref:`Performance <label_lbl_performance>` optimizations available in RADIS,
 the calculation is typically 100 times faster in RADIS::
 
     >>> Calculated with HAPI in 157.41s

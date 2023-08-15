@@ -629,7 +629,7 @@ class SpectrumFactory(BandFactory):
         # Warnings
         # --------
 
-        # Add cutoff / threshold warning values for the different optimisations
+        # Add cutoff / threshold warning values for the different optimizations
         # (linestrength cutoff, broadening cutoff). These cannot be changed
         # from the Factory input, but can still be modified manually afterwards
         # TODO: replace everything with 'auto' modes.
