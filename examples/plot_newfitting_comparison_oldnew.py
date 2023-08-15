@@ -50,7 +50,7 @@ def LTEModel_withslitnorm(factory, fit_parameters, fixed_parameters):
     s = LTEModel(factory, fit_parameters, fixed_parameters)
     # we could also have added a fittable parameter, such as an offset,
     # or made the slit width a fittable parameter.
-    # ... any paramter in model_input will be fitted.
+    # ... any parameter in model_input will be fitted.
     # s.offset(model_input["offset"], 'nm')
     s.apply_slit(1.4, "nm")
     return s.take("radiance").normalize()
