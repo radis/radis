@@ -456,7 +456,7 @@ def crop(s: Spectrum, wmin=None, wmax=None, wunit=None, inplace=False) -> Spectr
     return s
 
 
-# %% Algebric operations on Spectra
+# %% Algebraic operations on Spectra
 
 
 def _get_unique_var(s, var, inplace):
