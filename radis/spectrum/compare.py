@@ -543,7 +543,7 @@ def get_default_units(
                 "Iunit not defined in spectrum for variable {0}. ".format(var)
                 + "Cant use default unit. Specify unit in s.units['{0}'].".format(var)
             )
-        # get default (note that defaut "Iunit" may depend on waveunit used. Let s.get() handle this)
+        # get default (note that default "Iunit" may depend on waveunit used. Let s.get() handle this)
         _, _, _, Iunit = s1.get(
             var, wunit=wunit, Iunit="default", copy=False, return_units="as_str"
         )
@@ -718,7 +718,7 @@ def plot_diff(
             method=['diff', 'ratio']
 
     normalize: bool
-        Normalize the spectra to be ploted
+        Normalize the spectra to be plotted
 
     Other Parameters
     ----------------'

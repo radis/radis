@@ -91,7 +91,7 @@ def add_ruler(fig, wunit="", Iunit="", ax=None):
           Dictionary of :class:`matplotlib.markers.MarkerStyle` properties
         textprops: dict, default is None
             Dictionary of :class:`matplotlib.text.Text` properties. To reposition the
-            textbox you can overide the defaults which position the box in the top left
+            textbox you can override the defaults which position the box in the top left
             corner of the axes.
 
         Notes

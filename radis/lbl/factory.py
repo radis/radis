@@ -15,7 +15,7 @@ Calculate a CO Spectrum, fetching the lines from HITRAN ::
                          cutoff=1e-30,   # for faster calculations. See
                                          # `plot_linestrength_hist` for more details
                          **kwargs)
-    sf.fetch_databank()        # autodownload from HITRAN
+    sf.fetch_databank()        # auto download from HITRAN
     s = sf.eq_spectrum(Tgas=300)
     s.plot('abscoeff')          # opacity
 
@@ -142,7 +142,7 @@ class SpectrumFactory(BandFactory):
         path length in cm. Default ``1``.
         use astropy.units to specify arbitrary length units.
     molecule: ``int``, ``str``, or ``None``
-        molecule id (HITRAN format) or name. If ``None``, the molecule can be infered
+        molecule id (HITRAN format) or name. If ``None``, the molecule can be inferred
         from the database files being loaded. See the list of supported molecules
         in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
         and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
@@ -203,7 +203,7 @@ class SpectrumFactory(BandFactory):
 
         .. note::
             parsum_mode= 'tabulation'  is new in 0.9.30, and makes nonequilibrium
-            calculations of small spectra extremelly fast. Will become the default
+            calculations of small spectra extremely fast. Will become the default
             after 0.9.31.
     pseudo_continuum_threshold: float
         if not ``0``, first calculate a rough approximation of the spectrum, then
@@ -225,9 +225,9 @@ class SpectrumFactory(BandFactory):
         necessary to later use :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`,
         but can take some space. Default ``False``.
     chunksize: int, or ``None``
-        Splits the lines database in several chuncks during calculation, else
+        Splits the lines database in several chunks during calculation, else
         the multiplication of lines over all spectral range takes too much memory
-        and slows the system down. Chunksize let you change the default chunck
+        and slows the system down. Chunksize let you change the default chunk
         size. If ``None``, all lines are processed directly. Usually faster but
         can create memory problems. Default ``None``
     optimization : ``"simple"``, ``"min-RMS"``, ``None``
@@ -242,7 +242,7 @@ class SpectrumFactory(BandFactory):
 
         Default ``"min-RMS"``
     folding_thresh: float
-        Folding is a correction procedure thet is applied when the lineshape is calculated with
+        Folding is a correction procedure that is applied when the lineshape is calculated with
         the ``fft`` broadening method and the linewidth is comparable to ``wstep``, that prevents
         sinc(v) modulation of the lineshape. Folding continues until the lineshape intensity
         is below ``folding_threshold``. Setting to 1 or higher effectively disables folding correction.
@@ -258,7 +258,7 @@ class SpectrumFactory(BandFactory):
         Default: -1
     broadening_method: ``"voigt"``, ``"convolve"``, ``"fft"``
         Calculates broadening with a direct voigt approximation ('voigt') or
-        by convoluting independantly calculated Doppler and collisional
+        by convoluting independently calculated Doppler and collisional
         broadening ('convolve'). First is much faster, 2nd can be used to
         compare results. This SpectrumFactory parameter can be manually
         adjusted a posteriori with::
@@ -269,7 +269,7 @@ class SpectrumFactory(BandFactory):
         Fast fourier transform ``'fft'`` is only available if using the LDM lineshape
         calculation ``optimization``. Because the LDM convolves all lines at the same time,
         and thus operates on large arrays, ``'fft'`` becomes more appropriate than
-        convolutions in real space (``'voit'``, ``'convolve'`` )
+        convolutions in real space (``'voigt'``, ``'convolve'`` )
 
         By default, use ``"fft"`` for any ``optimization``, and ``"voigt"`` if
         optimization is ``None`` .
@@ -345,7 +345,7 @@ class SpectrumFactory(BandFactory):
 
     - :py:attr:`~radis.lbl.loader.DatabankLoader.input` : physical input
     - :py:attr:`~radis.lbl.loader.DatabankLoader.params` : computational parameters
-    - :py:attr:`~radis.lbl.loader.DatabankLoader.misc` : miscallenous parameters (don't change output)
+    - :py:attr:`~radis.lbl.loader.DatabankLoader.misc` : miscellaneous parameters (don't change output)
 
     See Also
     --------
@@ -487,7 +487,7 @@ class SpectrumFactory(BandFactory):
 
         self._sparse_ldm = radis.config[
             "SPARSE_WAVERANGE"
-        ]  # target value (can be 'auto'), stored for next calculatinos
+        ]  # target value (can be 'auto'), stored for next calculations
         self.params["sparse_ldm"] = radis.config[
             "SPARSE_WAVERANGE"
         ]  # value evaluated at each new spectrum calculation
@@ -629,7 +629,7 @@ class SpectrumFactory(BandFactory):
         # Warnings
         # --------
 
-        # Add cutoff / threshold warning values for the different optimisations
+        # Add cutoff / threshold warning values for the different optimizations
         # (linestrength cutoff, broadening cutoff). These cannot be changed
         # from the Factory input, but can still be modified manually afterwards
         # TODO: replace everything with 'auto' modes.
@@ -1380,7 +1380,7 @@ class SpectrumFactory(BandFactory):
         def update_plot(val):
             # TODO : refactor this function and the update() mechanism. Ensure conditions are correct.
             # Update conditions
-            # ... at equilibirum, temperatures remain equal :
+            # ... at equilibrium, temperatures remain equal :
             s.conditions["Tvib"] = s.conditions["Tgas"]
             s.conditions["Trot"] = s.conditions["Tgas"]
             s.conditions["slit_function"] = s.conditions["slit_FWHM"]
@@ -2119,7 +2119,7 @@ class SpectrumFactory(BandFactory):
 
             this is a fast implementation that doesnt take into account
             the contribution of lines outside the given spectral range. It is valid for spectral ranges
-            surrounded by no lines, and spectral ranges much broaded than the typical
+            surrounded by no lines, and spectral ranges much broadened than the typical
             line broadening (~ 1-10 cm-1 in the infrared)
 
         If what you're looking for is an accurate simulation on a narrow spectral range
@@ -2245,7 +2245,7 @@ class SpectrumFactory(BandFactory):
         self.calc_emission_integral()
 
         #        # ----------------------------------------------------------------------
-        #        # Cutoff linestrength  (note that cuting linestrength doesnt make this
+        #        # Cutoff linestrength  (note that cutting linestrength doesnt make this
         #        # process faster here, but we still give this option to be consistent
         #        # with spectra)
         #        self._cutoff_linestrength()

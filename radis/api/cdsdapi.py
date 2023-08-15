@@ -314,7 +314,9 @@ def cdsd2df(
             )
         except PermissionError:
             if verbose:
-                print("An error occured in cache file generation. Lookup access rights")
+                print(
+                    "An error occurred in cache file generation. Lookup access rights"
+                )
             pass
 
     # TODO : get only wavenum above/below 'load_only_wavenum_above', 'load_only_wavenum_below'

@@ -325,7 +325,7 @@ def crop(s: Spectrum, wmin=None, wmax=None, wunit=None, inplace=False) -> Spectr
     Other Parameters
     ----------------
     inplace: bool
-        if ``True``, modifiy ``s`` directly. Else, returns a copy.
+        if ``True``, modify ``s`` directly. Else, returns a copy.
 
     Returns
     -------
@@ -456,7 +456,7 @@ def crop(s: Spectrum, wmin=None, wmax=None, wunit=None, inplace=False) -> Spectr
     return s
 
 
-# %% Algebric operations on Spectra
+# %% Algebraic operations on Spectra
 
 
 def _get_unique_var(s, var, inplace):
@@ -666,7 +666,7 @@ def add_array(s, a, unit=None, var=None, inplace=False):
 
 
 def sub_baseline(s, left, right, unit=None, var=None, inplace=False):
-    """Return a new spectrum with a baseline substracted to s[var]
+    """Return a new spectrum with a baseline subtracted to s[var]
 
     Parameters
     ----------
@@ -691,7 +691,7 @@ def sub_baseline(s, left, right, unit=None, var=None, inplace=False):
     -------
 
     s: Spectrum
-        Spectrum object where the baseline was substracted to intensity of s['var']
+        Spectrum object where the baseline was subtracted to intensity of s['var']
         If ``inplace=True``, ``s`` has been modified directly.
 
     Notes
@@ -742,7 +742,7 @@ def sub_baseline(s, left, right, unit=None, var=None, inplace=False):
     if not inplace:
         s = s.copy(quantity=var)
 
-    # Substract inplace       ( @dev: we have copied already if needed )
+    # Subtract inplace       ( @dev: we have copied already if needed )
     w, I = s.get(var, wunit=s.get_waveunit(), Iunit=s.units[var], copy=False)
     I -= np.linspace(left, right, num=np.size(I))
     # @dev: updates the Spectrum directly because of copy=False
@@ -757,7 +757,7 @@ def add_spectra(s1, s2, var=None, force=False):
         s1 + s2
 
     .. warning::
-        we are just algebrically adding the quantities. If you want to merge
+        we are just algebraically adding the quantities. If you want to merge
         spectra while preserving the radiative transfer equation, see
         :func:`~radis.los.slabs.MergeSlabs` and :func:`~radis.los.slabs.SerialSlabs`
 
@@ -828,7 +828,7 @@ def add_spectra(s1, s2, var=None, force=False):
 
 
 def substract_spectra(s1, s2, var=None):
-    """Return a new spectrum with ``s2`` substracted from ``s1``.
+    """Return a new spectrum with ``s2`` subtracted from ``s1``.
     Equivalent to::
 
         s1 - s2
@@ -880,7 +880,7 @@ def substract_spectra(s1, s2, var=None):
     # Resample s2 on s1
     s2 = s2.resample(s1, inplace=False)
 
-    # Substract
+    # Subtract
     w1, I1 = s1.get(var=var, Iunit=Iunit1, wunit=wunit1)
     w2, I2 = s2.get(var=var, Iunit=Iunit1, wunit=wunit1)
 
@@ -1099,7 +1099,7 @@ def get_baseline(
     Returns
     -------
     baseline: Spectrum
-        Spectrum object where intenisity is the baseline of s is computed by peakutils
+        Spectrum object where intensity is the baseline of s is computed by peakutils
 
     Examples
     --------

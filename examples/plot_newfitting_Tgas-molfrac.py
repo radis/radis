@@ -15,7 +15,7 @@ parameters, including gas temperature, mole fraction, and wavelength offset.
 This is a real fitting case introduced by Mr. Nicolas Minesi, featuring CO spectrum with absorbance
 as spectral quantity to be fitted. As we can see, he stored the experimental result in a MATLAB file,
 and from there a Spectrum object is generated. It is worth noticing that, the result seems to differ
-slightly from ground-truth, due to the fact that currently RADIS uses air broadening parameteres for
+slightly from ground-truth, due to the fact that currently RADIS uses air broadening parameters for
 calculation, while this experiment was originally conducted in Argon. Future updates on other molecules'
 broadening coefficients will increase the accuracy of these cases with non-air diluents.
 

@@ -119,7 +119,7 @@ def test_planck_cm(verbose=True, plot=True, *args, **kwargs):
     References
     ----------
 
-    .. [1] Simple Earth Climate Model `NASA Smidth 2010 <https://www.giss.nasa.gov/research/briefs/schmidt_05/>`__
+    .. [1] Simple Earth Climate Model `NASA Schmidt 2010 <https://www.giss.nasa.gov/research/briefs/schmidt_05/>`__
 
     """
 

@@ -153,7 +153,7 @@ You can also compute the chemical equilibrium composition in
 other codes like [CANTERA]_, and feed the output to
 RADIS :py:func:`~radis.lbl.calc.calc_spectrum`. The
 :py:func:`~radis.tools.gascomp.get_eq_mole_fraction` function
-provides an interace to [CANTERA]_ directly from RADIS ::
+provides an interface to [CANTERA]_ directly from RADIS ::
 
     from radis import calc_spectrum, get_eq_mole_fraction
 
@@ -196,7 +196,7 @@ Calculating spectrum using GPU
 RADIS also supports CUDA-native parallel computation, specifically
 for lineshape calculation and broadening. To use these GPU-accelerated methods to compute the spectra, use either :py:func:`~radis.lbl.calc.calc_spectrum`
 function with parameter `mode` set to `gpu`, or :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`. In order to use these methods,
-ensure that your system has an Nvidia GPU with compute capability of atleast 3.0 and CUDA Toolkit 8.0 or above. Refer to
+ensure that your system has an Nvidia GPU with compute capability of at least 3.0 and CUDA Toolkit 8.0 or above. Refer to
 :ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>` to see how to setup your system to run GPU accelerated spectrum
 calculation methods, examples and performance tests.
 
@@ -569,7 +569,7 @@ Performance
 
 RADIS is very optimized, making use of C-compiled libraries (NumPy, Numba) for computationally intensive steps,
 and data analysis libraries (Pandas) to handle lines databases efficiently.
-Additionaly, different strategies and parameters are used to improve performances further:
+Additionally, different strategies and parameters are used to improve performances further:
 
 Line Database Reduction Strategies
 ----------------------------------
@@ -651,7 +651,7 @@ Check the [RADIS-2018]_ article for a quantitative assessment of the influence o
 Other strategies are possible, such as calculating the weak lines in a pseudo-continuum. This can
 result in orders of magnitude improvements in computation performances.:
 
-- The ``pseudo_continuum_threshold`` defines which treshold should be used.
+- The ``pseudo_continuum_threshold`` defines which threshold should be used.
 
 See the :py:func:`~radis.test.lbl.test_broadening.test_abscoeff_continuum` case in ``radis/test/lbl/test_broadening.py``
 for an example, which can be run with (you will need the CDSD-HITEMP database installed) ::
@@ -706,7 +706,7 @@ or ``db_use_cached=False, lvl_use_cached=False`` in :py:class:`~radis.lbl.factor
 
 You can also use :py:meth:`~radis.lbl.loader.DatabankLoader.init_databank` instead of the default
 :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank`. The former will save the line database parameter,
-and only load them if needed. This is useful if used in conjonction with
+and only load them if needed. This is useful if used in conjunction with
 :py:meth:`~radis.lbl.loader.DatabankLoader.init_database`, which will retrieve precomputed spectra from
 a database if they exist.
 

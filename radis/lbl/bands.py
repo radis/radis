@@ -99,7 +99,7 @@ class BandFactory(BroadenFactory):
     #
     # =========================================================================
 
-    # Vibrationaly specific calculations
+    # Vibrationally specific calculations
 
     def eq_bands(
         self,
@@ -155,7 +155,7 @@ class BandFactory(BroadenFactory):
 
         Process:
 
-        - Calculate line strenghts correcting the CDSD reference one.
+        - Calculate line strengths correcting the CDSD reference one.
         - Then call the main routine that sums over all lines
         """
 
@@ -263,7 +263,7 @@ class BandFactory(BroadenFactory):
             # Filter levels that feature the given energy levels. The rest
             # is stored in 'others'
             lines = self.df1
-            # We need levels to be explicitely stated for given molecule
+            # We need levels to be explicitly stated for given molecule
             assert hasattr(lines, "viblvl_u")
             assert hasattr(lines, "viblvl_l")
             # Get bands to remove
@@ -594,7 +594,7 @@ class BandFactory(BroadenFactory):
             # Filter levels that feature the given energy levels. The rest
             # is stored in 'others'
             lines = self.df1
-            # We need levels to be explicitely stated for given molecule
+            # We need levels to be explicitly stated for given molecule
             assert hasattr(lines, "viblvl_u")
             assert hasattr(lines, "viblvl_l")
             # Get bands to remove
@@ -860,17 +860,17 @@ class BandFactory(BroadenFactory):
     # Broadening functions: band specific
 
     def _broaden_lines_bands(self, df):
-        """Divide over chuncks not to process to many lines in memory at the
+        """Divide over chunks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
         lines are processed on the same core) Band specific version: returns a
         list of all broadened vibrational bands :
 
         Notes
         -----
-        Implementation: there is no more splitting over line chuncks of given different
+        Implementation: there is no more splitting over line chunks of given different
         (NotImplemented). This may result in large arrays and MemoryErrors for
         extreme spectral ranges. If that ever happens we may have to insert
-        a chunck splitting loop in the band groupby loop
+        a chunk splitting loop in the band groupby loop
 
         See _calc_lineshape for more information
         """
@@ -910,17 +910,17 @@ class BandFactory(BroadenFactory):
         return wavenumber, abscoeff_bands
 
     def _broaden_lines_noneq_bands(self, df):
-        """Divide over chuncks not to process to many lines in memory at the
+        """Divide over chunks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
         lines are processed on the same core) Band specific version: returns a
         list of all broadened vibrational bands.
 
         Notes
         -----
-        Implementation: there is no more splitting over line chuncks of given different
+        Implementation: there is no more splitting over line chunks of given different
         (NotImplemented). This may result in large arrays and MemoryErrors for
         extreme spectral ranges. If that ever happens we may have to insert
-        a chunck splitting loop in the band groupby loop
+        a chunk splitting loop in the band groupby loop
 
         See _calc_lineshape for more information
         """

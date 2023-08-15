@@ -59,13 +59,13 @@ eps_0 = 8.8541878128e-12
 https://physics.nist.gov/cgi-bin/cuu/Value?ep0|search_for=vacuum+permittivity"""
 
 hc_k = h * c / k_b * 100  #
-"""float:  cm to K conversion (~ 1.44 K/cm), used in Boltman factors"""
+"""float:  cm to K conversion (~ 1.44 K/cm), used in Boltzmann factors"""
 
 
 # %% HITRAN (CGS) units
 
 k_b_CGS = 1.380648813e-16
-"""float: Boltzman constant (erg / K)"""
+"""float: Boltzmann constant (erg / K)"""
 
 c_CGS = 2.99792458e10
 """float: Light velocity (cm / s)"""

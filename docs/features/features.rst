@@ -21,7 +21,7 @@ It includes:
 - Spatially heterogeneous spectra (see :ref:`see line-of-sight <label_los_index>`)
 - Post-processing tools to load and :ref:`compare with experimental spectra <label_spectrum_howto_compare>` (see :ref:`the Spectrum object <label_spectrum>`)
 - A :ref:`Line Survey <label_spectrum_linesurvey>` tool to identify which lines correspond to a spectral feature.
-- Matlab users can access RADIS easily and use it from Matalb (see :ref:`Access RADIS from Matlab <label_matlab_access>`)
+- Matlab users can access RADIS easily and use it from Matlab (see :ref:`Access RADIS from Matlab <label_matlab_access>`)
 
 RADIS does *not* include, so far:
 

@@ -266,7 +266,7 @@ assert compare_lists(drop_auto_columns_for_levelsfmt, KNOWN_LVLFORMAT) == 1
 class ConditionDict(dict):
     """A class to hold Spectrum calculation input conditions
     (:py:class:`~radis.lbl.loader.Input`), computation parameters
-    (:py:class:`~radis.lbl.loader.Parameters`), or miscalleneous parameters
+    (:py:class:`~radis.lbl.loader.Parameters`), or miscellaneous parameters
     (:py:class:`~radis.lbl.loader.MiscParams`).
     Works like a dict except you can also access attribute with::
         v = a.key   # equivalent to v = a[key]
@@ -276,7 +276,7 @@ class ConditionDict(dict):
     -----
     for developers:
     Parameters and Input could also have simply derived from the (object) class,
-    but it may have missed some convenients functions implemented for dict.
+    but it may have missed some convenient functions implemented for dict.
     For instance, how to be picked / unpickled.
 
     See Also
@@ -519,7 +519,7 @@ class Parameters(ConditionDict):
         self.include_neighbouring_lines = True
         """bool: if ``True``, includes the contribution of off-range, neighbouring
         lines because of lineshape broadening. Default ``True``."""
-        self.parsum_mode = "full summation"  #: int : "full summation" or "tabulation"  . calculation mode of parittion function. See :py:class:`~radis.levels.partfunc.RovibParFuncCalculator`
+        self.parsum_mode = "full summation"  #: int : "full summation" or "tabulation"  . calculation mode of partition function. See :py:class:`~radis.levels.partfunc.RovibParFuncCalculator`
         self.sparse_ldm = "auto"  #: str: "auto", True, False  . Sparse LDM calculation. See :py:meth:`radis.lbl.broadening.BroadenFactory._apply_lineshape_LDM`
 
 
@@ -655,7 +655,7 @@ class DatabankLoader(object):
         they may change the output of calculations (ex: threshold, cutoff, broadening methods, etc.)
         """
         self.misc = MiscParams()
-        """Miscelleneous parameters (:py:class:`~radis.lbl.loader.MiscParams`)
+        """Miscellaneous parameters (:py:class:`~radis.lbl.loader.MiscParams`)
         params that cannot change the output of calculations (ex: number of CPU, etc.)
         """
         # Setup individual warnings. Value of keys can be:
@@ -729,7 +729,7 @@ class DatabankLoader(object):
         """MolParam: contains information about molar mass; isotopic abundance.
 
         See :py:class:`~radis.db.molparam.MolParams`"""
-        # TODO @dev : Refactor : turn it into a Dictinoary? (easier to store as JSON Etc.)
+        # TODO @dev : Refactor : turn it into a Dictionary? (easier to store as JSON Etc.)
 
         # Profiler
         self.profiler = None
@@ -820,7 +820,7 @@ class DatabankLoader(object):
             parameter is used to determine the limit. Default ``True``.
         drop_columns: list
             columns names to drop from Line DataFrame after loading the file.
-            Not recommended to use, unless you explicitely want to drop information
+            Not recommended to use, unless you explicitly want to drop information
             (for instance if dealing with too large databases). If ``[]``, nothing
             is dropped. If ``'auto'``, parameters considered unnecessary
             are dropped. See :data:`~radis.lbl.loader.drop_auto_columns_for_dbformat`
@@ -832,7 +832,7 @@ class DatabankLoader(object):
             calculations. If ``'noneq'``, also load the columns required for
             non-LTE calculations. See :data:`~radis.lbl.loader.drop_all_but_these`.
             If ``'all'``, load everything. Note that for performances, it is
-            better to load only certain columsn rather than loading them all
+            better to load only certain columns rather than loading them all
             and dropping them with ``drop_columns``.
             Default ``'equilibrium'``.
 
@@ -844,7 +844,7 @@ class DatabankLoader(object):
 
         Notes
         -----
-        Useful in conjonction with :meth:`~radis.lbl.loader.DatabankLoader.init_database`
+        Useful in conjunction with :meth:`~radis.lbl.loader.DatabankLoader.init_database`
         when dealing with large line databanks when some of the spectra may have
         been precomputed in a spectrum database (:class:`~radis.tools.database.SpecDatabase`)
         Note that any previously loaded databank is discarded on the method call
@@ -934,7 +934,7 @@ class DatabankLoader(object):
     ):
         """Fetch the latest files from [HITRAN-2020]_, [HITEMP-2010]_ (or newer),
         [ExoMol-2020]_  or [GEISA-2020] , and store them locally in memory-mapping
-        formats for extremelly fast access.
+        formats for extremely fast access.
 
         Parameters
         ----------
@@ -1015,7 +1015,7 @@ class DatabankLoader(object):
             calculations. If ``'noneq'``, also load the columns required for
             non-LTE calculations. See :data:`~radis.lbl.loader.drop_all_but_these`.
             If ``'all'``, load everything. Note that for performances, it is
-            better to load only certain columsn rather than loading them all
+            better to load only certain columns rather than loading them all
             and dropping them with ``drop_columns``.
             If ``diluent`` then all additional columns required for calculating spectrum
             in that diluent is loaded.
@@ -1176,7 +1176,7 @@ class DatabankLoader(object):
                 )
                 self.params.dbpath = ",".join(local_paths)
 
-                # ... explicitely write all isotopes based on isotopes found in the database
+                # ... explicitly write all isotopes based on isotopes found in the database
                 if isotope == "all":
                     self.input.isotope = ",".join(
                         [str(k) for k in self._get_isotope_list(df=df)]
@@ -1190,7 +1190,7 @@ class DatabankLoader(object):
                 # Query one isotope at a time
                 if isotope == "all":
                     raise ValueError(
-                        "Please define isotope explicitely (cannot use 'all' with fetch_databank('hitran'))"
+                        "Please define isotope explicitly (cannot use 'all' with fetch_databank('hitran'))"
                     )
                 isotope_list = self._get_isotope_list()
 
@@ -1260,7 +1260,7 @@ class DatabankLoader(object):
             )
             self.params.dbpath = ",".join(local_paths)
 
-            # ... explicitely write all isotopes based on isotopes found in the database
+            # ... explicitly write all isotopes based on isotopes found in the database
             if isotope == "all":
                 self.input.isotope = ",".join(
                     [str(k) for k in self._get_isotope_list(df=df)]
@@ -1274,7 +1274,7 @@ class DatabankLoader(object):
 
             if database in ["full", "range"]:
                 raise ValueError(
-                    f"Got `database={database}`. When fetching ExoMol, use the `database=` key to retrieve a specific database. Use `database='default'` to get the recommended database. See more informatino in radis.io.fetch_exomol()"
+                    f"Got `database={database}`. When fetching ExoMol, use the `database=` key to retrieve a specific database. Use `database='default'` to get the recommended database. See more information in radis.io.fetch_exomol()"
                 )
 
             # Download, setup local databases, and fetch (use existing if possible)
@@ -1285,7 +1285,7 @@ class DatabankLoader(object):
 
             if isotope == "all":
                 raise ValueError(
-                    "Please define isotope explicitely (cannot use 'all' with fetch_databank('exomol'))"
+                    "Please define isotope explicitly (cannot use 'all' with fetch_databank('exomol'))"
                 )
             isotope_list = self._get_isotope_list()
 
@@ -1297,7 +1297,7 @@ class DatabankLoader(object):
             frames = []  # lines for all isotopes
             partition_function_exomol = {
                 molecule: {}
-            }  # partition function tabulators for all isotpes
+            }  # partition function tabulators for all isotopes
             for iso in isotope_list:
                 df, local_path, Z_exomol = fetch_exomol(
                     molecule,
@@ -1380,7 +1380,7 @@ class DatabankLoader(object):
             )
             self.params.dbpath = ",".join(local_paths)
 
-            # ... explicitely write all isotopes based on isotopes found in the database
+            # ... explicitly write all isotopes based on isotopes found in the database
             if isotope == "all":
                 self.input.isotope = ",".join(
                     [str(k) for k in self._get_isotope_list(df=df)]
@@ -1448,7 +1448,7 @@ class DatabankLoader(object):
                     + "in fetch_databank"
                 )
 
-        self._remove_unecessary_columns(df)
+        self._remove_unnecessary_columns(df)
 
         return
 
@@ -1532,12 +1532,12 @@ class DatabankLoader(object):
         *Other arguments are related to how to open the files:*
         drop_columns: list
             columns names to drop from Line DataFrame after loading the file.
-            Not recommended to use, unless you explicitely want to drop information
+            Not recommended to use, unless you explicitly want to drop information
             (for instance if dealing with too large databases). If ``[]``, nothing
             is dropped. If ``'auto'``, parameters considered useless
             are dropped. See :data:`~radis.lbl.loader.drop_auto_columns_for_dbformat`
             and :data:`~radis.lbl.loader.drop_auto_columns_for_levelsfmt`.
-            If ``'all'``, parameters considered unecessary for equilibrium calculations
+            If ``'all'``, parameters considered unnecessary for equilibrium calculations
             are dropped, including all information about lines that could be otherwise
             available in :py:meth:`~radis.spectrum.spectrum.Spectrum` method.
             Warning: nonequilibrium calculations are not possible in this mode.
@@ -1548,7 +1548,7 @@ class DatabankLoader(object):
             calculations. If ``'noneq'``, also load the columns required for
             non-LTE calculations. See :data:`~radis.lbl.loader.drop_all_but_these`.
             If ``'all'``, load everything. Note that for performances, it is
-            better to load only certain columsn rather than loading them all
+            better to load only certain columns rather than loading them all
             and dropping them with ``drop_columns``.
             Default ``'equilibrium'``.
 
@@ -1895,7 +1895,7 @@ class DatabankLoader(object):
         autoupdate: boolean
             if ``True``, all spectra calculated by this Factory are automatically
             exported in database. Default ``True`` (but only if init_database is
-            explicitely called by user)
+            explicitly called by user)
         add_info: list, or ``None``/``False``
             append these parameters and their values if they are in conditions.
             Default ``['Tvib', 'Trot']``
@@ -1905,7 +1905,7 @@ class DatabankLoader(object):
         compress: boolean, or 2
             if ``True``, Spectrum are read and written in binary format. This is faster,
             and takes less memory space. Default ``True``.
-            If ``2``, additionaly remove all redundant quantities.
+            If ``2``, additionally remove all redundant quantities.
 
         Other Parameters
         ----------------
@@ -2134,12 +2134,12 @@ class DatabankLoader(object):
             If ``'regen'`` regenerate existing cache files.
         drop_columns: list
             columns names to drop from Line DataFrame after loading the file.
-            Not recommended to use, unless you explicitely want to drop information
+            Not recommended to use, unless you explicitly want to drop information
             (for instance if dealing with too large databases). If ``[]``, nothing
             is dropped. If ``'auto'``, parameters considered useless
             are dropped. See :data:`~radis.lbl.loader.drop_auto_columns_for_dbformat`
             and :data:`~radis.lbl.loader.drop_auto_columns_for_levelsfmt`.
-            If ``'all'``, parameters considered unecessary for equilibrium calculations
+            If ``'all'``, parameters considered unnecessary for equilibrium calculations
             are dropped, including all information about lines that could be otherwise
             available in :py:meth:`~radis.spectrum.spectrum.Spectrum` method.
             Warning: nonequilibrium calculations are not possible in this mode.
@@ -2149,7 +2149,7 @@ class DatabankLoader(object):
             calculations. If ``'noneq'``, also load the columns required for
             non-LTE calculations. See :data:`~radis.lbl.loader.drop_all_but_these`.
             If ``'all'``, load everything. Note that for performances, it is
-            better to load only certain columsn rather than loading them all
+            better to load only certain columns rather than loading them all
             and dropping them with ``drop_columns``.
             Default ``'equilibrium'``.
 
@@ -2217,7 +2217,7 @@ class DatabankLoader(object):
         # subroutine load_and_concat
         # --------------------------------------
         def load_and_concat(files):
-            """Contatenate many files in RAM
+            """Concatenate many files in RAM
             Parameters
             ----------
             files: list of str
@@ -2385,7 +2385,7 @@ class DatabankLoader(object):
         maxwavdb = df.wav.max()
         minwavdb = df.wav.min()
 
-        # ... Explicitely write molecule if not given
+        # ... Explicitly write molecule if not given
         if self.input.molecule in [None, ""]:
             id_set = df.id.unique()
             if len(id_set) > 1:
@@ -2396,7 +2396,7 @@ class DatabankLoader(object):
                 )
             self.input.molecule = get_molecule(id_set[0])
 
-        # ... explicitely write all isotopes based on isotopes found in the database
+        # ... explicitly write all isotopes based on isotopes found in the database
         if self.input.isotope == "all":
             self.input.isotope = ",".join(
                 [str(k) for k in self._get_isotope_list(df=df)]
@@ -2457,12 +2457,12 @@ class DatabankLoader(object):
                 )
             )
 
-        self._remove_unecessary_columns(df)
+        self._remove_unnecessary_columns(df)
 
         return df
 
-    def _remove_unecessary_columns(self, df):
-        """Remove unecessary columns and add values as attributes
+    def _remove_unnecessary_columns(self, df):
+        """Remove unnecessary columns and add values as attributes
 
         Returns
         -------
@@ -2674,7 +2674,7 @@ class DatabankLoader(object):
             parsum.at_noneq(Tvib, Trot)
 
         Partition functions are calculated from energy levels. Populations for
-        all levels (independantly of the spectral range) can optionaly be
+        all levels (independently of the spectral range) can optionally be
         calculated with argument ``update_populations=True``  (used to export
         populations of all states in Spectrum object)
 
@@ -2889,7 +2889,7 @@ class DatabankLoader(object):
                 "Error while Retrieving Partition Function of Molecule!"
                 + " Load the energies levels with SpectrumFactory.load_databank"
                 + "('path', load_energies=True). If using SpectrumFactory.fetch_databank()"
-                + " consider adding arguement load_energies=True"
+                + " consider adding argument load_energies=True"
             ) from err
 
         return parsum

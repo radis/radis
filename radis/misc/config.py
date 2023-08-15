@@ -281,7 +281,7 @@ See Also
 def get_user_config_configformat():
     r"""Read config file and returns it.
 
-    Config file name is harcoded: :ref:`~/.radis <label_lbl_config_file>`
+    Config file name is hardcoded: :ref:`~/.radis <label_lbl_config_file>`
     """
 
     config = configparser.ConfigParser()
@@ -356,7 +356,7 @@ def convertRadisToJSON(config_path_json, config_path_old=CONFIG_PATH_OLD):
                 else:
                     temp[j] = config[i][j]
             else:
-                # Adding to `temp` dictionaru
+                # Adding to `temp` dictionary
                 temp[j] = config[i][j]
 
         config_json[i] = temp

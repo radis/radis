@@ -97,7 +97,7 @@ from radis.spectrum.utils import print_conditions
 class BaseFactory(DatabankLoader):
 
     units = {
-        "waverange": "cm-1",  # should be "cm-1", "nm" [assumes in air], "nm_vac" [in vacuum]. Note that Radis caluclations will still happen in cm-1, units are converted at the export only.
+        "waverange": "cm-1",  # should be "cm-1", "nm" [assumes in air], "nm_vac" [in vacuum]. Note that Radis calculations will still happen in cm-1, units are converted at the export only.
         "absorbance": "",
         "abscoeff": "cm-1",
         "abscoeff_continuum": "cm-1",
@@ -188,18 +188,18 @@ class BaseFactory(DatabankLoader):
     #
     # =========================================================================
 
-    def print_conditions(self, preprend=None):
+    def print_conditions(self, prepend=None):
         """Prints all physical / computational parameters. These are also
         stored in each result Spectrum.
 
         Parameters
         ----------
-        preprend: str
+        prepend: str
             just to text to display before printing conditions
         """
 
-        if preprend:
-            print(preprend)
+        if prepend:
+            print(prepend)
 
         conditions = self.get_conditions()
 
@@ -280,7 +280,7 @@ class BaseFactory(DatabankLoader):
         df = getattr(self, dataframe)
         a = np.log10(np.array(df[what]))
         if np.isnan(a).any():
-            printwarn("Nan values in log10(lines)")
+            printwarn("NaN values in log10(lines)")
         plt.hist(np.round(a[~np.isnan(a)]))
         if axvline is not None:
             plt.axvline(axvline, color="r")
@@ -523,7 +523,7 @@ class BaseFactory(DatabankLoader):
                 ------
                 r.polyu.iloc[0],r.wangu.iloc[0],r.ranku.iloc[0]  : [0] because they're
                             all the same
-                r.ju.iloc[0]  not necessary (same Tvib) but explicitely mentionning it
+                r.ju.iloc[0]  not necessary (same Tvib) but explicitly mentioning it
                          yields a x20 on performances (60s -> 3s)
                 """
                 r["Evibu"] = energies.at[(r.polyu.iloc[0], r.wangu.iloc[0]), "Evib"]
@@ -550,7 +550,7 @@ class BaseFactory(DatabankLoader):
             #            except KeyError:
             #                import traceback
             #                traceback.print_exc()
-            #                raise KeyError("{0} -> An error (see above) occured that usually ".format(sys.exc_info()[1]) +
+            #                raise KeyError("{0} -> An error (see above) occurred that usually ".format(sys.exc_info()[1]) +
             #                               "happens when the energy level is not referenced in the database. " +
             #                               "Check your partition function calculator, and energies " +
             #                               "for isotope {0} (Factory.parsum_calc['CO2'][{0}]['X'].df)".format(iso))
@@ -905,7 +905,7 @@ class BaseFactory(DatabankLoader):
                 ------
                 r.polyu.iloc[0],r.wangu.iloc[0],r.ranku.iloc[0]  : [0] because they're
                             all the same
-                r.ju.iloc[0]  not necessary (same Tvib) but explicitely mentionning it
+                r.ju.iloc[0]  not necessary (same Tvib) but explicitly mentioning it
                          yields a x20 on performances (60s -> 3s)
                 (probably faster since neq==0.9.20) (radis<1.0)
                 """
@@ -932,7 +932,7 @@ class BaseFactory(DatabankLoader):
             # ~ 6.6 s   (probably faster since neq==0.9.20) (radis<1.0)
             df = df.groupby(by=["polyl", "wangl"]).apply(fillEvib123l)
             #            except KeyError:
-            #                printr("{0} -> An error (see above) occured that usually ".format(sys.exc_info()[1]) +
+            #                printr("{0} -> An error (see above) occurred that usually ".format(sys.exc_info()[1]) +
             #                       "happens when the energy level is not referenced in the database. " +
             #                       "Check your partition function calculator, and energies " +
             #                       "for isotope {0} (Factory.parsum_calc['CO2'][{0}]['X'].df)".format(iso))
@@ -1698,7 +1698,7 @@ class BaseFactory(DatabankLoader):
 
         if "id" in df.columns:
             raise NotImplementedError(
-                "'id' still in DataFrame columsn. Is there more than 1 molecule ?"
+                "'id' still in DataFrame columns. Is there more than 1 molecule ?"
             )
         if "id" in df.attrs:
             molecule = df.attrs["id"]
@@ -1989,7 +1989,7 @@ class BaseFactory(DatabankLoader):
         Currently this value is only used in GPU calculations.
         It is one of the columns that is transferred to the GPU
         memory. The idea behind S0 is that it is scaled with all
-        variabled that do not change during iterations as to
+        variables that do not change during iterations as to
         minimize calculations.
 
         Units: cm-1/(molecules/cm-2
@@ -2242,7 +2242,7 @@ class BaseFactory(DatabankLoader):
                 df1.int
                 * self.Qref_Qgas_ratio(df1, Tgas, Tref)
                 *
-                # ratio of Boltzman populations
+                # ratio of Boltzmann populations
                 exp(-hc_k * df1.El * (1 / Tgas - 1 / Tref))
                 *
                 # effect of stimulated emission
@@ -2986,7 +2986,7 @@ class BaseFactory(DatabankLoader):
                             assert "viblvl" in list(energies.keys())
                             # only get one entry per vibrational level
                             pop = energies.drop_duplicates("viblvl")  # is a copy
-                            # remove unecessary keys (all rotational specific)
+                            # remove unnecessary keys (all rotational specific)
                             for k in ["E", "j", "gj", "Erot", "grot", "n"]:
                                 try:
                                     del pop[k]
@@ -3252,7 +3252,7 @@ class BaseFactory(DatabankLoader):
         # TODO: remove useless columns in df1 to save memory
         # Note @EP : with Vaex; the selection should be updated here
 
-        # Ensures abundance, molar mass and partition functions are transfered
+        # Ensures abundance, molar mass and partition functions are transferred
         # (needed if they are attributes and not isotopes)
         transfer_metadata(df, self.df1, [k for k in df_metadata if k in df.attrs])
         # assert len(self.df1.attrs) > 0

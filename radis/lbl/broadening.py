@@ -964,7 +964,7 @@ class BroadenFactory(BaseFactory):
         self.profiler.stop("calc_hwhm", "Calculate broadening HWHM")
 
     def _calc_min_width(self, df):
-        """Calculates the minimum FWHW of the lines
+        """Calculates the minimum FWHM of the lines
         and stores in self.min_width
         """
         if "hwhm_voigt" in df:
@@ -973,7 +973,7 @@ class BroadenFactory(BaseFactory):
             min_lorentz_fwhm = 2 * df.hwhm_lorentz.min()
             min_gauss_fwhm = 2 * df.hwhm_gauss.min()
             # We take the max of both. Note: could also have used
-            # Olivero1977 to get the Voigt-equivlaent width of all lines,
+            # Olivero1977 to get the Voigt-equivalent width of all lines,
             # but it's quite expensive to compute
             min_width = max(min_lorentz_fwhm, min_gauss_fwhm)
 
@@ -1009,7 +1009,7 @@ class BroadenFactory(BaseFactory):
 
         """
         # TODO : make it a Method of a PhysicalHypothesis class, with a
-        # WarningTreshold and an ErrorThreshold ?
+        # WarningThreshold and an ErrorThreshold ?
 
         # TODO: thresholds depend whether we're computing Transmittance/optically thin emission,
         # for a homogeneous slab, or self-absorbed radiance combined with other slabs.
@@ -1750,7 +1750,7 @@ class BroadenFactory(BaseFactory):
         line_profile:   (1/cm-1)        2D array of lines_profiles for all lines
                 (size B * N, B = width of lineshape)
         shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
-            center wavelength (used to project broaded lineshapes )
+            center wavelength (used to project broadened lineshapes )
 
         Returns
         -------
@@ -1907,7 +1907,7 @@ class BroadenFactory(BaseFactory):
             in Fourier space.
 
         shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
-            center wavelength (used to project broaded lineshapes )
+            center wavelength (used to project broadened lineshapes )
         wL: array       (size DL)
             array of all Lorentzian widths in LDM
         wG: array       (size DG)
@@ -2015,7 +2015,7 @@ class BroadenFactory(BaseFactory):
             ) / (2 * dxL)
 
         else:
-            # Simple weigths:
+            # Simple weights:
             avi = tvi
             aGi = tGi
             aLi = tLi
@@ -2047,7 +2047,7 @@ class BroadenFactory(BaseFactory):
             if self.params.sparse_ldm == True:
                 if self.verbose >= 2:
                     print(
-                        "SPARSE optimisation not implemented with 'fft' mode. Use 'voigt' for analytical voigt, or radis.config['SPARSE_WAVERANGE'] = False"
+                        "SPARSE optimization not implemented with 'fft' mode. Use 'voigt' for analytical voigt, or radis.config['SPARSE_WAVERANGE'] = False"
                     )
             LDM = np.zeros(
                 (
@@ -2106,7 +2106,7 @@ class BroadenFactory(BaseFactory):
                 for groupby_param, group in dgb:
                     truncation_pts = int(self.params.truncation // self.params.wstep)
                     # note: truncation can be unique for each point of the LDM basis
-                    # (allow to have line-dependant truncatino, at least as all
+                    # (allow to have line-dependant truncation, at least as all
                     # lines with same truncation are grouped together in the LDM basis)
 
                     ki0 = group.ki0.values
@@ -2160,7 +2160,7 @@ class BroadenFactory(BaseFactory):
             )
             LDM_ranges = {}
             LDM_reduced = {}
-            #  (note : could be combined faster by combining the ranges directly, rather than geenrating the boolean arrays?)
+            #  (note : could be combined faster by combining the ranges directly, rather than generating the boolean arrays?)
             for param in all_keys:
                 b = np.zeros(len(w), dtype=bool)
                 I = np.zeros(len(w))
@@ -2249,7 +2249,7 @@ class BroadenFactory(BaseFactory):
         return wavenumber, sumoflines
 
     def _broaden_lines(self, df):
-        """Divide over chuncks not to process to many lines in memory at the
+        """Divide over chunks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
         lines are processed on the same core. )
 
@@ -2476,7 +2476,7 @@ class BroadenFactory(BaseFactory):
         return wavenumber, abscoeff
 
     def _broaden_lines_noneq(self, df):
-        """Divide over chuncks not to process to many lines in memory at the
+        """Divide over chunks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
         lines are processed on the same core)
 
@@ -2547,7 +2547,7 @@ class BroadenFactory(BaseFactory):
                 # ... Distribute lines over LDM 2.1s
                 # ... Convolve and sum on spectral range 0.3s
                 # @EP: #performance.
-                # unlike in the non LDM case, the nonequilibruum case here is ~2x
+                # unlike in the non LDM case, the nonequilibrium case here is ~2x
                 # the equilibrium case: only the closest matching line is common to the
                 # absorption & emission steps. The bottleneck is the distribution
                 # of the line over the LDM, which has to be done for both abscoeff & emisscoeff.
@@ -2827,8 +2827,8 @@ class BroadenFactory(BaseFactory):
         in the Factory.
 
         The Weak line characterization [1]_ is only based on abscoeff. For strong
-        nonequilibrium cases there may be lines consired as weak in terms
-        of absorption but not weaks in emission, or the other way around. It should
+        nonequilibrium cases there may be lines considered as weak in terms
+        of absorption but not weak in emission, or the other way around. It should
         be negligible, though, so a dual conditioning (looking at both abscoeff
         and emisscoeff) was not implemented.
         See :func:`radis.lbl.broadening._find_weak_lines` if you want to change that
@@ -2860,7 +2860,7 @@ class BroadenFactory(BaseFactory):
             # ... only guess based on abscoeff. See Notes for noneq case.
             self._find_weak_lines(pseudo_continuum_threshold)
 
-            # Retrieve lines, separate weaks from strong
+            # Retrieve lines, separate weak from strong
             df = self.df1
             df_weak_lines = df[df.weak_line]
             df_strong_lines = df[~df.weak_line]

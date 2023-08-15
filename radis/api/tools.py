@@ -171,7 +171,7 @@ def _format_dtype(dtype):
 
 
 def _cast_to_dtype(data, dtype):
-    """Cast array to certain type, crash with hopefull helping error message.
+    """Cast array to certain type, crash with hopefully helping error message.
 
     Return casted data.
 
