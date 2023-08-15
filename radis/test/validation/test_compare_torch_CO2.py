@@ -192,7 +192,7 @@ def test_compare_torch_CO2(
 
     # Solve RTE along the line of sight
     # --------
-    # two semi profile, + room absortion
+    # two semi profile, + room absorption
     line_of_sight = slabstot[1:][::-1] + slabstot + [s0]
     stot = SerialSlabs(*line_of_sight)
     #        stot = SerialSlabs(*slabstot[1:][::-1], *slabstot, s0)  # Python 3 syntax only
