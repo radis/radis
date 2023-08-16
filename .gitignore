@@ -34,7 +34,7 @@ radis/cython/*.cpp
 
 # C extensions
 *.so
-
+!radis/gpu/kernels.so
 # Distribution / packaging
 .Python
 env/

@@ -1,0 +1,3 @@
+cp kernels.cu kernels.cpp
+g++ -shared -fPIC -o kernels.so kernels.cpp
+rm kernels.cpp

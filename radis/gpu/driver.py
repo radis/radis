@@ -23,7 +23,7 @@ if os_name == "nt":
     )  # TODO: drop to 10?
 else:
     lib = cdll.LoadLibrary("libcuda.so")
-    lib_cufft = windll.LoadLibrary(cufft_path[0] + "\\lib\\libcufft.so.11")
+    lib_cufft = cdll.LoadLibrary(cufft_path[0] + "\\lib\\libcufft.so.11")
 
 verbose = False
 
