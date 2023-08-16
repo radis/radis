@@ -38,6 +38,7 @@ def cu_print(*vargs):
 
 
 CUDA_SUCCESS = 0
+CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK = 1
 CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR = 75
 CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR = 76
 
@@ -87,6 +88,13 @@ class CuContext:
             dev_list.append(_name.value.decode())
 
         return dev_list
+
+    def getMaxThreadsPerBlock(self):
+        _Ntpb = c_long(0)
+        lib.cuDeviceGetAttribute(
+            byref(_Ntpb), CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK, self._device
+        )
+        return _Ntpb.value
 
     def printDeviceCapabilities(self):
 

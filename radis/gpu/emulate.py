@@ -27,6 +27,10 @@ from radis.misc.utils import getProjectRoot
 CUFFT_R2C = 0x2A
 CUFFT_C2R = 0x2C
 
+# This number does not have a meaningful interpretation in a CPU,
+# so we just default to a typical number for GPU.
+_max_threads_per_block = 1024
+
 
 class CuContext:
     def __init__(self, device_id=0, flags=0):
@@ -34,6 +38,9 @@ class CuContext:
         # private:
         self._context = c_void_p(123)
         self._device = c_void_p(456)
+
+    def getMaxThreadsPerBlock(self):
+        return _max_threads_per_block
 
     ##    @staticmethod
     ##    def getDeviceList(): #TODO

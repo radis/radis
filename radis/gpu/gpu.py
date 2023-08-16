@@ -469,7 +469,7 @@ def gpu_init(
 
     NvFT = init_h.N_v_FT
     NxFT = NvFT // 2 + 1
-    Ntpb = 1024  # threads per block #TODO: determine dynamically
+    Ntpb = ctx.getMaxThreadsPerBlock()
     Nipt = init_h.N_iterations_per_thread
     Nli = init_h.N_lines
     threads = (Ntpb, 1, 1)
