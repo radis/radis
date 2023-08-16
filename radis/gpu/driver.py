@@ -89,13 +89,6 @@ class CuContext:
 
         return dev_list
 
-    def getMaxThreadsPerBlock(self):
-        _Ntpb = c_long(0)
-        lib.cuDeviceGetAttribute(
-            byref(_Ntpb), CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK, self._device
-        )
-        return _Ntpb.value
-
     def printDeviceCapabilities(self):
 
         _major = c_long(0)
@@ -124,6 +117,13 @@ class CuContext:
                 "YES" if _totalGlobalMem.value > (2 << 31) else "NO"
             )
         )
+
+    def getMaxThreadsPerBlock(self):
+        _Ntpb = c_long(0)
+        lib.cuDeviceGetAttribute(
+            byref(_Ntpb), CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK, self._device
+        )
+        return _Ntpb.value
 
     def setCurrent(self):
         cu_print(lib.cuCtxSetCurrent(self._context), "ctx.setcurrent")

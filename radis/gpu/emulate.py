@@ -39,12 +39,18 @@ class CuContext:
         self._context = c_void_p(123)
         self._device = c_void_p(456)
 
+    @staticmethod
+    def getDeviceList():
+        import platform
+
+        return [platform.processor()]
+
+    def printDeviceCapabilities(self):
+        print("> GPU emulated by CPU")
+        print("  Total amount of global memory:   0 bytes")
+
     def getMaxThreadsPerBlock(self):
         return _max_threads_per_block
-
-    ##    @staticmethod
-    ##    def getDeviceList(): #TODO
-    ##    def printDeviceCapabilities(self): #TODO
 
     def setCurrent(self):
         pass
