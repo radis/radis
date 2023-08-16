@@ -113,7 +113,7 @@ def load_h5_cache_file(
 
     Returns
     -------
-    df: pandas DataFrame, or None
+    df: pandas DataFrame or Vaex Dataframe or None
         None if no cache file was found, or if it was deleted
     """
     # TODO @dev: refactor to use HDF5Manager more
@@ -537,7 +537,7 @@ def check_relevancy(
 
     for k, v in relevant_if_metadata_above.items():
         # Note : check_not_deprecated already tested the existence of each key so we are safe
-        if file_metadata[k] < v:
+        if float(file_metadata[k]) < v:
             raise IrrelevantFileWarning(
                 "Database file {0} irrelevant: {1}={2} [file metadata] < {3} [expected], not loaded".format(
                     file, k, file_metadata[k], v
@@ -545,7 +545,7 @@ def check_relevancy(
             )
     for k, v in relevant_if_metadata_below.items():
         # Note : check_not_deprecated already tested the existence of each key so we are safe
-        if file_metadata[k] > v:
+        if float(file_metadata[k]) > v:
             raise IrrelevantFileWarning(
                 "Database file {0} irrelevant ({1}={2} [file metadata] > {3} [expected]), not loaded".format(
                     file, k, file_metadata[k], v

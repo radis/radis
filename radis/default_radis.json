@@ -24,7 +24,7 @@
     "SPARSE_WAVERANGE": "auto"              # true,/false. sparse LDM algorithm. May be smaller on dense spectra. If "auto", a scarcity criterion is used (Nlines/Ngrids > 1)
     "DEFAULT_DOWNLOAD_PATH": "~/.radisdb"   # default path for downloading databases with databank='hitran'/'hitemp'/'exomol' . You can also specify a local path for each entry of the, "database" list.
     "RESAMPLING_TOLERANCE_THRESHOLD": 5e-3  # an error if raises if areas do not match by a value above, this threshold during resampling. See :py:meth:`~radis.spectrum.spectrum.Spectrum.resample`
-
+    "DATAFRAME_ENGINE" : "pandas"
 
     # molecular parameters
     # --------------------

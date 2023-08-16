@@ -354,6 +354,10 @@ def anynan(a):
     return np.isnan(np.dot(a, a))
 
 
+def anynan_vaex(a):
+    return not (a.countnan() == 0)
+
+
 @numba.njit
 def first_nonnan_index(a):
     """Returns index of first non-nan value in ``a``

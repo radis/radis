@@ -29,6 +29,7 @@ except ImportError:  # if ran from here
     from radis.lbl.factory import SpectrumFactory
     from radis.lbl.base import get_wavenumber_range
 
+from radis import config
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
 from radis.spectrum.spectrum import Spectrum
@@ -290,6 +291,8 @@ def calc_spectrum(
                 s, sf = calc_spectrum(..., return_factory=True)
                 sf.df1  # see the lines calculated
                 sf.eq_spectrum(...)  #  new calculation without reloading the database
+    engine : string
+        Vaex or Pandas . Default Pandas, if engine is vaex memory performance is improved
     **kwargs: other inputs forwarded to SpectrumFactory
         For instance: ``warnings``.
         See :py:class:`~radis.lbl.factory.SpectrumFactory` documentation for more
@@ -530,6 +533,7 @@ def calc_spectrum(
         diluent_for_this_molecule = diluents_for_molecule(
             mole_fraction, diluent, molecule
         )
+        engine = config["DATAFRAME_ENGINE"]
 
         generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
@@ -561,6 +565,7 @@ def calc_spectrum(
             export_lines=export_lines,
             return_factory=return_factory,
             diluent=diluent_for_this_molecule,
+            engine=engine,
             **kwargs_molecule,
         )
 
@@ -620,6 +625,7 @@ def _calc_spectrum_one_molecule(
     export_lines,
     return_factory=False,
     diluent="air",
+    engine="pandas",
     **kwargs,
 ) -> Spectrum:
     """See :py:func:`~radis.lbl.calc.calc_spectrum`
@@ -719,6 +725,7 @@ def _calc_spectrum_one_molecule(
 
     # Load databank
     # -------------
+    sf.dataframe_type = engine
 
     # Get databank
     if (

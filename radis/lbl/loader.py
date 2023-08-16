@@ -57,6 +57,7 @@ from uuid import uuid1
 
 import numpy as np
 import pandas as pd
+import vaex
 
 from radis import config
 from radis.api.cdsdapi import cdsd2df
@@ -1094,6 +1095,9 @@ class DatabankLoader(object):
         if not molecule:
             raise ValueError("Please define `molecule=` so the database can be fetched")
 
+        output = config["DATAFRAME_ENGINE"]
+        self.dataframe_type = output
+
         if include_neighbouring_lines:
             wavenum_min = self.params.wavenum_min_calc
             wavenum_max = self.params.wavenum_max_calc
@@ -1105,6 +1109,7 @@ class DatabankLoader(object):
         # and saved in output spectra information
         self.params.dbformat = dbformat
         self.misc.load_energies = load_energies
+        self.dataframe_type = output
         self.levels = levels
         if levels is not None:
             self.levelspath = ",".join([format_paths(lvl) for lvl in levels.values()])
@@ -1171,12 +1176,15 @@ class DatabankLoader(object):
                     verbose=self.verbose,
                     return_local_path=True,
                     engine=memory_mapping_engine,
+                    output=output,
                     parallel=parallel,
                     extra_params=extra_params,
                 )
                 self.params.dbpath = ",".join(local_paths)
 
-                # ... explicitly write all isotopes based on isotopes found in the database
+                df.attrs = {}
+
+                # ... explicitely write all isotopes based on isotopes found in the database
                 if isotope == "all":
                     self.input.isotope = ",".join(
                         [str(k) for k in self._get_isotope_list(df=df)]
@@ -1216,9 +1224,15 @@ class DatabankLoader(object):
                     )
                 if len(frames) > 1:
                     # Note @dev : may be faster/less memory hungry to keep lines separated for each isotope. TODO : test both versions
-                    for df in frames:
-                        assert "iso" in df.columns
-                    df = pd.concat(frames, ignore_index=True)  # reindex
+                    if output == "pandas":
+                        for df in frames:
+                            assert "iso" in df.columns
+                        df = pd.concat(frames, ignore_index=True)  # reindex
+                    elif output == "vaex":
+                        for df in frames:
+                            assert "iso" in df.column_names
+
+                        df = vaex.concat(frames)
                 else:
                     df = frames[0]
                 self.params.dbpath = "fetched from hitran"
@@ -1256,6 +1270,7 @@ class DatabankLoader(object):
                 verbose=self.verbose,
                 return_local_path=True,
                 engine=memory_mapping_engine,
+                output=output,
                 parallel=parallel,
             )
             self.params.dbpath = ",".join(local_paths)
@@ -1312,6 +1327,7 @@ class DatabankLoader(object):
                     return_local_path=True,
                     return_partition_function=True,
                     engine=memory_mapping_engine,
+                    output=output,
                 )
                 # @dev refactor : have a DatabaseClass from which we load lines and partition functions
                 if len(df) > 0:
@@ -1327,21 +1343,50 @@ class DatabankLoader(object):
                 )
             if len(frames) > 1:
                 # Note @dev : may be faster/less memory hungry to keep lines separated for each isotope. TODO : test both versions
-                for df in frames:
-                    if "iso" not in df.columns:
-                        assert "iso" in df.attrs
-                        df["iso"] = df.attrs["iso"]
-                # Keep attributes:
-                from radis.misc.basics import intersect
+                if output == "pandas":
+                    for df in frames:
+                        if "iso" not in df.columns:
+                            # to save some memory, we have added "iso" as an attribute rather than a column if it is the same for all lines
+                            assert "iso" in df.attrs
+                            df["iso"] = df.attrs["iso"]
+                    # Keep attributes:
+                    from radis.misc.basics import intersect
 
-                attrs = frames[0].attrs
-                for df in frames[1:]:
-                    attrs = intersect(attrs, df.attrs)
-                del attrs["iso"]  # added as a column (different for each line)
-                # Merge:
-                df = pd.concat(frames, ignore_index=True)  # reindex
-                df.attrs = attrs
-                self.params.dbpath = ",".join(local_paths)
+                    attrs = frames[0].attrs
+                    for df in frames[1:]:
+                        attrs = intersect(attrs, df.attrs)
+                    del attrs["iso"]  # added as a column (different for each line)
+                    # Merge:
+                    df = pd.concat(frames, ignore_index=True)  # reindex
+                    df.attrs = attrs
+                    self.params.dbpath = ",".join(local_paths)
+                elif output == "vaex":
+                    Frames = []
+                    for df in frames:
+                        if "iso" not in df.columns:
+                            assert "iso" in df.attrs
+                            import vaex
+
+                            df["iso"] = vaex.vconstant(
+                                int(df.attrs["iso"]), length=df.length_unfiltered()
+                            )
+                            Frames.append(df)
+                    # Keep attributes:
+                    from radis.misc.basics import intersect
+
+                    attrs = Frames[0].attrs
+                    for df in Frames[1:]:
+                        attrs = intersect(attrs, df.attrs)
+                    del attrs["iso"]  # added as a column (different for each line)
+                    # Merge:
+                    import vaex
+
+                    df = vaex.concat(Frames)  # reindex
+                    df.attrs = attrs
+
+                    self.params.dbpath = ",".join(local_paths)
+                else:
+                    raise NotImplementedError(output)
             else:
                 df = frames[0]
                 self.params.dbpath = local_paths[0]
@@ -1376,6 +1421,7 @@ class DatabankLoader(object):
                 verbose=self.verbose,
                 return_local_path=True,
                 engine=memory_mapping_engine,
+                output=output,
                 parallel=parallel,
             )
             self.params.dbpath = ",".join(local_paths)
@@ -1396,18 +1442,32 @@ class DatabankLoader(object):
             )
 
         # Always sort line database by wavenumber (required to SPARSE_WAVERANGE mode)
-        df.sort_values("wav", ignore_index=True, inplace=True)
+        if output == "pandas":
+            df.sort_values("wav", kind="mergesort", ignore_index=True, inplace=True)
+        elif output == "vaex":
+            try:
+                attrs = df.attrs
+            except:
+                attrs = {}
+            df = df.sort("wav", ascending=True)
+            df.attrs = attrs  # It is required because dataframe returned by sort_values doesn't have attrs, so I have to add it again.
+        else:
+            raise NotImplementedError(output)
 
         # %% Post-processing of the line database
         # ------------------------------------
         # (note : this is now done in 'fetch_hitemp' before saving to the disk)
         # spectroscopic quantum numbers will be needed for nonequilibrium calculations, and line survey.
         if parse_local_global_quanta and "locu" in df and source != "geisa":
-            df = parse_local_quanta(df, molecule, verbose=self.verbose)
+            df = parse_local_quanta(
+                df, molecule, verbose=self.verbose, dataframe_type=output
+            )
         if (
             parse_local_global_quanta and "globu" in df and source != "geisa"
         ):  # spectroscopic quantum numbers will be needed for nonequilibrium calculations :
-            df = parse_global_quanta(df, molecule, verbose=self.verbose)
+            df = parse_global_quanta(
+                df, molecule, verbose=self.verbose, dataframe_type=output
+            )
 
         # Remove non numerical attributes
         if drop_non_numeric:
@@ -1448,8 +1508,7 @@ class DatabankLoader(object):
                     + "in fetch_databank"
                 )
 
-        self._remove_unnecessary_columns(df)
-
+        self._remove_unecessary_columns(df, output)
         return
 
     def load_databank(
@@ -1572,6 +1631,9 @@ class DatabankLoader(object):
         # %% Check inputs
         # ---------
 
+        output = config["DATAFRAME_ENGINE"]
+        self.dataframe_type = output
+
         # use radis default for calculations non equilibrium calculations
         # if the levelsfmt is not specified in the databank
         if levelsfmt is None:
@@ -1626,6 +1688,7 @@ class DatabankLoader(object):
         # %% Load Line databases
         # ----------------------
         self._reset_references()  # bibliographic references
+        self.dataframe_type = output
 
         self.df0 = self._load_databank(
             path,
@@ -1635,6 +1698,7 @@ class DatabankLoader(object):
             drop_columns=drop_columns,
             load_columns=load_columns,
             include_neighbouring_lines=include_neighbouring_lines,
+            output=output,
         )
         self.misc.total_lines = len(self.df0)  # will be stored in Spectrum metadata
 
@@ -2064,7 +2128,8 @@ class DatabankLoader(object):
         #        # Reset index
         #        #    (cost ~ 1 ms but is needed if the user manually edited the database
         #        #    in between the load_database() and the calculation command
-        self.df0.reset_index(inplace=True, drop=True)  # drop: don't add old index
+        if self.dataframe_type == "pandas":
+            self.df0.reset_index(inplace=True, drop=True)  # drop: don't add old index
         # Finally commented: code may crash if users edit the database manually
         # (ex: modify broadening coefficients) and forgot to reset the index,
         # but that's for advanced users anyway. The cost (time+dont know what
@@ -2117,7 +2182,8 @@ class DatabankLoader(object):
         drop_columns,
         load_columns,
         include_neighbouring_lines=True,
-    ) -> pd.DataFrame:
+        output="pandas",
+    ):
 
         """Loads all available database files and keep the relevant one.
         Returns a Pandas dataframe.
@@ -2216,8 +2282,10 @@ class DatabankLoader(object):
 
         # subroutine load_and_concat
         # --------------------------------------
-        def load_and_concat(files):
-            """Concatenate many files in RAM
+
+        def load_and_concat(files, output="pandas"):
+            """Contatenate many files in RAM
+
             Parameters
             ----------
             files: list of str
@@ -2247,6 +2315,12 @@ class DatabankLoader(object):
                                 "Missing doi for CDSD-HITEMP. Use HITEMP-2010?",
                                 "MissingReferenceWarning",
                             )
+
+                        if self.dataframe_type == "pandas":
+                            engine = "pytables"
+                        elif self.dataframe_type == "vaex":
+                            engine = "vaex"
+
                         df = cdsd2df(
                             filename,
                             version="hitemp" if dbformat == "cdsd-hitemp" else "4000",
@@ -2256,7 +2330,8 @@ class DatabankLoader(object):
                             drop_non_numeric=True,
                             load_wavenum_min=wavenum_min,
                             load_wavenum_max=wavenum_max,
-                            engine="pytables",
+                            engine=engine,
+                            output=output,
                         )
                         # TODO: implement load_columns
                     elif dbformat in ["hitran", "hitemp"]:
@@ -2268,6 +2343,12 @@ class DatabankLoader(object):
                             self.reftracker.add(
                                 doi["HITEMP-2010"], "line database"
                             )  # [HITEMP-2010]_
+
+                        if self.dataframe_type == "pandas":
+                            engine = "pytables"
+                        elif self.dataframe_type == "vaex":
+                            engine = "vaex"
+
                         df = hit2df(
                             filename,
                             cache=db_use_cached,
@@ -2276,7 +2357,8 @@ class DatabankLoader(object):
                             drop_non_numeric=True,
                             load_wavenum_min=wavenum_min,
                             load_wavenum_max=wavenum_max,
-                            engine="pytables",
+                            engine=engine,
+                            output=output,
                         )
                     elif dbformat in ["hdf5-radisdb", "hitemp-radisdb"]:
                         if dbformat == "hitemp-radisdb":
@@ -2288,6 +2370,12 @@ class DatabankLoader(object):
                                 f"Missing doi reference for database used {filename}",
                                 "MissingReferenceWarning",
                             )
+
+                        if self.dataframe_type == "pandas":
+                            engine = "guess"
+                        elif self.dataframe_type == "vaex":
+                            engine = "vaex"
+
                         df = hdf2df(
                             filename,
                             columns=columns,
@@ -2299,7 +2387,8 @@ class DatabankLoader(object):
                             else None,
                             load_wavenum_min=wavenum_min,
                             load_wavenum_max=wavenum_max,
-                            engine="guess",
+                            engine=engine,
+                            output=output,
                         )
                     elif dbformat in ["exomol"]:
                         # self.reftracker.add("10.1016/j.jqsrt.2020.107228", "line database")  # [ExoMol-2020]
@@ -2322,9 +2411,13 @@ class DatabankLoader(object):
                     if col in drop_columns or (
                         drop_columns == "all" and col not in drop_all_but_these
                     ):
-                        del df[col]
-                        dropped.append(col)
-                if self.verbose >= 2 and len(dropped) > 0:
+                        if output == "pandas":
+                            del df[col]
+                            dropped.append(col)
+                        elif output == "vaex":
+                            df.drop(col, inplace=True)
+                if verbose >= 2 and len(dropped) > 0:
+
                     print("Dropped columns: {0}".format(dropped))
 
                 # Crop to the wavenumber of interest
@@ -2348,18 +2441,28 @@ class DatabankLoader(object):
 
             # Finally: Concatenate all
             if frames == []:
-                df = (
-                    pd.DataFrame()
-                )  # a database empty error will be raised a few lines below
+                if output == "pandas":
+                    df = (
+                        pd.DataFrame()
+                    )  # a database empty error will be raised a few lines below
+                elif output == "vaex":
+                    raise EmptyDatabaseError()
+                else:
+                    raise NotImplementedError(output)
             else:
-                df = pd.concat(frames, ignore_index=True)  # reindex
+                if output == "pandas":
+                    df = pd.concat(frames, ignore_index=True)  # reindex
+                elif output == "vaex":
+
+                    df = vaex.concat(frames)
+                    df.attrs = {}
 
             return df
 
         # end subroutine load_and_concat
         # --------------------------------------
 
-        df = load_and_concat(database)
+        df = load_and_concat(database, output=output)
 
         # Final checks
 
@@ -2411,7 +2514,11 @@ class DatabankLoader(object):
             # check no isotope shows 0 line in this range. Raise an warning if it
             # happens
             for k in isotope_list:
-                if not (sum(df.iso == k) > 0):
+                if self.dataframe_type == "pandas":
+                    iso_count = sum(df.iso == k)
+                elif self.dataframe_type == "vaex":
+                    iso_count = (df.iso == k).sum()
+                if not (iso_count > 0):
                     msg = (
                         "Reference databank ({0:.2f}-{1:.2f}cm-1)".format(
                             minwavdb, maxwavdb
@@ -2457,12 +2564,12 @@ class DatabankLoader(object):
                 )
             )
 
-        self._remove_unnecessary_columns(df)
+        self._remove_unecessary_columns(df, output)
 
         return df
 
-    def _remove_unnecessary_columns(self, df):
-        """Remove unnecessary columns and add values as attributes
+    def _remove_unecessary_columns(self, df, output="pandas"):
+        """Remove unecessary columns and add values as attributes
 
         Returns
         -------
@@ -2478,9 +2585,17 @@ class DatabankLoader(object):
                     + "in SpectrumFactory. Use radis.calc_spectrum, which "
                     + "calculates them independently then use MergeSlabs"
                 )
+            if output == "pandas":
+                df.drop("id", axis=1, inplace=True)
+            elif output == "vaex":
+                df.drop("id", inplace=True)
+            else:
+                raise NotImplementedError(output)
 
-            df.drop("id", axis=1, inplace=True)
             df_metadata.append("id")
+
+            if "attrs" not in df.columns:
+                df.attrs = {}
             df.attrs["id"] = id_set[0]
         else:
             assert "id" in df.attrs or "molecule" in df.attrs
@@ -2489,7 +2604,13 @@ class DatabankLoader(object):
             isotope_set = df.iso.unique()
 
             if len(isotope_set) == 1:
-                df.drop("iso", axis=1, inplace=True)
+                if output == "pandas":
+                    df.drop("iso", axis=1, inplace=True)
+                elif output == "vaex":
+                    df.drop("iso", inplace=True)
+                else:
+                    raise NotImplementedError(output)
+
                 df_metadata.append("iso")
                 df.attrs["iso"] = isotope_set[0]
         else:
@@ -2520,7 +2641,7 @@ class DatabankLoader(object):
         if df is None:
             isotope_list = self.input.isotope.split(",")
         else:  # get all isotopes in line database
-            isotope_list = set(df.iso)
+            isotope_list = set(df.iso.unique())
 
         return [int(k) for k in isotope_list]
 
