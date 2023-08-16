@@ -128,7 +128,7 @@ def transmittance_spectrum(
         wavespace unit: wavelength in air (``'nm'``), wavenumber
         (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``). Default ``'nm'``.
     Iunit: str
-        intensity unit. Default ``""`` (adimensionned)
+        intensity unit. Default ``""`` (adimensioned)
 
 
     Other Parameters

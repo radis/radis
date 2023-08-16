@@ -13,7 +13,7 @@ Output should be similar, but no ! By default these two databases provide
 different broadening coefficients. However, the Einstein coefficients & linestrengths
 should be the same, therefore the integrals under the lines should be similar.
 
-We verifiy this below :
+We verify this below :
 
 For further exploration, ExoMol and HITEMP lines can be downloaded and accessed separately using
 :py:func:`~radis.io.exomol.fetch_exomol` and :py:func:`~radis.io.hitemp.fetch_hitemp`

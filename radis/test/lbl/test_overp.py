@@ -58,7 +58,7 @@ def test_direct_overpopulation_vs_recombined_bands(
     #
     #    Starting from RADIS 1.0.1, the test is run on [HITRAN-2016]_, which
     #    is not valid for these temperatures but can be more conveniently
-    #    downloaded automatically and thus executed everytime with `Travis CI <https://travis-ci.com/radis/radis>`_
+    #    downloaded automatically and thus executed every time with `Travis CI <https://travis-ci.com/radis/radis>`_
     #
 
     # Note: only with iso1 at the moment

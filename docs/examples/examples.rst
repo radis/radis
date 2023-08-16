@@ -209,7 +209,7 @@ case::
     cd radis
     python radis/test/benchmark/radis_vs_hapi_CH4_full_spectrum.py
 
-Using the different :ref:`Performance <label_lbl_performance>` optimisations available in RADIS,
+Using the different :ref:`Performance <label_lbl_performance>` optimizations available in RADIS,
 the calculation is typically 100 times faster in RADIS::
 
     >>> Calculated with HAPI in 157.41s
@@ -245,7 +245,7 @@ than wavelengths.
 Access Matlab from RADIS
 ========================
 
-RADIS can be accessed from Matlab by setting up Python environmnet in Matlab ::
+RADIS can be accessed from Matlab by setting up Python environment in Matlab ::
 
     s = py.radis.calc_spectrum(1900,2300,molecule='CO',isotope='1,2,3',pressure=1.01325,Tgas=700,mole_fraction=0.1,path_length=1,databank='hitran');
     s.apply_slit(0.5,'nm');

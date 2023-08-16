@@ -79,7 +79,7 @@ def fetch_hitran(
 
         .. note::
             Vaex DataFrames are memory-mapped. They do not take any space in RAM
-            and are extremelly useful to deal with the largest databases.
+            and are extremely useful to deal with the largest databases.
 
     parallel: bool
         if ``True``, uses joblib.parallel to load database with multiple processes
@@ -90,7 +90,7 @@ def fetch_hitran(
 
     Returns
     -------
-    df: pd.DataFrame
+    df: pd.DataFrame or vaex.dataframe.DataFrameLocal
         Line list
         A HDF5 file is also created in ``local_databases`` and referenced
         in the :ref:`RADIS config file <label_lbl_config_file>` with name

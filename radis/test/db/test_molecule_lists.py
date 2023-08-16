@@ -292,7 +292,7 @@ def generate_molparam_for_non_HITRAN_species():
             ),
         )
 
-    #%% Generate dictionary of terrestrial abuneances for all molecules not in HITRAN
+    #%% Generate dictionary of terrestrial abundances for all molecules not in HITRAN
     EXTRA_ABUNDANCES_DICT = {}
     EXTRA_MOLAR_MASS_DICT = {}
     EXTRA_ISOTOPE_FULLNAME_DICT = {}

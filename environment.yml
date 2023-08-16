@@ -20,7 +20,7 @@ dependencies:
 - matplotlib
 - numpy
 - numba  # just-in-time compiler
-- pandas<2.0.0   # not ready for 2.0 yet ; some breaking compatibility, see issue #600 
+- pandas<2.0.0   # not ready for 2.0 yet ; some breaking compatibility, see issue #600
 - plotly>=2.5.1  # for line survey HTML output
 - progressbar2    # used in vaex
 - psutil # to get user RAM

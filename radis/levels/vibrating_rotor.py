@@ -141,7 +141,7 @@ def EvJah_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, remove_ZPE=Tr
 
     Defined for CO2 only. See:  Klarenaar et al. [1]_
 
-    Energy of CO2 X(1Σg+) state with an independant harmonic oscillator
+    Energy of CO2 X(1Σg+) state with an independent harmonic oscillator
     approximation  (CO2-626 = first isotope)
 
     Note that this is less accurate than using CDSD energies in the (p, J, c, n)

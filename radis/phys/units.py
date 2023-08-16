@@ -65,7 +65,7 @@ def conv2(quantity, fromunit, tounit):
 
     The output is still non dimensional. We don't transform `quantity`
     into a dimensioned array because this may create a performance
-    drop in computationaly-expensive task. Instead, we assume we know for
+    drop in computationally-expensive task. Instead, we assume we know for
     sure the units in which some of our quantities will be created, and just
     want to let the users choose another output unit
     """

@@ -64,6 +64,7 @@ Formula in docstrings generated with :py:func:`~pytexit.pytexit.py2tex` ::
 from warnings import warn
 
 import numpy as np
+import vaex
 from numba import float64, jit
 from numpy import arange, exp
 from numpy import log as ln
@@ -234,7 +235,8 @@ def gaussian_FT(w_centered, hwhm):
 
     Returns
     -------
-    array
+    numpy array or vaex expression.
+    Depends upon the type of hwhm parameter, if it of vaex expression type then,returned value is vaex expression
 
     See Also
     --------
@@ -293,7 +295,8 @@ def pressure_broadening_HWHM(
 
     Returns
     -------
-    pandas Series        [shape N]
+    pandas Series or Vaex Expression        [shape N]
+        Depends on the engine used . Vaex Expression are memory efficient
         Lorentzian half-width at half-maximum (HWHM) for each line profile
 
     References
@@ -896,6 +899,7 @@ class BroadenFactory(BaseFactory):
 
         # diluent and their broadening coeff dictionary
         diluent_broadening_coeff = {}
+
         for key in diluent:
             if key == "air":
                 # no need to add broadening dictionary with air, as "airbrd" and "Tdpair" is already in the dataframe
@@ -964,7 +968,7 @@ class BroadenFactory(BaseFactory):
         self.profiler.stop("calc_hwhm", "Calculate broadening HWHM")
 
     def _calc_min_width(self, df):
-        """Calculates the minimum FWHW of the lines
+        """Calculates the minimum FWHM of the lines
         and stores in self.min_width
         """
         if "hwhm_voigt" in df:
@@ -973,7 +977,7 @@ class BroadenFactory(BaseFactory):
             min_lorentz_fwhm = 2 * df.hwhm_lorentz.min()
             min_gauss_fwhm = 2 * df.hwhm_gauss.min()
             # We take the max of both. Note: could also have used
-            # Olivero1977 to get the Voigt-equivlaent width of all lines,
+            # Olivero1977 to get the Voigt-equivalent width of all lines,
             # but it's quite expensive to compute
             min_width = max(min_lorentz_fwhm, min_gauss_fwhm)
 
@@ -1009,7 +1013,7 @@ class BroadenFactory(BaseFactory):
 
         """
         # TODO : make it a Method of a PhysicalHypothesis class, with a
-        # WarningTreshold and an ErrorThreshold ?
+        # WarningThreshold and an ErrorThreshold ?
 
         # TODO: thresholds depend whether we're computing Transmittance/optically thin emission,
         # for a homogeneous slab, or self-absorbed radiance combined with other slabs.
@@ -1076,7 +1080,13 @@ class BroadenFactory(BaseFactory):
         """
 
         # Check self broadening is here
-        if not "Tdpsel" in list(df.keys()):
+
+        if self.dataframe_type == "pandas":
+            columns = list(df.keys())
+        elif self.dataframe_type == "vaex":
+            columns = df.column_names
+
+        if not "Tdpsel" in columns:
             self.warn(
                 "Self-broadening temperature coefficient Tdpsel not given in database: used Tdpair instead",
                 "MissingSelfBroadeningWarning",
@@ -1088,7 +1098,7 @@ class BroadenFactory(BaseFactory):
 
         molar_mass = self.get_molar_mass(df)
 
-        if not "selbrd" in list(df.keys()):
+        if not "selbrd" in columns:
             self.warn(
                 "Self-broadening coefficient selbrd not given in database: used airbrd instead",
                 "MissingSelfBroadeningWarning",
@@ -1155,7 +1165,11 @@ class BroadenFactory(BaseFactory):
         """
 
         # Check self broadening temperature-dependance coefficient is here
-        if not "Tdpsel" in list(df.keys()):
+        if self.dataframe_type == "pandas":
+            columns = list(df.keys())
+        elif self.dataframe_type == "vaex":
+            columns = df.column_names
+        if not "Tdpsel" in columns:
             self.warn(
                 "Self-broadening temperature coefficient `Tdpsel` not given in database: used `Tdpair` instead",
                 "MissingSelfBroadeningTdepWarning",
@@ -1166,7 +1180,7 @@ class BroadenFactory(BaseFactory):
             Tdpsel = df.Tdpsel
 
         # Check self broadening is here
-        if not "selbrd" in list(df.keys()):
+        if not "selbrd" in columns:
             self.warn(
                 "Self-broadening reference width `selbrd` not given in database: used air broadening reference width `airbrd` instead",
                 "MissingSelfBroadeningWarning",
@@ -1246,7 +1260,10 @@ class BroadenFactory(BaseFactory):
 
         # Prepare vectorized operations:
         try:  # make it a (1, N) row vector
-            gamma_lb = gamma_lb.values.reshape((1, -1))
+            if isinstance(gamma_lb, np.ndarray) or self.dataframe_type == "pandas":
+                gamma_lb = gamma_lb.values.reshape((1, -1))
+            elif self.dataframe_type == "vaex":
+                gamma_lb = gamma_lb.to_numpy().reshape((1, -1))
         except AttributeError:  # probably not a dataframe: assert there is one line only.
             assert type(gamma_lb) is np.float64
 
@@ -1308,7 +1325,10 @@ class BroadenFactory(BaseFactory):
 
         # Prepare vectorized operations:
         try:  # make it a (1,N) row vector
-            gamma_db = gamma_db.values.reshape((1, -1))
+            if self.dataframe_type == "pandas":
+                gamma_db = gamma_db.values.reshape((1, -1))
+            elif self.dataframe_type == "vaex":
+                gamma_db = gamma_db.to_numpy().reshape((1, -1))
         except AttributeError:  # probably not a dataframe: assert there is one line only.
             assert type(gamma_db) is np.float64
 
@@ -1374,12 +1394,17 @@ class BroadenFactory(BaseFactory):
 
         # Prepare coefficients, vectorize
         # ... get Voigt HWHM
-        if not "hwhm_voigt" in list(dg.keys()):
+        if self.dataframe_type == "vaex":
+            columns = dg.column_names
+        elif self.dataframe_type == "pandas":
+            columns = list(dg.keys())
+
+        if not "hwhm_voigt" in columns:
             raise KeyError(
                 "hwhm_voigt: Calculate broadening with "
                 + "calc_voigt_broadening_HWHM first"
             )
-        if not "hwhm_lorentz" in list(dg.keys()):
+        if not "hwhm_lorentz" in columns:
             raise KeyError(
                 "hwhm_lorentz: Calculate broadening with "
                 + "calc_voigt_broadening_HWHM first"
@@ -1390,11 +1415,16 @@ class BroadenFactory(BaseFactory):
 
         # Prepare vectorized operations: make (1, N) row vectors
         try:
-            hwhm_lorentz = hwhm_lorentz.values.reshape((1, -1))
-            hwhm_voigt = hwhm_voigt.values.reshape((1, -1))
+            if self.dataframe_type == "pandas":
+                hwhm_lorentz = hwhm_lorentz.values.reshape((1, -1))
+                hwhm_voigt = hwhm_voigt.values.reshape((1, -1))
+            elif self.dataframe_type == "vaex":
+                hwhm_lorentz = hwhm_lorentz.to_numpy().reshape((1, -1))
+                hwhm_voigt = hwhm_voigt.to_numpy().reshape((1, -1))
         except AttributeError:  # probably not a dataframe: assert there is one line only.
-            assert type(hwhm_lorentz) is np.float64
-            assert type(hwhm_voigt) is np.float64
+            if self.dataframe_type == "pandas":
+                assert type(hwhm_lorentz) is np.float64
+                assert type(hwhm_voigt) is np.float64
 
         # Calculate broadening for all lines
         # ----------------------------------
@@ -1463,8 +1493,12 @@ class BroadenFactory(BaseFactory):
         shifted_wavenum = dg.shiftwav
 
         try:  # make it a row vector
-            shifted_wavenum = shifted_wavenum.values.reshape((1, -1))
-            N = len(dg)
+            if self.dataframe_type == "pandas":
+                shifted_wavenum = shifted_wavenum.values.reshape((1, -1))
+                N = len(dg)
+            elif self.dataframe_type == "vaex":
+                shifted_wavenum = shifted_wavenum.to_numpy().reshape((1, -1))
+                N = len(dg)
         except AttributeError:  # probably not a dataframe: one line only.
             assert type(shifted_wavenum) is np.float64
             N = 1
@@ -1579,8 +1613,12 @@ class BroadenFactory(BaseFactory):
         log_pL = self.params.dxL  # LDM user params
         log_pG = self.params.dxG  # LDM user params
 
-        wL_dat = df.hwhm_lorentz.values * 2  # FWHM
-        wG_dat = df.hwhm_gauss.values * 2  # FWHM
+        if self.dataframe_type == "pandas":
+            wL_dat = df.hwhm_lorentz.values * 2.000  # FWHM
+            wG_dat = df.hwhm_gauss.values * 2.000  # FWHM
+        elif self.dataframe_type == "vaex":
+            wL_dat = df.hwhm_lorentz * 2.000  # FWHM
+            wG_dat = df.hwhm_gauss * 2.000  # FWHM
 
         wL = _init_w_axis(wL_dat, log_pL)  # FWHM
         self.NwL = len(wL)
@@ -1750,7 +1788,7 @@ class BroadenFactory(BaseFactory):
         line_profile:   (1/cm-1)        2D array of lines_profiles for all lines
                 (size B * N, B = width of lineshape)
         shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
-            center wavelength (used to project broaded lineshapes )
+            center wavelength (used to project broadened lineshapes )
 
         Returns
         -------
@@ -1777,7 +1815,13 @@ class BroadenFactory(BaseFactory):
         )  # calculation vector of wavenumbers (shape W + space B on the sides)
 
         # Vectorize the chunk of lines
-        S = broadened_param.reshape((1, -1))
+        if isinstance(broadened_param, np.ndarray):
+            S = broadened_param.reshape((1, -1))
+        elif self.dataframe_type == "vaex":
+            S = broadened_param.to_numpy().reshape((1, -1))
+        else:
+            raise NotImplementedError
+
         shifted_wavenum = shifted_wavenum.reshape((1, -1))  # make it a row vector
 
         # Get truncation array
@@ -1907,7 +1951,7 @@ class BroadenFactory(BaseFactory):
             in Fourier space.
 
         shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
-            center wavelength (used to project broaded lineshapes )
+            center wavelength (used to project broadened lineshapes )
         wL: array       (size DL)
             array of all Lorentzian widths in LDM
         wG: array       (size DG)
@@ -1970,9 +2014,16 @@ class BroadenFactory(BaseFactory):
 
         # LDM : Next calculate how the line is distributed over the 2x2x2 bins.
         ki0, ki1, tvi = self._get_indices(shifted_wavenum, wavenumber_calc)
-        li0, li1, tGi = self._get_indices(np.log(wG_dat), np.log(wG))
-        mi0, mi1, tLi = self._get_indices(np.log(wL_dat), np.log(wL))
 
+        if self.dataframe_type == "vaex":
+            # TODO : check memory usage & if there is no other implementation without numpy conversion
+            wG_dat = wG_dat.to_numpy()
+            wL_dat = wL_dat.to_numpy()
+            li0, li1, tGi = self._get_indices(np.log(wG_dat), np.log(wG))
+            mi0, mi1, tLi = self._get_indices(np.log(wL_dat), np.log(wL))
+        elif self.dataframe_type == "pandas":
+            li0, li1, tGi = self._get_indices(np.log(wG_dat), np.log(wG))
+            mi0, mi1, tLi = self._get_indices(np.log(wL_dat), np.log(wL))
         # Next assign simple weights:
         if optimization == "min-RMS":
 
@@ -2015,7 +2066,7 @@ class BroadenFactory(BaseFactory):
             ) / (2 * dxL)
 
         else:
-            # Simple weigths:
+            # Simple weights:
             avi = tvi
             aGi = tGi
             aLi = tLi
@@ -2047,7 +2098,7 @@ class BroadenFactory(BaseFactory):
             if self.params.sparse_ldm == True:
                 if self.verbose >= 2:
                     print(
-                        "SPARSE optimisation not implemented with 'fft' mode. Use 'voigt' for analytical voigt, or radis.config['SPARSE_WAVERANGE'] = False"
+                        "SPARSE optimization not implemented with 'fft' mode. Use 'voigt' for analytical voigt, or radis.config['SPARSE_WAVERANGE'] = False"
                     )
             LDM = np.zeros(
                 (
@@ -2106,7 +2157,7 @@ class BroadenFactory(BaseFactory):
                 for groupby_param, group in dgb:
                     truncation_pts = int(self.params.truncation // self.params.wstep)
                     # note: truncation can be unique for each point of the LDM basis
-                    # (allow to have line-dependant truncatino, at least as all
+                    # (allow to have line-dependant truncation, at least as all
                     # lines with same truncation are grouped together in the LDM basis)
 
                     ki0 = group.ki0.values
@@ -2160,7 +2211,7 @@ class BroadenFactory(BaseFactory):
             )
             LDM_ranges = {}
             LDM_reduced = {}
-            #  (note : could be combined faster by combining the ranges directly, rather than geenrating the boolean arrays?)
+            #  (note : could be combined faster by combining the ranges directly, rather than generating the boolean arrays?)
             for param in all_keys:
                 b = np.zeros(len(w), dtype=bool)
                 I = np.zeros(len(w))
@@ -2249,7 +2300,7 @@ class BroadenFactory(BaseFactory):
         return wavenumber, sumoflines
 
     def _broaden_lines(self, df):
-        """Divide over chuncks not to process to many lines in memory at the
+        """Divide over chunks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
         lines are processed on the same core. )
 
@@ -2415,7 +2466,15 @@ class BroadenFactory(BaseFactory):
                             )
                         )
 
-                    for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
+                    # Cut lines in smaller bits for better memory handling
+                    if self.dataframe_type == "pandas":
+                        df = df.groupby(arange(len(df)) % N)
+                    elif self.dataframe_type == "vaex":
+                        # idx is added to as vaex don't have index column . Then df is divided into chunks
+                        df["idx"] = vaex.vrange(0, len(df)) % N
+                        df = df.groupby(df.idx)
+
+                    for i, (_, dg) in enumerate(df):
                         line_profile = self._calc_lineshape(dg)
                         (wavenumber, absorption) = self._apply_lineshape(
                             dg.S.values, line_profile, dg.shiftwav.values
@@ -2429,7 +2488,16 @@ class BroadenFactory(BaseFactory):
                     self.reftracker.add(doi["DIT-2020"], "algorithm")
                     # Iterating over the chunks of the line database
                     # Using DIT Algorithm calculations for optimized loops
-                    for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
+
+                    # Cut lines in smaller bits for better memory handlin
+                    if self.dataframe_type == "pandas":
+                        df = df.groupby(arange(len(df)) % N)
+                    elif self.dataframe_type == "vaex":
+                        # idx is added to as vaex don't have index column . Then df is divided into chunks
+                        df["idx"] = vaex.vrange(0, len(df)) % N
+                        df = df.groupby(df.idx)
+
+                    for i, (_, dg) in enumerate(df):
                         (
                             line_profile_LDM,
                             wL_i,
@@ -2476,7 +2544,7 @@ class BroadenFactory(BaseFactory):
         return wavenumber, abscoeff
 
     def _broaden_lines_noneq(self, df):
-        """Divide over chuncks not to process to many lines in memory at the
+        """Divide over chunks not to process to many lines in memory at the
         same time (note that this is not where the parallelisation is done: all
         lines are processed on the same core)
 
@@ -2547,7 +2615,7 @@ class BroadenFactory(BaseFactory):
                 # ... Distribute lines over LDM 2.1s
                 # ... Convolve and sum on spectral range 0.3s
                 # @EP: #performance.
-                # unlike in the non LDM case, the nonequilibruum case here is ~2x
+                # unlike in the non LDM case, the nonequilibrium case here is ~2x
                 # the equilibrium case: only the closest matching line is common to the
                 # absorption & emission steps. The bottleneck is the distribution
                 # of the line over the LDM, which has to be done for both abscoeff & emisscoeff.
@@ -2760,7 +2828,7 @@ class BroadenFactory(BaseFactory):
         self.profiler.start("weak_lines", 2, "... classifying lines as weak or strong")
         # Get approximate spectral absorption coefficient
         rough_spectrum, S_density_on_grid, line2grid_proj_left = project_lines_on_grid(
-            df, wavenumber_calc, wstep
+            df, wavenumber_calc, wstep, self.dataframe_type
         )
 
         #     :
@@ -2827,8 +2895,8 @@ class BroadenFactory(BaseFactory):
         in the Factory.
 
         The Weak line characterization [1]_ is only based on abscoeff. For strong
-        nonequilibrium cases there may be lines consired as weak in terms
-        of absorption but not weaks in emission, or the other way around. It should
+        nonequilibrium cases there may be lines considered as weak in terms
+        of absorption but not weak in emission, or the other way around. It should
         be negligible, though, so a dual conditioning (looking at both abscoeff
         and emisscoeff) was not implemented.
         See :func:`radis.lbl.broadening._find_weak_lines` if you want to change that
@@ -2860,7 +2928,7 @@ class BroadenFactory(BaseFactory):
             # ... only guess based on abscoeff. See Notes for noneq case.
             self._find_weak_lines(pseudo_continuum_threshold)
 
-            # Retrieve lines, separate weaks from strong
+            # Retrieve lines, separate weak from strong
             df = self.df1
             df_weak_lines = df[df.weak_line]
             df_strong_lines = df[~df.weak_line]
@@ -2873,7 +2941,7 @@ class BroadenFactory(BaseFactory):
             # Calculate continuum
             if noneq:
                 k_continuum, j_continuum, _, _, _ = project_lines_on_grid_noneq(
-                    df_weak_lines, wavenumber_calc, wstep
+                    df_weak_lines, wavenumber_calc, wstep, self.dataframe_type
                 )
 
                 if __debug__:
@@ -2896,7 +2964,7 @@ class BroadenFactory(BaseFactory):
 
             else:
                 k_continuum, _, _ = project_lines_on_grid(
-                    df_weak_lines, wavenumber_calc, wstep
+                    df_weak_lines, wavenumber_calc, wstep, self.dataframe_type
                 )
 
                 if __debug__:
@@ -2990,7 +3058,7 @@ class BroadenFactory(BaseFactory):
         return abscoeff_v
 
 
-def project_lines_on_grid(df, wavenumber, wstep):
+def project_lines_on_grid(df, wavenumber, wstep, dataframe_type="pandas"):
     """Quickly sums all lines on wavespace grid as rectangles of HWHM
     corresponding to ``hwhm_voigt`` and a spectral absorption coefficient value so
     that linestrength is conserved.
@@ -3021,9 +3089,15 @@ def project_lines_on_grid(df, wavenumber, wstep):
         ``wavenumber``. Size ``N``
     """
 
-    shiftwav = df.shiftwav.values  # cm-1  ,   size N (number of lines)
-    S = df.S.values  # cm/#  ~   cm-1/(#.cm-2)  ,   size N
-    wv = df.hwhm_voigt.values * 2  # HWHM > FWHM
+    if dataframe_type == "pandas":
+        shiftwav = df.shiftwav.values  # cm-1  ,   size N (number of lines)
+        S = df.S.values  # cm/#  ~   cm-1/(#.cm-2)  ,   size N
+        wv = df.hwhm_voigt.values * 2  # HWHM > FWHM
+    elif dataframe_type == "vaex":
+        # TODO : check memory usage & if there is no other implementation without numpy conversion
+        shiftwav = df.shiftwav.to_numpy()  # cm-1  ,   size N (number of lines)
+        S = df.S.to_numpy()  # cm/#  ~   cm-1/(#.cm-2)  ,   size N
+        wv = df.hwhm_voigt.to_numpy() * 2  # HWHM > FWHM
 
     # ... First get closest matching line (left, and right):
     iwav_on_grid_left = np.searchsorted(wavenumber, shiftwav.T, side="left").ravel() - 1
@@ -3124,7 +3198,7 @@ def project_lines_on_grid(df, wavenumber, wstep):
     return k_rough_spectrum, S_density_on_grid, line2grid_projection_left
 
 
-def project_lines_on_grid_noneq(df, wavenumber, wstep):
+def project_lines_on_grid_noneq(df, wavenumber, wstep, dataframe_type="pandas"):
     """Quickly sums all lines on wavespace grid as rectangles of HWHM
     corresponding to ``hwhm_voigt`` and a spectral absorption coefficient value so
     that linestrength is conserved.
@@ -3170,10 +3244,17 @@ def project_lines_on_grid_noneq(df, wavenumber, wstep):
     be recomputed from the linestrength).
     """
 
-    shiftwav = df.shiftwav.values  # cm-1  ,   size N (number of lines)
-    S = df.S.values  # cm/#  ~   cm-1/(#.cm-2)  ,   size N
-    Ei = df.Ei.values  # mW/cm3/sr
-    wv = df.hwhm_voigt.values * 2  # HWHM > FWHM
+    if dataframe_type == "pandas":
+        shiftwav = df.shiftwav.values  # cm-1  ,   size N (number of lines)
+        S = df.S.values  # cm/#  ~   cm-1/(#.cm-2)  ,   size N
+        Ei = df.Ei.values  # mW/cm3/sr
+        wv = df.hwhm_voigt.values * 2  # HWHM > FWHM
+    elif dataframe_type == "vaex":
+        # TODO : check memory usage & if there is no other implementation without numpy conversion
+        shiftwav = df.shiftwav.to_numpy()  # cm-1  ,   size N (number of lines)
+        S = df.S.to_numpy()  # cm/#  ~   cm-1/(#.cm-2)  ,   size N
+        Ei = df.Ei.to_numpy()  # mW/cm3/sr
+        wv = df.hwhm_voigt.to_numpy() * 2  # HWHM > FWHM
 
     # ... First get closest matching line (left, and right):
     iwav_on_grid_left = np.searchsorted(wavenumber, shiftwav.T, side="left").ravel() - 1

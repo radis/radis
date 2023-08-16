@@ -17,6 +17,7 @@ Get equivalent width in nm of a 10cm-1 width at 380 nm
 """
 
 import numpy as np
+import vaex
 
 from radis.phys.air import air2vacuum, vacuum2air
 from radis.phys.constants import c, eV, h, hc_k, k_b
@@ -89,6 +90,12 @@ def K2cm(E):
 def cm2J(E):
     """cm-1 to J."""
     _assertcm(E)
+    return (E * 100) * (h * c)
+
+
+def cm2J_vaex(E):
+    """cm-1 to J."""
+    _assertcm_vaex(E)
     return (E * 100) * (h * c)
 
 
@@ -332,7 +339,10 @@ def atm2bar(p_atm):
 
 
 def _magn(x):
-    return np.round((np.log10(np.abs(x))))
+    if isinstance(x, vaex.expression.Expression):
+        return x.abs().log10().round()
+    else:
+        return np.round((np.log10(np.abs(x))))
 
 
 def _assertK(E):
@@ -349,6 +359,15 @@ def _assertcm(E):
         try:
             m = _magn(E)
             assert ((1 <= m) & (m <= 5)).all()
+        except AssertionError:
+            print(("Warning. Input values may not be in cm-1", E, "cm-1?"))
+
+
+def _assertcm_vaex(E):
+    if E.abs().sum():  # check E != 0 for both floats and arrays
+        try:
+            m = _magn(E)
+            assert (((1 <= m) & (m <= 5))).unique() == [True]
         except AssertionError:
             print(("Warning. Input values may not be in cm-1", E, "cm-1?"))
 

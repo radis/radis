@@ -31,7 +31,7 @@ from radis.phys.units import Unit as Q_
 from radis.phys.units import conv2
 
 
-def planck(lmbda, T, eps=1, unit="mW/cm2/sr/nm"):
+def planck(lambda_, T, eps=1, unit="mW/cm2/sr/nm"):
     r"""Planck function for blackbody radiation.
 
     .. math::
@@ -58,7 +58,7 @@ def planck(lmbda, T, eps=1, unit="mW/cm2/sr/nm"):
     :py:func:`~radis.tools.blackbody.sPlanck`, :py:func:`~radis.phys.blackbody.planck_wn`
     """
     k = k_b
-    lbd = lmbda * 1e-9
+    lbd = lambda_ * 1e-9
     iplanck = (
         eps * (2 * h * c**2 / lbd**5) * (1 / (exp(h * c / (lbd * k * T)) - 1))
     )  # S.I  (W.sr-1.m-3)

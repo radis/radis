@@ -120,7 +120,7 @@ def calc_lorentzian_envelope_params(
     cdef size_t top_size = 0
     cdef size_t bottom_size = 0
 
-    fname = "Lorenzian_minmax_" + str(len(gamma)) + ".dat"
+    fname = "Lorentzian_minmax_" + str(len(gamma)) + ".dat"
 
     cdef unsigned int i,na_len
     cdef float na_i, gamma_i

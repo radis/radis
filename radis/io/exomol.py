@@ -96,7 +96,7 @@ def fetch_exomol(
 
         .. note::
             Vaex DataFrames are memory-mapped. They do not take any space in RAM
-            and are extremelly useful to deal with the largest databases.
+            and are extremely useful to deal with the largest databases.
 
     skip_optional_data : bool
         If False, fetch all fields which are marked as available in the ExoMol definition
@@ -117,7 +117,7 @@ def fetch_exomol(
 
     Returns
     -------
-    df: pd.DataFrame
+    df: pd.DataFrame or vaex.dataframe.DataFrameLocal
         Line list
         A HDF5 file is also created in ``local_databases`` and referenced
         in the :ref:`RADIS config file <label_lbl_config_file>` with name
@@ -274,7 +274,7 @@ def fetch_exomol(
     assert "wav" in df
 
     # ... include isotopic abundance in linestrength :
-    # Note : ExoMol treats isotopes as independant molecules ; linestrength is not
+    # Note : ExoMol treats isotopes as independent molecules ; linestrength is not
     # corrected by isotopic abundance.
     # Below, replace Linestrength with Line Intensity taking into account
     # Terrestrial isotopic abundance (to be compatible with HITRAN/HITEMP/etc. )
@@ -295,7 +295,7 @@ def fetch_exomol(
         mdb.rename_columns(df, {"Sij0": "int"})
 
     # Add Attributes of the DataFrame
-    if output == "pandas":  # no attribtes in "Jax" or "Vaex" mode
+    if output in ["pandas", "vaex"]:  # no attribtes in "Jax" or "Vaex" mode
         from radis.db.classes import HITRAN_MOLECULES
 
         attrs = {}
@@ -306,9 +306,12 @@ def fetch_exomol(
         attrs["molecule"] = molecule
         attrs["iso"] = isotope
 
-        for k, v in attrs.items():
-            df.attrs[k] = v
-
+        if output == "vaex":
+            df.attrs = {}
+            df.attrs = attrs
+        elif output == "pandas":
+            for k, v in attrs.items():
+                df.attrs[k] = v
     # Return:
     out = df
     if return_local_path or return_partition_function:

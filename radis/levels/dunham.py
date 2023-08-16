@@ -8,7 +8,7 @@ Dunham development for diatomic molecules energies
 Warning
 -------
 
-Although by convention prefactors share the same name throughout most of the litterature,
+Although by convention prefactors share the same name throughout most of the literature,
 signs can be different depending on the article. Make sure your Dunham expansion
 has the same signs as the one we use here!
 
@@ -72,7 +72,7 @@ def Gv(v, we=0, wexe=0, weye=0, weze=0, weae=0, webe=0, gv=1):
 
     .. warning::
 
-        Although by convention prefactors share the same name throughout most of the litterature,
+        Although by convention prefactors share the same name throughout most of the literature,
         signs can be different depending on the article. Make sure your Dunham expansion
         has the same signs as the one we use here! In particular, this function
         uses a ``-wexe`` sign as in the usual Herzberg notation. Ex:
@@ -190,7 +190,7 @@ def Fv(
 
     .. warning::
 
-        Although by convention prefactors share the same name throughout most of the litterature,
+        Although by convention prefactors share the same name throughout most of the literature,
         signs can be different depending on the article. Make sure your Dunham expansion
         has the same signs as the one we use here! Ex:
 

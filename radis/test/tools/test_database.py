@@ -146,7 +146,7 @@ def test_save_compressed2(verbose=True, *args, **kwargs):
     )
     try:
 
-        # load in one databse
+        # load in one database
         db = SpecDatabase(join(dirname(getTestFile(".")), "newDb"))
         db.add(s, compress=2, if_exists_then="error")
 

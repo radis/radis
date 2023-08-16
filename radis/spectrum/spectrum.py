@@ -284,7 +284,7 @@ class Spectrum(object):
 
     Wavebase:
 
-        quantites are stored either in wavenum or wavelength base, but this doesnt
+        quantities are stored either in wavenum or wavelength base, but this doesnt
         matter as they are retrieved / plotted with the
         :meth:`~radis.spectrum.spectrum.Spectrum.get` and :meth:`~radis.spectrum.spectrum.Spectrum.plot`
         methods which have units as input arguments
@@ -394,7 +394,7 @@ class Spectrum(object):
             conditions["waveunit"] = conditions["wavespace"]
             del conditions["wavespace"]
 
-        # ... make sure waveunit is given. Either implicitely, or explicitely:
+        # ... make sure waveunit is given. Either implicitly, or explicitly:
         if waveunit is None and not "waveunit" in conditions:
             if "wavelength" in quantities:
                 raise AssertionError(
@@ -497,7 +497,7 @@ class Spectrum(object):
 
         # Finally, add our attributes
         self.conditions = self.c = conditions
-        """ dict: computation conditions, or experimetnal parameters, or
+        """ dict: computation conditions, or experimental parameters, or
         any metadata you need to store with the Spectrum object.
         """
         self.populations = populations
@@ -557,10 +557,10 @@ class Spectrum(object):
         wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
             unit of waverange:         wavelength in air (``'nm'`` or ``'nm_air'``), wavenumber
             (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
-            If ``None``, then ``w`` must be a dimensionned array.
+            If ``None``, then ``w`` must be a dimensioned array.
         Iunit: str
             spectral quantity unit (arbitrary). Ex: ``'mW/cm2/sr/nm'`` for radiance_noslit
-            If ``None``, then ``I`` must be a dimensionned array.
+            If ``None``, then ``I`` must be a dimensioned array.
         *args, **kwargs
             see :class:`~radis.spectrum.spectrum.Spectrum` doc
 
@@ -600,7 +600,7 @@ class Spectrum(object):
             s = Spectrum.from_array(w, I, 'radiance_noslit',
                                    wunit='nm', unit='mW/cm2/sr/nm')
 
-        Dimensionned arrays can also be used directly ::
+        Dimensioned arrays can also be used directly ::
 
             import astropy.units as u
             w = np.linspace(200, 300) * u.nm
@@ -644,19 +644,19 @@ class Spectrum(object):
             )
             Iunit = unit
 
-        # Check if dimensionned arrays
+        # Check if dimensioned arrays
         try:
             I.unit
         except AttributeError:
             # dimensionless
             if Iunit is None:
                 raise ValueError(
-                    "I must be a dimensionned array, or ``Iunit=`` must be given."
+                    "I must be a dimensioned array, or ``Iunit=`` must be given."
                 )
         else:
             if Iunit is not None:
                 raise ValueError(
-                    f"I is a dimensionned array (in {Iunit.unit.to_string()}), therefore ``Iunit`` cannot be given too (got {Iunit}). Set ``Iunit=None``"
+                    f"I is a dimensioned array (in {Iunit.unit.to_string()}), therefore ``Iunit`` cannot be given too (got {Iunit}). Set ``Iunit=None``"
                 )
             Iunit = I.unit.to_string()
             I = I.value
@@ -666,7 +666,7 @@ class Spectrum(object):
             # dimensionless
             if wunit is None:
                 raise ValueError(
-                    "``w`` must be a dimensionned array, or ``wunit=`` must be given."
+                    "``w`` must be a dimensioned array, or ``wunit=`` must be given."
                 )
         else:
             wunit_input = wunit
@@ -700,7 +700,7 @@ class Spectrum(object):
                     wunit = wunit_input
                 elif wunit != wunit_input:
                     raise ValueError(
-                        f"``w`` is a dimensionned array (in {wunit}), therefore ``wunit`` should not be given ( `wunit=None`), or be the same (got `wunit={wunit_input}`). Set ``wunit=None``"
+                        f"``w`` is a dimensioned array (in {wunit}), therefore ``wunit`` should not be given ( `wunit=None`), or be the same (got `wunit={wunit_input}`). Set ``wunit=None``"
                     )
                 else:
                     pass
@@ -1071,7 +1071,7 @@ class Spectrum(object):
                     self.update(var, verbose=False)
                 except ValueError as err:
                     raise ValueError(
-                        f"{var} not in Spectrum arrays {self.get_vars()}. An error occured while trying to recompute it from the available arrays and conditions. See above"
+                        f"{var} not in Spectrum arrays {self.get_vars()}. An error occurred while trying to recompute it from the available arrays and conditions. See above"
                     ) from err
 
         # Get quantity
@@ -1803,7 +1803,7 @@ class Spectrum(object):
         Parameters
         ----------
         var: str
-            spectral quantity to integate
+            spectral quantity to integrate
         wunit: str
             over which waverange to integrated. If ``default``,
             use the default Spectrum wavespace defined with
@@ -2815,7 +2815,7 @@ class Spectrum(object):
             if kw in kwargs:
                 kwargsconvolve.update({kw: kwargs.pop(kw)})
 
-        # For non evenyly distributed cases we take the minimum wstep among the
+        # For non evenly distributed cases we take the minimum wstep among the
         # spectral range (and resample in convolve_with_slit)
         # Note: by construction all variables now have the same wavespace
         w = self._q["wavespace"]  # non convoluted wavespace
@@ -2874,7 +2874,7 @@ class Spectrum(object):
         I_conv_slices = {}
         for qns in varlist:
             # Convolve and store the output in a new variable name (quantity name minus `_noslit`)
-            # Create if requireds
+            # Create if required
 
             q = qns[:-7]  # new name  (minus '_noslit')
             w_conv_slices = []
@@ -2908,7 +2908,7 @@ class Spectrum(object):
             # ---------
             for i, q in enumerate(I_conv_slices.keys()):
                 # Convolve and store the output in a new variable name (quantity name minus `_noslit`)
-                # Create if requireds
+                # Create if required
 
                 qns = q + "_noslit"
                 w_window = w[slice_window]
@@ -3077,7 +3077,7 @@ class Spectrum(object):
         # Check inputs
         assert wunit in ["nm", "cm-1", "nm_vac", None]
         # @dev: note: wunit in 'nm_vac' also implemented for consistency,
-        # although not mentionned in docs.
+        # although not mentioned in docs.
         if wunit is None:
             wunit = self.conditions["slit_unit"]
 
@@ -3381,7 +3381,7 @@ class Spectrum(object):
             if a file name, then Spectrum is saved to this file and the later
             formatting options dont apply
         file: str
-            explicitely give a filename to save
+            explicitly give a filename to save
         compress: boolean
             if ``False``, save under text format, readable with any editor.
             if ``True``, saves under binary format. Faster and takes less space.
@@ -3526,7 +3526,7 @@ class Spectrum(object):
         ----------
         var: 'radiance', 'radiance_noslit', etc.
             which spectral array to convert. If ``None`` and only one spectral
-            arry is defined, use it.
+            array is defined, use it.
         wunit: ``'nm'``, ``'cm'``, ``'nm_vac'``.
             wavespace unit: wavelength in air (``'nm'``), wavenumber
             (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
@@ -3596,11 +3596,11 @@ class Spectrum(object):
             var = self._get_unique_var(operation_name="to_specutils")
         if wunit == "default":
             wunit = self.get_waveunit()
-            if wunit in WAVELEN_UNITS:  # wavlength units in air
+            if wunit in WAVELEN_UNITS:  # wavelength units in air
                 # AFAIK, specutil's Spectrum1D will only handle wavelengths as seen in vacuum
                 # so below we request wavelengths in vac :
                 wunit = "nm_vac"
-        if wunit in WAVELEN_UNITS:  # wavlength units in air
+        if wunit in WAVELEN_UNITS:  # wavelength units in air
             raise ValueError(
                 f"specutil's Spectrum1D will only handle wavelengths as seen in vacuum. Use one of `s.to_specutils(..., wunit={WAVELENVAC_UNITS}`)"
             )
@@ -3615,7 +3615,7 @@ class Spectrum(object):
         w, I = self.get(
             var, wunit=wunit, Iunit=Iunit, copy=True, trim_nan=True, return_units=True
         )
-        # w, I are dimensionned arrays
+        # w, I are dimensioned arrays
 
         return Spectrum1D(
             flux=I,
@@ -3957,7 +3957,7 @@ class Spectrum(object):
 
         if equilibrium != guess:
             msg = (
-                "Declared value of equilibrium ({0}) does not match the infered one ({1})".format(
+                "Declared value of equilibrium ({0}) does not match the inferred one ({1})".format(
                     equilibrium, guess
                 )
                 + ". Update your Spectrum conditions"
@@ -4013,7 +4013,7 @@ class Spectrum(object):
         except MemoryError:
             raise MemoryError(
                 "during copy of Spectrum. If you don't need them, "
-                + "droping lines before copying may save a lot of space: "
+                + "dropping lines before copying may save a lot of space: "
                 + "del s.lines ; or, use copy_lines=False"
             )
 
@@ -4171,7 +4171,7 @@ class Spectrum(object):
                 out = (~np.isclose(I, Ie, rtol=rtol, atol=0)).sum()/len(I) < ignore_outliers
 
         normalize: bool
-            Normalize the spectra to be ploted
+            Normalize the spectra to be plotted
 
         Other Parameters
         ----------------
@@ -4440,7 +4440,7 @@ class Spectrum(object):
                 # no need to check if wavespace is evenly spaced: we won't
                 # apply the slit function again
             else:
-                # Check Wavelength/wavenumber is evently spaced
+                # Check Wavelength/wavenumber is evenly spaced
                 if check_wavespace:
                     if not evenly_distributed(w, atolerance=1e-5):
                         warn(
@@ -4689,7 +4689,7 @@ class Spectrum(object):
         Other Parameters
         ----------------
         force: boolean
-            By default, normalizing some parametres such as transmittance
+            By default, normalizing some parameters such as transmittance
             is forbidden because considered non-physical. Use force=True
             if you really want to.
 
@@ -4799,7 +4799,7 @@ class Spectrum(object):
         Returns
         -------
         baseline: Spectrum
-            Spectrum object where intenisity is the baseline of s
+            Spectrum object where intensity is the baseline of s
 
         Examples
         --------
@@ -4960,7 +4960,7 @@ class Spectrum(object):
 
             return add_spectra(self, other)
         else:
-            #            warn("You should'nt use the '+'. See '//' or '>' for more details", Warning)
+            #            warn("You shouldn't use the '+'. See '//' or '>' for more details", Warning)
             raise NotImplementedError(
                 "+ not implemented for a Spectrum and a {0} object".format(type(other))
             )
@@ -4984,7 +4984,7 @@ class Spectrum(object):
 
             return add_array(self, other, inplace=True)
         else:
-            warn("You should'nt use the '+'. See '//' or '>' for more details", Warning)
+            warn("You shouldn't use the '+'. See '//' or '>' for more details", Warning)
             raise NotImplementedError(
                 "+ not implemented for a Spectrum and a {0} object".format(type(other))
             )
@@ -5119,7 +5119,7 @@ class Spectrum(object):
     def __truediv__(self, other):
         """Override '/' behavior Divide is defined as :
 
-        - for numeric values: divide algebrically (equivalent to optically thin scaling)
+        - for numeric values: divide algebraically (equivalent to optically thin scaling)
         """
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
@@ -5148,7 +5148,7 @@ class Spectrum(object):
     def __itruediv__(self, other):
         """Override '/=' behavior Divide is defined as :
 
-        - for numeric values: divide quantities algebrically
+        - for numeric values: divide quantities algebraically
         (equivalent to optically thin scaling)
         """
         if isinstance(other, float) or isinstance(other, int):
@@ -5179,7 +5179,7 @@ class Spectrum(object):
         raise ArithmeticError(
             "A Spectrum cannot be evaluated as a boolean. "
             + "You may have tried using syntax such as `s1>s2>s3` "
-            + "which Python interpets as `s1>s2 and s2>s3`. "
+            + "which Python interprets as `s1>s2 and s2>s3`. "
             + "Use `(s1>s2)>s3)` or SerialSlabs(s1, s2, s3) instead."
         )
 
@@ -5217,7 +5217,7 @@ class Spectrum(object):
     #                    type(other)))
 
     def __floordiv__(self, other):
-        """Overloads '//' behavior not a divison here: we use it to say that
+        """Overloads '//' behavior not a division here: we use it to say that
         Slabs are ``in parallel``, i.e., as if their respective mole fractions
         were added in the same physical space.
 
@@ -5281,7 +5281,7 @@ def _cut_slices(w_spec_nm, w_slit_nm, slit_dispersion, slit_dispersion_threshold
     Parameters
     ----------
     w_spec_nm : numpy array
-        The warenage (reversed or not) to cut into slices.
+        The waverange (reversed or not) to cut into slices.
     w_slit_nm : numpy array
         The waverange of the slit function.
     slit_dispersion : function

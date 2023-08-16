@@ -3,7 +3,7 @@
 Experiment module to track references used in the code; and return
 the appropriate citations
 
-To be made an independant package in the future
+To be made an independent package in the future
 """
 
 

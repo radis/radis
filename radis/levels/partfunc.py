@@ -48,7 +48,7 @@ References
 -------------------------------------------------------------------------------
 """
 
-# TODO: vectorize partition function caclulations for different temperatures. Would need
+# TODO: vectorize partition function calculations for different temperatures. Would need
 # stuff like E = df.E.values.reshape((1,-1)), etc.
 
 # TODO: store molecule_data.json in the H5 file metadata. If not done already.
@@ -302,7 +302,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         import vaex  # import delayed until now (takes ~2s to import)
 
         df = vaex.from_pandas(self.df)
-        # Vaex processs may get stuck in Spyder IDE. https://github.com/radis/radis/issues/338
+        # Vaex process may get stuck in Spyder IDE. https://github.com/radis/radis/issues/338
         # Temp fix : >>> df.executor.async_method = "awaitio"     (doesn't always work here)
 
         epsilon = 1e-4  # prevent log(0)
@@ -498,7 +498,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         import vaex  # import delayed until now (takes ~2s to import)
 
         df = vaex.from_pandas(self.df)
-        # Vaex processs may get stuck in Spyder IDE. https://github.com/radis/radis/issues/338
+        # Vaex process may get stuck in Spyder IDE. https://github.com/radis/radis/issues/338
         # Temp fix : >>> df.executor.async_method = "awaitio"     (doesn't always work here)
 
         epsilon = 1e-4  # prevent log(0)
@@ -855,7 +855,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         import vaex  # import delayed until now (takes ~2s to import)
 
         df = vaex.from_pandas(self.df)
-        # Vaex processs may get stuck in Spyder IDE. https://github.com/radis/radis/issues/338
+        # Vaex process may get stuck in Spyder IDE. https://github.com/radis/radis/issues/338
         # Temp fix : >>> df.executor.async_method = "awaitio"     (doesn't always work here)
 
         epsilon = 1e-4  # prevent log(0)
@@ -1078,8 +1078,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         Notes
         -----
 
-        assumes a complete rovibrational assigmnent but no hyperfine assignment
-        (i.e: all energy levels are returned!). If hyperfine assigmnent is given,
+        assumes a complete rovibrational assignment but no hyperfine assignment
+        (i.e: all energy levels are returned!). If hyperfine assignment is given,
         this method should be modified to return only the ``roviblvl`` unique
         keys
         """
@@ -1414,7 +1414,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             electronic_state=electronic_state, mode=mode, verbose=verbose
         )
 
-        # Check inputs ('return' is not mentionned in signature. it will just return
+        # Check inputs ('return' is not mentioned in signature. it will just return
         # after cache name is given)
         assert use_cached in [True, False, "regen", "force", "return"]
 
@@ -1765,7 +1765,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         if Jmax is None:
             Jmax = ElecState.Jmax
 
-        #        if vmax is None: vmax = 100    # just to prevent infinite loop. Ediss should be limitant
+        #        if vmax is None: vmax = 100    # just to prevent infinite loop. Ediss should be limited
         if Jmax is None:
             Jmax = 1000
 
@@ -1846,7 +1846,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
                             # (can there be non null 'forbidden' levels as
                             # there are forbidden transitions?).
                             # Anyway, their linestrengths are very small,
-                            # and they wont be acounted for in the
+                            # and they wont be accounted for in the
                             # partition function because of gs=0
 
                             if not calc_Evib_harmonic_anharmonic:
@@ -2050,7 +2050,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             Hence:
 
             - symmetric vibrational levels -> only even j numbers
-            - assymmetric vibrational levels -> only odd j numbers
+            - asymmetric vibrational levels -> only odd j numbers
 
             If oxygen atoms are different isotopologues (ex: CO2 628), then all
             levels exist
@@ -2061,7 +2061,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             See Section (2.3) in ``The CO2 Laser by Witteman 1987,
             ISBN 3540477446, 9783540477440``
 
-            Exemples
+            Examples
             --------
 
             Output of ``is_symmetric(v1, v2, l2, v3)`` for different levels::
@@ -2160,7 +2160,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         return gs(M, I)
 
     def gi(self, ElecState):
-        """Get state independant rotational degeneracy. Typically depends on
+        """Get state independent rotational degeneracy. Typically depends on
         the isotope.
 
         See Also
