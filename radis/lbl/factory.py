@@ -1353,7 +1353,7 @@ class SpectrumFactory(BandFactory):
         from matplotlib.widgets import Slider
 
         try:
-            from radis.lbl.gpu import gpu_iterate
+            from radis.gpu.gpu import gpu_iterate
         except (ModuleNotFoundError):
             print("Failed to load GPU module, exiting!")
             exit()
