@@ -2,7 +2,9 @@ from ctypes import c_float, c_longlong
 
 import matplotlib.pyplot as plt
 import numpy as np
-from driver import CuArray, CuContext, CuFFT, CuModule
+
+# from driver import CuArray, CuContext, CuFFT, CuModule
+from emulate import CuArray, CuContext, CuFFT, CuModule
 from matplotlib.widgets import Slider
 from numpy.fft import rfftfreq
 from numpy.random import rand, randint, seed

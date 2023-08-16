@@ -398,8 +398,10 @@ def gpu_init(
     global init_h, ctx, cu_mod, _cuda_context_open
     global lorentzian_param_data, gaussian_param_data, Q_interpolator_list
     # -----------------------------------------------------
-
-    from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule
+    if gpu:
+        from radis.gpu.driver import CuArray, CuContext, CuFFT, CuModule
+    else:
+        from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule
 
     if _cuda_context_open:
         # TODO: warn

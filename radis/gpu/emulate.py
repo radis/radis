@@ -8,22 +8,24 @@ from ctypes import (
     c_short,
     c_void_p,
     cast,
+    cdll,
     memmove,
     sizeof,
     windll,
 )
-from os.path import dirname
+from os import name as os_name
 
 import numpy as np
 from scipy.fft import irfft, rfft
-from structs import blockDim_t, gridDim_t
 
-# from radis.misc.utils import getProjectRoot
+from radis.gpu.structs import blockDim_t, gridDim_t
+from radis.misc.utils import getProjectRoot
+
+# from os.path import dirname
+
 
 CUFFT_R2C = 0x2A
 CUFFT_C2R = 0x2C
-
-_lib_ext = [".dll", ".so"][0]  # TODO: Determine dynamically
 
 
 class CuContext:
@@ -50,12 +52,16 @@ class CuContext:
 class CuModule:
     def __init__(self, context, module_name):
         # public:
-        self.module_name = os.path.splitext(module_name)[0] + _lib_ext
+        lib_ext = ".dll" if os_name == "nt" else ".so"
+        self.module_name = os.path.splitext(module_name)[0] + lib_ext
         self.context = context
 
         # private:
-        radis_path = dirname(dirname(__file__))  # getProjectRoot()
-        self._module = windll.LoadLibrary(
+        # radis_path = dirname(dirname(__file__))
+        radis_path = getProjectRoot()
+
+        lib_obj = windll if os_name == "nt" else cdll
+        self._module = lib_obj.LoadLibrary(
             os.path.join(radis_path, "gpu", self.module_name)
         )
         self._func_dict = {}
@@ -144,12 +150,12 @@ class CuArray:
             return
 
         elif init == "empty":
-            arr = np.empty(self.shape, dtype=self.dtype)
+            self._arr = np.empty(self.shape, dtype=self.dtype)
 
         elif init == "zeros":
-            arr = np.zeros(self.shape, dtype=self.dtype)
+            self._arr = np.zeros(self.shape, dtype=self.dtype)
 
-        self._ptr = c_void_p(arr.ctypes.data)
+        self._ptr = c_void_p(self._arr.ctypes.data)
 
     @staticmethod
     def fromArray(arr):
@@ -169,6 +175,7 @@ class CuArray:
         if params_changed or uninitialized_memory:
             self.resize(arr.shape, arr.dtype, None)
         self._ptr = c_void_p(arr.ctypes.data)
+        self._arr = arr
 
     def getArray(self):
         my_ctype = {1: c_char, 2: c_short, 4: c_int, 8: c_longlong}[self.itemsize]
@@ -190,9 +197,6 @@ class CuFFT:
         self._fft_type = CUFFT_R2C if direction == "fwd" else CUFFT_C2R
         self._plan = c_void_p(789)
 
-        if plan_fft:
-            self.planMany()
-
     def planMany(self):
         pass
 
@@ -204,7 +208,8 @@ class CuFFT:
         if self._direction == "fwd":
             np_arr_out[:] = rfft(np_arr_in, axis=0)
         else:
-            np_arr_out[:] = irfft(np_arr_in, axis=0)
+            n = np_arr_out.shape[0]
+            np_arr_out[:] = irfft(np_arr_in, n=n, axis=0)
 
     def destroy(self):
         pass

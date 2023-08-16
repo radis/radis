@@ -49,8 +49,8 @@ mod.setConstant("Nf", c_int(Nf))
 mod.setConstant("dt", c_float(dt))
 
 data_in_d = CuArray.fromArray(I_arr)
-data_FT_d = CuArray(Nf, np.complex64)
-data_out_d = CuArray(Nt, np.float32)
+data_FT_d = CuArray(Nf, np.complex64, init="empty")
+data_out_d = CuArray(Nt, np.float32, init="empty")
 
 fft_fwd = CuFFT(data_in_d, data_FT_d, direction="fwd")
 mod.applyLineshapes.setArgs(data_FT_d)
@@ -60,10 +60,19 @@ print("Done!")
 
 
 print("w = {:4.2f}... ".format(wL), end="\n")
+print(data_in_d._ptr)
+print(data_FT_d._ptr)
+print(data_out_d._ptr)
 mod.setConstant("wL", c_float(wL))
+print("fwd_fft()... ", end="")
 fft_fwd()
+print("Done!")
+print("applyLineshape()... ", end="")
 mod.applyLineshapes()
+print("Done!")
+print("fft_rev()... ", end="")
 fft_rev()
+print("Done!")
 I_out = fft_rev.arr_out.getArray() * wL / Nt
 print("Done!")
 

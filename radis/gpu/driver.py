@@ -7,17 +7,25 @@ from ctypes import (
     c_size_t,
     c_void_p,
     cast,
+    cdll,
     create_string_buffer,
     windll,
 )
+from os import name as os_name
 
 import numpy as np
 from nvidia.cufft import __path__ as cufft_path
 
-lib = windll.LoadLibrary("nvcuda.dll")
-lib_cufft = windll.LoadLibrary(cufft_path[0] + "\\bin\\cufft64_11.dll")
+if os_name == "nt":
+    lib = windll.LoadLibrary("nvcuda.dll")
+    lib_cufft = windll.LoadLibrary(
+        cufft_path[0] + "\\bin\\cufft64_11.dll"
+    )  # TODO: drop to 10?
+else:
+    lib = cdll.LoadLibrary("libcuda.so")
+    lib_cufft = windll.LoadLibrary(cufft_path[0] + "\\lib\\libcufft.so.11")
 
-verbose = True
+verbose = False
 
 
 def cu_print(*vargs):
@@ -26,8 +34,6 @@ def cu_print(*vargs):
         print(*vargs)
 
 
-# TODO: make compatible with linux/mac
-# TODO: implement cpu compatibility mode
 # TODO: establish cuda version requirement
 
 
