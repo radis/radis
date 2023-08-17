@@ -28,9 +28,9 @@ print(f"{len(df)} lines in HITEMP CO2; 2150 - 2450 cm-1")
 # databases
 #
 # We can also use Vaex graph functions.
-# See Vaex visualization : https://vaex.readthedocs.io/en/latest/guides/advanced_plotting.html#
+# See Vaex vizualisations : https://vaex.readthedocs.io/en/latest/guides/advanced_plotting.html#
 #
-# For instance, we plot a :py:func:`~vaex.viz.DataFrameAccessorViz.heatmap` showing Self and Air-broadening coefficients
+# For instance, we plot a :py:meth:`~vaex.viz.DataFrameAccessorViz.heatmap` showing Self and Air-broadening coefficients
 
 import matplotlib.pyplot as plt
 
@@ -39,7 +39,7 @@ df.viz.heatmap("airbrd", "selbrd", limits="99%")
 
 # TODO / idea : compare CO2 broadening with Air broadening for HITRAN database ?
 #%%
-# Or below we plot the number of lines using Vaex's :py:func:`~vaex.viz.DataFrameAccessorViz.histogram`
+# Or below we plot the number of lines using Vaex's :py:meth:`~vaex.viz.DataFrameAccessorViz.heatmap`s
 
 plt.figure()
 df.viz.histogram("wav", shape=1000)
