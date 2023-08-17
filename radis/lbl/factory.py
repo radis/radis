@@ -1147,11 +1147,7 @@ class SpectrumFactory(BandFactory):
         if verbose >= 2:
             print("Initializing parameters...", end=" ")
 
-        try:
-            from radis.gpu.gpu import gpu_exit, gpu_init, gpu_iterate
-        except (ModuleNotFoundError):
-            print("Failed to load GPU module, exiting!")
-            exit()
+        from radis.gpu.gpu import gpu_exit, gpu_init, gpu_iterate
 
         gpu_init(
             v_arr,
@@ -1167,7 +1163,7 @@ class SpectrumFactory(BandFactory):
             molarmass_arr,
             Q_interp_list,
             verbose=verbose,
-            gpu=(not emulate),
+            emulate=emulate,
         )
 
         if verbose >= 2:
@@ -1352,11 +1348,7 @@ class SpectrumFactory(BandFactory):
         import matplotlib.pyplot as plt
         from matplotlib.widgets import Slider
 
-        try:
-            from radis.gpu.gpu import gpu_iterate
-        except (ModuleNotFoundError):
-            print("Failed to load GPU module, exiting!")
-            exit()
+        from radis.gpu.gpu import gpu_exit, gpu_iterate
 
         self.interactive_params = {}
 
@@ -1440,6 +1432,7 @@ class SpectrumFactory(BandFactory):
             n_sliders += 1
 
         fig.subplots_adjust(bottom=0.05 * n_sliders + 0.15)
+        fig.canvas.mpl_connect("close_event", gpu_exit)
 
         if not was_interactive:
             plt.ioff()

@@ -96,7 +96,7 @@ def add_at_32(np.ndarray[np.float32_t, ndim=3] arr,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
-def calc_lorentzian_envelope_params(
+def cy_init_L_params(
     np.ndarray[dtype=np.float32_t, ndim=1] na,
     np.ndarray[dtype=np.float32_t, ndim=1] gamma,
     verbose_gpu = False):
@@ -217,7 +217,7 @@ def calc_lorentzian_envelope_params(
             (top_a, top_b, top_x))
 
 
-def calc_gaussian_envelope_params(
+def cy_init_G_params(
     np.ndarray[dtype=np.float32_t, ndim=1] log_2vMm,
     verbose_gpu=False):
 

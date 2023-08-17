@@ -1,341 +1,28 @@
 import os.path
+from warnings import warn
 
 import numpy as np
 from scipy.constants import N_A, c, h, k
 from scipy.fft import next_fast_len
 
-from radis.gpu.structs import initData, iterData
+from radis.gpu.params import (
+    init_G_params,
+    init_L_params,
+    init_Q,
+    set_G_params,
+    set_L_params,
+    set_pTQ,
+)
+from radis.gpu.structs import initData_t, iterData_t
 from radis.misc.utils import getProjectRoot
-
-# import sys
-# import matplotlib.pyplot as plt
-
 
 c_cm = 100 * c
 c2 = h * c_cm / k
 
-_cuda_context_open = False
-
-
-init_h = initData()
-iter_h = iterData()
-
-# TODO: the first two steps could be done on GPU if it makes it faster.
-def py_calc_lorentzian_envelope_params(na, gamma, verbose=False):
-    """
-
-
-    Parameters
-    ----------
-    na : TYPE
-        DESCRIPTION.
-    gamma : TYPE
-        DESCRIPTION.
-    verbose : TYPE, optional
-        DESCRIPTION. The default is False.
-
-    Returns
-    -------
-    TYPE
-        DESCRIPTION..
-
-    """
-    # Remove duplicates
-    unique_lines = set([])
-    for i in range(len(na)):
-        unique_lines.add(str(na[i]) + " " + str(gamma[i]))
-
-    # Only keep extremes
-    max_dict = {}
-    min_dict = {}
-    for s in unique_lines:
-        na_i, gamma_i = map(float, s.split())
-        try:
-            min_dict[na_i] = gamma_i if gamma_i < min_dict[na_i] else min_dict[na_i]
-            max_dict[na_i] = gamma_i if gamma_i > max_dict[na_i] else max_dict[na_i]
-
-        except (KeyError):
-            min_dict[na_i] = gamma_i
-            max_dict[na_i] = gamma_i
-
-    # Check which ones are really at the top:
-    result = []
-    for test_dict in (min_dict, max_dict):
-
-        keys = sorted(test_dict.keys(), reverse=(test_dict == min_dict))
-        A = [keys[0]]
-        B = [np.log(test_dict[keys[0]])]
-        X = [-np.inf]
-
-        for key in keys[1:]:
-            for i in range(len(X)):
-                xi = (np.log(test_dict[key]) - B[i]) / (A[i] - key)
-                if xi >= X[i]:
-                    if i < len(X) - 1:
-                        if xi < X[i + 1]:
-                            break
-                    else:
-                        break
-
-            A = A[: i + 1] + [key]
-            B = B[: i + 1] + [np.log(test_dict[key])]
-            X = X[: i + 1] + [xi]
-
-        X = X[1:] + [np.inf]
-        result.append((A, B, X))
-
-    return tuple(result)
-
-
-def py_calc_gaussian_envelope_params(log_2vMm, verbose=False):
-    """
-
-
-    Parameters
-    ----------
-    log_2vMm : TYPE
-        DESCRIPTION.
-    verbose : TYPE, optional
-        DESCRIPTION. The default is False.
-
-    Returns
-    -------
-    TYPE
-        DESCRIPTION.
-
-    """
-    return np.amin(log_2vMm), np.max(log_2vMm)
-
-
-try:
-    from radis_cython_extensions import (  # isort:skip
-        calc_gaussian_envelope_params,
-        calc_lorentzian_envelope_params,
-    )
-except (ModuleNotFoundError):
-    calc_gaussian_envelope_params = py_calc_gaussian_envelope_params
-    calc_lorentzian_envelope_params = py_calc_lorentzian_envelope_params
-
-
-def init_gaussian_params(log_2vMm, verbose):
-    """
-
-
-    Parameters
-    ----------
-    log_2vMm : TYPE
-        DESCRIPTION.
-    verbose : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    param_data : TYPE
-        DESCRIPTION.
-
-    """
-
-    if verbose >= 2:
-        print("Initializing Gaussian parameters")
-
-    ##fname = "Gaussian_minmax_" + str(len(log_2vMm)) + ".dat"
-    ##    try:
-    ##        param_data = pickle.load(open(fname, "rb"))
-    ##        if verbose >= 2:
-    ##            print(" (from cache)... ")
-    ##
-    ##    except (OSError, IOError):
-    if True:
-        if verbose >= 2:
-            print("... ")
-
-        param_data = calc_gaussian_envelope_params(log_2vMm, verbose)
-    ##        pickle.dump(param_data, open(fname, "wb"))
-
-    if verbose >= 2:
-        print("done!")
-
-    return param_data
-
-
-def init_lorentzian_params(na, gamma, verbose):
-    """
-
-
-    Parameters
-    ----------
-    na : TYPE
-        DESCRIPTION.
-    gamma : TYPE
-        DESCRIPTION.
-    verbose : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    param_data : TYPE
-        DESCRIPTION.
-
-    """
-
-    if verbose >= 2:
-        print("Initializing Lorentzian parameters ")
-
-    ##fname = "Lorenzian_minmax_" + str(len(gamma)) + ".dat"
-    ##
-    ##    try:
-    ##        with open(fname, "rb") as f:
-    ##            if verbose >= 2:
-    ##                print(" (from cache)... ")
-    ##            param_data = pickle.load(f)
-    ##
-    ##    except:
-    if True:
-        if verbose >= 2:
-            print(" ... ")
-
-        param_data = calc_lorentzian_envelope_params(na, gamma, verbose)
-    ##        with open(fname, "wb") as f:
-    ##            pickle.dump(param_data, f)
-
-    if verbose >= 2:
-        print("done!")
-
-    return param_data
-
-
-def calc_gaussian_params(gaussian_param_data, init_h, iter_h, epsilon=1e-4):
-    """
-
-
-    Parameters
-    ----------
-    gaussian_param_data : TYPE
-        DESCRIPTION.
-    init_h : TYPE
-        DESCRIPTION.
-    iter_h : TYPE
-        DESCRIPTION.
-    epsilon : TYPE, optional
-        DESCRIPTION. The default is 1e-4.
-
-    Returns
-    -------
-    None.
-
-    """
-
-    log_2vMm_min, log_2vMm_max = gaussian_param_data
-    log_wG_min = log_2vMm_min + iter_h.hlog_T
-    log_wG_max = log_2vMm_max + iter_h.hlog_T
-    ##    print("wG:", log_wG_min, log_wG_max)
-    log_wG_max += epsilon
-
-    # dxG = (log_wG_max - log_wG_min) / (init_h.N_G - 1)
-    N = int(np.ceil((log_wG_max - log_wG_min) / init_h.dxG) + 1)
-
-    iter_h.log_wG_min = log_wG_min
-    # iter_h.dxG = dxG
-    iter_h.N_G = N
-
-
-def calc_lorentzian_minmax(param_data, log_rT, log_2p):
-    """
-
-
-    Parameters
-    ----------
-    param_data : TYPE
-        DESCRIPTION.
-    log_rT : TYPE
-        DESCRIPTION.
-    log_2p : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    TYPE
-        DESCRIPTION.
-
-    """
-
-    result = []
-    for params in param_data:
-        A, B, X = params
-        i = 0
-        while X[i] < log_rT:
-            i += 1
-        result.append(log_rT * A[i] + B[i] + log_2p)
-    return tuple(result)
-
-
-def calc_lorentzian_params(param_data, init_h, iter_h, epsilon=1e-4):
-    """
-
-
-    Parameters
-    ----------
-    param_data : TYPE
-        DESCRIPTION.
-    init_h : TYPE
-        DESCRIPTION.
-    iter_h : TYPE
-        DESCRIPTION.
-    epsilon : TYPE, optional
-        DESCRIPTION. The default is 1e-4.
-
-    Returns
-    -------
-    None.
-
-    """
-
-    log_wL_min, log_wL_max = calc_lorentzian_minmax(
-        param_data, iter_h.log_rT, iter_h.log_2p
-    )
-    log_wL_max += epsilon
-    # dxL = (log_wL_max - log_wL_min) / (init_h.N_L - 1)
-    N = int(np.ceil((log_wL_max - log_wL_min) / init_h.dxL) + 1)
-
-    iter_h.log_wL_min = log_wL_min
-    iter_h.N_L = N
-
-
-def set_pTQ(p, T, mole_fraction, iter_h, l=1.0, slit_FWHM=0.0):
-    """
-
-
-    Parameters
-    ----------
-    p : float
-        pressure [bar].
-    T : float
-        temperature [K].
-    mole_fraction : float
-    iter_h : TYPE
-        DESCRIPTION.
-    l : TYPE, optional
-        DESCRIPTION. The default is 1.0.
-    slit_FWHM : TYPE, optional
-        DESCRIPTION. The default is 0.0.
-
-    Returns
-    -------
-    None.
-
-    """
-
-    iter_h.p = p  # bar
-    iter_h.log_2p = np.log(2 * p)
-    iter_h.hlog_T = 0.5 * np.log(T)
-    iter_h.log_rT = np.log(296.0 / T)
-    iter_h.c2T = -c2 / T
-    iter_h.N = mole_fraction * p * 1e5 / (1e6 * k * T)  # cm-3
-    iter_h.l = l
-    iter_h.slit_FWHM = slit_FWHM
-
-    for i in range(len(Q_interpolator_list)):
-        iter_h.Q[i] = Q_interpolator_list[i](T)
+cu_mod = None
+init_h = initData_t()
+iter_h = iterData_t()
+warn("Hot males in your area!!!")
 
 
 def gpu_init(
@@ -352,7 +39,7 @@ def gpu_init(
     Mm_arr,
     Q_intp_list,
     verbose=True,
-    gpu=False,
+    emulate=True,
 ):
     """
 
@@ -394,18 +81,15 @@ def gpu_init(
 
     """
 
-    # ----------- setup global variables -----------------
-    global init_h, ctx, cu_mod, _cuda_context_open
-    global lorentzian_param_data, gaussian_param_data, Q_interpolator_list
-    # -----------------------------------------------------
-    if gpu:
-        from radis.gpu.driver import CuArray, CuContext, CuFFT, CuModule
-    else:
-        from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule
+    global cu_mod
 
-    if _cuda_context_open:
-        # TODO: warn
-        print("Only a single CUDA context allowed; please call gpu_exit() first.")
+    if emulate:
+        from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule
+    else:
+        from radis.gpu.driver import CuArray, CuContext, CuFFT, CuModule
+
+    if cu_mod is not None:
+        warn("Only a single CUDA context allowed; please call gpu_exit() first.")
         return
 
     if verbose == 1:
@@ -416,7 +100,6 @@ def gpu_init(
     ## and made available as the CuModule object cu_mod
 
     ctx = CuContext()
-    _cuda_context_open = True
     ptx_path = os.path.join(getProjectRoot(), "gpu", "kernels.ptx")
     if not os.path.exists(ptx_path):
         raise FileNotFoundError(ptx_path)
@@ -424,7 +107,7 @@ def gpu_init(
 
     ## Next, the GPU is made aware of a number of parameters.
     ## Parameters that don't change during iteration are stored
-    ## in iter_h. They are copied to the GPU through cu_mod.setConstant()
+    ## in init_h. They are copied to the GPU through cu_mod.setConstant()
 
     if verbose >= 2:
         print("Copying initialization parameters to device memory...")
@@ -450,13 +133,13 @@ def gpu_init(
     for i in range(len(log_c2Mm_arr)):
         init_h.log_c2Mm[i] = log_c2Mm_arr[i]
 
-    Q_interpolator_list = Q_intp_list
+    init_Q(Q_intp_list)
     log_2vMm = np.log(v0) + log_c2Mm_arr.take(iso)
 
     cu_mod.setConstant("init_d", init_h)
 
-    gaussian_param_data = init_gaussian_params(log_2vMm.astype(np.float32), verbose)
-    lorentzian_param_data = init_lorentzian_params(na, gamma, verbose)
+    init_G_params(log_2vMm.astype(np.float32), verbose)
+    init_L_params(na, gamma, verbose)
 
     if verbose >= 2:
         print("done!")
@@ -557,13 +240,8 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
 
     """
 
-    # ----------- setup global variables -----------------
-    global init_h, iter_h, cu_mod, _cuda_context_open
-    # ------------------------------------------------------
-
-    if not _cuda_context_open:
-        # TODO: warn
-        print("Must have an open CUDA context; please call gpu_init() first.")
+    if cu_mod is None:
+        warn("Must have an open CUDA context; please call gpu_init() first.")
         return
 
     if verbose >= 2:
@@ -571,21 +249,9 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
 
     ## First a number of parameters that change during iteration
     ## are computed and copied to the GPU.
-
     set_pTQ(p, T, mole_fraction, iter_h, l=l, slit_FWHM=slit_FWHM)
-
-    calc_gaussian_params(
-        gaussian_param_data,
-        init_h,
-        iter_h,
-    )
-
-    calc_lorentzian_params(
-        lorentzian_param_data,
-        init_h,
-        iter_h,
-    )
-
+    set_G_params(init_h, iter_h)
+    set_L_params(init_h, iter_h)
     cu_mod.setConstant("iter_d", iter_h)
 
     ## Next the S_klm_d variable is reshaped to the correct shape,
@@ -619,7 +285,6 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
         print("Done!")
         print("Calculating transmittance...")
 
-    # ctx.synchronize()
     abscoeff_h = cu_mod.fft_rev.arr_out.getArray()[: init_h.N_v]
 
     ## To apply a slit function, first the transmittance is calculated.
@@ -635,7 +300,6 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
     cu_mod.applyGaussianSlit()
     cu_mod.fft_rev2()
 
-    # ctx.synchronize()
     transmittance_h = cu_mod.fft_rev2.arr_out.getArray()[: init_h.N_v]
 
     if verbose >= 2:
@@ -647,7 +311,7 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
     return abscoeff_h, transmittance_h, iter_h
 
 
-def gpu_exit():
-    global ctx, _cuda_context_open
-    ctx.destroy()
-    _cuda_context_open = False
+def gpu_exit(event=None):
+    global cu_mod
+    cu_mod.context.destroy()
+    cu_mod = None

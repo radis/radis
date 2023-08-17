@@ -33,8 +33,7 @@ class gridDim_t(Structure):
     ]
 
 
-# TODO: capitalize first letters
-class initData(Structure):
+class initData_t(Structure):
     _fields_ = [
         ("v_min", c_float),
         ("v_max", c_float),
@@ -50,7 +49,7 @@ class initData(Structure):
     ]
 
 
-class iterData(Structure):
+class iterData_t(Structure):
     _fields_ = [
         ("p", c_float),
         ("log_2p", c_float),
