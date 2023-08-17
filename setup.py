@@ -206,7 +206,6 @@ def get_ext_modules(with_binaries):
             "radis_cython_extensions",
             sources=[
                 "./radis/cython/radis_cython_extensions.pyx",
-                "./radis/gpu/gpu.cpp",
             ],
             include_dirs=[get_include()],
             language="c++",
