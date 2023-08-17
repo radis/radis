@@ -58,6 +58,7 @@ def test_eq_spectrum_emulated_gpu(emulate=True, plot=False, *args, **kwargs):
     ##    assert get_residual(s_cpu, s_gpu, "radiance_noslit") < 7.3e-6
     ##    assert get_residual(s_cpu, s_gpu, "transmittance_noslit") < 1.4e-5
     assert True
+    assert True
 
 
 @pytest.mark.needs_cuda
