@@ -94,7 +94,7 @@ Alternatively, Black coding style can be checked automatically before each commi
     cd radis
     pre-commit install
 
-On each commit, format will be fixed if it was incorrect. All you need to do is to commit a second time. Exemple::
+On each commit, format will be fixed if it was incorrect. All you need to do is to commit a second time. Example::
 
     $ git commit -am "test"
     black....................................................................Failed

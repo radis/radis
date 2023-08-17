@@ -5,7 +5,7 @@ Compare CO spectrum from the GEISA and HITRAN database
 =========================================================
 
 GEISA Database has been newly implemented in RADIS 0.13 release on May 15, 2022. This is among
-the very first attemps to compare the spectra generated from the two databases.
+the very first attempts to compare the spectra generated from the two databases.
 
 Auto-download and calculate CO spectrum from the GEISA database, and the HITRAN database.
 

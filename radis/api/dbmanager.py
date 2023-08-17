@@ -174,10 +174,10 @@ class DatabaseManager(object):
             # Check that local files are the one we expect :
             for f in local_files:
                 local_file_abspath = abspath(expanduser(f)).lower()
-                local_databaes_abspath = abspath(expanduser(local_databases)).lower()
-                if not local_file_abspath.startswith(local_databaes_abspath):
+                local_databases_abspath = abspath(expanduser(local_databases)).lower()
+                if not local_file_abspath.startswith(local_databases_abspath):
                     raise ValueError(
-                        f"Database {self.name} is inconsistent : it should be stored in {local_databaes_abspath} but files registered in ~/radis.json contains {local_file_abspath}. Please fix or delete the ~/radis.json entry."
+                        f"Database {self.name} is inconsistent : it should be stored in {local_databases_abspath} but files registered in ~/radis.json contains {local_file_abspath}. Please fix or delete the ~/radis.json entry."
                     )
 
         elif self.is_downloadable():
@@ -516,7 +516,7 @@ class DatabaseManager(object):
 
             if isinstance(df, vaex.dataframe.DataFrameLocal):
                 # see https://github.com/vaexio/vaex/pull/1570
-                df[key] = vaex.vconstant(float(value), length=len(df))
+                df[key] = vaex.vconstant(float(value), length=df.length_unfiltered())
             else:
                 df[key] = value
         else:

@@ -110,7 +110,7 @@ class EmptyDatabaseWarning(UserWarning):
 
 class OutOfRangeLinesWarning(UserWarning):
     """Trigger a warning if out of range neighbouring lines, that could have an
-    effect on the spectrume due to their broadening, cannot be found in the
+    effect on the spectrum due to their broadening, cannot be found in the
     database."""
 
     pass
@@ -299,7 +299,7 @@ default_warning_status = {
     "GaussianBroadeningWarning": "once",  # once per Spectrum calculation
     "CollisionalBroadeningWarning": "once",  # once per Spectrum calculation
     "VoigtBroadeningWarning": "once",  # once per Spectrum calculation
-    # see also self.misc.warning_broadening_threshold for the treshold value
+    # see also self.misc.warning_broadening_threshold for the threshold value
     "LinestrengthCutoffWarning": "warn",
     "MemoryUsageWarning": "warn",
     "EmptyDatabaseWarning": "warn",
@@ -308,7 +308,7 @@ default_warning_status = {
     "OutOfRangeLinesWarning": "warn",
     "HighTemperatureWarning": "warn",
     "NegativeEnergiesWarning": "warn",  # warning if negative energies in database
-    # warning if self-broadening abs coefficnet missing (Air is used instead)
+    # warning if self-broadening abs coefficient missing (Air is used instead)
     "MissingSelfBroadeningTdepWarning": "warn",
     "MissingSelfBroadeningWarning": "warn",
     "MissingDiluentBroadeningWarning": "warn",

@@ -11,6 +11,7 @@ from shutil import rmtree
 import matplotlib.pyplot as plt
 import pytest
 
+from radis import config
 from radis.lbl import SpectrumFactory
 from radis.misc.printer import printm
 from radis.test.utils import getTestFile, setup_test_line_databases
@@ -156,7 +157,7 @@ def test_ignore_irrelevant_files(*args, **kwargs):
 
 @pytest.mark.fast
 def test_custom_abundance(verbose=True, plot=False, *args, **kwargs):
-    """Test calculatinos with custom abundances
+    """Test calculations with custom abundances
 
     set the terrestrial abundance to False to
     force computation of linestrength from Einstein coefficients instead
@@ -222,13 +223,188 @@ def test_custom_abundance(verbose=True, plot=False, *args, **kwargs):
     assert s.compare_with((3 * s3.take("abscoeff")), "abscoeff", rtol=0.5e-2, plot=True)
 
 
+def test_vaex_and_pandas_dataframe_fetch_databank():
+    """
+    Compares dataframes fetched and manipulated with vaex with that of pandas.
+    Every column of dataframe in vaex format is compared with corresponding column
+    of dataframe in pandas format .
+    Here expected
+    - All columns are same for dataframe in pandas and vaex format
+    - Ensure dataframes are same across all the databanks available in RADIS
+    Added in https://github.com/radis/radis/pull/580
+    """
+    import numpy as np
+    import pandas
+    import vaex
+
+    from radis.lbl import SpectrumFactory
+
+    sf = SpectrumFactory(
+        1500,
+        2000,
+        molecule="CO",
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        path_length=1,  # cm
+    )
+
+    def compare_dataframe(df_vaex, df_pandas, columns):
+        if_same = True
+        for column in columns:
+            if_same = if_same * np.all(df_vaex[column].to_numpy() == df_pandas[column])
+
+        return if_same
+
+    # HITRAN
+    # Comparing Vaex dataframe and Pandas dataframe fetched from HITRAN
+
+    # Fetching in vaex dataframe format
+    config["DATAFRAME_ENGINE"] = "vaex"
+    sf.fetch_databank("hitran", memory_mapping_engine="vaex", load_columns="all")
+    df1 = sf.df0
+    assert isinstance(df1, vaex.dataframe.DataFrameLocal)
+
+    # Fetching in Pandas dataframe format
+    config["DATAFRAME_ENGINE"] = "pandas"
+    sf.fetch_databank("hitran", memory_mapping_engine="vaex", load_columns="all")
+    df2 = sf.df0
+    assert isinstance(df2, pandas.core.frame.DataFrame)
+
+    # Comparing the dataframe fetched from HITEMP
+    assert compare_dataframe(df1, df2, df2.columns)
+
+    # HITEMP
+    # Comparing Vaex dataframe and Pandas dataframe fetched from HITEMP
+
+    # Fetching in vaex dataframe format
+    config["DATAFRAME_ENGINE"] = "vaex"
+    sf.fetch_databank("hitemp", memory_mapping_engine="vaex", load_columns="all")
+    df1 = sf.df0
+    assert isinstance(df1, vaex.dataframe.DataFrameLocal)
+
+    # Fetching in Pandas dataframe format
+    config["DATAFRAME_ENGINE"] = "pandas"
+    sf.fetch_databank("hitemp", memory_mapping_engine="vaex", load_columns="all")
+    df2 = sf.df0
+    assert isinstance(df2, pandas.core.frame.DataFrame)
+
+    # Comparing the dataframe fetched from HITEMP
+    assert compare_dataframe(df1, df2, df2.columns)
+
+    # EXOMOL
+    # Comparing Vaex dataframe and Pandas dataframe fetched from EXOMOL
+
+    # Fetching in vaex dataframe format
+    config["DATAFRAME_ENGINE"] = "vaex"
+    sf.fetch_databank("exomol", memory_mapping_engine="vaex", load_columns="all")
+    df1 = sf.df0
+    assert isinstance(df1, vaex.dataframe.DataFrameLocal)
+
+    # Fetching in Pandas dataframe format
+    config["DATAFRAME_ENGINE"] = "pandas"
+    sf.fetch_databank("exomol", memory_mapping_engine="vaex", load_columns="all")
+    df2 = sf.df0
+    assert isinstance(df1, vaex.dataframe.DataFrameLocal)
+
+    # Comparing the dataframe fetched from EXOMOL
+    assert compare_dataframe(df1, df2, df2.columns)
+
+    # GEISA
+    # Comparing Vaex dataframe and Pandas dataframe fetched from GEISA
+
+    # Fetching in vaex dataframe format
+    config["DATAFRAME_ENGINE"] = "vaex"
+    sf.fetch_databank("geisa", memory_mapping_engine="vaex", load_columns="all")
+    df1 = sf.df0
+    assert isinstance(df1, vaex.dataframe.DataFrameLocal)
+
+    # Fetching in Pandas dataframe format
+    config["DATAFRAME_ENGINE"] = "pandas"
+    sf.fetch_databank("geisa", memory_mapping_engine="vaex", load_columns="all")
+    df2 = sf.df0
+    assert isinstance(df1, vaex.dataframe.DataFrameLocal)
+
+    # Comparing the dataframe fetched from GEISA
+    assert compare_dataframe(df1, df2, df2.columns)
+
+
+def test_vaex_and_pandas_dataframe_load_databank():
+    """
+    Compares dataframes fetched and manipulated with vaex with that of pandas.
+    Every column of dataframe in vaex format is compared with corresponding column
+    of dataframe in pandas format .
+    Added in https://github.com/radis/radis/pull/580
+    """
+    import numpy as np
+
+    from radis import SpectrumFactory
+
+    # Comparing HITRAN
+    sf = SpectrumFactory(
+        wavenum_min=2380,
+        wavenum_max=2400,
+        mole_fraction=400e-6,
+        path_length=100,  # cm
+        isotope=[1],
+    )
+
+    # Loading in vaex dataframe format
+    config["DATAFRAME_ENGINE"] = "vaex"
+    sf.load_databank("HITRAN-CO2-TEST")
+    df1 = sf.df0
+
+    # Loading in  pandas dataframe format
+    config["DATAFRAME_ENGINE"] = "pandas"
+    sf.load_databank("HITRAN-CO2-TEST")
+    df2 = sf.df0
+
+    # Comparing both the dataframes
+    for column in df2.columns:
+        assert np.all(df1[column].to_numpy() == df2[column])
+
+    # Comparing HITEMP
+    sf = SpectrumFactory(
+        2284.2,
+        2284.6,
+        wstep=0.001,  # cm-1
+        pressure=20 * 1e-3,  # bar
+        cutoff=0,
+        path_length=0.1,
+        mole_fraction=400e-6,
+        molecule="CO2",
+        isotope="1,2",
+        medium="vacuum",
+        truncation=5,
+        verbose=0,
+    )
+    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+
+    # Loading in vaex dataframe format
+    config["DATAFRAME_ENGINE"] = "vaex"
+    sf.load_databank("HITEMP-CO2-TEST", load_columns="all")
+    df1 = sf.df0
+
+    # Loading in pandas dataframe format
+    config["DATAFRAME_ENGINE"] = "pandas"
+    sf.load_databank("HITEMP-CO2-TEST", load_columns="all")
+    df2 = sf.df0
+
+    # Comparing both the dataframes
+    for column in df2.columns:
+        assert np.all(df1[column].to_numpy() == df2[column])
+
+
 def _run_testcases(verbose=True, plot=False):
 
     test_retrieve_from_database(plot=plot, verbose=verbose)
     test_ignore_cached_files()
     test_ignore_irrelevant_files(verbose=verbose)
     test_custom_abundance()
+    test_vaex_and_pandas_dataframe_fetch_databank()
+    test_vaex_and_pandas_dataframe_load_databank()
 
 
 if __name__ == "__main__":
     _run_testcases()
+
+# %%

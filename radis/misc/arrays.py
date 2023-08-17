@@ -112,7 +112,7 @@ def scale_to(a, b, k=1):
 
 
 def array_allclose(a, b, rtol=1e-5, atol=1e-8, equal_nan=True):
-    """Returns wheter a and b are all close (element wise). If not the same
+    """Returns whether a and b are all close (element wise). If not the same
     size, returns False (instead of crashing like the numpy version). Cf
     numpy.allclose docs for more information.
 
@@ -123,7 +123,7 @@ def array_allclose(a, b, rtol=1e-5, atol=1e-8, equal_nan=True):
     rtol: float
     atol: float
     equal_nan: bool
-        whether to consider Nan's as equal. Contrary to the numpy version this
+        whether to consider NaN's as equal. Contrary to the numpy version this
         one is set to True by default
     """
 
@@ -157,23 +157,23 @@ def arange_len(wmin, wmax, wstep) -> int:
 
 
 def calc_diff(t1, v1, t2, v2):
-    """Substract two vectors that may have slightly offset abscisses
+    """Subtract two vectors that may have slightly offset abscissa
     interpolating the correct values.
 
     Parameters
     ----------
 
     t1, v1: array_like
-        first vector and its abscisses
+        first vector and its abscissa
     t2, v2: array_like
-        second vector and its abscisses
+        second vector and its abscissa
 
 
     Returns
     -------
 
     tdiff, vdiff: array_like
-        substracted vector and its abscisses
+        subtracted vector and its abscissa
     """
 
     t1, v1, t2, v2 = list(map(np.array, (t1, v1, t2, v2)))
@@ -204,7 +204,7 @@ def find_nearest(array, searched, return_bool=False):
     """Return the closest elements in array for each element in 'searched'
     array. In case of multiple elements in `array` having equal difference with
     `searched` element, one with least index is returned. Also returns a
-    boolean array with indices of elements occuring in output list set to true.
+    boolean array with indices of elements occurring in output list set to true.
 
     Examples
     --------
@@ -256,11 +256,11 @@ def find_nearest(array, searched, return_bool=False):
     return out
 
 
-def find_first(arr, treshold):
+def find_first(arr, threshold):
     """Return the index of the first element of the array arr whose value is
-    more than the treshold."""
+    more than the threshold."""
 
-    return np.argmax(arr > treshold)
+    return np.argmax(arr > threshold)
 
 
 def autoturn(data, key=-1):
@@ -354,6 +354,10 @@ def anynan(a):
     return np.isnan(np.dot(a, a))
 
 
+def anynan_vaex(a):
+    return not (a.countnan() == 0)
+
+
 @numba.njit
 def first_nonnan_index(a):
     """Returns index of first non-nan value in ``a``
@@ -422,7 +426,7 @@ def is_sorted_backward(a):
 
 def bining(I, ymin=None, ymax=None, axis=1):
     """Averages a I multi-dimensional array (typically an image) along the y
-    axis bining(I) corresponds to I.mean(axis=1) Nan are not taken into
+    axis bining(I) corresponds to I.mean(axis=1) NaN are not taken into
     account.
 
     Parameters
@@ -454,7 +458,7 @@ def bining(I, ymin=None, ymax=None, axis=1):
 
 
 def count_nans(a):
-    """Nan are good but only in India."""
+    """NaN are good but only in India."""
 
     return np.isnan(a).sum()
 
@@ -523,7 +527,7 @@ else:
 #     """return a boolean array of same size as ``a`` where each position ``i``
 #     is ``True`` if there are non-zero points less than ``n`` index position
 #     away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
-#     position away from from ``a[i]``
+#     position away from ``a[i]``
 #     """
 #     # # Cleaner version, but about 2x slower on real-life test cases:
 #     # #
@@ -549,7 +553,7 @@ def non_zero_values_around(a, n):
     """return a boolean array of same size as ``a`` where each position ``i``
     is ``True`` if there are non-zero points less than ``n`` index position
     away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
-    position away from from ``a[i]``
+    position away from ``a[i]``
     """
 
     # build the list
@@ -593,7 +597,7 @@ def non_zero_values_around(a, n):
 #     where each position ``i``
 #     is ``True`` if there are non-zero points less than ``n`` index position
 #     away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
-#     position away from from ``a[i]``
+#     position away from ``a[i]``
 
 #     Parameters
 #     ----------
@@ -636,7 +640,7 @@ def non_zero_values_around(a, n):
 #     """return a boolean array of same size as ``a`` where each position ``i``
 #     is ``True`` if there are non-zero points less than ``n`` index position
 #     away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
-#     position away from from ``a[i]``
+#     position away from ``a[i]``
 #     """
 #     L = non_zero_ranges_around(a, n)
 

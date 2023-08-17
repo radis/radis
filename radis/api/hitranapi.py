@@ -115,16 +115,48 @@ PARAMETER_GROUPS_HITRAN = {
 }
 
 
-def cast_to_int64_with_missing_values(dg, keys):
+def cast_to_int64_with_missing_values(dg, keys, dataframe_type="pandas"):
     """replace missing values of int64 columns with -1"""
     for c in keys:
-        if dg.dtypes[c] != int64:
-            dg[c].replace(
-                r"^\s+$", -1, regex=True, inplace=True
-            )  # replace empty strings by -1, e.g. HCN
-            # Warning: -1 may be a valid non-equilibirum quantum number for some
-            # molecules, e.g. H2O, see https://github.com/radis/radis/issues/280#issuecomment-896120510
-            dg[c] = dg[c].fillna(-1).astype(int64)  # replace nans with -1
+        if dataframe_type == "pandas":
+            dtype = dg.dtypes[c]
+        elif dataframe_type == "vaex":
+            dtype = dg.data_type(c)
+
+        if dtype != int64:
+            if dataframe_type == "pandas":
+                dg[c].replace(
+                    r"^\s+$", -1, regex=True, inplace=True
+                )  # replace empty strings by -1, e.g. HCN
+                # Warning: -1 may be a valid non-equilibirum quantum number for some
+                # molecules, e.g. H2O, see https://github.com/radis/radis/issues/280#issuecomment-896120510
+                dg[c] = dg[c].fillna(-1).astype(int64)  # replace nans with -1
+            elif dataframe_type == "vaex":
+                dg[c] = dg[c].str.replace(
+                    r"^\s+$", "-1", regex=True
+                )  # replace empty strings by -1, e.g. HCN
+                # Warning: -1 may be a valid non-equilibirum quantum number for some
+                # molecules, e.g. H2O, see https://github.com/radis/radis/issues/280#issuecomment-896120510
+                # dg[c] = dg[c].apply(lambda x : int(x))
+            else:
+                raise NotImplementedError(dataframe_type)
+
+
+def cast_all_to_int64(df, keys):
+    """converts string to int64"""
+    for key in keys:
+        df[key] = df[key].apply(lambda x: int(x) if (x.strip()).isdigit() else x)
+
+
+def extract_columns(df, extracted_values, columns):
+    """extracts column from extracted_values"""
+    for column in columns:
+        df[column] = extracted_values.apply(lambda x: x.get(column))
+
+    cast_all_to_int64(df, columns)
+
+    for column in columns:
+        df[column] = df.evaluate(df[column])
 
 
 def hit2df(
@@ -135,6 +167,7 @@ def hit2df(
     load_wavenum_min=None,
     load_wavenum_max=None,
     engine="pytables",
+    output="pandas",
     parse_quanta=True,
 ):
     """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe
@@ -166,10 +199,12 @@ def hit2df(
     parse_quanta: bool
         if ``True``, parse local & global quanta (required to identify lines
         for non-LTE calculations ; but sometimes lines are not labelled.)
+    output : str
+        output format of data as pandas Dataformat or vaex Dataformat
 
     Returns
     -------
-    df: pandas Dataframe
+    df: pandas Dataframe or Vaex Dataframe
         dataframe containing all lines and parameters
 
 
@@ -239,11 +274,11 @@ def hit2df(
             + "instead of an HITRAN file"
         ) from err
 
-    df = parse_hitran_file(fname, columns)
-
+    df = parse_hitran_file(fname, columns, output=output)
     df = post_process_hitran_data(
         df,
         molecule=mol,
+        dataframe_type=output,
         parse_quanta=parse_quanta,
     )
     # cached file mode but cached file doesn't exist yet (else we had returned)
@@ -275,7 +310,9 @@ def hit2df(
         except PermissionError:
             if verbose:
                 print(sys.exc_info())
-                print("An error occured in cache file generation. Lookup access rights")
+                print(
+                    "An error occurred in cache file generation. Lookup access rights"
+                )
             pass
 
     # TODO : get only wavenum above/below 'load_wavenum_min', 'load_wavenum_max'
@@ -293,8 +330,9 @@ def post_process_hitran_data(
     drop_non_numeric=True,
     parse_quanta=True,
     add_HITRAN_uncertainty_code=False,
+    dataframe_type="pandas",
 ):
-    """Parsing non-equilibrum parameters in HITRAN/HITEMP [1]_ file to and return final Pandas Dataframe
+    """Parsing non-equilibrium parameters in HITRAN/HITEMP [1]_ file to and return final Pandas Dataframe
 
     Parameters
     ----------
@@ -316,10 +354,12 @@ def post_process_hitran_data(
         for non-LTE calculations ; but sometimes lines are not labelled.)
     add_HITRAN_uncertainty_code: bool
         if ``True``, a column which contains HITRAN uncertainty code is converted to integer and not dropped.
+    engine: str
+        pandas or vaex
 
     Returns
     -------
-    df: pandas Dataframe
+    df: pandas Dataframe or vaex Dataframe
         dataframe containing all lines and parameters
 
 
@@ -350,9 +390,14 @@ def post_process_hitran_data(
     if nmol == 0:
         raise ValueError("Databank looks empty")
     elif nmol != 1:
-        # Crash, give explicity error messages
+        # Crash, give explicitly error messages
         try:
-            secondline = df.iloc[1]
+            if dataframe_type == "pandas":
+                secondline = df.iloc[1]
+            elif dataframe_type == "vaex":
+                secondline = df.values[1]
+            else:
+                raise NotImplementedError(dataframe_type)
         except IndexError:
             secondline = ""
         raise ValueError(
@@ -369,7 +414,9 @@ def post_process_hitran_data(
     if parse_quanta:
         # Add local quanta attributes, based on the HITRAN group
         try:
-            df = parse_local_quanta(df, molecule, verbose=verbose)
+            df = parse_local_quanta(
+                df, molecule, verbose=verbose, dataframe_type=dataframe_type
+            )
         except ValueError as err:
             # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
             # In this case, do not parse (makes non-equilibrium calculations impossible).
@@ -383,7 +430,9 @@ def post_process_hitran_data(
 
         # Add global quanta attributes, based on the HITRAN class
         try:
-            df = parse_global_quanta(df, molecule, verbose=verbose)
+            df = parse_global_quanta(
+                df, molecule, verbose=verbose, dataframe_type=dataframe_type
+            )
         except ValueError as err:
             # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
             # In this case, do not parse (makes non-equilibrium calculations impossible).
@@ -409,7 +458,7 @@ def post_process_hitran_data(
 # %% Hitran global quanta classes
 
 
-def _parse_HITRAN_class1(df, verbose=True):
+def _parse_HITRAN_class1(df, verbose=True, dataframe_type="pandas"):
     r"""Diatomic molecules: CO, HF, HCl, HBr, HI, N2, NO+
 
 
@@ -417,7 +466,12 @@ def _parse_HITRAN_class1(df, verbose=True):
     ----------
     df: pandas Dataframe
         lines read from a HITRAN-like database
+    dataframe_type : str
+        pandas or vaex
 
+    Returns
+    -------
+        pandas Dataframe or Vaex Dataframe
 
     Notes
     -----
@@ -434,19 +488,51 @@ def _parse_HITRAN_class1(df, verbose=True):
 
     """
 
-    # 1. Parse
-    dgu = df["globu"].astype(str).str.extract(r"[ ]{13}(?P<vu>[\d ]{2})", expand=True)
-    dgl = df["globl"].astype(str).str.extract(r"[ ]{13}(?P<vl>[\d ]{2})", expand=True)
+    if dataframe_type == "vaex":
+        # 1. Parse
 
-    # 2. Convert to numeric
-    cast_to_int64_with_missing_values(dgu, ["vu"])
-    cast_to_int64_with_missing_values(dgl, ["vl"])
+        extracted_values = df["globu"].str.extract_regex(
+            pattern=r"[ ]{13}(?P<vu>[\d ]{2})"
+        )
 
-    # 3. Clean
-    del df["globu"]
-    del df["globl"]
+        extract_columns(df, extracted_values, ["vu"])
 
-    return pd.concat([df, dgu, dgl], axis=1)
+        extracted_values = df["globl"].str.extract_regex(
+            pattern=r"[ ]{13}(?P<vl>[\d ]{2})"
+        )
+
+        extract_columns(df, extracted_values, ["vl"])
+
+        # # 2. Convert to numeric
+        # cast_to_int64_with_missing_values(
+        #     df, ["vu", "vl"], dataframe_type=dataframe_type
+        # )
+
+        # 3. Clean
+        df.drop("globu", inplace=True)
+        df.drop("globl", inplace=True)
+
+        return df
+    elif dataframe_type == "pandas":
+        # 1. Parse
+        dgu = (
+            df["globu"].astype(str).str.extract(r"[ ]{13}(?P<vu>[\d ]{2})", expand=True)
+        )
+        dgl = (
+            df["globl"].astype(str).str.extract(r"[ ]{13}(?P<vl>[\d ]{2})", expand=True)
+        )
+
+        # 2. Convert to numeric
+        cast_to_int64_with_missing_values(dgu, ["vu"], dataframe_type=dataframe_type)
+        cast_to_int64_with_missing_values(dgl, ["vl"], dataframe_type=dataframe_type)
+
+        # 3. Clean
+        del df["globu"]
+        del df["globl"]
+
+        return pd.concat([df, dgu, dgl], axis=1)
+    else:
+        raise NotImplementedError(dataframe_type)
 
 
 def _parse_HITRAN_class2(df, verbose=True):
@@ -513,7 +599,7 @@ def _parse_HITRAN_class3(df, verbose=True):
     return df
 
 
-def _parse_HITRAN_class4(df, verbose=True):
+def _parse_HITRAN_class4(df, verbose=True, dataframe_type="pandas"):
     r"""Parse linear triatomic class in HITRAN [1]_: N2O, OCS, HCN
 
     Parameters
@@ -521,6 +607,12 @@ def _parse_HITRAN_class4(df, verbose=True):
 
     df: pandas Dataframe
         lines read from a HITRAN-like database
+    dataframe_type : str
+        pandas or vaex
+
+    Returns
+    -------
+        pandas Dataframe or Vaex Dataframe
 
     Notes
     -----
@@ -538,37 +630,64 @@ def _parse_HITRAN_class4(df, verbose=True):
     .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     """
-
-    # 1. Parse
-    dgu = (
-        df["globu"]
-        .astype(str)
-        .str.extract(
-            r"[ ]{7}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})",
-            expand=True,
+    if dataframe_type == "pandas":
+        # 1. Parse
+        dgu = (
+            df["globu"]
+            .astype(str)
+            .str.extract(
+                r"[ ]{7}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})",
+                expand=True,
+            )
         )
-    )
-    dgl = (
-        df["globl"]
-        .astype(str)
-        .str.extract(
-            r"[ ]{7}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})",
-            expand=True,
+        dgl = (
+            df["globl"]
+            .astype(str)
+            .str.extract(
+                r"[ ]{7}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})",
+                expand=True,
+            )
         )
-    )
 
-    # 2. Convert to numeric
-    cast_to_int64_with_missing_values(dgu, ["v1u", "v2u", "l2u", "v3u"])
-    cast_to_int64_with_missing_values(dgl, ["v1l", "v2l", "l2l", "v3l"])
+        # 2. Convert to numeric
+        cast_to_int64_with_missing_values(dgu, ["v1u", "v2u", "l2u", "v3u"])
+        cast_to_int64_with_missing_values(dgl, ["v1l", "v2l", "l2l", "v3l"])
 
-    # 3. Clean
-    del df["globu"]
-    del df["globl"]
+        # 3. Clean
+        del df["globu"]
+        del df["globl"]
 
-    return pd.concat([df, dgu, dgl], axis=1)
+        return pd.concat([df, dgu, dgl], axis=1)
+    elif dataframe_type == "vaex":
+        # 1. Parse
+        extracted_values = df["globu"].str.extract_regex(
+            pattern=r"[ ]{7}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})"
+        )
+
+        extract_columns(df, extracted_values, ["v1u", "v2u", "l2u", "v3u"])
+
+        extracted_values = df["globl"].str.extract_regex(
+            pattern=r"[ ]{7}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})"
+        )
+
+        extract_columns(df, extracted_values, ["v1l", "v2l", "l2l", "v3l"])
+
+        # # 2. Convert to numeric
+        # cast_to_int64_with_missing_values(
+        #     df,
+        #     ["v1u", "v2u", "l2u", "v3u", "v1l", "v2l", "l2l", "v3l"],
+        #     dataframe_type=dataframe_type,
+        # )
+
+        # 3. Clean
+        df.drop("globu", inplace=True)
+
+        return df
+    else:
+        raise NotImplementedError(dataframe_type)
 
 
-def _parse_HITRAN_class5(df, verbose=True):
+def _parse_HITRAN_class5(df, verbose=True, dataframe_type="pandas"):
     r"""Parse linear triatomic with large Fermi resonance in HITRAN [1]_: CO2
 
     Parameters
@@ -576,6 +695,12 @@ def _parse_HITRAN_class5(df, verbose=True):
 
     df: pandas Dataframe
         lines read from a HITRAN-like database
+    dataframe_type : str
+        pandas or vaex
+
+    Returns
+    -------
+        pandas Dataframe or Vaex Dataframe
 
     Notes
     -----
@@ -594,36 +719,63 @@ def _parse_HITRAN_class5(df, verbose=True):
 
     """
 
-    # 1. Parse
-    dgu = (
-        df["globu"]
-        .astype(str)
-        .str.extract(
-            r"[ ]{6}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<ru>\d)",
-            expand=True,
+    if dataframe_type == "pandas":
+        # 1. Parse
+        dgu = (
+            df["globu"]
+            .astype(str)
+            .str.extract(
+                r"[ ]{6}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<ru>\d)",
+                expand=True,
+            )
         )
-    )
-    dgl = (
-        df["globl"]
-        .astype(str)
-        .str.extract(
-            r"[ ]{6}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})(?P<rl>\d)",
-            expand=True,
+        dgl = (
+            df["globl"]
+            .astype(str)
+            .str.extract(
+                r"[ ]{6}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})(?P<rl>\d)",
+                expand=True,
+            )
         )
-    )
 
-    # 2. Convert to numeric
-    cast_to_int64_with_missing_values(dgu, ["v1u", "v2u", "l2u", "v3u", "ru"])
-    cast_to_int64_with_missing_values(dgl, ["v1l", "v2l", "l2l", "v3l", "rl"])
+        # 2. Convert to numeric
+        cast_to_int64_with_missing_values(dgu, ["v1u", "v2u", "l2u", "v3u", "ru"])
+        cast_to_int64_with_missing_values(dgl, ["v1l", "v2l", "l2l", "v3l", "rl"])
 
-    # 3. Clean
-    del df["globu"]
-    del df["globl"]
+        # 3. Clean
+        del df["globu"]
+        del df["globl"]
 
-    return pd.concat([df, dgu, dgl], axis=1)
+        return pd.concat([df, dgu, dgl], axis=1)
+    elif dataframe_type == "vaex":
+        # 1. Parse
+        extracted_values = df["globu"].str.extract_regex(
+            pattern=r"[ ]{6}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<ru>\d)"
+        )
+
+        extract_columns(df, extracted_values, ["v1u", "v2u", "l2u", "v3u", "ru"])
+
+        extracted_values = df["globl"].str.extract_regex(
+            pattern=r"[ ]{6}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})(?P<rl>\d)"
+        )
+
+        extract_columns(df, extracted_values, ["v1l", "v2l", "l2l", "v3l", "rl"])
+
+        # # 2. Convert to numeric
+        # cast_to_int64_with_missing_values(
+        #     df,
+        #     ["v1u", "v2u", "l2u", "v3u", "ru", "v1l", "v2l", "l2l", "v3l", "rl"],
+        #     dataframe_type=dataframe_type,
+        # )
+
+        # 3. Clean
+        df.drop("globu", inplace=True)
+        df.drop("globl", inplace=True)
+
+        return df
 
 
-def _parse_HITRAN_class6(df, verbose=True):
+def _parse_HITRAN_class6(df, verbose=True, dataframe_type="pandas"):
     r"""Parse non-linear triatomic in HITRAN [1]_: H2O, O3, SO2, NO2, HOCl, H2S, HO2, HOBr
 
     Parameters
@@ -631,7 +783,12 @@ def _parse_HITRAN_class6(df, verbose=True):
 
     df: pandas Dataframe
         lines read from a HITRAN-like database
+    dataframe_type : str
+        pandas or vaex
 
+    Returns
+    -------
+        pandas Dataframe or Vaex Dataframe
     Notes
     -----
 
@@ -648,45 +805,74 @@ def _parse_HITRAN_class6(df, verbose=True):
     .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
 
     """
-
-    # 1. Parse
-    dgu = (
-        df["globu"]
-        .astype(str)
-        .str.extract(
-            #        '[ ]{9}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<v3u>[\d ]{2})',
-            r"[ ]{9}(?P<v1u>[\-\d ]{2})(?P<v2u>[\-\d ]{2})(?P<v3u>[\-\d ]{2})",
-            expand=True,
+    if dataframe_type == "pandas":
+        # 1. Parse
+        dgu = (
+            df["globu"]
+            .astype(str)
+            .str.extract(
+                #        '[ ]{9}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<v3u>[\d ]{2})',
+                r"[ ]{9}(?P<v1u>[\-\d ]{2})(?P<v2u>[\-\d ]{2})(?P<v3u>[\-\d ]{2})",
+                expand=True,
+            )
         )
-    )
-    dgl = (
-        df["globl"]
-        .astype(str)
-        .str.extract(
-            #        '[ ]{9}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<v3l>[\d ]{2})',
-            r"[ ]{9}(?P<v1l>[\-\d ]{2})(?P<v2l>[\-\d ]{2})(?P<v3l>[\-\d ]{2})",
-            expand=True,
+        dgl = (
+            df["globl"]
+            .astype(str)
+            .str.extract(
+                #        '[ ]{9}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<v3l>[\d ]{2})',
+                r"[ ]{9}(?P<v1l>[\-\d ]{2})(?P<v2l>[\-\d ]{2})(?P<v3l>[\-\d ]{2})",
+                expand=True,
+            )
         )
-    )
-    # ... note @EP: in HITRAN H2O files, for iso=2, vibrational levels are
-    # ... somehow negative. The regex above is adapted to catch negation signs with \-
+        # ... note @EP: in HITRAN H2O files, for iso=2, vibrational levels are
+        # ... somehow negative. The regex above is adapted to catch negation signs with \-
 
-    # 2. Convert to numeric
-    cast_to_int64_with_missing_values(
-        dgu,
-        [
-            "v1u",
-            "v2u",
-            "v3u",
-        ],
-    )
-    cast_to_int64_with_missing_values(dgl, ["v1l", "v2l", "v3l"])
+        # 2. Convert to numeric
+        cast_to_int64_with_missing_values(
+            dgu,
+            [
+                "v1u",
+                "v2u",
+                "v3u",
+            ],
+        )
+        cast_to_int64_with_missing_values(dgl, ["v1l", "v2l", "v3l"])
 
-    # 3. Clean
-    del df["globu"]
-    del df["globl"]
+        # 3. Clean
+        del df["globu"]
+        del df["globl"]
 
-    return pd.concat([df, dgu, dgl], axis=1)
+        return pd.concat([df, dgu, dgl], axis=1)
+    elif dataframe_type == "vaex":
+        # 1. Parse
+
+        # ... note @EP: in HITRAN H2O files, for iso=2, vibrational levels are
+        # ... somehow negative. The regex below is adapted to catch negation signs with \-
+        extracted_values = df["globu"].str.extract_regex(
+            pattern=r"[ ]{9}(?P<v1u>[\-\d ]{2})(?P<v2u>[\-\d ]{2})(?P<v3u>[\-\d ]{2})"
+        )
+
+        extract_columns(df, extracted_values, ["v1u", "v2u", "v3u"])
+
+        extracted_values = df["globl"].str.extract_regex(
+            pattern=r"[ ]{9}(?P<v1l>[\-\d ]{2})(?P<v2l>[\-\d ]{2})(?P<v3l>[\-\d ]{2})"
+        )
+
+        extract_columns(df, extracted_values, ["v1l", "v2l", "v3l"])
+
+        # # 2. Convert to numeric
+        # cast_to_int64_with_missing_values(
+        #     df, ["v1l", "v2l", "v3l", "v1u", "v2u", "v3u"]
+        # )
+
+        # 3. Clean
+        df.drop("globu", inplace=True)
+        df.drop("globl", inplace=True)
+
+        return df
+    else:
+        raise NotImplementedError(dataframe_type)
 
 
 def _parse_HITRAN_class7(df, verbose=True):
@@ -814,7 +1000,7 @@ def _parse_HITRAN_class10(df, verbose=True):
 # %% HITRAN Local quanta
 
 
-def _parse_HITRAN_group1(df, verbose=True):
+def _parse_HITRAN_group1(df, verbose=True, dataframe_type="pandas"):
     r"""Parse asymmetric rotors (:py:attr:`~radis.db.classes.HITRAN_GROUP1` ):
     H2O, O3, SO2, NO2, HNO3, H2CO, HOCl, H2O2, COF2, H2S, HO2, HCOOH, ClONO2, HOBr, C2H4
 
@@ -823,6 +1009,12 @@ def _parse_HITRAN_group1(df, verbose=True):
 
     df: pandas Dataframe
         lines read from a HITRAN-like database
+    dataframe_type : str
+        pandas or vaex
+
+    Returns
+    -------
+        pandas Dataframe or Vaex Dataframe
 
 
     Notes
@@ -839,47 +1031,87 @@ def _parse_HITRAN_group1(df, verbose=True):
 
     """
 
-    # 1. Parse
+    if dataframe_type == "vaex":
+        # 1. Parse
 
-    # Ref [1] : locu
-    # --------------
-    # J'  | Ka' | Kc' | F'  | Sym'
-    # I3  | I3  | I3  | A5  | A1
-    dgu = (
-        df["locu"]
-        .astype(str)
-        .str.extract(
-            r"(?P<ju>[\d ]{3})(?P<Kau>[\-\d ]{3})(?P<Kcu>[\-\d ]{3})(?P<Fu>.{5})(?P<symu>.)",
-            expand=True,
+        # Ref [1] : locu
+        # --------------
+        # J'  | Ka' | Kc' | F'  | Sym'
+        # I3  | I3  | I3  | A5  | A1
+
+        extracted_values = df["locu"].str.extract_regex(
+            pattern=r"(?P<ju>[\d ]{3})(?P<Kau>[\-\d ]{3})(?P<Kcu>[\-\d ]{3})(?P<Fu>.{5})(?P<symu>.)"
         )
-    )
-    # Ref [1] : locl
-    # --------------
-    # J'' | Ka''| Kc''| F'' | Sym''
-    # I3  | I3  | I3  | A5  | A1
-    dgl = (
-        df["locl"]
-        .astype(str)
-        .str.extract(
-            r"(?P<jl>[\d ]{3})(?P<Kal>[\-\d ]{3})(?P<Kcl>[\-\d ]{3})(?P<Fl>.{5})(?P<syml>.)",
-            expand=True,
+
+        extract_columns(df, extracted_values, ["ju", "Kau", "Kcu", "Fu", "symu"])
+
+        # Ref [1] : locl
+        # --------------
+        # J'' | Ka''| Kc''| F'' | Sym''
+        # I3  | I3  | I3  | A5  | A1
+
+        extracted_values = df["locl"].str.extract_regex(
+            pattern=r"(?P<jl>[\d ]{3})(?P<Kal>[\-\d ]{3})(?P<Kcl>[\-\d ]{3})(?P<Fl>.{5})(?P<syml>.)"
         )
-    )
-    # ... note @EP: in HITRAN H2O files, for iso=2, the Kau, Kcu can somehow
-    # ... be negative. The regex above is adapted to catch negation signs with \-
 
-    # 2. Convert to numeric
-    cast_to_int64_with_missing_values(dgu, ["ju", "Kau", "Kcu"])
-    cast_to_int64_with_missing_values(dgl, ["jl", "Kal", "Kcl"])
+        extract_columns(df, extracted_values, ["jl", "Kal", "Kcl", "Fl", "syml"])
 
-    # 3. Clean
-    del df["locu"]
-    del df["locl"]
+        # ... note @EP: in HITRAN H2O files, for iso=2, the Kau, Kcu can somehow
+        # ... be negative. The regex above is adapted to catch negation signs with \-
+        # # 2. Convert to numeric
+        # cast_to_int64_with_missing_values(
+        #     df, ["ju", "Kau", "Kcu", "Fu", "symu", "jl", "Kal", "Kcl", "Fl", "syml"]
+        # )
 
-    return pd.concat([df, dgu, dgl], axis=1)
+        # 3. Clean
+        df.drop("locu", inplace=True)
+        df.drop("locl", inplace=True)
+
+        return df
+    elif dataframe_type == "pandas":
+        # 1. Parse
+
+        # Ref [1] : locu
+        # --------------
+        # J'  | Ka' | Kc' | F'  | Sym'
+        # I3  | I3  | I3  | A5  | A1
+
+        dgu = (
+            df["locu"]
+            .astype(str)
+            .str.extract(
+                r"(?P<ju>[\d ]{3})(?P<Kau>[\-\d ]{3})(?P<Kcu>[\-\d ]{3})(?P<Fu>.{5})(?P<symu>.)",
+                expand=True,
+            )
+        )
+        # Ref [1] : locl
+        # --------------
+        # J'' | Ka''| Kc''| F'' | Sym''
+        # I3  | I3  | I3  | A5  | A1
+        dgl = (
+            df["locl"]
+            .astype(str)
+            .str.extract(
+                r"(?P<jl>[\d ]{3})(?P<Kal>[\-\d ]{3})(?P<Kcl>[\-\d ]{3})(?P<Fl>.{5})(?P<syml>.)",
+                expand=True,
+            )
+        )
+        # ... note @EP: in HITRAN H2O files, for iso=2, the Kau, Kcu can somehow
+        # ... be negative. The regex above is adapted to catch negation signs with \-
+        # 2. Convert to numeric
+        cast_to_int64_with_missing_values(dgu, ["ju", "Kau", "Kcu"])
+        cast_to_int64_with_missing_values(dgl, ["jl", "Kal", "Kcl"])
+
+        # 3. Clean
+        del df["locu"]
+        del df["locl"]
+
+        return pd.concat([df, dgu, dgl], axis=1)
+    else:
+        raise NotImplementedError(dataframe_type)
 
 
-def _parse_HITRAN_group2(df, verbose=True):
+def _parse_HITRAN_group2(df, verbose=True, dataframe_type="pandas"):
     r"""Parse diatomic and linear molecules (:py:attr:`~radis.db.classes.HITRAN_GROUP2` ):
     CO2, N2O, CO, HF, HCl, HBr, HI, OCS, N2, HCN, C2H2, NO+
 
@@ -888,6 +1120,12 @@ def _parse_HITRAN_group2(df, verbose=True):
 
     df: pandas Dataframe
         lines read from a HITRAN-like database
+    dataframe_type : str
+        pandas or vaex
+
+    Returns
+    -------
+        pandas Dataframe or Vaex Dataframe
 
 
     Notes
@@ -910,30 +1148,61 @@ def _parse_HITRAN_group2(df, verbose=True):
     # --------------
     #     | F'  |
     # 10X | A5  |
-    dgu = df["locu"].astype(str).str.extract(r"[ ]{10}(?P<Fu>.{5})", expand=True)
-    # Ref [1] : locl
-    # --------------
-    #     | Br  | J'' | Sym''| F'' |
-    # 5X  | A1  | I3  | A1   | A5  |
-    dgl = (
-        df["locl"]
-        .astype(str)
-        .str.extract(
-            r"[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<syml>.)(?P<Fl>.{5})",
-            expand=True,
+    if dataframe_type == "pandas":
+        dgu = df["locu"].astype(str).str.extract(r"[ ]{10}(?P<Fu>.{5})", expand=True)
+
+        # Ref [1] : locl
+        # --------------
+        #     | Br  | J'' | Sym''| F'' |
+        # 5X  | A1  | I3  | A1   | A5  |
+        dgl = (
+            df["locl"]
+            .astype(str)
+            .str.extract(
+                r"[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<syml>.)(?P<Fl>.{5})",
+                expand=True,
+            )
         )
-    )
 
-    # 2. Convert to numeric
+        # 2. Convert to numeric
 
-    # dgl['jl'] = dgl.jl.apply(pd.to_numeric)
-    cast_to_int64_with_missing_values(dgl, ["jl"])
+        # dgl['jl'] = dgl.jl.apply(pd.to_numeric)
+        cast_to_int64_with_missing_values(dgl, ["jl"], dataframe_type=dataframe_type)
 
-    # 3. Clean
-    del df["locu"]
-    del df["locl"]
+        # 3. Clean
+        del df["locu"]
+        del df["locl"]
 
-    return pd.concat([df, dgu, dgl], axis=1)
+        return pd.concat([df, dgu, dgl], axis=1)
+    elif dataframe_type == "vaex":
+        # 1.Parse
+        extracted_values = df["locu"].str.extract_regex(pattern=r"[ ]{10}(?P<Fu>.{5})")
+        extract_columns(df, extracted_values, ["Fu"])
+
+        # dgu = df["locu"].astype(str).str.extract(r"[ ]{10}(?P<Fu>.{5})", expand=True)
+        # Ref [1] : locl
+        # --------------
+        #     | Br  | J'' | Sym''| F'' |
+        # 5X  | A1  | I3  | A1   | A5  |
+
+        extracted_values = df["locl"].str.extract_regex(
+            pattern=r"[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<syml>.)(?P<Fl>.{5})"
+        )
+
+        extract_columns(df, extracted_values, ["branch", "jl", "syml", "Fl"])
+
+        # # 2. Convert to numeric
+        # cast_to_int64_with_missing_values(
+        #     df, ["Fu", "branch", "jl", "syml", "Fl"], dataframe_type=dataframe_type
+        # )
+
+        # 3. Clean
+        df.drop("locu", inplace=True)
+        df.drop("locl", inplace=True)
+
+        return df
+    else:
+        raise NotImplementedError(dataframe_type)
 
 
 #                # 10X included in Fu
@@ -1072,7 +1341,7 @@ def _parse_HITRAN_group6(df, verbose=True):
 # %% Reading function
 
 
-def parse_local_quanta(df, mol, verbose=True):
+def parse_local_quanta(df, mol, verbose=True, dataframe_type="pandas"):
     r"""
     Parameters
     ----------
@@ -1084,9 +1353,9 @@ def parse_local_quanta(df, mol, verbose=True):
     """
 
     if mol in HITRAN_GROUP1:
-        df = _parse_HITRAN_group1(df, verbose=verbose)
+        df = _parse_HITRAN_group1(df, verbose=verbose, dataframe_type=dataframe_type)
     elif mol in HITRAN_GROUP2:
-        df = _parse_HITRAN_group2(df, verbose=verbose)
+        df = _parse_HITRAN_group2(df, verbose=verbose, dataframe_type=dataframe_type)
     elif mol in HITRAN_GROUP3:
         df = _parse_HITRAN_group3(df, verbose=verbose)
     elif mol in HITRAN_GROUP4:
@@ -1103,7 +1372,7 @@ def parse_local_quanta(df, mol, verbose=True):
     return df
 
 
-def parse_global_quanta(df, mol, verbose=True):
+def parse_global_quanta(df, mol, verbose=True, dataframe_type="pandas"):
     r"""
 
     Parameters
@@ -1116,17 +1385,17 @@ def parse_global_quanta(df, mol, verbose=True):
     """
 
     if mol in HITRAN_CLASS1:
-        df = _parse_HITRAN_class1(df, verbose=verbose)
+        df = _parse_HITRAN_class1(df, verbose=verbose, dataframe_type=dataframe_type)
     elif mol in HITRAN_CLASS2:
         df = _parse_HITRAN_class2(df, verbose=verbose)
     elif mol in HITRAN_CLASS3:
         df = _parse_HITRAN_class3(df, verbose=verbose)
     elif mol in HITRAN_CLASS4:
-        df = _parse_HITRAN_class4(df, verbose=verbose)
+        df = _parse_HITRAN_class4(df, verbose=verbose, dataframe_type=dataframe_type)
     elif mol in HITRAN_CLASS5:
-        df = _parse_HITRAN_class5(df, verbose=verbose)
+        df = _parse_HITRAN_class5(df, verbose=verbose, dataframe_type=dataframe_type)
     elif mol in HITRAN_CLASS6:
-        df = _parse_HITRAN_class6(df, verbose=verbose)
+        df = _parse_HITRAN_class6(df, verbose=verbose, dataframe_type=dataframe_type)
     elif mol in HITRAN_CLASS7:
         df = _parse_HITRAN_class7(df, verbose=verbose)
     elif mol in HITRAN_CLASS8:
@@ -1218,7 +1487,7 @@ class HITRANDatabaseManager(DatabaseManager):
         wmax = 40000
 
         def download_all_hitran_isotopes(molecule, directory, extra_params):
-            """Blindly try to download all isotpes 1 - 9 for the given molecule
+            """Blindly try to download all isotopes 1 - 9 for the given molecule
 
             .. warning::
                 this won't be able to download higher isotopes (ex : isotope 10-11-12 for CO2)

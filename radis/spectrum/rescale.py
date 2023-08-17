@@ -3,7 +3,7 @@
 new spectral quantities that can be derived from existing ones, or rescale
 path_length or mole_fraction, or add overpopulations.
 
-Most of these are binded as methods to the Spectrum class, but stored here to
+Most of these are bound as methods to the Spectrum class, but stored here to
 unload the spectrum.py file
 
 
@@ -48,7 +48,7 @@ non_rescalable_keys = ["abscoeff_continuum", "emisscoeff_continuum"]
 """str:  variables that cannot be rescaled (or not implemented): """
 # ... Check we have everyone (safety check!):
 # ... if it fails here, then we may have added a new key without adding a scaling
-# ... method. Explicitely add it in non_rescalableçkeys so an error is raised
+# ... method. Explicitly add it in non_rescalableçkeys so an error is raised
 # ... if trying to rescale a Spectrum that has such a quantity
 assert (
     compare_lists(
@@ -254,12 +254,12 @@ def _build_update_graph(
     }
 
     def derives_from(what, *from_keys):
-        """Writes that quantity ``what`` can be infered by having all
+        """Writes that quantity ``what`` can be inferred by having all
         quantities ``from_keys``
 
         Examples
         --------
-        Radiance can be infered from emisscoeff if optically thin::
+        Radiance can be inferred from emisscoeff if optically thin::
 
             derives_from('radiance_noslit', 'emisscoeff')
 
@@ -282,7 +282,7 @@ def _build_update_graph(
     #
     # Note for Developers: all derives_from relationship should correspond to a
     # rescale method that was implemented. Only the developer can know that!
-    # If a rescaled relationship is implemetend but not added here it wont be
+    # If a rescaled relationship is implemented but not added here it wont be
     # used by the code when trying to add all quantities. If a relationship is
     # added here but not implemented it will crash during rescale (and explain why)
 
@@ -996,7 +996,7 @@ def rescale_emisscoeff(
         assert "emisscoeff" in units
         return rescaled, units
 
-    # Firt get initial emisscoeff j1
+    # First get initial emisscoeff j1
     # -------------------
 
     if "emisscoeff" in initial:
@@ -1225,7 +1225,7 @@ def rescale_absorbance(
         unit = ""
     else:
         msg = (
-            "Cant recalculate absorbance if scaled absoeff "
+            "Cant recalculate absorbance if scaled abscoeff "
             + "({0}) and true path_length ({1}) are not given".format(
                 "abscoeff" in rescaled, true_path_length
             )
@@ -1714,7 +1714,7 @@ def rescale_emissivity_noslit(spec, rescaled, rescaled_units, extra, true_path_l
     if "transmittance_noslit" in rescaled:
         if __debug__:
             printdbg("... rescale: emissivity_noslit e_2 = 1 - T_2")
-        # transmittivity already scaled
+        # transmissivity already scaled
         T2 = rescaled["transmittance_noslit"]
         emissivity_noslit = 1 - T2  # recalculate
     else:

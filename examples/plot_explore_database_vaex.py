@@ -28,7 +28,7 @@ print(f"{len(df)} lines in HITEMP CO2; 2150 - 2450 cm-1")
 # databases
 #
 # We can also use Vaex graph functions.
-# See Vaex vizualisations : https://vaex.readthedocs.io/en/latest/guides/advanced_plotting.html#
+# See Vaex visualization : https://vaex.readthedocs.io/en/latest/guides/advanced_plotting.html#
 #
 # For instance, we plot a :py:func:`~vaex.viz.DataFrameAccessorViz.heatmap` showing Self and Air-broadening coefficients
 

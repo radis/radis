@@ -27,7 +27,7 @@ RADIS implements two functions that expose GPU functionality:
   once, the updated spectra are calculated extremely fast.
 
 By default both functions will be compiled an ran on a GPU if available. The CUDA code
-is written "architecture-agnosticly" which means it can be compiled for either GPU or CPU.
+is written "architecture-agnostically" which means it can be compiled for either GPU or CPU.
 It is therefore possible to use the same GPU functions without an actual GPU by passing the
 keyword ``emulate=True``, which forces use of the CPU targeted compiled code. This feature is
 mostly for developers to check for errors in the CUDA code, but it can be used for interactive

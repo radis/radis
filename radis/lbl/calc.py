@@ -29,6 +29,7 @@ except ImportError:  # if ran from here
     from radis.lbl.factory import SpectrumFactory
     from radis.lbl.base import get_wavenumber_range
 
+from radis import config
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
 from radis.spectrum.spectrum import Spectrum
@@ -75,7 +76,7 @@ def calc_spectrum(
     using either CPU or GPU.
 
     It is a wrapper to :py:class:`~radis.lbl.factory.SpectrumFactory` class.
-    For advanced used, please refer to the aforementionned class.
+    For advanced used, please refer to the aforementioned class.
 
 
     Parameters
@@ -108,7 +109,7 @@ def calc_spectrum(
         molecule id (HITRAN format) or name. For multiple molecules, use a list.
         The ``'isotope'``, ``'mole_fraction'``, ``'databank'`` and ``'overpopulation'`` parameters must then
         be dictionaries.
-        If ``None``, the molecule can be infered
+        If ``None``, the molecule can be inferred
         from the database files being loaded. See the list of supported molecules
         in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
         and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
@@ -155,7 +156,7 @@ def calc_spectrum(
           only the required range). To use one mode or the other, use ::
 
             databank=('hitran', 'full')     # download and cache full database, all isotopes
-            databank=('hitran', 'range')    # download and cache required range, required isoope
+            databank=('hitran', 'range')    # download and cache required range, required isotope
 
         - ``'hitemp'``, to fetch the latest HITEMP version
           through :py:func:`~radis.io.hitemp.fetch_hitemp`. Downloads all lines
@@ -234,7 +235,7 @@ def calc_spectrum(
 
         .. note::
             parsum_mode= 'tabulation'  is new in 0.9.30, and makes nonequilibrium
-            calculations of small spectra extremelly fast. Will become the default
+            calculations of small spectra extremely fast. Will become the default
             after 0.9.31.
     optimization : ``"simple"``, ``"min-RMS"``, ``None``
         If either ``"simple"`` or ``"min-RMS"`` LDM optimization for lineshape calculation is used:
@@ -290,6 +291,8 @@ def calc_spectrum(
                 s, sf = calc_spectrum(..., return_factory=True)
                 sf.df1  # see the lines calculated
                 sf.eq_spectrum(...)  #  new calculation without reloading the database
+    engine : string
+        Vaex or Pandas . Default Pandas, if engine is vaex memory performance is improved
     **kwargs: other inputs forwarded to SpectrumFactory
         For instance: ``warnings``.
         See :py:class:`~radis.lbl.factory.SpectrumFactory` documentation for more
@@ -461,8 +464,10 @@ def calc_spectrum(
             molecule_reference_set, reference_name, argument, argument_name
         )
 
-    # ... Now we are sure there are no contradctions. Just ensure we have molecules:
-    if molecule_reference_set is None :
+
+    # ... Now we are sure there are no contradictions. Just ensure we have molecules:
+    if molecule_reference_set is None:
+
         raise ValueError(
             "Please enter the molecule(s) to calculate in the `molecule=` argument or as a dictionary in the following: {0}".format(
                 list(DICT_INPUT_ARGUMENTS.keys())
@@ -538,7 +543,8 @@ def calc_spectrum(
             mole_fraction, diluent, molecule
         )
         if 'molecule' in kwargs_molecule:
-            del kwargs_molecule['molecule']
+          del kwargs_molecule['molecule']
+        engine = config["DATAFRAME_ENGINE"]
 
         generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
@@ -570,6 +576,7 @@ def calc_spectrum(
             export_lines=export_lines,
             return_factory=return_factory,
             diluent=diluent_for_this_molecule,
+            engine=engine,
             **kwargs_molecule,
         )
 
@@ -629,6 +636,7 @@ def _calc_spectrum_one_molecule(
     export_lines,
     return_factory=False,
     diluent="air",
+    engine="pandas",
     **kwargs,
 ) -> Spectrum:
     """See :py:func:`~radis.lbl.calc.calc_spectrum`
@@ -721,9 +729,14 @@ def _calc_spectrum_one_molecule(
         diluent_other_than_air = len(diluent) > 1 or (
             len(diluent) == 1 and "air" not in diluent
         )
+    if diluent_other_than_air and databank == "exomol":
+        raise NotImplementedError(
+            "Only air broadening is implemented in RADIS with ExoMol. Please reach out on https://github.com/radis/radis/issues"
+        )
 
     # Load databank
     # -------------
+    sf.dataframe_type = engine
 
     # Get databank
     if (
@@ -819,7 +832,7 @@ def _calc_spectrum_one_molecule(
         # Guess format
         if databank.endswith(".par"):
             if verbose:
-                print("Infered {0} is a HITRAN-format file.".format(databank))
+                print("Inferred {0} is a HITRAN-format file.".format(databank))
             conditions["format"] = "hitran"
             # If non-equilibrium we'll also need to load the energy levels.
             if not _equilibrium:
@@ -830,7 +843,7 @@ def _calc_spectrum_one_molecule(
         elif databank.endswith(".h5") or databank.endswith(".hdf5"):
             if verbose:
                 print(
-                    "Infered {0} is a HDF5 file with RADISDB columns format".format(
+                    "Inferred {0} is a HDF5 file with RADISDB columns format".format(
                         databank
                     )
                 )
@@ -884,7 +897,7 @@ def _calc_spectrum_one_molecule(
             load_columns=load_columns,
         )
 
-    #    # Get optimisation strategies
+    #    # Get optimization strategies
     #    if lineshape_optimization == 'auto':        # NotImplemented: finally we use DLM all the time as default.
     #        if len(sf.df0) > 1e5:
     #            lineshape_optimization = 'DLM'
@@ -893,7 +906,7 @@ def _calc_spectrum_one_molecule(
     #        sf.params['chunksize'] = lineshape_optimization
 
     if overpopulation is not None or overpopulation != {}:
-        sf.misc.export_rovib_fraction = True  # required to compute Partition fucntions with overpopulation being taken into account
+        sf.misc.export_rovib_fraction = True  # required to compute Partition functions with overpopulation being taken into account
 
     # Calculate Spectrum
     # ------------------

@@ -223,7 +223,7 @@ def read_trans(transf, engine="vaex"):
                 )
             except Exception as err:
                 raise Exception(
-                    f"Error reading {transf}. Maybe the file was corrupted during download ? You can try to delete it."
+                    f"Error reading {transf}. Either the file does not exist on exomol.com, or was corrupted? You can try to delete it."
                 ) from err
     elif engine == "csv":
         try:  # bz2 compression
@@ -240,7 +240,7 @@ def read_trans(transf, engine="vaex"):
                 )
             except Exception as err:
                 raise Exception(
-                    f"Error reading {transf}. Maybe the file was corrupted during download ? You can try to delete it."
+                    f"Error reading {transf}. Either the file does not exist on exomol.com, or was corrupted? You can try to delete it."
                 ) from err
     else:
         raise NotImplementedError(engine)
@@ -365,7 +365,7 @@ def read_states(
 
             except Exception as err:
                 raise Exception(
-                    f"Error reading {statesf}. Maybe the file was corrupted during download ? You can try to delete it."
+                    f"Error reading {statesf}. Either the file does not exist on exomol.com, or was corrupted? You can try to delete it."
                 ) from err
     elif engine == "csv":
         try:
@@ -504,7 +504,7 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True):
 
 
 def read_broad(broadf):
-    """Reading braodening file (.broad)
+    """Reading broadening file (.broad)
     Parameters
     ----------
     broadf: .broad file
@@ -543,7 +543,7 @@ def read_broad(broadf):
 
 
 def check_bdat(bdat):
-    """cheking codes in .broad
+    """checking codes in .broad
     Args:
        bdat: exomol .broad data given by exomolapi.read_broad
     Returns:
@@ -583,24 +583,32 @@ def make_j2b(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
     alpha_ref_arr = np.array(bdat["alpha_ref"][cmask])
     n_Texp_arr = np.array(bdat["n_Texp"][cmask])
 
+    # Determine the array size based on jlower_max
     if jlower_max is None:
         Nblower = np.max(jlower_arr) + 1
     else:
         Nblower = np.max([jlower_max, np.max(jlower_arr)]) + 1
-    j2alpha_ref = np.ones(Nblower) * alpha_ref_default
-    j2n_Texp = np.ones(Nblower) * n_Texp_default
 
+    # Initialize arrays with default alpha_ref and n_Texp
+    j2alpha_ref = np.full(Nblower, alpha_ref_default)
+    j2n_Texp = np.full(Nblower, n_Texp_default)
+
+    # Populate the mapping arrays using known broadening coefficients
     j2alpha_ref[jlower_arr] = alpha_ref_arr
     j2n_Texp[jlower_arr] = n_Texp_arr
 
-    Ndef = Nblower - (np.max(jlower_arr) + 1)
-    if Ndef > 0:
-        print(
-            "default broadening parameters are used for ",
-            Ndef,
-            " J lower states in ",
-            Nblower,
-            " states",
+    # Raise a minor warning if default values are used for high J values
+    if Nblower > (np.max(jlower_arr) + 1):
+        import warnings
+
+        from radis.misc.warning import AccuracyWarning
+
+        warnings.warn(
+            AccuracyWarning(
+                "The default broadening parameter (alpha = {2} cm^-1 and n = {3}) are used for J'' > {1} up to J'' = {0}".format(
+                    Nblower, np.max(jlower_arr), alpha_ref_default, n_Texp_default
+                )
+            )
         )
 
     return j2alpha_ref, j2n_Texp
@@ -979,7 +987,7 @@ class MdbExomol(DatabaseManager):
         nurange=[0.0, np.inf],
         margin=0.0,
         crit=-np.inf,
-        bkgdatm="Air",  # TODO: use Air whenever possible, to be consistent with HITRAN/HITEMP
+        bkgdatm="Air",  # TODO: use Air whenever possible (consistent with HITRAN/HITEMP). This is not a parameter for the moment.
         broadf=True,
         engine="vaex",
         verbose=True,
@@ -1008,8 +1016,7 @@ class MdbExomol(DatabaseManager):
 
         t0 = self.path.parents[0].stem
         molec = t0 + "__" + str(self.path.stem)
-        self.bkgdatm = bkgdatm
-        print("Background atmosphere: ", self.bkgdatm)
+        self.bkgdatm = bkgdatm  # TODO: for the moment, only air is possible in RADIS, although He and H are usually available in ExoMol
         molecbroad = t0 + "__" + self.bkgdatm
 
         self.crit = crit
@@ -1036,7 +1043,7 @@ class MdbExomol(DatabaseManager):
         tag = molec.split("__")
         self.isotope_fullname = tag[0]
         self.molecule = e2s(tag[0])
-        # self.isotope = 1  # Placeholder. TODO : impement parsing of other isotopes.
+        # self.isotope = 1  # Placeholder. TODO : implement parsing of other isotopes.
 
         # load def
         dic_def = read_def(self.def_file)  # approx. 3 ms
@@ -1068,7 +1075,7 @@ class MdbExomol(DatabaseManager):
         # load states
         mgr = self.get_datafile_manager()
         if cache == "regen" and mgr.cache_file(self.states_file).exists():
-            if verbose:
+            if self.verbose:
                 print("Removing existing file ", mgr.cache_file(self.states_file))
             os.remove(mgr.cache_file(self.states_file))
         if mgr.cache_file(self.states_file).exists():
@@ -1140,14 +1147,28 @@ class MdbExomol(DatabaseManager):
                 self.trans_file.append(trans_file)
                 self.num_tag.append(dic_def["numtag"][i])
 
+        # some verbose
+        if self.verbose:
+            print("Molecule: ", molecule)
+            print("Isotopologue: ", self.isotope_fullname)
+            print("Background atmosphere: ", self.bkgdatm)
+            print("ExoMol database: ", database)
+            print("Local folder: ", self.path)
+            print("Transition files: ")
+
         # Look-up missing parameters and write file
         # -----------------------------------------
-
         for trans_file, num_tag in zip(self.trans_file, self.num_tag):
-            print("Reading", trans_file)
+            if self.verbose:
+                print(
+                    "\t => File {}".format(
+                        os.path.splitext(os.path.basename((trans_file)))[0]
+                    )
+                )
+
             if cache == "regen" and mgr.cache_file(trans_file).exists():
-                if verbose:
-                    print("Removing existing file ", mgr.cache_file(trans_file))
+                if self.verbose:
+                    print("\t\t => `regen = True`. Removing the file")
                 os.remove(mgr.cache_file(trans_file))
 
             if not mgr.cache_file(trans_file).exists():
@@ -1158,14 +1179,15 @@ class MdbExomol(DatabaseManager):
 
                 if not trans_file.exists():
                     self.download(molec, extension=[".trans.bz2"], numtag=num_tag)
-                    # TODO: add option to delete file at the end
-
-                print(
-                    f"Note: Caching line transition data to the {engine} format. After the second time, it will become much faster."
-                )
+                if self.verbose:
+                    print(
+                        f"\t\t => Caching the *.trans.bz2 file to the {engine} (*.h5) format. After the second time, it will become much faster."
+                    )
+                    print(f"\t\t => You can deleted the 'trans.bz2' file by hand.")
                 trans = read_trans(
                     trans_file, engine="vaex" if engine == "vaex" else "csv"
                 )
+                # TODO: add option to delete file at the end
 
                 # Complete transition data with lookup on upper & lower state :
                 # In particular, compute gup and elower
@@ -1196,12 +1218,7 @@ class MdbExomol(DatabaseManager):
 
                 mgr.write(mgr.cache_file(trans_file), trans)
 
-        # Database ready to be loaded.
-        # Proceed with mdb.load()
-        # self.set_broadening()
-        #
-
-    def set_broadening(self, df, alpha_ref_def=None, n_Texp_def=None, output=None):
+    def set_broadening_coef(self, df, alpha_ref_def=None, n_Texp_def=None, output=None):
         """setting broadening parameters
 
         Parameters
@@ -1215,34 +1232,6 @@ class MdbExomol(DatabaseManager):
         None. Store values in Data Frame.
 
         """
-        self.compute_broadening(
-            jlower=df["jlower"],
-            jupper=df["jupper"],
-            alpha_ref_def=alpha_ref_def,
-            n_Texp_def=n_Texp_def,
-            output=output,
-        )
-        # Add values
-        self.add_column(df, "alpha_ref", self.alpha_ref)
-        self.add_column(df, "n_Texp", self.n_Texp)
-
-    def compute_broadening(
-        self, jlower, jupper, alpha_ref_def=None, n_Texp_def=None, output=None
-    ):
-        """computing broadening parameters
-
-        Parameters
-        ----------
-        jlower: jlower array
-        jupper: jupper array
-        alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
-        n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
-
-        Returns
-        -------
-        None. Store values in self.n_Texp and self.alpha_ref.
-
-        """
 
         if alpha_ref_def:
             self.alpha_ref_def = alpha_ref_def
@@ -1251,45 +1240,60 @@ class MdbExomol(DatabaseManager):
 
         if self.broadf:
             try:
-                print(".broad is used.")
                 bdat = read_broad(self.broad_file)
+                if self.verbose > 1:
+                    print(
+                        "The file `{}` is used.".format(
+                            os.path.basename(self.broad_file)
+                        )
+                    )
+            except FileNotFoundError:
+                warnings.warn(
+                    "Could not load `{}`. The default broadening parameters are used.\n".format(
+                        os.path.basename(self.broad_file)
+                    )
+                )
+
+                self.alpha_ref = np.array(
+                    self.alpha_ref_def * np.ones_like(df["jlower"])
+                )
+                self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df["jlower"]))
+            else:
                 codelv = check_bdat(bdat)
-                print("Broadening code level=", codelv)
+                if self.verbose:
+                    print("Broadening code level:", codelv)
                 if codelv == "a0":
                     j2alpha_ref, j2n_Texp = make_j2b(
                         bdat,
                         alpha_ref_default=self.alpha_ref_def,
                         n_Texp_default=self.n_Texp_def,
-                        jlower_max=np.max(jlower),
+                        jlower_max=df["jlower"].max(),
                     )
-                    self.alpha_ref = np.array(j2alpha_ref[jlower])
-                    self.n_Texp = np.array(j2n_Texp[jlower])
+                    self.alpha_ref = j2alpha_ref[df["jlower"].values]
+                    self.n_Texp = j2n_Texp[df["jlower"].values]
                 elif codelv == "a1":
                     j2alpha_ref, j2n_Texp = make_j2b(
                         bdat,
                         alpha_ref_default=self.alpha_ref_def,
                         n_Texp_default=self.n_Texp_def,
-                        jlower_max=np.max(jlower),
+                        jlower_max=np.max(df["jlower"]),
                     )
                     jj2alpha_ref, jj2n_Texp = make_jj2b(
                         bdat,
                         j2alpha_ref_def=j2alpha_ref,
                         j2n_Texp_def=j2n_Texp,
-                        jupper_max=np.max(jupper),
+                        jupper_max=np.max(df["jupper"]),
                     )
-                    self.alpha_ref = np.array(jj2alpha_ref[jlower, jupper])
-                    self.n_Texp = np.array(jj2n_Texp[jlower, jupper])
-            except FileNotFoundError:
-                print(
-                    "Warning: Cannot load .broad. The default broadening parameters are used."
-                )
-                self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(jlower))
-                self.n_Texp = np.array(self.n_Texp_def * np.ones_like(jlower))
-
+                    self.alpha_ref = np.array(jj2alpha_ref[df["jlower"], df["jupper"]])
+                    self.n_Texp = np.array(jj2n_Texp[df["jlower"], df["jupper"]])
         else:
             print("The default broadening parameters are used.")
-            self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(jlower))
-            self.n_Texp = np.array(self.n_Texp_def * np.ones_like(jlower))
+            self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(df["jlower"]))
+            self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df["jlower"]))
+
+        # Add values
+        self.add_column(df, "alpha_ref", self.alpha_ref)
+        self.add_column(df, "n_Texp", self.n_Texp)
 
     def QT_interp(self, T):
         """interpolated partition function
@@ -1338,7 +1342,7 @@ class MdbExomol(DatabaseManager):
 
         tag = molec.split("__")
         molname_simple = e2s(tag[0])
-
+        # TODO: add progress bar
         for ext in extension:
             if ext == ".trans.bz2" and numtag is not None:
                 ext = "__" + numtag + ext
@@ -1357,12 +1361,10 @@ class MdbExomol(DatabaseManager):
             for pfname in pfname_arr:
                 pfpath = url + pfname
                 os.makedirs(str(self.path), exist_ok=True)
-                print(
-                    "Downloading "
-                    + pfpath
-                    + " and saving as "
-                    + str(self.path / pfname)
-                )
+                if self.verbose:
+                    print(
+                        "\t\t => Downloading from {}".format(pfpath)
+                    )  # modify indent accordingly print in __init__
                 try:
                     urllib.request.urlretrieve(pfpath, str(self.path / pfname))
                 except HTTPError:
@@ -1411,7 +1413,7 @@ if __name__ == "__main__":
     # # sf.fetch_databank('hitran')  # placeholder. Load lines (will be replaced), load partition function.
     # # s_hit = sf.eq_spectrum(500, name='HITRAN')
 
-    #%% Test by direct caclulation
+    #%% Test by direct calculation
     # import pytest
 
     # print("Testing factory:", pytest.main(["../test/io/test_exomol.py"]))

@@ -69,12 +69,12 @@ class HDF5Manager(object):
 
 class DataFileManager(object):
     def __init__(self, engine=None):
-        """Class to handle all DataFrame-librairies with one common API
+        """Class to handle all DataFrame-libraries with one common API
 
-        All functions may not be fully implemetned, will raise a NotImplementedError
+        All functions may not be fully implemented, will raise a NotImplementedError
         if that's not the case.
 
-        Librairies ::
+        Libraries ::
 
             'vaex'     > HDF5,  column-based
             'pytables' > Pandas's HDF5,  row-based
@@ -237,7 +237,7 @@ class DataFileManager(object):
             import vaex
 
             df = vaex.open(self._temp_batch_files, group=key)
-            # Removing Nan values columns
+            # Removing NaN values columns
             if delete_nan_columns:
                 import numpy as np
 
@@ -367,7 +367,11 @@ class DataFileManager(object):
             raise NotImplementedError(output)
 
         if output == "vaex":
-            df = df.extract()  # return DataFrame containing only the filtered rows
+            # df = df.extract()  # Not required # return DataFrame containing only the filtered rows
+            if columns:  # load only these columns (if they exist)
+                columns = [c for c in columns if c in df.columns]
+            if columns is not None:
+                df = df[columns]
 
         return df
 
@@ -625,7 +629,7 @@ class DataFileManager(object):
                 if create_empty_dataset:
                     assert key is not None
                     hf.create_dataset(key, dtype="f")
-                if key is None:  # add metadta at root level
+                if key is None:  # add metadata at root level
                     hf.attrs.update(_h5_compatible(metadata))
                 else:
                     hf[key].attrs.update(_h5_compatible(metadata))
@@ -642,7 +646,7 @@ class DataFileManager(object):
                         if create_empty_dataset:
                             assert key is not None
                             hf.create_dataset(key, dtype="f")
-                        if key is None:  # add metadta at root level
+                        if key is None:  # add metadata at root level
                             hf.attrs.update(_h5_compatible(m))
                         else:
                             hf[key].attrs.update(_h5_compatible(m))
@@ -652,7 +656,7 @@ class DataFileManager(object):
                     if create_empty_dataset:
                         assert key is not None
                         hf.create_dataset(key, dtype="f")
-                    if key is None:  # add metadta at root level
+                    if key is None:  # add metadata at root level
                         hf.attrs.update(_h5_compatible(metadata))
                     else:
                         hf[key].attrs.update(_h5_compatible(metadata))
@@ -665,7 +669,7 @@ class DataFileManager(object):
         Other Parameters
         ----------------
         key: str
-            group where to read metadat from. If ``None``, add at root level. If ``'default'``,
+            group where to read metadata from. If ``None``, add at root level. If ``'default'``,
             use engine's default (`/table` for `'vaex'`, `df` for `pytables`,
             root for `h5py` )
         """
@@ -694,7 +698,7 @@ class DataFileManager(object):
             if key == "default":
                 key = None
             with h5py.File(fname, "r") as hf:
-                if key is None:  # read metadta at root level
+                if key is None:  # read metadata at root level
                     metadata = dict(hf.attrs)
                 else:
                     try:
@@ -711,14 +715,14 @@ class DataFileManager(object):
                 for f in fname:
                     f = expanduser(f)
                     with h5py.File(f, "r") as hf:
-                        if key is None:  # read metadta at root level
+                        if key is None:  # read metadata at root level
                             metadata.append(dict(hf.attrs))
                         else:
                             metadata.append(dict(hf[key].attrs))
             else:
                 fname = expanduser(fname)
                 with h5py.File(fname, "r") as hf:
-                    if key is None:  # add metadta at root level
+                    if key is None:  # add metadata at root level
                         metadata = dict(hf.attrs)
                     else:
                         try:
@@ -758,7 +762,7 @@ class DataFileManager(object):
         """Guess which HDF5 library ``file`` is compatible with
 
         .. note::
-            it still take about 1 ms for this functino to execute. For extreme
+            it still take about 1 ms for this function to execute. For extreme
             performance you want to directly give the correct engine
 
         Examples

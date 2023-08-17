@@ -39,7 +39,7 @@ def test_compare_methods(verbose=True, plot=True, close_plots=True, *args, **kwa
 
     # limits to a single line, because get_distance()
     s.resample(np.linspace(2193, 2193.8, 100))
-    # is very computationaly heavy
+    # is very computationally heavy
     s.update("radiance_noslit")
     s_noabsorption = s.copy()
     s.name = "solve RTE"
@@ -91,12 +91,12 @@ def test_plot_compare_with_nan(
     s = Radiance_noslit(s)
     s._q["radiance_noslit"][0] = np.nan
 
-    # Test Plot function when there are Nans in the spectrum:
+    # Test Plot function when there are NaNs in the spectrum:
     if plot:
         s.plot(normalize=True)
         s.plot(normalize=(2200, 2250))
 
-    # Test plot_diff function when there are Nans in the spectra:
+    # Test plot_diff function when there are NaNs in the spectra:
     if plot:
         plot_diff(s, s * 1.2, normalize=True)
         plot_diff(s, s * 1.2, "radiance_noslit", normalize=(2000, 2100))
@@ -159,7 +159,7 @@ def test_get_residual():
     I3[0] = np.nan
     s_expe_3 = experimental_spectrum(w1, I3, Iunit="W/cm2/sr/nm", wunit="cm-1")
 
-    # Intrestingly, the "mean" method seams to be not adapted for spectra with nans
+    # Interestingly, the "mean" method seams to be not adapted for spectra with nans
     criterion = [7e-5, 2e-6, 2e-2]
     for index, bool_how in enumerate(["max", "area", "mean"]):
         residual3 = get_residual(

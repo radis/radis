@@ -11,7 +11,7 @@ We love spectroscopy, and we love your input! We want to make contributing to th
 This document is a quick summary, more information can be found on the [Developer Guide](https://radis.readthedocs.io/en/latest/dev/developer.html)
 
 
-## Report bugs using Github's [issues](https://github.com/radis/radis/issues)
+## Report bugs using GitHub's [issues](https://github.com/radis/radis/issues)
 We use GitHub issues to track public bugs. Report a bug by [opening a new issue](https://github.com/radis/radis/issues/new/choose); it's that easy!
 
 **Great Bug Reports** tend to have:
@@ -42,7 +42,7 @@ You can suggest or vote for new features below:
 
 ## Change the code : become a Contributor.
 
-We use the [Github Flow](https://guides.github.com/introduction/flow/index.html), where
+We use the [GitHub Flow](https://guides.github.com/introduction/flow/index.html), where
 all code changes should happen through Pull Requests (PR). PR are the best way to propose changes to the codebase :
 Maintainers of the code can comment, help you, and even edit your code directly.
 
@@ -81,7 +81,7 @@ repo ``radis/radis`` as ``upstream``.
 One workflow is to have at least 2 branches locally :
 
 - one pointing to the latest developer version, e.g. named, ``upstream-develop``.
-- one per feature or fix you're currently working on, poiting to your own fork ``origin`` : could be ``develop``, ``fix/something``, ``this_new_idea_i_work_on`` , etc.
+- one per feature or fix you're currently working on, pointing to your own fork ``origin`` : could be ``develop``, ``fix/something``, ``this_new_idea_i_work_on`` , etc.
 
 A way to do this is to :
 

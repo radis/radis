@@ -3,13 +3,13 @@
 
 @author: erwan
 
-State-dependant and state-independant degeneracies for molecules
+State-dependant and state-independent degeneracies for molecules
 """
 # TODO: Make it a JSON file
 
 
 def gi(M, I):
-    """State independant degeneracy.
+    """State independent degeneracy.
 
     Parameters
     ----------
@@ -36,7 +36,7 @@ def gi(M, I):
         return _gi[M][I]
     except KeyError:
         raise NotImplementedError(
-            "undefined state-independant degeneracy for "
+            "undefined state-independent degeneracy for "
             + "molecule[isotope]: {0}[{1}]".format(M, I)
         )
 

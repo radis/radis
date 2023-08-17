@@ -354,7 +354,7 @@ def als_baseline(
     ::
 
         from neq.math.smooth import als_baseline
-        I = als_baseline(I, smoothness_param=1e5, aymmetry_param=0.1)
+        I = als_baseline(I, smoothness_param=1e5, asymmetry_param=0.1)
 
     References
     ----------

@@ -136,6 +136,7 @@ def cdsd2df(
     load_wavenum_min=None,
     load_wavenum_max=None,
     engine="pytables",
+    output="pandas",
 ):
     """Convert a CDSD-HITEMP [1]_ or CDSD-4000 [2]_ file to a Pandas dataframe.
 
@@ -174,7 +175,7 @@ def cdsd2df(
 
     Returns
     -------
-    df: pandas Dataframe
+    df: pandas Dataframe or Vaex Dataframe
         dataframe containing all lines and parameters
 
     Notes
@@ -280,7 +281,7 @@ def cdsd2df(
 
     # %% Start reading the full file
 
-    df = parse_hitran_file(fname, columns)
+    df = parse_hitran_file(fname, columns, output=output)
 
     # Remove non numerical attributes
     if drop_non_numeric:
@@ -314,7 +315,9 @@ def cdsd2df(
             )
         except PermissionError:
             if verbose:
-                print("An error occured in cache file generation. Lookup access rights")
+                print(
+                    "An error occurred in cache file generation. Lookup access rights"
+                )
             pass
 
     # TODO : get only wavenum above/below 'load_only_wavenum_above', 'load_only_wavenum_below'
