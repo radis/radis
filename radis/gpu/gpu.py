@@ -22,7 +22,6 @@ c2 = h * c_cm / k
 cu_mod = None
 init_h = initData_t()
 iter_h = iterData_t()
-warn("Hot males in your area!!!")
 
 
 def gpu_init(
@@ -82,15 +81,25 @@ def gpu_init(
     """
 
     global cu_mod
+    if cu_mod is not None:
+        warn("Only a single CUDA context allowed; please call gpu_exit() first.")
+        return
 
     if emulate:
         from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule
     else:
         from radis.gpu.driver import CuArray, CuContext, CuFFT, CuModule
 
-    if cu_mod is not None:
-        warn("Only a single CUDA context allowed; please call gpu_exit() first.")
-        return
+    ctx = CuContext()
+
+    ##    if ctx is None:
+    ##        warn(("Failed to load CUDA context, this happened either because"+
+    ##              "CUDA is not installed properly, or you have no NVIDIA GPU."+
+    ##              "Continuing with emulated GPU on CPU..."+
+    ##              "This means *NO* GPU acceleration!"))
+    ##
+    ##        from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule
+    ##        ctx = CuContext()
 
     if verbose == 1:
         print("Number of lines loaded: {0}".format(len(v0)))
@@ -99,7 +108,6 @@ def gpu_init(
     ## First a CUDA context is created, then the .ptx file is read
     ## and made available as the CuModule object cu_mod
 
-    ctx = CuContext()
     ptx_path = os.path.join(getProjectRoot(), "gpu", "kernels.ptx")
     if not os.path.exists(ptx_path):
         raise FileNotFoundError(ptx_path)
