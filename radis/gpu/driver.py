@@ -372,6 +372,7 @@ class CuFFT:
 
     def __del__(self):
         try:
-            self.destroy()
+            if self._plan is not c_void_p(0):
+                self.destroy()
         except(OSError):
             pass
