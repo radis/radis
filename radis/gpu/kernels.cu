@@ -131,7 +131,7 @@ __global__ void applyLineshapes(complex<float>* S_klm_FT, complex<float>* abscoe
                     for (int m = 0; m < iter_d.N_L; m++) {
                         int index = k * iter_d.N_G * iter_d.N_L + l * iter_d.N_L + m;
                         float wL = expf(iter_d.log_wL_min + m * init_d.dxL);
-                        mul = expf(-r4log2 * powf(pi * x * wG, 2) - pi * x * wL) * init_d.N_v / init_d.N_v_FT;
+                        mul = expf(-r4log2 * powf(pi * x * wG, 2) - pi * x * wL) / init_d.dv / init_d.N_v_FT;
                         out_complex += mul * S_klm_FT[index];
                     }
                 }
@@ -166,7 +166,7 @@ __global__ void applyGaussianSlit(complex<float>* transmittance_noslit_FT, compl
         LOOP(blockIdx.x, gridDim.x){
             int iv = threadIdx.x + blockDim.x * blockIdx.x;
             float x = iv / (init_d.N_v_FT * init_d.dv);
-            float window = expf(-r4log2 * powf(pi * x * iter_d.slit_FWHM, 2));
+            float window = expf(-r4log2 * powf(pi * x * iter_d.slit_FWHM, 2)) / init_d.N_v_FT;
 
             if (iv < init_d.N_x_FT) {
                 transmittance_FT[iv] = transmittance_noslit_FT[iv] * window;

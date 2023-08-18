@@ -130,7 +130,6 @@ def gpu_init(
     init_h.dxL = dxL
     init_h.N_lines = int(len(v0))
     init_h.N_iterations_per_thread = 1024
-    print(init_h.N_v, init_h.N_v_FT, init_h.N_x_FT)
 
     log_c2Mm_arr = np.array(
         [0]
