@@ -332,7 +332,6 @@ class CuFFT:
 
         batch = int(np.prod(self._arr.shape[1:]))
         oneInt = 1 * c_int
-        # dist = self._arr.shape[0]
         _n = oneInt(self._arr.shape[0])
         stride = batch
 
@@ -372,4 +371,7 @@ class CuFFT:
             pass
 
     def __del__(self):
-        self.destroy()
+        try:
+            self.destroy()
+        except(OSError):
+            pass

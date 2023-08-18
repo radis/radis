@@ -125,19 +125,14 @@ __global__ void applyLineshapes(complex<float>* S_klm_FT, complex<float>* abscoe
                 float x = k / (init_d.N_v_FT * init_d.dv);
                 float mul = 0.0;
                 complex<float> out_complex = 0;
-                // float out_re = 0.0;
-                // float out_im = 0.0;
-                float wG, wL;
-                int index;
-
+              
                 for (int l = 0; l < iter_d.N_G; l++) {
-                    wG = expf(iter_d.log_wG_min + l * init_d.dxG);
+                    float wG = expf(iter_d.log_wG_min + l * init_d.dxG);
                     for (int m = 0; m < iter_d.N_L; m++) {
-                        index = k * iter_d.N_G * iter_d.N_L + l * iter_d.N_L + m;
-                        wL = expf(iter_d.log_wL_min + m * init_d.dxL);
-                        mul = expf(-r4log2 * powf(pi * x * wG, 2) - pi * x * wL) * init_d.dv;
+                        int index = k * iter_d.N_G * iter_d.N_L + l * iter_d.N_L + m;
+                        float wL = expf(iter_d.log_wL_min + m * init_d.dxL);
+                        mul = expf(-r4log2 * powf(pi * x * wG, 2) - pi * x * wL) * init_d.N_v / init_d.N_v_FT;
                         out_complex += mul * S_klm_FT[index];
-                        //out_complex += LDM[index];
                     }
                 }
                 abscoeff[k].real(out_complex.real());
