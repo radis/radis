@@ -1,0 +1,2 @@
+radis/gpu/build_kernels binary
+radis/gpu/*.so binary
