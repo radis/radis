@@ -19,8 +19,8 @@ from nvidia.cufft import __path__ as cufft_path
 if os_name == "nt":
     lib = windll.LoadLibrary("nvcuda.dll")
     lib_cufft = windll.LoadLibrary(
-        cufft_path[0] + "\\bin\\cufft64_11.dll"
-    )  # TODO: drop to 10?
+        cufft_path[0] + "\\bin\\cufft64_10.dll"
+    )  
 else:
     lib = cdll.LoadLibrary("libcuda.so")
     lib_cufft = cdll.LoadLibrary(cufft_path[0] + "\\lib\\libcufft.so.11")

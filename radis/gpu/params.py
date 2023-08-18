@@ -4,7 +4,6 @@ from scipy.constants import c, h, k
 c_cm = 100 * c
 c2 = h * c_cm / k
 
-# TODO: the first two steps could be done on GPU if it makes it faster.
 def init_L_params(na, gamma, verbose=False):
 
     if verbose >= 2:
@@ -18,15 +17,16 @@ def init_L_params(na, gamma, verbose=False):
     except (ModuleNotFoundError):
 
         # Remove duplicates
-        unique_lines = set([])
-        for i in range(len(na)):
-            unique_lines.add(str(na[i]) + " " + str(gamma[i]))
-
+        na_gamma_arr = np.zeros((gamma.size,2), dtype=np.float32)
+        na_gamma_arr[:,0] = na
+        na_gamma_arr[:,1] = gamma
+        
+        unique_lines = np.unique(na_gamma_arr.reshape(2*gamma.size).view(np.int64))
+                
         # Only keep extremes
         max_dict = {}
         min_dict = {}
-        for s in unique_lines:
-            na_i, gamma_i = map(float, s.split())
+        for (na_i, gamma_i) in unique_lines.view(np.float32).reshape(unique_lines.size, 2):
             try:
                 min_dict[na_i] = gamma_i if gamma_i < min_dict[na_i] else min_dict[na_i]
                 max_dict[na_i] = gamma_i if gamma_i > max_dict[na_i] else max_dict[na_i]
