@@ -16,9 +16,6 @@ from radis.gpu.params import (
 from radis.gpu.structs import initData_t, iterData_t
 from radis.misc.utils import getProjectRoot
 
-c_cm = 100 * c
-c2 = h * c_cm / k
-
 cu_mod = None
 init_h = initData_t()
 iter_h = iterData_t()
@@ -89,6 +86,11 @@ def gpu_init(
     else:
         from radis.gpu.driver import CuArray, CuContext, CuFFT, CuModule
 
+    ## First a CUDA context is created, then the .ptx file is read
+    ## and made available as the CuModule object cu_mod
+    ## If this fails, None is returned and calculations are
+    ## defaulted to CPU emulation
+
     ctx = CuContext.Open()
     if ctx is None:
         warn(("Failed to load CUDA context, this happened either because",
@@ -102,9 +104,6 @@ def gpu_init(
     if verbose == 1:
         print("Number of lines loaded: {0}".format(len(v0)))
         print()
-
-    ## First a CUDA context is created, then the .ptx file is read
-    ## and made available as the CuModule object cu_mod
 
     ptx_path = os.path.join(getProjectRoot(), "gpu", "kernels.ptx")
     if not os.path.exists(ptx_path):
@@ -127,7 +126,6 @@ def gpu_init(
     init_h.dxG = dxG
     init_h.dxL = dxL
     init_h.N_lines = int(len(v0))
-    init_h.N_iterations_per_thread = 1024
 
     log_c2Mm_arr = np.array(
         [0]
@@ -159,11 +157,10 @@ def gpu_init(
     NvFT = init_h.N_v_FT
     NxFT = NvFT // 2 + 1
     Ntpb = ctx.getMaxThreadsPerBlock()
-    Nipt = init_h.N_iterations_per_thread
     Nli = init_h.N_lines
     threads = (Ntpb, 1, 1)
 
-    cu_mod.fillLDM.setGrid((Nli // (Ntpb * Nipt) + 1, 1, 1), threads)
+    cu_mod.fillLDM.setGrid((Nli // Ntpb + 1, 1, 1), threads)
     cu_mod.applyLineshapes.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
     cu_mod.calcTransmittanceNoslit.setGrid((NvFT // Ntpb + 1, 1, 1), threads)
     cu_mod.applyGaussianSlit.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
@@ -176,17 +173,17 @@ def gpu_init(
     ## They are not allocated, only given a device pointer by which
     ## they can be referenced later.
 
-    S_klm_d = CuArray(0, dtype=np.float32, init="defer")  # dev_ptr only
-    S_klm_FT_d = CuArray(0, dtype=np.complex64, init="defer")  # dev_ptr only
+    S_klm_d = CuArray(0, dtype=np.float32, init="defer")  # _ptr only
+    S_klm_FT_d = CuArray(0, dtype=np.complex64, init="defer")  # _ptr only
 
-    spectrum_in_d = CuArray(NxFT, dtype=np.complex64)  # malloc
-    spectrum_out_d = CuArray(NvFT, dtype=np.float32)  # malloc
+    spectrum_in_d = CuArray(NxFT, dtype=np.complex64)
+    spectrum_out_d = CuArray(NvFT, dtype=np.float32)
 
-    transmittance_noslit_d = CuArray(NvFT, dtype=np.float32)  # malloc
-    transmittance_noslit_FT_d = CuArray(NxFT, dtype=np.complex64)  # malloc
+    transmittance_noslit_d = CuArray(NvFT, dtype=np.float32)
+    transmittance_noslit_FT_d = CuArray(NxFT, dtype=np.complex64)
 
-    transmittance_FT_d = CuArray(NxFT, dtype=np.complex64)  # malloc
-    transmittance_d = CuArray(NvFT, dtype=np.float32)  # malloc
+    transmittance_FT_d = CuArray(NxFT, dtype=np.complex64)
+    transmittance_d = CuArray(NvFT, dtype=np.float32)
 
     cu_mod.fillLDM.setArgs(
         CuArray.fromArray(iso),
