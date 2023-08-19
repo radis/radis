@@ -16,15 +16,6 @@ from os import name as os_name
 import numpy as np
 from nvidia.cufft import __path__ as cufft_path
 
-if os_name == "nt":
-    lib = windll.LoadLibrary("nvcuda.dll")
-    lib_cufft = windll.LoadLibrary(
-        cufft_path[0] + "\\bin\\cufft64_10.dll"
-    )  
-else:
-    lib = cdll.LoadLibrary("libcuda.so")
-    lib_cufft = cdll.LoadLibrary(cufft_path[0] + "\\lib\\libcufft.so.11")
-
 verbose = False
 
 
@@ -47,12 +38,37 @@ CUFFT_C2R = 0x2C
 
 
 class CuContext:
-    def __init__(self, device_id=0, flags=0):
+    def __init__(self, device, context):
 
         # private:
-        self._context = c_void_p(0)
-        self._device = c_void_p(0)
+        self._device = device
+        self._context = context
+        
 
+    @staticmethod
+    def Open(device_id=0, flags=0):
+        global lib, lib_cufft
+        
+        # private:
+        _context = c_void_p(0)
+        _device = c_void_p(0)
+
+        load_lib = windll.LoadLibrary if os_name == 'nt' else cdll.LoadLibrary
+        cuda_name = 'nvcuda.dll' if os_name == 'nt' else 'libcuda.so'
+        cufft_name = '\\bin\\cufft64_10.dll' if os_name == 'nt' else '\\lib\\libcufft.so.11'
+
+        try:
+            lib = load_lib(cuda_name)
+        except(FileNotFoundError):
+            print("Can't find {:s}...".format(cuda_name))
+            return None
+
+        try:
+            lib_cufft = load_lib(cufft_path[0] + cufft_name)
+        except(FileNotFoundError):
+            print("Can't find {:s}...".format(cufft_name))
+            return None
+            
         err = lib.cuInit(0)
 
         deviceCount = c_int(0)
@@ -60,15 +76,18 @@ class CuContext:
 
         if deviceCount == 0:
             print("Error: no devices supporting CUDA\n")
-            # sys.exit()
+            return None
+        
+        lib.cuDeviceGet(byref(_device), device_id)
 
-        lib.cuDeviceGet(byref(self._device), device_id)
-
-        err = lib.cuCtxCreate_v2(byref(self._context), flags, self._device)
+        err = lib.cuCtxCreate_v2(byref(_context), flags, _device)
         if err != CUDA_SUCCESS:
-            print("* Error initializing the CUDA context.")
+            print("Error initializing the CUDA context.")
             lib.cuCtxDestroy_v2(self._context)
-            # sys.exit()
+            return None
+
+        return CuContext(_device, _context)
+
 
     @staticmethod
     def getDeviceList():

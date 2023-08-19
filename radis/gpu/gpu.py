@@ -23,7 +23,6 @@ cu_mod = None
 init_h = initData_t()
 iter_h = iterData_t()
 
-
 def gpu_init(
     v_arr,
     dxG,
@@ -38,7 +37,7 @@ def gpu_init(
     Mm_arr,
     Q_intp_list,
     verbose=True,
-    emulate=True,
+    emulate=False,
 ):
     """
 
@@ -90,16 +89,15 @@ def gpu_init(
     else:
         from radis.gpu.driver import CuArray, CuContext, CuFFT, CuModule
 
-    ctx = CuContext()
+    ctx = CuContext.Open()
+    if ctx is None:
+        warn(("Failed to load CUDA context, this happened either because",
+              "CUDA is not installed properly, or you have no NVIDIA GPU. ",
+              "Continuing with emulated GPU on CPU...",
+              "This means *NO* GPU acceleration!"))
 
-    ##    if ctx is None:
-    ##        warn(("Failed to load CUDA context, this happened either because"+
-    ##              "CUDA is not installed properly, or you have no NVIDIA GPU."+
-    ##              "Continuing with emulated GPU on CPU..."+
-    ##              "This means *NO* GPU acceleration!"))
-    ##
-    ##        from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule
-    ##        ctx = CuContext()
+        from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule
+        ctx = CuContext.Open()
 
     if verbose == 1:
         print("Number of lines loaded: {0}".format(len(v0)))

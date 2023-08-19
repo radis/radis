@@ -33,11 +33,17 @@ _max_threads_per_block = 1024
 
 
 class CuContext:
-    def __init__(self, device_id=0, flags=0):
-
+    def __init__(self, device, context):
         # private:
-        self._context = c_void_p(123)
-        self._device = c_void_p(456)
+        self._device = device
+        self._context = context
+
+    @staticmethod
+    def Open(device_id=0, flags=0):        
+        _device = c_void_p(456)
+        _context = c_void_p(123)
+        
+        return CuContext(_device, _context)
 
     @staticmethod
     def getDeviceList():
