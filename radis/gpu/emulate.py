@@ -97,24 +97,28 @@ class CuModule:
             self._func_dict[attr].module = self
             return self._func_dict[attr]
 
+    def _getGlobal(self, name, ctype=None):
+        try:
+            return self._global_dict[name]
+
+        except (KeyError):
+            if ctype is not None:
+                _type = ctype
+                _var = _type.in_dll(self._module, name)
+                _size = sizeof(ctype)
+                self._global_dict[name] = _var, _size, _type
+                return self._global_dict[name]
+            
+            else:
+                print('Constant type must be passed first time it is called!')
+                return
+        
     def setConstant(self, name, c_val):
-        try:
-            _var, _size = self._global_dict[name]
+        _var, _size, _type = self._getGlobal(name, type(c_val))
+        memmove(byref(_var), byref(c_val), sizeof(c_val))
 
-        except (KeyError):
-            _var = type(c_val).in_dll(self._module, name)
-            _size = sizeof(c_val)
-            self._global_dict[name] = (_var, _size)
-
-        memmove(byref(_var), byref(c_val), _size)
-
-    def getConstant(self, name):
-        try:
-            _var, _size = self._global_dict[name]
-
-        except (KeyError):
-            pass  # TODO: catch exception
-
+    def getConstant(self, name, ctype=None):
+        _var, _size, _type = self._getGlobal(name, ctype=None)    
         return _var
 
 

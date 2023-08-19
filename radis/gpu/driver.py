@@ -205,23 +205,39 @@ class CuModule:
             self._func_dict[attr].module = self
             return self._func_dict[attr]
 
-    def setConstant(self, name, c_val):
+    def _getGlobal(self, name, ctype=None):
         try:
-            _var, _size = self._global_dict[name]
+            return self._global_dict[name]
 
         except (KeyError):
-            _var = c_void_p()
-            _size = c_long()
-            cu_print(
-                lib.cuModuleGetGlobal_v2(
-                    byref(_var), byref(_size), self._module, c_char_p(name.encode())
-                ),
-                "mod.global",
-            )
-            self._global_dict[name] = (_var, _size)
+            if ctype is not None:
+                _var = c_void_p()
+                _size = c_size_t()
+                _type = ctype
+                cu_print(
+                    lib.cuModuleGetGlobal_v2(
+                        byref(_var), byref(_size), self._module, c_char_p(name.encode())
+                    ),
+                    "mod.global",
+                )
+                self._global_dict[name] = (_var, _size, _type)
+                return self._global_dict[name]
 
-        cu_print(lib.cuMemcpyHtoD_v2(_var, byref(c_val), _size), "mod.HtoD")
+            else:
+                print('Constant type must be passed first time it is called!')
+                return
 
+            
+    def setConstant(self, name, cval):
+        _var, _size, _type = self._getGlobal(name, type(cval))
+        cu_print(lib.cuMemcpyHtoD_v2(_var, byref(cval), _size), "mod.HtoD")
+        
+
+    def getConstant(self, name, ctype=None):
+        _var, _size, _type = self._getGlobal(name, ctype)
+        cvar = _type()    
+        cu_print(lib.cuMemcpyDtoH_v2(byref(cvar), _var,  _size), "mod.DtoH")
+        return cvar
 
 class CuFunction:
     def __init__(self, _function):
