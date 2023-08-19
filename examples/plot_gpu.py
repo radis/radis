@@ -35,9 +35,8 @@ s = sf.eq_spectrum_gpu(
     pressure=1,  # bar
     mole_fraction=0.8,
     path_length=0.2,  # cm
-    emulate=False,  # if True, runs CPU code on GPU. Set to False or remove to run on the GPU
 )
-#print(s)
+print(s)
 
 s.apply_slit(0.5)  # cm-1
 s.plot("radiance", show=True)
