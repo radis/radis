@@ -49,7 +49,9 @@ s.plot()
 # Some operations, such as crop, happen "in-place" by default, i.e. they modify the Spectrum.
 # If you don't want to modify the Spectrum make sure you specify ``inplace=False``
 # For instance we compare the current Spectrum to a mock-up new experimental
-# spectrum obtained by adding some random noise (15%) on top of the the previous one:
+# spectrum obtained by adding some random noise (15%) on top of the the previous one,
+# with some offset and a coarser grid.
+#
 # Note the use of ``len(s)`` to get the number of spectral points
 import matplotlib.pyplot as plt
 import numpy as np
@@ -60,10 +62,14 @@ s.normalize(inplace=False).plot(lw=1.5)
 noise_array = 0.15 * (
     np.random.rand(len(s)) * Unit("")
 )  # must be dimensioned to be multipled to spectra
-noise_offset = np.random.rand(1) * 0.02
-(-1 * (s.normalize(inplace=False) + noise_array)).offset(
+noise_offset = np.random.rand(1) * 0.01
+s2 = (-1 * (s.normalize(inplace=False) + noise_array)).offset(
     noise_offset, "cm-1", inplace=False
-).plot(nfig="same", lw=1.5)
+)
+# Resample the spectrum on a coarser (1 every 3 points) grid
+s2.resample(s2.get_wavenumber()[::3], inplace=True, energy_threshold=None)
+
+s2.plot(nfig="same", lw=1.5)
 plt.axhline(0)  # draw horizontal line
 
 # %%
@@ -104,3 +110,17 @@ import numpy as np
 print("Absorbance of original line : ", s.get_integral("absorbance"))
 print("Absorbance of fitted line   :", np.trapz(y_fit, w_fit))
 #
+
+
+#%%
+# Finally note that the fitting routine can be achieved directly
+# using the :py:meth:`~radis.spectrum.spectrum.Spectrum.fit_model` function:
+from astropy.modeling import models
+
+s.fit_model(models.Lorentz1D(), plot=True)
+
+#%%
+# We see that fitting a Voigt profile yields substantially better results
+from astropy.modeling import models
+
+s.fit_model(models.Voigt1D(), plot=True)

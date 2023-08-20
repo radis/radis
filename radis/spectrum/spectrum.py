@@ -4102,6 +4102,223 @@ class Spectrum(object):
 
         return s
 
+    #%% Fonctions to fit a lineshape model
+    #
+
+    def fit_model(
+        self, model, plot=False, confidence=0.9545, verbose=False, debug=False
+    ):
+        """Fit a lineshape model to the spectrum.
+
+        The model can be a simple lineshape model among :py:class:`~astropy.modeling.models.Gaussian1D`,
+        :py:class:`~astropy.modeling.models.Lorentz1D`, :py:class:`~astropy.modeling.models.Voigt1D`,
+         or a combination of multiple models.
+
+        Parameters
+        ----------
+        model: astropy.modeling.Model or a list of models
+            model to fit to the spectrum.
+            If a list is given, a sum of models is fitted
+        plot: bool
+            if True, plot the difference between the model and the spectrum
+
+        Other Parameters
+        ----------------
+        confidence: 0.6827, 0.9545, or 0.9973
+            confidence interval to use.
+
+        Returns
+        -------
+        g_fit
+            the fitted model
+        y_err
+            uncertainty on the fitted parameters
+
+        Examples
+        --------
+        ::
+
+            from astropy.modeling import models
+            s = radis.test_spectrum().crop(2201.7, 2205.1)
+            g_fit, y_err = s.fit_model(models.Lorentz1D(), plot=True)
+
+        Example with 6 Voigt lines:
+        ::
+
+            from astropy.modeling import models
+            s = radis.test_spectrum().crop(2201.7, 2225.1)
+            g_fit_list, y_err = s.fit_model([models.Voigt1D() for _ in range(6)], plot=True)
+
+        Other Examples
+        --------------
+
+        .. minigallery:: radis.Spectrum.fit_model
+
+        """
+        # TODO : return error on fitted parameters by default
+        from astropy.modeling.fitting import LevMarLSQFitter
+        from specutils.fitting import fit_lines
+
+        # make the model a list of models :
+        if not (isinstance(model, list) or isinstance(model, tuple)):
+            model = [model]
+
+        # from astropy.modeling import models
+        # from astropy.modeling.core import Fittable1DModel
+        # assert isinstance(model, Fittable1DModel)
+
+        fitter = LevMarLSQFitter(calc_uncertainties=True)
+        w_fit = self.get(self.get_vars()[0], return_units=True)[0]
+
+        # Initialize model
+        # ----------------
+        # Fit the spectrum and calculate the fitted flux values (``y_fit``)
+        # ... make some reasonable first assumption on amplitude, center, fwhm (if available)
+        # If multiple models, initialize them sequentially and remove the fitted
+        # values from the spectrum before fitting the next model
+        # fitter0 = LevMarLSQFitter()
+
+        if len(model) > 1:
+            s0 = self.copy(copy_lines=False, copy_arrays=True)
+        else:
+            s0 = self
+        for i, mod in enumerate(model):
+
+            # Note from Astropy Modeling:
+            # > ("The .value property on parameters should be set"
+            # " to unitless values, not Quantity objects. To set"
+            # "a parameter to a quantity simply set the "
+            # "parameter directly without using .value")
+
+            # If values are set to the default, then make a safe guess :
+            if "amplitude" in mod.param_names:
+                if (
+                    mod.__getattribute__("amplitude").value
+                    == mod.__getattribute__("amplitude").default
+                ):
+                    mod.__setattr__("amplitude", s0.max())  # dimensioned
+            if "amplitude_L" in mod.param_names:
+                # Lorentzian amplitude (?) in Voigt mode
+                if (
+                    mod.__getattribute__("amplitude_L").value
+                    == mod.__getattribute__("amplitude_L").default
+                ):
+                    mod.__setattr__("amplitude_L", s0.max())  # dimensioned
+            if "x_0" in mod.param_names:
+                if (
+                    mod.__getattribute__("x_0").value
+                    == mod.__getattribute__("x_0").default
+                ):
+                    mod.__setattr__("x_0", s0.argmax())  # dimensioned
+
+            def get_fwhm_fast(s0):
+                """a very rough 1st-guess for HWHM:
+                we measure the distance before the intensity drops below half the maximum
+                """
+                w, I = s0.get(s0.get_vars()[0])
+                mask_below_half = (I - I.min()) < (I.max() - I.min()) / 2
+                i_fwhm_left = np.argmin(
+                    ((w[mask_below_half] - s0.argmax(value_only=True))) ** 2
+                )
+                if i_fwhm_left + 1 > len(w[mask_below_half]):
+                    fwhm = abs(w[-1] - w[0])
+                else:
+                    fwhm = abs(
+                        w[mask_below_half][i_fwhm_left + 1]
+                        - w[mask_below_half][i_fwhm_left]
+                    )
+                return fwhm
+
+            if "fwhm" in mod.param_names:
+                if (
+                    mod.__getattribute__("fwhm").value
+                    == mod.__getattribute__("fwhm").default
+                ):
+                    mod.__setattr__("fwhm", get_fwhm_fast(s0))  # NOT dimensioned TODO
+            if "fwhm_L" in mod.param_names and "fwhm_G" in mod.param_names:
+                # Lorentzian and Gaussian width in Voigt profile
+                if (
+                    mod.__getattribute__("fwhm_L").value
+                    == mod.__getattribute__("fwhm_L").default
+                    and mod.__getattribute__("fwhm_G").value
+                    == mod.__getattribute__("fwhm_G").default
+                ):
+                    # distribute FWHM on the two profiles:
+                    fwhm = get_fwhm_fast(s0)
+                    mod.__setattr__("fwhm_L", fwhm / 2)  # NOT dimensioned TODO
+                    mod.__setattr__("fwhm_G", fwhm / 2)  # NOT dimensioned TODO
+
+            if len(model) > 1:
+                # Remove fitted model from spectrum, and initialize the next model
+                g_one_mod = fit_lines(s0.to_specutils(), mod, fitter=fitter)
+                y_one_mod = g_one_mod(w_fit)
+                s0 -= y_one_mod
+                if debug:
+                    s0.plot()
+                    import matplotlib.pyplot as plt
+
+                    plt.title(f"s0 after iteration {i} of guessing initial parameters")
+                    plt.tight_layout()
+                    plt.plot(w_fit, y_one_mod, "--r")
+
+        # Final fit
+        # ---------
+        # This time we fit the full spectrum ('self') with all models (model)
+        from astropy.modeling.fitting import DEFAULT_MAXITER
+
+        maxiter = len(model) * DEFAULT_MAXITER  # arbitrary
+        g_fit_list = fit_lines(
+            self.to_specutils(), model, fitter=fitter, maxiter=maxiter
+        )
+
+        y_fit_list = [g_fit(w_fit) for g_fit in g_fit_list]
+
+        if plot:
+            import matplotlib.pyplot as plt
+
+            self.plot(lw=5, color="grey")
+            for i, y_fit in enumerate(y_fit_list):
+                g_fit = g_fit_list[i]
+                label = " ".join(
+                    [
+                        f"{g_fit.param_names[k]}"[:6] + f"={v:.2f}"
+                        for k, v in enumerate(g_fit.parameters)
+                    ]
+                )
+                plt.plot(w_fit, y_fit, label=label)
+            # plot legend with small font size:
+            plt.legend(fontsize=14)
+
+        if verbose:
+            print(fitter.fit_info["ierr"], fitter.fit_info["message"])
+
+        # Get uncertainties
+        if fitter.fit_info["param_cov"] is not None:
+            cov_matrix_diagonal = fitter.fit_info["param_cov"].diagonal()
+            std = np.sqrt(cov_matrix_diagonal)
+
+            if confidence == 0.6827:
+                y_err = 1 * std
+            elif confidence == 0.9545:
+                y_err = 2 * std
+            elif confidence == 0.9973:
+                y_err = 3 * std
+            else:
+                raise ValueError("Use confidence as one of 0.6827, 0.9545, or 0.9973")
+
+            # Add units
+            y_err = [
+                mod.__getattribute__(param).unit * y_err[i]
+                if mod.__getattribute__(param).unit
+                else y_err[i]
+                for mod in model
+                for i, param in enumerate(mod.param_names)
+            ]  # TODO refactor there is probably a better way to write it
+        else:
+            y_err = None
+
+        return g_fit_list, y_err
+
     # %% ======================================================================
     # Semi public functions
     # ----------------
