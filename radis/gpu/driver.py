@@ -288,7 +288,7 @@ class CuArray:
         shape_tuple = shape if isinstance(shape, tuple) else (shape,)
         self.shape = self.shape if shape is None else shape_tuple
         self.dtype = self.dtype if dtype is None else np.dtype(dtype)
-        self.size = int(np.prod(shape))
+        self.size = int(np.prod(self.shape))
         self.itemsize = self.dtype.itemsize
         self.nbytes = self.itemsize * self.size
 
@@ -336,10 +336,14 @@ class CuArray:
 
         return arr
 
+    def free(self):
+        cu_print(lib.cuMemFree_v2(self._ptr), "arr.free")
+
+
     def __del__(self):
 
         try:
-            cu_print(lib.cuMemFree_v2(self._ptr), "arr.free")
+            self.free()
         except (AttributeError):
             pass
 
