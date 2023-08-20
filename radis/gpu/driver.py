@@ -166,6 +166,7 @@ class CuModule:
         # public:
         self.module_name = module_name
         self.context = context
+        self.mode = 'GPU'
 
         # private:
         self._module = c_void_p(0)
@@ -226,7 +227,8 @@ class CuModule:
             else:
                 print('Constant type must be passed first time it is called!')
                 return
-
+    def getMode(self):
+        return self.mode
             
     def setConstant(self, name, cval):
         _var, _size, _type = self._getGlobal(name, type(cval))

@@ -1179,7 +1179,6 @@ class SpectrumFactory(BandFactory):
             Tgas,
             mole_fraction,
             verbose=verbose,
-            gpu=(not emulate),
         )
 
         if exit_gpu:
@@ -1395,7 +1394,6 @@ class SpectrumFactory(BandFactory):
                 l=s.conditions["path_length"],
                 slit_FWHM=s.conditions["slit_FWHM"],
                 verbose=False,
-                gpu=(not s.conditions["emulate_gpu"]),
             )
 
             # This happen inside a Spectrum() method

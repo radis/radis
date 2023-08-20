@@ -74,6 +74,7 @@ class CuModule:
         lib_ext = ".dll" if os_name == "nt" else ".so"
         self.module_name = os.path.splitext(module_name)[0] + lib_ext
         self.context = context
+        self.mode = 'CPU'
 
         # private:
         # radis_path = dirname(dirname(__file__))
@@ -112,7 +113,9 @@ class CuModule:
             else:
                 print('Constant type must be passed first time it is called!')
                 return
-        
+    def getMode(self):
+        return self.mode
+    
     def setConstant(self, name, c_val):
         _var, _size, _type = self._getGlobal(name, type(c_val))
         memmove(byref(_var), byref(c_val), sizeof(c_val))

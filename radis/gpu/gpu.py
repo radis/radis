@@ -126,7 +126,7 @@ def gpu_init(
     init_h.dxG = dxG
     init_h.dxL = dxL
     init_h.N_lines = int(len(v0))
-
+    
     log_c2Mm_arr = np.array(
         [0]
         + [
@@ -213,7 +213,7 @@ def gpu_init(
         print("done!")
 
 
-def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False):
+def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
     """
     Parameters
     ----------

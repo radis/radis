@@ -1,7 +1,6 @@
 
 #include "gpu_cpu_agnostic.h"
 
-
 extern "C"{
 
 struct initData {
