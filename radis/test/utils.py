@@ -439,7 +439,7 @@ def _failsafe_if_no_db(testcase, *args, **kwargs):
 #%%
 class EmulateMatlab:
     def __init__(self):
-        """Creates a class that allows to use Matlab syntax in Radis,
+        r"""Creates a class that allows to use Matlab syntax in Radis,
         in order to show & run valid Matlab syntax code directly from the
         Python documentation and tests.
         ::
@@ -461,11 +461,11 @@ class EmulateMatlab:
 
     # Overload the __getattr__ method to catch all undefined methods
     def __getattr__(self, name):
-        """catch all undefined methods and redirect to radis"""
+        r"""catch all undefined methods and redirect to radis"""
         return getattr(self.radis, name)
 
     def __call__(self, *args, **kwargs):
-        """catch all undefined methods and redirect to radis"""
+        r"""catch all undefined methods and redirect to radis"""
         return self.radis(*args, **kwargs)
 
     def __repr__(self):

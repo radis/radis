@@ -807,7 +807,7 @@ def get_FWHM(w, I, return_index=False):
     xmax = upper.max()
 
     def get_zero(x1, y1, x2, y2):
-        """
+        r"""
         Linear interpolation on data to get zero
         Return location of zero by solving for f(x) = (y2-y1)/(x2-x1) * (x-x1) + y1 = 0
         """

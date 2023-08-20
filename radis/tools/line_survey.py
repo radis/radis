@@ -204,7 +204,7 @@ def LineSurvey(
         )
 
     def hitran2splot(S, T):
-        """convert Linestrength in HITRAN units (cm-1/(molecules.cm-2)) to
+        r"""convert Linestrength in HITRAN units (cm-1/(molecules.cm-2)) to
         SpectraPlot units (cm-2/atm)"""
 
         return S / (k_b * T) / 10
@@ -262,7 +262,7 @@ def LineSurvey(
     # %% Plot - Plotly version
 
     def get_x(w):
-        """w (input) is supposed to be in vacuum wavenumbers in the lines
+        r"""w (input) is supposed to be in vacuum wavenumbers in the lines
         database."""
 
         # Convert wavelength / wavenumber
@@ -286,7 +286,7 @@ def LineSurvey(
     # (one function per databank format)
 
     def add_details(row, details):
-        """Add details in string; add on 2 columns if "upper" and "lower" value follow"
+        r"""Add details in string; add on 2 columns if "upper" and "lower" value follow"
 
         Example :  keep "gu", "gl" on the same line
 
@@ -321,7 +321,7 @@ def LineSurvey(
         return label
 
     def get_label_hitran(row, details, attrs):
-        """
+        r"""
         Todo
         -------
 
@@ -566,7 +566,7 @@ def LineSurvey(
         return label
 
     def get_label_all(row):
-        """print all lines details"""
+        r"""print all lines details"""
         # label = row.__repr__()
         label = "<br>".join([f"{k}: {v}" for k, v in row.items()])
         return label

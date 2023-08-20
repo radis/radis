@@ -28,7 +28,7 @@ import warnings
 
 class ParamRange:
     def __init__(self, valmin=0, valmax=1, valinit=None):
-        """Used in :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu_interactive`"""
+        r"""Used in :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu_interactive`"""
         self.valmin = valmin
         self.valmax = valmax
 
@@ -68,7 +68,7 @@ def add_ruler(fig, wunit="", Iunit="", ax=None):
 
     # TODO: build it only on demand/ if add_tool called?
     class Ruler(AxesWidget):
-        """
+        r"""
         A ruler to measure distances and angles on an axes instance.
 
         For the ruler to remain responsive you must keep a reference to it.
@@ -545,7 +545,7 @@ def add_ruler(fig, wunit="", Iunit="", ax=None):
     # %% Add in toolbars
 
     class RulerTool(ToolToggleBase):
-        """Add a RulerTool to measure spectra
+        r"""Add a RulerTool to measure spectra
 
         Based on work from TerranJP
         https://github.com/terranjp/matplotlib-tools

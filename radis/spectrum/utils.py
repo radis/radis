@@ -305,11 +305,11 @@ def print_conditions(
     """
 
     def align(a, space=20):
-        """fix alignment."""
+        r"""fix alignment."""
         return a + " " * max(1, (space - len(str(a))))
 
     def print_param(k):
-        """Special formatting for nicely printing conditions."""
+        r"""Special formatting for nicely printing conditions."""
         v_k = conditions[k]
         # Add extra arguments based on arbitrary conditions
         args = []
@@ -647,7 +647,7 @@ def generate_perf_profile(profiler):
     """
 
     def parse_profiler(tree, parent=None, parent_time=None):
-        """
+        r"""
 
         Parameters
         ----------

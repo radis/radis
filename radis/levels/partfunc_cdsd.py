@@ -68,7 +68,7 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
     """
 
     def __init__(self, isotope, database):
-        """Get partition function for one isotope only.
+        r"""Get partition function for one isotope only.
 
         (note that this forces to reload the file once per isotope, but
         at least we have a clean layout with one object per isotope)
@@ -102,11 +102,11 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
         self.Tmax = parsum["T(K)"].max()
 
     def _inrange(self, T):
-        """Allow for 5% extrapolation (ex: 296K / 300K) )"""
+        r"""Allow for 5% extrapolation (ex: 296K / 300K) )"""
         return (self.Tmin * 0.95 <= T) and (self.Tmax * 1.05 >= T)
 
     def _at(self, T):
-        """Get partition function at temperature T.
+        r"""Get partition function at temperature T.
 
         Called by :meth:`radis.levels.partfunc.RovibParFuncTabulator.at`
         """
@@ -337,7 +337,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
             )
 
     def _add_degeneracies(self, df):
-        """Calculate and store degeneracies in database df.
+        r"""Calculate and store degeneracies in database df.
 
         Parameters
         ----------

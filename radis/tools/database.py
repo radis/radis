@@ -1030,7 +1030,7 @@ def query(df, conditions="", **kwconditions):
 
 class SpecList(object):
     def __init__(self, *spectra, **kwargs):
-        """A list of Spectrum, with various methods to manage them.
+        r"""A list of Spectrum, with various methods to manage them.
 
         .. warning::     still new in 0.9.17
         """
@@ -1042,7 +1042,7 @@ class SpecList(object):
         self.verbose = verbose
 
     def _create_df(self, *spectra):
-        """Returns Dataframe of spectra with conditions.
+        r"""Returns Dataframe of spectra with conditions.
 
         Parameters
         ----------
@@ -1068,7 +1068,7 @@ class SpecList(object):
         return pd.DataFrame(db)
 
     def conditions(self):
-        """Show conditions in database."""
+        r"""Show conditions in database."""
 
         cond = list(self.df.columns)
 
@@ -1080,7 +1080,7 @@ class SpecList(object):
         return cond
 
     def see(self, columns=None, *args):
-        """Shows Spectrum database with all conditions (``columns=None``) or
+        r"""Shows Spectrum database with all conditions (``columns=None``) or
         specific conditions.
 
         Parameters
@@ -1124,7 +1124,7 @@ class SpecList(object):
         return dg.reindex(columns=columns)
 
     def view(self, columns=None, *args):
-        """alias of :py:meth:`~radis.tools.database.SpecList.see`
+        r"""alias of :py:meth:`~radis.tools.database.SpecList.see`
 
         See Also
         --------
@@ -1135,7 +1135,7 @@ class SpecList(object):
         return self.see(columns=columns, *args)
 
     def map(self, function):
-        """Apply ``function`` to all Spectra in database.
+        r"""Apply ``function`` to all Spectra in database.
 
         Examples
         --------
@@ -1175,7 +1175,7 @@ class SpecList(object):
             function(s)
 
     def _load_existing_files(self, files):
-        """Loadspectra already registered in the database.
+        r"""Loadspectra already registered in the database.
 
         Parameters
         ----------
@@ -1230,7 +1230,7 @@ class SpecList(object):
         return list(self.df["Spectrum"])
 
     def get(self, conditions="", **kwconditions):
-        """Returns a list of spectra that match given conditions.
+        r"""Returns a list of spectra that match given conditions.
 
         Parameters
         ----------
@@ -1344,7 +1344,7 @@ class SpecList(object):
         return out
 
     def get_unique(self, conditions="", scale_if_possible=False, **kwconditions):
-        """Returns a spectrum that match given conditions.
+        r"""Returns a spectrum that match given conditions.
 
         Raises an error if the spectrum is not unique.
 
@@ -1389,7 +1389,7 @@ class SpecList(object):
             return out[0]
 
     def get_closest(self, scale_if_possible=True, **kwconditions):
-        """Returns the Spectra in the database that is the closest to the input
+        r"""Returns the Spectra in the database that is the closest to the input
         conditions.
 
         Note that for non-numeric values only equals should be given.
@@ -1574,7 +1574,7 @@ class SpecList(object):
         return sout
 
     def get_items(self, condition):
-        """Returns all Spectra in database under a dictionary; indexed by
+        r"""Returns all Spectra in database under a dictionary; indexed by
         ``condition``
 
         Requires that ``condition`` is unique
@@ -1612,7 +1612,7 @@ class SpecList(object):
         return dict(zip(self.df[condition], self.df.Spectrum))
 
     def create_fname_grid(self, conditions):
-        """Create a 2D-grid of filenames for the list of parameters ``conditions``
+        r"""Create a 2D-grid of filenames for the list of parameters ``conditions``
 
         Examples
         --------
@@ -1636,7 +1636,7 @@ class SpecList(object):
         )
 
     def __iter__(self):
-        """Iterate over all Spectra in database.
+        r"""Iterate over all Spectra in database.
 
         .. warning::
 
@@ -1673,7 +1673,7 @@ class SpecList(object):
         return self.get(inplace=True).__iter__()
 
     def keys(self):
-        """Iterate over all {path} in database.
+        r"""Iterate over all {path} in database.
 
         See Also
         --------
@@ -1686,7 +1686,7 @@ class SpecList(object):
         return list(self.to_dict().keys())
 
     def values(self):
-        """Iterate over all {Spectrum} in database.
+        r"""Iterate over all {Spectrum} in database.
 
         See Also
         --------
@@ -1699,7 +1699,7 @@ class SpecList(object):
         return list(self.to_dict().values())
 
     def items(self):
-        """Iterate over all :py:class:`~radis.spectrum.spectrum.Spectrum` in
+        r"""Iterate over all :py:class:`~radis.spectrum.spectrum.Spectrum` in
         database.
 
         Examples
@@ -1727,7 +1727,7 @@ class SpecList(object):
         return list(self.to_dict().items())
 
     def plot(self, nfig=None, legend=True, **kwargs):
-        """Plot all spectra in database.
+        r"""Plot all spectra in database.
 
         Parameters
         ----------
@@ -1772,7 +1772,7 @@ class SpecList(object):
         return fig, ax
 
     def plot_cond(self, cond_x, cond_y, z_value=None, nfig=None):
-        """Plot database conditions available:
+        r"""Plot database conditions available:
 
         Parameters
         ----------
@@ -2077,7 +2077,7 @@ class SpecDatabase(SpecList):
                         )
 
     def update(self, force_reload=False, filt=".spec", update_register_only=False):
-        """Reloads database, updates internal index structure and export it in
+        r"""Reloads database, updates internal index structure and export it in
         ``<database>.csv``.
 
         Parameters
@@ -2128,7 +2128,7 @@ class SpecDatabase(SpecList):
         self.print_index()
 
     def compress_to(self, new_folder, compress=True, if_exists_then="error"):
-        """Saves the Database in a new folder with all Spectrum objects under
+        r"""Saves the Database in a new folder with all Spectrum objects under
         compressed (binary) format. Read/write is much faster. After the
         operation, a new database should be initialized in the new_folder to
         access the new Spectrum.
@@ -2189,7 +2189,7 @@ class SpecDatabase(SpecList):
                 pass
 
     def find_duplicates(self, columns=None):
-        """Find spectra with same conditions. The first duplicated spectrum
+        r"""Find spectra with same conditions. The first duplicated spectrum
         will be ``'False'``, the following will be ``'True'`` (see
         .duplicated()).
 
@@ -2232,7 +2232,7 @@ class SpecDatabase(SpecList):
     def add(
         self, spectrum: Spectrum, store_name=None, if_exists_then="increment", **kwargs
     ):
-        """Add Spectrum to database, whether it's a
+        r"""Add Spectrum to database, whether it's a
         :py:class:`~radis.spectrum.spectrum.Spectrum` object or a file that
         stores one. Check it's not in database already.
 
@@ -2393,7 +2393,7 @@ class SpecDatabase(SpecList):
         return file
 
     def interpolate(self, **kwconditions):
-        """Interpolate existing spectra from the database to generate a new spectrum
+        r"""Interpolate existing spectra from the database to generate a new spectrum
         with conditions kwargs
 
         Examples
@@ -2466,7 +2466,7 @@ class SpecDatabase(SpecList):
         conditions="",
         **kwconditions,
     ):
-        """Returns the Spectrum in the database that has the lowest residual
+        r"""Returns the Spectrum in the database that has the lowest residual
         with ``s_exp``.
 
         Parameters
@@ -2552,7 +2552,7 @@ class SpecDatabase(SpecList):
         return spectra[i].copy()  # dont forget to copy the Spectrum we return
 
     def _load_new_files(self, files, update_register_only=False):
-        """Parse files and generate a database.
+        r"""Parse files and generate a database.
 
         Other Parameters
         ----------------
@@ -2606,7 +2606,7 @@ class SpecDatabase(SpecList):
         return pd.DataFrame(db)
 
     def _load_new_file(self, file, binary=False, update_register_only=False):
-        """Load spectrum and return Spectrum attributes for insertion in database.
+        r"""Load spectrum and return Spectrum attributes for insertion in database.
 
         The Spectrum itself is stored under the "Spectrum" key, and the filename
         under "file".
@@ -2642,7 +2642,7 @@ class SpecDatabase(SpecList):
         return out
 
     def update_conditions(self):
-        """Reloads conditions of all Spectrum in database."""
+        r"""Reloads conditions of all Spectrum in database."""
 
         # Fetch new conditions, including file and Spectrum object itself
         new_conditions_list = []
@@ -2657,7 +2657,7 @@ class SpecDatabase(SpecList):
         self.df = pd.DataFrame(new_conditions_list)
 
     def to_dict(self):
-        """Returns all Spectra in database under a dictionary, indexed by file.
+        r"""Returns all Spectra in database under a dictionary, indexed by file.
 
         Returns
         -------
