@@ -755,6 +755,8 @@ class DatabankLoader(object):
             a df0.reset_index()
 
         For instance::
+
+            from radis import SpectrumFactory
             sf = SpectrumFactory(
                 wavenum_min= 2150.4,
                 wavenum_max=2151.4,

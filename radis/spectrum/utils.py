@@ -420,6 +420,7 @@ def dict_to_tree(pro, name):
     ----------
     pro: dict
         of the form::
+
             {"value":float,    # keyword 'value' is expected
              "some_key":float
              "some_key2":float,

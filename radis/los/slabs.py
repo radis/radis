@@ -7,6 +7,7 @@ Classes to deal with multi-slabs configurations:
 - :func:`~radis.los.slabs.MergeSlabs` for several species at the same spatial position
 - :func:`~radis.los.slabs.SerialSlabs` to add several spectra along the line-of-path
 One Slab is just a :class:`~radis.spectrum.spectrum.Spectrum` object
+
 Examples
 --------
 See more examples in the
@@ -610,7 +611,6 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
     out_of_bounds = kwargs.pop("out", "nan")  # default 'nan'
     optically_thin = kwargs.pop("optically_thin", False)  # default False
     verbose = kwargs.pop("verbose", False)  # type: bool
-    kwargs.pop("debug", False)  # type: bool
     modify_inputs = kwargs.pop("modify_inputs", False)  # type: bool
     if len(kwargs) > 0:
         raise ValueError("Unexpected input: {0}".format(list(kwargs.keys())))

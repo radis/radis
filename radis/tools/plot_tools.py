@@ -14,6 +14,7 @@ Add a RulerTool to measure spectra
 Examples
 --------
 ::
+
     from radis.tools.plot_tools import add_ruler
     fig = plt.figure()
     add_ruler(fig)
@@ -60,6 +61,25 @@ class ParamRange:
 
 
 def add_ruler(fig, wunit="", Iunit="", ax=None):
+    """
+
+    Add a RulerTool to measure spectra
+
+        Based on work from TerranJP
+        https://github.com/terranjp/matplotlib-tools
+
+
+    Examples
+    --------
+    ::
+
+        from radis.tools.plot_tools import add_ruler
+        fig = plt.figure()
+        add_ruler(fig)
+
+    .. image:: https://user-images.githubusercontent.com/16088743/122615292-95a9e080-d088-11eb-9927-bf1187d5a94a.png
+
+    """
 
     import matplotlib.pyplot as plt
     import numpy as np

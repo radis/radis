@@ -894,7 +894,7 @@ class Spectrum(object):
 
     @classmethod
     def from_specutils(self, spectrum, var="radiance"):
-        r"""Convert a ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D`
+        r"""Convert a :py:mod:`specutils` :py:class:`~specutils.spectra.spectrum1d.Spectrum1D`
         to a ``radis`` :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
         Parameters
@@ -1546,7 +1546,7 @@ class Spectrum(object):
             import astropy.units as u
             s.rescale_path_length(1 * u.km).plot()
 
-        .. minigallery:: radis.spectrum.Spectrum.rescale_path_length
+        .. minigallery:: radis.Spectrum.rescale_path_length
 
         Notes
         -----
@@ -1677,10 +1677,7 @@ class Spectrum(object):
 
         See Also
         --------
-        :func:`radis.spectrum.operations.crop`,
-        :func:`~radis.los.slabs.MergeSlabs`: if used with ``resample='full',
-        out='transparent'``, this becomes the opposite of cropping: can be used
-        to combine 2 adjacent spectra in one.
+        :func:`radis.spectrum.operations.crop`
         """
 
         from radis.spectrum.operations import crop
@@ -1783,9 +1780,10 @@ class Spectrum(object):
         Examples
         --------
         ::
+
             s.offset(5, 'nm')
 
-        .. minigallery:: radis.spectrum.spectrum.Spectrum.offset
+        .. minigallery:: radis.Spectrum.offset
 
 
         See Also
@@ -3057,6 +3055,12 @@ class Spectrum(object):
 
         Examples
         --------
+        ::
+
+            s = radis.test_spectrum()
+            s.apply_slit((0.4, 0.6), "nm")  # add trapezoidal slit function
+            s.plot_slit()   # plot the slit function that was applied
+
 
         .. minigallery:: radis.spectrum.spectrum.Spectrum.plot_slit
 
@@ -4900,7 +4904,7 @@ class Spectrum(object):
         Examples
         --------
 
-        .. minigallery:: radis.spectrum.spectrum.Spectrum.get_baseline
+        .. minigallery:: radis.Spectrum.get_baseline
 
         See also
         --------
@@ -4982,8 +4986,11 @@ class Spectrum(object):
     def generate_perf_profile(self):
         r"""Generate a visual/interactive performance profile diagram using ``tuna``
 
-        .. note:
+        .. note::
             requires a `profiler` key with in Spectrum.conditions
+
+        .. warning::
+            deprecated in favor of :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile`
 
         Examples
         --------
