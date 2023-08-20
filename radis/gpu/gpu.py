@@ -15,14 +15,12 @@ from radis.gpu.params import (
 )
 from radis.gpu.structs import initData_t, iterData_t
 from radis.misc.utils import getProjectRoot
+from time import perf_counter
 
-c_cm = 100 * c
-c2 = h * c_cm / k
 
 cu_mod = None
 init_h = initData_t()
 iter_h = iterData_t()
-
 
 def gpu_init(
     v_arr,
@@ -38,7 +36,7 @@ def gpu_init(
     Mm_arr,
     Q_intp_list,
     verbose=True,
-    emulate=True,
+    emulate=False,
 ):
     """
 
@@ -86,32 +84,35 @@ def gpu_init(
         return
 
     if emulate:
-        from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule
+
+        from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule, CuTimer
     else:
-        from radis.gpu.driver import CuArray, CuContext, CuFFT, CuModule
+        from radis.gpu.driver import CuArray, CuContext, CuFFT, CuModule, CuTimer
 
-    ctx = CuContext()
+    ## First a CUDA context is created, then the .ptx file is read
+    ## and made available as the CuModule object cu_mod
+    ## If this fails, None is returned and calculations are
+    ## defaulted to CPU emulation
 
-    ##    if ctx is None:
-    ##        warn(("Failed to load CUDA context, this happened either because"+
-    ##              "CUDA is not installed properly, or you have no NVIDIA GPU."+
-    ##              "Continuing with emulated GPU on CPU..."+
-    ##              "This means *NO* GPU acceleration!"))
-    ##
-    ##        from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule
-    ##        ctx = CuContext()
+    ctx = CuContext.Open()
+    if ctx is None:
+        warn(("Failed to load CUDA context, this happened either because",
+              "CUDA is not installed properly, or you have no NVIDIA GPU. ",
+              "Continuing with emulated GPU on CPU...",
+              "This means *NO* GPU acceleration!"))
+
+        from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule, CuTimer
+        ctx = CuContext.Open()
 
     if verbose == 1:
         print("Number of lines loaded: {0}".format(len(v0)))
         print()
 
-    ## First a CUDA context is created, then the .ptx file is read
-    ## and made available as the CuModule object cu_mod
-
     ptx_path = os.path.join(getProjectRoot(), "gpu", "kernels.ptx")
     if not os.path.exists(ptx_path):
         raise FileNotFoundError(ptx_path)
     cu_mod = CuModule(ctx, ptx_path)
+    print('mode:',cu_mod.getMode())
 
     ## Next, the GPU is made aware of a number of parameters.
     ## Parameters that don't change during iteration are stored
@@ -129,8 +130,7 @@ def gpu_init(
     init_h.dxG = dxG
     init_h.dxL = dxL
     init_h.N_lines = int(len(v0))
-    init_h.N_iterations_per_thread = 1024
-
+    
     log_c2Mm_arr = np.array(
         [0]
         + [
@@ -161,11 +161,10 @@ def gpu_init(
     NvFT = init_h.N_v_FT
     NxFT = NvFT // 2 + 1
     Ntpb = ctx.getMaxThreadsPerBlock()
-    Nipt = init_h.N_iterations_per_thread
     Nli = init_h.N_lines
     threads = (Ntpb, 1, 1)
 
-    cu_mod.fillLDM.setGrid((Nli // (Ntpb * Nipt) + 1, 1, 1), threads)
+    cu_mod.fillLDM.setGrid((Nli // Ntpb + 1, 1, 1), threads)
     cu_mod.applyLineshapes.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
     cu_mod.calcTransmittanceNoslit.setGrid((NvFT // Ntpb + 1, 1, 1), threads)
     cu_mod.applyGaussianSlit.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
@@ -178,17 +177,17 @@ def gpu_init(
     ## They are not allocated, only given a device pointer by which
     ## they can be referenced later.
 
-    S_klm_d = CuArray(0, dtype=np.float32, init="defer")  # dev_ptr only
-    S_klm_FT_d = CuArray(0, dtype=np.complex64, init="defer")  # dev_ptr only
+    S_klm_d = CuArray(0, dtype=np.float32, init="defer")  # _ptr only
+    S_klm_FT_d = CuArray(0, dtype=np.complex64, init="defer")  # _ptr only
 
-    spectrum_in_d = CuArray(NxFT, dtype=np.complex64)  # malloc
-    spectrum_out_d = CuArray(NvFT, dtype=np.float32)  # malloc
+    spectrum_in_d = CuArray(NxFT, dtype=np.complex64)
+    spectrum_out_d = CuArray(NvFT, dtype=np.float32)
 
-    transmittance_noslit_d = CuArray(NvFT, dtype=np.float32)  # malloc
-    transmittance_noslit_FT_d = CuArray(NxFT, dtype=np.complex64)  # malloc
+    transmittance_noslit_d = CuArray(NvFT, dtype=np.float32)
+    transmittance_noslit_FT_d = CuArray(NxFT, dtype=np.complex64)
 
-    transmittance_FT_d = CuArray(NxFT, dtype=np.complex64)  # malloc
-    transmittance_d = CuArray(NvFT, dtype=np.float32)  # malloc
+    transmittance_FT_d = CuArray(NxFT, dtype=np.complex64)
+    transmittance_d = CuArray(NvFT, dtype=np.float32)
 
     cu_mod.fillLDM.setArgs(
         CuArray.fromArray(iso),
@@ -213,12 +212,12 @@ def gpu_init(
         transmittance_noslit_d, transmittance_noslit_FT_d, direction="fwd"
     )
     cu_mod.fft_rev2 = CuFFT(transmittance_FT_d, transmittance_d, direction="rev")
-
+    cu_mod.timer = CuTimer()
     if verbose >= 2:
         print("done!")
 
 
-def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False):
+def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
     """
     Parameters
     ----------
@@ -257,11 +256,14 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
 
     ## First a number of parameters that change during iteration
     ## are computed and copied to the GPU.
+
+    cu_mod.timer.reset()
+    
     set_pTQ(p, T, mole_fraction, iter_h, l=l, slit_FWHM=slit_FWHM)
     set_G_params(init_h, iter_h)
     set_L_params(init_h, iter_h)
     cu_mod.setConstant("iter_d", iter_h)
-
+    cu_mod.timer.lap('iter_params')
     ## Next the S_klm_d variable is reshaped to the correct shape,
     ## and filled with spectral data.
 
@@ -272,6 +274,7 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
     S_klm_shape = (init_h.N_v_FT, iter_h.N_G, iter_h.N_L)
     cu_mod.fillLDM.args[-1].resize(S_klm_shape, init="zeros")
     cu_mod.fillLDM()
+    cu_mod.timer.lap('fillLDM')
 
     ## Next the S_klm_FT_d is also reshaped, and the lineshapes are
     ## applied. This consists of an FT of the LDM, a product by the
@@ -285,9 +288,16 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
     S_klm_FT_shape = (init_h.N_x_FT, iter_h.N_G, iter_h.N_L)
     cu_mod.fft_fwd.arr_out.resize(S_klm_FT_shape)
     cu_mod.fft_fwd.planMany()  # replan because size may have changed
+    cu_mod.timer.lap('fft_fwd - plan')
+
     cu_mod.fft_fwd()
+    cu_mod.timer.lap('fft_fwd - exec')
+
     cu_mod.applyLineshapes()
+    cu_mod.timer.lap('applyLineshapes')
+
     cu_mod.fft_rev()
+    cu_mod.timer.lap('fft_rev')
 
     if verbose >= 2:
         print("Done!")
@@ -304,9 +314,17 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
         print("Applying slit function...")
 
     cu_mod.calcTransmittanceNoslit()
+    cu_mod.timer.lap('calcTransmittanceNoslit')
+
     cu_mod.fft_fwd2()
+    cu_mod.timer.lap('fft_fwd2')
+
     cu_mod.applyGaussianSlit()
+    cu_mod.timer.lap('applyGaussianSlit')
+
     cu_mod.fft_rev2()
+    cu_mod.timer.lap('fft_rev2')
+    t1 = perf_counter()
 
     transmittance_h = cu_mod.fft_rev2.arr_out.getArray()[: init_h.N_v]
 
@@ -315,6 +333,14 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0, gpu=False)
 
     if verbose == 1:
         print("Finished calculating spectrum!")
+
+##    diffs = cu_mod.timer.getDiffs()
+##    for key in diffs:
+##        print('{:8.3f} ms - '.format(diffs[key]),key)
+##
+##    print('------------------')
+##    print('{:8.3f} ms - total'.format((t1 - t0)*1e3))
+##    print('\n')
 
     return abscoeff_h, transmittance_h, iter_h
 

@@ -4,6 +4,8 @@ from ctypes import (
     c_char_p,
     c_int,
     c_long,
+    c_longlong,
+    c_float,
     c_size_t,
     c_void_p,
     cast,
@@ -15,15 +17,6 @@ from os import name as os_name
 
 import numpy as np
 from nvidia.cufft import __path__ as cufft_path
-
-if os_name == "nt":
-    lib = windll.LoadLibrary("nvcuda.dll")
-    lib_cufft = windll.LoadLibrary(
-        cufft_path[0] + "\\bin\\cufft64_11.dll"
-    )  # TODO: drop to 10?
-else:
-    lib = cdll.LoadLibrary("libcuda.so")
-    lib_cufft = cdll.LoadLibrary(cufft_path[0] + "\\lib\\libcufft.so.11")
 
 verbose = False
 
@@ -45,14 +38,34 @@ CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR = 76
 CUFFT_R2C = 0x2A
 CUFFT_C2R = 0x2C
 
+lib = None
+lib_cufft = None
+LoadLibrary = windll.LoadLibrary if os_name == 'nt' else cdll.LoadLibrary
+
 
 class CuContext:
-    def __init__(self, device_id=0, flags=0):
+    def __init__(self, device, context):
 
         # private:
-        self._context = c_void_p(0)
-        self._device = c_void_p(0)
+        self._device = device
+        self._context = context
+        
 
+    @staticmethod
+    def Open(device_id=0, flags=0):
+        global lib
+        
+        # private:
+        _context = c_void_p(0)
+        _device = c_void_p(0)
+
+        cuda_name = 'nvcuda.dll' if os_name == 'nt' else 'libcuda.so'
+        try:
+            lib = LoadLibrary(cuda_name)
+        except(FileNotFoundError):
+            print("Can't find {:s}...".format(cuda_name))
+            return None
+            
         err = lib.cuInit(0)
 
         deviceCount = c_int(0)
@@ -60,15 +73,18 @@ class CuContext:
 
         if deviceCount == 0:
             print("Error: no devices supporting CUDA\n")
-            # sys.exit()
+            return None
+        
+        lib.cuDeviceGet(byref(_device), device_id)
 
-        lib.cuDeviceGet(byref(self._device), device_id)
-
-        err = lib.cuCtxCreate_v2(byref(self._context), flags, self._device)
+        err = lib.cuCtxCreate_v2(byref(_context), flags, _device)
         if err != CUDA_SUCCESS:
-            print("* Error initializing the CUDA context.")
+            print("Error initializing the CUDA context.")
             lib.cuCtxDestroy_v2(self._context)
-            # sys.exit()
+            return None
+
+        return CuContext(_device, _context)
+
 
     @staticmethod
     def getDeviceList():
@@ -147,6 +163,7 @@ class CuModule:
         # public:
         self.module_name = module_name
         self.context = context
+        self.mode = 'GPU'
 
         # private:
         self._module = c_void_p(0)
@@ -186,23 +203,40 @@ class CuModule:
             self._func_dict[attr].module = self
             return self._func_dict[attr]
 
-    def setConstant(self, name, c_val):
+    def _getGlobal(self, name, ctype=None):
         try:
-            _var, _size = self._global_dict[name]
+            return self._global_dict[name]
 
         except (KeyError):
-            _var = c_void_p()
-            _size = c_long()
-            cu_print(
-                lib.cuModuleGetGlobal_v2(
-                    byref(_var), byref(_size), self._module, c_char_p(name.encode())
-                ),
-                "mod.global",
-            )
-            self._global_dict[name] = (_var, _size)
+            if ctype is not None:
+                _var = c_void_p()
+                _size = c_size_t()
+                _type = ctype
+                cu_print(
+                    lib.cuModuleGetGlobal_v2(
+                        byref(_var), byref(_size), self._module, c_char_p(name.encode())
+                    ),
+                    "mod.global",
+                )
+                self._global_dict[name] = (_var, _size, _type)
+                return self._global_dict[name]
 
-        cu_print(lib.cuMemcpyHtoD_v2(_var, byref(c_val), _size), "mod.HtoD")
+            else:
+                print('Constant type must be passed first time it is called!')
+                return
+    def getMode(self):
+        return self.mode
+            
+    def setConstant(self, name, cval):
+        _var, _size, _type = self._getGlobal(name, type(cval))
+        cu_print(lib.cuMemcpyHtoD_v2(_var, byref(cval), _size), "mod.HtoD")
+        
 
+    def getConstant(self, name, ctype=None):
+        _var, _size, _type = self._getGlobal(name, ctype)
+        cvar = _type()    
+        cu_print(lib.cuMemcpyDtoH_v2(byref(cvar), _var,  _size), "mod.DtoH")
+        return cvar
 
 class CuFunction:
     def __init__(self, _function):
@@ -254,7 +288,7 @@ class CuArray:
         shape_tuple = shape if isinstance(shape, tuple) else (shape,)
         self.shape = self.shape if shape is None else shape_tuple
         self.dtype = self.dtype if dtype is None else np.dtype(dtype)
-        self.size = int(np.prod(shape))
+        self.size = int(np.prod(self.shape))
         self.itemsize = self.dtype.itemsize
         self.nbytes = self.itemsize * self.size
 
@@ -302,17 +336,21 @@ class CuArray:
 
         return arr
 
+    def free(self):
+        cu_print(lib.cuMemFree_v2(self._ptr), "arr.free")
+
+
     def __del__(self):
 
         try:
-            cu_print(lib.cuMemFree_v2(self._ptr), "arr.free")
+            self.free()
         except (AttributeError):
             pass
 
 
 class CuFFT:
     def __init__(self, arr_in, arr_out, direction="fwd", plan_fft=True):
-
+        global lib_cufft
         # public:
         self.arr_in = arr_in
         self.arr_out = arr_out
@@ -323,6 +361,15 @@ class CuFFT:
         self._fft_type = CUFFT_R2C if direction == "fwd" else CUFFT_C2R
         self._plan = c_void_p(0)
 
+
+        cufft_name = '\\bin\\cufft64_10.dll' if os_name == 'nt' else '\\lib\\libcufft.so.10'
+        try:
+            if lib_cufft is None:
+                lib_cufft = LoadLibrary(cufft_path[0] + cufft_name)
+        except(FileNotFoundError):
+            print("Can't find {:s}...".format(cufft_name))
+            return None
+
         cu_print(lib_cufft.cufftCreate(byref(self._plan)), "fft.plan create")
 
         if plan_fft:
@@ -332,7 +379,6 @@ class CuFFT:
 
         batch = int(np.prod(self._arr.shape[1:]))
         oneInt = 1 * c_int
-        # dist = self._arr.shape[0]
         _n = oneInt(self._arr.shape[0])
         stride = batch
 
@@ -372,4 +418,48 @@ class CuFFT:
             pass
 
     def __del__(self):
-        self.destroy()
+        try:
+            if self._plan is not c_void_p(0):
+                self.destroy()
+        except(OSError):
+            pass
+
+
+class CuTimer:
+    def __init__(self, stream=0, flags=0):
+        #private:
+        self._stream = c_int(stream)
+        self._start = c_void_p(0)
+        self._stop = c_void_p(0)
+
+        #public:
+        self.times = {}
+
+        cu_print(lib.cuEventCreate(byref(self._start), flags|1), 'time.create')
+        cu_print(lib.cuEventCreate(byref(self._stop), flags|1), 'time.create')
+        self.reset()
+                     
+    def reset(self):
+        cu_print(lib.cuEventRecord(self._start, self._stream), 'time.record')
+
+    def lap(self, name=None):
+        if name is None:
+            name = 'event{:d}'.format(len(self.times.keys()))
+        self.times[name] = self()    
+
+    def __call__(self):
+        _time = c_float(0) #elapsed time in ms
+        cu_print(lib.cuEventRecord(self._stop, self._stream), 'time.record')
+        cu_print(lib.cuEventSynchronize(self._stop), 'time.sync')
+        cu_print(lib.cuEventElapsedTime(byref(_time), self._start, self._stop), 'time.time')
+        return _time.value
+
+    def getTimes(self):
+        return self.times
+
+    def getDiffs(self):
+        vals = [*self.times.values()]
+        diffs = [vals[0]] + [vals[i] - vals[i-1] for i in range(1, len(vals))]
+        return dict(zip(self.times.keys(), diffs))
+
+    

@@ -44,7 +44,6 @@ class initData_t(Structure):
         ("dxG", c_float),
         ("dxL", c_float),
         ("N_lines", c_int),
-        ("N_iterations_per_thread", c_int),
         ("log_c2Mm", c_float * 16),
     ]
 

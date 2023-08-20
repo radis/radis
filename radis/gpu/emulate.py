@@ -20,12 +20,16 @@ from scipy.fft import irfft, rfft
 
 from radis.gpu.structs import blockDim_t, gridDim_t
 from radis.misc.utils import getProjectRoot
+from time import perf_counter
 
 # from os.path import dirname
 
 
 CUFFT_R2C = 0x2A
 CUFFT_C2R = 0x2C
+LoadLibrary = windll.LoadLibrary if os_name == "nt" else cdll.LoadLibrary
+
+
 
 # This number does not have a meaningful interpretation in a CPU,
 # so we just default to a typical number for GPU.
@@ -33,11 +37,17 @@ _max_threads_per_block = 1024
 
 
 class CuContext:
-    def __init__(self, device_id=0, flags=0):
-
+    def __init__(self, device, context):
         # private:
-        self._context = c_void_p(123)
-        self._device = c_void_p(456)
+        self._device = device
+        self._context = context
+
+    @staticmethod
+    def Open(device_id=0, flags=0):        
+        _device = c_void_p(456)
+        _context = c_void_p(123)
+        
+        return CuContext(_device, _context)
 
     @staticmethod
     def getDeviceList():
@@ -68,13 +78,13 @@ class CuModule:
         lib_ext = ".dll" if os_name == "nt" else ".so"
         self.module_name = os.path.splitext(module_name)[0] + lib_ext
         self.context = context
+        self.mode = 'CPU'
 
         # private:
         # radis_path = dirname(dirname(__file__))
         radis_path = getProjectRoot()
 
-        lib_obj = windll if os_name == "nt" else cdll
-        self._module = lib_obj.LoadLibrary(
+        self._module = LoadLibrary(
             os.path.join(radis_path, "gpu", self.module_name)
         )
         self._func_dict = {}
@@ -91,24 +101,30 @@ class CuModule:
             self._func_dict[attr].module = self
             return self._func_dict[attr]
 
+    def _getGlobal(self, name, ctype=None):
+        try:
+            return self._global_dict[name]
+
+        except (KeyError):
+            if ctype is not None:
+                _type = ctype
+                _var = _type.in_dll(self._module, name)
+                _size = sizeof(ctype)
+                self._global_dict[name] = _var, _size, _type
+                return self._global_dict[name]
+            
+            else:
+                print('Constant type must be passed first time it is called!')
+                return
+    def getMode(self):
+        return self.mode
+    
     def setConstant(self, name, c_val):
-        try:
-            _var, _size = self._global_dict[name]
+        _var, _size, _type = self._getGlobal(name, type(c_val))
+        memmove(byref(_var), byref(c_val), sizeof(c_val))
 
-        except (KeyError):
-            _var = type(c_val).in_dll(self._module, name)
-            _size = sizeof(c_val)
-            self._global_dict[name] = (_var, _size)
-
-        memmove(byref(_var), byref(c_val), _size)
-
-    def getConstant(self, name):
-        try:
-            _var, _size = self._global_dict[name]
-
-        except (KeyError):
-            pass  # TODO: catch exception
-
+    def getConstant(self, name, ctype=None):
+        _var, _size, _type = self._getGlobal(name, ctype=None)    
         return _var
 
 
@@ -219,10 +235,39 @@ class CuFFT:
         np_arr_out = self.arr_out.getArray()
 
         if self._direction == "fwd":
-            np_arr_out[:] = rfft(np_arr_in, axis=0, norm="backward")
+            np_arr_out[:] = rfft(np_arr_in, axis=0)
         else:
             n = np_arr_out.shape[0]
-            np_arr_out[:] = irfft(np_arr_in, n=n, axis=0, norm="forward")
+            np_arr_out[:] = irfft(np_arr_in, n=n, axis=0, norm='forward')
 
     def destroy(self):
         pass
+
+
+class CuTimer:
+    def __init__(self, stream=0):
+        self._stream = c_int(stream)
+        self._start = perf_counter()
+        self._stop = self._start
+        self.times = {}
+        
+    def reset(self):
+        self._start = perf_counter()
+
+    def lap(self, name=None):
+        if name is None:
+            name = 'event{:d}'.format(len(self.times.keys()))
+        self.times[name] = self()    
+
+    def __call__(self):
+        self._stop = perf_counter()
+        elapsed_time = 1e3*(self._stop - self._start)
+        return elapsed_time
+
+    def getTimes(self):
+        return self.times
+
+    def getDiffs(self):
+        vals = [*self.times.values()]
+        diffs = [vals[0]] + [vals[i] - vals[i-1] for i in range(1, len(vals))]
+        return dict(zip(self.times.keys(), diffs))
