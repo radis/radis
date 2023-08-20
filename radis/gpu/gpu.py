@@ -331,18 +331,14 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
     if verbose == 1:
         print("Finished calculating spectrum!")
 
-    diffs = cu_mod.timer.getDiffs()
-    for key in diffs:
-        print('{:8.3f} ms - '.format(diffs[key]),key)
+##    diffs = cu_mod.timer.getDiffs()
+##    for key in diffs:
+##        print('{:8.3f} ms - '.format(diffs[key]),key)
+##
+##    print('------------------')
+##    print('{:8.3f} ms - total'.format((t1 - t0)*1e3))
+##    print('\n')
 
-    print('------------------')
-    print('{:8.3f} ms - total'.format((t1 - t0)*1e3))
-    print('\n')
-
-
-##    abscoeff_h = cu_mod.fft_rev.arr_out.getArray()[: init_h.N_v]
-##    transmittance_h = cu_mod.fft_rev2.arr_out.getArray()[: init_h.N_v]
-    
     return abscoeff_h, transmittance_h, iter_h
 
 
