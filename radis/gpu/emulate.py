@@ -261,7 +261,7 @@ class CuTimer:
 
     def __call__(self):
         self._stop = perf_counter()
-        elapsed_time = 1e3*(self._stop - self._start())
+        elapsed_time = 1e3*(self._stop - self._start)
         return elapsed_time
 
     def getTimes(self):
