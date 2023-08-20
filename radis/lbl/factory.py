@@ -353,6 +353,8 @@ class SpectrumFactory(BandFactory):
     :func:`~radis.lbl.calc.calc_spectrum`
     """
 
+    __slots__ = BandFactory.__slots__
+
     # TODO: make it possible to export both 'vib' and 'rovib'
 
     # TODO

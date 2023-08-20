@@ -87,6 +87,8 @@ class BandFactory(BroadenFactory):
     :class:`~radis.lbl.factory.SpectrumFactory`
     """
 
+    __slots__ = BroadenFactory.__slots__
+
     def __init__(self):
 
         super(BandFactory, self).__init__()

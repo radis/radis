@@ -802,6 +802,8 @@ class BroadenFactory(BaseFactory):
     :class:`~radis.lbl.factory.SpectrumFactory`
     """
 
+    __slots__ = BaseFactory.__slots__
+
     def __init__(self):
 
         super(BroadenFactory, self).__init__()
@@ -1675,6 +1677,9 @@ class BroadenFactory(BaseFactory):
 
             w_fold = (w_lineshape_ft, w_lineshape_ft[::-1])
 
+            from time import time
+
+            t0 = time()
             # Get all combinations of Voigt lineshapes (in Fourier space)
             for l in range(len(wG)):
                 line_profile_LDM[l] = {}
@@ -1696,6 +1701,8 @@ class BroadenFactory(BaseFactory):
                         n += 1
 
                     line_profile_LDM[l][m] /= line_profile_LDM[l][m][0]
+
+            print("👉 PROFILER:", time() - t0)
 
         else:
             raise NotImplementedError(

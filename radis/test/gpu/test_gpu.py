@@ -11,13 +11,20 @@ import warnings
 
 import pytest
 
+import radis
 from radis import SpectrumFactory, get_residual
 from radis.misc.printer import printm
 from radis.misc.warning import NoGPUWarning
 from radis.test.utils import getTestFile
 
 
-def test_eq_spectrum_emulated_gpu(emulate=True, plot=False, *args, **kwargs):
+def test_eq_spectrum_emulated_gpu(
+    emulate=True, verbose=False, plot=False, *args, **kwargs
+):
+    """Compare Spectrum calculated in the emulated-GPU code
+    :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu` to Spectrum
+    calculated with the CPU code :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum`
+    """
 
     print("Emulate: ", emulate)
     T = 1000
@@ -25,6 +32,9 @@ def test_eq_spectrum_emulated_gpu(emulate=True, plot=False, *args, **kwargs):
     wstep = 0.001
     wmin = 2284.0  # cm-1
     wmax = 2285.0  # cm-1
+
+    # Compare GPU & CPU without sparse-LDM (not implemented in GPU yet)
+    radis.config["SPARSE_WAVERANGE"] = False
 
     sf = SpectrumFactory(
         wavenum_min=wmin,
@@ -41,17 +51,17 @@ def test_eq_spectrum_emulated_gpu(emulate=True, plot=False, *args, **kwargs):
             "GaussianBroadeningWarning": "ignore",
         },
     )
-    sf._broadening_method = "fft"
+    sf.params.broadening_method = "fft"
     sf.load_databank(
         path=getTestFile("cdsd_hitemp_09_fragment.txt"),
         format="cdsd-hitemp",
         parfuncfmt="hapi",
     )
 
-    s_cpu = sf.eq_spectrum(Tgas=T, name=f"CPU")
+    s_cpu = sf.eq_spectrum(Tgas=T, name="CPU")
     s_cpu.name += f" [{s_cpu.c['calculation_time']:.2f}s]"
     s_gpu = sf.eq_spectrum_gpu(
-        Tgas=T, emulate=emulate, name=f"GPU (emulate)" if emulate else "GPU"
+        Tgas=T, emulate=emulate, name="GPU (emulate)" if emulate else "GPU"
     )
     s_gpu.name += f"[{s_gpu.c['calculation_time']:.2f}s]"
     s_cpu.crop(wmin=2284.2, wmax=2284.8)  # remove edge lines
@@ -62,9 +72,22 @@ def test_eq_spectrum_emulated_gpu(emulate=True, plot=False, *args, **kwargs):
     assert get_residual(s_cpu, s_gpu, "radiance_noslit") < 7.3e-6
     assert get_residual(s_cpu, s_gpu, "transmittance_noslit") < 1.4e-5
 
+    if verbose >= 2:
+        print(s_gpu)
+        print("\n" * 2)
+        print(s_cpu)
+        print("\n" * 2)
+        s_gpu.print_perf_profile()
+        print("\n" * 2)
+        s_cpu.print_perf_profile()
+
 
 @pytest.mark.needs_cuda
 def test_eq_spectrum_gpu(plot=False, *args, **kwargs):
+    """Compare Spectrum calculated in the GPU code
+    :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu` to Spectrum
+    calculated with the CPU code :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum`
+    """
     # Ensure that GPU is not deactivated (which triggers a NoGPUWarning)
     with warnings.catch_warnings():
         warnings.simplefilter("error", category=NoGPUWarning)
@@ -73,5 +96,8 @@ def test_eq_spectrum_gpu(plot=False, *args, **kwargs):
 
 # --------------------------
 if __name__ == "__main__":
+
+    # test_eq_spectrum_gpu(plot=True)
+    test_eq_spectrum_emulated_gpu(plot=True, verbose=2)
 
     printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))
