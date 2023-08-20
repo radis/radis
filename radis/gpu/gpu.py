@@ -15,6 +15,7 @@ from radis.gpu.params import (
 )
 from radis.gpu.structs import initData_t, iterData_t
 from radis.misc.utils import getProjectRoot
+from time import perf_counter
 
 cu_mod = None
 init_h = initData_t()
@@ -82,9 +83,9 @@ def gpu_init(
         return
 
     if emulate:
-        from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule
+        from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule, CuTimer
     else:
-        from radis.gpu.driver import CuArray, CuContext, CuFFT, CuModule
+        from radis.gpu.driver import CuArray, CuContext, CuFFT, CuModule, CuTimer
 
     ## First a CUDA context is created, then the .ptx file is read
     ## and made available as the CuModule object cu_mod
@@ -98,7 +99,7 @@ def gpu_init(
               "Continuing with emulated GPU on CPU...",
               "This means *NO* GPU acceleration!"))
 
-        from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule
+        from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule, CuTimer
         ctx = CuContext.Open()
 
     if verbose == 1:
@@ -109,6 +110,7 @@ def gpu_init(
     if not os.path.exists(ptx_path):
         raise FileNotFoundError(ptx_path)
     cu_mod = CuModule(ctx, ptx_path)
+    print('mode:',cu_mod.getMode())
 
     ## Next, the GPU is made aware of a number of parameters.
     ## Parameters that don't change during iteration are stored
@@ -208,7 +210,7 @@ def gpu_init(
         transmittance_noslit_d, transmittance_noslit_FT_d, direction="fwd"
     )
     cu_mod.fft_rev2 = CuFFT(transmittance_FT_d, transmittance_d, direction="rev")
-
+    cu_mod.timer = CuTimer()
     if verbose >= 2:
         print("done!")
 
@@ -252,11 +254,14 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
 
     ## First a number of parameters that change during iteration
     ## are computed and copied to the GPU.
+    cu_mod.timer.reset()
+    t0 = perf_counter()
+    
     set_pTQ(p, T, mole_fraction, iter_h, l=l, slit_FWHM=slit_FWHM)
     set_G_params(init_h, iter_h)
     set_L_params(init_h, iter_h)
     cu_mod.setConstant("iter_d", iter_h)
-
+    cu_mod.timer.lap('iter_params')
     ## Next the S_klm_d variable is reshaped to the correct shape,
     ## and filled with spectral data.
 
@@ -267,6 +272,7 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
     S_klm_shape = (init_h.N_v_FT, iter_h.N_G, iter_h.N_L)
     cu_mod.fillLDM.args[-1].resize(S_klm_shape, init="zeros")
     cu_mod.fillLDM()
+    cu_mod.timer.lap('fillLDM')
 
     ## Next the S_klm_FT_d is also reshaped, and the lineshapes are
     ## applied. This consists of an FT of the LDM, a product by the
@@ -280,9 +286,16 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
     S_klm_FT_shape = (init_h.N_x_FT, iter_h.N_G, iter_h.N_L)
     cu_mod.fft_fwd.arr_out.resize(S_klm_FT_shape)
     cu_mod.fft_fwd.planMany()  # replan because size may have changed
+    cu_mod.timer.lap('fft_fwd - plan')
+
     cu_mod.fft_fwd()
+    cu_mod.timer.lap('fft_fwd - exec')
+
     cu_mod.applyLineshapes()
+    cu_mod.timer.lap('applyLineshapes')
+
     cu_mod.fft_rev()
+    cu_mod.timer.lap('fft_rev')
 
     if verbose >= 2:
         print("Done!")
@@ -299,10 +312,17 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
         print("Applying slit function...")
 
     cu_mod.calcTransmittanceNoslit()
-    cu_mod.fft_fwd2()
-    cu_mod.applyGaussianSlit()
-    cu_mod.fft_rev2()
+    cu_mod.timer.lap('calcTransmittanceNoslit')
 
+    cu_mod.fft_fwd2()
+    cu_mod.timer.lap('fft_fwd2')
+
+    cu_mod.applyGaussianSlit()
+    cu_mod.timer.lap('applyGaussianSlit')
+
+    cu_mod.fft_rev2()
+    cu_mod.timer.lap('fft_rev2')
+    t1 = perf_counter()
     transmittance_h = cu_mod.fft_rev2.arr_out.getArray()[: init_h.N_v]
 
     if verbose >= 2:
@@ -311,6 +331,18 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
     if verbose == 1:
         print("Finished calculating spectrum!")
 
+    diffs = cu_mod.timer.getDiffs()
+    for key in diffs:
+        print('{:8.3f} ms - '.format(diffs[key]),key)
+
+    print('------------------')
+    print('{:8.3f} ms - total'.format((t1 - t0)*1e3))
+    print('\n')
+
+
+##    abscoeff_h = cu_mod.fft_rev.arr_out.getArray()[: init_h.N_v]
+##    transmittance_h = cu_mod.fft_rev2.arr_out.getArray()[: init_h.N_v]
+    
     return abscoeff_h, transmittance_h, iter_h
 
 

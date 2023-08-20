@@ -4,6 +4,8 @@ from ctypes import (
     c_char_p,
     c_int,
     c_long,
+    c_longlong,
+    c_float,
     c_size_t,
     c_void_p,
     cast,
@@ -36,6 +38,10 @@ CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR = 76
 CUFFT_R2C = 0x2A
 CUFFT_C2R = 0x2C
 
+lib = None
+lib_cufft = None
+LoadLibrary = windll.LoadLibrary if os_name == 'nt' else cdll.LoadLibrary
+
 
 class CuContext:
     def __init__(self, device, context):
@@ -47,26 +53,17 @@ class CuContext:
 
     @staticmethod
     def Open(device_id=0, flags=0):
-        global lib, lib_cufft
+        global lib
         
         # private:
         _context = c_void_p(0)
         _device = c_void_p(0)
 
-        load_lib = windll.LoadLibrary if os_name == 'nt' else cdll.LoadLibrary
         cuda_name = 'nvcuda.dll' if os_name == 'nt' else 'libcuda.so'
-        cufft_name = '\\bin\\cufft64_10.dll' if os_name == 'nt' else '\\lib\\libcufft.so.11'
-
         try:
-            lib = load_lib(cuda_name)
+            lib = LoadLibrary(cuda_name)
         except(FileNotFoundError):
             print("Can't find {:s}...".format(cuda_name))
-            return None
-
-        try:
-            lib_cufft = load_lib(cufft_path[0] + cufft_name)
-        except(FileNotFoundError):
-            print("Can't find {:s}...".format(cufft_name))
             return None
             
         err = lib.cuInit(0)
@@ -349,7 +346,7 @@ class CuArray:
 
 class CuFFT:
     def __init__(self, arr_in, arr_out, direction="fwd", plan_fft=True):
-
+        global lib_cufft
         # public:
         self.arr_in = arr_in
         self.arr_out = arr_out
@@ -359,6 +356,15 @@ class CuFFT:
         self._arr = arr_in if direction == "fwd" else arr_out
         self._fft_type = CUFFT_R2C if direction == "fwd" else CUFFT_C2R
         self._plan = c_void_p(0)
+
+
+        cufft_name = '\\bin\\cufft64_10.dll' if os_name == 'nt' else '\\lib\\libcufft.so.11'
+        try:
+            if lib_cufft is None:
+                lib_cufft = LoadLibrary(cufft_path[0] + cufft_name)
+        except(FileNotFoundError):
+            print("Can't find {:s}...".format(cufft_name))
+            return None
 
         cu_print(lib_cufft.cufftCreate(byref(self._plan)), "fft.plan create")
 
@@ -413,3 +419,43 @@ class CuFFT:
                 self.destroy()
         except(OSError):
             pass
+
+
+class CuTimer:
+    def __init__(self, stream=0, flags=0):
+        #private:
+        self._stream = c_int(stream)
+        self._start = c_void_p(0)
+        self._stop = c_void_p(0)
+
+        #public:
+        self.times = {}
+
+        cu_print(lib.cuEventCreate(byref(self._start), flags|1), 'time.create')
+        cu_print(lib.cuEventCreate(byref(self._stop), flags|1), 'time.create')
+        self.reset()
+                     
+    def reset(self):
+        cu_print(lib.cuEventRecord(self._start, self._stream), 'time.record')
+
+    def lap(self, name=None):
+        if name is None:
+            name = 'event{:d}'.format(len(self.times.keys()))
+        self.times[name] = self()    
+
+    def __call__(self):
+        _time = c_float(0) #elapsed time in ms
+        cu_print(lib.cuEventRecord(self._stop, self._stream), 'time.record')
+        cu_print(lib.cuEventSynchronize(self._stop), 'time.sync')
+        cu_print(lib.cuEventElapsedTime(byref(_time), self._start, self._stop), 'time.time')
+        return _time.value
+
+    def getTimes(self):
+        return self.times
+
+    def getDiffs(self):
+        vals = [*self.times.values()]
+        diffs = [vals[0]] + [vals[i] - vals[i-1] for i in range(1, len(vals))]
+        return dict(zip(self.times.keys(), diffs))
+
+    

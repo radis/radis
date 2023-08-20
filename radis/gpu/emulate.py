@@ -20,12 +20,16 @@ from scipy.fft import irfft, rfft
 
 from radis.gpu.structs import blockDim_t, gridDim_t
 from radis.misc.utils import getProjectRoot
+from time import perf_counter
 
 # from os.path import dirname
 
 
 CUFFT_R2C = 0x2A
 CUFFT_C2R = 0x2C
+LoadLibrary = windll.LoadLibrary if os_name == "nt" else cdll.LoadLibrary
+
+
 
 # This number does not have a meaningful interpretation in a CPU,
 # so we just default to a typical number for GPU.
@@ -80,8 +84,7 @@ class CuModule:
         # radis_path = dirname(dirname(__file__))
         radis_path = getProjectRoot()
 
-        lib_obj = windll if os_name == "nt" else cdll
-        self._module = lib_obj.LoadLibrary(
+        self._module = LoadLibrary(
             os.path.join(radis_path, "gpu", self.module_name)
         )
         self._func_dict = {}
@@ -239,3 +242,32 @@ class CuFFT:
 
     def destroy(self):
         pass
+
+
+class CuTimer:
+    def __init__(self, stream=0):
+        self._stream = c_int(stream)
+        self._start = perf_counter()
+        self._stop = self._start
+        self.times = {}
+        
+    def reset(self):
+        self._start = perf_counter()
+
+    def lap(self, name=None):
+        if name is None:
+            name = 'event{:d}'.format(len(self.times.keys()))
+        self.times[name] = self()    
+
+    def __call__(self):
+        self._stop = perf_counter()
+        elapsed_time = 1e3*(self._stop - self._start())
+        return elapsed_time
+
+    def getTimes(self):
+        return self.times
+
+    def getDiffs(self):
+        vals = [*self.times.values()]
+        diffs = [vals[0]] + [vals[i] - vals[i-1] for i in range(1, len(vals))]
+        return dict(zip(self.times.keys(), diffs))

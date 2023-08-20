@@ -57,4 +57,4 @@ s = sf.eq_spectrum_gpu_interactive(
     plotkwargs={"wunit": "nm"},  # "nfig": "same",
 )
 
-print(s)
+#print(s)
