@@ -927,7 +927,7 @@ class Spectrum(object):
             s.plot(wunit='nm')
 
 
-        .. minigallery:: radis.spectrum.spectrum.Spectrum.from_specutils
+        .. minigallery:: radis.Spectrum.from_specutils
 
         See Also
         --------
@@ -972,6 +972,137 @@ class Spectrum(object):
             wunit=waveunit,
             conditions=conditions,
         )
+
+    @classmethod
+    def from_mat(
+        self,
+        file,
+        quantity,
+        wunit,
+        unit,
+        data_key=None,
+        w_name="nu",
+        I_name=None,
+        index=None,
+        *args,
+        **kwargs,
+    ):
+        r"""Construct Spectrum from Matlab ``.mat`` file.
+
+        Parameters
+        ----------
+        file: str
+            file name
+        quantity: str
+            spectral quantity name
+        wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
+            unit of waverange: wavelength in air (``'nm'``), wavenumber
+            (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
+        unit: str
+            spectral quantity unit
+        index: int
+            index within Matlab ``.mat`` array.
+        data_key: str
+            data key to use within Matlab ``.mat`` array. If ``None``, guess.
+        w_name, I_name: str
+            key to use to parse the ``data[data_key]`` array and return waverange and quantity.
+        *args, **kwargs
+            the following inputs are forwarded to :py:func:`~scipy.io.loadmat`:
+            ``'simplify_cells'``, ``'skiprows'``
+            The rest if forwarded to Spectrum and will be registered as a
+            Spectrum condition. see :class:`~radis.spectrum.spectrum.Spectrum`
+            doc
+
+        Returns
+        -------
+        s: Spectrum
+            creates a :class:`~radis.spectrum.spectrum.Spectrum` object
+
+        Examples
+        --------
+
+        .. minigallery:: radis.Spectrum.from_mat
+
+        Notes
+        -----
+        Internally, the scipy :py:func:`~scipy.io.loadmat` function is used and
+        corresponds to ::
+
+            data = scipy.io.loadmat(file, **kwloadmat)
+            data = data[data_key]
+            w, I = data[w_name], data[I_name]
+
+        Special keywords can be given to ``kwloadmat``. See docs of ``kwargs``.
+
+        See Also
+        --------
+        :meth:`~radis.spectrum.spectrum.Spectrum.from_array`,
+        :func:`~radis.tools.database.load_spec`
+        """
+        from scipy.io import loadmat
+
+        # default loadmat reading arguments
+        kwloadmat = {"simplify_cells": True}
+        # override arguments
+        for k in ["simplify_cells"]:
+            if k in kwargs:
+                kwloadmat[k] = kwargs.pop(k)
+
+        data = loadmat(file, **kwloadmat)
+
+        if data_key is None:
+            guessed_key = [k for k in data.keys() if not k.startswith("_")]
+            if len(guessed_key) == 1:
+                data_key = guessed_key[0]
+            else:
+                raise ValueError(
+                    "data_key not given and could not be guessed. Available keys : {0}. Choose one and set `data_key=`".format(
+                        guessed_key
+                    )
+                )
+
+        data_array = data[data_key]
+        try:
+            w = data_array[w_name]
+        except KeyError:
+            raise KeyError(
+                "Could not find key {0} to parse waverange in data. Available keys : [{1}]".format(
+                    w_name, data_array.keys()
+                )
+            )
+        if I_name is None:
+            guessed_I_name = [k for k in data_array.keys() if k != w_name]
+            if len(guessed_I_name) == 1:
+                I_name = guessed_I_name[0]
+            else:
+                raise ValueError(
+                    "I_name not given and could not be guessed. Available keys : {0}. Choose one and set `I_name=`".format(
+                        guessed_I_name
+                    )
+                )
+        try:
+            I = data_array[I_name]
+        except KeyError:
+            raise KeyError(
+                "Could not find key {0} to parse quantity in data. Available keys : [{1}]".format(
+                    I_name, data_array.keys()
+                )
+            )
+
+        if index is not None:
+            I = I[:, index]
+
+        quantities = {quantity: (w, I)}
+        units = {quantity: unit}
+
+        # Update Spectrum conditions
+        conditions = kwargs.copy()
+
+        s = self(quantities, units, wunit=wunit, conditions=conditions)
+
+        # Store filename
+        s.file = file
+        return s
 
     # Public functions
     # %% ======================================================================
@@ -3671,8 +3802,7 @@ class Spectrum(object):
             from specutils.fitting import find_lines_threshold
             lines = find_lines_threshold(spectrum)
 
-        .. minigallery:: radis.spectrum.spectrum.Spectrum.to_specutils
-            :add-heading:
+        .. minigallery:: radis.Spectrum.to_specutils
 
         See Also
         --------
@@ -4688,7 +4818,7 @@ class Spectrum(object):
             var = quantities[0]
         return var
 
-    def max(self, value_only=False):
+    def max(self, value_only=False, return_wmax=False):
         r"""Maximum of the Spectrum, if only one spectral quantity is
         available::
 
@@ -4701,6 +4831,13 @@ class Spectrum(object):
         :py:meth:`~radis.spectrum.spectrum.Spectrum.take`, e.g. ::
 
             s.take('radiance').max()
+
+        Parameters
+        ----------
+        value_only: bool
+        return_position: bool
+            if True, returns wavelength or wavenumber of maximum, in the
+            Spectrum unit.
 
         Examples
         --------
@@ -4724,18 +4861,69 @@ class Spectrum(object):
 
             s_exp -= s.take('radiance').normalize() * s_exp.crop((w1, w2)), inplace=False).max()
 
+        Other Examples
+        --------------
+        Get max position ``wmax`` ::
+
+            s = radis.test_spectrum()
+            max, wmax = s.max(return_wmax=True)
+
+        Note that the later can also be achieved with :py:meth:`~radis.spectrum.spectrum.Spectrum.argmax` ::
+
+            wmax = s.argmax()
+
+        .. minigallery:: radis.Spectrum.max
+
+        See Also
+        --------
+
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.argmax`
+
         """
+        # TODO refactor: value_only can be replaced by ~return_units, and used in get()
 
         var = self._get_unique_var(operation_name="max")
         w, I = self.get(
             var, wunit=self.get_waveunit(), Iunit=self.units[var], copy=False
         )
-        if value_only:
-            return I[~np.isnan(I)].max()
-        else:
-            return I[~np.isnan(I)].max() * Unit(self.units[var])
 
-    def min(self, value_only=True):
+        nan_mask = ~np.isnan(I)
+
+        if return_wmax:
+            imax = I[nan_mask].argmax()
+            Imax = I[nan_mask][imax]
+            wmax = w[nan_mask][imax]
+
+            if value_only:
+                return Imax, wmax
+            else:
+                return Imax * Unit(self.units[var]), wmax * Unit(self.get_waveunit())
+
+        else:
+            Imax = I[nan_mask].max()
+            if value_only:
+                return Imax
+            else:
+                return Imax * Unit(self.units[var])
+
+    def argmax(self, value_only=False):
+        r"""Return wave position of maximum of the Spectrum
+
+        Equivalent to the following use of the function :py:meth:`~radis.spectrum.spectrum.Spectrum.max`::
+
+            s.max(value_only=value_only, return_wmax=True)[1]
+
+        .. minigallery:: radis.Spectrum.argmax
+
+        See Also
+        --------
+
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.max`
+        """
+
+        return self.max(value_only=value_only, return_wmax=True)[1]
+
+    def min(self, value_only=True, return_wmin=False):
         r"""Minimum of the Spectrum, if only one spectral quantity is available
         ::
 
@@ -4749,16 +4937,65 @@ class Spectrum(object):
 
             s.take('radiance').min()
 
+        Other Examples
+        --------------
+        Get min position ``wmin`` ::
+
+            s = radis.test_spectrum()
+            min, wmin = s.min(return_wmin=True)
+
+        Note that the later can also be achieved with :py:meth:`~radis.spectrum.spectrum.Spectrum.argmin` ::
+
+            wmax = s.argmin()
+
+        .. minigallery:: radis.Spectrum.min
+
+        See Also
+        --------
+
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.argmin`
         """
 
         var = self._get_unique_var(operation_name="min")
         w, I = self.get(
             var, wunit=self.get_waveunit(), Iunit=self.units[var], copy=False
         )
-        if value_only:
-            return I[~np.isnan(I)].min()
+
+        nan_mask = ~np.isnan(I)
+
+        if return_wmin:
+            imin = I[nan_mask].argmin()
+            Imin = I[nan_mask][imin]
+            wmin = w[nan_mask][imin]
+
+            if value_only:
+                return Imin, wmin
+            else:
+                return Imin * Unit(self.units[var]), wmin * Unit(self.get_waveunit())
+
         else:
-            return I[~np.isnan(I)].min() * Unit(self.units[var])
+            Imin = I[nan_mask].min()
+            if value_only:
+                return Imin.min()
+            else:
+                return Imin.min() * Unit(self.units[var])
+
+    def argmin(self, value_only=False):
+        r"""Return wave position of minimum of the Spectrum
+
+        Equivalent to the following use of the function :py:meth:`~radis.spectrum.spectrum.Spectrum.min`::
+
+            s.min(value_only=value_only, return_wmin=True)[1]
+
+        .. minigallery:: radis.Spectrum.argmin
+
+        See Also
+        --------
+
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.min`
+        """
+
+        return self.min(value_only=value_only, return_wmin=True)[1]
 
     def normalize(
         self,
@@ -5168,6 +5405,12 @@ class Spectrum(object):
             raise NotImplementedError(
                 "* not implemented for 2 Spectrum objects. Use > to combine them along the line of sight, as in SerialSlabs"
             )
+        elif isinstance(other, np.array):
+            raise NotImplementedError(
+                "* not implemented for a Spectrum and a {0} object. Use a dimensioned (with units) array".format(
+                    type(other)
+                )
+            )
         else:
             raise NotImplementedError(
                 "* not implemented for a Spectrum and a {0} object".format(type(other))
@@ -5187,6 +5430,12 @@ class Spectrum(object):
         elif isinstance(other, Spectrum):
             raise NotImplementedError(
                 "* not implemented for 2 Spectrum objects. Use > to combine them along the line of sight, as in SerialSlabs"
+            )
+        elif isinstance(other, np.array):
+            raise NotImplementedError(
+                "right side * not implemented for a Spectrum and a {0} object. Use a dimensioned (with units) array".format(
+                    type(other)
+                )
             )
         else:
             raise NotImplementedError(
@@ -5212,6 +5461,12 @@ class Spectrum(object):
             return multiply(self, other, inplace=True)
         elif isinstance(other, Spectrum):
             raise NotImplementedError("* not implemented for 2 Spectrum objects. Use >")
+        elif isinstance(other, np.array):
+            raise NotImplementedError(
+                "*= not implemented for a Spectrum and a {0} object. Use a dimensioned (with units) array".format(
+                    type(other)
+                )
+            )
         else:
             raise NotImplementedError(
                 "*= not implemented for a Spectrum and a {0} object".format(type(other))
@@ -5234,6 +5489,12 @@ class Spectrum(object):
 
             return multiply(self, 1 / other.value, unit=1 / other.unit, inplace=False)
 
+        elif isinstance(other, np.array):
+            raise NotImplementedError(
+                "/ not implemented for a Spectrum and a {0} object. Use a dimensioned (with units) array".format(
+                    type(other)
+                )
+            )
         else:
             raise NotImplementedError(
                 "/ not implemented for a Spectrum and a {0} object".format(type(other))
