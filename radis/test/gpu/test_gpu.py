@@ -7,10 +7,13 @@ Created on Sun Aug 22 13:34:42 2020
 ------------------------------------------------------------------------
 
 """
+import warnings
+
 import pytest
 
 from radis import SpectrumFactory, get_residual
 from radis.misc.printer import printm
+from radis.misc.warning import NoGPUWarning
 from radis.test.utils import getTestFile
 
 
@@ -41,14 +44,16 @@ def test_eq_spectrum_emulated_gpu(emulate=True, plot=False, *args, **kwargs):
     sf._broadening_method = "fft"
     sf.load_databank(
         path=getTestFile("cdsd_hitemp_09_fragment.txt"),
-        format="cdsd-4000",
+        format="cdsd-hitemp",
         parfuncfmt="hapi",
     )
 
-    s_cpu = sf.eq_spectrum(Tgas=T, name="CPU")
+    s_cpu = sf.eq_spectrum(Tgas=T, name=f"CPU")
+    s_cpu.name += f" [{s_cpu.c['calculation_time']:.2f}s]"
     s_gpu = sf.eq_spectrum_gpu(
-        Tgas=T, emulate=emulate, name="GPU (emulate)" if emulate else "GPU"
+        Tgas=T, emulate=emulate, name=f"GPU (emulate)" if emulate else "GPU"
     )
+    s_gpu.name += f"[{s_gpu.c['calculation_time']:.2f}s]"
     s_cpu.crop(wmin=2284.2, wmax=2284.8)  # remove edge lines
     s_gpu.crop(wmin=2284.2, wmax=2284.8)
     if plot:
@@ -59,8 +64,11 @@ def test_eq_spectrum_emulated_gpu(emulate=True, plot=False, *args, **kwargs):
 
 
 @pytest.mark.needs_cuda
-def test_eq_spectrum_gpu(plot, *args, **kwargs):
-    test_eq_spectrum_emulated_gpu(emulate=False, plot=plot, *args, **kwargs)
+def test_eq_spectrum_gpu(plot=False, *args, **kwargs):
+    # Ensure that GPU is not deactivated (which triggers a NoGPUWarning)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", category=NoGPUWarning)
+        test_eq_spectrum_emulated_gpu(emulate=False, plot=plot, *args, **kwargs)
 
 
 # --------------------------
