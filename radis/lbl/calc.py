@@ -533,7 +533,6 @@ def calc_spectrum(
         diluent_for_this_molecule = diluents_for_molecule(
             mole_fraction, diluent, molecule
         )
-        engine = config["DATAFRAME_ENGINE"]
 
         generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
@@ -565,7 +564,6 @@ def calc_spectrum(
             export_lines=export_lines,
             return_factory=return_factory,
             diluent=diluent_for_this_molecule,
-            engine=engine,
             **kwargs_molecule,
         )
 
@@ -625,7 +623,6 @@ def _calc_spectrum_one_molecule(
     export_lines,
     return_factory=False,
     diluent="air",
-    engine="pandas",
     **kwargs,
 ) -> Spectrum:
     """See :py:func:`~radis.lbl.calc.calc_spectrum`
@@ -725,7 +722,7 @@ def _calc_spectrum_one_molecule(
 
     # Load databank
     # -------------
-    sf.dataframe_type = engine
+    sf.dataframe_type = config["DATAFRAME_ENGINE"]
 
     # Get databank
     if (
