@@ -71,7 +71,7 @@ downloaded manually.
 
 - CDSD-4000 files can be downloaded from ftp://ftp.iao.ru/pub/. Expect ~50 Gb for all CO2.
   Cite with [CDSD-4000]_.
-- Tabulated partition functions are availabe in the ``partition_functions.txt`` file on the
+- Tabulated partition functions are available in the ``partition_functions.txt`` file on the
   [CDSD-4000]_ FTP : ftp://ftp.iao.ru/pub/CDSD-4000/  . They can be loaded and interpolated
   with :py:class:`~radis.levels.partfunc_cdsd.PartFuncCO2_CDSDtab`. This can be done automatically
   providing ``parfuncfmt: cdsd`` and ``parfunc = PATH/TO/cdsd_partition_functions.txt`` is given

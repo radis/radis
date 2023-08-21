@@ -95,7 +95,7 @@ print(
 
 #%%
 #
-# :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey` is also a convenient way to explore populatinos and other line
+# :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey` is also a convenient way to explore populations and other line
 # parameters, for instance ::
 #
 #     s.line_survey(overlay="absorbance", barwidth=0.001, lineinfo="all")

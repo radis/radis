@@ -72,7 +72,7 @@ def fetch_hitemp(
 
         .. note::
             Vaex DataFrames are memory-mapped. They do not take any space in RAM
-            and are extremelly useful to deal with the largest databases.
+            and are extremely useful to deal with the largest databases.
 
     parallel: bool
         if ``True``, uses joblib.parallel to load database with multiple processes

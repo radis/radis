@@ -384,7 +384,7 @@ def merge_rename_columns(df, columns1, columns2, merged_names):
 
 
 def print_series(a):
-    """Print a pandas series `a` , explicitely showing all rows."""
+    """Print a pandas series `a` , explicitly showing all rows."""
 
     for i, k in enumerate(a.keys()):
         print(k, "\t", a.values[0][i])
@@ -394,7 +394,7 @@ def transfer_metadata(df1, df2, metadata):
     """Transfer metadata between a DataFrame df1 and df2.
 
     For some reason metadata are sometimes not copied when a DataFrame is
-    sliced or copied, even if they explicitely appear in the ``df.attrs``
+    sliced or copied, even if they explicitly appear in the ``df.attrs``
     attribute. See https://github.com/pandas-dev/pandas/issues/28283
 
     Here we copy them back. Attributes can be :
@@ -426,7 +426,7 @@ def expand_metadata(df, metadata):
     """Turn metadata from a float to a column.
 
     For some reason metadata are sometimes not copied when a DataFrame is
-    sliced or copied, even if they explicitely figure in the df.attrs
+    sliced or copied, even if they explicitly figure in the df.attrs
     attribute. Here we add them as column before such operations.
 
     Parameters
@@ -514,7 +514,7 @@ def to_str(a):
 
 
 def round_off(n):
-    # Getting rounded off value (atleast order 3)
+    # Getting rounded off value (at least order 3)
     for i in range(0, 10):
         val = round(n, 3 + i)
         if val == 0:

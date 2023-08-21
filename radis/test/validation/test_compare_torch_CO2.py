@@ -177,7 +177,7 @@ def test_compare_torch_CO2(
     # Room absorption
     s0 = sf.eq_spectrum(Tgas=300, mole_fraction=330e-6, path_length=600)
     # Warning: This slab includes the CO2 emission from the 300 K air
-    # within the spectrometer. But experimentally it is substracted
+    # within the spectrometer. But experimentally it is subtracted
     # by there the chopper (this is corrected below)
     # ... see RADIS 2019 paper for more details
 
@@ -192,7 +192,7 @@ def test_compare_torch_CO2(
 
     # Solve RTE along the line of sight
     # --------
-    # two semi profile, + room absortion
+    # two semi profile, + room absorption
     line_of_sight = slabstot[1:][::-1] + slabstot + [s0]
     stot = SerialSlabs(*line_of_sight)
     #        stot = SerialSlabs(*slabstot[1:][::-1], *slabstot, s0)  # Python 3 syntax only
@@ -226,8 +226,8 @@ def test_compare_torch_CO2(
     sco.apply_slit(slit_function, unit="nm", norm_by=norm_by, shape="trapezoidal")
     stot.apply_slit(slit_function, unit="nm", norm_by=norm_by, shape="trapezoidal")
 
-    # Remove emission from within the spectrometer (substracted
-    # by the chopper experimentaly)
+    # Remove emission from within the spectrometer (subtracted
+    # by the chopper experimentally)
     # -------
     s0spectro = s0.copy()
     s0spectro.rescale_path_length(75 * 4)  # spectrometer length

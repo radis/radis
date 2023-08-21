@@ -63,7 +63,7 @@ Research papers using RADIS and the associated algorithms :
 Conferences
 ===========
 
-Talks presenting RADIS features and algorithms, available on the `RADIS Youtube Channel <https://www.youtube.com/channel/UCO-7NXkubTAiGGxXmvtQlsA>`__ :
+Talks presenting RADIS features and algorithms, available on the `RADIS YouTube Channel <https://www.youtube.com/channel/UCO-7NXkubTAiGGxXmvtQlsA>`__ :
 
 DIT Algorithm at the ISMS 2021 Conference, by D.v.d. Bekerom :
 

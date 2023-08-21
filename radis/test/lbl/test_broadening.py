@@ -144,7 +144,7 @@ def test_broadening_methods_different_conditions(
     truncation = 1  # cm-1
 
     for (T, p, fwhm_lorentz, fwhm_gauss) in [
-        # K, bar, expected FWHM for Lotentz, gauss (cm-1)
+        # K, bar, expected FWHM for Lorentz, gauss (cm-1)
         (3000, 1, 0.02849411, 0.01594728),
         (300, 1, 0.16023415, 0.00504297),
         (3000, 0.01, 0.00028494, 0.01594728),
@@ -511,7 +511,7 @@ def test_truncations_and_neighbour_lines(*args, **kwargs):
     So far: test that all functions work
     More assertion could be added.
     """
-    # TODO  . Check on databases with one line that truncatino is achieved, etc.
+    # TODO  . Check on databases with one line that truncation is achieved, etc.
 
     #%% Test truncation > lines
 
@@ -527,7 +527,7 @@ def test_truncations_and_neighbour_lines(*args, **kwargs):
         "databank": "HITRAN-CO-TEST",
     }
 
-    # No Neighbourling lines, only truncation
+    # No Neighbouring lines, only truncation
     from radis import calc_spectrum
 
     s_lbl_voigt_trunc10 = calc_spectrum(
@@ -1005,7 +1005,7 @@ def test_broadening_chunksize_eq(verbose=True, plot=False, *args, **kwargs):
 
 @pytest.mark.fast
 def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
-    """Test collisinnal broadening by other species than air and self (resonant)
+    """Test collisional broadening by other species than air and self (resonant)
 
     Here, broadening by CO2 yields larger Lorentzian HWHM than air. We check that.
 
@@ -1042,7 +1042,7 @@ def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
         extra_params="all",
         db_use_cached="regen",  # required to download extra broadening parameters
     )
-    # set default behavior of missing custom broadneing to be an error:
+    # set default behavior of missing custom broadening to be an error:
     sf.warnings["MissingDiluentBroadeningWarning"] = "error"
     sf.warnings["MissingDiluentBroadeningTdepWarning"] = "error"
 

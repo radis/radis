@@ -113,7 +113,7 @@ def load_h5_cache_file(
 
     Returns
     -------
-    df: pandas DataFrame, or None
+    df: pandas DataFrame or Vaex Dataframe or None
         None if no cache file was found, or if it was deleted
     """
     # TODO @dev: refactor to use HDF5Manager more
@@ -158,7 +158,7 @@ def load_h5_cache_file(
             os.remove(cachefile)
             return None
 
-    # 4. File is not not deprecated: read the the extremum wavenumbers.    raise
+    # 4. File is not deprecated: read the extremum wavenumbers.    raise
     if relevant_if_metadata_above is not None or relevant_if_metadata_below is not None:
         try:
             check_relevancy(
@@ -186,7 +186,7 @@ def load_h5_cache_file(
         df = manager.read(cachefile, columns=columns, key="df")
 
     except KeyError as err:  # An error happened during file reading.
-        # Fail safe by deleting cache file (unless we explicitely wanted it
+        # Fail safe by deleting cache file (unless we explicitly wanted it
         # with 'force')
         if use_cached == "force":
             raise
@@ -537,7 +537,7 @@ def check_relevancy(
 
     for k, v in relevant_if_metadata_above.items():
         # Note : check_not_deprecated already tested the existence of each key so we are safe
-        if file_metadata[k] < v:
+        if float(file_metadata[k]) < v:
             raise IrrelevantFileWarning(
                 "Database file {0} irrelevant: {1}={2} [file metadata] < {3} [expected], not loaded".format(
                     file, k, file_metadata[k], v
@@ -545,7 +545,7 @@ def check_relevancy(
             )
     for k, v in relevant_if_metadata_below.items():
         # Note : check_not_deprecated already tested the existence of each key so we are safe
-        if file_metadata[k] > v:
+        if float(file_metadata[k]) > v:
             raise IrrelevantFileWarning(
                 "Database file {0} irrelevant ({1}={2} [file metadata] > {3} [expected]), not loaded".format(
                     file, k, file_metadata[k], v
@@ -649,7 +649,7 @@ def filter_metadata(arguments, discard_variables=["self", "verbose"]):
 
     - remove variables in ``discard_variables``
     - remove variables that start with ``'_'``
-    - remove varibles whose value is ``None``
+    - remove variables whose value is ``None``
 
     Parameters
     ----------

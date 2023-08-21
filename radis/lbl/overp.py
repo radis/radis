@@ -85,7 +85,7 @@ class LevelsList(object):
         Parameters
         ----------
         bands: dict of bands
-            bands are Spectrum objects calculated at equilibrium or non-equilibrim.
+            bands are Spectrum objects calculated at equilibrium or non-equilibrium.
             Tgas, or (Tvib, Trot) must be given and the same in all bands conditions.
 
         """
@@ -267,7 +267,7 @@ class LevelsList(object):
             k
         ) in (
             lvl_index
-        ):  # Note: do not fill directly in frmokeys or you'll get the same shared list
+        ):  # Note: do not fill directly in fromkeys or you'll get the same shared list
             lvl_index[k] = {"bands_where_low": [], "bands_where_up": []}
 
         self.lvl_index = lvl_index
@@ -339,7 +339,7 @@ class LevelsList(object):
 
             # Get new population
             E_vib = vib_levels["Evib"]
-            g = 1  # explicitely calculate populations divided by degeneracy
+            g = 1  # explicitly calculate populations divided by degeneracy
             # this means we should only use ratios for rescaling
             if vib_distribution == "boltzmann":
                 nvibQvib = g * exp(-hc_k * E_vib / Tvib)
@@ -355,7 +355,7 @@ class LevelsList(object):
             E_vib1 = vib_levels["Evib1"]
             E_vib2 = vib_levels["Evib2"]
             E_vib3 = vib_levels["Evib3"]
-            g = 1  # explicitely calculate populations divided by degeneracy
+            g = 1  # explicitly calculate populations divided by degeneracy
             # this means we should only use ratios for rescaling
             if vib_distribution == "boltzmann":
                 nvibQvib = (
@@ -533,7 +533,7 @@ class LevelsList(object):
         #            for br in bands:
         #                pop_correction[br] = exp(-E_bands[br]*hc_k/Tvib)/exp(-E_bands[br]*hc_k/Tvib_ref)
 
-        # Recalculate populations from reference everytime
+        # Recalculate populations from reference every time
         vib_levels = self.vib_levels
 
         # Recalculate partition function
@@ -685,7 +685,7 @@ def rescale_updown_levels(
     should be recomputed
 
     IMPORTANT: if editing make sure you use the proper nu and nl. In particular
-    when infering emission quantities from absorption quantities this may
+    when inferring emission quantities from absorption quantities this may
     ends up in error in overpopulation rescaling.
     """
     # TODO: Add warning when too large rescaling
@@ -738,7 +738,7 @@ def rescale_updown_levels(
 
     # Choose which values to recompute
     # ----------
-    initial = spec.get_vars()  # quantities initialy in spectrum
+    initial = spec.get_vars()  # quantities initially in spectrum
     recompute = list(initial)  # quantities to recompute
     rescaled = {}  # quantities rescaled
 

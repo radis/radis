@@ -27,7 +27,7 @@ conversion of Dunham spectroscopic coefficients to Herzberg convention """
 ## Invert the dictionary.
 herzberg2dunham = {v: (sign, k) for k, (sign, v) in dunham2herzberg.items()}
 """ dict: {Yij: (sign, coeff)
-conversion of Herberg convention to Dunham spectroscopic coefficients
+conversion of Herzberg convention to Dunham spectroscopic coefficients
 
 See Also
 --------

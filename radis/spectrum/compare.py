@@ -543,7 +543,7 @@ def get_default_units(
                 "Iunit not defined in spectrum for variable {0}. ".format(var)
                 + "Cant use default unit. Specify unit in s.units['{0}'].".format(var)
             )
-        # get default (note that defaut "Iunit" may depend on waveunit used. Let s.get() handle this)
+        # get default (note that default "Iunit" may depend on waveunit used. Let s.get() handle this)
         _, _, _, Iunit = s1.get(
             var, wunit=wunit, Iunit="default", copy=False, return_units="as_str"
         )
@@ -718,7 +718,7 @@ def plot_diff(
             method=['diff', 'ratio']
 
     normalize: bool
-        Normalize the spectra to be ploted
+        Normalize the spectra to be plotted
 
     Other Parameters
     ----------------'
@@ -744,7 +744,8 @@ def plot_diff(
         Default is ``False``. By default won't save anything, type the path of the
         destination if you want to save it (format in the name).
     show: Bool
-        Default is ``True``. Will show the plots : bad if there are more than 20.
+        Default is ``True``. Will show the plots. You should switch to ``False`` if there are more than 20 calls of this function to avoid memory load during execution.
+        If ``False``, you can show the plot(s) with ``plt.show()``
     show_residual: bool
         if ``True``, calculates and shows on the graph the residual in L2 norm.
         See :func:`~radis.spectrum.compare.get_residual`. ``diff_window`` is
@@ -828,13 +829,6 @@ def plot_diff(
     from matplotlib.widgets import MultiCursor
 
     from radis.misc.plot import fix_style, set_style
-
-    if (not show) and (
-        not save
-    ):  # I added this line to avoid calculus in the case there is nothing to do (Minou)
-        if verbose:
-            print("plot_diff : Nothing to do")
-        return None, None
 
     var, wunit, Iunit = get_default_units(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
 
