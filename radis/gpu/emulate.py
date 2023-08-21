@@ -11,10 +11,14 @@ from ctypes import (
     cdll,
     memmove,
     sizeof,
-    windll,
 )
 from os import name as os_name
-
+if os_name == 'nt':
+    from ctypes import windll as dllobj
+else:
+    from ctypes import cdll as dllobj
+    
+    
 import numpy as np
 from scipy.fft import irfft, rfft
 
@@ -27,8 +31,6 @@ from time import perf_counter
 
 CUFFT_R2C = 0x2A
 CUFFT_C2R = 0x2C
-LoadLibrary = windll.LoadLibrary if os_name == "nt" else cdll.LoadLibrary
-
 
 
 # This number does not have a meaningful interpretation in a CPU,
@@ -84,7 +86,7 @@ class CuModule:
         # radis_path = dirname(dirname(__file__))
         radis_path = getProjectRoot()
 
-        self._module = LoadLibrary(
+        self._module = dllobj.LoadLibrary(
             os.path.join(radis_path, "gpu", self.module_name)
         )
         self._func_dict = {}

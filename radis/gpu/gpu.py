@@ -1,9 +1,8 @@
 import os.path
-from time import perf_counter
 from warnings import warn
 
 import numpy as np
-from scipy.constants import N_A, c, h, k
+from scipy.constants import N_A, c, k
 from scipy.fft import next_fast_len
 
 from radis.gpu.params import (
@@ -85,10 +84,9 @@ def gpu_init(
         return
 
     if emulate:
-
-        from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule, CuTimer
+        from radis.gpu.emulate import CuContext
     else:
-        from radis.gpu.driver import CuArray, CuContext, CuFFT, CuModule, CuTimer
+        from radis.gpu.driver import CuContext
 
     ## First a CUDA context is created, then the .ptx file is read
     ## and made available as the CuModule object cu_mod
@@ -105,10 +103,14 @@ def gpu_init(
                 + "This means *NO* GPU acceleration!"
             )
         )
-
+        # failed to init CUDA context, continue with CPU:
         from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule, CuTimer
-
         ctx = CuContext.Open()
+        
+    else:
+        # successfully initialized CUDA context, continue with GPU:
+        from radis.gpu.driver import CuArray, CuFFT, CuModule, CuTimer
+
 
     if verbose == 1:
         print("Number of lines loaded: {0}".format(len(v0)))
@@ -330,7 +332,6 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
 
     cu_mod.fft_rev2()
     cu_mod.timer.lap("fft_rev2")
-    t1 = perf_counter()
 
     transmittance_h = cu_mod.fft_rev2.arr_out.getArray()[: init_h.N_v]
 
@@ -339,14 +340,6 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
 
     if verbose == 1:
         print("Finished calculating spectrum!")
-
-    ##    diffs = cu_mod.timer.getDiffs()
-    ##    for key in diffs:
-    ##        print('{:8.3f} ms - '.format(diffs[key]),key)
-    ##
-    ##    print('------------------')
-    ##    print('{:8.3f} ms - total'.format((t1 - t0)*1e3))
-    ##    print('\n')
 
     return abscoeff_h, transmittance_h, iter_h
 

@@ -5,15 +5,18 @@ from ctypes import (
     c_float,
     c_int,
     c_long,
-    c_longlong,
     c_size_t,
     c_void_p,
     cast,
     cdll,
     create_string_buffer,
-    windll,
 )
 from os import name as os_name
+if os_name == 'nt':
+    from ctypes import windll as dllobj
+else:
+    from ctypes import cdll as dllobj
+
 
 import numpy as np
 from nvidia.cufft import __path__ as cufft_path
@@ -40,7 +43,6 @@ CUFFT_C2R = 0x2C
 
 lib = None
 lib_cufft = None
-LoadLibrary = windll.LoadLibrary if os_name == "nt" else cdll.LoadLibrary
 
 
 class CuContext:
@@ -60,7 +62,7 @@ class CuContext:
 
         cuda_name = "nvcuda.dll" if os_name == "nt" else "libcuda.so"
         try:
-            lib = LoadLibrary(cuda_name)
+            lib = dllobj.LoadLibrary(cuda_name)
         except (FileNotFoundError):
             print("Can't find {:s}...".format(cuda_name))
             return None
@@ -364,7 +366,7 @@ class CuFFT:
         )
         try:
             if lib_cufft is None:
-                lib_cufft = LoadLibrary(cufft_path[0] + cufft_name)
+                lib_cufft = dllobj.LoadLibrary(cufft_path[0] + cufft_name)
         except (FileNotFoundError):
             print("Can't find {:s}...".format(cufft_name))
             return None
