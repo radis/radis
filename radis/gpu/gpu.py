@@ -83,35 +83,39 @@ def gpu_init(
         warn("Only a single CUDA context allowed; please call gpu_exit() first.")
         return
 
-    if emulate:
-        from radis.gpu.emulate import CuContext
-    else:
-        from radis.gpu.driver import CuContext
-
     ## First a CUDA context is created, then the .ptx file is read
     ## and made available as the CuModule object cu_mod
     ## If this fails, None is returned and calculations are
     ## defaulted to CPU emulation
 
-    ctx = CuContext.Open()
-    if ctx is None:
-        warn(
-            NoGPUWarning(
-                "Failed to load CUDA context, this happened either because"
-                + "CUDA is not installed properly, or you have no NVIDIA GPU. "
-                + "Continuing with emulated GPU on CPU..."
-                + "This means *NO* GPU acceleration!"
-            )
-        )
-        # failed to init CUDA context, continue with CPU:
-        from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule, CuTimer
+
+    if emulate:
+        from radis.gpu.emulate import CuContext, CuModule, CuFFT, CuArray, CuTimer
         ctx = CuContext.Open()
-        
+    
     else:
-        # successfully initialized CUDA context, continue with GPU:
-        from radis.gpu.driver import CuArray, CuFFT, CuModule, CuTimer
+        # Try to load GPU
+        from radis.gpu.driver import CuContext
+        ctx = CuContext.Open()
+        if ctx is None:
+            warn(
+                NoGPUWarning(
+                    "Failed to load CUDA context, this happened either because"
+                    + "CUDA is not installed properly, or you have no NVIDIA GPU. "
+                    + "Continuing with emulated GPU on CPU..."
+                    + "This means *NO* GPU acceleration!"
+                    )
+                )
+                
+            # failed to init CUDA context, continue with CPU:
+            from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule, CuTimer
+            ctx = CuContext.Open()
+            
+        else:
+            # successfully initialized CUDA context, continue with GPU:
+            from radis.gpu.driver import CuArray, CuFFT, CuModule, CuTimer
 
-
+        
     if verbose == 1:
         print("Number of lines loaded: {0}".format(len(v0)))
         print()
@@ -119,7 +123,7 @@ def gpu_init(
     ptx_path = os.path.join(getProjectRoot(), "gpu", "kernels.ptx")
     if not os.path.exists(ptx_path):
         raise FileNotFoundError(ptx_path)
-    cu_mod = CuModule(ctx, ptx_path)
+    cu_mod = CuModule(ctx, ptx_path) #gpu
     print("mode:", cu_mod.getMode())
 
     ## Next, the GPU is made aware of a number of parameters.
