@@ -8,11 +8,11 @@ from ctypes import (
     c_size_t,
     c_void_p,
     cast,
-    cdll,
     create_string_buffer,
 )
 from os import name as os_name
-if os_name == 'nt':
+
+if os_name == "nt":
     from ctypes import windll as dllobj
 else:
     from ctypes import cdll as dllobj
@@ -298,6 +298,7 @@ class CuArray:
 
         if self._ptr.value is not None:
             cu_print(lib.cuMemFree_v2(self._ptr), "arr.free")
+            self._ptr = c_void_p(0)
 
         cu_print(lib.cuMemAlloc_v2(byref(self._ptr), self.nbytes), "arr.alloc")
 

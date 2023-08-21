@@ -102,7 +102,7 @@ __global__ void fillLDM(
                     ADD(&S_klm[k1i * N_G * N_L + l0i * N_L + m1i], Sv1i * aV01i);
                     ADD(&S_klm[k1i * N_G * N_L + l1i * N_L + m0i], Sv1i * aV10i);
                     ADD(&S_klm[k1i * N_G * N_L + l1i * N_L + m1i], Sv1i * aV11i);
-                
+
                 }
             }
         }
@@ -122,7 +122,7 @@ __global__ void applyLineshapes(complex<float>* S_klm_FT, complex<float>* abscoe
                 float x = k / (init_d.N_v_FT * init_d.dv);
                 float mul = 0.0;
                 complex<float> out_complex = 0;
-              
+
                 for (int l = 0; l < iter_d.N_G; l++) {
                     float wG = expf(iter_d.log_wG_min + l * init_d.dxG);
                     for (int m = 0; m < iter_d.N_L; m++) {

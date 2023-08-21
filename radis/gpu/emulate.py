@@ -8,23 +8,23 @@ from ctypes import (
     c_short,
     c_void_p,
     cast,
-    cdll,
     memmove,
     sizeof,
 )
 from os import name as os_name
-if os_name == 'nt':
+
+if os_name == "nt":
     from ctypes import windll as dllobj
 else:
     from ctypes import cdll as dllobj
-    
-    
+
+from time import perf_counter
+
 import numpy as np
 from scipy.fft import irfft, rfft
 
 from radis.gpu.structs import blockDim_t, gridDim_t
 from radis.misc.utils import getProjectRoot
-from time import perf_counter
 
 # from os.path import dirname
 
@@ -45,10 +45,10 @@ class CuContext:
         self._context = context
 
     @staticmethod
-    def Open(device_id=0, flags=0):        
+    def Open(device_id=0, flags=0):
         _device = c_void_p(456)
         _context = c_void_p(123)
-        
+
         return CuContext(_device, _context)
 
     @staticmethod
@@ -80,7 +80,7 @@ class CuModule:
         lib_ext = ".dll" if os_name == "nt" else ".so"
         self.module_name = os.path.splitext(module_name)[0] + lib_ext
         self.context = context
-        self.mode = 'CPU'
+        self.mode = "CPU"
 
         # private:
         # radis_path = dirname(dirname(__file__))
@@ -114,19 +114,20 @@ class CuModule:
                 _size = sizeof(ctype)
                 self._global_dict[name] = _var, _size, _type
                 return self._global_dict[name]
-            
+
             else:
-                print('Constant type must be passed first time it is called!')
+                print("Constant type must be passed first time it is called!")
                 return
+
     def getMode(self):
         return self.mode
-    
+
     def setConstant(self, name, c_val):
         _var, _size, _type = self._getGlobal(name, type(c_val))
         memmove(byref(_var), byref(c_val), sizeof(c_val))
 
     def getConstant(self, name, ctype=None):
-        _var, _size, _type = self._getGlobal(name, ctype=None)    
+        _var, _size, _type = self._getGlobal(name, ctype=None)
         return _var
 
 
@@ -240,7 +241,7 @@ class CuFFT:
             np_arr_out[:] = rfft(np_arr_in, axis=0)
         else:
             n = np_arr_out.shape[0]
-            np_arr_out[:] = irfft(np_arr_in, n=n, axis=0, norm='forward')
+            np_arr_out[:] = irfft(np_arr_in, n=n, axis=0, norm="forward")
 
     def destroy(self):
         pass
@@ -252,18 +253,18 @@ class CuTimer:
         self._start = perf_counter()
         self._stop = self._start
         self.times = {}
-        
+
     def reset(self):
         self._start = perf_counter()
 
     def lap(self, name=None):
         if name is None:
-            name = 'event{:d}'.format(len(self.times.keys()))
-        self.times[name] = self()    
+            name = "event{:d}".format(len(self.times.keys()))
+        self.times[name] = self()
 
     def __call__(self):
         self._stop = perf_counter()
-        elapsed_time = 1e3*(self._stop - self._start)
+        elapsed_time = 1e3 * (self._stop - self._start)
         return elapsed_time
 
     def getTimes(self):
@@ -271,5 +272,5 @@ class CuTimer:
 
     def getDiffs(self):
         vals = [*self.times.values()]
-        diffs = [vals[0]] + [vals[i] - vals[i-1] for i in range(1, len(vals))]
+        diffs = [vals[0]] + [vals[i] - vals[i - 1] for i in range(1, len(vals))]
         return dict(zip(self.times.keys(), diffs))

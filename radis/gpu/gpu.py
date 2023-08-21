@@ -88,14 +88,15 @@ def gpu_init(
     ## If this fails, None is returned and calculations are
     ## defaulted to CPU emulation
 
-
     if emulate:
-        from radis.gpu.emulate import CuContext, CuModule, CuFFT, CuArray, CuTimer
+        from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule, CuTimer
+
         ctx = CuContext.Open()
-    
+
     else:
         # Try to load GPU
         from radis.gpu.driver import CuContext
+
         ctx = CuContext.Open()
         if ctx is None:
             warn(
@@ -104,18 +105,18 @@ def gpu_init(
                     + "CUDA is not installed properly, or you have no NVIDIA GPU. "
                     + "Continuing with emulated GPU on CPU..."
                     + "This means *NO* GPU acceleration!"
-                    )
                 )
-                
+            )
+
             # failed to init CUDA context, continue with CPU:
             from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule, CuTimer
+
             ctx = CuContext.Open()
-            
+
         else:
             # successfully initialized CUDA context, continue with GPU:
             from radis.gpu.driver import CuArray, CuFFT, CuModule, CuTimer
 
-        
     if verbose == 1:
         print("Number of lines loaded: {0}".format(len(v0)))
         print()
@@ -123,7 +124,7 @@ def gpu_init(
     ptx_path = os.path.join(getProjectRoot(), "gpu", "kernels.ptx")
     if not os.path.exists(ptx_path):
         raise FileNotFoundError(ptx_path)
-    cu_mod = CuModule(ctx, ptx_path) #gpu
+    cu_mod = CuModule(ctx, ptx_path)  # gpu
     print("mode:", cu_mod.getMode())
 
     ## Next, the GPU is made aware of a number of parameters.
