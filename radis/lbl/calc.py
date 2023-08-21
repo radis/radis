@@ -32,6 +32,7 @@ except ImportError:  # if ran from here
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
 from radis.spectrum.spectrum import Spectrum
+from radis.db.classes import to_conventional_name
 
 
 # %%
@@ -380,10 +381,9 @@ def calc_spectrum(
     if 'molecule' in kwargs:
         print("Molecule is deprecated. Use species instead.")
         species = kwargs['molecule']
-        molecule = species
-        #molecule= kwargs['molecule']
+        molecule = to_conventional_name(species)
     else : 
-        molecule=species
+        molecule=to_conventional_name(species)
 
     # ... wavelengths / wavenumbers
     

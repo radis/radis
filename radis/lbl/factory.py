@@ -420,6 +420,9 @@ class SpectrumFactory(BandFactory):
                 species = kwargs['molecule']
                 molecule = species
             kwargs0.pop('molecule')  # remove it from kwargs0 so it doesn't trigger the error later
+        else : 
+            molecule=species
+        
 
         if "db_use_cached" in kwargs:
             warn(
@@ -504,38 +507,39 @@ class SpectrumFactory(BandFactory):
         # Init variables
         # --------------
         # Get molecule name
-        if not is_atom(species): 
-            if isinstance(species, int):
-                species == get_molecule(species)
-            if species is not None:
-                if (
-                    species
-                    not in MOLECULES_LIST_EQUILIBRIUM + MOLECULES_LIST_NONEQUILIBRIUM
-                ):
-                    raise ValueError(
-                        "Unsupported molecule: {0}.\n".format(species)
-                        + "Supported molecules are:\n - under equilibrium: {0}".format(
-                            MOLECULES_LIST_EQUILIBRIUM
+        if molecule is not None and species is not None:
+            if not is_atom(molecule): 
+                if isinstance(molecule, int):
+                    species == get_molecule(molecule)
+                if molecule is not None:
+                    if (
+                        species
+                        not in MOLECULES_LIST_EQUILIBRIUM + MOLECULES_LIST_NONEQUILIBRIUM
+                    ):
+                        raise ValueError(
+                            "Unsupported molecule: {0}.\n".format(species)
+                            + "Supported molecules are:\n - under equilibrium: {0}".format(
+                                MOLECULES_LIST_EQUILIBRIUM
+                            )
+                            + "\n- under nonequilibrium: {0}".format(
+                                MOLECULES_LIST_NONEQUILIBRIUM
+                            )
+                            + "\n\nNote that RADIS now has ExoMol support, but not all ExoMol molecules are referenced in RADIS. If a molecule is available in ExoMol but does not appear in RADIS yet, please contact the RADIS team or write on https://github.com/radis/radis/issues/319"
                         )
-                        + "\n- under nonequilibrium: {0}".format(
-                            MOLECULES_LIST_NONEQUILIBRIUM
-                        )
-                        + "\n\nNote that RADIS now has ExoMol support, but not all ExoMol molecules are referenced in RADIS. If a molecule is available in ExoMol but does not appear in RADIS yet, please contact the RADIS team or write on https://github.com/radis/radis/issues/319"
-                    )
 
-                # Store isotope identifier in str format (list wont work in database queries)
-                if not isinstance(isotope, str):
-                    isotope = ",".join([str(k) for k in list_if_float(isotope)])
+        # Store isotope identifier in str format (list wont work in database queries)
+        if not isinstance(isotope, str):
+            isotope = ",".join([str(k) for k in list_if_float(isotope)])
 
-                # If molecule present in diluent, raise error
-                if (isinstance(diluent, str) and diluent == molecule) or (
-                    isinstance(diluent, dict) and molecule in diluent.keys()
-                ):
-                    raise KeyError(
-                        "{0} is being called as molecule and diluent, please remove it from diluent.".format(
-                            molecule
-                        )
-                    )
+        # If molecule present in diluent, raise error
+        if (isinstance(diluent, str) and diluent == molecule) or (
+            isinstance(diluent, dict) and molecule in diluent.keys()
+        ):
+            raise KeyError(
+                "{0} is being called as molecule and diluent, please remove it from diluent.".format(
+                    molecule
+                )
+            )
 
         # Initialize input conditions
         self.input.wavenum_min = wavenum_min
@@ -545,16 +549,17 @@ class SpectrumFactory(BandFactory):
         self.input.mole_fraction = mole_fraction
 
         self.input.path_length = convert_and_strip_units(path_length, u.cm)
-        if not is_atom(species) :
-            self.input.molecule = (
-                species  # if None, will be overwritten after reading database
-                )
-            self.input.state = "X"  # for the moment only ground-state is used
-            # (but the code is electronic state aware)
-            self.input.isotope = (
-                isotope  # if 'all', will be overwritten after reading database
+        #if molecule is not None and species is not None:
+            #if not is_atom(species) :
+        self.input.molecule = (
+            species  # if None, will be overwritten after reading database
             )
-            self.input.self_absorption = self_absorption
+        self.input.state = "X"  # for the moment only ground-state is used
+        # (but the code is electronic state aware)
+        self.input.isotope = (
+            isotope  # if 'all', will be overwritten after reading database
+        )
+        self.input.self_absorption = self_absorption
         self.input.species = species
 
         # Initialize computation variables

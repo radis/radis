@@ -2308,7 +2308,7 @@ class DatabankLoader(object):
                         # self.reftracker.add("10.1016/j.jqsrt.2020.107228", "line database")  # [ExoMol-2020]
                         raise NotImplementedError("use fetch_databank('exomol')")
                     elif dbformat in ["kurucz"]:
-                        
+                        print("species input",self.input.species)
                         kurucz=AdBKurucz(self.input.species)
                         hdf5_file=fetch_kurucz(self.input.species)[0]
                         df=fetch_kurucz(self.input.species)[1]
