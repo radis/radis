@@ -4293,7 +4293,7 @@ class Spectrum(object):
                 ax.plot(w_fit, y_fit, label=label)
             # plot legend with small font size:
             ax.legend(fontsize=14)
-            line.figure.show()  # needed if `plt.isinteractive() = False`
+            plt.show()  # needed if `plt.isinteractive() = False`
 
         if verbose:
             print(fitter.fit_info["ierr"], fitter.fit_info["message"])
