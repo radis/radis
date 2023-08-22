@@ -4276,12 +4276,12 @@ class Spectrum(object):
         if plot:
             import matplotlib.pyplot as plt
 
-            line = self.plot(
+            plt_line = self.plot(
                 lw=5,
                 color="grey",
                 show=False,  # needed when using `inline` ploting (e.g. default in Spyder)
             )
-            ax = line.figure.axes[0]
+            ax = plt_line.figure.axes[0]
             for i, y_fit in enumerate(y_fit_list):
                 g_fit = g_fit_list[i]
                 label = " ".join(
@@ -4322,6 +4322,25 @@ class Spectrum(object):
             ]  # TODO refactor there is probably a better way to write it
         else:
             y_err = None
+
+        # Compute area under the curve of models.Voigt1D or models.Gaussian1D or models.Lorentz1D
+        from astropy.modeling import models
+
+        for index, line in enumerate(g_fit_list):
+            if isinstance(line, models.Voigt1D):
+                area = np.abs(np.trapz(y_fit_list[index], w_fit))  # slow, but accurate
+            elif isinstance(line, models.Gaussian1D):
+                area = line.amplitude * line.stddev * np.sqrt(2 * np.pi)
+            elif isinstance(line, models.Lorentz1D):
+                area = line.amplitude * np.pi * line.fwhm / 2
+            else:
+                raise ValueError(
+                    "Unexpected model type: {0}. \nExpected `models.Voigt1D` or `Gaussian1D` or `Lorentz1D`".format(
+                        type(line).__name__
+                    )
+                )
+            # return area
+            g_fit_list[index].area = area
 
         return g_fit_list, y_err
 

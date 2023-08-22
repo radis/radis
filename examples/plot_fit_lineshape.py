@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 ==================================
-Fit Multiple Lorentzian Lineshapes
+Fit Multiple Voigt Lineshapes
 ==================================
 
-Direct-access functions to fit a sum of three Lorentzian lineshapes on an
+Direct-access functions to fit a sum of three Voigt lineshapes on an
 experimental spectrum.
 
 This uses the underlying fitting routines of :py:mod:`specutils`
@@ -38,3 +38,4 @@ gfit, y_err = s.fit_model(
 
 for mod in gfit:
     print(mod)
+    print(mod.area)
