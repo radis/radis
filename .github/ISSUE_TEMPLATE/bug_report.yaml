@@ -1,6 +1,5 @@
 name: "Bug Report"
 description: "Create a bug report to help us improve Radis \U0001F331"
-title: ""
 labels: [bug]
 body:
   - type: markdown
