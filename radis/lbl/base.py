@@ -2610,7 +2610,6 @@ class BaseFactory(DatabankLoader):
 
         # %% Calculate line strength at desired temperature
         # -------------------------------------------------
-        #if self.input.species is not None and molecule is not None:
         if self.input.species is not None :
             if self.molparam.terrestrial_abundances and not is_atom(self.input.species) :
                 # This calculation is based on equation (A11) in Rothman 1998: "JQSRT, vol.
