@@ -30,7 +30,7 @@ s = Spectrum.from_mat(
 # Plot default Spectrum:
 s.plot(
     nfig=1,  # nfig=1 and show=False to plot on the same figure after
-    show=False,  # False is especially needed when using `inline` ploting (e.g. default in Spyder)
+    show=False,  # needed when using `inline` ploting (e.g. default in Spyder)
 )
 
 # Now crop to the range we want to study

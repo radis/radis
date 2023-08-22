@@ -4276,7 +4276,12 @@ class Spectrum(object):
         if plot:
             import matplotlib.pyplot as plt
 
-            self.plot(lw=5, color="grey")
+            line = self.plot(
+                lw=5,
+                color="grey",
+                show=False,  # needed when using `inline` ploting (e.g. default in Spyder)
+            )
+            ax = line.figure.axes[0]
             for i, y_fit in enumerate(y_fit_list):
                 g_fit = g_fit_list[i]
                 label = " ".join(
@@ -4285,9 +4290,10 @@ class Spectrum(object):
                         for k, v in enumerate(g_fit.parameters)
                     ]
                 )
-                plt.plot(w_fit, y_fit, label=label)
+                ax.plot(w_fit, y_fit, label=label)
             # plot legend with small font size:
-            plt.legend(fontsize=14)
+            ax.legend(fontsize=14)
+            line.figure.show()  # needed if `plt.isinteractive() = False`
 
         if verbose:
             print(fitter.fit_info["ierr"], fitter.fit_info["message"])
