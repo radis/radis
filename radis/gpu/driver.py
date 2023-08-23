@@ -304,13 +304,16 @@ class CuFunction:
 
 
 class CuArray:
-    def __init__(self, shape, dtype=np.float32, init="empty"):
+    def __init__(self, shape, dtype=np.float32, init="empty", grow_only=False):
         self._ptr = c_void_p()
+        self._nbytes_alloc = 0
+        self.grow_only = grow_only
         self.resize(shape, dtype, init)
         global _arrays
         _arrays.append(self)
 
     def resize(self, shape=None, dtype=None, init="empty"):
+        
         shape_tuple = shape if isinstance(shape, tuple) else (shape,)
         self.shape = self.shape if shape is None else shape_tuple
         self.dtype = self.dtype if dtype is None else np.dtype(dtype)
@@ -321,12 +324,15 @@ class CuArray:
         if init not in ("zeros", "empty"):
             return
 
-        if self._ptr.value is not None:
-            self.free()
-            self._ptr = c_void_p(0)
+        if self.nbytes > self._nbytes_alloc or ((self.nbytes < self._nbytes_alloc) and (not self.grow_only)):
+            if self._ptr.value is not None:
+                self.free()
+                self._ptr = c_void_p(0)
 
-        cu_print(lib.cuMemAlloc_v2(byref(self._ptr), self.nbytes), "arr.alloc")
-        cu_print(hex(self._ptr.value), self.nbytes)
+            cu_print(lib.cuMemAlloc_v2(byref(self._ptr), self.nbytes), "arr.alloc")
+            self._nbytes_alloc = self.nbytes
+            cu_print(hex(self._ptr.value), self.nbytes)
+
         if init == "zeros":
             self.zeroFill()
 
@@ -375,7 +381,7 @@ class CuFFT:
         # public:
         self.arr_in = arr_in
         self.arr_out = arr_out
-        self.workarea = CuArray((8,), dtype=np.byte) if workarea is None else workarea
+        self.workarea = CuArray((8,), dtype=np.byte, grow_only=True) if workarea is None else workarea
         
         # private:
         self._direction = direction
@@ -429,14 +435,7 @@ class CuFFT:
                 "fft.plan many"
             )
             
-            #cu_print('workarea: ', self.workarea.nbytes, 'this size: ',_worksize[0])
-
-            if _worksize[0] > self.workarea.nbytes:
-                cu_print('wa old size: ', self.workarea.nbytes, 'wa new size: ',_worksize[0])
-
-                self.workarea.resize((_worksize[0],), dtype=np.byte)
-                #cu_print(hex(self.workarea._ptr.value), _worksize[0])
-
+            self.workarea.resize((_worksize[0],), dtype=np.byte)
             cu_print(lib_cufft.cufftSetWorkArea(_plan, self.workarea._ptr), 'fft.set workarea')
 
             self._plans[self._arr.shape] = [_plan, int(self.workarea._ptr.value)]
@@ -448,7 +447,6 @@ class CuFFT:
         _plan, ptrval = self._getPlan()
 
         if ptrval != self.workarea._ptr.value:
-            #cu_print('old ptr:', ptrval, 'new ptr:', self.workarea._ptr.value, 'updating...')
             cu_print(lib_cufft.cufftSetWorkArea(_plan, self.workarea._ptr), 'fft.set workarea')
             self._plans[self._arr.shape][1] = int(self.workarea._ptr.value)
         

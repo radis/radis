@@ -166,8 +166,9 @@ class CuFunction:
 
 
 class CuArray:
-    def __init__(self, shape, dtype=np.float32, init="empty"):
+    def __init__(self, shape, dtype=np.float32, init="empty", grow_only=False):
         self._ptr = c_void_p()
+        self.grow_only = grow_only #Note that this doesn't actually do anything!
         self.resize(shape, dtype, init)
 
     def resize(self, shape=None, dtype=None, init="empty"):

@@ -190,8 +190,8 @@ def gpu_init(
     ## They are not allocated, only given a device pointer by which
     ## they can be referenced later.
 
-    S_klm_d = CuArray(0, dtype=np.float32, init="defer")  # _ptr only
-    S_klm_FT_d = CuArray(0, dtype=np.complex64, init="defer")  # _ptr only
+    S_klm_d = CuArray(0, dtype=np.float32, grow_only=True)
+    S_klm_FT_d = CuArray(0, dtype=np.complex64, grow_only=True)
 
     spectrum_in_d = CuArray(NxFT, dtype=np.complex64)
     spectrum_out_d = CuArray(NvFT, dtype=np.float32)
@@ -223,7 +223,7 @@ def gpu_init(
     ## CuFFT objects. The work area will be scaled according to needs by the CuFFT objects,
     ## so it can be initialized with a small value.
     
-    workarea_d = CuArray((8,), dtype=np.byte)
+    workarea_d = CuArray(0, dtype=np.byte, grow_only=True)
     cu_mod.fft_fwd = CuFFT(S_klm_d, S_klm_FT_d, workarea=workarea_d, direction="fwd")
     cu_mod.fft_rev = CuFFT(spectrum_in_d, spectrum_out_d, workarea=workarea_d, direction="rev")
     cu_mod.fft_fwd2 = CuFFT(
