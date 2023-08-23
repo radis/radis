@@ -44,6 +44,9 @@ CUFFT_C2R = 0x2C
 lib = None
 lib_cufft = None
 
+_arrays = []
+_plans = []
+_modules = []
 
 class CuContext:
     def __init__(self, device, context):
@@ -148,13 +151,27 @@ class CuContext:
         cu_print(lib.cuCtxSynchronize(), "ctx.sync")
 
     def destroy(self):
+        global _arrays, _plans, _modules
+
+        while len(_arrays):
+            arr = _arrays.pop(0)
+            arr.free()
+
+        while len(_plans):
+            plan = _plans.pop(0)
+            plan.destroy()
+            
+        while len(_modules):
+            mod = _modules.pop(0)
+            mod.unload()
+            
         try:
             cu_print(lib.cuCtxDestroy_v2(self._context), "ctx.destroy")
         except (AttributeError):
             pass
 
-    def __del__(self):
-        self.destroy()
+##    def __del__(self):
+##        self.destroy()
 
 
 class CuModule:
@@ -164,6 +181,8 @@ class CuModule:
         self.module_name = module_name
         self.context = context
         self.mode = "GPU"
+        global _modules
+        _modules.append(self)
 
         # private:
         self._module = c_void_p(0)
@@ -219,6 +238,7 @@ class CuModule:
                     "mod.global",
                 )
                 self._global_dict[name] = (_var, _size, _type)
+                cu_print('size: ', _size.value)
                 return self._global_dict[name]
 
             else:
@@ -237,6 +257,9 @@ class CuModule:
         cvar = _type()
         cu_print(lib.cuMemcpyDtoH_v2(byref(cvar), _var, _size), "mod.DtoH")
         return cvar
+
+    def unload(self):
+        cu_print(lib.cuModuleUnload(self._module), "mod.unload")
 
 
 class CuFunction:
@@ -284,6 +307,8 @@ class CuArray:
     def __init__(self, shape, dtype=np.float32, init="empty"):
         self._ptr = c_void_p()
         self.resize(shape, dtype, init)
+        global _arrays
+        _arrays.append(self)
 
     def resize(self, shape=None, dtype=None, init="empty"):
         shape_tuple = shape if isinstance(shape, tuple) else (shape,)
@@ -297,11 +322,11 @@ class CuArray:
             return
 
         if self._ptr.value is not None:
-            cu_print(lib.cuMemFree_v2(self._ptr), "arr.free")
+            self.free()
             self._ptr = c_void_p(0)
 
         cu_print(lib.cuMemAlloc_v2(byref(self._ptr), self.nbytes), "arr.alloc")
-
+        cu_print(hex(self._ptr.value), self.nbytes)
         if init == "zeros":
             self.zeroFill()
 
@@ -341,26 +366,22 @@ class CuArray:
     def free(self):
         cu_print(lib.cuMemFree_v2(self._ptr), "arr.free")
 
-    def __del__(self):
-
-        try:
-            self.free()
-        except (AttributeError):
-            pass
-
 
 class CuFFT:
-    def __init__(self, arr_in, arr_out, direction="fwd", plan_fft=True):
-        global lib_cufft
+    def __init__(self, arr_in, arr_out, workarea=None, direction="fwd"):
+        global lib_cufft, _plans
+        _plans.append(self)
+
         # public:
         self.arr_in = arr_in
         self.arr_out = arr_out
-
+        self.workarea = CuArray((8,), dtype=np.byte) if workarea is None else workarea
+        
         # private:
         self._direction = direction
-        self._arr = arr_in if direction == "fwd" else arr_out
         self._fft_type = CUFFT_R2C if direction == "fwd" else CUFFT_C2R
-        self._plan = c_void_p(0)
+        self._arr = arr_in if direction == "fwd" else arr_out
+        self._plans = {}
 
         cufft_name = (
             "\\bin\\cufft64_10.dll" if os_name == "nt" else "\\lib\\libcufft.so.10"
@@ -371,60 +392,82 @@ class CuFFT:
         except (FileNotFoundError):
             print("Can't find {:s}...".format(cufft_name))
             return None
+        
+            
+    def _getPlan(self):
+        try:
+            return self._plans[self._arr.shape]
+        
+        except(KeyError):
+            
+            _plan = c_void_p(0)
+            cu_print(lib_cufft.cufftCreate(byref(_plan)), "fft.plan create")
+            cu_print(lib_cufft.cufftSetAutoAllocation(_plan, c_int(0)), 'fft.setalloc')
+            
+            batch = int(np.prod(self._arr.shape[1:]))
+            oneInt = 1 * c_int
+            _n = oneInt(self._arr.shape[0])
+            stride = batch
+            oneSizeT = 1 * c_size_t
+            _worksize = oneSizeT(0)
 
-        cu_print(lib_cufft.cufftCreate(byref(self._plan)), "fft.plan create")
+            cu_print(
+                lib_cufft.cufftMakePlanMany(
+                    _plan,
+                    1,  # rank,
+                    _n,  # n
+                    oneInt(0),  # inembed,
+                    stride,  # istride
+                    1,  # idist,
+                    oneInt(0),  # onembed,
+                    stride,  # ostride
+                    1,  # odist,
+                    self._fft_type,
+                    batch,
+                    _worksize,
+                ),
+                "fft.plan many"
+            )
+            
+            #cu_print('workarea: ', self.workarea.nbytes, 'this size: ',_worksize[0])
 
-        if plan_fft:
-            self.planMany()
+            if _worksize[0] > self.workarea.nbytes:
+                cu_print('wa old size: ', self.workarea.nbytes, 'wa new size: ',_worksize[0])
 
-    def planMany(self):
+                self.workarea.resize((_worksize[0],), dtype=np.byte)
+                #cu_print(hex(self.workarea._ptr.value), _worksize[0])
 
-        batch = int(np.prod(self._arr.shape[1:]))
-        oneInt = 1 * c_int
-        _n = oneInt(self._arr.shape[0])
-        stride = batch
+            cu_print(lib_cufft.cufftSetWorkArea(_plan, self.workarea._ptr), 'fft.set workarea')
 
-        cu_print(
-            lib_cufft.cufftPlanMany(
-                byref(self._plan),
-                1,  # rank,
-                _n,  # n
-                oneInt(0),  # inembed,
-                stride,  # istride
-                1,  # idist,
-                oneInt(0),  # onembed,
-                stride,  # ostride
-                1,  # odist,
-                self._fft_type,
-                batch,
-            ),
-            "fft.plan many",
-        )
+            self._plans[self._arr.shape] = [_plan, int(self.workarea._ptr.value)]
+            return self._plans[self._arr.shape]
+
 
     def __call__(self):
+
+        _plan, ptrval = self._getPlan()
+
+        if ptrval != self.workarea._ptr.value:
+            #cu_print('old ptr:', ptrval, 'new ptr:', self.workarea._ptr.value, 'updating...')
+            cu_print(lib_cufft.cufftSetWorkArea(_plan, self.workarea._ptr), 'fft.set workarea')
+            self._plans[self._arr.shape][1] = int(self.workarea._ptr.value)
+        
         if self._direction == "fwd":
             cu_print(
-                lib_cufft.cufftExecR2C(self._plan, self.arr_in._ptr, self.arr_out._ptr),
+                lib_cufft.cufftExecR2C(_plan, self.arr_in._ptr, self.arr_out._ptr),
                 "fft.fwd",
             )
         else:
             cu_print(
-                lib_cufft.cufftExecC2R(self._plan, self.arr_in._ptr, self.arr_out._ptr),
+                lib_cufft.cufftExecC2R(_plan, self.arr_in._ptr, self.arr_out._ptr),
                 "fft.rev",
             )
 
     def destroy(self):
-        try:
-            cu_print(lib_cufft.cufftDestroy(self._plan), "fft.destroy")
-        except (AttributeError):
-            pass
 
-    def __del__(self):
-        try:
-            if self._plan is not c_void_p(0):
-                self.destroy()
-        except (OSError):
-            pass
+        for key in self._plans:
+            _plan, workarea = self._plans[key]
+            cu_print(lib_cufft.cufftDestroy(_plan), "fft.destroy")
 
 
 class CuTimer:
@@ -437,8 +480,8 @@ class CuTimer:
         # public:
         self.times = {}
 
-        cu_print(lib.cuEventCreate(byref(self._start), flags | 1), "time.create")
-        cu_print(lib.cuEventCreate(byref(self._stop), flags | 1), "time.create")
+        cu_print(lib.cuEventCreate(byref(self._start), flags), "time.create")
+        cu_print(lib.cuEventCreate(byref(self._stop), flags), "time.create")
         self.reset()
 
     def reset(self):

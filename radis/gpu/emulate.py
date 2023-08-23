@@ -217,20 +217,19 @@ class CuArray:
 
 
 class CuFFT:
-    def __init__(self, arr_in, arr_out, direction="fwd", plan_fft=True):
+    def __init__(self, arr_in, arr_out, workarea=None, direction="fwd"):
 
         # public:
         self.arr_in = arr_in
         self.arr_out = arr_out
+        self.workarea = CuArray((8,), dtype=np.byte) if workarea is None else workarea
 
         # private:
         self._direction = direction
         self._arr = arr_in if direction == "fwd" else arr_out
         self._fft_type = CUFFT_R2C if direction == "fwd" else CUFFT_C2R
-        self._plan = c_void_p(789)
+        self._plans = {}
 
-    def planMany(self):
-        pass
 
     def __call__(self):
 

@@ -218,18 +218,22 @@ def gpu_init(
 
     ## FFT's are performed through the CuFFT object. The required functions are internally
     ## loaded from the cufft library, not through the user kernels (.ptx files).
-
-    cu_mod.fft_fwd = CuFFT(S_klm_d, S_klm_FT_d, direction="fwd", plan_fft=False)
-    cu_mod.fft_rev = CuFFT(spectrum_in_d, spectrum_out_d, direction="rev")
+    ## The FFT's need some memory as "work area". Because the different FFT's can
+    ## reuse the work area, we make a CuArray at this scope that is passed to the
+    ## CuFFT objects. The work area will be scaled according to needs by the CuFFT objects,
+    ## so it can be initialized with a small value.
+    
+    workarea_d = CuArray((8,), dtype=np.byte)
+    cu_mod.fft_fwd = CuFFT(S_klm_d, S_klm_FT_d, workarea=workarea_d, direction="fwd")
+    cu_mod.fft_rev = CuFFT(spectrum_in_d, spectrum_out_d, workarea=workarea_d, direction="rev")
     cu_mod.fft_fwd2 = CuFFT(
-        transmittance_noslit_d, transmittance_noslit_FT_d, direction="fwd"
+        transmittance_noslit_d, transmittance_noslit_FT_d, workarea=workarea_d, direction="fwd"
     )
-    cu_mod.fft_rev2 = CuFFT(transmittance_FT_d, transmittance_d, direction="rev")
+    cu_mod.fft_rev2 = CuFFT(transmittance_FT_d, transmittance_d, workarea=workarea_d, direction="rev")
     cu_mod.timer = CuTimer()
     if verbose >= 2:
         print("done!")
-
-
+    
 def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
     """
     Parameters
@@ -277,6 +281,7 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
     set_L_params(init_h, iter_h)
     cu_mod.setConstant("iter_d", iter_h)
     cu_mod.timer.lap("iter_params")
+
     ## Next the S_klm_d variable is reshaped to the correct shape,
     ## and filled with spectral data.
 
@@ -300,11 +305,8 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
 
     S_klm_FT_shape = (init_h.N_x_FT, iter_h.N_G, iter_h.N_L)
     cu_mod.fft_fwd.arr_out.resize(S_klm_FT_shape)
-    cu_mod.fft_fwd.planMany()  # replan because size may have changed
-    cu_mod.timer.lap("fft_fwd - plan")
-
     cu_mod.fft_fwd()
-    cu_mod.timer.lap("fft_fwd - exec")
+    cu_mod.timer.lap("fft_fwd")
 
     cu_mod.applyLineshapes()
     cu_mod.timer.lap("applyLineshapes")
@@ -317,7 +319,7 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
         print("Calculating transmittance...")
 
     abscoeff_h = cu_mod.fft_rev.arr_out.getArray()[: init_h.N_v]
-
+    
     ## To apply a slit function, first the transmittance is calculated.
     ## Then the convolution is applied by an FT, product with the
     ## instrument function's FT, followed by an inverse FT.
@@ -339,14 +341,16 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
     cu_mod.timer.lap("fft_rev2")
 
     transmittance_h = cu_mod.fft_rev2.arr_out.getArray()[: init_h.N_v]
-
+    
     if verbose >= 2:
         print("done!")
 
     if verbose == 1:
         print("Finished calculating spectrum!")
 
-    return abscoeff_h, transmittance_h, iter_h
+    times = cu_mod.timer.getTimes()
+    
+    return abscoeff_h, transmittance_h, iter_h, times
 
 
 def gpu_exit(event=None):

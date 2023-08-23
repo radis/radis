@@ -1176,7 +1176,7 @@ class SpectrumFactory(BandFactory):
         if verbose >= 2:
             print("Calculating spectra...", end=" ")
 
-        abscoeff, transmittance, iter_params = gpu_iterate(
+        abscoeff, transmittance, iter_params, times = gpu_iterate(
             pressure_mbar * 1e-3,
             Tgas,
             mole_fraction,
@@ -1389,7 +1389,7 @@ class SpectrumFactory(BandFactory):
             s.conditions["Trot"] = s.conditions["Tgas"]
             s.conditions["slit_function"] = s.conditions["slit_FWHM"]
 
-            abscoeff, transmittance, iter_params = gpu_iterate(
+            abscoeff, transmittance, iter_params, times = gpu_iterate(
                 s.conditions["pressure"],
                 s.conditions["Tgas"],
                 s.conditions["mole_fraction"],
