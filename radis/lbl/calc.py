@@ -45,7 +45,7 @@ def calc_spectrum(
     Tvib=None,
     Trot=None,
     pressure=1.01325,
-    species=None,
+    molecule=None,
     isotope="all",
     mole_fraction=1,
     diluent="air",
@@ -381,12 +381,12 @@ def calc_spectrum(
     """
 
     # Check inputs
-    if 'molecule' in kwargs:
-        print("Molecule is deprecated. Use species instead.")
-        species = kwargs['molecule']
-        molecule = to_conventional_name(species)
-    else : 
-        molecule=to_conventional_name(species)
+    #if 'molecule' in kwargs:
+        #print("Molecule is deprecated. Use species instead.")
+        #species = kwargs['molecule']
+        #molecule = to_conventional_name(species)
+    #else : 
+        #molecule=to_conventional_name(species)
 
     # ... wavelengths / wavenumbers
     

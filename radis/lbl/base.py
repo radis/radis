@@ -2492,6 +2492,7 @@ class BaseFactory(DatabankLoader):
                 return df1["iso"].map(Qgas_dict)
 
         else:  # "iso" not in df:
+            
             iso = df1.attrs["iso"]
             Q = self._calc_Q(molecule, iso, state, Tgas)
             df1.attrs["Q"] = Q
@@ -2610,12 +2611,13 @@ class BaseFactory(DatabankLoader):
 
         # %% Calculate line strength at desired temperature
         # -------------------------------------------------
-        if self.input.species is not None :
-            if self.molparam.terrestrial_abundances and not is_atom(self.input.species) :
-                # This calculation is based on equation (A11) in Rothman 1998: "JQSRT, vol.
-                # 60, No. 5, pp. 665-710"
+        
+        if self.molparam.terrestrial_abundances :
+            # This calculation is based on equation (A11) in Rothman 1998: "JQSRT, vol.
+            # 60, No. 5, pp. 665-710"
 
-                # correct for Partition Function
+            # correct for Partition Function
+            if self.input.species is not None and not is_atom(self.input.species):
                 df1["S"] = (
                     df1.int
                     * self.Qref_Qgas_ratio(df1, Tgas, Tref)
@@ -2627,7 +2629,7 @@ class BaseFactory(DatabankLoader):
                     (1 - exp(-hc_k * df1.wav / Tgas))
                     / (1 - exp(-hc_k * df1.wav / Tref))
                 )  # [cm-1/(molecules/cm-2)]
-            else:
+            else: 
                 # An alternative strategy is to calculate the linestrength from the
                 # Einstein A coefficient and the populations (see Klarenaar 2017 Eqn. 12)
                 if not "gu" in df1:
@@ -2638,12 +2640,24 @@ class BaseFactory(DatabankLoader):
                 df1["S"] = linestrength_from_Einstein(
                     df1.A, df1.gu, df1.El, Ia, df1.wav, self.Qgas(df1, Tgas), Tgas
                 )
-            
-            assert "S" in self.df1
 
-            self.profiler.stop("scaled_eq_linestrength", "Scaled equilibrium linestrength")
+        else:
+            # An alternative strategy is to calculate the linestrength from the
+            # Einstein A coefficient and the populations (see Klarenaar 2017 Eqn. 12)
+            if not "gu" in df1:
+                if not "ju" in df1:
+                    self._add_ju(df1)
+                self._calc_degeneracies(df1)
+            Ia = self.get_lines_abundance(df1)
+            df1["S"] = linestrength_from_Einstein(
+                df1.A, df1.gu, df1.El, Ia, df1.wav, self.Qgas(df1, Tgas), Tgas
+            )
+        
+        assert "S" in self.df1
 
-            return
+        self.profiler.stop("scaled_eq_linestrength", "Scaled equilibrium linestrength")
+
+        return
 
     # %%
     def calc_populations_eq(self, Tgas):

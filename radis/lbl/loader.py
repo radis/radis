@@ -100,6 +100,7 @@ from radis.phys.convert import cm2nm
 from radis.tools.database import SpecDatabase
 from radis.tools.track_ref import RefTracker
 from radis.api.kuruczapi import AdBKurucz
+from radis.db.classes import is_atom
 KNOWN_DBFORMAT = [
     "hitran",
     "hitemp",
@@ -1710,12 +1711,8 @@ class DatabankLoader(object):
         self.misc.total_lines = len(self.df0)  # will be stored in Spectrum metadata
 
         # Check the molecule is what we expected
-        if self.input.molecule not in ["", None] and "_I" not in self.input.species:
-            assert self.input.molecule == get_molecule(
-                self.df0.attrs["id"]
-            )  # assert molecule is what we expected
-        else:
-            self.input.molecule = get_molecule(self.df0.attrs["id"])  # get molecule
+        
+        self.input.molecule = get_molecule(self.df0.attrs["id"])  # get molecule
 
         # %% Load Partition functions (and energies if needed)
         # ----------------------------------------------------
