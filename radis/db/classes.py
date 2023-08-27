@@ -379,7 +379,7 @@ EXOMOL_MOLECULES = [
     "PO",
     "PS",
     "SH",
-    "SO", #new
+    "SO",  # new
     "SO2",
     "SO3",
     "ScH",

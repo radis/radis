@@ -18,5 +18,6 @@ def test_get_eq_mole_fraction(*args, **kwargs):
 
     return True
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     test_get_eq_mole_fraction()

@@ -92,33 +92,33 @@ def test_eq_spectrum_gpu(plot=False, *args, **kwargs):
     with warnings.catch_warnings():
         warnings.simplefilter("error", category=NoGPUWarning)
         test_eq_spectrum_emulated_gpu(emulate=False, plot=plot, *args, **kwargs)
+
+
 def test_multiple_gpu_calls():
     from radis import SpectrumFactory
+
     fixed_conditions = {
         "path_length": 1,
         "wmin": 2000,
         "wmax": 2010,
         "pressure": 0.1,
         "wstep": 0.001,
-        "mole_fraction": 0.01}
-        
-    sf = SpectrumFactory(
-        **fixed_conditions,
-        broadening_method="fft",
-        molecule='CO')
+        "mole_fraction": 0.01,
+    }
+
+    sf = SpectrumFactory(**fixed_conditions, broadening_method="fft", molecule="CO")
     sf.fetch_databank("hitran")
-    
+
     s1_gpu = sf.eq_spectrum_gpu(
-        Tgas=300,  # K
-        emulate=False,  # runs on GPU
-        diluent={'air':0.99})    
+        Tgas=300, emulate=False, diluent={"air": 0.99}  # K  # runs on GPU
+    )
     s2_gpu = sf.eq_spectrum_gpu(
-        Tgas=300,  # K
-        emulate=False,  # runs on GPU
-        diluent={'air':0.99})
-    
-    assert abs(s1_gpu.get_power()-s2_gpu.get_power())/s1_gpu.get_power() < 1e-5
+        Tgas=300, emulate=False, diluent={"air": 0.99}  # K  # runs on GPU
+    )
+
+    assert abs(s1_gpu.get_power() - s2_gpu.get_power()) / s1_gpu.get_power() < 1e-5
     assert s1_gpu.get_power() > 0
+
 
 # --------------------------
 if __name__ == "__main__":

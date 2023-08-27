@@ -887,10 +887,10 @@ class SpectrumFactory(BandFactory):
                 "thermal_equilibrium": True,
                 "diluents": self._diluent,
                 "radis_version": version,
-                "spectral_points": (int(
-                    self.params.wavenum_max_calc - self.params.wavenum_min_calc
-                )
-                / self.params.wstep),
+                "spectral_points": (
+                    int(self.params.wavenum_max_calc - self.params.wavenum_min_calc)
+                    / self.params.wstep
+                ),
                 "profiler": dict(self.profiler.final),
             }
         )
@@ -1113,38 +1113,30 @@ class SpectrumFactory(BandFactory):
 
         self.profiler.start("spectrum_calculation", 1)
         self.profiler.start("spectrum_calc_before_obj", 2)
- 
-        spectral_points = int((self.params.wavenum_max_calc - self.params.wavenum_min_calc) / self.params.wstep)
-
 
         self._generate_wavenumber_arrays(checks=False)
-##
-##        self.wavenumber, self.wavenumber_calc, self.woutrange = _generate_wavenumber_range(
-##                                   self.input.wavenum_min,
-##                                   self.input.wavenum_max,
-##                                   self.params.wstep,
-##                                   self.params.neighbour_lines)
-##        
+        _Nlines_calculated = len(self.df0["wav"])
+
         # load the data
         if len(iso_set) > 1:
             iso = self.df0["iso"].to_numpy(dtype=np.uint8)
         elif len(iso_set) == 1:
-            iso = np.full(len(v0), iso_set[0], dtype=np.uint8)
+            iso = np.full(_Nlines_calculated, iso_set[0], dtype=np.uint8)
         else:
-            warn('Zero isotopes found... Is the database empty?')
+            warn("Zero isotopes found... Is the database empty?")
 
         gamma = np.array(
             self._get_lorentzian_broadening(mole_fraction), dtype=np.float32
         )
 
         self.calc_S0()
-    
+
         if verbose >= 2:
             print("Initializing parameters...", end=" ")
 
         from radis.gpu.gpu import gpu_exit, gpu_init, gpu_iterate
 
-        init_params = gpu_init(
+        gpu_init(
             self.params.wavenum_min_calc,
             len(self.wavenumber_calc),
             self.params.wstep,
@@ -1175,10 +1167,10 @@ class SpectrumFactory(BandFactory):
             verbose=verbose,
         )
 
-        #If sf.eq_spectrum_gpu() was called directly by the user, this is the time to
-        #destroy the CUDA context since we're done with all GPU calculations.
-        #When called from within sf.eq_spectrum_gpu_interactive(), the context must remain active
-        #because more calls to gpu_iterate() will follow. This is controlled by the exit_gpu keyword.
+        # If sf.eq_spectrum_gpu() was called directly by the user, this is the time to
+        # destroy the CUDA context since we're done with all GPU calculations.
+        # When called from within sf.eq_spectrum_gpu_interactive(), the context must remain active
+        # because more calls to gpu_iterate() will follow. This is controlled by the exit_gpu keyword.
         if exit_gpu:
             gpu_exit()
 
@@ -1192,12 +1184,12 @@ class SpectrumFactory(BandFactory):
 
         # get absorbance (technically it's the optical depth `tau`,
         #                absorbance `A` being `A = tau/ln(10)` )
-        abscoeff = abscoeff_calc[self.woutrange[0]:self.woutrange[1]]
-        transmittance = transmittance_calc[self.woutrange[0]:self.woutrange[1]]
+        abscoeff = abscoeff_calc[self.woutrange[0] : self.woutrange[1]]
+        transmittance = transmittance_calc[self.woutrange[0] : self.woutrange[1]]
 
-        #TODO: this should is inconistent with eq_spectrum_gpu_interactive, where all quantities
+        # TODO: this should is inconistent with eq_spectrum_gpu_interactive, where all quantities
         #      are calculated on CPU. (here the transmittance comes from GPU)
-        
+
         absorbance = abscoeff * path_length
         # Generate output quantities
         transmittance_noslit = exp(-absorbance)
@@ -1223,8 +1215,7 @@ class SpectrumFactory(BandFactory):
         self.profiler.start("generate_spectrum_obj", 2)
 
         # Get lines (intensities + populations)
-        
-        _Nlines_calculated = len(self.df0["wav"])
+
         conditions = self.get_conditions(add_config=True)
         conditions.update(
             {
@@ -1236,10 +1227,10 @@ class SpectrumFactory(BandFactory):
                 "diluents": self._diluent,
                 "radis_version": version,
                 "emulate_gpu": emulate,
-                "spectral_points": (int(
-                    self.params.wavenum_max_calc - self.params.wavenum_min_calc
-                )
-                / self.params.wstep),
+                "spectral_points": (
+                    int(self.params.wavenum_max_calc - self.params.wavenum_min_calc)
+                    / self.params.wstep
+                ),
                 "profiler": dict(self.profiler.final),
             }
         )
@@ -1349,7 +1340,8 @@ class SpectrumFactory(BandFactory):
 
         """
         from matplotlib import use
-        use('TkAgg')
+
+        use("TkAgg")
 
         import matplotlib.pyplot as plt
         from matplotlib.widgets import Slider
@@ -1402,7 +1394,7 @@ class SpectrumFactory(BandFactory):
                 slit_FWHM=s.conditions["slit_FWHM"],
                 verbose=False,
             )
-            
+
             # This happen inside a Spectrum() method
             for k in list(s._q.keys()):  # reset all quantities
                 if k in ["wavespace", "wavelength", "wavenumber"]:
@@ -1421,7 +1413,6 @@ class SpectrumFactory(BandFactory):
 
             line.set_ydata(new_y)
             fig.canvas.draw_idle()
-
 
         n_sliders = 0
         for key in self.interactive_params:
@@ -1444,7 +1435,6 @@ class SpectrumFactory(BandFactory):
             plt.ioff()
 
         return s
-
 
     def non_eq_spectrum(
         self,
@@ -1773,10 +1763,10 @@ class SpectrumFactory(BandFactory):
                 "thermal_equilibrium": False,  # dont even try to guess if it's at equilibrium
                 "diluents": self._diluent,
                 "radis_version": version,
-                "spectral_points": (int(
-                    self.params.wavenum_max_calc - self.params.wavenum_min_calc
-                )
-                / self.params.wstep),
+                "spectral_points": (
+                    int(self.params.wavenum_max_calc - self.params.wavenum_min_calc)
+                    / self.params.wstep
+                ),
                 "profiler": dict(self.profiler.final),
             }
         )
@@ -1857,7 +1847,7 @@ class SpectrumFactory(BandFactory):
         import radis
 
         self.profiler.start("generate_wavenumber_arrays", 2)
-            
+
         if checks:
             # calculates minimum FWHM of lines
             self._calc_min_width(self.df1)
@@ -1865,7 +1855,8 @@ class SpectrumFactory(BandFactory):
             # Setting wstep to optimal value and rounding it to a degree 3
             if self._wstep == "auto" or type(self.params.wstep) == list:
                 wstep_calc = round_off(
-                    self.min_width / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
+                    self.min_width
+                    / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
                 )
 
                 if type(self.params.wstep) == list:
@@ -1876,7 +1867,9 @@ class SpectrumFactory(BandFactory):
                 self.warnings["AccuracyWarning"] = "ignore"
 
         elif self._wstep == "auto" or type(self.params.wstep) == list:
-            self.warn("Current configuration incompatible with wstep='auto', please provide value for wstep")    
+            self.warn(
+                "Current configuration incompatible with wstep='auto', please provide value for wstep"
+            )
 
         truncation = self.params.truncation
         neighbour_lines = self.params.neighbour_lines
@@ -2024,9 +2017,10 @@ class SpectrumFactory(BandFactory):
         wstep = self.params.wstep
         n_lines = self.misc.total_lines
         truncation = self.params.truncation
-        spectral_points = (int(
-            self.params.wavenum_max_calc - self.params.wavenum_min_calc
-        ) / self.params.wstep)
+        spectral_points = (
+            int(self.params.wavenum_max_calc - self.params.wavenum_min_calc)
+            / self.params.wstep
+        )
 
         optimization = self.params.optimization
         broadening_method = self.params.broadening_method

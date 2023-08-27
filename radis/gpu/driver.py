@@ -27,13 +27,13 @@ _verbose = False
 
 def getCUDAVersion(ptx_file):
     # Reads the version of the CUDA Toolkit that was used to compile PTX file
-    with open(ptx_file,'rb') as f:
+    with open(ptx_file, "rb") as f:
         for i in range(5):
             line = f.readline()
-        version_string = line.decode().split(',')[2]
-        version_string = version_string[version_string.find('V')+1:]
-        major, minor, patch = map(int, version_string.split('.'))
-        return major, minor, patch        
+        version_string = line.decode().split(",")[2]
+        version_string = version_string[version_string.find("V") + 1 :]
+        major, minor, patch = map(int, version_string.split("."))
+        return major, minor, patch
 
 
 def getRequiredDriverVersion(ptx_file):
@@ -41,14 +41,15 @@ def getRequiredDriverVersion(ptx_file):
     major, minor, patch = getCUDAVersion(ptx_file)
     if major == 11:
         if minor == 0:
-            drv_ver = 'v451.22' if os_name == "nt" else 'v450.36.06'
+            drv_ver = "v451.22" if os_name == "nt" else "v450.36.06"
         else:
-            drv_ver = 'v452.39' if os_name == "nt" else 'v450.80.02'
-            
-    elif major == 12:
-        drv_ver = 'v527.41' if os_name == "nt" else 'v525.60.13'
+            drv_ver = "v452.39" if os_name == "nt" else "v450.80.02"
 
-    else: drv_ver = '[latest version]'
+    elif major == 12:
+        drv_ver = "v527.41" if os_name == "nt" else "v525.60.13"
+
+    else:
+        drv_ver = "[latest version]"
 
     return drv_ver
 
@@ -73,6 +74,7 @@ lib_cufft = None
 _arrays = []
 _plans = []
 _modules = []
+
 
 class CuContext:
     def __init__(self, device, context):
@@ -101,15 +103,15 @@ class CuContext:
         cuda_name = "nvcuda.dll" if os_name == "nt" else "libcuda.so"
         try:
             lib = dllobj.LoadLibrary(cuda_name)
-        except(OSError):
+        except (OSError):
             if os_name != "nt":
                 cuda_name = "libcuda.so.1"
                 try:
                     lib = dllobj.LoadLibrary(cuda_name)
-                except(OSError):
+                except (OSError):
                     print("Can't find {:s}...".format(cuda_name))
                     return None
-            
+
         except (FileNotFoundError):
             print("Can't find {:s}...".format(cuda_name))
             return None
@@ -195,7 +197,7 @@ class CuContext:
         cu_print(lib.cuCtxSynchronize(), "ctx.sync")
 
     def syncStream(self):
-        cu_print(lib.cuStreamSynchronize(0), "ctx.sync") #_ptsz
+        cu_print(lib.cuStreamSynchronize(0), "ctx.sync")  # _ptsz
 
     def destroy(self):
         global _arrays, _plans, _modules
@@ -207,11 +209,11 @@ class CuContext:
         while len(_plans):
             plan = _plans.pop(0)
             plan.destroy()
-            
+
         while len(_modules):
             mod = _modules.pop(0)
             mod.unload()
-            
+
         try:
             cu_print(lib.cuCtxDestroy_v2(self._context), "ctx.destroy")
         except (AttributeError):
@@ -238,9 +240,13 @@ class CuModule:
         if err != CUDA_SUCCESS:
             if err == 222:
                 drv_ver = getRequiredDriverVersion(module_name)
-                print("\n\n*** CUDA Driver too old!***\nMinimally required driver version is {:s}\n".format(drv_ver)+
-                     "Please update driver by downloading it at:\n-> www.nvidia.com/download/index.aspx \n")
-                
+                print(
+                    "\n\n*** CUDA Driver too old!***\nMinimally required driver version is {:s}\n".format(
+                        drv_ver
+                    )
+                    + "Please update driver by downloading it at:\n-> www.nvidia.com/download/index.aspx \n"
+                )
+
             warn(
                 "* Error loading the module {:s}\n".format(_module_name.value.decode())
             )
@@ -255,7 +261,7 @@ class CuModule:
         except (KeyError):
             _function = c_void_p(0)
             _kernel_name = c_char_p(attr.encode())
-            
+
             err = lib.cuModuleGetFunction(byref(_function), self._module, _kernel_name)
             if err != CUDA_SUCCESS:
                 print(
@@ -286,7 +292,7 @@ class CuModule:
                     "mod.global",
                 )
                 self._global_dict[name] = (_var, _size, _type)
-                cu_print('size: ', _size.value)
+                cu_print("size: ", _size.value)
                 return self._global_dict[name]
 
             else:
@@ -341,7 +347,7 @@ class CuFunction:
         c_args = voidPtrArr(*[cast(byref(arr._ptr), c_void_p) for arr in self.args])
 
         cu_print(
-            lib.cuLaunchKernel( #_ptsz
+            lib.cuLaunchKernel(  # _ptsz
                 self._function, *self.blocks, *self.threads, 0, 0, c_args, 0
             ),
             "func.kernel",
@@ -361,7 +367,7 @@ class CuArray:
         _arrays.append(self)
 
     def resize(self, shape=None, dtype=None, init="empty"):
-        
+
         shape_tuple = shape if isinstance(shape, tuple) else (shape,)
         self.shape = self.shape if shape is None else shape_tuple
         self.dtype = self.dtype if dtype is None else np.dtype(dtype)
@@ -372,7 +378,9 @@ class CuArray:
         if init not in ("zeros", "empty"):
             return
 
-        if self.nbytes > self._nbytes_alloc or ((self.nbytes < self._nbytes_alloc) and (not self.grow_only)):
+        if self.nbytes > self._nbytes_alloc or (
+            (self.nbytes < self._nbytes_alloc) and (not self.grow_only)
+        ):
             if self._ptr.value is not None:
                 self.free()
                 self._ptr = c_void_p(0)
@@ -429,8 +437,10 @@ class CuFFT:
         # public:
         self.arr_in = arr_in
         self.arr_out = arr_out
-        self.workarea = CuArray(0, dtype=np.byte, grow_only=True) if workarea is None else workarea
-        
+        self.workarea = (
+            CuArray(0, dtype=np.byte, grow_only=True) if workarea is None else workarea
+        )
+
         # private:
         self._direction = direction
         self._fft_type = CUFFT_R2C if direction == "fwd" else CUFFT_C2R
@@ -446,18 +456,17 @@ class CuFFT:
         except (FileNotFoundError):
             print("Can't find {:s}...".format(cufft_name))
             return None
-        
-            
+
     def _getPlan(self):
         try:
             return self._plans[self._arr.shape]
-        
-        except(KeyError):
-            
+
+        except (KeyError):
+
             _plan = c_void_p(0)
             cu_print(lib_cufft.cufftCreate(byref(_plan)), "fft.plan create")
-            cu_print(lib_cufft.cufftSetAutoAllocation(_plan, c_int(0)), 'fft.setalloc')
-            
+            cu_print(lib_cufft.cufftSetAutoAllocation(_plan, c_int(0)), "fft.setalloc")
+
             batch = int(np.prod(self._arr.shape[1:]))
             oneInt = 1 * c_int
             _n = oneInt(self._arr.shape[0])
@@ -480,24 +489,29 @@ class CuFFT:
                     batch,
                     _worksize,
                 ),
-                "fft.plan many"
+                "fft.plan many",
             )
-            
+
             self.workarea.resize((_worksize[0],), dtype=np.byte)
-            cu_print(lib_cufft.cufftSetWorkArea(_plan, self.workarea._ptr), 'fft.set workarea')
+            cu_print(
+                lib_cufft.cufftSetWorkArea(_plan, self.workarea._ptr),
+                "fft.set workarea",
+            )
 
             self._plans[self._arr.shape] = [_plan, int(self.workarea._ptr.value)]
             return self._plans[self._arr.shape]
-
 
     def __call__(self):
 
         _plan, ptrval = self._getPlan()
 
         if ptrval != self.workarea._ptr.value:
-            cu_print(lib_cufft.cufftSetWorkArea(_plan, self.workarea._ptr), 'fft.set workarea')
+            cu_print(
+                lib_cufft.cufftSetWorkArea(_plan, self.workarea._ptr),
+                "fft.set workarea",
+            )
             self._plans[self._arr.shape][1] = int(self.workarea._ptr.value)
-        
+
         if self._direction == "fwd":
             cu_print(
                 lib_cufft.cufftExecR2C(_plan, self.arr_in._ptr, self.arr_out._ptr),
@@ -509,7 +523,6 @@ class CuFFT:
                 "fft.rev",
             )
 
-        
     def destroy(self):
 
         for key in self._plans:
@@ -532,7 +545,7 @@ class CuTimer:
         self.reset()
 
     def reset(self):
-        cu_print(lib.cuEventRecord(self._start, self._stream), "time.record") #_ptsz
+        cu_print(lib.cuEventRecord(self._start, self._stream), "time.record")  # _ptsz
 
     def lap(self, name=None):
         if name is None:
@@ -541,7 +554,7 @@ class CuTimer:
 
     def __call__(self):
         _time = c_float(0)  # elapsed time in ms
-        cu_print(lib.cuEventRecord(self._stop, self._stream), "time.record") #_ptsz
+        cu_print(lib.cuEventRecord(self._stop, self._stream), "time.record")  # _ptsz
         cu_print(lib.cuEventSynchronize(self._stop), "time.sync")
         cu_print(
             lib.cuEventElapsedTime(byref(_time), self._start, self._stop), "time.time"

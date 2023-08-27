@@ -26,7 +26,6 @@ from scipy.fft import irfft, rfft
 from radis.gpu.structs import blockDim_t, gridDim_t
 from radis.misc.utils import getProjectRoot
 
-
 CUFFT_R2C = 0x2A
 CUFFT_C2R = 0x2C
 
@@ -174,7 +173,7 @@ class CuFunction:
 class CuArray:
     def __init__(self, shape, dtype=np.float32, init="empty", grow_only=False):
         self._ptr = c_void_p()
-        self.grow_only = grow_only #Note that this doesn't actually do anything!
+        self.grow_only = grow_only  # Note that this doesn't actually do anything!
         self.resize(shape, dtype, init)
 
     def resize(self, shape=None, dtype=None, init="empty"):
@@ -236,7 +235,6 @@ class CuFFT:
         self._arr = arr_in if direction == "fwd" else arr_out
         self._fft_type = CUFFT_R2C if direction == "fwd" else CUFFT_C2R
         self._plans = {}
-
 
     def __call__(self):
 

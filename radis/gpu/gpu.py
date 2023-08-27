@@ -102,7 +102,9 @@ def gpu_init(
         # Try to load GPU
         from radis.gpu.driver import CuContext
 
-        ctx = CuContext.Open(verbose=verbose) #Set verbosity to 2 or higher for printing driver output
+        ctx = CuContext.Open(
+            verbose=verbose
+        )  # Set verbosity to 2 or higher for printing driver output
         if ctx is None:
             warn(
                 NoGPUWarning(
@@ -226,14 +228,21 @@ def gpu_init(
     ## reuse the work area, we make a CuArray at this scope that is passed to the
     ## CuFFT objects. The work area will be scaled according to needs by the CuFFT objects,
     ## so it can be initialized with a small value.
-    
+
     workarea_d = CuArray(0, dtype=np.byte, grow_only=True)
     cu_mod.fft_fwd = CuFFT(S_klm_d, S_klm_FT_d, workarea=workarea_d, direction="fwd")
-    cu_mod.fft_rev = CuFFT(spectrum_in_d, spectrum_out_d, workarea=workarea_d, direction="rev")
-    cu_mod.fft_fwd2 = CuFFT(
-        transmittance_noslit_d, transmittance_noslit_FT_d, workarea=workarea_d, direction="fwd"
+    cu_mod.fft_rev = CuFFT(
+        spectrum_in_d, spectrum_out_d, workarea=workarea_d, direction="rev"
     )
-    cu_mod.fft_rev2 = CuFFT(transmittance_FT_d, transmittance_d, workarea=workarea_d, direction="rev")
+    cu_mod.fft_fwd2 = CuFFT(
+        transmittance_noslit_d,
+        transmittance_noslit_FT_d,
+        workarea=workarea_d,
+        direction="fwd",
+    )
+    cu_mod.fft_rev2 = CuFFT(
+        transmittance_FT_d, transmittance_d, workarea=workarea_d, direction="rev"
+    )
 
     cu_mod.timer = CuTimer()
 
@@ -242,7 +251,7 @@ def gpu_init(
 
     return init_h
 
-    
+
 def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
     """
     Parameters
@@ -327,9 +336,9 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
     if verbose >= 2:
         print("Done!")
         print("Calculating transmittance...")
-        
+
     abscoeff_h = cu_mod.fft_rev.arr_out.getArray()[: init_h.N_v]
-    
+
     ## To apply a slit function, first the transmittance is calculated.
     ## Then the convolution is applied by an FT, product with the
     ## instrument function's FT, followed by an inverse FT.
@@ -351,7 +360,7 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
     cu_mod.timer.lap("fft_rev2")
 
     transmittance_h = cu_mod.fft_rev2.arr_out.getArray()[: init_h.N_v]
-    
+
     if verbose >= 2:
         print("done!")
 
@@ -360,7 +369,7 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
 
     cu_mod.timer.lap("total")
     times = cu_mod.timer.getTimes()
-    
+
     return abscoeff_h, transmittance_h, iter_h, times
 
 
