@@ -41,43 +41,42 @@ def gpu_init(
     emulate=False,
 ):
     """
-
+    Initialize GPU-based calculation for emission and absorption spectra in spectroscopy.
 
     Parameters
     ----------
-    v_arr : TYPE
-        DESCRIPTION.
-    dxG : TYPE
-        DESCRIPTION.
-    dxL : TYPE
-        DESCRIPTION.
-    iso : TYPE
-        DESCRIPTION.
-    v0 : TYPE
-        DESCRIPTION.
-    da : TYPE
-        DESCRIPTION.
-    gamma : TYPE
-        DESCRIPTION.
-    na : TYPE
-        DESCRIPTION.
-    S0 : TYPE
-        DESCRIPTION.
-    El : TYPE
-        DESCRIPTION.
-    Mm_arr  : TYPE
-        DESCRIPTION.
-    Q_intp_list: TYPE
-        DESCRIPTION.
-    verbose : TYPE, optional
-        DESCRIPTION. The default is True.
-    gpu : TYPE, optional
-        DESCRIPTION. The default is False.
+    v_arr : numpy.ndarray
+        Array of frequency/wavelength points.
+    dxG : float
+        Grid spacing for Gaussian lineshapes.
+    dxL : float
+        Grid spacing for Lorentzian lineshapes.
+    iso : int
+        Index of isotopologue.
+    v0 : numpy.ndarray
+        Array of line center frequencies.
+    da : numpy.ndarray
+        Doppler width parameters.
+    gamma : numpy.ndarray
+        Lorentzian width parameters.
+    na : numpy.ndarray
+        Quantum numbers.
+    S0 : numpy.ndarray
+        Line intensity scaling factors.
+    El : numpy.ndarray
+        Lower energy levels.
+    Mm_arr : numpy.ndarray
+        Molecular masses.
+    Q_intp_list : list
+        List of Q branch interpolators.
+    verbose : bool, optional
+        Print verbosity. Default is True.
+    gpu : bool, optional
+        Enable GPU calculations. Default is False.
 
     Returns
     -------
     None.
-
     """
 
     global cu_mod
