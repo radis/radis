@@ -887,10 +887,10 @@ class SpectrumFactory(BandFactory):
                 "thermal_equilibrium": True,
                 "diluents": self._diluent,
                 "radis_version": version,
-                "spectral_points": (
+                "spectral_points": (int(
                     self.params.wavenum_max_calc - self.params.wavenum_min_calc
                 )
-                / self.params.wstep,
+                / self.params.wstep),
                 "profiler": dict(self.profiler.final),
             }
         )
@@ -1233,10 +1233,10 @@ class SpectrumFactory(BandFactory):
                 "diluents": self._diluent,
                 "radis_version": version,
                 "emulate_gpu": emulate,
-                "spectral_points": (
+                "spectral_points": (int(
                     self.params.wavenum_max_calc - self.params.wavenum_min_calc
                 )
-                / self.params.wstep,
+                / self.params.wstep),
                 "profiler": dict(self.profiler.final),
             }
         )
@@ -1769,10 +1769,10 @@ class SpectrumFactory(BandFactory):
                 "thermal_equilibrium": False,  # dont even try to guess if it's at equilibrium
                 "diluents": self._diluent,
                 "radis_version": version,
-                "spectral_points": (
+                "spectral_points": (int(
                     self.params.wavenum_max_calc - self.params.wavenum_min_calc
                 )
-                / self.params.wstep,
+                / self.params.wstep),
                 "profiler": dict(self.profiler.final),
             }
         )
@@ -2014,9 +2014,9 @@ class SpectrumFactory(BandFactory):
         wstep = self.params.wstep
         n_lines = self.misc.total_lines
         truncation = self.params.truncation
-        spectral_points = (
+        spectral_points = (int(
             self.params.wavenum_max_calc - self.params.wavenum_min_calc
-        ) / self.params.wstep
+        ) / self.params.wstep)
 
         optimization = self.params.optimization
         broadening_method = self.params.broadening_method
