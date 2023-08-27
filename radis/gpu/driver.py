@@ -101,6 +101,13 @@ class CuContext:
         cuda_name = "nvcuda.dll" if os_name == "nt" else "libcuda.so"
         try:
             lib = dllobj.LoadLibrary(cuda_name)
+        except(OSError):
+            if os_name != "nt":
+                cuda_name = "libcuda.so.1"
+                try:
+                    lib = dllobj.LoadLibrary(cuda_name)
+                except(OSError):
+                    raise(FileNotFoundError)
         except (FileNotFoundError):
             print("Can't find {:s}...".format(cuda_name))
             return None
@@ -429,7 +436,7 @@ class CuFFT:
         self._plans = {}
 
         cufft_name = (
-            "\\bin\\cufft64_10.dll" if os_name == "nt" else "\\lib\\libcufft.so.10"
+            "\\bin\\cufft64_10.dll" if os_name == "nt" else "/lib/libcufft.so.10"
         )
         try:
             if lib_cufft is None:

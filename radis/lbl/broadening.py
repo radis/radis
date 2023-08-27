@@ -1677,7 +1677,6 @@ class BroadenFactory(BaseFactory):
 
             w_fold = (w_lineshape_ft, w_lineshape_ft[::-1])
 
-            t0 = time()
             # Get all combinations of Voigt lineshapes (in Fourier space)
             for l in range(len(wG)):
                 line_profile_LDM[l] = {}

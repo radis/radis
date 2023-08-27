@@ -1162,7 +1162,6 @@ class SpectrumFactory(BandFactory):
             verbose=verbose,
             emulate=emulate,
         )
-        print('init_params: ',init_params.N_v)
         if verbose >= 2:
             print("Initialization complete!")
 
