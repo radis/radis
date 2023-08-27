@@ -1,0 +1,20 @@
+This folder contains all files related to GPU calculations of RADIS spectra.
+At the moment, only Nvidia cards are supported.
+
+Nvidia uses CUDA for general purpose GPU (GPGPU) programming.
+Most applications require the entire CUDA Toolkit installed in order to run.
+Instead, RADIS interfaces directly with the CUDA GPU driver, and can therefore run without any additional installations.
+
+The code that runs on the GPU is written in CUDA C and resides in the kernels.cu file.
+The kernels.cu file must be re-compiled whenever it is modified by the developer (that is you!) and the output packaged with RADIS.
+The CUDA driver loads the compiled .ptx file at runtime to launch the GPU kernels through driver.py.
+
+In addition, RADIS kernels can be compiled to run on the CPU as a compatibility mode.
+The kernels.cu file is compiled into kernels.dll (Windows) and kernels.so (Linux), which are
+ran through emulate.py.
+
+After modifying the kernels.cu file, it needs to be recompiled for the three targets (.ptx, .dll, .so).
+Compiling to .ptx and .dll is done by running build_kernels.bat in a windows environment.
+build_kernels.bat tries to run vcvarsall.bat, which may not have the proper path for your system.
+You can edit the file in a text editor to provide the proper path to vcvarsall.bat.
+The .so file is produced by compiling the .cu file in a linux environment by running ./build_kernels
