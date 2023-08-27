@@ -45,7 +45,7 @@ Routine Listing
 """
 
 import re
-from mendeleev import element
+import periodictable
 from os.path import dirname, exists, join
 
 from radis.db.conventions import get_convention
@@ -239,7 +239,8 @@ def to_conventional_name(species):
     # If species is an element
     else:
         try:
-            el = element(species)
+            atomic_symbol = species.split('_')[0]
+            el = getattr(periodictable, atomic_symbol)
             if el.symbol == species:  # check if symbols match
                 return f"{species}_I"
             else:

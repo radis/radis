@@ -20,7 +20,8 @@ from tqdm import tqdm
 
 from radis.misc.utils import getProjectRoot
 from radis.phys.air import air2vacuum
-from mendeleev import element
+import periodictable
+
 
 
 
@@ -39,11 +40,6 @@ class AdBKurucz:
         self.ionization_state=self.get_ionization_state(species)
         self.element_symbol=self.get_element_symbol(species)
 
-        #self.atomic_number = getattr(mendeleev,self.atom).atomic_number
-        # Convert atomic_number to element symbol
-        #self.element_symbol = mendeleev.element(int(self.atomic_number)).symbol
-
-        # Construct the key
 
 
 
@@ -52,8 +48,9 @@ class AdBKurucz:
         Extracts the atomic_number from the species id
         """
         atomic_symbol = species.split('_')[0]
-        el = element(atomic_symbol)
-        atomic_number=el.atomic_number
+        el = getattr(periodictable, atomic_symbol)
+
+        atomic_number=el.number
         return atomic_number
 
 
@@ -73,7 +70,7 @@ class AdBKurucz:
     
     def get_element_symbol(self,species):
         atomic_symbol = species.split('_')[0]
-        el = element(atomic_symbol)
+        el = getattr(periodictable, atomic_symbol)
         return el
 
 
