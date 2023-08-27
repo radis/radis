@@ -107,7 +107,9 @@ class CuContext:
                 try:
                     lib = dllobj.LoadLibrary(cuda_name)
                 except(OSError):
-                    raise(FileNotFoundError)
+                    print("Can't find {:s}...".format(cuda_name))
+                    return None
+            
         except (FileNotFoundError):
             print("Can't find {:s}...".format(cuda_name))
             return None
