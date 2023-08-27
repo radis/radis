@@ -37,7 +37,7 @@ def gpu_init(
     iso,
     Mm_arr,
     Q_intp_list,
-    verbose=False,
+    verbose=0,
     emulate=False,
 ):
     """
@@ -45,34 +45,38 @@ def gpu_init(
 
     Parameters
     ----------
-    v_arr : numpy.ndarray
-        Array of frequency/wavelength points.
+    vmin : float
+        Minimum value frequency/wavenumber axis
+    Nv : int
+        Total number of frequency/wavenumber points.
+    dv : float
+        Stepsize of frequency/wavenumber axis (called wstep elsewhere in RADIS).
     dxG : float
-        Grid spacing for Gaussian lineshapes.
+        Relative grid spacing for Gaussian lineshapes.
     dxL : float
-        Grid spacing for Lorentzian lineshapes.
-    iso : int
-        Index of isotopologue.
-    v0 : numpy.ndarray
-        Array of line center frequencies.
-    da : numpy.ndarray
-        Doppler width parameters.
-    gamma : numpy.ndarray
-        Lorentzian width parameters.
-    na : numpy.ndarray
-        Quantum numbers.
-    S0 : numpy.ndarray
+        Relative grid spacing for Lorentzian lineshapes.
+    v0 : numpy.ndarray[np.float32]
+        Array of line center frequencies (in cm-1).
+    da : numpy.ndarray[np.float32]
+        Pressure shift  (in cm-1.atm-1).
+    na : numpy.ndarray[np.float32]
+        Temperature dependency of Lorentzian widths
+    S0 : numpy.ndarray[np.float32]
         Line intensity scaling factors.
-    El : numpy.ndarray
-        Lower energy levels.
+    El : numpy.ndarray[np.float32]
+        Lower level energy levels.
+    gamma : numpy.ndarray[np.float32]
+        Lorentzian width parameters.
+    iso : numpy.ndarray[np.uint8]
+        Index of isotopologue.
     Mm_arr : numpy.ndarray
-        Molecular masses.
+        Molecular masses for all isotopologues in the database (Mm_arr[0] is always 0).
     Q_intp_list : list
         List of Q branch interpolators.
     verbose : bool, optional
-        Print verbosity. Default is True.
-    gpu : bool, optional
-        Enable GPU calculations. Default is False.
+        Print verbosity level. Default is 0.
+    emulate : bool, optional
+        Whether or not to emulate GPU on CPU. Default is False.
 
     Returns
     -------

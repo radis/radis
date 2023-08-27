@@ -1176,6 +1176,10 @@ class SpectrumFactory(BandFactory):
             verbose=verbose,
         )
 
+        #If sf.eq_spectrum_gpu() was called directly by the user, this is the time to
+        #destroy the CUDA context since we're done with all GPU calculations.
+        #When called from within sf.eq_spectrum_gpu_interactive(), the context must remain active
+        #because more calls to gpu_iterate() will follow. This is controlled by the exit_gpu keyword.
         if exit_gpu:
             gpu_exit()
 
