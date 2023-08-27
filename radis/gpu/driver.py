@@ -21,12 +21,12 @@ else:
 import numpy as np
 from nvidia.cufft import __path__ as cufft_path
 
-verbose = False
+_verbose = False
 
 
 def cu_print(*vargs):
-    global verbose
-    if verbose:
+    global _verbose
+    if _verbose:
         print(*vargs)
 
 
@@ -56,8 +56,17 @@ class CuContext:
         self._context = context
 
     @staticmethod
-    def Open(device_id=0, flags=0):
+    def setVerbosity(level):
+        global _verbose
+        if level >= 2:
+            _verbose = level
+
+    @staticmethod
+    def Open(device_id=0, flags=0, verbose=None):
         global lib
+
+        if verbose is not None:
+            CuContext.setVerbosity(verbose)
 
         # private:
         _context = c_void_p(0)
@@ -149,6 +158,9 @@ class CuContext:
 
     def synchronize(self):
         cu_print(lib.cuCtxSynchronize(), "ctx.sync")
+
+    def syncStream(self):
+        cu_print(lib.cuStreamSynchronize(0), "ctx.sync") #_ptsz
 
     def destroy(self):
         global _arrays, _plans, _modules
@@ -293,7 +305,7 @@ class CuFunction:
         c_args = voidPtrArr(*[cast(byref(arr._ptr), c_void_p) for arr in self.args])
 
         cu_print(
-            lib.cuLaunchKernel(
+            lib.cuLaunchKernel( #_ptsz
                 self._function, *self.blocks, *self.threads, 0, 0, c_args, 0
             ),
             "func.kernel",
@@ -381,7 +393,7 @@ class CuFFT:
         # public:
         self.arr_in = arr_in
         self.arr_out = arr_out
-        self.workarea = CuArray((8,), dtype=np.byte, grow_only=True) if workarea is None else workarea
+        self.workarea = CuArray(0, dtype=np.byte, grow_only=True) if workarea is None else workarea
         
         # private:
         self._direction = direction
@@ -461,6 +473,7 @@ class CuFFT:
                 "fft.rev",
             )
 
+        
     def destroy(self):
 
         for key in self._plans:
@@ -483,7 +496,7 @@ class CuTimer:
         self.reset()
 
     def reset(self):
-        cu_print(lib.cuEventRecord(self._start, self._stream), "time.record")
+        cu_print(lib.cuEventRecord(self._start, self._stream), "time.record") #_ptsz
 
     def lap(self, name=None):
         if name is None:
@@ -492,7 +505,7 @@ class CuTimer:
 
     def __call__(self):
         _time = c_float(0)  # elapsed time in ms
-        cu_print(lib.cuEventRecord(self._stop, self._stream), "time.record")
+        cu_print(lib.cuEventRecord(self._stop, self._stream), "time.record") #_ptsz
         cu_print(lib.cuEventSynchronize(self._stop), "time.sync")
         cu_print(
             lib.cuEventElapsedTime(byref(_time), self._start, self._stop), "time.time"

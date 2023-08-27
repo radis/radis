@@ -1345,6 +1345,8 @@ class SpectrumFactory(BandFactory):
             :add-heading:
 
         """
+        from matplotlib import use
+        use('TkAgg')
 
         import matplotlib.pyplot as plt
         from matplotlib.widgets import Slider
@@ -1397,7 +1399,7 @@ class SpectrumFactory(BandFactory):
                 slit_FWHM=s.conditions["slit_FWHM"],
                 verbose=False,
             )
-
+            
             # This happen inside a Spectrum() method
             for k in list(s._q.keys()):  # reset all quantities
                 if k in ["wavespace", "wavelength", "wavenumber"]:
@@ -1416,6 +1418,7 @@ class SpectrumFactory(BandFactory):
 
             line.set_ydata(new_y)
             fig.canvas.draw_idle()
+
 
         n_sliders = 0
         for key in self.interactive_params:

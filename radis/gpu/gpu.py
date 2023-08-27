@@ -35,7 +35,7 @@ def gpu_init(
     El,
     Mm_arr,
     Q_intp_list,
-    verbose=True,
+    verbose=False,
     emulate=False,
 ):
     """
@@ -91,13 +91,13 @@ def gpu_init(
     if emulate:
         from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule, CuTimer
 
-        ctx = CuContext.Open()
+        ctx = CuContext.Open(verbose=verbose)
 
     else:
         # Try to load GPU
         from radis.gpu.driver import CuContext
 
-        ctx = CuContext.Open()
+        ctx = CuContext.Open(verbose=verbose) #Set verbosity to 2 or higher for printing driver output
         if ctx is None:
             warn(
                 NoGPUWarning(
@@ -111,7 +111,7 @@ def gpu_init(
             # failed to init CUDA context, continue with CPU:
             from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule, CuTimer
 
-            ctx = CuContext.Open()
+            ctx = CuContext.Open(verbose=verbose)
 
         else:
             # successfully initialized CUDA context, continue with GPU:
@@ -230,7 +230,9 @@ def gpu_init(
         transmittance_noslit_d, transmittance_noslit_FT_d, workarea=workarea_d, direction="fwd"
     )
     cu_mod.fft_rev2 = CuFFT(transmittance_FT_d, transmittance_d, workarea=workarea_d, direction="rev")
+
     cu_mod.timer = CuTimer()
+
     if verbose >= 2:
         print("done!")
     
@@ -290,6 +292,7 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
         print("Filling LDM...")
 
     S_klm_shape = (init_h.N_v_FT, iter_h.N_G, iter_h.N_L)
+
     cu_mod.fillLDM.args[-1].resize(S_klm_shape, init="zeros")
     cu_mod.fillLDM()
     cu_mod.timer.lap("fillLDM")
@@ -317,7 +320,7 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
     if verbose >= 2:
         print("Done!")
         print("Calculating transmittance...")
-
+        
     abscoeff_h = cu_mod.fft_rev.arr_out.getArray()[: init_h.N_v]
     
     ## To apply a slit function, first the transmittance is calculated.
@@ -348,6 +351,7 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
     if verbose == 1:
         print("Finished calculating spectrum!")
 
+    cu_mod.timer.lap("total")
     times = cu_mod.timer.getTimes()
     
     return abscoeff_h, transmittance_h, iter_h, times

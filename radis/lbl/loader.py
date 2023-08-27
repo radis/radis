@@ -666,6 +666,7 @@ class DatabankLoader(object):
         "df1",
         "input",
         "input_wunit",
+        "interactive_params",
         "levels",
         "levelspath",
         "min_width",

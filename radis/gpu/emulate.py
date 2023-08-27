@@ -26,8 +26,6 @@ from scipy.fft import irfft, rfft
 from radis.gpu.structs import blockDim_t, gridDim_t
 from radis.misc.utils import getProjectRoot
 
-# from os.path import dirname
-
 
 CUFFT_R2C = 0x2A
 CUFFT_C2R = 0x2C
@@ -45,7 +43,12 @@ class CuContext:
         self._context = context
 
     @staticmethod
-    def Open(device_id=0, flags=0):
+    def setVerbosity(level):
+        # Verbose output not implemented for GPU emulation
+        pass
+
+    @staticmethod
+    def Open(device_id=0, flags=0, verbose=None):
         _device = c_void_p(456)
         _context = c_void_p(123)
 
@@ -68,6 +71,9 @@ class CuContext:
         pass
 
     def synchronize(self):
+        pass
+
+    def syncStream(self):
         pass
 
     def destroy(self):
@@ -223,7 +229,7 @@ class CuFFT:
         # public:
         self.arr_in = arr_in
         self.arr_out = arr_out
-        self.workarea = CuArray((8,), dtype=np.byte) if workarea is None else workarea
+        self.workarea = CuArray(0, dtype=np.byte) if workarea is None else workarea
 
         # private:
         self._direction = direction
