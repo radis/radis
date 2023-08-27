@@ -11,6 +11,7 @@ from ctypes import (
     create_string_buffer,
 )
 from os import name as os_name
+from warnings import warn
 
 if os_name == "nt":
     from ctypes import windll as dllobj
@@ -24,13 +25,38 @@ from nvidia.cufft import __path__ as cufft_path
 _verbose = False
 
 
+def getCUDAVersion(ptx_file):
+    # Reads the version of the CUDA Toolkit that was used to compile PTX file
+    with open(ptx_file,'rb') as f:
+        for i in range(5):
+            line = f.readline()
+        version_string = line.decode().split(',')[2]
+        version_string = version_string[version_string.find('V')+1:]
+        major, minor, patch = map(int, version_string.split('.'))
+        return major, minor, patch        
+
+
+def getRequiredDriverVersion(ptx_file):
+    # Returns the minimal required CUDA driver version
+    major, minor, patch = getCUDAVersion(ptx_file)
+    if major == 11:
+        if minor == 0:
+            drv_ver = 'v451.22' if os_name == "nt" else 'v450.36.06'
+        else:
+            drv_ver = 'v452.39' if os_name == "nt" else 'v450.80.02'
+            
+    elif major == 12:
+        drv_ver = 'v527.41' if os_name == "nt" else 'v525.60.13'
+
+    else: drv_ver = '[latest version]'
+
+    return drv_ver
+
+
 def cu_print(*vargs):
     global _verbose
     if _verbose:
         print(*vargs)
-
-
-# TODO: establish cuda version requirement
 
 
 CUDA_SUCCESS = 0
@@ -182,9 +208,6 @@ class CuContext:
         except (AttributeError):
             pass
 
-##    def __del__(self):
-##        self.destroy()
-
 
 class CuModule:
     def __init__(self, context, module_name):
@@ -205,12 +228,15 @@ class CuModule:
         err = lib.cuModuleLoad(byref(self._module), _module_name)
         if err != CUDA_SUCCESS:
             if err == 222:
-                print("* CUDA Driver too old, please update driver\n")
-            print(
+                drv_ver = getRequiredDriverVersion(module_name)
+                print("\n\n*** CUDA Driver too old!***\nMinimally required driver version is {:s}\n".format(drv_ver)+
+                     "Please update driver by downloading it at:\n-> www.nvidia.com/download/index.aspx \n")
+                
+            warn(
                 "* Error loading the module {:s}\n".format(_module_name.value.decode())
             )
             self.context.destroy()
-            # sys.exit()
+            return
 
     def __getattr__(self, attr):
         try:
@@ -220,6 +246,7 @@ class CuModule:
         except (KeyError):
             _function = c_void_p(0)
             _kernel_name = c_char_p(attr.encode())
+            
             err = lib.cuModuleGetFunction(byref(_function), self._module, _kernel_name)
             if err != CUDA_SUCCESS:
                 print(
