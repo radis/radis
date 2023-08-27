@@ -36,7 +36,6 @@ class gridDim_t(Structure):
 class initData_t(Structure):
     _fields_ = [
         ("v_min", c_float),
-        ("v_max", c_float),
         ("dv", c_float),
         ("N_v", c_int),
         ("N_v_FT", c_int),

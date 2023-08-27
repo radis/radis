@@ -11,7 +11,7 @@
 .address_size 64
 
 	// .globl	fillLDM
-.const .align 4 .b8 init_d[100];
+.const .align 4 .b8 init_d[96];
 .const .align 4 .b8 iter_d[112];
 
 .visible .entry fillLDM(
@@ -44,7 +44,7 @@
 	mov.u32 	%r6, %ntid.x;
 	mov.u32 	%r7, %tid.x;
 	mad.lo.s32 	%r1, %r6, %r5, %r7;
-	ld.const.u32 	%r8, [init_d+32];
+	ld.const.u32 	%r8, [init_d+28];
 	setp.ge.s32 	%p1, %r1, %r8;
 	@%p1 bra 	$L__BB0_7;
 
@@ -60,12 +60,12 @@
 	fma.rn.f32 	%f14, %f13, %f12, %f1;
 	ld.const.f32 	%f15, [init_d];
 	sub.f32 	%f16, %f14, %f15;
-	ld.const.f32 	%f17, [init_d+8];
+	ld.const.f32 	%f17, [init_d+4];
 	div.rn.f32 	%f2, %f16, %f17;
 	cvt.rzi.s32.f32 	%r2, %f2;
 	add.s32 	%r9, %r2, 1;
 	setp.lt.s32 	%p2, %r2, 0;
-	ld.const.u32 	%r10, [init_d+12];
+	ld.const.u32 	%r10, [init_d+8];
 	setp.ge.s32 	%p3, %r9, %r10;
 	or.pred  	%p4, %p2, %p3;
 	@%p4 bra 	$L__BB0_7;
@@ -126,13 +126,13 @@ $L__BB0_4:
 	mul.wide.u32 	%rd20, %r16, 4;
 	mov.u64 	%rd21, init_d;
 	add.s64 	%rd22, %rd21, %rd20;
-	ld.const.f32 	%f47, [%rd22+36];
+	ld.const.f32 	%f47, [%rd22+32];
 	add.f32 	%f48, %f46, %f47;
 	ld.const.f32 	%f49, [iter_d+8];
 	add.f32 	%f50, %f48, %f49;
 	ld.const.f32 	%f51, [iter_d+32];
 	sub.f32 	%f52, %f50, %f51;
-	ld.const.f32 	%f53, [init_d+24];
+	ld.const.f32 	%f53, [init_d+20];
 	div.rn.f32 	%f7, %f52, %f53;
 	cvta.to.global.u64 	%rd23, %rd9;
 	shl.b64 	%rd24, %rd1, 2;
@@ -182,7 +182,7 @@ $L__BB0_6:
 	fma.rn.f32 	%f88, %f87, %f86, %f85;
 	ld.const.f32 	%f89, [iter_d+36];
 	sub.f32 	%f90, %f88, %f89;
-	ld.const.f32 	%f91, [init_d+28];
+	ld.const.f32 	%f91, [init_d+24];
 	div.rn.f32 	%f92, %f90, %f91;
 	cvt.rzi.s32.f32 	%r23, %f92;
 	add.s32 	%r24, %r23, 1;
@@ -323,13 +323,13 @@ $L__BB0_7:
 	mov.u32 	%r18, %ntid.x;
 	mov.u32 	%r19, %tid.x;
 	mad.lo.s32 	%r1, %r18, %r17, %r19;
-	ld.const.u32 	%r20, [init_d+20];
+	ld.const.u32 	%r20, [init_d+16];
 	setp.ge.s32 	%p6, %r1, %r20;
 	@%p6 bra 	$L__BB1_26;
 
-	ld.const.u32 	%r21, [init_d+16];
+	ld.const.u32 	%r21, [init_d+12];
 	cvt.rn.f32.s32 	%f1, %r21;
-	ld.const.f32 	%f2, [init_d+8];
+	ld.const.f32 	%f2, [init_d+4];
 	ld.const.u32 	%r2, [iter_d+40];
 	setp.lt.s32 	%p7, %r2, 1;
 	mov.f32 	%f317, 0f00000000;
@@ -338,7 +338,7 @@ $L__BB0_7:
 
 	mul.lo.s32 	%r3, %r2, %r1;
 	ld.const.f32 	%f5, [iter_d+36];
-	ld.const.f32 	%f6, [init_d+28];
+	ld.const.f32 	%f6, [init_d+24];
 	mul.f32 	%f56, %f2, %f1;
 	cvt.rn.f32.s32 	%f57, %r1;
 	div.rn.f32 	%f58, %f57, %f56;
@@ -351,7 +351,7 @@ $L__BB0_7:
 
 $L__BB1_3:
 	ld.const.f32 	%f302, [iter_d+32];
-	ld.const.f32 	%f301, [init_d+24];
+	ld.const.f32 	%f301, [init_d+20];
 	cvt.rn.f32.s32 	%f59, %r67;
 	fma.rn.f32 	%f10, %f301, %f59, %f302;
 	setp.lt.s32 	%p8, %r4, 1;
@@ -774,7 +774,7 @@ $L__BB1_26:
 	mov.u32 	%r3, %ntid.x;
 	mov.u32 	%r4, %tid.x;
 	mad.lo.s32 	%r1, %r3, %r2, %r4;
-	ld.const.u32 	%r5, [init_d+12];
+	ld.const.u32 	%r5, [init_d+8];
 	setp.lt.s32 	%p1, %r1, %r5;
 	cvt.s64.s32 	%rd1, %r1;
 	mul.wide.s32 	%rd6, %r1, 4;
@@ -812,7 +812,7 @@ $L__BB2_3:
 	bra.uni 	$L__BB2_4;
 
 $L__BB2_1:
-	ld.const.u32 	%r6, [init_d+16];
+	ld.const.u32 	%r6, [init_d+12];
 	setp.ge.s32 	%p2, %r1, %r6;
 	@%p2 bra 	$L__BB2_4;
 
@@ -842,9 +842,9 @@ $L__BB2_4:
 	mov.u32 	%r4, %ntid.x;
 	mad.lo.s32 	%r1, %r4, %r3, %r2;
 	cvt.rn.f32.s32 	%f17, %r1;
-	ld.const.u32 	%r5, [init_d+16];
+	ld.const.u32 	%r5, [init_d+12];
 	cvt.rn.f32.s32 	%f1, %r5;
-	ld.const.f32 	%f18, [init_d+8];
+	ld.const.f32 	%f18, [init_d+4];
 	mul.f32 	%f19, %f18, %f1;
 	div.rn.f32 	%f20, %f17, %f19;
 	mul.f32 	%f21, %f20, 0f40490FDB;
@@ -1025,7 +1025,7 @@ $L__BB3_12:
 	ex2.approx.ftz.f32 	%f124, %f122;
 	mul.f32 	%f125, %f124, %f123;
 	div.rn.f32 	%f15, %f125, %f1;
-	ld.const.u32 	%r22, [init_d+20];
+	ld.const.u32 	%r22, [init_d+16];
 	setp.ge.s32 	%p17, %r1, %r22;
 	@%p17 bra 	$L__BB3_14;
 

@@ -1113,70 +1113,63 @@ class SpectrumFactory(BandFactory):
 
         self.profiler.start("spectrum_calculation", 1)
         self.profiler.start("spectrum_calc_before_obj", 2)
+ 
+        spectral_points = int((self.params.wavenum_max_calc - self.params.wavenum_min_calc) / self.params.wstep)
 
-        # generate the v_arr
-        v_arr = np.arange(
-            self.input.wavenum_min,
-            self.input.wavenum_max + self.params.wstep,
-            self.params.wstep,
-        )
 
+        self._generate_wavenumber_arrays(checks=False)
+##
+##        self.wavenumber, self.wavenumber_calc, self.woutrange = _generate_wavenumber_range(
+##                                   self.input.wavenum_min,
+##                                   self.input.wavenum_max,
+##                                   self.params.wstep,
+##                                   self.params.neighbour_lines)
+##        
         # load the data
-        df = self.df0
-        v0 = df["wav"].to_numpy(dtype=np.float32)
-
         if len(iso_set) > 1:
-            iso = df["iso"].to_numpy(dtype=np.uint8)
+            iso = self.df0["iso"].to_numpy(dtype=np.uint8)
         elif len(iso_set) == 1:
             iso = np.full(len(v0), iso_set[0], dtype=np.uint8)
-
-        da = df["Pshft"].to_numpy(dtype=np.float32)
-        El = df["El"].to_numpy(dtype=np.float32)
-        na = df["Tdpair"].to_numpy(dtype=np.float32)
+        else:
+            warn('Zero isotopes found... Is the database empty?')
 
         gamma = np.array(
             self._get_lorentzian_broadening(mole_fraction), dtype=np.float32
         )
 
         self.calc_S0()
-        S0 = self.df0["S0"].to_numpy(dtype=np.float32)
-
-        dxG = self.params.dxG
-        dxL = self.params.dxL
-
-        _Nlines_calculated = len(v0)
-
+    
         if verbose >= 2:
             print("Initializing parameters...", end=" ")
 
         from radis.gpu.gpu import gpu_exit, gpu_init, gpu_iterate
 
-        gpu_init(
-            v_arr,
-            dxG,
-            dxL,
-            iso,
-            v0,
-            da,
+        init_params = gpu_init(
+            self.params.wavenum_min_calc,
+            len(self.wavenumber_calc),
+            self.params.wstep,
+            self.params.dxG,
+            self.params.dxL,
+            self.df0["wav"].to_numpy(dtype=np.float32),
+            self.df0["Pshft"].to_numpy(dtype=np.float32),
+            self.df0["Tdpair"].to_numpy(dtype=np.float32),
+            self.df0["S0"].to_numpy(dtype=np.float32),
+            self.df0["El"].to_numpy(dtype=np.float32),
             gamma,
-            na,
-            S0,
-            El,
+            iso,
             molarmass_arr,
             Q_interp_list,
             verbose=verbose,
             emulate=emulate,
         )
-
+        print('init_params: ',init_params.N_v)
         if verbose >= 2:
             print("Initialization complete!")
-
-        wavenumber = v_arr
 
         if verbose >= 2:
             print("Calculating spectra...", end=" ")
 
-        abscoeff, transmittance, iter_params, times = gpu_iterate(
+        abscoeff_calc, transmittance_calc, iter_params, times = gpu_iterate(
             pressure_mbar * 1e-3,
             Tgas,
             mole_fraction,
@@ -1196,13 +1189,19 @@ class SpectrumFactory(BandFactory):
 
         # get absorbance (technically it's the optical depth `tau`,
         #                absorbance `A` being `A = tau/ln(10)` )
+        abscoeff = abscoeff_calc[self.woutrange[0]:self.woutrange[1]]
+        transmittance = transmittance_calc[self.woutrange[0]:self.woutrange[1]]
+
+        #TODO: this should is inconistent with eq_spectrum_gpu_interactive, where all quantities
+        #      are calculated on CPU. (here the transmittance comes from GPU)
+        
         absorbance = abscoeff * path_length
         # Generate output quantities
         transmittance_noslit = exp(-absorbance)
         emissivity = 1 - transmittance
         emissivity_noslit = 1 - transmittance_noslit
         radiance_noslit = calc_radiance(
-            wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
+            self.wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
         )
         assert self.units["abscoeff"] == "cm-1"
 
@@ -1221,7 +1220,8 @@ class SpectrumFactory(BandFactory):
         self.profiler.start("generate_spectrum_obj", 2)
 
         # Get lines (intensities + populations)
-
+        
+        _Nlines_calculated = len(self.df0["wav"])
         conditions = self.get_conditions(add_config=True)
         conditions.update(
             {
@@ -1253,7 +1253,7 @@ class SpectrumFactory(BandFactory):
 
         # Spectral quantities
         quantities = {
-            "wavenumber": wavenumber,
+            "wavenumber": self.wavenumber,
             "abscoeff": abscoeff,
             "absorbance": absorbance,
             "emissivity": emissivity,
@@ -1441,6 +1441,7 @@ class SpectrumFactory(BandFactory):
             plt.ioff()
 
         return s
+
 
     def non_eq_spectrum(
         self,
@@ -1843,7 +1844,7 @@ class SpectrumFactory(BandFactory):
 
         return s
 
-    def _generate_wavenumber_arrays(self):
+    def _generate_wavenumber_arrays(self, checks=True):
         """define wavenumber grid vectors
 
         `SpectrumFactory.wavenumber` is the output spectral range and
@@ -1853,22 +1854,26 @@ class SpectrumFactory(BandFactory):
         import radis
 
         self.profiler.start("generate_wavenumber_arrays", 2)
-        # calculates minimum FWHM of lines
-        self._calc_min_width(self.df1)
+            
+        if checks:
+            # calculates minimum FWHM of lines
+            self._calc_min_width(self.df1)
 
-        # Setting wstep to optimal value and rounding it to a degree 3
-        if self._wstep == "auto" or type(self.params.wstep) == list:
+            # Setting wstep to optimal value and rounding it to a degree 3
+            if self._wstep == "auto" or type(self.params.wstep) == list:
+                wstep_calc = round_off(
+                    self.min_width / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
+                )
 
-            wstep_calc = round_off(
-                self.min_width / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
-            )
+                if type(self.params.wstep) == list:
+                    self.params.wstep = min(self.params.wstep[1], wstep_calc)
+                else:
+                    self.params.wstep = wstep_calc
 
-            if type(self.params.wstep) == list:
-                self.params.wstep = min(self.params.wstep[1], wstep_calc)
-            else:
-                self.params.wstep = wstep_calc
+                self.warnings["AccuracyWarning"] = "ignore"
 
-            self.warnings["AccuracyWarning"] = "ignore"
+        elif self._wstep == "auto" or type(self.params.wstep) == list:
+            self.warn("Current configuration incompatible with wstep='auto', please provide value for wstep")    
 
         truncation = self.params.truncation
         neighbour_lines = self.params.neighbour_lines
@@ -1905,20 +1910,22 @@ class SpectrumFactory(BandFactory):
         self.woutrange = woutrange
 
         # AccuracyWarning. Check there are enough gridpoints per line.
-        self._check_accuracy(self.params.wstep)
+        if checks:
+            self._check_accuracy(self.params.wstep)
 
         # Set sparse waverange mode
 
         # Setting wstep to optimal value and rounding it to a degree 3
-        if self._sparse_ldm == "auto":
-            sparsity = len(wavenumber_calc) / len(self.df1)
-            self.params["sparse_ldm"] = (
-                sparsity > 1.0
-            )  # works ; TODO : set a threshold based on more data
-            if self.verbose >= 2:
-                print(
-                    f"Sparsity (grid points/lines) = {sparsity:.1f}. Set sparse_ldm to {self.params['sparse_ldm']}"
-                )
+        if checks:
+            if self._sparse_ldm == "auto":
+                sparsity = len(wavenumber_calc) / len(self.df1)
+                self.params["sparse_ldm"] = (
+                    sparsity > 1.0
+                )  # works ; TODO : set a threshold based on more data
+                if self.verbose >= 2:
+                    print(
+                        f"Sparsity (grid points/lines) = {sparsity:.1f}. Set sparse_ldm to {self.params['sparse_ldm']}"
+                    )
 
         self.profiler.stop("generate_wavenumber_arrays", "Generated Wavenumber Arrays")
 

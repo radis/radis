@@ -5,7 +5,6 @@ extern "C"{
 
 struct initData {
     float v_min;
-    float v_max;
     float dv;
     int N_v;
     int N_v_FT;

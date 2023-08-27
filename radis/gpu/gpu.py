@@ -23,16 +23,18 @@ iter_h = iterData_t()
 
 
 def gpu_init(
-    v_arr,
+    vmin,
+    Nv,
+    dv,
     dxG,
     dxL,
-    iso,
     v0,
     da,
-    gamma,
     na,
     S0,
     El,
+    gamma,
+    iso,
     Mm_arr,
     Q_intp_list,
     verbose=False,
@@ -134,10 +136,9 @@ def gpu_init(
     if verbose >= 2:
         print("Copying initialization parameters to device memory...")
 
-    init_h.v_min = np.min(v_arr)
-    init_h.v_max = np.max(v_arr)
-    init_h.dv = (v_arr[-1] - v_arr[0]) / (len(v_arr) - 1)  # TODO: get this from caller
-    init_h.N_v = len(v_arr)
+    init_h.v_min = vmin
+    init_h.dv = dv
+    init_h.N_v = Nv
     init_h.N_v_FT = next_fast_len(2 * init_h.N_v)
     init_h.N_x_FT = init_h.N_v_FT // 2 + 1
     init_h.dxG = dxG
@@ -235,6 +236,9 @@ def gpu_init(
 
     if verbose >= 2:
         print("done!")
+
+    return init_h
+
     
 def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
     """
