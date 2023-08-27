@@ -312,7 +312,6 @@ EXOMOL_MOLECULES = [
     "C2H2",
     "C2H4",
     "CH",
-    "CH_p",
     "CH3",
     "CH3Cl",
     "CH3F",
@@ -343,6 +342,7 @@ EXOMOL_MOLECULES = [
     "HF",
     "HNO3",
     "HeH_p",
+    "K",
     "KCl",
     "KF",
     "KOH",
@@ -361,6 +361,7 @@ EXOMOL_MOLECULES = [
     "NH3",
     "NO",
     "NS",
+    "Na",
     "NaCl",
     "NaF",
     "NaH",
@@ -378,6 +379,7 @@ EXOMOL_MOLECULES = [
     "PO",
     "PS",
     "SH",
+    "SO", #new
     "SO2",
     "SO3",
     "ScH",
@@ -392,11 +394,9 @@ EXOMOL_MOLECULES = [
     "TiO",
     "VO",
     "YO",
+    "ZrO",
     "cis-P2H2",
     "trans-P2H2",
-    "ZrO",
-    "K",
-    "Na",
 ]
 EXOMOL_ONLY_MOLECULES = sorted(
     list(set([M for M, iso in EXOMOL_ONLY_ISOTOPES_NAMES.keys()]))
