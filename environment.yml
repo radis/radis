@@ -10,7 +10,7 @@ dependencies:
 - astropy>=4.3.1  # Unit aware calculations
 - astroquery>=0.4.6  # to fetch HITRAN databases
 - beautifulsoup4>=4.10.0 # parse ExoMol website
-- cantera>=2.5.1, <3.0.0   # for chemical equilibrium computations
+- cantera>=2.5.1  # for chemical equilibrium computations
 - configparser
 - cython          # EP : really needed? pipreqs doesn't say so
 - habanero>=1.2.0  # CrossRef API to retrieve data from doi
