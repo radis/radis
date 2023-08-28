@@ -81,6 +81,7 @@ from radis.misc.progress_bar import ProgressBar
 from radis.misc.utils import getProjectRoot
 from radis.misc.warning import OutOfBoundError
 from radis.phys.constants import hc_k  # ~ 1.44 cm.K
+import os
 
 
 class RovibPartitionFunction(object):
@@ -1158,7 +1159,9 @@ class PartFuncKurucz(RovibParFuncTabulator):
         # Locate the row for the specific atom and ionization state
         pf_atom = self.pfdat.loc[f"{species}"]
         # Read the file's content
-        with open("radis/levels/pfTKurucz_values.txt", 'r') as f:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(current_dir, "./pfTKurucz_values.txt")
+        with open(file_path, 'r') as f:
             content = f.read()
 
         # Execute the content to get the pfT_values array

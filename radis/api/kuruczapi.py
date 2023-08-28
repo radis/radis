@@ -95,7 +95,8 @@ class AdBKurucz:
         `Barklem & Collet (2016), Table 8 <https://doi.org/10.1051/0004-6361/201526961>`_
 
         """
-        file_path=r"radis/levels/pfTKurucz_values.txt"
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(current_dir, "./../levels/pfTKurucz_values.txt")
         with open(file_path, "r") as file:
             lines = file.readlines()
         pfT_values_line = [line for line in lines if "pfT_str" in line][0]
@@ -427,7 +428,9 @@ class AdBKurucz:
         try:
             print(f"Temperature: {T}")
             # Read the pfdat file
-            pfdat = pd.read_csv("radis/db/kuruczpartfn.txt", sep="\s+", header=None)
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            file_path = os.path.join(current_dir, "./../db/kuruczpartfn.txt")
+            pfdat = pd.read_csv(file_path, sep="\s+", header=None)
             pfdat = pfdat.set_index(0)
 
             # Locate the row for the specific atom and ionization state
