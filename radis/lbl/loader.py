@@ -1065,7 +1065,7 @@ class DatabankLoader(object):
                 )
             )
             source = "hitran"
-        if source not in ["hitran", "hitemp", "exomol", "geisa"]:
+        if source not in ["hitran", "hitemp", "exomol", "geisa","kurucz"]:
             raise NotImplementedError("source: {0}".format(source))
         if source == "hitran":
             dbformat = "hitran"
@@ -1077,6 +1077,11 @@ class DatabankLoader(object):
             )
             if database == "default":
                 database = "full"
+
+        elif source == "kurucz":
+            dbformat=(
+                "kurucz"
+            )
         elif source == "exomol":
             dbformat = (
                 "exomol-radisdb"  # downloaded in RADIS local databases ~/.radisdb
@@ -1431,6 +1436,28 @@ class DatabankLoader(object):
                 engine=memory_mapping_engine,
                 output=output,
                 parallel=parallel,
+            )
+            self.params.dbpath = ",".join(local_paths)
+
+            # ... explicitly write all isotopes based on isotopes found in the database
+            if isotope == "all":
+                self.input.isotope = ",".join(
+                    [str(k) for k in self._get_isotope_list(df=df)]
+                )
+
+        elif source == "kurucz":
+            if memory_mapping_engine == "auto":
+                memory_mapping_engine = "vaex"
+
+
+            # Download, setup local databases, and fetch (use existing if possible)
+
+            if isotope == "all":
+                isotope_list = None
+            else:
+                isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
+            local_paths, df = fetch_kurucz(
+                molecule,
             )
             self.params.dbpath = ",".join(local_paths)
 
@@ -2401,7 +2428,7 @@ class DatabankLoader(object):
                         kurucz=AdBKurucz(self.input.species)
                         hdf5_file=fetch_kurucz(self.input.species)[0]
                         df=fetch_kurucz(self.input.species)[1]
-                        kurucz.add_airbrd(df)                    
+                        kurucz.add_airbrd(df)             
 
                     else:
                         raise ValueError("Unknown dbformat: {0}".format(dbformat))

@@ -2456,7 +2456,6 @@ class BaseFactory(DatabankLoader):
         --------
         :py:meth:`~radis.lbl.base.BaseFactory.Qgas_Qref_ratio`
         """
-
         if "id" in df1.columns:
             id_set = df1.id.unique()
             if len(id_set) > 1:
@@ -2492,6 +2491,8 @@ class BaseFactory(DatabankLoader):
                 return df1["iso"].map(Qgas_dict)
 
         else:  # "iso" not in df:
+            if "gamvdW" in df1.columns:
+                molecule=self.input.molecule
             
             iso = df1.attrs["iso"]
             Q = self._calc_Q(molecule, iso, state, Tgas)
@@ -2521,6 +2522,9 @@ class BaseFactory(DatabankLoader):
 
         if "molecule" in df1.attrs:
             molecule = df1.attrs["molecule"]  # used for ExoMol, which has no HITRAN-id
+        # Specific to atomic data
+        elif "gamvdW" in df1.columns:
+                molecule=self.input.molecule
         else:
             molecule = get_molecule(df1.attrs["id"])
         state = self.input.state

@@ -45,7 +45,7 @@ def calc_spectrum(
     Tvib=None,
     Trot=None,
     pressure=1.01325,
-    molecule=None,
+    species=None,
     isotope="all",
     mole_fraction=1,
     diluent="air",
@@ -381,14 +381,17 @@ def calc_spectrum(
     """
 
     # Check inputs
-    #if 'molecule' in kwargs:
-        #print("Molecule is deprecated. Use species instead.")
-        #species = kwargs['molecule']
-        #molecule = to_conventional_name(species)
-    #else : 
-        #molecule=to_conventional_name(species)
+    if 'molecule' in kwargs:
+        print("Molecule is deprecated. Use species instead.")
+        species = kwargs['molecule']
+        molecule = to_conventional_name(species)
+    else : 
+        if species is not None:
+            molecule=to_conventional_name(species)
+        else:
+            molecule=species
 
-    # ... wavelengths / wavenumbers
+
     
 
     # Get wavenumber, based on whatever was given as input.
@@ -463,7 +466,6 @@ def calc_spectrum(
         molecule_reference_set, reference_name = _check_molecules_are_consistent(
             molecule_reference_set, reference_name, argument, argument_name
         )
-
 
     # ... Now we are sure there are no contradictions. Just ensure we have molecules:
     if molecule_reference_set is None:
@@ -714,6 +716,7 @@ def _calc_spectrum_one_molecule(
         broadening_method=broadening_method,
         export_lines=export_lines,
         diluent=diluent,
+        warnings={"AccuracyError": "ignore", "AccuracyWarning": "ignore"},
         **kwargs,
     )
     # Have consistent output units
@@ -747,6 +750,7 @@ def _calc_spectrum_one_molecule(
             "hitemp",
             "exomol",
             "geisa",
+            "kurucz",
         ]
         or (isinstance(databank, tuple) and databank[0] == "exomol")
         or (isinstance(databank, tuple) and databank[0] == "hitran")
@@ -781,6 +785,11 @@ def _calc_spectrum_one_molecule(
                 "parfuncfmt": "hapi",
                 # TODO: replace with GEISA partition function someday.............
             }
+        elif databank in ["kurucz"]:
+            conditions={
+                "source":"kurucz",
+                "parfuncfmt":"kurucz"}
+            
         elif isinstance(databank, tuple) and databank[0] == "exomol":
             conditions = {
                 "source": "exomol",
