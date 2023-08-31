@@ -716,7 +716,6 @@ def _calc_spectrum_one_molecule(
         broadening_method=broadening_method,
         export_lines=export_lines,
         diluent=diluent,
-        warnings={"AccuracyError": "ignore", "AccuracyWarning": "ignore"},
         **kwargs,
     )
     # Have consistent output units
