@@ -10,61 +10,52 @@ def init_L_params(na, gamma, verbose=False):
     if verbose >= 2:
         print("Initializing Lorentzian parameters ")
 
-    try:
-        from radis_cython_extensions import cy_init_L_params
+    # Remove duplicates
+    na_gamma_arr = np.zeros((gamma.size, 2), dtype=np.float32)
+    na_gamma_arr[:, 0] = na
+    na_gamma_arr[:, 1] = gamma
 
-        param_data = cy_init_L_params(na, gamma)
+    unique_lines = np.unique(na_gamma_arr.reshape(2 * gamma.size).view(np.int64))
 
-    except (ModuleNotFoundError):
+    # Only keep extremes
+    max_dict = {}
+    min_dict = {}
+    for (na_i, gamma_i) in unique_lines.view(np.float32).reshape(unique_lines.size, 2):
+        try:
+            min_dict[na_i] = gamma_i if gamma_i < min_dict[na_i] else min_dict[na_i]
+            max_dict[na_i] = gamma_i if gamma_i > max_dict[na_i] else max_dict[na_i]
 
-        # Remove duplicates
-        na_gamma_arr = np.zeros((gamma.size, 2), dtype=np.float32)
-        na_gamma_arr[:, 0] = na
-        na_gamma_arr[:, 1] = gamma
+        except (KeyError):
+            min_dict[na_i] = gamma_i
+            max_dict[na_i] = gamma_i
 
-        unique_lines = np.unique(na_gamma_arr.reshape(2 * gamma.size).view(np.int64))
+    # Check which ones are really at the top:
+    result = []
+    for test_dict in (min_dict, max_dict):
 
-        # Only keep extremes
-        max_dict = {}
-        min_dict = {}
-        for (na_i, gamma_i) in unique_lines.view(np.float32).reshape(
-            unique_lines.size, 2
-        ):
-            try:
-                min_dict[na_i] = gamma_i if gamma_i < min_dict[na_i] else min_dict[na_i]
-                max_dict[na_i] = gamma_i if gamma_i > max_dict[na_i] else max_dict[na_i]
+        keys = sorted(test_dict.keys(), reverse=(test_dict == min_dict))
+        A = [keys[0]]
+        B = [np.log(test_dict[keys[0]])]
+        X = [-np.inf]
 
-            except (KeyError):
-                min_dict[na_i] = gamma_i
-                max_dict[na_i] = gamma_i
-
-        # Check which ones are really at the top:
-        result = []
-        for test_dict in (min_dict, max_dict):
-
-            keys = sorted(test_dict.keys(), reverse=(test_dict == min_dict))
-            A = [keys[0]]
-            B = [np.log(test_dict[keys[0]])]
-            X = [-np.inf]
-
-            for key in keys[1:]:
-                for i in range(len(X)):
-                    xi = (np.log(test_dict[key]) - B[i]) / (A[i] - key)
-                    if xi >= X[i]:
-                        if i < len(X) - 1:
-                            if xi < X[i + 1]:
-                                break
-                        else:
+        for key in keys[1:]:
+            for i in range(len(X)):
+                xi = (np.log(test_dict[key]) - B[i]) / (A[i] - key)
+                if xi >= X[i]:
+                    if i < len(X) - 1:
+                        if xi < X[i + 1]:
                             break
+                    else:
+                        break
 
-                A = A[: i + 1] + [key]
-                B = B[: i + 1] + [np.log(test_dict[key])]
-                X = X[: i + 1] + [xi]
+            A = A[: i + 1] + [key]
+            B = B[: i + 1] + [np.log(test_dict[key])]
+            X = X[: i + 1] + [xi]
 
-            X = X[1:] + [np.inf]
-            result.append((A, B, X))
+        X = X[1:] + [np.inf]
+        result.append((A, B, X))
 
-        param_data = tuple(result)
+    param_data = tuple(result)
 
     if verbose >= 2:
         print("done!")
@@ -78,14 +69,7 @@ def init_G_params(log_2vMm, verbose=False):
     if verbose >= 2:
         print("Initializing Gaussian parameters")
 
-    try:
-        from radis_cython_extensions import cy_init_G_params
-
-        param_data = cy_init_G_params(log_2vMm)
-
-    except (ModuleNotFoundError):
-
-        param_data = (np.min(log_2vMm), np.max(log_2vMm))
+    param_data = (np.min(log_2vMm), np.max(log_2vMm))
 
     if verbose >= 2:
         print("done!")
