@@ -7,11 +7,11 @@ del build /q
 call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" x64
 
 :: Compilte PTX:
-nvcc --ptx --output-file="build\kernels.ptx" kernels.cu  
+nvcc --ptx --output-file="build\kernels.ptx" kernels.cu
 
 :: Compile DLL:
 copy kernels.cu kernels.cpp
-cl /LD /O2 /Fe"build/kernels.dll" kernels.cpp 
+cl /LD /O2 /Fe"build/kernels.dll" kernels.cpp
 del build\kernels.exp"
 del build\kernels.lib"
 del kernels.obj

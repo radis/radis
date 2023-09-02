@@ -403,7 +403,7 @@ class SpectrumFactory(BandFactory):
         save_memory=False,
         export_populations=None,
         export_lines=False,
-        gpu_backend='gpu-cuda',
+        gpu_backend="gpu-cuda",
         diluent="air",
         **kwargs,
     ):
@@ -965,7 +965,7 @@ class SpectrumFactory(BandFactory):
         path_length=None,
         pressure=None,
         name=None,
-        backend='gpu-cuda',
+        backend="gpu-cuda",
         exit_gpu=True,
     ) -> Spectrum:
         """Generate a spectrum at equilibrium with calculation of lineshapes

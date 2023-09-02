@@ -38,7 +38,7 @@ def gpu_init(
     Mm_arr,
     Q_intp_list,
     verbose=0,
-    backend='gpu-cuda',
+    backend="gpu-cuda",
 ):
     """
     Initialize GPU-based calculation for emission and absorption spectra in spectroscopy.
@@ -93,7 +93,7 @@ def gpu_init(
     ## If this fails, None is returned and calculations are
     ## defaulted to CPU emulation
 
-    if backend == 'cpu-cuda':
+    if backend == "cpu-cuda":
         from radis.gpu.cuda.emulate import CuArray, CuContext, CuFFT, CuModule, CuTimer
 
         ctx = CuContext.Open(verbose=verbose)
@@ -116,7 +116,13 @@ def gpu_init(
             )
 
             # failed to init CUDA context, continue with CPU:
-            from radis.gpu.cuda.emulate import CuArray, CuContext, CuFFT, CuModule, CuTimer
+            from radis.gpu.cuda.emulate import (
+                CuArray,
+                CuContext,
+                CuFFT,
+                CuModule,
+                CuTimer,
+            )
 
             ctx = CuContext.Open(verbose=verbose)
 

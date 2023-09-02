@@ -19,7 +19,7 @@ from radis.test.utils import getTestFile
 
 
 def test_eq_spectrum_emulated_gpu(
-    backend='cpu-cuda', verbose=False, plot=False, *args, **kwargs
+    backend="cpu-cuda", verbose=False, plot=False, *args, **kwargs
 ):
     """Compare Spectrum calculated in the emulated-GPU code
     :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu` to Spectrum
@@ -61,7 +61,9 @@ def test_eq_spectrum_emulated_gpu(
     s_cpu = sf.eq_spectrum(Tgas=T, name="CPU")
     s_cpu.name += f" [{s_cpu.c['calculation_time']:.2f}s]"
     s_gpu = sf.eq_spectrum_gpu(
-        Tgas=T, backend=backend, name="GPU (emulate)" if backend=='cpu-cuda' else "GPU"
+        Tgas=T,
+        backend=backend,
+        name="GPU (emulate)" if backend == "cpu-cuda" else "GPU",
     )
     s_gpu.name += f"[{s_gpu.c['calculation_time']:.2f}s]"
     s_cpu.crop(wmin=2284.2, wmax=2284.8)  # remove edge lines
@@ -91,7 +93,7 @@ def test_eq_spectrum_gpu(plot=False, *args, **kwargs):
     # Ensure that GPU is not deactivated (which triggers a NoGPUWarning)
     with warnings.catch_warnings():
         warnings.simplefilter("error", category=NoGPUWarning)
-        test_eq_spectrum_emulated_gpu(backend='gpu-cuda', plot=plot, *args, **kwargs)
+        test_eq_spectrum_emulated_gpu(backend="gpu-cuda", plot=plot, *args, **kwargs)
 
 
 def test_multiple_gpu_calls():
@@ -110,10 +112,10 @@ def test_multiple_gpu_calls():
     sf.fetch_databank("hitran")
 
     s1_gpu = sf.eq_spectrum_gpu(
-        Tgas=300, backend='gpu-cuda', diluent={"air": 0.99}  # K  # runs on GPU
+        Tgas=300, backend="gpu-cuda", diluent={"air": 0.99}  # K  # runs on GPU
     )
     s2_gpu = sf.eq_spectrum_gpu(
-        Tgas=300, backend='gpu-cuda', diluent={"air": 0.99}  # K  # runs on GPU
+        Tgas=300, backend="gpu-cuda", diluent={"air": 0.99}  # K  # runs on GPU
     )
 
     assert abs(s1_gpu.get_power() - s2_gpu.get_power()) / s1_gpu.get_power() < 1e-5
