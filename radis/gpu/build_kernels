@@ -1,4 +1,0 @@
-cp kernels.cu kernels.cpp
-g++ -shared -nolibc -nostdlib -lgcc -fPIC -o kernels.so kernels.cpp
-rm kernels.cpp
-

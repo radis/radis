@@ -387,7 +387,9 @@ class CuArray:
 
             cu_print(lib.cuMemAlloc_v2(byref(self._ptr), self.nbytes), "arr.alloc")
             self._nbytes_alloc = self.nbytes
-            cu_print(hex(self._ptr.value), self.nbytes)
+
+            if self._ptr.value is not None:
+                cu_print(hex(self._ptr.value), self.nbytes)
 
         if init == "zeros":
             self.zeroFill()

@@ -38,7 +38,7 @@ def gpu_init(
     Mm_arr,
     Q_intp_list,
     verbose=0,
-    emulate=False,
+    backend='gpu-cuda',
 ):
     """
     Initialize GPU-based calculation for emission and absorption spectra in spectroscopy.
@@ -75,8 +75,8 @@ def gpu_init(
         List of Q branch interpolators.
     verbose : bool, optional
         Print verbosity level. Default is 0.
-    emulate : bool, optional
-        Whether or not to emulate GPU on CPU. Default is False.
+    backend : str, optional
+        Which backend to use currently only 'gpu-cuda' and 'cpu-cuda' available. Default is 'gpu-cuda'.
 
     Returns
     -------
@@ -93,14 +93,14 @@ def gpu_init(
     ## If this fails, None is returned and calculations are
     ## defaulted to CPU emulation
 
-    if emulate:
-        from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule, CuTimer
+    if backend == 'cpu-cuda':
+        from radis.gpu.cuda.emulate import CuArray, CuContext, CuFFT, CuModule, CuTimer
 
         ctx = CuContext.Open(verbose=verbose)
 
     else:
         # Try to load GPU
-        from radis.gpu.driver import CuContext
+        from radis.gpu.cuda.driver import CuContext
 
         ctx = CuContext.Open(
             verbose=verbose
@@ -116,19 +116,19 @@ def gpu_init(
             )
 
             # failed to init CUDA context, continue with CPU:
-            from radis.gpu.emulate import CuArray, CuContext, CuFFT, CuModule, CuTimer
+            from radis.gpu.cuda.emulate import CuArray, CuContext, CuFFT, CuModule, CuTimer
 
             ctx = CuContext.Open(verbose=verbose)
 
         else:
             # successfully initialized CUDA context, continue with GPU:
-            from radis.gpu.driver import CuArray, CuFFT, CuModule, CuTimer
+            from radis.gpu.cuda.driver import CuArray, CuFFT, CuModule, CuTimer
 
     if verbose == 1:
         print("Number of lines loaded: {0}".format(len(v0)))
         print()
 
-    ptx_path = os.path.join(getProjectRoot(), "gpu", "kernels.ptx")
+    ptx_path = os.path.join(getProjectRoot(), "gpu", "cuda", "build", "kernels.ptx")
     if not os.path.exists(ptx_path):
         raise FileNotFoundError(ptx_path)
     cu_mod = CuModule(ctx, ptx_path)  # gpu

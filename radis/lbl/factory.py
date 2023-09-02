@@ -403,7 +403,7 @@ class SpectrumFactory(BandFactory):
         save_memory=False,
         export_populations=None,
         export_lines=False,
-        emulate_gpu=False,
+        gpu_backend='gpu-cuda',
         diluent="air",
         **kwargs,
     ):
@@ -965,7 +965,7 @@ class SpectrumFactory(BandFactory):
         path_length=None,
         pressure=None,
         name=None,
-        emulate=False,
+        backend='gpu-cuda',
         exit_gpu=True,
     ) -> Spectrum:
         """Generate a spectrum at equilibrium with calculation of lineshapes
@@ -993,8 +993,9 @@ class SpectrumFactory(BandFactory):
 
         Other Parameters
         ----------------
-        emulate: bool
-            if ``True``, execute the GPU code on the CPU (useful for development)
+        backend: str
+            if ``'gpu-cuda'``, set CUDA as backend to run code on Nvidia GPU.
+            if ``'cpu-cuda'``, execute the GPU code on the CPU (useful for development)
 
         Returns
         -------
@@ -1152,7 +1153,7 @@ class SpectrumFactory(BandFactory):
             molarmass_arr,
             Q_interp_list,
             verbose=verbose,
-            emulate=emulate,
+            backend=backend,
         )
         if verbose >= 2:
             print("Initialization complete!")
@@ -1226,7 +1227,7 @@ class SpectrumFactory(BandFactory):
                 "thermal_equilibrium": True,
                 "diluents": self._diluent,
                 "radis_version": version,
-                "emulate_gpu": emulate,
+                "gpu_backend": backend,
                 "spectral_points": (
                     int(self.params.wavenum_max_calc - self.params.wavenum_min_calc)
                     / self.params.wstep
@@ -1302,7 +1303,7 @@ class SpectrumFactory(BandFactory):
             arguments forwarded to :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`
         **kwargs : dict
             arguments forwarded to :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`
-            In particular, see `emulate=`.
+            In particular, see `backend=`.
         plotkwargs : dict
             arguments forwarded to :py:meth:`~radis.spectrum.spectrum.Spectrum.plot`
 
@@ -1332,7 +1333,6 @@ class SpectrumFactory(BandFactory):
                                            mole_fraction=0.1,
                                            path_length=ParamRange(0,10,2.0), #cm
                                            slit_FWHM=ParamRange(0,1,0), #cm
-                                           emulate=False,  # if True, execute the GPU code on the CPU
                                            )
 
         .. minigallery:: radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu_interactive

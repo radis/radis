@@ -92,7 +92,7 @@ class CuModule:
         radis_path = getProjectRoot()
 
         self._module = dllobj.LoadLibrary(
-            os.path.join(radis_path, "gpu", self.module_name)
+            os.path.join(radis_path, "gpu", "cuda", "build", self.module_name)
         )
         self._func_dict = {}
         self._global_dict = {}
