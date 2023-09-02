@@ -5,17 +5,16 @@ RADIS-GPU Spectrum Calculation
 ==============================
 
 RADIS provides GPU acceleration to massively speedup spectral computations.
-The GPU code is written in CUDA-C++, which is compiled at runtime through the python package cupy.
-Because the CUDA code is compiled at runtime, a CUDA compiler such as NVRTC or NVCC must
-be installed before running the code. The easiest way to make sure a CUDA compiler is
-installed is by installing the Nvidia GPU computing toolkit, see: https://developer.nvidia.com/cuda-downloads.
-Currently only Nvidia GPU's are supported by RADIS, and this is unlikely to change in the foreseeable future.
+Currently only Nvidia GPU's are supported, but this will likely change in the future
+by using Vulkan as a backend.
 
-The GPU code requires some initialization functions that are run on the CPU (
-
-The GPU computations are so fast that in almost all cases the total computation time is
-limited by the CPU-to-GPU (also called host-to-device) data transfer. As a result, computing
-consecutive spectra is extremely fast.
+Generally GPU computations are memory bandwidth limited, meaning the computation time of
+a single spectrum is determined by the time it takes to move the database data from host
+(=CPU) to device (=GPU) memory. Because of this, GPU computations take place in two steps:
+An initialization step :py:func:`~radis.gpu.gpu.gpu_init` where, among other things, the database is
+uploaded to the GPU, and an iteration step :py:func:`~radis.gpu.gpu.gpu_iterate`, where a new spectrum
+with different parameters but the same database is computed. The latter could be repeated indefinitely
+as long as the same database and spectral axis is used, resulting in extremely fast spectrum generation.
 
 RADIS implements two functions that expose GPU functionality:
 
@@ -26,11 +25,11 @@ RADIS implements two functions that expose GPU functionality:
   composition, updating the spectrum in real time. Because the database only has to be transferred
   once, the updated spectra are calculated extremely fast.
 
-By default both functions will be compiled an ran on a GPU if available. The CUDA code
-is written "architecture-agnostically" which means it can be compiled for either GPU or CPU.
-It is therefore possible to use the same GPU functions without an actual GPU by passing the
-keyword ``emulate=True``, which forces use of the CPU targeted compiled code. This feature is
-mostly for developers to check for errors in the CUDA code, but it can be used for interactive
+By default both functions will be ran on a GPU if available. The CUDA code can also be compiled as pure
+C++, which means it can be compiled for CPU in addition to GPU.
+As a result, it ispossible to use the same GPU functions without an actual GPU by passing the
+keyword ``backend='cpu-cuda'``, which forces use of the CPU targeted compiled code. This feature is
+mostly for developers to check for errors in the CUDA code, but it can also be used for interactive
 plotting on the CPU for small spectra.
 
 GPU computation is currently only supported for equilibrium spectra. It is likely that
@@ -58,7 +57,6 @@ produces a single equilibrium spectrum using GPU acceleration. Below is a usage 
         pressure=1,  # bar
         mole_fraction=0.8,
         path_length=0.2,  # cm
-        emulate=False,  # runs on GPU
     )
 
     s.apply_slit(0.5)#cm-1
@@ -72,8 +70,8 @@ produces a single equilibrium spectrum using GPU acceleration. Below is a usage 
 Interactive Spectrum
 --------------------
 
-Computing the first GPU spectrum in a session takes a comparatively long time because the
-entire line database must be transferred to the GPU. The real power of GPU acceleration
+As mentioned before, computing the first GPU spectrum in a session takes a comparatively long time because the
+entire database must be transferred to the GPU. The real power of GPU acceleration
 becomes evident when computation times are not limited by data-transfer, i.e., when multiple
 consecutive spectra are synthesized. One obvious use case would be the fitting of a spectrum.
 Another one is interactive plotting, which can be done by calling
@@ -106,7 +104,7 @@ Another one is interactive plotting, which can be done by calling
     :add-heading:
 
 
-Note that `eq_spectrum_gpu_interactive()` takes the place of all `eq_spectrum_gpu()`,
+Note that `eq_spectrum_gpu_interactive()` replaces all of `eq_spectrum_gpu()`,
 `s.apply_slit()`, and `s.plot()` seen in the earlier example, and for this reason the
 syntax is a little bit different. For example, we directly pass the `var` keyword to
 `eq_spectrum_gpu_interactive()` to specify which spectrum should be plotted, and keyword arguments to `s.plot()`
@@ -121,9 +119,11 @@ object will spawn a slider widget in the plot window with which the parameter ca
  for large wavenumber ranges (>500cm-1) however, which may take a bit longer (up to a couple seconds),
  provided the GPU didn't run out of memory.
 
-At this moment the application of the instrumental function is done on the GPU and is limited
-to a Gaussian function. This will almost certainly be updated in the future to include other
-popular instrumental functions, including custom ones.
+At this moment the application of the instrumental function is done on the CPU to benefit from all features
+already implemented in :py:func:`~radis.spectrum.Spectrum.apply_slit`. It is expected that these computations
+will also move to the GPU at some point in the future.
+
+Did you miss any feature implemented on GPU? or support for your particular system? The GPU code is heavily under development, so drop us a visit on [our Githup](https://github.com/radis/radis/issues/616) and let us know what you're looking for!
 
 
 
