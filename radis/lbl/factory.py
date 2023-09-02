@@ -1161,7 +1161,7 @@ class SpectrumFactory(BandFactory):
         if verbose >= 2:
             print("Calculating spectra...", end=" ")
 
-        abscoeff_calc, transmittance_calc, iter_params, times = gpu_iterate(
+        abscoeff_calc, iter_params, times = gpu_iterate(
             pressure_mbar * 1e-3,
             Tgas,
             mole_fraction,
@@ -1186,7 +1186,6 @@ class SpectrumFactory(BandFactory):
         # get absorbance (technically it's the optical depth `tau`,
         #                absorbance `A` being `A = tau/ln(10)` )
         abscoeff = abscoeff_calc[self.woutrange[0] : self.woutrange[1]]
-        transmittance = transmittance_calc[self.woutrange[0] : self.woutrange[1]]
 
         # TODO: this should is inconistent with eq_spectrum_gpu_interactive, where all quantities
         #      are calculated on CPU. (here the transmittance comes from GPU)
@@ -1194,7 +1193,6 @@ class SpectrumFactory(BandFactory):
         absorbance = abscoeff * path_length
         # Generate output quantities
         transmittance_noslit = exp(-absorbance)
-        emissivity = 1 - transmittance
         emissivity_noslit = 1 - transmittance_noslit
         radiance_noslit = calc_radiance(
             self.wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
@@ -1251,11 +1249,9 @@ class SpectrumFactory(BandFactory):
             "wavenumber": self.wavenumber,
             "abscoeff": abscoeff,
             "absorbance": absorbance,
-            "emissivity": emissivity,
             "emissivity_noslit": emissivity_noslit,
             "transmittance_noslit": transmittance_noslit,
             "radiance_noslit": radiance_noslit,
-            "transmittance": transmittance,
         }
         conditions["default_output_unit"] = self.input_wunit
 
@@ -1386,13 +1382,13 @@ class SpectrumFactory(BandFactory):
             s.conditions["Trot"] = s.conditions["Tgas"]
             s.conditions["slit_function"] = s.conditions["slit_FWHM"]
 
-            abscoeff, transmittance, iter_params, times = gpu_iterate(
+            abscoeff, iter_params, times = gpu_iterate(
                 s.conditions["pressure"],
                 s.conditions["Tgas"],
                 s.conditions["mole_fraction"],
-                l=s.conditions["path_length"],
-                slit_FWHM=s.conditions["slit_FWHM"],
-                verbose=False,
+                verbose=0,
+                # l=s.conditions["path_length"],
+                # slit_FWHM=s.conditions["slit_FWHM"],
             )
 
             # This happen inside a Spectrum() method

@@ -80,7 +80,9 @@ def gpu_init(
 
     Returns
     -------
-    None.
+    init_h : radis.gpu.structs.initData_t
+        structue with parameters used for GPU computation that are constant
+        during iterations.
     """
 
     global cu_mod
@@ -258,7 +260,15 @@ def gpu_init(
     return init_h
 
 
-def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
+def gpu_iterate(
+    p,
+    T,
+    mole_fraction,
+    verbose=0,
+    # for GPU instrument functions (not currently supported):
+    l=1.0,
+    slit_FWHM=0.0,
+):
     """
     Parameters
     ----------
@@ -270,22 +280,20 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
 
     Other Parameters
     ----------------
-    verbose : bool, optional
-        The default is True.
-    l : TYPE, optional
-        DESCRIPTION. The default is 1.0.
-    slit_FWHM : TYPE, optional
-        DESCRIPTION. The default is 0.0.
-    gpu : TYPE, optional
-        DESCRIPTION. The default is False.
+    verbose : int, optional
+        The default is 0.
+
 
     Returns
     -------
-    abscoeff_h : TYPE
-        DESCRIPTION.
-    transmittance_h : TYPE
-        DESCRIPTION.
-
+    abscoeff_h : numpy.ndarray[np.float32]
+        array with absorbtion coefficients in (cm.-1)
+    iter_h : radis.gpu.structs.iterData_t
+        structue with parameters used for computation of abscoeff_h.
+    times : dict
+        dictionary with computation cumulative computation times for
+        different stages of the GPU computation. The ``'total'`` key
+        gives the total time.
     """
 
     if cu_mod is None:
@@ -351,24 +359,27 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
 
     if verbose >= 2:
         print("Done!")
-        print("Applying slit function...")
 
-    cu_mod.calcTransmittanceNoslit()
-    cu_mod.timer.lap("calcTransmittanceNoslit")
-
-    cu_mod.fft_fwd2()
-    cu_mod.timer.lap("fft_fwd2")
-
-    cu_mod.applyGaussianSlit()
-    cu_mod.timer.lap("applyGaussianSlit")
-
-    cu_mod.fft_rev2()
-    cu_mod.timer.lap("fft_rev2")
-
-    transmittance_h = cu_mod.fft_rev2.arr_out.getArray()[: init_h.N_v]
-
-    if verbose >= 2:
-        print("done!")
+    ##    ##The code below is to process slits on the GPU, which is currently unsupported.
+    ##
+    ##        print("Applying slit function...")
+    ##
+    ##    cu_mod.calcTransmittanceNoslit()
+    ##    cu_mod.timer.lap("calcTransmittanceNoslit")
+    ##
+    ##    cu_mod.fft_fwd2()
+    ##    cu_mod.timer.lap("fft_fwd2")
+    ##
+    ##    cu_mod.applyGaussianSlit()
+    ##    cu_mod.timer.lap("applyGaussianSlit")
+    ##
+    ##    cu_mod.fft_rev2()
+    ##    cu_mod.timer.lap("fft_rev2")
+    ##
+    ##    transmittance_h = cu_mod.fft_rev2.arr_out.getArray()[: init_h.N_v]
+    ##
+    ##    if verbose >= 2:
+    ##        print("done!")
 
     if verbose == 1:
         print("Finished calculating spectrum!")
@@ -376,7 +387,7 @@ def gpu_iterate(p, T, mole_fraction, l=1.0, slit_FWHM=0.0, verbose=0):
     cu_mod.timer.lap("total")
     times = cu_mod.timer.getTimes()
 
-    return abscoeff_h, transmittance_h, iter_h, times
+    return abscoeff_h, iter_h, times
 
 
 def gpu_exit(event=None):
