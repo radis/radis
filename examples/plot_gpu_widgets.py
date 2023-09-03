@@ -35,13 +35,12 @@ sf = SpectrumFactory(
 sf.fetch_databank("hitemp")
 
 s = sf.eq_spectrum_gpu_interactive(
-    var="radiance",
+    var="transmittance",
     Tgas=ParamRange(300.0, 2500.0, 1100.0),  # K
     pressure=ParamRange(0.1, 2, 1),  # bar
     mole_fraction=ParamRange(0, 1, 0.8),
     path_length=ParamRange(0, 1, 0.2),  # cm
-    slit_FWHM=ParamRange(0, 1.5, 0.24),  # cm-1
+    slit_FWHM=ParamRange(0, 1.5, 0.5),  # cm-1
     plotkwargs={"wunit": "nm"},  # "nfig": "same",
-    backend="cpu-cuda",
 )
 print(s)

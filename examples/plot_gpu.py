@@ -39,5 +39,5 @@ s = sf.eq_spectrum_gpu(
 )
 print(s)
 
-s.apply_slit(0.5)  # cm-1
-s.plot("radiance", show=True)
+s.apply_slit(0.5, unit="cm-1")  # cm-1
+s.plot("radiance", wunit="nm", show=True)

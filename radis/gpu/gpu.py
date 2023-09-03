@@ -75,8 +75,8 @@ def gpu_init(
         List of Q branch interpolators.
     verbose : bool, optional
         Print verbosity level. Default is 0.
-    backend : str, optional
-        Which backend to use currently only 'gpu-cuda' and 'cpu-cuda' available. Default is 'gpu-cuda'.
+    backend :  ``'gpu-cuda'``, ``'cpu-cuda'``, optional
+        Which backend to use; currently only CUDA backends (Nvidia) are supported. ``'cpu-cuda'`` runs the kernel on CPU. Default is ``'gpu-cuda'``.
 
     Returns
     -------

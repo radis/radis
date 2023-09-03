@@ -1230,7 +1230,10 @@ class SpectrumFactory(BandFactory):
                     int(self.params.wavenum_max_calc - self.params.wavenum_min_calc)
                     / self.params.wstep
                 ),
+                "add_at_used": "gpu-backend",
                 "profiler": dict(self.profiler.final),
+                "NwL": iter_params.N_L,
+                "NwG": iter_params.N_G,
             }
         )
         if self.params.optimization != None:
@@ -1342,7 +1345,7 @@ class SpectrumFactory(BandFactory):
         import matplotlib.pyplot as plt
         from matplotlib.widgets import Slider
 
-        from radis.gpu.gpu import gpu_exit, gpu_iterate
+        from radis.gpu.gpu import gpu_exit
 
         self.interactive_params = {}
 
@@ -1362,47 +1365,20 @@ class SpectrumFactory(BandFactory):
             slit_FWHM = slit_FWHM.valinit
 
         s.apply_slit(slit_FWHM, unit="cm-1")  # to create 'radiance', 'transmittance'
-        s.conditions["slit_FWHM"] = slit_FWHM
+        s.conditions["slit_function"] = slit_FWHM
+        # s.conditions['waveunit'] = plotkwargs.get("wunit", "default")
 
         was_interactive = plt.isinteractive
         plt.ion()
 
+        print(plotkwargs)
         line = s.plot(var, show=True, **plotkwargs)
         fig = line.figure
 
         def update_plot(val):
-            # TODO : refactor this function and the update() mechanism. Ensure conditions are correct.
-            # Update conditions
-            # ... at equilibrium, temperatures remain equal :
-            s.conditions["Tvib"] = s.conditions["Tgas"]
-            s.conditions["Trot"] = s.conditions["Tgas"]
-            s.conditions["slit_function"] = s.conditions["slit_FWHM"]
-
-            abscoeff, iter_params, times = gpu_iterate(
-                s.conditions["pressure"],
-                s.conditions["Tgas"],
-                s.conditions["mole_fraction"],
-                verbose=0,
-                # l=s.conditions["path_length"],
-                # slit_FWHM=s.conditions["slit_FWHM"],
-            )
-
-            # This happen inside a Spectrum() method
-            for k in list(s._q.keys()):  # reset all quantities
-                if k in ["wavespace", "wavelength", "wavenumber"]:
-                    pass
-                elif k == "abscoeff":
-                    s._q["abscoeff"] = abscoeff
-                else:
-                    del s._q[k]
-
-            _, new_y = s.get(
-                var,
-                copy=False,  # copy = False saves some time & memory, it's a pointer/reference to the real data, which is fine here as data is just plotted
-                wunit=plotkwargs.get("wunit", "default"),
-                Iunit=plotkwargs.get("Iunit", "default"),
-            )
-
+            # We directly updated the s.conditions dict so params don't have to
+            # be passed to s.recalc_gpu() anymore
+            new_y = s.recalc_gpu(var, Iunit=plotkwargs.get("Iunit", "default"))
             line.set_ydata(new_y)
             fig.canvas.draw_idle()
 
