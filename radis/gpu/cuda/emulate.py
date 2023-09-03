@@ -242,10 +242,10 @@ class CuFFT:
         np_arr_out = self.arr_out.getArray()
 
         if self._direction == "fwd":
-            np_arr_out[:] = rfft(np_arr_in, axis=0)
+            np_arr_out[:] = rfft(np_arr_in, axis=0, workers=-1)
         else:
             n = np_arr_out.shape[0]
-            np_arr_out[:] = irfft(np_arr_in, n=n, axis=0, norm="forward")
+            np_arr_out[:] = irfft(np_arr_in, n=n, axis=0, norm="forward", workers=-1)
 
     def destroy(self):
         pass
