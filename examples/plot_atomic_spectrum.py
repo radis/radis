@@ -17,10 +17,10 @@ from radis import calc_spectrum
 s = calc_spectrum(
     2000,
     5000,  # cm-1
-    species="Mg_I", # Enter species name 
+    species="Mg_I",  # Enter species name
     Tgas=5000,  # K
     databank="kurucz",
-    warnings={"AccuracyError": "ignore", "AccuracyWarning": "ignore"}
+    warnings={"AccuracyError": "ignore", "AccuracyWarning": "ignore"},
 )
 
-s.plot("radiance_noslit",wunit="nm")
+s.plot("radiance_noslit", wunit="nm")

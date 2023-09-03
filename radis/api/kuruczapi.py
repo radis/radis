@@ -15,66 +15,53 @@ from io import BytesIO
 
 import numpy as np
 import pandas as pd
+import periodictable
 import requests
 from tqdm import tqdm
 
 from radis.misc.utils import getProjectRoot
 from radis.phys.air import air2vacuum
-import periodictable
-
-
 
 
 class AdBKurucz:
-    from radis.phys.constants import c_CGS,ecgs,mecgs
-    
+    from radis.phys.constants import c_CGS, ecgs, mecgs
 
-    def __init__(self,species):
+    def __init__(self, species):
         self.kurucz_url_base = "http://kurucz.harvard.edu/linelists/gfall/gf"
         self.hdf5_file = None
         self.data = None
         self.pfTdat, self.pfdat = self.load_pf_Barklem2016()
         self.populations = None
-        self.species=species
-        self.atomic_number=self.get_atomic_number(species)
-        self.ionization_state=self.get_ionization_state(species)
-        self.element_symbol=self.get_element_symbol(species)
+        self.species = species
+        self.atomic_number = self.get_atomic_number(species)
+        self.ionization_state = self.get_ionization_state(species)
+        self.element_symbol = self.get_element_symbol(species)
 
-
-
-
-    def get_atomic_number(self,species):
+    def get_atomic_number(self, species):
         """
         Extracts the atomic_number from the species id
         """
-        atomic_symbol = species.split('_')[0]
+        atomic_symbol = species.split("_")[0]
         el = getattr(periodictable, atomic_symbol)
 
-        atomic_number=el.number
+        atomic_number = el.number
         return atomic_number
 
-
-    def get_ionization_state(self,species):
+    def get_ionization_state(self, species):
         """
         Extracts the ionization_state from the species id
         """
-        ionization_str = species.split('_')[1]
-        roman_to_int = {
-        'I': 0, 'II': 1, 'III': 2, 'IV': 3, 'V': 4, 
-        'VI': 5
-        }
+        ionization_str = species.split("_")[1]
+        roman_to_int = {"I": 0, "II": 1, "III": 2, "IV": 3, "V": 4, "VI": 5}
         ionization_int = roman_to_int.get(ionization_str, -1)
         formatted_str = f"{ionization_int:02}"
 
         return formatted_str
-    
-    def get_element_symbol(self,species):
-        atomic_symbol = species.split('_')[0]
+
+    def get_element_symbol(self, species):
+        atomic_symbol = species.split("_")[0]
         el = getattr(periodictable, atomic_symbol)
         return el
-
-
-            
 
     def get_url(self, atomic_number, ionization_state):
         ionization_state = str(ionization_state).zfill(2)
@@ -100,8 +87,8 @@ class AdBKurucz:
         with open(file_path, "r") as file:
             lines = file.readlines()
         pfT_values_line = [line for line in lines if "pfT_str" in line][0]
-        pfT_values_line = pfT_values_line.strip() 
-        pfT_str= pfT_values_line.replace('"', '')  # Removing quotation marks.
+        pfT_values_line = pfT_values_line.strip()
+        pfT_str = pfT_values_line.replace('"', "")  # Removing quotation marks.
         pfTdat = pd.read_csv(io.StringIO(pfT_str), sep=",")
         pfTdat = pd.Series(pfTdat.columns[1:]).astype(
             "float64"
@@ -246,7 +233,7 @@ class AdBKurucz:
         """
         with open(kuruczf) as f:
             lines = f.readlines()
-        num_lines=len(lines)
+        num_lines = len(lines)
         (
             wlnmair,
             loggf,
@@ -308,7 +295,8 @@ class AdBKurucz:
             np.zeros(num_lines),
             np.zeros(num_lines),
             np.zeros(num_lines),
-            np.zeros(num_lines))
+            np.zeros(num_lines),
+        )
         ielem, iion = np.zeros(num_lines, dtype=int), np.zeros(num_lines, dtype=int)
 
         for i, line in enumerate(lines):
@@ -389,7 +377,7 @@ class AdBKurucz:
             "landeglower": landeglower,
             "landegupper": landegupper,
             "isoshiftmA": isoshiftmA,
-            #"int":self.Sij0(A,gupper,nu_lines,elower,self.partfcn(self.species,296))
+            # "int":self.Sij0(A,gupper,nu_lines,elower,self.partfcn(self.species,296))
             # if int parameter is used, calc_linestrength_eq will also use it
         }
 
@@ -404,16 +392,27 @@ class AdBKurucz:
             neutral_hydrogen_number = 1
             atomic_coeff = 1
 
-            if self.element_symbol=="H" :
-                airbrd=(10**data['gamvdW'])*data["Tdpair"]*neutral_hydrogen_number
-            elif self.element_symbol== "He":
-                airbrd=(10**data['gamvdW'])*data["Tdpair"]*neutral_hydrogen_number*0.42
-            else :
-                airbrd=(10**data['gamvdW'])*data["Tdpair"]*neutral_hydrogen_number*atomic_coeff
+            if self.element_symbol == "H":
+                airbrd = (
+                    (10 ** data["gamvdW"]) * data["Tdpair"] * neutral_hydrogen_number
+                )
+            elif self.element_symbol == "He":
+                airbrd = (
+                    (10 ** data["gamvdW"])
+                    * data["Tdpair"]
+                    * neutral_hydrogen_number
+                    * 0.42
+                )
+            else:
+                airbrd = (
+                    (10 ** data["gamvdW"])
+                    * data["Tdpair"]
+                    * neutral_hydrogen_number
+                    * atomic_coeff
+                )
 
             data["airbrd"] = airbrd
 
-   
     def partfcn(self, key, T):
         # So far ielem is used for id and iion for iso in eq_spectrum so this method is used when the linestrength is computed for data_dict
         """Partition function from Barklem & Collet (2016).
@@ -460,8 +459,3 @@ class AdBKurucz:
                 f"Key {key} not found in pfdat. Available keys: {pfdat.index.tolist()}"
             )
             raise
-
-
-    
-
-        

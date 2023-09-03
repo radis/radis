@@ -97,6 +97,7 @@ except ImportError:  # if ran from here
     from radis.lbl.base import get_wavenumber_range
 
 from radis import config
+from radis.db.classes import is_atom
 from radis.misc.basics import flatten, is_float, is_range, list_if_float, round_off
 from radis.misc.utils import Default
 from radis.phys.constants import k_b
@@ -105,8 +106,6 @@ from radis.phys.units import convert_universal
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.spectrum import Spectrum
-from radis.api.kuruczapi import AdBKurucz
-from radis.db.classes import is_atom
 
 c_cm = c * 100
 
@@ -409,21 +408,22 @@ class SpectrumFactory(BandFactory):
     ):
 
         # Initialize BandFactory object
-        super(SpectrumFactory, self).__init__()      
+        super(SpectrumFactory, self).__init__()
 
         # Check inputs (deal with deprecated format)
         if medium not in ["air", "vacuum"]:
             raise ValueError("Wavelength must be one of: 'air', 'vacuum'")
         kwargs0 = kwargs  # kwargs is used to deal with Deprecated names
-        if 'molecule' in kwargs:
+        if "molecule" in kwargs:
             print("Molecule is deprecated. Use species instead.")
             if species is None:
-                species = kwargs['molecule']
+                species = kwargs["molecule"]
                 molecule = species
-            kwargs0.pop('molecule')  # remove it from kwargs0 so it doesn't trigger the error later
-        else : 
-            molecule=species
-        
+            kwargs0.pop(
+                "molecule"
+            )  # remove it from kwargs0 so it doesn't trigger the error later
+        else:
+            molecule = species
 
         if "db_use_cached" in kwargs:
             warn(
@@ -509,13 +509,14 @@ class SpectrumFactory(BandFactory):
         # --------------
         # Get molecule name
         if molecule is not None and species is not None:
-            if not is_atom(molecule): 
+            if not is_atom(molecule):
                 if isinstance(molecule, int):
                     species == get_molecule(molecule)
                 if molecule is not None:
                     if (
                         species
-                        not in MOLECULES_LIST_EQUILIBRIUM + MOLECULES_LIST_NONEQUILIBRIUM
+                        not in MOLECULES_LIST_EQUILIBRIUM
+                        + MOLECULES_LIST_NONEQUILIBRIUM
                     ):
                         raise ValueError(
                             "Unsupported molecule: {0}.\n".format(species)
@@ -554,11 +555,11 @@ class SpectrumFactory(BandFactory):
             raise NotImplementedError
 
         self.input.path_length = convert_and_strip_units(path_length, u.cm)
-        #if molecule is not None and species is not None:
-            #if not is_atom(species) :
+        # if molecule is not None and species is not None:
+        # if not is_atom(species) :
         self.input.molecule = (
             species  # if None, will be overwritten after reading database
-            )
+        )
         self.input.state = "X"  # for the moment only ground-state is used
         # (but the code is electronic state aware)
         self.input.isotope = (
@@ -647,7 +648,7 @@ class SpectrumFactory(BandFactory):
         self.SpecDatabase = None  # the database to store spectra. Not to be confused
         # with the databank where lines are stored
         self.database = None  # path to previous database
-        
+
         # Warnings
         # --------
 
@@ -970,8 +971,7 @@ class SpectrumFactory(BandFactory):
         #  In the less verbose case, we print the total calculation+generation time:
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
 
-        return s 
-
+        return s
 
     def eq_spectrum_gpu(
         self,

@@ -93,8 +93,6 @@ from radis.phys.constants import c_CGS, h_CGS, hc_k
 from radis.phys.convert import cm2J, cm2J_vaex, nm2cm, nm_air2cm
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.utils import print_conditions
-from radis.db.classes import is_atom
-
 
 
 class BaseFactory(DatabankLoader):
@@ -2492,8 +2490,8 @@ class BaseFactory(DatabankLoader):
 
         else:  # "iso" not in df:
             if "gamvdW" in df1.columns:
-                molecule=self.input.molecule
-            
+                molecule = self.input.molecule
+
             iso = df1.attrs["iso"]
             Q = self._calc_Q(molecule, iso, state, Tgas)
             df1.attrs["Q"] = Q
@@ -2524,7 +2522,7 @@ class BaseFactory(DatabankLoader):
             molecule = df1.attrs["molecule"]  # used for ExoMol, which has no HITRAN-id
         # Specific to atomic data
         elif "gamvdW" in df1.columns:
-                molecule=self.input.molecule
+            molecule = self.input.molecule
         else:
             molecule = get_molecule(df1.attrs["id"])
         state = self.input.state
@@ -2559,9 +2557,6 @@ class BaseFactory(DatabankLoader):
             df1.attrs["Qref"] = Qref
             Qref_Qgas = Qref / Qgas
         return Qref_Qgas
-    
-
-    
 
     def calc_linestrength_eq(self, Tgas):
         """Calculate linestrength at temperature Tgas correcting the database
@@ -2615,7 +2610,7 @@ class BaseFactory(DatabankLoader):
 
         # %% Calculate line strength at desired temperature
         # -------------------------------------------------
-        if self.molparam.terrestrial_abundances :
+        if self.molparam.terrestrial_abundances:
             # This calculation is based on equation (A11) in Rothman 1998: "JQSRT, vol.
             # 60, No. 5, pp. 665-710"
 
@@ -2632,7 +2627,7 @@ class BaseFactory(DatabankLoader):
                     (1 - exp(-hc_k * df1.wav / Tgas))
                     / (1 - exp(-hc_k * df1.wav / Tref))
                 )  # [cm-1/(molecules/cm-2)
-            else: 
+            else:
                 # An alternative strategy is to calculate the linestrength from the
                 # Einstein A coefficient and the populations (see Klarenaar 2017 Eqn. 12)
                 if not "gu" in df1:
@@ -2655,7 +2650,7 @@ class BaseFactory(DatabankLoader):
             df1["S"] = linestrength_from_Einstein(
                 df1.A, df1.gu, df1.El, Ia, df1.wav, self.Qgas(df1, Tgas), Tgas
             )
-        
+
         assert "S" in self.df1
 
         self.profiler.stop("scaled_eq_linestrength", "Scaled equilibrium linestrength")

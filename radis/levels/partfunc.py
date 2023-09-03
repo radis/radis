@@ -54,6 +54,7 @@ References
 # TODO: store molecule_data.json in the H5 file metadata. If not done already.
 
 
+import os
 import sys
 from os.path import exists, join
 from warnings import warn
@@ -81,7 +82,6 @@ from radis.misc.progress_bar import ProgressBar
 from radis.misc.utils import getProjectRoot
 from radis.misc.warning import OutOfBoundError
 from radis.phys.constants import hc_k  # ~ 1.44 cm.K
-import os
 
 
 class RovibPartitionFunction(object):
@@ -1149,10 +1149,10 @@ class PartFuncKurucz(RovibParFuncTabulator):
 
     """
 
-    def __init__(self,species):
+    def __init__(self, species):
         super(PartFuncKurucz, self).__init__()
         # Load data in constructor
-        self.species=species
+        self.species = species
         path_partfn = join(getProjectRoot(), "db", "kuruczpartfn.txt")
         pfdat = pd.read_csv(path_partfn, sep="\s+", header=None)
         self.pfdat = pfdat.set_index(0)
@@ -1161,7 +1161,7 @@ class PartFuncKurucz(RovibParFuncTabulator):
         # Read the file's content
         current_dir = os.path.dirname(os.path.abspath(__file__))
         file_path = os.path.join(current_dir, "./pfTKurucz_values.txt")
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             content = f.read()
 
         # Execute the content to get the pfT_values array
@@ -1169,13 +1169,17 @@ class PartFuncKurucz(RovibParFuncTabulator):
         exec(content, namespace)
 
         # Assign the array to the class variable
-        self.pfT_values = namespace['pfT_values']
-        self.pf_values = pf_atom.values[0:].astype(float)  # Exclude the first value (it's the atomic number)
+        self.pfT_values = namespace["pfT_values"]
+        self.pf_values = pf_atom.values[0:].astype(
+            float
+        )  # Exclude the first value (it's the atomic number)
 
     def _at(self, T):
         # Interpolate to find the partition function at the desired temperature
-        if T<10**(-5) or T>10**4:
-            raise ValueError(f"The temperature {T} is outside the tabulated range of the Kurucz partition functions [{10**(-5)}, {10**(4)}] K")
+        if T < 10 ** (-5) or T > 10**4:
+            raise ValueError(
+                f"The temperature {T} is outside the tabulated range of the Kurucz partition functions [{10**(-5)}, {10**(4)}] K"
+            )
         try:
             return np.interp(T, self.pfT_values, self.pf_values)
         except KeyError:

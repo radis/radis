@@ -30,10 +30,10 @@ except ImportError:  # if ran from here
     from radis.lbl.base import get_wavenumber_range
 
 from radis import config
+from radis.db.classes import to_conventional_name
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
 from radis.spectrum.spectrum import Spectrum
-from radis.db.classes import to_conventional_name
 
 
 # %%
@@ -381,18 +381,15 @@ def calc_spectrum(
     """
 
     # Check inputs
-    if 'molecule' in kwargs:
+    if "molecule" in kwargs:
         print("Molecule is deprecated. Use species instead.")
-        species = kwargs['molecule']
+        species = kwargs["molecule"]
         molecule = to_conventional_name(species)
-    else : 
+    else:
         if species is not None:
-            molecule=to_conventional_name(species)
+            molecule = to_conventional_name(species)
         else:
-            molecule=species
-
-
-    
+            molecule = species
 
     # Get wavenumber, based on whatever was given as input.
     wavenum_min, wavenum_max, input_wunit = get_wavenumber_range(
@@ -545,10 +542,8 @@ def calc_spectrum(
             mole_fraction, diluent, molecule
         )
 
-        if 'molecule' in kwargs_molecule:
-          del kwargs_molecule['molecule']
-        engine = config["DATAFRAME_ENGINE"]
-
+        if "molecule" in kwargs_molecule:
+            del kwargs_molecule["molecule"]
 
         generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
@@ -785,10 +780,8 @@ def _calc_spectrum_one_molecule(
                 # TODO: replace with GEISA partition function someday.............
             }
         elif databank in ["kurucz"]:
-            conditions={
-                "source":"kurucz",
-                "parfuncfmt":"kurucz"}
-            
+            conditions = {"source": "kurucz", "parfuncfmt": "kurucz"}
+
         elif isinstance(databank, tuple) and databank[0] == "exomol":
             conditions = {
                 "source": "exomol",

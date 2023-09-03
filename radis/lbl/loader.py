@@ -63,6 +63,7 @@ from radis import config
 from radis.api.cdsdapi import cdsd2df
 from radis.api.hdf5 import hdf2df
 from radis.api.hitranapi import hit2df, parse_global_quanta, parse_local_quanta
+from radis.api.kuruczapi import AdBKurucz
 from radis.api.tools import drop_object_format_columns, replace_PQR_with_m101
 from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
@@ -76,8 +77,8 @@ from radis.io.kurucz import fetch_kurucz
 from radis.io.query import fetch_astroquery
 from radis.levels.partfunc import (
     PartFunc_Dunham,
-    PartFuncTIPS,
     PartFuncKurucz,
+    PartFuncTIPS,
     RovibParFuncCalculator,
     RovibParFuncTabulator,
 )
@@ -99,8 +100,7 @@ from radis.misc.warning import (
 from radis.phys.convert import cm2nm
 from radis.tools.database import SpecDatabase
 from radis.tools.track_ref import RefTracker
-from radis.api.kuruczapi import AdBKurucz
-from radis.db.classes import is_atom
+
 KNOWN_DBFORMAT = [
     "hitran",
     "hitemp",
@@ -109,7 +109,7 @@ KNOWN_DBFORMAT = [
     "hitemp-radisdb",
     "hdf5-radisdb",
     "geisa",
-    "kurucz"
+    "kurucz",
 ]
 """list: Known formats for Line Databases:
 
@@ -167,7 +167,7 @@ drop_auto_columns_for_dbformat = {
     "hdf5-radisdb": [],
     "hitemp-radisdb": [],
     "geisa": [],
-    "kurucz":[],
+    "kurucz": [],
 }
 """ dict: drop these columns if using ``drop_columns='auto'`` in load_databank
 Based on the value of ``dbformat=``, some of these columns won't be used.
@@ -402,7 +402,6 @@ class Input(ConditionDict):
         "wavenum_max",
         "wavenum_min",
         "species",
-
     ]
 
     def __init__(self):
@@ -428,7 +427,7 @@ class Input(ConditionDict):
         )
         self.wavenum_max = None  #: str: wavenumber max (cm-1)
         self.wavenum_min = None  #: str: wavenumber min (cm-1)
-        self.species=None
+        self.species = None
 
 
 # TO-DO: these error estimations are horribly outdated...
@@ -1065,7 +1064,7 @@ class DatabankLoader(object):
                 )
             )
             source = "hitran"
-        if source not in ["hitran", "hitemp", "exomol", "geisa","kurucz"]:
+        if source not in ["hitran", "hitemp", "exomol", "geisa", "kurucz"]:
             raise NotImplementedError("source: {0}".format(source))
         if source == "hitran":
             dbformat = "hitran"
@@ -1079,9 +1078,7 @@ class DatabankLoader(object):
                 database = "full"
 
         elif source == "kurucz":
-            dbformat=(
-                "kurucz"
-            )
+            dbformat = "kurucz"
         elif source == "exomol":
             dbformat = (
                 "exomol-radisdb"  # downloaded in RADIS local databases ~/.radisdb
@@ -1449,7 +1446,6 @@ class DatabankLoader(object):
             if memory_mapping_engine == "auto":
                 memory_mapping_engine = "vaex"
 
-
             # Download, setup local databases, and fetch (use existing if possible)
 
             if isotope == "all":
@@ -1738,7 +1734,7 @@ class DatabankLoader(object):
         self.misc.total_lines = len(self.df0)  # will be stored in Spectrum metadata
 
         # Check the molecule is what we expected
-        
+
         self.input.molecule = get_molecule(self.df0.attrs["id"])  # get molecule
 
         # %% Load Partition functions (and energies if needed)
@@ -2425,10 +2421,9 @@ class DatabankLoader(object):
                         # self.reftracker.add("10.1016/j.jqsrt.2020.107228", "line database")  # [ExoMol-2020]
                         raise NotImplementedError("use fetch_databank('exomol')")
                     elif dbformat in ["kurucz"]:
-                        kurucz=AdBKurucz(self.input.species)
-                        hdf5_file=fetch_kurucz(self.input.species)[0]
-                        df=fetch_kurucz(self.input.species)[1]
-                        kurucz.add_airbrd(df)             
+                        kurucz = AdBKurucz(self.input.species)
+                        df = fetch_kurucz(self.input.species)[1]
+                        kurucz.add_airbrd(df)
 
                     else:
                         raise ValueError("Unknown dbformat: {0}".format(dbformat))
@@ -2525,7 +2520,7 @@ class DatabankLoader(object):
         minwavdb = df.wav.min()
 
         # ... Explicitly write molecule if not given
-        if self.input.molecule in [None, ""] and self.input.species not in [None,""]:
+        if self.input.molecule in [None, ""] and self.input.species not in [None, ""]:
 
             id_set = df.id.unique()
             if len(id_set) > 1:
@@ -2665,7 +2660,7 @@ class DatabankLoader(object):
         df: pandas DataFrame, or ``None``
             line database to parse. Default ``None``
         """
-        
+
         if molecule is not None and self.input.molecule != molecule:
             raise ValueError(
                 "Expected molecule is {0} according to the inputs, but got {1} ".format(

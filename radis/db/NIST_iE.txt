@@ -1,7 +1,7 @@
 The table below was downloaded from the NIST Atomic Spectra Database Ionization Energies Form (https://physics.nist.gov/PhysRefData/ASD/ionEnergy.html) selecting all elemental species (H-Ds) in the January of 2022.
 Notes:
 (a) If the listed ionization energy is blank, it is unknown. Only the ground state is known.
-(b) Uncertainties of some of the listed values are unknown. 
+(b) Uncertainties of some of the listed values are unknown.
 If you did not find the data you need, please inform the ASD Team.
 ----------------------------------------------------------------------------------------------------------------------------------------
 At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a) (eV)      | Uncertainty (b) (eV) | References
@@ -5154,7 +5154,7 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     101 | Md XCVII      |        +96 | Mendelevium   |   (40100)                            |   400                |           L8672c99
     101 | Md XCVIII     |        +97 | Mendelevium   |   (41000)                            |   400                |           L8672c99
     101 | Md XCIX       |        +98 | Mendelevium   |   (41548)                            |     6                |           L582c106
-    101 | Md C          |        +99 | Mendelevium   |                                      |                      |                   
+    101 | Md C          |        +99 | Mendelevium   |                                      |                      |
     101 | Md CI         |       +100 | Mendelevium   |  (164764)                            |     6                |              L7188
     102 | No I          |          0 | Nobelium      |        6.62621                       |     0.00005          |             L20870
     102 | No II         |         +1 | Nobelium      |      (12.93)                         |     0.04             |             L19691
@@ -5256,7 +5256,7 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     102 | No XCVIII     |        +97 | Nobelium      |   (41200)                            |   400                |           L8672c99
     102 | No XCIX       |        +98 | Nobelium      |   (42100)                            |   500                |           L8672c99
     102 | No C          |        +99 | Nobelium      |   (42632)                            |     6                |           L582c106
-    102 | No CI         |       +100 | Nobelium      |                                      |                      |                   
+    102 | No CI         |       +100 | Nobelium      |                                      |                      |
     102 | No CII        |       +101 | Nobelium      |  (168806)                            |     7                |              L7188
     103 | Lr I          |          0 | Lawrencium    |        4.96                          |     0.05             |             L21372
     103 | Lr II         |         +1 | Lawrencium    |      (14.54)                         |     0.04             |             L19691
@@ -5359,7 +5359,7 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     103 | Lr XCIX       |        +98 | Lawrencium    |   (42300)                            |   500                |           L8672c99
     103 | Lr C          |        +99 | Lawrencium    |   (43200)                            |   500                |           L8672c99
     103 | Lr CI         |       +100 | Lawrencium    |   (43759)                            |     6                |           L582c106
-    103 | Lr CII        |       +101 | Lawrencium    |                                      |                      |                   
+    103 | Lr CII        |       +101 | Lawrencium    |                                      |                      |
     103 | Lr CIII       |       +102 | Lawrencium    |  (172930)                            |     7                |              L7188
     104 | Rf I          |          0 | Rutherfordium |       (6.02)                         |     0.04             |             L19691
     104 | Rf II         |         +1 | Rutherfordium |      (14.35)                         |     0.04             |             L19691
@@ -5375,7 +5375,7 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     104 | Rf XII        |        +11 | Rutherfordium |     (225.0)                          |     2.5              |           L8672c99
     104 | Rf XIII       |        +12 | Rutherfordium |     (244)                            |     3                |           L8672c99
     104 | Rf XIV        |        +13 | Rutherfordium |     (275)                            |     3                |           L8672c99
-    104 | Rf XV         |        +14 | Rutherfordium |                                      |                      |                   
+    104 | Rf XV         |        +14 | Rutherfordium |                                      |                      |
     104 | Rf XXVII      |        +26 | Rutherfordium |     (791)                            |     4                |           L8672c99
     104 | Rf XXVIII     |        +27 | Rutherfordium |     (825)                            |     4                |           L8672c99
     104 | Rf XXIX       |        +28 | Rutherfordium |     (860)                            |     4                |           L8672c99
@@ -5386,28 +5386,28 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     104 | Rf XXXIV      |        +33 | Rutherfordium |    (1073)                            |     5                |           L8672c99
     104 | Rf XXXV       |        +34 | Rutherfordium |    (1114)                            |     5                |           L8672c99
     104 | Rf XXXVI      |        +35 | Rutherfordium |    (1151)                            |     5                |           L8672c99
-    104 | Rf XXXVII     |        +36 | Rutherfordium |                                      |                      |                   
-    104 | Rf XXXVIII    |        +37 | Rutherfordium |                                      |                      |                   
-    104 | Rf XXXIX      |        +38 | Rutherfordium |                                      |                      |                   
-    104 | Rf XL         |        +39 | Rutherfordium |                                      |                      |                   
-    104 | Rf XLI        |        +40 | Rutherfordium |                                      |                      |                   
-    104 | Rf XLII       |        +41 | Rutherfordium |                                      |                      |                   
-    104 | Rf XLIII      |        +42 | Rutherfordium |                                      |                      |                   
-    104 | Rf XLIV       |        +43 | Rutherfordium |                                      |                      |                   
-    104 | Rf XLV        |        +44 | Rutherfordium |                                      |                      |                   
-    104 | Rf XLVI       |        +45 | Rutherfordium |                                      |                      |                   
-    104 | Rf XLVII      |        +46 | Rutherfordium |                                      |                      |                   
-    104 | Rf XLVIII     |        +47 | Rutherfordium |                                      |                      |                   
-    104 | Rf XLIX       |        +48 | Rutherfordium |                                      |                      |                   
-    104 | Rf L          |        +49 | Rutherfordium |                                      |                      |                   
-    104 | Rf LI         |        +50 | Rutherfordium |                                      |                      |                   
-    104 | Rf LII        |        +51 | Rutherfordium |                                      |                      |                   
-    104 | Rf LIII       |        +52 | Rutherfordium |                                      |                      |                   
-    104 | Rf LIV        |        +53 | Rutherfordium |                                      |                      |                   
-    104 | Rf LV         |        +54 | Rutherfordium |                                      |                      |                   
-    104 | Rf LVI        |        +55 | Rutherfordium |                                      |                      |                   
-    104 | Rf LVII       |        +56 | Rutherfordium |                                      |                      |                   
-    104 | Rf LVIII      |        +57 | Rutherfordium |                                      |                      |                   
+    104 | Rf XXXVII     |        +36 | Rutherfordium |                                      |                      |
+    104 | Rf XXXVIII    |        +37 | Rutherfordium |                                      |                      |
+    104 | Rf XXXIX      |        +38 | Rutherfordium |                                      |                      |
+    104 | Rf XL         |        +39 | Rutherfordium |                                      |                      |
+    104 | Rf XLI        |        +40 | Rutherfordium |                                      |                      |
+    104 | Rf XLII       |        +41 | Rutherfordium |                                      |                      |
+    104 | Rf XLIII      |        +42 | Rutherfordium |                                      |                      |
+    104 | Rf XLIV       |        +43 | Rutherfordium |                                      |                      |
+    104 | Rf XLV        |        +44 | Rutherfordium |                                      |                      |
+    104 | Rf XLVI       |        +45 | Rutherfordium |                                      |                      |
+    104 | Rf XLVII      |        +46 | Rutherfordium |                                      |                      |
+    104 | Rf XLVIII     |        +47 | Rutherfordium |                                      |                      |
+    104 | Rf XLIX       |        +48 | Rutherfordium |                                      |                      |
+    104 | Rf L          |        +49 | Rutherfordium |                                      |                      |
+    104 | Rf LI         |        +50 | Rutherfordium |                                      |                      |
+    104 | Rf LII        |        +51 | Rutherfordium |                                      |                      |
+    104 | Rf LIII       |        +52 | Rutherfordium |                                      |                      |
+    104 | Rf LIV        |        +53 | Rutherfordium |                                      |                      |
+    104 | Rf LV         |        +54 | Rutherfordium |                                      |                      |
+    104 | Rf LVI        |        +55 | Rutherfordium |                                      |                      |
+    104 | Rf LVII       |        +56 | Rutherfordium |                                      |                      |
+    104 | Rf LVIII      |        +57 | Rutherfordium |                                      |                      |
     104 | Rf LIX        |        +58 | Rutherfordium |    (3857)                            |     6                |           L8672c99
     104 | Rf LX         |        +59 | Rutherfordium |    (3938)                            |     7                |           L8672c99
     104 | Rf LXI        |        +60 | Rutherfordium |    (4025)                            |    10                |           L8672c99
@@ -5451,8 +5451,8 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     104 | Rf XCIX       |        +98 | Rutherfordium |   (42700)                            |   500                |           L8672c99
     104 | Rf C          |        +99 | Rutherfordium |   (43400)                            |   500                |           L8672c99
     104 | Rf CI         |       +100 | Rutherfordium |   (44300)                            |   500                |           L8672c99
-    104 | Rf CII        |       +101 | Rutherfordium |                                      |                      |                   
-    104 | Rf CIII       |       +102 | Rutherfordium |                                      |                      |                   
+    104 | Rf CII        |       +101 | Rutherfordium |                                      |                      |
+    104 | Rf CIII       |       +102 | Rutherfordium |                                      |                      |
     104 | Rf CIV        |       +103 | Rutherfordium |  (177148)                            |     8                |              L7188
     105 | Db I          |          0 | Dubnium       |       (6.8)                          |     0.5              |             L12825
     105 | Db II         |         +1 | Dubnium       |      (14.0)                          |     1.6              |           L8672c99
@@ -5469,7 +5469,7 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     105 | Db XIII       |        +12 | Dubnium       |     (254)                            |     3                |           L8672c99
     105 | Db XIV        |        +13 | Dubnium       |     (274)                            |     3                |           L8672c99
     105 | Db XV         |        +14 | Dubnium       |     (307)                            |     3                |           L8672c99
-    105 | Db XVI        |        +15 | Dubnium       |                                      |                      |                   
+    105 | Db XVI        |        +15 | Dubnium       |                                      |                      |
     105 | Db XXVIII     |        +27 | Dubnium       |     (838)                            |     4                |           L8672c99
     105 | Db XXIX       |        +28 | Dubnium       |     (872)                            |     4                |           L8672c99
     105 | Db XXX        |        +29 | Dubnium       |     (908)                            |     4                |           L8672c99
@@ -5480,28 +5480,28 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     105 | Db XXXV       |        +34 | Dubnium       |    (1126)                            |     5                |           L8672c99
     105 | Db XXXVI      |        +35 | Dubnium       |    (1168)                            |     5                |           L8672c99
     105 | Db XXXVII     |        +36 | Dubnium       |    (1207)                            |     5                |           L8672c99
-    105 | Db XXXVIII    |        +37 | Dubnium       |                                      |                      |                   
-    105 | Db XXXIX      |        +38 | Dubnium       |                                      |                      |                   
-    105 | Db XL         |        +39 | Dubnium       |                                      |                      |                   
-    105 | Db XLI        |        +40 | Dubnium       |                                      |                      |                   
-    105 | Db XLII       |        +41 | Dubnium       |                                      |                      |                   
-    105 | Db XLIII      |        +42 | Dubnium       |                                      |                      |                   
-    105 | Db XLIV       |        +43 | Dubnium       |                                      |                      |                   
-    105 | Db XLV        |        +44 | Dubnium       |                                      |                      |                   
-    105 | Db XLVI       |        +45 | Dubnium       |                                      |                      |                   
-    105 | Db XLVII      |        +46 | Dubnium       |                                      |                      |                   
-    105 | Db XLVIII     |        +47 | Dubnium       |                                      |                      |                   
-    105 | Db XLIX       |        +48 | Dubnium       |                                      |                      |                   
-    105 | Db L          |        +49 | Dubnium       |                                      |                      |                   
-    105 | Db LI         |        +50 | Dubnium       |                                      |                      |                   
-    105 | Db LII        |        +51 | Dubnium       |                                      |                      |                   
-    105 | Db LIII       |        +52 | Dubnium       |                                      |                      |                   
-    105 | Db LIV        |        +53 | Dubnium       |                                      |                      |                   
-    105 | Db LV         |        +54 | Dubnium       |                                      |                      |                   
-    105 | Db LVI        |        +55 | Dubnium       |                                      |                      |                   
-    105 | Db LVII       |        +56 | Dubnium       |                                      |                      |                   
-    105 | Db LVIII      |        +57 | Dubnium       |                                      |                      |                   
-    105 | Db LIX        |        +58 | Dubnium       |                                      |                      |                   
+    105 | Db XXXVIII    |        +37 | Dubnium       |                                      |                      |
+    105 | Db XXXIX      |        +38 | Dubnium       |                                      |                      |
+    105 | Db XL         |        +39 | Dubnium       |                                      |                      |
+    105 | Db XLI        |        +40 | Dubnium       |                                      |                      |
+    105 | Db XLII       |        +41 | Dubnium       |                                      |                      |
+    105 | Db XLIII      |        +42 | Dubnium       |                                      |                      |
+    105 | Db XLIV       |        +43 | Dubnium       |                                      |                      |
+    105 | Db XLV        |        +44 | Dubnium       |                                      |                      |
+    105 | Db XLVI       |        +45 | Dubnium       |                                      |                      |
+    105 | Db XLVII      |        +46 | Dubnium       |                                      |                      |
+    105 | Db XLVIII     |        +47 | Dubnium       |                                      |                      |
+    105 | Db XLIX       |        +48 | Dubnium       |                                      |                      |
+    105 | Db L          |        +49 | Dubnium       |                                      |                      |
+    105 | Db LI         |        +50 | Dubnium       |                                      |                      |
+    105 | Db LII        |        +51 | Dubnium       |                                      |                      |
+    105 | Db LIII       |        +52 | Dubnium       |                                      |                      |
+    105 | Db LIV        |        +53 | Dubnium       |                                      |                      |
+    105 | Db LV         |        +54 | Dubnium       |                                      |                      |
+    105 | Db LVI        |        +55 | Dubnium       |                                      |                      |
+    105 | Db LVII       |        +56 | Dubnium       |                                      |                      |
+    105 | Db LVIII      |        +57 | Dubnium       |                                      |                      |
+    105 | Db LIX        |        +58 | Dubnium       |                                      |                      |
     105 | Db LX         |        +59 | Dubnium       |    (3975)                            |     7                |           L8672c99
     105 | Db LXI        |        +60 | Dubnium       |    (4057)                            |    10                |           L8672c99
     105 | Db LXII       |        +61 | Dubnium       |    (4145)                            |    12                |           L8672c99
@@ -5545,8 +5545,8 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     105 | Db C          |        +99 | Dubnium       |   (43800)                            |   500                |           L8672c99
     105 | Db CI         |       +100 | Dubnium       |   (44500)                            |   500                |           L8672c99
     105 | Db CII        |       +101 | Dubnium       |   (45400)                            |   500                |           L8672c99
-    105 | Db CIII       |       +102 | Dubnium       |                                      |                      |                   
-    105 | Db CIV        |       +103 | Dubnium       |                                      |                      |                   
+    105 | Db CIII       |       +102 | Dubnium       |                                      |                      |
+    105 | Db CIV        |       +103 | Dubnium       |                                      |                      |
     105 | Db CV         |       +104 | Dubnium       |  (181444)                            |     9                |              L7188
     106 | Sg I          |          0 | Seaborgium    |       [7.8]                          |     0.5              |              L7830
     106 | Sg II         |         +1 | Seaborgium    |      [17.1]                          |     0.5              |              L7830
@@ -5564,7 +5564,7 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     106 | Sg XIV        |        +13 | Seaborgium    |     (285)                            |     3                |           L8672c99
     106 | Sg XV         |        +14 | Seaborgium    |     (306)                            |     3                |           L8672c99
     106 | Sg XVI        |        +15 | Seaborgium    |     (339)                            |     3                |           L8672c99
-    106 | Sg XVII       |        +16 | Seaborgium    |                                      |                      |                   
+    106 | Sg XVII       |        +16 | Seaborgium    |                                      |                      |
     106 | Sg XXIX       |        +28 | Seaborgium    |     (885)                            |     4                |           L8672c99
     106 | Sg XXX        |        +29 | Seaborgium    |     (921)                            |     4                |           L8672c99
     106 | Sg XXXI       |        +30 | Seaborgium    |     (958)                            |     4                |       L8672c98,c99
@@ -5575,28 +5575,28 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     106 | Sg XXXVI      |        +35 | Seaborgium    |    (1181)                            |     5                |           L8672c99
     106 | Sg XXXVII     |        +36 | Seaborgium    |    (1223)                            |     5                |           L8672c99
     106 | Sg XXXVIII    |        +37 | Seaborgium    |    (1263)                            |     4                |           L8672c99
-    106 | Sg XXXIX      |        +38 | Seaborgium    |                                      |                      |                   
-    106 | Sg XL         |        +39 | Seaborgium    |                                      |                      |                   
-    106 | Sg XLI        |        +40 | Seaborgium    |                                      |                      |                   
-    106 | Sg XLII       |        +41 | Seaborgium    |                                      |                      |                   
-    106 | Sg XLIII      |        +42 | Seaborgium    |                                      |                      |                   
-    106 | Sg XLIV       |        +43 | Seaborgium    |                                      |                      |                   
-    106 | Sg XLV        |        +44 | Seaborgium    |                                      |                      |                   
-    106 | Sg XLVI       |        +45 | Seaborgium    |                                      |                      |                   
-    106 | Sg XLVII      |        +46 | Seaborgium    |                                      |                      |                   
-    106 | Sg XLVIII     |        +47 | Seaborgium    |                                      |                      |                   
-    106 | Sg XLIX       |        +48 | Seaborgium    |                                      |                      |                   
-    106 | Sg L          |        +49 | Seaborgium    |                                      |                      |                   
-    106 | Sg LI         |        +50 | Seaborgium    |                                      |                      |                   
-    106 | Sg LII        |        +51 | Seaborgium    |                                      |                      |                   
-    106 | Sg LIII       |        +52 | Seaborgium    |                                      |                      |                   
-    106 | Sg LIV        |        +53 | Seaborgium    |                                      |                      |                   
-    106 | Sg LV         |        +54 | Seaborgium    |                                      |                      |                   
-    106 | Sg LVI        |        +55 | Seaborgium    |                                      |                      |                   
-    106 | Sg LVII       |        +56 | Seaborgium    |                                      |                      |                   
-    106 | Sg LVIII      |        +57 | Seaborgium    |                                      |                      |                   
-    106 | Sg LIX        |        +58 | Seaborgium    |                                      |                      |                   
-    106 | Sg LX         |        +59 | Seaborgium    |                                      |                      |                   
+    106 | Sg XXXIX      |        +38 | Seaborgium    |                                      |                      |
+    106 | Sg XL         |        +39 | Seaborgium    |                                      |                      |
+    106 | Sg XLI        |        +40 | Seaborgium    |                                      |                      |
+    106 | Sg XLII       |        +41 | Seaborgium    |                                      |                      |
+    106 | Sg XLIII      |        +42 | Seaborgium    |                                      |                      |
+    106 | Sg XLIV       |        +43 | Seaborgium    |                                      |                      |
+    106 | Sg XLV        |        +44 | Seaborgium    |                                      |                      |
+    106 | Sg XLVI       |        +45 | Seaborgium    |                                      |                      |
+    106 | Sg XLVII      |        +46 | Seaborgium    |                                      |                      |
+    106 | Sg XLVIII     |        +47 | Seaborgium    |                                      |                      |
+    106 | Sg XLIX       |        +48 | Seaborgium    |                                      |                      |
+    106 | Sg L          |        +49 | Seaborgium    |                                      |                      |
+    106 | Sg LI         |        +50 | Seaborgium    |                                      |                      |
+    106 | Sg LII        |        +51 | Seaborgium    |                                      |                      |
+    106 | Sg LIII       |        +52 | Seaborgium    |                                      |                      |
+    106 | Sg LIV        |        +53 | Seaborgium    |                                      |                      |
+    106 | Sg LV         |        +54 | Seaborgium    |                                      |                      |
+    106 | Sg LVI        |        +55 | Seaborgium    |                                      |                      |
+    106 | Sg LVII       |        +56 | Seaborgium    |                                      |                      |
+    106 | Sg LVIII      |        +57 | Seaborgium    |                                      |                      |
+    106 | Sg LIX        |        +58 | Seaborgium    |                                      |                      |
+    106 | Sg LX         |        +59 | Seaborgium    |                                      |                      |
     106 | Sg LXI        |        +60 | Seaborgium    |    (4095)                            |    10                |           L8672c99
     106 | Sg LXII       |        +61 | Seaborgium    |    (4178)                            |    12                |           L8672c99
     106 | Sg LXIII      |        +62 | Seaborgium    |    (4267)                            |    15                |           L8672c99
@@ -5640,8 +5640,8 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     106 | Sg CI         |       +100 | Seaborgium    |   (44900)                            |   500                |           L8672c99
     106 | Sg CII        |       +101 | Seaborgium    |   (45700)                            |   500                |           L8672c99
     106 | Sg CIII       |       +102 | Seaborgium    |   (46600)                            |   500                |           L8672c99
-    106 | Sg CIV        |       +103 | Seaborgium    |                                      |                      |                   
-    106 | Sg CV         |       +104 | Seaborgium    |                                      |                      |                   
+    106 | Sg CIV        |       +103 | Seaborgium    |                                      |                      |
+    106 | Sg CV         |       +104 | Seaborgium    |                                      |                      |
     106 | Sg CVI        |       +105 | Seaborgium    |  (185839)                            |    10                |              L7188
     107 | Bh I          |          0 | Bohrium       |       [7.7]                          |     0.5              |             L13544
     107 | Bh II         |         +1 | Bohrium       |      [17.5]                          |     0.5              |             L13544
@@ -5660,7 +5660,7 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     107 | Bh XV         |        +14 | Bohrium       |     (318)                            |     3                |           L8672c99
     107 | Bh XVI        |        +15 | Bohrium       |     (337)                            |     3                |           L8672c99
     107 | Bh XVII       |        +16 | Bohrium       |     (374)                            |     3                |           L8672c99
-    107 | Bh XVIII      |        +17 | Bohrium       |                                      |                      |                   
+    107 | Bh XVIII      |        +17 | Bohrium       |                                      |                      |
     107 | Bh XXX        |        +29 | Bohrium       |     (934)                            |     4                |           L8672c99
     107 | Bh XXXI       |        +30 | Bohrium       |     (969)                            |     4                |           L8672c99
     107 | Bh XXXII      |        +31 | Bohrium       |    (1008)                            |     4                |           L8672c99
@@ -5671,28 +5671,28 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     107 | Bh XXXVII     |        +36 | Bohrium       |    (1237)                            |     5                |           L8672c99
     107 | Bh XXXVIII    |        +37 | Bohrium       |    (1280)                            |     4                |           L8672c99
     107 | Bh XXXIX      |        +38 | Bohrium       |    (1320)                            |     4                |           L8672c99
-    107 | Bh XL         |        +39 | Bohrium       |                                      |                      |                   
-    107 | Bh XLI        |        +40 | Bohrium       |                                      |                      |                   
-    107 | Bh XLII       |        +41 | Bohrium       |                                      |                      |                   
-    107 | Bh XLIII      |        +42 | Bohrium       |                                      |                      |                   
-    107 | Bh XLIV       |        +43 | Bohrium       |                                      |                      |                   
-    107 | Bh XLV        |        +44 | Bohrium       |                                      |                      |                   
-    107 | Bh XLVI       |        +45 | Bohrium       |                                      |                      |                   
-    107 | Bh XLVII      |        +46 | Bohrium       |                                      |                      |                   
-    107 | Bh XLVIII     |        +47 | Bohrium       |                                      |                      |                   
-    107 | Bh XLIX       |        +48 | Bohrium       |                                      |                      |                   
-    107 | Bh L          |        +49 | Bohrium       |                                      |                      |                   
-    107 | Bh LI         |        +50 | Bohrium       |                                      |                      |                   
-    107 | Bh LII        |        +51 | Bohrium       |                                      |                      |                   
-    107 | Bh LIII       |        +52 | Bohrium       |                                      |                      |                   
-    107 | Bh LIV        |        +53 | Bohrium       |                                      |                      |                   
-    107 | Bh LV         |        +54 | Bohrium       |                                      |                      |                   
-    107 | Bh LVI        |        +55 | Bohrium       |                                      |                      |                   
-    107 | Bh LVII       |        +56 | Bohrium       |                                      |                      |                   
-    107 | Bh LVIII      |        +57 | Bohrium       |                                      |                      |                   
-    107 | Bh LIX        |        +58 | Bohrium       |                                      |                      |                   
-    107 | Bh LX         |        +59 | Bohrium       |                                      |                      |                   
-    107 | Bh LXI        |        +60 | Bohrium       |                                      |                      |                   
+    107 | Bh XL         |        +39 | Bohrium       |                                      |                      |
+    107 | Bh XLI        |        +40 | Bohrium       |                                      |                      |
+    107 | Bh XLII       |        +41 | Bohrium       |                                      |                      |
+    107 | Bh XLIII      |        +42 | Bohrium       |                                      |                      |
+    107 | Bh XLIV       |        +43 | Bohrium       |                                      |                      |
+    107 | Bh XLV        |        +44 | Bohrium       |                                      |                      |
+    107 | Bh XLVI       |        +45 | Bohrium       |                                      |                      |
+    107 | Bh XLVII      |        +46 | Bohrium       |                                      |                      |
+    107 | Bh XLVIII     |        +47 | Bohrium       |                                      |                      |
+    107 | Bh XLIX       |        +48 | Bohrium       |                                      |                      |
+    107 | Bh L          |        +49 | Bohrium       |                                      |                      |
+    107 | Bh LI         |        +50 | Bohrium       |                                      |                      |
+    107 | Bh LII        |        +51 | Bohrium       |                                      |                      |
+    107 | Bh LIII       |        +52 | Bohrium       |                                      |                      |
+    107 | Bh LIV        |        +53 | Bohrium       |                                      |                      |
+    107 | Bh LV         |        +54 | Bohrium       |                                      |                      |
+    107 | Bh LVI        |        +55 | Bohrium       |                                      |                      |
+    107 | Bh LVII       |        +56 | Bohrium       |                                      |                      |
+    107 | Bh LVIII      |        +57 | Bohrium       |                                      |                      |
+    107 | Bh LIX        |        +58 | Bohrium       |                                      |                      |
+    107 | Bh LX         |        +59 | Bohrium       |                                      |                      |
+    107 | Bh LXI        |        +60 | Bohrium       |                                      |                      |
     107 | Bh LXII       |        +61 | Bohrium       |    (4216)                            |    12                |           L8672c99
     107 | Bh LXIII      |        +62 | Bohrium       |    (4301)                            |    15                |           L8672c99
     107 | Bh LXIV       |        +63 | Bohrium       |    (4390)                            |    19                |           L8672c99
@@ -5736,8 +5736,8 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     107 | Bh CII        |       +101 | Bohrium       |   (46100)                            |   500                |           L8672c99
     107 | Bh CIII       |       +102 | Bohrium       |   (46900)                            |   500                |           L8672c99
     107 | Bh CIV        |       +103 | Bohrium       |   (47800)                            |   500                |           L8672c99
-    107 | Bh CV         |       +104 | Bohrium       |                                      |                      |                   
-    107 | Bh CVI        |       +105 | Bohrium       |                                      |                      |                   
+    107 | Bh CV         |       +104 | Bohrium       |                                      |                      |
+    107 | Bh CVI        |       +105 | Bohrium       |                                      |                      |
     107 | Bh CVII       |       +106 | Bohrium       |  (190331)                            |    11                |              L7188
     108 | Hs I          |          0 | Hassium       |       [7.6]                          |     0.5              |             L13544
     108 | Hs II         |         +1 | Hassium       |      [18.2]                          |     0.5              |             L13544
@@ -5757,7 +5757,7 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     108 | Hs XVI        |        +15 | Hassium       |     (351)                            |     3                |           L8672c99
     108 | Hs XVII       |        +16 | Hassium       |     (371)                            |     3                |           L8672c99
     108 | Hs XVIII      |        +17 | Hassium       |     (409)                            |     3                |           L8672c99
-    108 | Hs XIX        |        +18 | Hassium       |                                      |                      |                   
+    108 | Hs XIX        |        +18 | Hassium       |                                      |                      |
     108 | Hs XXXI       |        +30 | Hassium       |     (984)                            |     4                |           L8672c99
     108 | Hs XXXII      |        +31 | Hassium       |    (1020)                            |     4                |           L8672c99
     108 | Hs XXXIII     |        +32 | Hassium       |    (1060)                            |     4                |           L8672c99
@@ -5768,28 +5768,28 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     108 | Hs XXXVIII    |        +37 | Hassium       |    (1294)                            |     4                |           L8672c99
     108 | Hs XXXIX      |        +38 | Hassium       |    (1338)                            |     4                |           L8672c99
     108 | Hs XL         |        +39 | Hassium       |    (1379)                            |     4                |           L8672c99
-    108 | Hs XLI        |        +40 | Hassium       |                                      |                      |                   
-    108 | Hs XLII       |        +41 | Hassium       |                                      |                      |                   
-    108 | Hs XLIII      |        +42 | Hassium       |                                      |                      |                   
-    108 | Hs XLIV       |        +43 | Hassium       |                                      |                      |                   
-    108 | Hs XLV        |        +44 | Hassium       |                                      |                      |                   
-    108 | Hs XLVI       |        +45 | Hassium       |                                      |                      |                   
-    108 | Hs XLVII      |        +46 | Hassium       |                                      |                      |                   
-    108 | Hs XLVIII     |        +47 | Hassium       |                                      |                      |                   
-    108 | Hs XLIX       |        +48 | Hassium       |                                      |                      |                   
-    108 | Hs L          |        +49 | Hassium       |                                      |                      |                   
-    108 | Hs LI         |        +50 | Hassium       |                                      |                      |                   
-    108 | Hs LII        |        +51 | Hassium       |                                      |                      |                   
-    108 | Hs LIII       |        +52 | Hassium       |                                      |                      |                   
-    108 | Hs LIV        |        +53 | Hassium       |                                      |                      |                   
-    108 | Hs LV         |        +54 | Hassium       |                                      |                      |                   
-    108 | Hs LVI        |        +55 | Hassium       |                                      |                      |                   
-    108 | Hs LVII       |        +56 | Hassium       |                                      |                      |                   
-    108 | Hs LVIII      |        +57 | Hassium       |                                      |                      |                   
-    108 | Hs LIX        |        +58 | Hassium       |                                      |                      |                   
-    108 | Hs LX         |        +59 | Hassium       |                                      |                      |                   
-    108 | Hs LXI        |        +60 | Hassium       |                                      |                      |                   
-    108 | Hs LXII       |        +61 | Hassium       |                                      |                      |                   
+    108 | Hs XLI        |        +40 | Hassium       |                                      |                      |
+    108 | Hs XLII       |        +41 | Hassium       |                                      |                      |
+    108 | Hs XLIII      |        +42 | Hassium       |                                      |                      |
+    108 | Hs XLIV       |        +43 | Hassium       |                                      |                      |
+    108 | Hs XLV        |        +44 | Hassium       |                                      |                      |
+    108 | Hs XLVI       |        +45 | Hassium       |                                      |                      |
+    108 | Hs XLVII      |        +46 | Hassium       |                                      |                      |
+    108 | Hs XLVIII     |        +47 | Hassium       |                                      |                      |
+    108 | Hs XLIX       |        +48 | Hassium       |                                      |                      |
+    108 | Hs L          |        +49 | Hassium       |                                      |                      |
+    108 | Hs LI         |        +50 | Hassium       |                                      |                      |
+    108 | Hs LII        |        +51 | Hassium       |                                      |                      |
+    108 | Hs LIII       |        +52 | Hassium       |                                      |                      |
+    108 | Hs LIV        |        +53 | Hassium       |                                      |                      |
+    108 | Hs LV         |        +54 | Hassium       |                                      |                      |
+    108 | Hs LVI        |        +55 | Hassium       |                                      |                      |
+    108 | Hs LVII       |        +56 | Hassium       |                                      |                      |
+    108 | Hs LVIII      |        +57 | Hassium       |                                      |                      |
+    108 | Hs LIX        |        +58 | Hassium       |                                      |                      |
+    108 | Hs LX         |        +59 | Hassium       |                                      |                      |
+    108 | Hs LXI        |        +60 | Hassium       |                                      |                      |
+    108 | Hs LXII       |        +61 | Hassium       |                                      |                      |
     108 | Hs LXIII      |        +62 | Hassium       |    (4339)                            |    15                |           L8672c99
     108 | Hs LXIV       |        +63 | Hassium       |    (4425)                            |    19                |           L8672c99
     108 | Hs LXV        |        +64 | Hassium       |    (4516)                            |    24                |           L8672c99
@@ -5833,12 +5833,12 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     108 | Hs CIII       |       +102 | Hassium       |   (47300)                            |   500                |           L8672c99
     108 | Hs CIV        |       +103 | Hassium       |   (48100)                            |   500                |           L8672c99
     108 | Hs CV         |       +104 | Hassium       |   (49000)                            |   600                |           L8672c99
-    108 | Hs CVI        |       +105 | Hassium       |                                      |                      |                   
-    108 | Hs CVII       |       +106 | Hassium       |                                      |                      |                   
+    108 | Hs CVI        |       +105 | Hassium       |                                      |                      |
+    108 | Hs CVII       |       +106 | Hassium       |                                      |                      |
     108 | Hs CVIII      |       +107 | Hassium       |  (194917)                            |    12                |              L7188
     109 | Mt V          |         +4 | Meitnerium    |      (50.0)                          |     1.9              |           L8672c99
-    109 | Mt VI         |         +5 | Meitnerium    |                                      |                      |                   
-    109 | Mt VII        |         +6 | Meitnerium    |                                      |                      |                   
+    109 | Mt VI         |         +5 | Meitnerium    |                                      |                      |
+    109 | Mt VII        |         +6 | Meitnerium    |                                      |                      |
     109 | Mt VIII       |         +7 | Meitnerium    |      (94.0)                          |     2.1              |           L8672c99
     109 | Mt IX         |         +8 | Meitnerium    |     (109.0)                          |     2.2              |           L8672c99
     109 | Mt X          |         +9 | Meitnerium    |     (187.0)                          |     2.2              |           L8672c99
@@ -5851,7 +5851,7 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     109 | Mt XVII       |        +16 | Meitnerium    |     (386)                            |     3                |           L8672c99
     109 | Mt XVIII      |        +17 | Meitnerium    |     (406)                            |     3                |           L8672c99
     109 | Mt XIX        |        +18 | Meitnerium    |     (445)                            |     3                |           L8672c99
-    109 | Mt XX         |        +19 | Meitnerium    |                                      |                      |                   
+    109 | Mt XX         |        +19 | Meitnerium    |                                      |                      |
     109 | Mt XXXII      |        +31 | Meitnerium    |    (1035)                            |     4                |           L8672c99
     109 | Mt XXXIII     |        +32 | Meitnerium    |    (1072)                            |     4                |           L8672c99
     109 | Mt XXXIV      |        +33 | Meitnerium    |    (1112)                            |     5                |           L8672c99
@@ -5862,28 +5862,28 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     109 | Mt XXXIX      |        +38 | Meitnerium    |    (1352)                            |     4                |           L8672c99
     109 | Mt XL         |        +39 | Meitnerium    |    (1397)                            |     4                |           L8672c99
     109 | Mt XLI        |        +40 | Meitnerium    |    (1439)                            |     4                |           L8672c99
-    109 | Mt XLII       |        +41 | Meitnerium    |                                      |                      |                   
-    109 | Mt XLIII      |        +42 | Meitnerium    |                                      |                      |                   
-    109 | Mt XLIV       |        +43 | Meitnerium    |                                      |                      |                   
-    109 | Mt XLV        |        +44 | Meitnerium    |                                      |                      |                   
-    109 | Mt XLVI       |        +45 | Meitnerium    |                                      |                      |                   
-    109 | Mt XLVII      |        +46 | Meitnerium    |                                      |                      |                   
-    109 | Mt XLVIII     |        +47 | Meitnerium    |                                      |                      |                   
-    109 | Mt XLIX       |        +48 | Meitnerium    |                                      |                      |                   
-    109 | Mt L          |        +49 | Meitnerium    |                                      |                      |                   
-    109 | Mt LI         |        +50 | Meitnerium    |                                      |                      |                   
-    109 | Mt LII        |        +51 | Meitnerium    |                                      |                      |                   
-    109 | Mt LIII       |        +52 | Meitnerium    |                                      |                      |                   
-    109 | Mt LIV        |        +53 | Meitnerium    |                                      |                      |                   
-    109 | Mt LV         |        +54 | Meitnerium    |                                      |                      |                   
-    109 | Mt LVI        |        +55 | Meitnerium    |                                      |                      |                   
-    109 | Mt LVII       |        +56 | Meitnerium    |                                      |                      |                   
-    109 | Mt LVIII      |        +57 | Meitnerium    |                                      |                      |                   
-    109 | Mt LIX        |        +58 | Meitnerium    |                                      |                      |                   
-    109 | Mt LX         |        +59 | Meitnerium    |                                      |                      |                   
-    109 | Mt LXI        |        +60 | Meitnerium    |                                      |                      |                   
-    109 | Mt LXII       |        +61 | Meitnerium    |                                      |                      |                   
-    109 | Mt LXIII      |        +62 | Meitnerium    |                                      |                      |                   
+    109 | Mt XLII       |        +41 | Meitnerium    |                                      |                      |
+    109 | Mt XLIII      |        +42 | Meitnerium    |                                      |                      |
+    109 | Mt XLIV       |        +43 | Meitnerium    |                                      |                      |
+    109 | Mt XLV        |        +44 | Meitnerium    |                                      |                      |
+    109 | Mt XLVI       |        +45 | Meitnerium    |                                      |                      |
+    109 | Mt XLVII      |        +46 | Meitnerium    |                                      |                      |
+    109 | Mt XLVIII     |        +47 | Meitnerium    |                                      |                      |
+    109 | Mt XLIX       |        +48 | Meitnerium    |                                      |                      |
+    109 | Mt L          |        +49 | Meitnerium    |                                      |                      |
+    109 | Mt LI         |        +50 | Meitnerium    |                                      |                      |
+    109 | Mt LII        |        +51 | Meitnerium    |                                      |                      |
+    109 | Mt LIII       |        +52 | Meitnerium    |                                      |                      |
+    109 | Mt LIV        |        +53 | Meitnerium    |                                      |                      |
+    109 | Mt LV         |        +54 | Meitnerium    |                                      |                      |
+    109 | Mt LVI        |        +55 | Meitnerium    |                                      |                      |
+    109 | Mt LVII       |        +56 | Meitnerium    |                                      |                      |
+    109 | Mt LVIII      |        +57 | Meitnerium    |                                      |                      |
+    109 | Mt LIX        |        +58 | Meitnerium    |                                      |                      |
+    109 | Mt LX         |        +59 | Meitnerium    |                                      |                      |
+    109 | Mt LXI        |        +60 | Meitnerium    |                                      |                      |
+    109 | Mt LXII       |        +61 | Meitnerium    |                                      |                      |
+    109 | Mt LXIII      |        +62 | Meitnerium    |                                      |                      |
     109 | Mt LXIV       |        +63 | Meitnerium    |    (4464)                            |    19                |           L8672c99
     109 | Mt LXV        |        +64 | Meitnerium    |    (4551)                            |    24                |           L8672c99
     109 | Mt LXVI       |        +65 | Meitnerium    |    (4640)                            |    30                |           L8672c99
@@ -5927,12 +5927,12 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     109 | Mt CIV        |       +103 | Meitnerium    |   (48500)                            |   500                |           L8672c99
     109 | Mt CV         |       +104 | Meitnerium    |   (49400)                            |   600                |           L8672c99
     109 | Mt CVI        |       +105 | Meitnerium    |   (50300)                            |   600                |           L8672c99
-    109 | Mt CVII       |       +106 | Meitnerium    |                                      |                      |                   
-    109 | Mt CVIII      |       +107 | Meitnerium    |                                      |                      |                   
+    109 | Mt CVII       |       +106 | Meitnerium    |                                      |                      |
+    109 | Mt CVIII      |       +107 | Meitnerium    |                                      |                      |
     109 | Mt CIX        |       +108 | Meitnerium    |  (199606)                            |    14                |              L7188
     110 | Ds VI         |         +5 | Darmstadtium  |      (65.0)                          |     2.0              |           L8672c99
-    110 | Ds VII        |         +6 | Darmstadtium  |                                      |                      |                   
-    110 | Ds VIII       |         +7 | Darmstadtium  |                                      |                      |                   
+    110 | Ds VII        |         +6 | Darmstadtium  |                                      |                      |
+    110 | Ds VIII       |         +7 | Darmstadtium  |                                      |                      |
     110 | Ds IX         |         +8 | Darmstadtium  |     (112.9)                          |     2.2              |           L8672c99
     110 | Ds X          |         +9 | Darmstadtium  |     (128.0)                          |     2.2              |           L8672c99
     110 | Ds XI         |        +10 | Darmstadtium  |     (216.0)                          |     2.4              |           L8672c99
@@ -5945,7 +5945,7 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     110 | Ds XVIII      |        +17 | Darmstadtium  |     (422)                            |     3                |           L8672c99
     110 | Ds XIX        |        +18 | Darmstadtium  |     (442)                            |     3                |           L8672c99
     110 | Ds XX         |        +19 | Darmstadtium  |     (483)                            |     4                |           L8672c99
-    110 | Ds XXI        |        +20 | Darmstadtium  |                                      |                      |                   
+    110 | Ds XXI        |        +20 | Darmstadtium  |                                      |                      |
     110 | Ds XXXIII     |        +32 | Darmstadtium  |    (1087)                            |     4                |           L8672c99
     110 | Ds XXXIV      |        +33 | Darmstadtium  |    (1125)                            |     5                |           L8672c99
     110 | Ds XXXV       |        +34 | Darmstadtium  |    (1165)                            |     5                |           L8672c99
@@ -5956,28 +5956,28 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     110 | Ds XL         |        +39 | Darmstadtium  |    (1412)                            |     4                |           L8672c99
     110 | Ds XLI        |        +40 | Darmstadtium  |    (1457)                            |     4                |           L8672c99
     110 | Ds XLII       |        +41 | Darmstadtium  |    (1500)                            |     4                |           L8672c99
-    110 | Ds XLIII      |        +42 | Darmstadtium  |                                      |                      |                   
-    110 | Ds XLIV       |        +43 | Darmstadtium  |                                      |                      |                   
-    110 | Ds XLV        |        +44 | Darmstadtium  |                                      |                      |                   
-    110 | Ds XLVI       |        +45 | Darmstadtium  |                                      |                      |                   
-    110 | Ds XLVII      |        +46 | Darmstadtium  |                                      |                      |                   
-    110 | Ds XLVIII     |        +47 | Darmstadtium  |                                      |                      |                   
-    110 | Ds XLIX       |        +48 | Darmstadtium  |                                      |                      |                   
-    110 | Ds L          |        +49 | Darmstadtium  |                                      |                      |                   
-    110 | Ds LI         |        +50 | Darmstadtium  |                                      |                      |                   
-    110 | Ds LII        |        +51 | Darmstadtium  |                                      |                      |                   
-    110 | Ds LIII       |        +52 | Darmstadtium  |                                      |                      |                   
-    110 | Ds LIV        |        +53 | Darmstadtium  |                                      |                      |                   
-    110 | Ds LV         |        +54 | Darmstadtium  |                                      |                      |                   
-    110 | Ds LVI        |        +55 | Darmstadtium  |                                      |                      |                   
-    110 | Ds LVII       |        +56 | Darmstadtium  |                                      |                      |                   
-    110 | Ds LVIII      |        +57 | Darmstadtium  |                                      |                      |                   
-    110 | Ds LIX        |        +58 | Darmstadtium  |                                      |                      |                   
-    110 | Ds LX         |        +59 | Darmstadtium  |                                      |                      |                   
-    110 | Ds LXI        |        +60 | Darmstadtium  |                                      |                      |                   
-    110 | Ds LXII       |        +61 | Darmstadtium  |                                      |                      |                   
-    110 | Ds LXIII      |        +62 | Darmstadtium  |                                      |                      |                   
-    110 | Ds LXIV       |        +63 | Darmstadtium  |                                      |                      |                   
+    110 | Ds XLIII      |        +42 | Darmstadtium  |                                      |                      |
+    110 | Ds XLIV       |        +43 | Darmstadtium  |                                      |                      |
+    110 | Ds XLV        |        +44 | Darmstadtium  |                                      |                      |
+    110 | Ds XLVI       |        +45 | Darmstadtium  |                                      |                      |
+    110 | Ds XLVII      |        +46 | Darmstadtium  |                                      |                      |
+    110 | Ds XLVIII     |        +47 | Darmstadtium  |                                      |                      |
+    110 | Ds XLIX       |        +48 | Darmstadtium  |                                      |                      |
+    110 | Ds L          |        +49 | Darmstadtium  |                                      |                      |
+    110 | Ds LI         |        +50 | Darmstadtium  |                                      |                      |
+    110 | Ds LII        |        +51 | Darmstadtium  |                                      |                      |
+    110 | Ds LIII       |        +52 | Darmstadtium  |                                      |                      |
+    110 | Ds LIV        |        +53 | Darmstadtium  |                                      |                      |
+    110 | Ds LV         |        +54 | Darmstadtium  |                                      |                      |
+    110 | Ds LVI        |        +55 | Darmstadtium  |                                      |                      |
+    110 | Ds LVII       |        +56 | Darmstadtium  |                                      |                      |
+    110 | Ds LVIII      |        +57 | Darmstadtium  |                                      |                      |
+    110 | Ds LIX        |        +58 | Darmstadtium  |                                      |                      |
+    110 | Ds LX         |        +59 | Darmstadtium  |                                      |                      |
+    110 | Ds LXI        |        +60 | Darmstadtium  |                                      |                      |
+    110 | Ds LXII       |        +61 | Darmstadtium  |                                      |                      |
+    110 | Ds LXIII      |        +62 | Darmstadtium  |                                      |                      |
+    110 | Ds LXIV       |        +63 | Darmstadtium  |                                      |                      |
     110 | Ds LXV        |        +64 | Darmstadtium  |    (4590)                            |    24                |           L8672c99
     110 | Ds LXVI       |        +65 | Darmstadtium  |    (4680)                            |    30                |           L8672c99
     110 | Ds LXVII      |        +66 | Darmstadtium  |    (4770)                            |    40                |           L8672c99
@@ -6021,6 +6021,6 @@ At. num | Sp. Name      | Ion Charge | El. Name      |      Ionization Energy (a
     110 | Ds CV         |       +104 | Darmstadtium  |   (49800)                            |   600                |           L8672c99
     110 | Ds CVI        |       +105 | Darmstadtium  |   (50700)                            |   600                |           L8672c99
     110 | Ds CVII       |       +106 | Darmstadtium  |   (51600)                            |   600                |           L8672c99
-    110 | Ds CVIII      |       +107 | Darmstadtium  |                                      |                      |                   
-    110 | Ds CIX        |       +108 | Darmstadtium  |                                      |                      |                   
+    110 | Ds CVIII      |       +107 | Darmstadtium  |                                      |                      |
+    110 | Ds CIX        |       +108 | Darmstadtium  |                                      |                      |
     110 | Ds CX         |       +109 | Darmstadtium  |  (204400)                            |    15                |              L7188
