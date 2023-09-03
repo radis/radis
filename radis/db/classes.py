@@ -47,6 +47,8 @@ Routine Listing
 import re
 from os.path import dirname, exists, join
 
+import periodictable
+
 from radis.db.conventions import get_convention
 from radis.db.utils import (
     get_default_jsonfile,
@@ -217,6 +219,38 @@ HITRAN_MOLECULES = list(trans.values())
 """ str: list of [HITRAN-2020]_ molecules. """
 
 
+def is_atom(species):
+    if "_I" in species:
+        return True
+    else:
+        return False
+
+
+def to_conventional_name(species):
+
+    # If the charge is positive
+    if "+" in species:
+        # Count the number of positive charges
+        charge = species.count("+") + 1  # Add one to convert to conventional notation
+        # Get the element of the species without the charge
+        element_name = species.split("+")[0]
+        # Convert the charge to roman notation
+        charge_in_roman = {1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}.get(charge, "")
+        return f"{element_name}_{charge_in_roman}"
+
+    # If species is an element
+    else:
+        try:
+            atomic_symbol = species.split("_")[0]
+            el = getattr(periodictable, atomic_symbol)
+            if el.symbol == species:  # check if symbols match
+                return f"{species}_I"
+            else:
+                return species
+        except:
+            return species
+
+
 def get_molecule_identifier(molecule_name):
     r"""
     For a given input molecular formula, return the corresponding
@@ -378,6 +412,7 @@ EXOMOL_MOLECULES = [
     "PO",
     "PS",
     "SH",
+    "SO",
     "SO2",
     "SO3",
     "ScH",
@@ -620,7 +655,7 @@ class ElectronicState(Isotope):
         vmax_morse=None,
         Jmax=None,
         Ediss=None,
-        **kwargs
+        **kwargs,
     ):
 
         super(ElectronicState, self).__init__(
