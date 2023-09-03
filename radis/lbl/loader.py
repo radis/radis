@@ -387,7 +387,7 @@ class Input(ConditionDict):
         "molecule",
         "overpopulation",
         "path_length",
-        "pressure_mbar",
+        "pressure",
         "rot_distribution",
         "self_absorption",
         "state",
@@ -410,7 +410,7 @@ class Input(ConditionDict):
         self.molecule = None  #: str: molecule
         self.overpopulation = None  #: dict: overpopulation
         self.path_length = None  #: float: path length (cm)
-        self.pressure_mbar = 1013.25  #: float: pressure (mbar)
+        self.pressure = 1.01325  #: float: pressure (bar)
         self.rot_distribution = "boltzmann"  #: str: rotational levels distribution
         self.self_absorption = (
             True  #: bool: self absorption (if True, not optically thin)

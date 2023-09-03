@@ -2496,15 +2496,15 @@ class Spectrum(object):
                 from radis.phys.constants import k_b
 
                 try:
-                    P_mbar = self.conditions["pressure_mbar"]  # mbar
+                    P = self.conditions["pressure"]  # bar
                     T = self.conditions["Tgas"]
                     mfrac = self.conditions["mole_fraction"]
                 except KeyError:
                     raise KeyError(
-                        "P_mbar (pressure), T (Tgas) and n (mole_fraction) "
+                        "P (pressure), T (Tgas) and n (mole_fraction) "
                         + "are needed to calculate total number density in (cm-3)"
                     )
-                N = P_mbar * 1e2 / k_b / T * mfrac * 1e-6
+                N = P * 1e5 / k_b / T * mfrac * 1e-6
                 n = n * N
                 unitlabel = " [cm-3]"
             elif nunit == "":

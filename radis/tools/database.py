@@ -696,15 +696,27 @@ def _fix_format(file, sload):
         sload["conditions"]["isotope"] = sload["conditions"].pop("isotope_identifier")
         fixed = True
 
+    if "pressure_mbar" in sload["conditions"]:
+        printr(
+            "File {0}".format(basename(file))
+            + " has a deprecated structure (key "
+            + "pressure_mbar replaced with pressure). Fixed this time, but regenerate "
+            + "database ASAP."
+        )  # , DeprecationWarning)
+        sload["conditions"]["pressure"] = (
+            sload["conditions"].pop("pressure_mbar") * 1e-3
+        )
+        fixed = True
+
     if "air_pressure_mbar" in sload["conditions"]:
         printr(
             "File {0}".format(basename(file))
             + " has a deprecated structure (key "
-            + "air_pressure_mbar replaced with pressure_mbar). Fixed this time, but regenerate "
+            + "air_pressure_mbar replaced with pressure). Fixed this time, but regenerate "
             + "database ASAP."
         )  # , DeprecationWarning)
-        sload["conditions"]["pressure_mbar"] = sload["conditions"].pop(
-            "air_pressure_mbar"
+        sload["conditions"]["pressure"] = (
+            sload["conditions"].pop("air_pressure_mbar") * 1e-3
         )
         fixed = True
 
@@ -1606,7 +1618,7 @@ class SpecList(object):
         --------
         ::
 
-            db.create_fname_grid(["Tgas", "pressure_mbar"])
+            db.create_fname_grid(["Tgas", "pressure"])
 
         See Also
         --------

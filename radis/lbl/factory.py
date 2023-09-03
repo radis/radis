@@ -535,7 +535,7 @@ class SpectrumFactory(BandFactory):
         self.input.wavenum_min = wavenum_min
         self.input.wavenum_max = wavenum_max
         self.input.Tref = convert_and_strip_units(Tref, u.K)
-        self.input.pressure_mbar = convert_and_strip_units(pressure, u.bar) * 1e3
+        self.input.pressure = convert_and_strip_units(pressure, u.bar)
         self.input.mole_fraction = mole_fraction
         if config["DATAFRAME_ENGINE"] in ["pandas", "vaex"]:
             self.dataframe_engine = config["DATAFRAME_ENGINE"]
@@ -758,7 +758,7 @@ class SpectrumFactory(BandFactory):
         if mole_fraction is not None:
             self.input.mole_fraction = mole_fraction
         if pressure is not None:
-            self.input.pressure_mbar = pressure * 1e3
+            self.input.pressure = pressure
         if not is_float(Tgas):
             raise ValueError(
                 "Tgas should be float or Astropy unit. Got {0}".format(Tgas)
@@ -772,7 +772,7 @@ class SpectrumFactory(BandFactory):
         self.input.Trot = Tgas  # just for info
 
         # Init variables
-        pressure_mbar = self.input.pressure_mbar
+        pressure = self.input.pressure
         mole_fraction = self.input.mole_fraction
         path_length = self.input.path_length
         verbose = self.verbose
@@ -839,7 +839,7 @@ class SpectrumFactory(BandFactory):
         self.profiler.start("calc_other_spectral_quan", 2)
 
         # incorporate density of molecules (see equation (A.16) )
-        density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
+        density = mole_fraction * ((pressure * 1e5) / (k_b * Tgas)) * 1e-6
         #  :
         # (#/cm3)
 
@@ -1042,7 +1042,7 @@ class SpectrumFactory(BandFactory):
         if mole_fraction is not None:
             self.input.mole_fraction = mole_fraction
         if pressure is not None:
-            self.input.pressure_mbar = pressure * 1e3
+            self.input.pressure = pressure
         if not is_float(Tgas):
             raise ValueError("Tgas should be float.")
         self.input.rot_distribution = "boltzmann"  # equilibrium
@@ -1059,7 +1059,7 @@ class SpectrumFactory(BandFactory):
         self._reset_profiler(verbose)
 
         # Init variables
-        pressure_mbar = self.input.pressure_mbar
+        pressure = self.input.pressure
         mole_fraction = self.input.mole_fraction
         path_length = self.input.path_length
 
@@ -1162,7 +1162,7 @@ class SpectrumFactory(BandFactory):
             print("Calculating spectra...", end=" ")
 
         abscoeff_calc, iter_params, times = gpu_iterate(
-            pressure_mbar * 1e-3,
+            pressure,
             Tgas,
             mole_fraction,
             verbose=verbose,
@@ -1364,10 +1364,6 @@ class SpectrumFactory(BandFactory):
         s.apply_slit(slit_FWHM, unit="cm-1")  # to create 'radiance', 'transmittance'
         s.conditions["slit_FWHM"] = slit_FWHM
 
-        # TODO: this should be resolved; there should be only one pressure that is
-        # both used as keyword by the user and as input value for spectra.
-        s.conditions["pressure"] = s.conditions["pressure_mbar"] * 1e-3
-
         was_interactive = plt.isinteractive
         plt.ion()
 
@@ -1563,7 +1559,7 @@ class SpectrumFactory(BandFactory):
         if mole_fraction is not None:
             self.input.mole_fraction = mole_fraction
         if pressure is not None:
-            self.input.pressure_mbar = pressure * 1e3
+            self.input.pressure = pressure
         if isinstance(Tvib, tuple):
             Tvib = tuple([convert_and_strip_units(T, u.K) for T in Tvib])
         elif not is_float(Tvib):
@@ -1591,7 +1587,7 @@ class SpectrumFactory(BandFactory):
         # Init variables
         path_length = self.input.path_length
         mole_fraction = self.input.mole_fraction
-        pressure_mbar = self.input.pressure_mbar
+        pressure = self.input.pressure
         verbose = self.verbose
 
         # New Profiler object
@@ -1685,7 +1681,7 @@ class SpectrumFactory(BandFactory):
         self.profiler.start("calc_other_spectral_quan", 2)
 
         # incorporate density of molecules (see Rothman 1996 equation (A.16) )
-        density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
+        density = mole_fraction * ((pressure * 1e5) / (k_b * Tgas)) * 1e-6
         #  :
         # (#/cm3)
 
@@ -2200,7 +2196,7 @@ class SpectrumFactory(BandFactory):
         # Init variables
         path_length = self.input.path_length
         mole_fraction = self.input.mole_fraction
-        pressure_mbar = self.input.pressure_mbar
+        pressure = self.input.pressure
         verbose = self.verbose
 
         # New Profiler object
@@ -2266,7 +2262,7 @@ class SpectrumFactory(BandFactory):
         P = self.df1["Ei"][b].sum()  # Ei  >> (mW/sr)
 
         # incorporate density of molecules (see equation (A.16) )
-        density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
+        density = mole_fraction * ((pressure * 1e5) / (k_b * Tgas)) * 1e-6
         Pv = P * density  # (mW/sr/cm3)
 
         # Optically thin case (no self absorption):

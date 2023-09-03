@@ -889,10 +889,10 @@ class BroadenFactory(BaseFactory):
                 "Tgas not defined. Make sure the parent function creates it"
             )
         Tgas = self.input.Tgas
-        pressure_mbar = self.input.pressure_mbar
+        pressure = self.input.pressure
         mole_fraction = self.input.mole_fraction
         # convert from mbar to atm for linebroadening calculation
-        pressure_atm = pressure_mbar / 1013.25
+        pressure_atm = pressure / 1.01325
         # coefficients tabulation temperature
         Tref = self.input.Tref
         broadening_method = (
@@ -1741,7 +1741,7 @@ class BroadenFactory(BaseFactory):
         import matplotlib.pyplot as plt
 
         if pressure_atm is None:
-            pressure_atm = self.input.pressure_mbar / 1013.25
+            pressure_atm = self.input.pressure / 1.01325
         if mole_fraction is None:
             mole_fraction = self.input.mole_fraction
         if Tgas is None:

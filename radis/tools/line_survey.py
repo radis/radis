@@ -191,7 +191,7 @@ def LineSurvey(
 
     # Get input
     # T = spec.conditions["Tgas"]
-    # P = spec.conditions["pressure_mbar"] / 1000  # bar1013.25 # atm
+    # P = spec.conditions["pressure"]  # bar1013.25 # atm
     # Xi = spec.conditions["mole_fraction"]
     sp = spec.lines.copy()
 

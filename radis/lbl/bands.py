@@ -172,7 +172,7 @@ class BandFactory(BroadenFactory):
         if mole_fraction is not None:
             self.input.mole_fraction = mole_fraction
         if pressure is not None:
-            self.input.pressure_mbar = pressure * 1e3
+            self.input.pressure = pressure
         if not is_float(Tgas):
             raise ValueError("Tgas should be a float or Astropy unit")
         assert type(levels) in [str, list, int]
@@ -188,7 +188,7 @@ class BandFactory(BroadenFactory):
         self.input.Trot = Tgas  # just for info
 
         # Init variables
-        pressure_mbar = self.input.pressure_mbar
+        pressure = self.input.pressure
         mole_fraction = self.input.mole_fraction
         path_length = self.input.path_length
         verbose = self.verbose
@@ -303,7 +303,7 @@ class BandFactory(BroadenFactory):
         for i, (band, abscoeff_v) in enumerate(abscoeff_v_bands.items()):
 
             # incorporate density of molecules (see equation (A.16) )
-            density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
+            density = mole_fraction * ((pressure * 1e5) / (k_b * Tgas)) * 1e-6
             #  :
             # (#/cm3)
             abscoeff = abscoeff_v * density  # cm-1
@@ -469,7 +469,7 @@ class BandFactory(BroadenFactory):
         if mole_fraction is not None:
             self.input.mole_fraction = mole_fraction
         if pressure is not None:
-            self.input.pressure_mbar = pressure * 1e3
+            self.input.pressure = pressure
         if isinstance(Tvib, tuple):
             Tvib = tuple([convert_and_strip_units(T, u.K) for T in Tvib])
         elif not is_float(Tvib):
@@ -509,7 +509,7 @@ class BandFactory(BroadenFactory):
         # Init variables
         path_length = self.input.path_length
         mole_fraction = self.input.mole_fraction
-        pressure_mbar = self.input.pressure_mbar
+        pressure = self.input.pressure
         verbose = self.verbose
 
         # New Profiler object
@@ -640,7 +640,7 @@ class BandFactory(BroadenFactory):
             emisscoeff_v = emisscoeff_v_bands[band]
 
             # incorporate density of molecules (see equation (A.16) )
-            density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
+            density = mole_fraction * ((pressure * 1e5) / (k_b * Tgas)) * 1e-6
             #  :
             # (#/cm3)
 

@@ -135,7 +135,7 @@ class BaseFactory(DatabankLoader):
         "Tgas": "K",
         "Tvib": "K",
         "Trot": "K",
-        "pressure_mbar": "mbar",
+        "pressure": "bar",
         "path_length": "cm",
         #        'slit_function_FWHM':   'nm',
         "cutoff": "cm-1/(#.cm-2)",
@@ -2319,7 +2319,7 @@ class BaseFactory(DatabankLoader):
         df = self.df1
 
         # Calculate
-        air_pressure = self.input.pressure_mbar / 1013.25  # convert from mbar to atm
+        air_pressure = self.input.pressure / 1.01325  # convert from bar to atm
 
         if "Pshft" in df.columns:
             df["shiftwav"] = df.wav + (df.Pshft * air_pressure)

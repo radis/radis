@@ -69,7 +69,7 @@ PHYSICAL_PARAMS = [
     "medium",
     "self_absorption",
     "slit_function_base",
-    "pressure_mbar",
+    "pressure",
     "wavelength_min",
     "wavelength_max",
     "Telec",
