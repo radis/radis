@@ -373,7 +373,6 @@ def pressure_broadening_HWHM(
     return gamma_lb
 
 
-
 def lorentzian_lineshape(w_centered, gamma_lb):
     r"""Computes collisional broadening over all lines [1]_
 
@@ -520,8 +519,6 @@ def voigt_broadening_HWHM(
     :py:func:`~radis.lbl.broadening.doppler_broadening_HWHM`,
     :py:func:`~radis.lbl.broadening.voigt_lineshape`
     """
-    
-    
 
     # Collisional broadening HWHM
     gamma_lb = pressure_broadening_HWHM(
@@ -804,8 +801,9 @@ class BroadenFactory(BaseFactory):
     --------
     :class:`~radis.lbl.factory.SpectrumFactory`
     """
+
     def __init__(self):
-    
+
         super(BroadenFactory, self).__init__()
 
         # Name variables (initialized later in SpectrumFactory)
@@ -969,9 +967,6 @@ class BroadenFactory(BaseFactory):
 
         self.profiler.stop("calc_hwhm", "Calculate broadening HWHM")
 
-
-
-
     def _calc_min_width(self, df):
         """Calculates the minimum FWHM of the lines
         and stores in self.min_width
@@ -1022,7 +1017,6 @@ class BroadenFactory(BaseFactory):
 
         # TODO: thresholds depend whether we're computing Transmittance/optically thin emission,
         # for a homogeneous slab, or self-absorbed radiance combined with other slabs.
-            
 
         min_width = self.min_width
 
@@ -1116,7 +1110,7 @@ class BroadenFactory(BaseFactory):
             selbrd = df.selbrd
 
         # Calculate broadening FWHM
-        wv, wl, wg = voigt_broadening_HWHM( 
+        wv, wl, wg = voigt_broadening_HWHM(
             df.airbrd,
             selbrd,
             df.Tdpair,
@@ -1136,7 +1130,7 @@ class BroadenFactory(BaseFactory):
         df["hwhm_lorentz"] = wl
         df["hwhm_gauss"] = wg
 
-        return 
+        return
 
     def _add_collisional_broadening_HWHM(
         self,
@@ -1238,9 +1232,6 @@ class BroadenFactory(BaseFactory):
         df["hwhm_gauss"] = wg
 
         return
-
-
-    
 
     def _collisional_lineshape(self, dg, wbroad_centered):
         """Computes collisional broadening over all lines + normalize and raise
