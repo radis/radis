@@ -81,11 +81,12 @@ _modules = []
 
 
 class CuContext:
-    def __init__(self, device, context):
+    def __init__(self, device, context, stream):
 
         # private:
         self._device = device
         self._context = context
+        self._stream = stream
 
     @staticmethod
     def setVerbosity(level):
@@ -103,6 +104,7 @@ class CuContext:
         # private:
         _context = c_void_p(0)
         _device = c_void_p(0)
+        _stream = c_void_p(0)
 
         cuda_name = "nvcuda.dll" if os_name == "nt" else "libcuda.so"
         try:
@@ -137,7 +139,9 @@ class CuContext:
             lib.cuCtxDestroy_v2(_context)
             return None
 
-        return CuContext(_device, _context)
+        cu_print(lib.cuStreamCreate(byref(_stream), 0), "ctx.create stream")
+
+        return CuContext(_device, _context, _stream)
 
     @staticmethod
     def getDeviceList():
@@ -348,11 +352,19 @@ class CuFunction:
         self.sync = self.sync if sync is None else sync
 
         voidPtrArr = len(self.args) * c_void_p
-        c_args = voidPtrArr(*[cast(byref(arr._ptr), c_void_p) for arr in self.args])
+        self._c_args = voidPtrArr(
+            *[cast(byref(arr._ptr), c_void_p) for arr in self.args]
+        )
 
         cu_print(
             lib.cuLaunchKernel(  # _ptsz
-                self._function, *self.blocks, *self.threads, 0, 0, c_args, 0
+                self._function,
+                *self.blocks,
+                *self.threads,
+                0,
+                self.module.context._stream,
+                self._c_args,
+                0
             ),
             "func.kernel",
         )
