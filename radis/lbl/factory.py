@@ -1288,7 +1288,7 @@ class SpectrumFactory(BandFactory):
         return s
 
     def eq_spectrum_gpu_interactive(
-        self, var="transmittance", slit_FWHM=0.0, plotkwargs={}, *vargs, **kwargs
+        self, var="transmittance", slit_function=0.0, plotkwargs={}, *vargs, **kwargs
     ) -> Spectrum:
         """
 
@@ -1296,7 +1296,7 @@ class SpectrumFactory(BandFactory):
         ----------
         var : TYPE, optional
             DESCRIPTION. The default is "transmittance".
-        slit_FWHM : TYPE, optional
+        slit_function : TYPE, optional
             DESCRIPTION. The default is 0.0.
         *vargs : TYPE
             arguments forwarded to :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`
@@ -1331,7 +1331,7 @@ class SpectrumFactory(BandFactory):
                                            pressure=0.2, #bar
                                            mole_fraction=0.1,
                                            path_length=ParamRange(0,10,2.0), #cm
-                                           slit_FWHM=ParamRange(0,1,0), #cm
+                                           slit_function=ParamRange(0,1,0), #cm
                                            )
 
         .. minigallery:: radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu_interactive
@@ -1359,26 +1359,31 @@ class SpectrumFactory(BandFactory):
 
         s = self.eq_spectrum_gpu(*vargs, **kwargs)
 
-        if is_range(slit_FWHM):
-            self.interactive_params["slit_FWHM"] = slit_FWHM
-            slit_FWHM.name = "slit_FWHM"
-            slit_FWHM = slit_FWHM.valinit
+        if is_range(slit_function):
+            self.interactive_params["slit_function"] = slit_function
+            slit_function.name = "slit_function"
+            slit_function = slit_function.valinit
 
-        s.apply_slit(slit_FWHM, unit="cm-1")  # to create 'radiance', 'transmittance'
-        s.conditions["slit_function"] = slit_FWHM
-        # s.conditions['waveunit'] = plotkwargs.get("wunit", "default")
+        s.apply_slit(
+            slit_function, unit="cm-1"
+        )  # to create 'radiance', 'transmittance'
+        s.conditions["slit_function"] = slit_function
 
         was_interactive = plt.isinteractive
         plt.ion()
 
-        print(plotkwargs)
         line = s.plot(var, show=True, **plotkwargs)
         fig = line.figure
 
         def update_plot(val):
             # We directly updated the s.conditions dict so params don't have to
             # be passed to s.recalc_gpu() anymore
-            new_y = s.recalc_gpu(var, Iunit=plotkwargs.get("Iunit", "default"))
+
+            new_y = s.recalc_gpu(
+                var,
+                wunit=plotkwargs.get("wunit", "default"),
+                Iunit=plotkwargs.get("Iunit", "default"),
+            )
             line.set_ydata(new_y)
             fig.canvas.draw_idle()
 

@@ -5271,12 +5271,13 @@ class Spectrum(object):
     def recalc_gpu(
         self,
         var="abscoeff",
+        wunit="default",
         Iunit="default",
         pressure=None,
         Tgas=None,
         mole_fraction=None,
         path_length=None,
-        slit_FWHM=None,
+        slit_function=None,
     ):
         """Recalculated the spectrum based on new input parameters. Can only be called
         for spectrum objectes produced by :py:meth:`~radis.lbl.factory.SpectrumFctory.eq_spectrum_gpu`.
@@ -5291,6 +5292,9 @@ class Spectrum(object):
         var: variable (`absorbance`, `transmittance`, `transmittance_noslit`, `xsection`, etc.)
             For full list see :py:meth:`~radis.spectrum.spectrum.Spectrum.get_vars()`.
             If ``None``, plot the first thing in the Spectrum. Default ``None``.
+        wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'`` or ``None``
+            wavelength in air (``'nm'``), wavenumber (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
+            If ``None``, ``'wavespace'`` must be defined in ``conditions``.
         Iunit: unit for variable
             if `default`, default unit for quantity `var` is used.
             for radiance, one can use per wavelength (~ `W/m2/sr/nm`) or
@@ -5303,8 +5307,8 @@ class Spectrum(object):
             Mole fraction
         path_length: float, optional
             Absroption length in [cm]
-        slit_FWHM: float, optional
-            Slit width in [cm-1]
+        slit_function: float, optional
+            Slit FWHM in [cm-1]
 
 
         Returns
@@ -5351,8 +5355,8 @@ class Spectrum(object):
             self.conditions["mole_fraction"] = mole_fraction
         if path_length is not None:
             self.conditions["path_length"] = path_length
-        # if slit_FWHM is not None: self.conditions["slit_FWHM"] = slit_FWHM
-        # self.conditions["slit_function"] = self.conditions["slit_FWHM"]
+        if slit_function is not None:
+            self.conditions["slit_function"] = slit_function
 
         from radis.gpu.gpu import gpu_iterate
 
@@ -5363,7 +5367,7 @@ class Spectrum(object):
             verbose=0,
             # TODO: GPU apply_slit not supported yet
             # l=s.conditions["path_length"],
-            # slit_FWHM=s.conditions["slit_FWHM"],
+            # slit_FWHM=s.conditions["slit_function"],
         )
         self.conditions["NwL"] = iter_params.N_L
         self.conditions["NwG"] = iter_params.N_G
@@ -5381,9 +5385,10 @@ class Spectrum(object):
         _, new_y = self.get(
             var,
             copy=False,  # copy = False saves some time & memory, it's a pointer/reference to the real data, which is fine here as data is just plotted
-            wunit=self.conditions["waveunit"],
+            wunit=wunit,
             Iunit=Iunit,
         )
+
         return new_y
 
 

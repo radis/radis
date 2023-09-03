@@ -19,7 +19,7 @@ using CUDA, check :ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>`
 
 """
 
-from radis import SpectrumFactory
+from radis import SpectrumFactory, plot_diff
 
 sf = SpectrumFactory(
     2150,
@@ -31,13 +31,29 @@ sf = SpectrumFactory(
 
 sf.fetch_databank("hitemp")
 
-s = sf.eq_spectrum_gpu(
-    Tgas=1100.0,  # K
-    pressure=1,  # bar
-    mole_fraction=0.8,
-    path_length=0.2,  # cm
-)
-print(s)
+T = 1500.0  # K
+p = 1.0  # bar
+x = 0.8
+l = 0.2  # cm
+w_slit = 0.5  # cm-1
 
-s.apply_slit(0.5, unit="cm-1")  # cm-1
-s.plot("radiance", wunit="nm", show=True)
+s_cpu = sf.eq_spectrum(
+    name="CPU",
+    Tgas=T,
+    pressure=p,
+    mole_fraction=x,
+    path_length=l,
+)
+s_cpu.apply_slit(w_slit, unit="cm-1")
+
+s_gpu = sf.eq_spectrum_gpu(
+    name="GPU",
+    Tgas=T,
+    pressure=p,
+    mole_fraction=x,
+    path_length=l,
+    backend="gpu-cuda",
+)
+s_gpu.apply_slit(w_slit, unit="cm-1")
+
+plot_diff(s_cpu, s_gpu, var="transmittance", wunit="nm", method="diff")
