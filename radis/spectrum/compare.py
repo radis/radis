@@ -860,7 +860,7 @@ def plot_diff(
     ax1 = []
     for i in range(len(methods)):
         ax1i = fig.add_subplot(gs[i + 1])
-        ax1i.get_shared_x_axes().join(ax0, ax1i)
+        ax1i.sharex(ax0)
         ax1i.ticklabel_format(useOffset=False)
         ax1.append(ax1i)
 
