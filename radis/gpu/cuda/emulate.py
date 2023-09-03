@@ -35,6 +35,10 @@ CUFFT_C2R = 0x2C
 _max_threads_per_block = 1024
 
 
+def getClasses():
+    return CuContext, CuModule, CuArray, CuFFT, CuTimer
+
+
 class CuContext:
     def __init__(self, device, context):
         # private:

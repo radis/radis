@@ -42,5 +42,6 @@ s = sf.eq_spectrum_gpu_interactive(
     path_length=ParamRange(0, 1, 0.2),  # cm
     slit_FWHM=ParamRange(0, 1.5, 0.24),  # cm-1
     plotkwargs={"wunit": "nm"},  # "nfig": "same",
+    backend="cpu-cuda",
 )
 print(s)

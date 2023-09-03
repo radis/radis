@@ -25,6 +25,10 @@ from nvidia.cufft import __path__ as cufft_path
 _verbose = False
 
 
+def getClasses():
+    return CuContext, CuModule, CuArray, CuFFT, CuTimer
+
+
 def getCUDAVersion(ptx_file):
     # Reads the version of the CUDA Toolkit that was used to compile PTX file
     with open(ptx_file, "rb") as f:
