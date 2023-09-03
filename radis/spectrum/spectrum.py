@@ -5279,8 +5279,8 @@ class Spectrum(object):
         path_length=None,
         slit_function=None,
     ):
-        """Recalculated the spectrum based on new input parameters. Can only be called
-        for spectrum objectes produced by :py:meth:`~radis.lbl.factory.SpectrumFctory.eq_spectrum_gpu`.
+        """Recalculate the spectrum based on new input parameters. Can only be called
+        for spectrum objects produced by :py:meth:`~radis.lbl.factory.SpectrumFctory.eq_spectrum_gpu`.
         This method is used internally by :py:meth:`~radis.lbl.factory.SpectrumFctory.eq_spectrum_gpu_interactive`.
         Parameters may be passed as arguments, or updated directly in :py:attr:`~radis.spectrum.spectrum.Spectrum.conditions`,
         after which spectrum.recalc_gpu() may be called without passing arguments.
