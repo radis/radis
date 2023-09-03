@@ -403,7 +403,7 @@ class SpectrumFactory(BandFactory):
         save_memory=False,
         export_populations=None,
         export_lines=False,
-        gpu_backend="gpu-cuda",
+        gpu_backend=None,
         diluent="air",
         **kwargs,
     ):
