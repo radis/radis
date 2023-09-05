@@ -56,4 +56,4 @@ s_gpu = sf.eq_spectrum_gpu(
 )
 s_gpu.apply_slit(w_slit, unit="cm-1")
 
-plot_diff(s_cpu, s_gpu, var="transmittance", wunit="nm", method="diff")
+plot_diff(s_cpu, s_gpu, var="radiance", wunit="nm", method="diff")

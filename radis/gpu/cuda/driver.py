@@ -139,7 +139,7 @@ class CuContext:
             lib.cuCtxDestroy_v2(_context)
             return None
 
-        cu_print(lib.cuStreamCreate(byref(_stream), 0), "ctx.create stream")
+        # cu_print(lib.cuStreamCreate(byref(_stream), 0), "ctx.create stream")
 
         return CuContext(_device, _context, _stream)
 
@@ -205,7 +205,7 @@ class CuContext:
         cu_print(lib.cuCtxSynchronize(), "ctx.sync")
 
     def syncStream(self):
-        cu_print(lib.cuStreamSynchronize(0), "ctx.sync")  # _ptsz
+        cu_print(lib.cuStreamSynchronize(0), "ctx.sync stream")  # _ptsz
 
     def destroy(self):
         global _arrays, _plans, _modules
@@ -221,6 +221,9 @@ class CuContext:
         while len(_modules):
             mod = _modules.pop(0)
             mod.unload()
+
+        if self._stream.value is not None:
+            cu_print(lib.cuStreamDestroy_v2(self._stream), "ctx.destroy stream")
 
         try:
             cu_print(lib.cuCtxDestroy_v2(self._context), "ctx.destroy")
@@ -346,25 +349,29 @@ class CuFunction:
 
     def __call__(self, *vargs, blocks=None, threads=None, sync=None):
 
-        self.args = self.args if not len(vargs) else vargs
-        self.blocks = self.blocks if blocks is None else blocks
-        self.threads = self.threads if threads is None else threads
-        self.sync = self.sync if sync is None else sync
+        if len(vargs):
+            self.args = vargs
+        if blocks is not None:
+            self.blocks = blocks
+        if threads is not None:
+            self.threads = threads
+        if sync is not None:
+            self.sync = sync
 
+        _stream = c_void_p(0)  # default stream; else: self.module.context._stream
         voidPtrArr = len(self.args) * c_void_p
-        self._c_args = voidPtrArr(
-            *[cast(byref(arr._ptr), c_void_p) for arr in self.args]
-        )
+        _c_args = voidPtrArr(*[cast(byref(arr._ptr), c_void_p) for arr in self.args])
+        _extra_args = (1 * c_void_p)(0)
 
         cu_print(
             lib.cuLaunchKernel(  # _ptsz
                 self._function,
                 *self.blocks,
                 *self.threads,
-                0,
-                self.module.context._stream,
-                self._c_args,
-                0
+                0,  # shared memory size #TODO: get capability; set max size
+                _stream,
+                _c_args,
+                _extra_args,
             ),
             "func.kernel",
         )
@@ -440,7 +447,6 @@ class CuArray:
             lib.cuMemcpyDtoH_v2(c_void_p(arr.ctypes.data), self._ptr, self.nbytes),
             "arr.DtoH",
         )
-
         return arr
 
     def free(self):

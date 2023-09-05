@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 =======================
-GPU Accelerated Spectra
+GPU Accelerated Spectra (recalc_gpu() demo)
 =======================
 
 Example using GPU calculation with :py:meth:`~radis.spectrum.spectrum.Spectrum.recalc_gpu`
