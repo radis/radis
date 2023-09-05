@@ -14,6 +14,9 @@ using CUDA, check :ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>`
 
 .. note::
 
+    In some cases matplotlib immediately closes the window and returns; this is solved
+    by running python in interactive mode as follows: ``python -i plot_gpu_widgets.py``.
+
     in the example below, the code runs on the GPU by default. In case no Nvidia GPU is
     detected, the code will instead be ran on CPU. This can be toggled manually by setting
     the ``backend`` keyword either to ``'gpu-cuda'`` or ``'cpu-cuda'``.
