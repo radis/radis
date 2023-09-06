@@ -109,18 +109,19 @@ class CuContext:
         cuda_name = "nvcuda.dll" if os_name == "nt" else "libcuda.so"
         try:
             lib = dllobj.LoadLibrary(cuda_name)
-        except (OSError):
-            if os_name != "nt":
+
+        except Exception:
+            if os_name == "nt":
+                print("Can't find {:s}...".format(cuda_name))
+                return None
+
+            else:
                 cuda_name = "libcuda.so.1"
                 try:
                     lib = dllobj.LoadLibrary(cuda_name)
                 except (OSError):
                     print("Can't find {:s}...".format(cuda_name))
                     return None
-
-        except (FileNotFoundError):
-            print("Can't find {:s}...".format(cuda_name))
-            return None
 
         err = lib.cuInit(0)
 
