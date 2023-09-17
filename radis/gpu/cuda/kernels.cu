@@ -12,6 +12,7 @@ struct initData {
     float dxG;
     float dxL;
     int N_lines;
+    int N_collision_partners;
     float log_c2Mm[16];
 };
 
@@ -23,6 +24,7 @@ struct iterData {
     float log_rT;
     float c2T;
     float N;
+    float x[16];
     float l;
     float slit_FWHM;
     float log_wG_min;
@@ -42,7 +44,7 @@ __global__ void fillLDM(
     float* da,  // pressure shift  in cm-1/atm
     float* S0,  // initial linestrength
     float* El,
-    float* gamma,
+    float* gamma_arr,
     float* na,
     float* S_klm
     ) {
@@ -72,14 +74,18 @@ __global__ void fillLDM(
             int l1i = l0i + 1;
 
             //Calc wL
-            float log_wLi = logf(gamma[i]) + iter_d.log_2p + na[i] * iter_d.log_rT;
+            float gamma = 0.0;
+            for (int j=0; j<init_d.N_collision_partners; j++){
+                gamma += iter_d.x[j] * gamma_arr[i + j * init_d.N_lines];
+            }
+            float log_wLi = logf(gamma) + iter_d.log_2p + na[i] * iter_d.log_rT;
             float mi = (log_wLi - iter_d.log_wL_min) / init_d.dxL;
             int m0i = (int)mi;
             int m1i = m0i + 1;
 
             //Calc I
             // ... scale linestrengths under equilibrium
-            float Si = iter_d.N * S0[i] * (expf(iter_d.c2T * El[i]) - expf(iter_d.c2T * (El[i] + v0[i]))) / iter_d.Q[iso[i]];
+            float Si = iter_d.N * iter_d.x[0] * S0[i] * (expf(iter_d.c2T * El[i]) - expf(iter_d.c2T * (El[i] + v0[i]))) / iter_d.Q[iso[i]];
 
             float avi = ki - (float)k0i;
             float aGi = li - (float)l0i;

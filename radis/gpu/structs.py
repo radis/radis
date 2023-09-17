@@ -43,6 +43,7 @@ class initData_t(Structure):
         ("dxG", c_float),
         ("dxL", c_float),
         ("N_lines", c_int),
+        ("N_collision_partners", c_int),
         ("log_c2Mm", c_float * 16),
     ]
 
@@ -55,6 +56,7 @@ class iterData_t(Structure):
         ("log_rT", c_float),
         ("c2T", c_float),
         ("N", c_float),
+        ("x", c_float * 16),
         ("l", c_float),
         ("slit_FWHM", c_float),
         ("log_wG_min", c_float),

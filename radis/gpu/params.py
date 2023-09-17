@@ -5,35 +5,35 @@ c_cm = 100 * c
 c2 = h * c_cm / k
 
 
-def init_L_params(na, gamma, verbose=False):
+def init_L_params(na, gamma_arr, verbose=False):
 
     if verbose >= 2:
         print("Initializing Lorentzian parameters ")
 
-    # Remove duplicates
-    na_gamma_arr = np.zeros((gamma.size, 2), dtype=np.float32)
-    na_gamma_arr[:, 0] = na
-    na_gamma_arr[:, 1] = gamma
-
-    unique_lines = np.unique(na_gamma_arr.reshape(2 * gamma.size).view(np.int64))
-
-    # Only keep extremes
-    max_dict = {}
-    min_dict = {}
-    for (na_i, gamma_i) in unique_lines.view(np.float32).reshape(unique_lines.size, 2):
-        try:
-            min_dict[na_i] = gamma_i if gamma_i < min_dict[na_i] else min_dict[na_i]
-            max_dict[na_i] = gamma_i if gamma_i > max_dict[na_i] else max_dict[na_i]
-
-        except (KeyError):
-            min_dict[na_i] = gamma_i
-            max_dict[na_i] = gamma_i
-
-    # Check which ones are really at the top:
+    # The entire list of widths is first checked for minima, then for maxima.
     result = []
-    for test_dict in (min_dict, max_dict):
+    for minmax in (np.min, np.max):
 
-        keys = sorted(test_dict.keys(), reverse=(test_dict == min_dict))
+        # Remove duplicates
+        na_gamma_arr = np.zeros((na.size, 2), dtype=np.float32)
+        na_gamma_arr[:, 0] = na
+        na_gamma_arr[:, 1] = minmax(gamma_arr, axis=0)
+
+        unique_lines = np.unique(na_gamma_arr.reshape(2 * na.size).view(np.int64))
+        unique_lines = unique_lines.view(np.float32).reshape(unique_lines.size, 2)
+
+        # Only keep extremes
+        test_dict = {}
+        for (na_i, gamma_i) in unique_lines:
+            try:
+                test_dict[na_i] = minmax((gamma_i, test_dict[na_i]))
+
+            except (KeyError):
+                test_dict[na_i] = gamma_i
+
+        # Check which ones are really at the top:
+
+        keys = sorted(test_dict.keys(), reverse=(minmax == np.min))
         A = [keys[0]]
         B = [np.log(test_dict[keys[0]])]
         X = [-np.inf]
@@ -145,7 +145,9 @@ def set_pTQ(p, T, mole_fraction, iter_h, l=1.0, slit_FWHM=0.0):
     iter_h.hlog_T = 0.5 * np.log(T)
     iter_h.log_rT = np.log(296.0 / T)
     iter_h.c2T = -c2 / T
-    iter_h.N = mole_fraction * p * 1e5 / (1e6 * k * T)  # cm-3
+    iter_h.N = p * 1e5 / (1e6 * k * T)  # cm-3
+    iter_h.x[0] = mole_fraction  # self
+    iter_h.x[1] = 1 - mole_fraction  # air
     iter_h.l = l
     iter_h.slit_FWHM = slit_FWHM
 

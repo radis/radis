@@ -33,7 +33,7 @@ def gpu_init(
     na,
     S0,
     El,
-    gamma,
+    gamma_arr,
     iso,
     Mm_arr,
     Q_intp_list,
@@ -65,8 +65,10 @@ def gpu_init(
         Line intensity scaling factors.
     El : numpy.ndarray[np.float32]
         Lower level energy levels.
-    gamma : numpy.ndarray[np.float32]
-        Lorentzian width parameters.
+    gamma_arr : numpy.ndarray[np.float32]
+        (m,n) shaped array with Lorentzian width parameters, with n the number of lines in the database
+        and m the number of collision partners included. This is usually at least two,
+        with the first (m=0) always self broadening and the last (m=-1) always air broadening.
     iso : numpy.ndarray[np.uint8]
         Index of isotopologue.
     Mm_arr : numpy.ndarray
@@ -153,6 +155,7 @@ def gpu_init(
     init_h.dxG = dxG
     init_h.dxL = dxL
     init_h.N_lines = int(len(v0))
+    init_h.N_collision_partners = gamma_arr.shape[0]
 
     log_c2Mm_arr = np.array(
         [0]
@@ -170,7 +173,7 @@ def gpu_init(
     gpu_mod.setConstant("init_d", init_h)
 
     init_G_params(log_2vMm.astype(np.float32), verbose)
-    init_L_params(na, gamma, verbose)
+    init_L_params(na, gamma_arr, verbose)
 
     if verbose >= 2:
         print("done!")
@@ -218,7 +221,7 @@ def gpu_init(
         GPUArray.fromArray(da),
         GPUArray.fromArray(S0),
         GPUArray.fromArray(El),
-        GPUArray.fromArray(gamma),
+        GPUArray.fromArray(gamma_arr),
         GPUArray.fromArray(na),
         S_klm_d,
     )

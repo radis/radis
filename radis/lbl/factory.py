@@ -1126,9 +1126,13 @@ class SpectrumFactory(BandFactory):
         else:
             warn("Zero isotopes found... Is the database empty?")
 
-        gamma = np.array(
-            self._get_lorentzian_broadening(mole_fraction), dtype=np.float32
-        )
+        # gamma = np.array(
+        # self._get_lorentzian_broadening(mole_fraction), dtype=np.float32
+        # )
+
+        gamma_arr = np.zeros((2, _Nlines_calculated), dtype=np.float32)
+        gamma_arr[0] = self.df0["selbrd"].to_numpy(dtype=np.float32)
+        gamma_arr[1] = self.df0["airbrd"].to_numpy(dtype=np.float32)
 
         self.calc_S0()
 
@@ -1148,7 +1152,7 @@ class SpectrumFactory(BandFactory):
             self.df0["Tdpair"].to_numpy(dtype=np.float32),
             self.df0["S0"].to_numpy(dtype=np.float32),
             self.df0["El"].to_numpy(dtype=np.float32),
-            gamma,
+            gamma_arr,
             iso,
             molarmass_arr,
             Q_interp_list,
