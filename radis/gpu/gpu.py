@@ -130,7 +130,7 @@ def gpu_init(
 
     GPUContext, GPUModule, GPUArray, GPUFFT, GPUTimer = backend_module.getClasses()
 
-    if verbose == 1:
+    if verbose:
         print("Number of lines loaded: {0}".format(len(v0)))
         print()
 
