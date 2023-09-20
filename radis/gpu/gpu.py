@@ -138,7 +138,7 @@ def gpu_init(
     if not os.path.exists(ptx_path):
         raise FileNotFoundError(ptx_path)
     gpu_mod = GPUModule(ctx, ptx_path)  # gpu
-    print("mode:", gpu_mod.getMode())
+    if verbose: print("mode:", gpu_mod.getMode())
 
     ## Next, the GPU is made aware of a number of parameters.
     ## Parameters that don't change during iteration are stored
