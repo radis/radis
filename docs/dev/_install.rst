@@ -34,6 +34,8 @@ isolated environment. We recommend to use the faster, local-optimization ``libma
 You can create a radis environment with all dependencies with::
 
     cd radis
+    conda deactivate
+    conda install -n base conda-libmamba-solver
     conda env create --file environment.yml --solver=libmamba
 
 4. Then install Radis in the `radis-env` environment::
