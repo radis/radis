@@ -97,7 +97,9 @@ from radis.spectrum.utils import print_conditions
 
 class BaseFactory(DatabankLoader):
 
-    units = {
+    __slots__ = DatabankLoader.__slots__
+
+    units0 = {
         "waverange": "cm-1",  # should be "cm-1", "nm" [assumes in air], "nm_vac" [in vacuum]. Note that Radis calculations will still happen in cm-1, units are converted at the export only.
         "absorbance": "",
         "abscoeff": "cm-1",
@@ -120,7 +122,7 @@ class BaseFactory(DatabankLoader):
     ... "mW/cm2/sr/nm" units for consistency
     """
 
-    cond_units = {
+    cond_units0 = {
         "wavenum_min": "cm-1",
         "wavenum_max": "cm-1",
         "wavenum_min_calc": "cm-1",
@@ -133,7 +135,7 @@ class BaseFactory(DatabankLoader):
         "Tgas": "K",
         "Tvib": "K",
         "Trot": "K",
-        "pressure_mbar": "mbar",
+        "pressure": "bar",
         "path_length": "cm",
         #        'slit_function_FWHM':   'nm',
         "cutoff": "cm-1/(#.cm-2)",
@@ -157,8 +159,8 @@ class BaseFactory(DatabankLoader):
         super(BaseFactory, self).__init__()  # initialize parent class
 
         # Make units specific to this BaseFactory instance :
-        self.units = BaseFactory.units.copy()
-        self.cond_units = BaseFactory.cond_units.copy()
+        self.units = BaseFactory.units0.copy()
+        self.cond_units = BaseFactory.cond_units0.copy()
 
         # Define variable names
         # ... Note: defaults values are overwritten by SpectrumFactory input
@@ -2317,7 +2319,7 @@ class BaseFactory(DatabankLoader):
         df = self.df1
 
         # Calculate
-        air_pressure = self.input.pressure_mbar / 1013.25  # convert from mbar to atm
+        air_pressure = self.input.pressure / 1.01325  # convert from bar to atm
 
         if "Pshft" in df.columns:
             df["shiftwav"] = df.wav + (df.Pshft * air_pressure)
@@ -3879,9 +3881,13 @@ class BaseFactory(DatabankLoader):
         # Also check some computation parameters:
 
         # Checks there if there is change in wstep value if initial wstep != "auto" (could happen if users modified the _wstep value directly)
-        if self._wstep != "auto":
+        if (
+            self._wstep != "auto"
+        ):  # TODO refactor : rename self._wstep and remove it from SpectrumFactory.__slots__
             assert self._wstep == self.params.wstep
-        if self._sparse_ldm != "auto":
+        if (
+            self._sparse_ldm != "auto"
+        ):  # TODO refactor : rename self._sparse_ldm and remove it from SpectrumFactory.__slots__
             assert self._sparse_ldm == self.params.sparse_ldm
 
         # Checks there if there is change in truncation value

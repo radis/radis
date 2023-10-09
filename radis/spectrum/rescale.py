@@ -217,7 +217,7 @@ def _build_update_graph(
     if p_T_x is None:
         p_T_x = (
             "Tgas" in spec.conditions
-            and "pressure_mbar" in spec.conditions
+            and "pressure" in spec.conditions
             and "mole_fraction" in spec.conditions
         )
     if equilibrium is None:
@@ -759,13 +759,13 @@ def rescale_abscoeff(
     elif (
         "xsection" in initial
         and "Tgas" in spec.conditions
-        and "pressure_mbar" in spec.conditions
+        and "pressure" in spec.conditions
         and "mole_fraction" in spec.conditions
     ):
         if __debug__:  # cm-1
             printdbg("... rescale: abscoeff k_2 = XS_2 * (x * p) / (k_b * T)")
         xsection = rescaled["xsection"]  # x already scaled
-        pressure_Pa = spec.conditions["pressure_mbar"] * 1e2
+        pressure_Pa = spec.conditions["pressure"] * 1e5
         x = spec.conditions["mole_fraction"]
         Tgas = spec.conditions["Tgas"]  # K
         from radis.phys.constants import k_b
@@ -1805,7 +1805,7 @@ def rescale_xsection(
     elif (
         "abscoeff" in rescaled
         and "Tgas" in spec.conditions
-        and "pressure_mbar" in spec.conditions
+        and "pressure" in spec.conditions
         and "mole_fraction" in spec.conditions
     ):
         if __debug__:  # cm-1
@@ -1817,16 +1817,16 @@ def rescale_xsection(
             abscoeff_cm1=abscoeff,
             Tgas_K=spec.conditions["Tgas"],
             mole_fraction=spec.conditions["mole_fraction"],
-            pressure_Pa=spec.conditions["pressure_mbar"] * 1e2,
+            pressure_Pa=spec.conditions["pressure"] * 1e5,
         )
         unit = "cm2"
     else:
         msg = (
             "Cant recalculate xsection if not all these quantities are given : "
-            + "scaled abscoeff ({0}), Tgas ({1}), pressure_mbar ({2})".format(
+            + "scaled abscoeff ({0}), Tgas ({1}), pressure ({2})".format(
                 "abscoeff" in rescaled,
                 "Tgas" in spec.conditions,
-                "pressure_mbar" in spec.conditions,
+                "pressure" in spec.conditions,
             )
         )
         if "xsection" in extra:  # cant calculate this one but let it go

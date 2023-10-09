@@ -353,6 +353,8 @@ class SpectrumFactory(BandFactory):
     :func:`~radis.lbl.calc.calc_spectrum`
     """
 
+    __slots__ = BandFactory.__slots__
+
     # TODO: make it possible to export both 'vib' and 'rovib'
 
     # TODO
@@ -401,7 +403,7 @@ class SpectrumFactory(BandFactory):
         save_memory=False,
         export_populations=None,
         export_lines=False,
-        emulate_gpu=False,
+        gpu_backend=None,
         diluent="air",
         **kwargs,
     ):
@@ -533,7 +535,7 @@ class SpectrumFactory(BandFactory):
         self.input.wavenum_min = wavenum_min
         self.input.wavenum_max = wavenum_max
         self.input.Tref = convert_and_strip_units(Tref, u.K)
-        self.input.pressure_mbar = convert_and_strip_units(pressure, u.bar) * 1e3
+        self.input.pressure = convert_and_strip_units(pressure, u.bar)
         self.input.mole_fraction = mole_fraction
         if config["DATAFRAME_ENGINE"] in ["pandas", "vaex"]:
             self.dataframe_engine = config["DATAFRAME_ENGINE"]
@@ -756,7 +758,7 @@ class SpectrumFactory(BandFactory):
         if mole_fraction is not None:
             self.input.mole_fraction = mole_fraction
         if pressure is not None:
-            self.input.pressure_mbar = pressure * 1e3
+            self.input.pressure = pressure
         if not is_float(Tgas):
             raise ValueError(
                 "Tgas should be float or Astropy unit. Got {0}".format(Tgas)
@@ -770,7 +772,7 @@ class SpectrumFactory(BandFactory):
         self.input.Trot = Tgas  # just for info
 
         # Init variables
-        pressure_mbar = self.input.pressure_mbar
+        pressure = self.input.pressure
         mole_fraction = self.input.mole_fraction
         path_length = self.input.path_length
         verbose = self.verbose
@@ -837,7 +839,7 @@ class SpectrumFactory(BandFactory):
         self.profiler.start("calc_other_spectral_quan", 2)
 
         # incorporate density of molecules (see equation (A.16) )
-        density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
+        density = mole_fraction * ((pressure * 1e5) / (k_b * Tgas)) * 1e-6
         #  :
         # (#/cm3)
 
@@ -886,9 +888,9 @@ class SpectrumFactory(BandFactory):
                 "diluents": self._diluent,
                 "radis_version": version,
                 "spectral_points": (
-                    self.params.wavenum_max_calc - self.params.wavenum_min_calc
-                )
-                / self.params.wstep,
+                    int(self.params.wavenum_max_calc - self.params.wavenum_min_calc)
+                    / self.params.wstep
+                ),
                 "profiler": dict(self.profiler.final),
             }
         )
@@ -963,7 +965,8 @@ class SpectrumFactory(BandFactory):
         path_length=None,
         pressure=None,
         name=None,
-        emulate=False,
+        backend="gpu-cuda",
+        exit_gpu=True,
     ) -> Spectrum:
         """Generate a spectrum at equilibrium with calculation of lineshapes
         and broadening done on the GPU.
@@ -990,8 +993,9 @@ class SpectrumFactory(BandFactory):
 
         Other Parameters
         ----------------
-        emulate: bool
-            if ``True``, execute the GPU code on the CPU (useful for development)
+        backend: str
+            if ``'gpu-cuda'``, set CUDA as backend to run code on Nvidia GPU.
+            if ``'cpu-cuda'``, execute the GPU code on the CPU (useful for development)
 
         Returns
         -------
@@ -1038,7 +1042,7 @@ class SpectrumFactory(BandFactory):
         if mole_fraction is not None:
             self.input.mole_fraction = mole_fraction
         if pressure is not None:
-            self.input.pressure_mbar = pressure * 1e3
+            self.input.pressure = pressure
         if not is_float(Tgas):
             raise ValueError("Tgas should be float.")
         self.input.rot_distribution = "boltzmann"  # equilibrium
@@ -1055,7 +1059,7 @@ class SpectrumFactory(BandFactory):
         self._reset_profiler(verbose)
 
         # Init variables
-        pressure_mbar = self.input.pressure_mbar
+        pressure = self.input.pressure
         mole_fraction = self.input.mole_fraction
         path_length = self.input.path_length
 
@@ -1111,79 +1115,70 @@ class SpectrumFactory(BandFactory):
         self.profiler.start("spectrum_calculation", 1)
         self.profiler.start("spectrum_calc_before_obj", 2)
 
-        # generate the v_arr
-        v_arr = np.arange(
-            self.input.wavenum_min,
-            self.input.wavenum_max + self.params.wstep,
-            self.params.wstep,
-        )
+        self._generate_wavenumber_arrays(checks=False)
+        _Nlines_calculated = len(self.df0["wav"])
 
         # load the data
-        df = self.df0
-        v0 = df["wav"].to_numpy(dtype=np.float32)
-
         if len(iso_set) > 1:
-            iso = df["iso"].to_numpy(dtype=np.uint8)
+            iso = self.df0["iso"].to_numpy(dtype=np.uint8)
         elif len(iso_set) == 1:
-            iso = np.full(len(v0), iso_set[0], dtype=np.uint8)
+            iso = np.full(_Nlines_calculated, iso_set[0], dtype=np.uint8)
+        else:
+            warn("Zero isotopes found... Is the database empty?")
 
-        da = df["Pshft"].to_numpy(dtype=np.float32)
-        El = df["El"].to_numpy(dtype=np.float32)
-        na = df["Tdpair"].to_numpy(dtype=np.float32)
+        # gamma = np.array(
+        # self._get_lorentzian_broadening(mole_fraction), dtype=np.float32
+        # )
 
-        gamma = np.array(
-            self._get_lorentzian_broadening(mole_fraction), dtype=np.float32
-        )
+        gamma_arr = np.zeros((2, _Nlines_calculated), dtype=np.float32)
+        gamma_arr[0] = self.df0["selbrd"].to_numpy(dtype=np.float32)
+        gamma_arr[1] = self.df0["airbrd"].to_numpy(dtype=np.float32)
 
         self.calc_S0()
-        S0 = self.df0["S0"].to_numpy(dtype=np.float32)
-
-        dxG = self.params.dxG
-        dxL = self.params.dxL
-
-        _Nlines_calculated = len(v0)
 
         if verbose >= 2:
             print("Initializing parameters...", end=" ")
 
-        try:
-            from radis.lbl.gpu import gpu_init, gpu_iterate
-        except (ModuleNotFoundError):
-            print("Failed to load GPU module, exiting!")
-            exit()
+        from radis.gpu.gpu import gpu_exit, gpu_init, gpu_iterate
 
         gpu_init(
-            v_arr,
-            dxG,
-            dxL,
+            self.params.wavenum_min_calc,
+            len(self.wavenumber_calc),
+            self.params.wstep,
+            self.params.dxG,
+            self.params.dxL,
+            self.df0["wav"].to_numpy(dtype=np.float32),
+            self.df0["Pshft"].to_numpy(dtype=np.float32),
+            self.df0["Tdpair"].to_numpy(dtype=np.float32),
+            self.df0["S0"].to_numpy(dtype=np.float32),
+            self.df0["El"].to_numpy(dtype=np.float32),
+            gamma_arr,
             iso,
-            v0,
-            da,
-            gamma,
-            na,
-            S0,
-            El,
             molarmass_arr,
             Q_interp_list,
             verbose=verbose,
-            gpu=(not emulate),
+            backend=backend,
         )
-
         if verbose >= 2:
             print("Initialization complete!")
-
-        wavenumber = v_arr
 
         if verbose >= 2:
             print("Calculating spectra...", end=" ")
 
-        abscoeff, transmittance, iter_params = gpu_iterate(
-            pressure_mbar * 1e-3,
+        abscoeff_calc, iter_params, times = gpu_iterate(
+            pressure,
             Tgas,
             mole_fraction,
             verbose=verbose,
-            gpu=(not emulate),
         )
+
+        # If sf.eq_spectrum_gpu() was called directly by the user, this is the time to
+        # destroy the CUDA context since we're done with all GPU calculations.
+        # When called from within sf.eq_spectrum_gpu_interactive(), the context must remain active
+        # because more calls to gpu_iterate() will follow. This is controlled by the exit_gpu keyword.
+        if exit_gpu:
+            gpu_exit()
+
         # Calculate output quantities
         # ----------------------------------------------------------------------
 
@@ -1194,13 +1189,17 @@ class SpectrumFactory(BandFactory):
 
         # get absorbance (technically it's the optical depth `tau`,
         #                absorbance `A` being `A = tau/ln(10)` )
+        abscoeff = abscoeff_calc[self.woutrange[0] : self.woutrange[1]]
+
+        # TODO: this should is inconistent with eq_spectrum_gpu_interactive, where all quantities
+        #      are calculated on CPU. (here the transmittance comes from GPU)
+
         absorbance = abscoeff * path_length
         # Generate output quantities
         transmittance_noslit = exp(-absorbance)
-        emissivity = 1 - transmittance
         emissivity_noslit = 1 - transmittance_noslit
         radiance_noslit = calc_radiance(
-            wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
+            self.wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
         )
         assert self.units["abscoeff"] == "cm-1"
 
@@ -1230,12 +1229,15 @@ class SpectrumFactory(BandFactory):
                 "thermal_equilibrium": True,
                 "diluents": self._diluent,
                 "radis_version": version,
-                "emulate_gpu": emulate,
+                "gpu_backend": backend,
                 "spectral_points": (
-                    self.params.wavenum_max_calc - self.params.wavenum_min_calc
-                )
-                / self.params.wstep,
+                    int(self.params.wavenum_max_calc - self.params.wavenum_min_calc)
+                    / self.params.wstep
+                ),
+                "add_at_used": "gpu-backend",
                 "profiler": dict(self.profiler.final),
+                "NwL": iter_params.N_L,
+                "NwG": iter_params.N_G,
             }
         )
         if self.params.optimization != None:
@@ -1251,14 +1253,12 @@ class SpectrumFactory(BandFactory):
 
         # Spectral quantities
         quantities = {
-            "wavenumber": wavenumber,
+            "wavenumber": self.wavenumber,
             "abscoeff": abscoeff,
             "absorbance": absorbance,
-            "emissivity": emissivity,
             "emissivity_noslit": emissivity_noslit,
             "transmittance_noslit": transmittance_noslit,
             "radiance_noslit": radiance_noslit,
-            "transmittance": transmittance,
         }
         conditions["default_output_unit"] = self.input_wunit
 
@@ -1292,7 +1292,7 @@ class SpectrumFactory(BandFactory):
         return s
 
     def eq_spectrum_gpu_interactive(
-        self, var="transmittance", slit_FWHM=0.0, plotkwargs={}, *vargs, **kwargs
+        self, var="transmittance", slit_function=0.0, plotkwargs={}, *vargs, **kwargs
     ) -> Spectrum:
         """
 
@@ -1300,13 +1300,13 @@ class SpectrumFactory(BandFactory):
         ----------
         var : TYPE, optional
             DESCRIPTION. The default is "transmittance".
-        slit_FWHM : TYPE, optional
+        slit_function : TYPE, optional
             DESCRIPTION. The default is 0.0.
         *vargs : TYPE
             arguments forwarded to :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`
         **kwargs : dict
             arguments forwarded to :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`
-            In particular, see `emulate=`.
+            In particular, see `backend=`.
         plotkwargs : dict
             arguments forwarded to :py:meth:`~radis.spectrum.spectrum.Spectrum.plot`
 
@@ -1335,23 +1335,21 @@ class SpectrumFactory(BandFactory):
                                            pressure=0.2, #bar
                                            mole_fraction=0.1,
                                            path_length=ParamRange(0,10,2.0), #cm
-                                           slit_FWHM=ParamRange(0,1,0), #cm
-                                           emulate=False,  # if True, execute the GPU code on the CPU
+                                           slit_function=ParamRange(0,1,0), #cm
                                            )
 
         .. minigallery:: radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu_interactive
             :add-heading:
 
         """
+        from matplotlib import use
+
+        use("TkAgg")
 
         import matplotlib.pyplot as plt
         from matplotlib.widgets import Slider
 
-        try:
-            from radis.lbl.gpu import gpu_iterate
-        except (ModuleNotFoundError):
-            print("Failed to load GPU module, exiting!")
-            exit()
+        from radis.gpu.gpu import gpu_exit
 
         self.interactive_params = {}
 
@@ -1361,20 +1359,19 @@ class SpectrumFactory(BandFactory):
                 self.interactive_params[key] = param_range
                 param_range.name = key
                 kwargs[key] = param_range.valinit
+        kwargs["exit_gpu"] = False
 
         s = self.eq_spectrum_gpu(*vargs, **kwargs)
 
-        if is_range(slit_FWHM):
-            self.interactive_params["slit_FWHM"] = slit_FWHM
-            slit_FWHM.name = "slit_FWHM"
-            slit_FWHM = slit_FWHM.valinit
+        if is_range(slit_function):
+            self.interactive_params["slit_function"] = slit_function
+            slit_function.name = "slit_function"
+            slit_function = slit_function.valinit
 
-        s.apply_slit(slit_FWHM, unit="cm-1")  # to create 'radiance', 'transmittance'
-        s.conditions["slit_FWHM"] = slit_FWHM
-
-        # TODO: this should be resolved; there should be only one pressure that is
-        # both used as keyword by the user and as input value for spectra.
-        s.conditions["pressure"] = s.conditions["pressure_mbar"] * 1e-3
+        s.apply_slit(
+            slit_function, unit="cm-1"
+        )  # to create 'radiance', 'transmittance'
+        s.conditions["slit_function"] = slit_function
 
         was_interactive = plt.isinteractive
         plt.ion()
@@ -1383,39 +1380,14 @@ class SpectrumFactory(BandFactory):
         fig = line.figure
 
         def update_plot(val):
-            # TODO : refactor this function and the update() mechanism. Ensure conditions are correct.
-            # Update conditions
-            # ... at equilibrium, temperatures remain equal :
-            s.conditions["Tvib"] = s.conditions["Tgas"]
-            s.conditions["Trot"] = s.conditions["Tgas"]
-            s.conditions["slit_function"] = s.conditions["slit_FWHM"]
+            # We directly updated the s.conditions dict so params don't have to
+            # be passed to s.recalc_gpu() anymore
 
-            abscoeff, transmittance, iter_params = gpu_iterate(
-                s.conditions["pressure"],
-                s.conditions["Tgas"],
-                s.conditions["mole_fraction"],
-                l=s.conditions["path_length"],
-                slit_FWHM=s.conditions["slit_FWHM"],
-                verbose=False,
-                gpu=(not s.conditions["emulate_gpu"]),
-            )
-
-            # This happen inside a Spectrum() method
-            for k in list(s._q.keys()):  # reset all quantities
-                if k in ["wavespace", "wavelength", "wavenumber"]:
-                    pass
-                elif k == "abscoeff":
-                    s._q["abscoeff"] = abscoeff
-                else:
-                    del s._q[k]
-
-            _, new_y = s.get(
+            new_y = s.recalc_gpu(
                 var,
-                copy=False,  # copy = False saves some time & memory, it's a pointer/reference to the real data, which is fine here as data is just plotted
                 wunit=plotkwargs.get("wunit", "default"),
                 Iunit=plotkwargs.get("Iunit", "default"),
             )
-
             line.set_ydata(new_y)
             fig.canvas.draw_idle()
 
@@ -1434,6 +1406,7 @@ class SpectrumFactory(BandFactory):
             n_sliders += 1
 
         fig.subplots_adjust(bottom=0.05 * n_sliders + 0.15)
+        fig.canvas.mpl_connect("close_event", gpu_exit)
 
         if not was_interactive:
             plt.ioff()
@@ -1571,7 +1544,7 @@ class SpectrumFactory(BandFactory):
         if mole_fraction is not None:
             self.input.mole_fraction = mole_fraction
         if pressure is not None:
-            self.input.pressure_mbar = pressure * 1e3
+            self.input.pressure = pressure
         if isinstance(Tvib, tuple):
             Tvib = tuple([convert_and_strip_units(T, u.K) for T in Tvib])
         elif not is_float(Tvib):
@@ -1599,7 +1572,7 @@ class SpectrumFactory(BandFactory):
         # Init variables
         path_length = self.input.path_length
         mole_fraction = self.input.mole_fraction
-        pressure_mbar = self.input.pressure_mbar
+        pressure = self.input.pressure
         verbose = self.verbose
 
         # New Profiler object
@@ -1693,7 +1666,7 @@ class SpectrumFactory(BandFactory):
         self.profiler.start("calc_other_spectral_quan", 2)
 
         # incorporate density of molecules (see Rothman 1996 equation (A.16) )
-        density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
+        density = mole_fraction * ((pressure * 1e5) / (k_b * Tgas)) * 1e-6
         #  :
         # (#/cm3)
 
@@ -1768,9 +1741,9 @@ class SpectrumFactory(BandFactory):
                 "diluents": self._diluent,
                 "radis_version": version,
                 "spectral_points": (
-                    self.params.wavenum_max_calc - self.params.wavenum_min_calc
-                )
-                / self.params.wstep,
+                    int(self.params.wavenum_max_calc - self.params.wavenum_min_calc)
+                    / self.params.wstep
+                ),
                 "profiler": dict(self.profiler.final),
             }
         )
@@ -1841,7 +1814,7 @@ class SpectrumFactory(BandFactory):
 
         return s
 
-    def _generate_wavenumber_arrays(self):
+    def _generate_wavenumber_arrays(self, checks=True):
         """define wavenumber grid vectors
 
         `SpectrumFactory.wavenumber` is the output spectral range and
@@ -1851,22 +1824,29 @@ class SpectrumFactory(BandFactory):
         import radis
 
         self.profiler.start("generate_wavenumber_arrays", 2)
-        # calculates minimum FWHM of lines
-        self._calc_min_width(self.df1)
 
-        # Setting wstep to optimal value and rounding it to a degree 3
-        if self._wstep == "auto" or type(self.params.wstep) == list:
+        if checks:
+            # calculates minimum FWHM of lines
+            self._calc_min_width(self.df1)
 
-            wstep_calc = round_off(
-                self.min_width / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
+            # Setting wstep to optimal value and rounding it to a degree 3
+            if self._wstep == "auto" or type(self.params.wstep) == list:
+                wstep_calc = round_off(
+                    self.min_width
+                    / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
+                )
+
+                if type(self.params.wstep) == list:
+                    self.params.wstep = min(self.params.wstep[1], wstep_calc)
+                else:
+                    self.params.wstep = wstep_calc
+
+                self.warnings["AccuracyWarning"] = "ignore"
+
+        elif self._wstep == "auto" or type(self.params.wstep) == list:
+            self.warn(
+                "Current configuration incompatible with wstep='auto', please provide value for wstep"
             )
-
-            if type(self.params.wstep) == list:
-                self.params.wstep = min(self.params.wstep[1], wstep_calc)
-            else:
-                self.params.wstep = wstep_calc
-
-            self.warnings["AccuracyWarning"] = "ignore"
 
         truncation = self.params.truncation
         neighbour_lines = self.params.neighbour_lines
@@ -1903,20 +1883,22 @@ class SpectrumFactory(BandFactory):
         self.woutrange = woutrange
 
         # AccuracyWarning. Check there are enough gridpoints per line.
-        self._check_accuracy(self.params.wstep)
+        if checks:
+            self._check_accuracy(self.params.wstep)
 
         # Set sparse waverange mode
 
         # Setting wstep to optimal value and rounding it to a degree 3
-        if self._sparse_ldm == "auto":
-            sparsity = len(wavenumber_calc) / len(self.df1)
-            self.params["sparse_ldm"] = (
-                sparsity > 1.0
-            )  # works ; TODO : set a threshold based on more data
-            if self.verbose >= 2:
-                print(
-                    f"Sparsity (grid points/lines) = {sparsity:.1f}. Set sparse_ldm to {self.params['sparse_ldm']}"
-                )
+        if checks:
+            if self._sparse_ldm == "auto":
+                sparsity = len(wavenumber_calc) / len(self.df1)
+                self.params["sparse_ldm"] = (
+                    sparsity > 1.0
+                )  # works ; TODO : set a threshold based on more data
+                if self.verbose >= 2:
+                    print(
+                        f"Sparsity (grid points/lines) = {sparsity:.1f}. Set sparse_ldm to {self.params['sparse_ldm']}"
+                    )
 
         self.profiler.stop("generate_wavenumber_arrays", "Generated Wavenumber Arrays")
 
@@ -2013,8 +1995,9 @@ class SpectrumFactory(BandFactory):
         n_lines = self.misc.total_lines
         truncation = self.params.truncation
         spectral_points = (
-            self.params.wavenum_max_calc - self.params.wavenum_min_calc
-        ) / self.params.wstep
+            int(self.params.wavenum_max_calc - self.params.wavenum_min_calc)
+            / self.params.wstep
+        )
 
         optimization = self.params.optimization
         broadening_method = self.params.broadening_method
@@ -2198,7 +2181,7 @@ class SpectrumFactory(BandFactory):
         # Init variables
         path_length = self.input.path_length
         mole_fraction = self.input.mole_fraction
-        pressure_mbar = self.input.pressure_mbar
+        pressure = self.input.pressure
         verbose = self.verbose
 
         # New Profiler object
@@ -2264,7 +2247,7 @@ class SpectrumFactory(BandFactory):
         P = self.df1["Ei"][b].sum()  # Ei  >> (mW/sr)
 
         # incorporate density of molecules (see equation (A.16) )
-        density = mole_fraction * ((pressure_mbar * 100) / (k_b * Tgas)) * 1e-6
+        density = mole_fraction * ((pressure * 1e5) / (k_b * Tgas)) * 1e-6
         Pv = P * density  # (mW/sr/cm3)
 
         # Optically thin case (no self absorption):

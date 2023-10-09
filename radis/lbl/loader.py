@@ -387,7 +387,7 @@ class Input(ConditionDict):
         "molecule",
         "overpopulation",
         "path_length",
-        "pressure_mbar",
+        "pressure",
         "rot_distribution",
         "self_absorption",
         "state",
@@ -410,7 +410,7 @@ class Input(ConditionDict):
         self.molecule = None  #: str: molecule
         self.overpopulation = None  #: dict: overpopulation
         self.path_length = None  #: float: path length (cm)
-        self.pressure_mbar = 1013.25  #: float: pressure (mbar)
+        self.pressure = 1.01325  #: float: pressure (bar)
         self.rot_distribution = "boltzmann"  #: str: rotational levels distribution
         self.self_absorption = (
             True  #: bool: self absorption (if True, not optically thin)
@@ -626,6 +626,68 @@ class DatabankLoader(object):
     --------
     :class:`~radis.lbl.factory.SpectrumFactory`
     """
+
+    # hardcode attribute names, to prevent typos and the declaration of unwanted parameters
+    # note @dev: generated with ::
+    #
+    #       slots = []
+    #       for p in dir(sf):
+    #           try:
+    #               if hasattr(sf.__getattribute__(p), "__call__"):
+    #                   continue
+    #               else:
+    #                   slots.append(p)
+    #           except KeyError:
+    #               slots.append(p)
+    __slots__ = [
+        "NwG",
+        "NwL",
+        "SpecDatabase",
+        "_Nlines_calculated",
+        "_Nlines_cutoff",
+        "_Nlines_in_continuum",
+        "_autoretrieveignoreconditions",
+        "_broadening_time_ruleofthumb",
+        "_databank_args",
+        "_databank_kwargs",
+        "_diluent",
+        "_export_continuum",
+        "_id",
+        "_neighbour_lines",
+        "_sparse_ldm",
+        "_wstep",
+        "autoretrievedatabase",
+        "autoupdatedatabase",
+        "cond_units",
+        "database",
+        "dataframe_engine",
+        "dataframe_type",
+        "df0",
+        "df1",
+        "input",
+        "input_wunit",
+        "interactive_params",
+        "levels",
+        "levelspath",
+        "min_width",
+        "misc",
+        "molparam",
+        "params",
+        "parsum_calc",
+        "parsum_tab",
+        "profiler",
+        "reftracker",
+        "save_memory",
+        "truncation",
+        "units",
+        "use_cython",
+        "verbose",
+        "warnings",
+        "wavenumber",
+        "wavenumber_calc",
+        "wbroad_centered",
+        "woutrange",
+    ]
 
     def __init__(self):
 

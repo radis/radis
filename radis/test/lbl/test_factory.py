@@ -489,7 +489,7 @@ def test_pressure_units_conversion(
     )
     sf.load_databank("HITRAN-CO-TEST")
     s = sf.eq_spectrum(Tgas=300)
-    assert np.isclose(s.conditions["pressure_mbar"], expected_pressure_bar * 1000)
+    assert np.isclose(s.conditions["pressure"], expected_pressure_bar)
 
 
 @pytest.mark.fast
@@ -553,7 +553,7 @@ def test_temperature_units_conversion(
     )
     assert np.isclose(s.conditions["Tgas"], expected_temperature_K)
     assert np.isclose(s.conditions["path_length"], 0.1)  # cm
-    assert np.isclose(s.conditions["pressure_mbar"], 20)
+    assert np.isclose(s.conditions["pressure"], 0.02)
 
 
 @pytest.mark.fast

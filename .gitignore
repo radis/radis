@@ -34,11 +34,12 @@ radis/cython/*.cpp
 
 # C extensions
 *.so
-
+!radis/gpu/cuda/build/*.so
 # Distribution / packaging
 .Python
 env/
 build/
+!radis/gpu/cuda/build/
 develop-eggs/
 develop-tests/
 dist/

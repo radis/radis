@@ -30,7 +30,8 @@ class SlitDispersionWarning(UserWarning):
 # -------------------------------------
 
 
-# Main warning classes :
+# Main warning classes
+# --------------------
 # - AccuracyWarning
 # - PerformanceWarning
 # - default UserWarning
@@ -56,6 +57,19 @@ class PerformanceWarning(UserWarning):
 
 
 # Other warnings
+# --------------
+
+
+class NoGPUWarning(PerformanceWarning):
+    """Triggered when GPU doesn't work"""
+
+    pass
+
+
+class GPUInitWarning(PerformanceWarning):
+    """Triggered when GPU isn't initialized"""
+
+    pass
 
 
 class OutOfBoundError(ValueError):
@@ -244,6 +258,8 @@ WarningClasses = {
     "default": UserWarning,
     "AccuracyWarning": AccuracyWarning,
     "PerformanceWarning": PerformanceWarning,
+    "NoGPUWarning": NoGPUWarning,
+    "GPUInitWarning": GPUInitWarning,
     "AccuracyError": AccuracyError,
     "SlitDispersionWarning": SlitDispersionWarning,
     "GaussianBroadeningWarning": GaussianBroadeningWarning,
@@ -295,6 +311,8 @@ default_warning_status = {
     "AccuracyWarning": "warn",
     "AccuracyError": "error",
     "PerformanceWarning": "warn",
+    "NoGPUWarning": "warn",
+    "GPUInitWarning": "warn",
     "SlitDispersionWarning": "warn",
     "GaussianBroadeningWarning": "once",  # once per Spectrum calculation
     "CollisionalBroadeningWarning": "once",  # once per Spectrum calculation

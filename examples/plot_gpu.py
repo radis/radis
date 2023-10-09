@@ -6,19 +6,20 @@ GPU Accelerated Spectra
 
 Example using GPU calculation with :py:meth:`~radis.lbl.SpectrumFactory.eq_spectrum_gpu`
 
-This method requires CUDA compatible hardware to execute.
+This method requires a GPU - Currently, only Nvidia GPU's are supported.
 For more information on how to setup your system to run GPU-accelerated methods
-using CUDA and Cython, check :ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>`
+using CUDA, check :ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>`
 
 .. note::
 
-    in the example below, the GPU code runs on CPU, using the parameter ``emulate=True``.
-    In your environment, to run the GPU code with the full power of the GPU, remove this line
-    or set  ``emulate=False`` (default)
+    in the example below, the code runs on the GPU by default. In case no Nvidia GPU is
+    detected, the code will instead be ran on CPU. This can be toggled manually by setting
+    the ``backend`` keyword either to ``'gpu-cuda'`` or ``'cpu-cuda'``.
+    The run time reported below is for CPU.
 
 """
 
-from radis import SpectrumFactory
+from radis import SpectrumFactory, plot_diff
 
 sf = SpectrumFactory(
     2150,
@@ -30,14 +31,29 @@ sf = SpectrumFactory(
 
 sf.fetch_databank("hitemp")
 
-s = sf.eq_spectrum_gpu(
-    Tgas=1100.0,  # K
-    pressure=1,  # bar
-    mole_fraction=0.8,
-    path_length=0.2,  # cm
-    emulate=True,  # if True, runs CPU code on GPU. Set to False or remove to run on the GPU
-)
-print(s)
+T = 1500.0  # K
+p = 1.0  # bar
+x = 0.8
+l = 0.2  # cm
+w_slit = 0.5  # cm-1
 
-s.apply_slit(0.5)  # cm-1
-s.plot("radiance", show=True)
+s_cpu = sf.eq_spectrum(
+    name="CPU",
+    Tgas=T,
+    pressure=p,
+    mole_fraction=x,
+    path_length=l,
+)
+s_cpu.apply_slit(w_slit, unit="cm-1")
+
+s_gpu = sf.eq_spectrum_gpu(
+    name="GPU",
+    Tgas=T,
+    pressure=p,
+    mole_fraction=x,
+    path_length=l,
+    backend="gpu-cuda",
+)
+s_gpu.apply_slit(w_slit, unit="cm-1")
+
+plot_diff(s_cpu, s_gpu, var="radiance", wunit="nm", method="diff")

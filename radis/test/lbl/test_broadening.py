@@ -412,7 +412,7 @@ def test_broadening_LDM_FT(verbose=True, plot=False, *args, **kwargs):
     # LDM, real space
     if verbose:
         print("\nConvolve version \n")
-    sf._broadening_method = "convolve"
+    sf.params.broadening_method = "convolve"
     s_ldm = sf.eq_spectrum(Tgas=T)
     s_ldm.name = "LDM ({0:.2f}s)".format(s_ldm.conditions["calculation_time"])
 

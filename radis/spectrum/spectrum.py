@@ -70,6 +70,7 @@ from radis.misc.arrays import (
 from radis.misc.debug import printdbg
 from radis.misc.plot import split_and_plot_by_parts
 from radis.misc.signal import resample, resample_even
+from radis.misc.warning import GPUInitWarning
 from radis.phys.air import air2vacuum, vacuum2air
 from radis.phys.convert import cm2nm, conv2, nm2cm
 from radis.phys.units import Unit, convert_universal
@@ -2496,15 +2497,15 @@ class Spectrum(object):
                 from radis.phys.constants import k_b
 
                 try:
-                    P_mbar = self.conditions["pressure_mbar"]  # mbar
+                    P = self.conditions["pressure"]  # bar
                     T = self.conditions["Tgas"]
                     mfrac = self.conditions["mole_fraction"]
                 except KeyError:
                     raise KeyError(
-                        "P_mbar (pressure), T (Tgas) and n (mole_fraction) "
+                        "P (pressure), T (Tgas) and n (mole_fraction) "
                         + "are needed to calculate total number density in (cm-3)"
                     )
-                N = P_mbar * 1e2 / k_b / T * mfrac * 1e-6
+                N = P * 1e5 / k_b / T * mfrac * 1e-6
                 n = n * N
                 unitlabel = " [cm-3]"
             elif nunit == "":
@@ -5266,6 +5267,129 @@ class Spectrum(object):
         else raises an error"""
 
         return len(self._get_wavespace(copy=False))
+
+    def recalc_gpu(
+        self,
+        var="abscoeff",
+        wunit="default",
+        Iunit="default",
+        pressure=None,
+        Tgas=None,
+        mole_fraction=None,
+        path_length=None,
+        slit_function=None,
+    ):
+        """Recalculate the spectrum based on new input parameters. Can only be called
+        for spectrum objects produced by :py:meth:`~radis.lbl.factory.SpectrumFctory.eq_spectrum_gpu`.
+        This method is used internally by :py:meth:`~radis.lbl.factory.SpectrumFctory.eq_spectrum_gpu_interactive`.
+        Parameters may be passed as arguments, or updated directly in :py:attr:`~radis.spectrum.spectrum.Spectrum.conditions`,
+        after which spectrum.recalc_gpu() may be called without passing arguments.
+
+
+        Parameters
+        ----------
+
+        var: variable (`absorbance`, `transmittance`, `transmittance_noslit`, `xsection`, etc.)
+            For full list see :py:meth:`~radis.spectrum.spectrum.Spectrum.get_vars()`.
+            If ``None``, plot the first thing in the Spectrum. Default ``None``.
+        wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'`` or ``None``
+            wavelength in air (``'nm'``), wavenumber (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
+            If ``None``, ``'wavespace'`` must be defined in ``conditions``.
+        Iunit: unit for variable
+            if `default`, default unit for quantity `var` is used.
+            for radiance, one can use per wavelength (~ `W/m2/sr/nm`) or
+            per wavenumber (~ `W/m2/sr/cm-1`) units
+        pressure: float, optional
+            Pressure in [bar]
+        Tgas: float, optional
+            Equilibrium temperature in [K]
+        mole_fraction: float, optional
+            Mole fraction
+        path_length: float, optional
+            Absroption length in [cm]
+        slit_function: float, optional
+            Slit FWHM in [cm-1]
+
+
+        Returns
+        -------
+
+        new_y: numpy.ndarray[np.fltoat32]
+            The recalculated array specified by the ``var`` keyword.
+
+
+        Examples
+        --------
+        ::
+
+            s = sf.eq_spectrum_gpu(
+                Tgas=1100.0,  # K
+                pressure=1,  # bar
+                mole_fraction=0.8,
+                path_length=0.2,  # cm
+            )
+
+            I = []
+            for T in [300.0, 1000.0, 2000.0]:
+                I.append(s.recalc_gpu('radiance', Tgas=T)
+
+        """
+
+        try:
+            self.conditions["gpu_backend"]
+
+        except (KeyError):
+            warn(
+                "GPU not initialized, spectrum.recalc_gpu() can only be called on spectrum objects produced by sf.eq_spectrum_gpu()!",
+                GPUInitWarning,
+            )
+
+        # Update conditions:
+        if Tgas is not None:
+            self.conditions["Tgas"] = Tgas
+        self.conditions["Tvib"] = self.conditions["Tgas"]
+        self.conditions["Trot"] = self.conditions["Tgas"]
+        if pressure is not None:
+            self.conditions["pressure"] = pressure
+        if mole_fraction is not None:
+            self.conditions["mole_fraction"] = mole_fraction
+        if path_length is not None:
+            self.conditions["path_length"] = path_length
+        if slit_function is not None:
+            self.conditions["slit_function"] = slit_function
+
+        from radis.gpu.gpu import gpu_iterate
+
+        abscoeff, iter_params, times = gpu_iterate(
+            self.conditions["pressure"],
+            self.conditions["Tgas"],
+            self.conditions["mole_fraction"],
+            verbose=0,
+            # TODO: GPU apply_slit not supported yet
+            # l=s.conditions["path_length"],
+            # slit_FWHM=s.conditions["slit_function"],
+        )
+        self.conditions["NwL"] = iter_params.N_L
+        self.conditions["NwG"] = iter_params.N_G
+        self.conditions["calculation_time"] = times["total"] * 1e-3
+
+        # TODO : refactor this function and the update() mechanism. Ensure conditions are correct.
+        for k in list(self._q.keys()):  # reset all quantities
+            if k in ["wavespace", "wavelength", "wavenumber"]:
+                pass
+            elif k == "abscoeff":
+                self._q["abscoeff"] = abscoeff
+            else:
+                del self._q[k]
+
+        _, new_y = self.get(
+            var,
+            copy=False,  # copy = False saves some time & memory, it's a pointer/reference to the real data, which is fine here as data is just plotted
+            wunit=wunit,
+            Iunit=Iunit,
+        )
+
+        return new_y
 
 
 # %% Private functions
