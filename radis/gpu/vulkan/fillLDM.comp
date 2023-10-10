@@ -1,0 +1,124 @@
+#version 450
+#extension GL_EXT_shader_atomic_float : enable
+#extension GL_EXT_shader_8bit_storage : enable
+
+layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
+layout (constant_id = 3) const int N_LINES = 1;
+
+layout(std140, binding = 0) uniform initData{
+    float v_min;
+    float dv;
+    int N_v;
+    int N_v_FT;
+    int N_x_FT;
+    float dxG;
+    float dxL;
+    int N_lines;
+    int N_collision_partners;
+    float log_c2Mm[16];
+} init_d;
+
+layout(std140, binding = 1) uniform iterData{
+    float p;
+    float log_2p;
+    float hlog_T;
+    float log_rT;
+    float c2T;
+    float N;
+    float x[16];
+    float l;
+    float slit_FWHM;
+    float log_wG_min;
+    float log_wL_min;
+    int N_G;
+    int N_L;
+    float Q[16];
+} iter_d;
+
+layout(std430, binding = 2) readonly buffer SSBO0 {
+    uint8_t iso[N_LINES];
+    float v0[N_LINES];
+    float da[N_LINES];  // pressure shift  in cm-1/atm
+    float S0[N_LINES];  // initial linestrength
+    float El[N_LINES];
+    float na[N_LINES];
+    float gamma_arr[];
+};
+
+layout(std430, binding = 3) buffer SSBO1 {
+    float S_klm[];
+};
+
+// layout(std430, binding = 4) buffer SSBO2 {
+    // vec2 S_klm_FT[];
+// };
+
+// layout(std430, binding = 5) buffer SSBO3 {
+    // vec2 I_k_FT[];
+// };
+
+// layout(std430, binding = 6) buffer SSBO4 {
+    // float I_k[];
+// };
+
+void main(){
+
+    int N_x_FT = init_d.N_x_FT;
+    int N_G = iter_d.N_G;
+    int N_L = iter_d.N_L;
+
+    int i = int(gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x);
+    if (i >= N_LINES) return;
+
+    //Calc v
+    // ... pressure-shift
+    float vi = v0[i] + iter_d.p * da[i];
+    float ki = (vi - init_d.v_min) / init_d.dv;
+    int k0i = int(ki);
+    int k1i = k0i + 1;
+
+    if ((k0i < 0) || (k1i >= init_d.N_v)) return;
+
+    //Calc wG
+    float log_wGi = log(v0[i]) + init_d.log_c2Mm[int(iso[i])] + iter_d.hlog_T;
+    float li = (log_wGi - iter_d.log_wG_min) / init_d.dxG;
+    int l0i = int(li);
+    int l1i = l0i + 1;
+
+    //Calc wL
+    float gamma = 0.0;
+    for (int j=0; j<init_d.N_collision_partners; j++){
+        gamma += iter_d.x[j] * gamma_arr[i + j * init_d.N_lines];
+    }
+    float log_wLi = log(gamma) + iter_d.log_2p + na[i] * iter_d.log_rT;
+    float mi = (log_wLi - iter_d.log_wL_min) / init_d.dxL;
+    int m0i = int(mi);
+    int m1i = m0i + 1;
+
+    //Calc I
+    // ... scale linestrengths under equilibrium
+    float Si = iter_d.N * iter_d.x[0] * S0[i] * (exp(iter_d.c2T * El[i]) - exp(iter_d.c2T * (El[i] + v0[i]))) / iter_d.Q[int(iso[i])];
+
+    float avi = ki - float(k0i);
+    float aGi = li - float(l0i);
+    float aLi = mi - float(m0i);
+
+    float aV00i = (1 - aGi) * (1 - aLi);
+    float aV01i = (1 - aGi) * aLi;
+    float aV10i = aGi * (1 - aLi);
+    float aV11i = aGi * aLi;
+
+    float Sv0i = Si * (1 - avi);
+    float Sv1i = Si * avi;
+
+    atomicAdd(S_klm[k0i + l0i * 2*N_x_FT + m0i * 2*N_x_FT*N_G], Sv0i * aV00i);
+    atomicAdd(S_klm[k0i + l0i * 2*N_x_FT + m1i * 2*N_x_FT*N_G], Sv0i * aV01i);
+    atomicAdd(S_klm[k0i + l1i * 2*N_x_FT + m0i * 2*N_x_FT*N_G], Sv0i * aV10i);
+    atomicAdd(S_klm[k0i + l1i * 2*N_x_FT + m1i * 2*N_x_FT*N_G], Sv0i * aV11i);
+    atomicAdd(S_klm[k1i + l0i * 2*N_x_FT + m0i * 2*N_x_FT*N_G], Sv1i * aV00i);
+    atomicAdd(S_klm[k1i + l0i * 2*N_x_FT + m1i * 2*N_x_FT*N_G], Sv1i * aV01i);
+    atomicAdd(S_klm[k1i + l1i * 2*N_x_FT + m0i * 2*N_x_FT*N_G], Sv1i * aV10i);
+    atomicAdd(S_klm[k1i + l1i * 2*N_x_FT + m1i * 2*N_x_FT*N_G], Sv1i * aV11i);
+
+}
+

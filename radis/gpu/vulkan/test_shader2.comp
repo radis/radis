@@ -1,0 +1,28 @@
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
+#extension GL_EXT_shader_atomic_float : enable
+#extension GL_EXT_scalar_block_layout : enable
+
+layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
+
+layout(std430, binding = 0) uniform initData{
+    int Nt;
+	int Nf;
+    int Nb;
+	float dt;
+	float wL;
+} init_d;
+
+layout(std430, binding = 4) buffer SSBO1 {
+   float data_out_d[];
+};
+
+void main() {
+
+	uint k = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x; //gl_GlobalInvocationID.x;
+
+	if (k >= init_d.Nt) return;
+
+	data_out_d[k] += 1;
+}
+

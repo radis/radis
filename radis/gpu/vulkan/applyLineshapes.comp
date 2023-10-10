@@ -1,0 +1,85 @@
+#version 450
+
+layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
+
+layout(std140, binding = 0) uniform initData{
+    float v_min;
+    float dv;
+    int N_v;
+    int N_v_FT;
+    int N_x_FT;
+    float dxG;
+    float dxL;
+    int N_lines;
+    int N_collision_partners;
+    float log_c2Mm[16];
+} init_d;
+
+layout(std140, binding = 1) uniform iterData{
+    float p;
+    float log_2p;
+    float hlog_T;
+    float log_rT;
+    float c2T;
+    float N;
+    float x[16];
+    float l;
+    float slit_FWHM;
+    float log_wG_min;
+    float log_wL_min;
+    int N_G;
+    int N_L;
+    float Q[16];
+} iter_d;
+
+// layout(std430, binding = 2) readonly buffer SSBO0 {
+    // uint8_t iso[N_LINES];
+    // float v0[N_LINES];
+    // float da[N_LINES];  // pressure shift  in cm-1/atm
+    // float S0[N_LINES];  // initial linestrength
+    // float El[N_LINES];
+    // float gamma_arr[N_LINES];
+    // float na[];
+// };
+
+// layout(std430, binding = 3) buffer SSBO1 {
+    // float S_klm[];
+// };
+
+layout(std430, binding = 4) buffer SSBO2 {
+    vec2 S_klm_FT[];
+};
+
+layout(std430, binding = 5) buffer SSBO3 {
+    vec2 I_k_FT[];
+};
+
+// layout(std430, binding = 6) buffer SSBO4 {
+    // float I_k[];
+// };
+
+
+void main() {
+
+    const float pi = 3.141592653589793f;
+    const float r4log2 = 0.36067376022224085f; // = 1 / (4 * ln(2))
+
+    int k = int(gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x);
+    if (k >= init_d.N_x_FT) return;
+
+    float x = k / (init_d.N_v_FT * init_d.dv);
+    float mul = 0.0;
+    int index = 0;
+    vec2 out_complex = vec2(0,0);
+
+    for (int l = 0; l < iter_d.N_G; l++) {
+        float wG = exp(iter_d.log_wG_min + l * init_d.dxG);
+        for (int m = 0; m < iter_d.N_L; m++) {
+            index = k * iter_d.N_G * iter_d.N_L + l * iter_d.N_L + m;
+            float wL = exp(iter_d.log_wL_min + m * init_d.dxL);
+            mul = exp(-r4log2 * pow(pi * x * wG, 2) - pi * x * wL) / init_d.dv / init_d.N_v_FT;
+            out_complex += mul * S_klm_FT[index];
+        }
+    }
+    I_k_FT[k] += S_klm_FT[index] * mul;
+}
