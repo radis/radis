@@ -22,6 +22,12 @@ init_h = initData_t()
 iter_h = iterData_t()
 
 
+def next_fast_len_even(n):
+    n = next_fast_len(n)
+    while n & 1:
+        n = next_fast_len(n + 1)
+    return n
+
 def gpu_init(
     vmin,
     Nv,
@@ -69,7 +75,7 @@ def gpu_init(
         (m,n) shaped array with Lorentzian width parameters, with n the number of lines in the database
         and m the number of collision partners included. This is usually at least two,
         with the first (m=0) always self broadening and the last (m=-1) always air broadening.
-    iso : numpy.ndarray[np.uint8]
+    iso : numpy.ndarray[np.uint32]
         Index of isotopologue.
     Mm_arr : numpy.ndarray
         Molecular masses for all isotopologues in the database (Mm_arr[0] is always 0).
@@ -87,59 +93,10 @@ def gpu_init(
         during iterations.
     """
 
-    global gpu_mod
-    if gpu_mod is not None:
-        warn("Only a single GPU context allowed; please call gpu_exit() first.")
-        return
-
-    ## First a GPU context is created, then the .ptx file is read
-    ## and made available as the GPUModule object gpu_mod
-    ## If this fails, None is returned and calculations are
-    ## defaulted to CPU emulation
-
-    if backend == "cpu-cuda":
-        from radis.gpu.cuda.emulate import CuContext as GPUContext
-
-        ctx = GPUContext.Open(verbose=verbose)
-        import radis.gpu.cuda.emulate as backend_module
-
-    else:
-        # Try to load GPU
-        from radis.gpu.cuda.driver import CuContext as GPUContext
-
-        ctx = GPUContext.Open(verbose=verbose)  # Set verbose to >=2 for comments
-        if ctx is None:
-            warn(
-                NoGPUWarning(
-                    "Failed to load CUDA context, this happened either because"
-                    + "CUDA is not installed properly, or you have no NVIDIA GPU. "
-                    + "Continuing with emulated GPU on CPU..."
-                    + "This means *NO* GPU acceleration!"
-                )
-            )
-
-            # failed to init CUDA context, continue with CPU:
-            from radis.gpu.cuda.emulate import CuContext as GPUContext
-
-            ctx = GPUContext.Open(verbose=verbose)
-            import radis.gpu.cuda.emulate as backend_module
-
-        else:
-            # successfully initialized CUDA context, continue with GPU:
-            import radis.gpu.cuda.driver as backend_module
-
-    GPUContext, GPUModule, GPUArray, GPUFFT, GPUTimer = backend_module.getClasses()
-
-    if verbose:
-        print("Number of lines loaded: {0}".format(len(v0)))
-        print()
-
-    ptx_path = os.path.join(getProjectRoot(), "gpu", "cuda", "build", "kernels.ptx")
-    if not os.path.exists(ptx_path):
-        raise FileNotFoundError(ptx_path)
-    gpu_mod = GPUModule(ctx, ptx_path)  # gpu
-    if verbose:
-        print("mode:", gpu_mod.getMode())
+    global app
+    
+    from radis.gpu.vulkan.vulkan_compute_lib import ComputeApplication, StructBuffer,  ArrayBuffer    
+    app = ComputeApplication(deviceID=0)
 
     ## Next, the GPU is made aware of a number of parameters.
     ## Parameters that don't change during iteration are stored
@@ -151,7 +108,7 @@ def gpu_init(
     init_h.v_min = vmin
     init_h.dv = dv
     init_h.N_v = Nv
-    init_h.N_v_FT = next_fast_len(2 * init_h.N_v)
+    init_h.N_v_FT = next_fast_len_even(2 * init_h.N_v)
     init_h.N_x_FT = init_h.N_v_FT // 2 + 1
     init_h.dxG = dxG
     init_h.dxL = dxL
@@ -171,11 +128,22 @@ def gpu_init(
     init_Q(Q_intp_list)
     log_2vMm = np.log(v0) + log_c2Mm_arr.take(iso)
 
-    gpu_mod.setConstant("init_d", init_h)
+    # gpu_mod.setConstant("init_d", init_h)
+    app.init_d = StructBuffer.fromStruct(init_h, binding=0, app=app)
+    app.iter_d = StructBuffer.fromStruct(iter_h, binding=1, app=app)
 
     init_G_params(log_2vMm.astype(np.float32), verbose)
     init_L_params(na, gamma_arr, verbose)
-
+    
+    #Calulate params once to obtain N_G_max and N_L_max:
+    p_max = 5.0 #bar #TODO: obtain this from defaults/keywords
+    T_max = 3500.0 #K
+    set_pTQ(p_max, T_max, 0.5, iter_h, l=1.0, slit_FWHM=0.0)
+    set_G_params(init_h, iter_h)
+    set_L_params(init_h, iter_h)    
+    N_G_max = iter_h.N_G
+    N_L_max = iter_h.N_L
+    
     if verbose >= 2:
         print("done!")
 
@@ -187,14 +155,14 @@ def gpu_init(
 
     NvFT = init_h.N_v_FT
     NxFT = NvFT // 2 + 1
-    Ntpb = ctx.getMaxThreadsPerBlock()
+    Ntpb = 1024 #TODO: Get these through vulkan
     Nli = init_h.N_lines
-    threads = (Ntpb, 1, 1)
+    threads = (Ntpb, 1, 1, Nli)
 
-    gpu_mod.fillLDM.setGrid((Nli // Ntpb + 1, 1, 1), threads)
-    gpu_mod.applyLineshapes.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
-    gpu_mod.calcTransmittanceNoslit.setGrid((NvFT // Ntpb + 1, 1, 1), threads)
-    gpu_mod.applyGaussianSlit.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
+    # gpu_mod.fillLDM.setGrid((Nli // Ntpb + 1, 1, 1), threads)
+    # gpu_mod.applyLineshapes.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
+    #gpu_mod.calcTransmittanceNoslit.setGrid((NvFT // Ntpb + 1, 1, 1), threads)
+    #gpu_mod.applyGaussianSlit.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
 
     ## Next the variables are initialized on the GPU. Constant variables
     ## that don't change (i.e. pertaining to the database) are immediately
@@ -204,56 +172,42 @@ def gpu_init(
     ## They are not allocated, only given a device pointer by which
     ## they can be referenced later.
 
-    S_klm_d = GPUArray(0, dtype=np.float32, grow_only=True)
-    S_klm_FT_d = GPUArray(0, dtype=np.complex64, grow_only=True)
 
-    spectrum_in_d = GPUArray(NxFT, dtype=np.complex64)
-    spectrum_out_d = GPUArray(NvFT, dtype=np.float32)
+    database_arrays = [iso, v0, da, S0, El, na, gamma_arr]
+    database_length = np.sum([np.sum(arr.shape[:-1]) if len(arr.shape)>1 else 1 for arr in database_arrays])
 
-    transmittance_noslit_d = GPUArray(NvFT, dtype=np.float32)
-    transmittance_noslit_FT_d = GPUArray(NxFT, dtype=np.complex64)
+    database_SSBO = ArrayBuffer((database_length, Nli),
+                                    np.float32, #TODO: Not all arrays are np.float32, but it doesn't matter because all dtypes have size 4 (=sizeof(float32)), and we never read this buffer.
+                                    binding=2, app=app)
+                                    
+    byte_offset = 0
+    for arr in database_arrays:
+        byte_offset += database_SSBO.setData(arr, byte_offset=byte_offset)
+        
+    S_klm_d = ArrayBuffer((N_L_max, N_G_max, 2*NxFT), np.float32, binding=3, app=app)
+    S_klm_FT_d = ArrayBuffer((N_L_max, N_G_max, NxFT), np.complex64, binding=4, app=app)
 
-    transmittance_FT_d = GPUArray(NxFT, dtype=np.complex64)
-    transmittance_d = GPUArray(NvFT, dtype=np.float32)
+    I_k_FT_d = ArrayBuffer((NxFT,), np.complex64, binding=5, app=app)
+    I_k_d = ArrayBuffer((2*NxFT,), np.float32, binding=6, app=app)
+    
+    from radis.gpu.vulkan.pyvkfft_vulkan import prepare_fft
+    app.fft_LDM = prepare_fft(S_klm_d, S_klm_FT_d, compute_app=app)
+    app.fft_spec = prepare_fft(I_k_d, I_k_FT_d, compute_app=app)
+    
+    # Write command buffer:
+    shader_path = os.path.join(getProjectRoot(), "gpu", "vulkan")
 
-    gpu_mod.fillLDM.setArgs(
-        GPUArray.fromArray(iso),
-        GPUArray.fromArray(v0),
-        GPUArray.fromArray(da),
-        GPUArray.fromArray(S0),
-        GPUArray.fromArray(El),
-        GPUArray.fromArray(gamma_arr),
-        GPUArray.fromArray(na),
-        S_klm_d,
-    )
-    gpu_mod.applyLineshapes.setArgs(S_klm_FT_d, spectrum_in_d)
-    gpu_mod.calcTransmittanceNoslit.setArgs(spectrum_out_d, transmittance_noslit_d)
-    gpu_mod.applyGaussianSlit.setArgs(transmittance_noslit_FT_d, transmittance_FT_d)
+    app.schedule_shader(os.path.join(shader_path,'fillLDM.spv'), 
+                        (Nli // Ntpb + 1, 1, 1), (Ntpb, 1, 1, Nli))
+    app.fft_LDM.fft(app._commandBuffer, S_klm_d._buffer, S_klm_FT_d._buffer)
+    app.init_shader(os.path.join(shader_path, 'applyLineshapes.spv'), 
+                    (NxFT // Ntpb + 1, 1, 1), (Ntpb, 1, 1))
+    app.fft_spec.ifft(app._commandBuffer, I_k_FT_d._buffer, I_k_d._buffer)
 
-    ## FFT's are performed through the GPUFFT object. The required functions are internally
-    ## loaded from the cufft library, not through the user kernels (.ptx files).
-    ## The FFT's need some memory as "work area". Because the different FFT's can
-    ## reuse the work area, we make a GPUArray at this scope that is passed to the
-    ## GPUFFT objects. The work area will be scaled according to needs by the GPUFFT objects,
-    ## so it can be initialized with a small value.
+    app.endCommandBuffer()
 
-    workarea_d = GPUArray(0, dtype=np.byte, grow_only=True)
-    gpu_mod.fft_fwd = GPUFFT(S_klm_d, S_klm_FT_d, workarea=workarea_d, direction="fwd")
-    gpu_mod.fft_rev = GPUFFT(
-        spectrum_in_d, spectrum_out_d, workarea=workarea_d, direction="rev"
-    )
-    gpu_mod.fft_fwd2 = GPUFFT(
-        transmittance_noslit_d,
-        transmittance_noslit_FT_d,
-        workarea=workarea_d,
-        direction="fwd",
-    )
-    gpu_mod.fft_rev2 = GPUFFT(
-        transmittance_FT_d, transmittance_d, workarea=workarea_d, direction="rev"
-    )
-
-    gpu_mod.timer = GPUTimer()
-
+    
+    
     if verbose >= 2:
         print("done!")
 
@@ -303,97 +257,26 @@ def gpu_iterate(
     if verbose >= 2:
         print("Copying iteration parameters to device...")
 
-    ## First a number of parameters that change during iteration
-    ## are computed and copied to the GPU.
-
-    gpu_mod.timer.reset()
-
     set_pTQ(p, T, mole_fraction, iter_h, l=l, slit_FWHM=slit_FWHM)
     set_G_params(init_h, iter_h)
-    set_L_params(init_h, iter_h)
-    gpu_mod.setConstant("iter_d", iter_h)
-    gpu_mod.timer.lap("iter_params")
-
-    ## Next the S_klm_d variable is reshaped to the correct shape,
-    ## and filled with spectral data.
-
+    set_L_params(init_h, iter_h)    
+    app.iter_d.setData(iter_h)
+    
     if verbose >= 2:
-        print("done!")
-        print("Filling LDM...")
-
-    S_klm_shape = (init_h.N_v_FT, iter_h.N_G, iter_h.N_L)
-
-    gpu_mod.fillLDM.args[-1].resize(S_klm_shape, init="zeros")
-    gpu_mod.fillLDM()
-    gpu_mod.timer.lap("fillLDM")
-
-    ## Next the S_klm_FT_d is also reshaped, and the lineshapes are
-    ## applied. This consists of an FT of the LDM, a product by the
-    ## lineshape FTs & summing all G and L axes, and an inverse FT
-    ## on the accumulated spectra.
-
-    if verbose >= 2:
-        print("done!")
-        print("Applying lineshapes...")
-
-    S_klm_FT_shape = (init_h.N_x_FT, iter_h.N_G, iter_h.N_L)
-    gpu_mod.fft_fwd.arr_out.resize(S_klm_FT_shape)
-    gpu_mod.fft_fwd()
-    gpu_mod.timer.lap("fft_fwd")
-
-    gpu_mod.applyLineshapes()
-    gpu_mod.timer.lap("applyLineshapes")
-
-    gpu_mod.fft_rev()
-    gpu_mod.timer.lap("fft_rev")
-
-    if verbose >= 2:
-        print("Done!")
-        print("Calculating transmittance...")
-
-    abscoeff_h = gpu_mod.fft_rev.arr_out.getArray()[: init_h.N_v]
-
-    ## To apply a slit function, first the transmittance is calculated.
-    ## Then the convolution is applied by an FT, product with the
-    ## instrument function's FT, followed by an inverse FT.
-
-    if verbose >= 2:
-        print("Done!")
-
-    ##    ##The code below is to process slits on the GPU, which is currently unsupported.
-    ##
-    ##        print("Applying slit function...")
-    ##
-    ##    gpu_mod.calcTransmittanceNoslit()
-    ##    gpu_mod.timer.lap("calcTransmittanceNoslit")
-    ##
-    ##    gpu_mod.fft_fwd2()
-    ##    gpu_mod.timer.lap("fft_fwd2")
-    ##
-    ##    gpu_mod.applyGaussianSlit()
-    ##    gpu_mod.timer.lap("applyGaussianSlit")
-    ##
-    ##    gpu_mod.fft_rev2()
-    ##    gpu_mod.timer.lap("fft_rev2")
-    ##
-    ##    transmittance_h = gpu_mod.fft_rev2.arr_out.getArray()[: init_h.N_v]
-    ##
-    ##    if verbose >= 2:
-    ##        print("done!")
-
+        print("Running compute pipelines...")
+    
+    app.run()
+    abscoeff_h = app.I_k_d.getData()[: init_h.N_v]
+    
     if verbose == 1:
         print("Finished calculating spectrum!")
 
-    gpu_mod.timer.lap("total")
-    times = gpu_mod.timer.getTimes()
-
-    ##    diffs = gpu_mod.timer.getDiffs()
-    ##    print(diffs['fillLDM'], diffs['fft_fwd'])
+    times = []
 
     return abscoeff_h, iter_h, times
 
 
 def gpu_exit(event=None):
-    global gpu_mod
-    gpu_mod.context.destroy()
-    gpu_mod = None
+    global app
+    del app
+    

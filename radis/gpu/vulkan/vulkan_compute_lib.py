@@ -71,7 +71,7 @@ class ComputeApplication(object):
         if self._instance:
             vk.vkDestroyInstance(self._instance, None)
 
-    def init_shader(
+    def schedule_shader(
         self,
         shader_fname=None,
         global_workgroup=(1, 1, 1),
@@ -422,6 +422,7 @@ class ComputeApplication(object):
         pipelines = vk.vkCreateComputePipelines(
             self._device, vk.VK_NULL_HANDLE, 1, pipelineCreateInfo, None
         )
+        print(self._device, pipelines)
         if len(pipelines) == 1:
             pipeline = pipelines[0]
         else:
@@ -589,7 +590,7 @@ class ArrayBuffer(ObjectBuffer):
     def _calcStrides(self, order="c"):
 
         sshape = np.zeros_like(self.shape)
-        sshape[0] = 1
+        sshape[0] = 1 #TODO: Check this, should maybe be sshape[-1]=1; shape[:-1] = self.shape[:-1]??
         sshape[1:] = self.shape[:-1]
         sshape *= self.itemsize
 
@@ -598,9 +599,12 @@ class ArrayBuffer(ObjectBuffer):
         else:
             self.strides = np.multiply.accumulate(sshape)
 
-    def setData(self, arr):
-        self._arr[...] = arr
-
+    def setData(self, arr, byte_offset=0):
+        ctypes.memmove(self._arr.ctypes.data + byte_offset, 
+                       arr.ctypes.data,
+                       arr.nbytes)
+        return arr.nbytes
+                       
     def getData(self):
         return self._arr
 

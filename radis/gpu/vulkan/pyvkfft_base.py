@@ -13,7 +13,7 @@ import warnings
 from enum import Enum
 
 import numpy as np
-import pyvkfft_config as config
+import radis.gpu.vulkan.pyvkfft_config as config
 
 # np.complex32 does not exist yet https://github.com/numpy/numpy/issues/14753
 complex32 = np.dtype([("re", np.float16), ("im", np.float16)])

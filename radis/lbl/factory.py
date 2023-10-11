@@ -181,7 +181,7 @@ class SpectrumFactory(BandFactory):
     neighbour_lines: float (:math:`cm^{-1}`)
         The calculated spectral range is increased (by ``neighbour_lines`` cm-1
         on each side) to take into account overlaps from out-of-range lines.
-        Default is ``0`` :math:`cm^{-1}`.​
+        Default is ``0`` :math:`cm^{-1}`.​ #TODO: Check weird character
     wstep: float (cm-1) or `'auto'`
         Resolution of wavenumber grid. Default ``0.01`` cm-1.
         If `'auto'`, it is ensured that there
@@ -236,7 +236,7 @@ class SpectrumFactory(BandFactory):
         - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [Spectral-Synthesis-Algorithm]_)
         - ``"simple"`` : weights equal to their relative position in the grid
 
-        If using the LDM optimization, broadening method is automatically set to ``'fft'``.
+        If using the LDM optimization, broadening method is automatically set to ``'fft'``. #TODO: Check if this is still true
         If ``None``, no lineshape interpolation is performed and the lineshape of all lines is calculated.
 
         Refer to [Spectral-Synthesis-Algorithm]_ for more explanation on the LDM method for lineshape interpolation.
@@ -1120,9 +1120,9 @@ class SpectrumFactory(BandFactory):
 
         # load the data
         if len(iso_set) > 1:
-            iso = self.df0["iso"].to_numpy(dtype=np.uint8)
+            iso = self.df0["iso"].to_numpy(dtype=np.uint32)
         elif len(iso_set) == 1:
-            iso = np.full(_Nlines_calculated, iso_set[0], dtype=np.uint8)
+            iso = np.full(_Nlines_calculated, iso_set[0], dtype=np.uint32)
         else:
             warn("Zero isotopes found... Is the database empty?")
 

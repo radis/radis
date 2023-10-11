@@ -1,9 +1,9 @@
 #version 450
 #extension GL_EXT_shader_atomic_float : enable
-#extension GL_EXT_shader_8bit_storage : enable
+//#extension GL_EXT_shader_8bit_storage : enable
 
 layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
-layout (constant_id = 3) const int N_LINES = 1;
+layout (constant_id = 3) const int N_LINES = 1; //this value is updated by the host code 
 
 layout(std140, binding = 0) uniform initData{
     float v_min;
@@ -35,8 +35,9 @@ layout(std140, binding = 1) uniform iterData{
     float Q[16];
 } iter_d;
 
-layout(std430, binding = 2) readonly buffer SSBO0 {
-    uint8_t iso[N_LINES];
+//TODO: Binding numbers of UBO and SSBO are separate, so could start at 0 here again
+layout(std430, binding = 2) readonly buffer database_SSBO {
+    uint iso[N_LINES];
     float v0[N_LINES];
     float da[N_LINES];  // pressure shift  in cm-1/atm
     float S0[N_LINES];  // initial linestrength
