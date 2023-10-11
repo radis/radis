@@ -188,11 +188,11 @@ def gpu_init(
     S_klm_FT_d = ArrayBuffer((N_L_max, N_G_max, NxFT), np.complex64, binding=4, app=app)
 
     I_k_FT_d = ArrayBuffer((NxFT,), np.complex64, binding=5, app=app)
-    I_k_d = ArrayBuffer((2*NxFT,), np.float32, binding=6, app=app)
+    app.I_k_d = ArrayBuffer((2*NxFT,), np.float32, binding=6, app=app)
     
     from radis.gpu.vulkan.pyvkfft_vulkan import prepare_fft
     app.fft_LDM = prepare_fft(S_klm_d, S_klm_FT_d, compute_app=app)
-    app.fft_spec = prepare_fft(I_k_d, I_k_FT_d, compute_app=app)
+    app.fft_spec = prepare_fft(app.I_k_d, I_k_FT_d, compute_app=app)
     
     # Write command buffer:
     shader_path = os.path.join(getProjectRoot(), "gpu", "vulkan")
@@ -200,9 +200,9 @@ def gpu_init(
     app.schedule_shader(os.path.join(shader_path,'fillLDM.spv'), 
                         (Nli // Ntpb + 1, 1, 1), (Ntpb, 1, 1, Nli))
     app.fft_LDM.fft(app._commandBuffer, S_klm_d._buffer, S_klm_FT_d._buffer)
-    app.init_shader(os.path.join(shader_path, 'applyLineshapes.spv'), 
+    app.schedule_shader(os.path.join(shader_path, 'applyLineshapes.spv'), 
                     (NxFT // Ntpb + 1, 1, 1), (Ntpb, 1, 1))
-    app.fft_spec.ifft(app._commandBuffer, I_k_FT_d._buffer, I_k_d._buffer)
+    app.fft_spec.ifft(app._commandBuffer, I_k_FT_d._buffer, app.I_k_d._buffer)
 
     app.endCommandBuffer()
 
@@ -250,9 +250,9 @@ def gpu_iterate(
         gives the total time.
     """
 
-    if gpu_mod is None:
-        warn("Must have an open GPU context; please call gpu_init() first.")
-        return
+    # if gpu_mod is None:
+        # warn("Must have an open GPU context; please call gpu_init() first.")
+        # return
 
     if verbose >= 2:
         print("Copying iteration parameters to device...")
@@ -271,7 +271,7 @@ def gpu_iterate(
     if verbose == 1:
         print("Finished calculating spectrum!")
 
-    times = []
+    times = [0, 0, 0, 0]
 
     return abscoeff_h, iter_h, times
 
