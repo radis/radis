@@ -26,7 +26,7 @@ def next_fast_len_even(n):
 
 t_min = 0.0
 t_max = 100.0
-Nt = 300005
+Nt = 2 * 300005
 Nt = next_fast_len_even(Nt)
 print("Nt = {:d}".format(Nt))
 t_arr = np.linspace(0, t_max, Nt)
@@ -69,7 +69,7 @@ print(Nw)
 
 
 def calc_LDM(t0_data, log_w_data, I_data):
-    LDM = np.zeros((Nw, 2 * Nf), dtype=np.float32)
+    LDM = np.zeros((Nw, Nt), dtype=np.float32)
 
     ki = (t0_data - t_min) / dt
     k0i = ki.astype(np.int32)
@@ -120,7 +120,8 @@ class initData(Structure):
         ("Nb", c_int),
         ("Nw", c_int),
         ("dt", c_float),
-        ("wL", c_float_arr_N),
+        ("dxL", c_float),
+        ("log_w_min", c_float),
     ]
 
 
@@ -138,20 +139,26 @@ def initialize():
     ##    app.data_in_d.setData(I_arr[0,:], byte_offset = 0)
     ##    app.data_in_d.setData(I_arr[1:,:], byte_offset = I_arr[0].nbytes)
 
-    app.data_in_d = ArrayBuffer.fromArr(LDM, binding=2, app=app)
-    app.data_FT_d = ArrayBuffer((Nw, Nf), np.complex64, binding=3, app=app)
-    app.data_FT2_d = ArrayBuffer((Nf,), np.complex64, binding=4, app=app)
-    app.data_out_d = ArrayBuffer((Nt + 2,), np.float32, binding=5, app=app)
+    app.data_LDM_d = ArrayBuffer.fromArr(LDM, binding=2, app=app)
+    app.data_LDM_FT_d = ArrayBuffer((Nw, Nf), np.complex64, binding=3, app=app)
+    app.data_spectrum_FT_d = ArrayBuffer((Nf,), np.complex64, binding=4, app=app)
+    app.data_spectrum_d = ArrayBuffer((Nt,), np.float32, binding=5, app=app)
 
     # Init FFT's:
     # TODO: init FFT without buffers
-    app.fft_fwd = prepare_fft(app.data_in_d, app.data_FT_d, compute_app=app)
-    app.fft_inv = prepare_fft(app.data_out_d, app.data_FT2_d, compute_app=app)
+    app.fft_fwd = prepare_fft(app.data_LDM_d, app.data_LDM_FT_d, compute_app=app)
+    app.fft_inv = prepare_fft(
+        app.data_spectrum_d, app.data_spectrum_FT_d, compute_app=app
+    )
 
     # Shaders:
-    app.fft_fwd.fft(app._commandBuffer, app.data_in_d._buffer, app.data_FT_d._buffer)
+    app.fft_fwd.fft(
+        app._commandBuffer, app.data_LDM_d._buffer, app.data_LDM_FT_d._buffer
+    )
     app.schedule_shader("test_shader2.spv", (Nf // Ntpb + 1, 1, 1), (Ntpb, 1, 1))
-    app.fft_inv.ifft(app._commandBuffer, app.data_FT2_d._buffer, app.data_out_d._buffer)
+    app.fft_inv.ifft(
+        app._commandBuffer, app.data_spectrum_FT_d._buffer, app.data_spectrum_d._buffer
+    )
     app.endCommandBuffer()
 
     # del app.fft_fwd
@@ -168,21 +175,21 @@ app = initialize()
 
 app.init_h.Nt = Nt
 app.init_h.Nf = Nf
-##app.init_h.Nb = Nb
 app.init_h.Nw = Nw
 app.init_h.dt = dt
-app.init_h.wL = c_float_arr_N(*[np.exp(log_w_min + i * dxL) for i in range(Nw)])
+app.init_h.dxL = dxL
+app.init_h.log_w_min = log_w_min
 app.init_d.setData(app.init_h)
 
 app.run()
 
 plt.axhline(0, c="k", lw=1, alpha=0.5)
 
-res = app.data_out_d.getData()
-lines = plt.plot(t_arr, res.T[:Nt], lw=0.5)
+res = app.data_spectrum_d.getData()
+lines = plt.plot(t_arr, res.T[:Nt], lw=1)
 
 I_ref = calc_spectrum(t_arr, t0_data, np.exp(log_w_data), I_data)
-lines = plt.plot(t_arr, I_ref, "k--", lw=0.5)
+plt.plot(t_arr, I_ref, "k--", lw=1)
 
 
 axw = plt.axes([0.25, 0.1, 0.65, 0.03])
@@ -191,10 +198,10 @@ sw = Slider(axw, "Width", 0.0, 2.0, valinit=w0)
 
 def update(val):
     t0 = time.perf_counter()
-    app.init_h.wL[:] = [np.exp(log_w_min + i * dxL) for i in range(Nw)]
+    # app.init_h.wL[:] = [np.exp(log_w_min + i * dxL) for i in range(Nw)]
     app.init_d.setData(app.init_h)
     app.run()
-    res = app.data_out_d.getData()
+    res = app.data_spectrum_d.getData()
     for i in range(len(lines)):
         lines[i].set_ydata(res[:Nt])
     fig.canvas.draw_idle()

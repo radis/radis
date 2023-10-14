@@ -11,15 +11,16 @@ layout(std430, binding = 0) uniform initData{
     int Nb;
     int Nw;
 	float dt;
-	float wL[32];
+    float dxL;
+    float log_w_min;
 } init_d;
 
 layout(std430, binding = 3) buffer SSBO1 {
-   vec2 data_FT_d[];
+   vec2 data_LDM_FT_d[];
 };
 
 layout(std430, binding = 4) buffer SSBO2 {
-   vec2 data_FT2_d[];
+   vec2 spectrum_FT_d[];
 };
 
 void main() {
@@ -33,10 +34,12 @@ void main() {
     float x = k / (init_d.Nt * init_d.dt);
 	vec2 res = vec2(0.0, 0.0);
     float mul = 0.0;
+    float wL = 0.0;
 
     for (int i=0; i < init_d.Nw; i++){
-        mul = exp(- pi * x * init_d.wL[i]) / init_d.dt;
-        res += data_FT_d[k + i*init_d.Nf] * mul;
+        wL = exp(init_d.log_w_min + i*init_d.dxL);
+        mul = exp(- pi * x * wL) / init_d.dt;
+        res += data_LDM_FT_d[k + i*init_d.Nf] * mul;
     }
-	data_FT2_d[k] = res;
+	spectrum_FT_d[k] = res;
 }
