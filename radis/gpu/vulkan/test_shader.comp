@@ -1,10 +1,26 @@
 #version 450
-//#extension GL_ARB_separate_shader_objects : enable
-//#extension GL_EXT_shader_atomic_float : enable
-
-#extension  GL_EXT_scalar_block_layout : enable
+#extension GL_EXT_scalar_block_layout : enable
 layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
-layout (constant_id = 3) const int N_LINES = 1; //this value is updated by the host code
+layout (constant_id = 3) const int N_LINES = 30; //this value is updated by the host code
+layout (constant_id = 4) const int HAS_ATOMIC_ADD_FLOAT = 0; //this value is updated by the host code
+
+// if (HAS_ATOMIC_ADD_FLOAT):
+// #extension GL_EXT_shader_atomic_float : enable
+// #define atomicAddFloatX(MEM, INDATA) atomicAdd(MEM, INDATA)
+// #define FLOAT_TYPE float
+// else:
+#define FLOAT_TYPE uint
+#define atomicAddFloatX(MEM, INDATA)      \
+{                                         \
+    uint expected_mem = MEM;              \
+    uint new_mem = floatBitsToUint(uintBitsToFloat(MEM) + INDATA); \
+    uint returned_mem = atomicCompSwap(MEM, expected_mem, new_mem); \
+    while(returned_mem != expected_mem){ \
+        expected_mem = returned_mem; \
+        new_mem = floatBitsToUint(uintBitsToFloat(expected_mem) + INDATA); \
+        returned_mem = atomicCompSwap(MEM, expected_mem, new_mem); \
+    } \
+}
 
 layout(std430, binding = 0) uniform initData{
     int Nt;
@@ -17,22 +33,23 @@ layout(std430, binding = 0) uniform initData{
     float log_w_min;
 } init_d;
 
-layout(std430, binding = 2) buffer database_SSBO {
+layout(std430, binding = 2) readonly buffer database_SSBO {
    float t0_data[N_LINES];
    float log_w_data[N_LINES];
    float I_data[N_LINES];
 };
 
 layout(std430, binding = 3) buffer SSBO1 {
-   vec2 data_LDM_d[];
+  FLOAT_TYPE data_LDM_d[];
 };
+
 
 
 void main() {
 
 	uint i = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x; //gl_GlobalInvocationID.x;
 
-	if (i >= N_LINES) return;
+	if (i >= init_d.Nl) return;
 
     float ki = (t0_data[i] - init_d.t_min) / init_d.dt;
     int k0i = int(ki);
@@ -44,8 +61,9 @@ void main() {
     int l1i = l0i + 1;
     float aLi = li - float(l0i);
 
-    data_LDM_d[l0i * init_d.Nt + k0i] += (1 - aLi) * (1 - avi) * I_data[i];
-    data_LDM_d[l0i * init_d.Nt + k1i] += (1 - aLi) * avi * I_data[i];
-    data_LDM_d[l1i * init_d.Nt + k0i] += aLi * (1 - avi) * I_data[i];
-    data_LDM_d[l1i * init_d.Nt + k1i] += aLi * avi * I_data[i];
+    atomicAddFloatX(data_LDM_d[l0i * init_d.Nt + k0i], (1 - aLi) * (1 - avi) * I_data[i]);
+    atomicAddFloatX(data_LDM_d[l0i * init_d.Nt + k1i], (1 - aLi) * avi * I_data[i]);
+    atomicAddFloatX(data_LDM_d[l1i * init_d.Nt + k0i], aLi * (1 - avi) * I_data[i]);
+    atomicAddFloatX(data_LDM_d[l1i * init_d.Nt + k1i], aLi * avi * I_data[i]);
+
 }

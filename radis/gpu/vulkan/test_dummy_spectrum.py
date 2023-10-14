@@ -26,7 +26,7 @@ def next_fast_len_even(n):
 
 t_min = 0.0
 t_max = 100.0
-Nt = 2 * 300005
+Nt = 300005
 Nt = next_fast_len_even(Nt)
 print("Nt = {:d}".format(Nt))
 t_arr = np.linspace(0, t_max, Nt)
@@ -136,11 +136,18 @@ def initialize():
     app.init_h = initData()
     app.init_d = StructBuffer.fromStruct(app.init_h, app=app)
 
-    ##    app.data_in_d = ArrayBuffer((Nb, Nt+2), np.float32, binding=2, app=app)
-    ##    app.data_in_d.setData(I_arr[0,:], byte_offset = 0)
-    ##    app.data_in_d.setData(I_arr[1:,:], byte_offset = I_arr[0].nbytes)
+    database_arrays = [t0_data, log_w_data, I_data]
 
-    app.data_LDM_d = ArrayBuffer.fromArr(LDM, binding=3, app=app)
+    app.database_SSBO_d = ArrayBuffer(
+        (len(database_arrays), Nl), np.float32, binding=2, app=app
+    )
+    byte_offset = 0
+    for arr in database_arrays:
+        byte_offset += app.database_SSBO_d.setData(arr, byte_offset=byte_offset)
+
+    app.data_LDM_d = ArrayBuffer((Nw, Nt), np.float32, binding=3, app=app)
+    # app.data_LDM_d.setData(LDM)
+
     app.data_LDM_FT_d = ArrayBuffer((Nw, Nf), np.complex64, binding=4, app=app)
     app.data_spectrum_FT_d = ArrayBuffer((Nf,), np.complex64, binding=5, app=app)
     app.data_spectrum_d = ArrayBuffer((Nt,), np.float32, binding=6, app=app)
@@ -153,6 +160,7 @@ def initialize():
     )
 
     # Shaders:
+    app.schedule_shader("test_shader.spv", (Nl // Ntpb + 1, 1, 1), (Ntpb, 1, 1, Nl))
     app.fft_fwd.fft(
         app._commandBuffer, app.data_LDM_d._buffer, app.data_LDM_FT_d._buffer
     )
@@ -178,10 +186,12 @@ app.init_h.Nt = Nt
 app.init_h.Nf = Nf
 app.init_h.Nw = Nw
 app.init_h.Nl = Nl
+
 app.init_h.dt = dt
 app.init_h.t_min = t_min
 app.init_h.dxL = dxL
 app.init_h.log_w_min = log_w_min
+
 app.init_d.setData(app.init_h)
 
 app.run()
@@ -200,15 +210,17 @@ sw = Slider(axw, "Width", 0.0, 2.0, valinit=w0)
 
 
 def update(val):
-    t0 = time.perf_counter()
+
     # app.init_h.wL[:] = [np.exp(log_w_min + i * dxL) for i in range(Nw)]
+    app.data_LDM_d.setData(np.zeros((Nw, Nt), dtype=np.float32))
     app.init_d.setData(app.init_h)
+    t0 = time.perf_counter()
     app.run()
+    t1 = time.perf_counter()
     res = app.data_spectrum_d.getData()
     for i in range(len(lines)):
         lines[i].set_ydata(res[:Nt])
     fig.canvas.draw_idle()
-    t1 = time.perf_counter()
     ax.set_title("Time: {:6.1f} ms".format((t1 - t0) * 1e3))
 
 
