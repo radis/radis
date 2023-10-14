@@ -1,19 +1,24 @@
 #version 450
-#extension GL_ARB_separate_shader_objects : enable
-#extension GL_EXT_shader_atomic_float : enable
+//#extension GL_ARB_separate_shader_objects : enable
+//#extension GL_EXT_shader_atomic_float : enable
 
+#extension  GL_EXT_scalar_block_layout : enable
 layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
 
-layout(std140, binding = 0) uniform initData{
+layout(std430, binding = 0) uniform initData{
     int Nt;
 	int Nf;
     int Nb;
 	float dt;
-	float wL;
+	float wL[3];
 } init_d;
 
 layout(std430, binding = 3) buffer SSBO1 {
    vec2 data_FT_d[];
+};
+
+layout(std430, binding = 4) buffer SSBO2 {
+   vec2 data_FT2_d[];
 };
 
 void main() {
@@ -21,12 +26,17 @@ void main() {
     const float pi = 3.141592653589793f;
 
 	uint k = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x; //gl_GlobalInvocationID.x;
-    uint m = gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y; //gl_GlobalInvocationID.y;
+    //uint m = gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y; //gl_GlobalInvocationID.y;
 
-	if ((k >= init_d.Nf) || (m >= init_d.Nb)) return;
+	if (k >= init_d.Nf) return;
 
-	float x = k / (init_d.Nt * init_d.dt);
-	float mul = exp(- pi * x * init_d.wL);
-	data_FT_d[k + m*init_d.Nf] = data_FT_d[k + m*init_d.Nf] * mul;
+    float x = k / (init_d.Nt * init_d.dt);
+	vec2 res = vec2(0.0, 0.0);
+    float mul = 0.0;
+
+    for (int i=0; i < init_d.Nb; i++){
+        mul = exp(- pi * x * init_d.wL[i]); //*(1<<(2*i))
+        res += data_FT_d[k + i*init_d.Nf] * mul;
+    }
+	data_FT2_d[k] = res;
 }
-

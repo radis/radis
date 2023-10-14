@@ -37,7 +37,7 @@ w0 = 0.2
 seed(0)
 Nl = 200
 
-Nb = 12  # batch
+Nb = 3  # batch
 
 
 def mock_spectrum(Nt, Nl, m=1):
@@ -76,7 +76,10 @@ def initialize():
     app.init_h = initData()
     app.init_d = StructBuffer.fromStruct(app.init_h, app=app)
 
-    app.data_in_d = ArrayBuffer.fromArr(I_arr, binding=2, app=app)
+    app.data_in_d = ArrayBuffer((Nb, Nt + 2), np.float32, binding=2, app=app)
+    app.data_in_d.setData(I_arr[0, : Nt // 2], byte_offset=I_arr[0].nbytes // 4 - 2)
+    app.data_in_d.setData(I_arr[1:, :], byte_offset=I_arr[0].nbytes)
+
     app.data_FT_d = ArrayBuffer.fromArr(np.zeros((Nb, Nf), np.complex64), app=app)
     app.data_out_d = ArrayBuffer.fromArr(np.zeros((Nb, Nt + 2), np.float32), app=app)
 
@@ -87,9 +90,9 @@ def initialize():
 
     # Shaders:
     app.fft_fwd.fft(app._commandBuffer, app.data_in_d._buffer, app.data_FT_d._buffer)
-    app.init_shader("test_shader.spv", (Nf // Ntpb + 1, Nb, 1), (Ntpb, 1, 1))
+    app.schedule_shader("test_shader.spv", (Nf // Ntpb + 1, Nb, 1), (Ntpb, 1, 1))
     app.fft_inv.ifft(app._commandBuffer, app.data_FT_d._buffer, app.data_out_d._buffer)
-    app.init_shader("test_shader2.spv", (Nt // Ntpb + 1, 1, 1), (Ntpb, 1, 1))
+    # app.schedule_shader("test_shader2.spv", (Nt // Ntpb + 1, Nb, 1), (Ntpb, 1, 1))
     app.endCommandBuffer()
 
     # del app.fft_fwd
@@ -113,10 +116,10 @@ app.init_d.setData(app.init_h)
 
 app.run()
 
-plt.axhline(1, c="k", lw=1, alpha=0.5)
+# plt.axhline(1, c="k", lw=1, alpha=0.5)
 
 res = app.data_out_d.getData()
-lines = plt.plot(t_arr, res.T[:Nt, :1], lw=0.5)
+lines = plt.plot(t_arr, res.T[:Nt, :], lw=0.5)
 
 axw = plt.axes([0.25, 0.1, 0.65, 0.03])
 sw = Slider(axw, "Width", 0.0, 2.0, valinit=w0)
