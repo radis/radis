@@ -5,12 +5,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Slider
 from numpy.fft import rfftfreq
-from numpy.random import rand, seed
 from pyvkfft_vulkan import prepare_fft
+from scipy.constants import N_A, c, h, k
 from scipy.fft import next_fast_len
 from vulkan_compute_lib import ArrayBuffer, ComputeApplication, StructBuffer
 
-# from driver import CuArray, CuContext, CuModule
+c_cm = 100 * c
+c2 = h * c_cm / k
+c_float_arr_16 = c_float * 16
 
 
 L = lambda t, w: 2 / (w * np.pi) * 1 / (1 + 4 * (t / w) ** 2)
@@ -24,20 +26,30 @@ def next_fast_len_even(n):
     return n
 
 
-v_min = 0.0
-v_max = 100.0
-N_v = 300005
-N_v_FT = next_fast_len_even(N_v)
+v_min = 2150.0
+v_max = 2450.0
+dv = 0.002
+N_v = 150001
+N_v_FT = next_fast_len_even(2 * N_v)
 print("N_v = {:d}".format(N_v))
-v_arr = np.linspace(0, v_max, N_v_FT)
-dv = v_arr[1]
-f_arr = rfftfreq(N_v_FT, dv)
-N_x_FT = len(f_arr)
+v_arr = np.arange(N_v) * dv + v_min
+x_arr = rfftfreq(N_v_FT, dv)
+N_x_FT = len(x_arr)
 Ntpb = 1024  # threads per block
 w0 = 0.2
-seed(0)
-N_lines = 30
-T0 = 1000.0
+# N_lines = 100
+T0 = 1500.0
+p0 = 1.0  # bar
+
+
+log_2p = np.log(2 * p0)
+log_rT = np.log(296.0 / T0)
+
+Mm_list = [4.3989830e01, 4.4993183e01, 4.5994076e01]
+
+log_c2Mm_arr = c_float_arr_16(
+    0, *[0.5 * np.log(8 * k * np.log(2) / (c**2 * Mm * 1e-3 / N_A)) for Mm in Mm_list]
+)
 
 
 def init_w_axis(dx, log_wi):
@@ -47,15 +59,19 @@ def init_w_axis(dx, log_wi):
     return log_w_min, log_w_max, N
 
 
+# {0:iso, 1:v0, 2:da, 3:S0, 4:El, 5:na, 6:gamma_arr}
+database_arrays = [np.load("data_arr_{:d}.npy".format(i)) for i in range(7)]
+N_lines = database_arrays[0].size
+
 dxL = 0.2
+na = database_arrays[-2]
+gamma = database_arrays[-1][0]
 
-E_data = 1000.0 * rand(N_lines).astype(np.float32)
-log_w_data = np.log(0.1 + 0.5 * rand(N_lines).astype(np.float32))
-v0_data = ((v_max - v_min) * rand(N_lines) + v_min).astype(np.float32)
+print(na.shape)
+print(gamma.shape)
+log_wL_data = np.log(gamma) + log_2p + na * log_rT
 
-
-log_w_min, log_w_max, N_L = init_w_axis(dxL, log_w_data)
-print(N_L)
+log_wL_min, log_wL_max, N_L = init_w_axis(dxL, log_wL_data)
 
 
 def gL(t, t0, wL):
@@ -79,31 +95,35 @@ c_float_arr_N = N_L * c_float
 
 class initData(Structure):
     _fields_ = [
+        ("v_min", c_float),
+        ("dv", c_float),
         ("N_v", c_int),
         ("N_v_FT", c_int),
         ("N_x_FT", c_int),
-        # ("N_L", c_int),
-        ("N_lines", c_int),
-        ("dv", c_float),
-        ("v_min", c_float),
+        # ("dxG", c_float),
         ("dxL", c_float),
-        # ("log_w_min", c_float),
-        # ("T", c_float),
+        ("N_lines", c_int),
+        # ("N_coll", c_int),
+        ("log_c2Mm", c_float_arr_16),
     ]
 
 
 class iterData(Structure):
     _fields_ = [
-        # ("N_v", c_int),
-        # ("N_v_FT", c_int),
-        # ("N_x_FT", c_int),
+        # ("p", c_float),
+        ("log_2p", c_float),
+        # ("hlog_T", c_float),
+        ("log_rT", c_float),
+        ("c2T", c_float),
+        ("N", c_float),
+        # ("x", c_float_arr_16),
+        # ("l", c_float),
+        # ("slit_FWHM", c_float),
+        # ("log_wG_min", c_float),
+        ("log_wL_min", c_float),
+        # ("N_G", c_int),
         ("N_L", c_int),
-        # ("N_lines", c_int),
-        # ("dv", c_float),
-        # ("v_min", c_float),
-        # ("dxL", c_float),
-        ("log_w_min", c_float),
-        ("T", c_float),
+        # ("Q", c_float_arr_16),
     ]
 
 
@@ -120,11 +140,14 @@ def initialize():
     app.iter_h = iterData()
     app.iter_d = StructBuffer.fromStruct(app.iter_h, app=app)
 
-    database_arrays = [v0_data, log_w_data, E_data]
-
-    app.database_SSBO_d = ArrayBuffer(
-        (len(database_arrays), N_lines), np.float32, binding=2, app=app
+    # database_arrays = [v0_data, np.exp(log_w_data), E_data]
+    database_length = np.sum(
+        [np.sum(arr.shape[:-1]) if len(arr.shape) > 1 else 1 for arr in database_arrays]
     )
+    app.database_SSBO_d = ArrayBuffer(
+        (database_length, N_lines), np.float32, binding=2, app=app
+    )
+
     byte_offset = 0
     for arr in database_arrays:
         byte_offset += app.database_SSBO_d.setData(arr, byte_offset=byte_offset)
@@ -175,11 +198,17 @@ app.init_h.N_lines = N_lines
 app.init_h.dv = dv
 app.init_h.v_min = v_min
 app.init_h.dxL = dxL
+app.init_h.log_c2Mm = log_c2Mm_arr
+
 app.init_d.setData(app.init_h)
 
 app.iter_h.N_L = N_L
-app.iter_h.log_w_min = log_w_min
-app.iter_h.T = T0  # K
+app.iter_h.log_wL_min = log_wL_min
+app.iter_h.c2T = c2 / T0  # K
+app.iter_h.log_2p = np.log(2 * p0)
+app.iter_h.log_rT = np.log(296.0 / T0)
+app.iter_h.N = p0 * 1e5 / (1e6 * k * T0)  # cm-3
+
 app.iter_d.setData(app.iter_h)
 
 
@@ -188,10 +217,11 @@ app.run()
 plt.axhline(0, c="k", lw=1, alpha=0.5)
 
 res = app.data_spectrum_d.getData()
-lines = plt.plot(v_arr[:N_v], res.T[:N_v], lw=1)
+lines = plt.plot(v_arr[:N_v], res.T[:N_v], lw=0.5)
+plt.xlim(v_max, v_min)
 
-I_ref = calc_spectrum(v_arr, v0_data, np.exp(log_w_data), E_data, T0)
-plt.plot(v_arr[:N_v], I_ref[:N_v], "k--", lw=1)
+##I_ref = calc_spectrum(v_arr, v0_data, np.exp(log_w_data), E_data, T0)
+##plt.plot(v_arr[:N_v], I_ref[:N_v], "k--", lw=1)
 
 
 axw = plt.axes([0.25, 0.1, 0.65, 0.03])
@@ -199,8 +229,12 @@ sw = Slider(axw, "T(K)", 300.0, 3000.0, valinit=T0)
 
 
 def update(val):
+    T = sw.val
+    app.iter_h.c2T = c2 / T
+    app.iter_h.log_2p = np.log(2 * p0)
+    app.iter_h.log_rT = np.log(296.0 / T)
+    app.iter_h.N = p0 * 1e5 / (1e6 * k * T)  # cm-3
 
-    app.iter_h.T = sw.val
     app.iter_d.setData(app.iter_h)
     app.data_LDM_d.setData(np.zeros((N_L, N_v_FT), dtype=np.float32))
     t0 = time.perf_counter()

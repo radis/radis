@@ -22,20 +22,35 @@ layout (constant_id = 3) const int HAS_ATOMIC_ADD_FLOAT = 0; //this value is upd
 }
 
 layout(std430, binding = 0) uniform initData{
+    float v_min;
+    float dv;
     int N_v;
     int N_v_FT;
 	int N_x_FT;
-    int N_lines;
-	float dv;
-    float v_min;
+    //float dxG;
     float dxL;
+    int N_lines;
+	//int N_coll;
+    float log_c2Mm[16];
 } init_d;
 
 layout(std430, binding = 1) uniform iterData{
+    //float p;
+    float log_2p;
+    //float hlog_T;
+    float log_rT;
+    float c2T;
+    float N;
+    //float x[16];
+    //float l;
+    //float slit_FWHM;
+    //float log_wG_min;
+    float log_wL_min;
+    //int N_G;
     int N_L;
-    float log_w_min;
-    float T;
+    //float Q[16];
 } iter_d;
+
 
 layout(std430, binding = 2) readonly buffer database_SSBO {
    float database_d[];
@@ -51,25 +66,38 @@ void main() {
 
 	if (i >= init_d.N_lines) return;
 
-    float v0_data    = database_d[i              ];
-    float log_w_data = database_d[i + 1*init_d.N_lines];
-    float E_data     = database_d[i + 2*init_d.N_lines];
+    float iso   = floatBitsToUint(database_d[i]);
+    float v0    = database_d[i + 1*init_d.N_lines];
+    float da    = database_d[i + 2*init_d.N_lines];
+    float S0    = database_d[i + 3*init_d.N_lines];
+    float El    = database_d[i + 4*init_d.N_lines];
+    float na    = database_d[i + 5*init_d.N_lines];
+    float gamma = database_d[i + 6*init_d.N_lines];
 
-    float ki = (v0_data - init_d.v_min) / init_d.dv;
+    float ki = (v0 - init_d.v_min) / init_d.dv;
     int k0i = int(ki);
     int k1i = k0i + 1;
     float avi = ki - float(k0i);
 
-    float li = (log_w_data - iter_d.log_w_min) / init_d.dxL;
-    int l0i = int(li);
-    int l1i = l0i + 1;
-    float aLi = li - float(l0i);
+    if ((k0i < 0) || (k1i >= init_d.N_v)) return;
 
-    float I_data = exp(-E_data/iter_d.T);
+    // float log_wG_data = log(v0) + init_d.log_c2Mm[iso] + iter_d.hlog_T;
+    // float li = (log_wG_data - iter_d.log_wG_min) / init_d.dxG;
+    // int l0i = int(li);
+    // int l1i = l0i + 1;
+    // float aLi = li - float(l0i);
 
-    atomicAddFloatX(data_LDM_d[l0i * init_d.N_v_FT + k0i], (1 - aLi) * (1 - avi) * I_data);
-    atomicAddFloatX(data_LDM_d[l0i * init_d.N_v_FT + k1i], (1 - aLi) * avi * I_data);
-    atomicAddFloatX(data_LDM_d[l1i * init_d.N_v_FT + k0i], aLi * (1 - avi) * I_data);
-    atomicAddFloatX(data_LDM_d[l1i * init_d.N_v_FT + k1i], aLi * avi * I_data);
+    float log_wL_data = log(gamma) + iter_d.log_2p + na * iter_d.log_rT;
+    float mi = (log_wL_data - iter_d.log_wL_min) / init_d.dxL;
+    int m0i = int(mi);
+    int m1i = m0i + 1;
+    float aLi = mi - float(m0i);
+
+    float I_data = iter_d.N * S0 * (exp(-iter_d.c2T * El) - exp(-iter_d.c2T * (El + v0)));
+
+    atomicAddFloatX(data_LDM_d[m0i * init_d.N_v_FT + k0i], (1 - aLi) * (1 - avi) * I_data);
+    atomicAddFloatX(data_LDM_d[m0i * init_d.N_v_FT + k1i], (1 - aLi) * avi * I_data);
+    atomicAddFloatX(data_LDM_d[m1i * init_d.N_v_FT + k0i], aLi * (1 - avi) * I_data);
+    atomicAddFloatX(data_LDM_d[m1i * init_d.N_v_FT + k1i], aLi * avi * I_data);
 
 }

@@ -5,20 +5,35 @@ layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
 
 
 layout(std430, binding = 0) uniform initData{
+    float v_min;
+    float dv;
     int N_v;
     int N_v_FT;
 	int N_x_FT;
-    int N_lines;
-	float dv;
-    float v_min;
+    //float dxG;
     float dxL;
+    int N_lines;
+	//int N_collision_partners;
+    float log_c2Mm[16];
 } init_d;
 
 layout(std430, binding = 1) uniform iterData{
+    //float p;
+    float log_2p;
+    //float hlog_T;
+    float log_rT;
+    float c2T;
+    float N;
+    //float x[16];
+    //float l;
+    //float slit_FWHM;
+    //float log_wG_min;
+    float log_wL_min;
+    //int N_G;
     int N_L;
-    float log_w_min;
-    float T;
+    //float Q[16];
 } iter_d;
+
 
 layout(std430, binding = 4) buffer SSBO1 {
    vec2 data_LDM_FT_d[];
@@ -34,17 +49,21 @@ void main() {
 
 	uint k = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x; //gl_GlobalInvocationID.x;
 
-	if (k >= init_d.N_x_FT) return;
+	if (k >= init_d.N_x_FT) return; //TODO: should be init_d.N_v_FT?
 
-    float x = k / (init_d.N_v * init_d.dv);
+    float x = k / (init_d.N_v_FT * init_d.dv);
 	vec2 res = vec2(0.0, 0.0);
     float mul = 0.0;
     float wL = 0.0;
+    float wG = 0.0;
 
-    for (int i=0; i < iter_d.N_L; i++){
-        wL = exp(iter_d.log_w_min + i*init_d.dxL);
-        mul = exp(- pi * x * wL) / init_d.dv;
-        res += data_LDM_FT_d[k + i*init_d.N_x_FT] * mul;
-    }
+    //for (int l=0; l < iter_d.N_G; l++){
+    //    wG = exp(iter_d.log_wG_min + l*init_d.dxG);
+        for (int m=0; m < iter_d.N_L; m++){
+            wL = exp(iter_d.log_wL_min + m*init_d.dxL);
+            mul = exp(- pi * x * wL) / init_d.dv;
+            res += data_LDM_FT_d[k + m*init_d.N_x_FT] * mul;
+        }
+    //}
 	spectrum_FT_d[k] = res;
 }
