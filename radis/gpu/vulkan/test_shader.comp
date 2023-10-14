@@ -4,39 +4,48 @@
 
 #extension  GL_EXT_scalar_block_layout : enable
 layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
+layout (constant_id = 3) const int N_LINES = 1; //this value is updated by the host code
 
 layout(std430, binding = 0) uniform initData{
     int Nt;
 	int Nf;
-    int Nb;
+    int Nw;
+    int Nl;
 	float dt;
-	float wL[3];
+    float t_min;
+    float dxL;
+    float log_w_min;
 } init_d;
 
-layout(std430, binding = 3) buffer SSBO1 {
-   vec2 data_FT_d[];
+layout(std430, binding = 2) buffer database_SSBO {
+   float t0_data[N_LINES];
+   float log_w_data[N_LINES];
+   float I_data[N_LINES];
 };
 
-layout(std430, binding = 4) buffer SSBO2 {
-   vec2 data_FT2_d[];
+layout(std430, binding = 3) buffer SSBO1 {
+   vec2 data_LDM_d[];
 };
+
 
 void main() {
 
-    const float pi = 3.141592653589793f;
+	uint i = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x; //gl_GlobalInvocationID.x;
 
-	uint k = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x; //gl_GlobalInvocationID.x;
-    //uint m = gl_WorkGroupID.y * gl_WorkGroupSize.y + gl_LocalInvocationID.y; //gl_GlobalInvocationID.y;
+	if (i >= N_LINES) return;
 
-	if (k >= init_d.Nf) return;
+    float ki = (t0_data[i] - init_d.t_min) / init_d.dt;
+    int k0i = int(ki);
+    int k1i = k0i + 1;
+    float avi = ki - float(k0i);
 
-    float x = k / (init_d.Nt * init_d.dt);
-	vec2 res = vec2(0.0, 0.0);
-    float mul = 0.0;
+    float li = (log_w_data[i] - init_d.log_w_min) / init_d.dxL;
+    int l0i = int(li);
+    int l1i = l0i + 1;
+    float aLi = li - float(l0i);
 
-    for (int i=0; i < init_d.Nb; i++){
-        mul = exp(- pi * x * init_d.wL[i]); //*(1<<(2*i))
-        res += data_FT_d[k + i*init_d.Nf] * mul;
-    }
-	data_FT2_d[k] = res;
+    data_LDM_d[l0i * init_d.Nt + k0i] += (1 - aLi) * (1 - avi) * I_data[i];
+    data_LDM_d[l0i * init_d.Nt + k1i] += (1 - aLi) * avi * I_data[i];
+    data_LDM_d[l1i * init_d.Nt + k0i] += aLi * (1 - avi) * I_data[i];
+    data_LDM_d[l1i * init_d.Nt + k1i] += aLi * avi * I_data[i];
 }

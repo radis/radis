@@ -8,18 +8,19 @@ layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
 layout(std430, binding = 0) uniform initData{
     int Nt;
 	int Nf;
-    int Nb;
     int Nw;
+    int Nl;
 	float dt;
+    float t_min;
     float dxL;
     float log_w_min;
 } init_d;
 
-layout(std430, binding = 3) buffer SSBO1 {
+layout(std430, binding = 4) buffer SSBO1 {
    vec2 data_LDM_FT_d[];
 };
 
-layout(std430, binding = 4) buffer SSBO2 {
+layout(std430, binding = 5) buffer SSBO2 {
    vec2 spectrum_FT_d[];
 };
 

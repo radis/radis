@@ -117,9 +117,10 @@ class initData(Structure):
     _fields_ = [
         ("Nt", c_int),
         ("Nf", c_int),
-        ("Nb", c_int),
         ("Nw", c_int),
+        ("Nl", c_int),
         ("dt", c_float),
+        ("t_min", c_float),
         ("dxL", c_float),
         ("log_w_min", c_float),
     ]
@@ -139,10 +140,10 @@ def initialize():
     ##    app.data_in_d.setData(I_arr[0,:], byte_offset = 0)
     ##    app.data_in_d.setData(I_arr[1:,:], byte_offset = I_arr[0].nbytes)
 
-    app.data_LDM_d = ArrayBuffer.fromArr(LDM, binding=2, app=app)
-    app.data_LDM_FT_d = ArrayBuffer((Nw, Nf), np.complex64, binding=3, app=app)
-    app.data_spectrum_FT_d = ArrayBuffer((Nf,), np.complex64, binding=4, app=app)
-    app.data_spectrum_d = ArrayBuffer((Nt,), np.float32, binding=5, app=app)
+    app.data_LDM_d = ArrayBuffer.fromArr(LDM, binding=3, app=app)
+    app.data_LDM_FT_d = ArrayBuffer((Nw, Nf), np.complex64, binding=4, app=app)
+    app.data_spectrum_FT_d = ArrayBuffer((Nf,), np.complex64, binding=5, app=app)
+    app.data_spectrum_d = ArrayBuffer((Nt,), np.float32, binding=6, app=app)
 
     # Init FFT's:
     # TODO: init FFT without buffers
@@ -176,7 +177,9 @@ app = initialize()
 app.init_h.Nt = Nt
 app.init_h.Nf = Nf
 app.init_h.Nw = Nw
+app.init_h.Nl = Nl
 app.init_h.dt = dt
+app.init_h.t_min = t_min
 app.init_h.dxL = dxL
 app.init_h.log_w_min = log_w_min
 app.init_d.setData(app.init_h)
