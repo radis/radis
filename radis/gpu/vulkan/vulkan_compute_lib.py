@@ -377,10 +377,12 @@ class ComputeApplication(object):
         pData = vk.ffi.cast("void*", buffer)
 
         dsize = vk.ffi.sizeof(dtype)
-        entries = [
-            vk.VkSpecializationMapEntry(constantID=i, offset=i * dsize, size=dsize)
-            for i in range(len(buffer))
-        ]
+        entries = []
+        for i in range(len(buffer)):
+            print(i, localWorkGroup[i])
+            entries.append(
+                vk.VkSpecializationMapEntry(constantID=i, offset=i * dsize, size=dsize)
+            )
 
         specializationInfo = vk.VkSpecializationInfo(
             mapEntryCount=len(entries),

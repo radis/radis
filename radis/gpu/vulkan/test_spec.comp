@@ -1,0 +1,19 @@
+#version 450
+#extension GL_EXT_scalar_block_layout : enable
+layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
+layout (constant_id = 3) const int N_LINES = 30; //this value is updated by the host code
+layout (constant_id = 4) const int HAS_ATOMIC_ADD_FLOAT = 0; //this value is updated by the host code
+
+layout(std430, binding = 0) buffer SSBO {
+   int data[];
+};
+
+
+void main() {
+
+	uint i = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x;
+	if (i > 0) return;
+
+    data[i] = N_LINES;
+
+}

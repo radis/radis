@@ -13,6 +13,7 @@ layout(std430, binding = 0) uniform initData{
     float t_min;
     float dxL;
     float log_w_min;
+    float T;
 } init_d;
 
 layout(std430, binding = 4) buffer SSBO1 {

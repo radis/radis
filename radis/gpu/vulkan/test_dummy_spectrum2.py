@@ -40,19 +40,6 @@ Nl = 30
 T0 = 1000.0
 
 
-##def mock_spectrum(Nt, Nl, m=1):
-##
-##    I_arr = np.zeros((m, Nt + 2), dtype=np.float32)
-##
-##    for k in range(m):
-##        line_index = randint(0, Nt, Nl)
-##        line_strength = rand(Nl)
-##        np.add.at(I_arr, (k, line_index), line_strength)
-##    return I_arr
-
-## I_arr = mock_spectrum(Nt, Nl, m=Nb)
-
-
 def init_w_axis(dx, log_wi):
     log_w_min = np.min(log_wi)
     log_w_max = np.max(log_wi) + 1e-4
@@ -63,35 +50,12 @@ def init_w_axis(dx, log_wi):
 dxL = 0.2
 
 E_data = 1000.0 * rand(Nl).astype(np.float32)
-log_w_data = np.log(0.1 + 1.9 * rand(Nl).astype(np.float32))
+log_w_data = np.log(0.1 + 0.5 * rand(Nl).astype(np.float32))
 t0_data = ((t_max - t_min) * rand(Nl) + t_min).astype(np.float32)
 
 
 log_w_min, log_w_max, Nw = init_w_axis(dxL, log_w_data)
 print(Nw)
-
-
-##def calc_LDM(t0_data, log_w_data, I_data):
-##    LDM = np.zeros((Nw, Nt), dtype=np.float32)
-##
-##    ki = (t0_data - t_min) / dt
-##    k0i = ki.astype(np.int32)
-##    k1i = k0i + 1
-##    avi = ki - k0i
-##
-##    li = (log_w_data - log_w_min) / dxL
-##    l0i = li.astype(np.int32)
-##    l1i = l0i + 1
-##    aLi = li - l0i
-##
-##    np.add.at(LDM, (l0i, k0i), (1 - aLi) * (1 - avi) * I_data)
-##    np.add.at(LDM, (l0i, k1i), (1 - aLi) * avi * I_data)
-##    np.add.at(LDM, (l1i, k0i), aLi * (1 - avi) * I_data)
-##    np.add.at(LDM, (l1i, k1i), aLi * avi * I_data)
-##
-##    return LDM
-##
-##LDM = calc_LDM(t0_data, log_w_data, I_data)
 
 
 def gL(t, t0, wL):
@@ -161,7 +125,7 @@ def initialize():
     )
 
     # Shaders:
-    app.schedule_shader("test_shader.spv", (Nl // Ntpb + 1, 1, 1), (Ntpb, 1, 1, Nl))
+    app.schedule_shader("test_shader.spv", (Nl // Ntpb + 1, 1, 1), (Ntpb, 1, 1))
     app.fft_fwd.fft(
         app._commandBuffer, app.data_LDM_d._buffer, app.data_LDM_FT_d._buffer
     )

@@ -1,13 +1,12 @@
 #version 450
 #extension GL_EXT_scalar_block_layout : enable
 layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
-layout (constant_id = 3) const int N_LINES = 30; //this value is updated by the host code
-layout (constant_id = 4) const int HAS_ATOMIC_ADD_FLOAT = 0; //this value is updated by the host code
+layout (constant_id = 3) const int HAS_ATOMIC_ADD_FLOAT = 0; //this value is updated by the host code
 
 // if (HAS_ATOMIC_ADD_FLOAT):
 // #extension GL_EXT_shader_atomic_float : enable
-// #define atomicAddFloatX(MEM, INDATA) atomicAdd(MEM, INDATA)
 // #define FLOAT_TYPE float
+// #define atomicAddFloatX(MEM, INDATA) atomicAdd(MEM, INDATA)
 // else:
 #define FLOAT_TYPE uint
 #define atomicAddFloatX(MEM, INDATA)      \
@@ -31,19 +30,16 @@ layout(std430, binding = 0) uniform initData{
     float t_min;
     float dxL;
     float log_w_min;
+    float T;
 } init_d;
 
 layout(std430, binding = 2) readonly buffer database_SSBO {
-   float t0_data[N_LINES];
-   float log_w_data[N_LINES];
-   float I_data[N_LINES];
+   float database_d[];
 };
 
 layout(std430, binding = 3) buffer SSBO1 {
   FLOAT_TYPE data_LDM_d[];
 };
-
-
 
 void main() {
 
@@ -51,19 +47,25 @@ void main() {
 
 	if (i >= init_d.Nl) return;
 
-    float ki = (t0_data[i] - init_d.t_min) / init_d.dt;
+    float t0_data    = database_d[i              ];
+    float log_w_data = database_d[i + 1*init_d.Nl];
+    float E_data     = database_d[i + 2*init_d.Nl];
+
+    float ki = (t0_data - init_d.t_min) / init_d.dt;
     int k0i = int(ki);
     int k1i = k0i + 1;
     float avi = ki - float(k0i);
 
-    float li = (log_w_data[i] - init_d.log_w_min) / init_d.dxL;
+    float li = (log_w_data - init_d.log_w_min) / init_d.dxL;
     int l0i = int(li);
     int l1i = l0i + 1;
     float aLi = li - float(l0i);
 
-    atomicAddFloatX(data_LDM_d[l0i * init_d.Nt + k0i], (1 - aLi) * (1 - avi) * I_data[i]);
-    atomicAddFloatX(data_LDM_d[l0i * init_d.Nt + k1i], (1 - aLi) * avi * I_data[i]);
-    atomicAddFloatX(data_LDM_d[l1i * init_d.Nt + k0i], aLi * (1 - avi) * I_data[i]);
-    atomicAddFloatX(data_LDM_d[l1i * init_d.Nt + k1i], aLi * avi * I_data[i]);
+    float I_data = exp(-E_data/init_d.T);
+
+    atomicAddFloatX(data_LDM_d[l0i * init_d.Nt + k0i], (1 - aLi) * (1 - avi) * I_data);
+    atomicAddFloatX(data_LDM_d[l0i * init_d.Nt + k1i], (1 - aLi) * avi * I_data);
+    atomicAddFloatX(data_LDM_d[l1i * init_d.Nt + k0i], aLi * (1 - avi) * I_data);
+    atomicAddFloatX(data_LDM_d[l1i * init_d.Nt + k1i], aLi * avi * I_data);
 
 }
