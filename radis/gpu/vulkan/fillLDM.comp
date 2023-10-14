@@ -2,6 +2,18 @@
 #extension GL_EXT_shader_atomic_float : enable
 //#extension GL_EXT_shader_8bit_storage : enable
 
+#define atomicAddFloatX(MEM, INDATA)      \
+{                                         \
+    float expected_mem = MEM;              \
+    float input_mem = (expected_mem + INDATA); \
+    float returned_mem = atomicCompSwap(MEM, expected_mem, input_mem); \
+    while(returned_mem != expected_mem){ \
+        expected_mem = returned_mem; \
+        input_mem = (expected_mem + INDATA) \
+        returned_mem = atomicCompSwap(MEM, expected_mem, input_mem); \
+    } \
+}
+
 layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
 layout (constant_id = 3) const int N_LINES = 1; //this value is updated by the host code 
 
@@ -112,14 +124,14 @@ void main(){
     float Sv0i = Si * (1 - avi);
     float Sv1i = Si * avi;
 
-    atomicAdd(S_klm[k0i + l0i * 2*N_x_FT + m0i * 2*N_x_FT*N_G], Sv0i * aV00i);
-    atomicAdd(S_klm[k0i + l0i * 2*N_x_FT + m1i * 2*N_x_FT*N_G], Sv0i * aV01i);
-    atomicAdd(S_klm[k0i + l1i * 2*N_x_FT + m0i * 2*N_x_FT*N_G], Sv0i * aV10i);
-    atomicAdd(S_klm[k0i + l1i * 2*N_x_FT + m1i * 2*N_x_FT*N_G], Sv0i * aV11i);
-    atomicAdd(S_klm[k1i + l0i * 2*N_x_FT + m0i * 2*N_x_FT*N_G], Sv1i * aV00i);
-    atomicAdd(S_klm[k1i + l0i * 2*N_x_FT + m1i * 2*N_x_FT*N_G], Sv1i * aV01i);
-    atomicAdd(S_klm[k1i + l1i * 2*N_x_FT + m0i * 2*N_x_FT*N_G], Sv1i * aV10i);
-    atomicAdd(S_klm[k1i + l1i * 2*N_x_FT + m1i * 2*N_x_FT*N_G], Sv1i * aV11i);
+    atomicAddFloatX(S_klm[k0i + l0i * 2*N_x_FT + m0i * 2*N_x_FT*N_G], Sv0i * aV00i);
+    atomicAddFloatX(S_klm[k0i + l0i * 2*N_x_FT + m1i * 2*N_x_FT*N_G], Sv0i * aV01i);
+    atomicAddFloatX(S_klm[k0i + l1i * 2*N_x_FT + m0i * 2*N_x_FT*N_G], Sv0i * aV10i);
+    atomicAddFloatX(S_klm[k0i + l1i * 2*N_x_FT + m1i * 2*N_x_FT*N_G], Sv0i * aV11i);
+    atomicAddFloatX(S_klm[k1i + l0i * 2*N_x_FT + m0i * 2*N_x_FT*N_G], Sv1i * aV00i);
+    atomicAddFloatX(S_klm[k1i + l0i * 2*N_x_FT + m1i * 2*N_x_FT*N_G], Sv1i * aV01i);
+    atomicAddFloatX(S_klm[k1i + l1i * 2*N_x_FT + m0i * 2*N_x_FT*N_G], Sv1i * aV10i);
+    atomicAddFloatX(S_klm[k1i + l1i * 2*N_x_FT + m1i * 2*N_x_FT*N_G], Sv1i * aV11i);
 
 }
 
