@@ -95,8 +95,17 @@ def calc_LDM(t0_data, log_w_data, I_data):
 LDM = calc_LDM(t0_data, log_w_data, I_data)
 
 
-##def calc_spectrum(t_arr, t0_data, log_w_data, I_data):
-##    I_arr = np.zeros(len(t_arr), dtype=np.float32)
+def gL(t, t0, wL):
+    gamma = wL / 2
+    return gamma / (np.pi * ((t - t0) ** 2 + gamma**2))
+
+
+def calc_spectrum(t_arr, t0_data, w_data, I_data):
+    I_arr = np.zeros(len(t_arr), dtype=np.float32)
+    for i in range(len(t0_data)):
+        I_arr += gL(t_arr, t0_data[i], w_data[i]) * I_data[i]
+
+    return I_arr
 
 
 ## Vulkan application:
@@ -170,8 +179,11 @@ app.run()
 plt.axhline(0, c="k", lw=1, alpha=0.5)
 
 res = app.data_out_d.getData()
-# res = LDM
 lines = plt.plot(t_arr, res.T[:Nt], lw=0.5)
+
+I_ref = calc_spectrum(t_arr, t0_data, np.exp(log_w_data), I_data)
+lines = plt.plot(t_arr, I_ref, "k--", lw=0.5)
+
 
 axw = plt.axes([0.25, 0.1, 0.65, 0.03])
 sw = Slider(axw, "Width", 0.0, 2.0, valinit=w0)

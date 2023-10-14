@@ -11,7 +11,7 @@ layout(std430, binding = 0) uniform initData{
     int Nb;
     int Nw;
 	float dt;
-	float wL[15];
+	float wL[32];
 } init_d;
 
 layout(std430, binding = 3) buffer SSBO1 {
@@ -35,7 +35,7 @@ void main() {
     float mul = 0.0;
 
     for (int i=0; i < init_d.Nw; i++){
-        mul = exp(- pi * x * init_d.wL[i]); //*(1<<(2*i))
+        mul = exp(- pi * x * init_d.wL[i]) / init_d.dt;
         res += data_FT_d[k + i*init_d.Nf] * mul;
     }
 	data_FT2_d[k] = res;
