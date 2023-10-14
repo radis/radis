@@ -1,8 +1,13 @@
 #version 450
 #extension GL_EXT_scalar_block_layout : enable
-
 layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
+layout (constant_id = 3) const int HAS_ATOMIC_ADD_FLOAT = 0; //this value is updated by the host code
 
+// if (HAS_ATOMIC_ADD_FLOAT):
+// #extension GL_EXT_shader_atomic_float : enable
+// #define FLOAT_TYPE float
+// #define atomicAddFloatX(MEM, INDATA) atomicAdd(MEM, INDATA)
+// else:
 #define FLOAT_TYPE uint
 #define atomicAddFloatX(MEM, INDATA)      \
 {                                         \
@@ -17,122 +22,50 @@ layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
 }
 
 layout(std430, binding = 0) uniform initData{
-    float v_min;
-    float dv;
-    int N_v;
-    int N_v_FT;
-    int N_x_FT;
-    float dxG;
+    int Nt;
+	int Nf;
+    int Nw;
+    int Nl;
+	float dt;
+    float t_min;
     float dxL;
-    int N_lines;
-    int N_collision_partners;
-    float log_c2Mm[16];
+    float log_w_min;
+    float T;
 } init_d;
 
-layout(std430, binding = 1) uniform iterData{
-    float p;
-    float log_2p;
-    float hlog_T;
-    float log_rT;
-    float c2T;
-    float N;
-    float x[16];
-    float l;
-    float slit_FWHM;
-    float log_wG_min;
-    float log_wL_min;
-    int N_G;
-    int N_L;
-    float Q[16];
-} iter_d;
-
-//TODO: Binding numbers of UBO and SSBO are separate, so could start at 0 here again
 layout(std430, binding = 2) readonly buffer database_SSBO {
-    float database[];
+   float database_d[];
 };
 
 layout(std430, binding = 3) buffer SSBO1 {
-    FLOAT_TYPE S_klm[];
+  FLOAT_TYPE data_LDM_d[];
 };
 
-// layout(std430, binding = 4) buffer SSBO2 {
-    // vec2 S_klm_FT[];
-// };
+void main() {
 
-// layout(std430, binding = 5) buffer SSBO3 {
-    // vec2 I_k_FT[];
-// };
+	uint i = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x; //gl_GlobalInvocationID.x;
 
-// layout(std430, binding = 6) buffer SSBO4 {
-    // float I_k[];
-// };
+	if (i >= init_d.Nl) return;
 
-void main(){
+    float t0_data    = database_d[i              ];
+    float log_w_data = database_d[i + 1*init_d.Nl];
+    float E_data     = database_d[i + 2*init_d.Nl];
 
-    int N_v_FT = init_d.N_v_FT;
-    int N_G = iter_d.N_G;
-    int N_L = iter_d.N_L;
-
-    int i = int(gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x);
-    if (i >= init_d.N_lines) return;
-
-    uint iso = floatBitsToUint(database[i]);
-    float v0 = database[i + 1*init_d.N_lines];
-    float da = database[i + 2*init_d.N_lines];  // pressure shift  in cm-1/atm
-    float S0 = database[i + 3*init_d.N_lines];  // initial linestrength
-    float El = database[i + 4*init_d.N_lines];
-    float na = database[i + 5*init_d.N_lines];
-
-
-    //Calc v
-    // ... pressure-shift
-    float vi = v0 + iter_d.p * da;
-    float ki = (vi - init_d.v_min) / init_d.dv;
+    float ki = (t0_data - init_d.t_min) / init_d.dt;
     int k0i = int(ki);
     int k1i = k0i + 1;
+    float avi = ki - float(k0i);
 
-    if ((k0i < 0) || (k1i >= init_d.N_v)) return;
-
-    //Calc wG
-    float log_wGi = log(v0) + init_d.log_c2Mm[iso] + iter_d.hlog_T;
-    float li = (log_wGi - iter_d.log_wG_min) / init_d.dxG;
+    float li = (log_w_data - init_d.log_w_min) / init_d.dxL;
     int l0i = int(li);
     int l1i = l0i + 1;
+    float aLi = li - float(l0i);
 
-    //Calc wL
-    float gamma = 0.0;
-    for (int j=0; j<init_d.N_collision_partners; j++){
-        gamma += iter_d.x[j] * database[i + (j+6) * init_d.N_lines];
-    }
-    float log_wLi = log(gamma) + iter_d.log_2p + na * iter_d.log_rT;
-    float mi = (log_wLi - iter_d.log_wL_min) / init_d.dxL;
-    int m0i = int(mi);
-    int m1i = m0i + 1;
+    float I_data = exp(-E_data/init_d.T);
 
-    //Calc I
-    // ... scale linestrengths under equilibrium
-    float Si = iter_d.N * iter_d.x[0] * S0 * (exp(iter_d.c2T * El) - exp(iter_d.c2T * (El + v0))) / iter_d.Q[iso];
-
-    float avi = ki - float(k0i);
-    float aGi = li - float(l0i);
-    float aLi = mi - float(m0i);
-
-    float aV00i = (1 - aGi) * (1 - aLi);
-    float aV01i = (1 - aGi) * aLi;
-    float aV10i = aGi * (1 - aLi);
-    float aV11i = aGi * aLi;
-
-    float Sv0i = Si * (1 - avi);
-    float Sv1i = Si * avi;
-
-    atomicAddFloatX(S_klm[k0i + l0i * N_v_FT + m0i * N_v_FT*N_G], Sv0i * aV00i);
-    atomicAddFloatX(S_klm[k0i + l0i * N_v_FT + m1i * N_v_FT*N_G], Sv0i * aV01i);
-    atomicAddFloatX(S_klm[k0i + l1i * N_v_FT + m0i * N_v_FT*N_G], Sv0i * aV10i);
-    atomicAddFloatX(S_klm[k0i + l1i * N_v_FT + m1i * N_v_FT*N_G], Sv0i * aV11i);
-    atomicAddFloatX(S_klm[k1i + l0i * N_v_FT + m0i * N_v_FT*N_G], Sv1i * aV00i);
-    atomicAddFloatX(S_klm[k1i + l0i * N_v_FT + m1i * N_v_FT*N_G], Sv1i * aV01i);
-    atomicAddFloatX(S_klm[k1i + l1i * N_v_FT + m0i * N_v_FT*N_G], Sv1i * aV10i);
-    atomicAddFloatX(S_klm[k1i + l1i * N_v_FT + m1i * N_v_FT*N_G], Sv1i * aV11i);
+    atomicAddFloatX(data_LDM_d[l0i * init_d.Nt + k0i], (1 - aLi) * (1 - avi) * I_data);
+    atomicAddFloatX(data_LDM_d[l0i * init_d.Nt + k1i], (1 - aLi) * avi * I_data);
+    atomicAddFloatX(data_LDM_d[l1i * init_d.Nt + k0i], aLi * (1 - avi) * I_data);
+    atomicAddFloatX(data_LDM_d[l1i * init_d.Nt + k1i], aLi * avi * I_data);
 
 }
-
