@@ -5,16 +5,20 @@ layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
 
 
 layout(std430, binding = 0) uniform initData{
-    int Nt;
-	int Nf;
-    int Nw;
-    int Nl;
-	float dt;
-    float t_min;
+    int N_v;
+    int N_v_FT;
+	int N_x_FT;
+    int N_lines;
+	float dv;
+    float v_min;
     float dxL;
+} init_d;
+
+layout(std430, binding = 1) uniform iterData{
+    int N_L;
     float log_w_min;
     float T;
-} init_d;
+} iter_d;
 
 layout(std430, binding = 4) buffer SSBO1 {
    vec2 data_LDM_FT_d[];
@@ -30,17 +34,17 @@ void main() {
 
 	uint k = gl_WorkGroupID.x * gl_WorkGroupSize.x + gl_LocalInvocationID.x; //gl_GlobalInvocationID.x;
 
-	if (k >= init_d.Nf) return;
+	if (k >= init_d.N_x_FT) return;
 
-    float x = k / (init_d.Nt * init_d.dt);
+    float x = k / (init_d.N_v * init_d.dv);
 	vec2 res = vec2(0.0, 0.0);
     float mul = 0.0;
     float wL = 0.0;
 
-    for (int i=0; i < init_d.Nw; i++){
-        wL = exp(init_d.log_w_min + i*init_d.dxL);
-        mul = exp(- pi * x * wL) / init_d.dt;
-        res += data_LDM_FT_d[k + i*init_d.Nf] * mul;
+    for (int i=0; i < iter_d.N_L; i++){
+        wL = exp(iter_d.log_w_min + i*init_d.dxL);
+        mul = exp(- pi * x * wL) / init_d.dv;
+        res += data_LDM_FT_d[k + i*init_d.N_x_FT] * mul;
     }
 	spectrum_FT_d[k] = res;
 }
