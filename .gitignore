@@ -20,6 +20,7 @@
 radis/test/test.nfig
 radis/test/*.png
 radis/test/validation/*.png
+radis/gpu/vulkan/test_data
 .pytest_cache/*
 
 # Byte-compiled / optimized / DLL files
