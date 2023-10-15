@@ -79,6 +79,7 @@ gamma = database_arrays[-1][0]
 log_wL_data0 = np.log(gamma)
 log_wL_data = log_wL_data0 + log_2p + na * log_rT
 log_wL_min, log_wL_max, N_L = init_w_axis(dxL, log_wL_data)
+N_coll = 1
 
 
 def gL(t, t0, wL):
@@ -110,14 +111,14 @@ class initData(Structure):
         ("dxG", c_float),
         ("dxL", c_float),
         ("N_lines", c_int),
-        # ("N_coll", c_int),
+        ("N_coll", c_int),
         ("log_c2Mm", c_float_arr_16),
     ]
 
 
 class iterData(Structure):
     _fields_ = [
-        # ("p", c_float),
+        ("p", c_float),
         ("log_2p", c_float),
         ("hlog_T", c_float),
         ("log_rT", c_float),
@@ -130,7 +131,7 @@ class iterData(Structure):
         ("log_wL_min", c_float),
         ("N_G", c_int),
         ("N_L", c_int),
-        # ("Q", c_float_arr_16),
+        ("Q", c_float_arr_16),
     ]
 
 
@@ -208,11 +209,13 @@ app.init_h.dv = dv
 app.init_h.v_min = v_min
 app.init_h.dxG = dxG
 app.init_h.dxL = dxL
+app.init_h.N_coll = N_coll
 app.init_h.log_c2Mm = log_c2Mm_arr
 
 app.init_d.setData(app.init_h)
 
 
+app.iter_h.p = p0
 app.iter_h.hlog_T = hlog_T
 app.iter_h.log_2p = np.log(2 * p0)
 app.iter_h.log_rT = np.log(296.0 / T0)
@@ -223,7 +226,7 @@ app.iter_h.log_wG_min = log_wG_min
 app.iter_h.log_wL_min = log_wL_min
 app.iter_h.N_G = N_G
 app.iter_h.N_L = N_L
-
+app.iter_h.Q = c_float_arr_16(*(16 * [1]))
 app.iter_d.setData(app.iter_h)
 
 

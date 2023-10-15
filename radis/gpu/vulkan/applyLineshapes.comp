@@ -1,7 +1,8 @@
 #version 450
-
-#extension  GL_EXT_scalar_block_layout : enable
+#extension GL_EXT_scalar_block_layout : enable
 layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
+
+
 
 
 layout(std430, binding = 0) uniform initData{
@@ -13,12 +14,12 @@ layout(std430, binding = 0) uniform initData{
     float dxG;
     float dxL;
     int N_lines;
-	//int N_collision_partners;
+	int N_coll;
     float log_c2Mm[16];
 } init_d;
 
 layout(std430, binding = 1) uniform iterData{
-    //float p;
+    float p;
     float log_2p;
     float hlog_T;
     float log_rT;
@@ -31,9 +32,8 @@ layout(std430, binding = 1) uniform iterData{
     float log_wL_min;
     int N_G;
     int N_L;
-    //float Q[16];
+    float Q[16];
 } iter_d;
-
 
 layout(std430, binding = 4) buffer SSBO1 {
    vec2 data_LDM_FT_d[];
@@ -42,6 +42,7 @@ layout(std430, binding = 4) buffer SSBO1 {
 layout(std430, binding = 5) buffer SSBO2 {
    vec2 spectrum_FT_d[];
 };
+
 
 void main() {
 
@@ -52,8 +53,6 @@ void main() {
 
 	if (k >= init_d.N_x_FT) return; //TODO: should be init_d.N_v_FT?
 
-    float x = k / (init_d.N_v_FT * init_d.dv);
-
     int sx = 1;
     int sG = init_d.N_x_FT;
     int sL = init_d.N_x_FT * iter_d.N_G;
@@ -62,6 +61,7 @@ void main() {
     float wL = 0.0;
     float mul = 0.0;
     vec2 res = vec2(0.0, 0.0);
+    float x = k / (init_d.N_v_FT * init_d.dv);
 
     for (int l=0; l < iter_d.N_G; l++){
         wG = exp(iter_d.log_wG_min + l*init_d.dxG);
