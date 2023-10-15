@@ -1,5 +1,4 @@
 import os.path
-from warnings import warn
 
 import numpy as np
 from scipy.constants import N_A, c, k
@@ -15,7 +14,11 @@ from radis.gpu.params import (
 )
 from radis.gpu.structs import initData_t, iterData_t
 from radis.misc.utils import getProjectRoot
-from radis.misc.warning import NoGPUWarning
+
+# from radis.misc.warning import NoGPUWarning
+
+# from warnings import warn
+
 
 gpu_mod = None
 init_h = initData_t()
@@ -27,6 +30,7 @@ def next_fast_len_even(n):
     while n & 1:
         n = next_fast_len(n + 1)
     return n
+
 
 def gpu_init(
     vmin,
@@ -94,8 +98,13 @@ def gpu_init(
     """
 
     global app
-    
-    from radis.gpu.vulkan.vulkan_compute_lib import ComputeApplication, StructBuffer,  ArrayBuffer    
+
+    from radis.gpu.vulkan.vulkan_compute_lib import (
+        ArrayBuffer,
+        ComputeApplication,
+        StructBuffer,
+    )
+
     app = ComputeApplication(deviceID=0)
 
     ## Next, the GPU is made aware of a number of parameters.
@@ -113,7 +122,16 @@ def gpu_init(
     init_h.dxG = dxG
     init_h.dxL = dxL
     init_h.N_lines = int(len(v0))
-    init_h.N_collision_partners = gamma_arr.shape[0]
+    init_h.N_coll = gamma_arr.shape[0]
+
+    # print(init_h.v_min)
+    # print(init_h.dv)
+    # print(init_h.N_v)
+    # print(init_h.N_v_FT)
+    # print('dxL:',init_h.dxL)
+    # print('dxG:',init_h.dxG)
+    # print(init_h.N_lines)
+    # print(Mm_arr)
 
     log_c2Mm_arr = np.array(
         [0]
@@ -134,16 +152,16 @@ def gpu_init(
 
     init_G_params(log_2vMm.astype(np.float32), verbose)
     init_L_params(na, gamma_arr, verbose)
-    
-    #Calulate params once to obtain N_G_max and N_L_max:
-    p_max = 5.0 #bar #TODO: obtain this from defaults/keywords
-    T_max = 3500.0 #K
+
+    # Calulate params once to obtain N_G_max and N_L_max:
+    p_max = 5.0  # bar #TODO: obtain this from defaults/keywords
+    T_max = 3500.0  # K
     set_pTQ(p_max, T_max, 0.5, iter_h, l=1.0, slit_FWHM=0.0)
     set_G_params(init_h, iter_h)
-    set_L_params(init_h, iter_h)    
+    set_L_params(init_h, iter_h)
     N_G_max = iter_h.N_G
     N_L_max = iter_h.N_L
-    
+
     if verbose >= 2:
         print("done!")
 
@@ -155,14 +173,14 @@ def gpu_init(
 
     NvFT = init_h.N_v_FT
     NxFT = NvFT // 2 + 1
-    Ntpb = 1024 #TODO: Get these through vulkan
+    Ntpb = 1024  # TODO: Get these through vulkan
     Nli = init_h.N_lines
-    threads = (Ntpb, 1, 1, Nli)
+    threads = (Ntpb, 1, 1)
 
     # gpu_mod.fillLDM.setGrid((Nli // Ntpb + 1, 1, 1), threads)
     # gpu_mod.applyLineshapes.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
-    #gpu_mod.calcTransmittanceNoslit.setGrid((NvFT // Ntpb + 1, 1, 1), threads)
-    #gpu_mod.applyGaussianSlit.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
+    # gpu_mod.calcTransmittanceNoslit.setGrid((NvFT // Ntpb + 1, 1, 1), threads)
+    # gpu_mod.applyGaussianSlit.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
 
     ## Next the variables are initialized on the GPU. Constant variables
     ## that don't change (i.e. pertaining to the database) are immediately
@@ -172,42 +190,55 @@ def gpu_init(
     ## They are not allocated, only given a device pointer by which
     ## they can be referenced later.
 
-
     database_arrays = [iso, v0, da, S0, El, na, gamma_arr]
-    database_length = np.sum([np.sum(arr.shape[:-1]) if len(arr.shape)>1 else 1 for arr in database_arrays])
+    database_length = np.sum(
+        [np.sum(arr.shape[:-1]) if len(arr.shape) > 1 else 1 for arr in database_arrays]
+    )
 
-    database_SSBO = ArrayBuffer((database_length, Nli),
-                                    np.float32, #TODO: Not all arrays are np.float32, but it doesn't matter because all dtypes have size 4 (=sizeof(float32)), and we never read this buffer.
-                                    binding=2, app=app)
-                                    
+    database_SSBO = ArrayBuffer(
+        (database_length, Nli),
+        np.float32,  # TODO: Not all arrays are np.float32, but it doesn't matter because all dtypes have size 4 (=sizeof(float32)), and we never read this buffer.
+        binding=2,
+        app=app,
+    )
+
     byte_offset = 0
-    for arr in database_arrays:
+    for i, arr in enumerate(database_arrays):
+        # np.save('data_arr_{:d}.npy'.format(i), arr)
         byte_offset += database_SSBO.setData(arr, byte_offset=byte_offset)
-        
-    app.S_klm_d = ArrayBuffer((N_L_max, N_G_max, 2*NxFT), np.float32, binding=3, app=app)
-    app.S_klm_FT_d = ArrayBuffer((N_L_max, N_G_max, NxFT), np.complex64, binding=4, app=app)
 
-    app.I_k_FT_d = ArrayBuffer((NxFT,), np.complex64, binding=5, app=app)
-    app.I_k_d = ArrayBuffer((2*NxFT,), np.float32, binding=6, app=app)
-    
+    app.S_klm_d = ArrayBuffer((N_L_max, N_G_max, NvFT), np.float32, binding=3, app=app)
+    app.S_klm_FT_d = ArrayBuffer(
+        (N_L_max, N_G_max, NxFT), np.complex64, binding=4, app=app
+    )
+
+    app.spectrum_FT_d = ArrayBuffer((NxFT,), np.complex64, binding=5, app=app)
+    app.spectrum_d = ArrayBuffer((NvFT,), np.float32, binding=6, app=app)
+
     from radis.gpu.vulkan.pyvkfft_vulkan import prepare_fft
+
     app.fft_LDM = prepare_fft(app.S_klm_d, app.S_klm_FT_d, compute_app=app)
-    app.fft_spec = prepare_fft(app.I_k_d, app.I_k_FT_d, compute_app=app)
-    
+    app.fft_spec = prepare_fft(app.spectrum_d, app.spectrum_FT_d, compute_app=app)
+
     # Write command buffer:
     shader_path = os.path.join(getProjectRoot(), "gpu", "vulkan")
 
-    app.schedule_shader(os.path.join(shader_path,'fillLDM.spv'), 
-                        (Nli // Ntpb + 1, 1, 1), (Ntpb, 1, 1, Nli))
+    app.clearBuffer(app._commandBuffer, app.S_klm_d)
+    app.schedule_shader(
+        os.path.join(shader_path, "fillLDM.spv"), (Nli // Ntpb + 1, 1, 1), threads
+    )
     app.fft_LDM.fft(app._commandBuffer, app.S_klm_d._buffer, app.S_klm_FT_d._buffer)
-    #app.schedule_shader(os.path.join(shader_path, 'applyLineshapes.spv'), 
-    #                (NxFT // Ntpb + 1, 1, 1), (Ntpb, 1, 1))
-    app.fft_spec.ifft(app._commandBuffer, app.I_k_FT_d._buffer, app.I_k_d._buffer)
+    app.schedule_shader(
+        os.path.join(shader_path, "applyLineshapes.spv"),
+        (NxFT // Ntpb + 1, 1, 1),
+        threads,
+    )
+    app.fft_spec.ifft(
+        app._commandBuffer, app.spectrum_FT_d._buffer, app.spectrum_d._buffer
+    )
 
     app.endCommandBuffer()
 
-    
-    
     if verbose >= 2:
         print("done!")
 
@@ -251,32 +282,38 @@ def gpu_iterate(
     """
 
     # if gpu_mod is None:
-        # warn("Must have an open GPU context; please call gpu_init() first.")
-        # return
+    # warn("Must have an open GPU context; please call gpu_init() first.")
+    # return
 
     if verbose >= 2:
         print("Copying iteration parameters to device...")
 
     set_pTQ(p, T, mole_fraction, iter_h, l=l, slit_FWHM=slit_FWHM)
     set_G_params(init_h, iter_h)
-    set_L_params(init_h, iter_h)    
+    set_L_params(init_h, iter_h)
     app.iter_d.setData(iter_h)
-    
+
+    # print('iter')
+    # print(iter_h.log_2p)
+    # print(iter_h.log_rT)
+    # print(iter_h.c2T)
+    # print(iter_h.log_wL_min)
+    # print(iter_h.N_L)
+
     if verbose >= 2:
         print("Running compute pipelines...")
-    
+
     app.run()
-    abscoeff_h = app.I_k_d.getData()[: init_h.N_v]
-    
+    abscoeff_h = app.spectrum_d.getData()[: init_h.N_v]
+
     if verbose == 1:
         print("Finished calculating spectrum!")
 
-    times = [0, 0, 0, 0]
+    times = {"total": 0.0}
 
     return abscoeff_h, iter_h, times
 
 
 def gpu_exit(event=None):
     global app
-    #del app
-    
+    # del app

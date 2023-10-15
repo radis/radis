@@ -37,14 +37,14 @@ x = 0.8
 l = 0.2  # cm
 w_slit = 0.5  # cm-1
 
-# s_cpu = sf.eq_spectrum(
-    # name="CPU",
-    # Tgas=T,
-    # pressure=p,
-    # mole_fraction=x,
-    # path_length=l,
-# )
-# s_cpu.apply_slit(w_slit, unit="cm-1")
+s_cpu = sf.eq_spectrum(
+    name="CPU",
+    Tgas=T,
+    pressure=p,
+    mole_fraction=x,
+    path_length=l,
+)
+s_cpu.apply_slit(w_slit, unit="cm-1")
 
 s_gpu = sf.eq_spectrum_gpu(
     name="GPU",
@@ -54,7 +54,6 @@ s_gpu = sf.eq_spectrum_gpu(
     path_length=l,
     backend="gpu-cuda",
 )
-#s_gpu.apply_slit(w_slit, unit="cm-1")
+s_gpu.apply_slit(w_slit, unit="cm-1")
 
-s_gpu.plot()
-#plot_diff(s_cpu, s_gpu, var="radiance", wunit="nm", method="diff")
+plot_diff(s_cpu, s_gpu, var="emissivity", wunit="nm", method="diff")

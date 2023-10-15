@@ -24,8 +24,11 @@ def getVulkanPtr(obj):
 ctype_int_size_p = np.ctypeslib.ndpointer(dtype=int, ndim=1, flags="C_CONTIGUOUS")
 
 
-#from radis.gpu.vulkan.pyvkfft_base import VkFFTApp as VkFFTAppBase  # , check_vkfft_result
-from pyvkfft_base import VkFFTApp as VkFFTAppBase  # , check_vkfft_result
+from radis.gpu.vulkan.pyvkfft_base import (
+    VkFFTApp as VkFFTAppBase,  # , check_vkfft_result
+)
+
+# from pyvkfft_base import VkFFTApp as VkFFTAppBase  # , check_vkfft_result
 
 
 def load_library(basename):

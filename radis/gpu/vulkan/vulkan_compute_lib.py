@@ -377,12 +377,10 @@ class ComputeApplication(object):
         pData = vk.ffi.cast("void*", buffer)
 
         dsize = vk.ffi.sizeof(dtype)
-        entries = []
-        for i in range(len(buffer)):
-            print(i, localWorkGroup[i])
-            entries.append(
-                vk.VkSpecializationMapEntry(constantID=i, offset=i * dsize, size=dsize)
-            )
+        entries = [
+            vk.VkSpecializationMapEntry(constantID=i, offset=i * dsize, size=dsize)
+            for i in range(len(buffer))
+        ]
 
         specializationInfo = vk.VkSpecializationInfo(
             mapEntryCount=len(entries),
@@ -476,6 +474,9 @@ class ComputeApplication(object):
         vk.vkWaitForFences(self._device, 1, [self._fence], vk.VK_TRUE, 100000000000)
         vk.vkResetFences(self._device, 1, [self._fence])
 
+    def clearBuffer(self, commandBuffer, buffer_obj):
+        vk.vkCmdFillBuffer(commandBuffer, buffer_obj._buffer, 0, buffer_obj.nbytes, 0)
+
     def sync(self):
         vk.vkCmdPipelineBarrier(
             self._commandBuffer,
@@ -567,6 +568,7 @@ class ArrayBuffer(ObjectBuffer):
         self.dtype = np.dtype(dtype)
         self.itemsize = self.dtype.itemsize
         self.size = int(np.prod(self.shape))
+        self.nbytes = self.size * self.itemsize
 
         if strides is None:
             self._calcStrides()
@@ -606,6 +608,10 @@ class ArrayBuffer(ObjectBuffer):
     def setData(self, arr, byte_offset=0):
         ctypes.memmove(self._arr.ctypes.data + byte_offset, arr.ctypes.data, arr.nbytes)
         return arr.nbytes
+
+    def clearData(self):
+        # TODO: allow partial clearing
+        ctypes.memset(self._arr.ctypes.data, 0, self.nbytes)
 
     def getData(self):
         return self._arr

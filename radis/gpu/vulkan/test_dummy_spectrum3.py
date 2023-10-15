@@ -148,7 +148,6 @@ def initialize():
     app.iter_h = iterData()
     app.iter_d = StructBuffer.fromStruct(app.iter_h, app=app)
 
-    # database_arrays = [v0_data, np.exp(log_w_data), E_data]
     database_length = np.sum(
         [np.sum(arr.shape[:-1]) if len(arr.shape) > 1 else 1 for arr in database_arrays]
     )
@@ -161,7 +160,6 @@ def initialize():
         byte_offset += app.database_SSBO_d.setData(arr, byte_offset=byte_offset)
 
     app.data_LDM_d = ArrayBuffer((N_L, N_G, N_v_FT), np.float32, binding=3, app=app)
-    # app.data_LDM_d.setData(LDM)
 
     app.data_LDM_FT_d = ArrayBuffer(
         (N_L, N_G, N_x_FT), np.complex64, binding=4, app=app
@@ -177,6 +175,7 @@ def initialize():
     )
 
     # Shaders:
+    app.clearBuffer(app._commandBuffer, app.data_LDM_d)
     app.schedule_shader("fillLDM.spv", (N_lines // Ntpb + 1, 1, 1), (Ntpb, 1, 1))
     app.fft_fwd.fft(
         app._commandBuffer, app.data_LDM_d._buffer, app.data_LDM_FT_d._buffer
@@ -262,7 +261,7 @@ def update(val):
     app.iter_h.N_L = N_L
 
     app.iter_d.setData(app.iter_h)
-    app.data_LDM_d.setData(np.zeros((N_L, N_G, N_v_FT), dtype=np.float32))
+
     t0 = time.perf_counter()
     app.run()
     t1 = time.perf_counter()
