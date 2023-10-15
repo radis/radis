@@ -221,7 +221,7 @@ def gpu_init(
     app.fft_spec = prepare_fft(app.spectrum_d, app.spectrum_FT_d, compute_app=app)
 
     # Write command buffer:
-    shader_path = os.path.join(getProjectRoot(), "gpu", "vulkan")
+    shader_path = os.path.join(getProjectRoot(), "gpu", "vulkan", "shaders")
 
     app.clearBuffer(app._commandBuffer, app.S_klm_d)
     app.schedule_shader(
