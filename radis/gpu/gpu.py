@@ -1,4 +1,5 @@
 import os.path
+from time import perf_counter
 
 import numpy as np
 from scipy.constants import N_A, c, k
@@ -124,15 +125,6 @@ def gpu_init(
     init_h.N_lines = int(len(v0))
     init_h.N_coll = gamma_arr.shape[0]
 
-    # print(init_h.v_min)
-    # print(init_h.dv)
-    # print(init_h.N_v)
-    # print(init_h.N_v_FT)
-    # print('dxL:',init_h.dxL)
-    # print('dxG:',init_h.dxG)
-    # print(init_h.N_lines)
-    # print(Mm_arr)
-
     log_c2Mm_arr = np.array(
         [0]
         + [
@@ -173,14 +165,9 @@ def gpu_init(
 
     NvFT = init_h.N_v_FT
     NxFT = NvFT // 2 + 1
-    Ntpb = 1024  # TODO: Get these through vulkan
+    Ntpb = 128  # TODO: Get these through vulkan
     Nli = init_h.N_lines
     threads = (Ntpb, 1, 1)
-
-    # gpu_mod.fillLDM.setGrid((Nli // Ntpb + 1, 1, 1), threads)
-    # gpu_mod.applyLineshapes.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
-    # gpu_mod.calcTransmittanceNoslit.setGrid((NvFT // Ntpb + 1, 1, 1), threads)
-    # gpu_mod.applyGaussianSlit.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
 
     ## Next the variables are initialized on the GPU. Constant variables
     ## that don't change (i.e. pertaining to the database) are immediately
@@ -288,28 +275,23 @@ def gpu_iterate(
     if verbose >= 2:
         print("Copying iteration parameters to device...")
 
+    t0 = perf_counter()
     set_pTQ(p, T, mole_fraction, iter_h, l=l, slit_FWHM=slit_FWHM)
     set_G_params(init_h, iter_h)
     set_L_params(init_h, iter_h)
     app.iter_d.setData(iter_h)
-
-    # print('iter')
-    # print(iter_h.log_2p)
-    # print(iter_h.log_rT)
-    # print(iter_h.c2T)
-    # print(iter_h.log_wL_min)
-    # print(iter_h.N_L)
 
     if verbose >= 2:
         print("Running compute pipelines...")
 
     app.run()
     abscoeff_h = app.spectrum_d.getData()[: init_h.N_v]
+    t1 = perf_counter()
 
     if verbose == 1:
         print("Finished calculating spectrum!")
 
-    times = {"total": 0.0}
+    times = {"total": (t1 - t0) * 1e3}
 
     return abscoeff_h, iter_h, times
 

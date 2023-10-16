@@ -533,6 +533,7 @@ class ObjectBuffer:
         index = self.app.findMemoryType(
             memoryRequirements.memoryTypeBits,
             vk.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            | vk.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
             | vk.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
         )
 

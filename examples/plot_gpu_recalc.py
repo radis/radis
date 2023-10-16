@@ -30,7 +30,7 @@ sf = SpectrumFactory(
 
 sf.fetch_databank("hitemp")
 
-T_list = [1000.0, 1500.0, 2000.0]
+T_list = [1000.0, 1250.0, 1500.0, 1750.0, 2000.0, 2250.0]
 
 s = sf.eq_spectrum_gpu(
     Tgas=T_list[0],  # K
@@ -43,12 +43,14 @@ s.apply_slit(0.5, unit="cm-1")  # cm-1
 print("Plot1 finished in {:6.1f} ms".format(s.conditions["calculation_time"] * 1e3))
 s.plot("radiance", wunit="nm", show=False)
 
-s.recalc_gpu(Tgas=T_list[1])
-print("Plot2 finished in {:6.1f} ms".format(s.conditions["calculation_time"] * 1e3))
-s.plot("radiance", wunit="nm", show=False, nfig="same")
-
-s.recalc_gpu(Tgas=T_list[2])
-print("Plot3 finished in {:6.1f} ms".format(s.conditions["calculation_time"] * 1e3))
-s.plot("radiance", wunit="nm", show=True, nfig="same")
+for i, T in enumerate(T_list[1:]):
+    show = True if T == T_list[-1] else False
+    s.recalc_gpu(Tgas=T)
+    print(
+        "Plot{:d} finished in {:6.1f} ms".format(
+            i + 1, s.conditions["calculation_time"] * 1e3
+        )
+    )
+    s.plot("radiance", wunit="nm", show=show, nfig="same")
 
 gpu_exit()
