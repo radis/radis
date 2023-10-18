@@ -1,5 +1,4 @@
 import os.path
-from time import perf_counter
 
 import numpy as np
 from scipy.constants import N_A, c, k
@@ -106,7 +105,9 @@ def gpu_init(
         StructBuffer,
     )
 
-    app = ComputeApplication(deviceID=0)
+    shader_path = os.path.join(getProjectRoot(), "gpu", "vulkan", "shaders")
+
+    app = ComputeApplication(deviceID=1)
 
     ## Next, the GPU is made aware of a number of parameters.
     ## Parameters that don't change during iteration are stored
@@ -208,21 +209,30 @@ def gpu_init(
     app.fft_spec = prepare_fft(app.spectrum_d, app.spectrum_FT_d, compute_app=app)
 
     # Write command buffer:
-    shader_path = os.path.join(getProjectRoot(), "gpu", "vulkan", "shaders")
+    app.timestamp("start")
 
-    app.clearBuffer(app._commandBuffer, app.S_klm_d)
+    app.clearBuffer(app.S_klm_d)
+    app.timestamp("clearBuffer")
+
     app.schedule_shader(
         os.path.join(shader_path, "fillLDM.spv"), (Nli // Ntpb + 1, 1, 1), threads
     )
+    app.timestamp("fillLDM")
+
     app.fft_LDM.fft(app._commandBuffer, app.S_klm_d._buffer, app.S_klm_FT_d._buffer)
+    app.timestamp("fft")
+
     app.schedule_shader(
         os.path.join(shader_path, "applyLineshapes.spv"),
         (NxFT // Ntpb + 1, 1, 1),
         threads,
     )
+    app.timestamp("applyLineshapes")
+
     app.fft_spec.ifft(
         app._commandBuffer, app.spectrum_FT_d._buffer, app.spectrum_d._buffer
     )
+    app.timestamp("ifft")
 
     app.endCommandBuffer()
 
@@ -275,7 +285,6 @@ def gpu_iterate(
     if verbose >= 2:
         print("Copying iteration parameters to device...")
 
-    t0 = perf_counter()
     set_pTQ(p, T, mole_fraction, iter_h, l=l, slit_FWHM=slit_FWHM)
     set_G_params(init_h, iter_h)
     set_L_params(init_h, iter_h)
@@ -285,13 +294,12 @@ def gpu_iterate(
         print("Running compute pipelines...")
 
     app.run()
+    times = app.get_timestamps()
+
     abscoeff_h = app.spectrum_d.getData()[: init_h.N_v]
-    t1 = perf_counter()
 
     if verbose == 1:
         print("Finished calculating spectrum!")
-
-    times = {"total": (t1 - t0) * 1e3}
 
     return abscoeff_h, iter_h, times
 

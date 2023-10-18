@@ -9,6 +9,8 @@ import ctypes
 import numpy as np
 import vulkan as vk
 
+QUERY_POOL_SIZE = 32  # Max number of queries (=timestamps)
+
 
 class ComputeApplication(object):
     """The application launches a compute shader that renders the mandelbrot set,
@@ -22,6 +24,7 @@ class ComputeApplication(object):
         self._physicalDevice = None
         self._device = None
         self._nextDstBinding = 0
+        self._timestampLabels = []
         self._bufferObjects = []
         self._deviceID = deviceID
 
@@ -33,6 +36,7 @@ class ComputeApplication(object):
 
         self._commandPool = None
         self._commandBuffer = None
+        self._queryPool = None
 
         self._enabledLayers = []
         self._enabledExtensions = []
@@ -62,6 +66,8 @@ class ComputeApplication(object):
         for pipeline in self._pipelines:
             vk.vkDestroyPipeline(self._device, pipeline, None)
 
+        if self._queryPool:
+            vk.vkDestroyQueryPool(self._device, self._queryPool, None)
         if self._commandPool:
             vk.vkDestroyCommandPool(self._device, self._commandPool, None)
         if self._fence:
@@ -247,6 +253,17 @@ class ComputeApplication(object):
             srcAccessMask=vk.VK_ACCESS_SHADER_WRITE_BIT,
             dstAccessMask=vk.VK_ACCESS_SHADER_READ_BIT,
         )
+
+        queryPoolCreateInfo = vk.VkQueryPoolCreateInfo(
+            vk.VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+            None,
+            0,
+            vk.VK_QUERY_TYPE_TIMESTAMP,
+            QUERY_POOL_SIZE,
+            0,
+        )
+
+        self._queryPool = vk.vkCreateQueryPool(self._device, queryPoolCreateInfo, None)
 
     # find memory type with desired properties.
     def findMemoryType(self, memoryTypeBits, properties):
@@ -474,8 +491,10 @@ class ComputeApplication(object):
         vk.vkWaitForFences(self._device, 1, [self._fence], vk.VK_TRUE, 100000000000)
         vk.vkResetFences(self._device, 1, [self._fence])
 
-    def clearBuffer(self, commandBuffer, buffer_obj):
-        vk.vkCmdFillBuffer(commandBuffer, buffer_obj._buffer, 0, buffer_obj.nbytes, 0)
+    def clearBuffer(self, buffer_obj):
+        vk.vkCmdFillBuffer(
+            self._commandBuffer, buffer_obj._buffer, 0, buffer_obj.nbytes, 0
+        )
 
     def sync(self):
         vk.vkCmdPipelineBarrier(
@@ -490,6 +509,48 @@ class ComputeApplication(object):
             0,
             0,
         )
+
+    def timestamp(self, label=None):
+
+        query = len(self._timestampLabels)
+        if label is None:
+            label = "timestamp_{:d}".format(query)
+        self._timestampLabels.append(label)
+
+        if query == 0:
+            vk.vkCmdResetQueryPool(
+                self._commandBuffer, self._queryPool, 0, QUERY_POOL_SIZE
+            )
+
+        vk.vkCmdWriteTimestamp(
+            self._commandBuffer,
+            vk.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+            self._queryPool,
+            query,
+        )
+
+        if query == QUERY_POOL_SIZE + 1:
+            print("Max pool size reached!!!")
+            # TODO: handle exception
+
+    def get_timestamps(self):
+
+        dtype = "unsigned int"
+        dsize = vk.ffi.sizeof(dtype)
+        length = len(self._timestampLabels)
+        queryResult = vk.ffi.new(dtype + "[{:d}]".format(length))
+        pData = vk.ffi.cast("void*", queryResult)
+
+        vk.vkGetQueryPoolResults(
+            self._device, self._queryPool, 0, length, dsize * length, pData, dsize, 0
+        )
+
+        result_arr = np.array([*queryResult]) * 1e-6  # in ms
+        result_arr -= result_arr[0]
+        result_dict = dict(zip(self._timestampLabels, result_arr))
+        result_dict["total"] = result_arr[-1]
+
+        return result_dict
 
 
 class ObjectBuffer:
