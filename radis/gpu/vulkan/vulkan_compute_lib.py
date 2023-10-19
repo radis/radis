@@ -9,6 +9,8 @@ import os
 
 import numpy as np
 import vulkan as vk
+from functools import partial
+from radis.gpu.vulkan.pyvkfft_vulkan import prepare_fft
 
 QUERY_POOL_SIZE = 32  # Max number of queries (=timestamps)
 
@@ -29,6 +31,7 @@ class ComputeApplication(object):
         self._bufferObjects = []
         self._deviceID = deviceID
         self._shaderPath = path
+        self._fftApps = {}
 
         self._computeShaderModules = []
         self._descriptorPools = []
@@ -51,6 +54,7 @@ class ComputeApplication(object):
         self.findPhysicalDevice()
         self.createDevice()
         self.createCommandBuffer()
+        self.init_shaders()
 
     def __del__(self):
 
@@ -78,25 +82,78 @@ class ComputeApplication(object):
             vk.vkDestroyDevice(self._device, None)
         if self._instance:
             vk.vkDestroyInstance(self._instance, None)
+            
+    def __setattr__(self, name, val):
+        if isinstance(val, ObjectBuffer):
+            val.app = self
+            val._init_buffer()
+            val._delayedSetData()
+        self.__dict__[name] = val
 
+    def init_shaders(self):
+        shader_fnames = [f for f in os.listdir(self._shaderPath) if f[-3:] == 'spv']
+        for shader_fname in shader_fnames:
+            fun_name = shader_fname.split('.')[0] #TODO: do this with os.path.basename
+            named_shader = partial(self.schedule_shader, shader_fname) 
+            setattr(self.__class__, fun_name, named_shader)
+    
+    def fft(self, *vargs, timestamp=False):
+        assert len(vargs) == 2
+        buf = vargs[0]
+        buf_FT = vargs[1]
+        key = (id(buf),id(buf_FT))
+        
+        try:
+            fft_app = self._fftApps[key]
+        except(KeyError):
+            fft_app = prepare_fft(buf, buf_FT, compute_app=self)
+            self._fftApps[key] = fft_app
+        
+        fft_app.fft(self._commandBuffer, buf._buffer, buf_FT._buffer)
+        
+        if timestamp == True:
+            self.addTimestamp('fft')
+        elif isinstance(timestamp, str):
+            self.addTimestamp(timestamp)
+        else:
+            pass
+            
+
+    def ifft(self, *vargs, timestamp=False):
+        assert len(vargs) == 2
+        buf_FT = vargs[0]
+        buf = vargs[1]
+        key = (id(buf), id(buf_FT))
+        
+        try:
+            fft_app = self._fftApps[key]
+        except(KeyError):
+            fft_app = prepare_fft(buf, buf_FT, compute_app=self)
+            self._fftApps[key] = fft_app
+        
+        fft_app.ifft(self._commandBuffer, buf_FT._buffer, buf._buffer)
+        
+        if timestamp == True:
+            self.addTimestamp('fft')
+        elif isinstance(timestamp, str):
+            self.addTimestamp(timestamp)
+        else:
+            pass
+            
     def schedule_shader(
         self,
         shader_fname=None,
         global_workgroup=(1, 1, 1),
         local_workgroup=(1, 1, 1),
         sync=True,
-    ):
-
-        # TODO: do this with os.path methods
-        if shader_fname.split(".")[-1] != "spv":
-            shader_fname += ".spv"
-
-        shader_fname = os.path.join(self._shaderPath, shader_fname)
+        timestamp=False):
+        
+        shader_fpath = os.path.join(self._shaderPath, shader_fname)
 
         descriptorSetLayout = self.createDescriptorSetLayout()
         descriptorPool, descriptorSet = self.createDescriptorSet(descriptorSetLayout)
         pipeline, pipelineLayout, computeShaderModule = self.createComputePipeline(
-            shader_fname, local_workgroup, descriptorSetLayout
+            shader_fpath, local_workgroup, descriptorSetLayout
         )
         self.bindAndDispatch(global_workgroup, descriptorSet, pipeline, pipelineLayout)
         if sync:
@@ -107,7 +164,15 @@ class ComputeApplication(object):
         self._descriptorSetLayouts.append(descriptorSetLayout)
         self._pipelineLayouts.append(pipelineLayout)
         self._pipelines.append(pipeline)
-
+        
+        if timestamp == True:
+            self.addTimestamp(shader_fname.split('.')[0])
+        elif isinstance(timestamp, str):
+            self.addTimestamp(timestamp)
+        else:
+            pass
+            
+            
     def run(self):
         self.runCommandBuffer()
 
@@ -210,6 +275,30 @@ class ComputeApplication(object):
 
         self._device = vk.vkCreateDevice(self._physicalDevice, deviceCreateInfo, None)
         self._queue = vk.vkGetDeviceQueue(self._device, self._queueFamilyIndex, 0)
+        
+                # We create a fence.
+        fenceCreateInfo = vk.VkFenceCreateInfo(
+            sType=vk.VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, flags=0
+        )
+        self._fence = vk.vkCreateFence(self._device, fenceCreateInfo, None)
+        self._memoryBarrier = vk.VkMemoryBarrier(
+            sType=vk.VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+            pNext=0,
+            srcAccessMask=vk.VK_ACCESS_SHADER_WRITE_BIT,
+            dstAccessMask=vk.VK_ACCESS_SHADER_READ_BIT,
+        )
+
+        queryPoolCreateInfo = vk.VkQueryPoolCreateInfo(
+            vk.VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+            None,
+            0,
+            vk.VK_QUERY_TYPE_TIMESTAMP,
+            QUERY_POOL_SIZE,
+            0,
+        )
+
+        self._queryPool = vk.vkCreateQueryPool(self._device, queryPoolCreateInfo, None)
+
 
     def createCommandBuffer(self):
         # We are getting closer to the end. In order to send commands to the device(GPU),
@@ -250,28 +339,6 @@ class ComputeApplication(object):
         )
         vk.vkBeginCommandBuffer(self._commandBuffer, beginInfo)
 
-        # We create a fence.
-        fenceCreateInfo = vk.VkFenceCreateInfo(
-            sType=vk.VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, flags=0
-        )
-        self._fence = vk.vkCreateFence(self._device, fenceCreateInfo, None)
-        self._memoryBarrier = vk.VkMemoryBarrier(
-            sType=vk.VK_STRUCTURE_TYPE_MEMORY_BARRIER,
-            pNext=0,
-            srcAccessMask=vk.VK_ACCESS_SHADER_WRITE_BIT,
-            dstAccessMask=vk.VK_ACCESS_SHADER_READ_BIT,
-        )
-
-        queryPoolCreateInfo = vk.VkQueryPoolCreateInfo(
-            vk.VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
-            None,
-            0,
-            vk.VK_QUERY_TYPE_TIMESTAMP,
-            QUERY_POOL_SIZE,
-            0,
-        )
-
-        self._queryPool = vk.vkCreateQueryPool(self._device, queryPoolCreateInfo, None)
 
     # find memory type with desired properties.
     def findMemoryType(self, memoryTypeBits, properties):
@@ -499,10 +566,16 @@ class ComputeApplication(object):
         vk.vkWaitForFences(self._device, 1, [self._fence], vk.VK_TRUE, 100000000000)
         vk.vkResetFences(self._device, 1, [self._fence])
 
-    def clearBuffer(self, buffer_obj):
+    def clearBuffer(self, buffer_obj, timestamp=False):
         vk.vkCmdFillBuffer(
             self._commandBuffer, buffer_obj._buffer, 0, buffer_obj.nbytes, 0
         )
+        if timestamp == True:
+            self.addTimestamp('clearBuffer')
+        elif isinstance(timestamp, str):
+            self.addTimestamp(timestamp)
+        else:
+            pass
 
     def sync(self):
         vk.vkCmdPipelineBarrier(
@@ -518,11 +591,12 @@ class ComputeApplication(object):
             0,
         )
 
-    def timestamp(self, label=None):
+    def addTimestamp(self, label=None):
 
         query = len(self._timestampLabels)
         if label is None:
             label = "timestamp_{:d}".format(query)
+        #TODO: deal with duplicates
         self._timestampLabels.append(label)
 
         if query == 0:
@@ -573,13 +647,20 @@ class ObjectBuffer:
             self._descriptorType = vk.VK_DESCRIPTOR_TYPE_STORAGE_BUFFER
 
         self._bufferSize = bufferSize
+        self._dstBinding = binding
+        
+        self._isInitialized = False
+        self._delayedSetDataList = []
+        
         self.app = app
-        self._device = app._device
+        if self.app is not None:
+            self._init_buffer()
 
-        if binding is None:
+    def _init_buffer(self):
+        self._device = self.app._device
+
+        if self._dstBinding is None:
             self._dstBinding = self.app._nextDstBinding
-        else:
-            self._dstBinding = binding
         self.app._nextDstBinding = self._dstBinding + 1
 
         self._buffer = None
@@ -619,6 +700,15 @@ class ObjectBuffer:
             self._device, self._bufferMemory, 0, self._bufferSize, 0
         )
         self.app._bufferObjects.append(self)
+        
+        self._isInitialized = True
+
+
+    def _delayedSetData(self):
+        while len(self._delayedSetDataList):
+            vargs = self._delayedSetDataList.pop(0)
+            self.setData(*vargs)
+
 
     def free(self):
         if self._pmappedMemory:
@@ -651,7 +741,16 @@ class ArrayBuffer(ObjectBuffer):
             binding=binding,
             app=app,
         )
-        self._arr = np.frombuffer(self._pmappedMemory, self.dtype).reshape(self.shape)
+        
+        self._arr = None
+        if self._isInitialized:
+            self._arr = np.frombuffer(self._pmappedMemory, self.dtype).reshape(self.shape)
+        
+
+    def _init_buffer(self):
+        super()._init_buffer()
+        if self._arr is None:
+            self._arr = np.frombuffer(self._pmappedMemory, self.dtype).reshape(self.shape)
 
     @staticmethod
     def fromArr(arr, binding=None, app=None):
@@ -676,7 +775,11 @@ class ArrayBuffer(ObjectBuffer):
             self.strides = np.multiply.accumulate(sshape)
 
     def setData(self, arr, byte_offset=0):
-        ctypes.memmove(self._arr.ctypes.data + byte_offset, arr.ctypes.data, arr.nbytes)
+        if self._isInitialized:
+            ctypes.memmove(self._arr.ctypes.data + byte_offset, arr.ctypes.data, arr.nbytes)
+        else:
+            self._delayedSetDataList.append((arr, byte_offset))
+            
         return arr.nbytes
 
     def clearData(self):
@@ -707,15 +810,18 @@ class StructBuffer(ObjectBuffer):
     # ffi.memmove(self._pmappedMemory, structPtr, self._bufferSize)
 
     def setData(self, struct):
-        ptr = ctypes.c_void_p(
-            int(
-                vk.ffi.cast(
-                    "unsigned long long", vk.ffi.from_buffer(self._pmappedMemory)
+        if self._isInitialized:
+            ptr = ctypes.c_void_p(
+                int(
+                    vk.ffi.cast(
+                        "unsigned long long", vk.ffi.from_buffer(self._pmappedMemory)
+                    )
                 )
             )
-        )
-        ctypes.memmove(ptr, ctypes.byref(struct), self._bufferSize)
-
+            ctypes.memmove(ptr, ctypes.byref(struct), self._bufferSize)
+        else:
+            self._delayedSetDataList.append((struct,))
+        
     def getData(self):
         # not implemented
         pass
