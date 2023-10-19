@@ -106,8 +106,7 @@ def gpu_init(
     )
 
     shader_path = os.path.join(getProjectRoot(), "gpu", "vulkan", "shaders")
-
-    app = ComputeApplication(deviceID=1)
+    app = ComputeApplication(deviceID=1, path=shader_path)
 
     ## Next, the GPU is made aware of a number of parameters.
     ## Parameters that don't change during iteration are stored
@@ -214,19 +213,13 @@ def gpu_init(
     app.clearBuffer(app.S_klm_d)
     app.timestamp("clearBuffer")
 
-    app.schedule_shader(
-        os.path.join(shader_path, "fillLDM.spv"), (Nli // Ntpb + 1, 1, 1), threads
-    )
+    app.schedule_shader("fillLDM", (Nli // Ntpb + 1, 1, 1), threads)
     app.timestamp("fillLDM")
 
     app.fft_LDM.fft(app._commandBuffer, app.S_klm_d._buffer, app.S_klm_FT_d._buffer)
     app.timestamp("fft")
 
-    app.schedule_shader(
-        os.path.join(shader_path, "applyLineshapes.spv"),
-        (NxFT // Ntpb + 1, 1, 1),
-        threads,
-    )
+    app.schedule_shader("applyLineshapes", (NxFT // Ntpb + 1, 1, 1), threads)
     app.timestamp("applyLineshapes")
 
     app.fft_spec.ifft(

@@ -5,6 +5,7 @@ import collections
 
 collections.Iterable = collections.abc.Iterable
 import ctypes
+import os
 
 import numpy as np
 import vulkan as vk
@@ -17,7 +18,7 @@ class ComputeApplication(object):
     by rendering it into a storage buffer.
     The storage buffer is then read from the GPU, and saved as .png."""
 
-    def __init__(self, deviceID=0):
+    def __init__(self, deviceID=0, path="./"):
         # In order to use Vulkan, you must create an instance
         self._instance = None
         self._debugReportCallback = None
@@ -27,6 +28,7 @@ class ComputeApplication(object):
         self._timestampLabels = []
         self._bufferObjects = []
         self._deviceID = deviceID
+        self._shaderPath = path
 
         self._computeShaderModules = []
         self._descriptorPools = []
@@ -84,6 +86,12 @@ class ComputeApplication(object):
         local_workgroup=(1, 1, 1),
         sync=True,
     ):
+
+        # TODO: do this with os.path methods
+        if shader_fname.split(".")[-1] != "spv":
+            shader_fname += ".spv"
+
+        shader_fname = os.path.join(self._shaderPath, shader_fname)
 
         descriptorSetLayout = self.createDescriptorSetLayout()
         descriptorPool, descriptorSet = self.createDescriptorSet(descriptorSetLayout)
