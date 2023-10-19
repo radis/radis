@@ -6,20 +6,17 @@ import collections
 collections.Iterable = collections.abc.Iterable
 import ctypes
 import os
+from functools import partial
 
 import numpy as np
 import vulkan as vk
-from functools import partial
+
 from radis.gpu.vulkan.pyvkfft_vulkan import prepare_fft
 
 QUERY_POOL_SIZE = 32  # Max number of queries (=timestamps)
 
 
-class ComputeApplication(object):
-    """The application launches a compute shader that renders the mandelbrot set,
-    by rendering it into a storage buffer.
-    The storage buffer is then read from the GPU, and saved as .png."""
-
+class GPUApplication(object):
     def __init__(self, deviceID=0, path="./"):
         # In order to use Vulkan, you must create an instance
         self._instance = None
@@ -41,6 +38,7 @@ class ComputeApplication(object):
 
         self._commandPool = None
         self._commandBuffer = None
+        self.command_list = []
         self._queryPool = None
 
         self._enabledLayers = []
@@ -53,8 +51,9 @@ class ComputeApplication(object):
         self.createInstance()
         self.findPhysicalDevice()
         self.createDevice()
-        self.createCommandBuffer()
         self.init_shaders()
+
+        self.createCommandBuffer()
 
     def __del__(self):
 
@@ -82,97 +81,125 @@ class ComputeApplication(object):
             vk.vkDestroyDevice(self._device, None)
         if self._instance:
             vk.vkDestroyInstance(self._instance, None)
-            
+
     def __setattr__(self, name, val):
-        if isinstance(val, ObjectBuffer):
+        if isinstance(val, GPUObject):
             val.app = self
             val._init_buffer()
             val._delayedSetData()
         self.__dict__[name] = val
 
     def init_shaders(self):
-        shader_fnames = [f for f in os.listdir(self._shaderPath) if f[-3:] == 'spv']
+        shader_fnames = [f for f in os.listdir(self._shaderPath) if f[-3:] == "spv"]
         for shader_fname in shader_fnames:
-            fun_name = shader_fname.split('.')[0] #TODO: do this with os.path.basename
-            named_shader = partial(self.schedule_shader, shader_fname) 
+            fun_name = shader_fname.split(".")[0]  # TODO: do this with os.path.basename
+            named_shader = partial(self.schedule_shader, shader_fname)
             setattr(self.__class__, fun_name, named_shader)
-    
-    def fft(self, *vargs, timestamp=False):
-        assert len(vargs) == 2
-        buf = vargs[0]
-        buf_FT = vargs[1]
-        key = (id(buf),id(buf_FT))
-        
-        try:
-            fft_app = self._fftApps[key]
-        except(KeyError):
-            fft_app = prepare_fft(buf, buf_FT, compute_app=self)
-            self._fftApps[key] = fft_app
-        
-        fft_app.fft(self._commandBuffer, buf._buffer, buf_FT._buffer)
-        
-        if timestamp == True:
-            self.addTimestamp('fft')
-        elif isinstance(timestamp, str):
-            self.addTimestamp(timestamp)
-        else:
-            pass
-            
 
-    def ifft(self, *vargs, timestamp=False):
-        assert len(vargs) == 2
-        buf_FT = vargs[0]
-        buf = vargs[1]
-        key = (id(buf), id(buf_FT))
-        
-        try:
-            fft_app = self._fftApps[key]
-        except(KeyError):
-            fft_app = prepare_fft(buf, buf_FT, compute_app=self)
-            self._fftApps[key] = fft_app
-        
-        fft_app.ifft(self._commandBuffer, buf_FT._buffer, buf._buffer)
-        
-        if timestamp == True:
-            self.addTimestamp('fft')
-        elif isinstance(timestamp, str):
-            self.addTimestamp(timestamp)
-        else:
-            pass
-            
     def schedule_shader(
         self,
         shader_fname=None,
         global_workgroup=(1, 1, 1),
         local_workgroup=(1, 1, 1),
         sync=True,
-        timestamp=False):
-        
-        shader_fpath = os.path.join(self._shaderPath, shader_fname)
+        timestamp=False,
+    ):
+        def func(
+            self,
+            shader_fname=None,
+            global_workgroup=(1, 1, 1),
+            local_workgroup=(1, 1, 1),
+            sync=True,
+            timestamp=False,
+        ):
 
-        descriptorSetLayout = self.createDescriptorSetLayout()
-        descriptorPool, descriptorSet = self.createDescriptorSet(descriptorSetLayout)
-        pipeline, pipelineLayout, computeShaderModule = self.createComputePipeline(
-            shader_fpath, local_workgroup, descriptorSetLayout
+            shader_fpath = os.path.join(self._shaderPath, shader_fname)
+
+            # Descriptor set:
+            descriptorSetLayout = self.createDescriptorSetLayout()
+            descriptorPool, descriptorSet = self.createDescriptorSet(
+                descriptorSetLayout
+            )
+
+            # Compute Pipeline:
+            pipeline, pipelineLayout, computeShaderModule = self.createComputePipeline(
+                shader_fpath, local_workgroup, descriptorSetLayout
+            )
+            self.bindAndDispatch(
+                global_workgroup, descriptorSet, pipeline, pipelineLayout
+            )
+            if sync:
+                self.sync()
+
+            self._computeShaderModules.append(computeShaderModule)
+            self._descriptorPools.append(descriptorPool)
+            self._descriptorSetLayouts.append(descriptorSetLayout)
+            self._pipelineLayouts.append(pipelineLayout)
+            self._pipelines.append(pipeline)
+
+            if timestamp == True:
+                self.addTimestamp(shader_fname.split(".")[0]).writeCommand()
+            elif isinstance(timestamp, str):
+                self.addTimestamp(timestamp).writeCommand()
+            else:
+                pass
+
+        return GPUCommand(
+            func,
+            [
+                self,
+            ],
+            {
+                "shader_fname": shader_fname,
+                "global_workgroup": global_workgroup,
+                "local_workgroup": local_workgroup,
+                "sync": sync,
+                "timestamp": timestamp,
+            },
         )
-        self.bindAndDispatch(global_workgroup, descriptorSet, pipeline, pipelineLayout)
-        if sync:
-            self.sync()
 
-        self._computeShaderModules.append(computeShaderModule)
-        self._descriptorPools.append(descriptorPool)
-        self._descriptorSetLayouts.append(descriptorSetLayout)
-        self._pipelineLayouts.append(pipelineLayout)
-        self._pipelines.append(pipeline)
-        
-        if timestamp == True:
-            self.addTimestamp(shader_fname.split('.')[0])
-        elif isinstance(timestamp, str):
-            self.addTimestamp(timestamp)
-        else:
-            pass
-            
-            
+    def fft(self, buf, buf_FT, timestamp=False):
+        def func(self, buf, buf_FT, timestamp=False):
+            key = (id(buf), id(buf_FT))
+
+            try:
+                fft_app = self._fftApps[key]
+            except (KeyError):
+                fft_app = prepare_fft(buf, buf_FT, compute_app=self)
+                self._fftApps[key] = fft_app
+
+            fft_app.fft(self._commandBuffer, buf._buffer, buf_FT._buffer)
+
+            if timestamp == True:
+                self.addTimestamp("fft").writeCommand()
+            elif isinstance(timestamp, str):
+                self.addTimestamp(timestamp).writeCommand()
+            else:
+                pass
+
+        return GPUCommand(func, [self, buf, buf_FT], {"timestamp": timestamp})
+
+    def ifft(self, buf_FT, buf, timestamp=False):
+        def func(self, buf_FT, buf, timestamp=False):
+            key = (id(buf), id(buf_FT))
+
+            try:
+                fft_app = self._fftApps[key]
+            except (KeyError):
+                fft_app = prepare_fft(buf, buf_FT, compute_app=self)
+                self._fftApps[key] = fft_app
+
+            fft_app.ifft(self._commandBuffer, buf_FT._buffer, buf._buffer)
+
+            if timestamp == True:
+                self.addTimestamp("fft").writeCommand()
+            elif isinstance(timestamp, str):
+                self.addTimestamp(timestamp).writeCommand()
+            else:
+                pass
+
+        return GPUCommand(func, [self, buf_FT, buf], {"timestamp": timestamp})
+
     def run(self):
         self.runCommandBuffer()
 
@@ -275,8 +302,8 @@ class ComputeApplication(object):
 
         self._device = vk.vkCreateDevice(self._physicalDevice, deviceCreateInfo, None)
         self._queue = vk.vkGetDeviceQueue(self._device, self._queueFamilyIndex, 0)
-        
-                # We create a fence.
+
+        # We create a fence.
         fenceCreateInfo = vk.VkFenceCreateInfo(
             sType=vk.VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, flags=0
         )
@@ -298,7 +325,6 @@ class ComputeApplication(object):
         )
 
         self._queryPool = vk.vkCreateQueryPool(self._device, queryPoolCreateInfo, None)
-
 
     def createCommandBuffer(self):
         # We are getting closer to the end. In order to send commands to the device(GPU),
@@ -331,14 +357,19 @@ class ComputeApplication(object):
             self._device, commandBufferAllocateInfo
         )[0]
 
+    def writeCommandBuffer(self):
+
         # Now we shall start recording commands into the newly allocated command buffer.
         beginInfo = vk.VkCommandBufferBeginInfo(
             sType=vk.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-            # the buffer is only submitted and used once in this application.
             flags=0,  # VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT #VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
         )
         vk.vkBeginCommandBuffer(self._commandBuffer, beginInfo)
 
+        for obj in self.command_list:
+            obj.writeCommand()
+
+        vk.vkEndCommandBuffer(self._commandBuffer)
 
     # find memory type with desired properties.
     def findMemoryType(self, memoryTypeBits, properties):
@@ -544,8 +575,8 @@ class ComputeApplication(object):
         # If you are already familiar with compute shaders from OpenGL, this should be nothing new to you.
         vk.vkCmdDispatch(self._commandBuffer, *globalWorkGroup)
 
-    def endCommandBuffer(self):
-        vk.vkEndCommandBuffer(self._commandBuffer)
+    # def endCommandBuffer(self):
+    # vk.vkEndCommandBuffer(self._commandBuffer)
 
     def runCommandBuffer(self):
         # Now we shall finally submit the recorded command buffer to a queue.
@@ -567,15 +598,18 @@ class ComputeApplication(object):
         vk.vkResetFences(self._device, 1, [self._fence])
 
     def clearBuffer(self, buffer_obj, timestamp=False):
-        vk.vkCmdFillBuffer(
-            self._commandBuffer, buffer_obj._buffer, 0, buffer_obj.nbytes, 0
-        )
-        if timestamp == True:
-            self.addTimestamp('clearBuffer')
-        elif isinstance(timestamp, str):
-            self.addTimestamp(timestamp)
-        else:
-            pass
+        def func(self, buffer_obj, timestamp=False):
+            vk.vkCmdFillBuffer(
+                self._commandBuffer, buffer_obj._buffer, 0, buffer_obj.nbytes, 0
+            )
+            if timestamp == True:
+                self.addTimestamp("clearBuffer").writeCommand()
+            elif isinstance(timestamp, str):
+                self.addTimestamp(timestamp).writeCommand()
+            else:
+                pass
+
+        return GPUCommand(func, [self, buffer_obj], {"timestamp": timestamp})
 
     def sync(self):
         vk.vkCmdPipelineBarrier(
@@ -592,28 +626,36 @@ class ComputeApplication(object):
         )
 
     def addTimestamp(self, label=None):
+        def func(self, label=None):
+            query = len(self._timestampLabels)
+            if label is None:
+                label = "timestamp_{:d}".format(query)
+            # TODO: deal with duplicates
+            self._timestampLabels.append(label)
 
-        query = len(self._timestampLabels)
-        if label is None:
-            label = "timestamp_{:d}".format(query)
-        #TODO: deal with duplicates
-        self._timestampLabels.append(label)
+            if query == 0:
+                vk.vkCmdResetQueryPool(
+                    self._commandBuffer, self._queryPool, 0, QUERY_POOL_SIZE
+                )
 
-        if query == 0:
-            vk.vkCmdResetQueryPool(
-                self._commandBuffer, self._queryPool, 0, QUERY_POOL_SIZE
+            vk.vkCmdWriteTimestamp(
+                self._commandBuffer,
+                vk.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                self._queryPool,
+                query,
             )
 
-        vk.vkCmdWriteTimestamp(
-            self._commandBuffer,
-            vk.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-            self._queryPool,
-            query,
-        )
+            if query == QUERY_POOL_SIZE + 1:
+                print("Max pool size reached!!!")
+                # TODO: handle exception
 
-        if query == QUERY_POOL_SIZE + 1:
-            print("Max pool size reached!!!")
-            # TODO: handle exception
+        return GPUCommand(
+            func,
+            [
+                self,
+            ],
+            {"label": label},
+        )
 
     def get_timestamps(self):
 
@@ -635,7 +677,17 @@ class ComputeApplication(object):
         return result_dict
 
 
-class ObjectBuffer:
+class GPUCommand:
+    def __init__(self, func, vargs, kwargs):
+        self.func = func
+        self.vargs = vargs
+        self.kwargs = kwargs
+
+    def writeCommand(self):
+        self.func(*self.vargs, **self.kwargs)
+
+
+class GPUObject:
     def __init__(self, bufferSize=0, uniform=False, binding=None, app=None):
         # customization:
 
@@ -648,10 +700,10 @@ class ObjectBuffer:
 
         self._bufferSize = bufferSize
         self._dstBinding = binding
-        
+
         self._isInitialized = False
         self._delayedSetDataList = []
-        
+
         self.app = app
         if self.app is not None:
             self._init_buffer()
@@ -700,15 +752,13 @@ class ObjectBuffer:
             self._device, self._bufferMemory, 0, self._bufferSize, 0
         )
         self.app._bufferObjects.append(self)
-        
-        self._isInitialized = True
 
+        self._isInitialized = True
 
     def _delayedSetData(self):
         while len(self._delayedSetDataList):
             vargs = self._delayedSetDataList.pop(0)
             self.setData(*vargs)
-
 
     def free(self):
         if self._pmappedMemory:
@@ -720,7 +770,7 @@ class ObjectBuffer:
             vk.vkDestroyBuffer(self._device, self._buffer, None)
 
 
-class ArrayBuffer(ObjectBuffer):
+class GPUArray(GPUObject):
     def __init__(
         self, shape=(1,), dtype=np.int32, strides=None, binding=None, app=None
     ):
@@ -741,20 +791,23 @@ class ArrayBuffer(ObjectBuffer):
             binding=binding,
             app=app,
         )
-        
+
         self._arr = None
         if self._isInitialized:
-            self._arr = np.frombuffer(self._pmappedMemory, self.dtype).reshape(self.shape)
-        
+            self._arr = np.frombuffer(self._pmappedMemory, self.dtype).reshape(
+                self.shape
+            )
 
     def _init_buffer(self):
         super()._init_buffer()
         if self._arr is None:
-            self._arr = np.frombuffer(self._pmappedMemory, self.dtype).reshape(self.shape)
+            self._arr = np.frombuffer(self._pmappedMemory, self.dtype).reshape(
+                self.shape
+            )
 
     @staticmethod
     def fromArr(arr, binding=None, app=None):
-        bufferObject = ArrayBuffer(
+        bufferObject = GPUArray(
             arr.shape, arr.dtype, arr.strides, binding=binding, app=app
         )
         bufferObject.setData(arr)
@@ -776,33 +829,31 @@ class ArrayBuffer(ObjectBuffer):
 
     def setData(self, arr, byte_offset=0):
         if self._isInitialized:
-            ctypes.memmove(self._arr.ctypes.data + byte_offset, arr.ctypes.data, arr.nbytes)
+            ctypes.memmove(
+                self._arr.ctypes.data + byte_offset, arr.ctypes.data, arr.nbytes
+            )
         else:
             self._delayedSetDataList.append((arr, byte_offset))
-            
-        return arr.nbytes
 
-    def clearData(self):
-        # TODO: allow partial clearing
-        ctypes.memset(self._arr.ctypes.data, 0, self.nbytes)
+        return arr.nbytes
 
     def getData(self):
         return self._arr
 
 
-class StructBuffer(ObjectBuffer):
+class GPUStruct(GPUObject):
     def __init__(self, bufferSize=0, binding=None, app=None):
         super().__init__(bufferSize=bufferSize, uniform=True, binding=binding, app=app)
 
     def fromStruct(struct, binding=None, app=None):
         bufferSize = ctypes.sizeof(struct)
-        bufferObject = StructBuffer(bufferSize=bufferSize, binding=binding, app=app)
+        bufferObject = GPUStruct(bufferSize=bufferSize, binding=binding, app=app)
         bufferObject.setData(struct)
         return bufferObject
 
     # def fromStruct(structPtr, binding=None, app=None):
     # bufferSize = ffi.sizeof(structPtr[0])
-    # bufferObject = StructBuffer(bufferSize=bufferSize, binding=binding, app=app)
+    # bufferObject = GPUStruct(bufferSize=bufferSize, binding=binding, app=app)
     # bufferObject.setData(structPtr)
     # return bufferObject
 
@@ -821,7 +872,7 @@ class StructBuffer(ObjectBuffer):
             ctypes.memmove(ptr, ctypes.byref(struct), self._bufferSize)
         else:
             self._delayedSetDataList.append((struct,))
-        
+
     def getData(self):
         # not implemented
         pass

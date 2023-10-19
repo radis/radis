@@ -99,14 +99,10 @@ def gpu_init(
 
     global app
 
-    from radis.gpu.vulkan.vulkan_compute_lib import (
-        ComputeApplication,
-        StructBuffer,
-        ArrayBuffer,
-    )
+    from radis.gpu.vulkan.vulkan_compute_lib import GPUApplication, GPUArray, GPUStruct
 
     shader_path = os.path.join(getProjectRoot(), "gpu", "vulkan", "shaders")
-    app = ComputeApplication(deviceID=1, path=shader_path)
+    app = GPUApplication(deviceID=1, path=shader_path)
 
     ## Next, the GPU is made aware of a number of parameters.
     ## Parameters that don't change during iteration are stored
@@ -161,8 +157,6 @@ def gpu_init(
     if verbose >= 2:
         print("Allocating device memory and copying data...")
 
-
-
     ## Next the variables are initialized on the GPU. Constant variables
     ## that don't change (i.e. pertaining to the database) are immediately
     ## copied to the GPU through GPUArray.fromArray().
@@ -176,11 +170,11 @@ def gpu_init(
         [np.sum(arr.shape[:-1]) if len(arr.shape) > 1 else 1 for arr in database_arrays]
     )
 
-    app.init_d = StructBuffer.fromStruct(init_h, binding=0)
-    app.iter_d = StructBuffer.fromStruct(iter_h, binding=1)
+    app.init_d = GPUStruct.fromStruct(init_h, binding=0)
+    app.iter_d = GPUStruct.fromStruct(iter_h, binding=1)
 
-    app.database_d = ArrayBuffer(
-        (N_db,  init_h.N_lines),
+    app.database_d = GPUArray(
+        (N_db, init_h.N_lines),
         np.float32,  # Not all arrays are np.float32, but it doesn't matter because all dtypes have size 4 (=sizeof(float32)), and the host never reads this buffer.
         binding=2,
     )
@@ -189,34 +183,30 @@ def gpu_init(
     for arr in database_arrays:
         byte_offset += app.database_d.setData(arr, byte_offset=byte_offset)
 
-    app.S_klm_d = ArrayBuffer((N_L_max, N_G_max, init_h.N_v_FT), np.float32, binding=3)
-    app.S_klm_FT_d = ArrayBuffer(
+    app.S_klm_d = GPUArray((N_L_max, N_G_max, init_h.N_v_FT), np.float32, binding=3)
+    app.S_klm_FT_d = GPUArray(
         (N_L_max, N_G_max, init_h.N_x_FT), np.complex64, binding=4
     )
 
-    app.spectrum_FT_d = ArrayBuffer((init_h.N_x_FT,), np.complex64, binding=5)
-    app.spectrum_d = ArrayBuffer((init_h.N_v_FT,), np.float32, binding=6)
+    app.spectrum_FT_d = GPUArray((init_h.N_x_FT,), np.complex64, binding=5)
+    app.spectrum_d = GPUArray((init_h.N_v_FT,), np.float32, binding=6)
 
     # Write command buffer:
-    N_tpb = 128 #threads per block
+    N_tpb = 128  # threads per block
     threads = (N_tpb, 1, 1)
-    
-    #app.command_list = [
-    app.addTimestamp("start")
-    
-    app.clearBuffer(app.S_klm_d, timestamp=True)
-    
-    app.fillLDM((init_h.N_lines // N_tpb + 1, 1, 1), threads, timestamp=True)
-    
-    app.fft(app.S_klm_d, app.S_klm_FT_d, timestamp=True)
-    
-    app.applyLineshapes((init_h.N_x_FT // N_tpb + 1, 1, 1), threads, timestamp=True)
-    
-    app.ifft(app.spectrum_FT_d, app.spectrum_d, timestamp=True)
-    #]
-    
-    app.endCommandBuffer()
-    #app.writeCommandBuffer()
+
+    app.command_list = [
+        app.addTimestamp("start"),
+        app.clearBuffer(app.S_klm_d, timestamp=True),
+        app.fillLDM((init_h.N_lines // N_tpb + 1, 1, 1), threads, timestamp=True),
+        app.fft(app.S_klm_d, app.S_klm_FT_d, timestamp=True),
+        app.applyLineshapes(
+            (init_h.N_x_FT // N_tpb + 1, 1, 1), threads, timestamp=True
+        ),
+        app.ifft(app.spectrum_FT_d, app.spectrum_d, timestamp=True),
+    ]
+
+    app.writeCommandBuffer()
 
     if verbose >= 2:
         print("done!")
