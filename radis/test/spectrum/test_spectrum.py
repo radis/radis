@@ -536,6 +536,10 @@ def test_normalization(*args, **kwargs):
         s3.crop(2125, 2150).get_integral("radiance", wunit=s3.get_waveunit()), 1
     )
 
+    w, I = s.get("radiance")
+    s4 = s.normalize(wrange=w[18047])
+    assert np.isclose(s4.get("radiance")[1][18047], 1)
+
 
 @pytest.mark.fast
 def test_sort(*args, **kwargs):
