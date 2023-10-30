@@ -26,7 +26,7 @@ class GPUApplication(object):
         self._nextDstBinding = 0
         self._timestampLabels = []
         self._bufferObjects = []
-        self._deviceID = deviceID
+        # self._deviceID = deviceID
         self._shaderPath = path
         self._fftApps = {}
 
@@ -49,7 +49,7 @@ class GPUApplication(object):
 
         # Initialize vulkan
         self.createInstance()
-        self.findPhysicalDevice()
+        self.selectPhysicalDevice(deviceID)
         self.createDevice()
         self.init_shaders()
 
@@ -237,27 +237,38 @@ class GPUApplication(object):
         # Having created the instance, we can actually start using vulkan.
         self._instance = vk.vkCreateInstance(createInfo, None)
 
-    def findPhysicalDevice(self):
-        # In this function, we find a physical device that can be used with Vulkan.
-        # So, first we will list all physical devices on the system with vkEnumeratePhysicalDevices.
+    def selectPhysicalDevice(self, deviceID, verbose=True):
         devices = vk.vkEnumeratePhysicalDevices(self._instance)
 
-        if self._deviceID < 0:
-            self._deviceID += len(devices)
-        if not 0 <= self._deviceID < len(devices):
-            self._deviceID = 0
+        if isinstance(deviceID, str):
+            test_str = deviceID.upper()
+            for deviceID, device in enumerate(devices):
+                props = vk.vkGetPhysicalDeviceProperties(device)
+                devname = vk.ffi.string(props.obj.deviceName).decode()
+                if test_str in devname.upper():
+                    break
+            else:
+                deviceID = 0
+        else:
+            if deviceID < 0:
+                deviceID += len(devices)
+            if not 0 <= deviceID < len(devices):
+                deviceID = 0
+
+        self._deviceID = deviceID
         self._physicalDevice = devices[self._deviceID]
 
-        print("Selected card (deviceID={:d}):".format(self._deviceID))
-        for i, device in enumerate(devices):
-            props = vk.vkGetPhysicalDeviceProperties(device)
-            devname = vk.ffi.string(props.obj.deviceName).decode()
-            print(
-                "[{:s}] {:d}: {:s}".format(
-                    "X" if i == self._deviceID else " ", i, devname
+        if verbose:
+            print("Selected card (deviceID={:d}):".format(self._deviceID))
+            for i, device in enumerate(devices):
+                props = vk.vkGetPhysicalDeviceProperties(device)
+                devname = vk.ffi.string(props.obj.deviceName).decode()
+                print(
+                    "[{:s}] {:d}: {:s}".format(
+                        "X" if i == self._deviceID else " ", i, devname
+                    )
                 )
-            )
-        print("")
+            print("")
 
     # Returns the index of a queue family that supports compute operations.
     def getComputeQueueFamilyIndex(self):

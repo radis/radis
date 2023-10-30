@@ -48,7 +48,8 @@ def gpu_init(
     Mm_arr,
     Q_intp_list,
     verbose=0,
-    backend="gpu-cuda",
+    backend="gpu-vulkan",
+    device_id=0,
 ):
     """
     Initialize GPU-based calculation for emission and absorption spectra in spectroscopy.
@@ -89,7 +90,8 @@ def gpu_init(
         Print verbosity level. Default is 0.
     backend :  ``'gpu-cuda'``, ``'cpu-cuda'``, optional
         Which backend to use; currently only CUDA backends (Nvidia) are supported. ``'cpu-cuda'`` runs the kernel on CPU. Default is ``'gpu-cuda'``.
-
+    device_id : int
+        The id of the selected GPU. Check the console output for more details.
     Returns
     -------
     init_h : radis.gpu.structs.initData_t
@@ -102,7 +104,7 @@ def gpu_init(
     from radis.gpu.vulkan.vulkan_compute_lib import GPUApplication, GPUArray, GPUStruct
 
     shader_path = os.path.join(getProjectRoot(), "gpu", "vulkan", "shaders")
-    app = GPUApplication(deviceID=0, path=shader_path)
+    app = GPUApplication(deviceID=device_id, path=shader_path)
 
     ## Next, the GPU is made aware of a number of parameters.
     ## Parameters that don't change during iteration are stored

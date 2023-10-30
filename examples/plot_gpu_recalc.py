@@ -37,6 +37,7 @@ s = sf.eq_spectrum_gpu(
     pressure=1,  # bar
     mole_fraction=0.8,
     path_length=0.2,  # cm
+    # device_id='intel',
     exit_gpu=False,
 )
 s.apply_slit(0.5, unit="cm-1")  # cm-1

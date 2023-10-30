@@ -965,7 +965,8 @@ class SpectrumFactory(BandFactory):
         path_length=None,
         pressure=None,
         name=None,
-        backend="gpu-cuda",
+        backend="gpu-vulkan",
+        device_id=0,
         exit_gpu=True,
     ) -> Spectrum:
         """Generate a spectrum at equilibrium with calculation of lineshapes
@@ -1158,6 +1159,7 @@ class SpectrumFactory(BandFactory):
             Q_interp_list,
             verbose=verbose,
             backend=backend,
+            device_id=device_id,
         )
         if verbose >= 2:
             print("Initialization complete!")
