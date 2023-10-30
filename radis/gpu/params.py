@@ -48,6 +48,9 @@ def init_L_params(na, gamma_arr, verbose=False):
                     else:
                         break
 
+            while X[i] == xi:
+                i -= 1
+
             A = A[: i + 1] + [key]
             B = B[: i + 1] + [np.log(test_dict[key])]
             X = X[: i + 1] + [xi]

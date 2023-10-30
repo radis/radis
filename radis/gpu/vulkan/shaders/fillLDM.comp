@@ -2,8 +2,7 @@
 #extension GL_EXT_scalar_block_layout : enable
 layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
 layout (constant_id = 3) const int HAS_ATOMIC_ADD_FLOAT = 0; //this value is updated by the host code
-#define FLOAT_TYPE uint
-//#define FLOAT_TYPE float // if (HAS_ATOMIC_ADD_FLOAT)
+#define float_atomic_t uint
 
 layout(std430, binding = 0) uniform initData{
     float v_min;
@@ -40,14 +39,10 @@ layout(std430, binding = 2) readonly buffer database_SSBO {
 };
 
 layout(std430, binding = 3) buffer SSBO1 {
-  FLOAT_TYPE data_LDM_d[];
+  float_atomic_t S_klm_d[];
 };
 
-
-// if (HAS_ATOMIC_ADD_FLOAT):
-// #extension GL_EXT_shader_atomic_float : enable
-// #define atomicAddFloatX(MEM, INDATA) atomicAdd(MEM, INDATA)
-// else:
+#ifdef VULKAN
 #define atomicAddFloatX(MEM, INDATA)      \
 {                                         \
     uint expected_mem = MEM;              \
@@ -59,7 +54,7 @@ layout(std430, binding = 3) buffer SSBO1 {
          returned_mem = atomicCompSwap(MEM, expected_mem, new_mem); \
     } \
 }
-
+#endif
 
 void main() {
 
@@ -106,13 +101,13 @@ void main() {
 
     float I_data = iter_d.N * iter_d.x[0] * S0 * (exp(-iter_d.c2T * El) - exp(-iter_d.c2T * (El + v0))) / iter_d.Q[iso];
 
-    atomicAddFloatX(data_LDM_d[k0i*sv + l0i*sG + m0i*sL], (1 - avi) * (1 - aGi) * (1 - aLi) * I_data);
-    atomicAddFloatX(data_LDM_d[k0i*sv + l0i*sG + m1i*sL], (1 - avi) * (1 - aGi) *      aLi  * I_data);
-    atomicAddFloatX(data_LDM_d[k0i*sv + l1i*sG + m0i*sL], (1 - avi) *      aGi  * (1 - aLi) * I_data);
-    atomicAddFloatX(data_LDM_d[k0i*sv + l1i*sG + m1i*sL], (1 - avi) *      aGi  *      aLi  * I_data);
-    atomicAddFloatX(data_LDM_d[k1i*sv + l0i*sG + m0i*sL],      avi  * (1 - aGi) * (1 - aLi) * I_data);
-    atomicAddFloatX(data_LDM_d[k1i*sv + l0i*sG + m1i*sL],      avi  * (1 - aGi) *      aLi  * I_data);
-    atomicAddFloatX(data_LDM_d[k1i*sv + l1i*sG + m0i*sL],      avi  *      aGi  * (1 - aLi) * I_data);
-    atomicAddFloatX(data_LDM_d[k1i*sv + l1i*sG + m1i*sL],      avi  *      aGi  *      aLi  * I_data);
+    atomicAddFloatX(S_klm_d[k0i*sv + l0i*sG + m0i*sL], (1 - avi) * (1 - aGi) * (1 - aLi) * I_data);
+    atomicAddFloatX(S_klm_d[k0i*sv + l0i*sG + m1i*sL], (1 - avi) * (1 - aGi) *      aLi  * I_data);
+    atomicAddFloatX(S_klm_d[k0i*sv + l1i*sG + m0i*sL], (1 - avi) *      aGi  * (1 - aLi) * I_data);
+    atomicAddFloatX(S_klm_d[k0i*sv + l1i*sG + m1i*sL], (1 - avi) *      aGi  *      aLi  * I_data);
+    atomicAddFloatX(S_klm_d[k1i*sv + l0i*sG + m0i*sL],      avi  * (1 - aGi) * (1 - aLi) * I_data);
+    atomicAddFloatX(S_klm_d[k1i*sv + l0i*sG + m1i*sL],      avi  * (1 - aGi) *      aLi  * I_data);
+    atomicAddFloatX(S_klm_d[k1i*sv + l1i*sG + m0i*sL],      avi  *      aGi  * (1 - aLi) * I_data);
+    atomicAddFloatX(S_klm_d[k1i*sv + l1i*sG + m1i*sL],      avi  *      aGi  *      aLi  * I_data);
 
 }

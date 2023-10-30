@@ -102,7 +102,7 @@ def gpu_init(
     from radis.gpu.vulkan.vulkan_compute_lib import GPUApplication, GPUArray, GPUStruct
 
     shader_path = os.path.join(getProjectRoot(), "gpu", "vulkan", "shaders")
-    app = GPUApplication(deviceID=1, path=shader_path)
+    app = GPUApplication(deviceID=0, path=shader_path)
 
     ## Next, the GPU is made aware of a number of parameters.
     ## Parameters that don't change during iteration are stored

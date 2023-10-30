@@ -1,7 +1,7 @@
 #version 450
 #extension GL_EXT_scalar_block_layout : enable
 layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
-
+#define complex64_t vec2
 
 
 
@@ -36,11 +36,11 @@ layout(std430, binding = 1) uniform iterData{
 } iter_d;
 
 layout(std430, binding = 4) readonly buffer SSBO1 {
-   vec2 data_LDM_FT_d[];
+   complex64_t data_LDM_FT_d[];
 };
 
 layout(std430, binding = 5) writeonly buffer SSBO2 {
-   vec2 spectrum_FT_d[];
+   complex64_t spectrum_FT_d[];
 };
 
 
@@ -60,7 +60,7 @@ void main() {
     float wG = 0.0;
     float wL = 0.0;
     float mul = 0.0;
-    vec2 res = vec2(0.0, 0.0);
+    complex64_t res = complex64_t(0.0, 0.0);
     float x = k / (init_d.N_v_FT * init_d.dv);
 
     for (int l=0; l < iter_d.N_G; l++){
