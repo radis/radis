@@ -57,6 +57,7 @@ import numpy as np
 from numpy import abs, diff
 
 from radis.db.references import doi
+from radis.gpu.gpu import gpu_iterate
 
 # from radis.lbl.base import print_conditions
 from radis.misc.arrays import (
@@ -69,6 +70,7 @@ from radis.misc.arrays import (
 )
 from radis.misc.debug import printdbg
 from radis.misc.plot import split_and_plot_by_parts
+from radis.misc.profiler import Profiler
 from radis.misc.signal import resample, resample_even
 from radis.misc.warning import GPUInitWarning
 from radis.phys.air import air2vacuum, vacuum2air
@@ -5334,7 +5336,9 @@ class Spectrum(object):
                 I.append(s.recalc_gpu('radiance', Tgas=T)
 
         """
-
+        profiler = Profiler(False)
+        profiler.start("spectrum_calculation", 1)
+        profiler.start("setting_params", 2)
         try:
             self.conditions["gpu_backend"]
 
@@ -5358,7 +5362,8 @@ class Spectrum(object):
         if slit_function is not None:
             self.conditions["slit_function"] = slit_function
 
-        from radis.gpu.gpu import gpu_iterate
+        profiler.stop("setting_params", "Input parameters set")
+        profiler.start("gpu_iterate", 2)
 
         abscoeff, iter_params, times = gpu_iterate(
             self.conditions["pressure"],
@@ -5369,9 +5374,11 @@ class Spectrum(object):
             # l=s.conditions["path_length"],
             # slit_FWHM=s.conditions["slit_function"],
         )
+        profiler.stop("gpu_iterate", "GPU calculations done")
+        profiler.start("spectral_quantities", 2)
+
         self.conditions["NwL"] = iter_params.N_L
         self.conditions["NwG"] = iter_params.N_G
-        self.conditions["calculation_time"] = times["total"] * 1e-3
 
         # TODO : refactor this function and the update() mechanism. Ensure conditions are correct.
         for k in list(self._q.keys()):  # reset all quantities
@@ -5388,7 +5395,11 @@ class Spectrum(object):
             wunit=wunit,
             Iunit=Iunit,
         )
-
+        profiler.stop("spectral_quantities", "Calculated spectral qunatities")
+        profiler.stop("spectrum_calculation", "Spectrum calculated")
+        self.conditions["calculation_time"] = profiler.final["spectrum_calculation"][
+            "value"
+        ]
         return new_y
 
 
