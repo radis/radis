@@ -390,6 +390,7 @@ EXOMOL_MOLECULES = [
     "SiO",
     "SiO2",
     "SiS",
+    "SO",
     "TiH",
     "TiO",
     "VO",
