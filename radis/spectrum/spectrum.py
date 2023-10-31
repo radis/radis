@@ -4132,7 +4132,8 @@ class Spectrum(object):
         g_fit
             the fitted model
         y_err
-            uncertainty on the fitted parameters
+            uncertainty on the fitted parameters calculated as the square root
+            of the diagonal of the covariance matrix
 
         Examples
         --------

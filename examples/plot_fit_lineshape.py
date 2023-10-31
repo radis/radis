@@ -13,21 +13,19 @@ models, among :py:class:`astropy.modeling.functional_models.Gaussian1D`,
 :py:class:`astropy.modeling.functional_models.Lorentz1D` or :py:class:`astropy.modeling.functional_models.Voigt1D`
 
 """
-
-
 from radis import Spectrum, calc_spectrum
 from radis.test.utils import getTestFile
 
-real_experiment = False
+real_experiment = True
 if real_experiment:
-    T_ref = 7000
+    T_ref = 7515  # for index 9
     # If using a real experiment from Minesi et al. (2022) - doi:10.1007/s00340-022-07931-7
     s = Spectrum.from_mat(
         getTestFile("trimmed_1857_VoigtCO_Minesi.mat"),
         "absorbance",
         wunit="cm-1",
         unit="",
-        index=10,
+        index=9,
     )
 else:
     # If using a generated experimental spectrum
@@ -50,8 +48,7 @@ else:
         wunit="cm-1",
         unit="",
     )
-# %%
-# Fix baseline & Fit 3 Voigts profiles :
+# %% Fit 3 Voigts profiles :
 from astropy.modeling import models
 
 list_models = [models.Voigt1D() for _ in range(3)]
@@ -85,9 +82,9 @@ for index in [0, 1]:
     step2 = step / T0
     temp_ratio = step / (
         log(R) + log(S0[index] / S0[i0]) + step2
-    )  # see Goldenstein(2016), Eq. 6
+    )  # see Goldenstein et al. (2016), Eq. 6
     print(
-        "Line pair: {0}/{1} \t T = {2:.0f} K, accuracy of {3:.0f}%".format(
+        "Line pair: {0}/{1} \t T = {2:.0f} K, error of {3:.0f}%".format(
             name[index], name[i0], temp_ratio, temp_ratio / T_ref * 100 - 100
         )
     )
@@ -96,7 +93,7 @@ msg = """
 **Result**: this fitting routine and the R(8,24)/(P(1,25) line pair
 are appropriate for temperature measurement. The R(4,7)/(P(1,25)
 line pair requires a more sophiscated fitting routine, due to the
-underlying transition at 2011 cm-1 from R(10,115), see
+underlying transition at 2011 cm-1 from R(10,115), see Minesi et al. (2022)
 """
 print(msg)
 #%% Get temperature from line ratio - accounting for stimulated emission
@@ -130,11 +127,10 @@ for index in [0, 1]:
 
     temp_interp = np.interp(R_meas, R_calc, T_K)
     print(
-        "Line pair: {0}/{1} \t T = {2:.0f} K, accuracy of {3:.0f}%".format(
+        "Line pair: {0}/{1} \t T = {2:.0f} K, error of {3:.0f}%".format(
             name[index], name[i0], temp_interp, temp_interp / T_ref * 100 - 100
         )
     )
-
 #%% Linestrength vs temperature
 # import matplotlib.pyplot as plt
 # for index in [0, 1, 2]:
