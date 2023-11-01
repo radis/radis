@@ -337,6 +337,7 @@ EXOMOL_MOLECULES = [
     "H2_p",
     "H3O_p",
     "H3_p",
+    "HBr",
     "HCN",
     "HCl",
     "HF",
