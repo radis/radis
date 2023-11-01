@@ -513,12 +513,15 @@ class Spectrum(object):
                     # this also checks that all arrays have same length
                     self._add_quantity(k, w, I, check_wavespace=False)
 
-        # Check condition units:
+        # Check condition units :
         for k, v in conditions.items():
-            if isinstance(v, u.quantity.Quantity):
+            if hasattr(v, "unit"):
                 if k in cond_units:
                     # assert units match
                     assert v.unit == cond_units[k]
+                else:
+                    # add in cond units
+                    cond_units[k] = v.unit
 
         # Finally, add our attributes
         self.conditions = self.c = conditions
@@ -1127,6 +1130,72 @@ class Spectrum(object):
         # Store filename
         s.file = file
         return s
+        conditions: dictionary
+            Conditions metadata added to the Spectrum object. see :py:class:`~radis.spectrum.spectrum.Spectrum`
+            doc. Note that ``Tgas`` and ``pressure`` are automatically read from
+            the cross-section file.
+
+        """
+
+        from radis.api.hitranapi import hitranxsc
+
+        data = hitranxsc(file)
+
+        from radis.phys.units import Unit as u
+
+        conditions.update(
+            {"pressure": data["P"] * u("Torr"), "Tgas": data["T"] * u("K")}
+        )
+        return Spectrum.from_array(
+            data["wavenumber"],
+            data["spectrum"],
+            name=data["name"],
+            quantity="xsection",  # cm2/molecule
+            wunit="cm-1",
+            Iunit="cm2/molecule",
+            conditions=conditions,
+        )
+
+
+    @classmethod
+    def from_xsc(
+        self,
+        file,
+        conditions={},
+    ):
+        """Generates a Spectrum from a manually downloaded HITRAN cross-section file
+        under `.xsc` format. Uses :py:func:`~radis.api.hitran.hitranapi.hitranxsc`
+
+
+        Parameters
+        ----------
+        file: str
+            file name
+        conditions: dictionary
+            Conditions metadata added to the Spectrum object. see :py:class:`~radis.spectrum.spectrum.Spectrum`
+            doc. Note that ``Tgas`` and ``pressure`` are automatically read from
+            the cross-section file.
+
+        """
+
+        from radis.api.hitranapi import hitranxsc
+
+        data = hitranxsc(file)
+
+        from radis.phys.units import Unit as u
+
+        conditions.update(
+            {"pressure": data["P"] * u("Torr"), "Tgas": data["T"] * u("K")}
+        )
+        return Spectrum.from_array(
+            data["wavenumber"],
+            data["spectrum"],
+            name=data["name"],
+            quantity="xsection",  # cm2/molecule
+            wunit="cm-1",
+            Iunit="cm2/molecule",
+            conditions=conditions,
+        )
 
     # Public functions
     # %% ======================================================================
