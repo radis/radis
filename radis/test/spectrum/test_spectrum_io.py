@@ -81,7 +81,6 @@ def test_reading_from_Matlab(verbose=True, plot=False, *args, **kwargs):
     assert np.isclose(s.get("absorbance")[1][100], 0.005560075444710532)
 
 
-
 def test_xsc_io(plot=False, *args, **kwargs):
     """Test Spectrum created from manually downloaded hitran cross section"""
 
@@ -98,7 +97,6 @@ def test_xsc_io(plot=False, *args, **kwargs):
     if plot:
         s.plot()
 
-    
 
 if __name__ == "__main__":
     test_specutils_io(plot=True)
