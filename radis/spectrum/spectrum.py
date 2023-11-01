@@ -91,7 +91,7 @@ from radis.spectrum.utils import (
 )
 from radis.tools.track_ref import RefTracker
 
-# %% Spectrum class to hold results )
+# %% Spectrum class to hold results
 
 
 def _is_running_in_notebook():
@@ -512,6 +512,13 @@ class Spectrum(object):
                 else:
                     # this also checks that all arrays have same length
                     self._add_quantity(k, w, I, check_wavespace=False)
+
+        # Check condition units:
+        for k, v in conditions.items():
+            if isinstance(v, u.quantity.Quantity):
+                if k in cond_units:
+                    # assert units match
+                    assert v.unit == cond_units[k]
 
         # Finally, add our attributes
         self.conditions = self.c = conditions
@@ -3739,11 +3746,81 @@ class Spectrum(object):
 
         See Also
         --------
-        :py:meth:`~radis.spectrum.Spectrum.print_conditions`,
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.get_conditions`,
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.print_conditions`,
         :ref:`the Spectrum page <label_spectrum>`
         """
 
         return self.conditions
+
+    def get_condition(self, condition, unit="default", return_unit=False):
+        """Get condition in arbitrary unit
+
+        If condition was stored as a dimensioned value, return a dimensioend value (converted to the right unit)
+        If condition was stored as a non dimensioned value, return a non dimensioned value (still converted to the right unit)
+
+        Parameters
+        ----------
+        condition: str
+            condition name
+        unit: str
+            unit name
+        return_unit: bool
+            if True, return value and unit separately (value is not dimensioned in this case)
+
+        Examples
+        --------
+        Get pressure (as float, non dimensioned) in Pascal::
+
+            s = radis.test_spectrum()
+            pressure_Pa, _ = s.get_condition("pressure", "Pa", return_unit=True)
+
+        Get pressure and convert it to a dimensioned value::
+
+            from radis.phys.units import Unit as u
+            s = radis.test_spectrum()
+            pressure_value, pressure_unit = s.get_condition("pressure", return_unit=True)
+            pressure = pressure_value * u(pressure_unit)
+
+
+
+        """
+
+        cond = self.conditions[condition]
+
+        if unit == "default":
+            if return_unit:
+                if hasattr(cond, "unit"):
+                    return cond.value, cond.unit
+                else:
+                    if condition not in self.cond_units:
+                        raise ValueError(
+                            f"Unit of condition {condition} not defined in s.cond_units"
+                        )
+                    return cond, self.cond_units[condition]
+            else:
+                return cond
+        else:
+            if return_unit:
+                if hasattr(cond, "unit"):
+                    return cond.to(unit).value, unit
+                else:
+                    if condition not in self.cond_units:
+                        raise ValueError(
+                            f"Unit of condition {condition} not defined in s.cond_units"
+                        )
+                    return (cond * u.Unit(self.cond_units[condition])).to(
+                        unit
+                    ).value, unit
+            else:
+                # If was dimensioned, return a dimensioend value (converted to the right unit)
+                # If not dimensioned, return a non dimensioned value (still converted to the right unit)
+                if hasattr(cond, "unit"):
+                    return cond.to(unit)
+                else:
+                    return (cond * u.Unit(self.cond_units[condition])).to(unit).value
+
+        return
 
     def print_conditions(self, **kwargs):
         r"""Prints all physical / computational parameters.

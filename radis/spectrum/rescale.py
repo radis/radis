@@ -765,14 +765,20 @@ def rescale_abscoeff(
         if __debug__:  # cm-1
             printdbg("... rescale: abscoeff k_2 = XS_2 * (x * p) / (k_b * T)")
         xsection = rescaled["xsection"]  # x already scaled
-        pressure_Pa = spec.conditions["pressure"] * 1e5
+
+        # Get pressure, temperature in S.I. units :
+        pressure_Pa, _ = spec.get_condition("pressure", "Pa", return_unit=True)
+        Tgas_K, _ = spec.get_condition("Tgas", "K", return_unit=True)
         x = spec.conditions["mole_fraction"]
-        Tgas = spec.conditions["Tgas"]  # K
+
         from radis.phys.constants import k_b
 
-        abscoeff_init = xsection * (x * pressure_Pa / k_b / Tgas) * 1e-6  # cm2
+        abscoeff_init = xsection * (x * pressure_Pa / k_b / Tgas_K) * 1e-6  # cm2
         if "xsection" in spec.units:
-            assert spec.units["xsection"] == "cm2"
+            assert (
+                spec.units["xsection"] == "cm2"
+                or spec.units["xsection"] == "cm2/molecule"
+            )
         unit = "cm-1"
 
     elif "abscoeff" in extra:  # cant calculate this one but let it go
@@ -791,11 +797,17 @@ def rescale_abscoeff(
         )
     else:
         raise ValueError(
-            "Can't rescale abscoeff if not all of the following are given : transmittance_noslit ({0}) ".format(
+            "Can't rescale abscoeff if not all of the following are given : \n(1) (transmittance_noslit ({0}) ".format(
                 "transmittance_noslit" in initial
             )
-            + "or absorbance ({0}), ".format("absorbance" in initial)
-            + "and true_path_length ({0}). ".format(true_path_length)
+            + "OR absorbance ({0})) ".format("absorbance" in initial)
+            + "AND true_path_length ({0}). ".format(true_path_length)
+            + "\n(2) xsection ({0}) AND Tgas ({1}) AND pressure ({2}) AND mole_fraction ({3})".format(
+                "xsection" in initial,
+                "Tgas" in spec.conditions,
+                "pressure" in spec.conditions,
+                "mole_fraction" in spec.conditions,
+            )
         )
 
     # Then export rescaled value
@@ -1835,11 +1847,15 @@ def rescale_xsection(
         abscoeff = rescaled["abscoeff"]  # x already scaled
         assert spec.units["abscoeff"] == "cm-1"
 
+        # Get pressure, temperature in S.I. units :
+        pressure_Pa, _ = spec.get_condition("pressure", "Pa", return_unit=True)
+        Tgas_K, _ = spec.get_condition("Tgas", "K", return_unit=True)
+
         xsection = abscoeff2xsection(
             abscoeff_cm1=abscoeff,
-            Tgas_K=spec.conditions["Tgas"],
+            Tgas_K=Tgas_K,
             mole_fraction=spec.conditions["mole_fraction"],
-            pressure_Pa=spec.conditions["pressure"] * 1e5,
+            pressure_Pa=pressure_Pa,
         )
         unit = "cm2"
     else:
