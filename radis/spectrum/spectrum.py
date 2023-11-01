@@ -1168,7 +1168,12 @@ class Spectrum(object):
         from radis.phys.units import Unit as u
 
         conditions.update(
-            {"pressure": data["P"] * u("Torr"), "Tgas": data["T"] * u("K")}
+            {
+                "thermal_equilibrium": True,
+                "pressure": data["P"] * u("Torr"),
+                "Tgas": data["T"] * u("K"),
+                "molecule": data["molec"],
+            }
         )
         return Spectrum.from_array(
             data["wavenumber"],
@@ -4546,11 +4551,14 @@ class Spectrum(object):
         # Check output match the rest of the spectrum conditions
         try:
             assert conditions["Tgas"] != r"N/A"
-            assert conditions["Tvib"] == conditions["Tgas"]
-            assert conditions["Trot"] == conditions["Tgas"]
+            if "Tvib" in conditions:
+                assert conditions["Tvib"] == conditions["Tgas"]
+            if "Trot" in conditions:
+                assert conditions["Trot"] == conditions["Tgas"]
             if "overpopulation" in conditions:
                 assert conditions["overpopulation"] is None
-            assert conditions["self_absorption"]  # is True
+            if "self_absorption" in conditions:
+                assert conditions["self_absorption"]  # is True
 
         except AssertionError:
             guess = False
