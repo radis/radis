@@ -707,6 +707,9 @@ def _fix_format(file, sload):
             sload["conditions"].pop("pressure_mbar") * 1e-3
         )
         fixed = True
+    if "pressure_mbar" in sload["cond_units"]:
+        sload["cond_units"]["pressure"] = sload["cond_units"].pop("pressure_mbar")
+        fixed = True
 
     if "air_pressure_mbar" in sload["conditions"]:
         printr(
