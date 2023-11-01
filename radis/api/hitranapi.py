@@ -1764,7 +1764,8 @@ def hitranxsc(hitranXSC):
         data["P"] = float(info[5])  # Pressure (Torr)
         data["InstrumentResolution"] = float(info[7])
         data["name"] = info[8]  # Familiar name of molecule
-        data["Broadener"] = info[10]  # Temperature
+        if len(info) > 10:
+            data["Broadener"] = info[10]  # Broadening species
         data["wavenumber"] = np.linspace(min_nu, max_nu, N)  # Wavenumber range (cm-1)
 
     # Read all lines of file (except from header) and flatten into an array; knowing that all rows aren't the same length
