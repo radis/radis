@@ -1113,32 +1113,6 @@ class Spectrum(object):
         # Store filename
         s.file = file
         return s
-        conditions: dictionary
-            Conditions metadata added to the Spectrum object. see :py:class:`~radis.spectrum.spectrum.Spectrum`
-            doc. Note that ``Tgas`` and ``pressure`` are automatically read from
-            the cross-section file.
-
-        """
-
-        from radis.api.hitranapi import hitranxsc
-
-        data = hitranxsc(file)
-
-        from radis.phys.units import Unit as u
-
-        conditions.update(
-            {"pressure": data["P"] * u("Torr"), "Tgas": data["T"] * u("K")}
-        )
-        return Spectrum.from_array(
-            data["wavenumber"],
-            data["spectrum"],
-            name=data["name"],
-            quantity="xsection",  # cm2/molecule
-            wunit="cm-1",
-            Iunit="cm2/molecule",
-            conditions=conditions,
-        )
-
 
     @classmethod
     def from_xsc(
