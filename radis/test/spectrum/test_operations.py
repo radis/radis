@@ -374,10 +374,10 @@ def _run_testcases(verbose=True, plot=False, *args, **kwargs):
 
 if __name__ == "__main__":
 
-    from warnings import catch_warnings, filterwarnings
+    # from warnings import catch_warnings, filterwarnings
 
-    with catch_warnings():
-        filterwarnings("error")
-        _run_testcases(plot=True)
-
+    # with catch_warnings():
+    #     filterwarnings("error")
     # _run_testcases(plot=True)
+
+    _run_testcases(plot=True)
