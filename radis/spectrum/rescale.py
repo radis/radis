@@ -579,7 +579,7 @@ def update(
 
     # Get path length
     if "path_length" in list(spec.conditions.keys()):
-        path_length_cm = spec.conditions["path_length"]
+        path_length_cm, _ = spec.get_condition("path_length", "cm", return_unit=True)
         true_path_length = True
     else:
         path_length_cm = 1  # we dont know the exact path length, but some stuff can still be updated.
