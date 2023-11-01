@@ -1185,7 +1185,12 @@ class Spectrum(object):
         from radis.phys.units import Unit as u
 
         conditions.update(
-            {"pressure": data["P"] * u("Torr"), "Tgas": data["T"] * u("K")}
+            {
+                "thermal_equilibrium": True,
+                "pressure": data["P"] * u("Torr"),
+                "Tgas": data["T"] * u("K"),
+                "molecule": data["molec"],
+            }
         )
         return Spectrum.from_array(
             data["wavenumber"],
@@ -4828,7 +4833,8 @@ class Spectrum(object):
                 assert conditions["Trot"] == conditions["Tgas"]
             if "overpopulation" in conditions:
                 assert conditions["overpopulation"] is None
-            assert conditions["self_absorption"]  # is True
+            if "self_absorption" in conditions:
+                assert conditions["self_absorption"]  # is True
 
         except AssertionError:
             guess = False
