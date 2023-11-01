@@ -552,6 +552,59 @@ def test_sort(*args, **kwargs):
     assert is_sorted(s_exp.sort().get("radiance")[0])
 
 
+#%%
+@pytest.mark.fast
+def test_argmax_argmin(*args, **kwargs):
+    """Test :py:meth:`~radis.spectrum.spectrum.Spectrum.argmax`
+    and :py:meth:`~radis.spectrum.spectrum.Spectrum.argmin`"""
+
+    from radis import load_spec
+    from radis.test.utils import getTestFile
+
+    s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
+
+    assert np.isclose(s.take("abscoeff").argmax(value_only=True), 2203.1603911193806)
+    assert np.isclose(s.take("abscoeff").argmin(value_only=True), 2144.215391118094)
+
+
+def test_fitting_lineshape(verbose=False, plot=False, *args, **kwargs):
+    """Test :py:meth:`~radis.spectrum.spectrum.Spectrum.fit_model``"""
+
+    from radis import Spectrum
+    from radis.test.utils import getTestFile
+
+    s = Spectrum.from_mat(
+        getTestFile("trimmed_1857_VoigtCO_Minesi.mat"),
+        "absorbance",
+        wunit="cm-1",
+        unit="",
+        index=10,
+    )
+
+    # Fix baseline & Fit 3 Voigts profiles :
+    from astropy.modeling import models
+
+    s += 0.002
+    gfit, y_err = s.fit_model(
+        [models.Voigt1D() for _ in range(3)],
+        confidence=0.9545,
+        plot=plot,
+        verbose=verbose,
+    )
+
+    assert np.isclose(gfit[0].x_0.value, 2011.4004821656893, atol=1e-5)
+    assert np.isclose(gfit[1].x_0.value, 2010.7262146624048, atol=1e-5)
+    assert np.isclose(gfit[2].x_0.value, 2011.0715924016497, atol=1e-5)
+
+    assert np.isclose(gfit[0].amplitude_L.value, 0.4493372678309748, atol=1e-5)
+    assert np.isclose(gfit[1].amplitude_L.value, 0.09824894900965533, atol=1e-5)
+    assert np.isclose(gfit[2].amplitude_L.value, 0.049188333571838126, atol=1e-5)
+
+    assert np.isclose(gfit[0].fwhm_L.value, 0.007149662717096372, atol=1e-5)
+    assert np.isclose(gfit[1].fwhm_L.value, 0.010284275703270292, atol=1e-5)
+    assert np.isclose(gfit[2].fwhm_L.value, 0.02030658150200352, atol=1e-5)
+
+
 # %%
 
 
@@ -591,6 +644,7 @@ def _run_testcases(
         verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs
     )
     test_store_functions(verbose=verbose, *args, **kwargs)
+    test_argmax_argmin(*args, **kwargs)
 
     # Test populations
     # ----------
@@ -618,6 +672,9 @@ def _run_testcases(
     # Test plot by parts
     test_plot_by_parts(plot=plot, *args, **kwargs)
     test_sort()
+
+    # Test spectrum fitting
+    test_fitting_lineshape(plot=plot, *args, **kwargs)
 
     return True
 

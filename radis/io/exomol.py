@@ -44,7 +44,7 @@ def fetch_exomol(
     molecule: ``str``
         ExoMol molecule
     database: ``str``
-        database name. Ex:: ``POKAZATEL`` or ``BT2`` for ``H2O``. See
+        database name. Ex: ``POKAZATEL`` or ``BT2`` for ``H2O``. See
         :py:data:`~radis.api.exomolapi.KNOWN_EXOMOL_DATABASE_NAMES`. If ``None`` and
         there is only one database available, use it.
     local_databases: ``str``

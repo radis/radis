@@ -436,6 +436,49 @@ def _failsafe_if_no_db(testcase, *args, **kwargs):
         return True
 
 
+#%%
+class EmulateMatlab:
+    def __init__(self):
+        r"""Creates a class that allows to use Matlab syntax in Radis,
+        in order to show & run valid Matlab syntax code directly from the
+        Python documentation and tests.
+        ::
+
+            py = EmulateMatlab()
+            py.radis.calc_spectrum()
+
+        It is used in the :ref:`Run from Matlab example <example_run_from_matlab>`
+
+        .. minigallery:: radis.test.utils.EmulateMatlab
+
+        Successful Radis in Matlab screenshots can be found in https://github.com/radis/radis/pull/547
+
+        """
+
+        import radis as py_radis
+
+        self.radis = py_radis
+
+    # Overload the __getattr__ method to catch all undefined methods
+    def __getattr__(self, name):
+        r"""catch all undefined methods and redirect to radis"""
+        return getattr(self.radis, name)
+
+    def __call__(self, *args, **kwargs):
+        r"""catch all undefined methods and redirect to radis"""
+        return self.radis(*args, **kwargs)
+
+    def __repr__(self):
+        return self.radis.__repr__()
+
+    def __str__(self):
+        return self.radis.__str__()
+
+    def __dir__(self):
+        return self.radis.__dir__()
+
+
+#%%
 if __name__ == "__main__":
     #    run_tests()
     setup_test_line_databases()

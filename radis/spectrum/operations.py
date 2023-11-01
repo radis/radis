@@ -1104,7 +1104,7 @@ def get_baseline(
     Examples
     --------
 
-    .. minigallery:: radis.spectrum.spectrum.Spectrum.get_baseline
+    .. minigallery:: radis.Spectrum.get_baseline
 
     See Also
     --------
