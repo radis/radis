@@ -36,6 +36,7 @@ radis/cython/*.cpp
 # C extensions
 *.so
 !radis/gpu/cuda/build/*.so
+!radis/gpu/vulkan/bin/*.so
 # Distribution / packaging
 .Python
 env/

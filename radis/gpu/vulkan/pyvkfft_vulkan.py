@@ -7,13 +7,14 @@
 
 import ctypes
 import os
-
-# from pyvkfft.tune import tune_vkfft
-import platform
-import sysconfig
+from os import name as os_name
 
 import numpy as np
 from vulkan import ffi
+
+# from pyvkfft.tune import tune_vkfft
+##import platform
+##import sysconfig
 
 
 def getVulkanPtr(obj):
@@ -31,26 +32,24 @@ from radis.gpu.vulkan.pyvkfft_base import (
 # from pyvkfft_base import VkFFTApp as VkFFTAppBase  # , check_vkfft_result
 
 
-def load_library(basename):
-    if platform.system() == "Windows":
-        # We patched build_ext so the module is a .so and not a dll
-        ext = ".so"
-    else:
-        ext = sysconfig.get_config_var("EXT_SUFFIX")
-    return ctypes.cdll.LoadLibrary(
-        os.path.join(os.path.dirname(__file__) or os.path.curdir, basename + ext)
-    )
+##def load_library(basename):
+##    if platform.system() == "Windows":
+##        # We patched build_ext so the module is a .so and not a dll
+##        ext = ".so"
+##    else:
+##        ext = sysconfig.get_config_var("EXT_SUFFIX")
+##    return ctypes.cdll.LoadLibrary(
+##        os.path.join(os.path.dirname(__file__) or os.path.curdir, basename + ext)
+##    )
 
 
-# _vkfft_vulkan = load_library("_vkfft_vulkan_homemade")
-
-vkfft_path = os.path.join(os.path.dirname(__file__), "bin", "vkfft_vulkan.dll")
-# _vkfft_vulkan = ctypes.cdll.LoadLibrary(r"C:\Users\dcmvd\Documents\GitHub\pyvkfft\src\vulkan\vkfft_vulkan.dll")
+libname = "vkfft_vulkan.dll" if os_name == "nt" else "vkfft_vulkan.so"
+vkfft_path = os.path.join(os.path.dirname(__file__), "bin", libname)
 _vkfft_vulkan = ctypes.cdll.LoadLibrary(vkfft_path)
 
 
-stdout = os.dup(1)
-silent = os.open(os.devnull, os.O_WRONLY)
+##stdout = os.dup(1)
+##silent = os.open(os.devnull, os.O_WRONLY)
 
 
 def prepare_fft(arr_in, arr_out=None, ndim=1, norm=1, compute_app=None, tune=False):
