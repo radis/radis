@@ -1218,7 +1218,9 @@ class MdbExomol(DatabaseManager):
 
                 mgr.write(mgr.cache_file(trans_file), trans)
 
-    def set_broadening_coef(self, df, alpha_ref_def=None, n_Texp_def=None, output=None, add_columns=True):
+    def set_broadening_coef(
+        self, df, alpha_ref_def=None, n_Texp_def=None, output=None, add_columns=True
+    ):
         """setting broadening parameters
 
         Parameters
@@ -1226,7 +1228,7 @@ class MdbExomol(DatabaseManager):
         df: Data Frame
         alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
         n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
-        add_columns: adds alpha_ref and n_Texp columns to df 
+        add_columns: adds alpha_ref and n_Texp columns to df
 
         Returns
         -------
