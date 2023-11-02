@@ -81,7 +81,7 @@ class LevelsList(object):
     def __init__(
         self, parfunc, bands, levelsfmt, sortby="Ei", copy_lines=False, verbose=True
     ):
-        """
+        r"""
         Parameters
         ----------
         bands: dict of bands
@@ -219,7 +219,7 @@ class LevelsList(object):
         }
 
     def _init_levels(self, sortby):
-        """
+        r"""
         Notes
         -----
 
@@ -288,7 +288,7 @@ class LevelsList(object):
             index[viblvl_l]["bands_where_low"].append(s)
 
     def plot_vib_populations(self, nfig=None, **kwargs):
-        """Plot current distribution of vibrational levels.
+        r"""Plot current distribution of vibrational levels.
 
         By constructions populations are shown as divided by the state degeneracy,
         i.e,            g =   gv   *   (2J+1)   *    gi    *     gs
@@ -319,7 +319,7 @@ class LevelsList(object):
     def _calc_vib_populations(
         self, Tvib, vib_distribution="boltzmann", overpopulation=None
     ):
-        """Calculate vibrational populations from Tref to new Tvib and store
+        r"""Calculate vibrational populations from Tref to new Tvib and store
         results in vib_levels dataframe This does not modify the spectra yet!
 
         By constructions populations are calculated divided by the state degeneracy,
@@ -417,7 +417,7 @@ class LevelsList(object):
         path_length=None,
         save_rescaled_bands=False,
     ):
-        """See :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`
+        r"""See :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`
 
         .. warning::
 
@@ -462,7 +462,7 @@ class LevelsList(object):
         path_length=None,
         save_rescaled_bands=False,
     ):
-        """See :py:meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`
+        r"""See :py:meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`
 
         .. warning::
 

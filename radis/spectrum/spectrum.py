@@ -549,7 +549,7 @@ class Spectrum(object):
         *args,
         **kwargs,
     ):
-        """Construct Spectrum from 2 arrays.
+        r"""Construct Spectrum from 2 arrays.
 
         Parameters
         ----------
@@ -723,7 +723,7 @@ class Spectrum(object):
 
     @classmethod
     def from_txt(self, file, quantity, wunit, unit, waveunit=None, *args, **kwargs):
-        """Construct Spectrum from txt file.
+        r"""Construct Spectrum from txt file.
 
         Parameters
         ----------
@@ -858,7 +858,7 @@ class Spectrum(object):
     def from_hdf5(
         self, file, wmin=None, wmax=None, wunit=None, columns=None, engine="pytables"
     ):
-        """Generates a Spectrum from an HDF5 file. Uses :py:func:`~radis.io.spec_hdf.hdf2spec`
+        r"""Generates a Spectrum from an HDF5 file. Uses :py:func:`~radis.io.spec_hdf.hdf2spec`
 
         Other Parameters
         ----------------
@@ -889,14 +889,14 @@ class Spectrum(object):
 
     @classmethod
     def from_spec(self, file):
-        """Generates a Spectrum from a .spec [json] file. Uses :py:func:`~radis.tools.database.load_spec`"""
+        r"""Generates a Spectrum from a .spec [json] file. Uses :py:func:`~radis.tools.database.load_spec`"""
         from radis.tools.database import load_spec
 
         return load_spec(file)
 
     @classmethod
     def from_specutils(self, spectrum, var="radiance"):
-        """Convert a ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D`
+        r"""Convert a :py:mod:`specutils` :py:class:`~specutils.spectra.spectrum1d.Spectrum1D`
         to a ``radis`` :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
         Parameters
@@ -929,7 +929,7 @@ class Spectrum(object):
             s.plot(wunit='nm')
 
 
-        .. minigallery:: radis.spectrum.spectrum.Spectrum.from_specutils
+        .. minigallery:: radis.Spectrum.from_specutils
 
         See Also
         --------
@@ -975,6 +975,137 @@ class Spectrum(object):
             conditions=conditions,
         )
 
+    @classmethod
+    def from_mat(
+        self,
+        file,
+        quantity,
+        wunit,
+        unit,
+        data_key=None,
+        w_name="nu",
+        I_name=None,
+        index=None,
+        *args,
+        **kwargs,
+    ):
+        r"""Construct Spectrum from Matlab ``.mat`` file.
+
+        Parameters
+        ----------
+        file: str
+            file name
+        quantity: str
+            spectral quantity name
+        wunit: ``'nm'``, ``'cm-1'``, ``'nm_vac'``
+            unit of waverange: wavelength in air (``'nm'``), wavenumber
+            (``'cm-1'``), or wavelength in vacuum (``'nm_vac'``).
+        unit: str
+            spectral quantity unit
+        index: int
+            index within Matlab ``.mat`` array.
+        data_key: str
+            data key to use within Matlab ``.mat`` array. If ``None``, guess.
+        w_name, I_name: str
+            key to use to parse the ``data[data_key]`` array and return waverange and quantity.
+        *args, **kwargs
+            the following inputs are forwarded to :py:func:`~scipy.io.loadmat`:
+            ``'simplify_cells'``, ``'skiprows'``
+            The rest if forwarded to Spectrum and will be registered as a
+            Spectrum condition. see :class:`~radis.spectrum.spectrum.Spectrum`
+            doc
+
+        Returns
+        -------
+        s: Spectrum
+            creates a :class:`~radis.spectrum.spectrum.Spectrum` object
+
+        Examples
+        --------
+
+        .. minigallery:: radis.Spectrum.from_mat
+
+        Notes
+        -----
+        Internally, the scipy :py:func:`~scipy.io.loadmat` function is used and
+        corresponds to ::
+
+            data = scipy.io.loadmat(file, **kwloadmat)
+            data = data[data_key]
+            w, I = data[w_name], data[I_name]
+
+        Special keywords can be given to ``kwloadmat``. See docs of ``kwargs``.
+
+        See Also
+        --------
+        :meth:`~radis.spectrum.spectrum.Spectrum.from_array`,
+        :func:`~radis.tools.database.load_spec`
+        """
+        from scipy.io import loadmat
+
+        # default loadmat reading arguments
+        kwloadmat = {"simplify_cells": True}
+        # override arguments
+        for k in ["simplify_cells"]:
+            if k in kwargs:
+                kwloadmat[k] = kwargs.pop(k)
+
+        data = loadmat(file, **kwloadmat)
+
+        if data_key is None:
+            guessed_key = [k for k in data.keys() if not k.startswith("_")]
+            if len(guessed_key) == 1:
+                data_key = guessed_key[0]
+            else:
+                raise ValueError(
+                    "data_key not given and could not be guessed. Available keys : {0}. Choose one and set `data_key=`".format(
+                        guessed_key
+                    )
+                )
+
+        data_array = data[data_key]
+        try:
+            w = data_array[w_name]
+        except KeyError:
+            raise KeyError(
+                "Could not find key {0} to parse waverange in data. Available keys : [{1}]".format(
+                    w_name, data_array.keys()
+                )
+            )
+        if I_name is None:
+            guessed_I_name = [k for k in data_array.keys() if k != w_name]
+            if len(guessed_I_name) == 1:
+                I_name = guessed_I_name[0]
+            else:
+                raise ValueError(
+                    "I_name not given and could not be guessed. Available keys : {0}. Choose one and set `I_name=`".format(
+                        guessed_I_name
+                    )
+                )
+        try:
+            I = data_array[I_name]
+        except KeyError:
+            raise KeyError(
+                "Could not find key {0} to parse quantity in data. Available keys : [{1}]".format(
+                    I_name, data_array.keys()
+                )
+            )
+
+        if index is not None:
+            I = I[:, index]
+
+        quantities = {quantity: (w, I)}
+        units = {quantity: unit}
+
+        # Update Spectrum conditions
+        conditions = kwargs.copy()
+
+        s = self(quantities, units, wunit=wunit, conditions=conditions)
+
+        # Store filename
+        s.file = file
+        return s
+
     # Public functions
     # %% ======================================================================
     # ----------------
@@ -989,7 +1120,7 @@ class Spectrum(object):
         trim_nan=False,
         return_units=False,
     ):
-        """Retrieve a spectral quantity from a Spectrum object. You can select
+        r"""Retrieve a spectral quantity from a Spectrum object. You can select
         wavespace unit, intensity unit, or propagation medium.
 
         Parameters
@@ -1189,7 +1320,7 @@ class Spectrum(object):
             return w, I
 
     def _get_wavespace(self, copy=True):
-        """Return wavespace (if the same for all quantities)
+        r"""Return wavespace (if the same for all quantities)
 
         Other Parameters
         ----------------
@@ -1213,7 +1344,7 @@ class Spectrum(object):
         return w
 
     def get_wavelength(self, medium="air", which=None, copy=True):
-        """Return wavelength in defined medium.
+        r"""Return wavelength in defined medium.
 
         Parameters
         ----------
@@ -1276,7 +1407,7 @@ class Spectrum(object):
         return w
 
     def get_wavenumber(self, which=None, copy=True):
-        """Return wavenumber (if the same for all quantities)
+        r"""Return wavenumber (if the same for all quantities)
 
         Other Parameters
         ----------------
@@ -1314,7 +1445,7 @@ class Spectrum(object):
         return w
 
     def get_radiance(self, Iunit="mW/cm2/sr/nm", copy=True):
-        """Return radiance in whatever unit, and can even convert from ~1/nm to
+        r"""Return radiance in whatever unit, and can even convert from ~1/nm to
         ~1/cm-1 (and the other way round)
 
         Other Parameters
@@ -1334,7 +1465,7 @@ class Spectrum(object):
         return self.get("radiance", Iunit=Iunit, copy=copy)[1]
 
     def get_radiance_noslit(self, Iunit="mW/cm2/sr/nm", copy=True):
-        """Return radiance (non convoluted) in whatever unit, and can even
+        r"""Return radiance (non convoluted) in whatever unit, and can even
         convert from ~1/nm to ~1/cm-1 (and the other way round)
 
         Other Parameters
@@ -1354,7 +1485,7 @@ class Spectrum(object):
         return self.get("radiance_noslit", Iunit=Iunit, copy=copy)[1]
 
     def get_name(self):
-        """Return Spectrum name.
+        r"""Return Spectrum name.
 
         If not defined, returns either the
         :attr:`~radis.spectrum.spectrum.Spectrum.file` name if Spectrum was
@@ -1386,7 +1517,7 @@ class Spectrum(object):
         return name
 
     def savetxt(self, filename, var, wunit="default", Iunit="default"):
-        """Export spectral quantity var to filename.
+        r"""Export spectral quantity var to filename.
 
         (note that by doing this you will loose additional information, such
          as the calculation conditions or the units. You better save a Spectrum
@@ -1449,7 +1580,7 @@ class Spectrum(object):
         )
 
     def update(self, quantity="all", optically_thin="default", verbose=True):
-        """Calculate missing quantities: ex: if path_length and emisscoeff are
+        r"""Calculate missing quantities: ex: if path_length and emisscoeff are
         given, recalculate radiance_noslit.
 
         Parameters
@@ -1503,7 +1634,7 @@ class Spectrum(object):
     def rescale_path_length(
         self, new_path_length, old_path_length=None, inplace=True, force=False
     ):
-        """Rescale spectrum to new path length. Starts from absorption
+        r"""Rescale spectrum to new path length. Starts from absorption
         coefficient and emission coefficient, and solves the RTE again for the
         new path length Convoluted values (with slit) are dropped in the
         process.
@@ -1548,7 +1679,7 @@ class Spectrum(object):
             import astropy.units as u
             s.rescale_path_length(1 * u.km).plot()
 
-        .. minigallery:: radis.spectrum.Spectrum.rescale_path_length
+        .. minigallery:: radis.Spectrum.rescale_path_length
 
         Notes
         -----
@@ -1579,7 +1710,7 @@ class Spectrum(object):
         force=False,
         verbose=True,
     ):
-        """Update spectrum with new molar fraction Convoluted values (with
+        r"""Update spectrum with new molar fraction Convoluted values (with
         slit) are dropped in the process.
 
         Parameters
@@ -1638,7 +1769,7 @@ class Spectrum(object):
         )
 
     def crop(self, wmin=None, wmax=None, wunit="default", inplace=True):
-        """Crop spectrum to ``wmin-wmax`` range in ``wunit``   (inplace)
+        r"""Crop spectrum to ``wmin-wmax`` range in ``wunit``   (inplace)
 
         Parameters
         ----------
@@ -1679,10 +1810,7 @@ class Spectrum(object):
 
         See Also
         --------
-        :func:`radis.spectrum.operations.crop`,
-        :func:`~radis.los.slabs.MergeSlabs`: if used with ``resample='full',
-        out='transparent'``, this becomes the opposite of cropping: can be used
-        to combine 2 adjacent spectra in one.
+        :func:`radis.spectrum.operations.crop`
         """
 
         from radis.spectrum.operations import crop
@@ -1693,7 +1821,7 @@ class Spectrum(object):
         return crop(self, wmin=wmin, wmax=wmax, wunit=wunit, inplace=inplace)
 
     def trim(self, inplace=True):
-        """Remove :py:attr:`~numpy.nan` common to all arrays on each side of the Spectrum.
+        r"""Remove :py:attr:`~numpy.nan` common to all arrays on each side of the Spectrum.
 
         Returns a smaller Spectrum (inplace or not).
 
@@ -1728,7 +1856,7 @@ class Spectrum(object):
         return s
 
     def sort(self, inplace=True):
-        """Sort the Spectrum by wavelength / wavenumber.
+        r"""Sort the Spectrum by wavelength / wavenumber.
 
         Parameters
         ----------
@@ -1785,9 +1913,10 @@ class Spectrum(object):
         Examples
         --------
         ::
+
             s.offset(5, 'nm')
 
-        .. minigallery:: radis.spectrum.spectrum.Spectrum.offset
+        .. minigallery:: radis.Spectrum.offset
 
 
         See Also
@@ -1801,7 +1930,7 @@ class Spectrum(object):
         return offset_func(self, offset, unit, inplace=inplace)
 
     def get_integral(self, var, wunit="default", Iunit="default", **kwargs):
-        """Returns integral of variable 'var' over waverange.
+        r"""Returns integral of variable 'var' over waverange.
 
         Parameters
         ----------
@@ -1838,7 +1967,7 @@ class Spectrum(object):
         return abs(nantrapz(I, w))
 
     def get_power(self, unit="mW/cm2/sr"):
-        """Returns integrated radiance (no slit) power density.
+        r"""Returns integrated radiance (no slit) power density.
 
         Parameters
         ----------
@@ -1875,7 +2004,7 @@ class Spectrum(object):
         return conv2(P, "mW/cm2/sr", unit)
 
     def has_nan(self, ignore_wavespace=True) -> bool:
-        """
+        r"""
 
         Parameters
         ----------
@@ -1904,7 +2033,7 @@ class Spectrum(object):
     # %% Plotting routines
 
     def get_vars(self, which=None):
-        """Returns all spectral quantities stored in this object (convoluted or
+        r"""Returns all spectral quantities stored in this object (convoluted or
         non convoluted)
 
         """
@@ -1919,7 +2048,7 @@ class Spectrum(object):
         return varlist
 
     def get_quantities(self, which=None):
-        """Returns all spectral quantities stored in this object (convoluted or
+        r"""Returns all spectral quantities stored in this object (convoluted or
         non convoluted). Wrapper to
         :py:meth:`~radis.spectrum.spectrum.get_vars`
 
@@ -1933,7 +2062,7 @@ class Spectrum(object):
         return self.get_vars()
 
     def _get_items(self) -> dict:
-        """Return a dictionary of tuples, e.g::
+        r"""Return a dictionary of tuples, e.g::
 
             {'radiance':(w,I), 'transmittance_noslit':(w_ns,T)}
 
@@ -1964,7 +2093,7 @@ class Spectrum(object):
         show_ruler=False,
         **kwargs,
     ):
-        """Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
+        r"""Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
         .. note::
             default plotting library and templates can be edited in :py:attr:`radis.config` ["plot"]
@@ -2021,7 +2150,7 @@ class Spectrum(object):
             to measure distances between peaks, etc.
 
             .. warning::
-                still experimental in 0.9.30 ! Try it, feedback welcome !
+                still experimental ! Try it, feedback welcome !
         **kwargs: **dict
             kwargs forwarded as argument to plot (e.g: lineshape
             attributes: `lw=3, color='r'`)
@@ -2213,7 +2342,7 @@ class Spectrum(object):
     def get_populations(
         self, molecule=None, isotope=None, electronic_state=None, show_warning=True
     ):
-        """Return populations that are featured in the spectrum, either as
+        r"""Return populations that are featured in the spectrum, either as
         upper or lower levels.
 
         Parameters
@@ -2333,7 +2462,7 @@ class Spectrum(object):
     def get_vib_levels(
         self, molecule=None, isotope=None, electronic_state=None, first=None
     ):
-        """Return vibrational levels in the spectrum (energies, populations)
+        r"""Return vibrational levels in the spectrum (energies, populations)
 
         Parameters
         ----------
@@ -2389,7 +2518,7 @@ class Spectrum(object):
     def get_rovib_levels(
         self, molecule=None, isotope=None, electronic_state=None, first=None
     ):
-        """Return rovibrational levels calculated in the spectrum (energies,
+        r"""Return rovibrational levels calculated in the spectrum (energies,
         populations)
 
         Parameters
@@ -2446,7 +2575,7 @@ class Spectrum(object):
     def plot_populations(
         self, what=None, nunit="", correct_for_abundance=False, **kwargs
     ):
-        """Plots vib populations if given and format is valid.
+        r"""Plots vib populations if given and format is valid.
 
         Parameters
         ----------
@@ -2598,7 +2727,7 @@ class Spectrum(object):
         *args,
         **kwargs,
     ):
-        """Apply an instrumental slit function to all quantities in Spectrum.
+        r"""Apply an instrumental slit function to all quantities in Spectrum.
         Slit function can be generated with usual shapes (see ``shape=``) or
         imported from an experimental slit function (path to a text file or
         numpy array of shape n*2). Convoluted spectra are cut on the edge
@@ -3012,7 +3141,7 @@ class Spectrum(object):
         return s_out  # to be able to chain: s.apply_slit().plot()
 
     def get_slit(self, wunit="same"):
-        """Get slit function that was applied to the Spectrum.
+        r"""Get slit function that was applied to the Spectrum.
 
         Returns
         -------
@@ -3041,7 +3170,7 @@ class Spectrum(object):
         return wslit, Islit
 
     def plot_slit(self, wunit=None, waveunit=None):
-        """Plot slit function that was applied to the Spectrum.
+        r"""Plot slit function that was applied to the Spectrum.
 
         If dispersion was used (see :meth:`~radis.spectrum.spectrum.Spectrum.apply_slit`)
         the different slits are built again and plotted too (dotted).
@@ -3056,6 +3185,15 @@ class Spectrum(object):
         -------
         fix, ax: matplotlib objects
             figure and ax
+
+        Examples
+        --------
+        ::
+
+            s = radis.test_spectrum()
+            s.apply_slit((0.4, 0.6), "nm")  # add trapezoidal slit function
+            s.plot_slit()   # plot the slit function that was applied
+
 
         .. minigallery:: radis.spectrum.spectrum.Spectrum.plot_slit
 
@@ -3180,7 +3318,7 @@ class Spectrum(object):
         *args,
         **kwargs,
     ):
-        """Plot Line Survey (all linestrengths used for calculation) Output in
+        r"""Plot Line Survey (all linestrengths used for calculation) Output in
             Plotly (html)
 
         Parameters
@@ -3318,7 +3456,7 @@ class Spectrum(object):
         )
 
     def get_conditions(self):
-        """Get all physical / computational parameters.
+        r"""Get all physical / computational parameters.
 
 
         .. minigallery:: radis.spectrum.spectrum.Spectrum.get_conditions
@@ -3333,7 +3471,7 @@ class Spectrum(object):
         return self.conditions
 
     def print_conditions(self, **kwargs):
-        """Prints all physical / computational parameters.
+        r"""Prints all physical / computational parameters.
 
         Parameters
         ----------
@@ -3343,11 +3481,103 @@ class Spectrum(object):
         Examples
         --------
         ::
+
+            s = radis.test_spectrum()
             s.print_conditions()
 
         You can also simply print the Spectrum object directly::
 
+            s = radis.test_spectrum()
             print(s)
+
+        Both syntaxes above will return (in radis==0.15)::
+
+            # output >>
+
+                Spectrum Name:  CO-hitran-700K-#3680
+                Spectral Quantities
+                ----------------------------------------
+                   abscoeff 	[cm-1] 	(40,002 points)
+                   absorbance  	(40,002 points)
+                   emissivity_noslit  	(40,002 points)
+                   transmittance_noslit  	(40,002 points)
+                   radiance_noslit 	[mW/cm2/sr/cm-1] 	(40,002 points)
+                Physical Conditions
+                ----------------------------------------
+                   Tgas                 700 K
+                   Trot                 700 K
+                   Tvib                 700 K
+                   isotope              1,2,3
+                   mole_fraction        0.1
+                   molecule             CO
+                   overpopulation       None
+                   path_length          1 cm
+                   pressure_mbar        1013.25 mbar
+                   rot_distribution     boltzmann
+                   self_absorption      True
+                   state                X
+                   thermal_equilibrium  True
+                   vib_distribution     boltzmann
+                   wavenum_max          2300.0000 cm-1
+                   wavenum_min          1900.0000 cm-1
+                Computation Parameters
+                ----------------------------------------
+                   NwG                  3
+                   NwL                  5
+                   Tref                 296 K
+                   add_at_used          cython
+                   broadening_method    voigt
+                   cutoff               1e-27 cm-1/(#.cm-2)
+                   dbformat             hitran
+                   dbpath               C:\Users\erwan\.radisdb\hitran\CO.hdf5
+                   default_output_unit  cm-1
+                   diluents             {'air': 0.9}
+                   folding_thresh       1e-06
+                   include_neighbouring_lines  True
+                   memory_mapping_engine  auto
+                   neighbour_lines      0 cm-1
+                   optimization         simple
+                   parfuncfmt           hapi
+                   parsum_mode          full summation
+                   profiler             {'spectrum_calculation': {'check_line_databank': ...
+                   pseudo_continuum_threshold  0
+                   radis_version        0.14
+                   sparse_ldm           True
+                   spectral_points      40000.0
+                   truncation           50 cm-1
+                   waveunit             cm-1
+                   wstep                0.01 cm-1
+                   zero_padding         40002
+                Config parameters
+                ----------------------------------------
+                   DEFAULT_DOWNLOAD_PATH  ~/.radisdb
+                   GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD  1
+                   GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD  3
+                   SPARSE_WAVERANGE     auto
+                Information
+                ----------------------------------------
+                   calculation_time     0.11549490000000162 s
+                   chunksize            None
+                   db_use_cached        True
+                   dxG                  0.1375350788016573
+                   dxL                  0.20180288881201608
+                   export_lines         False
+                   export_populations   None
+                   export_rovib_fraction  True
+                   levelsfmt            None
+                   lines_calculated     742
+                   lines_cutoff         0
+                   lines_in_continuum   0
+                   load_energies        False
+                   lvl_use_cached       True
+                   parfuncpath          None
+                   total_lines          742
+                   warning_broadening_threshold  0.01
+                   warning_linestrength_cutoff  0.01
+                   wavenum_max_calc     2300.0000 cm-1
+                   wavenum_min_calc     1900.0000 cm-1
+                ----------------------------------------
+
 
         .. minigallery:: radis.spectrum.spectrum.Spectrum.print_conditions
             :add-heading:
@@ -3372,7 +3602,7 @@ class Spectrum(object):
         if_exists_then="error",
         verbose=True,
     ):
-        """Save a Spectrum object in JSON format. Object can be recovered with
+        r"""Save a Spectrum object in JSON format. Object can be recovered with
         :func:`~radis.tools.database.load_spec`. If many Spectrum are saved in a
         same folder you can view their properties with the :class:`~radis.tools.database.SpecDatabase`
         structure.
@@ -3466,7 +3696,7 @@ class Spectrum(object):
         )
 
     def save(self, *args, **kwargs):
-        """Alias to Spectrum.store.
+        r"""Alias to Spectrum.store.
 
         See Spectrum.store for documentation
         """
@@ -3474,7 +3704,7 @@ class Spectrum(object):
         return self.store(*args, **kwargs)
 
     def to_json(self, *args, **kwargs):
-        """Alias to Spectrum.store(compress=False).
+        r"""Alias to Spectrum.store(compress=False).
 
         See Spectrum. :py:meth:`~radis.spectrum.spectrum.Spectrum.store` for documentation
         """
@@ -3482,7 +3712,7 @@ class Spectrum(object):
         return self.store(compress=False, *args, **kwargs)
 
     def to_hdf5(self, file, engine="pytables"):
-        """Stores the Spectrum under HDF5 format. Uses :py:func:`~radis.io.spec_hdf.spec2hdf`
+        r"""Stores the Spectrum under HDF5 format. Uses :py:func:`~radis.io.spec_hdf.spec2hdf`
 
         Examples
         --------
@@ -3499,7 +3729,7 @@ class Spectrum(object):
         return spec2hdf(self, file, engine=engine)
 
     def to_pandas(self, copy=True):
-        """Convert a Spectrum to a Pandas DataFrame
+        r"""Convert a Spectrum to a Pandas DataFrame
 
         Returns
         -------
@@ -3522,7 +3752,7 @@ class Spectrum(object):
         return df
 
     def to_specutils(self, var=None, wunit="default", Iunit="default"):
-        """Convert a ``radis`` :py:class:`~radis.spectrum.spectrum.Spectrum`
+        r"""Convert a ``radis`` :py:class:`~radis.spectrum.spectrum.Spectrum`
         object to ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D`
 
         Parameters
@@ -3548,11 +3778,11 @@ class Spectrum(object):
             For ``var="radiance"``, one can use per wavelength (~ 'W/m2/sr/nm')
             or per wavenumber (~ 'W/m2/sr/cm-1') units
 
-        .. note::
-            `nan`, that may have been added on the wings of the spectra if a
-            slit has been applied, are removed using ``trim_nan`` parameter of
-            :py:meth:`~radis.spectrum.spectrum.Spectrum.get` . The waverange
-            in the 1DSpectrum object may therefore be cropped.
+            .. note::
+                `nan` that may have been added on the wings of the spectra if a
+                slit has been applied are removed using ``trim_nan`` parameter of
+                :py:meth:`~radis.spectrum.spectrum.Spectrum.get` . The waverange
+                in the 1DSpectrum object may therefore be cropped.
 
         Examples
         --------
@@ -3574,8 +3804,7 @@ class Spectrum(object):
             from specutils.fitting import find_lines_threshold
             lines = find_lines_threshold(spectrum)
 
-        .. minigallery:: radis.spectrum.spectrum.Spectrum.to_specutils
-            :add-heading:
+        .. minigallery:: radis.Spectrum.to_specutils
 
         See Also
         --------
@@ -3637,7 +3866,7 @@ class Spectrum(object):
         if_conflict_drop=None,
         **kwargs,
     ):
-        """Resample spectrum over a new wavelength/wavenumber range.
+        r"""Resample spectrum over a new wavelength/wavenumber range.
 
         .. warning::
             This may result in information loss. Resampling is done with
@@ -3821,7 +4050,7 @@ class Spectrum(object):
     def resample_even(
         self, energy_threshold=5e-3, print_conservation=False, inplace=True
     ):
-        """Resample spectrum over the same waverange, but evenly spaced.
+        r"""Resample spectrum over the same waverange, but evenly spaced.
 
         .. warning::
             This may result in information loss. Resampling is done with
@@ -3875,6 +4104,249 @@ class Spectrum(object):
 
         return s
 
+    #%% Fonctions to fit a lineshape model
+    #
+
+    def fit_model(
+        self, model, plot=False, confidence=0.9545, verbose=False, debug=False
+    ):
+        """Fit a lineshape model to the spectrum.
+
+        The model can be a simple lineshape model among :py:class:`~astropy.modeling.models.Gaussian1D`,
+        :py:class:`~astropy.modeling.models.Lorentz1D`, :py:class:`~astropy.modeling.models.Voigt1D`,
+         or a combination of multiple models.
+
+        Parameters
+        ----------
+        model: astropy.modeling.Model or a list of models
+            model to fit to the spectrum.
+            If a list is given, a sum of models is fitted
+        plot: bool
+            if True, plot the difference between the model and the spectrum
+
+        Other Parameters
+        ----------------
+        confidence: 0.6827, 0.9545, or 0.9973
+            confidence interval to use.
+
+        Returns
+        -------
+        g_fit
+            the fitted model
+        y_err
+            uncertainty on the fitted parameters calculated as the square root
+            of the diagonal of the covariance matrix
+
+        Examples
+        --------
+        ::
+
+            from astropy.modeling import models
+            s = radis.test_spectrum().crop(2201.7, 2205.1)
+            g_fit, y_err = s.fit_model(models.Lorentz1D(), plot=True)
+
+        Example with 6 Voigt lines:
+        ::
+
+            from astropy.modeling import models
+            s = radis.test_spectrum().crop(2201.7, 2225.1)
+            g_fit_list, y_err = s.fit_model([models.Voigt1D() for _ in range(6)], plot=True)
+
+        Other Examples
+        --------------
+
+        .. minigallery:: radis.Spectrum.fit_model
+
+        """
+        # TODO : return error on fitted parameters by default
+        from astropy.modeling.fitting import LevMarLSQFitter
+        from specutils.fitting import fit_lines
+
+        # make the model a list of models :
+        if not (isinstance(model, list) or isinstance(model, tuple)):
+            model = [model]
+
+        # from astropy.modeling import models
+        # from astropy.modeling.core import Fittable1DModel
+        # assert isinstance(model, Fittable1DModel)
+
+        fitter = LevMarLSQFitter(calc_uncertainties=True)
+        w_fit = self.get(self.get_vars()[0], return_units=True)[0]
+
+        # Initialize model
+        # ----------------
+        # Fit the spectrum and calculate the fitted flux values (``y_fit``)
+        # ... make some reasonable first assumption on amplitude, center, fwhm (if available)
+        # If multiple models, initialize them sequentially and remove the fitted
+        # values from the spectrum before fitting the next model
+        # fitter0 = LevMarLSQFitter()
+
+        if len(model) > 1:
+            s0 = self.copy(copy_lines=False, copy_arrays=True)
+        else:
+            s0 = self
+        for i, mod in enumerate(model):
+
+            # Note from Astropy Modeling:
+            # > ("The .value property on parameters should be set"
+            # " to unitless values, not Quantity objects. To set"
+            # "a parameter to a quantity simply set the "
+            # "parameter directly without using .value")
+
+            # If values are set to the default, then make a safe guess :
+            if "amplitude" in mod.param_names:
+                if (
+                    mod.__getattribute__("amplitude").value
+                    == mod.__getattribute__("amplitude").default
+                ):
+                    mod.__setattr__("amplitude", s0.max())  # dimensioned
+            if "amplitude_L" in mod.param_names:
+                # Lorentzian amplitude (?) in Voigt mode
+                if (
+                    mod.__getattribute__("amplitude_L").value
+                    == mod.__getattribute__("amplitude_L").default
+                ):
+                    mod.__setattr__("amplitude_L", s0.max())  # dimensioned
+            if "x_0" in mod.param_names:
+                if (
+                    mod.__getattribute__("x_0").value
+                    == mod.__getattribute__("x_0").default
+                ):
+                    mod.__setattr__("x_0", s0.argmax())  # dimensioned
+
+            def get_fwhm_fast(s0):
+                """a very rough 1st-guess for HWHM:
+                we measure the distance before the intensity drops below half the maximum
+                """
+                w, I = s0.get(s0.get_vars()[0])
+                mask_below_half = (I - I.min()) < (I.max() - I.min()) / 2
+                i_fwhm_left = np.argmin(
+                    ((w[mask_below_half] - s0.argmax(value_only=True))) ** 2
+                )
+                if i_fwhm_left + 1 > len(w[mask_below_half]):
+                    fwhm = abs(w[-1] - w[0])
+                else:
+                    fwhm = abs(
+                        w[mask_below_half][i_fwhm_left + 1]
+                        - w[mask_below_half][i_fwhm_left]
+                    )
+                return fwhm
+
+            if "fwhm" in mod.param_names:
+                if (
+                    mod.__getattribute__("fwhm").value
+                    == mod.__getattribute__("fwhm").default
+                ):
+                    mod.__setattr__("fwhm", get_fwhm_fast(s0))  # NOT dimensioned TODO
+            if "fwhm_L" in mod.param_names and "fwhm_G" in mod.param_names:
+                # Lorentzian and Gaussian width in Voigt profile
+                if (
+                    mod.__getattribute__("fwhm_L").value
+                    == mod.__getattribute__("fwhm_L").default
+                    and mod.__getattribute__("fwhm_G").value
+                    == mod.__getattribute__("fwhm_G").default
+                ):
+                    # distribute FWHM on the two profiles:
+                    fwhm = get_fwhm_fast(s0)
+                    mod.__setattr__("fwhm_L", fwhm / 2)  # NOT dimensioned TODO
+                    mod.__setattr__("fwhm_G", fwhm / 2)  # NOT dimensioned TODO
+
+            if len(model) > 1:
+                # Remove fitted model from spectrum, and initialize the next model
+                g_one_mod = fit_lines(s0.to_specutils(), mod, fitter=fitter)
+                y_one_mod = g_one_mod(w_fit)
+                s0 -= y_one_mod
+                if debug:
+                    s0.plot()
+                    import matplotlib.pyplot as plt
+
+                    plt.title(f"s0 after iteration {i} of guessing initial parameters")
+                    plt.tight_layout()
+                    plt.plot(w_fit, y_one_mod, "--r")
+
+        # Final fit
+        # ---------
+        # This time we fit the full spectrum ('self') with all models (model)
+        from astropy.modeling.fitting import DEFAULT_MAXITER
+
+        maxiter = len(model) * DEFAULT_MAXITER  # arbitrary
+        g_fit_list = fit_lines(
+            self.to_specutils(), model, fitter=fitter, maxiter=maxiter
+        )
+
+        y_fit_list = [g_fit(w_fit) for g_fit in g_fit_list]
+
+        if plot:
+            import matplotlib.pyplot as plt
+
+            plt_line = self.plot(
+                lw=5,
+                color="grey",
+                show=False,  # needed when using `inline` ploting (e.g. default in Spyder)
+            )
+            ax = plt_line.figure.axes[0]
+            for i, y_fit in enumerate(y_fit_list):
+                g_fit = g_fit_list[i]
+                label = " ".join(
+                    [
+                        f"{g_fit.param_names[k]}"[:6] + f"={v:.2f}"
+                        for k, v in enumerate(g_fit.parameters)
+                    ]
+                )
+                ax.plot(w_fit, y_fit, label=label)
+            # plot legend with small font size:
+            ax.legend(fontsize=14)
+            plt.show()  # needed if `plt.isinteractive() = False`
+
+        if verbose:
+            print(fitter.fit_info["ierr"], fitter.fit_info["message"])
+
+        # Get uncertainties
+        if fitter.fit_info["param_cov"] is not None:
+            cov_matrix_diagonal = fitter.fit_info["param_cov"].diagonal()
+            std = np.sqrt(cov_matrix_diagonal)
+
+            if confidence == 0.6827:
+                y_err = 1 * std
+            elif confidence == 0.9545:
+                y_err = 2 * std
+            elif confidence == 0.9973:
+                y_err = 3 * std
+            else:
+                raise ValueError("Use confidence as one of 0.6827, 0.9545, or 0.9973")
+
+            # Add units
+            y_err = [
+                mod.__getattribute__(param).unit * y_err[i]
+                if mod.__getattribute__(param).unit
+                else y_err[i]
+                for mod in model
+                for i, param in enumerate(mod.param_names)
+            ]  # TODO refactor there is probably a better way to write it
+        else:
+            y_err = None
+
+        # Compute area under the curve of models.Voigt1D or models.Gaussian1D or models.Lorentz1D
+        from astropy.modeling import models
+
+        for index, line in enumerate(g_fit_list):
+            if isinstance(line, models.Voigt1D):
+                area = np.abs(np.trapz(y_fit_list[index], w_fit))  # slow, but accurate
+            elif isinstance(line, models.Gaussian1D):
+                area = line.amplitude * line.stddev * np.sqrt(2 * np.pi)
+            elif isinstance(line, models.Lorentz1D):
+                area = line.amplitude * np.pi * line.fwhm / 2
+            else:
+                raise ValueError(
+                    "Unexpected model type: {0}. \nExpected `models.Voigt1D` or `Gaussian1D` or `Lorentz1D`".format(
+                        type(line).__name__
+                    )
+                )
+            # return area
+            g_fit_list[index].area = area
+
+        return g_fit_list, y_err
+
     # %% ======================================================================
     # Semi public functions
     # ----------------
@@ -3882,13 +4354,13 @@ class Spectrum(object):
     # XXX =====================================================================
 
     def get_waveunit(self):
-        """Returns whether this spectrum is defined in wavelength (nm) or
+        r"""Returns whether this spectrum is defined in wavelength (nm) or
         wavenumber (cm-1)"""
 
         return self.conditions["waveunit"]
 
     def is_at_equilibrium(self, check="warn", verbose=False):
-        """Returns whether this spectrum is at (thermal) equilibrium. Reads the
+        r"""Returns whether this spectrum is at (thermal) equilibrium. Reads the
         ``thermal_equilibrium`` key in Spectrum conditions. It does not imply
         chemical equilibrium (mole fractions are still arbitrary)
 
@@ -3973,7 +4445,7 @@ class Spectrum(object):
         return equilibrium
 
     def is_optically_thin(self):
-        """Returns whether the spectrum is optically thin, based on the value
+        r"""Returns whether the spectrum is optically thin, based on the value
         on the self_absorption key in conditions.
 
         If not given, raises an error
@@ -3989,7 +4461,7 @@ class Spectrum(object):
             )
 
     def copy(self, copy_lines=True, quantity="all", copy_arrays=True):
-        """Returns a copy of this Spectrum object (performs a smart deepcopy)
+        r"""Returns a copy of this Spectrum object (performs a smart deepcopy)
 
         Parameters
         ----------
@@ -4021,7 +4493,7 @@ class Spectrum(object):
             )
 
     def __copy__(self, copy_lines=True, quantity="all", copy_arrays=True):
-        """Generate a new spectrum object.
+        r"""Generate a new spectrum object.
 
         Note: using deepcopy would work but then the Spectrum object would be pickled
         and unpickled again. It's a little faster here
@@ -4147,7 +4619,7 @@ class Spectrum(object):
         normalize=False,
         **kwargs,
     ):
-        """Compare Spectrum with another Spectrum object.
+        r"""Compare Spectrum with another Spectrum object.
 
         Parameters
         ----------
@@ -4398,7 +4870,7 @@ class Spectrum(object):
     # XXX =====================================================================
 
     def _init_annotations(self):
-        """Annotations are used to give typing hints for get() and plot()
+        r"""Annotations are used to give typing hints for get() and plot()
         functions, based on what quantities are available in the Spectrum
         object."""
 
@@ -4413,7 +4885,7 @@ class Spectrum(object):
             pass  # old Python version
 
     def _add_quantity(self, name, w, I, check_wavespace=True):
-        """Add quantity.
+        r"""Add quantity.
 
         Note: creates a copy of the input array
 
@@ -4468,15 +4940,15 @@ class Spectrum(object):
             pass
 
     def __eq__(self, other):
-        """Override the default Equals behavior."""
+        r"""Override the default Equals behavior."""
         return self.compare_with(other, spectra_only=True, verbose=False, plot=False)
 
     def __ne__(self, other):
-        """Define a non-equality test."""
+        r"""Define a non-equality test."""
         return not self.__eq__(other)
 
     def __dir__(self):
-        """Names shown with tab completion: remove certain attributes to
+        r"""Names shown with tab completion: remove certain attributes to
         simplify the use of this class (@minou)."""
 
         #        attrs = super(Spectrum, self).__dir__()
@@ -4494,7 +4966,7 @@ class Spectrum(object):
         return [k for k in attrs if not k in exclude]
 
     def __str__(self):
-        """Print all Spectrum attributes."""
+        r"""Print all Spectrum attributes."""
 
         # Print name
         print("Spectrum Name: ", self.get_name())
@@ -4535,7 +5007,7 @@ class Spectrum(object):
         return ""  # self.print_conditions()
 
     def take(self, var, copy_lines=False, copy_arrays=True):
-        """
+        r"""
         Parameters
         ----------
         var : str
@@ -4591,8 +5063,8 @@ class Spectrum(object):
             var = quantities[0]
         return var
 
-    def max(self, value_only=False):
-        """Maximum of the Spectrum, if only one spectral quantity is
+    def max(self, value_only=False, return_wmax=False):
+        r"""Maximum of the Spectrum, if only one spectral quantity is
         available::
 
             s.max()
@@ -4604,6 +5076,13 @@ class Spectrum(object):
         :py:meth:`~radis.spectrum.spectrum.Spectrum.take`, e.g. ::
 
             s.take('radiance').max()
+
+        Parameters
+        ----------
+        value_only: bool
+        return_position: bool
+            if True, returns wavelength or wavenumber of maximum, in the
+            Spectrum unit.
 
         Examples
         --------
@@ -4627,19 +5106,70 @@ class Spectrum(object):
 
             s_exp -= s.take('radiance').normalize() * s_exp.crop((w1, w2)), inplace=False).max()
 
+        Other Examples
+        --------------
+        Get max position ``wmax`` ::
+
+            s = radis.test_spectrum()
+            max, wmax = s.max(return_wmax=True)
+
+        Note that the later can also be achieved with :py:meth:`~radis.spectrum.spectrum.Spectrum.argmax` ::
+
+            wmax = s.argmax()
+
+        .. minigallery:: radis.Spectrum.max
+
+        See Also
+        --------
+
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.argmax`
+
         """
+        # TODO refactor: value_only can be replaced by ~return_units, and used in get()
 
         var = self._get_unique_var(operation_name="max")
         w, I = self.get(
             var, wunit=self.get_waveunit(), Iunit=self.units[var], copy=False
         )
-        if value_only:
-            return I[~np.isnan(I)].max()
-        else:
-            return I[~np.isnan(I)].max() * Unit(self.units[var])
 
-    def min(self, value_only=True):
-        """Minimum of the Spectrum, if only one spectral quantity is available
+        nan_mask = ~np.isnan(I)
+
+        if return_wmax:
+            imax = I[nan_mask].argmax()
+            Imax = I[nan_mask][imax]
+            wmax = w[nan_mask][imax]
+
+            if value_only:
+                return Imax, wmax
+            else:
+                return Imax * Unit(self.units[var]), wmax * Unit(self.get_waveunit())
+
+        else:
+            Imax = I[nan_mask].max()
+            if value_only:
+                return Imax
+            else:
+                return Imax * Unit(self.units[var])
+
+    def argmax(self, value_only=False):
+        r"""Return wave position of maximum of the Spectrum
+
+        Equivalent to the following use of the function :py:meth:`~radis.spectrum.spectrum.Spectrum.max`::
+
+            s.max(value_only=value_only, return_wmax=True)[1]
+
+        .. minigallery:: radis.Spectrum.argmax
+
+        See Also
+        --------
+
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.max`
+        """
+
+        return self.max(value_only=value_only, return_wmax=True)[1]
+
+    def min(self, value_only=True, return_wmin=False):
+        r"""Minimum of the Spectrum, if only one spectral quantity is available
         ::
 
             s.min()
@@ -4652,16 +5182,65 @@ class Spectrum(object):
 
             s.take('radiance').min()
 
+        Other Examples
+        --------------
+        Get min position ``wmin`` ::
+
+            s = radis.test_spectrum()
+            min, wmin = s.min(return_wmin=True)
+
+        Note that the later can also be achieved with :py:meth:`~radis.spectrum.spectrum.Spectrum.argmin` ::
+
+            wmax = s.argmin()
+
+        .. minigallery:: radis.Spectrum.min
+
+        See Also
+        --------
+
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.argmin`
         """
 
         var = self._get_unique_var(operation_name="min")
         w, I = self.get(
             var, wunit=self.get_waveunit(), Iunit=self.units[var], copy=False
         )
-        if value_only:
-            return I[~np.isnan(I)].min()
+
+        nan_mask = ~np.isnan(I)
+
+        if return_wmin:
+            imin = I[nan_mask].argmin()
+            Imin = I[nan_mask][imin]
+            wmin = w[nan_mask][imin]
+
+            if value_only:
+                return Imin, wmin
+            else:
+                return Imin * Unit(self.units[var]), wmin * Unit(self.get_waveunit())
+
         else:
-            return I[~np.isnan(I)].min() * Unit(self.units[var])
+            Imin = I[nan_mask].min()
+            if value_only:
+                return Imin.min()
+            else:
+                return Imin.min() * Unit(self.units[var])
+
+    def argmin(self, value_only=False):
+        r"""Return wave position of minimum of the Spectrum
+
+        Equivalent to the following use of the function :py:meth:`~radis.spectrum.spectrum.Spectrum.min`::
+
+            s.min(value_only=value_only, return_wmin=True)[1]
+
+        .. minigallery:: radis.Spectrum.argmin
+
+        See Also
+        --------
+
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.min`
+        """
+
+        return self.min(value_only=value_only, return_wmin=True)[1]
 
     def normalize(
         self,
@@ -4673,7 +5252,7 @@ class Spectrum(object):
         verbose=False,
         return_norm=False,
     ):
-        """Normalise the Spectrum, if only one spectral quantity is available.
+        r"""Normalise the Spectrum, if only one spectral quantity is available.
 
         Parameters
         ----------
@@ -4776,7 +5355,7 @@ class Spectrum(object):
         return out
 
     def get_baseline(self, algorithm="als", **kwargs):
-        """
+        r"""
         Calculate and returns a baseline
 
         Parameters
@@ -4807,7 +5386,7 @@ class Spectrum(object):
         Examples
         --------
 
-        .. minigallery:: radis.spectrum.spectrum.Spectrum.get_baseline
+        .. minigallery:: radis.Spectrum.get_baseline
 
         See also
         --------
@@ -4887,10 +5466,13 @@ class Spectrum(object):
         )
 
     def generate_perf_profile(self):
-        """Generate a visual/interactive performance profile diagram using ``tuna``
+        r"""Generate a visual/interactive performance profile diagram using ``tuna``
 
-        .. note:
+        .. note::
             requires a `profiler` key with in Spectrum.conditions
+
+        .. warning::
+            deprecated in favor of :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile`
 
         Examples
         --------
@@ -4944,7 +5526,7 @@ class Spectrum(object):
     # Plus
 
     def __add__(self, other):
-        """Override '+' behavior Add is defined as :
+        r"""Override '+' behavior Add is defined as :
 
         - for numeric values: add a baseline (returns a copy)
         - for 2 Spectra: not defined (not physical)
@@ -4969,11 +5551,11 @@ class Spectrum(object):
             )
 
     def __radd__(self, other):
-        """Right side addition."""
+        r"""Right side addition."""
         return self.__add__(other)
 
     def __iadd__(self, other):
-        """Override '+=' behavior Add is defined as :
+        r"""Override '+=' behavior Add is defined as :
 
         - for numeric values: add a baseline (inplace)
         - for 2 Spectra: not defined (not physical)
@@ -4995,7 +5577,7 @@ class Spectrum(object):
     # Minus
 
     def __sub__(self, other):
-        """Override '-' behavior Add is defined as :
+        r"""Override '-' behavior Add is defined as :
 
         - for numeric values: substract a baseline (returns a copy)
         - for 2 Spectra: defined only for baseline substraction
@@ -5018,13 +5600,13 @@ class Spectrum(object):
             )
 
     def __rsub__(self, other):
-        """Right side substraction."""
+        r"""Right side substraction."""
         raise NotImplementedError(
             "right substraction (-) not implemented for Spectrum objects"
         )
 
     def __isub__(self, other):
-        """Override '-=' behavior Add is defined as :
+        r"""Override '-=' behavior Add is defined as :
 
         - for numeric values: substract a baseline (inplace)
         - for 2 Spectra: defined only for baseline substraction
@@ -5049,7 +5631,7 @@ class Spectrum(object):
     # Times
 
     def __mul__(self, other):
-        """Override '*' behavior Multiply is defined as :
+        r"""Override '*' behavior Multiply is defined as :
 
         - for numeric values: multiply (equivalent to optically thin scaling)
           (only if in front, i.e:  2*s   works but s*2 is not implemented)
@@ -5068,13 +5650,19 @@ class Spectrum(object):
             raise NotImplementedError(
                 "* not implemented for 2 Spectrum objects. Use > to combine them along the line of sight, as in SerialSlabs"
             )
+        elif isinstance(other, np.array):
+            raise NotImplementedError(
+                "* not implemented for a Spectrum and a {0} object. Use a dimensioned (with units) array".format(
+                    type(other)
+                )
+            )
         else:
             raise NotImplementedError(
                 "* not implemented for a Spectrum and a {0} object".format(type(other))
             )
 
     def __rmul__(self, other):
-        """Right side multiplication."""
+        r"""Right side multiplication."""
 
         if (
             isinstance(other, float)
@@ -5088,6 +5676,12 @@ class Spectrum(object):
             raise NotImplementedError(
                 "* not implemented for 2 Spectrum objects. Use > to combine them along the line of sight, as in SerialSlabs"
             )
+        elif isinstance(other, np.array):
+            raise NotImplementedError(
+                "right side * not implemented for a Spectrum and a {0} object. Use a dimensioned (with units) array".format(
+                    type(other)
+                )
+            )
         else:
             raise NotImplementedError(
                 "right side * not implemented for a Spectrum and a {0} object".format(
@@ -5096,7 +5690,7 @@ class Spectrum(object):
             )
 
     def __imul__(self, other):
-        """Override '*=' behavior Multiply is defined as :
+        r"""Override '*=' behavior Multiply is defined as :
 
         - for numeric values: multiply (equivalent to optically thin scaling)
           (only if in front, i.e:  s *= 2)  (modifies inplace)
@@ -5112,6 +5706,12 @@ class Spectrum(object):
             return multiply(self, other, inplace=True)
         elif isinstance(other, Spectrum):
             raise NotImplementedError("* not implemented for 2 Spectrum objects. Use >")
+        elif isinstance(other, np.array):
+            raise NotImplementedError(
+                "*= not implemented for a Spectrum and a {0} object. Use a dimensioned (with units) array".format(
+                    type(other)
+                )
+            )
         else:
             raise NotImplementedError(
                 "*= not implemented for a Spectrum and a {0} object".format(type(other))
@@ -5120,7 +5720,7 @@ class Spectrum(object):
     # Divide
 
     def __truediv__(self, other):
-        """Override '/' behavior Divide is defined as :
+        r"""Override '/' behavior Divide is defined as :
 
         - for numeric values: divide algebraically (equivalent to optically thin scaling)
         """
@@ -5134,13 +5734,19 @@ class Spectrum(object):
 
             return multiply(self, 1 / other.value, unit=1 / other.unit, inplace=False)
 
+        elif isinstance(other, np.array):
+            raise NotImplementedError(
+                "/ not implemented for a Spectrum and a {0} object. Use a dimensioned (with units) array".format(
+                    type(other)
+                )
+            )
         else:
             raise NotImplementedError(
                 "/ not implemented for a Spectrum and a {0} object".format(type(other))
             )
 
     def __rtruediv__(self, other):
-        """Right side division."""
+        r"""Right side division."""
 
         raise NotImplementedError(
             "right side / not implemented for a Spectrum and a {0} object".format(
@@ -5149,7 +5755,7 @@ class Spectrum(object):
         )
 
     def __itruediv__(self, other):
-        """Override '/=' behavior Divide is defined as :
+        r"""Override '/=' behavior Divide is defined as :
 
         - for numeric values: divide quantities algebraically
         (equivalent to optically thin scaling)
@@ -5172,7 +5778,7 @@ class Spectrum(object):
     # Line of sight operations
 
     def __bool__(self):
-        """This prevents behaviors such as::
+        r"""This prevents behaviors such as::
 
             s1 > s2 > s3
 
@@ -5187,7 +5793,7 @@ class Spectrum(object):
         )
 
     def __gt__(self, other):
-        """Overloads '>' behavior no comparison: here we use > to define a
+        r"""Overloads '>' behavior no comparison: here we use > to define a
         ``Line of sight``.
 
         Examples
@@ -5220,7 +5826,7 @@ class Spectrum(object):
     #                    type(other)))
 
     def __floordiv__(self, other):
-        """Overloads '//' behavior not a division here: we use it to say that
+        r"""Overloads '//' behavior not a division here: we use it to say that
         Slabs are ``in parallel``, i.e., as if their respective mole fractions
         were added in the same physical space.
 
@@ -5265,7 +5871,7 @@ class Spectrum(object):
     #        return _json_to_spec(attrs)
 
     def __len__(self):
-        """Length of a Spectrum object = length of the wavespace if unique,
+        r"""Length of a Spectrum object = length of the wavespace if unique,
         else raises an error"""
 
         return len(self._get_wavespace(copy=False))

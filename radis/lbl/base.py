@@ -54,6 +54,7 @@ Most methods are written in inherited class with the following inheritance schem
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
 :py:class:`~radis.lbl.factory.SpectrumFactory`
 
+
 .. inheritance-diagram:: radis.lbl.factory.SpectrumFactory
    :parts: 1
 

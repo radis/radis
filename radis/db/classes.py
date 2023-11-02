@@ -337,6 +337,7 @@ EXOMOL_MOLECULES = [
     "H2_p",
     "H3O_p",
     "H3_p",
+    "HBr",
     "HCN",
     "HCl",
     "HF",
@@ -390,6 +391,7 @@ EXOMOL_MOLECULES = [
     "SiO",
     "SiO2",
     "SiS",
+    "SO",
     "TiH",
     "TiO",
     "VO",
@@ -940,7 +942,7 @@ class ElectronicState(Isotope):
         return self._Erovib(*args, **kwargs)
 
     def _Ehaj_default_coeffs(self, *args, **kwargs):
-        """Call default _Ehaj() function with default rovib_constants
+        r"""Call default _Ehaj() function with default rovib_constants
         coefficients."""
 
         assert "coeff_dict" not in kwargs

@@ -308,8 +308,9 @@ def calc_spectrum(
         - Or the :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method to plot it
           directly.
         - See [1]_ to get an overview of all Spectrum methods
-    :py:class:`~radis.lbl.factory.SpectrumFactory` : if using ``return_factory=True``
-        if multiple molecules, a dictionary of factories is returned
+    :py:class:`~radis.lbl.factory.SpectrumFactory`
+        if using ``return_factory=True``, the Factory that generated the spectrum is returned.
+        if calculating multiple molecules, a dictionary of factories is returned
 
 
     References
@@ -365,6 +366,9 @@ def calc_spectrum(
     For more details on how to use the GPU method and process the database, refer to the examples
     linked above and the documentation on :ref:`GPU support for RADIS <label_radis_gpu>`.
     ​
+    Other Examples
+    --------------
+
     .. minigallery:: radis.calc_spectrum
 
     References
@@ -418,7 +422,7 @@ def calc_spectrum(
     def _check_molecules_are_consistent(
         molecule_reference_set, reference_name, new_argument, new_argument_name
     ):
-        """Will test that molecules set are the same in molecule_reference_set
+        r"""Will test that molecules set are the same in molecule_reference_set
         and new_argument, if new_argument is a dict. molecule_reference_set is
         a set of molecules (yeah!). reference_name is the name of the argument
         from which we guessed the list of molecules (used to have a clear error

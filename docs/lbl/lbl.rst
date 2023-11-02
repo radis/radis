@@ -777,6 +777,7 @@ For the above example::
     s.print_perf_profile()
 
 ::
+
     # Output:
         spectrum_calculation      0.189s ████████████████
             check_line_databank              0.000s

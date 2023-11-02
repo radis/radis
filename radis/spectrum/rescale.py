@@ -254,7 +254,7 @@ def _build_update_graph(
     }
 
     def derives_from(what, *from_keys):
-        """Writes that quantity ``what`` can be inferred by having all
+        r"""Writes that quantity ``what`` can be inferred by having all
         quantities ``from_keys``
 
         Examples
@@ -837,7 +837,7 @@ def _recompute_from_abscoeff_at_equilibrium(
     """
 
     def get_unit_radiance():
-        """In which unit to store radiance : use the existing one by default,
+        r"""In which unit to store radiance : use the existing one by default,
         or use "mW/cm2/sr/nm if spectrum stored in wavelength; 'mW/cm2/sr/cm-1'
         if Spectrum stored in wavenumber"""
         if spec.get_waveunit() == "cm-1":
@@ -846,7 +846,7 @@ def _recompute_from_abscoeff_at_equilibrium(
             return spec.units.get("radiance_noslit", "mW/cm2/sr/nm")
 
     def get_unit_emisscoeff(unit_radiance):
-        """Basically, unit of ``unit_radiance`` divided by ``cm``"""
+        r"""Basically, unit of ``unit_radiance`` divided by ``cm``"""
         if "/cm2" in unit_radiance:
             return unit_radiance.replace("/cm2", "/cm3")
         else:
@@ -981,7 +981,7 @@ def rescale_emisscoeff(
     unit = None
 
     def get_emisscoeff_unit(unit_radiance):
-        """Basically, units of ``unit_radiance`` divided by ``cm``"""
+        r"""Basically, units of ``unit_radiance`` divided by ``cm``"""
         if "/cm2" in unit_radiance:
             return unit_radiance.replace("/cm2", "/cm3")
         else:
@@ -1502,7 +1502,7 @@ def rescale_radiance_noslit(
     unit = None
 
     def get_radiance_unit(unit_emisscoeff):
-        """get radiance_noslit unit from emisscoeff unit.
+        r"""get radiance_noslit unit from emisscoeff unit.
         Basically just multiply by ``cm``"""
         if "/cm3" in unit_emisscoeff:
             return unit_emisscoeff.replace("/cm3", "/cm2")

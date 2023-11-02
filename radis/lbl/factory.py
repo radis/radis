@@ -1294,7 +1294,7 @@ class SpectrumFactory(BandFactory):
         return s
 
     def eq_spectrum_gpu_interactive(
-        self, var="transmittance", slit_function=0.0, plotkwargs={}, *vargs, **kwargs
+        self, var="transmittance", slit_function=0.0, mpl_backend='', plotkwargs={}, *vargs, **kwargs
     ) -> Spectrum:
         """
 
@@ -1346,7 +1346,8 @@ class SpectrumFactory(BandFactory):
         """
         from matplotlib import use
 
-        use("TkAgg")
+        if mpl_backend:
+            use(mpl_backend)
 
         import matplotlib.pyplot as plt
         from matplotlib.widgets import Slider
