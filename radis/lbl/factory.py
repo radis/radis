@@ -17,7 +17,7 @@ Calculate a CO Spectrum, fetching the lines from HITRAN ::
                          **kwargs)
     sf.fetch_databank()        # auto download from HITRAN
     s = sf.eq_spectrum(Tgas=300)
-    s.plot('abscoeff')          # opacity
+    s.plot('abscoeff')          # opacity hello
 
     # Here we get some extra informations:
     s.plot('radiance', wunit='nm',
@@ -1292,7 +1292,13 @@ class SpectrumFactory(BandFactory):
         return s
 
     def eq_spectrum_gpu_interactive(
-        self, var="transmittance", slit_function=0.0, mpl_backend='', plotkwargs={}, *vargs, **kwargs
+        self,
+        var="transmittance",
+        slit_function=0.0,
+        mpl_backend="",
+        plotkwargs={},
+        *vargs,
+        **kwargs,
     ) -> Spectrum:
         """
 
