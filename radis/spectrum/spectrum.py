@@ -2298,7 +2298,9 @@ class Spectrum(object):
 
         from radis.phys.convert import cm2nm, div_safe, nm2cm
 
-        if "cm⁻¹" in ylabel:
+        if ax.child_axes != []:
+            pass
+        elif "cm⁻¹" in ylabel:
             secx = ax.secondary_xaxis(
                 "top", functions=(div_safe(cm2nm), div_safe(nm2cm))
             )
