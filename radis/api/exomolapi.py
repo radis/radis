@@ -1030,11 +1030,15 @@ class MdbExomol(DatabaseManager):
         self.def_file = self.path / pathlib.Path(molec + ".def")
         self.broad_file = self.path / pathlib.Path(molecbroad + ".broad")
 
+        mgr = self.get_datafile_manager()
         if not self.def_file.exists():
             self.download(molec, extension=[".def"])
         if not self.pf_file.exists():
             self.download(molec, extension=[".pf"])
-        if not self.states_file.exists():
+        if (
+            not self.states_file.exists()
+            and not mgr.cache_file(self.states_file).exists()
+        ):
             self.download(molec, extension=[".states.bz2"])
         if (not self.broad_file.exists()) and self.broadf:
             self.download(molec, extension=[".broad"])
@@ -1073,7 +1077,6 @@ class MdbExomol(DatabaseManager):
             )
 
         # load states
-        mgr = self.get_datafile_manager()
         if cache == "regen" and mgr.cache_file(self.states_file).exists():
             if self.verbose:
                 print("Removing existing file ", mgr.cache_file(self.states_file))
@@ -1218,7 +1221,9 @@ class MdbExomol(DatabaseManager):
 
                 mgr.write(mgr.cache_file(trans_file), trans)
 
-    def set_broadening_coef(self, df, alpha_ref_def=None, n_Texp_def=None, output=None, add_columns=True):
+    def set_broadening_coef(
+        self, df, alpha_ref_def=None, n_Texp_def=None, output=None, add_columns=True
+    ):
         """setting broadening parameters
 
         Parameters
@@ -1226,7 +1231,7 @@ class MdbExomol(DatabaseManager):
         df: Data Frame
         alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
         n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
-        add_columns: adds alpha_ref and n_Texp columns to df 
+        add_columns: adds alpha_ref and n_Texp columns to df
 
         Returns
         -------
