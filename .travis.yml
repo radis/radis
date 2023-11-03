@@ -23,8 +23,8 @@ jobs:
       before_install:
         # Udate glibc version:
         - ldd --version
-        - sudo apt-get -y update
-        - sudo apt-cache -y policy libc6
+        - sudo apt-get update
+        - sudo apt-cache policy libc6
         - sudo apt-get -y install libc6
         - ldd --version
 
