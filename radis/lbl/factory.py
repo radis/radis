@@ -1292,7 +1292,13 @@ class SpectrumFactory(BandFactory):
         return s
 
     def eq_spectrum_gpu_interactive(
-        self, var="transmittance", slit_function=0.0, mpl_backend='', plotkwargs={}, *vargs, **kwargs
+        self,
+        var="transmittance",
+        slit_function=0.0,
+        mpl_backend="",
+        plotkwargs={},
+        *vargs,
+        **kwargs,
     ) -> Spectrum:
         """
 
