@@ -763,7 +763,7 @@ def test_calc_spectrum_multiple_molecules_inputerror(
     return True
 
 
-@pytest.mark.fast
+# @pytest.mark.fast #this is not fastfor Travis because it requires a download
 @pytest.mark.needs_connection
 def test_calc_spectrum_multiple_molecules_wstep_auto(
     verbose=True, plot=True, warnings=True, *args, **kwargs
