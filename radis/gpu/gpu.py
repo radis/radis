@@ -280,4 +280,6 @@ def gpu_iterate(
 
 def gpu_exit(event=None):
     global app
-    del app
+    if app:
+        del app
+    app = None
