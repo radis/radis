@@ -23,7 +23,7 @@ jobs:
 
       before_install:
         # Install Vulkan drivers for GPU tests:
-        - sudo apt-get -y install mesa-vulkan-drivers
+        - sudo apt-get -y install mesa-vulkan-drivers libvulkan1
 
       install:
         # Install Micromamba
