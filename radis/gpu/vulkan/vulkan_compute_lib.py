@@ -259,6 +259,7 @@ class GPUApplication(object):
         self._physicalDevice = devices[self._deviceID]
 
         if verbose:
+            print("Vulkan version: ", vk.__version__)
             print("Selected card (deviceID={:d}):".format(self._deviceID))
             for i, device in enumerate(devices):
                 props = vk.vkGetPhysicalDeviceProperties(device)
