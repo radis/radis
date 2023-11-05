@@ -31,6 +31,7 @@ dependencies:
 - vaex-core>=4.17.0   # load HDF5 files  (version needed to fix https://github.com/radis/radis/issues/598)
 - vaex-hdf5
 - vaex-viz
+- vulkan==1.1.99 # RADIS monkey-patches a bug that may be fixed in; lower versions don't work
 - pip
 - pip:
   - -r requirements.txt              # add all packages directly in requirements.txt
