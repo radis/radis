@@ -1030,11 +1030,15 @@ class MdbExomol(DatabaseManager):
         self.def_file = self.path / pathlib.Path(molec + ".def")
         self.broad_file = self.path / pathlib.Path(molecbroad + ".broad")
 
+        mgr = self.get_datafile_manager()
         if not self.def_file.exists():
             self.download(molec, extension=[".def"])
         if not self.pf_file.exists():
             self.download(molec, extension=[".pf"])
-        if not self.states_file.exists():
+        if (
+            not self.states_file.exists()
+            and not mgr.cache_file(self.states_file).exists()
+        ):
             self.download(molec, extension=[".states.bz2"])
         if (not self.broad_file.exists()) and self.broadf:
             self.download(molec, extension=[".broad"])
@@ -1073,7 +1077,6 @@ class MdbExomol(DatabaseManager):
             )
 
         # load states
-        mgr = self.get_datafile_manager()
         if cache == "regen" and mgr.cache_file(self.states_file).exists():
             if self.verbose:
                 print("Removing existing file ", mgr.cache_file(self.states_file))
