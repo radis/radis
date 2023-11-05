@@ -7,6 +7,5 @@ peakutils
 ruamel.yaml
 json-tricks>=3.15.0  # to deal with non jsonable formats
 mpldatacursor
-higher versions
 nvidia-cuda-nvrtc-cu11[cuda]
 # tuna            # to generate visual/interactive performance profiles
