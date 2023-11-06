@@ -6,11 +6,9 @@ python:
 os: linux
 
 stages:
-  - name: test_rapid
+  - name: test
     if: branch = master OR branch = develop
     # we dont test on other branches
-  - name: test_long
-    if: branch = master OR branch = develop
   - name: lint
     if: branch = master OR branch = develop
     # we dont lint on other branches
@@ -19,8 +17,8 @@ stages:
 
 jobs:
   include:
-    - stage: test_rapid
-      name: Rapid Tests and Coverage
+    - stage: test
+      name: Test and Coverage
       install:
         # Install Micromamba
         # We do this conditionally because it saves us some downloading if the
@@ -51,9 +49,10 @@ jobs:
 
       script:
         # Your test script goes here
-        - echo ">>> Run rapid tests"
+        - echo ">>> Run tests"
         # use XVFB to have headless display port, and still run the Matplotlib tests.
-        - xvfb-run -a pytest --cov=./ --durations=10 -m "fast"
+        - xvfb-run -a pytest -m "fast" --cov=./ --durations=10
+        - xvfb-run -a pytest -m "not fast" --cov=./ --durations=10
         # --durations=N to print the slowest N tests
         # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
 
@@ -64,23 +63,6 @@ jobs:
         # codecoverage
         - pip install codecov
         - codecov
-
-      before_script:
-        - export MPLBACKEND=Agg
-
-    - stage: test_long
-      name: Long Tests and Coverage
-
-      script:
-        # Your test script goes here
-        - echo ">>> Run long tests"
-        # use XVFB to have headless display port, and still run the Matplotlib tests.
-        - xvfb-run -a pytest --cov=./ --durations=10 -m "not fast"
-        # --durations=N to print the slowest N tests
-        # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
-
-      services:
-        - xvfb
 
       before_script:
         - export MPLBACKEND=Agg
