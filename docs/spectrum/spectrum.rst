@@ -560,7 +560,7 @@ to a to ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D` object
     s.to_specutils()
 
 
-.. minigallery:: radis.spectrum.spectrum.Spectrum.to_specutils
+.. minigallery:: radis.Spectrum.to_specutils
 
 
 

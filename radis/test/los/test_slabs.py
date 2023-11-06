@@ -28,7 +28,6 @@ def test_merge_slabs(
     plot=False,
     close_plots=True,
     warnings=True,
-    debug=False,
     *args,
     **kwargs,
 ):
@@ -59,7 +58,7 @@ def test_merge_slabs(
 
         # Merge 50 times s1 in the same slab
         s50 = [s1] * 50
-        s1N = MergeSlabs(*s50, optically_thin=optically_thin, debug=debug)
+        s1N = MergeSlabs(*s50, optically_thin=optically_thin)
 
         if plot:
             for k in ["radiance_noslit"]:  # , 'transmittance_noslit']:
@@ -119,7 +118,7 @@ def test_equilibrium_condition():
 
 @pytest.mark.fast
 def test_serial_slabs_transmittance(
-    verbose=True, plot=False, warnings=True, debug=False, *args, **kwargs
+    verbose=True, plot=False, warnings=True, *args, **kwargs
 ):
     """Add some slabs in series, ensure that overall transmittance decreases
     Also check that some quantities are propagated (like path length?)
@@ -166,7 +165,7 @@ def test_serial_slabs_transmittance(
 
 @pytest.mark.fast
 def test_serial_slabs_radiance(
-    verbose=True, plot=False, warnings=True, debug=False, *args, **kwargs
+    verbose=True, plot=False, warnings=True, *args, **kwargs
 ):
     """Add some slabs in series under optically thin conditions, ensures
     that radiance is about the sum of all.
@@ -213,7 +212,6 @@ def _run_testcases(
     verbose=True,
     plot=True,
     close_plots=True,
-    debug=False,
     warnings=True,
     *args,
     **kwargs,
@@ -223,18 +221,17 @@ def _run_testcases(
         verbose=verbose,
         plot=plot,
         close_plots=close_plots,
-        debug=debug,
         warnings=warnings,
         *args,
         **kwargs,
     )
 
     test_serial_slabs_transmittance(
-        verbose=verbose, plot=plot, debug=debug, warnings=warnings, *args, **kwargs
+        verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
     )
 
     test_serial_slabs_radiance(
-        verbose=verbose, plot=plot, debug=debug, warnings=warnings, *args, **kwargs
+        verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
     )
 
     test_equilibrium_condition()

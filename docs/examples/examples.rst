@@ -32,6 +32,8 @@ Example of output produced by the :class:`~radis.tools.line_survey.LineSurvey` t
     s.line_survey(overlay='radiance_noslit', barwidth=0.01)
 
 
+.. minigallery:: radis.spectrum.spectrum.Spectrum.line_survey
+
 .. raw:: html
 
     <iframe id="igraph" src="//plotly.com/~erwanp/6.embed" width="650" height="420" seamless="seamless" scrolling="no"></iframe>
@@ -250,3 +252,7 @@ RADIS can be accessed from Matlab by setting up Python environment in Matlab ::
     s = py.radis.calc_spectrum(1900,2300,molecule='CO',isotope='1,2,3',pressure=1.01325,Tgas=700,mole_fraction=0.1,path_length=1,databank='hitran');
     s.apply_slit(0.5,'nm');
     s.plot(show=true);
+
+
+.. minigallery:: radis.test.utils.EmulateMatlab
+

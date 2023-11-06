@@ -123,7 +123,7 @@ class RovibParFuncTabulator(RovibPartitionFunction):
         super(RovibParFuncTabulator, self).__init__()
 
     def at(self, T, **kwargs):
-        """Get partition function at temperature T under equilibrium
+        r"""Get partition function at temperature T under equilibrium
         conditions, from tabulated data.
 
         Parameters
@@ -235,7 +235,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         """
 
     def at(self, T, update_populations=False):
-        """Get partition function at temperature T under equilibrium
+        r"""Get partition function at temperature T under equilibrium
         conditions.
 
         Parameters
@@ -283,7 +283,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             return self._eq_tabulation_eval(T=T)
 
     def _eq_tabulation_setup(self, N_bins):
-        """Bins all levels into an ``E`` grid
+        r"""Bins all levels into an ``E`` grid
 
         Parameters
         ----------
@@ -322,7 +322,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         self._tab_N_bins = N_bins
 
     def _eq_tabulation_eval(self, T):
-        """Computes partition function using tabulated grid
+        r"""Computes partition function using tabulated grid
 
         See Also
         --------
@@ -374,7 +374,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         returnQvibQrot=False,
         update_populations=False,
     ):
-        """Calculate Partition Function under non equilibrium (Tvib, Trot),
+        r"""Calculate Partition Function under non equilibrium (Tvib, Trot),
         with boltzmann/treanor distributions and overpopulations as specified
         by the user.
 
@@ -479,7 +479,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             )
 
     def _noneq_tabulation_setup(self, N_bins, vib_distribution, rot_distribution):
-        """Bins all levels into an Evib and Erot grid
+        r"""Bins all levels into an Evib and Erot grid
 
         Parameters
         ----------
@@ -541,7 +541,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         rot_distribution="boltzmann",
         returnQvibQrot=False,
     ):
-        """Computes partition function using tabulated grid
+        r"""Computes partition function using tabulated grid
 
         See Also
         --------
@@ -584,7 +584,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         returnQvibQrot=False,
         update_populations=False,
     ):
-        """Computes partition function by summing over all levels"""
+        r"""Computes partition function by summing over all levels"""
 
         # Get variables
         df = self.df
@@ -729,7 +729,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         returnQvibQrot=False,
         update_populations=False,
     ):
-        """Calculate Partition Function under non equilibrium ((Tvib1, Tvib2,
+        r"""Calculate Partition Function under non equilibrium ((Tvib1, Tvib2,
         Tvib3), Trot), with boltzmann/treanor distributions and overpopulations
         as specified by the user.
 
@@ -836,7 +836,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             )
 
     def _noneq_3Tvib_tabulation_setup(self, N_bins, vib_distribution, rot_distribution):
-        """Bins all levels into an Evib and Erot grid
+        r"""Bins all levels into an Evib and Erot grid
 
         Parameters
         ----------
@@ -951,7 +951,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         rot_distribution="boltzmann",
         returnQvibQrot=False,
     ):
-        """Computes partition function using tabulated grid
+        r"""Computes partition function using tabulated grid
 
         See Also
         --------
@@ -997,7 +997,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         returnQvibQrot=False,
         update_populations=False,
     ):
-        """Computes partition function by summing over all levels"""
+        r"""Computes partition function by summing over all levels"""
 
         # Get variables
         Tvib1, Tvib2, Tvib3 = Tvib
@@ -1051,7 +1051,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             return Q
 
     def reset_populations(self):
-        """Discard computed populations of all energy levels.
+        r"""Discard computed populations of all energy levels.
 
         To call on every RovibrationalPartitionFunction object before
         each new spectrum calculation
@@ -1064,7 +1064,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
     # %% Methods to get populations of all states
 
     def _get_vib_populations(self):
-        """Return vibrational populations for all levels featured in given line
+        r"""Return vibrational populations for all levels featured in given line
         set."""
 
         df = self.df
@@ -1072,7 +1072,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         return df.drop_duplicates("viblvl")
 
     def _get_rovib_populations(self):
-        """Return rovibrational populations for all levels featured in the
+        r"""Return rovibrational populations for all levels featured in the
         energy levels list df.
 
         Notes
@@ -1210,7 +1210,7 @@ class PartFuncTIPS(RovibParFuncTabulator):
         self.I = I
 
     def import_from_file(self, path):
-        """Import hapi.py from a given file (in case user wants to specify a
+        r"""Import hapi.py from a given file (in case user wants to specify a
         different HAPI version than the one embedded in RADIS)"""
         if sys.version == 2:
             import imp
@@ -1225,7 +1225,7 @@ class PartFuncTIPS(RovibParFuncTabulator):
         return hapi.partitionSum
 
     def _at(self, T):
-        """Get partition function of species M, isotope I at temperature T.
+        r"""Get partition function of species M, isotope I at temperature T.
 
         Called by :meth:`radis.levels.partfunc.RovibParFuncTabulator.at`
         """
@@ -1572,7 +1572,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
                     )
 
     def build_energy_levels_class1(self):  # , ZPE=0):
-        """in the case where only Ediss is given. Deal with vmax, Jmax later.
+        r"""in the case where only Ediss is given. Deal with vmax, Jmax later.
 
         Applies to molecules in :data:`~radis.api.hitranapi.HITRAN_CLASS1`
 
@@ -1709,7 +1709,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         calc_Evib_harmonic_anharmonic=False,
         group_energy_modes_in_2T_model=(["Evib1", "Evib2", "Evib2"], ["Erot"]),
     ):
-        """in the case where only Ediss is given. Deal with vmax, Jmax later.
+        r"""in the case where only Ediss is given. Deal with vmax, Jmax later.
 
         :data:`~radis.api.hitranapi.HITRAN_CLASS5` = ['CO2']
         # Linear triatomic with large Fermi resonance
@@ -2141,7 +2141,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         self.df = df
 
     def gs(self, ElecState):  # , viblvl):
-        """Get state specific rotational degeneracy.
+        r"""Get state specific rotational degeneracy.
 
         Parameters
         ----------
@@ -2160,7 +2160,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         return gs(M, I)
 
     def gi(self, ElecState):
-        """Get state independent rotational degeneracy. Typically depends on
+        r"""Get state independent rotational degeneracy. Typically depends on
         the isotope.
 
         See Also

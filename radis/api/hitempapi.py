@@ -124,7 +124,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         chunksize=100000,
         parallel=True,
     ):
-        """
+        r"""
         See Also
         --------
         HITEMPDatabaseManager is compatible with Exojax :py:class:`exojax.spec.api.MdbHitemp`
@@ -147,7 +147,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         self.urlnames = None
 
     def fetch_url_Nlines_wmin_wmax(self, hitemp_url="https://hitran.org/hitemp/"):
-        """requires connexion"""
+        r"""requires connexion"""
 
         molecule = self.molecule
 
@@ -225,7 +225,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         return url, Nlines, wmin, wmax
 
     def fetch_urlnames(self):
-        """requires connection"""
+        r"""requires connection"""
 
         if self.urlnames is not None:
             return self.urlnames
@@ -256,7 +256,7 @@ class HITEMPDatabaseManager(DatabaseManager):
     def keep_only_relevant(
         self, inputfiles, wavenum_min=None, wavenum_max=None, verbose=True
     ) -> list:
-        """For CO2 and H2O, return only relevant files for given wavenumber range.
+        r"""For CO2 and H2O, return only relevant files for given wavenumber range.
 
         If other molecule, return the file anyway.
         see :py:func:`radis.api.hitempapi.keep_only_relevant`"""
@@ -294,7 +294,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         pbar_Nlines_already=0,
         pbar_last=True,
     ):
-        """Uncompress ``urlname`` into ``local_file``.
+        r"""Uncompress ``urlname`` into ``local_file``.
         Also add metadata
 
         Parameters
@@ -413,7 +413,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         return Nlines
 
     def register(self):
-        """register in ~/radis.json"""
+        r"""register in ~/radis.json"""
 
         local_files, urlnames = self.get_filenames()
         info = f"HITEMP {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1) with TIPS-2017 (through HAPI) for partition functions"

@@ -178,13 +178,12 @@ def getMolecule(
 
         from radis import getMolecule
 
-        # Here we get the energy of the v=6, J=3 level of the 2nd isotope of CO::
+        # Here we get the energy of the v=6, J=3 level of the 2nd isotope of CO:
 
         CO = getMolecule("CO", 2, "X")
         print(CO.Erovib(6, 3))
 
     .. minigallery:: radis.getMolecule
-        :add-heading:
 
     See Also
     --------

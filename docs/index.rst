@@ -28,8 +28,12 @@ Assuming you have Python installed with the `Anaconda <https://www.anaconda.com/
 
 **That's it!** You can now run your first example below.
 If you encounter any problem or if you need to upgrade, please refer to the
-:ref:`detailed installation procedure <label_install>`. If you don't have a Python
+:ref:`detailed installation procedure <label_install>`.
+
+If you don't have a Python
 environment, try :ref:`🌱 RADIS Online <label_radis_online>` first !
+
+To run RADIS in Matlab, see :ref:`Access RADIS from Matlab <label_matlab_access>`
 
 .. _label_first_example:
 

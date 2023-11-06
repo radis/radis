@@ -351,7 +351,7 @@ class GEISADatabaseManager(DatabaseManager):
         self.urlnames = None
 
     def fetch_urlnames(self):
-        """requires connexion"""
+        r"""requires connexion"""
 
         if self.urlnames is not None:
             return self.urlnames
@@ -384,7 +384,7 @@ class GEISADatabaseManager(DatabaseManager):
         pbar_Nlines_already=0,
         pbar_last=True,
     ):
-        """Uncompress ``urlname`` into ``local_file``.
+        r"""Uncompress ``urlname`` into ``local_file``.
         Also add metadata
 
         Parameters
@@ -432,7 +432,7 @@ class GEISADatabaseManager(DatabaseManager):
         return Nlines
 
     def register(self):
-        """register in ~/radis.json"""
+        r"""register in ~/radis.json"""
 
         local_files, urlnames = self.get_filenames()
         info = f"GEISA {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1)"

@@ -39,7 +39,7 @@ df.viz.heatmap("airbrd", "selbrd", limits="99%")
 
 # TODO / idea : compare CO2 broadening with Air broadening for HITRAN database ?
 #%%
-# Or below we plot the number of lines using Vaex's :py:meth:`~vaex.viz.DataFrameAccessorViz.heatmap`s
+# Or below we plot the number of lines using Vaex's :py:meth:`~vaex.viz.DataFrameAccessorViz.histogram
 
 plt.figure()
 df.viz.histogram("wav", shape=1000)
