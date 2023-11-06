@@ -23,7 +23,7 @@ from radis.spectrum.spectrum import Spectrum
 from radis.test.utils import setup_test_line_databases
 
 
-@pytest.mark.fast
+# @pytest.mark.fast
 @pytest.mark.needs_connection
 def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs):
     """
