@@ -5307,7 +5307,7 @@ class Spectrum(object):
 
         if isinstance(wrange, (int, float)):
             # Use user provided point. Only makes sense to normalize using
-            # normalize_how='max', but seems dramatic to raise an error.
+            # normalize_how='max', otherwise raise an error.
             w, I = s.get(
                 var, wunit=wunit, Iunit=s.units[var], copy=False
             )  # (faster not to copy)
@@ -5316,10 +5316,10 @@ class Spectrum(object):
                 norm = I[np.argmin(np.abs(w - wrange))]
                 norm_unit = s.units[var]
             elif normalize_how == "mean" or normalize_how == "area":
-                warn(
+                raise ValueError(
+                    "Unexpected `normalize_how`: {0}. "
                     "For a single value wrange only `normalize_how='max'` is "
-                    "defined."
-                    "Ignoring `normalize_how='{0}'`".format(normalize_how)
+                    "defined.".format(normalize_how)
                 )
             else:
                 raise ValueError(

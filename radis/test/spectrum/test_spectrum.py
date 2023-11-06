@@ -536,9 +536,17 @@ def test_normalization(*args, **kwargs):
         s3.crop(2125, 2150).get_integral("radiance", wunit=s3.get_waveunit()), 1
     )
 
+    # Test the spectrum can be normalized at a single point,
     w, I = s.get("radiance")
     s4 = s.normalize(wrange=w[18047])
     assert np.isclose(s4.get("radiance")[1][18047], 1)
+
+    # and the errors are raised if a user tries to pass nonsense options.
+    with pytest.raises(ValueError):
+        s.normalize(wrange=w[18047], normalize_how="mean")
+
+    with pytest.raises(ValueError):
+        s.normalize(wrange=w[18047], normalize_how="area")
 
 
 @pytest.mark.fast
