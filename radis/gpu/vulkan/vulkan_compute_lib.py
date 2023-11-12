@@ -55,7 +55,13 @@ class GPUApplication(object):
 
         self.createCommandBuffer()
 
-    def __del__(self):
+    def free(self):
+
+        self.command_list = []
+
+        fft_keys = [*self._fftApps.keys()]
+        for key in fft_keys:
+            del self._fftApps[key]
 
         for bufferObject in self._bufferObjects:
             bufferObject.free()
@@ -70,6 +76,10 @@ class GPUApplication(object):
             vk.vkDestroyPipelineLayout(self._device, pipelineLayout, None)
         for pipeline in self._pipelines:
             vk.vkDestroyPipeline(self._device, pipeline, None)
+
+        # TODO: [developers-note]: VkFFT used to free some resources, which has now all moved to here. The two freeings below have been removed from VkFFT and not been replaced here:
+        # if (config->physicalDevice) free(config->physicalDevice);
+        # if (config->queue) free(config->queue);
 
         if self._queryPool:
             vk.vkDestroyQueryPool(self._device, self._queryPool, None)

@@ -19,7 +19,7 @@ from radis.test.utils import getTestFile
 
 
 def test_eq_spectrum_emulated_gpu(
-    backend="cpu-cuda", verbose=False, plot=False, *args, **kwargs
+    backend="cpu-vulkan", verbose=False, plot=False, *args, **kwargs
 ):
     """Compare Spectrum calculated in the emulated-GPU code
     :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu` to Spectrum
@@ -63,7 +63,7 @@ def test_eq_spectrum_emulated_gpu(
     s_gpu = sf.eq_spectrum_gpu(
         Tgas=T,
         backend=backend,
-        name="GPU (emulate)" if backend == "cpu-cuda" else "GPU",
+        name="GPU (emulate)" if backend == "cpu-vulkan" else "GPU",
     )
     s_gpu.name += f"[{s_gpu.c['calculation_time']:.2f}s]"
     s_cpu.crop(wmin=2284.2, wmax=2284.8)  # remove edge lines
@@ -96,8 +96,46 @@ def test_eq_spectrum_gpu(plot=False, *args, **kwargs):
         test_eq_spectrum_emulated_gpu(backend="gpu-cuda", plot=plot, *args, **kwargs)
 
 
-def test_multiple_gpu_calls():
+def test_gpu_recalc(plot=False):
+    from numpy import allclose
+
     from radis import SpectrumFactory
+    from radis.gpu.gpu import gpu_exit
+
+    fixed_conditions = {
+        "wmin": 2000,
+        "wmax": 2010,
+        "pressure": 0.1,
+        "wstep": 0.001,
+        "mole_fraction": 0.01,
+    }
+
+    sf = SpectrumFactory(**fixed_conditions, broadening_method="fft", molecule="CO")
+    sf.fetch_databank("hitran")
+
+    s_gpu = sf.eq_spectrum_gpu(
+        Tgas=300.0,
+        path_length=1.0,
+        backend="gpu-vulkan",
+        diluent={"air": 0.99},  # K  # runs on GPU
+        exit_gpu=False,  # GPU will be reused
+    )
+    wl, A1 = s_gpu.get("absorbance")
+    A2 = s_gpu.recalc_gpu("absorbance", path_length=3.0)
+    gpu_exit()
+
+    if plot:
+        import matplotlib.pyplot as plt
+
+        plt.plot(wl, 3 * A1, "k", lw=3)
+        plt.plot(wl, A2, "r", lw=1)
+        plt.show()
+
+    assert allclose(3 * A1, A2, rtol=1e-4)
+
+
+def test_multiple_gpu_calls(plot=False):
+    from radis import SpectrumFactory, plot_diff
 
     fixed_conditions = {
         "path_length": 1,
@@ -112,11 +150,17 @@ def test_multiple_gpu_calls():
     sf.fetch_databank("hitran")
 
     s1_gpu = sf.eq_spectrum_gpu(
-        Tgas=300, backend="gpu-cuda", diluent={"air": 0.99}  # K  # runs on GPU
+        Tgas=300, backend="gpu-vulkan", diluent={"air": 0.99}  # K  # runs on GPU
     )
     s2_gpu = sf.eq_spectrum_gpu(
-        Tgas=300, backend="gpu-cuda", diluent={"air": 0.99}  # K  # runs on GPU
+        Tgas=300, backend="gpu-vulkan", diluent={"air": 0.99}  # K  # runs on GPU
     )
+
+    if plot:
+        plot_diff(s1_gpu, s2_gpu, wunit="nm", method="diff")
+
+    print(s1_gpu.get_power())
+    print(s2_gpu.get_power())
 
     assert abs(s1_gpu.get_power() - s2_gpu.get_power()) / s1_gpu.get_power() < 1e-5
     assert s1_gpu.get_power() > 0
@@ -126,6 +170,6 @@ def test_multiple_gpu_calls():
 if __name__ == "__main__":
 
     # test_eq_spectrum_gpu(plot=True)
-    # test_eq_spectrum_emulated_gpu(plot=True, verbose=2)
-
+    # test_gpu_recalc(plot=True) #This one passes on win
+    # test_multiple_gpu_calls(plot=True)
     printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))

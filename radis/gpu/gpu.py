@@ -1,4 +1,5 @@
 import os.path
+from warnings import warn
 
 import numpy as np
 from scipy.constants import N_A, c, k
@@ -16,8 +17,6 @@ from radis.gpu.structs import initData_t, iterData_t
 from radis.misc.utils import getProjectRoot
 
 # from radis.misc.warning import NoGPUWarning
-
-# from warnings import warn
 
 
 gpu_mod = None
@@ -251,10 +250,9 @@ def gpu_iterate(
         different stages of the GPU computation. The ``'total'`` key
         gives the total time.
     """
-
-    # if gpu_mod is None:
-    # warn("Must have an open GPU context; please call gpu_init() first.")
-    # return
+    if app is None:
+        warn("No GPUApplication initialized; please call gpu_init() first.")
+        return
 
     if verbose >= 2:
         print("Copying iteration parameters to device...")
@@ -270,7 +268,7 @@ def gpu_iterate(
     app.run()
     gpu_times = app.get_timestamps()
 
-    abscoeff_h = app.spectrum_d.getData()[: init_h.N_v]
+    abscoeff_h = np.copy(app.spectrum_d.getData()[: init_h.N_v])
 
     if verbose == 1:
         print("Finished calculating spectrum!")
@@ -280,6 +278,8 @@ def gpu_iterate(
 
 def gpu_exit(event=None):
     global app
+    # TODO: free(), del, *and* =None might be redundant..
     if app:
+        app.free()
         del app
     app = None

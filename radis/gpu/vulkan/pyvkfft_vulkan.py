@@ -105,7 +105,7 @@ _vkfft_vulkan.sync_app.restype = ctypes.c_int
 _vkfft_vulkan.sync_app.argtypes = [_types.vkfft_app]
 
 
-_vkfft_vulkan.make_config.restype = ctypes.c_void_p
+_vkfft_vulkan.make_config.restype = _types.VkFFTConfiguration
 _vkfft_vulkan.make_config.argtypes = [
     ctype_int_size_p,
     ctypes.c_size_t,
@@ -137,7 +137,7 @@ _vkfft_vulkan.make_config.argtypes = [
     ctype_int_size_p,
 ]
 
-_vkfft_vulkan.init_app.restype = ctypes.c_void_p
+_vkfft_vulkan.init_app.restype = _types.vkfft_app
 _vkfft_vulkan.init_app.argtypes = [
     _types.VkFFTConfiguration,
     ctypes.POINTER(ctypes.c_int),
@@ -309,10 +309,21 @@ class VkFFTApp(VkFFTAppBase):
         """Takes care of deleting allocated memory in the underlying
         VkFFTApplication and VkFFTConfiguration.
         """
+
+        # print('VkFFT.app.__del__... ')
+        # print('free_app @',hex(self.app), end='... ')
         if self.app is not None:
             _vkfft_vulkan.free_app(self.app)
+            self.app = None
+        # print('Done!')
+
+        # print('free_config @',hex(self.config), end='... ')
         if self.config is not None:
             _vkfft_vulkan.free_config(self.config)
+            self.config = None
+        # print('Done!')
+
+        # print('VkFFT.app.__del__ done!')
 
     def _make_config(self):
         """Create a vkfft configuration for a FFT transform"""
