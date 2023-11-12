@@ -3,6 +3,7 @@ name: radis-env
 channels:
 - conda-forge
 - astropy
+- cantera
 - plotly
 dependencies:
 - python=3.8
