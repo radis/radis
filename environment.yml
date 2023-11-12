@@ -3,13 +3,13 @@ name: radis-env
 channels:
 - conda-forge
 - astropy
-- cantera
 - plotly
 dependencies:
 - python=3.8
 - astropy>=4.3.1  # Unit aware calculations
 - astroquery>=0.4.6  # to fetch HITRAN databases
 - beautifulsoup4>=4.10.0 # parse ExoMol website
+- sundials<=6.6.1 # Workaround to solve Cantera import issue
 - cantera>=2.5.1   # for chemical equilibrium computations
 - configparser
 - cython          # EP : really needed? pipreqs doesn't say so
