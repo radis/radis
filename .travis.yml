@@ -4,7 +4,7 @@ python:
   #- "2.7"    # not tested anymore starting from 0.9.19
   - "3.8"
 os: linux
-dist: focal # this gives us Ubuntu 20.04, needed for GPU tests
+dist: jammy # this gives us Ubuntu 22.04, needed for GPU tests
 
 stages:
   - name: test
