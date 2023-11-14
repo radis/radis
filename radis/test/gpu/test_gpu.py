@@ -134,7 +134,7 @@ def test_gpu_recalc(plot=False):
     assert allclose(3 * A1, A2, rtol=1e-4)
 
 
-def test_multiple_gpu_calls(plot=False):
+def test_multiple_gpu_calls(plot=False, Ntests=2):
     from radis import SpectrumFactory, plot_diff
 
     fixed_conditions = {
@@ -144,26 +144,34 @@ def test_multiple_gpu_calls(plot=False):
         "pressure": 0.1,
         "wstep": 0.001,
         "mole_fraction": 0.01,
+        "verbose": False,
     }
 
     sf = SpectrumFactory(**fixed_conditions, broadening_method="fft", molecule="CO")
     sf.fetch_databank("hitran")
 
-    s1_gpu = sf.eq_spectrum_gpu(
-        Tgas=300, backend="gpu-vulkan", diluent={"air": 0.99}  # K  # runs on GPU
-    )
-    s2_gpu = sf.eq_spectrum_gpu(
-        Tgas=300, backend="gpu-vulkan", diluent={"air": 0.99}  # K  # runs on GPU
-    )
+    s_list = []
+
+    for i in range(Ntests):
+
+        s_gpu = sf.eq_spectrum_gpu(
+            Tgas=300,  #  + 200*(i&1),
+            backend="gpu-vulkan",
+            device_id=1,
+            diluent={"air": 0.99},  # K  # runs on GPU
+        )
+        print(s_gpu.get_power())  # , end=('\n' if i&1 else ' '))
+        s_list.append(s_gpu)
+    print("\n")
 
     if plot:
-        plot_diff(s1_gpu, s2_gpu, wunit="nm", method="diff")
+        plot_diff(s_list[0], s_list[-2], wunit="nm", method="diff")
 
-    print(s1_gpu.get_power())
-    print(s2_gpu.get_power())
-
-    assert abs(s1_gpu.get_power() - s2_gpu.get_power()) / s1_gpu.get_power() < 1e-5
-    assert s1_gpu.get_power() > 0
+    assert (
+        abs(s_list[0].get_power() - s_list[-2].get_power()) / s_list[0].get_power()
+        < 1e-5
+    )
+    assert s_list[0].get_power() > 0
 
 
 # --------------------------
@@ -171,5 +179,5 @@ if __name__ == "__main__":
 
     # test_eq_spectrum_gpu(plot=True)
     # test_gpu_recalc(plot=True) #This one passes on win
-    # test_multiple_gpu_calls(plot=True)
+    # test_multiple_gpu_calls(plot=True, N=10)
     printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))
