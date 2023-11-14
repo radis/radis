@@ -968,6 +968,7 @@ class SpectrumFactory(BandFactory):
         backend="gpu-vulkan",
         device_id=0,
         exit_gpu=True,
+        verbose=None,
     ) -> Spectrum:
         """Generate a spectrum at equilibrium with calculation of lineshapes
         and broadening done on the GPU.
@@ -1054,7 +1055,8 @@ class SpectrumFactory(BandFactory):
         self.input.Tvib = Tgas  # just for info
         self.input.Trot = Tgas  # just for info
 
-        verbose = self.verbose
+        if verbose is None:
+            verbose = self.verbose
 
         # New Profiler object
         self._reset_profiler(verbose)

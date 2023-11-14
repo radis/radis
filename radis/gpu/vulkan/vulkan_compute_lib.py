@@ -17,7 +17,7 @@ QUERY_POOL_SIZE = 32  # Max number of queries (=timestamps)
 
 
 class GPUApplication(object):
-    def __init__(self, deviceID=0, path="./"):
+    def __init__(self, deviceID=0, path="./", verbose=True):
         # In order to use Vulkan, you must create an instance
         self._instance = None
         self._debugReportCallback = None
@@ -26,6 +26,7 @@ class GPUApplication(object):
         self._nextDstBinding = 0
         self._timestampLabels = []
         self._bufferObjects = []
+        self.verbose = verbose
         # self._deviceID = deviceID
         self._shaderPath = path
         self._fftApps = {}
@@ -49,7 +50,7 @@ class GPUApplication(object):
 
         # Initialize vulkan
         self.createInstance()
-        self.selectPhysicalDevice(deviceID)
+        self.selectPhysicalDevice(deviceID, verbose=verbose)
         self.createDevice()
         self.init_shaders()
 
