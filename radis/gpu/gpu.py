@@ -49,6 +49,7 @@ def gpu_init(
     verbose=0,
     backend="gpu-vulkan",
     device_id=0,
+    T_max_parsum=None,
 ):
     """
     Initialize GPU-based calculation for emission and absorption spectra in spectroscopy.
@@ -90,7 +91,9 @@ def gpu_init(
     backend :  ``'gpu-cuda'``, ``'cpu-cuda'``, optional
         Which backend to use; currently only CUDA backends (Nvidia) are supported. ``'cpu-cuda'`` runs the kernel on CPU. Default is ``'gpu-cuda'``.
     device_id : int
-        The id of the selected GPU. Check the console output for more details.
+        The id of the selected GPU. Check the console output for more details. ``'cpu-cuda'`` runs the kernel on CPU. Default is ``'gpu-cuda'``.
+    T_max_parsum : int
+        The maximum temperature at which the partition function of all the isotopologues is calculated (at higher T, the partition function should raise an error).
     Returns
     -------
     init_h : radis.gpu.structs.initData_t
@@ -142,7 +145,10 @@ def gpu_init(
 
     # Calulate params once to obtain N_G_max and N_L_max:
     p_max = 5.0  # bar #TODO: obtain this from defaults/keywords
-    T_max = 3500.0  # K
+    if T_max_parsum is not None:
+        T_max = T_max_parsum  # K
+    else:
+        T_max = 3500.0  # default value for now
     set_pTQ(p_max, T_max, 0.5, iter_h, l=1.0, slit_FWHM=0.0)
     set_G_params(init_h, iter_h)
     set_L_params(init_h, iter_h)
@@ -150,6 +156,7 @@ def gpu_init(
     N_L_max = iter_h.N_L
 
     if verbose >= 2:
+        print("T_max of temperature grid = {} K".format(T_max))
         print("done!")
 
     ## Next the block- and thread size of the GPU kernels are set.

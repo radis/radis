@@ -1103,6 +1103,7 @@ class SpectrumFactory(BandFactory):
             iso_list, dtype=np.float32
         )  # molar mass of each isotope
 
+        T_max_parsum = float("inf")
         Q_interp_list = []
         for iso in iso_list:
             if iso in iso_set:
@@ -1110,6 +1111,9 @@ class SpectrumFactory(BandFactory):
                 molarmass_arr[iso] = params.molar_mass.iloc[0]
                 parsum = self.get_partition_function_interpolator(molecule, iso, state)
                 Q_interp_list.append(parsum.at)
+                T_max_parsum = np.min(
+                    (T_max_parsum, parsum.Tmax)
+                )  # from all the isotopologues partition function, the lowest maximum temperature
             else:
                 Q_interp_list.append(lambda T: 1.0)
 
@@ -1162,6 +1166,7 @@ class SpectrumFactory(BandFactory):
             verbose=verbose,
             backend=backend,
             device_id=device_id,
+            T_max_parsum=T_max_parsum,
         )
         if verbose >= 2:
             print("Initialization complete!")
