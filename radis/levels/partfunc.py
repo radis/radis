@@ -1189,7 +1189,7 @@ class PartFuncTIPS(RovibParFuncTabulator):
                 with redirect_stdout(None):
                     from hapi import HAPI_VERSION, partitionSum
             else:
-                from hapi import HAPI_VERSION, TIPS_2021_ISOT_HASH, partitionSum
+                from hapi import HAPI_VERSION, partitionSum
 
                 if self.verbose >= 2:
                     printg("HAPI version: %s" % HAPI_VERSION)
@@ -1210,6 +1210,8 @@ class PartFuncTIPS(RovibParFuncTabulator):
         self.I = I
 
         # Get min and maximum of partition functions in TIPS
+        from hapi import TIPS_2021_ISOT_HASH
+
         TT = TIPS_2021_ISOT_HASH[(M, I)]
         self.Tmin = min(TT)
         self.Tmax = max(TT)

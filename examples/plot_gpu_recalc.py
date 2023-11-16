@@ -23,12 +23,14 @@ from radis.gpu.gpu import gpu_exit
 sf = SpectrumFactory(
     2150,
     2450,  # cm-1
-    molecule="CO2",
+    # molecule="CO2",
+    molecule="CO",
     isotope="1,2,3",
     wstep=0.002,
 )
 
-sf.fetch_databank("hitemp")
+# sf.fetch_databank("hitemp")
+sf.fetch_databank("exomol")
 
 T_list = [1000.0, 1250.0, 1500.0, 1750.0, 2000.0]
 
