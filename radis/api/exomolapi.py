@@ -1373,7 +1373,7 @@ class MdbExomol(DatabaseManager):
                         "\t\t => Downloading from {}".format(pfpath)
                     )  # modify indent accordingly print in __init__
                 try:
-                    urllib.request.urlretrieve(pfpath, str(self.path / pfname))                    
+                    urllib.request.urlretrieve(pfpath, str(self.path / pfname))
                 except HTTPError:
                     print(f"Error: Couldn't download {ext} file at {pfpath} and save.")
 
