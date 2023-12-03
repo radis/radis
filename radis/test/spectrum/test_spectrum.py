@@ -355,6 +355,7 @@ def test_rescaling_function(verbose=True, *args, **kwargs):
             "path_length": 1,  # arbitrary
             "medium": "air",
         },
+        cond_units={"path_length": "cm"},
         populations={"molecules": {"N2C": 1e13}},  # arbitrary
         # (just an example)
     )
