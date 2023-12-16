@@ -7,7 +7,8 @@ Notes
 
 We try to use the same Computation parameters when possible, in particular
 the :py:attr:`~radis.lbl.factory.SpectrumFactory.broadening_max_width` of RADIS
-is defined in terms of WavenumberWingHW/HWHM in [HAPI]_
+is defined in terms of WavenumberWingHW/HWHM in [HAPI]_. This
+benchmark case of [HAPI], Table 7, Methane_III, is also featured in the [RADIS-2018] article.
 
 
 

@@ -18,3 +18,8 @@ from radis import getMolecule
 
 CO = getMolecule("CO", 2, "X")
 print(CO.Erovib(6, 3))
+
+# Here we get the energy of the asymmetric mode of CO2::
+
+CO2 = getMolecule("CO2", 1, "X")
+print(CO2.Erovib(0, 0, 0, 1, 0))
