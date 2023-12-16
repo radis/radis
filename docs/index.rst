@@ -66,7 +66,7 @@ Calculate a CO equilibrium spectrum from the [HITRAN-2020]_ database, using the
 Content
 =======
 
-:doc:`examples/examples`
+:doc:`auto_examples/index`
     Explore the capabilities of RADIS with our examples.
 :doc:`features/features`
     More details about RADIS features, what RADIS can and can not provide.
@@ -78,10 +78,8 @@ Content
     The Line-of-sight (LOS) module for users dealing with line-of-sight experiments. The module allows combination of Spectra such as::
 
       s_line_of_sight = (s_plasma_CO2 // s_plasma_CO) > (s_room_absorption)
-:doc:`auto_examples/index`
-
-:doc:`examples/hitran-spectra`
-
+:doc:`hitran-spectra/hitran-spectra`
+    The HITRAN spectra database, plotted for every molecule at ambient conditions.
 :doc:`online/online`
     Detailed documentation on the two RADIS online interfaces.
 :doc:`dev/developer`
@@ -104,23 +102,28 @@ the work ! See :ref:`How to cite? <label_cite>`
 
 * :ref:`modindex`
 
----------------------------------------------------------------------
 
 .. toctree::
    :maxdepth: 2
    :hidden:
 
+   auto_examples/index
    features/features
    lbl/lbl
    spectrum/spectrum
    los/los
-   examples/examples
-   auto_examples/index
-   examples/hitran-spectra
+   hitran-spectra/hitran-spectra
    online/online
    dev/developer
    references/references
    modules
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: COUCOU
+   user_guide/test1/index
+   user_guide/test2/index
 
 
 
