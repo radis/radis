@@ -35,8 +35,8 @@ or 'conda' via the conda-forge channel::
 Had a problem or want something different?
 
 - refer to the :ref:`detailed installation procedure <label_install>`
-- try our GUI interface :ref:`🌱 RADIS Online <label_radis_online>` !
-- try our Jupyter notebooks :ref:`🌐 RADIS-lab <label_radis_lab>` !
+- try the RADIS-app, our GUI interface :ref:`🌱 RADIS Online <label_radis_online>` !
+- try RADIS-lab, our Jupyter notebooks :ref:`🔬 RADIS-lab <label_radis_lab>` !
 
 .. _label_first_example:
 
@@ -66,8 +66,10 @@ Calculate a CO equilibrium spectrum from the [HITRAN-2020]_ database, using the
 Content
 =======
 
+:doc:`examples/examples`
+    Explore the capabilities of RADIS with our examples.
 :doc:`features/features`
-    More details about RADIS features, what it can and can not provide.
+    More details about RADIS features, what RADIS can and can not provide.
 :doc:`lbl/lbl`
     Very detailed section on the Line-by-line (LBL) module and how spectra are generated in RADIS (databanks, line profiles, etc.)
 :doc:`spectrum/spectrum`
@@ -76,10 +78,10 @@ Content
     The Line-of-sight (LOS) module for users dealing with line-of-sight experiments. The module allows combination of Spectra such as::
 
       s_line_of_sight = (s_plasma_CO2 // s_plasma_CO) > (s_room_absorption)
-:doc:`examples/examples`
-    More examples.
 :doc:`auto_examples/index`
+
 :doc:`examples/hitran-spectra`
+
 :doc:`online/online`
     Detailed documentation on the two RADIS online interfaces.
 :doc:`dev/developer`
