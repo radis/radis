@@ -22,11 +22,11 @@ Getting Started
 Install
 =======
 
-Assuming you have Python installed with the `Anaconda <https://www.anaconda.com/download/>`_ distribution you can use 'pip'::
+Assuming you have Python installed with the `Anaconda <https://www.anaconda.com/download/>`_ distribution you can use ``pip``::
 
     pip install radis
 
-or 'conda' via the conda-forge channel::
+or ``conda`` via the conda-forge channel::
 
     conda install radis -c conda-forge
 
@@ -102,7 +102,6 @@ the work ! See :ref:`How to cite? <label_cite>`
 
 * :ref:`modindex`
 
-
 .. toctree::
    :maxdepth: 2
    :hidden:
@@ -117,16 +116,6 @@ the work ! See :ref:`How to cite? <label_cite>`
    dev/developer
    references/references
    modules
-
-.. toctree::
-   :maxdepth: 2
-   :hidden:
-   :caption: COUCOU
-   user_guide/test1/index
-   user_guide/test2/index
-
-
-
 
 ---------------------------------------------------------------------
 
