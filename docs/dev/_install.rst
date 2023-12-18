@@ -3,27 +3,10 @@
 Install
 -------
 
-You can either install RADIS from `pip`, the Python package manager. But if
-you want to access the latest features, or modify the code and contribute,
-we suggest that you Fork the source code from `GitHub <https://github.com/radis/radis>`_.
+This is the developper documentation, if you want to access the latest features, modify the code, or contribute.
+For the user documentation, see the :ref:`use-only install <label_install_useonly>`.
 
-**Use-only version** : cant modify the code
-
-In a terminal, run::
-
-    pip install --user radis -v
-
-The 'pip' module has to be installed (by default if you've installed Python
-with Anaconda).
-
-If you later want to update the package::
-
-    pip install radis --upgrade
-
-**Developer version**: to modify the code and contribute to the
-project.
-
-1. Fork the `RADIS repository <https://help.github.com/en/github/getting-started-with-github/fork-a-repo>`_ and use that url for the clone step below. This will make submitting changes easier in the long term for you:
+1. Fork the `RADIS repository <https://help.github.com/en/github/getting-started-with-github/fork-a-repo>`_ and use that url for the clone step below. This will make submitting changes easier in the long term for you.
 
 2. In a terminal, run::
 

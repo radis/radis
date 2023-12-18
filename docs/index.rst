@@ -19,6 +19,7 @@ with RADIS, or with other spectral codes.
 Getting Started
 ===============
 
+.. _label_install_useonly:
 Install
 =======
 
@@ -32,11 +33,12 @@ or ``conda`` via the conda-forge channel::
 
 **That's it!** You can now run your first example below.
 
-Had a problem or want something different?
 
-- refer to the :ref:`detailed installation procedure <label_install>`
-- try the RADIS-app, our GUI interface :ref:`🌱 RADIS Online <label_radis_online>` !
-- try RADIS-lab, our Jupyter notebooks :ref:`🔬 RADIS-lab <label_radis_lab>` !
+    Had a problem or want something different?
+
+    - refer to the :ref:`detailed installation procedure <label_install>`
+    - try the RADIS-app, our GUI interface :ref:`🌱 RADIS Online <label_radis_online>` !
+    - try RADIS-lab, our Jupyter notebooks :ref:`🔬 RADIS-lab <label_radis_lab>` !
 
 .. _label_first_example:
 
