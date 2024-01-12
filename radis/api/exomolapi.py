@@ -6,6 +6,7 @@ Initial code borrowed from the `Exojax <https://github.com/HajimeKawahara/exojax
 code (which you should also have a look at !), by @HajimeKawahara, under MIT License.
 
 """
+
 import os
 import pathlib
 import warnings
@@ -1058,23 +1059,15 @@ class MdbExomol(DatabaseManager):
         #  default n_Texp value if not given
         if self.n_Texp_def is None:
             self.n_Texp_def = 0.5
-            warnings.warn(
-                Warning(
-                    f"""
+            warnings.warn(Warning(f"""
                     No default broadening exponent in def file. Assigned n = {self.n_Texp_def}
-                    """
-                )
-            )
+                    """))
         #  default alpha_ref value if not given
         if self.alpha_ref_def is None:
             self.alpha_ref_def = 0.07
-            warnings.warn(
-                Warning(
-                    f"""
+            warnings.warn(Warning(f"""
                     No default broadening in def file. Assigned alpha_ref = {self.alpha_ref_def}
-                    """
-                )
-            )
+                    """))
 
         # load states
         if cache == "regen" and mgr.cache_file(self.states_file).exists():
@@ -1260,10 +1253,8 @@ class MdbExomol(DatabaseManager):
                     )
                 )
 
-                self.alpha_ref = np.array(
-                    self.alpha_ref_def * np.ones_like(df["jlower"])
-                )
-                self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df["jlower"]))
+                self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
+                self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
             else:
                 codelv = check_bdat(bdat)
                 if self.verbose:
@@ -1282,20 +1273,24 @@ class MdbExomol(DatabaseManager):
                         bdat,
                         alpha_ref_default=self.alpha_ref_def,
                         n_Texp_default=self.n_Texp_def,
-                        jlower_max=np.max(df["jlower"]),
+                        jlower_max=df["jlower"].max(),
                     )
                     jj2alpha_ref, jj2n_Texp = make_jj2b(
                         bdat,
                         j2alpha_ref_def=j2alpha_ref,
                         j2n_Texp_def=j2n_Texp,
-                        jupper_max=np.max(df["jupper"]),
+                        jupper_max=df["jupper"].max(),
                     )
-                    self.alpha_ref = np.array(jj2alpha_ref[df["jlower"], df["jupper"]])
-                    self.n_Texp = np.array(jj2n_Texp[df["jlower"], df["jupper"]])
+                    self.alpha_ref = np.array(
+                        jj2alpha_ref[df["jlower"].values, df["jupper"].values]
+                    )
+                    self.n_Texp = np.array(
+                        jj2n_Texp[df["jlower"].values, df["jupper"].values]
+                    )
         else:
             print("The default broadening parameters are used.")
-            self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(df["jlower"]))
-            self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df["jlower"]))
+            self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
+            self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
 
         if add_columns:
             # Add values
@@ -1420,12 +1415,12 @@ if __name__ == "__main__":
     # # sf.fetch_databank('hitran')  # placeholder. Load lines (will be replaced), load partition function.
     # # s_hit = sf.eq_spectrum(500, name='HITRAN')
 
-    #%% Test by direct calculation
+    # %% Test by direct calculation
     # import pytest
 
     # print("Testing factory:", pytest.main(["../test/io/test_exomol.py"]))
 
-    #%% RADIS-like Example
+    # %% RADIS-like Example
     # uses fetch_exomol() internally
 
     from radis import calc_spectrum
@@ -1568,7 +1563,7 @@ if __name__ == "__main__":
     )
     # ... ready to run Jax calculations
 
-    #%%
+    # %%
 
     # """ExoMol lines can be downloaded and accessed separately using
     # :py:func:`~radis.io.exomol.fetch_exomol`
