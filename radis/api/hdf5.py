@@ -530,11 +530,11 @@ class DataFileManager(object):
         if self.engine == "pytables":
             # Selection
             where = []
-            for (column, lbound) in lower_bound:
+            for column, lbound in lower_bound:
                 where.append(f"{column} > {lbound}")
-            for (column, ubound) in upper_bound:
+            for column, ubound in upper_bound:
                 where.append(f"{column} < {ubound}")
-            for (column, withinv) in within:
+            for column, withinv in within:
                 where.append(f"{column} in {withinv.split(',')}")
 
         elif self.engine in ["vaex", "feather"]:
@@ -554,11 +554,11 @@ class DataFileManager(object):
 
             # Selection
             b = True
-            for (column, lbound) in lower_bound:
+            for column, lbound in lower_bound:
                 b *= df[column] > lbound
-            for (column, ubound) in upper_bound:
+            for column, ubound in upper_bound:
                 b *= df[column] < ubound
-            for (column, withinv) in within:
+            for column, withinv in within:
                 b2 = False
                 for val in withinv.split(","):
                     b2 += df[column] == float(val)
@@ -566,7 +566,7 @@ class DataFileManager(object):
             if b is not True and False in b:
                 df = df[
                     b
-                ]  # note in Vaex mode, this is a vaex Expression, not the DataFrame yet
+                ].extract()  # note in Vaex mode, this is a vaex Expression, not the DataFrame yet
 
         return df
 
@@ -933,7 +933,7 @@ def hdf2df(
     return df
 
 
-#%%
+# %%
 
 if __name__ == "__main__":
 
