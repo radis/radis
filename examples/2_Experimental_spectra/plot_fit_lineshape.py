@@ -19,7 +19,7 @@ from radis.test.utils import getTestFile
 real_experiment = True
 if real_experiment:
     T_ref = 7515  # for index 9
-    # If using a real experiment from Minesi et al. (2022) - doi:10.1007/s00340-022-07931-7
+    # If using a real experiment (CO in argon) from Minesi et al. (2022) - doi:10.1007/s00340-022-07931-7
     s = Spectrum.from_mat(
         getTestFile("trimmed_1857_VoigtCO_Minesi.mat"),
         "absorbance",

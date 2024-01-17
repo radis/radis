@@ -27,7 +27,7 @@ Submit a `Pull Request <https://github.com/radis/radis/pulls>`__ from GitHub.
 
 Online tests will be run automatically. They will check for:
 
-- Physical test cases, to ensure that the code is still working as expected (see :ref:`Test Section <label_dev_test>` to run them locally).
+- Physics test cases, to ensure that the code is still working as expected (see :ref:`Test Section <label_dev_test>` to run them locally).
 - Code format (see :ref:`Code linting below <label_linting>`).
 
 .. include:: _test.rst
