@@ -68,10 +68,10 @@ Calculate a CO equilibrium spectrum from the [HITRAN-2020]_ database, using the
 Content
 =======
 
+:doc:`features/features`
+    General details about RADIS features, what RADIS can and can not provide.
 :doc:`auto_examples/index`
     Explore the capabilities of RADIS with our examples.
-:doc:`features/features`
-    More details about RADIS features, what RADIS can and can not provide.
 :doc:`lbl/lbl`
     Very detailed section on the Line-by-line (LBL) module and how spectra are generated in RADIS (databanks, line profiles, etc.)
 :doc:`spectrum/spectrum`

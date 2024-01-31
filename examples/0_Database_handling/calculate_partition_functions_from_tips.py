@@ -6,11 +6,7 @@ Partition Functions from TIPS
 
 By default and for equilibrium calculations, RADIS calculates Partition Functions
 using the TIPS program ([TIPS-2020]_) through [HAPI]_. These partition functions can be retrieved
-with the :py:class:`~radis.levels.partfunc.PartFuncTIPS` class::
-
-See Also
---------
-:py:class:`~radis.levels.partfunc.PartFunc_Dunham`
+with the :py:class:`~radis.levels.partfunc.PartFuncTIPS` class. See also :py:class:`~radis.levels.partfunc.PartFunc_Dunham`.
 """
 
 from radis.db.classes import get_molecule_identifier
