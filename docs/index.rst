@@ -97,25 +97,36 @@ Cite
 
 RADIS is built on the shoulders of many state-of-the-art packages and databases. If using RADIS
 to compute spectra, make sure you cite all of them, for proper reproducibility and acknowledgement of
-the work ! See :ref:`How to cite? <label_cite>`
+the work! See :ref:`How to cite? <label_cite>`
 
 ---------------------------------------------------------------------
 
 * :ref:`modindex`
 
 .. toctree::
+   :caption: First steps with RADIS
    :maxdepth: 2
-   :hidden:
 
-   auto_examples/index
    features/features
+   auto_examples/index
+
+.. toctree::
+   :caption: Advanced topics
+   :maxdepth: 2
+
+   dev/developer
    lbl/lbl
    spectrum/spectrum
    los/los
+   references/references
+
+
+.. toctree::
+   :caption: Miscellaneous
+   :maxdepth: 2
+
    hitran-spectra/hitran-spectra
    online/online
-   dev/developer
-   references/references
    modules
 
 ---------------------------------------------------------------------

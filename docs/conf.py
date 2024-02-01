@@ -300,6 +300,7 @@ html_theme_options = {
         "RADIS Website": "https://radis.github.io/",
         "Video Tutorials": "https://www.youtube.com/channel/UCO-7NXkubTAiGGxXmvtQlsA",
     },
+    "collapse_navigation": True,
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
