@@ -2910,10 +2910,9 @@ class BroadenFactory(BaseFactory):
         """
         # TODO: export continuum in Spectrum ? (under q['continuum'] ? )
 
-        self.warn(
-            DeprecationWarning(
-                "Pseudo_continuum not needed anymore as RADIS is getting so fast🔥🔥🔥. This feature will be removed in future versions."
-            )
+        warn(
+            "Pseudo_continuum not needed anymore as RADIS is getting so fast🔥🔥🔥. This feature will be removed in future versions.",
+            DeprecationWarning,
         )
         if self.params.pseudo_continuum_threshold > 0:
 

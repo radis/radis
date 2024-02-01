@@ -16,7 +16,7 @@ This means what whatever your RAM and whatever the size of the dataset, **you wo
 """
 
 # To compute spectrum using vaex add an argument engine= "vaex" in calc_spectrum, similarly add output="vaex" in fetch_hitran method to fetch data in vaex format.
-
+# Note : vaex is now the default engine (Radis 0.15)
 from radis import calc_spectrum
 
 s = calc_spectrum(
@@ -34,7 +34,7 @@ s = calc_spectrum(
 s.apply_slit(0.5, "nm")  # simulate an experimental slit
 s.plot("radiance")
 
-# To compute spectrum using pandas change engine="pandas" (default is also pandas)
+# To compute spectrum using pandas change engine="pandas"
 from radis import calc_spectrum
 
 s = calc_spectrum(
