@@ -2910,11 +2910,12 @@ class BroadenFactory(BaseFactory):
         """
         # TODO: export continuum in Spectrum ? (under q['continuum'] ? )
 
-        warn(
-            "Pseudo_continuum not needed anymore as RADIS is getting so fast🔥🔥🔥. This feature will be removed in future versions.",
-            DeprecationWarning,
-        )
         if self.params.pseudo_continuum_threshold > 0:
+
+            warn(
+                "Pseudo_continuum not needed anymore as RADIS is getting so fast🔥🔥🔥. This feature will be removed in future versions.",
+                DeprecationWarning,
+            )
 
             self.profiler.start(
                 "calc_pseudo_continuum", 2, "... Calculating pseudo continuum"

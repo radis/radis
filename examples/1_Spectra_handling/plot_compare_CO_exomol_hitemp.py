@@ -37,11 +37,8 @@ conditions = {
 }
 #%% Geisa VS HITRAN
 s_geisa = calc_spectrum(**conditions, databank="geisa", name="GEISA")
-s_hitran = calc_spectrum(
-    **conditions,
-    databank="hitran",
-    name="HITRAN",
-)
+s_hitran = calc_spectrum(**conditions, databank="hitran", name="HITRAN")
+
 fig, [ax0, ax1] = plot_diff(s_geisa, s_hitran, "xsection", yscale="log")
 # Adjust diff plot to be in linear scale
 ax1.set_yscale("linear")
