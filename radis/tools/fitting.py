@@ -219,7 +219,6 @@ def fit_spectrum(
     )
 
     # Calculate initial Spectrum, by showing all steps.
-    # factory.verbose = 0  # reduce verbose during calculation.
     compute_los_model(
         fit_parameters
     )  # Blank run to load energies; initialize all caches, etc.
@@ -228,7 +227,7 @@ def fit_spectrum(
     s0 = compute_los_model(fit_parameters)  # New run to get performance profile of fit
     sys.stderr.flush()
     s0.name = "Fit (in progress)"
-    if "profiler" in s0.conditions:
+    if "profiler" in s0.conditions and verbose > 0:
         print("-" * 30)
         print("TYPICAL FIT CALCULATION TIME:")
         s0.print_perf_profile()
@@ -493,9 +492,9 @@ def fit_spectrum(
             **{
                 "maxiter": maxiter,  # somehow.
                 "eps": 20,
-                #                         'ftol':1e-10,
+                # 'ftol':1e-10,
                 # 'gtol':1e-10,
-                "disp": True,
+                "disp": verbose,
             },
             **solver_options,
         },
