@@ -1943,19 +1943,12 @@ class SpectrumFactory(BandFactory):
 
         # Checking mole_fraction of molecule and diluent
         total_mole_fraction = mole_fraction + sum(list(diluents.values()))
-        if total_mole_fraction > 1:
-            raise MoleFractionError(
-                "Total molefraction = {0} of molecule and diluents greater than 1. Please set appropriate molefraction value of molecule and diluents.".format(
-                    total_mole_fraction
-                )
-            )
-        elif total_mole_fraction < 1:
-            raise MoleFractionError(
-                "Total molefraction = {0} of molecule and diluents less than 1. Please set appropriate molefraction value of molecule and diluents".format(
-                    total_mole_fraction
-                )
-            )
-
+        if not np.isclose(total_mole_fraction, 1):
+            if total_mole_fraction > 1:
+                message = "Total molefraction = {0} of molecule and diluents greater than 1. Please set appropriate molefraction value of molecule and diluents.".format(total_mole_fraction)
+            else:
+                message = "Total molefraction = {0} of molecule and diluents less than 1. Please set appropriate molefraction value of molecule and diluents".format(total_mole_fraction)
+            raise MoleFractionError(message)
         self._diluent = diluents
 
     def predict_time(self):

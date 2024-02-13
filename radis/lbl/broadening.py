@@ -358,8 +358,8 @@ def pressure_broadening_HWHM(
         gamma_lb += (
             (Tref / Tgas) ** n_i * gamma_i * pressure_atm * diluent_mole_fraction
         )
-
-    assert mole_fraction + sum(diluent.values()) == 1
+    total_mole_fraction = mole_fraction + sum(diluent.values())
+    assert np.isclose(total_mole_fraction, 1)
 
     # Adding self (resonant) broadening and temperature dependance self coefficient
     # ... if Tdpsel is not in `dg` then Tdpair is used.
