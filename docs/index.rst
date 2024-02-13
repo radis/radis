@@ -104,27 +104,15 @@ the work! See :ref:`How to cite? <label_cite>`
 * :ref:`modindex`
 
 .. toctree::
-   :caption: First steps with RADIS
    :maxdepth: 2
 
    features/features
    auto_examples/index
-
-.. toctree::
-   :caption: Advanced topics
-   :maxdepth: 2
-
    dev/developer
    lbl/lbl
    spectrum/spectrum
    los/los
    references/references
-
-
-.. toctree::
-   :caption: Miscellaneous
-   :maxdepth: 2
-
    hitran-spectra/hitran-spectra
    online/online
    modules
