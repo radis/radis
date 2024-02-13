@@ -2,19 +2,19 @@
 """
 
 ================================================================================
-Compare performance between old 1T fitting example and new fitting module
+Compare performance between legacy and current 1T fitting examples
 ================================================================================
 
-This example will try to fit an experimental spectrum using two fitting pipelines:
+In this example, an experimental spectrum is fit using two fitting pipelines:
 
-- Old fitting module of :py:func:`~radis.tools.fitting.fit_spectrum`, which is the
-  current RADIS fitting module. You can find the gallery example featuring it at
+- Legacy fitting module of :py:func:`~radis.tools.fitting.fit_spectrum`.
+  You can find the gallery example featuring it at
   `1 temperature fit <https://radis.readthedocs.io/en/latest/auto_examples/plot_1T_fit.html>`.
 - New fitting module of :py:func:`~radis.tools.new_fitting.fit_spectrum`, a new
   fitting interface for a more practical and interactive fitting experience. See
   `1 temperature fit using new module <https://radis.readthedocs.io/en/latest/auto_examples/plot_newfitting_Tgas.html>`
 
-With this, you can compare their overall performance, including number of loops,
+THe present code compare their overall performance, including number of loops,
 fitting time, and final residuals between experimental and best-fit spectra, as
 an indicator of fit accuracy.
 
@@ -29,7 +29,7 @@ from radis.test.utils import getTestFile, setup_test_line_databases
 from radis.tools.fitting import LTEModel
 from radis.tools.new_fitting import fit_spectrum
 
-# ------------------------------------ OLD 1-TEMPERATURE FITTING EXAMPLE ------------------------------------ #
+# -------------------- OLD 1-TEMPERATURE FITTING EXAMPLE -------------------- #
 
 setup_test_line_databases()
 
@@ -101,13 +101,13 @@ oldfitting_residual = best.fun
 oldfitting_loops = best.nfev
 oldfitting_time = end_time_mark - begin_time_mark
 
-# ------------------------------------------------------------------------------------------------------------ #
+# ------------------------------------------------------------ #
 
 
-# -------------------------------------------- NEW FITTING MODULE -------------------------------------------- #
+# ---------------------------- NEW FITTING MODULE ---------------------------- #
 
 
-# ------------------------------------ Step 1. Load experimental spectrum ------------------------------------ #
+# -------------------- Step 1. Load experimental spectrum -------------------- #
 
 
 # Load an experimental spectrum. You can prepare yours, or fetch one of them in the radis/test/files directory.
@@ -115,7 +115,7 @@ my_spec = getTestFile("CO2_measured_spectrum_4-5um.spec")
 s_experimental = load_spec(my_spec).offset(-0.2, "nm")
 
 
-# ------------------------------------ Step 2. Fill ground-truths and data ------------------------------------ #
+# -------------------- Step 2. Fill ground-truths and data -------------------- #
 
 
 # Experimental conditions which will be used for spectrum modeling. Basically, these are known ground-truths.
@@ -171,7 +171,7 @@ You can see the benchmark result of these algorithms here:
 """
 
 
-# ------------------------------------ Step 3. Run the fitting and retrieve results ------------------------------------ #
+# -------------------- Step 3. Run the fitting and retrieve results -------------------- #
 
 
 # Conduct the fitting process!
@@ -190,7 +190,7 @@ newfitting_loops = result.nfev
 newfitting_time = log["time_fitting"]
 
 
-# ---------------------------------------------------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------- #
 
 
 # ---------------------------------- PERFORMANCE COMPARISON BETWEEN 2 FITTING METHODS ---------------------------------- #

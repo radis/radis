@@ -2,7 +2,7 @@
 """
 
 ================================================================================
-New fitting module introduction - simple 1-temperature LTE case
+Fit #1: Temperature fit (T)
 ================================================================================
 
 RADIS has its own fitting feature, as shown in
@@ -42,24 +42,22 @@ from radis import load_spec
 from radis.test.utils import getTestFile
 from radis.tools.new_fitting import fit_spectrum
 
-# ------------------------------------ Step 1. Load experimental spectrum ------------------------------------ #
-
+# -------------------- Step 1. Load experimental spectrum -------------------- #
 
 # Load an experimental spectrum. You can prepare yours, or fetch one of them in the radis/test/files directory.
 my_spec = getTestFile("synth-NH3-1-500-2000cm-P10-mf0.01-p1.spec")
 s_experimental = load_spec(my_spec)
 
 
-# ------------------------------------ Step 2. Fill ground-truths and data ------------------------------------ #
-
+# -------------------- Step 2. Fill ground-truths and data -------------------- #
 
 # Experimental conditions which will be used for spectrum modeling. Basically, these are known ground-truths.
 experimental_conditions = {
     "molecule": "NH3",  # Molecule ID
-    "isotope": "1",  # Isotope ID, can have multiple at once
+    "isotope": "1",  # Isotopologue - also "all" or "1,2"
     "wmin": 1000,  # Starting wavelength/wavenumber to be cropped out from the original experimental spectrum.
     "wmax": 1050,  # Ending wavelength/wavenumber for the cropping range.
-    "wunit": "cm-1",  # Accompanying unit of those 2 wavelengths/wavenumbers above.
+    "wunit": "cm-1",  # Unit of "wmin"/"wmax"
     "mole_fraction": 0.01,  # Species mole fraction, from 0 to 1.
     "pressure": 1e6
     * u.Pa,  # Total pressure of gas, in "bar" unit by default, but you can also use Astropy units.
@@ -71,6 +69,7 @@ experimental_conditions = {
 }
 
 # List of parameters to be fitted, accompanied by their initial values.
+# Comment : an initial parameter too far from reality will impede convergence
 fit_parameters = {
     "Tgas": 700,  # Gas temperature, in K.
 }
@@ -79,10 +78,7 @@ fit_parameters = {
 # You can skip this step and let it use default bounding ranges, but this is not recommended.
 # Bounding range must be at format [<lower bound>, <upper bound>].
 bounding_ranges = {
-    "Tgas": [
-        500,
-        2000,
-    ],
+    "Tgas": [500, 2000],
 }
 
 # Fitting pipeline setups.
@@ -105,7 +101,7 @@ You can see the benchmark result of these algorithms here:
 """
 
 
-# ------------------------------------ Step 3. Run the fitting and retrieve results ------------------------------------ #
+# -------------------- Step 3. Run the fitting and retrieve results -------------------- #
 
 
 # Conduct the fitting process!

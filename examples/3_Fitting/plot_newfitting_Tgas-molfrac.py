@@ -2,7 +2,7 @@
 """
 
 ================================================================================
-Fit an LTE spectrum with multiple fit parameters using new fitting module
+Fit #2: multiparameters (T, x_CO, offset)
 ================================================================================
 
 With the new fitting module introduced in :py:func:`~radis.tools.new_fitting.fit_spectrum` function,
@@ -12,11 +12,10 @@ performance for equilibrium condition.
 This example features how new fitting module can fit an equilibrium spectrum, with multiple fit
 parameters, including gas temperature, mole fraction, and wavelength offset.
 
-This is a real fitting case introduced by Mr. Nicolas Minesi, featuring CO spectrum with absorbance
-as spectral quantity to be fitted. As we can see, he stored the experimental result in a MATLAB file,
-and from there a Spectrum object is generated. It is worth noticing that, the result seems to differ
-slightly from ground-truth, due to the fact that currently RADIS uses air broadening parameters for
-calculation, while this experiment was originally conducted in Argon. Future updates on other molecules'
+This example presents the fit of a real experiment (CO in argon) from Minesi et al. (2022) - doi:10.1007/s00340-022-07931-7
+The data are stored in a MatLab file. It is worth noticing that, the result differ
+slightly from ground-truth (7515 K for index = 9), due to the fact that RADIS uses HITRAN air broadening parameters for
+calculation, while this experiment was originally conducted in argon. Future updates on other molecules'
 broadening coefficients will increase the accuracy of these cases with non-air diluents.
 
 """
@@ -28,18 +27,17 @@ from radis import Spectrum
 from radis.test.utils import getTestFile
 from radis.tools.new_fitting import fit_spectrum
 
-# ------------------------------------ Step 1. Load experimental spectrum ------------------------------------ #
-
+# -------------------- Step 1. Load experimental spectrum -------------------- #
 
 data_file = "trimmed_1857_VoigtCO_Minesi.mat"
 data = scipy.io.loadmat(getTestFile(data_file), simplify_cells=True)["CO_resu_Voigt"]
-index = 20
+index = 9  # Ground truth is 7515 K
 s_experimental = Spectrum.from_array(
     data["nu"], data["A_exp"][:, index], "absorbance", wunit="cm-1", unit=""
 )  # adimensioned
 
 
-# ------------------------------------ Step 2. Fill ground-truths and data ------------------------------------ #
+# -------------------- Step 2. Fill ground-truths and data -------------------- #
 
 
 # Experimental conditions which will be used for spectrum modeling. Basically, these are known ground-truths.
@@ -54,6 +52,7 @@ experimental_conditions = {
     "path_length": 10
     * u.cm,  # Experimental path length, in "cm" unit by default, but you can use Astropy units too.
     "databank": "hitemp",  # Databank used for calculation. Must be stated.
+    "wstep": "auto",
 }
 
 # List of parameters to be fitted.
@@ -61,19 +60,15 @@ fit_parameters = {
     "Tgas": 5000,  # Fit parameter, accompanied by its initial value.
     "mole_fraction": 0.05,  # Species mole fraction, from 0 to 1.
     "offset": "0 cm-1",  # Experimental offset, must be a blank space separating offset amount and unit.
+    # "pressure": 0.8,
 }
 
 # List of bounding ranges applied for those fit parameters above.
 bounding_ranges = {
-    "Tgas": [
-        2000,
-        9000,
-    ],  # Bounding ranges for each fit parameter stated above. You can skip this step, but not recommended.
-    "mole_fraction": [0, 1],  # Species mole fraction, from 0 to 1.
-    "offset": [
-        -0.1,
-        0.1,
-    ],  # Experimental offset, must be a blank space separating offset amount and unit
+    "Tgas": [2000, 9000],
+    "mole_fraction": [0, 1],
+    "offset": [-0.03, 0.02],
+    # "pressure": [0.1, 2],
 }
 
 # Fitting pipeline setups.
@@ -96,7 +91,7 @@ You can see the benchmark result of these algorithms here:
 """
 
 
-# ------------------------------------ Step 3. Run the fitting and retrieve results ------------------------------------ #
+# -------------------- Step 3. Run the fitting and retrieve results -------------------- #
 
 
 # Conduct the fitting process!
