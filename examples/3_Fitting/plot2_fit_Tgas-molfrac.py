@@ -31,7 +31,9 @@ from radis.tools.new_fitting import fit_spectrum
 
 data_file = "trimmed_1857_VoigtCO_Minesi.mat"
 data = scipy.io.loadmat(getTestFile(data_file), simplify_cells=True)["CO_resu_Voigt"]
-index = 9  # Ground truth is 7515 K
+index = (
+    9  # Ground truth is 7515 K - Minesi et al. (2022) - doi:10.1007/s00340-022-07931-7
+)
 s_experimental = Spectrum.from_array(
     data["nu"], data["A_exp"][:, index], "absorbance", wunit="cm-1", unit=""
 )  # adimensioned

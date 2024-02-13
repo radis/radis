@@ -2,7 +2,7 @@
 """
 
 ================================================================================
-Compare performance between legacy and current 1T fitting examples
+Legacy vs recommended fitting examples
 ================================================================================
 
 In this example, an experimental spectrum is fit using two fitting pipelines:
@@ -73,7 +73,7 @@ sf.load_databank("HITRAN-CO2-TEST")
 
 begin_time_mark = time.time()
 
-s_best, best = sf.fit_spectrum(
+s_best, best = sf.fit_legacy(
     s_exp.take("radiance"),
     model=LTEModel_withslitnorm,
     fit_parameters={

@@ -3,12 +3,12 @@
 .. _example_one_temperature_fit:
 
 =================
-Legacy 1: Temperature fit
+Legacy #1: Temperature fit of CO2 spectrum
 =================
 
 Quickly fit an experimental spectrum with a one-temperature model,
 directly from :py:class:`~radis.lbl.factory.SpectrumFactory`,
-with :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`
+with :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_legacy`
 
 The method requires a fitting model. An example model is provided in :py:mod:`radis.tools.fitting` :
 :py:func:`~radis.tools.fitting.LTEModel`. Other models can be used; such as in
@@ -73,7 +73,7 @@ def LTEModel_withslitnorm(factory, fit_parameters, fixed_parameters):
 
 
 #%% Calculate
-# using :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`
+# using :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_legacy`
 
 import astropy.units as u
 
@@ -97,7 +97,7 @@ sf.load_databank(
 )  # see 'fetch_databank' below for a more general application
 # sf.fetch_databank("hitemp") #use "hitemp" or another database
 
-s_best, best = sf.fit_spectrum(
+s_best, best = sf.fit_legacy(
     s_exp.take("radiance"),
     model=LTEModel_withslitnorm,
     fit_parameters={

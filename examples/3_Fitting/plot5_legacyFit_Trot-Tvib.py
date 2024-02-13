@@ -3,7 +3,7 @@
 .. _example_multi_temperature_fit:
 
 =====================
-Legacy #2: non-equilibrium spectrum (Tvib, Trot)
+Legacy #2: non-equilibrium CO2 (Tvib_12, Tvib_3, Trot)
 =====================
 
 A `3 temperature fitting example <https://github.com/radis/radis-examples/tree/master/multi-temperature-fit>`__ .
@@ -83,7 +83,7 @@ sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
 sf.warnings["PerformanceWarning"] = "ignore"
 sf.load_databank("HITEMP-CO2-TEST")
 
-s_best, best = sf.fit_spectrum(
+s_best, best = sf.fit_legacy(
     s_exp.take("transmittance_noslit"),
     model=Tvib12Tvib3Trot_NonLTEModel,
     fit_parameters={

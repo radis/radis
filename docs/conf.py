@@ -38,13 +38,8 @@ sphinx_gallery.gen_rst.EXAMPLE_HEADER = """
     .. note::
         :class: sphx-glr-download-link-note
 
-        Run this example online :
-
-        - Click :ref:`here <sphx_glr_download_{1}>`
-          to download the full example code{2}
-
-        - Then start `Radis-Lab <https://radis.github.io/radis-lab/>`__,
-          upload the Jupyter notebook, and run it from there.
+        You can download :ref:`below <sphx_glr_download_{1}>`
+        the full example code{2} and run it with 🔬 `Radis-Lab <https://radis.github.io/radis-lab/>`__,
 
 .. rst-class:: sphx-glr-example-title
 

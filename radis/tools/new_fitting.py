@@ -98,6 +98,7 @@ def residual_LTE(params, conditions, s_data, sf, log, verbose):
 
     # Model spectrum calculation
     s_model = sf.eq_spectrum(**kwargs)
+    # s_model = sf.eq_spectrum_gpu(**kwargs)
 
     # Deal with "offset"
     if "offsetnm" in params:
@@ -603,7 +604,7 @@ def fit_spectrum(
     See Also
     --------
     :py:func:`~radis.tools.fitting.fit_spectrum()`,
-    :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`,
+    :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_legacy`,
     :py:mod:`fitroom`
 
     """
