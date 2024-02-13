@@ -2,7 +2,7 @@
 """
 
 ================================================================================
-Fit #2: multiparameters (T, x_CO, offset)
+Example #2: multiparameters (T, x_CO, offset)
 ================================================================================
 
 With the new fitting module introduced in :py:func:`~radis.tools.new_fitting.fit_spectrum` function,

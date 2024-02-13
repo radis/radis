@@ -3,7 +3,7 @@
 .. _example_multi_temperature_fit:
 
 =====================
-Multi-temperature Fit
+Legacy #2: non-equilibrium spectrum (Tvib, Trot)
 =====================
 
 A `3 temperature fitting example <https://github.com/radis/radis-examples/tree/master/multi-temperature-fit>`__ .

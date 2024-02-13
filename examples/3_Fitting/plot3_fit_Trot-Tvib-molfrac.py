@@ -2,7 +2,7 @@
 """
 
 ================================================================================
-Fit #3: non-equilibrium spectrum (Tvib, Trot, x_CO)
+Example #3: non-equilibrium spectrum (Tvib, Trot, x_CO)
 ================================================================================
 
 With the new fitting module introduced in :py:func:`~radis.tools.new_fitting.fit_spectrum` function,

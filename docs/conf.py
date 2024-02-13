@@ -22,6 +22,7 @@ import os
 import sys
 
 import sphinx_gallery.gen_rst
+from sphinx_gallery.sorting import FileNameSortKey
 
 # %% Custom Example header
 # https://github.com/sphinx-gallery/sphinx-gallery/issues/978
@@ -110,6 +111,8 @@ sphinx_gallery_conf = {
     "doc_module": ("radis"),
     "inspect_global_variables": True,
     "show_signature": False,
+    # Sort example files within gallery subsections with their filename
+    "within_subsection_order": FileNameSortKey,
 }
 
 

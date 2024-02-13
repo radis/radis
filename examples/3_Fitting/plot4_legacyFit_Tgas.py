@@ -3,7 +3,7 @@
 .. _example_one_temperature_fit:
 
 =================
-1 temperature fit
+Legacy 1: Temperature fit
 =================
 
 Quickly fit an experimental spectrum with a one-temperature model,
