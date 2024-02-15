@@ -181,7 +181,7 @@ class SpectrumFactory(BandFactory):
     neighbour_lines: float (:math:`cm^{-1}`)
         The calculated spectral range is increased (by ``neighbour_lines`` cm-1
         on each side) to take into account overlaps from out-of-range lines.
-        Default is ``0`` :math:`cm^{-1}`.​
+        Default is ``0`` :math:`cm^{-1}`.​ #TODO: Check weird character
     wstep: float (cm-1) or `'auto'`
         Resolution of wavenumber grid. Default ``0.01`` cm-1.
         If `'auto'`, it is ensured that there
@@ -236,7 +236,7 @@ class SpectrumFactory(BandFactory):
         - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [Spectral-Synthesis-Algorithm]_)
         - ``"simple"`` : weights equal to their relative position in the grid
 
-        If using the LDM optimization, broadening method is automatically set to ``'fft'``.
+        If using the LDM optimization, broadening method is automatically set to ``'fft'``. #TODO: Check if this is still true
         If ``None``, no lineshape interpolation is performed and the lineshape of all lines is calculated.
 
         Refer to [Spectral-Synthesis-Algorithm]_ for more explanation on the LDM method for lineshape interpolation.
@@ -965,8 +965,10 @@ class SpectrumFactory(BandFactory):
         path_length=None,
         pressure=None,
         name=None,
-        backend="gpu-cuda",
+        backend="gpu-vulkan",
+        device_id=0,
         exit_gpu=True,
+        verbose=None,
     ) -> Spectrum:
         """Generate a spectrum at equilibrium with calculation of lineshapes
         and broadening done on the GPU.
@@ -1053,7 +1055,8 @@ class SpectrumFactory(BandFactory):
         self.input.Tvib = Tgas  # just for info
         self.input.Trot = Tgas  # just for info
 
-        verbose = self.verbose
+        if verbose is None:
+            verbose = self.verbose
 
         # New Profiler object
         self._reset_profiler(verbose)
@@ -1100,13 +1103,17 @@ class SpectrumFactory(BandFactory):
             iso_list, dtype=np.float32
         )  # molar mass of each isotope
 
+        T_max_parsum = float("inf")
         Q_interp_list = []
         for iso in iso_list:
             if iso in iso_set:
                 params = molpar.df.loc[(mol_id, iso)]
-                molarmass_arr[iso] = params.molar_mass
+                molarmass_arr[iso] = params.molar_mass.iloc[0]
                 parsum = self.get_partition_function_interpolator(molecule, iso, state)
                 Q_interp_list.append(parsum.at)
+                T_max_parsum = np.min(
+                    (T_max_parsum, parsum.Tmax)
+                )  # from all the isotopologues partition function, the lowest maximum temperature
             else:
                 Q_interp_list.append(lambda T: 1.0)
 
@@ -1120,9 +1127,9 @@ class SpectrumFactory(BandFactory):
 
         # load the data
         if len(iso_set) > 1:
-            iso = self.df0["iso"].to_numpy(dtype=np.uint8)
+            iso = self.df0["iso"].to_numpy(dtype=np.uint32)
         elif len(iso_set) == 1:
-            iso = np.full(_Nlines_calculated, iso_set[0], dtype=np.uint8)
+            iso = np.full(_Nlines_calculated, iso_set[0], dtype=np.uint32)
         else:
             warn("Zero isotopes found... Is the database empty?")
 
@@ -1158,6 +1165,8 @@ class SpectrumFactory(BandFactory):
             Q_interp_list,
             verbose=verbose,
             backend=backend,
+            device_id=device_id,
+            T_max_parsum=T_max_parsum,
         )
         if verbose >= 2:
             print("Initialization complete!")

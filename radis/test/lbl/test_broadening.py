@@ -1003,7 +1003,7 @@ def test_broadening_chunksize_eq(verbose=True, plot=False, *args, **kwargs):
             )
 
 
-@pytest.mark.fast
+# @pytest.mark.fast #takes 30 sec @Nicolas Minesi
 def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
     """Test collisional broadening by other species than air and self (resonant)
 

@@ -23,32 +23,37 @@ from radis.gpu.gpu import gpu_exit
 sf = SpectrumFactory(
     2150,
     2450,  # cm-1
-    molecule="CO2",
+    # molecule="CO2",
+    molecule="CO",
     isotope="1,2,3",
     wstep=0.002,
 )
 
-sf.fetch_databank("hitemp")
+# sf.fetch_databank("hitemp")
+sf.fetch_databank("exomol")
 
-T_list = [1000.0, 1500.0, 2000.0]
+T_list = [1000.0, 1250.0, 1500.0, 1750.0, 2000.0]
 
 s = sf.eq_spectrum_gpu(
     Tgas=T_list[0],  # K
     pressure=1,  # bar
     mole_fraction=0.8,
     path_length=0.2,  # cm
+    # device_id='intel',
     exit_gpu=False,
 )
 s.apply_slit(0.5, unit="cm-1")  # cm-1
-print("Plot1 finished in {:6.1f} ms".format(s.conditions["calculation_time"] * 1e3))
+print("Plot0 finished in {:6.1f} ms".format(s.conditions["calculation_time"] * 1e3))
 s.plot("radiance", wunit="nm", show=False)
 
-s.recalc_gpu(Tgas=T_list[1])
-print("Plot2 finished in {:6.1f} ms".format(s.conditions["calculation_time"] * 1e3))
-s.plot("radiance", wunit="nm", show=False, nfig="same")
-
-s.recalc_gpu(Tgas=T_list[2])
-print("Plot3 finished in {:6.1f} ms".format(s.conditions["calculation_time"] * 1e3))
-s.plot("radiance", wunit="nm", show=True, nfig="same")
+for i, T in enumerate(T_list[1:]):
+    s.recalc_gpu(Tgas=T)
+    print(
+        "Plot{:d} finished in {:6.1f} ms".format(
+            i + 1, s.conditions["calculation_time"] * 1e3
+        )
+    )
+    show = True if T == T_list[-1] else False
+    s.plot("radiance", wunit="nm", show=show, nfig="same")
 
 gpu_exit()

@@ -44,5 +44,6 @@ s = sf.eq_spectrum_gpu_interactive(
     mole_fraction=ParamRange(0, 1, 0.8),
     path_length=ParamRange(0, 1, 0.2),  # cm
     slit_function=ParamRange(0, 1.5, 0.5),  # cm-1
+    # device_id='nvidia',
     plotkwargs={"wunit": "nm"},  # "nfig": "same",
 )

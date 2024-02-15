@@ -1,0 +1,75 @@
+#version 450
+#extension GL_EXT_scalar_block_layout : enable
+layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
+#define complex64_t vec2
+
+
+
+layout(std430, binding = 0) uniform initData{
+    float v_min;
+    float dv;
+    int N_v;
+    int N_v_FT;
+	int N_x_FT;
+    float dxG;
+    float dxL;
+    int N_lines;
+	int N_coll;
+    float log_c2Mm[16];
+} init_d;
+
+layout(std430, binding = 1) uniform iterData{
+    float p;
+    float log_2p;
+    float hlog_T;
+    float log_rT;
+    float c2T;
+    float N;
+    float x[16];
+    //float l;
+    //float slit_FWHM;
+    float log_wG_min;
+    float log_wL_min;
+    int N_G;
+    int N_L;
+    float Q[16];
+} iter_d;
+
+layout(std430, binding = 4) readonly buffer SSBO1 {
+   complex64_t data_LDM_FT_d[];
+};
+
+layout(std430, binding = 5) writeonly buffer SSBO2 {
+   complex64_t spectrum_FT_d[];
+};
+
+
+void main() {
+
+    const float pi = 3.141592653589793f;
+    const float r4log2 = 0.36067376022224085f; // = 1 / (4 * ln(2))
+
+	uint k = gl_GlobalInvocationID.x;
+
+	if (k >= init_d.N_x_FT) return; //TODO: should be init_d.N_v_FT?
+
+    int sx = 1;
+    int sG = init_d.N_x_FT;
+    int sL = init_d.N_x_FT * iter_d.N_G;
+
+    float wG = 0.0;
+    float wL = 0.0;
+    float mul = 0.0;
+    complex64_t res = complex64_t(0.0, 0.0);
+    float x = k / (init_d.N_v_FT * init_d.dv);
+
+    for (int l=0; l < iter_d.N_G; l++){
+        wG = exp(iter_d.log_wG_min + l*init_d.dxG);
+        for (int m=0; m < iter_d.N_L; m++){
+            wL = exp(iter_d.log_wL_min + m*init_d.dxL);
+            mul = exp(-r4log2 * pow(pi * x * wG, 2) - pi * x * wL) / init_d.dv;
+            res += data_LDM_FT_d[k*sx + l*sG + m*sL] * mul;
+        }
+    }
+	spectrum_FT_d[k] = res;
+}

@@ -265,6 +265,9 @@ class CuModule:
             self.context.destroy()
             return
 
+        # self.timer = GPUTimer()
+        self._timestampLabels = []
+
     def __getattr__(self, attr):
         try:
             self._func_dict[attr]
@@ -428,6 +431,17 @@ class CuArray:
 
     def zeroFill(self):
         cu_print(lib.cuMemsetD8_v2(self._ptr, 0, self.nbytes), "arr.zeros")
+
+    def setData(self, arr, byte_offset=0):
+        cu_print(
+            lib.cuMemcpyHtoD_v2(
+                c_void_p(self._ptr.value + byte_offset),
+                c_void_p(arr.ctypes.data),
+                arr.nbytes,
+            ),
+            "arr.HtoD",
+        )
+        return arr.nbytes
 
     def setArray(self, arr):
 

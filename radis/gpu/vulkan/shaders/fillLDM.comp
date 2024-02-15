@@ -1,0 +1,113 @@
+#version 450
+#extension GL_EXT_scalar_block_layout : enable
+layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
+layout (constant_id = 3) const int HAS_ATOMIC_ADD_FLOAT = 0; //this value is updated by the host code
+#define float_atomic_t uint
+
+layout(std430, binding = 0) uniform initData{
+    float v_min;
+    float dv;
+    int N_v;
+    int N_v_FT;
+	int N_x_FT;
+    float dxG;
+    float dxL;
+    int N_lines;
+	int N_coll;
+    float log_c2Mm[16];
+} init_d;
+
+layout(std430, binding = 1) uniform iterData{
+    float p;
+    float log_2p;
+    float hlog_T;
+    float log_rT;
+    float c2T;
+    float N;
+    float x[16];
+    //float l;
+    //float slit_FWHM;
+    float log_wG_min;
+    float log_wL_min;
+    int N_G;
+    int N_L;
+    float Q[16];
+} iter_d;
+
+layout(std430, binding = 2) readonly buffer database_SSBO {
+   float database_d[];
+};
+
+layout(std430, binding = 3) buffer SSBO1 {
+  float_atomic_t S_klm_d[];
+};
+
+#ifdef VULKAN
+#define atomicAddFloatX(MEM, INDATA)      \
+{                                         \
+    uint expected_mem = MEM;              \
+    uint new_mem = floatBitsToUint(uintBitsToFloat(MEM) + INDATA); \
+    uint returned_mem = atomicCompSwap(MEM, expected_mem, new_mem); \
+    while(returned_mem != expected_mem){ \
+         expected_mem = returned_mem; \
+         new_mem = floatBitsToUint(uintBitsToFloat(expected_mem) + INDATA); \
+         returned_mem = atomicCompSwap(MEM, expected_mem, new_mem); \
+    } \
+}
+#endif
+
+void main() {
+
+	uint i = gl_GlobalInvocationID.x;
+
+	if (i >= init_d.N_lines) return;
+
+    uint iso = floatBitsToUint(database_d[i]); // iterpret data as uint
+    float v0 = database_d[i + 1*init_d.N_lines];
+    float da = database_d[i + 2*init_d.N_lines];
+    float S0 = database_d[i + 3*init_d.N_lines];
+    float El = database_d[i + 4*init_d.N_lines];
+    float na = database_d[i + 5*init_d.N_lines];
+    //float gamma = database_d[i + 6*init_d.N_lines]; // fetch it later in loop
+
+
+    float vi = v0 + iter_d.p * da;
+    float ki = (vi - init_d.v_min) / init_d.dv;
+    int k0i = int(ki);
+    int k1i = k0i + 1;
+    float avi = ki - float(k0i);
+
+    if ((k0i < 0) || (k1i >= init_d.N_v)) return;
+
+    int sv = 1;
+    int sG = init_d.N_v_FT;
+    int sL = init_d.N_v_FT * iter_d.N_G;
+
+    float log_wG_data = log(v0) + init_d.log_c2Mm[iso] + iter_d.hlog_T;
+    float li = (log_wG_data - iter_d.log_wG_min) / init_d.dxG;
+    int l0i = int(li);
+    int l1i = l0i + 1;
+    float aGi = li - float(l0i);
+
+    float gamma = 0.0;
+    for (int j=0; j<init_d.N_coll; j++){
+        gamma += iter_d.x[j] * database_d[i + (j + 6) * init_d.N_lines];
+    }
+    float log_wL_data = log(gamma) + iter_d.log_2p + na * iter_d.log_rT;
+    float mi = (log_wL_data - iter_d.log_wL_min) / init_d.dxL;
+    int m0i = int(mi);
+    int m1i = m0i + 1;
+    float aLi = mi - float(m0i);
+
+    float I_data = iter_d.N * iter_d.x[0] * S0 * (exp(-iter_d.c2T * El) - exp(-iter_d.c2T * (El + v0))) / iter_d.Q[iso];
+
+    atomicAddFloatX(S_klm_d[k0i*sv + l0i*sG + m0i*sL], (1 - avi) * (1 - aGi) * (1 - aLi) * I_data);
+    atomicAddFloatX(S_klm_d[k0i*sv + l0i*sG + m1i*sL], (1 - avi) * (1 - aGi) *      aLi  * I_data);
+    atomicAddFloatX(S_klm_d[k0i*sv + l1i*sG + m0i*sL], (1 - avi) *      aGi  * (1 - aLi) * I_data);
+    atomicAddFloatX(S_klm_d[k0i*sv + l1i*sG + m1i*sL], (1 - avi) *      aGi  *      aLi  * I_data);
+    atomicAddFloatX(S_klm_d[k1i*sv + l0i*sG + m0i*sL],      avi  * (1 - aGi) * (1 - aLi) * I_data);
+    atomicAddFloatX(S_klm_d[k1i*sv + l0i*sG + m1i*sL],      avi  * (1 - aGi) *      aLi  * I_data);
+    atomicAddFloatX(S_klm_d[k1i*sv + l1i*sG + m0i*sL],      avi  *      aGi  * (1 - aLi) * I_data);
+    atomicAddFloatX(S_klm_d[k1i*sv + l1i*sG + m1i*sL],      avi  *      aGi  *      aLi  * I_data);
+
+}

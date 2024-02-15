@@ -15,11 +15,20 @@ from radis.gpu.params import (
 )
 from radis.gpu.structs import initData_t, iterData_t
 from radis.misc.utils import getProjectRoot
-from radis.misc.warning import NoGPUWarning
+
+# from radis.misc.warning import NoGPUWarning
+
 
 gpu_mod = None
 init_h = initData_t()
 iter_h = iterData_t()
+
+
+def next_fast_len_even(n):
+    n = next_fast_len(n)
+    while n & 1:
+        n = next_fast_len(n + 1)
+    return n
 
 
 def gpu_init(
@@ -38,7 +47,9 @@ def gpu_init(
     Mm_arr,
     Q_intp_list,
     verbose=0,
-    backend="gpu-cuda",
+    backend="gpu-vulkan",
+    device_id=0,
+    T_max_parsum=None,
 ):
     """
     Initialize GPU-based calculation for emission and absorption spectra in spectroscopy.
@@ -69,7 +80,7 @@ def gpu_init(
         (m,n) shaped array with Lorentzian width parameters, with n the number of lines in the database
         and m the number of collision partners included. This is usually at least two,
         with the first (m=0) always self broadening and the last (m=-1) always air broadening.
-    iso : numpy.ndarray[np.uint8]
+    iso : numpy.ndarray[np.uint32]
         Index of isotopologue.
     Mm_arr : numpy.ndarray
         Molecular masses for all isotopologues in the database (Mm_arr[0] is always 0).
@@ -79,7 +90,10 @@ def gpu_init(
         Print verbosity level. Default is 0.
     backend :  ``'gpu-cuda'``, ``'cpu-cuda'``, optional
         Which backend to use; currently only CUDA backends (Nvidia) are supported. ``'cpu-cuda'`` runs the kernel on CPU. Default is ``'gpu-cuda'``.
-
+    device_id : int
+        The id of the selected GPU. Check the console output for more details. ``'cpu-cuda'`` runs the kernel on CPU. Default is ``'gpu-cuda'``.
+    T_max_parsum : int
+        The maximum temperature at which the partition function of all the isotopologues is calculated (at higher T, the partition function should raise an error).
     Returns
     -------
     init_h : radis.gpu.structs.initData_t
@@ -87,59 +101,12 @@ def gpu_init(
         during iterations.
     """
 
-    global gpu_mod
-    if gpu_mod is not None:
-        warn("Only a single GPU context allowed; please call gpu_exit() first.")
-        return
+    global app
 
-    ## First a GPU context is created, then the .ptx file is read
-    ## and made available as the GPUModule object gpu_mod
-    ## If this fails, None is returned and calculations are
-    ## defaulted to CPU emulation
+    from radis.gpu.vulkan.vulkan_compute_lib import GPUApplication, GPUArray, GPUStruct
 
-    if backend == "cpu-cuda":
-        from radis.gpu.cuda.emulate import CuContext as GPUContext
-
-        ctx = GPUContext.Open(verbose=verbose)
-        import radis.gpu.cuda.emulate as backend_module
-
-    else:
-        # Try to load GPU
-        from radis.gpu.cuda.driver import CuContext as GPUContext
-
-        ctx = GPUContext.Open(verbose=verbose)  # Set verbose to >=2 for comments
-        if ctx is None:
-            warn(
-                NoGPUWarning(
-                    "Failed to load CUDA context, this happened either because"
-                    + "CUDA is not installed properly, or you have no NVIDIA GPU. "
-                    + "Continuing with emulated GPU on CPU..."
-                    + "This means *NO* GPU acceleration!"
-                )
-            )
-
-            # failed to init CUDA context, continue with CPU:
-            from radis.gpu.cuda.emulate import CuContext as GPUContext
-
-            ctx = GPUContext.Open(verbose=verbose)
-            import radis.gpu.cuda.emulate as backend_module
-
-        else:
-            # successfully initialized CUDA context, continue with GPU:
-            import radis.gpu.cuda.driver as backend_module
-
-    GPUContext, GPUModule, GPUArray, GPUFFT, GPUTimer = backend_module.getClasses()
-
-    if verbose:
-        print("Number of lines loaded: {0}".format(len(v0)))
-        print()
-
-    ptx_path = os.path.join(getProjectRoot(), "gpu", "cuda", "build", "kernels.ptx")
-    if not os.path.exists(ptx_path):
-        raise FileNotFoundError(ptx_path)
-    gpu_mod = GPUModule(ctx, ptx_path)  # gpu
-    if verbose:
-        print("mode:", gpu_mod.getMode())
+    shader_path = os.path.join(getProjectRoot(), "gpu", "vulkan", "shaders")
+    app = GPUApplication(deviceID=device_id, path=shader_path, verbose=verbose)
 
     ## Next, the GPU is made aware of a number of parameters.
     ## Parameters that don't change during iteration are stored
@@ -151,12 +118,12 @@ def gpu_init(
     init_h.v_min = vmin
     init_h.dv = dv
     init_h.N_v = Nv
-    init_h.N_v_FT = next_fast_len(2 * init_h.N_v)
+    init_h.N_v_FT = next_fast_len_even(2 * init_h.N_v)
     init_h.N_x_FT = init_h.N_v_FT // 2 + 1
     init_h.dxG = dxG
     init_h.dxL = dxL
     init_h.N_lines = int(len(v0))
-    init_h.N_collision_partners = gamma_arr.shape[0]
+    init_h.N_coll = gamma_arr.shape[0]
 
     log_c2Mm_arr = np.array(
         [0]
@@ -171,12 +138,25 @@ def gpu_init(
     init_Q(Q_intp_list)
     log_2vMm = np.log(v0) + log_c2Mm_arr.take(iso)
 
-    gpu_mod.setConstant("init_d", init_h)
+    # gpu_mod.setConstant("init_d", init_h)
 
     init_G_params(log_2vMm.astype(np.float32), verbose)
     init_L_params(na, gamma_arr, verbose)
 
+    # Calulate params once to obtain N_G_max and N_L_max:
+    p_max = 5.0  # bar #TODO: obtain this from defaults/keywords
+    if T_max_parsum is not None:
+        T_max = T_max_parsum  # K
+    else:
+        T_max = 3500.0  # default value for now
+    set_pTQ(p_max, T_max, 0.5, iter_h, l=1.0, slit_FWHM=0.0)
+    set_G_params(init_h, iter_h)
+    set_L_params(init_h, iter_h)
+    N_G_max = iter_h.N_G
+    N_L_max = iter_h.N_L
+
     if verbose >= 2:
+        print("T_max of temperature grid = {} K".format(T_max))
         print("done!")
 
     ## Next the block- and thread size of the GPU kernels are set.
@@ -184,17 +164,6 @@ def gpu_init(
 
     if verbose >= 2:
         print("Allocating device memory and copying data...")
-
-    NvFT = init_h.N_v_FT
-    NxFT = NvFT // 2 + 1
-    Ntpb = ctx.getMaxThreadsPerBlock()
-    Nli = init_h.N_lines
-    threads = (Ntpb, 1, 1)
-
-    gpu_mod.fillLDM.setGrid((Nli // Ntpb + 1, 1, 1), threads)
-    gpu_mod.applyLineshapes.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
-    gpu_mod.calcTransmittanceNoslit.setGrid((NvFT // Ntpb + 1, 1, 1), threads)
-    gpu_mod.applyGaussianSlit.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
 
     ## Next the variables are initialized on the GPU. Constant variables
     ## that don't change (i.e. pertaining to the database) are immediately
@@ -204,55 +173,51 @@ def gpu_init(
     ## They are not allocated, only given a device pointer by which
     ## they can be referenced later.
 
-    S_klm_d = GPUArray(0, dtype=np.float32, grow_only=True)
-    S_klm_FT_d = GPUArray(0, dtype=np.complex64, grow_only=True)
-
-    spectrum_in_d = GPUArray(NxFT, dtype=np.complex64)
-    spectrum_out_d = GPUArray(NvFT, dtype=np.float32)
-
-    transmittance_noslit_d = GPUArray(NvFT, dtype=np.float32)
-    transmittance_noslit_FT_d = GPUArray(NxFT, dtype=np.complex64)
-
-    transmittance_FT_d = GPUArray(NxFT, dtype=np.complex64)
-    transmittance_d = GPUArray(NvFT, dtype=np.float32)
-
-    gpu_mod.fillLDM.setArgs(
-        GPUArray.fromArray(iso),
-        GPUArray.fromArray(v0),
-        GPUArray.fromArray(da),
-        GPUArray.fromArray(S0),
-        GPUArray.fromArray(El),
-        GPUArray.fromArray(gamma_arr),
-        GPUArray.fromArray(na),
-        S_klm_d,
-    )
-    gpu_mod.applyLineshapes.setArgs(S_klm_FT_d, spectrum_in_d)
-    gpu_mod.calcTransmittanceNoslit.setArgs(spectrum_out_d, transmittance_noslit_d)
-    gpu_mod.applyGaussianSlit.setArgs(transmittance_noslit_FT_d, transmittance_FT_d)
-
-    ## FFT's are performed through the GPUFFT object. The required functions are internally
-    ## loaded from the cufft library, not through the user kernels (.ptx files).
-    ## The FFT's need some memory as "work area". Because the different FFT's can
-    ## reuse the work area, we make a GPUArray at this scope that is passed to the
-    ## GPUFFT objects. The work area will be scaled according to needs by the GPUFFT objects,
-    ## so it can be initialized with a small value.
-
-    workarea_d = GPUArray(0, dtype=np.byte, grow_only=True)
-    gpu_mod.fft_fwd = GPUFFT(S_klm_d, S_klm_FT_d, workarea=workarea_d, direction="fwd")
-    gpu_mod.fft_rev = GPUFFT(
-        spectrum_in_d, spectrum_out_d, workarea=workarea_d, direction="rev"
-    )
-    gpu_mod.fft_fwd2 = GPUFFT(
-        transmittance_noslit_d,
-        transmittance_noslit_FT_d,
-        workarea=workarea_d,
-        direction="fwd",
-    )
-    gpu_mod.fft_rev2 = GPUFFT(
-        transmittance_FT_d, transmittance_d, workarea=workarea_d, direction="rev"
+    database_arrays = [iso, v0, da, S0, El, na, gamma_arr]
+    N_db = np.sum(
+        [np.sum(arr.shape[:-1]) if len(arr.shape) > 1 else 1 for arr in database_arrays]
     )
 
-    gpu_mod.timer = GPUTimer()
+    app.init_d = GPUStruct.fromStruct(init_h, binding=0)
+    app.iter_d = GPUStruct.fromStruct(iter_h, binding=1)
+
+    app.database_d = GPUArray(
+        (N_db, init_h.N_lines),
+        np.float32,  # Not all arrays are np.float32, but it doesn't matter because all dtypes have size 4 (=sizeof(float32)), and the host never reads this buffer.
+        binding=2,
+    )
+
+    byte_offset = 0
+    for arr in database_arrays:
+        byte_offset += app.database_d.setData(arr, byte_offset=byte_offset)
+
+    app.S_klm_d = GPUArray((N_L_max, N_G_max, init_h.N_v_FT), np.float32, binding=3)
+    app.S_klm_FT_d = GPUArray(
+        (N_L_max, N_G_max, init_h.N_x_FT), np.complex64, binding=4
+    )
+
+    app.spectrum_FT_d = GPUArray((init_h.N_x_FT,), np.complex64, binding=5)
+    app.spectrum_d = GPUArray((init_h.N_v_FT,), np.float32, binding=6)
+
+    # Write command buffer:
+    N_tpb = 128  # threads per block
+    threads = (N_tpb, 1, 1)
+
+    app.command_list = [
+        app.addTimestamp("start"),
+        app.clearBuffer(app.S_klm_d, timestamp=True),
+        app.fillLDM((init_h.N_lines // N_tpb + 1, 1, 1), threads, timestamp=True),
+        app.clearBuffer(app.S_klm_FT_d, timestamp=True),
+        app.fft(app.S_klm_d, app.S_klm_FT_d, timestamp=True),
+        # app.clearBuffer(app.spectrum_FT_d, timestamp=True),
+        app.applyLineshapes(
+            (init_h.N_x_FT // N_tpb + 1, 1, 1), threads, timestamp=True
+        ),
+        app.clearBuffer(app.spectrum_d, timestamp=True),
+        app.ifft(app.spectrum_FT_d, app.spectrum_d, timestamp=True),
+    ]
+
+    app.writeCommandBuffer()
 
     if verbose >= 2:
         print("done!")
@@ -295,105 +260,36 @@ def gpu_iterate(
         different stages of the GPU computation. The ``'total'`` key
         gives the total time.
     """
-
-    if gpu_mod is None:
-        warn("Must have an open GPU context; please call gpu_init() first.")
+    if app is None:
+        warn("No GPUApplication initialized; please call gpu_init() first.")
         return
 
     if verbose >= 2:
         print("Copying iteration parameters to device...")
 
-    ## First a number of parameters that change during iteration
-    ## are computed and copied to the GPU.
-
-    gpu_mod.timer.reset()
-
     set_pTQ(p, T, mole_fraction, iter_h, l=l, slit_FWHM=slit_FWHM)
     set_G_params(init_h, iter_h)
     set_L_params(init_h, iter_h)
-    gpu_mod.setConstant("iter_d", iter_h)
-    gpu_mod.timer.lap("iter_params")
-
-    ## Next the S_klm_d variable is reshaped to the correct shape,
-    ## and filled with spectral data.
+    app.iter_d.setData(iter_h)
 
     if verbose >= 2:
-        print("done!")
-        print("Filling LDM...")
+        print("Running compute pipelines...")
 
-    S_klm_shape = (init_h.N_v_FT, iter_h.N_G, iter_h.N_L)
+    app.run()
+    gpu_times = app.get_timestamps()
 
-    gpu_mod.fillLDM.args[-1].resize(S_klm_shape, init="zeros")
-    gpu_mod.fillLDM()
-    gpu_mod.timer.lap("fillLDM")
-
-    ## Next the S_klm_FT_d is also reshaped, and the lineshapes are
-    ## applied. This consists of an FT of the LDM, a product by the
-    ## lineshape FTs & summing all G and L axes, and an inverse FT
-    ## on the accumulated spectra.
-
-    if verbose >= 2:
-        print("done!")
-        print("Applying lineshapes...")
-
-    S_klm_FT_shape = (init_h.N_x_FT, iter_h.N_G, iter_h.N_L)
-    gpu_mod.fft_fwd.arr_out.resize(S_klm_FT_shape)
-    gpu_mod.fft_fwd()
-    gpu_mod.timer.lap("fft_fwd")
-
-    gpu_mod.applyLineshapes()
-    gpu_mod.timer.lap("applyLineshapes")
-
-    gpu_mod.fft_rev()
-    gpu_mod.timer.lap("fft_rev")
-
-    if verbose >= 2:
-        print("Done!")
-        print("Calculating transmittance...")
-
-    abscoeff_h = gpu_mod.fft_rev.arr_out.getArray()[: init_h.N_v]
-
-    ## To apply a slit function, first the transmittance is calculated.
-    ## Then the convolution is applied by an FT, product with the
-    ## instrument function's FT, followed by an inverse FT.
-
-    if verbose >= 2:
-        print("Done!")
-
-    ##    ##The code below is to process slits on the GPU, which is currently unsupported.
-    ##
-    ##        print("Applying slit function...")
-    ##
-    ##    gpu_mod.calcTransmittanceNoslit()
-    ##    gpu_mod.timer.lap("calcTransmittanceNoslit")
-    ##
-    ##    gpu_mod.fft_fwd2()
-    ##    gpu_mod.timer.lap("fft_fwd2")
-    ##
-    ##    gpu_mod.applyGaussianSlit()
-    ##    gpu_mod.timer.lap("applyGaussianSlit")
-    ##
-    ##    gpu_mod.fft_rev2()
-    ##    gpu_mod.timer.lap("fft_rev2")
-    ##
-    ##    transmittance_h = gpu_mod.fft_rev2.arr_out.getArray()[: init_h.N_v]
-    ##
-    ##    if verbose >= 2:
-    ##        print("done!")
+    abscoeff_h = np.copy(app.spectrum_d.getData()[: init_h.N_v])
 
     if verbose == 1:
         print("Finished calculating spectrum!")
 
-    gpu_mod.timer.lap("total")
-    times = gpu_mod.timer.getTimes()
-
-    ##    diffs = gpu_mod.timer.getDiffs()
-    ##    print(diffs['fillLDM'], diffs['fft_fwd'])
-
-    return abscoeff_h, iter_h, times
+    return abscoeff_h, iter_h, gpu_times
 
 
 def gpu_exit(event=None):
-    global gpu_mod
-    gpu_mod.context.destroy()
-    gpu_mod = None
+    global app
+    # TODO: free(), del, *and* =None might be redundant..
+    if app:
+        app.free()
+        del app
+    app = None
