@@ -22,11 +22,6 @@ Calculations are performed within the :class:`~radis.lbl.factory.SpectrumFactory
 
    lbl
 
-For any other question you can use the `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__,
-the `GitHub issues <https://github.com/radis/radis/issues>`__ or the
-community chats on `Gitter <https://gitter.im/radis-radiation/community>`__ or
-`Slack <https://radis.github.io/slack-invite/>`__ . |badge_gitter| |badge_slack|
-
 
 .. include:: _databases.rst
 
@@ -182,14 +177,6 @@ or supply an energy level database. In the latter case, you need to edit the
 :ref:`Configuration file <label_lbl_config_file>` .
 
 
-Fit a Spectrum
---------------
-
-
-.. minigallery:: radis.lbl.factory.fit_spectrum
-
-
-
 Calculating spectrum using GPU
 ------------------------------
 
@@ -331,7 +318,7 @@ The configuration file will help to:
 
 .. note::
 
-    it is also possible to work with local line databases without a configuration file,
+    It is also possible to work with local line databases without a configuration file,
     either by giving a file to the `databank=...` parameter of :py:func:`~radis.lbl.calc.calc_spectrum` ,
     or by giving to :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank` the line database path,
     format, and partition function format directly.
@@ -555,7 +542,7 @@ Connect to a Spectrum Database
 ------------------------------
 
 In RADIS, the same code can be used to retrieve precomputed spectra if they exist,
-or calculate them and store them if they don't. See :ref:`Precompute Spectra <label_lbl_precompute_spectra>`
+or calculate them and store them if they don't. See :ref:`Precompute Spectra <label_lbl_precompute_spectra>` and the following example:
 
 
 .. minigallery:: radis.SpecDatabase
@@ -585,7 +572,7 @@ Additional strategies (deactivated by default):
 
 - *weak lines* (pseudo-continuum): lines which are close to a much stronger line are called weak lines.
   They are added to a pseudo-continuum and their lineshape is calculated with a simple
-  rectangular approximation.
+  rectangular approximation. This feature will be deprecated in the future.
   See the default value in the arguments of :py:attr:`~radis.lbl.loader.Parameters.pseudo_continuum_threshold`
   (see arguments of :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`)
 
@@ -604,10 +591,19 @@ Two approaches can be used:
 RADIS implements the two approaches as well as various strategies and parameters
 to calculate the lineshapes efficiently.
 
-- *broadening width* : lineshapes are calculated on a reduced spectral range.
-  Voigt computation calculation times scale linearly with that parameter.
-  Gaussian x Lorentzian calculation times scale as a square with that parameter.
-  parameters: broadening_max_width
+- *LDM* :  lines are projected on a Lineshape database to reduce the number of calculated
+  lineshapes from millions to a few dozens.
+  With this optimization strategy, the lineshape convolution becomes almost instantaneous
+  and all the other strategies are rendered useless. Projection of all lines on the lineshape
+  database becomes the performance bottleneck.
+  Parameters: :py:attr:`~radis.lbl.loader.Parameters.ldm_res_L`,
+  :py:attr:`~radis.lbl.loader.Parameters.ldm_res_G`.
+  (this is the default strategy implemented in RADIS). Learn more in [Spectral-Synthesis-Algorithm]_
+
+- *broadening width* : lineshapes are calculated on a reduced spectral range because the
+  Voigt computation times scale linearly with that parameter.
+  (Gaussian x Lorentzian calculation times scale as a square with that parameter.)
+  Parameters: :py:attr:`~radis.lbl.loader.Parameters.broadening_max_width`
 
 - *Voigt approximation* : Voigt is calculated with an analytical approximation.
   Parameter : :py:attr:`~radis.lbl.loader.Parameters.broadening_max_width` and
@@ -623,19 +619,8 @@ to calculate the lineshapes efficiently.
   calculate the lineshape wings with a lower resolution. This strategy is not
   implemented in RADIS.
 
-- *LDM* :  lines are projected on a Lineshape database to reduce the number of calculated
-  lineshapes from millions to a few dozens.
-  With this optimization strategy, the lineshape convolution becomes almost instantaneous
-  and all the other strategies are rendered useless. Projection of all lines on the lineshape
-  database becomes the performance bottleneck.
-  parameters: :py:attr:`~radis.lbl.loader.Parameters.ldm_res_L`,
-  :py:attr:`~radis.lbl.loader.Parameters.ldm_res_G`.
-  (this is the default strategy implemented in RADIS). Learn more in [Spectral-Synthesis-Algorithm]_
-
-More details on the parameters below:
-
-Computation parameters
-----------------------
+Recommandations for speeding up spectra computations
+-----------------------------------------------------
 
 If performance is an issue (for instance when calculating polyatomic spectra on large spectral ranges), you
 may want to tweak the computation parameters in :py:func:`~radis.lbl.calc.calc_spectrum` and
@@ -645,13 +630,9 @@ impact on the calculation performances are:
 - The ``broadening_max_width``, which defines the spectral range over which the broadening is calculated.
 - The linestrength ``cutoff``, which defines which low intensity lines should be discarded. See
   :meth:`~radis.lbl.base.BaseFactory.plot_linestrength_hist` to choose a correct cutoff.
+- The ``pseudo_continuum_threshold`` defines a threshold to integrate weak lines into a continuum. This solution will be deprecated in the future.
 
 Check the [RADIS-2018]_ article for a quantitative assessment of the influence of the different parameters.
-
-Other strategies are possible, such as calculating the weak lines in a pseudo-continuum. This can
-result in orders of magnitude improvements in computation performances.:
-
-- The ``pseudo_continuum_threshold`` defines which threshold should be used.
 
 See the :py:func:`~radis.test.lbl.test_broadening.test_abscoeff_continuum` case in ``radis/test/lbl/test_broadening.py``
 for an example, which can be run with (you will need the CDSD-HITEMP database installed) ::

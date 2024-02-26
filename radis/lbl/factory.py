@@ -2259,7 +2259,7 @@ class SpectrumFactory(BandFactory):
 
         return conv2(Ptot, "mW/cm2/sr", unit)
 
-    def fit_spectrum(
+    def fit_legacy(
         self,
         s_exp,
         model,
@@ -2270,14 +2270,15 @@ class SpectrumFactory(BandFactory):
         **kwargs,
     ) -> Union[Spectrum, OptimizeResult]:
         """Fit an experimental spectrum with an arbitrary model and an arbitrary
-        number of fit parameters.
+        number of fit parameters. This method calls :py:func:`~radis.tools.fitting.fit_legacy`
+        which is still functional. However, we recommend using :py:func:`~radis.tools.new_fitting.fit_spectrum`.
 
         Parameters
         ----------
         s_exp : Spectrum
             experimental spectrum. Should have only spectral array only. Use
             :py:meth:`~radis.spectrum.spectrum.Spectrum.take`, e.g::
-                sf.fit_spectrum(s_exp.take('transmittance'))
+                sf.fit_legacy(s_exp.take('transmittance'))
         model : func -> Spectrum
             a line-of-sight model returning a Spectrum. Example :
             :py:func:`~radis.tools.fitting.LTEModel, `:py:func:`~radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel`
@@ -2320,7 +2321,7 @@ class SpectrumFactory(BandFactory):
         See a :ref:`one-temperature fit example <example_one_temperature_fit>`
         and a :ref:`non-LTE fit example <example_multi_temperature_fit>`
 
-        .. minigallery:: radis.lbl.factory.SpectrumFactory.fit_spectrum
+        .. minigallery:: radis.lbl.factory.SpectrumFactory.fit_legacy
 
         More advanced tools for interactive fitting of multi-dimensional, multi-slabs
         spectra can be found in :py:mod:`fitroom`.
@@ -2332,9 +2333,9 @@ class SpectrumFactory(BandFactory):
         :py:mod:`fitroom`
 
         """
-        from radis.tools.fitting import fit_spectrum
+        from radis.tools.fitting import fit_legacy
 
-        return fit_spectrum(
+        return fit_legacy(
             self,
             s_exp,
             model,

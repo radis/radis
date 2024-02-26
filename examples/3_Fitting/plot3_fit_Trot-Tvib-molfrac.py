@@ -2,7 +2,7 @@
 """
 
 ================================================================================
-Fit a non-LTE spectrum with multiple fit parameters using new fitting module
+Example #3: non-equilibrium spectrum (Tvib, Trot, x_CO)
 ================================================================================
 
 With the new fitting module introduced in :py:func:`~radis.tools.new_fitting.fit_spectrum` function,
@@ -12,8 +12,8 @@ performance for equilibrium condition.
 This example features how new fitting module can fit non-equilibrium spectrum, with multiple fit
 parameters, such as vibrational/rotational temperatures, or mole fraction, etc.
 
-This is a real fitting case introduced by Mr. Corentin Grimaldi, a scientist and member of RADIS
-community. This case features CO molecule emitting on a wide range of spectrum. This case also includes
+This is a real fitting case introduced Grimaldi's thesis: https://doi.org/10.2514/1.T6768 .
+This case features CO molecule emitting on a wide range of spectrum. This case also includes
 a user-defined trapezoid slit function, which is accounted by the distortion (dispersion) of the slit,
 as a result of the influences from experimental parameters and spectrometer dispersion parameters
 during the experiment.
@@ -27,10 +27,7 @@ from radis import load_spec
 from radis.test.utils import getTestFile
 from radis.tools.new_fitting import fit_spectrum
 
-# The following script is for Mr. Correnti Grimaldi's cases, used for his own slit settings.
-# This is not native to current fitting modules.
-
-# ----------------------- Begin of Mr. Grimaldi's script ----------------------- #
+# The following function and parameters reproduce the slit function in Dr. Corenti Grimaldi's thesis.
 
 
 def slit_dispersion(w):
@@ -57,10 +54,8 @@ dispersion = slit_dispersion(center_slit)
 top_slit_nm = top_slit_um * 1e-3 * dispersion
 base_slit_nm = base_slit_um * 1e-3 * dispersion * 1.33
 
-# ------------------------ End of Mr. Grimaldi's script ------------------------ #
 
-
-# ------------------------------------ Step 1. Load experimental spectrum ------------------------------------ #
+# -------------------- Step 1. Load experimental spectrum -------------------- #
 
 
 specName = (
@@ -69,7 +64,7 @@ specName = (
 s_experimental = load_spec(getTestFile(specName)).offset(-0.6, "nm")
 
 
-# ------------------------------------ Step 2. Fill ground-truths and data ------------------------------------ #
+# -------------------- Step 2. Fill ground-truths and data -------------------- #
 
 
 # Experimental conditions which will be used for spectrum modeling. Basically, these are known ground-truths.
@@ -132,7 +127,7 @@ You can see the benchmark result of these algorithms here:
 """
 
 
-# ------------------------------------ Step 3. Run the fitting and retrieve results ------------------------------------ #
+# -------------------- Step 3. Run the fitting and retrieve results -------------------- #
 
 
 # Conduct the fitting process!
