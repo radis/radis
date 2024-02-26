@@ -97,9 +97,6 @@ GPU Acceleration
 
 RADIS supports GPU acceleration for super-fast computation of spectra. Refer to `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/lbl.html#calculating-spectrum-using-gpu>`__ for more details on GPU acceleration.::
 
-.. image:: https://raw.githubusercontent.com/dcmvdbekerom/radis/gpu_widget_new_branch/docs/examples/GPU_spectrum.png
-
-
 =======================================
 Try online (no installation needed!)
 =======================================
