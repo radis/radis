@@ -11,7 +11,7 @@ equilibrium / non-LTE) based on HITRAN/HITEMP/ExoMol.
 It includes post-processing tools to compare experimental spectra and spectra calculated
 with RADIS or other spectral codes.
 
-User guide, install procedure and examples are available on the `RADIS Website <http://radis.readthedocs.io/>`__:
+User full documentation (advanced install and examples) are available on the `RADIS Website <http://radis.readthedocs.io/>`__.
 
 
 ===============
@@ -21,19 +21,13 @@ Getting Started
 Install
 -------
 
-Assuming you have Python installed with pip then use this command to install::
+Assuming you have Python installed with the `Anaconda <https://www.anaconda.com/download/>`_ distribution you can use ``pip``::
 
-    pip install radis -v
+    pip install radis
 
-if you want to install **radis** through *conda* then use this command to ::
+or ``mamba`` or ``conda`` via the conda-forge channel::
 
     conda install radis -c conda-forge
-
-or with *mamba*::
-
-    mamba install radis
-
-
 
 **That's it!** You can now run your first example below.
 If you encounter any issue, or to upgrade the package later, please refer to the
@@ -42,10 +36,7 @@ If you encounter any issue, or to upgrade the package later, please refer to the
 Quick Start
 -----------
 
-
-Calculate a CO equilibrium spectrum from the HITRAN database, using the
-`calc_spectrum <https://radis.readthedocs.io/en/latest/source/radis.lbl.calc.html#radis.lbl.calc.calc_spectrum>`__ function. Output is a
-`Spectrum object <https://radis.readthedocs.io/en/latest/spectrum/spectrum.html#label-spectrum>`__: ::
+Calculate a CO equilibrium spectrum from the HITRAN database ::
 
     from radis import calc_spectrum
     s = calc_spectrum(1900, 2300,         # cm-1
@@ -66,7 +57,6 @@ Calculate a CO equilibrium spectrum from the HITRAN database, using the
 
 Advanced use
 ------------
-
 
 The Quick Start examples automatically downloads the line databases from `HITRAN-2016 <https://radis.readthedocs.io/en/latest/references/references.html#hitran-2016>`__, which is valid for temperatures below 700 K.
 For *high temperature* cases, you may need to use other line databases such as
@@ -105,56 +95,29 @@ Refer to the `Examples <https://radis.readthedocs.io/en/latest/examples/examples
 GPU Acceleration
 ----------------
 
-RADIS supports GPU acceleration for super-fast computation of spectra::
-
-    from radis import SpectrumFactory
-    from radis.tools.plot_tools import ParamRange
-
-    sf = SpectrumFactory(
-        2100,
-        2400,  # cm-1
-        molecule="CO2",
-        isotope="1,2,3",
-        wstep=0.002,
-    )
-
-    sf.fetch_databank("hitemp")
-
-    s = sf.eq_spectrum_gpu_interactive(
-        var="radiance",
-        Tgas=ParamRange(300.0, 2500.0, 1100.0),  # K
-        pressure=ParamRange(0.1, 2, 1),  # bar
-        mole_fraction=ParamRange(0, 1, 0.8),
-        path_length=ParamRange(0, 1, 0.2),  # cm
-        slit_FWHM=ParamRange(0, 1.5, 0.24),  # cm-1
-        emulate=False,  # runs on GPU
-        plotkwargs={"nfig": "same", "wunit": "nm"},
-    )
+RADIS supports GPU acceleration for super-fast computation of spectra. Refer to `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/lbl.html#calculating-spectrum-using-gpu>`__ for more details on GPU acceleration.::
 
 .. image:: https://raw.githubusercontent.com/dcmvdbekerom/radis/gpu_widget_new_branch/docs/examples/GPU_spectrum.png
 
-Refer to `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/lbl.html#calculating-spectrum-using-gpu>`__ for more details on GPU acceleration.
 
 =======================================
-🌱 Try online (no installation needed!)
+Try online (no installation needed!)
 =======================================
 
-radis-app
+🌱 Radis-app
 ---------
 
-A simple web-app for RADIS under development.
+A simple `web-app <https://radis.app/>`__ for RADIS under development - `GitHub <https://github.com/suzil/radis-app>`__
 
 .. image:: https://user-images.githubusercontent.com/16088743/103406077-b2457100-4b59-11eb-82c0-e4de027a91c4.png
     :target: https://radis.app/
     :alt: https://radis.app/
 
-See more `on GitHub <https://github.com/suzil/radis-app>`__
 
-
-RADIS-lab
+🔬 RADIS-lab
 ---------
 
-An online environment for advanced spectrum processing and comparison with experimental data :
+An `online environment <https://github.com/radis/radis-lab>`__ for advanced spectrum processing and comparison with experimental data:
 
 - no need to install anything
 - use pre-configured line databases (HITEMP)
@@ -164,8 +127,6 @@ An online environment for advanced spectrum processing and comparison with exper
 .. image:: https://user-images.githubusercontent.com/16088743/103448773-7d8f0200-4c9e-11eb-8bf1-ce3385519b77.png
     :target: https://radis.github.io/radis-lab/
     :alt: https://radis.github.io/radis-lab/
-
-🌱 Try it : https://radis.github.io/radis-lab/
 
 See more `on GitHub <https://github.com/radis/radis-lab>`__
 
@@ -190,40 +151,36 @@ Developer Guide
 Contribute
 ----------
 
-Want to contribute to RADIS ? Join the Slack community and we'll help you through the process.
-Want to get started immediatly ? Nice. Have a look at the `CONTRIBUTING.md <./CONTRIBUTING.md>`__ guide.
+Want to contribute to RADIS? Join the Slack community and we'll help you through the process.
+Want to get started immediatly? Nice. Have a look at the the `Developer Guide <https://radis.readthedocs.io/en/latest/dev/developer.html>`__.
 
 |badge_contributors| |badge_slack|
 
-You need to know more about Spectroscopy ? We're working on Tutorials to
-make spectroscopy available to everyone. For the moment, join the
-`Slack channel <https://radis-radiation.slack.com/archives/C01N7R9728M>`__ .
+.. You need to know more about Spectroscopy ? We're working on Tutorials to
+.. make spectroscopy available to everyone. For the moment, join the
+.. `Slack channel <https://radis-radiation.slack.com/archives/C01N7R9728M>`__ .
 
 
+RADIS internals are also described in the `full documentation <https://radis.readthedocs.io/en/latest/index.html>`__
 
-Architecture
-------------
-
-RADIS internals are described in the `Developer Guide <https://radis.readthedocs.io/en/latest/dev/developer.html>`__
-
-.. image:: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
-     :target:   https://radis.readthedocs.io/en/latest/dev/architecture.html#label-dev-architecture
-     :alt: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
+.. .. image:: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
+..      :target:   https://radis.readthedocs.io/en/latest/dev/architecture.html#label-dev-architecture
+..      :alt: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
 
 
-### Matlab
+.. ### Matlab
 
-Matlab users can seamlessly access Python modules
+.. Matlab users can seamlessly access Python modules
 
-Here's what's you'll need:
+.. Here's what's you'll need:
 
-1. [Setup Python &harr; Matlab interface](https://www.scivision.dev/matlab-python-user-module-import/).
-2. Install RADIS in Python as at the top of this Readme.
-3. From Matlab, verify everything is working by:
+.. 1. [Setup Python &harr; Matlab interface](https://www.scivision.dev/matlab-python-user-module-import/).
+.. 2. Install RADIS in Python as at the top of this Readme.
+.. 3. From Matlab, verify everything is working by:
 
-        ```
-        py.radis.calc_spectrum()
-        ```
+..         ```
+..         py.radis.calc_spectrum()
+..         ```
 
 
 License
@@ -233,21 +190,21 @@ The code is available on this repository under
 `GNU LESSER GENERAL PUBLIC LICENSE (v3) <./LICENSE>`_   |badge_license|
 
 
-Support
--------
+.. Support
+.. -------
 
-If encountering any problem, first refer to the list of known
-`Issues <https://github.com/radis/radis/issues?utf8=%E2%9C%93&q=is%3Aissue>`__ on GitHub.
-We appreciate your feedback and suggestions!
+.. If encountering any problem, first refer to the list of known
+.. `Issues <https://github.com/radis/radis/issues?utf8=%E2%9C%93&q=is%3Aissue>`__ on GitHub.
+.. We appreciate your feedback and suggestions!
 
-For any question, please join the discussion channel on Gitter |badge_gitter|, Slack |badge_slack|
-or the `Q&A Forum <https://groups.google.com/forum/#!forum/radis-radiation>`__
+.. For any question, please join the discussion channel on Gitter |badge_gitter|, Slack |badge_slack|
+.. or the `Q&A Forum <https://groups.google.com/forum/#!forum/radis-radiation>`__
 
 
-Finally, you can also suggest or vote for new features below:
+.. Finally, you can also suggest or vote for new features below:
 
-.. image:: https://feathub.com/radis/radis?format=svg
-   :target: https://feathub.com/radis/radis
+.. .. image:: https://feathub.com/radis/radis?format=svg
+..    :target: https://feathub.com/radis/radis
 
 
 

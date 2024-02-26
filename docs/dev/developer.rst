@@ -11,10 +11,8 @@ know spectroscopy or not. The project is organized around a
 `GitHub repository <https://github.com/radis/radis/>`__.
 
 You want to become a `contributor <https://github.com/radis/radis/graphs/contributors>`__? Welcome!
-First follow the install procedure for developpers below. Then, you can either:
-
-- have a look at all the `GitHub opened issues <https://github.com/radis/radis/issues>`__.
-- tackle specifically one of the `Good First Issues <https://github.com/radis/radis/contribute>`__.
+First follow the install procedure for developpers below. Then, you can have a look at all the `GitHub opened issues <https://github.com/radis/radis/issues>`__.
+and tackle specifically one of the `Good First Issues <https://github.com/radis/radis/contribute>`__.
 
 Sources
 =======

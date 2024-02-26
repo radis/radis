@@ -15,7 +15,7 @@ The HITRAN group also supports the HITEMP database, which is designed for high-t
 The files of the HITEMP database are formatted in the same way as HITRAN files but are much larger.
 
 By default, RADIS automatically fetch HITRAN/HITEMP lines using the `Astroquery <https://astroquery.readthedocs.io>`_
-module. This is done by specifying ``databank=='hitran'`` or ``databank=='hitran'``.
+module. This is done by specifying ``databank=='hitran'`` or ``databank=='hitemp'``.
 - See the following example for :py:func:`~radis.lbl.calc.calc_spectrum` ::
 
     from radis import calc_spectrum
