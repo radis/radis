@@ -1,7 +1,7 @@
 .. _label_dev_test:
 
-Test
-====
+Testing RADIS
+=============
 
 
 Test status
@@ -26,37 +26,6 @@ the ``radis`` directory::
 
 The whole test procedure takes 5 - 10 min. You can use pytest filtering keys
 to :ref:`run specific tests only <label_dev_select_test>`
-
-
-Code coverage
--------------
-
-Code coverage makes sure every line in RADIS is properly tested. See
-the current code coverage status (click the badge for more details):
-
-.. image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg
-  :target: https://codecov.io/gh/radis/radis
-  :alt: https://codecov.io/gh/radis/radis
-
-
-
-If you want to see the test coverage report locally use ``codecov`` that
-is interfaced with pytest through the ``--cov=./`` command::
-
-    pip install codecov pytest-cov
-    cd radis/test
-    pytest --cov=./
-
-Performance benchmarks
-----------------------
-
-RADIS performance is tested against past versions on a dedicated project : `radis-benchmark <https://github.com/radis/radis-benchmark>`__.
-
-Results can be found on : 🔗 https://radis.github.io/radis-benchmark/
-
-.. image:: http://img.shields.io/badge/benchmarked%20by-asv-blue.svg?style=flat
-            :target: https://github.com/radis/radis-benchmark
-            :alt: Benchmarks
 
 
 .. _label_dev_select_test:
@@ -208,18 +177,39 @@ Load a Spectrum object ::
        db_use_cached        True
     ----------------------------------------
 
-
-Report errors
--------------
-
-If you encounter any error, open an `Issue on GitHub <https://github.com/radis/radis/issues>`__
-
-To simplify the debugging process, provide a code snippet that reproduces
-the error. If you need a line database, spectrum, or energy level, try to use one
-of the :ref:`test files <label_dev_test_files>`.
-
 Debugging
 ---------
 
 See the :py:func:`~radis.misc.debug.printdbg` function in ``radis.misc``, and
 the :py:data:`~radis.DEBUG_MODE` global variable.
+
+
+Code coverage
+-------------
+
+Code coverage makes sure every line in RADIS is properly tested. See
+the current code coverage status (click the badge for more details):
+
+.. image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/radis/radis
+  :alt: https://codecov.io/gh/radis/radis
+
+
+
+If you want to see the test coverage report locally use ``codecov`` that
+is interfaced with pytest through the ``--cov=./`` command::
+
+    pip install codecov pytest-cov
+    cd radis/test
+    pytest --cov=./
+
+Performance benchmarks
+----------------------
+
+RADIS performance is tested against past versions on a dedicated project : `radis-benchmark <https://github.com/radis/radis-benchmark>`__.
+
+Results can be found on : 🔗 https://radis.github.io/radis-benchmark/
+
+.. image:: http://img.shields.io/badge/benchmarked%20by-asv-blue.svg?style=flat
+            :target: https://github.com/radis/radis-benchmark
+            :alt: Benchmarks

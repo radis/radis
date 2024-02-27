@@ -1157,7 +1157,9 @@ class DatabankLoader(object):
         molecule = self.input.molecule
         isotope = self.input.isotope
         if not molecule:
-            raise ValueError("Please define `molecule=` so the database can be fetched")
+            raise ValueError(
+                "Please define `molecule=` in the definition SpectrumFactory() so the database can be fetched"
+            )
 
         output = config["DATAFRAME_ENGINE"]
         self.dataframe_type = output

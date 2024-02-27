@@ -51,7 +51,8 @@ jobs:
         # Your test script goes here
         - echo ">>> Run tests"
         # use XVFB to have headless display port, and still run the Matplotlib tests.
-        - xvfb-run -a pytest --cov=./ --durations=10
+        - xvfb-run -a pytest -m "fast" --cov=./ --durations=10
+        - xvfb-run -a pytest -m "not fast" --cov=./ --durations=10
         # --durations=N to print the slowest N tests
         # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
 

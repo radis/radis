@@ -358,8 +358,8 @@ def pressure_broadening_HWHM(
         gamma_lb += (
             (Tref / Tgas) ** n_i * gamma_i * pressure_atm * diluent_mole_fraction
         )
-
-    assert mole_fraction + sum(diluent.values()) == 1
+    total_mole_fraction = mole_fraction + sum(diluent.values())
+    assert np.isclose(total_mole_fraction, 1)
 
     # Adding self (resonant) broadening and temperature dependance self coefficient
     # ... if Tdpsel is not in `dg` then Tdpair is used.
@@ -2911,6 +2911,11 @@ class BroadenFactory(BaseFactory):
         # TODO: export continuum in Spectrum ? (under q['continuum'] ? )
 
         if self.params.pseudo_continuum_threshold > 0:
+
+            warn(
+                "Pseudo_continuum not needed anymore as RADIS is getting so fast🔥🔥🔥. This feature will be removed in future versions.",
+                DeprecationWarning,
+            )
 
             self.profiler.start(
                 "calc_pseudo_continuum", 2, "... Calculating pseudo continuum"
