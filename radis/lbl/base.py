@@ -3168,8 +3168,8 @@ class BaseFactory(DatabankLoader):
             times. If 0, no cutoff. Default 0
 
         cutoff_error: float
-            user-inputted value of cutoff error, to keep the estimated error
-            below this value. If None, no error to consider. Default None.
+            percentage below which to keep the estimated error,
+            adjusting the cutoff if necessary. If None, no error to consider. Default None.
 
         Notes
         -----
@@ -3191,9 +3191,6 @@ class BaseFactory(DatabankLoader):
         cutoff_error = self.params.cutoff_error
         verbose = self.verbose
         df = self.df1
-        df1 = self.df1
-        lines_by_intensity = df1.S.tolist()
-        lines_by_intensity.sort()
 
         if len(df) == 0:  # no lines
             self._Nlines_cutoff = None
@@ -3224,35 +3221,23 @@ class BaseFactory(DatabankLoader):
 
             if cutoff_error is not None:
                 if cutoff_error < error:
-                    # Remove additional lines such that cutoff error is less than user-inputted value
-                    intensity_sum = 0
-                    for i in lines_by_intensity:
-                        intensity_sum += i
-                    # Last value of the list is the cumulative intensity
-                    lines_by_intensity.append(intensity_sum)
-                    desired_intensity = (cutoff_error / 100) * lines_by_intensity[-1]
-                    next_index = 0
-                    sum = 0
-                    # Find the index till which sum <= desired intensity and remove the rest of the elements
-                    for i in lines_by_intensity[:-1]:
-                        if sum <= desired_intensity:
-                            if sum + lines_by_intensity[next_index] > desired_intensity:
-                                break
-                            else:
-                                sum += i
-                                next_index += 1
-                        else:
-                            break
-                    # Change a copy of the list containing lines by intensity
-                    correct_lines = lines_by_intensity.copy()
-                    for i in range(next_index + 1, len(lines_by_intensity) + 1):
-                        correct_lines.pop()
-                    # Update the database
-                    df1["S"] = correct_lines
+                    lines_by_intensity = df.S.sort_values()
+                    cumsummed = lines_by_intensity.cumsum()
+                    cond = cumsummed <= (cutoff_error / 100) * df.S.sum()
+                    post_cutoff = lines_by_intensity[cond]
+                    # to account for the unlikely case where the cutoff in cond lies between duplicate values:
+                    max_value = post_cutoff.max()
+                    if post_cutoff.value_counts()[max_value] < lines_by_intensity.value_counts()[max_value]:
+                        b = df.S < max_value # exclude max_value as including it pushes us over cutoff_error
+                        in_or_ex = 'exclusive'
+                    else:
+                        b = df.S <= max_value
+                        in_or_ex = 'inclusive'
                     # Print current error
-                    current_error = sum / lines_by_intensity[-1] * 100
+                    error = df.S[b].sum() / df.S.sum() * 100
                     print(
-                        "Current percentage error: {0:.2f}% ".format(current_error)
+                        "Cutoff for discarded lines adjusted to {0} ({1}). ".format(max_value,in_or_ex)
+                        + "Current percentage error: {0:.2f}% ".format(error)
                         + "Inputted error: {0:.2f}%".format(cutoff_error)
                     )
 
@@ -3264,15 +3249,14 @@ class BaseFactory(DatabankLoader):
                         )
                         + " Estimated error: {0:.2f}%".format(error)
                     )
-                b = df.S <= cutoff
                 Nlines_cutoff = b.sum()
             else:
                 print("Cutoff error not inputted.")
 
             if verbose >= 2:
                 print(
-                    "Discarded {0:.2f}% of lines (linestrength<{1}cm-1/(#.cm-2))".format(
-                        Nlines_cutoff / len(df.S) * 100, cutoff
+                    "Discarded {0:.2f}% of lines".format(
+                        Nlines_cutoff / len(df.S) * 100
                     )
                     + " Estimated error: {0:.2f}%".format(error)
                 )
@@ -3281,7 +3265,7 @@ class BaseFactory(DatabankLoader):
                     "Estimated error after discarding lines is large: {0:.2f}%".format(
                         error
                     )
-                    + ". Consider reducing cutoff",
+                    + ". Consider reducing cutoff (or cutoff_error if adjusted)",
                     "LinestrengthCutoffWarning",
                 )
 
