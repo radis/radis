@@ -257,7 +257,7 @@ def test_calculatedQ_match_HAPI_CO(
     return True
 
 
-@pytest.mark.fast
+# @pytest.mark.fast #not fast, Nicolas Minesi 08/04/2024
 def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
     """Tested that Q ab_initio (Dunham) match HAPI for different molecules
     and isotopes"""
