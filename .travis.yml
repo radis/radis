@@ -8,6 +8,8 @@ os: linux
 stages:
   - name: test
     if: branch = master OR branch = develop
+  - name: test_slow
+    if: branch = master OR branch = develop
     # we dont test on other branches
   - name: lint
     if: branch = master OR branch = develop
@@ -59,13 +61,26 @@ jobs:
       services:
         - xvfb
 
+      before_script:
+        - export MPLBACKEND=Agg
+
+    - stage: test_slow
+      name: Test and Coverage
+
+      script:
+        # Your test script goes here
+        - echo ">>> Run tests"
+        # use XVFB to have headless display port, and still run the Matplotlib tests.
+        - xvfb-run -a pytest --cov=./ --durations=10 # re-run the fast tests as well... but it should be fast!
+        # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
+
+      services:
+        - xvfb
+
       after_success:
         # codecoverage
         - pip install codecov
         - codecov
-
-      before_script:
-        - export MPLBACKEND=Agg
 
     - stage: lint
       name: Code Quality Checks
