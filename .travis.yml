@@ -69,8 +69,6 @@ jobs:
 
       script:
         - micromamba activate radis-env
-        - pip install pytest-cov
-        - pip install -e . -v
         # Your test script goes here
         - echo ">>> Run tests"
         # use XVFB to have headless display port, and still run the Matplotlib tests.
