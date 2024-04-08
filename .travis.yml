@@ -53,7 +53,7 @@ jobs:
         # Your test script goes here
         - echo ">>> Run tests"
         # use XVFB to have headless display port, and still run the Matplotlib tests.
-        - xvfb-run -a pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_connection" --cov=./ --durations=10
+        - xvfb-run -a pytest -m "fast and not needs_db_CDSD_HITEMP_PCN" --cov=./ --durations=10
         #- xvfb-run -a pytest -m "not fast" --cov=./ --durations=10
         #- xvfb-run -a pytest --cov=./ --durations=10
         # --durations=N to print the slowest N tests
