@@ -439,7 +439,7 @@ def test_broadening_LDM_FT(verbose=True, plot=False, *args, **kwargs):
     assert res < 5e-6
 
 
-@pytest.mark.fast
+# @pytest.mark.fast #not fast, Nicolas Minesi 08/04/2024
 def test_broadening_LDM_noneq(verbose=True, plot=False, *args, **kwargs):
     """
     Test Noneq version of LDM and makes sure it gives the same results as the eq
@@ -1003,7 +1003,7 @@ def test_broadening_chunksize_eq(verbose=True, plot=False, *args, **kwargs):
             )
 
 
-@pytest.mark.fast
+# @pytest.mark.fast #not fast, Nicolas Minesi 08/04/2024
 def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
     """Test collisional broadening by other species than air and self (resonant)
 

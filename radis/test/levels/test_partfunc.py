@@ -201,7 +201,7 @@ def test_reduced_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
         printm("Tested CDSD Q_calc vs Q_tab give same output: OK")
 
 
-@pytest.mark.fast
+# @pytest.mark.fast #not fast, Nicolas Minesi 08/04/2024
 def test_calculatedQ_match_HAPI_CO(
     vmax=11, jmax=300, plot=False, verbose=True, *args, **kwargs
 ):
