@@ -67,9 +67,32 @@ jobs:
     - stage: test_slow
       name: Test and Coverage (slow)
 
-      script:
+      install:
+        # Install Micromamba
+        # We do this conditionally because it saves us some downloading if the
+        # version is the same.
+        # For now use http instead of https according to this comment:
+        # https://github.com/mamba-org/mamba/issues/1675#issuecomment-1127160021
+        - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/0.25.1 | tar -xvj bin/micromamba
+        - ./bin/micromamba shell init -s bash -p ~/micromamba
+        - source ~/.bashrc
+        - micromamba activate base
+        # Update python version in environment
+        - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
+        # Create conda environment
+        - micromamba install xtensor -c conda-forge -y
+        # move requirements.txt to the /tmp folder, required so that .environment.yml finds it
+        - pwd
+        - cp requirements.txt /tmp/requirements.txt
+        # Create the environment:
+        - micromamba create -f ./environment.yml -y
+        # Activate and install test-only dependencies
         - micromamba activate radis-env
+        - micromamba list
         - pip install pytest-cov
+        - pip install -e . -v
+
+      script:
         # Your test script goes here
         - echo ">>> Run tests"
         # use XVFB to have headless display port, and still run the Matplotlib tests.
