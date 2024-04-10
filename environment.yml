@@ -5,13 +5,13 @@ channels:
 - astropy
 - plotly
 dependencies:
-- python=3.8  # Needed by vaex - https://github.com/vaexio/vaex/issues/2397
+- python=3.8  # Needed by vaex 4.17 - https://github.com/vaexio/vaex/issues/2397
 - astropy>=4.3.1  # Unit aware calculations
 - astroquery>=0.4.6  # to fetch HITRAN databases
 - beautifulsoup4>=4.10.0 # parse ExoMol website
 - cantera>=2.5.1   # for chemical equilibrium computations
 - configparser
-- cython          # EP : really needed? pipreqs doesn't say so
+#- cython          # Not needed, see #647
 - habanero>=1.2.0  # CrossRef API to retrieve data from doi
 - h5py>=3.2.1   # load HDF5
 - joblib  # for parallel loading of SpecDatabase
@@ -28,8 +28,7 @@ dependencies:
 - seaborn   # other matplotlib themes
 - termcolor  # terminal colors
 - specutils
-- vaex-core
-#- vaex-core>=4.17.0   # load HDF5 files  (version needed to fix https://github.com/radis/radis/issues/598)
+- vaex-core>=4.17.0   # load HDF5 files  (version needed to fix https://github.com/radis/radis/issues/598)
 - vaex-hdf5
 - vaex-viz
 - pip
