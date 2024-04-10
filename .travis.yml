@@ -46,7 +46,7 @@ jobs:
         # Activate and install test-only dependencies
         - micromamba activate radis-env
         - micromamba list
-        - pip install pytest-cov
+        - pip install pytest-cov pytest==7.4.4
         - pip install -e . -v
 
       script:
@@ -89,7 +89,7 @@ jobs:
         # Activate and install test-only dependencies
         - micromamba activate radis-env
         - micromamba list
-        - pip install pytest-cov
+        - pip install pytest-cov pytest==7.4.4
         - pip install -e . -v
 
       script:
