@@ -5,7 +5,7 @@ channels:
 - astropy
 - plotly
 dependencies:
-#- python=3.8 #NM not really needed
+- python=3.8  # Needed by vaex - https://github.com/vaexio/vaex/issues/2397
 - astropy>=4.3.1  # Unit aware calculations
 - astroquery>=0.4.6  # to fetch HITRAN databases
 - beautifulsoup4>=4.10.0 # parse ExoMol website
