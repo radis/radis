@@ -1059,15 +1059,23 @@ class MdbExomol(DatabaseManager):
         #  default n_Texp value if not given
         if self.n_Texp_def is None:
             self.n_Texp_def = 0.5
-            warnings.warn(Warning(f"""
+            warnings.warn(
+                Warning(
+                    f"""
                     No default broadening exponent in def file. Assigned n = {self.n_Texp_def}
-                    """))
+                    """
+                )
+            )
         #  default alpha_ref value if not given
         if self.alpha_ref_def is None:
             self.alpha_ref_def = 0.07
-            warnings.warn(Warning(f"""
+            warnings.warn(
+                Warning(
+                    f"""
                     No default broadening in def file. Assigned alpha_ref = {self.alpha_ref_def}
-                    """))
+                    """
+                )
+            )
 
         # load states
         if cache == "regen" and mgr.cache_file(self.states_file).exists():

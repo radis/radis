@@ -10,6 +10,7 @@ import pytest
 from radis.io.exomol import get_exomol_database_list, get_exomol_full_isotope_name
 
 
+@pytest.mark.needs_connection
 def test_exomol_parsing_functions(verbose=True, *args, **kwargs):
     """Test functions used to parse ExoMol website"""
 
@@ -27,8 +28,8 @@ def test_exomol_parsing_functions(verbose=True, *args, **kwargs):
     #  Note : this may change if new databases are added ; test would have to
     # be updated in that case.
     databases, recommended = get_exomol_database_list("CH4", "12C-1H4")
-    assert databases == ["xsec-YT10to10", "YT10to10", "YT34to10"]
-    assert recommended == "YT34to10"
+    assert sorted(databases) == sorted(["xsec-MM", "YT10to10", "YT34to10", "MM"])
+    assert recommended == "MM"
 
     # Test that these databases are found
     KNOWN_EXOMOL_DATABASE_NAMES = {

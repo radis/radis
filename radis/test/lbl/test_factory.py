@@ -607,7 +607,7 @@ def test_wstep_auto_method_sf(verbose=True, plot=False, *args, **kwargs):
     )
 
 
-@pytest.mark.fast
+# @pytest.mark.fast #not fast, Nicolas Minesi 08/04/2024
 def test_all_spectrum_using_wstep_auto(verbose=True, plot=False, *args, **kwargs):
     """Checks all methods to calculate Spectrum works with "auto" mode"""
     Tgas = 1000
