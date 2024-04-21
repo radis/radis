@@ -3627,7 +3627,7 @@ class BaseFactory(DatabankLoader):
 
         cutoff_error: float
             percentage below which to keep the estimated error,
-            adjusting the cutoff if necessary. If None, no error to consider. Default None.
+            adjusting the cutoff if necessary. If None, no error to consider. Default None. *Currently only implemented for Pandas DataFrames.*
 
         Notes
         -----
@@ -3642,6 +3642,8 @@ class BaseFactory(DatabankLoader):
         if cutoff is not None:
             self.params.cutoff = cutoff
         if cutoff_error is not None:
+            if self.dataframe_type == "vaex":
+                raise "The dataframe_type is vaex, but the cutoff_error parameter is currently only implemented for Pandas DataFrames"
             self.params.cutoff_error = cutoff_error
 
         # Load variables
@@ -3681,7 +3683,7 @@ class BaseFactory(DatabankLoader):
                 error_cutoff = df.S[b].sum() / df.S.sum() * 100
 
             if cutoff_error is not None:
-                if cutoff_error < error:
+                if cutoff_error < error_cutoff:
                     lines_by_intensity = df.S.sort_values()
                     cumsummed = lines_by_intensity.cumsum()
                     cond = cumsummed <= (cutoff_error / 100) * df.S.sum()
@@ -3695,10 +3697,10 @@ class BaseFactory(DatabankLoader):
                         b = df.S <= max_value
                         in_or_ex = 'inclusive'
                     # Print current error
-                    error = df.S[b].sum() / df.S.sum() * 100
+                    error_cutoff = df.S[b].sum() / df.S.sum() * 100
                     print(
                         "Cutoff for discarded lines adjusted to {0} ({1}). ".format(max_value,in_or_ex)
-                        + "Current percentage error: {0:.2f}% ".format(error)
+                        + "Current percentage error: {0:.2f}% ".format(error_cutoff)
                         + "Inputted error: {0:.2f}%".format(cutoff_error)
                     )
 
@@ -3708,7 +3710,7 @@ class BaseFactory(DatabankLoader):
                         + " Inputted cutoff error percentage is {0:.2f}%".format(
                             cutoff_error
                         )
-                        + " Estimated error: {0:.2f}%".format(error)
+                        + " Estimated error: {0:.2f}%".format(error_cutoff)
                     )
                 Nlines_cutoff = b.sum()
             else:
