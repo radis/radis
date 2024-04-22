@@ -246,6 +246,7 @@ def run_setup(with_binary):
         ],
         packages=find_packages(),
         install_requires=[],
+        python_requires="<3.9",  # this limit is introduced by vaex, see https://github.com/radis/radis/pull/647
         # do not add requirements here, add them directly in the requirements.txt file
         # note EP : generate a requirement.txt by Mamba & pip freeze for Pypi deployment ? see https://stackoverflow.com/a/75239980/5622825
         extras_require={
