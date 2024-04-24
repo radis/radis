@@ -40,14 +40,18 @@ else:
         pressure=1,  # bar
         Tgas=T_ref,
         mole_fraction=1,
+        path_length=4,
         wstep=0.001,
         databank="hitemp",
         verbose=False,
     )
     w, A = s.get("absorbance")  # extract the wavenumber and absorbance
-    noise_amplitude = 5e-3
+    noise_amplitude = 5e-2
+    rng1 = np.random.default_rng(
+        122807528840384100672342137672332424406
+    )  # to make sure the fit provides the same output each time
     noise = (
-        noise_amplitude * np.random.rand(np.size(A)) - noise_amplitude / 2
+        noise_amplitude * rng1.random(np.size(A)) - noise_amplitude / 2
     )  # simulates the noise of an experiment
     s = Spectrum.from_array(
         w,
@@ -62,7 +66,9 @@ from astropy.modeling import models
 list_models = [models.Voigt1D() for _ in range(3)]
 
 verbose = False  # verbose=True also recommended
-gfit, y_err = s.fit_model(list_models, confidence=0.9545, plot=True, verbose=verbose)
+gfit, y_err = s.fit_model(
+    list_models, confidence=0.9545, plot=True, verbose=verbose, debug=False
+)
 if verbose:
     for mod in gfit:
         print(mod)
