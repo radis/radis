@@ -3626,8 +3626,8 @@ class BaseFactory(DatabankLoader):
             times. If 0, no cutoff. Default 0
 
         cutoff_error: float
-            percentage below which to keep the estimated error,
-            adjusting the cutoff if necessary. If None, no error to consider. Default None. *Currently only implemented for Pandas DataFrames.*
+            keep the estimated error from exceeding this percentage,
+            adjusting the cutoff if necessary. If None, no error to consider. Default None.
 
         Notes
         -----
@@ -3642,8 +3642,6 @@ class BaseFactory(DatabankLoader):
         if cutoff is not None:
             self.params.cutoff = cutoff
         if cutoff_error is not None:
-            if self.dataframe_type == "vaex":
-                raise "The dataframe_type is vaex, but the cutoff_error parameter is currently only implemented for Pandas DataFrames"
             self.params.cutoff_error = cutoff_error
 
         # Load variables
@@ -3684,9 +3682,31 @@ class BaseFactory(DatabankLoader):
 
             if cutoff_error is not None:
                 if cutoff_error < error_cutoff:
-                    lines_by_intensity = df.S.sort_values()
-                    cumsummed = lines_by_intensity.cumsum()
-                    cond = cumsummed <= (cutoff_error / 100) * df.S.sum()
+                    total = 0
+                    if self.dataframe_type == "vaex":
+                        cutoff_sum = (cutoff_error / 100) * df.sum(df.S)
+                        working_df = df[b].extract()
+                        working_df = working_df.sort(working_df.S)
+                        nbins = 100000
+                        bounds = working_df.minmax(working_df.S)
+                        filtered_df = working_df #initialising for the loop
+                        while filtered_df.length() > nbins:
+                            limits = bounds + [0,1] #add 1 to upper bound to make sure the highest value is included in last bin
+                            step = (limits[-1]-limits[0])/nbins #width of each bin
+                            binned_sum = filtered_df.sum(working_df.S, working_df.S, limits, nbins)
+                            cumsummed = np.cumsum(binned_sum) + total
+                            idx = np.searchsorted(cumsummed,cutoff_sum,side='right')
+                            if idx > 0:
+                                total += cumsummed[idx-1]
+                            minimum = filtered_df.min(working_df.S)
+                            bounds = np.array([minimum + idx*step, minimum + (idx+1)*step])
+                            filtered_df = filtered_df[(working_df.S >= bounds[0]) & (working_df.S <= bounds[1])].extract()
+                        lines_by_intensity = filtered_df.to_pandas_df().S
+                    else:
+                        cutoff_sum = (cutoff_error / 100) * df.S.sum()
+                        lines_by_intensity = df.S[b].sort_values()
+                    cumsummed = lines_by_intensity.cumsum() + total
+                    cond = cumsummed <= cutoff_sum
                     post_cutoff = lines_by_intensity[cond]
                     # to account for the unlikely case where the cutoff in cond lies between duplicate values:
                     max_value = post_cutoff.max()
@@ -3697,7 +3717,10 @@ class BaseFactory(DatabankLoader):
                         b = df.S <= max_value
                         in_or_ex = 'inclusive'
                     # Print current error
-                    error_cutoff = df.S[b].sum() / df.S.sum() * 100
+                    if self.dataframe_type == "vaex":
+                        error_cutoff = df[b].sum(df[b].S) / df.sum(df.S) * 100
+                    else:
+                        error_cutoff = df.S[b].sum() / df.S.sum() * 100
                     print(
                         "Cutoff for discarded lines adjusted to {0} ({1}). ".format(max_value,in_or_ex)
                         + "Current percentage error: {0:.2f}% ".format(error_cutoff)
