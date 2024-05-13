@@ -30,6 +30,7 @@ except ImportError:  # if ran from here
     from radis.lbl.base import get_wavenumber_range
 
 from radis import config
+from radis.db.classes import to_conventional_name
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
 from radis.spectrum.spectrum import Spectrum
@@ -44,7 +45,7 @@ def calc_spectrum(
     Tvib=None,
     Trot=None,
     pressure=1.01325,
-    molecule=None,
+    species=None,
     isotope="all",
     mole_fraction=1,
     diluent="air",
@@ -384,8 +385,15 @@ def calc_spectrum(
     """
 
     # Check inputs
-
-    # ... wavelengths / wavenumbers
+    if "molecule" in kwargs:
+        print("Molecule is deprecated. Use species instead.")
+        species = kwargs["molecule"]
+        molecule = to_conventional_name(species)
+    else:
+        if species is not None:
+            molecule = to_conventional_name(species)
+        else:
+            molecule = species
 
     # Get wavenumber, based on whatever was given as input.
     wavenum_min, wavenum_max, input_wunit = get_wavenumber_range(
@@ -399,7 +407,6 @@ def calc_spectrum(
         medium,
         return_input_wunit=True,
     )
-
     # Deal with Multi-molecule mode:
 
     from radis.los.slabs import MergeSlabs
@@ -463,6 +470,7 @@ def calc_spectrum(
 
     # ... Now we are sure there are no contradictions. Just ensure we have molecules:
     if molecule_reference_set is None:
+
         raise ValueError(
             "Please enter the molecule(s) to calculate in the `molecule=` argument or as a dictionary in the following: {0}".format(
                 list(DICT_INPUT_ARGUMENTS.keys())
@@ -537,6 +545,9 @@ def calc_spectrum(
         diluent_for_this_molecule = diluents_for_molecule(
             mole_fraction, diluent, molecule
         )
+
+        if "molecule" in kwargs_molecule:
+            del kwargs_molecule["molecule"]
 
         generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
@@ -737,6 +748,7 @@ def _calc_spectrum_one_molecule(
             "hitemp",
             "exomol",
             "geisa",
+            "kurucz",
         ]
         or (isinstance(databank, tuple) and databank[0] == "exomol")
         or (isinstance(databank, tuple) and databank[0] == "hitran")
@@ -771,6 +783,9 @@ def _calc_spectrum_one_molecule(
                 "parfuncfmt": "hapi",
                 # TODO: replace with GEISA partition function someday.............
             }
+        elif databank in ["kurucz"]:
+            conditions = {"source": "kurucz", "parfuncfmt": "kurucz"}
+
         elif isinstance(databank, tuple) and databank[0] == "exomol":
             conditions = {
                 "source": "exomol",

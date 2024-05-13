@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Contains the :py:class:`~radis.lbl.factory.SpectrumFactory` class, which is
+"""Contains the :py:class:`~radimolecules.lbl.factory.SpectrumFactory` class, which is
 the core of the RADIS Line-by-Line module.
 
 Examples
@@ -97,6 +97,7 @@ except ImportError:  # if ran from here
     from radis.lbl.base import get_wavenumber_range
 
 from radis import config
+from radis.db.classes import is_atom
 from radis.misc.basics import flatten, is_float, is_range, list_if_float, round_off
 from radis.misc.utils import Default
 from radis.phys.constants import k_b
@@ -384,7 +385,6 @@ class SpectrumFactory(BandFactory):
         mole_fraction=1,
         path_length=1,
         wstep=0.01,
-        molecule=None,
         isotope="all",
         medium="air",
         truncation=Default(50),
@@ -400,6 +400,7 @@ class SpectrumFactory(BandFactory):
         parsum_mode="full summation",
         verbose=True,
         warnings=True,
+        species=None,
         save_memory=False,
         export_populations=None,
         export_lines=False,
@@ -415,6 +416,17 @@ class SpectrumFactory(BandFactory):
         if medium not in ["air", "vacuum"]:
             raise ValueError("Wavelength must be one of: 'air', 'vacuum'")
         kwargs0 = kwargs  # kwargs is used to deal with Deprecated names
+        if "molecule" in kwargs:
+            print("Molecule is deprecated. Use species instead.")
+            if species is None:
+                species = kwargs["molecule"]
+                molecule = species
+            kwargs0.pop(
+                "molecule"
+            )  # remove it from kwargs0 so it doesn't trigger the error later
+        else:
+            molecule = species
+
         if "db_use_cached" in kwargs:
             warn(
                 DeprecationWarning(
@@ -497,25 +509,27 @@ class SpectrumFactory(BandFactory):
 
         # Init variables
         # --------------
-
         # Get molecule name
-        if isinstance(molecule, int):
-            molecule == get_molecule(molecule)
-        if molecule is not None:
-            if (
-                molecule
-                not in MOLECULES_LIST_EQUILIBRIUM + MOLECULES_LIST_NONEQUILIBRIUM
-            ):
-                raise ValueError(
-                    "Unsupported molecule: {0}.\n".format(molecule)
-                    + "Supported molecules are:\n - under equilibrium: {0}".format(
-                        MOLECULES_LIST_EQUILIBRIUM
-                    )
-                    + "\n- under nonequilibrium: {0}".format(
-                        MOLECULES_LIST_NONEQUILIBRIUM
-                    )
-                    + "\n\nNote that RADIS now has ExoMol support, but not all ExoMol molecules are referenced in RADIS. If a molecule is available in ExoMol but does not appear in RADIS yet, please contact the RADIS team or write on https://github.com/radis/radis/issues/319"
-                )
+        if molecule is not None and species is not None:
+            if not is_atom(molecule):
+                if isinstance(molecule, int):
+                    species == get_molecule(molecule)
+                if molecule is not None:
+                    if (
+                        species
+                        not in MOLECULES_LIST_EQUILIBRIUM
+                        + MOLECULES_LIST_NONEQUILIBRIUM
+                    ):
+                        raise ValueError(
+                            "Unsupported molecule: {0}.\n".format(species)
+                            + "Supported molecules are:\n - under equilibrium: {0}".format(
+                                MOLECULES_LIST_EQUILIBRIUM
+                            )
+                            + "\n- under nonequilibrium: {0}".format(
+                                MOLECULES_LIST_NONEQUILIBRIUM
+                            )
+                            + "\n\nNote that RADIS now has ExoMol support, but not all ExoMol molecules are referenced in RADIS. If a molecule is available in ExoMol but does not appear in RADIS yet, please contact the RADIS team or write on https://github.com/radis/radis/issues/319"
+                        )
 
         # Store isotope identifier in str format (list wont work in database queries)
         if not isinstance(isotope, str):
@@ -543,8 +557,10 @@ class SpectrumFactory(BandFactory):
             raise NotImplementedError
 
         self.input.path_length = convert_and_strip_units(path_length, u.cm)
+        # if molecule is not None and species is not None:
+        # if not is_atom(species) :
         self.input.molecule = (
-            molecule  # if None, will be overwritten after reading database
+            species  # if None, will be overwritten after reading database
         )
         self.input.state = "X"  # for the moment only ground-state is used
         # (but the code is electronic state aware)
@@ -552,6 +568,7 @@ class SpectrumFactory(BandFactory):
             isotope  # if 'all', will be overwritten after reading database
         )
         self.input.self_absorption = self_absorption
+        self.input.species = species
 
         # Initialize computation variables
         self.params.wstep = wstep
@@ -633,6 +650,7 @@ class SpectrumFactory(BandFactory):
         self.SpecDatabase = None  # the database to store spectra. Not to be confused
         # with the databank where lines are stored
         self.database = None  # path to previous database
+
         # Warnings
         # --------
 

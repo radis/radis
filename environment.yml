@@ -9,7 +9,7 @@ dependencies:
 - astropy>=4.3.1  # Unit aware calculations
 - astroquery>=0.4.6  # to fetch HITRAN databases
 - beautifulsoup4>=4.10.0 # parse ExoMol website
-- cantera>=2.5.1   # for chemical equilibrium computations
+- cantera>=2.5.1
 - configparser
 #- cython          # Not needed, see #647
 - habanero>=1.2.0  # CrossRef API to retrieve data from doi
@@ -31,6 +31,5 @@ dependencies:
 - vaex-core>=4.17.0   # load HDF5 files  (version needed to fix https://github.com/radis/radis/issues/598)
 - vaex-hdf5
 - vaex-viz
-- pip
 - pip:
   - -r requirements.txt              # add all packages directly in requirements.txt
