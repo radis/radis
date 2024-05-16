@@ -179,7 +179,7 @@ class AdBKurucz:
         return filename
 
     def Sij0(self, A, g, nu_lines, elower, QTref):
-        # The int column of the df can be computed using this method but the default option option rather uses Radis linestrength_from_Einstein
+        # The int column of the df can be computed using this method but the default option rather uses Radis linestrength_from_Einstein
         """Reference Line Strength in Tref=296K, S0.
 
         Note:

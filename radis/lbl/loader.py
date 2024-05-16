@@ -1799,8 +1799,6 @@ class DatabankLoader(object):
         )
         self.misc.total_lines = len(self.df0)  # will be stored in Spectrum metadata
 
-        # Check the molecule is what we expected
-
         self.input.molecule = get_molecule(self.df0.attrs["id"])  # get molecule
 
         # %% Load Partition functions (and energies if needed)
