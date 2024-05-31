@@ -17,10 +17,15 @@ from radis import calc_spectrum
 s = calc_spectrum(
     2000,
     5000,  # cm-1
-    species="Mg_I",  # Enter species name
-    Tgas=5000,  # K
+    species="Fe_I",  # Enter species name
+    Tgas=4754.6797,  # K
     databank="kurucz",
+    pressure=1e2,
+    # optimization=None,
+    # truncation=500,
+    # diluent={'air':1},
+    mole_fraction=0.5,
     warnings={"AccuracyError": "ignore", "AccuracyWarning": "ignore"},
 )
 
-s.plot("radiance_noslit", wunit="nm")
+s.plot("radiance_noslit", wunit="cm-1")

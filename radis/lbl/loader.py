@@ -2487,7 +2487,6 @@ class DatabankLoader(object):
                     elif dbformat in ["kurucz"]:
                         kurucz = AdBKurucz(self.input.species)
                         df = fetch_kurucz(self.input.species)[1]
-                        kurucz.add_airbrd(df)
 
                     else:
                         raise ValueError("Unknown dbformat: {0}".format(dbformat))

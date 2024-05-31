@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from radis.api.kuruczapi import AdBKurucz
+from radis.api.kuruczapi import AdBKurucz, load_pf_Barklem2016
 from radis.io.kurucz import fetch_kurucz
 
 
@@ -68,7 +68,7 @@ def test_adbkurucz_external_data_functions():
     kurucz = AdBKurucz("Na_I")
 
     # Testing load_pf_Barklem2016 function
-    pfTdat, pfdat = kurucz.load_pf_Barklem2016()
+    pfTdat, pfdat = load_pf_Barklem2016()
     assert isinstance(pfTdat, pd.Series)
     assert isinstance(pfdat, pd.DataFrame)
     assert len(pfTdat) == 42

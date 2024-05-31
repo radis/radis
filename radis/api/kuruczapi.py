@@ -22,6 +22,152 @@ from tqdm import tqdm
 from radis.misc.utils import getProjectRoot
 from radis.phys.air import air2vacuum
 
+def load_ionization_energies():
+    #based on https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/spec/atomllapi.py#L308; the file 'NIST_Atomic_Ionization_Energies.txt' is taken from https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/data/atom/NIST_Atomic_Ionization_Energies.txt; 
+    # Not used for now but will probably be for NIST database
+    """Load atomic ionization energies.
+
+    Returns:
+        df_ionE (pd.DataFrame): table of ionization energies
+
+    """
+    fn_IonE = os.path.join(getProjectRoot(), "db", "NIST_Atomic_Ionization_Energies.txt") #pkgutil.get_data(
+    #     "exojax", "data/atom/NIST_Atomic_Ionization_Energies.txt"
+    # )
+    df_ionE = pd.read_csv(fn_IonE, sep="|", skiprows=6, header=0)
+    return df_ionE
+
+def pick_ionE(ielem, iion, df_ionE):
+    """Pick up ionization energy of a specific atomic species.
+
+    This method was extracted from exojax/src/exojax/spec/atomllapi.py
+    (https://github.com/HajimeKawahara/exojax.git)
+
+    Args:
+        ielem (int): atomic number (e.g., Fe=26)
+        iion (int): ionized level (e.g., neutral=1, singly ionized=2, etc.)
+        df_ionE (pd.DataFrame): table of ionization energies
+
+    Returns:
+        ionE (float): ionization energy
+
+    Note:
+        NIST_iE is for now is .NIST_iE.txt
+    """
+
+    def f_droppare(x):
+        return (
+            x.str.replace("\(", "", regex=True)
+            .str.replace("\)", "", regex=True)
+            .str.replace("\[", "", regex=True)
+            .str.replace("\]", "", regex=True)
+            .str.replace("                                      ", "0", regex=True)
+        )
+
+    ionE = float(
+        f_droppare(
+            df_ionE[
+                (df_ionE["At. num "] == ielem)
+                & (df_ionE[" Ion Charge "] == iion - 1)
+            ]["      Ionization Energy (a) (eV)      "]
+        )
+    )
+    return ionE
+
+def get_atomic_number(species):
+    """
+    Extracts the atomic_number from the species id
+    """
+    atomic_symbol = species.split("_")[0]
+    el = getattr(periodictable, atomic_symbol)
+
+    atomic_number = el.number
+    return atomic_number
+
+def get_ionization_state(species):
+    """
+    Extracts the ionization_state from the species id
+    """
+    ionization_str = species.split("_")[1]
+    roman_to_int = {"I": 0, "II": 1, "III": 2, "IV": 3, "V": 4, "VI": 5}
+    ionization_int = roman_to_int.get(ionization_str, -1)
+    #formatted_str = f"{ionization_int:02}"
+
+    return ionization_int#formatted_str
+
+def get_element_symbol(species):
+    atomic_symbol = species.split("_")[0]
+    el = getattr(periodictable, atomic_symbol)
+    return el
+
+#Initially from Exojax but no longer needed since pressure is handled by SpectrumFactory; Update: from https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/atm/atmprof.py#L10
+def pressure_layer(logPtop=-8.,
+                logPbtm=2.,
+                NP=20,
+                mode='ascending',
+                reference_point=0.5):
+    """generating the pressure layer.
+
+    Args:
+        logPtop: log10(P[bar]) at the top layer
+        logPbtm: log10(P[bar]) at the bottom layer
+        NP: the number of the layers
+        mode: ascending or descending
+        reference_point: reference point in the layer. 0.5:center, 1.0:lower boundary, 0.0:upper boundary
+        numpy: if True use numpy array instead of jnp array
+
+    Returns:
+        Parr: pressure layer
+        dParr: delta pressure layer
+        k: k-factor, P[i-1] = k*P[i]
+
+    Note:
+        dParr[i] = Parr[i] - Parr[i-1], dParr[0] = (1-k) Parr[0] for ascending mode
+    """
+    dlog10P = (logPbtm - logPtop) / (NP - 1)
+    k = 10**-dlog10P
+    
+    Parr = np.logspace(logPtop, logPbtm, NP)
+    
+    dParr = (k ** (reference_point - 1.0) - k**reference_point) * Parr
+    if mode == 'descending':
+        Parr = Parr[::-1]
+        dParr = dParr[::-1]
+
+    return Parr, dParr, k
+
+def load_pf_Barklem2016():
+    """Load a table of the partition functions for 284 atomic species.
+
+    Returns
+    -------
+    pfTdat:  pd.DataFrame
+        Steps of temperature (K)
+    pfdat:  pd.DataFrame
+        Partition functions for 284 atomic species
+
+    References
+    ----------
+    `Barklem & Collet (2016), Table 8 <https://doi.org/10.1051/0004-6361/201526961>`_
+
+    """
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(current_dir, "./../levels/pfTKurucz_values.txt")
+    with open(file_path, "r") as file:
+        pfT_str = file.read()
+    #     lines = file.readlines()
+    # pfT_values_line = [line for line in lines if "pfT_str" in line][0]
+    # pfT_values_line = pfT_values_line.strip()
+    # pfT_str = pfT_values_line.replace('"', "")  # Removing quotation marks.
+    pfTdat = pd.read_csv(io.StringIO(pfT_str), sep='\s+')
+    pfTdat = pd.Series(pfTdat.columns[1:]).astype(
+        "float64"
+    )  # Converts the values to float64, skipping the first value
+
+    with open(os.path.join(getProjectRoot(), "db", "kuruczpartfn.txt"), "r") as f:
+        pfdat = pd.read_csv(f, sep="\s+", comment="#", names=pfTdat.index)
+
+    return pfTdat, pfdat
 
 class AdBKurucz:
     from radis.phys.constants import c_CGS, ecgs, mecgs
@@ -30,127 +176,16 @@ class AdBKurucz:
         self.kurucz_url_base = "http://kurucz.harvard.edu/linelists/gfall/gf"
         self.hdf5_file = None
         self.data = None
-        self.pfTdat, self.pfdat = self.load_pf_Barklem2016()
+        self.pfTdat, self.pfdat = load_pf_Barklem2016()
         self.populations = None
         self.species = species
-        self.atomic_number = self.get_atomic_number(species)
-        self.ionization_state = self.get_ionization_state(species)
-        self.element_symbol = self.get_element_symbol(species)
-
-    def get_atomic_number(self, species):
-        """
-        Extracts the atomic_number from the species id
-        """
-        atomic_symbol = species.split("_")[0]
-        el = getattr(periodictable, atomic_symbol)
-
-        atomic_number = el.number
-        return atomic_number
-
-    def get_ionization_state(self, species):
-        """
-        Extracts the ionization_state from the species id
-        """
-        ionization_str = species.split("_")[1]
-        roman_to_int = {"I": 0, "II": 1, "III": 2, "IV": 3, "V": 4, "VI": 5}
-        ionization_int = roman_to_int.get(ionization_str, -1)
-        formatted_str = f"{ionization_int:02}"
-
-        return formatted_str
-
-    def get_element_symbol(self, species):
-        atomic_symbol = species.split("_")[0]
-        el = getattr(periodictable, atomic_symbol)
-        return el
+        self.atomic_number = get_atomic_number(species)
+        self.ionization_state = get_ionization_state(species)
+        self.element_symbol = get_element_symbol(species)
 
     def get_url(self, atomic_number, ionization_state):
         ionization_state = str(ionization_state).zfill(2)
         return f"http://kurucz.harvard.edu/linelists/gfall/gf{atomic_number}{ionization_state}.all"
-
-    def load_pf_Barklem2016(self):
-        """Load a table of the partition functions for 284 atomic species.
-
-        Returns
-        -------
-        pfTdat:  pd.DataFrame
-            Steps of temperature (K)
-        pfdat:  pd.DataFrame
-            Partition functions for 284 atomic species
-
-        References
-        ----------
-        `Barklem & Collet (2016), Table 8 <https://doi.org/10.1051/0004-6361/201526961>`_
-
-        """
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        file_path = os.path.join(current_dir, "./../levels/pfTKurucz_values.txt")
-        with open(file_path, "r") as file:
-            lines = file.readlines()
-        pfT_values_line = [line for line in lines if "pfT_str" in line][0]
-        pfT_values_line = pfT_values_line.strip()
-        pfT_str = pfT_values_line.replace('"', "")  # Removing quotation marks.
-        pfTdat = pd.read_csv(io.StringIO(pfT_str), sep=",")
-        pfTdat = pd.Series(pfTdat.columns[1:]).astype(
-            "float64"
-        )  # Converts the values to float64, skipping the first value
-
-        with open(os.path.join(getProjectRoot(), "db", "kuruczpartfn.txt"), "r") as f:
-            pfdat = pd.read_csv(f, sep="\s+", comment="#", names=pfTdat.index)
-
-        return pfTdat, pfdat
-
-    def load_ionization_energies(self):
-        # Not used for now but will probably be for NIST database
-        """Load atomic ionization energies.
-
-        Returns:
-            df_ionE (pd.DataFrame): table of ionization energies
-
-        Note:
-            NIST_Atomic_Ionization_Energies.txt is in data/atom
-        """
-        fn_IonE = pkgutil.get_data(
-            "exojax", "data/atom/NIST_Atomic_Ionization_Energies.txt"
-        )
-        df_ionE = pd.read_csv(BytesIO(fn_IonE), sep="|", skiprows=6, header=0)
-        return df_ionE
-
-    def pick_ionE(self, ielem, iion, df_ionE):
-        """Pick up ionization energy of a specific atomic species.
-
-        This method was extracted from exojax/src/exojax/spec/atomllapi.py
-        (https://github.com/HajimeKawahara/exojax.git)
-
-        Args:
-            ielem (int): atomic number (e.g., Fe=26)
-            iion (int): ionized level (e.g., neutral=1, singly ionized=2, etc.)
-            df_ionE (pd.DataFrame): table of ionization energies
-
-        Returns:
-            ionE (float): ionization energy
-
-        Note:
-            NIST_iE is for now is .NIST_iE.txt
-        """
-
-        def f_droppare(x):
-            return (
-                x.str.replace("(", "", regex=True)
-                .str.replace(")", "", regex=True)
-                .str.replace("[", "", regex=True)
-                .str.replace("]", "", regex=True)
-                .str.replace("                                      ", "0", regex=True)
-            )
-
-        ionE = float(
-            f_droppare(
-                df_ionE[
-                    (df_ionE["At. num "] == ielem)
-                    & (df_ionE[" Ion Charge "] == iion - 1)
-                ]["      Ionization Energy (a) (eV)      "]
-            )
-        )
-        return ionE
 
     def download_file(self):
         """Download a file from an url to a specified output path."""
@@ -313,10 +348,15 @@ class AdBKurucz:
             gamSta[i] = float(line[86:92])
             gamvdW[i] = float(line[92:98])
 
-        # Invert elower, eupper, jlower, and jupper where eupper - elower > 0
-        condition = eupper - elower > 0
-        elower[condition], eupper[condition] = eupper[condition], elower[condition]
-        jlower[condition], jupper[condition] = jupper[condition], jlower[condition]
+        # Invert elower, eupper, and jlower, jupper where eupper - elower <= 0
+        elower_inverted = np.where((eupper-elower) > 0,  elower,  eupper)
+        eupper_inverted = np.where((eupper-elower) > 0,  eupper,  elower)
+        jlower_inverted = np.where((eupper-elower) > 0,  jlower,  jupper)
+        jupper_inverted = np.where((eupper-elower) > 0,  jupper,  jlower)
+        elower = elower_inverted
+        eupper = eupper_inverted
+        jlower = jlower_inverted
+        jupper = jupper_inverted
 
         wlaa = np.where(wlnmair < 200, wlnmair * 10, air2vacuum(wlnmair * 10))
         nu_lines = 1e8 / wlaa[::-1]  # [cm-1]<-[AA]
@@ -342,7 +382,7 @@ class AdBKurucz:
         data_dict = {
             "A": A,
             "nu_lines": nu_lines,
-            "wav": 10**7 / nu_lines,
+            "wav": nu_lines,
             "El": elower,
             "eupper": eupper,
             "gu": gupper,
@@ -418,29 +458,21 @@ class AdBKurucz:
         """Partition function from Barklem & Collet (2016).
 
         Args:
-        atom: the atom name
+        key: the atom name
         T: temperature
 
         Returns:
         partition function Q
         """
         try:
-            print(f"Temperature: {T}")
-            # Read the pfdat file
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            file_path = os.path.join(current_dir, "./../db/kuruczpartfn.txt")
-            pfdat = pd.read_csv(file_path, sep="\s+", header=None)
-            pfdat = pfdat.set_index(0)
+            #print(f"Temperature: {T}")
+            pfdat = self.pfdat
 
             # Locate the row for the specific atom and ionization state
             pf_atom = pfdat.loc[f"{key}"]
             # Extract temperature and partition function values
-            pfT_values = self.pfTdat.values.flatten()[
-                1:
-            ]  # Exclude the first value (it's the temperature unit)
-            pf_values = pf_atom.values[
-                1:
-            ]  # Exclude the first value (it's the atomic number)
+            pfT_values = self.pfTdat.values.flatten()
+            pf_values = pf_atom.values
 
             pfT_values = pfT_values.astype(float)
             pf_values = pf_values.astype(float)
@@ -459,3 +491,21 @@ class AdBKurucz:
                 f"Key {key} not found in pfdat. Available keys: {pfdat.index.tolist()}"
             )
             raise
+
+    def calculate_populations(self, atom, temperature, data):
+        # Select the partition function for the specific atom
+        # atom_pf = self.pfdat.loc[f'{atom}_I']
+
+        # Calculate the partition function at a certain temperature
+        #print(type(self.partfn))
+        QT_atom = self.partfcn(atom, temperature)
+        #print("QT_atom",QT_atom)
+
+        # Calculate energy/temperature ratio
+        energy_temp_ratio = data["El"] / (0.695 * temperature)
+        # print(f'Energy/temp ratio: {energy_temp_ratio}')   # print the energy to temperature ratio for debugging
+
+        # Calculate level populations using Boltzmann statistics
+        self.populations = np.exp(-energy_temp_ratio) / QT_atom
+
+        return self.populations

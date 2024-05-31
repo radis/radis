@@ -17,6 +17,8 @@ eV = 1.602176634e-19  # J
 https://physics.nist.gov/cgi-bin/cuu/Value?e
 """
 
+eV2wn = 8065.54  # 1[eV]=8065.54[cm^-1] # from: https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/utils/constants.py#L35
+
 h = 6.62607015e-34
 """float: Planck constant (m2.kg.s-1 = J.s)
 

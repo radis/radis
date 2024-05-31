@@ -73,6 +73,7 @@ from scipy.signal import oaconvolve
 
 import radis
 from radis.db.references import doi
+from radis.db.classes import is_atom
 from radis.lbl.base import BaseFactory
 from radis.misc.arrays import (
     add_at,
@@ -87,7 +88,9 @@ from radis.misc.debug import printdbg
 from radis.misc.plot import fix_style, set_style
 from radis.misc.progress_bar import ProgressBar
 from radis.misc.warning import reset_warnings
-from radis.phys.constants import Na, c_CGS, k_b_CGS
+from radis.phys.constants import Na, c_CGS, k_b_CGS, eV2wn
+from radis.api.kuruczapi import load_ionization_energies,pick_ionE,get_atomic_number,get_ionization_state,get_element_symbol,pressure_layer
+#import periodictable
 
 # %% Broadening functions
 
@@ -372,6 +375,32 @@ def pressure_broadening_HWHM(
 
     return gamma_lb
 
+def gamma_vald3(df, T, PH, PHH, PHe, enh_damp=1.0):  # , vdW_meth="V"):
+    # based on: https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/spec/atomll.py#L40
+    gamRad = df['gamRad'].replace(0., -99)
+    gamSta = df['gamSta'].replace(0., -99)
+    chi_lam = df['nu_lines']/eV2wn  # [cm-1] -> [eV]
+    chi = df['El']/eV2wn  # [cm-1] -> [eV]
+
+    C6 = 0.3e-30 * ((1/(df['ionE']-chi-chi_lam)**2) - (1/(df['ionE']-chi)**2))
+    C6 = np.abs(C6)
+    gam6H = 1e20 * C6**0.4 * PH*1e6 / T**0.7
+    gam6He = 1e20 * C6**0.4 * PHe*1e6*0.41336 / T**0.7
+    gam6HH = 1e20 * C6**0.4 * PHH* 1e6*0.85 / T**0.7
+    gamma6 = enh_damp * (gam6H + gam6He + gam6HH)
+    gamma_case1 = (gamma6 + 10**gamRad + 10**gamSta) / (4*np.pi*c_CGS)
+    gamma_case1 = gamma_case1.replace(np.nan, 0.)
+
+    Texp = 0.38  # Barklem+2000
+    gam6H = 10**df['gamvdW'] * (T/10000.)**Texp * PH*1e6 / (k_b_CGS*T)
+    gam6He = 10**df['gamvdW'] * (T/10000.)**Texp * PHe*1e6*0.41336 / (k_b_CGS*T)
+    gam6HH = 10**df['gamvdW'] * (T/10000.)**Texp * PHH*1e6*0.85 / (k_b_CGS*T)
+    gamma6 = gam6H + gam6He + gam6HH
+    gamma_case2 = (gamma6 + 10**gamRad + 10**gamSta) / (4*np.pi*c_CGS)
+
+    gamma = gamma_case1.where(df['gamvdW'] >= 0., gamma_case2)
+
+    return gamma
 
 def lorentzian_lineshape(w_centered, gamma_lb):
     r"""Computes collisional broadening over all lines [1]_
@@ -649,6 +678,7 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
     # ... - it is defined for wavelengths only. Here we may have wavenumbers as well
 
     integral = np.trapz(lineshape, w_centered, axis=0)
+
     # Normalize
     lineshape /= integral
 
@@ -891,7 +921,7 @@ class BroadenFactory(BaseFactory):
         Tgas = self.input.Tgas
         pressure = self.input.pressure
         mole_fraction = self.input.mole_fraction
-        # convert from mbar to atm for linebroadening calculation
+        # convert from bar to atm for linebroadening calculation
         pressure_atm = pressure / 1.01325
         # coefficients tabulation temperature
         Tref = self.input.Tref
@@ -1082,55 +1112,114 @@ class BroadenFactory(BaseFactory):
         """
 
         # Check self broadening is here
+        if not is_atom(self.input.species) : 
+            if self.dataframe_type == "pandas":
+                columns = list(df.keys())
+            elif self.dataframe_type == "vaex":
+                columns = df.column_names
 
-        if self.dataframe_type == "pandas":
-            columns = list(df.keys())
-        elif self.dataframe_type == "vaex":
-            columns = df.column_names
+            if not "Tdpsel" in columns:
+                self.warn(
+                    "Self-broadening temperature coefficient Tdpsel not given in database: used Tdpair instead",
+                    "MissingSelfBroadeningWarning",
+                    level=2,  # only appear if verbose>=2
+                )
+                Tdpsel = None  # if None, voigt_broadening_HWHM uses df.Tdpair
+            else:
+                Tdpsel = df.Tdpsel
 
-        if not "Tdpsel" in columns:
-            self.warn(
-                "Self-broadening temperature coefficient Tdpsel not given in database: used Tdpair instead",
-                "MissingSelfBroadeningWarning",
-                level=2,  # only appear if verbose>=2
+            molar_mass = self.get_molar_mass(df)
+
+            if not "selbrd" in columns:
+                self.warn(
+                    "Self-broadening coefficient selbrd not given in database: used airbrd instead",
+                    "MissingSelfBroadeningWarning",
+                    level=2,  # only appear if verbose>=2
+                )
+
+                selbrd = df.airbrd
+            else:
+                selbrd = df.selbrd
+
+            # Calculate broadening FWHM
+            wv, wl, wg = voigt_broadening_HWHM(
+                df.airbrd,
+                selbrd,
+                df.Tdpair,
+                Tdpsel,
+                df.wav,
+                molar_mass,
+                pressure_atm,
+                mole_fraction,
+                Tgas,
+                Tref,
+                diluent,
+                diluent_broadening_coeff,
             )
-            Tdpsel = None  # if None, voigt_broadening_HWHM uses df.Tdpair
-        else:
-            Tdpsel = df.Tdpsel
+            
+            # Update dataframe
+            df["hwhm_voigt"] = wv
+            df["hwhm_lorentz"] = wl
+            df["hwhm_gauss"] = wg
 
-        molar_mass = self.get_molar_mass(df)
+        else :
+            df_ionE = load_ionization_energies()
+            #print("df_ionE",df_ionE.columns)
+            #df_ionE.columns = df_ionE.columns.str.strip()
+            ielem = get_atomic_number(self.input.species) #getattr(periodictable,self.input.atom).number
+            #filtered_df = df_ionE[(df_ionE['At. num'] == self.atomic_number) & (df_ionE['Ion Charge'] == int(self.input.ionization_state))]
 
-        if not "selbrd" in columns:
-            self.warn(
-                "Self-broadening coefficient selbrd not given in database: used airbrd instead",
-                "MissingSelfBroadeningWarning",
-                level=2,  # only appear if verbose>=2
-            )
+            #print("filtered_df", filtered_df)
+            #print("wav",df["wav"])
 
-            selbrd = df.airbrd
-        else:
-            selbrd = df.selbrd
+            #print("colonnes df_ionE", df_ionE)
+            iion=get_ionization_state(self.input.species)
+            #print("ielem:", ielem)
+            #print("iion:", iion)
+            
+            ionE = pick_ionE(ielem= ielem, iion= iion+1, df_ionE= df_ionE)
+            df["ionE"]=ionE
 
-        # Calculate broadening FWHM
-        wv, wl, wg = voigt_broadening_HWHM(
-            df.airbrd,
-            selbrd,
-            df.Tdpair,
-            Tdpsel,
-            df.wav,
-            molar_mass,
-            pressure_atm,
-            mole_fraction,
-            Tgas,
-            Tref,
-            diluent,
-            diluent_broadening_coeff,
-        )
+            
+            
+            #print("ionE",df["ionE"])
 
-        # Update dataframe
-        df["hwhm_voigt"] = wv
-        df["hwhm_lorentz"] = wl
-        df["hwhm_gauss"] = wg
+            #based on: https://github.com/HajimeKawahara/exojax/blob/938ed4538c5f57c60def8d795cb1fe7739ce8770/documents/tutorials/Forward_modeling_for_Fe_I_lines_of_Kurucz.ipynb
+
+            element = get_element_symbol(self.input.species)
+            M=element.mass
+            #Assume ATMOSPHERE
+            # NP=len(df["nu_lines"])
+            #T0=3000. #10000. #3000. #1295.0 #K
+            # Parr, dParr, k= pressure_layer(logPtop=-8.,
+            #        logPbtm=2.,
+            #        NP=NP,
+            #        mode='ascending',
+            #        reference_point=0.5)
+            P = self.input.pressure
+            H_He_HH_VMR = [1.0-self.input.mole_fraction, 0.0, 0.0]
+            self.warn('Specifying diluents for pressure broadening of atomic lines is not implemented. Assuming 100% atomic hydrogen diluent')
+            #Tarr = T0*(P)**0.1
+
+            PH = P* H_He_HH_VMR[0]
+            PHe = P* H_He_HH_VMR[1]
+            PHH = P* H_He_HH_VMR[2]
+            #nH = PHH / (k_b_CGS *Tarr)
+            #vdWdamp = 10**(df['gamvdW']) * nH
+            #print("gamvdW", df['gamvdW'])
+            #df['vdWdamp']=vdWdamp
+            #print('vdWdamp', vdWdamp)
+
+            g_broadening = doppler_broadening_HWHM(df["nu_lines"],M,Tgas)
+            l_broadening = gamma_vald3(df, Tgas, PH, PHH, PHe, enh_damp=1.0)
+
+            wg=2*g_broadening
+            wl=2*l_broadening
+            wv=olivero_1977(wg,wl)
+            #print("les données",wv)
+            df["hwhm_gauss"]=wg/2
+            df["hwhm_lorentz"]=wl/2
+            df["hwhm_voigt"]=wv/2
 
         return
 

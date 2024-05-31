@@ -91,21 +91,25 @@ from radis.db.classes import get_molecule, get_molecule_identifier
 
 try:  # Proper import
     from .bands import BandFactory
-    from .base import get_wavenumber_range
+    from .base import get_wavenumber_range, linestrength_from_Einstein
+    from .broadening import voigt_lineshape
 except ImportError:  # if ran from here
     from radis.lbl.bands import BandFactory
     from radis.lbl.base import get_wavenumber_range
+    from radis.lbl.broadening import voigt_lineshape
 
 from radis import config
 from radis.db.classes import is_atom
 from radis.misc.basics import flatten, is_float, is_range, list_if_float, round_off
 from radis.misc.utils import Default
-from radis.phys.constants import k_b
+from radis.phys.constants import k_b, k_b_CGS
 from radis.phys.convert import conv2
 from radis.phys.units import convert_universal
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.spectrum import Spectrum
+from radis.api.kuruczapi import AdBKurucz
+from radis.levels.partfunc import PartFuncKurucz
 
 c_cm = c * 100
 
@@ -172,7 +176,7 @@ class SpectrumFactory(BandFactory):
         Half-width over which to compute the lineshape, i.e. lines are truncated
         on each side after ``truncation`` (:math:`cm^{-1}`) from the line center.
         If ``None``, use no truncation (lineshapes spread on the full spectral range).
-        Default is ``300`` :math:`cm^{-1}`
+        Default is ``50`` :math:`cm^{-1}`
 
         .. note::
          Large values (> ``50``) can induce a performance drop (computation of lineshape
@@ -757,6 +761,7 @@ class SpectrumFactory(BandFactory):
         """
         # %% Preprocessing
         # --------------------------------------------------------------------
+        #if not is_atom(self.input.species): 
 
         # Check inputs
         if not self.input.self_absorption:
@@ -974,6 +979,183 @@ class SpectrumFactory(BandFactory):
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
 
         return s
+        # else : 
+        #     Tgas = convert_and_strip_units(Tgas, u.K)
+        #     if not is_float(Tgas):
+        #         raise ValueError(
+        #             "Tgas should be float or Astropy unit. Got {0}".format(Tgas)
+        #         )
+        #     self.input.Tgas = Tgas
+
+        #     verbose = self.verbose
+        #     self._reset_profiler(verbose)
+        #     self.profiler.start("spectrum_calculation", 1)
+        #     self.profiler.start("spectrum_calc_before_obj", 2)
+            
+        #     # Check database, reset populations, create line dataframe to be scaled
+        #     # --------------------------------------------------------------------
+        #     #self._check_line_databank()
+        #     #self._reinitialize()  # creates scaled dataframe df1 from df0
+
+        #     # --------------------------------------------------------------------
+
+        #     # First calculate the linestrength at given temperature
+        #     df=self.df0
+        #     #df = df[(df['nu_lines']<1e8/10350) & (df['nu_lines']>1e8/10450)]
+        #     #Tref=296
+        #     # Convert atomic_number to element symbol
+        #     #atomic_number = getattr(periodictable, atom).number
+        #     #element_symbol = periodictable.elements[int(atomic_number)].symbol
+
+        #     # Construct the key
+
+        #     # if self.input.ionization_state == "00":
+        #     #     key = self.input.atom + "_I"
+        #     # elif self.input.ionization_state == "01":
+        #     #     key = self.input.atom+ "_II"
+        #     # else:
+        #     #     key = self.input.atom + "_III"
+        #     #print("df",df.columns)
+        #     key = self.input.species
+        #     nu_lines = df['nu_lines']
+        #     elower = df['El']
+        #     gupper=df['gu']
+        #     A=df['A']
+
+        #     pressure = self.input.pressure
+        #     mole_fraction = self.input.mole_fraction
+        #     path_length = self.input.path_length
+
+        #     #just to get self.df1=self.df0 for now:
+        #     self._reinitialize()
+
+        #     #just to get shiftwav=wav for now, might otherwise require special treatment for atoms:
+        #     self.calc_lineshift()
+
+        #     #self.pfTdat=AdBKurucz.load_pf_Barklem2016(self)[0]
+        #     kurucz = AdBKurucz(self.input.species)
+        #     PartFunc = PartFuncKurucz(self.input.species)
+        #     # QTref=PartFunc._at(Tref)
+        #     # qr = PartFunc._at(Tgas)/QTref
+        #     # Sij0 =linestrength_from_Einstein(A,gupper,elower,1,nu_lines,QTref,Tref)
+        #     # line_strength=self.line_strength_numpy(Tgas,Sij0,nu_lines,elower,qr,Tref)
+        #     Qgas = PartFunc._at(Tgas)
+        #     df['S'] = linestrength_from_Einstein(A,gupper,elower,1,nu_lines,Qgas,Tgas)
+        #     #not running self.calc_linestrength_eq(Tgas) until self.get_lines_abundance(df) is implemented for atoms
+        #     #self._cutoff_linestrength()
+
+        #     # ----------------------------------------------------------------------
+
+        #     # Calculate line shift
+        #     #self.calc_lineshift()  # scales wav to shiftwav (equivalent to v0)
+
+        #     # ----------------------------------------------------------------------
+        #     # Line broadening
+
+        #     #self._calc_broadening_HWHM()
+        #     self._add_voigt_broadening_HWHM(
+        #         df,
+        #         None,
+        #         None,
+        #         Tgas,
+        #         None,
+        #         None,
+        #         None,
+        #     )
+
+        #     #handles range over which profile is normalised and assigns necessary columns:
+        #     self._generate_wavenumber_arrays()
+
+
+        #     #self.partfn=AdBKurucz.partfcn(self,key,Tgas)
+        #     #QT_atom = AdBKurucz.partfcn(self,key,Tgas)
+
+        #     populations=kurucz.calculate_populations(key,Tgas,df)
+        #     wavenumber, abscoeff_v = self._calc_broadening()
+        #     #from self._calc_lineshape:
+        #     # wbroad_centered_oneline = self.wbroad_centered
+        #     # wbroad_centered = np.outer(wbroad_centered_oneline, np.ones(len(df)))
+        #     # line_profile = self._voigt_broadening(df, wbroad_centered, jit=True)
+        #     # (wavenumber, abscoeff_v) = self._apply_lineshape(
+        #     #     df.S.values, line_profile, df.shiftwav.values
+        #     # )
+        #     #voigt_profile = voigt_lineshape(df["nu_lines"],df["hwhm_lorentz"],df["hwhm_voigt"],jit=False)
+
+        #     density = mole_fraction * ((pressure * 1e5) / (k_b * Tgas)) * 1e-6
+        #     abscoeff = abscoeff_v * density  # cm-1
+        #     # ... # TODO: if the code is extended to multi-species, then density has to be added
+        #     # ... before lineshape broadening (as it would not be constant for all species)
+
+        #     # get absorbance (technically it's the optical depth `tau`,
+        #     #                absorbance `A` being `A = tau/ln(10)` )
+        #     absorbance = abscoeff * path_length
+        #     # Generate output quantities
+        #     transmittance_noslit = exp(-absorbance)
+        #     emissivity_noslit = 1 - transmittance_noslit
+        #     radiance_noslit = calc_radiance(
+        #         wavenumber, emissivity_noslit, Tgas, unit='mW/cm2/sr/cm-1'
+        #     )
+
+        #     # import matplotlib.pyplot as plt
+        #     # fig = plt.figure()
+        #     # ax = fig.gca()
+        #     # ax.plot(df["nu_lines"], line_strength*voigt_profile)
+        #     # plt.show()
+        #     # return
+
+        #     # quantities={
+        #     #     "wavenumber": df["nu_lines"],
+        #     #     "radiance_noslit": line_strength*voigt_profile,
+        #     #     "populations" : populations,
+        #     #     "intensity": df["A"]*populations,
+        #     # }
+
+        #     quantities = {
+        #         "wavenumber": wavenumber,
+        #         "abscoeff": abscoeff,
+        #         "absorbance": absorbance,
+        #         "emissivity_noslit": emissivity_noslit,
+        #         "transmittance_noslit": transmittance_noslit,
+        #         "radiance_noslit": radiance_noslit,
+        #     }
+            
+        #      # Get conditions
+        #     conditions = self.get_conditions(add_config=True)
+        #     conditions.update(
+        #         {
+        #             "calculation_time": self.profiler.final[list(self.profiler.final)[-1]][
+        #                 "spectrum_calc_before_obj"
+        #             ],
+        #             "thermal_equilibrium": True,
+        #             "diluents": self._diluent,
+        #             "radis_version": version,
+        #             "spectral_points": (
+        #                 self.params.wavenum_max_calc - self.params.wavenum_min_calc
+        #             )
+        #             / self.params.wstep,
+        #             "profiler": dict(self.profiler.final),
+        #         }
+        #     )
+            
+        #     del self.profiler.final[list(self.profiler.final)[-1]][
+        #         "spectrum_calc_before_obj"
+        #     ]
+        #     units={'radiance_noslit':'mW/cm2/sr/cm-1','populations':None,'intensity':None}
+
+
+        #     lines = self.get_lines()
+
+        #     s=Spectrum(quantities=quantities,
+        #     units=units,
+        #     conditions=conditions,
+        #     lines=lines,
+        #     cond_units=self.cond_units,
+        #     # dont check input (much faster, and Spectrum
+        #     check_wavespace=False,
+        #     # is freshly baken so probably in a good format
+        #     name=name,
+        #     references=dict(self.reftracker),)
+        #     return s
 
     def eq_spectrum_gpu(
         self,

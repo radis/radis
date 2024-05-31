@@ -75,7 +75,7 @@ from psutil import virtual_memory
 import radis
 
 # TODO: rename in get_molecule_name
-from radis.db.classes import get_molecule, get_molecule_identifier
+from radis.db.classes import get_molecule, get_molecule_identifier, is_atom
 
 try:  # Proper import
     from .loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
@@ -94,6 +94,8 @@ from radis.phys.constants import c_CGS, h_CGS, hc_k
 from radis.phys.convert import cm2J, cm2J_vaex, nm2cm, nm_air2cm
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.utils import print_conditions
+#hcperk = 1.4387773538277202  # hc/kB (cm K)
+Tref_original=296
 
 
 class BaseFactory(DatabankLoader):
@@ -2322,7 +2324,10 @@ class BaseFactory(DatabankLoader):
         # Calculate
         air_pressure = self.input.pressure / 1.01325  # convert from bar to atm
 
-        if "Pshft" in df.columns:
+        if is_atom(self.input.species): 
+            self.warn('Pressure shift has not been implemented for atoms')
+            df["shiftwav"] = df.wav
+        elif "Pshft" in df.columns:
             df["shiftwav"] = df.wav + (df.Pshft * air_pressure)
         else:
             self.warn(
@@ -2560,6 +2565,26 @@ class BaseFactory(DatabankLoader):
             df1.attrs["Qref"] = Qref
             Qref_Qgas = Qref / Qgas
         return Qref_Qgas
+    
+
+    def line_strength_numpy(self,T, Sij0, nu_lines, elower, qr, Tref=Tref_original):
+        #based on: https://github.com/HajimeKawahara/exojax/blob/adc44e96d4ddf523b592485594516f348ef03bc2/src/exojax/spec/hitran.py#L35
+        """Line strength as a function of temperature, numpy version
+
+        Args:
+            T: temperature (K)
+            Sij0: line strength at Tref=296K
+            elower: elower
+            nu_lines: line center wavenumber 
+            qr : partition function ratio qr(T) = Q(T)/Q(Tref)
+            Tref: reference temeparture
+
+        Returns:
+            line strength at Ttyp
+        """
+        return Sij0 \
+            * np.exp(-hc_k*elower * (1./T - 1./Tref)) \
+            * np.expm1(-hc_k*nu_lines/T) / np.expm1(-hc_k*nu_lines/Tref) / qr
 
     def calc_linestrength_eq(self, Tgas):
         """Calculate linestrength at temperature Tgas correcting the database
@@ -2641,7 +2666,10 @@ class BaseFactory(DatabankLoader):
                     self._add_ju(df1)
                 self._calc_degeneracies(df1)
 
-            Ia = self.get_lines_abundance(df1)
+            if is_atom(self.input.species): 
+                Ia = 1
+            else:
+                Ia = self.get_lines_abundance(df1)
             df1["S"] = linestrength_from_Einstein(
                 df1.A, df1.gu, df1.El, Ia, df1.wav, self.Qgas(df1, Tgas), Tgas
             )
@@ -2851,7 +2879,7 @@ class BaseFactory(DatabankLoader):
                     # ... make sure PartitionFunction above is calculated with the same
                     # ... temperatures, rovibrational distributions and overpopulations
                     # ... as the populations of active levels (somewhere below)
-                    print(df.columns)
+                    #print(df.columns)
                     df.loc[idx, "Qvib"] = Qvib
                     df.loc[idx, "Q"] = Q
 

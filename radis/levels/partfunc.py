@@ -65,6 +65,7 @@ from numpy import exp
 
 import radis
 from radis.api.cache_files import load_h5_cache_file, save_to_hdf
+from radis.api.kuruczapi import load_pf_Barklem2016
 from radis.db.classes import (
     HITRAN_CLASS1,
     HITRAN_CLASS2,
@@ -1153,26 +1154,25 @@ class PartFuncKurucz(RovibParFuncTabulator):
         super(PartFuncKurucz, self).__init__()
         # Load data in constructor
         self.species = species
-        path_partfn = join(getProjectRoot(), "db", "kuruczpartfn.txt")
-        pfdat = pd.read_csv(path_partfn, sep="\s+", header=None)
-        self.pfdat = pfdat.set_index(0)
+        self.pfTdat, self.pfdat = load_pf_Barklem2016()
+        # path_partfn = join(getProjectRoot(), "db", "kuruczpartfn.txt")
+        # pfdat = pd.read_csv(path_partfn, sep="\s+", header=None)
+        # self.pfdat = pfdat.set_index(0)
         # Locate the row for the specific atom and ionization state
         pf_atom = self.pfdat.loc[f"{species}"]
         # Read the file's content
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        file_path = os.path.join(current_dir, "./pfTKurucz_values.txt")
-        with open(file_path, "r") as f:
-            content = f.read()
+        # current_dir = os.path.dirname(os.path.abspath(__file__))
+        # file_path = os.path.join(current_dir, "./pfTKurucz_values.txt")
+        # with open(file_path, "r") as f:
+        #     content = f.read()
 
-        # Execute the content to get the pfT_values array
-        namespace = {}
-        exec(content, namespace)
+        # # Execute the content to get the pfT_values array
+        # namespace = {}
+        # exec(content, namespace)
 
         # Assign the array to the class variable
-        self.pfT_values = namespace["pfT_values"]
-        self.pf_values = pf_atom.values[0:].astype(
-            float
-        )  # Exclude the first value (it's the atomic number)
+        self.pfT_values = self.pfTdat.values.flatten().astype(float)#namespace["pfT_values"]
+        self.pf_values = pf_atom.values.astype(float)
 
     def _at(self, T):
         # Interpolate to find the partition function at the desired temperature
