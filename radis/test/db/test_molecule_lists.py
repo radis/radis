@@ -35,6 +35,7 @@ def fetch_ExoMol_molecules():
     return molecules
 
 
+@pytest.mark.fast  # this test fails as soon as ExoMol adds a new molecule (often!)
 @pytest.mark.needs_connection
 def test_ExoMol_molecules_list(verbose=True, *args, **kwargs):
     """Test that ExoMol molecule list in RADIS remains up to date"""
@@ -45,10 +46,10 @@ def test_ExoMol_molecules_list(verbose=True, *args, **kwargs):
     molecules = fetch_ExoMol_molecules()
 
     if verbose:
-        print("ExoMol molecules, fetched online ")
+        print("ExoMol molecules, fetched online:")
         print(sorted(molecules))
 
-        print("Comparing Radis hardcoded ExoMol molecules list to the ExoMol website: ")
+        print("Comparing Radis hardcoded ExoMol molecules list to the ExoMol website:")
 
     assert (
         compare_lists(
@@ -60,6 +61,7 @@ def test_ExoMol_molecules_list(verbose=True, *args, **kwargs):
         )
         == 1
     )
+    print("----")
 
 
 def fetch_ExoMol_isotopes(verbose=True, *args, **kwargs):
@@ -124,10 +126,10 @@ def test_HITRAN_molecules_list(verbose=True, *args, **kwargs):
     molecules = fetch_HITRAN_molecules()
 
     if verbose:
-        print("HITRAN molecules, fetched online ")
+        print("HITRAN molecules, fetched online:")
         print(molecules)
 
-        print("Comparing Radis hardcoded HITRAN molecules list to the HITRAN website: ")
+        print("Comparing Radis hardcoded HITRAN molecules list to the HITRAN website:")
 
     assert (
         compare_lists(
@@ -139,6 +141,7 @@ def test_HITRAN_molecules_list(verbose=True, *args, **kwargs):
         )
         == 1
     )
+    print("----")
 
 
 #%%
