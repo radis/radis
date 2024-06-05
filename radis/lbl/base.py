@@ -4181,7 +4181,7 @@ def linestrength_from_Einstein(
     ----------
 
     .. math::
-        S(T) =\frac{1}{8\pi c_{CGS} {n_u}^2} A \frac{I_a g_u \operatorname{exp}\left(\frac{-c_2 E_l}{T}\right)}{Q(T)} \left(1-\operatorname{exp}\left(\frac{-c_2 n_u}{T}\right)\right)
+        S(T) =\frac{1}{8\pi c_{CGS} {\nu}^2} A \frac{I_a g_u \operatorname{exp}\left(\frac{-c_2 E_l}{T}\right)}{Q(T)} \left(1-\operatorname{exp}\left(\frac{-c_2 \nu}{T}\right)\right)
 
     Combine Eq.(A.5), (A.9) in [Rothman-1998]_
 
