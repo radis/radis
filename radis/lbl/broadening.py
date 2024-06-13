@@ -1322,7 +1322,7 @@ class BroadenFactory(BaseFactory):
         else:
             if self.input.isatom:
                 gammma_rad, gamma_stark, gamma_vdw = gamma_vald3(Tgas, pressure_atm*1.01325, df['wav'], df['El'], df['ionE'], df['gamRad'], df['gamSta'], df['gamvdW'], diluent)
-                df['shft'] = (1.0/3.0)*2*gamma_vdw #Konjević et al. 2012 §4.1.3.2
+                df['shft'] = (1.0/3.0)*2*gamma_vdw #Konjević et al. 2012 §4.1.3.2, neglect stark shift by default
                 wl = gammma_rad + gamma_stark + gamma_vdw
                 # selfbrd = 2.2e-2 * pressure_atm*1.01325*1e6*mole_fraction / (k_b_CGS*Tgas) / 2.7e19
                 # print(selfbrd)
