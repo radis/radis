@@ -17,9 +17,9 @@ from radis.api.hdf5 import DataFileManager
 from radis.api.kuruczapi import AdBKurucz,get_atomic_number,get_ionization_state
 
 
-def fetch_kurucz(species):
+def fetch_kurucz(species, isotope, engine):
     kurucz = AdBKurucz(species)
-    data_manager = DataFileManager(engine="pytables")
+    data_manager = DataFileManager(engine=engine)
     atomic_number = f"{get_atomic_number(species):02}"
     ionization_state_str = f"{get_ionization_state(species):02}"
     hdf5_file = f"gf{atomic_number}{ionization_state_str}.hdf5"
@@ -29,8 +29,6 @@ def fetch_kurucz(species):
     # If hdf5 file exists, read data from it
     if os.path.exists(hdf5_file):
         print("HDF5 file already exists, reading data from it.")
-        df = data_manager.read(fname=hdf5_file, key="df")
-        kurucz.add_airbrd(df)
     else:
         kuruczf = kurucz.download_file()
         df = kurucz.read_kurucz(kuruczf)
@@ -38,11 +36,10 @@ def fetch_kurucz(species):
             file=hdf5_file,
             df=df,
             append=False,
-            key="df",
             format="table",
             data_columns=df.columns,
         )
-        df = data_manager.read(fname=hdf5_file, key="df")
-        kurucz.add_airbrd(df)
+    df = data_manager.load(fname=hdf5_file, within=[("iso", isotope)] if isotope is not None else [])
+    kurucz.add_airbrd(df)
 
     return hdf5_file, df

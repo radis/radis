@@ -64,14 +64,12 @@ def pick_ionE(ielem, iion, df_ionE):
             .str.replace("                                      ", "0", regex=True)
         )
 
-    ionE = float(
-        f_droppare(
+    ionE = f_droppare(
             df_ionE[
                 (df_ionE["At. num "] == ielem)
                 & (df_ionE[" Ion Charge "] == iion - 1)
             ]["      Ionization Energy (a) (eV)      "]
         )
-    )
     return ionE
 
 def get_atomic_number(species):
@@ -185,7 +183,9 @@ class AdBKurucz:
 
     def get_url(self, atomic_number, ionization_state):
         ionization_state = str(ionization_state).zfill(2)
-        return f"http://kurucz.harvard.edu/linelists/gfall/gf{atomic_number}{ionization_state}.all"
+        code = f'{atomic_number}{ionization_state}'
+        return "http://kurucz.harvard.edu/atoms/" + code + "/gf" + code + ".all"
+        #return f"http://kurucz.harvard.edu/linelists/gfall/gf{atomic_number}{ionization_state}.all"
 
     def download_file(self):
         """Download a file from an url to a specified output path."""
@@ -339,7 +339,7 @@ class AdBKurucz:
             loggf[i] = float(line[11:18])
             species[i] = str(line[18:24])
             ielem[i] = int(species[i].split(".")[0])
-            iion[i] = int(species[i].split(".")[1]) + 1
+            iion[i] = int(species[i].split(".")[1])
             elower[i] = float(line[24:36])
             jlower[i] = float(line[36:41])
             eupper[i] = float(line[52:64])
@@ -347,7 +347,16 @@ class AdBKurucz:
             gamRad[i] = float(line[80:86])
             gamSta[i] = float(line[86:92])
             gamvdW[i] = float(line[92:98])
+            isonum[i] = int(line[106:109])
 
+        ielem = np.unique(ielem)
+        assert len(ielem) == 1
+        ielem = ielem[0]
+
+        iion = np.unique(iion)
+        assert len(iion) == 1
+        iion = iion[0] + 1
+        
         # Invert elower, eupper, and jlower, jupper where eupper - elower <= 0
         elower_inverted = np.where((eupper-elower) > 0,  elower,  eupper)
         eupper_inverted = np.where((eupper-elower) > 0,  eupper,  elower)
@@ -360,9 +369,8 @@ class AdBKurucz:
 
         wlaa = np.where(wlnmair < 200, wlnmair * 10, air2vacuum(wlnmair * 10))
         nu_lines = 1e8 / wlaa[::-1]  # [cm-1]<-[AA]
+        wlnmair = wlnmair[::-1]
         loggf = loggf[::-1]
-        ielem = ielem[::-1]
-        iion = iion[::-1]
         elower = elower[::-1]
         eupper = eupper[::-1]
         jlower = jlower[::-1]
@@ -378,10 +386,15 @@ class AdBKurucz:
         gamRad = gamRad[::-1]
         gamSta = gamSta[::-1]
         gamvdW = gamvdW[::-1]
+        isonum = isonum[::-1]
+
+        ionE = pick_ionE(ielem, iion, load_ionization_energies())
+        assert ionE.size == 1
+        ionE = float(ionE.iloc[0])
 
         data_dict = {
             "A": A,
-            "nu_lines": nu_lines,
+            'orig_wavelen': wlnmair,
             "wav": nu_lines,
             "El": elower,
             "eupper": eupper,
@@ -389,7 +402,8 @@ class AdBKurucz:
             "jlower": jlower,
             "ju": jupper,
             "id": ielem,
-            "iso": iion,
+            "ionE": ionE,
+            "iso": isonum,
             "gamRad": gamRad,
             "gamSta": gamSta,
             "gamvdW": gamvdW,
@@ -417,6 +431,7 @@ class AdBKurucz:
             "landeglower": landeglower,
             "landegupper": landegupper,
             "isoshiftmA": isoshiftmA,
+            "shft": 0
             # "int":self.Sij0(A,gupper,nu_lines,elower,self.partfcn(self.species,296))
             # if int parameter is used, calc_linestrength_eq will also use it
         }

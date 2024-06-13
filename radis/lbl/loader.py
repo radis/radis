@@ -402,6 +402,7 @@ class Input(ConditionDict):
         "wavenum_max",
         "wavenum_min",
         "species",
+        "isatom"
     ]
 
     def __init__(self):
@@ -489,6 +490,7 @@ class Parameters(ConditionDict):
         "waveunit",
         "wstep",
         "diluent",
+        "lbfunc"
     ]
 
     def __init__(self):
@@ -1510,7 +1512,7 @@ class DatabankLoader(object):
 
         elif source == "kurucz":
             if memory_mapping_engine == "auto":
-                memory_mapping_engine = "vaex"
+                memory_mapping_engine = "pytables"
 
             # Download, setup local databases, and fetch (use existing if possible)
 
@@ -1520,6 +1522,8 @@ class DatabankLoader(object):
                 isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
             local_paths, df = fetch_kurucz(
                 molecule,
+                isotope=isotope_list,
+                engine=memory_mapping_engine
             )
             self.params.dbpath = ",".join(local_paths)
 
@@ -2485,8 +2489,15 @@ class DatabankLoader(object):
                         # self.reftracker.add("10.1016/j.jqsrt.2020.107228", "line database")  # [ExoMol-2020]
                         raise NotImplementedError("use fetch_databank('exomol')")
                     elif dbformat in ["kurucz"]:
-                        kurucz = AdBKurucz(self.input.species)
-                        df = fetch_kurucz(self.input.species)[1]
+                        if self.dataframe_type == "pandas":
+                            engine = "pytables"
+                        elif self.dataframe_type == "vaex":
+                            engine = "vaex"
+                        if isotope == "all":
+                            isotope_list = None
+                        else:
+                            isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
+                        df = fetch_kurucz(self.input.species, isotope=isotope_list, engine=engine)[1]
 
                     else:
                         raise ValueError("Unknown dbformat: {0}".format(dbformat))

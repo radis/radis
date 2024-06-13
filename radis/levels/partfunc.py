@@ -1141,13 +1141,6 @@ class PartFuncExoMol(RovibParFuncTabulator):
 
 class PartFuncKurucz(RovibParFuncTabulator):
     """Return partition function using interpolation of tabulated values of local file kuruczpartfn.txt
-
-    Parameters
-    ----------
-    atom: str
-        exomol isotope full name
-    ionization_state : int
-
     """
 
     def __init__(self, species):

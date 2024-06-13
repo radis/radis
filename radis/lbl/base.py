@@ -75,7 +75,8 @@ from psutil import virtual_memory
 import radis
 
 # TODO: rename in get_molecule_name
-from radis.db.classes import get_molecule, get_molecule_identifier, is_atom
+from radis.db.classes import get_molecule, get_molecule_identifier
+from radis.api.kuruczapi import get_element_symbol
 
 try:  # Proper import
     from .loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
@@ -95,7 +96,6 @@ from radis.phys.convert import cm2J, cm2J_vaex, nm2cm, nm_air2cm
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.utils import print_conditions
 #hcperk = 1.4387773538277202  # hc/kB (cm K)
-Tref_original=296
 
 
 class BaseFactory(DatabankLoader):
@@ -2082,11 +2082,17 @@ class BaseFactory(DatabankLoader):
             iso_set = df.iso.unique()
             molar_mass_dict = {}
             for iso in iso_set:
-                molar_mass_dict[iso] = molpar.get(molecule, iso, "mol_mass")
+                if self.input.isatom:
+                    molar_mass_dict[iso] = iso or get_element_symbol(self.input.species).mass #if isotope number is given then use it, otherwise resort to standard atomic weight
+                else:
+                    molar_mass_dict[iso] = molpar.get(molecule, iso, "mol_mass")
             molar_mass = df["iso"].map(molar_mass_dict)
         else:
             iso = df.attrs["iso"]
-            molar_mass = molpar.get(molecule, iso, "mol_mass")
+            if self.input.isatom:
+                molar_mass = iso or get_element_symbol(self.input.species).mass
+            else:
+                molar_mass = molpar.get(molecule, iso, "mol_mass")
 
         return molar_mass
 
@@ -2324,9 +2330,12 @@ class BaseFactory(DatabankLoader):
         # Calculate
         air_pressure = self.input.pressure / 1.01325  # convert from bar to atm
 
-        if is_atom(self.input.species): 
-            self.warn('Pressure shift has not been implemented for atoms')
-            df["shiftwav"] = df.wav
+        if self.input.isatom:
+            if 'shft' in df.columns:
+                df["shiftwav"] = df.wav - df['shft']
+            else:
+                self.warn('wavenumber shift not given in database: assumed 0 shift')
+                df["shiftwav"] = df.wav
         elif "Pshft" in df.columns:
             df["shiftwav"] = df.wav + (df.Pshft * air_pressure)
         else:
@@ -2567,7 +2576,7 @@ class BaseFactory(DatabankLoader):
         return Qref_Qgas
     
 
-    def line_strength_numpy(self,T, Sij0, nu_lines, elower, qr, Tref=Tref_original):
+    def line_strength_numpy(self,T, Sij0, nu_lines, elower, qr, Tref=None):
         #based on: https://github.com/HajimeKawahara/exojax/blob/adc44e96d4ddf523b592485594516f348ef03bc2/src/exojax/spec/hitran.py#L35
         """Line strength as a function of temperature, numpy version
 
@@ -2582,6 +2591,8 @@ class BaseFactory(DatabankLoader):
         Returns:
             line strength at Ttyp
         """
+        if not Tref:
+            Tref = self.input.Tref
         return Sij0 \
             * np.exp(-hc_k*elower * (1./T - 1./Tref)) \
             * np.expm1(-hc_k*nu_lines/T) / np.expm1(-hc_k*nu_lines/Tref) / qr
@@ -2666,7 +2677,7 @@ class BaseFactory(DatabankLoader):
                     self._add_ju(df1)
                 self._calc_degeneracies(df1)
 
-            if is_atom(self.input.species): 
+            if self.input.isatom:
                 Ia = 1
             else:
                 Ia = self.get_lines_abundance(df1)

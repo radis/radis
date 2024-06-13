@@ -21,6 +21,7 @@ from copy import deepcopy
 from os.path import exists
 
 import numpy as np
+from warnings import warn
 
 try:  # Proper import
     from .base import get_wavenumber_range
@@ -30,7 +31,7 @@ except ImportError:  # if ran from here
     from radis.lbl.base import get_wavenumber_range
 
 from radis import config
-from radis.db.classes import to_conventional_name
+from radis.db.classes import to_conventional_name, is_atom
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
 from radis.spectrum.spectrum import Spectrum
@@ -68,6 +69,7 @@ def calc_spectrum(
     export_lines=False,
     verbose=True,
     return_factory=False,
+    CustomSpectrumFactory=None,
     **kwargs,
 ) -> Spectrum:
     r"""Calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
@@ -117,7 +119,7 @@ def calc_spectrum(
         Default ``None``.​
     isotope: int, list, str of the form ``'1,2'``, or ``'all'``, or dict
         isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
-        See [HITRAN-2020]_ documentation for isotope list for all species. If ``'all'``,
+        For molecules, see [HITRAN-2020]_ documentation for isotope list for all species. For atoms, use the isotope number of the isotope (the total number of protons and neutrons in the nucleus) - use 0 to select rows where the isotope is unspecified, in which case the standard atomic weight from the ``periodictable`` module is used when mass is required. If ``'all'``,
         all isotopes in database are used (this may result in larger computation
         times!). Default ``'all'``.
 
@@ -142,6 +144,8 @@ def calc_spectrum(
             For multiple diluents ::
 
                 diluent = { 'CO2': 0.6, 'H2O':0.2}
+            
+            For free electrons, use the symbol 'e-'
 
     path_length: float [:math:`cm`] or `~astropy.units.quantity.Quantity`
         slab size. Default ``1`` cm​. Use arbitrary units::
@@ -212,11 +216,11 @@ def calc_spectrum(
         Half-width over which to compute the lineshape, i.e. lines are truncated
         on each side after ``truncation`` (:math:`cm^{-1}`) from the line center.
         If ``None``, use no truncation (lineshapes spread on the full spectral range).
-        Default is ``300`` :math:`cm^{-1}`
+        Default is ``50`` :math:`cm^{-1}`
 
         .. note::
                 Large values (> ``50``) can induce a performance drop (computation of lineshape
-                typically scale as :math:`~truncation ^2` ). The default ``300`` was
+                typically scale as :math:`~truncation ^2` ). The default ``50`` was
                 chosen to maintain a good accuracy, and still exhibit the sub-Lorentzian
                 behavior of most lines far (few hundreds :math:`cm^{-1}`) from the line center.
     neighbour_lines: float (:math:`cm^{-1}`)
@@ -294,6 +298,8 @@ def calc_spectrum(
                 sf.eq_spectrum(...)  #  new calculation without reloading the database
     engine : string
         Vaex or Pandas . Default Pandas, if engine is vaex memory performance is improved
+    CustomSpectrumFactory: class
+        An alternative class to use in place of radis.lbl.factory.SpectrumFactory. This option is intended to make monkey patching SpectrumFactory easier, so CustomSpectrumFactory would typically be a modified instance or subclass of it.
     **kwargs: other inputs forwarded to SpectrumFactory
         For instance: ``warnings``.
         See :py:class:`~radis.lbl.factory.SpectrumFactory` documentation for more
@@ -386,14 +392,29 @@ def calc_spectrum(
 
     # Check inputs
     if "molecule" in kwargs:
-        print("Molecule is deprecated. Use species instead.")
-        species = kwargs["molecule"]
-        molecule = to_conventional_name(species)
-    else:
         if species is not None:
-            molecule = to_conventional_name(species)
-        else:
-            molecule = species
+            if species != kwargs['molecule']:
+                raise Exception("Both `molecule` and `species` arguments have been given and aren't equal, but `molecule` is deprecated and `species` is just its replacement.")
+        species = molecule = kwargs['molecule']
+        warn(
+            DeprecationWarning(
+                "`molecule` is deprected - use `species` instead"
+            )
+        )
+    else:
+        molecule = species
+    if species is not None:
+        if is_atom(species):
+            molecule = species = to_conventional_name(species)
+    # if "molecule" in kwargs:
+    #     print("Molecule is deprecated. Use species instead.")
+    #     species = kwargs["molecule"]
+    #     molecule = to_conventional_name(species)
+    # else:
+    #     if species is not None:
+    #         molecule = to_conventional_name(species)
+    #     else:
+    #         molecule = species
 
     # Get wavenumber, based on whatever was given as input.
     wavenum_min, wavenum_max, input_wunit = get_wavenumber_range(
@@ -579,6 +600,7 @@ def calc_spectrum(
             export_lines=export_lines,
             return_factory=return_factory,
             diluent=diluent_for_this_molecule,
+            CustomSpectrumFactory=CustomSpectrumFactory,
             **kwargs_molecule,
         )
 
@@ -638,6 +660,7 @@ def _calc_spectrum_one_molecule(
     export_lines,
     return_factory=False,
     diluent="air",
+    CustomSpectrumFactory=None,
     **kwargs,
 ) -> Spectrum:
     """See :py:func:`~radis.lbl.calc.calc_spectrum`
@@ -696,11 +719,15 @@ def _calc_spectrum_one_molecule(
         drop_columns = "auto"
 
     # Run calculations
-    sf = SpectrumFactory(
+    if CustomSpectrumFactory:
+        sfclass = CustomSpectrumFactory
+    else:
+        sfclass = SpectrumFactory
+    sf = sfclass(
         wavenum_min=wavenum_min,
         wavenum_max=wavenum_max,
         medium=medium,
-        molecule=molecule,
+        species=molecule,
         isotope=isotope,
         pressure=pressure,
         wstep=wstep,
@@ -784,7 +811,10 @@ def _calc_spectrum_one_molecule(
                 # TODO: replace with GEISA partition function someday.............
             }
         elif databank in ["kurucz"]:
-            conditions = {"source": "kurucz", "parfuncfmt": "kurucz"}
+            conditions = {
+                "source": "kurucz",
+                "parfuncfmt": "kurucz"
+            }
 
         elif isinstance(databank, tuple) and databank[0] == "exomol":
             conditions = {

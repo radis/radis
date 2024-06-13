@@ -155,7 +155,7 @@ class SpectrumFactory(BandFactory):
         Default ``None``.
     isotope: ``int``, ``list``, ``str`` of the form ``'1,2'``, or ``'all'``
         isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
-        See HITRAN documentation for isotope list for all species. If 'all',
+        For molecules, see [HITRAN-2020]_ documentation for isotope list for all species. For atoms, use the isotope number of the isotope (the total number of protons and neutrons in the nucleus) - use 0 to select rows where the isotope is unspecified, in which case the standard atomic weight from the ``periodictable`` module is used when mass is required. If ``'all'``,
         all isotopes in database are used (this may result in larger computation
         times!). Default ``'all'``
     medium: ``'air'``, ``'vacuum'``
@@ -163,7 +163,7 @@ class SpectrumFactory(BandFactory):
         Does not change anything when giving inputs in wavenumber. Default ``'air'``
     diluent: ``str`` or ``dictionary``
             can be a string of a single diluent or a dictionary containing diluent
-            name as key and its mole_fraction as value. Default ``air``.
+            name as key and its mole_fraction as value. Default ``air``. For free electrons, use the symbol 'e-'
 
     Other Parameters
     ----------------
@@ -294,6 +294,18 @@ class SpectrumFactory(BandFactory):
         If ``False``, stays quiet. If ``True``, tells what is going on.
         If ``>=2``, gives more detailed messages (for instance, details of
         calculation times). Default ``True``.
+    lbfunc: callable
+        An alternative function to be used instead of the default in calculating Lorentzian broadening, which receives the following keyword arguments:
+            df: the dataframe ``self.df1`` containing the quantities used for calculating the spectrum
+            pressure_atm: ``self.pressure`` in units of atmospheric pressure (1.01325 bar)
+            mole_fraction: ``self.input.mole_fraction``, the mole fraction of the species for which the spectrum is being calculated
+            Tgas: ``self.input.Tgas``, gas temperature in K
+            Tref: ``self.input.Tref``, reference temperature for calculations in K
+            diluent: ``self._diluent``, the dictionary of diluents giving the mole fraction of each
+            diluent_broadening_coeff: a dictionary of the broadening coefficients for each diluent
+        Returns:
+            gamma_lb, shift - The total Lorentzian HWHM [cm^-1], and the shift [cm^-1] to be subtracted from the wavenumber array to account for lineshift. If setting the lineshift here is not desired, the 2nd return object can be anything for which `bool(shift)==False` like `None`
+        If unspecified, the broadening is handled by default by ``radis.lbl.broadening.gamma_vald3`` for atoms and ``radis.lbl.broadening.pressure_broadening_HWHM`` for molecules
 
     Examples
     --------
@@ -410,6 +422,7 @@ class SpectrumFactory(BandFactory):
         export_lines=False,
         gpu_backend=None,
         diluent="air",
+        lbfunc=None,
         **kwargs,
     ):
 
@@ -421,10 +434,20 @@ class SpectrumFactory(BandFactory):
             raise ValueError("Wavelength must be one of: 'air', 'vacuum'")
         kwargs0 = kwargs  # kwargs is used to deal with Deprecated names
         if "molecule" in kwargs:
-            print("Molecule is deprecated. Use species instead.")
-            if species is None:
-                species = kwargs["molecule"]
-                molecule = species
+            if species is not None:
+                if species != kwargs['molecule']:
+                    raise Exception("Both `molecule` and `species` arguments have been given and aren't equal, but `molecule` is deprecated and `species` is just its replacement.")
+            species = molecule = kwargs['molecule']
+            warn(
+                DeprecationWarning(
+                    "`molecule` is deprected - use `species` instead"
+                )
+            )
+
+            # print("Molecule is deprecated. Use species instead.")
+            # if species is None:
+            #     species = kwargs["molecule"]
+            #     molecule = species
             kwargs0.pop(
                 "molecule"
             )  # remove it from kwargs0 so it doesn't trigger the error later
@@ -514,26 +537,28 @@ class SpectrumFactory(BandFactory):
         # Init variables
         # --------------
         # Get molecule name
-        if molecule is not None and species is not None:
+        if isinstance(molecule, int):
+            species = molecule = get_molecule(molecule)
+        if molecule is not None:# and species is not None:
             if not is_atom(molecule):
-                if isinstance(molecule, int):
-                    species == get_molecule(molecule)
-                if molecule is not None:
-                    if (
-                        species
-                        not in MOLECULES_LIST_EQUILIBRIUM
-                        + MOLECULES_LIST_NONEQUILIBRIUM
-                    ):
-                        raise ValueError(
-                            "Unsupported molecule: {0}.\n".format(species)
-                            + "Supported molecules are:\n - under equilibrium: {0}".format(
-                                MOLECULES_LIST_EQUILIBRIUM
-                            )
-                            + "\n- under nonequilibrium: {0}".format(
-                                MOLECULES_LIST_NONEQUILIBRIUM
-                            )
-                            + "\n\nNote that RADIS now has ExoMol support, but not all ExoMol molecules are referenced in RADIS. If a molecule is available in ExoMol but does not appear in RADIS yet, please contact the RADIS team or write on https://github.com/radis/radis/issues/319"
+                if (
+                    molecule
+                    not in MOLECULES_LIST_EQUILIBRIUM
+                    + MOLECULES_LIST_NONEQUILIBRIUM
+                ):
+                    raise ValueError(
+                        "Unsupported molecule: {0}.\n".format(molecule)
+                        + "Supported molecules are:\n - under equilibrium: {0}".format(
+                            MOLECULES_LIST_EQUILIBRIUM
                         )
+                        + "\n- under nonequilibrium: {0}".format(
+                            MOLECULES_LIST_NONEQUILIBRIUM
+                        )
+                        + "\n\nNote that RADIS now has ExoMol support, but not all ExoMol molecules are referenced in RADIS. If a molecule is available in ExoMol but does not appear in RADIS yet, please contact the RADIS team or write on https://github.com/radis/radis/issues/319"
+                    )
+                self.input.isatom = False
+            else:
+                self.input.isatom = True
 
         # Store isotope identifier in str format (list wont work in database queries)
         if not isinstance(isotope, str):
@@ -640,6 +665,7 @@ class SpectrumFactory(BandFactory):
         self.params.optimization = optimization
         self.params.folding_thresh = folding_thresh
         self.misc.zero_padding = zero_padding
+        self.params.lbfunc = lbfunc
 
         # used to split lines into blocks not too big for memory
         self.misc.chunksize = chunksize
@@ -831,9 +857,6 @@ class SpectrumFactory(BandFactory):
 
         # ----------------------------------------------------------------------
 
-        # Calculate line shift
-        self.calc_lineshift()  # scales wav to shiftwav (equivalent to v0)
-
         # ----------------------------------------------------------------------
         # Line broadening
 
@@ -842,6 +865,9 @@ class SpectrumFactory(BandFactory):
 
         # ... calculate broadening  HWHM
         self._calc_broadening_HWHM()
+
+        # Calculate line shift
+        self.calc_lineshift()  # scales wav to shiftwav (equivalent to v0)
 
         # ... generates all wstep related entities
         self._generate_wavenumber_arrays()

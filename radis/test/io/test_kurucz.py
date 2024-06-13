@@ -19,7 +19,6 @@ def test_fetch_kurucz():
 
     required_columns = [
         "A",
-        "nu_lines",
         "wav",
         "El",
         "eupper",
