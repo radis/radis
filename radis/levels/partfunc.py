@@ -220,6 +220,15 @@ class RovibParFuncCalculator(RovibPartitionFunction):
 
         if not mode in ["full summation", "tabulation"]:
             raise ValueError("Choose mode = one of 'full summation', 'tabulation'")
+        if mode == "tabulation":
+            try:
+                import vaex
+
+                vaex  # to avoid linting errors
+            except ImportError:
+                raise ImportError(
+                    "On-the-fly tabulation of partition functions require Vaex. Install it. /!\ as of June 2024 Vaex is not available on Python>=3.11 "
+                )
 
         self.mode = mode
         self._tab_at = None  # tabulated function
@@ -294,6 +303,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         --------
         :py:func:`~radis.levels.partfunc._noneq_tabulation_eval`
         """
+        # Note @dev : this is a Vaex only feature
         shape = N_bins
         if self.verbose >= 3:
             print(f"Tabulation eq partition functions with : shape = {shape}")

@@ -10,9 +10,16 @@ import pytest
 from radis.api.hdf5 import DataFileManager, hdf2df
 from radis.io.hitemp import fetch_hitemp
 from radis.misc.config import getDatabankEntries
+from radis.misc.utils import NotInstalled, not_installed_vaex_args
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
 
 
 @pytest.mark.fast
+@pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
 def test_hdf5_io_engines(*args, **kwargs):
     """Test different engines implemented in :py:class:`radis.api.hdf5.DataFileManager`"""
 
