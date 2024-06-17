@@ -68,8 +68,6 @@ def parse_hitran_file(fname, columns, count=-1, output="pandas"):
     # Return a Pandas dataframe
     df = _ndarray2df(data, columns, linereturnformat)
 
-    import vaex
-
     if output == "vaex":
         df = vaex.from_pandas(df)
     return df

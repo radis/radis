@@ -1438,7 +1438,6 @@ class DatabankLoader(object):
                     for df in frames:
                         if "iso" not in df.columns:
                             assert "iso" in df.attrs
-                            import vaex
 
                             df["iso"] = vaex.vconstant(
                                 int(df.attrs["iso"]), length=df.length_unfiltered()
@@ -1452,7 +1451,6 @@ class DatabankLoader(object):
                         attrs = intersect(attrs, df.attrs)
                     del attrs["iso"]  # added as a column (different for each line)
                     # Merge:
-                    import vaex
 
                     df = vaex.concat(Frames)  # reindex
                     df.attrs = attrs

@@ -309,6 +309,7 @@ EXOMOL_MOLECULES = [
     "AsH3",
     "BeH",
     "C2",
+    "C3",
     "C2H2",
     "C2H4",
     "CH",

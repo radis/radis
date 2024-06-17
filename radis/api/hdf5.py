@@ -745,8 +745,6 @@ class DataFileManager(object):
         """Convert DataFrame to numpy"""
 
         if self.engine == "vaex":
-            import vaex
-
             return vaex.array_types.to_numpy(df)
         elif self.engine == "feather":
             return df.to_numpy()
