@@ -25,6 +25,13 @@ from radis.test.utils import setup_test_line_databases
 
 fig_prefix = basename(__file__) + ": "
 
+from radis.misc.utils import NotInstalled, not_installed_vaex_args
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
+
 # %% Test routines
 
 
@@ -50,13 +57,20 @@ def test_populations(verbose=True, *args, **kwargs):
     sf.load_databank("HITRAN-CO-TEST")
     sf.misc.export_rovib_fraction = True
     # we test that "tabulation" and "export_population" are incompatible
-    sf.params.parsum_mode = "tabulation"
-    with pytest.raises(ValueError) as err:
-        s = sf.non_eq_spectrum(2000, 2000)
-    assert (
-        str(err.value)
-        == "Cannot update populations of individual levels with `tabulation` mode. Choose `update_populations=False` or `mode='full summation'`"
-    )
+
+    if isinstance(vaex, NotInstalled):
+        # Vaex not available, just-in-time partition functions are only implemented in Vaex as of Radis 0.15"
+        # SKIPPING TEST
+        pass
+    else:
+
+        sf.params.parsum_mode = "tabulation"
+        with pytest.raises(ValueError) as err:
+            s = sf.non_eq_spectrum(2000, 2000)
+        assert (
+            str(err.value)
+            == "Cannot update populations of individual levels with `tabulation` mode. Choose `update_populations=False` or `mode='full summation'`"
+        )
 
     sf.params.parsum_mode = "full summation"  # won't be default at some point
     s = sf.non_eq_spectrum(2000, 2000)
