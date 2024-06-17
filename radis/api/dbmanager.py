@@ -49,13 +49,16 @@ LAST_VALID_DATE = (
 
 
 def get_auto_MEMORY_MAPPING_ENGINE():
-    """see https://github.com/radis/radis/issues/653"""
-    import sys
+    """see https://github.com/radis/radis/issues/653
 
-    if sys.version_info[2] <= 11:
-        return "vaex"
-    else:
+    Use Vaex by default if it exists (only Python <= 3.11 as of June 2024) ,
+    else use PyTables"""
+    try:
+        import vaex
+    except ImportError:
         return "pytables"
+    else:
+        return vaex
 
 
 # Add a zip opener to the datasource _file_openers
