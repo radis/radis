@@ -67,7 +67,6 @@ Most methods are written in inherited class with the following inheritance schem
 
 import numpy as np
 import pandas as pd
-import vaex
 from astropy import units as u
 from numpy import exp, pi
 from psutil import virtual_memory
@@ -88,12 +87,17 @@ from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
 from radis.misc.plot import fix_style, set_style
 from radis.misc.printer import printg
-from radis.misc.utils import Default
+from radis.misc.utils import Default, NotInstalled, not_installed_vaex_args
 from radis.misc.warning import OutOfBoundError
 from radis.phys.constants import c_CGS, h_CGS, hc_k
 from radis.phys.convert import cm2J, cm2J_vaex, nm2cm, nm_air2cm
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.utils import print_conditions
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
 
 
 class BaseFactory(DatabankLoader):

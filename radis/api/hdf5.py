@@ -13,6 +13,13 @@ import h5py
 import pandas as pd
 from tables.exceptions import NoSuchNodeError
 
+from ..misc.utils import NotInstalled, not_installed_vaex_args
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
+
 
 def vaexsafe_colname(name):
     """replace '/' (forbidden in HDF5 vaex column names with '_'
@@ -25,7 +32,6 @@ def vaexsafe_colname(name):
 def update_pytables_to_vaex(fname, remove_initial=False, verbose=True, key="df"):
     """Convert a HDF5 file generated from PyTables to a
     Vaex-friendly HDF5 format, preserving metadata"""
-    import vaex
 
     if fname.endswith(".h5"):
         fname_vaex = fname.replace(".h5", ".hdf5")
@@ -110,8 +116,6 @@ class DataFileManager(object):
         if self.engine == "pytables":
             return pd.HDFStore(file, mode=mode, complib="blosc", complevel=9)
         elif self.engine == "vaex":
-            import vaex
-
             return vaex.open(file)
         else:
             raise NotImplementedError(self.engine)
@@ -159,8 +163,6 @@ class DataFileManager(object):
             df.to_hdf(file, key, format="fixed", mode="w", complevel=9, complib="blosc")
         elif self.engine == "vaex":
             if isinstance(df, pd.DataFrame):
-                import vaex
-
                 df = vaex.from_pandas(df)
 
             for c in df.columns:  # remove "/" in columns (forbidden)
@@ -201,8 +203,6 @@ class DataFileManager(object):
         engine = self.engine
         local_file = expanduser(local_file)
         if engine == "vaex":
-            import vaex
-
             # by default vaex does not load everything
             df = vaex.open(local_file)
             columns = df.column_names
@@ -234,8 +234,6 @@ class DataFileManager(object):
                 raise ValueError(f"No batch temp files were written for {file}")
             if key == "default":
                 key = r"/table"
-            import vaex
-
             df = vaex.open(self._temp_batch_files, group=key)
             # Removing NaN values columns
             if delete_nan_columns:
@@ -435,8 +433,6 @@ class DataFileManager(object):
         elif self.engine == "vaex":
             if key == "default":
                 key = r"/table"
-
-            import vaex
 
             # Open file
             assert len(store_kwargs) == 0

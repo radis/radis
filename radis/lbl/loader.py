@@ -57,10 +57,10 @@ from uuid import uuid1
 
 import numpy as np
 import pandas as pd
-import vaex
 
 from radis import config
 from radis.api.cdsdapi import cdsd2df
+from radis.api.dbmanager import get_auto_MEMORY_MAPPING_ENGINE
 from radis.api.hdf5 import hdf2df
 from radis.api.hitranapi import hit2df, parse_global_quanta, parse_local_quanta
 from radis.api.tools import drop_object_format_columns, replace_PQR_with_m101
@@ -97,6 +97,13 @@ from radis.misc.warning import (
 from radis.phys.convert import cm2nm
 from radis.tools.database import SpecDatabase
 from radis.tools.track_ref import RefTracker
+
+from ..misc.utils import NotInstalled, not_installed_vaex_args
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
 
 KNOWN_DBFORMAT = [
     "hitran",
@@ -1224,7 +1231,7 @@ class DatabankLoader(object):
                 self.reftracker.add(doi["HAPI"], "data retrieval")  # [HAPI]_
 
                 if memory_mapping_engine == "auto":
-                    memory_mapping_engine = "vaex"
+                    memory_mapping_engine = get_auto_MEMORY_MAPPING_ENGINE()
 
                 if isotope == "all":
                     isotope_list = None
@@ -1311,7 +1318,7 @@ class DatabankLoader(object):
             self.reftracker.add(doi["HITEMP-2010"], "line database")  # [HITEMP-2010]_
 
             if memory_mapping_engine == "auto":
-                memory_mapping_engine = "vaex"
+                memory_mapping_engine = get_auto_MEMORY_MAPPING_ENGINE()
 
             if database != "full":
                 raise ValueError(
@@ -1351,7 +1358,7 @@ class DatabankLoader(object):
             self.reftracker.add(doi["ExoMol-2020"], "line database")  # [ExoMol-2020]
 
             if memory_mapping_engine == "auto":
-                memory_mapping_engine = "vaex"
+                memory_mapping_engine = get_auto_MEMORY_MAPPING_ENGINE()
 
             if database in ["full", "range"]:
                 raise ValueError(
@@ -1462,7 +1469,7 @@ class DatabankLoader(object):
             self.reftracker.add(doi["GEISA-2020"], "line database")
 
             if memory_mapping_engine == "auto":
-                memory_mapping_engine = "vaex"
+                memory_mapping_engine = get_auto_MEMORY_MAPPING_ENGINE()
 
             if database != "full":
                 raise ValueError(

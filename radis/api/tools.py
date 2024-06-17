@@ -9,7 +9,14 @@ from warnings import warn
 
 import numpy as np
 import pandas as pd
-import vaex
+
+from ..misc.utils import NotInstalled, not_installed_vaex_args
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
+
 
 from ..misc.warning import PerformanceWarning
 

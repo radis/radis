@@ -8,9 +8,15 @@ from io import BytesIO
 from os.path import abspath, dirname, exists, expanduser, join, split, splitext
 from zipfile import ZipFile
 
-from radis.misc.config import addDatabankEntries, getDatabankEntries, getDatabankList
-from radis.misc.printer import printr
-from radis.misc.warning import DatabaseAlreadyExists, DeprecatedFileWarning
+from ..misc.config import addDatabankEntries, getDatabankEntries, getDatabankList
+from ..misc.printer import printr
+from ..misc.utils import NotInstalled, not_installed_vaex_args
+from ..misc.warning import DatabaseAlreadyExists, DeprecatedFileWarning
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
 
 try:
     from .cache_files import check_not_deprecated
@@ -33,6 +39,17 @@ from numpy import DataSource
 LAST_VALID_DATE = (
     "01 Jan 2010"  # set to a later date to force re-download of all databases
 )
+
+
+def get_auto_MEMORY_MAPPING_ENGINE():
+    """see https://github.com/radis/radis/issues/653"""
+    import sys
+
+    if sys.version_info[2] <= 11:
+        return "vaex"
+    else:
+        return "pytables"
+
 
 # Add a zip opener to the datasource _file_openers
 def open_zip(zipname, mode="r", encoding=None, newline=None):
@@ -103,7 +120,7 @@ class DatabaseManager(object):
 
             engine = config["MEMORY_MAPPING_ENGINE"]  # 'pytables', 'vaex', 'feather'
             if engine == "auto":
-                engine = "vaex"
+                engine = get_auto_MEMORY_MAPPING_ENGINE()
 
         self.name = name
         self.molecule = molecule
@@ -490,8 +507,6 @@ class DatabaseManager(object):
                 nrows = store.get_storer("df").nrows
 
         elif engine == "vaex":
-            import vaex
-
             # by default vaex does not load everything
             df = vaex.open(local_file)
             nrows = len(df)
@@ -512,8 +527,6 @@ class DatabaseManager(object):
         from radis.misc.basics import is_number
 
         if is_number(self.alpha_ref):
-            import vaex
-
             if isinstance(df, vaex.dataframe.DataFrameLocal):
                 # see https://github.com/vaexio/vaex/pull/1570
                 df[key] = vaex.vconstant(float(value), length=df.length_unfiltered())
@@ -527,9 +540,9 @@ class DatabaseManager(object):
 
         mdb.rename_columns(df, {"nu_lines":"wav"})
         """
-        import vaex
-
-        if isinstance(df, vaex.dataframe.DataFrameLocal):
+        if not isinstance(vaex, NotInstalled) and isinstance(
+            df, vaex.dataframe.DataFrameLocal
+        ):
             for k, v in rename_dict.items():
                 df.rename(k, v)
         elif isinstance(df, pd.DataFrame):

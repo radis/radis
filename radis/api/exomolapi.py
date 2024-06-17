@@ -13,7 +13,7 @@ import warnings
 
 import numpy as np
 
-from radis.api.dbmanager import DatabaseManager
+from radis.api.dbmanager import DatabaseManager, get_auto_MEMORY_MAPPING_ENGINE
 from radis.db.classes import EXOMOL_MOLECULES, EXOMOL_ONLY_ISOTOPES_NAMES
 
 EXOMOL_URL = "http://www.exomol.com/db/"
@@ -1009,7 +1009,7 @@ class MdbExomol(DatabaseManager):
 
             engine = config["MEMORY_MAPPING_ENGINE"]
             if engine == "auto":
-                engine = "vaex"
+                engine = get_auto_MEMORY_MAPPING_ENGINE()
 
         self.path = pathlib.Path(path)
         if local_databases is not None:
