@@ -8,25 +8,32 @@ from io import BytesIO
 from os.path import abspath, dirname, exists, expanduser, join, split, splitext
 from zipfile import ZipFile
 
-from ..misc.config import addDatabankEntries, getDatabankEntries, getDatabankList
-from ..misc.printer import printr
-from ..misc.utils import NotInstalled, not_installed_vaex_args
-from ..misc.warning import DatabaseAlreadyExists, DeprecatedFileWarning
-
 try:
-    import vaex
-except ImportError:
-    vaex = NotInstalled(*not_installed_vaex_args)
-
-try:
+    from ..misc.config import addDatabankEntries, getDatabankEntries, getDatabankList
+    from ..misc.printer import printr
+    from ..misc.utils import NotInstalled, not_installed_vaex_args
+    from ..misc.warning import DatabaseAlreadyExists, DeprecatedFileWarning
     from .cache_files import check_not_deprecated
     from .hdf5 import DataFileManager
 except ImportError:
     if __name__ == "__main__":  # running from this file, as a script
         from radis.api.cache_files import check_not_deprecated
         from radis.api.hdf5 import DataFileManager
+        from radis.misc.config import (
+            addDatabankEntries,
+            getDatabankEntries,
+            getDatabankList,
+        )
+        from radis.misc.printer import printr
+        from radis.misc.utils import NotInstalled, not_installed_vaex_args
+        from radis.misc.warning import DatabaseAlreadyExists, DeprecatedFileWarning
     else:
         raise
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
 
 from datetime import date
 

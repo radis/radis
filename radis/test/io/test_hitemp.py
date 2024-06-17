@@ -15,6 +15,12 @@ from radis.api.hitempapi import (
 )
 from radis.io.hitemp import fetch_hitemp
 from radis.misc.config import getDatabankList
+from radis.misc.utils import NotInstalled, not_installed_vaex_args
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
 
 
 @pytest.mark.needs_connection
@@ -123,6 +129,7 @@ def test_fetch_hitemp_OH_pytables(verbose=True, *args, **kwargs):
 
 
 @pytest.mark.needs_connection
+@pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
 def test_fetch_hitemp_OH_vaex(verbose=True, *args, **kwargs):
     """Test proper download of HITEMP OH database, with two engines.
 
