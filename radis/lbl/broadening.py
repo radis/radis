@@ -64,7 +64,6 @@ Formula in docstrings generated with :py:func:`~pytexit.pytexit.py2tex` ::
 from warnings import warn
 
 import numpy as np
-import vaex
 from numba import float64, jit
 from numpy import arange, exp
 from numpy import log as ln
@@ -82,12 +81,20 @@ from radis.misc.arrays import (
     numpy_add_at,
     sparse_add_at,
 )
-from radis.misc.basics import is_float
-from radis.misc.debug import printdbg
-from radis.misc.plot import fix_style, set_style
-from radis.misc.progress_bar import ProgressBar
-from radis.misc.warning import reset_warnings
-from radis.phys.constants import Na, c_CGS, k_b_CGS
+
+from ..misc.basics import is_float
+from ..misc.debug import printdbg
+from ..misc.plot import fix_style, set_style
+from ..misc.progress_bar import ProgressBar
+from ..misc.utils import NotInstalled, not_installed_vaex_args
+from ..misc.warning import reset_warnings
+from ..phys.constants import Na, c_CGS, k_b_CGS
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
+
 
 # %% Broadening functions
 
