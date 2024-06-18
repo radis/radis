@@ -10,7 +10,13 @@ from os.path import exists, join
 
 import pytest
 
+from radis.misc.utils import NotInstalled, not_installed_vaex_args
 from radis.misc.warning import DeprecatedFileWarning
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
 
 
 # ignored by pytest with argument -m "not needs_connection"
@@ -123,6 +129,7 @@ def test_fetch_hitran_CO_pytables(*args, **kwargs):
 
 # ignored by pytest with argument -m "not needs_connection"
 @pytest.mark.needs_connection
+@pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
 def test_fetch_hitran_CO_vaex(*args, **kwargs):
 
     from radis.io.hitran import fetch_hitran
