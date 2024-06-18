@@ -55,10 +55,12 @@ def get_auto_MEMORY_MAPPING_ENGINE():
     else use PyTables"""
     try:
         import vaex
+
+        vaex
     except ImportError:
         return "pytables"
     else:
-        return vaex
+        return "vaex"
 
 
 # Add a zip opener to the datasource _file_openers
