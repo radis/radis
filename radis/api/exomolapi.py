@@ -415,7 +415,7 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True):
     ### Step 1. Essential quantum number for spectra
     # ----------------------------------------------
 
-    def map_add(col, new_col, trans_key, states_key="i"):
+    def map_add(trans, col, new_col, trans_key, states_key="i"):
         """Lookup `key` in states and add it in trans, using the level ``i``
         for upper and lower state
 
@@ -426,7 +426,14 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True):
             map_add("E", "E_lower", "i_lower")
         """
         try:  # pytable
-            trans[new_col] = trans[trans_key].map(dict(states[col]))
+            # trans[new_col] = trans[trans_key].map(dict(states[col]))
+            states_map = states.copy()
+            states_map.rename(
+                columns={col: new_col, states_key: trans_key}, inplace=True
+            )
+            states_map = states_map[[new_col, trans_key]]  # drop useless columns
+            trans = trans.join(states_map.set_index(trans_key), on=trans_key)
+            return trans
         except:  # a priori, vaex version  (TODO : replace with dict() approach in vaex too)
             col = vaexsafe_colname(col)
             new_col = vaexsafe_colname(new_col)
@@ -440,11 +447,12 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True):
             )
             trans.drop(states_key, inplace=True)
             trans.rename(col, new_col)
+            return trans
 
-    map_add("g", "gup", "i_upper")
-    map_add("J", "jlower", "i_lower")
-    map_add("J", "jupper", "i_upper")
-    map_add("E", "elower", "i_lower")
+    trans = map_add(trans, "g", "gup", "i_upper")
+    trans = map_add(trans, "J", "jlower", "i_lower")
+    trans = map_add(trans, "J", "jupper", "i_upper")
+    trans = map_add(trans, "E", "elower", "i_lower")
 
     def has_nan(column):
         try:  # Vaex
@@ -1196,7 +1204,7 @@ class MdbExomol(DatabaseManager):
                 # Complete transition data with lookup on upper & lower state :
                 # In particular, compute gup and elower
 
-                pickup_gE(
+                trans = pickup_gE(
                     states,
                     trans,
                     dic_def,
