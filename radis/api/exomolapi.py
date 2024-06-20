@@ -382,7 +382,7 @@ def read_states(
     return dat
 
 
-def pickup_gE(states, trans, dic_def, skip_optional_data=True):
+def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
     """extract g_upper (gup), E_lower (elower), and J_lower and J_upper from states
     DataFrame and insert them into the transition DataFrame.
 
@@ -425,16 +425,15 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True):
 
             map_add("E", "E_lower", "i_lower")
         """
-        try:  # pytable
-            # trans[new_col] = trans[trans_key].map(dict(states[col]))
+        if engine == "pytables":
+            # Rename the columns in the states DataFrame
             states_map = states.copy()
             states_map.rename(
                 columns={col: new_col, states_key: trans_key}, inplace=True
             )
             states_map = states_map[[new_col, trans_key]]  # drop useless columns
             trans = trans.join(states_map.set_index(trans_key), on=trans_key)
-            return trans
-        except:  # a priori, vaex version  (TODO : replace with dict() approach in vaex too)
+        elif engine == "vaex":
             col = vaexsafe_colname(col)
             new_col = vaexsafe_colname(new_col)
 
@@ -447,7 +446,7 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True):
             )
             trans.drop(states_key, inplace=True)
             trans.rename(col, new_col)
-            return trans
+        return trans
 
     trans = map_add(trans, "g", "gup", "i_upper")
     trans = map_add(trans, "J", "jlower", "i_lower")
@@ -1209,6 +1208,7 @@ class MdbExomol(DatabaseManager):
                     trans,
                     dic_def,
                     skip_optional_data=skip_optional_data,
+                    engine=engine,
                 )
 
                 ##Recompute Line strength:
