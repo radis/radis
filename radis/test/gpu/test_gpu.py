@@ -126,6 +126,6 @@ def test_multiple_gpu_calls():
 if __name__ == "__main__":
 
     # test_eq_spectrum_gpu(plot=True)
-    # test_eq_spectrum_emulated_gpu(plot=True, verbose=2)
+    test_eq_spectrum_emulated_gpu(plot=True, verbose=2)
 
     printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))
