@@ -191,6 +191,44 @@ def test_calc_hitran_spectrum(verbose=True, plot=False, *args, **kwargs):
     return
 
 
+@pytest.mark.needs_connection
+@pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
+def test_pytable_vs_vaex(verbose=True):
+    import numpy as np
+    from astropy import units as u
+
+    from radis import SpectrumFactory
+
+    conditions = {
+        "wmin": 2116 / u.cm,
+        "wmax": 2123 / u.cm,
+        "molecule": "CO",
+        "isotope": "2",
+        "pressure": 1.01325,  # bar
+        "mole_fraction": 0.1,
+        "path_length": 1,  # cm
+        "broadening_method": "fft",
+        "verbose": verbose,
+    }
+    Tgas = 1000
+    sf_exo_pytables = SpectrumFactory(**conditions)
+    sf_exo_pytables.fetch_databank(
+        "exomol", memory_mapping_engine="pytables", db_use_cached="regen"
+    )
+    s_exo_pytables = sf_exo_pytables.eq_spectrum(Tgas=Tgas * u.K, path_length=1 * u.cm)
+
+    sf_exo_vaex = SpectrumFactory(**conditions)
+    sf_exo_vaex.fetch_databank(
+        "exomol", memory_mapping_engine="vaex", db_use_cached="regen"
+    )
+    s_exo_vaex = sf_exo_vaex.eq_spectrum(Tgas=Tgas * u.K, path_length=1 * u.cm)
+
+    assert np.isclose(
+        s_exo_vaex.get_integral("abscoeff"),
+        s_exo_pytables.get_integral("abscoeff"),
+    )  # June 2024, should be 0.0026227144035907727
+
+
 def _run_testcases(verbose=True, *args, **kwargs):
 
     test_fetch_astroquery(verbose=verbose, *args, **kwargs)
@@ -200,6 +238,7 @@ def _run_testcases(verbose=True, *args, **kwargs):
     test_fetch_hitran_CO_vaex(*args, **kwargs)
     test_fetch_hitran(*args, **kwargs)
     test_calc_hitran_spectrum(*args, **kwargs)
+    test_pytable_vs_vaex(verbose=verbose)
 
     return True
 
