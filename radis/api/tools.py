@@ -235,7 +235,9 @@ def drop_object_format_columns(df, verbose=True):
     objects = [k for k, v in df.dtypes.items() if v == object]
     if df_type == pd.DataFrame:
         df.drop(objects, axis=1)
-    elif df_type == vaex.dataframe.DataFrameLocal:  # no objects in vaex
+    elif (
+        not isinstance(vaex, NotInstalled) and df_type == vaex.dataframe.DataFrameLocal
+    ):  # no objects in vaex
         pass
     else:
         raise NotImplementedError(df_type)
@@ -275,7 +277,13 @@ def replace_PQR_with_m101(df):
 
     # First checking if the input type is correct
     df_type = type(df)
-    if not (df_type == pd.DataFrame or df_type == vaex.dataframe.DataFrameLocal):
+    if df_type == pd.DataFrame:
+        pass
+    elif (
+        not isinstance(vaex, NotInstalled) and df_type == vaex.dataframe.DataFrameLocal
+    ):
+        pass
+    else:
         raise NotImplementedError(df_type)
 
     # Then do the actual mapping
