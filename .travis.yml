@@ -11,6 +11,8 @@ stages:
   - name: lint
     if: branch = master OR branch = develop
     # we dont lint on other branches
+  - name: build_wheels
+    if: branch = master OR branch = develop
   - name: deploy
     if: branch = master
 
@@ -49,7 +51,7 @@ jobs:
 
       before_script:
       # pipeline does not continue if anything fails
-      # >> If before_install, install or before_script returns a non-zero exit code, the build is errored and 
+      # >> If before_install, install or before_script returns a non-zero exit code, the build is errored and
       # >> stops immediately. (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
         - export MPLBACKEND=Agg
         - echo ">>> Run Fast tests first"
@@ -58,7 +60,7 @@ jobs:
 
       script:
         # Your test script goes here
-        # >> If script returns a non-zero exit code, the build is failed, but continues to run before being 
+        # >> If script returns a non-zero exit code, the build is failed, but continues to run before being
         # >> marked as failed.  (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
         - echo ">>> Run All tests now"
         - xvfb-run -a pytest --cov=./ --durations=10 #run all tests but that's ok because the redondant tests are fast!
@@ -80,6 +82,28 @@ jobs:
       after_failure: #better for checking the origin of a bug
         - cat /home/travis/.cache/pre-commit/pre-commit.log
 
+    - stage: build_wheels
+      name: Build the Wheels on Linux, Windows
+      # Added from https://github.com/pypa/cibuildwheel/blob/main/examples/travis-ci-deploy.yml; see https://github.com/radis/radis/issues/650
+      include:
+        # perform a linux build
+        - services: docker
+        # and a windows build
+        - os: windows
+          language: shell
+          before_install:
+            - choco upgrade python -y --version 3.8.6
+            - export PATH="/c/Python38:/c/Python38/Scripts:$PATH"
+            # make sure it's on PATH as 'python3'
+            - ln -s /c/Python38/python.exe /c/Python38/python3.exe
+
+      install:
+        - python3 -m pip install cibuildwheel==2.19.1
+
+      script:
+        # build the wheels, put them into './dist'
+        - python3 -m cibuildwheel --output-dir dist
+
     - stage: deploy
       name: Deploy to PyPI
       install:
@@ -95,4 +119,5 @@ jobs:
         password:
           secure: dxZOpuKL1ezk3MM5FgY89zJYNL484x0jUZ+c3IB5q2GjpWl6qmCogoWG37iGZIcmldeIdVzga3pj5CC32eht4B0hJQX5QLVjCq9wwpfLs7Tkj4ODiAzvOchSLhfBOSLOIX33iW/+wxDjZ3fG61TzPI1z3ksdNh7+imdVYiV+G4FmOcxJKjFEgGm7CAwfbxso47ab9jbgm6FHbCC7HfpSiSrMpyIDSorJFk5XR11+Hoe6JjbKr11eeWuoO8EXKvSQeeJpsu0minqFyAy8nf9af/aU3NJU1LOlFM1DuoYlpQKwnbop5lBodU28zt4Asa1h8lp8Zu+wZSIaZSOeEoC6U/H/5zAE03W8SytWyWgNEtwuYLSiWacbOzeZOclVRoNu4P6Fz9hFdZuSANQlSQN7cBYFJiA8cbJDU4nb3srFoKlBLxCH9ZC3/K7rnZpjPmy7A35plNf+1dAEpB6adiWwsGy/VwCywHyJsBq7N3z6lN9wZ2SUPekl4y/sLobYPqg8y48u4bMqfd05Ub1QDUB3MSNALMa+OcczJvxNHZj+Bk4ooai/t/GOMOWNyy78VES7S/J77cWUheq+mW80ywCS8gcyF6ARR4EJxJGwp4q2RHwGdVvxbzc/uaKgi6I1bmLRw4cjJvOXx5ulLdANUftfMg4ATW/VAFqYLrdS/LpGX5A=
         skip_existing: true
+        skip_cleanup: true    # to keep wheels (in the ./dist folder?)
         distributions: "sdist bdist_wheel"
