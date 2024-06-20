@@ -16,6 +16,7 @@ stages:
 
 jobs:
   include:
+    - fast_finish: true    #  pipeline does not continue if anything fails
     - stage: test
       name: Test and Coverage
 
