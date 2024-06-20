@@ -887,6 +887,10 @@ def test_tabulated_partition_functions(
         plt.legend()
 
 
+@pytest.mark.skipif(
+    isinstance(vaex, NotInstalled),
+    reason="Vaex not available, just-in-time partition functions are only implemented in Vaex as of Radis 0.15",
+)
 def test_parsum_mode_in_factory(verbose=True, plot=True, *args, **kwargs):
     """Test Partition function modes in SpectrumFactory
 
