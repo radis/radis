@@ -1450,7 +1450,6 @@ if __name__ == "__main__":
         Tgas=1000,  # K
         mole_fraction=0.1,
         path_length=1,  # cm
-        # broadening_method="fft",  # @ dev: Doesn't work with 'voigt'
         databank=(
             "exomol",
             "YT10to10",
