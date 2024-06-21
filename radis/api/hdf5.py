@@ -156,6 +156,9 @@ class DataFileManager(object):
                     append=append,
                     format=format,
                     data_columns=data_columns,
+                    min_itemsize={
+                        "values_block_1": 94
+                    },  # fixes #656  for HITRAN CO2 (at least)
                 )
         elif self.engine == "pytables-fixed":
             assert not append
