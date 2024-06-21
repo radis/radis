@@ -150,16 +150,29 @@ class DataFileManager(object):
             if key == "default":
                 key = "df"
             with self.open(file, "a" if append else "w") as f:
-                f.put(
-                    key=key,
-                    value=df,
-                    append=append,
-                    format=format,
-                    data_columns=data_columns,
-                    min_itemsize={
-                        "values_block_1": 94
-                    },  # fixes #656  for HITRAN CO2 (at least)
-                )
+                try:
+                    f.put(
+                        key=key,
+                        value=df,
+                        append=append,
+                        format=format,
+                        data_columns=data_columns,
+                    )
+                except ValueError as err:
+                    if "Trying to store a string with len" in str(err):
+                        f.put(
+                            key=key,
+                            value=df,
+                            append=append,
+                            format=format,
+                            data_columns=data_columns,
+                            min_itemsize={
+                                "values_block_1": 94
+                            },  # fixes #656  for HITRAN CO2 (at least)
+                        )
+                    else:
+                        raise
+
         elif self.engine == "pytables-fixed":
             assert not append
             # export dataframe
