@@ -63,7 +63,6 @@ from radis import config
 from radis.api.cdsdapi import cdsd2df
 from radis.api.hdf5 import hdf2df
 from radis.api.hitranapi import hit2df, parse_global_quanta, parse_local_quanta
-from radis.api.kuruczapi import AdBKurucz
 from radis.api.tools import drop_object_format_columns, replace_PQR_with_m101
 from radis.db.classes import get_molecule
 from radis.db.molecules import getMolecule
@@ -73,7 +72,7 @@ from radis.io.exomol import fetch_exomol
 from radis.io.geisa import fetch_geisa
 from radis.io.hitemp import fetch_hitemp
 from radis.io.hitran import fetch_hitran
-from radis.io.kurucz import fetch_kurucz
+from radis.io.kurucz import fetch_kurucz, fetch_kurucz_new
 from radis.io.query import fetch_astroquery
 from radis.levels.partfunc import (
     PartFunc_Dunham,
@@ -109,7 +108,6 @@ KNOWN_DBFORMAT = [
     "hitemp-radisdb",
     "hdf5-radisdb",
     "geisa",
-    "kurucz",
 ]
 """list: Known formats for Line Databases:
 
@@ -167,7 +165,6 @@ drop_auto_columns_for_dbformat = {
     "hdf5-radisdb": [],
     "hitemp-radisdb": [],
     "geisa": [],
-    "kurucz": [],
 }
 """ dict: drop these columns if using ``drop_columns='auto'`` in load_databank
 Based on the value of ``dbformat=``, some of these columns won't be used.
@@ -402,7 +399,8 @@ class Input(ConditionDict):
         "wavenum_max",
         "wavenum_min",
         "species",
-        "isatom"
+        "isatom",
+        "isneutral"
     ]
 
     def __init__(self):
@@ -1145,6 +1143,8 @@ class DatabankLoader(object):
 
         elif source == "kurucz":
             dbformat = "kurucz"
+            if database == "default":
+                database = "full"
         elif source == "exomol":
             dbformat = (
                 "exomol-radisdb"  # downloaded in RADIS local databases ~/.radisdb
@@ -1511,8 +1511,17 @@ class DatabankLoader(object):
                 )
 
         elif source == "kurucz":
+            if columns is not None:
+                self.warn("The required columns for Kurucz don't match those of existing moleculear databases, so all columns are being loaded")
+                columns = None
+
             if memory_mapping_engine == "auto":
                 memory_mapping_engine = "pytables"
+
+            if database != "full":
+                raise ValueError(
+                    f"Got `database={database}`. When fetching Kurucz, only the `database='full'` option is available."
+                )
 
             # Download, setup local databases, and fetch (use existing if possible)
 
@@ -1520,10 +1529,24 @@ class DatabankLoader(object):
                 isotope_list = None
             else:
                 isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
-            local_paths, df = fetch_kurucz(
+            # local_paths, df = fetch_kurucz(
+            #     molecule,
+            #     isotope=isotope_list,
+            #     engine=memory_mapping_engine
+            # )
+            df, local_paths = fetch_kurucz_new(
                 molecule,
                 isotope=isotope_list,
-                engine=memory_mapping_engine
+                local_databases=join(local_databases, "kurucz"),
+                load_wavenum_min=wavenum_min,
+                load_wavenum_max=wavenum_max,
+                columns=columns,
+                cache=db_use_cached,
+                verbose=self.verbose,
+                return_local_path=True,
+                engine=memory_mapping_engine,
+                output=output,
+                parallel=parallel,
             )
             self.params.dbpath = ",".join(local_paths)
 
@@ -2488,16 +2511,17 @@ class DatabankLoader(object):
                     elif dbformat in ["exomol"]:
                         # self.reftracker.add("10.1016/j.jqsrt.2020.107228", "line database")  # [ExoMol-2020]
                         raise NotImplementedError("use fetch_databank('exomol')")
-                    elif dbformat in ["kurucz"]:
-                        if self.dataframe_type == "pandas":
-                            engine = "pytables"
-                        elif self.dataframe_type == "vaex":
-                            engine = "vaex"
-                        if isotope == "all":
-                            isotope_list = None
-                        else:
-                            isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
-                        df = fetch_kurucz(self.input.species, isotope=isotope_list, engine=engine)[1]
+                    # elif dbformat in ["kurucz"]:
+                    #     # if self.dataframe_type == "pandas":
+                    #     #     engine = "pytables"
+                    #     # elif self.dataframe_type == "vaex":
+                    #     #     engine = "vaex"
+                    #     # if isotope == "all":
+                    #     #     isotope_list = None
+                    #     # else:
+                    #     #     isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
+                    #     # df = fetch_kurucz(self.input.species, isotope=isotope_list, engine=engine)[1]
+                    #     raise NotImplementedError("use fetch_databank('kurucz')")
 
                     else:
                         raise ValueError("Unknown dbformat: {0}".format(dbformat))

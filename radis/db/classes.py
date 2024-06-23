@@ -222,6 +222,8 @@ HITRAN_MOLECULES = list(trans.values())
 def is_atom(species):
     return species.split('_')[0] in [i.symbol for i in list(periodictable.elements)[1:]] #first element is neutron, symbol 'n'
 
+def is_neutral(species):
+    return species.endswith('_I')
 
 def to_conventional_name(species):
 

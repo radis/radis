@@ -9,6 +9,7 @@ Date: June 2023
 
 import io
 import os
+from os.path import abspath, join, splitext
 import pkgutil
 from contextlib import closing
 from io import BytesIO
@@ -21,6 +22,9 @@ from tqdm import tqdm
 
 from radis.misc.utils import getProjectRoot
 from radis.phys.air import air2vacuum
+from radis.phys.constants import c_CGS, ecgs, mecgs
+
+from radis.api.dbmanager import DatabaseManager
 
 def load_ionization_energies():
     #based on https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/spec/atomllapi.py#L308; the file 'NIST_Atomic_Ionization_Energies.txt' is taken from https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/data/atom/NIST_Atomic_Ionization_Energies.txt; 
@@ -167,19 +171,175 @@ def load_pf_Barklem2016():
 
     return pfTdat, pfdat
 
+class KuruczDatabaseManager(DatabaseManager):
+    def __init__(
+        self,
+        name,
+        molecule,
+        local_databases,
+        engine="default",
+        verbose=True,
+        chunksize=100000,
+        parallel=True,
+    ):
+        super().__init__(
+            name,
+            molecule,
+            local_databases,
+            engine,
+            verbose=verbose,
+            parallel=parallel,
+        )
+        self.chunksize = chunksize
+        self.base_url = None
+        self.Nlines = None
+        self.wmin = None
+        self.wmax = None
+        self.urlnames = None
+
+        self.atomic_number = f"{get_atomic_number(molecule):02}"
+        self.ionization_state = f"{get_ionization_state(molecule):02}"
+
+        self.actual_file = None
+        self.actual_url = None
+
+    def fetch_urlnames(self):
+        """returns the possible urls of the desired file, pending confirmation upon attempting download as to which is correct"""
+
+        if self.urlnames is not None:
+            return self.urlnames
+
+        code = f'{self.atomic_number}{self.ionization_state}'
+
+        urlnames = [
+            "http://kurucz.harvard.edu/atoms/" + code + "/gf" + code + ".all", # 1. new linelist including lab lines
+            "http://kurucz.harvard.edu/atoms/" + code + "/gf" + code + ".pos", # 2. new linelist without lab lines
+            "http://kurucz.harvard.edu/linelists/gfall/gf" + code + ".all" # 3. old linelist including lab lines
+            
+        ]
+
+        self.urlnames = urlnames
+
+        return urlnames
+    
+    def get_possible_files(self, urlnames=None):
+        verbose = self.verbose
+        local_databases = self.local_databases
+
+        #copied from DatabaseManager.get_filenames:
+        if urlnames is None:
+            urlnames = self.fetch_urlnames()
+        local_fnames = [
+            (
+                splitext(splitext(url.split("/")[-1])[0])[
+                    0
+                ]  # twice to remove .par.bz2
+                + ".h5"
+            )
+            for url in urlnames
+        ]
+
+        try:
+            os.mkdir(local_databases)
+        except OSError:
+            pass
+        else:
+            if verbose:
+                print("Created folder :", local_databases)
+
+        local_files = [
+            abspath(
+                join(
+                    local_databases,
+                    self.molecule + "-" + local_fname,
+                )
+            )
+            for local_fname in local_fnames
+        ]
+
+        return local_files, urlnames
+
+    def parse_to_local_file(
+        self,
+        opener,
+        urlname,
+        local_file,
+        pbar_active=True,
+        pbar_t0=0,
+        pbar_Ntot_estimate_factor=None,
+        pbar_Nlines_already=0,
+        pbar_last=True,
+    ):
+        
+        writer = self.get_datafile_manager()
+
+        df = read_kurucz(opener.abspath(urlname))
+
+        writer.write(local_file, df, append=False)
+
+        self.wmin = df.wav.min()
+        self.wmax = df.wav.max()
+
+        Nlines = len(df)
+
+        writer.combine_temp_batch_files(local_file)
+
+        # Add metadata
+        from radis import __version__
+
+        writer.add_metadata(
+            local_file,
+            {
+                "wavenumber_min": self.wmin,
+                "wavenumber_max": self.wmax,
+                "download_date": self.get_today(),
+                "download_url": urlname,
+                "total_lines": Nlines,
+                "version": __version__,
+            },
+        )
+
+        return Nlines
+    
+    def register(self):
+
+        info = f"Kurucz {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1)."
+
+        if self.actual_file and self.actual_url:
+            files = [self.actual_file]
+            urls = [self.actual_url]
+        else:
+            raise Exception("Kurucz database can't be registered until the correct url to use is known")
+
+        dict_entries = {
+            "info": info,
+            "path": files,
+            "format": "hdf5-radisdb",
+            "parfuncfmt": "kurucz",
+            "wavenumber_min": self.wmin,
+            "wavenumber_max": self.wmax,
+            "download_date": self.get_today(),
+            "download_url": urls,
+        }
+
+        super().register(dict_entries)
+
+
+
+
 class AdBKurucz:
-    from radis.phys.constants import c_CGS, ecgs, mecgs
 
     def __init__(self, species):
-        self.kurucz_url_base = "http://kurucz.harvard.edu/linelists/gfall/gf"
-        self.hdf5_file = None
-        self.data = None
-        self.pfTdat, self.pfdat = load_pf_Barklem2016()
-        self.populations = None
-        self.species = species
-        self.atomic_number = get_atomic_number(species)
-        self.ionization_state = get_ionization_state(species)
-        self.element_symbol = get_element_symbol(species)
+        # self.kurucz_url_base = "http://kurucz.harvard.edu/linelists/gfall/gf"
+        # self.hdf5_file = None
+        # self.data = None
+        # self.pfTdat, self.pfdat = load_pf_Barklem2016()
+        # self.populations = None
+        # self.species = species
+        # self.atomic_number = get_atomic_number(species)
+        # self.ionization_state = get_ionization_state(species)
+        # self.element_symbol = get_element_symbol(species)
+        pass
 
     def get_url(self, atomic_number, ionization_state):
         ionization_state = str(ionization_state).zfill(2)
@@ -213,314 +373,328 @@ class AdBKurucz:
                     pbar.update(len(data))
         return filename
 
-    def Sij0(self, A, g, nu_lines, elower, QTref):
-        # The int column of the df can be computed using this method but the default option rather uses Radis linestrength_from_Einstein
-        """Reference Line Strength in Tref=296K, S0.
+    # def Sij0(self, A, g, nu_lines, elower, QTref):
+    #     # The int column of the df can be computed using this method but the default option rather uses Radis linestrength_from_Einstein
+    #     """Reference Line Strength in Tref=296K, S0.
 
-        Note:
-        Tref=296K
+    #     Note:
+    #     Tref=296K
 
-        Args:
-        A: Einstein coefficient (s-1)
-        g: the upper state statistical weight
-        nu_lines: line center wavenumber (cm-1)
-        elower: elower
-        QTref: partition function Q(Tref)
-        Mmol: molecular mass (normalized by m_u)
+    #     Args:
+    #     A: Einstein coefficient (s-1)
+    #     g: the upper state statistical weight
+    #     nu_lines: line center wavenumber (cm-1)
+    #     elower: elower
+    #     QTref: partition function Q(Tref)
+    #     Mmol: molecular mass (normalized by m_u)
 
-        Returns:
-        Sij(T): Line strength (cm)
-        """
-        hcperk = 1.4387773538277202  # hc/kB (cm K)
-        ccgs = 29979245800.0
-        Tref = 296.0
-        S0 = (
-            -A
-            * g
-            * np.exp(-hcperk * elower / Tref)
-            * np.expm1(-hcperk * nu_lines / Tref)
-            / (8.0 * np.pi * ccgs * nu_lines**2 * QTref)
-        )
-        return S0
+    #     Returns:
+    #     Sij(T): Line strength (cm)
+    #     """
+    #     hcperk = 1.4387773538277202  # hc/kB (cm K)
+    #     ccgs = 29979245800.0
+    #     Tref = 296.0
+    #     S0 = (
+    #         -A
+    #         * g
+    #         * np.exp(-hcperk * elower / Tref)
+    #         * np.expm1(-hcperk * nu_lines / Tref)
+    #         / (8.0 * np.pi * ccgs * nu_lines**2 * QTref)
+    #     )
+    #     return S0
 
     def read_kurucz(self, kuruczf):
-        """
-        This method was adapted from the original read_kurucz method in exojax/src/exojax/spec/atomllapi.py
-        (https://github.com/HajimeKawahara/exojax.git)
-        Input Kurucz line list (http://kurucz.harvard.edu/linelists/)
+        return read_kurucz(kuruczf)
 
-        Args:
-            kuruczf: file path
+def read_kurucz(kuruczf):
+    """
+    This method was adapted from the original read_kurucz method in exojax/src/exojax/spec/atomllapi.py
+    (https://github.com/HajimeKawahara/exojax.git)
+    Input Kurucz line list (http://kurucz.harvard.edu/linelists/)
 
-        Returns:
-            A:  Einstein coefficient in [s-1]
-            nu_lines:  transition waveNUMBER in [cm-1] (#NOT frequency in [s-1])
-            elower: lower excitation potential [cm-1] (#converted from eV)
-            eupper: upper excitation potential [cm-1] (#converted from eV)
-            gupper: upper statistical weight
-            jlower: lower J (rotational quantum number, total angular momentum)
-            jupper: upper J
-            ielem:  atomic number (e.g., Fe=26)
-            iion:  ionized level (e.g., neutral=1, singly)
-            gamRad: log of gamma of radiation damping (s-1) #(https://www.astro.uu.se/valdwiki/Vald3Format)
-            gamSta: log of gamma of Stark damping (s-1)
-            gamvdW:  log of (van der Waals damping constant / neutral hydrogen number) (s-1)
-        """
-        with open(kuruczf) as f:
-            lines = f.readlines()
-        num_lines = len(lines)
-        (
-            wlnmair,
-            loggf,
-            species,
-            elower,
-            jlower,
-            labellower,
-            eupper,
-            jupper,
-            labelupper,
-            gamRad,
-            gamSta,
-            gamvdW,
-            ref,
-            NLTElower,
-            NLTEupper,
-            isonum,
-            hyperfrac,
-            isonumdi,
-            isofrac,
-            hypershiftlower,
-            hypershiftupper,
-            hyperFlower,
-            hypernotelower,
-            hyperFupper,
-            hypternoteupper,
-            strenclass,
-            auto,
-            landeglower,
-            landegupper,
-            isoshiftmA,
-        ) = (
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.array([""] * num_lines, dtype=object),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-            np.zeros(num_lines),
-        )
-        ielem, iion = np.zeros(num_lines, dtype=int), np.zeros(num_lines, dtype=int)
+    Args:
+        kuruczf: file path
 
-        for i, line in enumerate(lines):
-            wlnmair[i] = float(line[0:11])
-            loggf[i] = float(line[11:18])
-            species[i] = str(line[18:24])
-            ielem[i] = int(species[i].split(".")[0])
-            iion[i] = int(species[i].split(".")[1])
-            elower[i] = float(line[24:36])
-            jlower[i] = float(line[36:41])
-            eupper[i] = float(line[52:64])
-            jupper[i] = float(line[64:69])
-            gamRad[i] = float(line[80:86])
-            gamSta[i] = float(line[86:92])
-            gamvdW[i] = float(line[92:98])
-            isonum[i] = int(line[106:109])
+    Returns:
+        A:  Einstein coefficient in [s-1]
+        nu_lines:  transition waveNUMBER in [cm-1] (#NOT frequency in [s-1])
+        elower: lower excitation potential [cm-1] (#converted from eV)
+        eupper: upper excitation potential [cm-1] (#converted from eV)
+        gupper: upper statistical weight
+        jlower: lower J (rotational quantum number, total angular momentum)
+        jupper: upper J
+        ielem:  atomic number (e.g., Fe=26)
+        iion:  ionized level (e.g., neutral=1, singly)
+        gamRad: log of gamma of radiation damping (s-1) #(https://www.astro.uu.se/valdwiki/Vald3Format)
+        gamSta: log of gamma of Stark damping (s-1)
+        gamvdW:  log of (van der Waals damping constant / neutral hydrogen number) (s-1)
+    """
+    with open(kuruczf) as f:
+        lines = f.readlines()
+    num_lines = len(lines)
+    (
+        wlnmair,
+        loggf,
+        species,
+        elower,
+        jlower,
+        labellower,
+        eupper,
+        jupper,
+        labelupper,
+        gamRad,
+        gamSta,
+        gamvdW,
+        ref,
+        NLTElower,
+        NLTEupper,
+        isonum,
+        hyperfrac,
+        isonumdi,
+        isofrac,
+        hypershiftlower,
+        hypershiftupper,
+        hyperFlower,
+        hypernotelower,
+        hyperFupper,
+        hypternoteupper,
+        strenclass,
+        auto,
+        landeglower,
+        landegupper,
+        isoshiftmA,
+    ) = (
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.array([""] * num_lines, dtype=object),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.array([""] * num_lines, dtype=object),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.array([""] * num_lines, dtype=object),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+        np.zeros(num_lines),
+    )
+    ielem, iion = np.zeros(num_lines, dtype=int), np.zeros(num_lines, dtype=int)
 
-        ielem = np.unique(ielem)
-        assert len(ielem) == 1
-        ielem = ielem[0]
+    for i, line in enumerate(lines):
+        wlnmair[i] = float(line[0:11])
+        loggf[i] = float(line[11:18])
+        species[i] = str(line[18:24])
+        ielem[i] = int(species[i].split(".")[0])
+        iion[i] = int(species[i].split(".")[1])
+        elower[i] = float(line[24:36])
+        jlower[i] = float(line[36:41])
+        labellower[i] = str(line[41:52]).strip()
+        eupper[i] = float(line[52:64])
+        jupper[i] = float(line[64:69])
+        labelupper[i] = str(line[69:80]).strip()
+        gamRad[i] = float(line[80:86])
+        gamSta[i] = float(line[86:92])
+        gamvdW[i] = float(line[92:98])
+        isonum[i] = int(line[106:109])
 
-        iion = np.unique(iion)
-        assert len(iion) == 1
-        iion = iion[0] + 1
-        
-        # Invert elower, eupper, and jlower, jupper where eupper - elower <= 0
-        elower_inverted = np.where((eupper-elower) > 0,  elower,  eupper)
-        eupper_inverted = np.where((eupper-elower) > 0,  eupper,  elower)
-        jlower_inverted = np.where((eupper-elower) > 0,  jlower,  jupper)
-        jupper_inverted = np.where((eupper-elower) > 0,  jupper,  jlower)
-        elower = elower_inverted
-        eupper = eupper_inverted
-        jlower = jlower_inverted
-        jupper = jupper_inverted
+    ielem = np.unique(ielem)
+    assert len(ielem) == 1
+    ielem = ielem[0]
 
-        wlaa = np.where(wlnmair < 200, wlnmair * 10, air2vacuum(wlnmair * 10))
-        nu_lines = 1e8 / wlaa[::-1]  # [cm-1]<-[AA]
-        wlnmair = wlnmair[::-1]
-        loggf = loggf[::-1]
-        elower = elower[::-1]
-        eupper = eupper[::-1]
-        jlower = jlower[::-1]
-        jupper = jupper[::-1]
-        gupper = jupper * 2 + 1
-        A = (
-            10**loggf
-            / gupper
-            * (self.c_CGS * nu_lines) ** 2
-            * (8 * np.pi**2 * self.ecgs**2)
-            / (self.mecgs * self.c_CGS**3)
-        )
-        gamRad = gamRad[::-1]
-        gamSta = gamSta[::-1]
-        gamvdW = gamvdW[::-1]
-        isonum = isonum[::-1]
+    iion = np.unique(iion)
+    assert len(iion) == 1
+    iion = iion[0] + 1
+    
+    # Invert elower, eupper, and jlower, jupper where eupper - elower <= 0
+    elower_orig = elower
+    eupper_orig = eupper
+    jlower_orig = jlower
+    jupper_orig = jupper
+    elower = np.where((eupper-elower) > 0,  elower,  eupper)
+    eupper = np.where((eupper-elower) > 0,  eupper,  elower)
+    jlower = np.where((eupper-elower) > 0,  jlower,  jupper)
+    jupper = np.where((eupper-elower) > 0,  jupper,  jlower)
 
-        ionE = pick_ionE(ielem, iion, load_ionization_energies())
-        assert ionE.size == 1
-        ionE = float(ionE.iloc[0])
+    wlaa = np.where(wlnmair < 200, wlnmair * 10, air2vacuum(wlnmair * 10))
+    nu_lines = 1e8 / wlaa[::-1]  # [cm-1]<-[AA]
+    wlnmair = wlnmair[::-1]
+    loggf = loggf[::-1]
+    elower = elower[::-1]
+    eupper = eupper[::-1]
+    jlower = jlower[::-1]
+    jupper = jupper[::-1]
+    labellower = labellower[::-1]
+    labelupper = labelupper[::-1]
+    gupper = jupper * 2 + 1
+    A = (
+        10**loggf
+        / gupper
+        * (c_CGS * nu_lines) ** 2
+        * (8 * np.pi**2 * ecgs**2)
+        / (mecgs * c_CGS**3)
+    )
+    gamRad = gamRad[::-1]
+    gamSta = gamSta[::-1]
+    gamvdW = gamvdW[::-1]
+    isonum = isonum[::-1]
+    elower_orig = elower_orig[::-1]
+    eupper_orig = eupper_orig[::-1]
+    jlower_orig = jlower_orig[::-1]
+    jupper_orig = jupper_orig[::-1]
 
-        data_dict = {
-            "A": A,
-            'orig_wavelen': wlnmair,
-            "wav": nu_lines,
-            "El": elower,
-            "eupper": eupper,
-            "gu": gupper,
-            "jlower": jlower,
-            "ju": jupper,
-            "id": ielem,
-            "ionE": ionE,
-            "iso": isonum,
-            "gamRad": gamRad,
-            "gamSta": gamSta,
-            "gamvdW": gamvdW,
-            "Tdpair": 0.68,  # placeholder to adjust
-            "wlnmair": wlnmair,
-            "loggf": loggf,
-            "species": species,
-            "labellower": labellower,
-            "labelupper": labelupper,
-            "ref": ref,
-            "NLTElower": NLTElower,
-            "NLTEupper": NLTEupper,
-            "isonum": isonum,
-            "hyperfrac": hyperfrac,
-            "isonumdi": isonumdi,
-            "isofrac": isofrac,
-            "hypershiftlower": hypershiftlower,
-            "hypershiftupper": hypershiftupper,
-            "hyperFlower": hyperFlower,
-            "hypernotelower": hypernotelower,
-            "hyperFupper": hyperFupper,
-            "hypternoteupper": hypternoteupper,
-            "strenclass": strenclass,
-            "auto": auto,
-            "landeglower": landeglower,
-            "landegupper": landegupper,
-            "isoshiftmA": isoshiftmA,
-            "shft": 0
-            # "int":self.Sij0(A,gupper,nu_lines,elower,self.partfcn(self.species,296))
-            # if int parameter is used, calc_linestrength_eq will also use it
-        }
+    ionE = pick_ionE(ielem, iion, load_ionization_energies())
+    assert ionE.size == 1
+    ionE = float(ionE.iloc[0])
 
-        self.data = pd.DataFrame(data_dict)
-        return self.data
+    data_dict = {
+        "A": A,
+        'orig_wavelen': wlnmair,
+        "wav": nu_lines,
+        "El": elower,
+        "eupper": eupper,
+        "gu": gupper,
+        "jlower": jlower,
+        "ju": jupper,
+        "id": ielem,
+        "ionE": ionE,
+        "iso": isonum,
+        "gamRad": gamRad,
+        "gamSta": gamSta,
+        "gamvdW": gamvdW,
+        "Tdpair": 0.68,  # placeholder to adjust
+        "wlnmair": wlnmair,
+        "loggf": loggf,
+        "species": species,
+        "labellower": labellower,
+        "labelupper": labelupper,
+        "ref": ref,
+        "NLTElower": NLTElower,
+        "NLTEupper": NLTEupper,
+        "isonum": isonum,
+        "hyperfrac": hyperfrac,
+        "isonumdi": isonumdi,
+        "isofrac": isofrac,
+        "hypershiftlower": hypershiftlower,
+        "hypershiftupper": hypershiftupper,
+        "hyperFlower": hyperFlower,
+        "hypernotelower": hypernotelower,
+        "hyperFupper": hyperFupper,
+        "hypternoteupper": hypternoteupper,
+        "strenclass": strenclass,
+        "auto": auto,
+        "landeglower": landeglower,
+        "landegupper": landegupper,
+        "isoshiftmA": isoshiftmA,
+        "elower_orig": elower_orig,
+        "eupper_orig": eupper_orig,
+        "jlower_orig": jlower_orig,
+        "jupper_orig": jupper_orig
+        # "int":self.Sij0(A,gupper,nu_lines,elower,self.partfcn(self.species,296))
+        # if int parameter is used, calc_linestrength_eq will also use it
+    }
 
-    def add_airbrd(self, data):
-        if "airbrd" not in data.columns:
-            # placeholder for neutral_hydrogen_number and atomic_coeff
-            # TODO: adjust the coefficient to the atoms and adjust the value for neutral_hydrogen_number
+    # self.data = pd.DataFrame(data_dict)
+    return pd.DataFrame(data_dict)#self.data
 
-            neutral_hydrogen_number = 1
-            atomic_coeff = 1
+    # def add_airbrd(self, data):
+    #     if "airbrd" not in data.columns:
+    #         # placeholder for neutral_hydrogen_number and atomic_coeff
+    #         # TODO: adjust the coefficient to the atoms and adjust the value for neutral_hydrogen_number
 
-            if self.element_symbol == "H":
-                airbrd = (
-                    (10 ** data["gamvdW"]) * data["Tdpair"] * neutral_hydrogen_number
-                )
-            elif self.element_symbol == "He":
-                airbrd = (
-                    (10 ** data["gamvdW"])
-                    * data["Tdpair"]
-                    * neutral_hydrogen_number
-                    * 0.42
-                )
-            else:
-                airbrd = (
-                    (10 ** data["gamvdW"])
-                    * data["Tdpair"]
-                    * neutral_hydrogen_number
-                    * atomic_coeff
-                )
+    #         neutral_hydrogen_number = 1
+    #         atomic_coeff = 1
 
-            data["airbrd"] = airbrd
+    #         if self.element_symbol == "H":
+    #             airbrd = (
+    #                 (10 ** data["gamvdW"]) * data["Tdpair"] * neutral_hydrogen_number
+    #             )
+    #         elif self.element_symbol == "He":
+    #             airbrd = (
+    #                 (10 ** data["gamvdW"])
+    #                 * data["Tdpair"]
+    #                 * neutral_hydrogen_number
+    #                 * 0.42
+    #             )
+    #         else:
+    #             airbrd = (
+    #                 (10 ** data["gamvdW"])
+    #                 * data["Tdpair"]
+    #                 * neutral_hydrogen_number
+    #                 * atomic_coeff
+    #             )
 
-    def partfcn(self, key, T):
-        # So far ielem is used for id and iion for iso in eq_spectrum so this method is used when the linestrength is computed for data_dict
-        """Partition function from Barklem & Collet (2016).
+    #         data["airbrd"] = airbrd
 
-        Args:
-        key: the atom name
-        T: temperature
+    # def partfcn(self, key, T):
+    #     # So far ielem is used for id and iion for iso in eq_spectrum so this method is used when the linestrength is computed for data_dict
+    #     """Partition function from Barklem & Collet (2016).
 
-        Returns:
-        partition function Q
-        """
-        try:
-            #print(f"Temperature: {T}")
-            pfdat = self.pfdat
+    #     Args:
+    #     key: the atom name
+    #     T: temperature
 
-            # Locate the row for the specific atom and ionization state
-            pf_atom = pfdat.loc[f"{key}"]
-            # Extract temperature and partition function values
-            pfT_values = self.pfTdat.values.flatten()
-            pf_values = pf_atom.values
+    #     Returns:
+    #     partition function Q
+    #     """
+    #     try:
+    #         #print(f"Temperature: {T}")
+    #         pfdat = self.pfdat
 
-            pfT_values = pfT_values.astype(float)
-            pf_values = pf_values.astype(float)
+    #         # Locate the row for the specific atom and ionization state
+    #         pf_atom = pfdat.loc[f"{key}"]
+    #         # Extract temperature and partition function values
+    #         pfT_values = self.pfTdat.values.flatten()
+    #         pf_values = pf_atom.values
 
-            # print("pfT_values:", pfT_values)
-            # print("pf_values:", pf_values)
+    #         pfT_values = pfT_values.astype(float)
+    #         pf_values = pf_values.astype(float)
 
-            # Interpolate to find the partition function at the desired temperature
-            Q = np.interp(T, pfT_values, pf_values)
-            # print(f"Partition function: {Q}")
+    #         # print("pfT_values:", pfT_values)
+    #         # print("pf_values:", pf_values)
 
-            return Q
-        except KeyError:
-            print("pfdat", pfdat)
-            print(
-                f"Key {key} not found in pfdat. Available keys: {pfdat.index.tolist()}"
-            )
-            raise
+    #         # Interpolate to find the partition function at the desired temperature
+    #         Q = np.interp(T, pfT_values, pf_values)
+    #         # print(f"Partition function: {Q}")
 
-    def calculate_populations(self, atom, temperature, data):
-        # Select the partition function for the specific atom
-        # atom_pf = self.pfdat.loc[f'{atom}_I']
+    #         return Q
+    #     except KeyError:
+    #         print("pfdat", pfdat)
+    #         print(
+    #             f"Key {key} not found in pfdat. Available keys: {pfdat.index.tolist()}"
+    #         )
+    #         raise
 
-        # Calculate the partition function at a certain temperature
-        #print(type(self.partfn))
-        QT_atom = self.partfcn(atom, temperature)
-        #print("QT_atom",QT_atom)
+    # def calculate_populations(self, atom, temperature, data):
+    #     # Select the partition function for the specific atom
+    #     # atom_pf = self.pfdat.loc[f'{atom}_I']
 
-        # Calculate energy/temperature ratio
-        energy_temp_ratio = data["El"] / (0.695 * temperature)
-        # print(f'Energy/temp ratio: {energy_temp_ratio}')   # print the energy to temperature ratio for debugging
+    #     # Calculate the partition function at a certain temperature
+    #     #print(type(self.partfn))
+    #     QT_atom = self.partfcn(atom, temperature)
+    #     #print("QT_atom",QT_atom)
 
-        # Calculate level populations using Boltzmann statistics
-        self.populations = np.exp(-energy_temp_ratio) / QT_atom
+    #     # Calculate energy/temperature ratio
+    #     energy_temp_ratio = data["El"] / (0.695 * temperature)
+    #     # print(f'Energy/temp ratio: {energy_temp_ratio}')   # print the energy to temperature ratio for debugging
 
-        return self.populations
+    #     # Calculate level populations using Boltzmann statistics
+    #     self.populations = np.exp(-energy_temp_ratio) / QT_atom
+
+    #     return self.populations

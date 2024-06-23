@@ -145,7 +145,7 @@ def calc_spectrum(
 
                 diluent = { 'CO2': 0.6, 'H2O':0.2}
             
-            For free electrons, use the symbol 'e-'
+            For free electrons, use the symbol 'e-'. Currently, only H, H2, H2, and e- are supported for atoms - any other diluents have no effect besides diluting the mole fractions of the other constituents.
 
     path_length: float [:math:`cm`] or `~astropy.units.quantity.Quantity`
         slab size. Default ``1`` cm​. Use arbitrary units::

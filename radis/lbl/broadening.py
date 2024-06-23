@@ -379,33 +379,69 @@ def pressure_broadening_HWHM(
 
     return gamma_lb
 
-def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, vdWdamp, diluent, enh_damp=1.0):  # , vdW_meth="V"):
+def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, is_neutral, enh_damp=1.0):  # , vdW_meth="V"):
     """(This function is based on exojax.spec.atomll.gamma_vald3)
     
     HWHM of Lorentzian (cm-1) caluculated as gamma/(4*pi*c) [cm-1] for lines
     with the van der Waals gamma in the line list (VALD or Kurucz), otherwise
-    estimated according to the Unsoeld (1955)
+    estimated according to the [Unsöld-1955]
 
-    Args:
-      T: temperature (K)
-      P: Pressure #1 bar = 1e6 dyn/cm2
-      nu_lines:  transition waveNUMBER in [cm-1] (NOT frequency in [s-1])
-      elower: excitation potential (lower level) [cm-1]
-      ionE: ionization potential [eV]
-      gamRad: log of gamma of radiation damping (s-1) (https://www.astro.uu.se/valdwiki/Vald3Format)
-      gamSta: log of gamma of Stark damping ((s * Nelec)^-1)
-      vdWdamp:  log of (van der Waals damping constant / neutral hydrogen number) (s-1)
-      enh_damp: empirical "enhancement factor" for classical Unsoeld's damping constant cf.) This coefficient (enh_damp) depends on  each species in some codes such as Turbospectrum. #tako210917
+    Parameters
+    ----------
+    T: float [K]
+        (translational) gas temperature
+    P: float  [bar]
+        pressure in bar
+    nu_lines: array   (cm-1)        [length N]
+        transition wavenumber
+    elower: array   (cm-1)        [length N]
+        excitation potential (lower level)
+    ionE: array   (eV)        [length N]
+        ionization potential
+    gamRad: array   (s-1)        [length N]
+        log of the half-width half maximum coefficient (HWHM) for radiative broadening
+    gamSta: array   (s-1 * cm-3)         [length N]
+        log of the half-width half maximum coefficient (HWHM) per electron density for Stark broadening, at 10000 K
+    gamVdW: array   (s-1 * cm-3)        [length N]
+        log of the half-width half maximum coefficient (HWHM) per atomic hydrogen density for Van der Waals broadening, at 10000 K
+    diluent: dictionary
+        contains diluent and their mole fraction
+    is_neutral: bool
+        True if the radiating species is neutral, False if it's ionised
+    enh_damp: float
+        empirical "enhancement factor" for classical Unsoeld's damping constant
+      
+    Returns
+    -------
+    gammma_rad, gamma_stark, gamma_vdw: (cm-1) numpy array [length N]
+        Radiation, Stark, and Van der Waals HWHM
+    
+    Notes
+    -----
+    ``gamVdW`` given in the Kurucz linelists is, as [Kurucz & Avrett 1981] state, ":math:`\\frac{Gamma_{W}}{N_{H}}` at 10000 K for pure hydrogen"
 
-    Returns:
-      gammma_rad, gamma_stark, gamma_vdw - Radiation, Stark, and Van der Waals HWHM [cm^-1]
+    ``gamSta`` given in the Kurucz linelists can be recovered with a small error for a large proportion of lines from the values of :math:`C_4` given in the associated .gam files using an equation of the form:
 
-    * Reference of van der Waals damping constant (pressure/collision gamma):
-    *   Unsöld1955: https://ui.adsabs.harvard.edu/abs/1955psmb.book.....U
-    *   Kurucz+1981: https://ui.adsabs.harvard.edu/abs/1981SAOSR.391.....K
-    *   Barklem+1998: https://ui.adsabs.harvard.edu/abs/1998MNRAS.300..863B
-    *   Barklem+2000: https://ui.adsabs.harvard.edu/abs/2000A&AS..142..467B
-    *   Gray+2005: https://ui.adsabs.harvard.edu/abs/2005oasp.book.....G
+    .. math::
+
+        \\gamma_{4} = 40 {\\left(\\frac{8kT}{\pi m_e}\\right)}^{\\frac{1}{6}} C_4^2 N_e
+    
+    See e.g. [Aller-1963] p318 and [Gray-2005] p244 for the background. See [Rivière et al 2002] for a treatment distinguishing between neutral and ionised radiators.
+
+    References
+    ----------
+
+    .. [Unsöld-1955] `"Physik der Sternatmospharen, MIT besonderer Berucksichtigung der Sonne." <https://ui.adsabs.harvard.edu/abs/1955psmb.book.....U>`_
+    .. [Aller-1963] `" Astrophysics The atmospheres of the sun and stars" <https://ui.adsabs.harvard.edu/abs/1963aass.book.....A>`_
+    .. [Gray-2005] `"The Observation and Analysis of Stellar Photospheres" <https://ui.adsabs.harvard.edu/abs/2005oasp.book.....G>`_
+    .. [Kurucz & Avrett 1981] `"Solar Spectrum Synthesis. I. A Sample Atlas from 224 to 300 nm" <https://ui.adsabs.harvard.edu/abs/1981SAOSR.391.....K>`_
+    .. [Barklem et al 2000] `"A list of data for the broadening of metallic lines by neutral hydrogen collisions" <https://ui.adsabs.harvard.edu/abs/2000A%2526AS..142..467B>`_
+    .. [Rivière et al 2002] `"Systematic semi-classical calculations of Stark broadening parameters of NI, OI, NII, OII multiplets for modelling the radiative transfer in atmospheric air mixture plasmas" <https://ui.adsabs.harvard.edu/abs/2002JQSRT..73...91R>`_
+
+    See Also
+    --------
+
+    :py:func:`~radis.lbl.broadening.doppler_broadening_HWHM`,
     """
     # based on: https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/spec/atomll.py#L40
     gamRad = np.where(gamRad == 0., -99, gamRad)
@@ -431,15 +467,19 @@ def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, vdWdamp, diluent, 
     Texp = 0.38  # Barklem+2000
     gamma6 = 0
     for key in weighted_coeff:
-        gamma6 += 10**vdWdamp * (T/10000.)**Texp * P*1e6*weighted_coeff[key] / (k_b_CGS*T)
+        gamma6 += 10**gamVdW * (T/10000.)**Texp * P*1e6*weighted_coeff[key] / (k_b_CGS*T)
     gamma_case2 =  gamma6 / (4*np.pi*c_CGS)
 
-    gamma_vdw = np.where(vdWdamp >= 0., gamma_case1, gamma_case2)
+    gamma_vdw = np.where(gamVdW >= 0., gamma_case1, gamma_case2)
     # df['shft'] = (1.0/3.0)*2*gamma #Konjević et al. 2012 §4.1.3.2
     #print(gamma_vdw)
     
     if 'e-' in diluent:
-        gamma_stark = (10**gamSta) * P*1e6*diluent['e-'] / (k_b_CGS*T) / (4*np.pi*c_CGS)
+        gamma_stark = (10**gamSta) * P*1e6*diluent['e-'] / (k_b_CGS*T) / (4*np.pi*c_CGS) #see e.g. Gray p244 for temperature scaling
+        if is_neutral:
+            gamma_stark *= ((T/10000)**(1.0/6.0)) #see e.g. Gray p244
+        else:
+            gamma_stark *= ((T/10000)**(-1.0/2.0)) #see e.g. Rivière et al 2002 §2.2, v ∝ T^-1/2
     else:
         gamma_stark = 0
     
@@ -1321,7 +1361,7 @@ class BroadenFactory(BaseFactory):
                 df['shft'] = shift
         else:
             if self.input.isatom:
-                gammma_rad, gamma_stark, gamma_vdw = gamma_vald3(Tgas, pressure_atm*1.01325, df['wav'], df['El'], df['ionE'], df['gamRad'], df['gamSta'], df['gamvdW'], diluent)
+                gammma_rad, gamma_stark, gamma_vdw = gamma_vald3(Tgas, pressure_atm*1.01325, df['wav'], df['El'], df['ionE'], df['gamRad'], df['gamSta'], df['gamvdW'], diluent, self.input.isneutral)
                 df['shft'] = (1.0/3.0)*2*gamma_vdw #Konjević et al. 2012 §4.1.3.2, neglect stark shift by default
                 wl = gammma_rad + gamma_stark + gamma_vdw
                 # selfbrd = 2.2e-2 * pressure_atm*1.01325*1e6*mole_fraction / (k_b_CGS*Tgas) / 2.7e19

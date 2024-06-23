@@ -99,7 +99,7 @@ except ImportError:  # if ran from here
     from radis.lbl.broadening import voigt_lineshape
 
 from radis import config
-from radis.db.classes import is_atom
+from radis.db.classes import is_atom, is_neutral
 from radis.misc.basics import flatten, is_float, is_range, list_if_float, round_off
 from radis.misc.utils import Default
 from radis.phys.constants import k_b, k_b_CGS
@@ -108,8 +108,8 @@ from radis.phys.units import convert_universal
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.spectrum import Spectrum
-from radis.api.kuruczapi import AdBKurucz
-from radis.levels.partfunc import PartFuncKurucz
+# from radis.api.kuruczapi import AdBKurucz
+# from radis.levels.partfunc import PartFuncKurucz
 
 c_cm = c * 100
 
@@ -163,7 +163,7 @@ class SpectrumFactory(BandFactory):
         Does not change anything when giving inputs in wavenumber. Default ``'air'``
     diluent: ``str`` or ``dictionary``
             can be a string of a single diluent or a dictionary containing diluent
-            name as key and its mole_fraction as value. Default ``air``. For free electrons, use the symbol 'e-'
+            name as key and its mole_fraction as value. Default ``air`` for molecules, nothing for atoms. For free electrons, use the symbol 'e-'. Currently, only H, H2, H2, and e- are supported for atoms - any other diluents have no effect besides diluting the mole fractions of the other constituents.
 
     Other Parameters
     ----------------
@@ -559,6 +559,7 @@ class SpectrumFactory(BandFactory):
                 self.input.isatom = False
             else:
                 self.input.isatom = True
+                self.input.isneutral = is_neutral(molecule)
 
         # Store isotope identifier in str format (list wont work in database queries)
         if not isinstance(isotope, str):
@@ -812,13 +813,14 @@ class SpectrumFactory(BandFactory):
             raise ValueError(
                 "Tgas should be float or Astropy unit. Got {0}".format(Tgas)
             )
-        self.input.rot_distribution = "boltzmann"  # equilibrium
-        self.input.vib_distribution = "boltzmann"  # equilibrium
+        if not self.input.isatom:
+            self.input.rot_distribution = "boltzmann"  # equilibrium
+            self.input.vib_distribution = "boltzmann"  # equilibrium
 
-        # Get temperatures
+            # Get temperatures
+            self.input.Tvib = Tgas  # just for info
+            self.input.Trot = Tgas  # just for info
         self.input.Tgas = Tgas
-        self.input.Tvib = Tgas  # just for info
-        self.input.Trot = Tgas  # just for info
 
         # Init variables
         pressure = self.input.pressure
