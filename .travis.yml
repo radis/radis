@@ -1,6 +1,5 @@
 # Runs Test scripts; Linting; Deployment on Travis-CI
 language: python
-dist: focal #needed for python 3.10 (xenial is default for Travis-CI, but does not support python 3.10)
 python:
   # We don't actually use the Travis Python, but this keeps it organized.
   #- "2.7"    # not tested anymore starting from 0.9.19
@@ -8,6 +7,7 @@ python:
   - "3.9"
   - "3.10"
 os: linux
+dist: focal #needed for python 3.10 (xenial is default for Travis-CI, but does not support python 3.10)
 
 name: Test and Coverage
 install:
@@ -62,26 +62,29 @@ after_success:
   - codecov
 
 
-# stages:
-#   - name: lint
-#     if: branch = master OR branch = develop
-#     # we dont lint on other branches
+stages:
+  - name: test
+    if: branch = master OR branch = develop
+  - name: lint
+    if: branch = master OR branch = develop
+    # we dont lint on other branches
 #   - name: build_wheels
 #     if: branch = master OR branch = develop
 #   - name: deploy
 #     if: branch = master
 
-# jobs:
-#   include:
-#     - stage: lint
-#       name: Code Quality Checks
-#       install:
-#         - pip install pre-commit
-#         - pre-commit install
-#       script:
-#         - pre-commit run --all-files
-#       after_failure: #better for checking the origin of a bug
-#         - cat /home/travis/.cache/pre-commit/pre-commit.log
+jobs:
+  include:
+    - stage: lint
+      name: Code Quality Checks
+      python: 3.10
+      install:
+        - pip install pre-commit
+        - pre-commit install
+      script:
+        - pre-commit run --all-files
+      after_failure: #better for checking the origin of a bug
+        - cat /home/travis/.cache/pre-commit/pre-commit.log
 
 #     - stage: build_wheels
 #       name: Build the Wheels on Linux, Windows
