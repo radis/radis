@@ -1,5 +1,6 @@
 # Runs Test scripts; Linting; Deployment on Travis-CI
 language: python
+dist: focal #needed for python 3.10 (xenial is default for Travis-CI, but does not support python 3.10)
 python:
   # We don't actually use the Travis Python, but this keeps it organized.
   #- "2.7"    # not tested anymore starting from 0.9.19
