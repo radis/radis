@@ -4,6 +4,8 @@ python:
   # We don't actually use the Travis Python, but this keeps it organized.
   #- "2.7"    # not tested anymore starting from 0.9.19
   - "3.8"
+  - "3.9"
+  - "3.10"
 os: linux
 
 stages:
@@ -21,9 +23,6 @@ jobs:
   include:
     - stage: test
       name: Test and Coverage
-      python:
-        - "3.8"
-        - "3.10"
       install:
         # Install Micromamba
         # We do this conditionally because it saves us some downloading if the
