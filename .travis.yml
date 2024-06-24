@@ -4,14 +4,69 @@ python:
   # We don't actually use the Travis Python, but this keeps it organized.
   #- "2.7"    # not tested anymore starting from 0.9.19
   - "3.8"
+  - "3.9"
+  - "3.10"
 os: linux
+dist: focal #needed for python 3.10 (xenial is default for Travis-CI, but does not support python 3.10)
+
+name: Test and Coverage
+install:
+  # Install Micromamba
+  # We do this conditionally because it saves us some downloading if the
+  # version is the same.
+  # For now use http instead of https according to this comment:
+  # https://github.com/mamba-org/mamba/issues/1675#issuecomment-1127160021
+  - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/1.5.8 | tar -xvj bin/micromamba
+  - ./bin/micromamba shell init -s bash -p ~/micromamba
+  - source ~/.bashrc
+  - micromamba activate base
+  # Update python version in environment
+  - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
+  # Create conda environment
+  - micromamba install xtensor -c conda-forge -y
+  # move requirements.txt to the /tmp folder, required so that .environment.yml finds it
+  - pwd
+  - cp requirements.txt /tmp/requirements.txt
+  # Create the environment:
+  - micromamba create -f ./environment.yml -y
+  # Activate and install test-only dependencies
+  - micromamba activate radis-env
+  - micromamba list
+  - pip install pytest-cov
+  - pip install -e . -v
+
+services:
+  - xvfb
+
+before_script:
+# pipeline does not continue if anything fails
+# >> If before_install, install or before_script returns a non-zero exit code, the build is errored and
+# >> stops immediately. (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
+  - export MPLBACKEND=Agg
+  - echo ">>> Run Fast tests first"
+  # use XVFB to have headless display port, and still run the Matplotlib tests.
+  - xvfb-run -a pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10
+
+script:
+  # Your test script goes here
+  # >> If script returns a non-zero exit code, the build is failed, but continues to run before being
+  # >> marked as failed.  (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
+  - echo ">>> Run All tests now"
+  - xvfb-run -a pytest --cov=./ --durations=10 #run all tests but that's ok because the redondant tests are fast (<3min)!
+  # --durations=N to print the slowest N tests
+  # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
+
+after_success:
+  # codecoverage
+  - pip install codecov
+  - codecov
+
 
 stages:
   - name: test
     if: branch = master OR branch = develop
   - name: lint
     if: branch = master OR branch = develop
-    # we dont lint on other branches
   - name: build_wheels
     if: branch = master OR branch = develop
   - name: deploy
@@ -19,62 +74,9 @@ stages:
 
 jobs:
   include:
-    - stage: test
-      name: Test and Coverage
-
-      install:
-        # Install Micromamba
-        # We do this conditionally because it saves us some downloading if the
-        # version is the same.
-        # For now use http instead of https according to this comment:
-        # https://github.com/mamba-org/mamba/issues/1675#issuecomment-1127160021
-        - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/0.25.1 | tar -xvj bin/micromamba
-        - ./bin/micromamba shell init -s bash -p ~/micromamba
-        - source ~/.bashrc
-        - micromamba activate base
-        # Update python version in environment
-        - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
-        # Create conda environment
-        - micromamba install xtensor -c conda-forge -y
-        # move requirements.txt to the /tmp folder, required so that .environment.yml finds it
-        - pwd
-        - cp requirements.txt /tmp/requirements.txt
-        # Create the environment:
-        - micromamba create -f ./environment.yml -y
-        # Activate and install test-only dependencies
-        - micromamba activate radis-env
-        - micromamba list
-        - pip install pytest-cov
-        - pip install -e . -v
-
-      services:
-        - xvfb
-
-      before_script:
-      # pipeline does not continue if anything fails
-      # >> If before_install, install or before_script returns a non-zero exit code, the build is errored and
-      # >> stops immediately. (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
-        - export MPLBACKEND=Agg
-        - echo ">>> Run Fast tests first"
-        # use XVFB to have headless display port, and still run the Matplotlib tests.
-        - xvfb-run -a pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10
-
-      script:
-        # Your test script goes here
-        # >> If script returns a non-zero exit code, the build is failed, but continues to run before being
-        # >> marked as failed.  (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
-        - echo ">>> Run All tests now"
-        - xvfb-run -a pytest --cov=./ --durations=10 #run all tests but that's ok because the redondant tests are fast!
-        # --durations=N to print the slowest N tests
-        # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
-
-      after_success:
-        # codecoverage
-        - pip install codecov
-        - codecov
-
     - stage: lint
       name: Code Quality Checks
+      python: 3.10
       install:
         - pip install pre-commit
         - pre-commit install
