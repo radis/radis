@@ -16,17 +16,20 @@ underlying :py:mod:`vaex` library.
 
 """
 
+#%% Discard this example if Vaex is not installed
+import sys
+
 try:
     import vaex
 
     vaex  # fix linting
-    output = "vaex"
 except ImportError:
-    output = "pytables"
+    print("`vaex` not installed, exiting the programme.")
+    sys.exit()
 
 from radis.io.hitemp import fetch_hitemp
 
-df = fetch_hitemp("CO2", output=output, load_wavenum_min=2150, load_wavenum_max=2450)
+df = fetch_hitemp("CO2", output="vaex", load_wavenum_min=2150, load_wavenum_max=2450)
 print(f"{len(df)} lines in HITEMP CO2; 2150 - 2450 cm-1")
 
 #%%
@@ -40,16 +43,15 @@ print(f"{len(df)} lines in HITEMP CO2; 2150 - 2450 cm-1")
 #
 # For instance, we plot a :py:meth:`~vaex.viz.DataFrameAccessorViz.heatmap` showing Self and Air-broadening coefficients
 
-if output == "vaex":
-    import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
-    plt.figure()
-    df.viz.heatmap("airbrd", "selbrd", limits="99%")
+plt.figure()
+df.viz.heatmap("airbrd", "selbrd", limits="99%")
 
-    # TODO / idea : compare CO2 broadening with Air broadening for HITRAN database ?
-    #%%
-    # Or below we plot the number of lines using Vaex's :py:meth:`~vaex.viz.DataFrameAccessorViz.histogram
+# TODO / idea : compare CO2 broadening with Air broadening for HITRAN database ?
+#%%
+# Or below we plot the number of lines using Vaex's :py:meth:`~vaex.viz.DataFrameAccessorViz.histogram
 
-    plt.figure()
-    df.viz.histogram("wav", shape=1000)
-    plt.yscale("log")
+plt.figure()
+df.viz.histogram("wav", shape=1000)
+plt.yscale("log")
