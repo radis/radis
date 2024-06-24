@@ -52,7 +52,7 @@ script:
   # >> If script returns a non-zero exit code, the build is failed, but continues to run before being
   # >> marked as failed.  (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
   - echo ">>> Run All tests now"
-  # - xvfb-run -a pytest --cov=./ --durations=10 #run all tests but it is ok because the redondant tests are fast (<3min)!
+  - xvfb-run -a pytest --cov=./ --durations=10 #run all tests but it is ok because the redondant tests are fast (<3min)!
   # --durations=N to print the slowest N tests
   # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
 
@@ -108,7 +108,7 @@ jobs:
 
       script:
         # build the wheels, put them into './dist'
-        - python3 -m cibuildwheel --output-dir dist #If you intend to build a pure-Python wheel, you don't need cibuildwheel
+        # - python3 -m cibuildwheel --output-dir dist #If you intend to build a pure-Python wheel, you don't need cibuildwheel
         - python3 -m pip wheel -w dist .
 
     - stage: deploy
