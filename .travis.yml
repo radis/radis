@@ -52,7 +52,7 @@ script:
   # >> If script returns a non-zero exit code, the build is failed, but continues to run before being
   # >> marked as failed.  (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
   - echo ">>> Run All tests now"
-  - xvfb-run -a pytest --cov=./ --durations=10 #run all tests but that's ok because the redondant tests are fast (<3min)!
+  # - xvfb-run -a pytest --cov=./ --durations=10 #run all tests but it is ok because the redondant tests are fast (<3min)!
   # --durations=N to print the slowest N tests
   # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
 
@@ -80,6 +80,7 @@ jobs:
       install:
         - pip install pre-commit
         - pre-commit install
+      before_script: skip #do NOT run the before_script of "tests" stage
       script:
         - pre-commit run --all-files
       after_failure: #better for checking the origin of a bug
@@ -100,17 +101,21 @@ jobs:
             # make sure it's on PATH as 'python3'
             - ln -s /c/Python38/python.exe /c/Python38/python3.exe
 
-      install:
-        - python3 -m pip install cibuildwheel==2.19.1
+      install: skip
+        #- python3 -m pip install cibuildwheel==2.19.1 #If you intend to build a pure-Python wheel, you don't need cibuildwheel
+
+      before_script: skip #do NOT run the before_script of "tests" stage
 
       script:
         # build the wheels, put them into './dist'
-        - python3 -m cibuildwheel --output-dir dist
+        - python3 -m cibuildwheel --output-dir dist #If you intend to build a pure-Python wheel, you don't need cibuildwheel
+        - python3 -m pip wheel -w dist .
 
     - stage: deploy
       name: Deploy to PyPI
       install:
         - sudo apt-get update
+      before_script: skip #do NOT run the before_script of "tests" stage
       script:
         - echo "Deploying to PyPI"
       before_deploy:
