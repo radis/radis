@@ -15,7 +15,7 @@ install:
   # version is the same.
   # For now use http instead of https according to this comment:
   # https://github.com/mamba-org/mamba/issues/1675#issuecomment-1127160021
-  - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/0.25.1 | tar -xvj bin/micromamba
+  - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/1.5.8 | tar -xvj bin/micromamba
   - ./bin/micromamba shell init -s bash -p ~/micromamba
   - source ~/.bashrc
   - micromamba activate base
@@ -61,63 +61,63 @@ after_success:
   - codecov
 
 
-stages:
-  - name: lint
-    if: branch = master OR branch = develop
-    # we dont lint on other branches
-  - name: build_wheels
-    if: branch = master OR branch = develop
-  - name: deploy
-    if: branch = master
+# stages:
+#   - name: lint
+#     if: branch = master OR branch = develop
+#     # we dont lint on other branches
+#   - name: build_wheels
+#     if: branch = master OR branch = develop
+#   - name: deploy
+#     if: branch = master
 
-jobs:
-  include:
-    - stage: lint
-      name: Code Quality Checks
-      install:
-        - pip install pre-commit
-        - pre-commit install
-      script:
-        - pre-commit run --all-files
-      after_failure: #better for checking the origin of a bug
-        - cat /home/travis/.cache/pre-commit/pre-commit.log
+# jobs:
+#   include:
+#     - stage: lint
+#       name: Code Quality Checks
+#       install:
+#         - pip install pre-commit
+#         - pre-commit install
+#       script:
+#         - pre-commit run --all-files
+#       after_failure: #better for checking the origin of a bug
+#         - cat /home/travis/.cache/pre-commit/pre-commit.log
 
-    - stage: build_wheels
-      name: Build the Wheels on Linux, Windows
-      # Added from https://github.com/pypa/cibuildwheel/blob/main/examples/travis-ci-deploy.yml; see https://github.com/radis/radis/issues/650
-      include:
-        # perform a linux build
-        - services: docker
-        # and a windows build
-        - os: windows
-          language: shell
-          before_install:
-            - choco upgrade python -y --version 3.8.6
-            - export PATH="/c/Python38:/c/Python38/Scripts:$PATH"
-            # make sure it's on PATH as 'python3'
-            - ln -s /c/Python38/python.exe /c/Python38/python3.exe
+#     - stage: build_wheels
+#       name: Build the Wheels on Linux, Windows
+#       # Added from https://github.com/pypa/cibuildwheel/blob/main/examples/travis-ci-deploy.yml; see https://github.com/radis/radis/issues/650
+#       include:
+#         # perform a linux build
+#         - services: docker
+#         # and a windows build
+#         - os: windows
+#           language: shell
+#           before_install:
+#             - choco upgrade python -y --version 3.8.6
+#             - export PATH="/c/Python38:/c/Python38/Scripts:$PATH"
+#             # make sure it's on PATH as 'python3'
+#             - ln -s /c/Python38/python.exe /c/Python38/python3.exe
 
-      install:
-        - python3 -m pip install cibuildwheel==2.19.1
+#       install:
+#         - python3 -m pip install cibuildwheel==2.19.1
 
-      script:
-        # build the wheels, put them into './dist'
-        - python3 -m cibuildwheel --output-dir dist
+#       script:
+#         # build the wheels, put them into './dist'
+#         - python3 -m cibuildwheel --output-dir dist
 
-    - stage: deploy
-      name: Deploy to PyPI
-      install:
-        - sudo apt-get update
-      script:
-        - echo "Deploying to PyPI"
-      before_deploy:
-        - sudo apt-get install pandoc
-        - pandoc README.rst -o README.md
-      deploy:
-        provider: pypi
-        user: "__token__"
-        password:
-          secure: dxZOpuKL1ezk3MM5FgY89zJYNL484x0jUZ+c3IB5q2GjpWl6qmCogoWG37iGZIcmldeIdVzga3pj5CC32eht4B0hJQX5QLVjCq9wwpfLs7Tkj4ODiAzvOchSLhfBOSLOIX33iW/+wxDjZ3fG61TzPI1z3ksdNh7+imdVYiV+G4FmOcxJKjFEgGm7CAwfbxso47ab9jbgm6FHbCC7HfpSiSrMpyIDSorJFk5XR11+Hoe6JjbKr11eeWuoO8EXKvSQeeJpsu0minqFyAy8nf9af/aU3NJU1LOlFM1DuoYlpQKwnbop5lBodU28zt4Asa1h8lp8Zu+wZSIaZSOeEoC6U/H/5zAE03W8SytWyWgNEtwuYLSiWacbOzeZOclVRoNu4P6Fz9hFdZuSANQlSQN7cBYFJiA8cbJDU4nb3srFoKlBLxCH9ZC3/K7rnZpjPmy7A35plNf+1dAEpB6adiWwsGy/VwCywHyJsBq7N3z6lN9wZ2SUPekl4y/sLobYPqg8y48u4bMqfd05Ub1QDUB3MSNALMa+OcczJvxNHZj+Bk4ooai/t/GOMOWNyy78VES7S/J77cWUheq+mW80ywCS8gcyF6ARR4EJxJGwp4q2RHwGdVvxbzc/uaKgi6I1bmLRw4cjJvOXx5ulLdANUftfMg4ATW/VAFqYLrdS/LpGX5A=
-        skip_existing: true
-        skip_cleanup: true    # to keep wheels (in the ./dist folder?)
-        distributions: "sdist bdist_wheel"
+#     - stage: deploy
+#       name: Deploy to PyPI
+#       install:
+#         - sudo apt-get update
+#       script:
+#         - echo "Deploying to PyPI"
+#       before_deploy:
+#         - sudo apt-get install pandoc
+#         - pandoc README.rst -o README.md
+#       deploy:
+#         provider: pypi
+#         user: "__token__"
+#         password:
+#           secure: dxZOpuKL1ezk3MM5FgY89zJYNL484x0jUZ+c3IB5q2GjpWl6qmCogoWG37iGZIcmldeIdVzga3pj5CC32eht4B0hJQX5QLVjCq9wwpfLs7Tkj4ODiAzvOchSLhfBOSLOIX33iW/+wxDjZ3fG61TzPI1z3ksdNh7+imdVYiV+G4FmOcxJKjFEgGm7CAwfbxso47ab9jbgm6FHbCC7HfpSiSrMpyIDSorJFk5XR11+Hoe6JjbKr11eeWuoO8EXKvSQeeJpsu0minqFyAy8nf9af/aU3NJU1LOlFM1DuoYlpQKwnbop5lBodU28zt4Asa1h8lp8Zu+wZSIaZSOeEoC6U/H/5zAE03W8SytWyWgNEtwuYLSiWacbOzeZOclVRoNu4P6Fz9hFdZuSANQlSQN7cBYFJiA8cbJDU4nb3srFoKlBLxCH9ZC3/K7rnZpjPmy7A35plNf+1dAEpB6adiWwsGy/VwCywHyJsBq7N3z6lN9wZ2SUPekl4y/sLobYPqg8y48u4bMqfd05Ub1QDUB3MSNALMa+OcczJvxNHZj+Bk4ooai/t/GOMOWNyy78VES7S/J77cWUheq+mW80ywCS8gcyF6ARR4EJxJGwp4q2RHwGdVvxbzc/uaKgi6I1bmLRw4cjJvOXx5ulLdANUftfMg4ATW/VAFqYLrdS/LpGX5A=
+#         skip_existing: true
+#         skip_cleanup: true    # to keep wheels (in the ./dist folder?)
+#         distributions: "sdist bdist_wheel"
