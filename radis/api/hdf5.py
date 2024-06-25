@@ -150,17 +150,42 @@ class DataFileManager(object):
             if key == "default":
                 key = "df"
             with self.open(file, "a" if append else "w") as f:
-                f.put(
-                    key=key,
-                    value=df,
-                    append=append,
-                    format=format,
-                    data_columns=data_columns,
-                    min_itemsize={
-                        "statepp": 100,
-                        "statep": 100,
-                    },  # fixes #656  for HITRAN CO2 (at least)
-                )
+                try:
+                    f.put(
+                        key=key,
+                        value=df,
+                        append=append,
+                        format=format,
+                        data_columns=data_columns,
+                    )
+                except ValueError as err:
+                    if (
+                        "Trying to store a string with len"
+                        or "cannot match existing table structure" in str(err)
+                    ):
+                        print("coucou")
+                        # a bit brutal but simply removes the columns that raise the problem in #656 for CO2
+                        bad_columns = [
+                            "Fl",
+                            "Fu",
+                            "ierr",
+                            "iref",
+                            "line_mixing_flag",
+                            "statep",
+                            "statepp",
+                        ]
+                        for col in bad_columns:
+                            if col in df.columns:
+                                df = df.drop(col, axis=1)
+                        f.put(
+                            key=key,
+                            value=df,
+                            append=append,
+                            format=format,
+                            data_columns=data_columns,
+                        )
+                    else:
+                        raise
 
         elif self.engine == "pytables-fixed":
             assert not append
