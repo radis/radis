@@ -51,7 +51,7 @@ script:
   # >> If script returns a non-zero exit code, the build is failed, but continues to run before being
   # >> marked as failed.  (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
   - echo ">>> Run All tests now"
-  - xvfb-run -a pytest -m "not fast" --cov=./ --durations=10 #run all tests without the "fast" because they were already done
+  - xvfb-run -a pytest --cov=./ --durations=10 #re-run fast tests but that is ok because they are fast
   # --durations=N to print the slowest N tests
   # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
 
