@@ -61,7 +61,13 @@ after_success:
   - codecov
 
 
-stages:
+stages: #This sequence defines the order of the stages
+  - name: Win_py310
+    if: branch = master OR branch = develop
+  - name: MacOS_py310
+    if: branch = master OR branch = develop
+  - name: Py312
+    if: branch = master OR branch = develop
   - name: test
     if: branch = master OR branch = develop
   - name: lint
@@ -70,12 +76,6 @@ stages:
     if: branch = master OR branch = develop
   - name: deploy
     if: branch = master
-  - name: Win_py310
-    if: branch = master OR branch = develop
-  - name: MacOS_py310
-    if: branch = master OR branch = develop
-  - name: Py312
-    if: branch = master OR branch = develop
 
 jobs:
   include: #start by testing other OS
