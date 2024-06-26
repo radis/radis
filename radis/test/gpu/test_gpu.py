@@ -18,6 +18,7 @@ from radis.misc.warning import NoGPUWarning
 from radis.test.utils import getTestFile
 
 
+@pytest.mark.fast
 def test_eq_spectrum_emulated_gpu(
     backend="cpu-cuda", verbose=False, plot=False, *args, **kwargs
 ):
@@ -96,6 +97,7 @@ def test_eq_spectrum_gpu(plot=False, *args, **kwargs):
         test_eq_spectrum_emulated_gpu(backend="gpu-cuda", plot=plot, *args, **kwargs)
 
 
+@pytest.mark.fast
 def test_multiple_gpu_calls():
     from radis import SpectrumFactory
 
