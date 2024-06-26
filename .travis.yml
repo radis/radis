@@ -70,35 +70,34 @@ stages:
     if: branch = master OR branch = develop
   - name: deploy
     if: branch = master
-  - name: "Python 3.10 on macOS"
+  - name: Win_py310
     if: branch = master OR branch = develop
-  - name: "Python 3.10 on Windows"
+  - name: MacOS_py310
     if: branch = master OR branch = develop
-  - name: "Python 3.12 on Windows"
+  - name: Py312
     if: branch = master OR branch = develop
 
 jobs:
-  include:
-  ### Other OS - limited set of Python versions are tested - normaly ONLY on master to save computing time
-      - name: "Python 3.10 on macOS"
-      python: 3.10
+  include: #start by testing other OS
+    - stage: MacOS_py310
+      name: Python 3.10 on macOS
+      python: "3.10"
       os: osx
-      osx_image: xcode11.2  # Python 3.7.4 running on macOS 10.14.4
-      language: shell       # 'language: python' is an error on Travis CI macOS
-
-      - name: "Python 3.10 on Windows"
-      python: 3.10
-      os: windows           # Windows 10.0.17134 N/A Build 17134
-      language: shell       # 'language: python' is an error on Travis CI Windows
+      osx_image: xcode11.2
+      language: shell
+    - stage: Win_py310
+      name: Python 3.10 on Windows
+      python: "3.10"
+      os: windows
+      language: shell
       before_install:
         - choco install python --version 3.8.0
         - python -m pip install --upgrade pip
       env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
-  ### Other OS - end
-  ### Extra Python versions - silly way to save computing time and test only occasionaly other versions
-    - stage: lint
+    - stage: Py312
       name: "Python 3.12"
       python: 3.12
+  ### Extra Python versions - end
     - stage: lint
       name: Code Quality Checks
       python: 3.10
