@@ -330,6 +330,7 @@ EXOMOL_MOLECULES = [
     "CrH",
     "FeH",
     "H2",
+    "HBO",
     "H2CO",
     "H2CS",
     "H2O",
