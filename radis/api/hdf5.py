@@ -145,46 +145,33 @@ class DataFileManager(object):
             only these column names will be searchable directly on disk to
             load certain lines only. See :py:func:`~radis.api.hdf5.hdf2df`
         """
+        # a bit brutal but simply removes the columns that raise the problem in #656 for CO2
+        if "CO2" in str(file):  # file can be a WindowsPath type
+            bad_columns = [
+                "Fl",
+                "Fu",
+                "ierr",
+                "iref",
+                "line_mixing_flag",
+                "statep",
+                "statepp",
+            ]
+            for col in bad_columns:
+                if col in df.columns:
+                    df = df.drop(col, axis=1)
+
         file = expanduser(file)
         if self.engine == "pytables":
             if key == "default":
                 key = "df"
             with self.open(file, "a" if append else "w") as f:
-                try:
-                    f.put(
-                        key=key,
-                        value=df,
-                        append=append,
-                        format=format,
-                        data_columns=data_columns,
-                    )
-                except ValueError as err:
-                    if (
-                        "Trying to store a string with len"
-                        or "cannot match existing table structure" in str(err)
-                    ):
-                        # a bit brutal but simply removes the columns that raise the problem in #656 for CO2
-                        bad_columns = [
-                            "Fl",
-                            "Fu",
-                            "ierr",
-                            "iref",
-                            "line_mixing_flag",
-                            "statep",
-                            "statepp",
-                        ]
-                        for col in bad_columns:
-                            if col in df.columns:
-                                df = df.drop(col, axis=1)
-                        f.put(
-                            key=key,
-                            value=df,
-                            append=append,
-                            format=format,
-                            data_columns=data_columns,
-                        )
-                    else:
-                        raise
+                f.put(
+                    key=key,
+                    value=df,
+                    append=append,
+                    format=format,
+                    data_columns=data_columns,
+                )
 
         elif self.engine == "pytables-fixed":
             assert not append
