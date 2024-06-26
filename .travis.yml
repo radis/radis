@@ -2,9 +2,9 @@
 language: python
 python:
   #- "2.7"    # not tested anymore starting from 0.9.19
-  - "3.8"
-  - "3.9"
+  - "3.8" #end of life, Novembre 2024, https://devguide.python.org/versions/
   - "3.10"
+  - "3.11"
 os: linux
 dist: focal #needed for python 3.10 (xenial is default for Travis-CI, but does not support python 3.10)
 
