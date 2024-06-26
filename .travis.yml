@@ -1,7 +1,6 @@
 # Runs Test scripts; Linting; Deployment on Travis-CI
 language: python
 python:
-  # We don't actually use the Travis Python, but this keeps it organized.
   #- "2.7"    # not tested anymore starting from 0.9.19
   - "3.8"
   - "3.9"
@@ -52,7 +51,7 @@ script:
   # >> If script returns a non-zero exit code, the build is failed, but continues to run before being
   # >> marked as failed.  (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
   - echo ">>> Run All tests now"
-  - xvfb-run -a pytest --cov=./ --durations=10 #run all tests but that's ok because the redondant tests are fast!
+  - xvfb-run -a pytest -m "not fast" --cov=./ --durations=10 #run all tests without the "fast" because they were already done
   # --durations=N to print the slowest N tests
   # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
 
@@ -67,61 +66,91 @@ stages:
     if: branch = master OR branch = develop
   - name: lint
     if: branch = master OR branch = develop
-    # we dont lint on other branches
-#   - name: build_wheels
-#     if: branch = master OR branch = develop
-#   - name: deploy
-#     if: branch = master
+  - name: build_wheels
+    if: branch = master OR branch = develop
+  - name: deploy
+    if: branch = master
+  - name: "Python 3.10 on macOS"
+    if: branch = master OR branch = develop
+  - name: "Python 3.10 on Windows"
+    if: branch = master OR branch = develop
+  - name: "Python 3.12 on Windows"
+    if: branch = master OR branch = develop
 
 jobs:
   include:
+  ### Other OS - limited set of Python versions are tested - normaly ONLY on master to save computing time
+      - name: "Python 3.10 on macOS"
+      python: 3.10
+      os: osx
+      osx_image: xcode11.2  # Python 3.7.4 running on macOS 10.14.4
+      language: shell       # 'language: python' is an error on Travis CI macOS
+
+      - name: "Python 3.10 on Windows"
+      python: 3.10
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version 3.8.0
+        - python -m pip install --upgrade pip
+      env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
+  ### Other OS - end
+  ### Extra Python versions - silly way to save computing time and test only occasionaly other versions
+    - stage: lint
+      name: "Python 3.12"
+      python: 3.12
     - stage: lint
       name: Code Quality Checks
       python: 3.10
       install:
         - pip install pre-commit
         - pre-commit install
+      before_script: skip #do NOT run the before_script of "tests" stage
       script:
         - pre-commit run --all-files
       after_failure: #better for checking the origin of a bug
         - cat /home/travis/.cache/pre-commit/pre-commit.log
 
-#     - stage: build_wheels
-#       name: Build the Wheels on Linux, Windows
-#       # Added from https://github.com/pypa/cibuildwheel/blob/main/examples/travis-ci-deploy.yml; see https://github.com/radis/radis/issues/650
-#       include:
-#         # perform a linux build
-#         - services: docker
-#         # and a windows build
-#         - os: windows
-#           language: shell
-#           before_install:
-#             - choco upgrade python -y --version 3.8.6
-#             - export PATH="/c/Python38:/c/Python38/Scripts:$PATH"
-#             # make sure it's on PATH as 'python3'
-#             - ln -s /c/Python38/python.exe /c/Python38/python3.exe
+    - stage: build_wheels
+      name: Build the Wheels on Linux, Windows
+      # Added from https://github.com/pypa/cibuildwheel/blob/main/examples/travis-ci-deploy.yml; see https://github.com/radis/radis/issues/650
+      include:
+        # perform a linux build
+        - services: docker
+        # and a windows build
+        - os: windows
+          language: shell
+          before_install:
+            - choco upgrade python -y --version 3.8.6
+            - export PATH="/c/Python38:/c/Python38/Scripts:$PATH"
+            # make sure it's on PATH as 'python3'
+            - ln -s /c/Python38/python.exe /c/Python38/python3.exe
 
-#       install:
-#         - python3 -m pip install cibuildwheel==2.19.1
+      install: skip
+        #- python3 -m pip install cibuildwheel==2.19.1 #If you intend to build a pure-Python wheel, you don't need cibuildwheel
 
-#       script:
-#         # build the wheels, put them into './dist'
-#         - python3 -m cibuildwheel --output-dir dist
+      before_script: skip #do NOT run the before_script of "tests" stage
 
-#     - stage: deploy
-#       name: Deploy to PyPI
-#       install:
-#         - sudo apt-get update
-#       script:
-#         - echo "Deploying to PyPI"
-#       before_deploy:
-#         - sudo apt-get install pandoc
-#         - pandoc README.rst -o README.md
-#       deploy:
-#         provider: pypi
-#         user: "__token__"
-#         password:
-#           secure: dxZOpuKL1ezk3MM5FgY89zJYNL484x0jUZ+c3IB5q2GjpWl6qmCogoWG37iGZIcmldeIdVzga3pj5CC32eht4B0hJQX5QLVjCq9wwpfLs7Tkj4ODiAzvOchSLhfBOSLOIX33iW/+wxDjZ3fG61TzPI1z3ksdNh7+imdVYiV+G4FmOcxJKjFEgGm7CAwfbxso47ab9jbgm6FHbCC7HfpSiSrMpyIDSorJFk5XR11+Hoe6JjbKr11eeWuoO8EXKvSQeeJpsu0minqFyAy8nf9af/aU3NJU1LOlFM1DuoYlpQKwnbop5lBodU28zt4Asa1h8lp8Zu+wZSIaZSOeEoC6U/H/5zAE03W8SytWyWgNEtwuYLSiWacbOzeZOclVRoNu4P6Fz9hFdZuSANQlSQN7cBYFJiA8cbJDU4nb3srFoKlBLxCH9ZC3/K7rnZpjPmy7A35plNf+1dAEpB6adiWwsGy/VwCywHyJsBq7N3z6lN9wZ2SUPekl4y/sLobYPqg8y48u4bMqfd05Ub1QDUB3MSNALMa+OcczJvxNHZj+Bk4ooai/t/GOMOWNyy78VES7S/J77cWUheq+mW80ywCS8gcyF6ARR4EJxJGwp4q2RHwGdVvxbzc/uaKgi6I1bmLRw4cjJvOXx5ulLdANUftfMg4ATW/VAFqYLrdS/LpGX5A=
-#         skip_existing: true
-#         skip_cleanup: true    # to keep wheels (in the ./dist folder?)
-#         distributions: "sdist bdist_wheel"
+      script:
+        # build the wheels, put them into './dist'
+        # - python3 -m cibuildwheel --output-dir dist #If you intend to build a pure-Python wheel, you don't need cibuildwheel
+        - python3 -m pip wheel -w dist .
+
+    - stage: deploy
+      name: Deploy to PyPI
+      install:
+        - sudo apt-get update
+      before_script: skip #do NOT run the before_script of "tests" stage
+      script:
+        - echo "Deploying to PyPI"
+      before_deploy:
+        - sudo apt-get install pandoc
+        - pandoc README.rst -o README.md
+      deploy:
+        provider: pypi
+        user: "__token__"
+        password:
+          secure: dxZOpuKL1ezk3MM5FgY89zJYNL484x0jUZ+c3IB5q2GjpWl6qmCogoWG37iGZIcmldeIdVzga3pj5CC32eht4B0hJQX5QLVjCq9wwpfLs7Tkj4ODiAzvOchSLhfBOSLOIX33iW/+wxDjZ3fG61TzPI1z3ksdNh7+imdVYiV+G4FmOcxJKjFEgGm7CAwfbxso47ab9jbgm6FHbCC7HfpSiSrMpyIDSorJFk5XR11+Hoe6JjbKr11eeWuoO8EXKvSQeeJpsu0minqFyAy8nf9af/aU3NJU1LOlFM1DuoYlpQKwnbop5lBodU28zt4Asa1h8lp8Zu+wZSIaZSOeEoC6U/H/5zAE03W8SytWyWgNEtwuYLSiWacbOzeZOclVRoNu4P6Fz9hFdZuSANQlSQN7cBYFJiA8cbJDU4nb3srFoKlBLxCH9ZC3/K7rnZpjPmy7A35plNf+1dAEpB6adiWwsGy/VwCywHyJsBq7N3z6lN9wZ2SUPekl4y/sLobYPqg8y48u4bMqfd05Ub1QDUB3MSNALMa+OcczJvxNHZj+Bk4ooai/t/GOMOWNyy78VES7S/J77cWUheq+mW80ywCS8gcyF6ARR4EJxJGwp4q2RHwGdVvxbzc/uaKgi6I1bmLRw4cjJvOXx5ulLdANUftfMg4ATW/VAFqYLrdS/LpGX5A=
+        skip_existing: true
+        skip_cleanup: true    # to keep wheels (in the ./dist folder?)
+        distributions: "sdist bdist_wheel"
