@@ -279,6 +279,7 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
     assert len(df) == Nlines
 
 
+@pytest.mark.fast
 @pytest.mark.needs_connection
 def test_partial_loading(*args, **kwargs):
     """Assert that using partial loading of the database works`"""
@@ -336,6 +337,7 @@ def test_partial_loading(*args, **kwargs):
     assert set(df.iso.unique()) == {1, 2}
 
 
+@pytest.mark.fast
 @pytest.mark.needs_connection
 @pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
 def test_partial_loading_vaex(*args, **kwargs):
@@ -382,6 +384,7 @@ def test_partial_loading_vaex(*args, **kwargs):
     assert set(df.iso.unique()) == {2, 3}
 
 
+@pytest.mark.fast
 @pytest.mark.needs_connection
 def test_calc_hitemp_spectrum(*args, **kwargs):
     """
