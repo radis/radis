@@ -1,7 +1,6 @@
 # Runs Test scripts; Linting; Deployment on Travis-CI
 language: python
 python:
-  # We don't actually use the Travis Python, but this keeps it organized.
   #- "2.7"    # not tested anymore starting from 0.9.19
   - "3.8"
   - "3.9"
@@ -52,7 +51,7 @@ script:
   # >> If script returns a non-zero exit code, the build is failed, but continues to run before being
   # >> marked as failed.  (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
   - echo ">>> Run All tests now"
-  - xvfb-run -a pytest --cov=./ --durations=10 #run all tests but it is ok because the redondant tests are fast (<3min)!
+  - xvfb-run -a pytest -m not fast --cov=./ --durations=10 #run all tests without the "fast" because they were already done
   # --durations=N to print the slowest N tests
   # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
 
@@ -74,6 +73,22 @@ stages:
 
 jobs:
   include:
+  ### Other OS - limited set of Python versions are tested
+      - name: "Python 3.10 on macOS"
+      python: 3.10
+      os: osx
+      osx_image: xcode11.2  # Python 3.7.4 running on macOS 10.14.4
+      language: shell       # 'language: python' is an error on Travis CI macOS
+
+      - name: "Python 3.10 on Windows"
+      python: 3.10
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version 3.8.0
+        - python -m pip install --upgrade pip
+      env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
+  ### Other OS - end
     - stage: lint
       name: Code Quality Checks
       python: 3.10

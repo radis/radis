@@ -35,6 +35,7 @@ def fetch_ExoMol_molecules():
     return molecules
 
 
+@pytest.mark.fast
 @pytest.mark.needs_connection
 def test_ExoMol_molecules_list(verbose=True, *args, **kwargs):
     """Test that ExoMol molecule list in RADIS remains up to date"""
@@ -91,8 +92,6 @@ def fetch_ExoMol_isotopes(verbose=True, *args, **kwargs):
 
 
 #%%
-
-
 def fetch_HITRAN_molecules():
 
     import re
@@ -114,6 +113,7 @@ def fetch_HITRAN_molecules():
     return molecules
 
 
+@pytest.mark.fast
 @pytest.mark.needs_connection
 def test_HITRAN_molecules_list(verbose=True, *args, **kwargs):
     """Test that HITRAN molecule list in RADIS remains up to date"""
