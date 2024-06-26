@@ -349,12 +349,16 @@ def pressure_broadening_HWHM(
     gamma_lb = 0
     for diluent_molecule, diluent_mole_fraction in diluent.items():
         diluent_name = diluent_molecule.lower()
+
+        ## Temperature coefficient - n_i ##
         if "n_" + diluent_name in diluent_broadening_coeff:
             n_i = diluent_broadening_coeff["n_" + diluent_name]
         else:
             ## A warning is normally raised already in '_calc_broadening_HWHM' when constructing the dict diluent_broadening_coef
             n_i = Tdpair
         # @dev: if n_air is not defined, then add another default. #TODO
+
+        ## Broadening coefficient - gamma_i ##
         if "gamma_" + diluent_name in diluent_broadening_coeff:
             gamma_i = diluent_broadening_coeff["gamma_" + diluent_name]
         else:
@@ -918,11 +922,22 @@ class BroadenFactory(BaseFactory):
                 diluent_broadening_coeff["gamma_" + diluent_name] = df[
                     "gamma_" + diluent_name
                 ]
+
+                # Check if there are Nans in the gamma column
+                num_nans = (
+                    diluent_broadening_coeff["gamma_" + diluent_name].isna().sum()
+                )
+                if num_nans > 0:
+                    self.warn(
+                        message=f"Broadening Coefficient by {key} has Nan values in the database. \nWe found {num_nans} nans out of {diluent_broadening_coeff['gamma_' + diluent_name].shape[0]} elements in the columns {'gamma_' + diluent_name}. You can silence this error by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.\nThe broadening coefficient of air is used instead.",
+                        category="MissingDiluentBroadeningWarning",
+                    )
+                    diluent_broadening_coeff["gamma_" + diluent_name] = df[
+                        "airbrd"
+                    ]  # note @dev : check it doesn't create a new memory object
             else:
                 self.warn(
-                    message="Broadening Coefficient of "
-                    + key
-                    + " not present in database. \nIf the database should include these coefficients, try removing the cache by using once `use_cached='regen'' in calc_spectrum. If not, you can silence this error by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.\nThe broadening coefficient of air is used instead.",
+                    message=f"Broadening Coefficient of {self.get_conditions()['molecule']} by {key} not present in database. \nIf the database should include these coefficients, try removing the cache by using once `use_cached='regen'' in calc_spectrum. If not, you can silence this error by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.\nThe broadening coefficient of air is used instead.",
                     category="MissingDiluentBroadeningWarning",
                 )
                 diluent_broadening_coeff["gamma_" + diluent_name] = df[
@@ -931,11 +946,20 @@ class BroadenFactory(BaseFactory):
 
             if "n_" + diluent_name in df.columns:
                 diluent_broadening_coeff["n_" + diluent_name] = df["n_" + diluent_name]
+
+                # Check if there are Nans in the gamma column
+                num_nans = diluent_broadening_coeff["n_" + diluent_name].isna().sum()
+                if num_nans > 0:
+                    self.warn(
+                        message=f"Temperature dependance of Broadening Coefficient of {self.get_conditions()['molecule']} by {key} has Nan values in the database. \nWe found {num_nans} nans out of {diluent_broadening_coeff['n_' + diluent_name].shape[0]} elements in the columns {'gamma_' + diluent_name}. You can silence this error by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.\nThe broadening coefficient of air is used instead.",
+                        category="MissingDiluentBroadeningWarning",
+                    )
+                    diluent_broadening_coeff["n_" + diluent_name] = df[
+                        "Tdpair"
+                    ]  # note @dev : check it doesn't create a new memory object
             else:
                 self.warn(
-                    message="Temperature dependance of Broadening Coefficient of "
-                    + key
-                    + " not present in database. \nIf the database should include these coefficients, try removing the cache by using once `use_cached='regen'' in calc_spectrum. If not, you can silence this error by using `warnings['MissingDiluentBroadeningTdepWarning']='ignore'`.\nThe temperature-dependance coefficient of air is used instead.",
+                    message=f"Temperature dependance of Broadening Coefficient of {self.get_conditions()['molecule']} by {key} not present in database. \nIf the database should include these coefficients, try removing the cache by using once `use_cached='regen'' in calc_spectrum. If not, you can silence this error by using `warnings['MissingDiluentBroadeningTdepWarning']='ignore'`.\nThe temperature-dependance coefficient of air is used instead.",
                     category="MissingDiluentBroadeningTdepWarning",
                 )
                 diluent_broadening_coeff["n_" + diluent_name] = df[
