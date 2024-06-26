@@ -163,7 +163,6 @@ class DataFileManager(object):
                         "Trying to store a string with len"
                         or "cannot match existing table structure" in str(err)
                     ):
-                        print("coucou")
                         # a bit brutal but simply removes the columns that raise the problem in #656 for CO2
                         bad_columns = [
                             "Fl",
