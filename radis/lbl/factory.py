@@ -163,7 +163,7 @@ class SpectrumFactory(BandFactory):
         Does not change anything when giving inputs in wavenumber. Default ``'air'``
     diluent: ``str`` or ``dictionary``
             can be a string of a single diluent or a dictionary containing diluent
-            name as key and its mole_fraction as value. Default ``air`` for molecules, nothing for atoms. For free electrons, use the symbol 'e-'. Currently, only H, H2, H2, and e- are supported for atoms - any other diluents have no effect besides diluting the mole fractions of the other constituents.
+            name as key and its mole_fraction as value. Default ``air`` for molecules, atomic hydrogen 'H' for atoms. For free electrons, use the symbol 'e-'. Currently, only H, H2, H2, and e- are supported for atoms - any other diluents have no effect besides diluting the mole fractions of the other constituents.
 
     Other Parameters
     ----------------
@@ -304,8 +304,10 @@ class SpectrumFactory(BandFactory):
             diluent: ``self._diluent``, the dictionary of diluents giving the mole fraction of each
             diluent_broadening_coeff: a dictionary of the broadening coefficients for each diluent
         Returns:
-            gamma_lb, shift - The total Lorentzian HWHM [cm^-1], and the shift [cm^-1] to be subtracted from the wavenumber array to account for lineshift. If setting the lineshift here is not desired, the 2nd return object can be anything for which `bool(shift)==False` like `None`
+            gamma_lb, shift - The total Lorentzian HWHM [cm^-1], and the shift [cm^-1] to be subtracted from the wavenumber array to account for lineshift. If setting the lineshift here is not desired, the 2nd return object can be anything for which `bool(shift)==False` like `None`. gamma_lb must be array-like but can also be a vaex expression if the dataframe type is vaex.
         If unspecified, the broadening is handled by default by ``radis.lbl.broadening.gamma_vald3`` for atoms and ``radis.lbl.broadening.pressure_broadening_HWHM`` for molecules
+    potential_lowering: float
+        Some species with Kurucz linelists also come with dedicated partition function tables provided, which depend on both Temperature and potential lowering. Setting this parameter results in the partition function interpolator using that table for the species if it's available, otherwise if it's unavailable or this parameter remains `None`, the default partition functions use `Barklem & Collet (2016), Table 8 <https://doi.org/10.1051/0004-6361/201526961>`.
 
     Examples
     --------
@@ -423,6 +425,7 @@ class SpectrumFactory(BandFactory):
         gpu_backend=None,
         diluent="air",
         lbfunc=None,
+        potential_lowering=None,
         **kwargs,
     ):
 
@@ -599,6 +602,7 @@ class SpectrumFactory(BandFactory):
         )
         self.input.self_absorption = self_absorption
         self.input.species = species
+        self.input.potential_lowering = potential_lowering
 
         # Initialize computation variables
         self.params.wstep = wstep
@@ -813,13 +817,13 @@ class SpectrumFactory(BandFactory):
             raise ValueError(
                 "Tgas should be float or Astropy unit. Got {0}".format(Tgas)
             )
-        if not self.input.isatom:
-            self.input.rot_distribution = "boltzmann"  # equilibrium
-            self.input.vib_distribution = "boltzmann"  # equilibrium
+        # if not self.input.isatom:
+        #     self.input.rot_distribution = "boltzmann"  # equilibrium
+        #     self.input.vib_distribution = "boltzmann"  # equilibrium
 
-            # Get temperatures
-            self.input.Tvib = Tgas  # just for info
-            self.input.Trot = Tgas  # just for info
+        #     # Get temperatures
+        #     self.input.Tvib = Tgas  # just for info
+        #     self.input.Trot = Tgas  # just for info
         self.input.Tgas = Tgas
 
         # Init variables

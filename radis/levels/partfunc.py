@@ -125,7 +125,7 @@ class RovibParFuncTabulator(RovibPartitionFunction):
     def __init__(self):
         super(RovibParFuncTabulator, self).__init__()
 
-    def at(self, T, **kwargs):
+    def at(self, T, potential_lowering=None, **kwargs):
         r"""Get partition function at temperature T under equilibrium
         conditions, from tabulated data.
 
@@ -163,7 +163,10 @@ class RovibParFuncTabulator(RovibPartitionFunction):
             )
 
         # defined individually for each class Variants (one per database)
-        return self._at(T)
+        if potential_lowering is not None:
+            return self._at(T, potential_lowering)
+        else:
+            return self._at(T)
 
     def at_noneq(self, *args, **kwargs):
         raise ValueError(
@@ -1143,7 +1146,7 @@ class PartFuncKurucz(RovibParFuncTabulator):
     """Return partition function using interpolation of tabulated values of local file kuruczpartfn.txt
     """
 
-    def __init__(self, species):
+    def __init__(self, species, pfpath = None):
         super(PartFuncKurucz, self).__init__()
         # Load data in constructor
         self.species = species
@@ -1167,20 +1170,36 @@ class PartFuncKurucz(RovibParFuncTabulator):
         self.pfT_values = self.pfTdat.values.flatten().astype(float)#namespace["pfT_values"]
         self.pf_values = pf_atom.values.astype(float)
 
-    def _at(self, T):
+        if pfpath:
+            self.partfn = pd.read_hdf(pfpath)
+        else:
+            self.partfn = None
+
+    def _at(self, T, potential_lowering=None):
         # Interpolate to find the partition function at the desired temperature
-        if T < 10 ** (-5) or T > 10**4:
+        if potential_lowering is not None and self.partfn is not None:
+            Temp = self.partfn['T']
+            Qvals = self.partfn[f'{potential_lowering}']
+            addmsg = '. You might want to check whether the partition functions from Barklem & Collet (2016) have a different temperature range within which lies your input temperature.'
+        else:
+            if self.partfn is not None:
+                warn('Table of partition functions by potential lowering not available for this species - using Barklem & Collet (2016) instead with just the temperature')
+            Temp = self.pfT_values
+            Qvals = self.pf_values
+            addmsg = '. You might want to check whether the species has a table of partition functions dependent on potential lowering with a different temperature range within which lies your input temperature.'
+        
+        if T < Temp.min() or T > Temp.max():
             raise ValueError(
-                f"The temperature {T} is outside the tabulated range of the Kurucz partition functions [{10**(-5)}, {10**(4)}] K"
+                f"The temperature {T} is outside the tabulated range of the partition functions [{Temp.min()}, {Temp.max()}] K" + addmsg
             )
-        try:
-            return np.interp(T, self.pfT_values, self.pf_values)
-        except KeyError:
-            print("pfdat", self.pfdat)
-            print(
-                f"Key {self.key} not found in pfdat. Available keys: {self.pfdat.index.tolist()}"
-            )
-            raise
+        # try:
+        return np.interp(T, Temp, Qvals)
+        # except KeyError:
+        #     print("pfdat", self.pfdat)
+        #     print(
+        #         f"Key {self.key} not found in pfdat. Available keys: {self.pfdat.index.tolist()}"
+        #     )
+        #     raise
 
 
 class PartFuncTIPS(RovibParFuncTabulator):

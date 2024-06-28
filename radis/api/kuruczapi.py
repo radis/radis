@@ -9,7 +9,7 @@ Date: June 2023
 
 import io
 import os
-from os.path import abspath, join, splitext
+from os.path import abspath, join, splitext, expanduser
 import pkgutil
 from contextlib import closing
 from io import BytesIO
@@ -21,10 +21,13 @@ import requests
 from tqdm import tqdm
 
 from radis.misc.utils import getProjectRoot
+from radis.misc.config import getDatabankEntries
 from radis.phys.air import air2vacuum
 from radis.phys.constants import c_CGS, ecgs, mecgs
 
 from radis.api.dbmanager import DatabaseManager
+from radis.misc.warning import DatabaseAlreadyExists
+
 
 def load_ionization_energies():
     #based on https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/spec/atomllapi.py#L308; the file 'NIST_Atomic_Ionization_Energies.txt' is taken from https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/data/atom/NIST_Atomic_Ionization_Energies.txt; 
@@ -138,6 +141,12 @@ def pressure_layer(logPtop=-8.,
 
     return Parr, dParr, k
 
+def read_kurucz_pfs(file):
+    df = pd.read_csv(file, sep="\s+", header=2)
+    df.set_index('LOG10(T)', inplace=True)
+    return df
+    
+
 def load_pf_Barklem2016():
     """Load a table of the partition functions for 284 atomic species.
 
@@ -202,6 +211,8 @@ class KuruczDatabaseManager(DatabaseManager):
 
         self.actual_file = None
         self.actual_url = None
+        self.pf_path = None
+        self.pf_url = None
 
     def fetch_urlnames(self):
         """returns the possible urls of the desired file, pending confirmation upon attempting download as to which is correct"""
@@ -222,9 +233,17 @@ class KuruczDatabaseManager(DatabaseManager):
 
         return urlnames
     
+    def get_pf_path(self):
+        code = f'{self.atomic_number}{self.ionization_state}'
+        url = "http://kurucz.harvard.edu/atoms/" + code + "/partfn" + code + ".dat"
+        fname = splitext(url.split("/")[-1])[0] + '.h5'
+        path = expanduser(abspath(join(self.local_databases, self.molecule + "-" + fname)))
+        return path, url
+    
     def get_possible_files(self, urlnames=None):
         verbose = self.verbose
         local_databases = self.local_databases
+        engine = self.engine
 
         #copied from DatabaseManager.get_filenames:
         if urlnames is None:
@@ -257,6 +276,11 @@ class KuruczDatabaseManager(DatabaseManager):
             for local_fname in local_fnames
         ]
 
+        if engine == "vaex":
+            local_files = [fname.replace(".h5", ".hdf5") for fname in local_files]
+
+        local_files = [expanduser(f) for f in local_files]
+
         return local_files, urlnames
 
     def parse_to_local_file(
@@ -272,57 +296,79 @@ class KuruczDatabaseManager(DatabaseManager):
     ):
         
         writer = self.get_datafile_manager()
+        if local_file == self.pf_path:
+            df = read_kurucz_pfs(opener.abspath(urlname))
+            with pd.HDFStore(local_file, mode='w', complib="blosc", complevel=9) as f:
+                f.put(
+                    key='df',
+                    value=df
+                )
+            Nlines = len(df) #irrelevant
+        else:        
+            df = read_kurucz(opener.abspath(urlname))
 
-        df = read_kurucz(opener.abspath(urlname))
+            writer.write(local_file, df, append=False)
 
-        writer.write(local_file, df, append=False)
+            self.wmin = df.wav.min()
+            self.wmax = df.wav.max()
 
-        self.wmin = df.wav.min()
-        self.wmax = df.wav.max()
+            Nlines = len(df)
 
-        Nlines = len(df)
+            writer.combine_temp_batch_files(local_file)
 
-        writer.combine_temp_batch_files(local_file)
+            # Add metadata
+            from radis import __version__
 
-        # Add metadata
-        from radis import __version__
-
-        writer.add_metadata(
-            local_file,
-            {
-                "wavenumber_min": self.wmin,
-                "wavenumber_max": self.wmax,
-                "download_date": self.get_today(),
-                "download_url": urlname,
-                "total_lines": Nlines,
-                "version": __version__,
-            },
-        )
+            writer.add_metadata(
+                local_file,
+                {
+                    "wavenumber_min": self.wmin,
+                    "wavenumber_max": self.wmax,
+                    "download_date": self.get_today(),
+                    "download_url": urlname,
+                    "total_lines": Nlines,
+                    "version": __version__,
+                },
+            )
 
         return Nlines
     
     def register(self):
 
-        info = f"Kurucz {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1)."
+        # if self.is_registered():
+        #     dict_entries = getDatabankEntries(self.name) #just update previous register details
+        # else:
+        dict_entries = {}
 
         if self.actual_file and self.actual_url:
             files = [self.actual_file]
             urls = [self.actual_url]
+            if self.wmin and self.wmin:
+                info = f"Kurucz {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1)."
+                dict_entries.update({
+                    "info": info,
+                    "wavenumber_min": self.wmin,
+                    "wavenumber_max": self.wmax
+                })
         else:
             raise Exception("Kurucz database can't be registered until the correct url to use is known")
+        
+        if self.pf_path and self.pf_url:
+            files.append(self.pf_path)
+            urls.append(self.pf_url)
 
-        dict_entries = {
-            "info": info,
+        dict_entries.update({
             "path": files,
             "format": "hdf5-radisdb",
             "parfuncfmt": "kurucz",
-            "wavenumber_min": self.wmin,
-            "wavenumber_max": self.wmax,
             "download_date": self.get_today(),
             "download_url": urls,
-        }
+        })
 
-        super().register(dict_entries)
+        try:
+            super().register(dict_entries)
+        except DatabaseAlreadyExists as e:
+            raise Exception('If you want RADIS to overwrite the existing entry for a registered databank, set the config option "ALLOW_OVERWRITE" to True.') from e
 
 
 
@@ -572,7 +618,7 @@ def read_kurucz(kuruczf):
         "gu": gupper,
         "jlower": jlower,
         "ju": jupper,
-        "id": ielem,
+        # "id": ielem,
         "ionE": ionE,
         "iso": isonum,
         "gamRad": gamRad,

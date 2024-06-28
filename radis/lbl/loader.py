@@ -72,7 +72,7 @@ from radis.io.exomol import fetch_exomol
 from radis.io.geisa import fetch_geisa
 from radis.io.hitemp import fetch_hitemp
 from radis.io.hitran import fetch_hitran
-from radis.io.kurucz import fetch_kurucz, fetch_kurucz_new
+from radis.io.kurucz import fetch_kurucz
 from radis.io.query import fetch_astroquery
 from radis.levels.partfunc import (
     PartFunc_Dunham,
@@ -400,33 +400,36 @@ class Input(ConditionDict):
         "wavenum_min",
         "species",
         "isatom",
-        "isneutral"
+        "isneutral",
+        "potential_lowering"
     ]
 
     def __init__(self):
         super(Input, self).__init__()
 
-        self.Tgas = None  #: float: gas (translational) temperature. Overwritten by SpectrumFactory.eq/noneq_spectrum
-        self.Tref = None  #: float: reference temperature for line database.
-        self.Tvib = None  #: float: vibrational temperature. Overwritten by SpectrumFactory.eq/noneq_spectrum
-        self.Trot = None  #: float: rotational temperature. Overwritten by SpectrumFactory.eq/noneq_spectrum
-        self.isotope = None  #: str: isotope list. Can be '1,2,3', etc. or 'all'
-        self.mole_fraction = None  #: float: mole fraction
-        self.molecule = None  #: str: molecule
-        self.overpopulation = None  #: dict: overpopulation
-        self.path_length = None  #: float: path length (cm)
-        self.pressure = 1.01325  #: float: pressure (bar)
-        self.rot_distribution = "boltzmann"  #: str: rotational levels distribution
-        self.self_absorption = (
-            True  #: bool: self absorption (if True, not optically thin)
-        )
-        self.state = None  #: str: electronic state
-        self.vib_distribution = (
-            "boltzmann"  #: str: vibrational levels distribution (boltzmann, treanor)
-        )
-        self.wavenum_max = None  #: str: wavenumber max (cm-1)
-        self.wavenum_min = None  #: str: wavenumber min (cm-1)
-        self.species = None
+        # let subclasses define values for these instead of setting defaults:
+
+        # self.Tgas = None  #: float: gas (translational) temperature. Overwritten by SpectrumFactory.eq/noneq_spectrum
+        # self.Tref = None  #: float: reference temperature for line database.
+        # # self.Tvib = None  #: float: vibrational temperature. Overwritten by SpectrumFactory.eq/noneq_spectrum
+        # # self.Trot = None  #: float: rotational temperature. Overwritten by SpectrumFactory.eq/noneq_spectrum
+        # self.isotope = None  #: str: isotope list. Can be '1,2,3', etc. or 'all'
+        # self.mole_fraction = None  #: float: mole fraction
+        # self.molecule = None  #: str: molecule
+        # self.overpopulation = None  #: dict: overpopulation
+        # self.path_length = None  #: float: path length (cm)
+        # self.pressure = 1.01325  #: float: pressure (bar)
+        # #self.rot_distribution = "boltzmann"  #: str: rotational levels distribution
+        # self.self_absorption = (
+        #     True  #: bool: self absorption (if True, not optically thin)
+        # )
+        # self.state = None  #: str: electronic state
+        # # self.vib_distribution = (
+        # #     "boltzmann"  #: str: vibrational levels distribution (boltzmann, treanor)
+        # # )
+        # self.wavenum_max = None  #: str: wavenumber max (cm-1)
+        # self.wavenum_min = None  #: str: wavenumber min (cm-1)
+        # self.species = None
 
 
 # TO-DO: these error estimations are horribly outdated...
@@ -488,7 +491,8 @@ class Parameters(ConditionDict):
         "waveunit",
         "wstep",
         "diluent",
-        "lbfunc"
+        "lbfunc",
+        "pf_df_path"
     ]
 
     def __init__(self):
@@ -505,6 +509,7 @@ class Parameters(ConditionDict):
         )
         self.dbformat = None  #: str: format of Line Database. See :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
         self.dbpath = None  #: str: joined list of filepaths to Line Database
+        self.pf_df_path = None #: str: path to parition function dataframe, used for Kurucz currently
         self.levelsfmt = None  #: str: format of Energy Database. See :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`
         self.lvl_use_cached = (
             None  #: bool: use (and generate) cache files for Energy Database
@@ -1516,7 +1521,7 @@ class DatabankLoader(object):
                 columns = None
 
             if memory_mapping_engine == "auto":
-                memory_mapping_engine = "pytables"
+                memory_mapping_engine = "vaex"
 
             if database != "full":
                 raise ValueError(
@@ -1534,7 +1539,7 @@ class DatabankLoader(object):
             #     isotope=isotope_list,
             #     engine=memory_mapping_engine
             # )
-            df, local_paths = fetch_kurucz_new(
+            df, local_paths, self.params.pf_df_path = fetch_kurucz(
                 molecule,
                 isotope=isotope_list,
                 local_databases=join(local_databases, "kurucz"),
@@ -1826,7 +1831,10 @@ class DatabankLoader(object):
         )
         self.misc.total_lines = len(self.df0)  # will be stored in Spectrum metadata
 
-        self.input.molecule = get_molecule(self.df0.attrs["id"])  # get molecule
+        if "molecule" in self.df0.attrs:
+            self.input.molecule = self.df0.attrs["molecule"]
+        else:
+            self.input.molecule = get_molecule(self.df0.attrs["id"])
 
         # %% Load Partition functions (and energies if needed)
         # ----------------------------------------------------
@@ -2899,7 +2907,7 @@ class DatabankLoader(object):
                 M=molecule, I=isotope, path=parfunc, verbose=self.verbose
             )
         elif parfuncfmt in ["kurucz"]:
-            parsum = PartFuncKurucz(self.input.species)
+            parsum = PartFuncKurucz(molecule, self.params.pf_df_path)
 
         elif parfuncfmt == "cdsd":  # Use tabulated CDSD partition functions
             self.reftracker.add(doi["CDSD-4000"], "partition function")

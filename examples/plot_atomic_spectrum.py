@@ -16,6 +16,10 @@ from radis import calc_spectrum, plot_diff
 from radis.lbl.factory import SpectrumFactory
 from radis.lbl.broadening import gamma_vald3
 import numpy as np
+import radis
+
+radis.config['DATAFRAME_ENGINE'] = 'vaex'
+radis.config['ALLOW_OVERWRITE'] = True
 
 wlim = (12850, 13120)
 # truncation = 50
@@ -78,7 +82,7 @@ class CustomSpectrumFactory(SpectrumFactory):
 s = calc_spectrum(
     wlim[0],
     wlim[1],#+truncation,  # cm-1
-    species="O_I",  # Enter species name
+    species="Fe_I",  # Enter species name
     Tgas=4000,  # K
     databank="kurucz",
     pressure=1.01325,
@@ -87,8 +91,9 @@ s = calc_spectrum(
     diluent={'H':1-mole_fraction-1e-3, 'e-': 1e-3},
     mole_fraction=mole_fraction,
     path_length=15,
-    # lbfunc=func2,
+    # lbfunc=func1,
     # CustomSpectrumFactory=CustomSpectrumFactory,
+    # potential_lowering=-500,
     warnings={"AccuracyError": "ignore", "AccuracyWarning": "ignore"},
 )
 

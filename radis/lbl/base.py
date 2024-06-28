@@ -2436,7 +2436,8 @@ class BaseFactory(DatabankLoader):
 
         try:
             parsum = self.get_partition_function_interpolator(molecule, iso, state)
-            Q = parsum.at(T)
+            Q = parsum.at(T, self.input.potential_lowering)
+            print(Q)
         except OutOfBoundError as err:
             # Try to calculate
             try:
@@ -2483,7 +2484,7 @@ class BaseFactory(DatabankLoader):
                 df1.attrs["id"] = int(id_set)
 
         if "molecule" in df1.attrs:
-            molecule = df1.attrs["molecule"]  # used for ExoMol, which has no HITRAN-id
+            molecule = df1.attrs["molecule"]  # used for ExoMol and others, which has no HITRAN-id
         else:
             molecule = get_molecule(df1.attrs["id"])
         state = self.input.state

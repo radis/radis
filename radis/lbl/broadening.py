@@ -380,7 +380,7 @@ def pressure_broadening_HWHM(
     return gamma_lb
 
 def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, is_neutral, enh_damp=1.0):  # , vdW_meth="V"):
-    """(This function is based on exojax.spec.atomll.gamma_vald3)
+    """(This function is derived from exojax.spec.atomll.gamma_vald3)
     
     HWHM of Lorentzian (cm-1) caluculated as gamma/(4*pi*c) [cm-1] for lines
     with the van der Waals gamma in the line list (VALD or Kurucz), otherwise
@@ -444,8 +444,14 @@ def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, i
     :py:func:`~radis.lbl.broadening.doppler_broadening_HWHM`,
     """
     # based on: https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/spec/atomll.py#L40
-    gamRad = np.where(gamRad == 0., -99, gamRad)
-    gamSta = np.where(gamSta == 0., -99, gamSta)
+    if isinstance(gamRad, vaex.expression.Expression):
+        gamRad = (gamRad == 0.).where(-99, gamRad)
+    else:
+        gamRad = np.where(gamRad == 0., -99, gamRad)
+    if isinstance(gamSta, vaex.expression.Expression):
+        gamSta = (gamSta == 0.).where(-99, gamSta)
+    else:
+        gamSta = np.where(gamSta == 0., -99, gamSta)
     chi_lam = nu_lines/eV2wn  # [cm-1] -> [eV]
     chi = elower/eV2wn  # [cm-1] -> [eV]
 
@@ -462,7 +468,13 @@ def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, i
         gamma6 += 1e20 * C6**0.4 * P*1e6*weighted_coeff[key] / T**0.7
     gamma6 *= enh_damp
     gamma_case1 = gamma6 / (4*np.pi*c_CGS)
-    gamma_case1 = np.nan_to_num(gamma_case1)
+    #gamma_case1 = np.nan_to_num(gamma_case1) #revisit if NaN or NA ever does appear
+    try:
+        if gamma_case1.isna().sum() > 0:
+            raise Exception('NA values were encountered in the estimated van der Waals gamma')
+    except Exception:
+        if np.sum(np.isnan(gamma_case1)) > 0:
+            raise Exception('NaN values were encountered in the estimated van der Waals gamma')
 
     Texp = 0.38  # Barklem+2000
     gamma6 = 0
@@ -470,14 +482,17 @@ def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, i
         gamma6 += 10**gamVdW * (T/10000.)**Texp * P*1e6*weighted_coeff[key] / (k_b_CGS*T)
     gamma_case2 =  gamma6 / (4*np.pi*c_CGS)
 
-    gamma_vdw = np.where(gamVdW >= 0., gamma_case1, gamma_case2)
+    if isinstance(gamVdW, vaex.expression.Expression):
+        gamma_vdw = (gamVdW >= 0.).where(gamma_case1, gamma_case2)
+    else:
+        gamma_vdw = np.where(gamVdW >= 0., gamma_case1, gamma_case2)
     # df['shft'] = (1.0/3.0)*2*gamma #Konjević et al. 2012 §4.1.3.2
-    #print(gamma_vdw)
+    #print(gamma_vdw)#.evaluate())
     
     if 'e-' in diluent:
         gamma_stark = (10**gamSta) * P*1e6*diluent['e-'] / (k_b_CGS*T) / (4*np.pi*c_CGS) #see e.g. Gray p244 for temperature scaling
         if is_neutral:
-            gamma_stark *= ((T/10000)**(1.0/6.0)) #see e.g. Gray p244
+            gamma_stark *= ((T/10000)**(1.0/6.0)) #see e.g. Gray 2005 p244
         else:
             gamma_stark *= ((T/10000)**(-1.0/2.0)) #see e.g. Rivière et al 2002 §2.2, v ∝ T^-1/2
     else:
@@ -485,8 +500,8 @@ def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, i
     
     gammma_rad = 10**gamRad / (4*np.pi*c_CGS)
 
-    #print(gammma_rad)
-    #print(gamma_stark)
+    #print(gammma_rad)#.evaluate())
+    #print(gamma_stark)#.evaluate())
     # gamma += (10**gamRad + gamma_stark) / (4*np.pi*c_CGS)
 
     return gammma_rad, gamma_stark, gamma_vdw
@@ -1021,7 +1036,20 @@ class BroadenFactory(BaseFactory):
         # diluent and their broadening coeff dictionary
         diluent_broadening_coeff = {}
 
-        if not self.input.isatom:
+        new_diluent = diluent.copy()
+        if self.input.isatom:
+            for key in diluent:
+                if key != 'e-' and key not in atomic_broadening_coeff:
+                    self.warn(
+                        message="Broadening Coefficient of "
+                        + key
+                        + " not available. You can silence this error by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.\nThe broadening coefficient of atomic hydrogen is used instead.",
+                        category="MissingDiluentBroadeningWarning",
+                    )
+                    new_diluent['H'] = new_diluent.get('H', 0) + new_diluent[key]
+                    del new_diluent[key]
+            diluent = new_diluent
+        else:
             for key in diluent:
                 if key == "air":
                     # no need to add broadening dictionary with air, as "airbrd" and "Tdpair" is already in the dataframe
@@ -1358,7 +1386,14 @@ class BroadenFactory(BaseFactory):
             try:
                 assert bool(shift) == False
             except:
-                df['shft'] = shift
+                # convoluted solution for vaex, account for case where wl is e.g. int or float, and for case where it's e.g. list
+                if self.dataframe_type == 'vaex' and not isinstance(shift, vaex.expression.Expression):
+                    try:
+                        df['shft'] = np.asarray(shift)
+                    except Exception:
+                        df['shft'] = np.asarray(shift) + df['wav']*0
+                else:
+                    df['shft'] = shift
         else:
             if self.input.isatom:
                 gammma_rad, gamma_stark, gamma_vdw = gamma_vald3(Tgas, pressure_atm*1.01325, df['wav'], df['El'], df['ionE'], df['gamRad'], df['gamSta'], df['gamvdW'], diluent, self.input.isneutral)
@@ -1409,7 +1444,14 @@ class BroadenFactory(BaseFactory):
                 )
 
         # Update dataframe
-        df["hwhm_lorentz"] = wl
+        # convoluted solution for vaex, account for case where wl is e.g. int or float, and for case where it's e.g. list
+        if self.dataframe_type == 'vaex' and not isinstance(wl, vaex.expression.Expression):
+            try:
+                df["hwhm_lorentz"] = np.asarray(wl)
+            except Exception:
+                df["hwhm_lorentz"] = np.asarray(wl) + df['wav']*0
+        else:
+            df["hwhm_lorentz"] = wl
 
         #####
 

@@ -45,6 +45,7 @@ from os.path import dirname, exists, expanduser, join
 
 import hjson
 
+import radis
 from radis.misc.basics import compare_dict, compare_lists, stdpath
 from radis.misc.utils import DatabankNotFound, getProjectRoot
 from radis.misc.warning import DatabaseAlreadyExists
@@ -935,18 +936,21 @@ def addDatabankEntries(dbname, dict_entries, verbose=True, configpath=CONFIG_PAT
     """
 
     # Get ~/radis.json if exists, else create it
-    dbnames = getDatabankList(configpath)
+    # dbnames = getDatabankList(configpath)
 
-    # Check database doesnt exist
-    if dbname in dbnames:
-        raise DatabaseAlreadyExists(
-            f"Database {dbname} already exists in {configpath}. Cant add it"
-        )
+    # # Check database doesnt exist
+    # if dbname in dbnames:
+    #     raise DatabaseAlreadyExists(
+    #         f"Database {dbname} already exists in {configpath}. Cant add it"
+    #     )
+
+    # # Loading `~/radis.json`
+    # with open(configpath, "r") as json_file:
+    #     _config = json.load(json_file)
 
     # Loading `~/radis.json`
-    with open(configpath, "r") as json_file:
-        _config = json.load(json_file)
-
+    _config = get_user_config(configpath)
+    
     try:
         # Accessing `database` key in file
         config = _config["database"]
@@ -955,6 +959,11 @@ def addDatabankEntries(dbname, dict_entries, verbose=True, configpath=CONFIG_PAT
         _config["database"] = {}
         config = _config["database"]
 
+    if dbname in config and not radis.config["ALLOW_OVERWRITE"]:
+        raise DatabaseAlreadyExists(
+            f"Database {dbname} already exists in {configpath}. Cant add it"
+        )
+    
     # Adding entries in `config[dbname]`
     config[dbname] = {}
 
