@@ -20,7 +20,7 @@ install:
   - source ~/.bashrc
   - micromamba activate base
   # Update python version in environment
-  - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
+  - sed -i -E 's/^- python$/- python='$TRAVIS_PYTHON_VERSION'/' ./environment.yml
   # Create conda environment
   - micromamba install xtensor -c conda-forge -y
   # move requirements.txt to the /tmp folder, required so that .environment.yml finds it
@@ -42,7 +42,7 @@ before_script:
 # >> If before_install, install or before_script returns a non-zero exit code, the build is errored and
 # >> stops immediately. (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
   - export MPLBACKEND=Agg
-  - python --version
+  - python --version #to check and be sure of the python version
   - echo ">>> Run Fast tests first"
   # use XVFB to have headless display port, and still run the Matplotlib tests.
   - xvfb-run -a pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10
