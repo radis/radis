@@ -69,7 +69,6 @@ def calc_spectrum(
     export_lines=False,
     verbose=True,
     return_factory=False,
-    CustomSpectrumFactory=None,
     **kwargs,
 ) -> Spectrum:
     r"""Calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
@@ -298,8 +297,6 @@ def calc_spectrum(
                 s, sf = calc_spectrum(..., return_factory=True)
                 sf.df1  # see the lines calculated
                 sf.eq_spectrum(...)  #  new calculation without reloading the database
-    CustomSpectrumFactory: class
-        An alternative class to use in place of radis.lbl.factory.SpectrumFactory. This option is intended to make monkey patching SpectrumFactory easier, so CustomSpectrumFactory would typically be a modified instance or subclass of it.
     **kwargs: other inputs forwarded to SpectrumFactory
         For instance: ``warnings``.
         See :py:class:`~radis.lbl.factory.SpectrumFactory` documentation for more
@@ -395,7 +392,7 @@ def calc_spectrum(
         if species is not None:
             if species != kwargs['molecule']:
                 raise Exception("Both `molecule` and `species` arguments have been given and aren't equal, but `molecule` is deprecated and `species` is just its replacement.")
-        species = molecule = kwargs['molecule']
+        species = molecule = kwargs.pop("molecule") #remove molecule from kwargs
         warn(
             DeprecationWarning(
                 "`molecule` is deprected - use `species` instead"
@@ -567,9 +564,6 @@ def calc_spectrum(
             mole_fraction, diluent, molecule
         )
 
-        if "molecule" in kwargs_molecule:
-            del kwargs_molecule["molecule"]
-
         generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
             wavenum_max=wavenum_max,
@@ -600,7 +594,6 @@ def calc_spectrum(
             export_lines=export_lines,
             return_factory=return_factory,
             diluent=diluent_for_this_molecule,
-            CustomSpectrumFactory=CustomSpectrumFactory,
             **kwargs_molecule,
         )
 
@@ -660,7 +653,6 @@ def _calc_spectrum_one_molecule(
     export_lines,
     return_factory=False,
     diluent="air",
-    CustomSpectrumFactory=None,
     **kwargs,
 ) -> Spectrum:
     """See :py:func:`~radis.lbl.calc.calc_spectrum`
@@ -719,11 +711,7 @@ def _calc_spectrum_one_molecule(
         drop_columns = "auto"
 
     # Run calculations
-    if CustomSpectrumFactory:
-        sfclass = CustomSpectrumFactory
-    else:
-        sfclass = SpectrumFactory
-    sf = sfclass(
+    sf = SpectrumFactory(
         wavenum_min=wavenum_min,
         wavenum_max=wavenum_max,
         medium=medium,

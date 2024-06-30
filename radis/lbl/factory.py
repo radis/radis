@@ -592,7 +592,7 @@ class SpectrumFactory(BandFactory):
         self.input.path_length = convert_and_strip_units(path_length, u.cm)
         # if molecule is not None and species is not None:
         # if not is_atom(species) :
-        self.input.molecule = (
+        self.input.species = (
             species  # if None, will be overwritten after reading database
         )
         self.input.state = "X"  # for the moment only ground-state is used
@@ -601,7 +601,6 @@ class SpectrumFactory(BandFactory):
             isotope  # if 'all', will be overwritten after reading database
         )
         self.input.self_absorption = self_absorption
-        self.input.species = species
         self.input.potential_lowering = potential_lowering
 
         # Initialize computation variables
@@ -792,7 +791,6 @@ class SpectrumFactory(BandFactory):
         """
         # %% Preprocessing
         # --------------------------------------------------------------------
-        #if not is_atom(self.input.species): 
 
         # Check inputs
         if not self.input.self_absorption:
@@ -1320,7 +1318,7 @@ class SpectrumFactory(BandFactory):
             else:
                 mol_id = self.df0.attrs["id"]
         except:
-            mol_id = get_molecule_identifier(self.input.molecule)
+            mol_id = get_molecule_identifier(self.input.species)
 
         molecule = get_molecule(mol_id)
         state = self.input.state
@@ -2149,7 +2147,7 @@ class SpectrumFactory(BandFactory):
     def _generate_diluent_molefraction(self, mole_fraction, diluent):
         from radis.misc.warning import MoleFractionError
 
-        molecule = self.input.molecule
+        molecule = self.input.species
         # Check if diluent is same as molecule or not
         if (isinstance(diluent, str) and diluent == molecule) or (
             isinstance(diluent, dict) and molecule in diluent.keys()

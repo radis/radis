@@ -26,7 +26,7 @@ wlim = (12850, 13120)
 mole_fraction = 0.01
 
 def func1(**kwargs):
-    """An example implementing the default broadening formula and values in SpectraPlot"""
+    """An example implementing the default broadening formula and values of SpectraPlot (https://spectraplot.com/)"""
     # print(kwargs.keys())
     # print(kwargs['df'].columns)
     return 1.0*(296/kwargs['Tgas'])**0.8, None
@@ -92,7 +92,6 @@ s = calc_spectrum(
     mole_fraction=mole_fraction,
     path_length=15,
     # lbfunc=func1,
-    # CustomSpectrumFactory=CustomSpectrumFactory,
     # potential_lowering=-500,
     warnings={"AccuracyError": "ignore", "AccuracyWarning": "ignore"},
 )

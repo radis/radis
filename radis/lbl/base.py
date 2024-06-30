@@ -324,7 +324,7 @@ class BaseFactory(DatabankLoader):
         except AssertionError as err:
             if self.dataframe_type == "pandas":
                 index = np.isnan(df[column]).idxmax()
-                if self.input.molecule == "CO2":
+                if self.input.species == "CO2":
                     fix_idea = (
                         "If using HITEMP2010 for CO2, some lines are unlabelled and therefore cannot be used at "
                         "equilibrium. This is a known issue of the HITEMP database and will soon be fixed in the "
@@ -338,7 +338,7 @@ class BaseFactory(DatabankLoader):
                     )
                 ) from err
             elif self.dataframe_type == "vaex":
-                if self.input.molecule == "CO2":
+                if self.input.species == "CO2":
                     fix_idea = (
                         "If using HITEMP2010 for CO2, some lines are unlabelled and therefore cannot be used at "
                         "equilibrium. This is a known issue of the HITEMP database and will soon be fixed in the "
@@ -400,7 +400,7 @@ class BaseFactory(DatabankLoader):
         # calculate directly with Dunham expansions, whose terms are included in
         # the radis.db database
         elif self.params.levelsfmt == "radis":
-            molecule = self.input.molecule
+            molecule = self.input.species
             if molecule in HITRAN_CLASS1:  # class 1
                 return self._add_EvibErot_RADIS_cls1(
                     df, calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic
@@ -453,7 +453,7 @@ class BaseFactory(DatabankLoader):
             raise NotImplementedError("3 Tvib mode for CDSD in pcN convention")  # TODO
 
         elif self.params.levelsfmt == "radis":  # calculate with Dunham expansions
-            if self.input.molecule in HITRAN_CLASS5:  # class 5
+            if self.input.species in HITRAN_CLASS5:  # class 5
                 if calc_Evib_harmonic_anharmonic:
                     return self._add_Evib123Erot_RADIS_cls5_harmonicanharmonic(df)
                 else:
@@ -496,7 +496,7 @@ class BaseFactory(DatabankLoader):
         if calc_Evib_harmonic_anharmonic:
             raise NotImplementedError
 
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
         assert molecule == "CO2"
@@ -670,7 +670,7 @@ class BaseFactory(DatabankLoader):
         if calc_Evib_harmonic_anharmonic:
             raise NotImplementedError
 
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
         assert molecule == "CO2"
@@ -797,7 +797,7 @@ class BaseFactory(DatabankLoader):
         if calc_Evib_harmonic_anharmonic:
             raise NotImplementedError
 
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
         assert molecule == "CO2"
@@ -940,7 +940,7 @@ class BaseFactory(DatabankLoader):
         if calc_Evib_harmonic_anharmonic:
             raise NotImplementedError
 
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
         assert molecule == "CO2"
@@ -1136,7 +1136,7 @@ class BaseFactory(DatabankLoader):
         if calc_Evib_harmonic_anharmonic:
             raise NotImplementedError
 
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
 
@@ -1277,7 +1277,7 @@ class BaseFactory(DatabankLoader):
         if __debug__:
             printdbg("called _add_Evib123Erot_RADIS_cls5()")
 
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
 
@@ -1455,7 +1455,7 @@ class BaseFactory(DatabankLoader):
         if __debug__:
             printdbg("called _add_Evib123Erot_RADIS_cls5_harmonicanharmonic()")
 
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
 
@@ -2437,7 +2437,7 @@ class BaseFactory(DatabankLoader):
         try:
             parsum = self.get_partition_function_interpolator(molecule, iso, state)
             Q = parsum.at(T, self.input.potential_lowering)
-            print(Q)
+            #print(Q)
         except OutOfBoundError as err:
             # Try to calculate
             try:
@@ -2507,9 +2507,6 @@ class BaseFactory(DatabankLoader):
                 return df1["iso"].map(Qgas_dict)
 
         else:  # "iso" not in df:
-            if "gamvdW" in df1.columns:
-                molecule = self.input.molecule
-
             iso = df1.attrs["iso"]
             Q = self._calc_Q(molecule, iso, state, Tgas)
             df1.attrs["Q"] = Q
@@ -2537,10 +2534,7 @@ class BaseFactory(DatabankLoader):
                 df1.attrs["id"] = int(id_set)
 
         if "molecule" in df1.attrs:
-            molecule = df1.attrs["molecule"]  # used for ExoMol, which has no HITRAN-id
-        # Specific to atomic data
-        elif "gamvdW" in df1.columns:
-            molecule = self.input.molecule
+            molecule = df1.attrs["molecule"]  # used for ExoMol and others, which has no HITRAN-id
         else:
             molecule = get_molecule(df1.attrs["id"])
         state = self.input.state
@@ -2577,26 +2571,26 @@ class BaseFactory(DatabankLoader):
         return Qref_Qgas
     
 
-    def line_strength_numpy(self,T, Sij0, nu_lines, elower, qr, Tref=None):
-        #based on: https://github.com/HajimeKawahara/exojax/blob/adc44e96d4ddf523b592485594516f348ef03bc2/src/exojax/spec/hitran.py#L35
-        """Line strength as a function of temperature, numpy version
+    # def line_strength_numpy(self,T, Sij0, nu_lines, elower, qr, Tref=None):
+    #     #based on: https://github.com/HajimeKawahara/exojax/blob/adc44e96d4ddf523b592485594516f348ef03bc2/src/exojax/spec/hitran.py#L35
+    #     """Line strength as a function of temperature, numpy version
 
-        Args:
-            T: temperature (K)
-            Sij0: line strength at Tref=296K
-            elower: elower
-            nu_lines: line center wavenumber 
-            qr : partition function ratio qr(T) = Q(T)/Q(Tref)
-            Tref: reference temeparture
+    #     Args:
+    #         T: temperature (K)
+    #         Sij0: line strength at Tref=296K
+    #         elower: elower
+    #         nu_lines: line center wavenumber 
+    #         qr : partition function ratio qr(T) = Q(T)/Q(Tref)
+    #         Tref: reference temeparture
 
-        Returns:
-            line strength at Ttyp
-        """
-        if not Tref:
-            Tref = self.input.Tref
-        return Sij0 \
-            * np.exp(-hc_k*elower * (1./T - 1./Tref)) \
-            * np.expm1(-hc_k*nu_lines/T) / np.expm1(-hc_k*nu_lines/Tref) / qr
+    #     Returns:
+    #         line strength at Ttyp
+    #     """
+    #     if not Tref:
+    #         Tref = self.input.Tref
+    #     return Sij0 \
+    #         * np.exp(-hc_k*elower * (1./T - 1./Tref)) \
+    #         * np.expm1(-hc_k*nu_lines/T) / np.expm1(-hc_k*nu_lines/Tref) / qr
 
     def calc_linestrength_eq(self, Tgas):
         """Calculate linestrength at temperature Tgas correcting the database
@@ -3453,7 +3447,7 @@ class BaseFactory(DatabankLoader):
 
         pops = {}
         # Loop over molecules, isotopes, electronic states
-        for molecule in [self.input.molecule]:
+        for molecule in [self.input.species]:
             pops[molecule] = {}
 
             for isotope in self._get_isotope_list(molecule):
@@ -3873,7 +3867,7 @@ class BaseFactory(DatabankLoader):
 
         self.profiler.start("reset_population", 3)
         # Reset populations from RovibrationalPartitionFunctions objects
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state
         for isotope in self._get_isotope_list(molecule):
             # ... Get partition function calculator
@@ -3990,7 +3984,7 @@ class BaseFactory(DatabankLoader):
                 raise ValueError("isotope number is needed")
 
         # Get levels
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state
         levels = self.get_partition_function_calculator(molecule, isotope, state).df
         if what == "vib":

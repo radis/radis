@@ -1182,11 +1182,13 @@ class PartFuncKurucz(RovibParFuncTabulator):
             Qvals = self.partfn[f'{potential_lowering}']
             addmsg = '. You might want to check whether the partition functions from Barklem & Collet (2016) have a different temperature range within which lies your input temperature.'
         else:
-            if self.partfn is not None:
+            if self.partfn is None:
                 warn('Table of partition functions by potential lowering not available for this species - using Barklem & Collet (2016) instead with just the temperature')
+                addmsg = ''
+            else:
+                addmsg = '. You might want to check whether the table of partition functions dependent on potential lowering for this species has a different temperature range within which lies your input temperature.'
             Temp = self.pfT_values
             Qvals = self.pf_values
-            addmsg = '. You might want to check whether the species has a table of partition functions dependent on potential lowering with a different temperature range within which lies your input temperature.'
         
         if T < Temp.min() or T > Temp.max():
             raise ValueError(

@@ -18,7 +18,6 @@
 *.tif
 *.h5
 *.hdf5
-*.all
 radis/test/test.nfig
 radis/test/*.png
 radis/test/validation/*.png

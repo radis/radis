@@ -721,7 +721,7 @@ class DatabankLoader(object):
         # ... They will be stored in the Spectrum object
         self.input = Input()
         self.input.isotope = "all"
-        self.input.molecule = ""
+        self.input.species = ""
         self.input.state = ""
 
         # an computation parameters:
@@ -1171,7 +1171,7 @@ class DatabankLoader(object):
             memory_mapping_engine = self.misc.memory_mapping_engine
 
         # Get inputs
-        molecule = self.input.molecule
+        molecule = self.input.species
         isotope = self.input.isotope
         if not molecule:
             raise ValueError(
@@ -1832,9 +1832,9 @@ class DatabankLoader(object):
         self.misc.total_lines = len(self.df0)  # will be stored in Spectrum metadata
 
         if "molecule" in self.df0.attrs:
-            self.input.molecule = self.df0.attrs["molecule"]
+            self.input.species = self.df0.attrs["molecule"]
         else:
-            self.input.molecule = get_molecule(self.df0.attrs["id"])
+            self.input.species = get_molecule(self.df0.attrs["id"])
 
         # %% Load Partition functions (and energies if needed)
         # ----------------------------------------------------
@@ -2161,7 +2161,7 @@ class DatabankLoader(object):
         """
 
         # Let's get the tabulated partition function (to calculate eq spectra)
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state
         self.parsum_tab[molecule] = {}
         for iso in self._get_isotope_list():
@@ -2169,7 +2169,7 @@ class DatabankLoader(object):
             ParsumTab = self._build_partition_function_interpolator(
                 parfunc,
                 parfuncfmt,
-                self.input.molecule,
+                self.input.species,
                 isotope=iso,
                 predefined_partition_functions=predefined_partition_functions,
             )
@@ -2192,7 +2192,7 @@ class DatabankLoader(object):
             possible.
         """
 
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state
         # only defined for one molecule at the moment (add loops later!)
         self.parsum_calc[molecule] = {}
@@ -2626,7 +2626,7 @@ class DatabankLoader(object):
         minwavdb = df.wav.min()
 
         # ... Explicitly write molecule if not given
-        if self.input.molecule in [None, ""] and self.input.species not in [None, ""]:
+        if self.input.species in [None, ""]:# and self.input.species not in [None, ""]:
 
             id_set = df.id.unique()
             if len(id_set) > 1:
@@ -2635,7 +2635,7 @@ class DatabankLoader(object):
                     + "moment. Got {0}. Use different runs ".format(id_set)
                     + "and use MergeSlabs(out='transparent' afterwards"
                 )
-            self.input.molecule = get_molecule(id_set[0])
+            self.input.species = get_molecule(id_set[0])
 
         # ... explicitly write all isotopes based on isotopes found in the database
         if self.input.isotope == "all":
@@ -2767,10 +2767,10 @@ class DatabankLoader(object):
             line database to parse. Default ``None``
         """
 
-        if molecule is not None and self.input.molecule != molecule:
+        if molecule is not None and self.input.species != molecule:
             raise ValueError(
                 "Expected molecule is {0} according to the inputs, but got {1} ".format(
-                    self.input.molecule, molecule
+                    self.input.species, molecule
                 )
                 + "in line database. Check your `molecule=` parameter, or your "
                 + "line database."
@@ -2982,7 +2982,7 @@ class DatabankLoader(object):
         elif levelsfmt == "radis":
             self.reftracker.add(doi["RADIS-2018"], "rovibrational energies")
             state = getMolecule(
-                self.input.molecule, isotope, self.input.state, verbose=self.verbose
+                self.input.species, isotope, self.input.state, verbose=self.verbose
             )
             if state.doi is not None:
                 self.reftracker.add(state.doi, "spectroscopic constants")
