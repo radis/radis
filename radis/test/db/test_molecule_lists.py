@@ -31,6 +31,7 @@ def fetch_ExoMol_molecules():
         "a", {"class": "list-group-item link-list-group-item molecule_link"}
     )
     molecules = [r.get_attribute_list("href")[0] for r in rows]
+    molecules = [molecule.split("/")[-2] for molecule in molecules]  # 03/07/2024
 
     return molecules
 
