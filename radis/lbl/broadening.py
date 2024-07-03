@@ -935,7 +935,7 @@ class BroadenFactory(BaseFactory):
                     in the columns {'gamma_' + diluent_name}.
                     """
                     raise ValueError(
-                        f"{msg}\nClean the database or replace {key} by 'air' in the `diluent=` parameter."
+                        f"{msg}\nClean the database or replace '{key}' by 'air' in the `diluent=` parameter."
                     )
                     # self.warn(
                     #     message=msg+"You can silence this error by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.\nThe broadening coefficient of air is used instead.",
@@ -947,7 +947,7 @@ class BroadenFactory(BaseFactory):
             else:
                 msg = f"Broadening Coefficient of {self.get_conditions()['molecule']} by {key} not present in database. \nIf the database should include these coefficients, try removing the cache by using once `use_cached='regen'` in calc_spectrum."
                 raise ValueError(
-                    f"{msg}\nOtherwise, replace {key} by 'air' in the `diluent=` parameter."
+                    f"{msg}\nOtherwise, replace '{key}' by 'air' in the `diluent=` parameter."
                 )
                 # self.warn(
                 #     message="f{msg}\nIf not, you can silence this error by using `warnings['MissingDiluentBroadeningTdepWarning']='ignore'`.\nThe temperature-dependance coefficient of air is used instead.",
@@ -971,7 +971,7 @@ class BroadenFactory(BaseFactory):
                     elements in the columns {'gamma_' + diluent_name}.
                     """
                     raise ValueError(
-                        f"{msg}\nClean the database or replace {key} by 'air' in the `diluent=` parameter."
+                        f"{msg}\nClean the database or replace '{key}' by 'air' in the `diluent=` parameter."
                     )
 
                     # self.warn(
@@ -984,7 +984,7 @@ class BroadenFactory(BaseFactory):
             else:
                 msg = f"Temperature dependance of Broadening Coefficient of {self.get_conditions()['molecule']} by {key} not present in database. \nIf the database should include these coefficients, try removing the cache by using once `use_cached='regen'` in calc_spectrum."
                 raise ValueError(
-                    f"{msg}\nOtherwise, replace {key} by 'air' in the `diluent=` parameter."
+                    f"{msg}\nOtherwise, replace '{key}' by 'air' in the `diluent=` parameter."
                 )
                 # self.warn(
                 #     message="f{msg}\nIf not, you can silence this error by using `warnings['MissingDiluentBroadeningTdepWarning']='ignore'`.\nThe temperature-dependance coefficient of air is used instead.",
