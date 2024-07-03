@@ -10,6 +10,7 @@ import pytest
 from radis.io.exomol import get_exomol_database_list, get_exomol_full_isotope_name
 
 
+@pytest.mark.fast
 @pytest.mark.needs_connection
 def test_exomol_parsing_functions(verbose=True, *args, **kwargs):
     """Test functions used to parse ExoMol website"""

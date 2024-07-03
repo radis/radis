@@ -771,6 +771,7 @@ def get_exomol_database_list(molecule, isotope_full_name=None):
         "a", {"class": "list-group-item link-list-group-item recommended"}
     )
     databases_recommended = [r.get_attribute_list("title")[0] for r in rows]
+    databases_recommended = list(np.unique(databases_recommended))
 
     # All others
     rows = soup.find_all("a", {"class": "list-group-item link-list-group-item"})
@@ -796,7 +797,7 @@ def get_exomol_database_list(molecule, isotope_full_name=None):
     else:
         recommended_database = False
 
-    return databases, recommended_database
+    return list(np.unique(databases)), recommended_database
 
 
 # def fetch_exomol_molecule_list():
