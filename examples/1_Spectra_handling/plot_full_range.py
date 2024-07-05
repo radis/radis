@@ -7,7 +7,7 @@ Calculate a full range spectrum
 ===============================
 
 We compute the transmittance of an homogeneous, 1-km atmosphere layer
-at 300 K and 1 atm, with 420 ppm CO2 and 2% H2O.
+at 300 K and 1 atm, with 2% H2O.
 
 This example makes use of a lot of the RADIS optimization and convenience functions :
 
@@ -44,7 +44,9 @@ from radis import calc_spectrum
 s = calc_spectrum(
     wmin=0.5 * u.um,
     wmax=15 * u.um,  # cm-1
-    mole_fraction={"CO2": 420e-6, "H2O": 0.02},
+    mole_fraction={
+        "H2O": 0.02
+    },  # {"CO2": 420e-6, "H2O": 0.02} #this option will be possible when issue #633 is solved
     isotope="1,2,3",
     pressure=1.01325,  # bar
     Tgas=300,  # K
