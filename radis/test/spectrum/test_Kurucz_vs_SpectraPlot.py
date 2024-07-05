@@ -10,9 +10,10 @@ NOTE / TO-DO:
 # >>>>> see NOTE / TO-DO
 import radis
 
-radis.config["ALLOW_OVERWRITE"] = True
+# radis.config["ALLOW_OVERWRITE"] = True
 # <<<<< see NOTE / TO-DO
 from radis import SpectrumFactory, plot_diff
+from radis.test.utils import getTestFile
 
 
 def Kurucz_vs_NISTandSpectraplot(verbose=True):
@@ -32,9 +33,10 @@ def Kurucz_vs_NISTandSpectraplot(verbose=True):
         verbose=0,
         lbfunc=broad_arbitrary,
     )
-    sf.fetch_databank("kurucz", parfunc="kurucz", parfuncfmt="kurucz")
-    # sf.load_databank('Kurucz-O_I')    # >>>>> see NOTE / TO-DO
+    sf.fetch_databank("kurucz", parfuncfmt="kurucz")
+    # sf.load_databank('Kurucz-O_I', drop_columns=[], load_columns='all')    # >>>>> see NOTE / TO-DO
     s_RADIS = sf.eq_spectrum(Tgas=10000, name="Kurucz by RADIS")
+    # s_RADIS.plot("radiance_noslit", wunit="cm-1")
 
     #%% Experimental spectrum
     import numpy as np
@@ -42,7 +44,7 @@ def Kurucz_vs_NISTandSpectraplot(verbose=True):
     from radis import Spectrum
 
     L = 1  # cm - Input in SpectraPlot software
-    raw_data = np.loadtxt("spectraplot_O_10000K.txt", delimiter=",", skiprows=1)
+    raw_data = np.loadtxt(getTestFile("spectraplot_O_10000K.txt"), delimiter=",", skiprows=1)
     s_SpectraPlot = Spectrum(
         {
             "wavenumber": raw_data[:, 0],
@@ -53,7 +55,7 @@ def Kurucz_vs_NISTandSpectraplot(verbose=True):
         wunit="cm-1",
         name="NIST by SpectraPlot",
     )
-    # s.plot('abscoeff', wunit='nm')
+    # s_SpectraPlot.plot('abscoeff', wunit='cm-1')
 
     plot_diff(s_RADIS, s_SpectraPlot, "abscoeff", wunit="nm")
     A_RADIS = s_RADIS.get_integral("abscoeff", wunit="nm")

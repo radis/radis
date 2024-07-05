@@ -308,6 +308,7 @@ class SpectrumFactory(BandFactory):
         If unspecified, the broadening is handled by default by ``radis.lbl.broadening.gamma_vald3`` for atoms and ``radis.lbl.broadening.pressure_broadening_HWHM`` for molecules
     potential_lowering: float
         Some species with Kurucz linelists also come with dedicated partition function tables provided, which depend on both Temperature and potential lowering. Setting this parameter results in the partition function interpolator using that table for the species if it's available, otherwise if it's unavailable or this parameter remains `None`, the default partition functions use `Barklem & Collet (2016), Table 8 <https://doi.org/10.1051/0004-6361/201526961>`.
+        The value can thereafter be changed on the fly by changing the `.potential_lowering` attribute of the SpectrumFactory instance, the result of which is reflected the next time partition function interpolator's `._at` method is used, without any need to re-initialise it.
 
     Examples
     --------
@@ -1255,6 +1256,9 @@ class SpectrumFactory(BandFactory):
         # --------------------------------------------------------------------
 
         # Check inputs
+        if self.input.isatom:
+            raise NotImplementedError("eq_spectrum_gpu hasn't been implemented for atomic spectra")
+        
         if not self.input.self_absorption:
             raise ValueError(
                 "Use non_eq_spectrum(Tgas, Tgas) to calculate spectra "
@@ -1578,6 +1582,9 @@ class SpectrumFactory(BandFactory):
             :add-heading:
 
         """
+        if self.input.isatom:
+            raise NotImplementedError("eq_spectrum_gpu hasn't been implemented for atomic spectra")
+
         from matplotlib import use
 
         if mpl_backend:
@@ -2206,9 +2213,9 @@ class SpectrumFactory(BandFactory):
 
         def _is_at_equilibrium():
             try:
-                assert self.input.Tvib is None or self.input.Tvib == self.input.Tgas
-                assert self.input.Trot is None or self.input.Trot == self.input.Tgas
-                assert (
+                if 'Tvib' in self.input: assert self.input.Tvib is None or self.input.Tvib == self.input.Tgas
+                if 'Trot' in self.input: assert self.input.Trot is None or self.input.Trot == self.input.Tgas
+                if 'overpopulation' in self.input: assert (
                     self.input.overpopulation is None or self.input.overpopulation == {}
                 )
                 try:

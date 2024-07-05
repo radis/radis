@@ -216,11 +216,11 @@ class DatabaseManager(object):
                 for local_fname in local_fnames
             ]
 
+            if engine == "vaex":
+                local_files = [fname.replace(".h5", ".hdf5") for fname in local_files]
+
         else:
             raise NotImplementedError
-
-        if engine == "vaex":
-            local_files = [fname.replace(".h5", ".hdf5") for fname in local_files]
 
         local_files = [expanduser(f) for f in local_files]
 

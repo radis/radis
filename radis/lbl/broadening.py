@@ -392,17 +392,17 @@ def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, i
         (translational) gas temperature
     P: float  [bar]
         pressure in bar
-    nu_lines: array   (cm-1)        [length N]
+    nu_lines: array or Vaex expression   (cm-1)        [length N]
         transition wavenumber
-    elower: array   (cm-1)        [length N]
+    elower: array or Vaex expression   (cm-1)        [length N]
         excitation potential (lower level)
-    ionE: array   (eV)        [length N]
+    ionE: array or Vaex expression   (eV)        [length N]
         ionization potential
-    gamRad: array   (s-1)        [length N]
+    gamRad: array or Vaex expression   (s-1)        [length N]
         log of the half-width half maximum coefficient (HWHM) for radiative broadening
-    gamSta: array   (s-1 * cm-3)         [length N]
+    gamSta: array or Vaex expression   (s-1 * cm-3)         [length N]
         log of the half-width half maximum coefficient (HWHM) per electron density for Stark broadening, at 10000 K
-    gamVdW: array   (s-1 * cm-3)        [length N]
+    gamVdW: array or Vaex expression   (s-1 * cm-3)        [length N]
         log of the half-width half maximum coefficient (HWHM) per atomic hydrogen density for Van der Waals broadening, at 10000 K
     diluent: dictionary
         contains diluent and their mole fraction
@@ -413,7 +413,7 @@ def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, i
       
     Returns
     -------
-    gammma_rad, gamma_stark, gamma_vdw: (cm-1) numpy array [length N]
+    gammma_rad, gamma_stark, gamma_vdw: (cm-1) numpy array or Vaex expression (depending on input type) [length N]
         Radiation, Stark, and Van der Waals HWHM
     
     Notes
@@ -494,7 +494,7 @@ def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, i
         if is_neutral:
             gamma_stark *= ((T/10000)**(1.0/6.0)) #see e.g. Gray 2005 p244
         else:
-            gamma_stark *= ((T/10000)**(-1.0/2.0)) #see e.g. Rivière et al 2002 §2.2, v ∝ T^-1/2
+            gamma_stark *= ((T/10000)**(-1.0/2.0)) #see e.g. Rivière et al 2002 §2.2, v ∝ T^1/2
     else:
         gamma_stark = 0
     

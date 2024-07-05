@@ -492,7 +492,6 @@ class Parameters(ConditionDict):
         "wstep",
         "diluent",
         "lbfunc",
-        "pf_df_path"
     ]
 
     def __init__(self):
@@ -509,7 +508,6 @@ class Parameters(ConditionDict):
         )
         self.dbformat = None  #: str: format of Line Database. See :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
         self.dbpath = None  #: str: joined list of filepaths to Line Database
-        self.pf_df_path = None #: str: path to parition function dataframe, used for Kurucz currently
         self.levelsfmt = None  #: str: format of Energy Database. See :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`
         self.lvl_use_cached = (
             None  #: bool: use (and generate) cache files for Energy Database
@@ -1539,7 +1537,7 @@ class DatabankLoader(object):
             #     isotope=isotope_list,
             #     engine=memory_mapping_engine
             # )
-            df, local_paths, self.params.pf_df_path = fetch_kurucz(
+            df, local_paths, parfuncpath = fetch_kurucz(
                 molecule,
                 isotope=isotope_list,
                 local_databases=join(local_databases, "kurucz"),
@@ -1554,6 +1552,8 @@ class DatabankLoader(object):
                 parallel=parallel,
             )
             self.params.dbpath = ",".join(local_paths)
+            if not parfunc:
+                self.params.parfuncpath = parfunc = format_paths(parfuncpath)
 
             # ... explicitly write all isotopes based on isotopes found in the database
             if isotope == "all":
@@ -2637,6 +2637,18 @@ class DatabankLoader(object):
                 )
             self.input.species = get_molecule(id_set[0])
 
+        # Add necessary attribute for databases without 'id' column, else _remove_unecessary_columns below raises an AssertionError
+        if output in ["pandas", "vaex"]:  # no attribtes in "Jax" or "Vaex" mode
+            attrs = {}
+            attrs["molecule"] = self.input.species
+
+            if output == "vaex":
+                df.attrs = {}
+                df.attrs = attrs
+            elif output == "pandas":
+                for k, v in attrs.items():
+                    df.attrs[k] = v
+        
         # ... explicitly write all isotopes based on isotopes found in the database
         if self.input.isotope == "all":
             self.input.isotope = ",".join(
@@ -2907,7 +2919,7 @@ class DatabankLoader(object):
                 M=molecule, I=isotope, path=parfunc, verbose=self.verbose
             )
         elif parfuncfmt in ["kurucz"]:
-            parsum = PartFuncKurucz(molecule, self.params.pf_df_path)
+            parsum = PartFuncKurucz(molecule, parfunc)
 
         elif parfuncfmt == "cdsd":  # Use tabulated CDSD partition functions
             self.reftracker.add(doi["CDSD-4000"], "partition function")

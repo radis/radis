@@ -17,6 +17,7 @@ from os.path import abspath, expanduser, join
 import radis
 from radis.api.hdf5 import DataFileManager
 from radis.api.kuruczapi import AdBKurucz,get_atomic_number,get_ionization_state, KuruczDatabaseManager
+from radis.misc.config import getDatabankEntries
 
 def fetch_kurucz(
     molecule,
@@ -61,40 +62,51 @@ def fetch_kurucz(
         engine=engine,
     )
 
-    # Get list of all expected local files for this database:
-    try:
-        local_files, urlnames = ldb.get_filenames(return_reg_urls=True) # only expecting 1 file per molecule
-    except NotImplementedError:
-        # no file registered so not sure what to expect
-        local_files = []
-        urlnames = []
+    local_files, urlnames = [], []
+    pf_path = []
+    if ldb.is_registered():
+        entries = getDatabankEntries(ldb.name)
+        local_files, urlnames = entries['path'], entries['download_url']
+        if 'parfunc' in entries:
+            pf_path = [entries['parfunc']]
 
-    main_files, main_urls = ldb.get_possible_files()
-    pf_path, pf_url = ldb.get_pf_path()
-    url_file = dict(zip(urlnames, local_files))
+    # # Get list of all expected local files for this database:
+    # try:
+    #     local_files, urlnames = ldb.get_filenames(return_reg_urls=True) # only expecting 1 file per molecule
+    # except NotImplementedError:
+    #     # no file registered so not sure what to expect
+    #     local_files = []
+    #     urlnames = []
+
+    # main_files, main_urls = ldb.get_possible_files()
+    # pf_path, pf_url = ldb.get_pf_path()
+    # url_file = dict(zip(urlnames, local_files))
     
     get_pf_files = True
     if ldb.is_registered() and not radis.config["ALLOW_OVERWRITE"]:
         error = False
-        if cache == "regen":
+        if cache == "regen" or not local_files:
             error = True
-        main_url = main_urls & urlnames
-        if not main_url:
-            error = True
-        files_to_check = [url_file[main_url[0]]]
-        if pf_url in urlnames:
-            files_to_check.append(url_file[pf_url])
-        else:
-            get_pf_files = False #assume partition function file is either unavailable or undesired for current species
+        # main_url = list(set(main_urls) & set(urlnames))
+        # if not main_url:
+        #     error = True
+        files_to_check = local_files + pf_path
+        # files_to_check = [url_file[main_url[0]]]
+        # if pf_url in urlnames:
+        #     files_to_check.append(url_file[pf_url])
+        # else:
+        #     get_pf_files = False #assume partition function file is either unavailable or undesired for current species
         if ldb.get_missing_files(files_to_check):
             error = True
+        if not pf_path:
+            get_pf_files = False #assume partition function file is either unavailable or undesired for current species
         if error:
             raise Exception('Changes are required to the local database, and hence updating the registered entry, but "ALLOW_OVERWRITE" is False')
     
     # Delete files if needed:
 
     if cache == "regen":
-        ldb.remove_local_files(local_files)
+        ldb.remove_local_files(local_files + pf_path)
     ldb.check_deprecated_files(
         ldb.get_existing_files(local_files),
         auto_remove=True if cache != "force" else False,
@@ -102,26 +114,36 @@ def fetch_kurucz(
 
     #download_files = []
     
-    missing_files = ldb.get_missing_files(local_files)
-    file_url = dict(zip(local_files, urlnames))
-    missing_urls = [file_url[file] for file in missing_files]
+    # missing_files = ldb.get_missing_files(local_files)
+    # file_url = dict(zip(local_files, urlnames))
+    # missing_urls = [file_url[file] for file in missing_files]
     
     # missing_url_file = dict(zip(missing_urls, missing_files))
     
     # main_url_file = dict(zip(main_urls, main_files))
     
     get_main_files = True
+
+    if len(local_files) > 1 or len(urlnames) > 1:
+        raise Exception('only 1 database file is expected')
     
-    for url in urlnames:
-        if url not in missing_urls:
-            if url in main_urls:
-                get_main_files = False
-                ldb.actual_url = url # in case of re-registering ...
-                ldb.actual_file = url_file[url] # ... and for ldb.load below
-            elif url == pf_url:
-                get_pf_files = False
-                ldb.pf_url = url
-                ldb.pf_path = url_file[url]
+    if local_files and not ldb.get_missing_files(local_files):
+        get_main_files = False
+        ldb.actual_file = local_files[0] # for ldb.load below
+    if pf_path and not ldb.get_missing_files(pf_path):
+        get_pf_files = False
+        ldb.pf_path = pf_path[0]
+    
+    # for url in urlnames:
+    #     if url not in missing_urls:
+    #         if url in main_urls:
+    #             get_main_files = False
+    #             ldb.actual_url = url # in case of re-registering ...
+    #             ldb.actual_file = url_file[url] # ... and for ldb.load below
+    #         elif url == pf_url:
+    #             get_pf_files = False
+    #             ldb.pf_url = url
+    #             ldb.pf_path = url_file[url]
 
 
 
@@ -174,6 +196,7 @@ def fetch_kurucz(
     
     # Download files
     if get_main_files:
+        main_files, main_urls = ldb.get_possible_files()
         # if urlnames is None:
         #     urlnames = ldb.fetch_urlnames()
         # filesmap = dict(zip(download_files, urlnames))
@@ -200,6 +223,7 @@ def fetch_kurucz(
                 break #no need to search any further
     
     if get_pf_files:
+        pf_path, pf_url = ldb.get_pf_path()
         ldb.pf_path = pf_path
         ldb.pf_url = pf_url
         try:
@@ -209,7 +233,7 @@ def fetch_kurucz(
 
     # Register
     if get_main_files or get_pf_files or not ldb.is_registered():
-        ldb.register()
+        ldb.register(get_main_files, get_pf_files)
 
     if (get_main_files or get_pf_files) and clean_cache_files:
         ldb.clean_download_files()
@@ -240,6 +264,7 @@ def fetch_kurucz(
             for k, v in attrs.items():
                 df.attrs[k] = v
 
+    print(df.attrs)
     return (df, local_files, ldb.pf_path) if return_local_path else df
 
 

@@ -225,6 +225,55 @@ def is_atom(species):
 def is_neutral(species):
     return species.endswith('_I')
 
+roman_numerals = {
+    "I" : 1,
+    "V" : 5,
+    "X" : 10,
+    "L" : 50,
+    "C" : 100,
+    "D" : 500,
+    "M" : 1000
+}
+
+def roman_to_int(roman):
+    """
+    A function to convert a string of roman numerals to an int
+
+    Should support 'Standard form', 'Other additive forms', and 'Other subtractive forms' mentioned here: https://en.wikipedia.org/wiki/Roman_numerals
+    """
+    roman = roman.upper()
+    total = 0
+    current_max = 0 #the current largest 'digit'
+    for i in range(len(roman) - 1, -1, -1): #in reverse, from last character to first
+        current_max = max(roman_numerals[roman[i]], current_max)
+        if roman_numerals[roman[i]] < current_max:
+            total -= roman_numerals[roman[i]]
+        else:
+            total += roman_numerals[roman[i]]
+    return total
+
+invert_roman_numerals = dict((v,k) for k,v in sorted(roman_numerals.items(), key=lambda x: x[1], reverse=True))
+
+def int_to_roman(num):
+    count = {}
+    for factor in invert_roman_numerals:
+        count[factor] = num//factor
+        num = num%factor
+    string = count[1000]*'M'
+    nums = list(invert_roman_numerals)
+    i = 0
+    while i < len(invert_roman_numerals)-2:
+        if count[nums[i+2]] == 4:
+            if count[nums[i+1]] == 1: #so overall i+2 digit is 9
+                addstring = invert_roman_numerals[nums[i+2]] + invert_roman_numerals[nums[i]]
+            else: #overall i+2 digit is 4
+                addstring = invert_roman_numerals[nums[i+2]] + invert_roman_numerals[nums[i+1]]
+        else:
+            addstring = count[nums[i+1]]*invert_roman_numerals[nums[i+1]] + count[nums[i+2]]*invert_roman_numerals[nums[i+2]]
+        string += addstring
+        i += 2
+    return string
+
 def to_conventional_name(species):
 
     # If the charge is positive
@@ -234,7 +283,7 @@ def to_conventional_name(species):
         # Get the element of the species without the charge
         element_name = species.split("+")[0]
         # Convert the charge to roman notation
-        charge_in_roman = {1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}.get(charge, "")
+        charge_in_roman = int_to_roman(charge)
         return f"{element_name}_{charge_in_roman}"
 
     # If species is an element

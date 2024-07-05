@@ -22,6 +22,7 @@ from tqdm import tqdm
 
 from radis.misc.utils import getProjectRoot
 from radis.misc.config import getDatabankEntries
+from radis.db.classes import roman_to_int
 from radis.phys.air import air2vacuum
 from radis.phys.constants import c_CGS, ecgs, mecgs
 
@@ -94,8 +95,7 @@ def get_ionization_state(species):
     Extracts the ionization_state from the species id
     """
     ionization_str = species.split("_")[1]
-    roman_to_int = {"I": 0, "II": 1, "III": 2, "IV": 3, "V": 4, "VI": 5}
-    ionization_int = roman_to_int.get(ionization_str, -1)
+    ionization_int = roman_to_int(ionization_str) - 1
     #formatted_str = f"{ionization_int:02}"
 
     return ionization_int#formatted_str
@@ -333,16 +333,22 @@ class KuruczDatabaseManager(DatabaseManager):
 
         return Nlines
     
-    def register(self):
+    def register(self, get_main_files, get_pf_files):
 
-        # if self.is_registered():
-        #     dict_entries = getDatabankEntries(self.name) #just update previous register details
-        # else:
-        dict_entries = {}
+        if self.is_registered():
+            dict_entries = getDatabankEntries(self.name) #just update previous register details
+        else:
+            dict_entries = {}
 
-        if self.actual_file and self.actual_url:
+        if get_main_files:
             files = [self.actual_file]
             urls = [self.actual_url]
+            dict_entries.update({
+                "path": files,
+                "format": "hdf5-radisdb",
+                "download_date": self.get_today(),
+                "download_url": urls,
+            })
             if self.wmin and self.wmin:
                 info = f"Kurucz {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1)."
                 dict_entries.update({
@@ -350,20 +356,16 @@ class KuruczDatabaseManager(DatabaseManager):
                     "wavenumber_min": self.wmin,
                     "wavenumber_max": self.wmax
                 })
-        else:
-            raise Exception("Kurucz database can't be registered until the correct url to use is known")
+        # else:
+        #     raise Exception("Kurucz database can't be registered until the correct url to use is known")
         
-        if self.pf_path and self.pf_url:
-            files.append(self.pf_path)
-            urls.append(self.pf_url)
-
-        dict_entries.update({
-            "path": files,
-            "format": "hdf5-radisdb",
-            "parfuncfmt": "kurucz",
-            "download_date": self.get_today(),
-            "download_url": urls,
-        })
+        if get_pf_files:
+            # files.append(self.pf_path)
+            # urls.append(self.pf_url)
+            dict_entries.update({
+                "parfunc": self.pf_path,
+                "parfuncfmt": "kurucz",
+            })
 
         try:
             super().register(dict_entries)
@@ -462,18 +464,7 @@ def read_kurucz(kuruczf):
         kuruczf: file path
 
     Returns:
-        A:  Einstein coefficient in [s-1]
-        nu_lines:  transition waveNUMBER in [cm-1] (#NOT frequency in [s-1])
-        elower: lower excitation potential [cm-1] (#converted from eV)
-        eupper: upper excitation potential [cm-1] (#converted from eV)
-        gupper: upper statistical weight
-        jlower: lower J (rotational quantum number, total angular momentum)
-        jupper: upper J
-        ielem:  atomic number (e.g., Fe=26)
-        iion:  ionized level (e.g., neutral=1, singly)
-        gamRad: log of gamma of radiation damping (s-1) #(https://www.astro.uu.se/valdwiki/Vald3Format)
-        gamSta: log of gamma of Stark damping (s-1)
-        gamvdW:  log of (van der Waals damping constant / neutral hydrogen number) (s-1)
+        Pandas dataframe containing the required columns for the Kurucz linelist database
     """
     with open(kuruczf) as f:
         lines = f.readlines()
@@ -582,6 +573,7 @@ def read_kurucz(kuruczf):
     nu_lines = 1e8 / wlaa[::-1]  # [cm-1]<-[AA]
     wlnmair = wlnmair[::-1]
     loggf = loggf[::-1]
+    species = species[::-1]
     elower = elower[::-1]
     eupper = eupper[::-1]
     jlower = jlower[::-1]

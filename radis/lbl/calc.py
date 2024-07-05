@@ -950,7 +950,8 @@ def _calc_spectrum_one_molecule(
                 pressure=pressure,
                 path_length=path_length,
                 name=name,
-                emulate=(True if mode == "emulated_gpu" else False),
+                backend=('cpu-cuda' if mode == "emulated_gpu" else 'gpu-cuda')
+                #emulate=(True if mode == "emulated_gpu" else False),
             )
         else:
             raise ValueError(

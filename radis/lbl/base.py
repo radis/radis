@@ -2083,14 +2083,14 @@ class BaseFactory(DatabankLoader):
             molar_mass_dict = {}
             for iso in iso_set:
                 if self.input.isatom:
-                    molar_mass_dict[iso] = iso or get_element_symbol(self.input.species).mass #if isotope number is given then use it, otherwise resort to standard atomic weight
+                    molar_mass_dict[iso] = iso or get_element_symbol(molecule).mass #if isotope number is given then use it, otherwise resort to standard atomic weight
                 else:
                     molar_mass_dict[iso] = molpar.get(molecule, iso, "mol_mass")
             molar_mass = df["iso"].map(molar_mass_dict)
         else:
             iso = df.attrs["iso"]
             if self.input.isatom:
-                molar_mass = iso or get_element_symbol(self.input.species).mass
+                molar_mass = iso or get_element_symbol(molecule).mass
             else:
                 molar_mass = molpar.get(molecule, iso, "mol_mass")
 
@@ -2122,7 +2122,10 @@ class BaseFactory(DatabankLoader):
         self.profiler.start("calc_weight_trans", 2)
 
         # get abundance
-        abundance = self.get_lines_abundance(df)
+        if self.input.isatom:
+            abundance = 1
+        else:
+            abundance = self.get_lines_abundance(df)
         if not self.molparam.terrestrial_abundances:
             raise NotImplementedError(
                 "Formula not corrected for non-terrestrial isotopic abundances"
@@ -2412,7 +2415,10 @@ class BaseFactory(DatabankLoader):
 
         A = df0["A"]
         wav = df0["wav"]
-        Ia = self.get_lines_abundance(df0)
+        if self.input.isatom:
+            Ia = 1
+        else:
+            Ia = self.get_lines_abundance(df0)
 
         S0 = Ia * gp * A / (8 * pi * c_cm * wav**2)
 
@@ -3634,7 +3640,10 @@ class BaseFactory(DatabankLoader):
         # adim. (#/#) (multiplied by n_tot later)
         n_u = df["nu"]
         # correct for abundance
-        n_ua = n_u * self.get_lines_abundance(df)
+        if self.input.isatom:
+            n_ua = n_u
+        else:
+            n_ua = n_u * self.get_lines_abundance(df)
 
         A_ul = df["Aul"]  # (s-1)
 

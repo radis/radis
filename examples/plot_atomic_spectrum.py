@@ -29,7 +29,7 @@ def func1(**kwargs):
     """An example implementing the default broadening formula and values of SpectraPlot (https://spectraplot.com/)"""
     # print(kwargs.keys())
     # print(kwargs['df'].columns)
-    return 1.0*(296/kwargs['Tgas'])**0.8, None
+    return 0.1*(296/kwargs['Tgas'])**0.8, None
 
 def func2(df, Tgas, pressure_atm, diluent, **kwargs):
     """An example for O_I changing the value of the van der Waals broadening parameter for a particular line"""
@@ -53,31 +53,31 @@ def func3(df, pressure_atm, mole_fraction, Tgas, diluent, **kwargs):
     wl = gammma_rad + gamma_stark + gamma_vdw + gamma_self
     return wl, shift
     
-class CustomSpectrumFactory(SpectrumFactory):
-    def _add_Lorentzian_broadening_HWHM(
-        self,
-        df,
-        pressure_atm,
-        mole_fraction,
-        Tgas,
-        Tref,
-        diluent,
-        diluent_broadening_coeff,
-    ):
+# class CustomSpectrumFactory(SpectrumFactory):
+#     def _add_Lorentzian_broadening_HWHM(
+#         self,
+#         df,
+#         pressure_atm,
+#         mole_fraction,
+#         Tgas,
+#         Tref,
+#         diluent,
+#         diluent_broadening_coeff,
+#     ):
 
-        print('testing')
-        wl, shift = func1(
-            Tgas=Tgas,
-        )
-        if shift:
-            df['shft'] = shift
+#         print('testing')
+#         wl, shift = func1(
+#             Tgas=Tgas,
+#         )
+#         if shift:
+#             df['shft'] = shift
 
-        # Update dataframe
-        df["hwhm_lorentz"] = wl
+#         # Update dataframe
+#         df["hwhm_lorentz"] = wl
 
-        #####
+#         #####
 
-        return
+#         return
 
 s = calc_spectrum(
     wlim[0],
@@ -88,12 +88,14 @@ s = calc_spectrum(
     pressure=1.01325,
     # optimization=None,
     # truncation=truncation,
-    diluent={'H':1-mole_fraction-1e-3, 'e-': 1e-3},
-    mole_fraction=mole_fraction,
+    # diluent={'H':1-mole_fraction-1e-3, 'e-': 1e-3},
+    # mole_fraction=mole_fraction,
     path_length=15,
-    # lbfunc=func1,
+    lbfunc=func1,
     # potential_lowering=-500,
+    # verbose=2,
     warnings={"AccuracyError": "ignore", "AccuracyWarning": "ignore"},
+    # mode='emulated_gpu'
 )
 
 #s.crop(*wlim)
