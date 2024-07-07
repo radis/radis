@@ -1155,20 +1155,25 @@ class PartFuncKurucz(RovibParFuncTabulator):
         # pfdat = pd.read_csv(path_partfn, sep="\s+", header=None)
         # self.pfdat = pfdat.set_index(0)
         # Locate the row for the specific atom and ionization state
-        pf_atom = self.pfdat.loc[f"{species}"]
-        # Read the file's content
-        # current_dir = os.path.dirname(os.path.abspath(__file__))
-        # file_path = os.path.join(current_dir, "./pfTKurucz_values.txt")
-        # with open(file_path, "r") as f:
-        #     content = f.read()
+        try:
+            pf_atom = self.pfdat.loc[f"{species}"]
+        except KeyError:
+            warn("Note: the partition functions from Barklem & Collet (2016) don't include this species.")
+            self.pf_values = self.pfT_values = None
+        else:
+            # Read the file's content
+            # current_dir = os.path.dirname(os.path.abspath(__file__))
+            # file_path = os.path.join(current_dir, "./pfTKurucz_values.txt")
+            # with open(file_path, "r") as f:
+            #     content = f.read()
 
-        # # Execute the content to get the pfT_values array
-        # namespace = {}
-        # exec(content, namespace)
+            # # Execute the content to get the pfT_values array
+            # namespace = {}
+            # exec(content, namespace)
 
-        # Assign the array to the class variable
-        self.pfT_values = self.pfTdat.values.flatten().astype(float)#namespace["pfT_values"]
-        self.pf_values = pf_atom.values.astype(float)
+            # Assign the array to the class variable
+            self.pfT_values = self.pfTdat.values.flatten().astype(float)#namespace["pfT_values"]
+            self.pf_values = pf_atom.values.astype(float)
 
         if pfpath:
             self.partfn = pd.read_hdf(pfpath)
@@ -1185,8 +1190,13 @@ class PartFuncKurucz(RovibParFuncTabulator):
             if self.partfn is None:
                 warn('Table of partition functions by potential lowering not available for this species - using Barklem & Collet (2016) instead with just the temperature')
                 addmsg = ''
+                addmsg2 = ''
             else:
                 addmsg = '. You might want to check whether the table of partition functions dependent on potential lowering for this species has a different temperature range within which lies your input temperature.'
+                addmsg2 = '. Specify the potential lowering so the dedicated table of partition functions for this species can be used.'
+            if self.pf_values is None:
+                raise Exception("The partition functions from Barklem & Collet (2016) don't include this species." + addmsg2)
+            
             Temp = self.pfT_values
             Qvals = self.pf_values
         

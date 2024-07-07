@@ -401,8 +401,8 @@ def calc_spectrum(
     else:
         molecule = species
     if species is not None:
-        if is_atom(species):
-            molecule = species = to_conventional_name(species)
+        # if is_atom(species): # not testing for atom until name is converted!
+        molecule = species = to_conventional_name(species)
     # if "molecule" in kwargs:
     #     print("Molecule is deprecated. Use species instead.")
     #     species = kwargs["molecule"]

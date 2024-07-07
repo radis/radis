@@ -279,12 +279,12 @@ def to_conventional_name(species):
     # If the charge is positive
     if "+" in species:
         # Count the number of positive charges
-        charge = species.count("+") + 1  # Add one to convert to conventional notation
+        chargeplus1 = species.count("+") + 1  # Add one to convert to conventional notation
         # Get the element of the species without the charge
         element_name = species.split("+")[0]
         # Convert the charge to roman notation
-        charge_in_roman = int_to_roman(charge)
-        return f"{element_name}_{charge_in_roman}"
+        chargeplus1_in_roman = int_to_roman(chargeplus1)
+        return f"{element_name}_{chargeplus1_in_roman}"
 
     # If species is an element
     else:

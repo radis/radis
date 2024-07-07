@@ -81,7 +81,7 @@ from warnings import warn
 
 import astropy.units as u
 import numpy as np
-from numpy import arange, exp
+from numpy import arange, exp, expm1
 from scipy.constants import c
 from scipy.optimize import OptimizeResult
 
@@ -306,9 +306,10 @@ class SpectrumFactory(BandFactory):
         Returns:
             gamma_lb, shift - The total Lorentzian HWHM [cm^-1], and the shift [cm^-1] to be subtracted from the wavenumber array to account for lineshift. If setting the lineshift here is not desired, the 2nd return object can be anything for which `bool(shift)==False` like `None`. gamma_lb must be array-like but can also be a vaex expression if the dataframe type is vaex.
         If unspecified, the broadening is handled by default by ``radis.lbl.broadening.gamma_vald3`` for atoms and ``radis.lbl.broadening.pressure_broadening_HWHM`` for molecules
-    potential_lowering: float
-        Some species with Kurucz linelists also come with dedicated partition function tables provided, which depend on both Temperature and potential lowering. Setting this parameter results in the partition function interpolator using that table for the species if it's available, otherwise if it's unavailable or this parameter remains `None`, the default partition functions use `Barklem & Collet (2016), Table 8 <https://doi.org/10.1051/0004-6361/201526961>`.
+    potential_lowering: float (cm-1/Zeff**2)
+        Some species with Kurucz linelists also come with dedicated partition function tables provided, which depend on both temperature and potential lowering. Setting this parameter results in the partition function interpolator using that table for the species if it's available, otherwise if it's unavailable or this parameter remains `None`, the default partition functions use `Barklem & Collet (2016), Table 8 <https://doi.org/10.1051/0004-6361/201526961>`.
         The value can thereafter be changed on the fly by changing the `.potential_lowering` attribute of the SpectrumFactory instance, the result of which is reflected the next time partition function interpolator's `._at` method is used, without any need to re-initialise it.
+        Allowable values are usually: -500, -1000, -2000, -4000, -8000, -16000, -32000. This is based on what's been encountered in the partition function tables of the species checked so far, but documentation of the Kurucz linelists is unclear on whether this is the case for all species.
 
     Examples
     --------
@@ -905,8 +906,10 @@ class SpectrumFactory(BandFactory):
         #                absorbance `A` being `A = tau/ln(10)` )
         absorbance = abscoeff * path_length
         # Generate output quantities
-        transmittance_noslit = exp(-absorbance)
-        emissivity_noslit = 1 - transmittance_noslit
+        # transmittance_noslit = exp(-absorbance)
+        # emissivity_noslit = 1 - transmittance_noslit
+        emissivity_noslit = -expm1(-absorbance) #to handle small values of absorbance
+        transmittance_noslit = 1 - emissivity_noslit
         radiance_noslit = calc_radiance(
             wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
         )

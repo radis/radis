@@ -285,9 +285,15 @@ class BaseFactory(DatabankLoader):
         plt.figure()
         df = getattr(self, dataframe)
         a = np.log10(np.array(df[what]))
-        if np.isnan(a).any():
+        if isinstance(a, vaex.expression.Expression):
+            checknan = a.countnan()
+            withoutnan = a.dropnan()
+        else:
+            checknan = np.isnan(a).any()
+            withoutnan = a[~np.isnan(a)]
+        if checknan:
             printwarn("NaN values in log10(lines)")
-        plt.hist(np.round(a[~np.isnan(a)]))
+        plt.hist(np.round(withoutnan))
         if axvline is not None:
             plt.axvline(axvline, color="r")
         plt.xlabel("log10({0})".format(what))

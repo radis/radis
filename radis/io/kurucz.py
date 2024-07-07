@@ -11,12 +11,12 @@ Defines :py:func:`~radis.io.fetch_kurucz` based on :py:class:`~AdBKurucz`
 
 """
 
-import os
+# import os
 from os.path import abspath, expanduser, join
 
 import radis
-from radis.api.hdf5 import DataFileManager
-from radis.api.kuruczapi import AdBKurucz,get_atomic_number,get_ionization_state, KuruczDatabaseManager
+# from radis.api.hdf5 import DataFileManager
+from radis.api.kuruczapi import KuruczDatabaseManager #AdBKurucz,get_atomic_number,get_ionization_state
 from radis.misc.config import getDatabankEntries
 
 def fetch_kurucz(
@@ -213,7 +213,7 @@ def fetch_kurucz(
                     print(f'No source found for {ldb.molecule}')
                     raise
                 else:
-                    print(f'Error downloading {url}. Attempting to download {main_urls[i+1]}')
+                    print(f'Error downloading {url}')
                     continue
             else:
                 print(f'Successfully downloaded {url}')
@@ -225,11 +225,14 @@ def fetch_kurucz(
     if get_pf_files:
         pf_path, pf_url = ldb.get_pf_path()
         ldb.pf_path = pf_path
-        ldb.pf_url = pf_url
+        # ldb.pf_url = pf_url
         try:
             ldb.download_and_parse([pf_url], [pf_path], 1)
         except OSError:
             print('a partition function file specific to this species was not found')
+            get_pf_files = False
+            ldb.pf_path = None
+            # ldb.pf_url = None
 
     # Register
     if get_main_files or get_pf_files or not ldb.is_registered():
@@ -264,7 +267,6 @@ def fetch_kurucz(
             for k, v in attrs.items():
                 df.attrs[k] = v
 
-    print(df.attrs)
     return (df, local_files, ldb.pf_path) if return_local_path else df
 
 

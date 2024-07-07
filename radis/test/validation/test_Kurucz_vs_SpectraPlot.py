@@ -13,10 +13,11 @@ import radis
 # radis.config["ALLOW_OVERWRITE"] = True
 # <<<<< see NOTE / TO-DO
 from radis import SpectrumFactory, plot_diff
-from radis.test.utils import getTestFile
+from radis.test.utils import getValidationCase
+import pytest
 
-
-def Kurucz_vs_NISTandSpectraplot(verbose=True):
+@pytest.mark.needs_connection
+def test_Kurucz_vs_NISTandSpectraplot(plot=True, verbose=True):
     def broad_arbitrary(**kwargs):
         """An arbitrary broadening formula in SpectraPlot (https://spectraplot.com/)"""
         return 1 * (296 / kwargs["Tgas"]) ** 0.8, None
@@ -44,7 +45,7 @@ def Kurucz_vs_NISTandSpectraplot(verbose=True):
     from radis import Spectrum
 
     L = 1  # cm - Input in SpectraPlot software
-    raw_data = np.loadtxt(getTestFile("spectraplot_O_10000K.txt"), delimiter=",", skiprows=1)
+    raw_data = np.loadtxt(getValidationCase("spectraplot_O_10000K.txt"), delimiter=",", skiprows=1)
     s_SpectraPlot = Spectrum(
         {
             "wavenumber": raw_data[:, 0],
@@ -57,7 +58,8 @@ def Kurucz_vs_NISTandSpectraplot(verbose=True):
     )
     # s_SpectraPlot.plot('abscoeff', wunit='cm-1')
 
-    plot_diff(s_RADIS, s_SpectraPlot, "abscoeff", wunit="nm")
+    if plot:
+        plot_diff(s_RADIS, s_SpectraPlot, "abscoeff", wunit="nm")
     A_RADIS = s_RADIS.get_integral("abscoeff", wunit="nm")
     A_SpectraPlot = s_SpectraPlot.get_integral("abscoeff", wunit="nm")
 
@@ -70,4 +72,4 @@ def Kurucz_vs_NISTandSpectraplot(verbose=True):
 
 
 if __name__ == "__main__":
-    Kurucz_vs_NISTandSpectraplot()
+    test_Kurucz_vs_NISTandSpectraplot()

@@ -212,7 +212,7 @@ class KuruczDatabaseManager(DatabaseManager):
         self.actual_file = None
         self.actual_url = None
         self.pf_path = None
-        self.pf_url = None
+        # self.pf_url = None
 
     def fetch_urlnames(self):
         """returns the possible urls of the desired file, pending confirmation upon attempting download as to which is correct"""
@@ -367,6 +367,10 @@ class KuruczDatabaseManager(DatabaseManager):
                 "parfuncfmt": "kurucz",
             })
 
+        dict_entries.update({
+            "parfuncfmt": "kurucz",
+        })
+
         try:
             super().register(dict_entries)
         except DatabaseAlreadyExists as e:
@@ -375,86 +379,86 @@ class KuruczDatabaseManager(DatabaseManager):
 
 
 
-class AdBKurucz:
+# class AdBKurucz:
 
-    def __init__(self, species):
-        # self.kurucz_url_base = "http://kurucz.harvard.edu/linelists/gfall/gf"
-        # self.hdf5_file = None
-        # self.data = None
-        # self.pfTdat, self.pfdat = load_pf_Barklem2016()
-        # self.populations = None
-        # self.species = species
-        # self.atomic_number = get_atomic_number(species)
-        # self.ionization_state = get_ionization_state(species)
-        # self.element_symbol = get_element_symbol(species)
-        pass
+#     def __init__(self, species):
+#         # self.kurucz_url_base = "http://kurucz.harvard.edu/linelists/gfall/gf"
+#         # self.hdf5_file = None
+#         # self.data = None
+#         # self.pfTdat, self.pfdat = load_pf_Barklem2016()
+#         # self.populations = None
+#         # self.species = species
+#         # self.atomic_number = get_atomic_number(species)
+#         # self.ionization_state = get_ionization_state(species)
+#         # self.element_symbol = get_element_symbol(species)
+#         pass
 
-    def get_url(self, atomic_number, ionization_state):
-        ionization_state = str(ionization_state).zfill(2)
-        code = f'{atomic_number}{ionization_state}'
-        return "http://kurucz.harvard.edu/atoms/" + code + "/gf" + code + ".all"
-        #return f"http://kurucz.harvard.edu/linelists/gfall/gf{atomic_number}{ionization_state}.all"
+#     def get_url(self, atomic_number, ionization_state):
+#         ionization_state = str(ionization_state).zfill(2)
+#         code = f'{atomic_number}{ionization_state}'
+#         return "http://kurucz.harvard.edu/atoms/" + code + "/gf" + code + ".all"
+#         #return f"http://kurucz.harvard.edu/linelists/gfall/gf{atomic_number}{ionization_state}.all"
 
-    def download_file(self):
-        """Download a file from an url to a specified output path."""
+#     def download_file(self):
+#         """Download a file from an url to a specified output path."""
 
-        # extracts the file's name from l'URL
-        filename = self.url.split("/")[-1]
+#         # extracts the file's name from l'URL
+#         filename = self.url.split("/")[-1]
 
-        # Verify if the file exists already
-        if os.path.exists(filename):
-            print("File already exists, skipping download.")
-            return filename
+#         # Verify if the file exists already
+#         if os.path.exists(filename):
+#             print("File already exists, skipping download.")
+#             return filename
 
-        with closing(requests.get(self.url, stream=True)) as r:
-            total_size = int(r.headers.get("content-length", 0))
-            block_size = 1024
-            with open(filename, "wb") as f, tqdm(
-                total=total_size,
-                unit="B",
-                unit_scale=True,
-                unit_divisor=1024,
-                desc=filename,
-            ) as pbar:
-                for data in r.iter_content(block_size):
-                    f.write(data)
-                    pbar.update(len(data))
-        return filename
+#         with closing(requests.get(self.url, stream=True)) as r:
+#             total_size = int(r.headers.get("content-length", 0))
+#             block_size = 1024
+#             with open(filename, "wb") as f, tqdm(
+#                 total=total_size,
+#                 unit="B",
+#                 unit_scale=True,
+#                 unit_divisor=1024,
+#                 desc=filename,
+#             ) as pbar:
+#                 for data in r.iter_content(block_size):
+#                     f.write(data)
+#                     pbar.update(len(data))
+#         return filename
 
-    # def Sij0(self, A, g, nu_lines, elower, QTref):
-    #     # The int column of the df can be computed using this method but the default option rather uses Radis linestrength_from_Einstein
-    #     """Reference Line Strength in Tref=296K, S0.
+#     # def Sij0(self, A, g, nu_lines, elower, QTref):
+#     #     # The int column of the df can be computed using this method but the default option rather uses Radis linestrength_from_Einstein
+#     #     """Reference Line Strength in Tref=296K, S0.
 
-    #     Note:
-    #     Tref=296K
+#     #     Note:
+#     #     Tref=296K
 
-    #     Args:
-    #     A: Einstein coefficient (s-1)
-    #     g: the upper state statistical weight
-    #     nu_lines: line center wavenumber (cm-1)
-    #     elower: elower
-    #     QTref: partition function Q(Tref)
-    #     Mmol: molecular mass (normalized by m_u)
+#     #     Args:
+#     #     A: Einstein coefficient (s-1)
+#     #     g: the upper state statistical weight
+#     #     nu_lines: line center wavenumber (cm-1)
+#     #     elower: elower
+#     #     QTref: partition function Q(Tref)
+#     #     Mmol: molecular mass (normalized by m_u)
 
-    #     Returns:
-    #     Sij(T): Line strength (cm)
-    #     """
-    #     hcperk = 1.4387773538277202  # hc/kB (cm K)
-    #     ccgs = 29979245800.0
-    #     Tref = 296.0
-    #     S0 = (
-    #         -A
-    #         * g
-    #         * np.exp(-hcperk * elower / Tref)
-    #         * np.expm1(-hcperk * nu_lines / Tref)
-    #         / (8.0 * np.pi * ccgs * nu_lines**2 * QTref)
-    #     )
-    #     return S0
+#     #     Returns:
+#     #     Sij(T): Line strength (cm)
+#     #     """
+#     #     hcperk = 1.4387773538277202  # hc/kB (cm K)
+#     #     ccgs = 29979245800.0
+#     #     Tref = 296.0
+#     #     S0 = (
+#     #         -A
+#     #         * g
+#     #         * np.exp(-hcperk * elower / Tref)
+#     #         * np.expm1(-hcperk * nu_lines / Tref)
+#     #         / (8.0 * np.pi * ccgs * nu_lines**2 * QTref)
+#     #     )
+#     #     return S0
 
-    def read_kurucz(self, kuruczf):
-        return read_kurucz(kuruczf)
+#     def read_kurucz(self, kuruczf):
+#         return read_kurucz(kuruczf)
 
-def read_kurucz(kuruczf):
+def read_kurucz(kuruczf, preserve_orig_levels=False):
     """
     This method was adapted from the original read_kurucz method in exojax/src/exojax/spec/atomllapi.py
     (https://github.com/HajimeKawahara/exojax.git)
@@ -532,14 +536,14 @@ def read_kurucz(kuruczf):
         np.zeros(num_lines),
         np.zeros(num_lines),
     )
-    ielem, iion = np.zeros(num_lines, dtype=int), np.zeros(num_lines, dtype=int)
+    # ielem, iion = np.zeros(num_lines, dtype=int), np.zeros(num_lines, dtype=int)
 
     for i, line in enumerate(lines):
         wlnmair[i] = float(line[0:11])
         loggf[i] = float(line[11:18])
         species[i] = str(line[18:24])
-        ielem[i] = int(species[i].split(".")[0])
-        iion[i] = int(species[i].split(".")[1])
+        # ielem[i] = int(species[i].split(".")[0])
+        # iion[i] = int(species[i].split(".")[1])
         elower[i] = float(line[24:36])
         jlower[i] = float(line[36:41])
         labellower[i] = str(line[41:52]).strip()
@@ -551,23 +555,29 @@ def read_kurucz(kuruczf):
         gamvdW[i] = float(line[92:98])
         isonum[i] = int(line[106:109])
 
-    ielem = np.unique(ielem)
-    assert len(ielem) == 1
-    ielem = ielem[0]
+    species_unique = np.unique(species)
+    assert len(species_unique) == 1
+    species_unique = species_unique[0]
+    ielem = int(species_unique.split(".")[0])
+    iion = int(species_unique.split(".")[1]) + 1
 
-    iion = np.unique(iion)
-    assert len(iion) == 1
-    iion = iion[0] + 1
+    # iion = np.unique(iion)
+    # assert len(iion) == 1
+    # iion = iion[0] + 1
     
     # Invert elower, eupper, and jlower, jupper where eupper - elower <= 0
     elower_orig = elower
     eupper_orig = eupper
     jlower_orig = jlower
     jupper_orig = jupper
-    elower = np.where((eupper-elower) > 0,  elower,  eupper)
-    eupper = np.where((eupper-elower) > 0,  eupper,  elower)
-    jlower = np.where((eupper-elower) > 0,  jlower,  jupper)
-    jupper = np.where((eupper-elower) > 0,  jupper,  jlower)
+    labellower_orig = labellower
+    labelupper_orig = labelupper
+    jlower = np.where((eupper_orig-elower_orig) > 0,  jlower_orig,  jupper_orig)
+    jupper = np.where((eupper_orig-elower_orig) > 0,  jupper_orig,  jlower_orig)
+    labellower = np.where((eupper_orig-elower_orig) > 0,  labellower_orig,  labelupper_orig)
+    labelupper = np.where((eupper_orig-elower_orig) > 0,  labelupper_orig,  labellower_orig)
+    elower = np.where((eupper_orig-elower_orig) > 0,  elower_orig,  eupper_orig)
+    eupper = np.where((eupper_orig-elower_orig) > 0,  eupper_orig,  elower_orig)
 
     wlaa = np.where(wlnmair < 200, wlnmair * 10, air2vacuum(wlnmair * 10))
     nu_lines = 1e8 / wlaa[::-1]  # [cm-1]<-[AA]
@@ -592,10 +602,13 @@ def read_kurucz(kuruczf):
     gamSta = gamSta[::-1]
     gamvdW = gamvdW[::-1]
     isonum = isonum[::-1]
-    elower_orig = elower_orig[::-1]
-    eupper_orig = eupper_orig[::-1]
-    jlower_orig = jlower_orig[::-1]
-    jupper_orig = jupper_orig[::-1]
+    if preserve_orig_levels:
+        elower_orig = elower_orig[::-1]
+        eupper_orig = eupper_orig[::-1]
+        jlower_orig = jlower_orig[::-1]
+        jupper_orig = jupper_orig[::-1]
+        labellower_orig = labellower_orig[::-1]
+        labelupper_orig = labelupper_orig[::-1]
 
     ionE = pick_ionE(ielem, iion, load_ionization_energies())
     assert ionE.size == 1
@@ -640,13 +653,19 @@ def read_kurucz(kuruczf):
         # "landeglower": landeglower,
         # "landegupper": landegupper,
         # "isoshiftmA": isoshiftmA,
-        # "elower_orig": elower_orig,
-        # "eupper_orig": eupper_orig,
-        # "jlower_orig": jlower_orig,
-        # "jupper_orig": jupper_orig
         # "int":self.Sij0(A,gupper,nu_lines,elower,self.partfcn(self.species,296))
         # if int parameter is used, calc_linestrength_eq will also use it
     }
+
+    if preserve_orig_levels:
+        data_dict.update({
+        "elower_orig": elower_orig,
+        "eupper_orig": eupper_orig,
+        "jlower_orig": jlower_orig,
+        "jupper_orig": jupper_orig,
+        "labellower_orig": labellower_orig,
+        "labelupper_orig": labelupper_orig,
+        })
 
     # self.data = pd.DataFrame(data_dict)
     return pd.DataFrame(data_dict)#self.data

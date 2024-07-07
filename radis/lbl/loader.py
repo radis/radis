@@ -64,7 +64,7 @@ from radis.api.cdsdapi import cdsd2df
 from radis.api.hdf5 import hdf2df
 from radis.api.hitranapi import hit2df, parse_global_quanta, parse_local_quanta
 from radis.api.tools import drop_object_format_columns, replace_PQR_with_m101
-from radis.db.classes import get_molecule
+from radis.db.classes import get_molecule, is_atom, is_neutral
 from radis.db.molecules import getMolecule
 from radis.db.molparam import MOLPARAMS_EXTRA_PATH, MolParams
 from radis.db.references import doi
@@ -1833,6 +1833,11 @@ class DatabankLoader(object):
 
         if "molecule" in self.df0.attrs:
             self.input.species = self.df0.attrs["molecule"]
+            if is_atom(self.input.species):
+                self.input.isatom = True
+                self.input.isneutral = is_neutral(self.input.species)
+            else:
+                self.input.isatom = False
         else:
             self.input.species = get_molecule(self.df0.attrs["id"])
 

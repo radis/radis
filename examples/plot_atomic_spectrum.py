@@ -82,20 +82,20 @@ def func3(df, pressure_atm, mole_fraction, Tgas, diluent, **kwargs):
 s = calc_spectrum(
     wlim[0],
     wlim[1],#+truncation,  # cm-1
-    species="Fe_I",  # Enter species name
+    species="O_I",  # Enter species name
     Tgas=4000,  # K
     databank="kurucz",
     pressure=1.01325,
     # optimization=None,
     # truncation=truncation,
-    # diluent={'H':1-mole_fraction-1e-3, 'e-': 1e-3},
-    # mole_fraction=mole_fraction,
+    diluent={'H':1-mole_fraction-1e-3, 'e-': 1e-3},
+    mole_fraction=mole_fraction,
     path_length=15,
-    lbfunc=func1,
+    # lbfunc=func1,
     # potential_lowering=-500,
     # verbose=2,
     warnings={"AccuracyError": "ignore", "AccuracyWarning": "ignore"},
-    # mode='emulated_gpu'
+    # cutoff=0
 )
 
 #s.crop(*wlim)

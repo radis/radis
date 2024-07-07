@@ -470,10 +470,10 @@ def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, i
     gamma_case1 = gamma6 / (4*np.pi*c_CGS)
     #gamma_case1 = np.nan_to_num(gamma_case1) #revisit if NaN or NA ever does appear
     try:
-        if gamma_case1.isna().sum() > 0:
+        if gamma_case1.countna():
             raise Exception('NA values were encountered in the estimated van der Waals gamma')
     except Exception:
-        if np.sum(np.isnan(gamma_case1)) > 0:
+        if np.isnan(gamma_case1).any():
             raise Exception('NaN values were encountered in the estimated van der Waals gamma')
 
     Texp = 0.38  # Barklem+2000
