@@ -1840,6 +1840,7 @@ class DatabankLoader(object):
                 self.input.isatom = False
         else:
             self.input.species = get_molecule(self.df0.attrs["id"])
+            self.input.isatom = False
 
         # %% Load Partition functions (and energies if needed)
         # ----------------------------------------------------
