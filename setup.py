@@ -274,9 +274,11 @@ def run_setup(with_binary):
             "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
             "Topic :: Scientific/Engineering",
             "Programming Language :: Python",
-            "Programming Language :: Python :: 3.7",
-            "Programming Language :: Python :: 3.8",
+            "Programming Language :: Python :: 3.8",  # end of life, Novembre 2024, https://devguide.python.org/versions/
             "Programming Language :: Python :: 3.9",
+            "Programming Language :: Python :: 3.10",
+            "Programming Language :: Python :: 3.11",
+            "Programming Language :: Python :: 3.12",
             "Operating System :: OS Independent",
         ],
         **get_ext_modules(with_binary),

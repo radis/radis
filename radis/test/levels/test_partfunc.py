@@ -39,6 +39,13 @@ from radis.test.utils import getTestFile, setup_test_line_databases
 fig_prefix = basename(__file__) + ": "
 
 
+from radis.misc.utils import NotInstalled, not_installed_vaex_args
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
+
 # %% Test
 
 # never add @pytest.mark.fast so we don't delete cached files for 'fast' tests
@@ -765,6 +772,10 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
     assert cache_last_modification_again > cache_last_modification
 
 
+@pytest.mark.skipif(
+    isinstance(vaex, NotInstalled),
+    reason="Vaex not available, just-in-time partition functions are only implemented in Vaex as of Radis 0.15",
+)
 def test_tabulated_partition_functions(
     verbose=True, plot=True, rtol=1e-2, *args, **kwargs
 ):
@@ -876,6 +887,10 @@ def test_tabulated_partition_functions(
         plt.legend()
 
 
+@pytest.mark.skipif(
+    isinstance(vaex, NotInstalled),
+    reason="Vaex not available, just-in-time partition functions are only implemented in Vaex as of Radis 0.15",
+)
 def test_parsum_mode_in_factory(verbose=True, plot=True, *args, **kwargs):
     """Test Partition function modes in SpectrumFactory
 

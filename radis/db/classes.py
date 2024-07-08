@@ -309,6 +309,7 @@ EXOMOL_MOLECULES = [
     "AsH3",
     "BeH",
     "C2",
+    "C3",
     "C2H2",
     "C2H4",
     "C3",
@@ -345,7 +346,7 @@ EXOMOL_MOLECULES = [
     "HF",
     "HNO3",
     "HeH_p",
-    "K",
+    # "K", #not anymore since 01/07/2024
     "KCl",
     "KF",
     "KOH",
@@ -364,7 +365,7 @@ EXOMOL_MOLECULES = [
     "NH3",
     "NO",
     "NS",
-    "Na",
+    # "Na",  #not anymore since 01/07/2024
     "NaCl",
     "NaF",
     "NaH",

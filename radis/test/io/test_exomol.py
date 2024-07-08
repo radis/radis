@@ -10,6 +10,7 @@ import pytest
 from radis.io.exomol import get_exomol_database_list, get_exomol_full_isotope_name
 
 
+@pytest.mark.fast
 @pytest.mark.needs_connection
 def test_exomol_parsing_functions(verbose=True, *args, **kwargs):
     """Test functions used to parse ExoMol website"""
@@ -62,7 +63,7 @@ def test_calc_exomol_spectrum(verbose=True, plot=True, *args, **kwargs):
         Tgas=1000,  # K
         mole_fraction=0.1,
         path_length=1,  # cm
-        broadening_method="fft",  # @ dev: Doesn't work with 'voigt'
+        broadening_method="fft",
         databank=("exomol", "EBJT"),
         verbose=verbose,
     )
@@ -91,12 +92,14 @@ def test_calc_exomol_vs_hitemp(verbose=True, plot=True, *args, **kwargs):
         "Tgas": 1000,  # K
         "mole_fraction": 0.1,
         "path_length": 1,  # cm
-        "broadening_method": "fft",  # @ dev: Doesn't work with 'voigt'
+        "broadening_method": "fft",
         "verbose": True,
     }
 
     s_exomol = calc_spectrum(
-        **conditions, databank="exomol", name="EXOMOL/HITEMP (default broadening)"
+        **conditions,
+        databank="exomol",
+        name="EXOMOL (default broadening)",  # June 2017, default ref is Li2015
     )
     s_hitemp = calc_spectrum(
         **conditions,

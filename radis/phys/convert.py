@@ -17,7 +17,6 @@ Get equivalent width in nm of a 10cm-1 width at 380 nm
 """
 
 import numpy as np
-import vaex
 
 from radis.phys.air import air2vacuum, vacuum2air
 from radis.phys.constants import c, eV, h, hc_k, k_b
@@ -339,10 +338,7 @@ def atm2bar(p_atm):
 
 
 def _magn(x):
-    if isinstance(x, vaex.expression.Expression):
-        return x.abs().log10().round()
-    else:
-        return np.round((np.log10(np.abs(x))))
+    return np.round((np.log10(np.abs(x))))
 
 
 def _assertK(E):

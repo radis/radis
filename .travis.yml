@@ -2,9 +2,9 @@
 language: python
 python:
   #- "2.7"    # not tested anymore starting from 0.9.19
-  - "3.8"
-  - "3.9"
+  #- "3.8" #end of life, Novembre 2024, https://devguide.python.org/versions/
   - "3.10"
+  - "3.11"
 os: linux
 dist: focal #needed for python 3.10 (xenial is default for Travis-CI, but does not support python 3.10)
 
@@ -20,7 +20,7 @@ install:
   - source ~/.bashrc
   - micromamba activate base
   # Update python version in environment
-  - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
+  - sed -i -E 's/^- python$/- python='$TRAVIS_PYTHON_VERSION'/' ./environment.yml
   # Create conda environment
   - micromamba install xtensor -c conda-forge -y
   # move requirements.txt to the /tmp folder, required so that .environment.yml finds it
@@ -42,6 +42,7 @@ before_script:
 # >> If before_install, install or before_script returns a non-zero exit code, the build is errored and
 # >> stops immediately. (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
   - export MPLBACKEND=Agg
+  - python --version #to check and be sure of the python version
   - echo ">>> Run Fast tests first"
   # use XVFB to have headless display port, and still run the Matplotlib tests.
   - xvfb-run -a pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10
@@ -66,14 +67,14 @@ stages: #This sequence defines the order of the stages
     if: branch = master OR branch = develop
   - name: lint
     if: branch = master OR branch = develop
-  - name: build_wheels
-    if: branch = master OR branch = develop
   - name: deploy
     if: branch = master
   # - name: MacOS_py310
   #   if: branch = master OR branch = develop
   # - name: Win_py310
   #   if: branch = master OR branch = develop
+  - name: Py38
+    if: branch = master
   - name: Py312
     if: branch = master
 
@@ -115,6 +116,9 @@ jobs:
     #     - pip install pytest-cov
     #     - pip install -e . -v
   ### Extra Python versions - start
+    - stage: Py38
+      name: "Python 3.8"
+      python: 3.8
     - stage: Py312
       name: "Python 3.12"
       python: 3.12
@@ -130,31 +134,6 @@ jobs:
         - pre-commit run --all-files
       after_failure: #better for checking the origin of a bug
         - cat /home/travis/.cache/pre-commit/pre-commit.log
-
-    - stage: build_wheels
-      name: Build the Wheels on Linux, Windows
-      # Added from https://github.com/pypa/cibuildwheel/blob/main/examples/travis-ci-deploy.yml; see https://github.com/radis/radis/issues/650
-      include:
-        # perform a linux build
-        - services: docker
-        # and a windows build
-        - os: windows
-          language: shell
-          before_install:
-            - choco upgrade python -y --version 3.8.6
-            - export PATH="/c/Python38:/c/Python38/Scripts:$PATH"
-            # make sure it's on PATH as 'python3'
-            - ln -s /c/Python38/python.exe /c/Python38/python3.exe
-
-      install: skip
-        #- python3 -m pip install cibuildwheel==2.19.1 #If you intend to build a pure-Python wheel, you don't need cibuildwheel
-
-      before_script: skip #do NOT run the before_script of "tests" stage
-
-      script:
-        # build the wheels, put them into './dist'
-        # - python3 -m cibuildwheel --output-dir dist #If you intend to build a pure-Python wheel, you don't need cibuildwheel
-        - python3 -m pip wheel -w dist .
 
     - stage: deploy
       name: Deploy to PyPI

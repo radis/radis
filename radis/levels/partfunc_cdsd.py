@@ -86,7 +86,7 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
             )
 
         # Read partition function tabulated data
-        parsum = pd.read_csv(database, comment="#", delim_whitespace=True)
+        parsum = pd.read_csv(database, comment="#", sep="\s+")
         if not "T(K)" in list(parsum.keys()):
             raise KeyError("Missing columns ({0}) in {1}".format("T(K)", database))
 
@@ -319,7 +319,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         )
 
         if df is None:  # Read normal file
-            df = pd.read_csv(energy_levels, comment="#", delim_whitespace=True)
+            df = pd.read_csv(energy_levels, comment="#", sep="\s+")
             df = self._add_degeneracies(df)
             df = self._add_levels(df)
 

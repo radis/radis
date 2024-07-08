@@ -1028,7 +1028,7 @@ def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
     )
     sf.warnings.update(
         {
-            "MissingSelfBroadeningWarning": "ignore",
+            # "MissingSelfBroadeningWarning": "ignore",
             "NegativeEnergiesWarning": "ignore",
             "LinestrengthCutoffWarning": "ignore",
             "HighTemperatureWarning": "ignore",
@@ -1042,9 +1042,9 @@ def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
         extra_params="all",
         db_use_cached="regen",  # required to download extra broadening parameters
     )
-    # set default behavior of missing custom broadening to be an error:
-    sf.warnings["MissingDiluentBroadeningWarning"] = "error"
-    sf.warnings["MissingDiluentBroadeningTdepWarning"] = "error"
+    # set default behavior of missing custom broadening to be an error: ###Depreciated since radis=0.15
+    # sf.warnings["MissingDiluentBroadeningWarning"] = "error"
+    # sf.warnings["MissingDiluentBroadeningTdepWarning"] = "error"
 
     # (1) Calculating spectrum for different diluents
     sf.eq_spectrum(Tgas=2000)
@@ -1064,15 +1064,7 @@ def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
 
     # (2) Now, ensures that asking broadening by some species not in database raises
     # an error
-    from radis.misc.warning import MissingDiluentBroadeningWarning
-
-    with pytest.raises(MissingDiluentBroadeningWarning):
-        sf.eq_spectrum(Tgas=2000, diluent="X")  # "X" is not a real molecule
-
-    # Ensure it still works and that the warning is raised (air broadening will be used instead)
-    sf.warnings["MissingDiluentBroadeningWarning"] = "warn"
-    sf.warnings["MissingDiluentBroadeningTdepWarning"] = "warn"
-    with pytest.warns(MissingDiluentBroadeningWarning):
+    with pytest.raises(ValueError):
         sf.eq_spectrum(Tgas=2000, diluent="X")  # "X" is not a real molecule
 
 
