@@ -46,9 +46,9 @@ from os.path import dirname, exists, expanduser, join
 import hjson
 
 import radis
-from radis.misc.basics import compare_dict, compare_lists, stdpath
-from radis.misc.utils import DatabankNotFound, getProjectRoot
-from radis.misc.warning import DatabaseAlreadyExists
+from ..misc.basics import compare_dict, compare_lists, stdpath
+from ..misc.utils import DatabankNotFound, getProjectRoot
+from ..misc.warning import DatabaseAlreadyExists
 
 # %% Functions to parse radis/config.json
 

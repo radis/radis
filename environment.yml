@@ -28,8 +28,9 @@ dependencies:
 - seaborn   # other matplotlib themes
 - termcolor  # terminal colors
 - specutils
-- vaex-core>=4.17.0   # load HDF5 files  (version needed to fix https://github.com/radis/radis/issues/598)
-- vaex-hdf5
-- vaex-viz
+#- vaex-core>=4.17.0   # load HDF5 files  (version needed to fix https://github.com/radis/radis/issues/598)
+#- vaex-hdf5
+#- vaex-viz
+- pip
 - pip:
   - -r requirements.txt              # add all packages directly in requirements.txt

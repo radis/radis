@@ -14,7 +14,13 @@ import pytest
 from radis import config
 from radis.lbl import SpectrumFactory
 from radis.misc.printer import printm
+from radis.misc.utils import NotInstalled, not_installed_vaex_args
 from radis.test.utils import getTestFile, setup_test_line_databases
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
 
 
 def test_retrieve_from_database(
@@ -223,6 +229,7 @@ def test_custom_abundance(verbose=True, plot=False, *args, **kwargs):
     assert s.compare_with((3 * s3.take("abscoeff")), "abscoeff", rtol=0.5e-2, plot=True)
 
 
+@pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
 def test_vaex_and_pandas_dataframe_fetch_databank():
     """
     Compares dataframes fetched and manipulated with vaex with that of pandas.
@@ -353,6 +360,7 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
     # Comparing the dataframe fetched from GEISA
     assert compare_dataframe(df1, df2, df2.columns)
 
+@pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
 def test_vaex_and_pandas_dataframe_load_databank():
     """
     Compares dataframes fetched and manipulated with vaex with that of pandas.

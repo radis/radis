@@ -7,6 +7,7 @@ Created on Sun Aug 22 13:34:42 2020
 ------------------------------------------------------------------------
 
 """
+#%%
 import warnings
 
 import pytest
@@ -18,6 +19,7 @@ from radis.misc.warning import NoGPUWarning
 from radis.test.utils import getTestFile
 
 
+@pytest.mark.fast
 def test_eq_spectrum_emulated_gpu(
     backend="cpu-cuda", verbose=False, plot=False, *args, **kwargs
 ):
@@ -96,6 +98,7 @@ def test_eq_spectrum_gpu(plot=False, *args, **kwargs):
         test_eq_spectrum_emulated_gpu(backend="gpu-cuda", plot=plot, *args, **kwargs)
 
 
+@pytest.mark.fast
 def test_multiple_gpu_calls():
     from radis import SpectrumFactory
 
@@ -126,6 +129,6 @@ def test_multiple_gpu_calls():
 if __name__ == "__main__":
 
     # test_eq_spectrum_gpu(plot=True)
-    # test_eq_spectrum_emulated_gpu(plot=True, verbose=2)
+    test_eq_spectrum_emulated_gpu(plot=True, verbose=2)
 
     printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))

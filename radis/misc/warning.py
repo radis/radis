@@ -168,6 +168,9 @@ class MissingDiluentBroadeningTdepWarning(UserWarning):
     :py:meth:`~radis.lbl.broadening.BroadenFactory._add_Lorentzian_broadening_HWHM`
     """
 
+    # warnings.warn(
+    #     "This Warning is depreciated since radis=0.15. A missing coefficient for broadening should be an error."
+    # )
     pass
 
 
@@ -178,6 +181,9 @@ class MissingDiluentBroadeningWarning(UserWarning):
     :py:meth:`~radis.lbl.broadening.BroadenFactory._add_Lorentzian_broadening_HWHM`
     """
 
+    # warnings.warn(
+    #     "This Warning is depreciated since radis=0.15. A missing coefficient for broadening should be an error."
+    # )
     pass
 
 
