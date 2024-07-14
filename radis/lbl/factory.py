@@ -565,13 +565,13 @@ class SpectrumFactory(BandFactory):
                     )
                 self.input.isatom = False
                 self.input.isneutral = None # irrelevant for molecules
-                if self.input.diluent is None:
-                    self.input.diluent = 'air'
+                if diluent is None:
+                    diluent = 'air'
             else:
                 self.input.isatom = True
                 self.input.isneutral = is_neutral(molecule)
-                if self.input.diluent is None:
-                    self.input.diluent = 'H'
+                if diluent is None:
+                    diluent = 'H'
 
         # Store isotope identifier in str format (list wont work in database queries)
         if not isinstance(isotope, str):

@@ -1841,13 +1841,13 @@ class DatabankLoader(object):
         if is_atom(self.input.species):
             self.input.isatom = True
             self.input.isneutral = is_neutral(self.input.species)
-            if self.input.diluent is None:
-                self.input.diluent = 'H'
+            if self.params.diluent is None:
+                self.params.diluent = 'H'
         else:
             self.input.isatom = False
             self.input.isneutral = None # irrelevant for molecules
-            if self.input.diluent is None:
-                self.input.diluent = 'air'
+            if self.params.diluent is None:
+                self.params.diluent = 'air'
         # %% Load Partition functions (and energies if needed)
         # ----------------------------------------------------
 
