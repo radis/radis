@@ -90,7 +90,7 @@ from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
 from radis.misc.printer import printg
 from radis.misc.profiler import Profiler
-from radis.misc.utils import get_files_from_regex
+from radis.misc.utils import get_files_from_regex, Default
 from radis.misc.warning import (
     EmptyDatabaseError,
     IrrelevantFileWarning,
@@ -1841,12 +1841,12 @@ class DatabankLoader(object):
         if is_atom(self.input.species):
             self.input.isatom = True
             self.input.isneutral = is_neutral(self.input.species)
-            if self.params.diluent is None:
+            if isinstance(self.params.diluent, Default) or (len(self.params.diluent)==1 and isinstance(list(self.params.diluent.keys())[0], Default)):
                 self.params.diluent = 'H'
         else:
             self.input.isatom = False
             self.input.isneutral = None # irrelevant for molecules
-            if self.params.diluent is None:
+            if isinstance(self.params.diluent, Default) or (len(self.params.diluent)==1 and isinstance(list(self.params.diluent.keys())[0], Default)):
                 self.params.diluent = 'air'
         # %% Load Partition functions (and energies if needed)
         # ----------------------------------------------------

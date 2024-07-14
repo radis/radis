@@ -17,7 +17,7 @@ def func1(**kwargs):
     return 0.1*(296/kwargs['Tgas'])**0.8, None
 
 @pytest.mark.needs_connection
-def test_Kurucz_vs_NISTandSpectraplot(plot=True, verbose=True):
+def test_Kurucz_vs_NISTandSpectraplot_4000(plot=True, verbose=True):
     w, I = np.loadtxt(getValidationCase("spectraplot_O_4000K.csv"), skiprows=1, delimiter=',', unpack=True)
     I = np.where(I==0, 1e-99, I)
 
@@ -50,4 +50,4 @@ def test_Kurucz_vs_NISTandSpectraplot(plot=True, verbose=True):
     assert np.isclose(I_RADIS, I_SpectraPlot, rtol=1.4e-2)
 
 if __name__ == "__main__":
-    test_Kurucz_vs_NISTandSpectraplot()
+    test_Kurucz_vs_NISTandSpectraplot_4000()

@@ -217,7 +217,7 @@ def test_lazy_loading(verbose=True, *args, **kwargs):
     # Check what species are in the database at a given temperature (300)
     s300 = db.get(Tgas=300)  # simple use of get
     if verbose:
-        print([s.conditions["molecule"] for s in s300])
+        print([s.conditions["species"] for s in s300])
     # Check what species are in the database at a given species
     sCO = db.get(molecule="CO")
     if verbose:
@@ -234,7 +234,7 @@ def test_lazy_loading(verbose=True, *args, **kwargs):
     #%% Access the spectra in the database via the get functions.
     # Check what species are in the database at a given temperature (300)
     s300_2 = db2.get(Tgas=300)  # simple use of get
-    print([s.conditions["molecule"] for s in s300_2])
+    print([s.conditions["species"] for s in s300_2])
 
     assert s300 == s300_2
 

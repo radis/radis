@@ -1088,7 +1088,7 @@ class BroadenFactory(BaseFactory):
                         #     "airbrd"
                         # ]  # note @dev : check it doesn't create a new memory object
                 else:
-                    msg = f"Broadening Coefficient of {self.get_conditions()['molecule']} by {key} not present in database. \nIf the database should include these coefficients, try removing the cache by using once `use_cached='regen'` in calc_spectrum."
+                    msg = f"Broadening Coefficient of {self.get_conditions()['species']} by {key} not present in database. \nIf the database should include these coefficients, try removing the cache by using once `use_cached='regen'` in calc_spectrum."
                     raise ValueError(
                         f"{msg}\nOtherwise, replace '{key}' by 'air' in the `diluent=` parameter."
                     )
@@ -1107,7 +1107,7 @@ class BroadenFactory(BaseFactory):
                     if num_nans > 0:
                         msg = """
                         Temperature dependance of Broadening Coefficient of
-                        {self.get_conditions()['molecule']} by {key} has Nan values in the database.
+                        {self.get_conditions()['species']} by {key} has Nan values in the database.
                         \nWe found {num_nans} nans out of
                         {diluent_broadening_coeff['gamma_' + diluent_name].shape[0]}
                         elements in the columns {'gamma_' + diluent_name}.
@@ -1124,7 +1124,7 @@ class BroadenFactory(BaseFactory):
                         #     "Tdpair"
                         # ]  # note @dev : check it doesn't create a new memory object
                 else:
-                    msg = f"Temperature dependance of Broadening Coefficient of {self.get_conditions()['molecule']} by {key} not present in database. \nIf the database should include these coefficients, try removing the cache by using once `use_cached='regen'` in calc_spectrum."
+                    msg = f"Temperature dependance of Broadening Coefficient of {self.get_conditions()['species']} by {key} not present in database. \nIf the database should include these coefficients, try removing the cache by using once `use_cached='regen'` in calc_spectrum."
                     raise ValueError(
                         f"{msg}\nOtherwise, replace '{key}' by 'air' in the `diluent=` parameter."
                     )

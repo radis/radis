@@ -883,10 +883,10 @@ def _recompute_from_abscoeff_at_equilibrium(
     ):
         # Calculate transmittance
         transmittance_noslit = exp(-absorbance)
-        transmittance_noslitm1 = expm1(-absorbance)
+        _transmittance_noslitm1 = expm1(-absorbance)
         # Store:
         rescaled["transmittance_noslit"] = transmittance_noslit
-        rescaled["transmittance_noslitm1"] = transmittance_noslitm1
+        rescaled["_transmittance_noslitm1"] = _transmittance_noslitm1
         units["transmittance_noslit"] = ""
 
     if (
@@ -1326,7 +1326,7 @@ def rescale_transmittance_noslit(
             printdbg("... rescale: transmittance_noslit T_2 = exp(-A_2)")
         absorbance = rescaled["absorbance"]  # x and L already scaled
         transmittance_noslit = exp(-absorbance)  # recalculate
-        transmittance_noslitm1 = expm1(-absorbance)
+        _transmittance_noslitm1 = expm1(-absorbance)
         unit = get_transmittance_unit()
     elif "abscoeff" in rescaled and true_path_length:
         if __debug__:
@@ -1335,7 +1335,7 @@ def rescale_transmittance_noslit(
         assert units["abscoeff"] == "cm-1"
         absorbance = abscoeff * new_path_length_cm  # calculate
         transmittance_noslit = exp(-absorbance)  # recalculate
-        transmittance_noslitm1 = expm1(-absorbance)
+        _transmittance_noslitm1 = expm1(-absorbance)
         unit = get_transmittance_unit()
     elif "transmittance_noslit" in initial:
         if __debug__:
@@ -1371,7 +1371,7 @@ def rescale_transmittance_noslit(
         absorbance *= new_mole_fraction / old_mole_fraction  # rescale x
         absorbance *= new_path_length_cm / old_path_length_cm  # rescale L
         transmittance_noslit = exp(-absorbance)
-        transmittance_noslitm1 = expm1(-absorbance)
+        _transmittance_noslitm1 = expm1(-absorbance)
         unit = get_transmittance_unit()
     else:
         msg = "Missing data to rescale transmittance. Expected scaled absorbance ({0})".format(
@@ -1389,7 +1389,7 @@ def rescale_transmittance_noslit(
     # Export rescaled value
     if transmittance_noslit is not None:
         rescaled["transmittance_noslit"] = transmittance_noslit
-        rescaled["transmittance_noslitm1"] = transmittance_noslitm1
+        rescaled["_transmittance_noslitm1"] = _transmittance_noslitm1
     if unit is not None:
         units["transmittance_noslit"] = unit
 
@@ -1546,12 +1546,16 @@ def rescale_radiance_noslit(
         assert rescaled_units["abscoeff"] == "cm-1"
         # mole_fraction, path_length already scaled
         transmittance_noslit = rescaled["transmittance_noslit"]
-        transmittance_noslitm1 = rescaled["transmittance_noslitm1"]
         b = transmittance_noslit == 1  # optically thin mask
         radiance_noslit = np.empty_like(emisscoeff)  # calculate L
-        radiance_noslit[~b] = (
-            emisscoeff[~b] / abscoeff[~b] * -transmittance_noslitm1 #(1 - transmittance_noslit[~b])
-        )
+        if '_transmittance_noslitm1' in rescaled:
+            radiance_noslit[~b] = (
+                emisscoeff[~b] / abscoeff[~b] * -rescaled["_transmittance_noslitm1"] #(1 - transmittance_noslit[~b])
+            )
+        else:
+            radiance_noslit[~b] = (
+                emisscoeff[~b] / abscoeff[~b] * (1 - transmittance_noslit[~b])
+            )
         radiance_noslit[b] = emisscoeff[b] * new_path_length_cm  # optically thin limit
         unit = get_radiance_unit(unit_emisscoeff=rescaled_units["emisscoeff"])
 
@@ -1722,8 +1726,11 @@ def rescale_emissivity_noslit(spec, rescaled, rescaled_units, extra, true_path_l
         if __debug__:
             printdbg("... rescale: emissivity_noslit e_2 = 1 - T_2")
         # transmissivity already scaled
-        # T2 = rescaled["transmittance_noslit"]
-        emissivity_noslit = rescaled["transmittance_noslitm1"]  # recalculate
+        if '_transmittance_noslitm1' in rescaled:
+            emissivity_noslit = -rescaled["_transmittance_noslitm1"]  # recalculate
+        else:
+            T2 = rescaled["transmittance_noslit"]
+            emissivity_noslit = 1 - T2
     else:
         msg = "transmittance_noslit needed to recompute emissivity_noslit"
         if "emissivity_noslit" in extra:  # cant calculate this one but let it go

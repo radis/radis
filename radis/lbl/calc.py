@@ -48,7 +48,7 @@ def calc_spectrum(
     species=None,
     isotope="all",
     mole_fraction=1,
-    diluent="air",
+    diluent=Default(None),
     path_length=1,
     databank="hitran",
     medium="air",
@@ -644,8 +644,8 @@ def _calc_spectrum_one_molecule(
     verbose,
     mode,
     export_lines,
+    diluent,
     return_factory=False,
-    diluent="air",
     **kwargs,
 ) -> Spectrum:
     """See :py:func:`~radis.lbl.calc.calc_spectrum`
@@ -704,6 +704,8 @@ def _calc_spectrum_one_molecule(
         drop_columns = "auto"
 
     # Run calculations
+    print(diluent)
+    print(type(list(diluent.keys())[0]))
     sf = SpectrumFactory(
         wavenum_min=wavenum_min,
         wavenum_max=wavenum_max,
