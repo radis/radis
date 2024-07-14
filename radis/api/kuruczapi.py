@@ -1,30 +1,30 @@
+# -*- coding: utf-8 -*-
 """
-The AdBKurucz class below is inspired by an Exojax class developed by Hiroyuki Tako ISHIKAWA.
-It allows loading data from the Kurucz database and performing several calculations on it.
-https://github.com/HajimeKawahara/exojax.git
+Summary
+-----------------------
 
-Author: Racim Menasria
-Date: June 2023
+Kurucz database parser
+
+Based largely on the `Exojax <https://github.com/HajimeKawahara/exojax>`__ code
+
+-----------------------
+
+
 """
 
 import io
 import os
 from os.path import abspath, join, splitext, expanduser
-import pkgutil
-from contextlib import closing
-from io import BytesIO
 
 import numpy as np
 import pandas as pd
 import periodictable
-import requests
-from tqdm import tqdm
 
 from radis.misc.utils import getProjectRoot
 from radis.misc.config import getDatabankEntries
-from radis.db.classes import roman_to_int
+from radis.db.classes import roman_to_int, get_ielem_charge
 from radis.phys.air import air2vacuum
-from radis.phys.constants import c_CGS, ecgs, mecgs
+from radis.phys.constants import c_CGS, e_CGS, m_e_CGS
 
 from radis.api.dbmanager import DatabaseManager
 from radis.misc.warning import DatabaseAlreadyExists
@@ -32,7 +32,6 @@ from radis.misc.warning import DatabaseAlreadyExists
 
 def load_ionization_energies():
     #based on https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/spec/atomllapi.py#L308; the file 'NIST_Atomic_Ionization_Energies.txt' is taken from https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/data/atom/NIST_Atomic_Ionization_Energies.txt; 
-    # Not used for now but will probably be for NIST database
     """Load atomic ionization energies.
 
     Returns:
@@ -45,22 +44,20 @@ def load_ionization_energies():
     df_ionE = pd.read_csv(fn_IonE, sep="|", skiprows=6, header=0)
     return df_ionE
 
-def pick_ionE(ielem, iion, df_ionE):
-    """Pick up ionization energy of a specific atomic species.
+def pick_ionE(ielem, charge, df_ionE):
+    # This method was extracted from exojax/src/exojax/spec/atomllapi.py
+    # (https://github.com/HajimeKawahara/exojax.git)
 
-    This method was extracted from exojax/src/exojax/spec/atomllapi.py
-    (https://github.com/HajimeKawahara/exojax.git)
+    """Pick up ionization energy of a specific atomic species.
 
     Args:
         ielem (int): atomic number (e.g., Fe=26)
-        iion (int): ionized level (e.g., neutral=1, singly ionized=2, etc.)
+        charge (int): charge of the species
         df_ionE (pd.DataFrame): table of ionization energies
 
     Returns:
         ionE (float): ionization energy
 
-    Note:
-        NIST_iE is for now is .NIST_iE.txt
     """
 
     def f_droppare(x):
@@ -75,14 +72,14 @@ def pick_ionE(ielem, iion, df_ionE):
     ionE = f_droppare(
             df_ionE[
                 (df_ionE["At. num "] == ielem)
-                & (df_ionE[" Ion Charge "] == iion - 1)
+                & (df_ionE[" Ion Charge "] == charge)
             ]["      Ionization Energy (a) (eV)      "]
         )
     return ionE
 
 def get_atomic_number(species):
     """
-    Extracts the atomic_number from the species id
+    Extracts the atomic number from the species given in spectroscopic notation
     """
     atomic_symbol = species.split("_")[0]
     el = getattr(periodictable, atomic_symbol)
@@ -92,7 +89,7 @@ def get_atomic_number(species):
 
 def get_ionization_state(species):
     """
-    Extracts the ionization_state from the species id
+    Extracts the ionization state from the species given in spectroscopic notation
     """
     ionization_str = species.split("_")[1]
     ionization_int = roman_to_int(ionization_str) - 1
@@ -101,47 +98,22 @@ def get_ionization_state(species):
     return ionization_int#formatted_str
 
 def get_element_symbol(species):
+    """
+    Extracts the element symbol from the species given in spectroscopic notation
+    """
+
     atomic_symbol = species.split("_")[0]
     el = getattr(periodictable, atomic_symbol)
     return el
 
-#Initially from Exojax but no longer needed since pressure is handled by SpectrumFactory; Update: from https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/atm/atmprof.py#L10
-def pressure_layer(logPtop=-8.,
-                logPbtm=2.,
-                NP=20,
-                mode='ascending',
-                reference_point=0.5):
-    """generating the pressure layer.
-
-    Args:
-        logPtop: log10(P[bar]) at the top layer
-        logPbtm: log10(P[bar]) at the bottom layer
-        NP: the number of the layers
-        mode: ascending or descending
-        reference_point: reference point in the layer. 0.5:center, 1.0:lower boundary, 0.0:upper boundary
-        numpy: if True use numpy array instead of jnp array
-
-    Returns:
-        Parr: pressure layer
-        dParr: delta pressure layer
-        k: k-factor, P[i-1] = k*P[i]
-
-    Note:
-        dParr[i] = Parr[i] - Parr[i-1], dParr[0] = (1-k) Parr[0] for ascending mode
-    """
-    dlog10P = (logPbtm - logPtop) / (NP - 1)
-    k = 10**-dlog10P
-    
-    Parr = np.logspace(logPtop, logPbtm, NP)
-    
-    dParr = (k ** (reference_point - 1.0) - k**reference_point) * Parr
-    if mode == 'descending':
-        Parr = Parr[::-1]
-        dParr = dParr[::-1]
-
-    return Parr, dParr, k
-
 def read_kurucz_pfs(file):
+    """Convert a Kurucz partfnxxyy.dat file containing a table of partition functions by temperature and potential lowering to a Pandas dataframe
+
+    Parameters
+    ----------
+    fname: str
+        file name
+    """
     df = pd.read_csv(file, sep="\s+", header=2)
     df.set_index('LOG10(T)', inplace=True)
     return df
@@ -163,13 +135,9 @@ def load_pf_Barklem2016():
 
     """
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(current_dir, "./../levels/pfTKurucz_values.txt")
+    file_path = os.path.join(current_dir, "./../db/pfTKurucz_values.txt")
     with open(file_path, "r") as file:
         pfT_str = file.read()
-    #     lines = file.readlines()
-    # pfT_values_line = [line for line in lines if "pfT_str" in line][0]
-    # pfT_values_line = pfT_values_line.strip()
-    # pfT_str = pfT_values_line.replace('"', "")  # Removing quotation marks.
     pfTdat = pd.read_csv(io.StringIO(pfT_str), sep='\s+')
     pfTdat = pd.Series(pfTdat.columns[1:]).astype(
         "float64"
@@ -188,7 +156,6 @@ class KuruczDatabaseManager(DatabaseManager):
         local_databases,
         engine="default",
         verbose=True,
-        chunksize=100000,
         parallel=True,
     ):
         super().__init__(
@@ -199,12 +166,8 @@ class KuruczDatabaseManager(DatabaseManager):
             verbose=verbose,
             parallel=parallel,
         )
-        self.chunksize = chunksize
-        self.base_url = None
-        self.Nlines = None
         self.wmin = None
         self.wmax = None
-        self.urlnames = None
 
         self.atomic_number = f"{get_atomic_number(molecule):02}"
         self.ionization_state = f"{get_ionization_state(molecule):02}"
@@ -212,13 +175,9 @@ class KuruczDatabaseManager(DatabaseManager):
         self.actual_file = None
         self.actual_url = None
         self.pf_path = None
-        # self.pf_url = None
 
     def fetch_urlnames(self):
-        """returns the possible urls of the desired file, pending confirmation upon attempting download as to which is correct"""
-
-        if self.urlnames is not None:
-            return self.urlnames
+        """returns the possible urls of the desired linelist file, pending confirmation upon attempting download as to which is correct"""
 
         code = f'{self.atomic_number}{self.ionization_state}'
 
@@ -229,11 +188,11 @@ class KuruczDatabaseManager(DatabaseManager):
             
         ]
 
-        self.urlnames = urlnames
 
         return urlnames
     
     def get_pf_path(self):
+        """returns the url at which the dedicated partition function file is expected to be located, and the derived file path at which it would be saved after downloading and parsing"""
         code = f'{self.atomic_number}{self.ionization_state}'
         url = "http://kurucz.harvard.edu/atoms/" + code + "/partfn" + code + ".dat"
         fname = splitext(url.split("/")[-1])[0] + '.h5'
@@ -241,6 +200,7 @@ class KuruczDatabaseManager(DatabaseManager):
         return path, url
     
     def get_possible_files(self, urlnames=None):
+        """returns the urls from fretch_urlnames and the derived file paths at which each would be saved after downloading and parsing"""
         verbose = self.verbose
         local_databases = self.local_databases
         engine = self.engine
@@ -294,6 +254,7 @@ class KuruczDatabaseManager(DatabaseManager):
         pbar_Nlines_already=0,
         pbar_last=True,
     ):
+        """overwrites parent class method as required"""
         
         writer = self.get_datafile_manager()
         if local_file == self.pf_path:
@@ -376,382 +337,74 @@ class KuruczDatabaseManager(DatabaseManager):
         except DatabaseAlreadyExists as e:
             raise Exception('If you want RADIS to overwrite the existing entry for a registered databank, set the config option "ALLOW_OVERWRITE" to True.') from e
 
-
-
-
-# class AdBKurucz:
-
-#     def __init__(self, species):
-#         # self.kurucz_url_base = "http://kurucz.harvard.edu/linelists/gfall/gf"
-#         # self.hdf5_file = None
-#         # self.data = None
-#         # self.pfTdat, self.pfdat = load_pf_Barklem2016()
-#         # self.populations = None
-#         # self.species = species
-#         # self.atomic_number = get_atomic_number(species)
-#         # self.ionization_state = get_ionization_state(species)
-#         # self.element_symbol = get_element_symbol(species)
-#         pass
-
-#     def get_url(self, atomic_number, ionization_state):
-#         ionization_state = str(ionization_state).zfill(2)
-#         code = f'{atomic_number}{ionization_state}'
-#         return "http://kurucz.harvard.edu/atoms/" + code + "/gf" + code + ".all"
-#         #return f"http://kurucz.harvard.edu/linelists/gfall/gf{atomic_number}{ionization_state}.all"
-
-#     def download_file(self):
-#         """Download a file from an url to a specified output path."""
-
-#         # extracts the file's name from l'URL
-#         filename = self.url.split("/")[-1]
-
-#         # Verify if the file exists already
-#         if os.path.exists(filename):
-#             print("File already exists, skipping download.")
-#             return filename
-
-#         with closing(requests.get(self.url, stream=True)) as r:
-#             total_size = int(r.headers.get("content-length", 0))
-#             block_size = 1024
-#             with open(filename, "wb") as f, tqdm(
-#                 total=total_size,
-#                 unit="B",
-#                 unit_scale=True,
-#                 unit_divisor=1024,
-#                 desc=filename,
-#             ) as pbar:
-#                 for data in r.iter_content(block_size):
-#                     f.write(data)
-#                     pbar.update(len(data))
-#         return filename
-
-#     # def Sij0(self, A, g, nu_lines, elower, QTref):
-#     #     # The int column of the df can be computed using this method but the default option rather uses Radis linestrength_from_Einstein
-#     #     """Reference Line Strength in Tref=296K, S0.
-
-#     #     Note:
-#     #     Tref=296K
-
-#     #     Args:
-#     #     A: Einstein coefficient (s-1)
-#     #     g: the upper state statistical weight
-#     #     nu_lines: line center wavenumber (cm-1)
-#     #     elower: elower
-#     #     QTref: partition function Q(Tref)
-#     #     Mmol: molecular mass (normalized by m_u)
-
-#     #     Returns:
-#     #     Sij(T): Line strength (cm)
-#     #     """
-#     #     hcperk = 1.4387773538277202  # hc/kB (cm K)
-#     #     ccgs = 29979245800.0
-#     #     Tref = 296.0
-#     #     S0 = (
-#     #         -A
-#     #         * g
-#     #         * np.exp(-hcperk * elower / Tref)
-#     #         * np.expm1(-hcperk * nu_lines / Tref)
-#     #         / (8.0 * np.pi * ccgs * nu_lines**2 * QTref)
-#     #     )
-#     #     return S0
-
-#     def read_kurucz(self, kuruczf):
-#         return read_kurucz(kuruczf)
-
 def read_kurucz(kuruczf, preserve_orig_levels=False):
     """
-    This method was adapted from the original read_kurucz method in exojax/src/exojax/spec/atomllapi.py
-    (https://github.com/HajimeKawahara/exojax.git)
-    Input Kurucz line list (http://kurucz.harvard.edu/linelists/)
+    Parse a Kurucz linelist, process its columns as required, and return as a Pandas DataFrame
+
+    Inspired by: https://github.com/rasmus98/NLTE-Helium/blob/fc6161a30ebecfcf59f36386b1dc7f02ff749905/Grotrian_diagram_Helium.ipynb
 
     Args:
         kuruczf: file path
+        preserve_orig_levels: (boolean)
+            whether to preserve the original columns pertaining to the levels prior to transforming them, with '_orig' appended to their name; note the columns are still reversed so that the database index increases in wavenumber rather than wavelength
 
     Returns:
-        Pandas dataframe containing the required columns for the Kurucz linelist database
+        Pandas DataFrame containing the required columns for the Kurucz linelist database
     """
-    with open(kuruczf) as f:
-        lines = f.readlines()
-    num_lines = len(lines)
-    (
-        wlnmair,
-        loggf,
-        species,
-        elower,
-        jlower,
-        labellower,
-        eupper,
-        jupper,
-        labelupper,
-        gamRad,
-        gamSta,
-        gamvdW,
-        ref,
-        NLTElower,
-        NLTEupper,
-        isonum,
-        hyperfrac,
-        isonumdi,
-        isofrac,
-        hypershiftlower,
-        hypershiftupper,
-        hyperFlower,
-        hypernotelower,
-        hyperFupper,
-        hypternoteupper,
-        strenclass,
-        auto,
-        landeglower,
-        landegupper,
-        isoshiftmA,
-    ) = (
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.array([""] * num_lines, dtype=object),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.array([""] * num_lines, dtype=object),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.array([""] * num_lines, dtype=object),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-        np.zeros(num_lines),
-    )
-    # ielem, iion = np.zeros(num_lines, dtype=int), np.zeros(num_lines, dtype=int)
-
-    for i, line in enumerate(lines):
-        wlnmair[i] = float(line[0:11])
-        loggf[i] = float(line[11:18])
-        species[i] = str(line[18:24])
-        # ielem[i] = int(species[i].split(".")[0])
-        # iion[i] = int(species[i].split(".")[1])
-        elower[i] = float(line[24:36])
-        jlower[i] = float(line[36:41])
-        labellower[i] = str(line[41:52]).strip()
-        eupper[i] = float(line[52:64])
-        jupper[i] = float(line[64:69])
-        labelupper[i] = str(line[69:80]).strip()
-        gamRad[i] = float(line[80:86])
-        gamSta[i] = float(line[86:92])
-        gamvdW[i] = float(line[92:98])
-        isonum[i] = int(line[106:109])
-
-    species_unique = np.unique(species)
+    colspecs=((0,11),(11,18),(18,24),(24,36),(36,41),(42,52),(52,64),(64,69),(70,80),(80,86),(86,92),(92,98),
+              #(98,102),(102,104),(104,106),
+               (106,109),)
+               #(109,115),(115,118),(118,124),(124,129),(129,134),(135,136),(136,137),(138,139),(139,140),(140,141),(141,144),(144,149),(149,154),(154,160))
+    dtypes = (np.float64,np.float64,'string', #make species string rather than float for easier parsing
+              np.float64,np.float64,'string',np.float64,np.float64,'string',np.float64,np.float64,np.float64,
+              #str,np.int64,np.int64,
+              np.int64,)
+              #np.float64,np.int64,np.float64,np.int64,np.int64,str,str,str,str,np.int64,str,np.int64,np.int64,np.int64)
+    colnames = ('orig_wavelen','loggf','species','elower_orig','jlower_orig','labellower_orig','eupper_orig','jupper_orig','labelupper_orig','gamRad','gamSta','gamvdW',
+                #'ref','NLTElo','NLTEhi',
+                'iso',)
+                #'hyperstrength','isotope2','isoabund','hyperlo','hyperhi','hyperFlo','hypernotelo','hyperFhi','hypernotehi','strengthclassnote','trans_code','lande_g_even','lande_g_odd','iso_shift')
+    df = pd.read_fwf(kuruczf, colspecs=colspecs, dtype=dict(zip(colnames, dtypes)), names=colnames, skip_blank_lines=True)#, converters={'labellower_orig': str.strip, 'labelupper_orig': str.strip}) # appears to strip automatically
+    species_unique = df['species'].unique()
     assert len(species_unique) == 1
-    species_unique = species_unique[0]
-    ielem = int(species_unique.split(".")[0])
-    iion = int(species_unique.split(".")[1]) + 1
-
-    # iion = np.unique(iion)
-    # assert len(iion) == 1
-    # iion = iion[0] + 1
-    
-    # Invert elower, eupper, and jlower, jupper where eupper - elower <= 0
-    elower_orig = elower
-    eupper_orig = eupper
-    jlower_orig = jlower
-    jupper_orig = jupper
-    labellower_orig = labellower
-    labelupper_orig = labelupper
-    jlower = np.where((eupper_orig-elower_orig) > 0,  jlower_orig,  jupper_orig)
-    jupper = np.where((eupper_orig-elower_orig) > 0,  jupper_orig,  jlower_orig)
-    labellower = np.where((eupper_orig-elower_orig) > 0,  labellower_orig,  labelupper_orig)
-    labelupper = np.where((eupper_orig-elower_orig) > 0,  labelupper_orig,  labellower_orig)
-    elower = np.where((eupper_orig-elower_orig) > 0,  elower_orig,  eupper_orig)
-    eupper = np.where((eupper_orig-elower_orig) > 0,  eupper_orig,  elower_orig)
-
-    wlaa = np.where(wlnmair < 200, wlnmair * 10, air2vacuum(wlnmair * 10))
-    nu_lines = 1e8 / wlaa[::-1]  # [cm-1]<-[AA]
-    wlnmair = wlnmair[::-1]
-    loggf = loggf[::-1]
-    species = species[::-1]
-    elower = elower[::-1]
-    eupper = eupper[::-1]
-    jlower = jlower[::-1]
-    jupper = jupper[::-1]
-    labellower = labellower[::-1]
-    labelupper = labelupper[::-1]
-    gupper = jupper * 2 + 1
-    A = (
-        10**loggf
-        / gupper
-        * (c_CGS * nu_lines) ** 2
-        * (8 * np.pi**2 * ecgs**2)
-        / (mecgs * c_CGS**3)
-    )
-    gamRad = gamRad[::-1]
-    gamSta = gamSta[::-1]
-    gamvdW = gamvdW[::-1]
-    isonum = isonum[::-1]
-    if preserve_orig_levels:
-        elower_orig = elower_orig[::-1]
-        eupper_orig = eupper_orig[::-1]
-        jlower_orig = jlower_orig[::-1]
-        jupper_orig = jupper_orig[::-1]
-        labellower_orig = labellower_orig[::-1]
-        labelupper_orig = labelupper_orig[::-1]
-
-    ionE = pick_ionE(ielem, iion, load_ionization_energies())
+    ielem, charge = get_ielem_charge(species_unique[0])
+    ionE = pick_ionE(ielem, charge, load_ionization_energies())
     assert ionE.size == 1
-    ionE = float(ionE.iloc[0])
+    df['ionE'] = float(ionE.iloc[0])
 
-    data_dict = {
-        "A": A,
-        'orig_wavelen': wlnmair,
-        "wav": nu_lines,
-        "El": elower,
-        "Eu": eupper,
-        "gu": gupper,
-        "jlower": jlower,
-        "ju": jupper,
-        # "id": ielem,
-        "ionE": ionE,
-        "iso": isonum,
-        "gamRad": gamRad,
-        "gamSta": gamSta,
-        "gamvdW": gamvdW,
-        # "Tdpair": 0.68,  # placeholder to adjust
-        # "wlnmair": wlnmair,
-        "loggf": loggf,
-        "species": species,
-        "labellower": labellower,
-        "labelupper": labelupper,
-        # "ref": ref,
-        # "NLTElower": NLTElower,
-        # "NLTEupper": NLTEupper,
-        # "isonum": isonum,
-        # "hyperfrac": hyperfrac,
-        # "isonumdi": isonumdi,
-        # "isofrac": isofrac,
-        # "hypershiftlower": hypershiftlower,
-        # "hypershiftupper": hypershiftupper,
-        # "hyperFlower": hyperFlower,
-        # "hypernotelower": hypernotelower,
-        # "hyperFupper": hyperFupper,
-        # "hypternoteupper": hypternoteupper,
-        # "strenclass": strenclass,
-        # "auto": auto,
-        # "landeglower": landeglower,
-        # "landegupper": landegupper,
-        # "isoshiftmA": isoshiftmA,
-        # "int":self.Sij0(A,gupper,nu_lines,elower,self.partfcn(self.species,296))
-        # if int parameter is used, calc_linestrength_eq will also use it
-    }
+    # simple method to preserve dtypes of each column:
+    cond = (df['eupper_orig']-df['elower_orig']) > 0
+    oldlower = ['jlower_orig', 'labellower_orig', 'elower_orig']
+    oldupper = ['jupper_orig', 'labelupper_orig', 'eupper_orig']
+    newlower = ['jlower', 'labellower', 'El']
+    newupper = ['ju', 'labelupper', 'Eu']
+    for oldcol1, oldcol2, newcol1, newcol2 in zip(oldlower, oldupper, newlower, newupper):
+        df[newcol1] = df[oldcol1].where(cond, df[oldcol2])
+        df[newcol2] = df[oldcol2].where(cond, df[oldcol1])
+    # df1[['jlower_orig', 'jupper_orig', 'labellower_orig', 'labelupper_orig', 'elower_orig', 'eupper_orig']] = df[['jupper_orig', 'jlower_orig', 'labelupper_orig', 'labellower_orig', 'eupper_orig', 'elower_orig']]
+    # df.where(cond, df1, inplace=True) # returns TypeError: Cannot do inplace boolean setting on mixed-types with a non np.nan value
+    # np.where(pd.concat([cond]*6, axis=1), df[['jlower_orig', 'jupper_orig', 'labellower_orig', 'labelupper_orig', 'elower_orig', 'eupper_orig']], df[['jupper_orig', 'jlower_orig', 'labelupper_orig', 'labellower_orig', 'eupper_orig', 'elower_orig']]) # doesn't preserve dtype
+    
+    df['wav'] = 1e7/df['orig_wavelen'].where(df['orig_wavelen'] < 200, air2vacuum(df['orig_wavelen']))
+    df['gu'] = df['ju'] * 2 + 1
+    df['A'] = (
+        10**df['loggf']
+        / df['gu']
+        * (c_CGS * df['wav']) ** 2
+        * (8 * np.pi**2 * e_CGS**2)
+        / (m_e_CGS * c_CGS**3)
+    )
 
-    if preserve_orig_levels:
-        data_dict.update({
-        "elower_orig": elower_orig,
-        "eupper_orig": eupper_orig,
-        "jlower_orig": jlower_orig,
-        "jupper_orig": jupper_orig,
-        "labellower_orig": labellower_orig,
-        "labelupper_orig": labelupper_orig,
-        })
+    df[:] = df[::-1]
 
-    # self.data = pd.DataFrame(data_dict)
-    return pd.DataFrame(data_dict)#self.data
-
-    # def add_airbrd(self, data):
-    #     if "airbrd" not in data.columns:
-    #         # placeholder for neutral_hydrogen_number and atomic_coeff
-    #         # TODO: adjust the coefficient to the atoms and adjust the value for neutral_hydrogen_number
-
-    #         neutral_hydrogen_number = 1
-    #         atomic_coeff = 1
-
-    #         if self.element_symbol == "H":
-    #             airbrd = (
-    #                 (10 ** data["gamvdW"]) * data["Tdpair"] * neutral_hydrogen_number
-    #             )
-    #         elif self.element_symbol == "He":
-    #             airbrd = (
-    #                 (10 ** data["gamvdW"])
-    #                 * data["Tdpair"]
-    #                 * neutral_hydrogen_number
-    #                 * 0.42
-    #             )
-    #         else:
-    #             airbrd = (
-    #                 (10 ** data["gamvdW"])
-    #                 * data["Tdpair"]
-    #                 * neutral_hydrogen_number
-    #                 * atomic_coeff
-    #             )
-
-    #         data["airbrd"] = airbrd
-
-    # def partfcn(self, key, T):
-    #     # So far ielem is used for id and iion for iso in eq_spectrum so this method is used when the linestrength is computed for data_dict
-    #     """Partition function from Barklem & Collet (2016).
-
-    #     Args:
-    #     key: the atom name
-    #     T: temperature
-
-    #     Returns:
-    #     partition function Q
-    #     """
-    #     try:
-    #         #print(f"Temperature: {T}")
-    #         pfdat = self.pfdat
-
-    #         # Locate the row for the specific atom and ionization state
-    #         pf_atom = pfdat.loc[f"{key}"]
-    #         # Extract temperature and partition function values
-    #         pfT_values = self.pfTdat.values.flatten()
-    #         pf_values = pf_atom.values
-
-    #         pfT_values = pfT_values.astype(float)
-    #         pf_values = pf_values.astype(float)
-
-    #         # print("pfT_values:", pfT_values)
-    #         # print("pf_values:", pf_values)
-
-    #         # Interpolate to find the partition function at the desired temperature
-    #         Q = np.interp(T, pfT_values, pf_values)
-    #         # print(f"Partition function: {Q}")
-
-    #         return Q
-    #     except KeyError:
-    #         print("pfdat", pfdat)
-    #         print(
-    #             f"Key {key} not found in pfdat. Available keys: {pfdat.index.tolist()}"
-    #         )
-    #         raise
-
-    # def calculate_populations(self, atom, temperature, data):
-    #     # Select the partition function for the specific atom
-    #     # atom_pf = self.pfdat.loc[f'{atom}_I']
-
-    #     # Calculate the partition function at a certain temperature
-    #     #print(type(self.partfn))
-    #     QT_atom = self.partfcn(atom, temperature)
-    #     #print("QT_atom",QT_atom)
-
-    #     # Calculate energy/temperature ratio
-    #     energy_temp_ratio = data["El"] / (0.695 * temperature)
-    #     # print(f'Energy/temp ratio: {energy_temp_ratio}')   # print the energy to temperature ratio for debugging
-
-    #     # Calculate level populations using Boltzmann statistics
-    #     self.populations = np.exp(-energy_temp_ratio) / QT_atom
-
-    #     return self.populations
+    if not preserve_orig_levels:
+        df.drop([
+            "elower_orig",
+            "eupper_orig",
+            "jlower_orig",
+            "jupper_orig",
+            "labellower_orig",
+            "labelupper_orig",
+        ], axis=1, inplace=True)
+    
+    return df

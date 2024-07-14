@@ -37,7 +37,12 @@ Or::
 
 Routine Listing
 ---------------
-
+- :func:`~radis.db.classes.is_atom`
+- :func:`~radis.db.classes.is_neutral`
+- :func:`~radis.db.classes.roman_to_int`
+- :func:`~radis.db.classes.int_to_roman`
+- :func:`~radis.db.classes.get_ielem_charge`
+- :func:`~radis.db.classes.to_conventional_name`
 - :func:`~radis.db.classes.get_molecule`
 - :func:`~radis.db.classes.get_molecule_identifier`
 
@@ -220,9 +225,15 @@ HITRAN_MOLECULES = list(trans.values())
 
 
 def is_atom(species):
+    """
+    determine whether the input species is atomic
+    """
     return species.split('_')[0] in [i.symbol for i in list(periodictable.elements)[1:]] #first element is neutron, symbol 'n'
 
 def is_neutral(species):
+    """
+    determine whether the input species is a neutral atom
+    """
     return species.endswith('_I')
 
 roman_numerals = {
@@ -255,6 +266,9 @@ def roman_to_int(roman):
 invert_roman_numerals = dict((v,k) for k,v in sorted(roman_numerals.items(), key=lambda x: x[1], reverse=True))
 
 def int_to_roman(num):
+    """
+    A function to convert an int to a string of roman numerals
+    """
     count = {}
     for factor in invert_roman_numerals:
         count[factor] = num//factor
@@ -274,9 +288,37 @@ def int_to_roman(num):
         i += 2
     return string
 
-def to_conventional_name(species):
+def get_ielem_charge(species):
+    """return the atomic number xx and the charge yy of a positive or neutral atomic species input in the form of a string xx.yy"""
+    ielemstr, chargem1str = species.split(".")
+    ielem = int(ielemstr)
+    charge = int(chargem1str)
+    return ielem, charge
 
-    # If the charge is positive
+def to_conventional_name(species):
+    """
+    To convert an atomic species given in any of the following forms to spectroscopic notation (with an underscore rather than whitespace):
+    - as a ``str`` in spectroscopic notation with a space separating the symbol and ionisation level (e.g. 'O II' for singly ionised oxygen)
+    - as an ``int`` composed of the atomic number xx multiplied by 100 and then added to the charge (801 for O_II, 2600 for Fe_I)
+    - as a **``str``** (not a float) in the form 'xx.yy', i.e. the charge divided by 100 and then added to the atomic number
+    - For neutrals, as a ``str`` with just the atomic symbol
+    - For ions, as a ``str`` composed of the atomic symbol followed by a string of + signs the number of which matches the charge on the ion
+    If given a molecule name or HITRAN ID, it is returned unchanged
+    """
+    if isinstance(species, float):
+        raise Exception('If you are trying to input the species in the form xx.yy, input as a string, not a float')
+    if isinstance(species, int):
+        atomic_number = species//100
+        if atomic_number == 0: #looks like it's just the molecule ID of a molecule instead
+            return species
+        symbol = periodictable.elements[atomic_number]
+        roman = int_to_roman(species%100 + 1)
+        return f'{symbol}_{roman}'
+    if '.' in species:
+        ielem, charge = get_ielem_charge(species)
+        symbol = periodictable.elements[ielem]
+        roman = int_to_roman(charge + 1)
+        return f'{symbol}_{roman}'
     if "+" in species:
         # Count the number of positive charges
         chargeplus1 = species.count("+") + 1  # Add one to convert to conventional notation
@@ -285,19 +327,17 @@ def to_conventional_name(species):
         # Convert the charge to roman notation
         chargeplus1_in_roman = int_to_roman(chargeplus1)
         return f"{element_name}_{chargeplus1_in_roman}"
-
-    # If species is an element
-    else:
-        try:
-            atomic_symbol = species.split("_")[0]
-            el = getattr(periodictable, atomic_symbol)
-            if el.symbol == species:  # check if symbols match
-                return f"{species}_I"
-            else:
-                return species
-        except:
+    if ' ' in species.strip():
+        species = species.replace(' ', '_')
+    atomic_symbol = species.split('_')[0]
+    if atomic_symbol == species:
+        try: # confirm it actually is an atom
+            getattr(periodictable, atomic_symbol)
+        except AttributeError:
             return species
-
+        else:
+            return f'{species}_I'
+    return species
 
 def get_molecule_identifier(molecule_name):
     r"""

@@ -147,8 +147,6 @@ class DatabaseManager(object):
     def get_filenames(self, return_reg_urls=False):
         """Get names of all files in the database (even if not downloaded yet)
 
-        Note that for Kurucz linelists it returns all the possible files depending on which url is correct to use, pending confirmation upon download
-
         See Also
         --------
         :py:meth:`~radis.api.dbmanager.DatabaseManager.get_files_to_download`"""
@@ -186,7 +184,6 @@ class DatabaseManager(object):
                     )
 
         elif self.is_downloadable():
-            # local_files = self.fetch_filenames()
             urlnames = self.fetch_urlnames()
             local_fnames = [
                 (

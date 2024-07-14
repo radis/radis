@@ -1124,6 +1124,9 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
     test_tabulated_partition_functions(verbose=verbose, *args, **kwargs)
     test_parsum_mode_in_factory(verbose=verbose, *args, **kwargs)
 
+    # Test 10:
+    test_partfunckurucz()
+
     return True
 
 

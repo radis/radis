@@ -6,6 +6,7 @@ from radis.api.kuruczapi import load_pf_Barklem2016, read_kurucz
 from radis.io.kurucz import fetch_kurucz
 from radis.test.utils import getTestFile
 
+@pytest.mark.fast
 def test_read_kurucz():
     df = read_kurucz(getTestFile('gf4000.all')) # from: http://kurucz.harvard.edu/atoms/4000/gf4000.all
     a = df.loc[5, ['orig_wavelen', 'loggf', 'species', 'El', 'jlower', 'labellower', 'Eu', 'ju', 'labelupper', 'gamRad', 'gamSta', 'gamvdW', 'iso']]#.to_numpy()
@@ -63,27 +64,7 @@ def test_read_kurucz():
 #         df.columns
 #     ), "Not all required columns are present in the DataFrame"
 
-@pytest.mark.needs_connection
-def test_calc_kurucz_spectrum(verbose=3, plot=True, *args, **kwargs):
-    from radis import calc_spectrum
-
-    s = calc_spectrum(
-        100,
-        10000,  # cm-1
-        species="Y++++", # should be converted to Y_V by radis.db.classes.to_conventional_name
-        pressure=1.01325,  # bar
-        Tgas=4000,  # K
-        diluent={'H':1-0.01-1e-3, 'e-': 1e-3},        
-        mole_fraction=0.01,
-        path_length=15,  # cm
-        databank='kurucz',
-        verbose=verbose,
-        potential_lowering=-500,
-        cutoff=0
-    )
-    if plot:
-        s.plot("radiance_noslit")
-
+@pytest.mark.fast
 def test_barklem_pf():
     # Testing load_pf_Barklem2016 function
     pfTdat, pfdat = load_pf_Barklem2016()

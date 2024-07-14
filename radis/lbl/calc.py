@@ -31,7 +31,6 @@ except ImportError:  # if ran from here
     from radis.lbl.base import get_wavenumber_range
 
 from radis import config
-from radis.db.classes import to_conventional_name, is_atom
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
 from radis.spectrum.spectrum import Spectrum
@@ -73,7 +72,7 @@ def calc_spectrum(
 ) -> Spectrum:
     r"""Calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
 
-    Can automatically download databases (HITRAN/HITEMP) or use manually downloaded
+    Can automatically download databases or use manually downloaded
     local databases, under equilibrium or non-equilibrium, with or without overpopulation,
     using either CPU or GPU.
 
@@ -107,14 +106,17 @@ def calc_spectrum(
             import astropy.units as u
             calc_spectrum(..., pressure=20*u.mbar)
 
-    molecule: int, str, list or ``None``
-        molecule id (HITRAN format) or name. For multiple molecules, use a list.
-        The ``'isotope'``, ``'mole_fraction'``, ``'databank'`` and ``'overpopulation'`` parameters must then
-        be dictionaries.
-        If ``None``, the molecule can be inferred
-        from the database files being loaded. See the list of supported molecules
-        in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
-        and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
+    species: int, str, list or ``None``
+        For molecules:
+            molecule id (HITRAN format) or name. For multiple molecules, use a list.
+            The ``'isotope'``, ``'mole_fraction'``, ``'databank'`` and ``'overpopulation'`` parameters must then
+            be dictionaries.
+            If ``None``, the molecule can be inferred
+            from the database files being loaded. See the list of supported molecules
+            in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
+            and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
+        For atoms:
+            The positive or neutral atomic species. It may be given in spectroscopic notation or any form that can be converted by :py:func:`~radis.db.classes.to_conventional_name`
         Default ``None``.​
     isotope: int, list, str of the form ``'1,2'``, or ``'all'``, or dict
         isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
@@ -182,6 +184,8 @@ def calc_spectrum(
 
             databank='PATH/TO/co_*.par'
 
+        - ``'kurucz'`` to fetch the Kurucz linelists for atoms through :py:func:`~radis.io.kurucz.fetch_kurucz`. Downloads al lines and all isotopes.
+        
         - the name of a spectral database registered in your ``~/radis.json``
           :ref:`configuration file <label_lbl_config_file>` ::
 
@@ -289,6 +293,7 @@ def calc_spectrum(
         methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`__
         To try the GPU code without an actual GPU, you can use ``mode='emulated_gpu'``.
         This will run the GPU equivalent code on the CPU.
+        Only ``'cpu'`` is available for atoms.
     return_factory: bool
         if ``True``, return the :py:class:`~radis.lbl.factory.SpectrumFactory` that
         computes the spectrum. Useful to access computational parameters, the line database,
@@ -400,18 +405,6 @@ def calc_spectrum(
         )
     else:
         molecule = species
-    if species is not None:
-        # if is_atom(species): # not testing for atom until name is converted!
-        molecule = species = to_conventional_name(species)
-    # if "molecule" in kwargs:
-    #     print("Molecule is deprecated. Use species instead.")
-    #     species = kwargs["molecule"]
-    #     molecule = to_conventional_name(species)
-    # else:
-    #     if species is not None:
-    #         molecule = to_conventional_name(species)
-    #     else:
-    #         molecule = species
 
     # Get wavenumber, based on whatever was given as input.
     wavenum_min, wavenum_max, input_wunit = get_wavenumber_range(

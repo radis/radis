@@ -95,8 +95,6 @@ from radis.phys.constants import c_CGS, h_CGS, hc_k
 from radis.phys.convert import cm2J, cm2J_vaex, nm2cm, nm_air2cm
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.utils import print_conditions
-#hcperk = 1.4387773538277202  # hc/kB (cm K)
-
 
 class BaseFactory(DatabankLoader):
 
@@ -2449,7 +2447,6 @@ class BaseFactory(DatabankLoader):
         try:
             parsum = self.get_partition_function_interpolator(molecule, iso, state)
             Q = parsum.at(T, self.input.potential_lowering)
-            #print(Q)
         except OutOfBoundError as err:
             # Try to calculate
             try:
@@ -2496,7 +2493,7 @@ class BaseFactory(DatabankLoader):
                 df1.attrs["id"] = int(id_set)
 
         if "molecule" in df1.attrs:
-            molecule = df1.attrs["molecule"]  # used for ExoMol and others, which has no HITRAN-id
+            molecule = df1.attrs["molecule"]  # used for ExoMol and others, which have no HITRAN-id
         else:
             molecule = get_molecule(df1.attrs["id"])
         state = self.input.state
@@ -2582,28 +2579,6 @@ class BaseFactory(DatabankLoader):
             Qref_Qgas = Qref / Qgas
         return Qref_Qgas
     
-
-    # def line_strength_numpy(self,T, Sij0, nu_lines, elower, qr, Tref=None):
-    #     #based on: https://github.com/HajimeKawahara/exojax/blob/adc44e96d4ddf523b592485594516f348ef03bc2/src/exojax/spec/hitran.py#L35
-    #     """Line strength as a function of temperature, numpy version
-
-    #     Args:
-    #         T: temperature (K)
-    #         Sij0: line strength at Tref=296K
-    #         elower: elower
-    #         nu_lines: line center wavenumber 
-    #         qr : partition function ratio qr(T) = Q(T)/Q(Tref)
-    #         Tref: reference temeparture
-
-    #     Returns:
-    #         line strength at Ttyp
-    #     """
-    #     if not Tref:
-    #         Tref = self.input.Tref
-    #     return Sij0 \
-    #         * np.exp(-hc_k*elower * (1./T - 1./Tref)) \
-    #         * np.expm1(-hc_k*nu_lines/T) / np.expm1(-hc_k*nu_lines/Tref) / qr
-
     def calc_linestrength_eq(self, Tgas):
         """Calculate linestrength at temperature Tgas correcting the database
         linestrength tabulated at temperature :math:`T_{ref}`.
@@ -4246,10 +4221,10 @@ def linestrength_from_Einstein(
     """
 
     return (
-        (1 / (8 * np.pi * c_CGS * nu**2))
+        (1 / (8 * pi * c_CGS * nu**2))
         * A
-        * ((Ia * gu * np.exp(-hc_k * El / T)) / Q)
-        * (1 - np.exp(-hc_k * nu / T))
+        * ((Ia * gu * exp(-hc_k * El / T)) / Q)
+        * (1 - exp(-hc_k * nu / T))
     )
 
 

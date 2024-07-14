@@ -87,16 +87,14 @@ from scipy.optimize import OptimizeResult
 
 from radis import version
 from radis.db import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
-from radis.db.classes import get_molecule, get_molecule_identifier
+from radis.db.classes import get_molecule, get_molecule_identifier, to_conventional_name
 
 try:  # Proper import
     from .bands import BandFactory
-    from .base import get_wavenumber_range, linestrength_from_Einstein
-    from .broadening import voigt_lineshape
+    from .base import get_wavenumber_range
 except ImportError:  # if ran from here
     from radis.lbl.bands import BandFactory
     from radis.lbl.base import get_wavenumber_range
-    from radis.lbl.broadening import voigt_lineshape
 
 from radis import config
 from radis.db.classes import is_atom, is_neutral
@@ -108,8 +106,6 @@ from radis.phys.units import convert_universal
 from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.spectrum import Spectrum
-# from radis.api.kuruczapi import AdBKurucz
-# from radis.levels.partfunc import PartFuncKurucz
 
 c_cm = c * 100
 
@@ -147,11 +143,14 @@ class SpectrumFactory(BandFactory):
     path_length: ``float(cm)`` or `~astropy.units.quantity.Quantity`
         path length in cm. Default ``1``.
         use astropy.units to specify arbitrary length units.
-    molecule: ``int``, ``str``, or ``None``
-        molecule id (HITRAN format) or name. If ``None``, the molecule can be inferred
-        from the database files being loaded. See the list of supported molecules
-        in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
-        and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
+    species: ``int``, ``str``, or ``None``
+        For molecules:
+            molecule id (HITRAN format) or name. If ``None``, the molecule can be inferred
+            from the database files being loaded. See the list of supported molecules
+            in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
+            and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
+        For atoms:
+            The positive or neutral atomic species. It may be given in spectroscopic notation or any form that can be converted by :py:func:`~radis.db.classes.to_conventional_name`
         Default ``None``.
     isotope: ``int``, ``list``, ``str`` of the form ``'1,2'``, or ``'all'``
         isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
@@ -303,12 +302,13 @@ class SpectrumFactory(BandFactory):
             Tref: ``self.input.Tref``, reference temperature for calculations in K
             diluent: ``self._diluent``, the dictionary of diluents giving the mole fraction of each
             diluent_broadening_coeff: a dictionary of the broadening coefficients for each diluent
+            isneutral: When calculating the spectrum of an atomic species, whether or not it is neutral (always ``None`` for molecules)
         Returns:
             gamma_lb, shift - The total Lorentzian HWHM [cm^-1], and the shift [cm^-1] to be subtracted from the wavenumber array to account for lineshift. If setting the lineshift here is not desired, the 2nd return object can be anything for which `bool(shift)==False` like `None`. gamma_lb must be array-like but can also be a vaex expression if the dataframe type is vaex.
         If unspecified, the broadening is handled by default by ``radis.lbl.broadening.gamma_vald3`` for atoms and ``radis.lbl.broadening.pressure_broadening_HWHM`` for molecules
     potential_lowering: float (cm-1/Zeff**2)
-        Some species with Kurucz linelists also come with dedicated partition function tables provided, which depend on both temperature and potential lowering. Setting this parameter results in the partition function interpolator using that table for the species if it's available, otherwise if it's unavailable or this parameter remains `None`, the default partition functions use `Barklem & Collet (2016), Table 8 <https://doi.org/10.1051/0004-6361/201526961>`.
-        The value can thereafter be changed on the fly by changing the `.potential_lowering` attribute of the SpectrumFactory instance, the result of which is reflected the next time partition function interpolator's `._at` method is used, without any need to re-initialise it.
+        Some species with Kurucz linelists also come with dedicated partition function tables provided, which depend on both temperature and potential lowering. Setting this parameter results in the partition function interpolator using that table for the species if it's available, otherwise if it's unavailable or this parameter remains `None`, the default partition functions use [Barklem & Collet 2016]_ Table 8.
+        The value can thereafter be changed on the fly by changing the `sf.input.potential_lowering` attribute of the SpectrumFactory instance ``sf``, the result of which is reflected the next time partition function interpolator's `._at` method is used, without any need to re-initialise it.
         Allowable values are usually: -500, -1000, -2000, -4000, -8000, -16000, -32000. This is based on what's been encountered in the partition function tables of the species checked so far, but documentation of the Kurucz linelists is unclear on whether this is the case for all species.
 
     Examples
@@ -368,6 +368,11 @@ class SpectrumFactory(BandFactory):
     - :py:attr:`~radis.lbl.loader.DatabankLoader.input` : physical input
     - :py:attr:`~radis.lbl.loader.DatabankLoader.params` : computational parameters
     - :py:attr:`~radis.lbl.loader.DatabankLoader.misc` : miscellaneous parameters (don't change output)
+
+    References
+    ----------
+
+    .. [Barklem & Collet 2016] `"Partition functions and equilibrium constants for diatomic molecules and atoms of astrophysical interest" <https://ui.adsabs.harvard.edu/abs/2016A%2526A...588A..96B>`_
 
     See Also
     --------
@@ -448,11 +453,6 @@ class SpectrumFactory(BandFactory):
                     "`molecule` is deprected - use `species` instead"
                 )
             )
-
-            # print("Molecule is deprecated. Use species instead.")
-            # if species is None:
-            #     species = kwargs["molecule"]
-            #     molecule = species
             kwargs0.pop(
                 "molecule"
             )  # remove it from kwargs0 so it doesn't trigger the error later
@@ -542,9 +542,11 @@ class SpectrumFactory(BandFactory):
         # Init variables
         # --------------
         # Get molecule name
-        if isinstance(molecule, int):
-            species = molecule = get_molecule(molecule)
+
         if molecule is not None:# and species is not None:
+            species = molecule = to_conventional_name(molecule)
+            if isinstance(molecule, int):
+                species = molecule = get_molecule(molecule)
             if not is_atom(molecule):
                 if (
                     molecule
@@ -562,6 +564,7 @@ class SpectrumFactory(BandFactory):
                         + "\n\nNote that RADIS now has ExoMol support, but not all ExoMol molecules are referenced in RADIS. If a molecule is available in ExoMol but does not appear in RADIS yet, please contact the RADIS team or write on https://github.com/radis/radis/issues/319"
                     )
                 self.input.isatom = False
+                self.input.isneutral = None # irrelevant for molecules
             else:
                 self.input.isatom = True
                 self.input.isneutral = is_neutral(molecule)
@@ -592,8 +595,6 @@ class SpectrumFactory(BandFactory):
             raise NotImplementedError
 
         self.input.path_length = convert_and_strip_units(path_length, u.cm)
-        # if molecule is not None and species is not None:
-        # if not is_atom(species) :
         self.input.species = (
             species  # if None, will be overwritten after reading database
         )
@@ -817,13 +818,6 @@ class SpectrumFactory(BandFactory):
             raise ValueError(
                 "Tgas should be float or Astropy unit. Got {0}".format(Tgas)
             )
-        # if not self.input.isatom:
-        #     self.input.rot_distribution = "boltzmann"  # equilibrium
-        #     self.input.vib_distribution = "boltzmann"  # equilibrium
-
-        #     # Get temperatures
-        #     self.input.Tvib = Tgas  # just for info
-        #     self.input.Trot = Tgas  # just for info
         self.input.Tgas = Tgas
 
         # Init variables
@@ -909,7 +903,7 @@ class SpectrumFactory(BandFactory):
         # transmittance_noslit = exp(-absorbance)
         # emissivity_noslit = 1 - transmittance_noslit
         emissivity_noslit = -expm1(-absorbance) #to handle small values of absorbance
-        transmittance_noslit = 1 - emissivity_noslit
+        transmittance_noslit = 1 - emissivity_noslit #still 1 for small values of emissivity_noslit
         radiance_noslit = calc_radiance(
             wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
         )
@@ -1013,183 +1007,6 @@ class SpectrumFactory(BandFactory):
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
 
         return s
-        # else : 
-        #     Tgas = convert_and_strip_units(Tgas, u.K)
-        #     if not is_float(Tgas):
-        #         raise ValueError(
-        #             "Tgas should be float or Astropy unit. Got {0}".format(Tgas)
-        #         )
-        #     self.input.Tgas = Tgas
-
-        #     verbose = self.verbose
-        #     self._reset_profiler(verbose)
-        #     self.profiler.start("spectrum_calculation", 1)
-        #     self.profiler.start("spectrum_calc_before_obj", 2)
-            
-        #     # Check database, reset populations, create line dataframe to be scaled
-        #     # --------------------------------------------------------------------
-        #     #self._check_line_databank()
-        #     #self._reinitialize()  # creates scaled dataframe df1 from df0
-
-        #     # --------------------------------------------------------------------
-
-        #     # First calculate the linestrength at given temperature
-        #     df=self.df0
-        #     #df = df[(df['nu_lines']<1e8/10350) & (df['nu_lines']>1e8/10450)]
-        #     #Tref=296
-        #     # Convert atomic_number to element symbol
-        #     #atomic_number = getattr(periodictable, atom).number
-        #     #element_symbol = periodictable.elements[int(atomic_number)].symbol
-
-        #     # Construct the key
-
-        #     # if self.input.ionization_state == "00":
-        #     #     key = self.input.atom + "_I"
-        #     # elif self.input.ionization_state == "01":
-        #     #     key = self.input.atom+ "_II"
-        #     # else:
-        #     #     key = self.input.atom + "_III"
-        #     #print("df",df.columns)
-        #     key = self.input.species
-        #     nu_lines = df['nu_lines']
-        #     elower = df['El']
-        #     gupper=df['gu']
-        #     A=df['A']
-
-        #     pressure = self.input.pressure
-        #     mole_fraction = self.input.mole_fraction
-        #     path_length = self.input.path_length
-
-        #     #just to get self.df1=self.df0 for now:
-        #     self._reinitialize()
-
-        #     #just to get shiftwav=wav for now, might otherwise require special treatment for atoms:
-        #     self.calc_lineshift()
-
-        #     #self.pfTdat=AdBKurucz.load_pf_Barklem2016(self)[0]
-        #     kurucz = AdBKurucz(self.input.species)
-        #     PartFunc = PartFuncKurucz(self.input.species)
-        #     # QTref=PartFunc._at(Tref)
-        #     # qr = PartFunc._at(Tgas)/QTref
-        #     # Sij0 =linestrength_from_Einstein(A,gupper,elower,1,nu_lines,QTref,Tref)
-        #     # line_strength=self.line_strength_numpy(Tgas,Sij0,nu_lines,elower,qr,Tref)
-        #     Qgas = PartFunc._at(Tgas)
-        #     df['S'] = linestrength_from_Einstein(A,gupper,elower,1,nu_lines,Qgas,Tgas)
-        #     #not running self.calc_linestrength_eq(Tgas) until self.get_lines_abundance(df) is implemented for atoms
-        #     #self._cutoff_linestrength()
-
-        #     # ----------------------------------------------------------------------
-
-        #     # Calculate line shift
-        #     #self.calc_lineshift()  # scales wav to shiftwav (equivalent to v0)
-
-        #     # ----------------------------------------------------------------------
-        #     # Line broadening
-
-        #     #self._calc_broadening_HWHM()
-        #     self._add_voigt_broadening_HWHM(
-        #         df,
-        #         None,
-        #         None,
-        #         Tgas,
-        #         None,
-        #         None,
-        #         None,
-        #     )
-
-        #     #handles range over which profile is normalised and assigns necessary columns:
-        #     self._generate_wavenumber_arrays()
-
-
-        #     #self.partfn=AdBKurucz.partfcn(self,key,Tgas)
-        #     #QT_atom = AdBKurucz.partfcn(self,key,Tgas)
-
-        #     populations=kurucz.calculate_populations(key,Tgas,df)
-        #     wavenumber, abscoeff_v = self._calc_broadening()
-        #     #from self._calc_lineshape:
-        #     # wbroad_centered_oneline = self.wbroad_centered
-        #     # wbroad_centered = np.outer(wbroad_centered_oneline, np.ones(len(df)))
-        #     # line_profile = self._voigt_broadening(df, wbroad_centered, jit=True)
-        #     # (wavenumber, abscoeff_v) = self._apply_lineshape(
-        #     #     df.S.values, line_profile, df.shiftwav.values
-        #     # )
-        #     #voigt_profile = voigt_lineshape(df["nu_lines"],df["hwhm_lorentz"],df["hwhm_voigt"],jit=False)
-
-        #     density = mole_fraction * ((pressure * 1e5) / (k_b * Tgas)) * 1e-6
-        #     abscoeff = abscoeff_v * density  # cm-1
-        #     # ... # TODO: if the code is extended to multi-species, then density has to be added
-        #     # ... before lineshape broadening (as it would not be constant for all species)
-
-        #     # get absorbance (technically it's the optical depth `tau`,
-        #     #                absorbance `A` being `A = tau/ln(10)` )
-        #     absorbance = abscoeff * path_length
-        #     # Generate output quantities
-        #     transmittance_noslit = exp(-absorbance)
-        #     emissivity_noslit = 1 - transmittance_noslit
-        #     radiance_noslit = calc_radiance(
-        #         wavenumber, emissivity_noslit, Tgas, unit='mW/cm2/sr/cm-1'
-        #     )
-
-        #     # import matplotlib.pyplot as plt
-        #     # fig = plt.figure()
-        #     # ax = fig.gca()
-        #     # ax.plot(df["nu_lines"], line_strength*voigt_profile)
-        #     # plt.show()
-        #     # return
-
-        #     # quantities={
-        #     #     "wavenumber": df["nu_lines"],
-        #     #     "radiance_noslit": line_strength*voigt_profile,
-        #     #     "populations" : populations,
-        #     #     "intensity": df["A"]*populations,
-        #     # }
-
-        #     quantities = {
-        #         "wavenumber": wavenumber,
-        #         "abscoeff": abscoeff,
-        #         "absorbance": absorbance,
-        #         "emissivity_noslit": emissivity_noslit,
-        #         "transmittance_noslit": transmittance_noslit,
-        #         "radiance_noslit": radiance_noslit,
-        #     }
-            
-        #      # Get conditions
-        #     conditions = self.get_conditions(add_config=True)
-        #     conditions.update(
-        #         {
-        #             "calculation_time": self.profiler.final[list(self.profiler.final)[-1]][
-        #                 "spectrum_calc_before_obj"
-        #             ],
-        #             "thermal_equilibrium": True,
-        #             "diluents": self._diluent,
-        #             "radis_version": version,
-        #             "spectral_points": (
-        #                 self.params.wavenum_max_calc - self.params.wavenum_min_calc
-        #             )
-        #             / self.params.wstep,
-        #             "profiler": dict(self.profiler.final),
-        #         }
-        #     )
-            
-        #     del self.profiler.final[list(self.profiler.final)[-1]][
-        #         "spectrum_calc_before_obj"
-        #     ]
-        #     units={'radiance_noslit':'mW/cm2/sr/cm-1','populations':None,'intensity':None}
-
-
-        #     lines = self.get_lines()
-
-        #     s=Spectrum(quantities=quantities,
-        #     units=units,
-        #     conditions=conditions,
-        #     lines=lines,
-        #     cond_units=self.cond_units,
-        #     # dont check input (much faster, and Spectrum
-        #     check_wavespace=False,
-        #     # is freshly baken so probably in a good format
-        #     name=name,
-        #     references=dict(self.reftracker),)
-        #     return s
 
     def eq_spectrum_gpu(
         self,
@@ -1433,8 +1250,10 @@ class SpectrumFactory(BandFactory):
 
         absorbance = abscoeff * path_length
         # Generate output quantities
-        transmittance_noslit = exp(-absorbance)
-        emissivity_noslit = 1 - transmittance_noslit
+        # transmittance_noslit = exp(-absorbance)
+        # emissivity_noslit = 1 - transmittance_noslit
+        emissivity_noslit = -expm1(-absorbance) #to handle small values of absorbance
+        transmittance_noslit = 1 - emissivity_noslit
         radiance_noslit = calc_radiance(
             self.wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
         )
@@ -1776,6 +1595,9 @@ class SpectrumFactory(BandFactory):
         :meth:`~radis.lbl.factory.SpectrumFactory.optically_thin_power`
         """
 
+        if self.input.isatom:
+            raise NotImplementedError("non_eq_spectrum hasn't been implemented for atomic spectra yet")
+
         # %% Preprocessing
         # --------------------------------------------------------------------
         # Convert units
@@ -1933,7 +1755,7 @@ class SpectrumFactory(BandFactory):
             b = abscoeff == 0  # optically thin mask
             radiance_noslit = np.zeros_like(emisscoeff)
             radiance_noslit[~b] = (
-                emisscoeff[~b] / abscoeff[~b] * (1 - transmittance_noslit[~b])
+                emisscoeff[~b] / abscoeff[~b] * -expm1(-absorbance[~b]) #(1 - transmittance_noslit[~b])
             )
             radiance_noslit[b] = emisscoeff[b] * path_length
         else:

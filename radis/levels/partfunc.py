@@ -54,7 +54,6 @@ References
 # TODO: store molecule_data.json in the H5 file metadata. If not done already.
 
 
-import os
 import sys
 from os.path import exists, join
 from warnings import warn
@@ -1151,9 +1150,6 @@ class PartFuncKurucz(RovibParFuncTabulator):
         # Load data in constructor
         self.species = species
         self.pfTdat, self.pfdat = load_pf_Barklem2016()
-        # path_partfn = join(getProjectRoot(), "db", "kuruczpartfn.txt")
-        # pfdat = pd.read_csv(path_partfn, sep="\s+", header=None)
-        # self.pfdat = pfdat.set_index(0)
         # Locate the row for the specific atom and ionization state
         try:
             pf_atom = self.pfdat.loc[f"{species}"]
@@ -1161,17 +1157,6 @@ class PartFuncKurucz(RovibParFuncTabulator):
             warn("Note: the partition functions from Barklem & Collet (2016) don't include this species.")
             self.pf_values = self.pfT_values = None
         else:
-            # Read the file's content
-            # current_dir = os.path.dirname(os.path.abspath(__file__))
-            # file_path = os.path.join(current_dir, "./pfTKurucz_values.txt")
-            # with open(file_path, "r") as f:
-            #     content = f.read()
-
-            # # Execute the content to get the pfT_values array
-            # namespace = {}
-            # exec(content, namespace)
-
-            # Assign the array to the class variable
             self.pfT_values = self.pfTdat.values.flatten().astype(float)#namespace["pfT_values"]
             self.pf_values = pf_atom.values.astype(float)
 
@@ -1202,16 +1187,9 @@ class PartFuncKurucz(RovibParFuncTabulator):
         
         if T < Temp.min() or T > Temp.max():
             raise ValueError(
-                f"The temperature {T} is outside the tabulated range of the partition functions [{Temp.min()}, {Temp.max()}] K" + addmsg
+                f"The temperature {T} K is outside the tabulated range of the partition functions [{Temp.min()}, {Temp.max()}] K" + addmsg
             )
-        # try:
         return np.interp(T, Temp, Qvals)
-        # except KeyError:
-        #     print("pfdat", self.pfdat)
-        #     print(
-        #         f"Key {self.key} not found in pfdat. Available keys: {self.pfdat.index.tolist()}"
-        #     )
-        #     raise
 
 
 class PartFuncTIPS(RovibParFuncTabulator):

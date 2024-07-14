@@ -4,14 +4,7 @@ Created on Tue Jul  2 17:48:14 2024
 
 @author: Nicolas Minesi
 
-NOTE / TO-DO:
-    Why do I need to always specify "radis.config["ALLOW_OVERWRITE"] = True"? What is the alternative?
 """
-# >>>>> see NOTE / TO-DO
-import radis
-
-# radis.config["ALLOW_OVERWRITE"] = True
-# <<<<< see NOTE / TO-DO
 from radis import SpectrumFactory, plot_diff
 from radis.test.utils import getValidationCase
 import pytest
@@ -35,7 +28,7 @@ def test_Kurucz_vs_NISTandSpectraplot(plot=True, verbose=True):
         lbfunc=broad_arbitrary,
     )
     sf.fetch_databank("kurucz", parfuncfmt="kurucz")
-    # sf.load_databank('Kurucz-O_I', drop_columns=[], load_columns='all')    # >>>>> see NOTE / TO-DO
+    # sf.load_databank('Kurucz-O_I', drop_columns=[], load_columns='all')
     s_RADIS = sf.eq_spectrum(Tgas=10000, name="Kurucz by RADIS")
     # s_RADIS.plot("radiance_noslit", wunit="cm-1")
 

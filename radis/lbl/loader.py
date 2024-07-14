@@ -58,13 +58,14 @@ from uuid import uuid1
 import numpy as np
 import pandas as pd
 import vaex
+import periodictable
 
 from radis import config
 from radis.api.cdsdapi import cdsd2df
 from radis.api.hdf5 import hdf2df
 from radis.api.hitranapi import hit2df, parse_global_quanta, parse_local_quanta
 from radis.api.tools import drop_object_format_columns, replace_PQR_with_m101
-from radis.db.classes import get_molecule, is_atom, is_neutral
+from radis.db.classes import get_molecule, is_atom, is_neutral, to_conventional_name
 from radis.db.molecules import getMolecule
 from radis.db.molparam import MOLPARAMS_EXTRA_PATH, MolParams
 from radis.db.references import doi
@@ -1008,12 +1009,12 @@ class DatabankLoader(object):
         extra_params=None,
     ):
         """Fetch the latest files from [HITRAN-2020]_, [HITEMP-2010]_ (or newer),
-        [ExoMol-2020]_  or [GEISA-2020] , and store them locally in memory-mapping
+        [ExoMol-2020]_  or [GEISA-2020] or the Kurucz atomic linelists, and store them locally in memory-mapping
         formats for extremely fast access.
 
         Parameters
         ----------
-        source: ``'hitran'``, ``'hitemp'``, ``'exomol'``, ``'geisa'``
+        source: ``'hitran'``, ``'hitemp'``, ``'exomol'``, ``'geisa'``, ``'kurucz'``
             which database to use.
         database: ``'full'``, ``'range'``, name of an ExoMol database, or ``'default'``
             if fetching from HITRAN, ``'full'`` download the full database and register
@@ -1026,7 +1027,7 @@ class DatabankLoader(object):
 
             Default is ``'full'``.
 
-            If fetching from HITEMP, only ``'full'`` is available.
+            If fetching from HITEMP or Kurucz, only ``'full'`` is available.
 
             if fetching from ''`exomol`'', use this parameter to choose which database
             to use. Keep ``'default'`` to use the recommended one. See all available databases
@@ -1039,14 +1040,15 @@ class DatabankLoader(object):
 
         Other Parameters
         ----------------
-        parfuncfmt: ``'cdsd'``, ``'hapi'``, ``'exomol'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
+        parfuncfmt: ``'cdsd'``, ``'hapi'``, ``'exomol'``, ``'kurucz'`` or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
             format to read tabulated partition function file. If ``'hapi'``, then
             [HAPI]_ (HITRAN Python interface) is used to retrieve [TIPS-2020]_
             tabulated partition functions.
             If ``'exomol'`` then partition functions are downloaded from ExoMol.
+            If ``'kurucz'``, if dedicated partition functions are available with the linelists for the species, they are used, otherwise partition functions from Barklem & Collett 2016 are used. Also see the documentation for the `potential_lowering` parameter of :py:class:`~radis.lbl.factory.SpectrumFactory`.
             Default ``'hapi'``.
         parfunc: filename or None
-            path to a tabulated partition function file to use.
+            path to a tabulated partition function file to use. For kurucz linelists, this would be the path to a dedicated partition function file for the species (dependant on both temperature and potential lowering).
         levels: dict of str or None
             path to energy levels (needed for non-eq calculations). Format::
 
@@ -1094,6 +1096,7 @@ class DatabankLoader(object):
             and dropping them with ``drop_columns``.
             If ``diluent`` then all additional columns required for calculating spectrum
             in that diluent is loaded.
+            Only ``'all'`` is available for kurucz linelists.
             Default ``'equilibrium'``.
 
             .. warning::
@@ -1532,11 +1535,6 @@ class DatabankLoader(object):
                 isotope_list = None
             else:
                 isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
-            # local_paths, df = fetch_kurucz(
-            #     molecule,
-            #     isotope=isotope_list,
-            #     engine=memory_mapping_engine
-            # )
             df, local_paths, parfuncpath = fetch_kurucz(
                 molecule,
                 isotope=isotope_list,
@@ -1833,15 +1831,14 @@ class DatabankLoader(object):
 
         if "molecule" in self.df0.attrs:
             self.input.species = self.df0.attrs["molecule"]
-            if is_atom(self.input.species):
-                self.input.isatom = True
-                self.input.isneutral = is_neutral(self.input.species)
-            else:
-                self.input.isatom = False
         else:
             self.input.species = get_molecule(self.df0.attrs["id"])
+        if is_atom(self.input.species):
+            self.input.isatom = True
+            self.input.isneutral = is_neutral(self.input.species)
+        else:
             self.input.isatom = False
-
+            self.input.isneutral = None # irrelevant for molecules
         # %% Load Partition functions (and energies if needed)
         # ----------------------------------------------------
 
@@ -2634,14 +2631,20 @@ class DatabankLoader(object):
         # ... Explicitly write molecule if not given
         if self.input.species in [None, ""]:# and self.input.species not in [None, ""]:
 
-            id_set = df.id.unique()
-            if len(id_set) > 1:
-                raise NotImplementedError(
-                    "RADIS expects one molecule per run for the "
-                    + "moment. Got {0}. Use different runs ".format(id_set)
-                    + "and use MergeSlabs(out='transparent' afterwards"
-                )
-            self.input.species = get_molecule(id_set[0])
+            try:
+                id_set = df.id.unique()
+            except AttributeError: # for kurucz
+                species_unique = df.species.unique()
+                assert len(species_unique) == 1
+                self.input.species = to_conventional_name(species_unique[0])
+            else:
+                if len(id_set) > 1:
+                    raise NotImplementedError(
+                        "RADIS expects one molecule per run for the "
+                        + "moment. Got {0}. Use different runs ".format(id_set)
+                        + "and use MergeSlabs(out='transparent' afterwards"
+                    )
+                self.input.species = get_molecule(id_set[0])
 
         # Add necessary attribute for databases without 'id' column, else _remove_unecessary_columns below raises an AssertionError
         if output in ["pandas", "vaex"]:  # no attribtes in "Jax" or "Vaex" mode
