@@ -1506,7 +1506,7 @@ class Spectrum(object):
             name = "{0}".format(basename(self.file))
         else:
             name_params = []
-            for (key, unit) in [("molecule", ""), ("dbformat", ""), ("Tgas", "K")]:
+            for (key, unit) in [("species", ""), ("dbformat", ""), ("Tgas", "K")]:
                 if key in self.conditions:
                     name_params.append(f"{self.conditions[key]}{unit}")
 

@@ -691,7 +691,7 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
             if cond in conditions and conditions[cond] == "N/A":
                 conditions.pop(cond)
         # ... Add extensive parameters
-        for cond in ["molecule"]:  # list of all
+        for cond in ["species"]:  # list of all
             if in_all(cond, [s.conditions for s in slabs]):
                 conditions[cond] = set([s.conditions[cond] for s in slabs])
         for cond in [

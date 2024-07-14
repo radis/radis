@@ -219,11 +219,11 @@ def test_lazy_loading(verbose=True, *args, **kwargs):
     if verbose:
         print([s.conditions["species"] for s in s300])
     # Check what species are in the database at a given species
-    sCO = db.get(molecule="CO")
+    sCO = db.get(species="CO")
     if verbose:
         print([s.conditions["Tgas"] for s in sCO])
     # Advanced use of the get function
-    sdb = db.get('Tgas>=600 & Tgas<900 & molecule=="CO"')
+    sdb = db.get('Tgas>=600 & Tgas<900 & species=="CO"')
     if verbose:
         print("Number of spectra found for the given conditions: ", len(sdb))
 
@@ -239,14 +239,14 @@ def test_lazy_loading(verbose=True, *args, **kwargs):
     assert s300 == s300_2
 
     # Check what species are in the database at a given species
-    sCO_2 = db2.get(molecule="CO")
+    sCO_2 = db2.get(species="CO")
     if verbose:
         print([s.conditions["Tgas"] for s in sCO_2])
 
     assert sCO == sCO_2
 
     # Advanced use of the get function
-    sdb_2 = db2.get('Tgas>=600 & Tgas<900 & molecule=="CO"')
+    sdb_2 = db2.get('Tgas>=600 & Tgas<900 & species=="CO"')
     if verbose:
         print("Number of spectra found for the given conditions: ", len(sdb))
 

@@ -553,9 +553,12 @@ def calc_spectrum(
         kwargs_molecule.update(**dict_arguments)
 
         # getting diluents for this molecule
-        diluent_for_this_molecule = diluents_for_molecule(
-            mole_fraction, diluent, molecule
-        )
+        if isinstance(diluent, Default):
+            diluent_for_this_molecule = diluent
+        else:
+            diluent_for_this_molecule = diluents_for_molecule(
+                mole_fraction, diluent, molecule
+            )
 
         generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
@@ -704,8 +707,6 @@ def _calc_spectrum_one_molecule(
         drop_columns = "auto"
 
     # Run calculations
-    print(diluent)
-    print(type(list(diluent.keys())[0]))
     sf = SpectrumFactory(
         wavenum_min=wavenum_min,
         wavenum_max=wavenum_max,
@@ -737,9 +738,10 @@ def _calc_spectrum_one_molecule(
         else:
             diluent_other_than_air = True
     else:
-        diluent_other_than_air = len(diluent) > 1 or (
-            len(diluent) == 1 and "air" not in diluent
-        )
+        diluent_other_than_air = not isinstance(diluent, Default)
+        # diluent_other_than_air = len(diluent) > 1 or (
+        #     len(diluent) == 1 and "air" not in diluent
+        # )
     if diluent_other_than_air and databank == "exomol":
         raise NotImplementedError(
             "Only air broadening is implemented in RADIS with ExoMol. Please reach out on https://github.com/radis/radis/issues"
