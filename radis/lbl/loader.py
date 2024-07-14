@@ -1527,7 +1527,7 @@ class DatabankLoader(object):
                 columns = None
 
             if memory_mapping_engine == "auto":
-                memory_mapping_engine = "vaex"
+                memory_mapping_engine = get_auto_MEMORY_MAPPING_ENGINE()
 
             if database != "full":
                 raise ValueError(
@@ -1841,9 +1841,13 @@ class DatabankLoader(object):
         if is_atom(self.input.species):
             self.input.isatom = True
             self.input.isneutral = is_neutral(self.input.species)
+            if self.input.diluent is None:
+                self.input.diluent = 'H'
         else:
             self.input.isatom = False
             self.input.isneutral = None # irrelevant for molecules
+            if self.input.diluent is None:
+                self.input.diluent = 'air'
         # %% Load Partition functions (and energies if needed)
         # ----------------------------------------------------
 

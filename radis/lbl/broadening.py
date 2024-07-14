@@ -1044,14 +1044,17 @@ class BroadenFactory(BaseFactory):
         if self.input.isatom:
             for key in diluent:
                 if key != 'e-' and key not in atomic_broadening_coeff:
-                    self.warn(
-                        message="Broadening Coefficient of "
-                        + key
-                        + " not available. You can silence this error by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.\nThe broadening coefficient of atomic hydrogen is used instead.",
-                        category="MissingDiluentBroadeningWarning",
+                    raise ValueError(
+                        f"Broadening Coefficient of {key} not available. Broadening coefficients are only available for: {list(atomic_broadening_coeff.keys()) + ['e-']}."
                     )
-                    new_diluent['H'] = new_diluent.get('H', 0) + new_diluent[key]
-                    del new_diluent[key]
+                    # self.warn(
+                    #     message="Broadening Coefficient of "
+                    #     + key
+                    #     + " not available. You can silence this error by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.\nThe broadening coefficient of atomic hydrogen is used instead.",
+                    #     category="MissingDiluentBroadeningWarning",
+                    # )
+                    # new_diluent['H'] = new_diluent.get('H', 0) + new_diluent[key]
+                    # del new_diluent[key]
             diluent = new_diluent
         else:
             for key in diluent:

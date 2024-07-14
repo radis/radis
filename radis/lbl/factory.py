@@ -162,7 +162,7 @@ class SpectrumFactory(BandFactory):
         Does not change anything when giving inputs in wavenumber. Default ``'air'``
     diluent: ``str`` or ``dictionary``
             can be a string of a single diluent or a dictionary containing diluent
-            name as key and its mole_fraction as value. Default ``air`` for molecules, atomic hydrogen 'H' for atoms. For free electrons, use the symbol 'e-'. Currently, only H, H2, H2, and e- are supported for atoms - any other diluents have no effect besides diluting the mole fractions of the other constituents.
+            name as key and its mole_fraction as value. If left as ``None``, it defaults to ``'air'`` for molecules and atomic hydrogen 'H' for atoms. For free electrons, use the symbol 'e-'. Currently, only H, H2, H2, and e- are supported for atoms - any other diluents have no effect besides diluting the mole fractions of the other constituents.
 
     Other Parameters
     ----------------
@@ -430,7 +430,7 @@ class SpectrumFactory(BandFactory):
         export_populations=None,
         export_lines=False,
         gpu_backend=None,
-        diluent="air",
+        diluent=None,
         lbfunc=None,
         potential_lowering=None,
         **kwargs,
@@ -565,9 +565,13 @@ class SpectrumFactory(BandFactory):
                     )
                 self.input.isatom = False
                 self.input.isneutral = None # irrelevant for molecules
+                if self.input.diluent is None:
+                    self.input.diluent = 'air'
             else:
                 self.input.isatom = True
                 self.input.isneutral = is_neutral(molecule)
+                if self.input.diluent is None:
+                    self.input.diluent = 'H'
 
         # Store isotope identifier in str format (list wont work in database queries)
         if not isinstance(isotope, str):
