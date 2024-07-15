@@ -341,7 +341,10 @@ def read_kurucz(kuruczf, preserve_orig_levels=False):
     """
     Parse a Kurucz linelist, process its columns as required, and return as a Pandas DataFrame
 
-    Inspired by: https://github.com/rasmus98/NLTE-Helium/blob/fc6161a30ebecfcf59f36386b1dc7f02ff749905/Grotrian_diagram_Helium.ipynb
+    Inspired by: https://github.com/rasmus98/NLTE-Helium/blob/fc6161a30ebecfcf59f36386b1dc7f02ff749905/Grotrian_diagram_Helium.ipynb cell 2. Also see:
+    - https://github.com/DBerke/varconlib/blob/e57250ca359026ae8b8059dae179fb0ad9625aa2/varconlib/scripts/select_line_pairs.py#L711
+    - https://github.com/followthesheep/specutils/blob/e2873719f3820e83ab29c79062d7a59a7664fa2f/specutils/read_kurucz_linelist.py
+    - https://github.com/ajwheeler/Korg.jl/blob/53420d38c23e21a7fe202b8680bdb201c9a62a2a/src/linelist.jl#L153
 
     Args:
         kuruczf: file path
@@ -376,7 +379,7 @@ def read_kurucz(kuruczf, preserve_orig_levels=False):
     cond = (df['eupper_orig']-df['elower_orig']) > 0
     oldlower = ['jlower_orig', 'labellower_orig', 'elower_orig']
     oldupper = ['jupper_orig', 'labelupper_orig', 'eupper_orig']
-    newlower = ['jlower', 'labellower', 'El']
+    newlower = ['jl', 'labellower', 'El']
     newupper = ['ju', 'labelupper', 'Eu']
     for oldcol1, oldcol2, newcol1, newcol2 in zip(oldlower, oldupper, newlower, newupper):
         df[newcol1] = df[oldcol1].where(cond, df[oldcol2])
