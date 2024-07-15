@@ -11,8 +11,6 @@ from radis.test.utils import getValidationCase
 import pytest
 import radis
 
-radis.config['DATAFRAME_ENGINE'] = 'vaex'
-
 def func1(**kwargs):
     """An example implementing the default broadening formula and values of SpectraPlot"""
     # print(kwargs.keys())
@@ -21,6 +19,9 @@ def func1(**kwargs):
 
 @pytest.mark.needs_connection
 def test_Kurucz_vs_NISTandSpectraplot_4000(plot=True, verbose=True):
+    initial_engine = radis.config['DATAFRAME_ENGINE']
+    radis.config['DATAFRAME_ENGINE'] = 'vaex'
+
     w, I = np.loadtxt(getValidationCase("spectraplot_O_4000K.csv"), skiprows=1, delimiter=',', unpack=True)
     I = np.where(I==0, 1e-99, I)
 
@@ -52,6 +53,8 @@ def test_Kurucz_vs_NISTandSpectraplot_4000(plot=True, verbose=True):
         )
 
     assert np.isclose(I_RADIS, I_SpectraPlot, rtol=1.4e-2)
+
+    radis.config['DATAFRAME_ENGINE'] = initial_engine
 
 if __name__ == "__main__":
     test_Kurucz_vs_NISTandSpectraplot_4000()
