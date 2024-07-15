@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Comparing an atomic spectrum for the Kurucz database with that generated from SpectraPlot (https://spectraplot.com/), specifically:
-using calc_spectrum, with values for the parameters largely equivalent to the defaults in SpectraPlot, working in cm-1, and testing the integral under the emission graphs
+using calc_spectrum, with values for the parameters largely equivalent to the defaults in SpectraPlot, working in cm-1, and testing the integral under the emission graphs, and using vaex rather than pandas, and verbose output
 """
 
 from radis.spectrum.spectrum import Spectrum
@@ -9,6 +9,9 @@ from radis import calc_spectrum, plot_diff
 import numpy as np
 from radis.test.utils import getValidationCase
 import pytest
+import radis
+
+radis.config['DATAFRAME_ENGINE'] = 'vaex'
 
 def func1(**kwargs):
     """An example implementing the default broadening formula and values of SpectraPlot"""
@@ -33,6 +36,7 @@ def test_Kurucz_vs_NISTandSpectraplot_4000(plot=True, verbose=True):
         path_length=15,
         lbfunc=func1,
         warnings={"AccuracyError": "ignore", "AccuracyWarning": "ignore"},
+        verbose=2
     )
 
     #s_RADIS.plot("radiance_noslit", wunit="cm-1")

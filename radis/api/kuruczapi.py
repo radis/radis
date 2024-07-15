@@ -355,8 +355,8 @@ def read_kurucz(kuruczf, preserve_orig_levels=False):
               #(98,102),(102,104),(104,106),
                (106,109),)
                #(109,115),(115,118),(118,124),(124,129),(129,134),(135,136),(136,137),(138,139),(139,140),(140,141),(141,144),(144,149),(149,154),(154,160))
-    dtypes = (np.float64,np.float64,'string', #make species string rather than float for easier parsing
-              np.float64,np.float64,'string',np.float64,np.float64,'string',np.float64,np.float64,np.float64,
+    dtypes = (np.float64,np.float64,'object', #make species string rather than float for easier parsing
+              np.float64,np.float64,'object',np.float64,np.float64,'object',np.float64,np.float64,np.float64,
               #str,np.int64,np.int64,
               np.int64,)
               #np.float64,np.int64,np.float64,np.int64,np.int64,str,str,str,str,np.int64,str,np.int64,np.int64,np.int64)
