@@ -1016,7 +1016,7 @@ class DatabankLoader(object):
         extra_params=None,
     ):
         """Fetch the latest files from [HITRAN-2020]_, [HITEMP-2010]_ (or newer),
-        [ExoMol-2020]_  or [GEISA-2020] or the Kurucz atomic linelists, and store them locally in memory-mapping
+        [ExoMol-2020]_  or [GEISA-2020] or [Kurucz-2017], and store them locally in memory-mapping
         formats for extremely fast access.
 
         Parameters
@@ -1522,6 +1522,8 @@ class DatabankLoader(object):
                 )
 
         elif source == "kurucz":
+            self.reftracker.add(doi["Kurucz-2017"], "line database")
+
             if columns is not None:
                 self.warn("The required columns for Kurucz don't match those of existing moleculear databases, so all columns are being loaded")
                 columns = None

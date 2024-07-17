@@ -3565,6 +3565,10 @@ class BaseFactory(DatabankLoader):
         line_strength *= 1 - df.gl / df.gu * nu / nl
         df["S"] = line_strength
 
+        # should produce the same result:
+        # self.calc_S0() # makes S0 column in df
+        # df["S"] = df['S0'] * nl * (1 - df.gl / df.gu * nu / nl) / df.gl
+
         self.profiler.stop(
             "scaled_non_eq_linestrength", "scaled nonequilibrium linestrength"
         )

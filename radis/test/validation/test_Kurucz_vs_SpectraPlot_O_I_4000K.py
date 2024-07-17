@@ -11,6 +11,13 @@ from radis.test.utils import getValidationCase
 import pytest
 import radis
 
+from radis.misc.utils import NotInstalled, not_installed_vaex_args
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
+
 def func1(**kwargs):
     """An example implementing the default broadening formula and values of SpectraPlot"""
     # print(kwargs.keys())
@@ -18,6 +25,7 @@ def func1(**kwargs):
     return 0.1*(296/kwargs['Tgas'])**0.8, None
 
 @pytest.mark.needs_connection
+@pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
 def test_Kurucz_vs_NISTandSpectraplot_4000(plot=True, verbose=True):
     initial_engine = radis.config['DATAFRAME_ENGINE']
     radis.config['DATAFRAME_ENGINE'] = 'vaex'
