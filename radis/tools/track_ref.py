@@ -3,7 +3,7 @@
 Experiment module to track references used in the code; and return
 the appropriate citations
 
-To be made an independant package in the future
+To be made an independent package in the future
 """
 
 
@@ -99,7 +99,7 @@ class RefTracker(dict):
                 self[doi].append(why)
 
     def cite(self, format="bibentry"):
-        """See more in :py:func:`habanero.content_negotiation`"""
+        r"""See more in :py:func:`habanero.content_negotiation`"""
 
         # Grouping dictionary by value :
         by_use = {}

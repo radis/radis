@@ -28,7 +28,12 @@ def test_speclist(*args, **kwargs):
     # Now generate a SpecList
     dbl = SpecList(*spec_list)
     # check methods work:
-    dbl.get_closest(Trot=1550)
+    s_closest = dbl.get_closest(Trot=1550)  # TODO add which one
+    assert s_closest.c["Trot"] == 1500
+
+    # test get_closest() with a non numeric argument
+    s_closest_2 = dbl.get_closest(Trot=1550, molecule="CO")
+    assert s_closest_2.c["Trot"] == 1500
 
 
 @pytest.mark.fast
@@ -141,7 +146,7 @@ def test_save_compressed2(verbose=True, *args, **kwargs):
     )
     try:
 
-        # load in one databse
+        # load in one database
         db = SpecDatabase(join(dirname(getTestFile(".")), "newDb"))
         db.add(s, compress=2, if_exists_then="error")
 

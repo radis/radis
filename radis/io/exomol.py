@@ -44,7 +44,7 @@ def fetch_exomol(
     molecule: ``str``
         ExoMol molecule
     database: ``str``
-        database name. Ex:: ``POKAZATEL`` or ``BT2`` for ``H2O``. See
+        database name. Ex: ``POKAZATEL`` or ``BT2`` for ``H2O``. See
         :py:data:`~radis.api.exomolapi.KNOWN_EXOMOL_DATABASE_NAMES`. If ``None`` and
         there is only one database available, use it.
     local_databases: ``str``
@@ -96,7 +96,7 @@ def fetch_exomol(
 
         .. note::
             Vaex DataFrames are memory-mapped. They do not take any space in RAM
-            and are extremelly useful to deal with the largest databases.
+            and are extremely useful to deal with the largest databases.
 
     skip_optional_data : bool
         If False, fetch all fields which are marked as available in the ExoMol definition
@@ -117,7 +117,7 @@ def fetch_exomol(
 
     Returns
     -------
-    df: pd.DataFrame
+    df: pd.DataFrame or vaex.dataframe.DataFrameLocal
         Line list
         A HDF5 file is also created in ``local_databases`` and referenced
         in the :ref:`RADIS config file <label_lbl_config_file>` with name
@@ -166,20 +166,21 @@ def fetch_exomol(
     known_exomol_databases, recommended_database = get_exomol_database_list(
         molecule, full_molecule_name
     )
-
-    _exomol_use_hint = "Select one of them with `radis.fetch_exomol(DATABASE_NAME)`, `SpectrumFactory.fetch_databank('exomol', exomol_database=DATABASE_NAME')`, or `calc_spectrum(..., databank=('exomol', DATABASE_NAME))` \n"
+    if verbose:
+        print("\n========== Loading Exomol database [start] ==========")
+    _exomol_use_hint = "Select one of them with `fetch_exomol(DATABASE_NAME)`, `SpectrumFactory.fetch_databank('exomol', exomol_database=DATABASE_NAME')`, or `calc_spectrum(..., databank=('exomol', DATABASE_NAME))` \n"
     if database is None or database == "default":
         if len(known_exomol_databases) == 1:
-            database = known_exomol_databases[0]
-            if verbose:
-                print(f"Using ExoMol database {database} for {full_molecule_name}")
+            database = known_exomol_databases[
+                0
+            ]  # TODO: if there is only one, is it not the recommended one?
         elif recommended_database:
             database = recommended_database
-            if verbose:
+            if verbose > 1:
                 print(
-                    f"Using ExoMol database {database} for {full_molecule_name} (recommended by the ExoMol team). All available databases are {known_exomol_databases}. {_exomol_use_hint}"
+                    f"For {full_molecule_name}, the available databases are {known_exomol_databases}. {_exomol_use_hint}"
                 )
-        else:
+        else:  # TODO: Explain here when this case occurs...
             raise KeyError(
                 f"Choose one of the several databases available for {full_molecule_name} in ExoMol: {known_exomol_databases}. ({recommended_database} is recommended by the ExoMol team). {_exomol_use_hint}"
             )
@@ -207,6 +208,7 @@ def fetch_exomol(
     mdb = MdbExomol(
         local_path,
         molecule=molecule,
+        database=database,
         name=databank_name,
         local_databases=local_databases,
         nurange=[
@@ -216,6 +218,7 @@ def fetch_exomol(
         engine=engine,
         cache=cache,
         skip_optional_data=skip_optional_data,
+        verbose=verbose,
     )
 
     # Get local files
@@ -261,7 +264,7 @@ def fetch_exomol(
         )
 
     # Add broadening
-    mdb.set_broadening(df, output=output)
+    mdb.set_broadening_coef(df, output=output)
 
     # Specific for RADIS :
     # ... Get RADIS column names:
@@ -271,7 +274,7 @@ def fetch_exomol(
     assert "wav" in df
 
     # ... include isotopic abundance in linestrength :
-    # Note : ExoMol treats isotopes as independant molecules ; linestrength is not
+    # Note: ExoMol treats isotopes as independent molecules ; linestrength is not
     # corrected by isotopic abundance.
     # Below, replace Linestrength with Line Intensity taking into account
     # Terrestrial isotopic abundance (to be compatible with HITRAN/HITEMP/etc. )
@@ -292,7 +295,7 @@ def fetch_exomol(
         mdb.rename_columns(df, {"Sij0": "int"})
 
     # Add Attributes of the DataFrame
-    if output == "pandas":  # no attribtes in "Jax" or "Vaex" mode
+    if output in ["pandas", "vaex"]:  # no attribtes in "Jax" or "Vaex" mode
         from radis.db.classes import HITRAN_MOLECULES
 
         attrs = {}
@@ -303,9 +306,12 @@ def fetch_exomol(
         attrs["molecule"] = molecule
         attrs["iso"] = isotope
 
-        for k, v in attrs.items():
-            df.attrs[k] = v
-
+        if output == "vaex":
+            df.attrs = {}
+            df.attrs = attrs
+        elif output == "pandas":
+            for k, v in attrs.items():
+                df.attrs[k] = v
     # Return:
     out = df
     if return_local_path or return_partition_function:
@@ -316,4 +322,6 @@ def fetch_exomol(
         assert return_local_path
         out.append(mdb.to_partition_function_tabulator())
 
+    if verbose:
+        print("========== Loading Exomol database [end] ==========\n")
     return out

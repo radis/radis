@@ -7,6 +7,7 @@ Classes to deal with multi-slabs configurations:
 - :func:`~radis.los.slabs.MergeSlabs` for several species at the same spatial position
 - :func:`~radis.los.slabs.SerialSlabs` to add several spectra along the line-of-path
 One Slab is just a :class:`~radis.spectrum.spectrum.Spectrum` object
+
 Examples
 --------
 See more examples in the
@@ -280,7 +281,7 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
                 conditions[cond] = s.conditions[cond] + sn.conditions[cond]
                 if cond in s.cond_units and cond in sn.cond_units:
                     assert s.cond_units == sn.cond_units
-        # ... for the parmaeters below, if N/A, remove the value
+        # ... for the parameters below, if N/A, remove the value
         for cond in ["default_output_unit"]:
             if cond in conditions and conditions[cond] == "N/A":
                 conditions.pop(cond)
@@ -338,7 +339,7 @@ def _check_valid(s):
             k in ["transmittance_noslit", "radiance_noslit", "abscoeff", "emisscoeff"]
         ) and anynan(v):
             warn(
-                "Nans detected in Spectrum object for multi-slab operation. "
+                "NaNs detected in Spectrum object for multi-slab operation. "
                 + "Results may be wrong!"
             )
 
@@ -363,7 +364,7 @@ def resample_slabs(
     *slabs
 ):
     # type: (str, str, str, *Spectrum) -> *Spectrum
-    """Resample slabs on the same wavespace: if the range are differents,
+    """Resample slabs on the same wavespace: if the range are different,
     depending on the mode we may fill with optically thin media, or raise an
     error
 
@@ -465,8 +466,8 @@ def resample_slabs(
                 # note: s.resample() fills with 0 when out of bounds
             elif resample_wavespace == "intersect":
                 # ... get bounds
-                wmin = max([w.min() for w in wl])  # maximum of all
-                wmax = min([w.max() for w in wl])  # minimum of all
+                wmin = max([w.min() for w in wl])  # minimum of all
+                wmax = min([w.max() for w in wl])  # maximum of all
                 dw = min([abs(diff(w)).min() for w in wl])  # highest density
                 wnew = arange(wmin, wmax + dw, dw)
                 if wnew[-1] > wmax:  # sometimes arange doesnt work as expected
@@ -610,7 +611,6 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
     out_of_bounds = kwargs.pop("out", "nan")  # default 'nan'
     optically_thin = kwargs.pop("optically_thin", False)  # default False
     verbose = kwargs.pop("verbose", False)  # type: bool
-    kwargs.pop("debug", False)  # type: bool
     modify_inputs = kwargs.pop("modify_inputs", False)  # type: bool
     if len(kwargs) > 0:
         raise ValueError("Unexpected input: {0}".format(list(kwargs.keys())))
@@ -685,8 +685,8 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
         for s in slabs[1:]:
             conditions = intersect(conditions, s.conditions)
             cond_units = intersect(cond_units, s.cond_units)
-            # units = intersect(units0, s.units)  # we're actually using [slabs0].units insteads
-        # ... for the parmaeters below, if N/A, remove the value
+            # units = intersect(units0, s.units)  # we're actually using [slabs0].units instead
+        # ... for the parameters below, if N/A, remove the value
         for cond in ["default_output_unit"]:
             if cond in conditions and conditions[cond] == "N/A":
                 conditions.pop(cond)

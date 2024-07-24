@@ -14,6 +14,7 @@ Add a RulerTool to measure spectra
 Examples
 --------
 ::
+
     from radis.tools.plot_tools import add_ruler
     fig = plt.figure()
     add_ruler(fig)
@@ -28,7 +29,7 @@ import warnings
 
 class ParamRange:
     def __init__(self, valmin=0, valmax=1, valinit=None):
-        """Used in :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu_interactive`"""
+        r"""Used in :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu_interactive`"""
         self.valmin = valmin
         self.valmax = valmax
 
@@ -60,6 +61,25 @@ class ParamRange:
 
 
 def add_ruler(fig, wunit="", Iunit="", ax=None):
+    """
+
+    Add a RulerTool to measure spectra
+
+        Based on work from TerranJP
+        https://github.com/terranjp/matplotlib-tools
+
+
+    Examples
+    --------
+    ::
+
+        from radis.tools.plot_tools import add_ruler
+        fig = plt.figure()
+        add_ruler(fig)
+
+    .. image:: https://user-images.githubusercontent.com/16088743/122615292-95a9e080-d088-11eb-9927-bf1187d5a94a.png
+
+    """
 
     import matplotlib.pyplot as plt
     import numpy as np
@@ -68,7 +88,7 @@ def add_ruler(fig, wunit="", Iunit="", ax=None):
 
     # TODO: build it only on demand/ if add_tool called?
     class Ruler(AxesWidget):
-        """
+        r"""
         A ruler to measure distances and angles on an axes instance.
 
         For the ruler to remain responsive you must keep a reference to it.
@@ -91,7 +111,7 @@ def add_ruler(fig, wunit="", Iunit="", ax=None):
           Dictionary of :class:`matplotlib.markers.MarkerStyle` properties
         textprops: dict, default is None
             Dictionary of :class:`matplotlib.text.Text` properties. To reposition the
-            textbox you can overide the defaults which position the box in the top left
+            textbox you can override the defaults which position the box in the top left
             corner of the axes.
 
         Notes
@@ -545,7 +565,7 @@ def add_ruler(fig, wunit="", Iunit="", ax=None):
     # %% Add in toolbars
 
     class RulerTool(ToolToggleBase):
-        """Add a RulerTool to measure spectra
+        r"""Add a RulerTool to measure spectra
 
         Based on work from TerranJP
         https://github.com/terranjp/matplotlib-tools

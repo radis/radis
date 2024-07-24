@@ -249,7 +249,7 @@ class MolParams(object):
         if file is None:
             file = getFile("molparam.txt")
 
-        df = pd.read_csv(file, comment="#", delim_whitespace=True)
+        df = pd.read_csv(file, comment="#", sep="\s+")
         df = df.set_index(["id", "iso"])
 
         df["isotope_name_exomol"] = _add_exomol_name(df)
@@ -354,7 +354,9 @@ class MolParams(object):
                 )
 
         else:
-            return self.df.loc[(M, isotope), key]
+            out = self.df.loc[(M, isotope), key]
+            assert len(out) == 1
+            return out.iloc[0]
 
 
 def _add_exomol_name(df):

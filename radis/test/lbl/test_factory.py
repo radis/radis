@@ -27,11 +27,19 @@ import numpy as np
 import pytest
 
 import radis
+from radis import config
 from radis.lbl.factory import SpectrumFactory
 from radis.misc.printer import printm
 from radis.test.utils import setup_test_line_databases
 
 fig_prefix = basename(__file__) + ": "
+
+from radis.misc.utils import NotInstalled, not_installed_vaex_args
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
 
 # %% ======================================================================
 # TEST
@@ -100,7 +108,7 @@ def test_spec_generation(
     Notes
     -----
 
-    Performance test. How long it tooks to calculate this Spectrum?
+    Performance test. How long it took to calculate this Spectrum?
     Test with cutoff 1e-25, broadening_max_width=10
 
     - 0.9.15: >>> 33s
@@ -195,7 +203,7 @@ def test_spec_generation(
         sf.plot_broadening(i=0)  # show broadening of one line
         plt.xlim((2267.20, 2268.30))
 
-    # Compare with harcoded results
+    # Compare with hardcoded results
     # ... code previously used to export hardcoded results:
     # ... and header contains all input conditions:
     #        np.savetxt('output.txt', np.vstack(s.get('abscoeff', wunit='nm')).T[::10])
@@ -488,7 +496,7 @@ def test_pressure_units_conversion(
     )
     sf.load_databank("HITRAN-CO-TEST")
     s = sf.eq_spectrum(Tgas=300)
-    assert np.isclose(s.conditions["pressure_mbar"], expected_pressure_bar * 1000)
+    assert np.isclose(s.conditions["pressure"], expected_pressure_bar)
 
 
 @pytest.mark.fast
@@ -552,7 +560,7 @@ def test_temperature_units_conversion(
     )
     assert np.isclose(s.conditions["Tgas"], expected_temperature_K)
     assert np.isclose(s.conditions["path_length"], 0.1)  # cm
-    assert np.isclose(s.conditions["pressure_mbar"], 20)
+    assert np.isclose(s.conditions["pressure"], 0.02)
 
 
 @pytest.mark.fast
@@ -606,7 +614,7 @@ def test_wstep_auto_method_sf(verbose=True, plot=False, *args, **kwargs):
     )
 
 
-@pytest.mark.fast
+# @pytest.mark.fast #not fast, Nicolas Minesi 08/04/2024
 def test_all_spectrum_using_wstep_auto(verbose=True, plot=False, *args, **kwargs):
     """Checks all methods to calculate Spectrum works with "auto" mode"""
     Tgas = 1000
@@ -644,85 +652,140 @@ def test_all_spectrum_using_wstep_auto(verbose=True, plot=False, *args, **kwargs
     assert sf._wstep == "auto"
 
 
-@pytest.mark.fast
-def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
+@pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
+def test_vaex_and_pandas_spectrum():
+    """Compares spectrum calculated using vaex and pandas are same.
+    CONVOLUTED_QUANTITIES and dataframe df is compared to ensure the spectrum is same.
 
-    sf = SpectrumFactory(
+    Here are things that we ensure are same for both vaex and pandas that
+    -Spectra calculated with Vaex & Pandas are the same
+    -Spectra calculated with Vaex & Pandas using Database cutoff are the same
+    Added in https://github.com/radis/radis/pull/580"""
+
+    from radis import calc_spectrum
+
+    # computing spectrum in vaex dataframe format
+    config["DATAFRAME_ENGINE"] = "vaex"
+    s_vaex, factory_s_vaex = calc_spectrum(
+        1900,
+        2300,  # cm-1
+        molecule="CO",
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        Tgas=700,  # K
+        # mole_fraction={'CO': 0.5, 'CO2': 0.3},
+        mole_fraction=0.1,
+        path_length=1,  # cm
+        databank="hitran",  # or 'hitemp', 'geisa', 'exomol'
+        # use_cached=False,
+        return_factory=True,
+    )
+
+    # computing spectrum in pandas dataframe format
+    config["DATAFRAME_ENGINE"] = "pandas"
+    s_pandas, factory_s_pandas = calc_spectrum(
+        1900,
+        2300,  # cm-1
+        molecule="CO",
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        Tgas=700,  # K
+        mole_fraction=0.1,
+        path_length=1,  # cm
+        databank="hitran",  # or 'hitemp', 'geisa', 'exomol'
+        # use_cached=False,
+        return_factory=True,
+    )
+
+    assert np.allclose(
+        s_vaex.get("absorbance"), s_pandas.get("absorbance"), equal_nan=True
+    )
+
+    for column in factory_s_pandas.df1.columns:
+        assert np.all(
+            factory_s_vaex.df1[column].to_numpy() == factory_s_pandas.df1[column]
+        )
+
+    #%% Additional test with other options (cutoff, ...)
+    from radis import SpectrumFactory
+
+    config["DATAFRAME_ENGINE"] = "vaex"
+    sf_vaex = SpectrumFactory(
         wavelength_min=4200,
         wavelength_max=4500,
         cutoff=1e-23,
-        molecule="CO",
-        isotope="1,2",
-        truncation=5,
-        neighbour_lines=10,
-        path_length=0.1,
-        mole_fraction=0.1,
-        medium="vacuum",
-        optimization=None,
-        verbose=verbose,
+        molecule="CO2",
     )
-    sf.warnings.update(
-        {
-            "MissingSelfBroadeningWarning": "ignore",
-            "NegativeEnergiesWarning": "ignore",
-            "LinestrengthCutoffWarning": "ignore",
-            "HighTemperatureWarning": "ignore",
-            "AccuracyWarning": "ignore",
-            "PerformanceWarning": "ignore",
-        }
-    )
+    sf_vaex.fetch_databank("hitran")
+    s_vaex = sf_vaex.eq_spectrum(Tgas=2000)  # failing on the 08/03/2023 - minouHub
 
-    sf.load_databank("HITRAN-CO", load_columns=["diluent", "equilibrium"])
-
-    # Calculating spectrum for different diluents
-    sf.eq_spectrum(Tgas=2000)
-    wl1 = sf.df1["hwhm_lorentz"]
-    assert sf._diluent == {"air": 0.9}
-
-    sf.eq_spectrum(Tgas=2000, diluent={"CO2": 0.4, "air": 0.5})
-    wl2 = sf.df1["hwhm_lorentz"]
-    assert sf._diluent == {"CO2": 0.4, "air": 0.5}
-
-    sf.eq_spectrum(Tgas=2000, diluent="CO2")
-    wl3 = sf.df1["hwhm_lorentz"]
-    assert sf._diluent == {"CO2": 0.9}
-
-    assert (wl1 < wl2).all() and (wl2 < wl3).all()
-
-
-@pytest.mark.fast
-def test_diluents_molefraction(verbose=True, plot=False, *args, **kwargs):
-    from radis.misc.warning import MoleFractionError
-
-    sf = SpectrumFactory(
-        wavelength_min=4300,
+    config["DATAFRAME_ENGINE"] = "pandas"
+    sf_pd = SpectrumFactory(
+        wavelength_min=4200,
         wavelength_max=4500,
-        wstep=0.01,
-        cutoff=1e-30,
-        pressure=1,
-        isotope=[1],
-        verbose=verbose,
-        diluent={"CO2": 0.4, "air": 0.2},
+        cutoff=1e-23,
+        molecule="CO2",
     )
-    sf.load_databank("HITRAN-CO", load_columns=["diluent", "equilibrium"])
-    # Molefraction (molecule + diluent) < 1
-    with pytest.raises(MoleFractionError) as err:
-        sf.eq_spectrum(Tgas=300, mole_fraction=0.3)
-    assert (
-        "of molecule and diluents less than 1. Please set appropriate molefraction value of molecule and diluents"
-        in str(err.value)
+    sf_pd.fetch_databank("hitran")
+    s_pd = sf_pd.eq_spectrum(Tgas=2000)
+    for column in sf_pd.df1.columns:
+        assert np.all(sf_vaex.df1[column].to_numpy() == sf_pd.df1[column])
+
+    assert np.allclose(s_vaex.get("absorbance"), s_pd.get("absorbance"), equal_nan=True)
+
+
+#%%
+@pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
+def test_vaex_and_pandas_spectrum_noneq():
+    """Compares the Spectrum calculated under non-equilibrium conditions .
+    Comparison is made between CONVOLUTED_QUANTITIES and dataframe df.
+
+    Here are things that we ensure are same for both vaex and pandas that
+    -Spectra calculated with Vaex & Pandas are the same
+    -Spectra calculated with Vaex & Pandas using Database cutoff are the same
+    Added in https://github.com/radis/radis/pull/580"""
+
+    from radis import calc_spectrum
+
+    conditions = {
+        "wmin": 2300,
+        "wmax": 2320,
+        "molecule": "CO",
+        "isotope": 1,
+        "pressure": 1.01325,
+        "mole_fraction": 0.1,
+        "wstep": "auto",
+        "path_length": 1,
+        "databank": "hitran",
+        "verbose": 3,
+        "return_factory": True,
+    }
+    # Calculating spectrum using vae
+    config["DATAFRAME_TYPE"] = "vaex"
+    s, factory_s = calc_spectrum(
+        **conditions,
+        Tgas=700,  # K
+        Tvib=710,
+        Trot=710,
     )
 
-    # Molefraction (molecule + diluent) > 1
-    with pytest.raises(MoleFractionError) as err:
-        sf.eq_spectrum(Tgas=300, mole_fraction=0.6)
-    assert (
-        "of molecule and diluents greater than 1. Please set appropriate molefraction value of molecule and diluents."
-        in str(err.value)
+    # Calculating spectrum using pandas
+    config["DATAFRAME_ENGINE"] = "pandas"
+    s1, factory_s1 = calc_spectrum(
+        **conditions,
+        Tgas=700,  # K
+        Tvib=710,
+        Trot=710,
     )
 
-    # Molefraction (molecule + diluent) == 1
-    sf.eq_spectrum(Tgas=300, mole_fraction=0.4)
+    import numpy as np
+
+    # Comparing different quantities
+    assert np.allclose(s.get("absorbance"), s1.get("absorbance"), equal_nan=True)
+
+    # Comparing different columns of dataframe df
+    for column in factory_s1.df1.columns:
+        assert np.all(factory_s1.df1[column] == factory_s.df1[column].to_numpy())
 
 
 # --------------------------

@@ -3,7 +3,7 @@
 new spectral quantities that can be derived from existing ones, or rescale
 path_length or mole_fraction, or add overpopulations.
 
-Most of these are binded as methods to the Spectrum class, but stored here to
+Most of these are bound as methods to the Spectrum class, but stored here to
 unload the spectrum.py file
 
 
@@ -48,7 +48,7 @@ non_rescalable_keys = ["abscoeff_continuum", "emisscoeff_continuum"]
 """str:  variables that cannot be rescaled (or not implemented): """
 # ... Check we have everyone (safety check!):
 # ... if it fails here, then we may have added a new key without adding a scaling
-# ... method. Explicitely add it in non_rescalableçkeys so an error is raised
+# ... method. Explicitly add it in non_rescalableçkeys so an error is raised
 # ... if trying to rescale a Spectrum that has such a quantity
 assert (
     compare_lists(
@@ -217,7 +217,7 @@ def _build_update_graph(
     if p_T_x is None:
         p_T_x = (
             "Tgas" in spec.conditions
-            and "pressure_mbar" in spec.conditions
+            and "pressure" in spec.conditions
             and "mole_fraction" in spec.conditions
         )
     if equilibrium is None:
@@ -254,12 +254,12 @@ def _build_update_graph(
     }
 
     def derives_from(what, *from_keys):
-        """Writes that quantity ``what`` can be infered by having all
+        r"""Writes that quantity ``what`` can be inferred by having all
         quantities ``from_keys``
 
         Examples
         --------
-        Radiance can be infered from emisscoeff if optically thin::
+        Radiance can be inferred from emisscoeff if optically thin::
 
             derives_from('radiance_noslit', 'emisscoeff')
 
@@ -282,7 +282,7 @@ def _build_update_graph(
     #
     # Note for Developers: all derives_from relationship should correspond to a
     # rescale method that was implemented. Only the developer can know that!
-    # If a rescaled relationship is implemetend but not added here it wont be
+    # If a rescaled relationship is implemented but not added here it wont be
     # used by the code when trying to add all quantities. If a relationship is
     # added here but not implemented it will crash during rescale (and explain why)
 
@@ -759,13 +759,13 @@ def rescale_abscoeff(
     elif (
         "xsection" in initial
         and "Tgas" in spec.conditions
-        and "pressure_mbar" in spec.conditions
+        and "pressure" in spec.conditions
         and "mole_fraction" in spec.conditions
     ):
         if __debug__:  # cm-1
             printdbg("... rescale: abscoeff k_2 = XS_2 * (x * p) / (k_b * T)")
         xsection = rescaled["xsection"]  # x already scaled
-        pressure_Pa = spec.conditions["pressure_mbar"] * 1e2
+        pressure_Pa = spec.conditions["pressure"] * 1e5
         x = spec.conditions["mole_fraction"]
         Tgas = spec.conditions["Tgas"]  # K
         from radis.phys.constants import k_b
@@ -837,7 +837,7 @@ def _recompute_from_abscoeff_at_equilibrium(
     """
 
     def get_unit_radiance():
-        """In which unit to store radiance : use the existing one by default,
+        r"""In which unit to store radiance : use the existing one by default,
         or use "mW/cm2/sr/nm if spectrum stored in wavelength; 'mW/cm2/sr/cm-1'
         if Spectrum stored in wavenumber"""
         if spec.get_waveunit() == "cm-1":
@@ -846,7 +846,7 @@ def _recompute_from_abscoeff_at_equilibrium(
             return spec.units.get("radiance_noslit", "mW/cm2/sr/nm")
 
     def get_unit_emisscoeff(unit_radiance):
-        """Basically, unit of ``unit_radiance`` divided by ``cm``"""
+        r"""Basically, unit of ``unit_radiance`` divided by ``cm``"""
         if "/cm2" in unit_radiance:
             return unit_radiance.replace("/cm2", "/cm3")
         else:
@@ -981,7 +981,7 @@ def rescale_emisscoeff(
     unit = None
 
     def get_emisscoeff_unit(unit_radiance):
-        """Basically, units of ``unit_radiance`` divided by ``cm``"""
+        r"""Basically, units of ``unit_radiance`` divided by ``cm``"""
         if "/cm2" in unit_radiance:
             return unit_radiance.replace("/cm2", "/cm3")
         else:
@@ -996,7 +996,7 @@ def rescale_emisscoeff(
         assert "emisscoeff" in units
         return rescaled, units
 
-    # Firt get initial emisscoeff j1
+    # First get initial emisscoeff j1
     # -------------------
 
     if "emisscoeff" in initial:
@@ -1225,7 +1225,7 @@ def rescale_absorbance(
         unit = ""
     else:
         msg = (
-            "Cant recalculate absorbance if scaled absoeff "
+            "Cant recalculate absorbance if scaled abscoeff "
             + "({0}) and true path_length ({1}) are not given".format(
                 "abscoeff" in rescaled, true_path_length
             )
@@ -1502,7 +1502,7 @@ def rescale_radiance_noslit(
     unit = None
 
     def get_radiance_unit(unit_emisscoeff):
-        """get radiance_noslit unit from emisscoeff unit.
+        r"""get radiance_noslit unit from emisscoeff unit.
         Basically just multiply by ``cm``"""
         if "/cm3" in unit_emisscoeff:
             return unit_emisscoeff.replace("/cm3", "/cm2")
@@ -1714,7 +1714,7 @@ def rescale_emissivity_noslit(spec, rescaled, rescaled_units, extra, true_path_l
     if "transmittance_noslit" in rescaled:
         if __debug__:
             printdbg("... rescale: emissivity_noslit e_2 = 1 - T_2")
-        # transmittivity already scaled
+        # transmissivity already scaled
         T2 = rescaled["transmittance_noslit"]
         emissivity_noslit = 1 - T2  # recalculate
     else:
@@ -1805,7 +1805,7 @@ def rescale_xsection(
     elif (
         "abscoeff" in rescaled
         and "Tgas" in spec.conditions
-        and "pressure_mbar" in spec.conditions
+        and "pressure" in spec.conditions
         and "mole_fraction" in spec.conditions
     ):
         if __debug__:  # cm-1
@@ -1817,16 +1817,16 @@ def rescale_xsection(
             abscoeff_cm1=abscoeff,
             Tgas_K=spec.conditions["Tgas"],
             mole_fraction=spec.conditions["mole_fraction"],
-            pressure_Pa=spec.conditions["pressure_mbar"] * 1e2,
+            pressure_Pa=spec.conditions["pressure"] * 1e5,
         )
         unit = "cm2"
     else:
         msg = (
             "Cant recalculate xsection if not all these quantities are given : "
-            + "scaled abscoeff ({0}), Tgas ({1}), pressure_mbar ({2})".format(
+            + "scaled abscoeff ({0}), Tgas ({1}), pressure ({2})".format(
                 "abscoeff" in rescaled,
                 "Tgas" in spec.conditions,
-                "pressure_mbar" in spec.conditions,
+                "pressure" in spec.conditions,
             )
         )
         if "xsection" in extra:  # cant calculate this one but let it go

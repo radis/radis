@@ -98,6 +98,7 @@ def residual_LTE(params, conditions, s_data, sf, log, verbose):
 
     # Model spectrum calculation
     s_model = sf.eq_spectrum(**kwargs)
+    # s_model = sf.eq_spectrum_gpu(**kwargs)
 
     # Deal with "offset"
     if "offsetnm" in params:
@@ -512,7 +513,7 @@ def spectrum_refinement(s_data, conditions, verbose) -> Union[Spectrum, dict]:
     if verbose:
         print(f"\nAcquired spectral quantity '{fit_var}' from the spectrum.")
 
-    # Remove NaN values. A wise man once said, "Nan is good but only in India"
+    # Remove NaN values. A wise man once said, "NaN is good but only in India"
 
     s_data_mtr = np.vstack(
         (s_data_wav, s_data_val)
@@ -563,119 +564,47 @@ def fit_spectrum(
     show_plot=True,
     fit_kws={},
 ) -> Union[Spectrum, MinimizerResult, dict]:
-    """Fit an experimental spectrum (from here referred as "data spectrum") with a modeled one,
-    then derive the fit results. Data spectrum is loaded from the path stated in the JSON file,
-    while model spectrum is generated based on the conditions stated in the JSON file, too.
+    """Fit an experimental spectrum (referred to as the "data spectrum") with a modeled spectrum,
+    and derive the fit results.
 
     Parameters
     ----------
     s_exp : Spectrum
-        a Spectrum object, containing the experimental spectrum.
+        The experimental spectrum to be fitted.
     fit_params : dict
-        a dict object, containing fit parameters and their initial values.
-    bounds : dict
-        a dict object, optional, containing bounding ranges of those fit parameters. If not stated,
-        all fit parameters will receive default bounding ranges.
+        A dictionary containing fit parameters and their initial values.
     model : dict
-        a dict object, containing experimental conditions and some additional convolutions for
-        modeling the spectrum.
+        A dictionary containing experimental conditions and additional convolutions for modeling the spectrum.
     pipeline : dict
-        a dict object, containing some preference properties of fitting process.
-    input_file : str
-        path to the JSON input file from the script calling it, by default, None. If this parameter
-        is defined, it means user uses JSON file for inputing everything, and so will discard all
-        other input parameters. For example:: "./test_dir/CO2_measured_spectrum_4-5um.json"
-
-    Other parameters
-    ----------
-    verbose : bool
-        print details about each loop of the fitting process. By default, False.
-    show_plot : bool
-        show experimental spectrum before and after being fitted. By default, True. Showing the plot
-        will pause the runtime, so if you are running benchmark which involves multiple fitting cases,
-        set it to False.
-    fit_kws: dict
-        Options to pass to the minimizer being used. See :py:func:`~lmfit.minimizer.minimize`
+        A dictionary containing preference properties of the fitting process.
+    bounds : dict, optional
+        A dictionary containing bounding ranges for the fit parameters. If not provided, default bounding ranges will be used.
+    input_file : str, optional
+        The path to a JSON input file. If specified, all other input parameters will be discarded.
+    verbose : bool, optional
+        If True, print details about each loop of the fitting process. Default is False.
+    show_plot : bool, optional
+        If True, show the experimental spectrum before and after fitting. Default is True. Note that showing the plot will pause the runtime.
+    fit_kws : dict, optional
+        Options to pass to the minimizer being used. See `lmfit.minimizer.minimize`.
 
     Returns
     -------
-    s_best: Spectrum
-        visualization of the best fit results obtained, as a spectrum.
-    best_fit: MinimizerResult
-        best fit results, output of LMFIT MinimizeResult.
-    log: dict
-        a Dictionary storing runtime log of the fitting process that are
-        not quite covered by the Minimizer, including: residual and fit
-        values after each fitting loop, and total time elapsed.
+    s_best : Spectrum
+        The best fit results obtained as a spectrum.
+    best_fit : MinimizerResult
+        The best fit results as output of LMFIT MinimizeResult.
+    log : dict
+        A dictionary storing runtime log of the fitting process, including residual and fit values after each fitting loop, and total time elapsed.
 
     Examples
     --------
+    Full list of examples can be found in the example gallery: https://radis.readthedocs.io/en
 
-    ::
-        from radis import load_spec
-        from radis.test.utils import getTestFile
-        from radis.tools.new_fitting import fit_spectrum
-
-        # Load an experimental spectrum. You can prepare yours, or fetch one of them in the radis/test/files directory.
-        my_spec = getTestFile("synth-NH3-1-500-2000cm-P10-mf0.01-p1.spec")
-        s_experimental = load_spec(my_spec)
-
-        # Experimental conditions which will be used for spectrum modeling. Basically, these are known ground-truths.
-        experimental_conditions = {
-            "molecule": "NH3",  # Molecule ID
-            "isotope": "1",  # Isotope ID, can have multiple at once
-            "wmin": 1000,  # Starting wavelength/wavenumber to be cropped out from the original experimental spectrum.
-            "wmax": 1050,  # Ending wavelength/wavenumber for the cropping range.
-            "wunit": "cm-1",  # Accompanying unit of those 2 wavelengths/wavenumbers above.
-            "mole_fraction": 0.01,  # Species mole fraction, from 0 to 1.
-            "pressure": 10,  # Total pressure of gas, in "bar" unit by default, but you can also use Astropy units.
-            "path_length": 1,  # Experimental path length, in "cm" unit by default, but you can also use Astropy units.
-            "slit": "1 nm",  # Experimental slit, must be a blank space separating slit amount and unit.
-            "offset": "-0.2 nm",  # Experimental offset, must be a blank space separating offset amount and unit.
-            "wstep": 0.003,  # Resolution of wavenumber grid, in cm-1.
-            "databank": "hitran",  # Databank used for the spectrum calculation. Must be stated.
-        }
-
-        # List of parameters to be fitted, accompanied by their initial values.
-        fit_parameters = {
-            "Tgas": 700,  # Gas temperature, in K.
-        }
-
-        # List of bounding ranges applied for those fit parameters above.
-        bounding_ranges = {
-            "Tgas": [
-                500,
-                2000,
-            ],
-        }
-
-        # Fitting pipeline setups.
-        fit_properties = {
-            "method": "leastsq",  # Preferred fitting method. By default, "leastsq".
-            "fit_var": "radiance",  # Spectral quantity to be extracted for fitting process, such as "radiance", "absorbance", etc.
-            "normalize": False,  # Either applying normalization on both spectra or not.
-            "max_loop": 150,  # Max number of loops allowed. By default, 200.
-            "tol": 1e-15,  # Fitting tolerance, only applicable for "lbfgsb" method.
-        }
-
-        # Conduct the fitting process!
-        s_best, result, log = fit_spectrum(
-            s_exp=s_experimental,  # Experimental spectrum.
-            fit_params=fit_parameters,  # Fit parameters.
-            bounds=bounding_ranges,  # Bounding ranges for those fit parameters.
-            model=experimental_conditions,  # Experimental ground-truths conditions.
-            pipeline=fit_properties,  # Fitting pipeline references.
-            verbose=False,  # If you want a clean result, stay False. If you want to see more about each loop, True.
-        )
-    .. minigallery:: radis.tools.new_fitting.fit_spectrum
-    Notes
-    -----
-    For the fitting method, you can try one among 17 different fitting methods and algorithms of LMFIT, introduced
-    in `LMFIT method list <https://lmfit.github.io/lmfit-py/fitting.html#choosing-different-fitting-methods>`.
     See Also
     --------
     :py:func:`~radis.tools.fitting.fit_spectrum()`,
-    :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`,
+    :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_legacy`,
     :py:mod:`fitroom`
 
     """
@@ -795,7 +724,7 @@ def fit_spectrum(
     if ("Tvib" in params) or ("Tvib0" in params):
         LTE = False  # LTE == False means it's non-LTE
 
-    # Determine fitting method, either stated by user or "lbfgsb" by default
+    # Determine fitting method, either stated by user or "leastsq" by default
     if "method" in pipeline:
         method = pipeline["method"]  # User-defined
     else:

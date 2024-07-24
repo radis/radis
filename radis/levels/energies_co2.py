@@ -29,7 +29,7 @@ def EvJ_co2(v1, v2, l2, v3, J, coeff_dict, remove_ZPE=True):
     Examples
     --------
 
-    Calculate energy of CO2 first asymetric mode (v3 = 1) ::
+    Calculate energy of CO2 first asymmetric mode (v3 = 1) ::
 
         from radis.db.utils import get_herzberg_coefficients
         from radis.levels.energies_co2 import EvJ_co2

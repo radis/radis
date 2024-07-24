@@ -1,0 +1,14 @@
+# Installed by "pip install -e .[dev]" as well as "conda env create --file environment.yml"
+lxml           # parser used for ExoMol website
+hjson          # Json with comments (for default_radis.json)
+publib 		   # Plotting styles for Matplotlib. Version, update to 0.4.0 needed for matplotlib==3.8. However, only 0.3.2 is compatible with python==3.8 (see #647)
+hitran-api     # HAPI, used to access TIPS partition functions
+peakutils
+ruamel.yaml
+json-tricks>=3.15.0  # to deal with non jsonable formats
+mpldatacursor
+nvidia-cufft-cu11
+# tuna            # to generate visual/interactive performance profiles
+vaex-core ; python_version < '3.11'
+vaex-hdf5 ; python_version < '3.11'
+vaex-viz ; python_version < '3.11'

@@ -32,6 +32,7 @@ fig_prefix = basename(__file__) + ": "
 # %% Test routines
 
 
+@pytest.mark.fast
 def test_spectrum_creation_method(*args, **kwargs):
     import pytest
 
@@ -71,7 +72,7 @@ def test_spectrum_creation_method(*args, **kwargs):
         Spectrum({"wavenumber": w, "abscoeff": np.hstack((k, k))}, wunit="cm-1")
     assert "Input arrays should have the same length" in str(err.value)
 
-    # ... units badly defeined :
+    # ... units badly defined :
     with pytest.raises(AssertionError) as err:
         Spectrum({"wavespace": w, "abscoeff": k})
     assert "waveunit ('nm', 'cm-1'?) has to be defined" in str(err.value)
@@ -87,6 +88,7 @@ def test_spectrum_creation_method(*args, **kwargs):
         Spectrum({"wavelength": w, "abscoeff": k}, wunit="cm-1")
 
 
+@pytest.mark.fast
 def test_spectrum_get_methods(
     verbose=True, plot=True, close_plots=True, *args, **kwargs
 ):
@@ -115,11 +117,11 @@ def test_spectrum_get_methods(
         == s.get("radiance_noslit", Iunit="W/m2/sr/nm")[1]
     )
     assert all(nm2cm(s.get_wavelength(medium="vacuum")) == s.get_wavenumber())
-    assert np.isclose(s.get_power(unit="W/cm2/sr"), 2631.6288408588148)
+    assert np.isclose(s.get_power(unit="W/cm2/sr"), 2632.311479516498)
     assert s.get_waveunit() == "nm"
     assert np.isclose(
         s.get_power(unit="W/cm2/sr"),
-        s.get_integral("radiance_noslit", Iunit="W/cm2/sr/nm"),
+        s.get_integral("radiance_noslit", wunit="nm_vac", Iunit="W/cm2/sr/nm"),
     )
     assert s.get_conditions()["Tgas"] == 1500
     assert len(s.get_vars()) == 2
@@ -534,6 +536,18 @@ def test_normalization(*args, **kwargs):
         s3.crop(2125, 2150).get_integral("radiance", wunit=s3.get_waveunit()), 1
     )
 
+    # Test the spectrum can be normalized at a single point,
+    w, I = s.get("radiance")
+    s4 = s.normalize(wrange=w[18047])
+    assert np.isclose(s4.get("radiance")[1][18047], 1)
+
+    # and the errors are raised if a user tries to pass nonsense options.
+    with pytest.raises(ValueError):
+        s.normalize(wrange=w[18047], normalize_how="mean")
+
+    with pytest.raises(ValueError):
+        s.normalize(wrange=w[18047], normalize_how="area")
+
 
 @pytest.mark.fast
 def test_sort(*args, **kwargs):
@@ -548,6 +562,59 @@ def test_sort(*args, **kwargs):
 
     assert not is_sorted(s_exp.get("radiance")[0])
     assert is_sorted(s_exp.sort().get("radiance")[0])
+
+
+#%%
+@pytest.mark.fast
+def test_argmax_argmin(*args, **kwargs):
+    """Test :py:meth:`~radis.spectrum.spectrum.Spectrum.argmax`
+    and :py:meth:`~radis.spectrum.spectrum.Spectrum.argmin`"""
+
+    from radis import load_spec
+    from radis.test.utils import getTestFile
+
+    s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
+
+    assert np.isclose(s.take("abscoeff").argmax(value_only=True), 2203.1603911193806)
+    assert np.isclose(s.take("abscoeff").argmin(value_only=True), 2144.215391118094)
+
+
+def test_fitting_lineshape(verbose=False, plot=False, *args, **kwargs):
+    """Test :py:meth:`~radis.spectrum.spectrum.Spectrum.fit_model``"""
+
+    from radis import Spectrum
+    from radis.test.utils import getTestFile
+
+    s = Spectrum.from_mat(
+        getTestFile("trimmed_1857_VoigtCO_Minesi.mat"),
+        "absorbance",
+        wunit="cm-1",
+        unit="",
+        index=10,
+    )
+
+    # Fix baseline & Fit 3 Voigts profiles :
+    from astropy.modeling import models
+
+    s += 0.002
+    gfit, y_err = s.fit_model(
+        [models.Voigt1D() for _ in range(3)],
+        confidence=0.9545,
+        plot=plot,
+        verbose=verbose,
+    )
+
+    assert np.isclose(gfit[0].x_0.value, 2011.4004821656893, atol=1e-5)
+    assert np.isclose(gfit[1].x_0.value, 2010.7262146624048, atol=1e-5)
+    assert np.isclose(gfit[2].x_0.value, 2011.0715924016497, atol=1e-5)
+
+    assert np.isclose(gfit[0].amplitude_L.value, 0.4493372678309748, atol=1e-5)
+    assert np.isclose(gfit[1].amplitude_L.value, 0.09824894900965533, atol=1e-5)
+    assert np.isclose(gfit[2].amplitude_L.value, 0.049188333571838126, atol=1e-5)
+
+    assert np.isclose(gfit[0].fwhm_L.value, 0.007149662717096372, atol=1e-5)
+    assert np.isclose(gfit[1].fwhm_L.value, 0.010284275703270292, atol=1e-5)
+    assert np.isclose(gfit[2].fwhm_L.value, 0.02030658150200352, atol=1e-5)
 
 
 # %%
@@ -589,6 +656,7 @@ def _run_testcases(
         verbose=verbose, plot=plot, close_plots=close_plots, *args, **kwargs
     )
     test_store_functions(verbose=verbose, *args, **kwargs)
+    test_argmax_argmin(*args, **kwargs)
 
     # Test populations
     # ----------
@@ -617,27 +685,30 @@ def _run_testcases(
     test_plot_by_parts(plot=plot, *args, **kwargs)
     test_sort()
 
+    # Test spectrum fitting
+    test_fitting_lineshape(plot=plot, *args, **kwargs)
+
     return True
 
 
 if __name__ == "__main__":
-    # print(("Test spectrum: ", _run_testcases(debug=False, close_plots=False)))
+    print(("Test spectrum: ", _run_testcases(debug=False, close_plots=False)))
 
-    import radis
+    # import radis
 
-    s = radis.test_spectrum()
-    assert s.c["default_output_unit"] == "cm-1"
+    # s = radis.test_spectrum()
+    # assert s.c["default_output_unit"] == "cm-1"
 
-    assert (s.get("abscoeff")[0] == s.get_wavenumber()).all()
+    # assert (s.get("abscoeff")[0] == s.get_wavenumber()).all()
 
-    s.c["default_output_unit"] = "nm"
+    # s.c["default_output_unit"] = "nm"
 
-    assert (s.get("abscoeff")[0] == s.get_wavelength()).all()
-    s.c["default_output_unit"] = "nm_vac"
-    assert (s.get("abscoeff")[0] == s.get_wavelength(medium="vacuum")).all()
+    # assert (s.get("abscoeff")[0] == s.get_wavelength()).all()
+    # s.c["default_output_unit"] = "nm_vac"
+    # assert (s.get("abscoeff")[0] == s.get_wavelength(medium="vacuum")).all()
 
-    #%%
-    from radis import load_spec
-    from radis.test.utils import getTestFile
+    # #%%
+    # from radis import load_spec
+    # from radis.test.utils import getTestFile
 
-    s_exp = load_spec(getTestFile("CO2_measured_spectrum_4-5um.spec"), binary=True)
+    # s_exp = load_spec(getTestFile("CO2_measured_spectrum_4-5um.spec"), binary=True)

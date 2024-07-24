@@ -69,7 +69,7 @@ PHYSICAL_PARAMS = [
     "medium",
     "self_absorption",
     "slit_function_base",
-    "pressure_mbar",
+    "pressure",
     "wavelength_min",
     "wavelength_max",
     "Telec",
@@ -305,11 +305,11 @@ def print_conditions(
     """
 
     def align(a, space=20):
-        """fix alignement."""
+        r"""fix alignment."""
         return a + " " * max(1, (space - len(str(a))))
 
     def print_param(k):
-        """Special formatting for nicely printing conditions."""
+        r"""Special formatting for nicely printing conditions."""
         v_k = conditions[k]
         # Add extra arguments based on arbitrary conditions
         args = []
@@ -354,7 +354,7 @@ def print_conditions(
     )
 
     # TODO : add verbose level so that Trot, Tvib are not shown if equilibrium
-    # and verbose<2 . Same for rot_distriubtion; vib_distriubtion
+    # and verbose<2 . Same for rot_distribution; vib_distribution
 
     print("Physical Conditions")
     print("-" * 40)
@@ -420,6 +420,7 @@ def dict_to_tree(pro, name):
     ----------
     pro: dict
         of the form::
+
             {"value":float,    # keyword 'value' is expected
              "some_key":float
              "some_key2":float,
@@ -647,7 +648,7 @@ def generate_perf_profile(profiler):
     """
 
     def parse_profiler(tree, parent=None, parent_time=None):
-        """
+        r"""
 
         Parameters
         ----------

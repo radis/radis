@@ -17,3 +17,7 @@ def test_get_eq_mole_fraction(*args, **kwargs):
     assert all_in(["C", "CO", "CO2", "O", "O2"], gas.keys())
 
     return True
+
+
+if __name__ == "__main__":
+    test_get_eq_mole_fraction()

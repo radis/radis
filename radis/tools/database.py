@@ -271,7 +271,7 @@ def _format_to_jsondict(s: Spectrum, discard, compress, verbose=True):
                 )
             del sjson["conditions"][k]
 
-    # if compress>=2, remove unecessary spectral quantities (that can be recomputed
+    # if compress>=2, remove unnecessary spectral quantities (that can be recomputed
     # from the rest)
     if compress >= 2:
         sjson["_q"] = sjson["_q"].copy()
@@ -497,7 +497,7 @@ def _json_to_spec(sload, file="") -> Spectrum:
     Parameters
     ----------
     sload: dict
-        Spectrum object content stored under a dictonary
+        Spectrum object content stored under a dictionary
 
     Returns
     -------
@@ -514,7 +514,7 @@ def _json_to_spec(sload, file="") -> Spectrum:
         }
         warn(
             "File {0}".format(basename(file))
-            + " has a deprecrated structure ("
+            + " has a deprecated structure ("
             + "quantities are stored with shared wavespace: uses less space). "
             + "Regenerate database ASAP.",
             DeprecationWarning,
@@ -597,7 +597,7 @@ def _fix_format(file, sload):
     """Test format / correct deprecated format: The goal is to still be able to
     load old format precomputed spectra, and fix their attribute names.
 
-    Save them again to fix the warnigns definitly.
+    Save them again to fix the warnings definitely.
 
     Returns
     -------
@@ -614,7 +614,7 @@ def _fix_format(file, sload):
     if "q" in sload:
         printr(
             "File {0}".format(basename(file))
-            + " has a deprecrated structure (key "
+            + " has a deprecated structure (key "
             + "q replaced with _q). Fixed this time, but regenerate "
             + "database ASAP."
         )  # , DeprecationWarning)
@@ -629,7 +629,7 @@ def _fix_format(file, sload):
         else:
             printr(
                 "File {0}".format(basename(file))
-                + " has a deprecrated structure (key "
+                + " has a deprecated structure (key "
                 + "_q_conv removed in 0.9.30). Fixed this time, but regenerate "
                 + "database for faster loading."
             )
@@ -666,7 +666,7 @@ def _fix_format(file, sload):
     if "medium" in sload["conditions"]:
         printr(
             "File {0}".format(basename(file))
-            + " has a deprecrated structure (key "
+            + " has a deprecated structure (key "
             + "medium removed in 0.9.22). Fixing this time, but regenerate "
             + "database ASAP."
         )  # , DeprecationWarning)
@@ -689,22 +689,34 @@ def _fix_format(file, sload):
     if "isotope_identifier" in sload["conditions"]:
         printr(
             "File {0}".format(basename(file))
-            + " has a deprecrated structure (key "
+            + " has a deprecated structure (key "
             + "isotope_identifier replaced with isotope). Fixed this time, but regenerate "
             + "database ASAP."
         )  # , DeprecationWarning)
         sload["conditions"]["isotope"] = sload["conditions"].pop("isotope_identifier")
         fixed = True
 
+    if "pressure_mbar" in sload["conditions"]:
+        printr(
+            "File {0}".format(basename(file))
+            + " has a deprecated structure (key "
+            + "pressure_mbar replaced with pressure). Fixed this time, but regenerate "
+            + "database ASAP."
+        )  # , DeprecationWarning)
+        sload["conditions"]["pressure"] = (
+            sload["conditions"].pop("pressure_mbar") * 1e-3
+        )
+        fixed = True
+
     if "air_pressure_mbar" in sload["conditions"]:
         printr(
             "File {0}".format(basename(file))
-            + " has a deprecrated structure (key "
-            + "air_pressure_mbar replaced with pressure_mbar). Fixed this time, but regenerate "
+            + " has a deprecated structure (key "
+            + "air_pressure_mbar replaced with pressure). Fixed this time, but regenerate "
             + "database ASAP."
         )  # , DeprecationWarning)
-        sload["conditions"]["pressure_mbar"] = sload["conditions"].pop(
-            "air_pressure_mbar"
+        sload["conditions"]["pressure"] = (
+            sload["conditions"].pop("air_pressure_mbar") * 1e-3
         )
         fixed = True
 
@@ -713,7 +725,7 @@ def _fix_format(file, sload):
         if not isinstance(isotope, str):
             printr(
                 "File {0}".format(basename(file))
-                + " has a deprecrated structure (key "
+                + " has a deprecated structure (key "
                 + "isotope is now a string). Fixed this time, but regenerate "
                 + "database ASAP."
             )  # , DeprecationWarning)
@@ -728,7 +740,7 @@ def _fix_format(file, sload):
         if not isinstance(dbpath, str):
             printr(
                 "File {0}".format(basename(file))
-                + " has a deprecrated structure (key "
+                + " has a deprecated structure (key "
                 + "dbpath is now a string). Fixed this time, but regenerate "
                 + "database ASAP."
             )  # , DeprecationWarning)
@@ -760,7 +772,7 @@ def _fix_format(file, sload):
             if path is not None and not isinstance(path, str):
                 printr(
                     "File {0}".format(basename(file))
-                    + " has a deprecrated structure (key "
+                    + " has a deprecated structure (key "
                     + "{0} is now a string). Fixed this time, but regenerate ".format(
                         key
                     )
@@ -825,7 +837,7 @@ def _fix_format(file, sload):
                 fixed = True
                 printr(
                     "File {0}".format(basename(file))
-                    + " has a deprecrated structure ("
+                    + " has a deprecated structure ("
                     + "thermal_equilibrium not defined). Fixed it this time (guessed {0})".format(
                         equilibrium
                     )
@@ -840,7 +852,7 @@ def _fix_format(file, sload):
         if "v1u" in lines and get_molecule(lines.id.iloc[0]) in HITRAN_CLASS1:
             printr(
                 "File {0}".format(basename(file))
-                + " has a deprecrated structure "
+                + " has a deprecated structure "
                 + "(v1u in lines is now called vu). Fixed this time, but regenerate "
                 + "database ASAP."
             )
@@ -856,7 +868,7 @@ def _fix_format(file, sload):
             if unit in ["I/I0", "-ln(I/I0)", "eps"]:
                 printr(
                     "File {0}".format(basename(file))
-                    + " has a deprecrated structure "
+                    + " has a deprecated structure "
                     + "(adimensioned units are now stored as ''). Fixed this time, but regenerate "
                     + "database ASAP."
                 )
@@ -864,7 +876,7 @@ def _fix_format(file, sload):
             if "cm_1" in unit:
                 printr(
                     "File {0}".format(basename(file))
-                    + " has a deprecrated structure "
+                    + " has a deprecated structure "
                     + "(cm_1 is now written cm-1''). Fixed this time, but regenerate "
                     + "database ASAP."
                 )
@@ -972,9 +984,53 @@ def plot_spec(file, what="radiance", title=True, **kwargs):
 # ... loads a list of spectra and manipulate them
 
 
+def query(df, conditions="", **kwconditions):
+
+    # Find Spectrum that match conditions
+    if conditions != "":  # ... with input conditions query directly
+        dg = df.query(conditions)
+    else:  # ... first write input conditions query
+        query = []
+        for (k, v) in kwconditions.items():
+            if isinstance(v, str):
+                query.append("{0} == r'{1}'".format(k, v))
+            elif v is None:
+                # query "k == None" doesn't work. We use a workaround,
+                # checking if the column is different from itself (i.e. : is None):
+                # https://stackoverflow.com/a/32207819/5622825
+                query.append(f"{k} != {k}")
+            else:
+                #                    query.append('{0} == {1}'.format(k,v))
+                query.append("{0} == {1}".format(k, v.__repr__()))
+                # ... for some reason {1}.format() would remove some digit
+                # ... to floats in Python2. Calling .__repr__() keeps
+                # ... the correct format, and has no other consequences as far
+                # ... as I can tell
+
+        # There is a limitation in numpy: a max of 32 arguments is required.
+        # Below we write a workaround when the Spectrum has more than 32 conditions
+        if len(query) < 32:
+            query = " & ".join(query)
+            if __debug__:
+                printdbg("Database query: {0}".format(query))
+            dg = df.query(query)
+        else:
+            # cut in <32-long parts
+            N = len(query) // 32 + 1
+            querypart = " & ".join(query[::N])
+            dg = df.query(querypart)
+            for i in range(1, N + 1):
+                querypart = " & ".join(query[i::N])
+                if __debug__:
+                    printdbg("Database query: {0}".format(querypart))
+                dg = dg.query(querypart)
+
+    return dg
+
+
 class SpecList(object):
     def __init__(self, *spectra, **kwargs):
-        """A list of Spectrum, with various methods to manage them.
+        r"""A list of Spectrum, with various methods to manage them.
 
         .. warning::     still new in 0.9.17
         """
@@ -986,7 +1042,7 @@ class SpecList(object):
         self.verbose = verbose
 
     def _create_df(self, *spectra):
-        """Returns Dataframe of spectra with conditions.
+        r"""Returns Dataframe of spectra with conditions.
 
         Parameters
         ----------
@@ -1012,7 +1068,7 @@ class SpecList(object):
         return pd.DataFrame(db)
 
     def conditions(self):
-        """Show conditions in database."""
+        r"""Show conditions in database."""
 
         cond = list(self.df.columns)
 
@@ -1024,7 +1080,7 @@ class SpecList(object):
         return cond
 
     def see(self, columns=None, *args):
-        """Shows Spectrum database with all conditions (``columns=None``) or
+        r"""Shows Spectrum database with all conditions (``columns=None``) or
         specific conditions.
 
         Parameters
@@ -1041,7 +1097,7 @@ class SpecList(object):
         -----
 
         Makes the 'file' column the index, and also discard the 'Spectrum' column
-        (that holds all the data) for readibility
+        (that holds all the data) for readability
         """
 
         if len(self) == 0:
@@ -1068,7 +1124,7 @@ class SpecList(object):
         return dg.reindex(columns=columns)
 
     def view(self, columns=None, *args):
-        """alias of :py:meth:`~radis.tools.database.SpecList.see`
+        r"""alias of :py:meth:`~radis.tools.database.SpecList.see`
 
         See Also
         --------
@@ -1079,7 +1135,7 @@ class SpecList(object):
         return self.see(columns=columns, *args)
 
     def map(self, function):
-        """Apply ``function`` to all Spectra in database.
+        r"""Apply ``function`` to all Spectra in database.
 
         Examples
         --------
@@ -1119,7 +1175,7 @@ class SpecList(object):
             function(s)
 
     def _load_existing_files(self, files):
-        """Loadspectra already registered in the database.
+        r"""Loadspectra already registered in the database.
 
         Parameters
         ----------
@@ -1174,7 +1230,7 @@ class SpecList(object):
         return list(self.df["Spectrum"])
 
     def get(self, conditions="", **kwconditions):
-        """Returns a list of spectra that match given conditions.
+        r"""Returns a list of spectra that match given conditions.
 
         Parameters
         ----------
@@ -1262,44 +1318,9 @@ class SpecList(object):
             out = list(self.df["Spectrum"])
 
         else:
-            # Find Spectrum that match conditions
-            if conditions != "":  # ... with input conditions query directly
-                dg = self.df.query(conditions)
-            else:  # ... first write input conditions query
-                query = []
-                for (k, v) in kwconditions.items():
-                    if isinstance(v, str):
-                        query.append("{0} == r'{1}'".format(k, v))
-                    elif v is None:
-                        # query "k == None" doesn't work. We use a workaround,
-                        # checking if the column is different from itself (i.e. : is None):
-                        # https://stackoverflow.com/a/32207819/5622825
-                        query.append(f"{k} != {k}")
-                    else:
-                        #                    query.append('{0} == {1}'.format(k,v))
-                        query.append("{0} == {1}".format(k, v.__repr__()))
-                        # ... for som reason {1}.format() would remove some digit
-                        # ... to floats in Python2. Calling .__repr__() keeps
-                        # ... the correct format, and has no other consequences as far
-                        # ... as I can tell
 
-                # There is a limitation in numpy: a max of 32 arguments is required.
-                # Below we write a workaround when the Spectrum has more than 32 conditions
-                if len(query) < 32:
-                    query = " & ".join(query)
-                    if __debug__:
-                        printdbg("Database query: {0}".format(query))
-                    dg = self.df.query(query)
-                else:
-                    # cut in <32-long parts
-                    N = len(query) // 32 + 1
-                    querypart = " & ".join(query[::N])
-                    dg = self.df.query(querypart)
-                    for i in range(1, N + 1):
-                        querypart = " & ".join(query[i::N])
-                        if __debug__:
-                            printdbg("Database query: {0}".format(querypart))
-                        dg = dg.query(querypart)
+            dg = query(self.df, conditions, **kwconditions)
+
             # Get all unloaded Spectrum objects and load them
             files = dg["file"][dg["Spectrum"].isnull()]
 
@@ -1323,7 +1344,7 @@ class SpecList(object):
         return out
 
     def get_unique(self, conditions="", scale_if_possible=False, **kwconditions):
-        """Returns a spectrum that match given conditions.
+        r"""Returns a spectrum that match given conditions.
 
         Raises an error if the spectrum is not unique.
 
@@ -1368,7 +1389,7 @@ class SpecList(object):
             return out[0]
 
     def get_closest(self, scale_if_possible=True, **kwconditions):
-        """Returns the Spectra in the database that is the closest to the input
+        r"""Returns the Spectra in the database that is the closest to the input
         conditions.
 
         Note that for non-numeric values only equals should be given.
@@ -1429,7 +1450,22 @@ class SpecList(object):
                     )
                 )
 
-        dg = self.df.reindex(columns=[k for k in self.df.columns if k != "Spectrum"])
+        numeric_columns = self.df.select_dtypes(include=np.number).columns.tolist()
+
+        # For non numeric values, assert equal :
+        # ....
+        kwconditions_non_numeric = {
+            k: v
+            for (k, v) in kwconditions.items()
+            if k not in numeric_columns and k != "Spectrum"
+        }
+        if len(kwconditions_non_numeric) == 0:
+            df_num = self.df
+        else:
+            df_num = query(self.df, **kwconditions_non_numeric)
+
+        # For Numeric values : find distance
+        dg = df_num.reindex(columns=[k for k in df_num.columns if k in numeric_columns])
 
         if scale_if_possible:
             # Remove scalable inputs from distance calculation variables (unless
@@ -1455,7 +1491,7 @@ class SpecList(object):
                 #            #     a  ->   (a-mean)/std  € [0-1]
                 #            # Distance becomes:
                 #            #     d^2 ->  sum((a-target)/std)^2
-                #            # Problem when std == 0! That means this dimension is not discrimant
+                #            # Problem when std == 0! That means this dimension is not discriminant
                 #            # anyway
                 #            if std[k] == 0:
                 #                # for this conditions all parameters have the same value.
@@ -1476,7 +1512,7 @@ class SpecList(object):
                     except TypeError as err2:
                         print(sys.exc_info())
                         raise TypeError(
-                            "An error occured (see above) when calculating "
+                            "An error occurred (see above) when calculating "
                             + f"(dg[{k}] - {v}). Example: "
                             + f"({dg[k].iloc[0]} - {v}). "
                             + "Check that your requested conditions match "
@@ -1538,7 +1574,7 @@ class SpecList(object):
         return sout
 
     def get_items(self, condition):
-        """Returns all Spectra in database under a dictionary; indexed by
+        r"""Returns all Spectra in database under a dictionary; indexed by
         ``condition``
 
         Requires that ``condition`` is unique
@@ -1576,13 +1612,13 @@ class SpecList(object):
         return dict(zip(self.df[condition], self.df.Spectrum))
 
     def create_fname_grid(self, conditions):
-        """Create a 2D-grid of filenames for the list of parameters ``conditions``
+        r"""Create a 2D-grid of filenames for the list of parameters ``conditions``
 
         Examples
         --------
         ::
 
-            db.create_fname_grid(["Tgas", "pressure_mbar"])
+            db.create_fname_grid(["Tgas", "pressure"])
 
         See Also
         --------
@@ -1600,7 +1636,7 @@ class SpecList(object):
         )
 
     def __iter__(self):
-        """Iterate over all Spectra in database.
+        r"""Iterate over all Spectra in database.
 
         .. warning::
 
@@ -1637,7 +1673,7 @@ class SpecList(object):
         return self.get(inplace=True).__iter__()
 
     def keys(self):
-        """Iterate over all {path} in database.
+        r"""Iterate over all {path} in database.
 
         See Also
         --------
@@ -1650,7 +1686,7 @@ class SpecList(object):
         return list(self.to_dict().keys())
 
     def values(self):
-        """Iterate over all {Spectrum} in database.
+        r"""Iterate over all {Spectrum} in database.
 
         See Also
         --------
@@ -1663,7 +1699,7 @@ class SpecList(object):
         return list(self.to_dict().values())
 
     def items(self):
-        """Iterate over all :py:class:`~radis.spectrum.spectrum.Spectrum` in
+        r"""Iterate over all :py:class:`~radis.spectrum.spectrum.Spectrum` in
         database.
 
         Examples
@@ -1691,7 +1727,7 @@ class SpecList(object):
         return list(self.to_dict().items())
 
     def plot(self, nfig=None, legend=True, **kwargs):
-        """Plot all spectra in database.
+        r"""Plot all spectra in database.
 
         Parameters
         ----------
@@ -1736,7 +1772,7 @@ class SpecList(object):
         return fig, ax
 
     def plot_cond(self, cond_x, cond_y, z_value=None, nfig=None):
-        """Plot database conditions available:
+        r"""Plot database conditions available:
 
         Parameters
         ----------
@@ -1859,7 +1895,7 @@ class SpecDatabase(SpecList):
     *input for :class:`~joblib.parallel.Parallel` loading of database*
 
     nJobs: int
-        Number of processors to use to load a database (usefull for big
+        Number of processors to use to load a database (useful for big
         databases). BE CAREFULL, no check is done on processor use prior
         to the execution ! Default ``-2``: use all but 1 processors.
         Use ``1`` for single processor.
@@ -1940,7 +1976,7 @@ class SpecDatabase(SpecList):
         update_register_only=False,
     ):
         # TODO @devs: generate a SpecDatabase from a dict.
-        # use the key of the dict insted of the file.
+        # use the key of the dict instead of the file.
 
         # Assert name looks like a directory
         name, ext = splitext(str(path))
@@ -2041,7 +2077,7 @@ class SpecDatabase(SpecList):
                         )
 
     def update(self, force_reload=False, filt=".spec", update_register_only=False):
-        """Reloads database, updates internal index structure and export it in
+        r"""Reloads database, updates internal index structure and export it in
         ``<database>.csv``.
 
         Parameters
@@ -2092,7 +2128,7 @@ class SpecDatabase(SpecList):
         self.print_index()
 
     def compress_to(self, new_folder, compress=True, if_exists_then="error"):
-        """Saves the Database in a new folder with all Spectrum objects under
+        r"""Saves the Database in a new folder with all Spectrum objects under
         compressed (binary) format. Read/write is much faster. After the
         operation, a new database should be initialized in the new_folder to
         access the new Spectrum.
@@ -2104,7 +2140,7 @@ class SpecDatabase(SpecList):
             it is created.
         compress: boolean, or 2
             if ``True``, saves under binary format. Faster and takes less space.
-            If ``2``, additionaly remove all redundant quantities.
+            If ``2``, additionally remove all redundant quantities.
         if_exists_then: ``'increment'``, ``'replace'``, ``'error'``, ``'ignore'``
             what to do if file already exists. If ``'increment'`` an incremental digit
             is added. If ``'replace'`` file is replaced (!). If ``'ignore'`` the
@@ -2153,7 +2189,7 @@ class SpecDatabase(SpecList):
                 pass
 
     def find_duplicates(self, columns=None):
-        """Find spectra with same conditions. The first duplicated spectrum
+        r"""Find spectra with same conditions. The first duplicated spectrum
         will be ``'False'``, the following will be ``'True'`` (see
         .duplicated()).
 
@@ -2178,7 +2214,7 @@ class SpecDatabase(SpecList):
 
         """
         dg = self.see(columns=columns).astype(str).duplicated()
-        # need to convert eveything as a str to avoid comparaison problems (Minou)
+        # need to convert everything as a str to avoid comparison problems (Minou)
         if columns is None:
             columns = "all"
 
@@ -2196,7 +2232,7 @@ class SpecDatabase(SpecList):
     def add(
         self, spectrum: Spectrum, store_name=None, if_exists_then="increment", **kwargs
     ):
-        """Add Spectrum to database, whether it's a
+        r"""Add Spectrum to database, whether it's a
         :py:class:`~radis.spectrum.spectrum.Spectrum` object or a file that
         stores one. Check it's not in database already.
 
@@ -2347,7 +2383,9 @@ class SpecDatabase(SpecList):
 
         # Now register the spectrum in the database :
         spectrum_conditions = self._load_new_file(file, binary=compress)
-        self.df = self.df.append(spectrum_conditions, ignore_index=True)
+        self.df = pd.concat(
+            [self.df, pd.DataFrame([spectrum_conditions])], ignore_index=True
+        )
 
         # Update index .csv
         self.print_index()
@@ -2355,7 +2393,7 @@ class SpecDatabase(SpecList):
         return file
 
     def interpolate(self, **kwconditions):
-        """Interpolate existing spectra from the database to generate a new spectrum
+        r"""Interpolate existing spectra from the database to generate a new spectrum
         with conditions kwargs
 
         Examples
@@ -2428,7 +2466,7 @@ class SpecDatabase(SpecList):
         conditions="",
         **kwconditions,
     ):
-        """Returns the Spectrum in the database that has the lowest residual
+        r"""Returns the Spectrum in the database that has the lowest residual
         with ``s_exp``.
 
         Parameters
@@ -2514,7 +2552,7 @@ class SpecDatabase(SpecList):
         return spectra[i].copy()  # dont forget to copy the Spectrum we return
 
     def _load_new_files(self, files, update_register_only=False):
-        """Parse files and generate a database.
+        r"""Parse files and generate a database.
 
         Other Parameters
         ----------------
@@ -2568,7 +2606,7 @@ class SpecDatabase(SpecList):
         return pd.DataFrame(db)
 
     def _load_new_file(self, file, binary=False, update_register_only=False):
-        """Load spectrum and return Spectrum attributes for insertion in database.
+        r"""Load spectrum and return Spectrum attributes for insertion in database.
 
         The Spectrum itself is stored under the "Spectrum" key, and the filename
         under "file".
@@ -2604,7 +2642,7 @@ class SpecDatabase(SpecList):
         return out
 
     def update_conditions(self):
-        """Reloads conditions of all Spectrum in database."""
+        r"""Reloads conditions of all Spectrum in database."""
 
         # Fetch new conditions, including file and Spectrum object itself
         new_conditions_list = []
@@ -2619,7 +2657,7 @@ class SpecDatabase(SpecList):
         self.df = pd.DataFrame(new_conditions_list)
 
     def to_dict(self):
-        """Returns all Spectra in database under a dictionary, indexed by file.
+        r"""Returns all Spectra in database under a dictionary, indexed by file.
 
         Returns
         -------

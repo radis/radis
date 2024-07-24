@@ -34,11 +34,12 @@ radis/cython/*.cpp
 
 # C extensions
 *.so
-
+!radis/gpu/cuda/build/*.so
 # Distribution / packaging
 .Python
 env/
 build/
+!radis/gpu/cuda/build/
 develop-eggs/
 develop-tests/
 dist/
@@ -135,3 +136,6 @@ $RECYCLE.BIN/
 
 # VSCode
 .vscode/
+radis/test/files/hitran/CO.hdf5
+radis/test/files/hitran_co2_626_bandhead_4165_4200nm.hdf5
+radis/test/files/hitran_co_3iso_2000_2300cm.hdf5

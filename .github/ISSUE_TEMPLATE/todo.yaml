@@ -1,6 +1,5 @@
 name: "📚 todo"
 description: "the todos for nextdays "
-title: "📚 todo: "
 labels: [todo]
 body:
   - type: markdown

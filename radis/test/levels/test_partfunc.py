@@ -39,6 +39,13 @@ from radis.test.utils import getTestFile, setup_test_line_databases
 fig_prefix = basename(__file__) + ": "
 
 
+from radis.misc.utils import NotInstalled, not_installed_vaex_args
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
+
 # %% Test
 
 # never add @pytest.mark.fast so we don't delete cached files for 'fast' tests
@@ -201,7 +208,7 @@ def test_reduced_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
         printm("Tested CDSD Q_calc vs Q_tab give same output: OK")
 
 
-@pytest.mark.fast
+# @pytest.mark.fast #not fast, Nicolas Minesi 08/04/2024
 def test_calculatedQ_match_HAPI_CO(
     vmax=11, jmax=300, plot=False, verbose=True, *args, **kwargs
 ):
@@ -257,7 +264,7 @@ def test_calculatedQ_match_HAPI_CO(
     return True
 
 
-@pytest.mark.fast
+# @pytest.mark.fast #not fast, Nicolas Minesi 08/04/2024
 def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
     """Tested that Q ab_initio (Dunham) match HAPI for different molecules
     and isotopes"""
@@ -765,6 +772,10 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
     assert cache_last_modification_again > cache_last_modification
 
 
+@pytest.mark.skipif(
+    isinstance(vaex, NotInstalled),
+    reason="Vaex not available, just-in-time partition functions are only implemented in Vaex as of Radis 0.15",
+)
 def test_tabulated_partition_functions(
     verbose=True, plot=True, rtol=1e-2, *args, **kwargs
 ):
@@ -876,6 +887,10 @@ def test_tabulated_partition_functions(
         plt.legend()
 
 
+@pytest.mark.skipif(
+    isinstance(vaex, NotInstalled),
+    reason="Vaex not available, just-in-time partition functions are only implemented in Vaex as of Radis 0.15",
+)
 def test_parsum_mode_in_factory(verbose=True, plot=True, *args, **kwargs):
     """Test Partition function modes in SpectrumFactory
 
@@ -1015,7 +1030,7 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
     test_calculatedQ_match_HAPI()
 
     # Test 3: compare calculated PartFunc to the tabulated one with CDSD
-    # Test 4: compare calculated PartFunc to harcoded references
+    # Test 4: compare calculated PartFunc to hardcoded references
     test_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
     test_CDSD_calc_vs_ref(warnings=warnings)
     test_reduced_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)

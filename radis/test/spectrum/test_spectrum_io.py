@@ -58,5 +58,29 @@ def test_specutils_io(verbose=True, plot=False, *args, **kwargs):
     assert get_residual(s, s2, "transmittance_noslit", ignore_nan=True) < 1e-9
 
 
+@pytest.mark.fast
+def test_reading_from_Matlab(verbose=True, plot=False, *args, **kwargs):
+    """Test creating a Spectrum from a Matlab file with
+    :py:meth:`~radis.spectrum.spectrum.Spectrum.from_mat`
+    """
+
+    from radis import Spectrum
+    from radis.test.utils import getTestFile
+
+    s = Spectrum.from_mat(
+        getTestFile("trimmed_1857_VoigtCO_Minesi.mat"),
+        "absorbance",
+        wunit="cm-1",
+        unit="",
+        index=10,
+    )
+
+    import numpy as np
+
+    assert np.isclose(s.get("absorbance")[0][100], 2011.5356487633755)
+    assert np.isclose(s.get("absorbance")[1][100], 0.005560075444710532)
+
+
 if __name__ == "__main__":
     test_specutils_io(plot=True)
+    test_reading_from_Matlab()

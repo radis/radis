@@ -6,13 +6,14 @@ Initial code borrowed from the `Exojax <https://github.com/HajimeKawahara/exojax
 code (which you should also have a look at !), by @HajimeKawahara, under MIT License.
 
 """
+
 import os
 import pathlib
 import warnings
 
 import numpy as np
 
-from radis.api.dbmanager import DatabaseManager
+from radis.api.dbmanager import DatabaseManager, get_auto_MEMORY_MAPPING_ENGINE
 from radis.db.classes import EXOMOL_MOLECULES, EXOMOL_ONLY_ISOTOPES_NAMES
 
 EXOMOL_URL = "http://www.exomol.com/db/"
@@ -25,7 +26,6 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 from radis.api.hdf5 import vaexsafe_colname
-from radis.misc.warning import InconsistentDatabaseError
 
 
 def e2s(molname_exact):
@@ -106,6 +106,7 @@ def read_def(deff):
     ntransf = 1
     maxnu = 0.0
     quantum_labels = []
+    unc = False
     for i, com in enumerate(dat["COMMENT"]):
         if "Default value of Lorentzian half-width" in com:
             alpha_ref = float(dat["VAL"][i])
@@ -125,50 +126,15 @@ def read_def(deff):
             lande = int(dat["VAL"][i]) == 1
         elif "Quantum label" in com:
             quantum_labels.append(dat["VAL"][i].strip(" "))
+        elif "Uncertainty availability" in com:
+            unc = int(dat["VAL"][i]) == 1
 
     # SOME DEF FILES CONTAINS ERRORS. THESE ARE THE EXCEPTIONS
-    if deff.stem == "12C-16O2__UCL-4000":
-        ntransf = 20
-    if deff.stem == "1H3-16O_p__eXeL":
-        # fixes https://github.com/radis/radis/pull/531
-        ntransf = 100
-    if deff.stem == "14N-1H3__CoYuTe":
-        maxnu = 20000.0
-    if deff.stem == "12C2-1H2__aCeTY":
-        if molmass == 12.0:
-            molmass = 26.0
-            print(
-                f"Known error in ExoMol def file, molmass corrected from 12.0 to {molmass}"
-            )
-        if quantum_labels == [
-            "totalSym",
-            "v1",
-            "v2",
-            "v3",
-            "v4",
-            "v5",
-            "v5",
-            "v7",
-            "vibSym",
-            "K",
-            "rotSym",
-        ]:
-            quantum_labels = [
-                "totalSym",
-                "v1",
-                "v2",
-                "v3",
-                "v4",
-                "v5",
-                "v6",
-                "v7",
-                "vibSym",
-                "K",
-                "rotSym",
-            ]
-            print(
-                f"Known error in ExoMol def file, quantum_labels corrected from '['totalSym', 'v1', 'v2', 'v3', 'v4', 'v5', 'v5', 'v7', 'vibSym', 'K', 'rotSym']' to {quantum_labels}"
-            )
+    if deff.stem == "1H-35Cl__HITRAN-HCl":
+        quantum_labels = ["v"]
+        # See https://github.com/HajimeKawahara/exojax/issues/330
+    if deff.stem == "16O-1H__MoLLIST":
+        quantum_labels = ["e/f", "v", "F1/F2", "Es"]
 
     if ntransf > 1:
         dnufile = maxnu / ntransf
@@ -181,7 +147,6 @@ def read_def(deff):
     else:
         numinf = None
         numtag = ""
-
     output = {
         "n_Texp": n_Texp,
         "alpha_ref": alpha_ref,
@@ -191,6 +156,7 @@ def read_def(deff):
         "quantum_labels": quantum_labels,  # array
         "Landé": lande,  # bool
         "lifetime": lifetime,  # bool
+        "unc": unc,  # bool uncertainty of line center availability
     }
     return output
 
@@ -258,7 +224,7 @@ def read_trans(transf, engine="vaex"):
                 )
             except Exception as err:
                 raise Exception(
-                    f"Error reading {transf}. Maybe the file was corrupted during download ? You can try to delete it."
+                    f"Error reading {transf}. Either the file does not exist on exomol.com, or was corrupted? You can try to delete it."
                 ) from err
     elif engine == "csv":
         try:  # bz2 compression
@@ -275,7 +241,7 @@ def read_trans(transf, engine="vaex"):
                 )
             except Exception as err:
                 raise Exception(
-                    f"Error reading {transf}. Maybe the file was corrupted during download ? You can try to delete it."
+                    f"Error reading {transf}. Either the file does not exist on exomol.com, or was corrupted? You can try to delete it."
                 ) from err
     else:
         raise NotImplementedError(engine)
@@ -283,7 +249,9 @@ def read_trans(transf, engine="vaex"):
     return dat
 
 
-def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
+def read_states(
+    statesf, dic_def, engine="vaex", skip_optional_data=True, print_states=False
+):
     """Exomol IO for a state file
 
     Notes
@@ -322,6 +290,9 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
               structure described in [1]_, unlike the states file of
               https://exomol.com/data/molecules/NO/14N-16O/XABC/ which follows the
               structure described in [2]_.
+    print_states: bool
+        print some info. When .def file looks inconsistent with .states file, turn ON and report them in Issue.
+
 
     Returns
     -------
@@ -340,27 +311,21 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
     # we read first 4 columns for ("i", "E", "g", "J"),
     # skip lifetime, skip Landé g-factor,
     # read quantum numbers
-    N = np.size(dic_def["quantum_labels"])
+    N_otherfields = np.size(dic_def["quantum_labels"])
     quantum_labels = dic_def["quantum_labels"]
 
-    mandatory_usecol = np.arange(4)
     mandatory_fields = ("i", "E", "g", "J")
+    N_mandatory_fields = len(mandatory_fields)
+    mandatory_usecol = np.arange(N_mandatory_fields)
     if skip_optional_data:
         usecol = mandatory_usecol
         names = mandatory_fields
     else:
-        if dic_def["Landé"] and dic_def["lifetime"]:
-            usecol = np.concatenate((mandatory_usecol, 5 + 2 + np.arange(N)))
-            names = mandatory_fields + ("Lande", "lifetime") + tuple(quantum_labels)
-        elif dic_def["Landé"]:
-            usecol = np.concatenate((mandatory_usecol, 5 + 1 + np.arange(N)))
-            names = mandatory_fields + ("Lande",) + tuple(quantum_labels)
-        elif dic_def["lifetime"]:
-            usecol = np.concatenate((mandatory_usecol, 5 + 1 + np.arange(N)))
-            names = mandatory_fields + ("lifetime",) + tuple(quantum_labels)
-        else:  # no lifetime, nor landé according to the def file
-            usecol = np.concatenate((mandatory_usecol, 5 + np.arange(N)))
-            names = mandatory_fields + tuple(quantum_labels)
+        label = np.array(["unc", "lifetime", "Lande"])
+        mask = np.array([dic_def["unc"], dic_def["Landé"], dic_def["lifetime"]])
+        N_except = np.sum(mask)
+        usecol = np.arange(0, N_mandatory_fields + N_except + N_otherfields)
+        names = mandatory_fields + tuple(label[mask]) + tuple(quantum_labels)
         # The definitions file (*.def) specifies which fields are available
         # in the states fiel (*.states). Check the number of available fields
         # (see *.def) match the numbers of columns in the states file (*.states).
@@ -371,11 +336,9 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
             # splitline = re.split(r"\s+", firstline)
             f.close()
         if len(splitline) != len(names):
-            raise InconsistentDatabaseError(
-                "The EXOMOL definitions and states files are inconsistent.\n"
-                + "Some data are specified as available by the *.def file, but are absent in the *.bz2 file.\n"
-                + "Set `skip_optional_data=False` in `fetch_exomol()` to load only the required data for a LTE computation.\n"
-                + "The problematic optional data/columns will be ignored."
+            warnings.warn(
+                "There appear to be further additional columns in .state file,"
+                + "which are not defined in .def file. We skip them."
             )
 
     if engine == "vaex":
@@ -403,7 +366,7 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
 
             except Exception as err:
                 raise Exception(
-                    f"Error reading {statesf}. Maybe the file was corrupted during download ? You can try to delete it."
+                    f"Error reading {statesf}. Either the file does not exist on exomol.com, or was corrupted? You can try to delete it."
                 ) from err
     elif engine == "csv":
         try:
@@ -414,13 +377,12 @@ def read_states(statesf, dic_def, engine="vaex", skip_optional_data=True):
             dat = pd.read_csv(statesf, sep=r"\s+", usecols=usecol, names=names)
     else:
         raise NotImplementedError(engine)
-
+    if print_states:
+        print(dat)
     return dat
 
 
-def pickup_gE(
-    states, trans, trans_file, dic_def, trans_lines=False, skip_optional_data=True
-):
+def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
     """extract g_upper (gup), E_lower (elower), and J_lower and J_upper from states
     DataFrame and insert them into the transition DataFrame.
 
@@ -428,10 +390,8 @@ def pickup_gE(
     ----------
     states: states DataFrame  - the i, E, g, J are in the 4 first columns
     trans: transition numpy array
-    trans_file: name of the transition file
-    trans_lines: By default (False) we use nu_lines computed using the state file, i.e. E_upper - E_lower. If trans_nuline=True, we use the nu_lines in the transition file. Note that some trans files do not this info.
     dic_def: Informations about additional quantum labels
-    add_quantum_labels: bool . If True fetch all quantum labels in dic_def['quantum_labels'] from states into transitions
+    skip_optional_data: bool . If True fetch all quantum labels in dic_def['quantum_labels'] from states into transitions (_l for lower, _u for upper states)
 
     Returns
     -------
@@ -455,7 +415,7 @@ def pickup_gE(
     ### Step 1. Essential quantum number for spectra
     # ----------------------------------------------
 
-    def map_add(col, new_col, trans_key, states_key="i"):
+    def map_add(trans, col, new_col, trans_key, states_key="i"):
         """Lookup `key` in states and add it in trans, using the level ``i``
         for upper and lower state
 
@@ -465,9 +425,15 @@ def pickup_gE(
 
             map_add("E", "E_lower", "i_lower")
         """
-        try:  # pytable
-            trans[new_col] = trans[trans_key].map(dict(states[col]))
-        except:  # a priori, vaex version  (TODO : replace with dict() approach in vaex too)
+        if engine == "pytables":
+            # Rename the columns in the states DataFrame
+            states_map = states.copy()
+            states_map.rename(
+                columns={col: new_col, states_key: trans_key}, inplace=True
+            )
+            states_map = states_map[[new_col, trans_key]]  # drop useless columns
+            trans = trans.join(states_map.set_index(trans_key), on=trans_key)
+        elif engine == "vaex":
             col = vaexsafe_colname(col)
             new_col = vaexsafe_colname(new_col)
 
@@ -480,12 +446,12 @@ def pickup_gE(
             )
             trans.drop(states_key, inplace=True)
             trans.rename(col, new_col)
+        return trans
 
-    map_add("g", "gup", "i_upper")
-    map_add("J", "jlower", "i_lower")
-    map_add("J", "jupper", "i_upper")
-
-    map_add("E", "elower", "i_lower")
+    trans = map_add(trans, "g", "gup", "i_upper")
+    trans = map_add(trans, "J", "jlower", "i_lower")
+    trans = map_add(trans, "J", "jupper", "i_upper")
+    trans = map_add(trans, "E", "elower", "i_lower")
 
     def has_nan(column):
         try:  # Vaex
@@ -502,7 +468,7 @@ def pickup_gE(
     if not skip_optional_data:
         for q in dic_def["quantum_labels"]:
             map_add(q, f"{q}_l", "i_lower")
-            # map_add(q, f"{q}_u", "i_upper")
+            map_add(q, f"{q}_u", "i_upper")
 
     return trans
 
@@ -546,7 +512,7 @@ def pickup_gE(
 
 
 def read_broad(broadf):
-    """Reading braodening file (.broad)
+    """Reading broadening file (.broad)
     Parameters
     ----------
     broadf: .broad file
@@ -585,7 +551,7 @@ def read_broad(broadf):
 
 
 def check_bdat(bdat):
-    """cheking codes in .broad
+    """checking codes in .broad
     Args:
        bdat: exomol .broad data given by exomolapi.read_broad
     Returns:
@@ -625,24 +591,32 @@ def make_j2b(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
     alpha_ref_arr = np.array(bdat["alpha_ref"][cmask])
     n_Texp_arr = np.array(bdat["n_Texp"][cmask])
 
+    # Determine the array size based on jlower_max
     if jlower_max is None:
         Nblower = np.max(jlower_arr) + 1
     else:
         Nblower = np.max([jlower_max, np.max(jlower_arr)]) + 1
-    j2alpha_ref = np.ones(Nblower) * alpha_ref_default
-    j2n_Texp = np.ones(Nblower) * n_Texp_default
 
+    # Initialize arrays with default alpha_ref and n_Texp
+    j2alpha_ref = np.full(Nblower, alpha_ref_default)
+    j2n_Texp = np.full(Nblower, n_Texp_default)
+
+    # Populate the mapping arrays using known broadening coefficients
     j2alpha_ref[jlower_arr] = alpha_ref_arr
     j2n_Texp[jlower_arr] = n_Texp_arr
 
-    Ndef = Nblower - (np.max(jlower_arr) + 1)
-    if Ndef > 0:
-        print(
-            "default broadening parameters are used for ",
-            Ndef,
-            " J lower states in ",
-            Nblower,
-            " states",
+    # Raise a minor warning if default values are used for high J values
+    if Nblower > (np.max(jlower_arr) + 1):
+        import warnings
+
+        from radis.misc.warning import AccuracyWarning
+
+        warnings.warn(
+            AccuracyWarning(
+                "The default broadening parameter (alpha = {2} cm^-1 and n = {3}) are used for J'' > {1} up to J'' = {0}".format(
+                    Nblower, np.max(jlower_arr), alpha_ref_default, n_Texp_default
+                )
+            )
         )
 
     return j2alpha_ref, j2n_Texp
@@ -797,6 +771,7 @@ def get_exomol_database_list(molecule, isotope_full_name=None):
         "a", {"class": "list-group-item link-list-group-item recommended"}
     )
     databases_recommended = [r.get_attribute_list("title")[0] for r in rows]
+    databases_recommended = list(np.unique(databases_recommended))
 
     # All others
     rows = soup.find_all("a", {"class": "list-group-item link-list-group-item"})
@@ -822,7 +797,7 @@ def get_exomol_database_list(molecule, isotope_full_name=None):
     else:
         recommended_database = False
 
-    return databases, recommended_database
+    return list(np.unique(databases)), recommended_database
 
 
 # def fetch_exomol_molecule_list():
@@ -998,107 +973,10 @@ class MdbExomol(DatabaseManager):
     .. [1] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Barton, E. J., Chubb, K. L., Coles, P. A., … Zak, E. (2016). The ExoMol database: molecular line lists for exoplanet and other hot atmospheres. https://doi.org/10.1016/j.jms.2016.05.002
     .. [2] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Clark, V. H. J., Chubb, K. L., Conway, E. K., … Yurchenko, O. P. (2020). The 2020 release of the ExoMol database: Molecular line lists for exoplanet and other hot atmospheres. Journal of Quantitative Spectroscopy and Radiative Transfer, 255, 107228. https://doi.org/10.1016/j.jqsrt.2020.107228
 
-    """
-
-    """molecular database of ExoMol
-
-    MdbExomol is a class for ExoMol.
-
-    Parameters
-    ----------
-    path: str
-        path for Exomol data directory/tag. For instance, "/home/CO/12C-16O/Li2015"
-    nurange: array
-        wavenumber range list (cm-1) or wavenumber array
-    margin: float
-        margin for nurange (cm-1)
-    crit: float
-        line strength lower limit for extraction
-    bkgdatm: str
-        background atmosphere for broadening. e.g. H2, He,
-    broadf: bool
-        if False, the default broadening parameters in .def file is used
-
-    Other Parameters
-    ----------------
-    engine : str
-        which memory mapping engine to use : 'vaex', 'pytables' (HDF5), 'feather'
-    skip_optional_data : bool
-        If False, fetch all fields which are marked as available in the ExoMol definition
-        file. If True, load only the first 4 columns of the states file
-        ("i", "E", "g", "J"). The structure of the columns above 5 depend on the
-        the definitions file (*.def) and the Exomol version.
-        If ``skip_optional_data=False``, two errors may occur:
-
-            - a field is marked as present/absent in the *.def field but is
-              absent/present in the *.states file (ie both files are inconsistent).
-            - in the updated version of Exomol, new fields have been added in the
-              states file of some species. But it has not been done for all species,
-              so both structures exist. For instance, the states file of
-              https://exomol.com/data/molecules/HCl/1H-35Cl/HITRAN-HCl/ follows the
-              structure described in [1]_, unlike the states file of
-              https://exomol.com/data/molecules/NO/14N-16O/XABC/ which follows the
-              structure described in [2]_.
-
-    Notes
-    -----
-
-    The trans/states files can be very large. For the first time to read it,
-    we convert it to the feather or hdf5-format. After the second-time,
-    we use the feather/hdf5 format instead.
-
-    Examples
+    See also
     --------
-    ::
 
-        # Init database, download files if needed.
-        mdb = MdbExomol(
-            local_path,
-            molecule=molecule,
-            name=databank_name,
-            local_databases=local_databases,
-            # nurange=[load_wavenum_min, load_wavenum_max],
-            engine="vaex",
-        )
-
-        # Get cache files to load :
-        mgr = mdb.get_datafile_manager()
-        local_files = [mgr.cache_file(f) for f in mdb.trans_file]
-
-        # Load files
-        df = mdb.load(
-            local_files,
-            columns=columns_exomol,
-            lower_bound=([('nu_lines', load_wavenum_min)] if load_wavenum_min else []) + ([("Sij0", mdb.crit)] if not np.isneginf(mdb.crit) else []),
-            upper_bound=([('nu_lines', load_wavenum_max)] if load_wavenum_max else []),
-            output="jax", # or "pytables", "vaex"
-        )
-
-    .. minigallery:: radis.fetch_exomol
-
-
-    DataFrame columns
-    -----------------
-
-    nu_lines (nd array): line center (cm-1)
-    Sij0 (nd array): line strength at T=Tref (cm)
-    dev_nu_lines (np array): line center in device (cm-1)
-    logsij0 (np array): log line strength at T=Tref
-    A (np array): Einstein A coefficient
-    elower (np array): the lower state energy (cm-1)
-    gpp (np array): statistical weight
-    jlower (np array): J_lower
-    jupper (np array): J_upper
-    n_Tref (np array): temperature exponent
-    alpha_ref (np array): alpha_ref (gamma0)
-    n_Tref_def: default temperature exponent in .def file, used for jlower not given in .broad
-    alpha_ref_def: default alpha_ref (gamma0) in .def file, used for jlower not given in .broad
-
-    References
-    ----------
-
-    .. [1] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Barton, E. J., Chubb, K. L., Coles, P. A., … Zak, E. (2016). The ExoMol database: molecular line lists for exoplanet and other hot atmospheres. https://doi.org/10.1016/j.jms.2016.05.002
-    .. [2] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Clark, V. H. J., Chubb, K. L., Conway, E. K., … Yurchenko, O. P. (2020). The 2020 release of the ExoMol database: Molecular line lists for exoplanet and other hot atmospheres. Journal of Quantitative Spectroscopy and Radiative Transfer, 255, 107228. https://doi.org/10.1016/j.jqsrt.2020.107228
+    MdbExomol is compatible with Exojax :py:class:`exojax.spec.api.MdbExomol`
 
     """
 
@@ -1118,7 +996,7 @@ class MdbExomol(DatabaseManager):
         nurange=[0.0, np.inf],
         margin=0.0,
         crit=-np.inf,
-        bkgdatm="Air",  # TODO: use Air whenever possible, to be consistent with HITRAN/HITEMP
+        bkgdatm="Air",  # TODO: use Air whenever possible (consistent with HITRAN/HITEMP). This is not a parameter for the moment.
         broadf=True,
         engine="vaex",
         verbose=True,
@@ -1139,7 +1017,7 @@ class MdbExomol(DatabaseManager):
 
             engine = config["MEMORY_MAPPING_ENGINE"]
             if engine == "auto":
-                engine = "vaex"
+                engine = get_auto_MEMORY_MAPPING_ENGINE()
 
         self.path = pathlib.Path(path)
         if local_databases is not None:
@@ -1147,8 +1025,7 @@ class MdbExomol(DatabaseManager):
 
         t0 = self.path.parents[0].stem
         molec = t0 + "__" + str(self.path.stem)
-        self.bkgdatm = bkgdatm
-        print("Background atmosphere: ", self.bkgdatm)
+        self.bkgdatm = bkgdatm  # TODO: for the moment, only air is possible in RADIS, although He and H are usually available in ExoMol
         molecbroad = t0 + "__" + self.bkgdatm
 
         self.crit = crit
@@ -1162,20 +1039,24 @@ class MdbExomol(DatabaseManager):
         self.def_file = self.path / pathlib.Path(molec + ".def")
         self.broad_file = self.path / pathlib.Path(molecbroad + ".broad")
 
+        mgr = self.get_datafile_manager()
         if not self.def_file.exists():
             self.download(molec, extension=[".def"])
         if not self.pf_file.exists():
             self.download(molec, extension=[".pf"])
-        if not self.states_file.exists():
+        if (
+            not self.states_file.exists()
+            and not mgr.cache_file(self.states_file).exists()
+        ):
             self.download(molec, extension=[".states.bz2"])
-        if not self.broad_file.exists():
+        if (not self.broad_file.exists()) and self.broadf:
             self.download(molec, extension=[".broad"])
 
         # Add molecule name
         tag = molec.split("__")
         self.isotope_fullname = tag[0]
         self.molecule = e2s(tag[0])
-        # self.isotope = 1  # Placeholder. TODO : impement parsing of other isotopes.
+        # self.isotope = 1  # Placeholder. TODO : implement parsing of other isotopes.
 
         # load def
         dic_def = read_def(self.def_file)  # approx. 3 ms
@@ -1205,9 +1086,8 @@ class MdbExomol(DatabaseManager):
             )
 
         # load states
-        mgr = self.get_datafile_manager()
         if cache == "regen" and mgr.cache_file(self.states_file).exists():
-            if verbose:
+            if self.verbose:
                 print("Removing existing file ", mgr.cache_file(self.states_file))
             os.remove(mgr.cache_file(self.states_file))
         if mgr.cache_file(self.states_file).exists():
@@ -1267,6 +1147,8 @@ class MdbExomol(DatabaseManager):
                 np.searchsorted(dic_def["numinf"], nurange[1] + margin, side="right")
                 - 1
             )
+            # not to exceed index out of the range
+            imax = np.min([imax, len(dic_def["numinf"]) - 2])
             self.trans_file = []
             self.num_tag = []
 
@@ -1277,14 +1159,28 @@ class MdbExomol(DatabaseManager):
                 self.trans_file.append(trans_file)
                 self.num_tag.append(dic_def["numtag"][i])
 
+        # some verbose
+        if self.verbose:
+            print("Molecule: ", molecule)
+            print("Isotopologue: ", self.isotope_fullname)
+            print("Background atmosphere: ", self.bkgdatm)
+            print("ExoMol database: ", database)
+            print("Local folder: ", self.path)
+            print("Transition files: ")
+
         # Look-up missing parameters and write file
         # -----------------------------------------
-
         for trans_file, num_tag in zip(self.trans_file, self.num_tag):
-            print("Reading", trans_file)
+            if self.verbose:
+                print(
+                    "\t => File {}".format(
+                        os.path.splitext(os.path.basename((trans_file)))[0]
+                    )
+                )
+
             if cache == "regen" and mgr.cache_file(trans_file).exists():
-                if verbose:
-                    print("Removing existing file ", mgr.cache_file(trans_file))
+                if self.verbose:
+                    print("\t\t => `regen = True`. Removing the file")
                 os.remove(mgr.cache_file(trans_file))
 
             if not mgr.cache_file(trans_file).exists():
@@ -1295,24 +1191,25 @@ class MdbExomol(DatabaseManager):
 
                 if not trans_file.exists():
                     self.download(molec, extension=[".trans.bz2"], numtag=num_tag)
-                    # TODO: add option to delete file at the end
-
-                print(
-                    f"Note: Caching line transition data to the {engine} format. After the second time, it will become much faster."
-                )
+                if self.verbose:
+                    print(
+                        f"\t\t => Caching the *.trans.bz2 file to the {engine} (*.h5) format. After the second time, it will become much faster."
+                    )
+                    print(f"\t\t => You can deleted the 'trans.bz2' file by hand.")
                 trans = read_trans(
                     trans_file, engine="vaex" if engine == "vaex" else "csv"
                 )
+                # TODO: add option to delete file at the end
 
                 # Complete transition data with lookup on upper & lower state :
                 # In particular, compute gup and elower
 
-                pickup_gE(
+                trans = pickup_gE(
                     states,
                     trans,
-                    trans_file,
                     dic_def,
                     skip_optional_data=skip_optional_data,
+                    engine=engine,
                 )
 
                 ##Recompute Line strength:
@@ -1334,12 +1231,9 @@ class MdbExomol(DatabaseManager):
 
                 mgr.write(mgr.cache_file(trans_file), trans)
 
-        # Database ready to be loaded.
-        # Proceed with mdb.load()
-        # self.set_broadening()
-        #
-
-    def set_broadening(self, df, alpha_ref_def=None, n_Texp_def=None, output=None):
+    def set_broadening_coef(
+        self, df, alpha_ref_def=None, n_Texp_def=None, output=None, add_columns=True
+    ):
         """setting broadening parameters
 
         Parameters
@@ -1347,38 +1241,11 @@ class MdbExomol(DatabaseManager):
         df: Data Frame
         alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
         n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
+        add_columns: adds alpha_ref and n_Texp columns to df
 
         Returns
         -------
         None. Store values in Data Frame.
-
-        """
-        self.compute_broadening(
-            jlower=df["jlower"],
-            jupper=df["jupper"],
-            alpha_ref_def=alpha_ref_def,
-            n_Texp_def=n_Texp_def,
-            output=output,
-        )
-        # Add values
-        self.add_column(df, "alpha_ref", self.alpha_ref)
-        self.add_column(df, "n_Texp", self.n_Texp)
-
-    def compute_broadening(
-        self, jlower, jupper, alpha_ref_def=None, n_Texp_def=None, output=None
-    ):
-        """computing broadening parameters
-
-        Parameters
-        ----------
-        jlower: jlower array
-        jupper: jupper array
-        alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
-        n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
-
-        Returns
-        -------
-        None. Store values in self.n_Texp and self.alpha_ref.
 
         """
 
@@ -1389,45 +1256,63 @@ class MdbExomol(DatabaseManager):
 
         if self.broadf:
             try:
-                print(".broad is used.")
                 bdat = read_broad(self.broad_file)
+                if self.verbose > 1:
+                    print(
+                        "The file `{}` is used.".format(
+                            os.path.basename(self.broad_file)
+                        )
+                    )
+            except FileNotFoundError:
+                warnings.warn(
+                    "Could not load `{}`. The default broadening parameters are used.\n".format(
+                        os.path.basename(self.broad_file)
+                    )
+                )
+
+                self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
+                self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
+            else:
                 codelv = check_bdat(bdat)
-                print("Broadening code level=", codelv)
+                if self.verbose:
+                    print("Broadening code level:", codelv)
                 if codelv == "a0":
                     j2alpha_ref, j2n_Texp = make_j2b(
                         bdat,
                         alpha_ref_default=self.alpha_ref_def,
                         n_Texp_default=self.n_Texp_def,
-                        jlower_max=np.max(jlower),
+                        jlower_max=df["jlower"].max(),
                     )
-                    self.alpha_ref = np.array(j2alpha_ref[jlower])
-                    self.n_Texp = np.array(j2n_Texp[jlower])
+                    self.alpha_ref = j2alpha_ref[df["jlower"].values]
+                    self.n_Texp = j2n_Texp[df["jlower"].values]
                 elif codelv == "a1":
                     j2alpha_ref, j2n_Texp = make_j2b(
                         bdat,
                         alpha_ref_default=self.alpha_ref_def,
                         n_Texp_default=self.n_Texp_def,
-                        jlower_max=np.max(jlower),
+                        jlower_max=df["jlower"].max(),
                     )
                     jj2alpha_ref, jj2n_Texp = make_jj2b(
                         bdat,
                         j2alpha_ref_def=j2alpha_ref,
                         j2n_Texp_def=j2n_Texp,
-                        jupper_max=np.max(jupper),
+                        jupper_max=df["jupper"].max(),
                     )
-                    self.alpha_ref = np.array(jj2alpha_ref[jlower, jupper])
-                    self.n_Texp = np.array(jj2n_Texp[jlower, jupper])
-            except FileNotFoundError:
-                print(
-                    "Warning: Cannot load .broad. The default broadening parameters are used."
-                )
-                self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(jlower))
-                self.n_Texp = np.array(self.n_Texp_def * np.ones_like(jlower))
-
+                    self.alpha_ref = np.array(
+                        jj2alpha_ref[df["jlower"].values, df["jupper"].values]
+                    )
+                    self.n_Texp = np.array(
+                        jj2n_Texp[df["jlower"].values, df["jupper"].values]
+                    )
         else:
             print("The default broadening parameters are used.")
-            self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(jlower))
-            self.n_Texp = np.array(self.n_Texp_def * np.ones_like(jlower))
+            self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
+            self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
+
+        if add_columns:
+            # Add values
+            self.add_column(df, "alpha_ref", self.alpha_ref)
+            self.add_column(df, "n_Texp", self.n_Texp)
 
     def QT_interp(self, T):
         """interpolated partition function
@@ -1476,7 +1361,7 @@ class MdbExomol(DatabaseManager):
 
         tag = molec.split("__")
         molname_simple = e2s(tag[0])
-
+        # TODO: add progress bar
         for ext in extension:
             if ext == ".trans.bz2" and numtag is not None:
                 ext = "__" + numtag + ext
@@ -1495,12 +1380,10 @@ class MdbExomol(DatabaseManager):
             for pfname in pfname_arr:
                 pfpath = url + pfname
                 os.makedirs(str(self.path), exist_ok=True)
-                print(
-                    "Downloading "
-                    + pfpath
-                    + " and saving as "
-                    + str(self.path / pfname)
-                )
+                if self.verbose:
+                    print(
+                        "\t\t => Downloading from {}".format(pfpath)
+                    )  # modify indent accordingly print in __init__
                 try:
                     urllib.request.urlretrieve(pfpath, str(self.path / pfname))
                 except HTTPError:
@@ -1549,12 +1432,12 @@ if __name__ == "__main__":
     # # sf.fetch_databank('hitran')  # placeholder. Load lines (will be replaced), load partition function.
     # # s_hit = sf.eq_spectrum(500, name='HITRAN')
 
-    #%% Test by direct caclulation
+    # %% Test by direct calculation
     # import pytest
 
     # print("Testing factory:", pytest.main(["../test/io/test_exomol.py"]))
 
-    #%% RADIS-like Example
+    # %% RADIS-like Example
     # uses fetch_exomol() internally
 
     from radis import calc_spectrum
@@ -1568,7 +1451,6 @@ if __name__ == "__main__":
         Tgas=1000,  # K
         mole_fraction=0.1,
         path_length=1,  # cm
-        # broadening_method="fft",  # @ dev: Doesn't work with 'voigt'
         databank=(
             "exomol",
             "YT10to10",
@@ -1697,7 +1579,7 @@ if __name__ == "__main__":
     )
     # ... ready to run Jax calculations
 
-    #%%
+    # %%
 
     # """ExoMol lines can be downloaded and accessed separately using
     # :py:func:`~radis.io.exomol.fetch_exomol`

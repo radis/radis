@@ -30,7 +30,8 @@ class SlitDispersionWarning(UserWarning):
 # -------------------------------------
 
 
-# Main warning classes :
+# Main warning classes
+# --------------------
 # - AccuracyWarning
 # - PerformanceWarning
 # - default UserWarning
@@ -56,6 +57,19 @@ class PerformanceWarning(UserWarning):
 
 
 # Other warnings
+# --------------
+
+
+class NoGPUWarning(PerformanceWarning):
+    """Triggered when GPU doesn't work"""
+
+    pass
+
+
+class GPUInitWarning(PerformanceWarning):
+    """Triggered when GPU isn't initialized"""
+
+    pass
 
 
 class OutOfBoundError(ValueError):
@@ -110,7 +124,7 @@ class EmptyDatabaseWarning(UserWarning):
 
 class OutOfRangeLinesWarning(UserWarning):
     """Trigger a warning if out of range neighbouring lines, that could have an
-    effect on the spectrume due to their broadening, cannot be found in the
+    effect on the spectrum due to their broadening, cannot be found in the
     database."""
 
     pass
@@ -128,7 +142,7 @@ class NegativeEnergiesWarning(UserWarning):
 
 
 class MissingSelfBroadeningTdepWarning(UserWarning):
-    """Self broadening temperature dependance coefficient is missing in Line Database.
+    """Self broadening temperature-dependance-coefficient is missing in Line Database.
 
     Usually, use Air broadening temperature dependance coefficient instead. See
     :py:meth:`~radis.lbl.broadening.BroadenFactory._add_collisional_broadening_HWHM`
@@ -144,6 +158,32 @@ class MissingSelfBroadeningWarning(UserWarning):
     :py:meth:`~radis.lbl.broadening.BroadenFactory._add_collisional_broadening_HWHM`
     """
 
+    pass
+
+
+class MissingDiluentBroadeningTdepWarning(UserWarning):
+    """Diluent broadening temperature-dependance-coefficient is missing in Line Database.
+
+    Usually, suggest user to use Air broadening temperature dependance coefficient instead. See
+    :py:meth:`~radis.lbl.broadening.BroadenFactory._add_collisional_broadening_HWHM`
+    """
+
+    # warnings.warn(
+    #     "This Warning is depreciated since radis=0.15. A missing coefficient for broadening should be an error."
+    # )
+    pass
+
+
+class MissingDiluentBroadeningWarning(UserWarning):
+    """Diluent broadening tabulated width is missing in Line Database.
+
+    Usually, suggest user to use Air broadening tabulated width instead. See
+    :py:meth:`~radis.lbl.broadening.BroadenFactory._add_collisional_broadening_HWHM`
+    """
+
+    # warnings.warn(
+    #     "This Warning is depreciated since radis=0.15. A missing coefficient for broadening should be an error."
+    # )
     pass
 
 
@@ -195,6 +235,16 @@ class MissingReferenceWarning(UserWarning):
     pass
 
 
+# %% Spectrum object  warnings / errors
+# -------------------------------------
+
+
+class UnevenWaverangeWarning(UserWarning):
+    """Warning triggered when Spectrum has unevenly distributed waverange"""
+
+    pass
+
+
 # %% Config file warnings & errors
 
 
@@ -210,9 +260,12 @@ class DatabaseNotFoundError(FileNotFoundError):
 
 # @dev: list all your custom warnings below so they are handled by RADIS user params.
 WarningClasses = {
+    # Spectrum Calculation Warnings & Errors :
     "default": UserWarning,
     "AccuracyWarning": AccuracyWarning,
     "PerformanceWarning": PerformanceWarning,
+    "NoGPUWarning": NoGPUWarning,
+    "GPUInitWarning": GPUInitWarning,
     "AccuracyError": AccuracyError,
     "SlitDispersionWarning": SlitDispersionWarning,
     "GaussianBroadeningWarning": GaussianBroadeningWarning,
@@ -227,6 +280,8 @@ WarningClasses = {
     "NegativeEnergiesWarning": NegativeEnergiesWarning,
     "MissingSelfBroadeningTdepWarning": MissingSelfBroadeningTdepWarning,
     "MissingSelfBroadeningWarning": MissingSelfBroadeningWarning,
+    "MissingDiluentBroadeningWarning": MissingDiluentBroadeningWarning,
+    "MissingDiluentBroadeningTdepWarning": MissingDiluentBroadeningTdepWarning,
     "ZeroBroadeningWarning": ZeroBroadeningWarning,
     "MissingPressureShiftWarning": MissingPressureShiftWarning,
     "LinestrengthCutoffWarning": LinestrengthCutoffWarning,
@@ -235,6 +290,8 @@ WarningClasses = {
     "IrrelevantFileWarning": IrrelevantFileWarning,
     "OutOfBoundWarning": OutOfBoundWarning,
     "MissingReferenceWarning": MissingReferenceWarning,
+    # Spectrum Post-Processing Warnings & Errors :
+    "UnevenWaverangeWarning": UnevenWaverangeWarning,
 }
 """ dict: warnings used in RADIS Spectrum calculations.
 
@@ -255,15 +312,18 @@ See Also
 :py:data:`~radis.misc.warning.default_warning_status`
 """
 default_warning_status = {
+    # Spectrum Calculation Warnings & Errors :
     "default": "warn",  # default
     "AccuracyWarning": "warn",
     "AccuracyError": "error",
     "PerformanceWarning": "warn",
+    "NoGPUWarning": "warn",
+    "GPUInitWarning": "warn",
     "SlitDispersionWarning": "warn",
     "GaussianBroadeningWarning": "once",  # once per Spectrum calculation
     "CollisionalBroadeningWarning": "once",  # once per Spectrum calculation
     "VoigtBroadeningWarning": "once",  # once per Spectrum calculation
-    # see also self.misc.warning_broadening_threshold for the treshold value
+    # see also self.misc.warning_broadening_threshold for the threshold value
     "LinestrengthCutoffWarning": "warn",
     "MemoryUsageWarning": "warn",
     "EmptyDatabaseWarning": "warn",
@@ -272,9 +332,11 @@ default_warning_status = {
     "OutOfRangeLinesWarning": "warn",
     "HighTemperatureWarning": "warn",
     "NegativeEnergiesWarning": "warn",  # warning if negative energies in database
-    # warning if self-broadening abs coefficnet missing (Air is used instead)
+    # warning if self-broadening abs coefficient missing (Air is used instead)
     "MissingSelfBroadeningTdepWarning": "warn",
     "MissingSelfBroadeningWarning": "warn",
+    "MissingDiluentBroadeningWarning": "warn",
+    "MissingDiluentBroadeningTdepWarning": "warn",
     "ZeroBroadeningWarning": "warn",
     "MissingPressureShiftWarning": "warn",
     "InputConditionsWarning": "warn",
@@ -282,6 +344,8 @@ default_warning_status = {
     "IrrelevantFileWarning": "warn",
     "OutOfBoundWarning": "warn",
     "MissingReferenceWarning": "warn",
+    # Spectrum Post-Processing Warnings & Errors :
+    "UnevenWaverangeWarning": "warn",
 }
 """ dict: default status of warnings used in RADIS Spectrum calculations.
 

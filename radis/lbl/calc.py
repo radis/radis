@@ -20,7 +20,7 @@ Routine Listing
 from copy import deepcopy
 from os.path import exists
 
-# from radis.db.classes import M
+import numpy as np
 
 try:  # Proper import
     from .base import get_wavenumber_range
@@ -29,6 +29,7 @@ except ImportError:  # if ran from here
     from radis.lbl.factory import SpectrumFactory
     from radis.lbl.base import get_wavenumber_range
 
+from radis import config
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
 from radis.spectrum.spectrum import Spectrum
@@ -75,7 +76,7 @@ def calc_spectrum(
     using either CPU or GPU.
 
     It is a wrapper to :py:class:`~radis.lbl.factory.SpectrumFactory` class.
-    For advanced used, please refer to the aforementionned class.
+    For advanced used, please refer to the aforementioned class.
 
 
     Parameters
@@ -108,7 +109,7 @@ def calc_spectrum(
         molecule id (HITRAN format) or name. For multiple molecules, use a list.
         The ``'isotope'``, ``'mole_fraction'``, ``'databank'`` and ``'overpopulation'`` parameters must then
         be dictionaries.
-        If ``None``, the molecule can be infered
+        If ``None``, the molecule can be inferred
         from the database files being loaded. See the list of supported molecules
         in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
         and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
@@ -155,7 +156,7 @@ def calc_spectrum(
           only the required range). To use one mode or the other, use ::
 
             databank=('hitran', 'full')     # download and cache full database, all isotopes
-            databank=('hitran', 'range')    # download and cache required range, required isoope
+            databank=('hitran', 'range')    # download and cache required range, required isotope
 
         - ``'hitemp'``, to fetch the latest HITEMP version
           through :py:func:`~radis.io.hitemp.fetch_hitemp`. Downloads all lines
@@ -234,7 +235,7 @@ def calc_spectrum(
 
         .. note::
             parsum_mode= 'tabulation'  is new in 0.9.30, and makes nonequilibrium
-            calculations of small spectra extremelly fast. Will become the default
+            calculations of small spectra extremely fast. Will become the default
             after 0.9.31.
     optimization : ``"simple"``, ``"min-RMS"``, ``None``
         If either ``"simple"`` or ``"min-RMS"`` LDM optimization for lineshape calculation is used:
@@ -305,8 +306,9 @@ def calc_spectrum(
         - Or the :py:meth:`~radis.spectrum.spectrum.Spectrum.plot` method to plot it
           directly.
         - See [1]_ to get an overview of all Spectrum methods
-    :py:class:`~radis.lbl.factory.SpectrumFactory` : if using ``return_factory=True``
-        if multiple molecules, a dictionary of factories is returned
+    :py:class:`~radis.lbl.factory.SpectrumFactory`
+        if using ``return_factory=True``, the Factory that generated the spectrum is returned.
+        if calculating multiple molecules, a dictionary of factories is returned
 
 
     References
@@ -327,6 +329,7 @@ def calc_spectrum(
                           Tgas=1000,
                           mole_fraction=0.1,
                           databank='hitran',  # or 'hitemp'
+                          diluent = "air"     # or {'CO2': 0.1, 'air':0.8}
                           )
         s.apply_slit(0.5, 'nm')
         s.plot('radiance')
@@ -361,6 +364,9 @@ def calc_spectrum(
     For more details on how to use the GPU method and process the database, refer to the examples
     linked above and the documentation on :ref:`GPU support for RADIS <label_radis_gpu>`.
     ​
+    Other Examples
+    --------------
+
     .. minigallery:: radis.calc_spectrum
 
     References
@@ -411,16 +417,10 @@ def calc_spectrum(
     # (dealt with separately because we cannot use them to guess what are the input molecules)
     DICT_INPUT_DICT_ARGUMENTS = {"overpopulation": overpopulation}
 
-    # Check if mole_fraction is dictionary of multiple molecules and have non air diluent, if yes then raise NotImplementedError
-    if isinstance(mole_fraction, dict) and isinstance(diluent, dict):
-        raise NotImplementedError(
-            "Spectrum calculation for multiple molecules in multiple diluents is not yet implemented."
-        )
-
     def _check_molecules_are_consistent(
         molecule_reference_set, reference_name, new_argument, new_argument_name
     ):
-        """Will test that molecules set are the same in molecule_reference_set
+        r"""Will test that molecules set are the same in molecule_reference_set
         and new_argument, if new_argument is a dict. molecule_reference_set is
         a set of molecules (yeah!). reference_name is the name of the argument
         from which we guessed the list of molecules (used to have a clear error
@@ -459,7 +459,7 @@ def calc_spectrum(
             molecule_reference_set, reference_name, argument, argument_name
         )
 
-    # ... Now we are sure there are no contradctions. Just ensure we have molecules:
+    # ... Now we are sure there are no contradictions. Just ensure we have molecules:
     if molecule_reference_set is None:
         raise ValueError(
             "Please enter the molecule(s) to calculate in the `molecule=` argument or as a dictionary in the following: {0}".format(
@@ -531,6 +531,11 @@ def calc_spectrum(
         # We add all of the DICT_INPUT_ARGUMENTS values:
         kwargs_molecule.update(**dict_arguments)
 
+        # getting diluents for this molecule
+        diluent_for_this_molecule = diluents_for_molecule(
+            mole_fraction, diluent, molecule
+        )
+
         generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
             wavenum_max=wavenum_max,
@@ -560,17 +565,18 @@ def calc_spectrum(
             mode=mode,
             export_lines=export_lines,
             return_factory=return_factory,
-            diluent=diluent,
+            diluent=diluent_for_this_molecule,
             **kwargs_molecule,
         )
+
         if return_factory:
             factory_dict[molecule] = generated_spectrum[1]
             generated_spectrum = generated_spectrum[0]  # the spectrum
         s_list.append(generated_spectrum)
 
-        if condition_multiple_wstep:
-            # Stores the minimum wstep value encountered
-            wstep[1] = generated_spectrum.get_conditions()["wstep"]
+        # if condition_multiple_wstep:
+        #     # Stores the minimum wstep value encountered
+        #     wstep[1] = generated_spectrum.get_conditions()["wstep"]
 
     # Stage 4: merge all molecules and return
     if condition_multiple_wstep:
@@ -659,7 +665,7 @@ def _calc_spectrum_one_molecule(
 
     def _is_at_equilibrium():
         try:
-            assert Tvib is None or Tvib == Tgas
+            assert Tvib is None or (np.array(Tvib) == np.array(Tgas)).all()
             assert Trot is None or Trot == Tgas
             assert overpopulation is None
             if "self_absorption" in kwargs:
@@ -711,9 +717,14 @@ def _calc_spectrum_one_molecule(
         diluent_other_than_air = len(diluent) > 1 or (
             len(diluent) == 1 and "air" not in diluent
         )
+    if diluent_other_than_air and databank == "exomol":
+        raise NotImplementedError(
+            "Only air broadening is implemented in RADIS with ExoMol. Please reach out on https://github.com/radis/radis/issues"
+        )
 
     # Load databank
     # -------------
+    sf.dataframe_type = config["DATAFRAME_ENGINE"]
 
     # Get databank
     if (
@@ -809,7 +820,7 @@ def _calc_spectrum_one_molecule(
         # Guess format
         if databank.endswith(".par"):
             if verbose:
-                print("Infered {0} is a HITRAN-format file.".format(databank))
+                print("Inferred {0} is a HITRAN-format file.".format(databank))
             conditions["format"] = "hitran"
             # If non-equilibrium we'll also need to load the energy levels.
             if not _equilibrium:
@@ -820,7 +831,7 @@ def _calc_spectrum_one_molecule(
         elif databank.endswith(".h5") or databank.endswith(".hdf5"):
             if verbose:
                 print(
-                    "Infered {0} is a HDF5 file with RADISDB columns format".format(
+                    "Inferred {0} is a HDF5 file with RADISDB columns format".format(
                         databank
                     )
                 )
@@ -874,7 +885,7 @@ def _calc_spectrum_one_molecule(
             load_columns=load_columns,
         )
 
-    #    # Get optimisation strategies
+    #    # Get optimization strategies
     #    if lineshape_optimization == 'auto':        # NotImplemented: finally we use DLM all the time as default.
     #        if len(sf.df0) > 1e5:
     #            lineshape_optimization = 'DLM'
@@ -883,7 +894,7 @@ def _calc_spectrum_one_molecule(
     #        sf.params['chunksize'] = lineshape_optimization
 
     if overpopulation is not None or overpopulation != {}:
-        sf.misc.export_rovib_fraction = True  # required to compute Partition fucntions with overpopulation being taken into account
+        sf.misc.export_rovib_fraction = True  # required to compute Partition functions with overpopulation being taken into account
 
     # Calculate Spectrum
     # ------------------
@@ -927,6 +938,29 @@ def _calc_spectrum_one_molecule(
         return s, sf
     else:
         return s
+
+
+# Function to get diluent(s) for a molecule
+def diluents_for_molecule(mole_fraction, diluent, molecule):
+    diluent_for_this_molecule = {}
+    if isinstance(diluent, dict):
+        diluent_for_this_molecule = diluent.copy()
+    else:
+        if isinstance(mole_fraction, dict):
+            diluent_for_this_molecule[diluent] = 1 - sum(list(mole_fraction.values()))
+        else:
+            diluent_for_this_molecule[diluent] = 1 - mole_fraction
+
+    # Adding the other molecules from the gas mixture as diluent for the calculation of this particular molecule
+    if isinstance(mole_fraction, dict):
+        for other_molecule, other_fraction in mole_fraction.items():
+            if other_molecule != molecule:
+                if other_molecule in diluent_for_this_molecule:
+                    diluent_for_this_molecule[other_molecule] += other_fraction
+                else:
+                    diluent_for_this_molecule[other_molecule] = other_fraction
+
+    return diluent_for_this_molecule
 
 
 # --------------------------

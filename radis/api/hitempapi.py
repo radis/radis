@@ -12,7 +12,7 @@ https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 
 import re
 import urllib.request
-from os.path import basename, join
+from os.path import basename, commonpath, join
 from typing import Union
 
 import numpy as np
@@ -50,9 +50,7 @@ HITEMP_MOLECULES = ["H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"]
 
 
 def keep_only_relevant(
-    inputfiles,
-    wavenum_min=None,
-    wavenum_max=None,
+    inputfiles, wavenum_min=None, wavenum_max=None, verbose=True
 ) -> Union[list, float, float]:
     """Parser file names for ``wavenum_format`` (min and max) and only keep
     relevant files if the requested range is ``[wavenum_min, wavenum_max]``
@@ -90,7 +88,16 @@ def keep_only_relevant(
             files_wmin = min(float(fname_wmin), files_wmin)
             files_wmax = max(float(fname_wmax), files_wmax)
 
-    print(f"HITEMP keep only relevant input files: {relevantfiles}")
+    if verbose and relevantfiles != []:
+        if len(relevantfiles) > 1:
+            folder = commonpath(relevantfiles)
+            # file_list = [x.replace(folder+'\\', '') for x in relevantfiles]
+            # print(f"In {folder} keep only relevant input files: {file_list}")
+            print(f"In ``{folder}`` keep only relevant input files:")
+            for file in relevantfiles:
+                print(file.replace(folder + "\\", ""))
+        else:
+            print(f"Keep only relevant input file: {relevantfiles}")
 
     return relevantfiles, files_wmin, files_wmax
 
@@ -117,6 +124,12 @@ class HITEMPDatabaseManager(DatabaseManager):
         chunksize=100000,
         parallel=True,
     ):
+        r"""
+        See Also
+        --------
+        HITEMPDatabaseManager is compatible with Exojax :py:class:`exojax.spec.api.MdbHitemp`
+
+        """
         super().__init__(
             name,
             molecule,
@@ -134,7 +147,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         self.urlnames = None
 
     def fetch_url_Nlines_wmin_wmax(self, hitemp_url="https://hitran.org/hitemp/"):
-        """requires connexion"""
+        r"""requires connexion"""
 
         molecule = self.molecule
 
@@ -173,9 +186,9 @@ class HITEMPDatabaseManager(DatabaseManager):
             #         return [td.get_text(strip=True) for td in tr.find_all(coltag)]
             #     rows = []
             #     trs = table.find_all('tr')
-            #     headerow = rowgetDataText(trs[0], 'th')
-            #     if headerow: # if there is a header row include first
-            #         rows.append(headerow)
+            #     headerrow = rowgetDataText(trs[0], 'th')
+            #     if headerrow: # if there is a header row include first
+            #         rows.append(headerrow)
             #         trs = trs[1:]
             #     for tr in trs: # for every table row
             #         rows.append(rowgetDataText(tr, 'td') ) # data row
@@ -212,7 +225,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         return url, Nlines, wmin, wmax
 
     def fetch_urlnames(self):
-        """requires connection"""
+        r"""requires connection"""
 
         if self.urlnames is not None:
             return self.urlnames
@@ -241,17 +254,16 @@ class HITEMPDatabaseManager(DatabaseManager):
         return urlnames
 
     def keep_only_relevant(
-        self,
-        inputfiles,
-        wavenum_min=None,
-        wavenum_max=None,
+        self, inputfiles, wavenum_min=None, wavenum_max=None, verbose=True
     ) -> list:
-        """For CO2 and H2O, return only relevant files for given wavenumber range.
+        r"""For CO2 and H2O, return only relevant files for given wavenumber range.
 
         If other molecule, return the file anyway.
         see :py:func:`radis.api.hitempapi.keep_only_relevant`"""
         if self.molecule in ["CO2", "H2O"]:
-            inputfiles, _, _ = keep_only_relevant(inputfiles, wavenum_min, wavenum_max)
+            inputfiles, _, _ = keep_only_relevant(
+                inputfiles, wavenum_min, wavenum_max, verbose
+            )
         return inputfiles
 
     def get_linereturn_format(self, opener, urlname, columns):
@@ -282,7 +294,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         pbar_Nlines_already=0,
         pbar_last=True,
     ):
-        """Uncompress ``urlname`` into ``local_file``.
+        r"""Uncompress ``urlname`` into ``local_file``.
         Also add metadata
 
         Parameters
@@ -401,7 +413,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         return Nlines
 
     def register(self):
-        """register in ~/radis.json"""
+        r"""register in ~/radis.json"""
 
         local_files, urlnames = self.get_filenames()
         info = f"HITEMP {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1) with TIPS-2017 (through HAPI) for partition functions"

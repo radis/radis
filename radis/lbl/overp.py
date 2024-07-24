@@ -81,11 +81,11 @@ class LevelsList(object):
     def __init__(
         self, parfunc, bands, levelsfmt, sortby="Ei", copy_lines=False, verbose=True
     ):
-        """
+        r"""
         Parameters
         ----------
         bands: dict of bands
-            bands are Spectrum objects calculated at equilibrium or non-equilibrim.
+            bands are Spectrum objects calculated at equilibrium or non-equilibrium.
             Tgas, or (Tvib, Trot) must be given and the same in all bands conditions.
 
         """
@@ -219,7 +219,7 @@ class LevelsList(object):
         }
 
     def _init_levels(self, sortby):
-        """
+        r"""
         Notes
         -----
 
@@ -267,7 +267,7 @@ class LevelsList(object):
             k
         ) in (
             lvl_index
-        ):  # Note: do not fill directly in frmokeys or you'll get the same shared list
+        ):  # Note: do not fill directly in fromkeys or you'll get the same shared list
             lvl_index[k] = {"bands_where_low": [], "bands_where_up": []}
 
         self.lvl_index = lvl_index
@@ -288,7 +288,7 @@ class LevelsList(object):
             index[viblvl_l]["bands_where_low"].append(s)
 
     def plot_vib_populations(self, nfig=None, **kwargs):
-        """Plot current distribution of vibrational levels.
+        r"""Plot current distribution of vibrational levels.
 
         By constructions populations are shown as divided by the state degeneracy,
         i.e,            g =   gv   *   (2J+1)   *    gi    *     gs
@@ -319,7 +319,7 @@ class LevelsList(object):
     def _calc_vib_populations(
         self, Tvib, vib_distribution="boltzmann", overpopulation=None
     ):
-        """Calculate vibrational populations from Tref to new Tvib and store
+        r"""Calculate vibrational populations from Tref to new Tvib and store
         results in vib_levels dataframe This does not modify the spectra yet!
 
         By constructions populations are calculated divided by the state degeneracy,
@@ -339,7 +339,7 @@ class LevelsList(object):
 
             # Get new population
             E_vib = vib_levels["Evib"]
-            g = 1  # explicitely calculate populations divided by degeneracy
+            g = 1  # explicitly calculate populations divided by degeneracy
             # this means we should only use ratios for rescaling
             if vib_distribution == "boltzmann":
                 nvibQvib = g * exp(-hc_k * E_vib / Tvib)
@@ -355,7 +355,7 @@ class LevelsList(object):
             E_vib1 = vib_levels["Evib1"]
             E_vib2 = vib_levels["Evib2"]
             E_vib3 = vib_levels["Evib3"]
-            g = 1  # explicitely calculate populations divided by degeneracy
+            g = 1  # explicitly calculate populations divided by degeneracy
             # this means we should only use ratios for rescaling
             if vib_distribution == "boltzmann":
                 nvibQvib = (
@@ -417,7 +417,7 @@ class LevelsList(object):
         path_length=None,
         save_rescaled_bands=False,
     ):
-        """See :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`
+        r"""See :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`
 
         .. warning::
 
@@ -462,7 +462,7 @@ class LevelsList(object):
         path_length=None,
         save_rescaled_bands=False,
     ):
-        """See :py:meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`
+        r"""See :py:meth:`~radis.lbl.factory.SpectrumFactory.non_eq_spectrum`
 
         .. warning::
 
@@ -533,7 +533,7 @@ class LevelsList(object):
         #            for br in bands:
         #                pop_correction[br] = exp(-E_bands[br]*hc_k/Tvib)/exp(-E_bands[br]*hc_k/Tvib_ref)
 
-        # Recalculate populations from reference everytime
+        # Recalculate populations from reference every time
         vib_levels = self.vib_levels
 
         # Recalculate partition function
@@ -685,7 +685,7 @@ def rescale_updown_levels(
     should be recomputed
 
     IMPORTANT: if editing make sure you use the proper nu and nl. In particular
-    when infering emission quantities from absorption quantities this may
+    when inferring emission quantities from absorption quantities this may
     ends up in error in overpopulation rescaling.
     """
     # TODO: Add warning when too large rescaling
@@ -738,7 +738,7 @@ def rescale_updown_levels(
 
     # Choose which values to recompute
     # ----------
-    initial = spec.get_vars()  # quantities initialy in spectrum
+    initial = spec.get_vars()  # quantities initially in spectrum
     recompute = list(initial)  # quantities to recompute
     rescaled = {}  # quantities rescaled
 

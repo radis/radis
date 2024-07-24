@@ -104,7 +104,7 @@ convenience function::
     s = Spectrum.from_array(w, T, 'transmittance_noslit',
                                wunit='nm', unit='') # adimensioned
 
-Dimensionned arrays can also be used directly ::
+Dimensioned arrays can also be used directly ::
 
     import astropy.units as u
     w = np.linspace(200, 300) * u.nm
@@ -331,7 +331,7 @@ Get spectral arrays
 Spectral Arrays of a Spectrum object can be stored in arbitrary
 wavespace (wavenumbers, wavelengths in air, or wavelengths in vacuum) and arbitrary units.
 
-Therefore, it is recommendeded to use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get`
+Therefore, it is recommended to use the :py:meth:`~radis.spectrum.spectrum.Spectrum.get`
 method to retrieve the quantity un the units you want::
 
     w, I = s.get('transmittance_noslit', wunit='cm-1')
@@ -376,6 +376,41 @@ You can also show the conditions only with
 
 
 .. _label_spectrum_plot:
+
+Plotting
+    -----
+
+    The `plot` method can be used to visualize the resulting spectrum. Available plot types are:
+
+    - 'absorption': plot absorption coefficient vs. wavenumber
+    - 'transmittance': plot transmittance vs. wavenumber
+    - 'radiance': plot radiance vs. wavenumber
+    - 'intensity': plot spectral intensity vs. wavenumber
+    - 'lines': plot individual spectral lines
+
+    Each plot type also has additional optional parameters that can be passed to `plot_options`.
+
+    Parameters
+    ----------
+    var : str, optional
+        The type of plot to generate. Defaults to 'absorption'.
+        Valid options are 'absorption', 'transmittance', 'radiance', 'intensity', and 'lines'.
+    plot_options : dict, optional
+        A dictionary of additional plot options. Valid keys and their descriptions are:
+
+        - 'figsize' : (width, height) tuple in inches for the plot figure size. Defaults to (10, 6).
+        - 'xlim' : (xmin, xmax) tuple in cm-1 for the x-axis limits. Defaults to (0, 5000).
+        - 'ylim' : (ymin, ymax) tuple for the y-axis limits. Defaults to 'auto'.
+        - 'linewidth' : float value for the line width. Defaults to 1.0.
+        - 'color' : string or tuple value for the line color. Defaults to 'k'.
+        - 'title' : string value for the plot title. Defaults to an automatically generated title.
+        - 'xlabel' : string value for the x-axis label. Defaults to 'Wavenumber (cm$^{-1}$)'.
+        - 'ylabel' : string value for the y-axis label. Defaults to 'Absorption Coefficient (cm$^{-1}$/(molecule cm$^{-2}$))' for 'absorption' plots,
+                      'Transmittance' for 'transmittance' plots,
+                      'Radiance (W/(cm$^{-1}$ sr))' for 'radiance' plots,
+                      'Spectral Intensity (W/(cm$^{-1}$ sr))' for 'intensity' plots.
+
+    def plot(self, var ='absorption', plot_options=None):
 
 Plot spectral arrays
 --------------------
@@ -525,7 +560,7 @@ to a to ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D` object
     s.to_specutils()
 
 
-.. minigallery:: radis.spectrum.spectrum.Spectrum.to_specutils
+.. minigallery:: radis.Spectrum.to_specutils
 
 
 
@@ -537,7 +572,7 @@ How to modify a Spectrum object?
 Calculate missing quantities
 ----------------------------
 
-Some spectral arrays can be infered from quantities stored in the Spectrum
+Some spectral arrays can be inferred from quantities stored in the Spectrum
 if enough conditions are given. For instance, transmittance can be recomputed
 from the spectral absorption coefficient if the path length is stored in the
 conditions.
@@ -661,7 +696,7 @@ For instance, remove a constant baseline in a given unit::
 
     s -= 0.1 * u.Unit('W/cm2/sr/nm')
 
-The :py:meth:`~radis.spectrum.spectrum.Spectrum.max` function returns a dimensionned
+The :py:meth:`~radis.spectrum.spectrum.Spectrum.max` function returns a dimensioned
 value, therefore it can be used to normalize a spectrum directly :  ::
 
     s /= s.max()
@@ -736,7 +771,7 @@ for the first command that allows it. i.e ::
 Remove a baseline
 -----------------
 
-Either use the :py:func:`~radis.spectrum.operations.add_constant` mentionned
+Either use the :py:func:`~radis.spectrum.operations.add_constant` mentioned
 above, which is implemented with the ``-`` operator::
 
     s2 = s - 0.1
@@ -806,7 +841,7 @@ to simply compare the spectra themselves, or even a particular quantity like
     s1.compare_with(s2, spectra_only=True)                    # compares all spectral arrays
     s1.compare_with(s2, spectra_only='transmittance_noslit')  # compares transmittance only
 
-The aforementionned methods will return a boolean array (True/False). If you
+The aforementioned methods will return a boolean array (True/False). If you
 need the difference, or ratio, or distance, between your two spectra, or simply
 want to plot the difference, you can use one of the predefined functions
 :func:`~radis.spectrum.compare.get_diff`, :func:`~radis.spectrum.compare.get_ratio`,

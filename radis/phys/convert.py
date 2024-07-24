@@ -92,6 +92,12 @@ def cm2J(E):
     return (E * 100) * (h * c)
 
 
+def cm2J_vaex(E):
+    """cm-1 to J."""
+    _assertcm_vaex(E)
+    return (E * 100) * (h * c)
+
+
 def cm2K(E):
     """cm-1 to K.
 
@@ -166,6 +172,21 @@ def hz2cm(f_Hz):
 def nm2hz(lbd_nm):
     """wavelength to frequency lbd in Hz, output in nm."""
     return c * 1e9 / lbd_nm
+
+
+# Function for safe division
+
+
+def zero2nan(x):
+    try:
+        x[x == 0] = np.nan
+        return x
+    except (TypeError):
+        return x if x else np.nan
+
+
+def div_safe(f):
+    return lambda x: f(zero2nan(x))
 
 
 # Convert Broadenings
@@ -334,6 +355,15 @@ def _assertcm(E):
         try:
             m = _magn(E)
             assert ((1 <= m) & (m <= 5)).all()
+        except AssertionError:
+            print(("Warning. Input values may not be in cm-1", E, "cm-1?"))
+
+
+def _assertcm_vaex(E):
+    if E.abs().sum():  # check E != 0 for both floats and arrays
+        try:
+            m = _magn(E)
+            assert (((1 <= m) & (m <= 5))).unique() == [True]
         except AssertionError:
             print(("Warning. Input values may not be in cm-1", E, "cm-1?"))
 

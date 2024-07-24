@@ -25,7 +25,7 @@ from radis.tools.database import load_spec
 
 @pytest.mark.fast
 def test_compression(verbose=True, warnings=True, *args, **kwargs):
-    """Test that redundant quantities are properly infered from already known
+    """Test that redundant quantities are properly inferred from already known
     spectral quantities"""
 
     # Get spectrum
@@ -404,7 +404,7 @@ def test_rescale_all_quantities(verbose=True, warnings=True, *args, **kwargs):
     sscaled.rescale_mole_fraction(new_mole_fraction)
     sscaled.rescale_path_length(new_path_length)
     s0.conditions["thermal_equilibrium"] = False  # to prevent rescaling with Kirchoff
-    # remove emissivity_no_slit (speciifc to equilibrium)
+    # remove emissivity_no_slit (specific to equilibrium)
     del s0._q["emissivity_noslit"]
 
     # Determine all quantities that can be recomputed
@@ -481,13 +481,13 @@ def test_xsections(*args, **kwargs):
     # Get spectrum
     s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
 
-    p = s.c["pressure_mbar"] * u("mbar")
+    p = s.c["pressure"] * u("bar")
     kb = k_b * u("J/K")
     T = s.c["Tgas"] * u("K")
 
     N = p / kb / T
 
-    assert s.c["pressure_mbar"] == 1013.25
+    assert s.c["pressure"] == 1.01325
     assert s.c["Tgas"] == 1500
     assert s.c["mole_fraction"] == 0.01
 

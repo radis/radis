@@ -74,7 +74,7 @@ class Chdir:
 
 class Default:
     """Contains a value. Used to know whether a function argument equal to its
-    default value was explicitely given by the user or not. This allows to
+    default value was explicitly given by the user or not. This allows to
     prevent user errors.
 
     Examples
@@ -175,6 +175,15 @@ class NotInstalled(object):
             "The {0} package is required to use this "
             "feature. {1}".format(self.__name, self.__info)
         )
+
+
+not_installed_vaex_args = (
+    "vaex",
+    "You must install Vaex to use these features. Vaex is a fast, "
+    + "memory-mapped DataFrame library. However is not available yet on latest Python versions. "
+    + "Use Pytables (slower) as an alternative in your Radis.json config file. To use Pytables, set "
+    + '"MEMORY_MAPPING_ENGINE": "pytables" and "DATAFRAME_ENGINE": "pandas"',
+)
 
 
 def get_files_from_regex(path):

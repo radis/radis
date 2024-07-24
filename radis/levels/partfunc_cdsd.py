@@ -68,7 +68,7 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
     """
 
     def __init__(self, isotope, database):
-        """Get partition function for one isotope only.
+        r"""Get partition function for one isotope only.
 
         (note that this forces to reload the file once per isotope, but
         at least we have a clean layout with one object per isotope)
@@ -86,7 +86,7 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
             )
 
         # Read partition function tabulated data
-        parsum = pd.read_csv(database, comment="#", delim_whitespace=True)
+        parsum = pd.read_csv(database, comment="#", sep="\s+")
         if not "T(K)" in list(parsum.keys()):
             raise KeyError("Missing columns ({0}) in {1}".format("T(K)", database))
 
@@ -102,11 +102,11 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
         self.Tmax = parsum["T(K)"].max()
 
     def _inrange(self, T):
-        """Allow for 5% extrapolation (ex: 296K / 300K) )"""
+        r"""Allow for 5% extrapolation (ex: 296K / 300K) )"""
         return (self.Tmin * 0.95 <= T) and (self.Tmax * 1.05 >= T)
 
     def _at(self, T):
-        """Get partition function at temperature T.
+        r"""Get partition function at temperature T.
 
         Called by :meth:`radis.levels.partfunc.RovibParFuncTabulator.at`
         """
@@ -167,7 +167,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
 
     Database format:
 
-    Taskhkun database updated with ranking number (n) & total rank (N) of
+    Tashkun database updated with ranking number (n) & total rank (N) of
     block, Evib and Erot (cm-1)  and jref
 
     For nonequilibrium, different strategies exist so as how to assign rotational and vibrational
@@ -226,7 +226,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         ElecState = ElectronicState("CO2", isotope, "X", "1Σu+")
         super(PartFuncCO2_CDSDcalc, self).__init__(ElecState, mode=mode)
 
-        # Check inputs ('return' is not mentionned in signature. it will just return
+        # Check inputs ('return' is not mentioned in signature. it will just return
         # after cache name is given)
         assert use_cached in [True, False, "regen", "force", "return"]
         if isotope not in [1, 2]:
@@ -319,7 +319,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         )
 
         if df is None:  # Read normal file
-            df = pd.read_csv(energy_levels, comment="#", delim_whitespace=True)
+            df = pd.read_csv(energy_levels, comment="#", sep="\s+")
             df = self._add_degeneracies(df)
             df = self._add_levels(df)
 
@@ -337,7 +337,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
             )
 
     def _add_degeneracies(self, df):
-        """Calculate and store degeneracies in database df.
+        r"""Calculate and store degeneracies in database df.
 
         Parameters
         ----------
@@ -357,7 +357,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         gj = 2 * df.j + 1
         # ... state dependant (forbidden rotational level are not in the database):
         gs = 1
-        # ... state independant:
+        # ... state independent:
         gi = self.gi()
         grot = gj * gs * gi
 

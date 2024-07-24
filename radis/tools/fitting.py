@@ -141,7 +141,7 @@ def Tvib12Tvib3Trot_NonLTEModel(
 ite = 2
 
 
-def fit_spectrum(
+def fit_legacy(
     factory,
     s_exp,
     model,
@@ -153,14 +153,15 @@ def fit_spectrum(
     solver_options={"maxiter": 300},
 ) -> Union[Spectrum, OptimizeResult]:
     """Fit an experimental spectrum with an arbitrary model and an arbitrary
-    number of fit parameters.
+    number of fit parameters. This legacy function is replaced by :py:func:`~radis.tools.new_fitting.fit_spectrum`
+    but is still functional.
 
     Parameters
     ----------
     s_exp : Spectrum
         experimental spectrum. Should have only spectral array only. Use
         :py:meth:`~radis.spectrum.spectrum.Spectrum.take`, e.g::
-            sf.fit_spectrum(s_exp.take('transmittance'))
+            sf.fit_legacy(s_exp.take('transmittance'))
     model : func -> Spectrum
         a line-of-sight model returning a Spectrum. Example :
         :py:func:`~radis.tools.fitting.LTEModel, `:py:func:`~radis.tools.fitting.Tvib12Tvib3Trot_NonLTEModel`
@@ -181,7 +182,7 @@ def fit_spectrum(
     ----------------
     plot: bool
         if ``True``, plot spectra as they are computed; and plot the convergence of
-        the residual. Defaut ``False``
+        the residual. Default ``False``
     verbose: bool, or ``2``
         use ``2`` for high verbose level.
     solver_options: dict
@@ -208,7 +209,7 @@ def fit_spectrum(
 
     See Also
     --------
-    :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_spectrum`,
+    :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_legacy`,
     :py:func:`~radis.tools.new_fitting.fit_spectrum`,
     :py:mod:`fitroom`
     """
@@ -219,7 +220,6 @@ def fit_spectrum(
     )
 
     # Calculate initial Spectrum, by showing all steps.
-    # factory.verbose = 0  # reduce verbose during calculation.
     compute_los_model(
         fit_parameters
     )  # Blank run to load energies; initialize all caches, etc.
@@ -228,7 +228,7 @@ def fit_spectrum(
     s0 = compute_los_model(fit_parameters)  # New run to get performance profile of fit
     sys.stderr.flush()
     s0.name = "Fit (in progress)"
-    if "profiler" in s0.conditions:
+    if "profiler" in s0.conditions and verbose > 0:
         print("-" * 30)
         print("TYPICAL FIT CALCULATION TIME:")
         s0.print_perf_profile()
@@ -316,7 +316,7 @@ def fit_spectrum(
 
         if blit:
             # cache the background
-            # ... rmeove data first:
+            # ... remove data first:
             s_diff = get_diff(s_exp, s0, var=fit_variable, wunit=wunit, Iunit=Iunit)
             lineSpec.set_data(s0.get(fit_variable)[0], s0.get(fit_variable)[1] * np.nan)
             lineDiff.set_data(s_diff[0], s_diff[1] * np.nan)
@@ -332,11 +332,11 @@ def fit_spectrum(
         plt.show(block=False)
 
     def cost_function(fit_values, plot=None):
-        """Return error on Spectrum s vs experimental spectrum"""
+        r"""Return error on Spectrum s vs experimental spectrum"""
 
         s = generate_spectrum(fit_values)
 
-        # Delete unecessary variables (for a faster resampling)
+        # Delete unnecessary variables (for a faster resampling)
         for var in [k for k in s._q.keys() if k not in [fit_variable, "wavespace"]]:
             del s._q[var]
 
@@ -373,7 +373,7 @@ def fit_spectrum(
         return get_residual(s, s_exp, fit_variable, ignore_nan=True, norm="L2")
 
     def log_cost_function(fit_values, plot=None):
-        """Calls the cost_function, and write the values to the Log history"""
+        r"""Calls the cost_function, and write the values to the Log history"""
 
         res = cost_function(fit_values, plot=plot)
 
@@ -397,7 +397,7 @@ def fit_spectrum(
     maxiter = solver_options.get("maxiter", 300)
 
     if plot:
-        # we need to plot lineValues alreazdy to get the legend right:
+        # we need to plot lineValues already to get the legend right:
         lineValues = {}
         for i, k in enumerate(fit_params):
             lineValues[k] = axValues.plot(
@@ -430,7 +430,7 @@ def fit_spectrum(
         )  # refresh plot every X calculations
 
     def cost_and_plot_function(fit_values):
-        """Return error on Spectrum s vs experimental spectrum
+        r"""Return error on Spectrum s vs experimental spectrum
 
         This is the function that is called by minimize()"""
         global ite
@@ -493,9 +493,9 @@ def fit_spectrum(
             **{
                 "maxiter": maxiter,  # somehow.
                 "eps": 20,
-                #                         'ftol':1e-10,
+                # 'ftol':1e-10,
                 # 'gtol':1e-10,
-                "disp": True,
+                "disp": verbose,
             },
             **solver_options,
         },
@@ -580,7 +580,7 @@ if __name__ == "__main__":
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.load_databank("HITEMP-CO2-TEST")
 
-    s_best, best = sf.fit_spectrum(
+    s_best, best = sf.fit_legacy(
         s_exp.take("transmittance_noslit"),
         model=Tvib12Tvib3Trot_NonLTEModel,
         fit_parameters={

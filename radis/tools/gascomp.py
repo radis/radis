@@ -63,7 +63,7 @@ def get_eq_mole_fraction(initial_mixture, T_K, p_Pa):
         ) from err
 
     # %% Init Cantera
-    g = ct.Solution("gri30.xml")
+    g = ct.Solution("gri30.yaml")
     g.TPX = T_K, p_Pa, initial_mixture
 
     # Minimize Gibbs:

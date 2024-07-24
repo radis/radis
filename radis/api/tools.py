@@ -5,11 +5,23 @@
 """
 # TODO refactor : rename this file as hitran_utils.py
 
+from warnings import warn
+
 import numpy as np
 import pandas as pd
 
+from ..misc.utils import NotInstalled, not_installed_vaex_args
 
-def parse_hitran_file(fname, columns, count=-1):
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
+
+
+from ..misc.warning import PerformanceWarning
+
+
+def parse_hitran_file(fname, columns, count=-1, output="pandas"):
     """Parse a file under HITRAN ``par`` format. Parsing is done in binary
     format with :py:func:`numpy.fromfile` so it's as fast as possible.
 
@@ -25,9 +37,12 @@ def parse_hitran_file(fname, columns, count=-1):
     count: int
         number of lines to read. If ``-1`` reads all file.
 
+    output : str
+        specifies the output type
+
     Returns
     -------
-    df: pandas DataFrame
+    df: pandas DataFrame or Vaex Dataframe
         dataframe with lines.
 
     See Also
@@ -51,7 +66,11 @@ def parse_hitran_file(fname, columns, count=-1):
     data = _read_hitran_file(fname, columns, count, linereturnformat)
 
     # Return a Pandas dataframe
-    return _ndarray2df(data, columns, linereturnformat)
+    df = _ndarray2df(data, columns, linereturnformat)
+
+    if output == "vaex":
+        df = vaex.from_pandas(df)
+    return df
 
 
 def _get_linereturnformat(data, columns, fname=""):
@@ -158,7 +177,7 @@ def _format_dtype(dtype):
         try:
             print("Data type")
             print("-" * 30)
-            for (k, c) in dtype:
+            for k, c in dtype:
                 print(str(k), "\t\t", c)
             print("-" * 30)
         finally:
@@ -167,7 +186,7 @@ def _format_dtype(dtype):
 
 
 def _cast_to_dtype(data, dtype):
-    """Cast array to certain type, crash with hopefull helping error message.
+    """Cast array to certain type, crash with hopefully helping error message.
 
     Return casted data.
 
@@ -205,16 +224,24 @@ def _cast_to_dtype(data, dtype):
 
 
 def drop_object_format_columns(df, verbose=True):
-    """Remove 'object' columns in a pandas DataFrame.
+    """Remove 'object' columns in a pandas DataFrame. If Vaex Dataframe, there is by construction no object in the Dataframe
 
     They are not useful to us at this time, and they slow down all
     operations (as they are converted to 'object' in pandas DataFrame).
     If you want to keep them, better convert them to some numeric values
     """
 
+    df_type = type(df)
     objects = [k for k, v in df.dtypes.items() if v == object]
-    for k in objects:
-        del df[k]
+    if df_type == pd.DataFrame:
+        df.drop(objects, axis=1)
+    elif (
+        not isinstance(vaex, NotInstalled) and df_type == vaex.dataframe.DataFrameLocal
+    ):  # no objects in vaex
+        pass
+    else:
+        raise NotImplementedError(df_type)
+
     if verbose >= 2 and len(objects) > 0:
         print(
             (
@@ -234,7 +261,7 @@ def replace_PQR_with_m101(df):
     Parameters
     ----------
 
-    df: pandas Dataframe
+    df: pandas Dataframe or Vaex Dataframe
         ``branch`` must be a column name.
 
 
@@ -247,8 +274,38 @@ def replace_PQR_with_m101(df):
 
     # Note: somehow pandas updates dtype automatically. We have to check
     # We just have to replace the column:
+
+    # First checking if the input type is correct
+    df_type = type(df)
+    if df_type == pd.DataFrame:
+        pass
+    elif (
+        not isinstance(vaex, NotInstalled) and df_type == vaex.dataframe.DataFrameLocal
+    ):
+        pass
+    else:
+        raise NotImplementedError(df_type)
+
+    # Then do the actual mapping
     if df.dtypes["branch"] != np.int64:
-        new_col = df["branch"].replace(["P", "Q", "R"], [-1, 0, 1])
+        mapping = {"P": -1, "Q": 0, "R": 1}
+        if df_type == pd.DataFrame:  # pandas
+            new_col = df["branch"].replace(mapping)
+        else:  # vaex
+            new_col = df["branch"].map(mapping, allow_missing=True)
         df["branch"] = new_col
 
-    assert df.dtypes["branch"] == np.int64
+    try:
+        assert df.dtypes["branch"] == np.int64
+    except AssertionError:
+        warn(
+            message=(
+                f"Expected branch data type to be 'int64', "
+                f"got '{df.dtypes['branch']}' instead."
+                f"This warning is safe to ignore although it is going to "
+                f"reduce the performance of your calculations. "
+                f"For further details, see:"
+                f"https://github.com/radis/radis/issues/65"
+            ),
+            category=PerformanceWarning,
+        )

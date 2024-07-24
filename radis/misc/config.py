@@ -45,9 +45,9 @@ from os.path import dirname, exists, expanduser, join
 
 import hjson
 
-from radis.misc.basics import compare_dict, compare_lists, stdpath
-from radis.misc.utils import DatabankNotFound, getProjectRoot
-from radis.misc.warning import DatabaseAlreadyExists
+from ..misc.basics import compare_dict, compare_lists, stdpath
+from ..misc.utils import DatabankNotFound, getProjectRoot
+from ..misc.warning import DatabaseAlreadyExists
 
 # %% Functions to parse radis/config.json
 
@@ -281,7 +281,7 @@ See Also
 def get_user_config_configformat():
     r"""Read config file and returns it.
 
-    Config file name is harcoded: :ref:`~/.radis <label_lbl_config_file>`
+    Config file name is hardcoded: :ref:`~/.radis <label_lbl_config_file>`
     """
 
     config = configparser.ConfigParser()
@@ -356,7 +356,7 @@ def convertRadisToJSON(config_path_json, config_path_old=CONFIG_PATH_OLD):
                 else:
                     temp[j] = config[i][j]
             else:
-                # Adding to `temp` dictionaru
+                # Adding to `temp` dictionary
                 temp[j] = config[i][j]
 
         config_json[i] = temp

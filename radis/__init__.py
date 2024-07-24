@@ -152,7 +152,7 @@ Notes
 
 Default values are read from the `radis/default_radis.json <https://github.com/radis/radis/blob/develop/radis/default_radis.json>`__ file.
 
-All values are overriden at runtime by the keys in the user JSON file ``~/radis.json (json)``
+All values are overridden at runtime by the keys in the user JSON file ``~/radis.json (json)``
 (in particular, the list of databases)
 
 See more in the :ref:`Configuration file <label_lbl_config_file>` documentation.

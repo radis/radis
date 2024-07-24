@@ -112,6 +112,7 @@ def test_convert(verbose=True, *args, **kwargs):
     return True
 
 
+@pytest.mark.fast
 def test_units(verbose=True, *args, **kwargs):
 
     # Test unit-ware arrays
