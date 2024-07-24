@@ -254,7 +254,7 @@ def drop_object_format_columns(df, verbose=True):
 
 
 def replace_PQR_with_m101(df):
-    """Return P, Q, R in column ``branch`` with -1, 0, 1 to get a fully numeric
+    """Return O, P, Q, R, S in column ``branch`` with -2, -1, 0, 1, 2 to get a fully numeric
     database. This improves performances quite a lot, as Pandas doesnt have a
     fixed-string dtype hence would use the slow ``object`` dtype.
 
@@ -288,7 +288,7 @@ def replace_PQR_with_m101(df):
 
     # Then do the actual mapping
     if df.dtypes["branch"] != np.int64:
-        mapping = {"P": -1, "Q": 0, "R": 1}
+        mapping = {"P": -1, "Q": 0, "R": 1, "O": -2, "S": 2}
         if df_type == pd.DataFrame:  # pandas
             new_col = df["branch"].replace(mapping)
         else:  # vaex
