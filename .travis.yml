@@ -69,14 +69,14 @@ stages: #This sequence defines the order of the stages
     if: branch = master OR branch = develop
   - name: deploy
     if: branch = master
+  - name: Py38
+    if: branch = master OR branch = develop
+  - name: Py312
+    if: branch = master OR branch = develop
   # - name: MacOS_py310
   #   if: branch = master OR branch = develop
   # - name: Win_py310
   #   if: branch = master OR branch = develop
-  - name: Py38
-    if: branch = master
-  - name: Py312
-    if: branch = master
 
 jobs:
   include: #start by testing other OS - TO-DO sort install of micromamba https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html
