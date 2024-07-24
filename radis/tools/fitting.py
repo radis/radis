@@ -449,7 +449,7 @@ def fit_legacy(
                 x, y = lineValues[k].get_data()
                 lineValues[k].set_data((np.hstack((x, ite)), np.hstack((y, v))))
             # Plot last
-            lineLast.set_data((ite, res))
+            lineLast.set_data([ite], [res])
 
             if blit:
                 # ... from https://stackoverflow.com/questions/40126176/fast-live-plotting-in-matplotlib-pyplot
