@@ -1853,7 +1853,7 @@ class BaseFactory(DatabankLoader):
         if not all_in(["gju", "gjl", "gvibu", "gvibl", "gu", "gl"], df):
             self._calc_degeneracies(df)
 
-        if not "Aul" in df:
+        if not "A" in df:
             self.calc_weighted_trans_moment()
             self.calc_einstein_coefficients()
 
@@ -2230,17 +2230,19 @@ class BaseFactory(DatabankLoader):
         return S0
 
     def calc_einstein_coefficients(self):
-        """Calculate :math:`A_{ul}`, :math:`B_{lu}`, :math:`B_{ul}` Einstein coefficients from weighted
+        """Calculate :math:`A (= A_{ul})`, :math:`B_{lu}`, :math:`B_{ul}` Einstein coefficients from weighted
         transition moments squared :math:`R_s^2`.
 
         Returns
         -------
-        None: ``self.df0`` is updated directly with new columns ``Aul``, ``Blu``, ``Bul``
+        None: ``self.df0`` is updated directly with new columns ``A``, ``Blu``, ``Bul``
 
-        Notes
-        -----
-        Einstein A coefficient already in database under df0.A
-        Difference between df0.A and df0.Aul < 0.5%
+
+        .. note::
+            Einstein A coefficient already in the HITRAN database.
+            In the HITRAN database, the maximum difference betweeen the tabulated
+            and the recalculated values of A was 0.053% for CO2 and 0.099%, see
+            https://github.com/radis/radis/issues/665
 
         References
         ----------
@@ -2257,7 +2259,7 @@ class BaseFactory(DatabankLoader):
         Einstein spontaneous emission coefficient (in :math:`s^{-1}`)
 
         .. math::
-            A_{ul}=10^{-36}\\cdot\\frac{\\frac{64{\\pi}^4}{3h} {\\nu}^3 gl}{gu} R_s^2
+            A = A_{ul}=10^{-36}\\cdot\\frac{\\frac{64{\\pi}^4}{3h} {\\nu}^3 gl}{gu} R_s^2
 
         See (Eqs.(A7), (A8), (A9) in [Rothman-1998]_)
 
@@ -2276,12 +2278,15 @@ class BaseFactory(DatabankLoader):
         nu = df.wav
         h = h_CGS  # erg.s
 
-        # Calculate coefficients
+        #### Calculate coefficients ####
+        # As of July 2024, the second Einstein coefficients are not used elsewhere
         df["Blu"] = 8 * pi**3 / (3 * h**2) * Rs2 * 1e-36 * 1e7  # cm3/(J.s^2)
         df["Bul"] = (
             8 * pi**3 / (3 * h**2) * (gl / gu) * Rs2 * 1e-36 * 1e7
         )  # cm3/(J.s^2)
-        df["Aul"] = 64 * pi**4 / (3 * h) * nu**3 * gl / gu * Rs2 * 1e-36  # s-1
+
+        # Up to version 0.15, df['A'] was called df['Aul']
+        df["A"] = 64 * pi**4 / (3 * h) * nu**3 * gl / gu * Rs2 * 1e-36  # s-1
 
         return None  # dataframe updated directly
 
