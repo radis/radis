@@ -2233,7 +2233,6 @@ class SpectrumFactory(BandFactory):
             )
         else:
             self.calc_populations_eq(Tgas)
-            self.df1["Aul"] = self.df1.A  # update einstein coefficients
         self.calc_emission_integral()
 
         #        # ----------------------------------------------------------------------

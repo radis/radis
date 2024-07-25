@@ -3606,7 +3606,7 @@ class BaseFactory(DatabankLoader):
         # correct for abundance
         n_ua = n_u * self.get_lines_abundance(df)
 
-        A_ul = df["Aul"]  # (s-1)
+        A_ul = df["A"]  # (s-1)
 
         if self.dataframe_type == "pandas":
             DeltaE = cm2J(df.wav)  # (cm-1) -> (J)
