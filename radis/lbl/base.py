@@ -3031,9 +3031,9 @@ class BaseFactory(DatabankLoader):
     # %%
     def calc_populations_noneq(
         self,
-        Tvib,
-        Trot,
-        Telec,
+        Tvib=None,
+        Trot=None,
+        Telec=None,
         vib_distribution="boltzmann",
         rot_distribution="boltzmann",
         overpopulation=None,
