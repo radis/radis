@@ -453,14 +453,18 @@ def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, i
     :py:func:`~radis.lbl.broadening.doppler_broadening_HWHM`,
     """
     # based on: https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/spec/atomll.py#L40
-    if isinstance(gamRad, vaex.expression.Expression):
-        gamRad = (gamRad == 0.).where(-99, gamRad)
-    else:
+    try: # using this syntax to account for the case where vaex isn't installed
+        assert isinstance(gamRad, vaex.expression.Expression)
+    except Exception:
         gamRad = np.where(gamRad == 0., -99, gamRad)
-    if isinstance(gamSta, vaex.expression.Expression):
-        gamSta = (gamSta == 0.).where(-99, gamSta)
     else:
-        gamSta = np.where(gamSta == 0., -99, gamSta)
+        gamRad = (gamRad == 0.).where(-99, gamRad)
+    try:
+        assert isinstance(gamRad, vaex.expression.Expression)
+    except Exception:
+        gamRad = np.where(gamRad == 0., -99, gamRad)
+    else:
+        gamRad = (gamRad == 0.).where(-99, gamRad)
     chi_lam = nu_lines/eV2wn  # [cm-1] -> [eV]
     chi = elower/eV2wn  # [cm-1] -> [eV]
 
@@ -491,10 +495,12 @@ def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, i
         gamma6 += 10**gamVdW * (T/10000.)**Texp * P*1e6*weighted_coeff[key] / (k_b_CGS*T)
     gamma_case2 =  gamma6 / (4*np.pi*c_CGS)
 
-    if isinstance(gamVdW, vaex.expression.Expression):
-        gamma_vdw = (gamVdW >= 0.).where(gamma_case1, gamma_case2)
-    else:
+    try:
+        assert isinstance(gamVdW, vaex.expression.Expression)
+    except Exception:
         gamma_vdw = np.where(gamVdW >= 0., gamma_case1, gamma_case2)
+    else:
+        gamma_vdw = (gamVdW >= 0.).where(gamma_case1, gamma_case2)
     
     if 'e-' in diluent:
         gamma_stark = (10**gamSta) * P*1e6*diluent['e-'] / (k_b_CGS*T) / (4*np.pi*c_CGS) #see e.g. Gray p244 for temperature scaling
@@ -1298,11 +1304,12 @@ class BroadenFactory(BaseFactory):
                 assert bool(shift) == False
             except:
                 # convoluted solution for vaex, account for case where wl is e.g. int or float, and for case where it's e.g. list
-                if self.dataframe_type == 'vaex' and not isinstance(shift, vaex.expression.Expression):
-                    try:
-                        df['shft'] = np.asarray(shift)
-                    except Exception:
-                        df['shft'] = np.asarray(shift) + df['wav']*0
+                if self.dataframe_type == 'vaex':
+                    if not isinstance(shift, vaex.expression.Expression):
+                        try:
+                            df['shft'] = np.asarray(shift)
+                        except Exception:
+                            df['shft'] = np.asarray(shift) + df['wav']*0
                 else:
                     df['shft'] = shift
         else:
@@ -1353,11 +1360,12 @@ class BroadenFactory(BaseFactory):
 
         # Update dataframe
         # convoluted solution for vaex, account for case where wl is e.g. int or float, and for case where it's e.g. list
-        if self.dataframe_type == 'vaex' and not isinstance(wl, vaex.expression.Expression):
-            try:
-                df["hwhm_lorentz"] = np.asarray(wl)
-            except Exception:
-                df["hwhm_lorentz"] = np.asarray(wl) + df['wav']*0
+        if self.dataframe_type == 'vaex':
+            if not isinstance(wl, vaex.expression.Expression):
+                try:
+                    df["hwhm_lorentz"] = np.asarray(wl)
+                except Exception:
+                    df["hwhm_lorentz"] = np.asarray(wl) + df['wav']*0
         else:
             df["hwhm_lorentz"] = wl
 
