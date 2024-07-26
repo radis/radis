@@ -1782,6 +1782,14 @@ class BaseFactory(DatabankLoader):
         if len(df) == 0:
             return  # no lines
 
+        # ... Make sure upper J' is calculated  (needed to compute populations)
+        if not "ju" in df:
+            self._add_ju(df) # doesn't actually work for Kurucz as no 'branch' column; not needed for now as 'ju' is already present
+
+        # ... Make sure upper energy level is calculated (needed to compute populations)
+        if not "Eu" in df:
+            self._add_Eu(df)
+
         if self.input.isatom:
             degeneracy_cols = ['gu', 'gl']
         else:
@@ -1851,14 +1859,6 @@ class BaseFactory(DatabankLoader):
                         "NegativeEnergiesWarning",
                     )
             degeneracy_cols = ["gju", "gjl", "gvibu", "gvibl", "gu", "gl"]
-
-        # ... Make sure upper J' is calculated  (needed to compute populations)
-        if not "ju" in df:
-            self._add_ju(df) # doesn't actually work for Kurucz as no 'branch' column; not needed for now as 'ju' is already present
-
-        # ... Make sure upper energy level is calculated (needed to compute populations)
-        if not "Eu" in df:
-            self._add_Eu(df)
         
         # ... Make sure degeneracies are calculated
         if not all_in(degeneracy_cols, df):

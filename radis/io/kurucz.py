@@ -77,7 +77,7 @@ def fetch_kurucz(
         if not pf_path:
             get_pf_files = False #assume partition function file is either unavailable or undesired for current species
         if error:
-            raise Exception('Changes are required to the local database, and hence updating the registered entry, but "ALLOW_OVERWRITE" is False')
+            raise Exception('Changes are required to the local database, and hence updating the registered entry, but "ALLOW_OVERWRITE" is False. Set `radis.config["ALLOW_OVERWRITE"]=True` to allow the changes to be made and config file to be automatically updated accordingly.')
     
     # Delete files if needed:
 

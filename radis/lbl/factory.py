@@ -308,10 +308,8 @@ class SpectrumFactory(BandFactory):
         If unspecified, the broadening is handled by default by ``radis.lbl.broadening.gamma_vald3`` for atoms and ``radis.lbl.broadening.pressure_broadening_HWHM`` for molecules
         See :ref:`the provided example <example_custom_lorentzian_broadening>`
     potential_lowering: float (cm-1/Zeff**2)
-        Some species with Kurucz linelists also come with dedicated partition function tables provided, which depend on both temperature and potential lowering. Setting this parameter results in the partition function interpolator using that table for the species if it's available, otherwise if it's unavailable or this parameter remains `None`, the default partition functions use [Barklem & Collet 2016]_ Table 8.
-        The value can thereafter be changed on the fly by changing the `sf.input.potential_lowering` attribute of the SpectrumFactory instance ``sf``, the result of which is reflected the next time partition function interpolator's `._at` method is used, without any need to re-initialise it.
-        Allowable values are usually: -500, -1000, -2000, -4000, -8000, -16000, -32000. This is based on what's been encountered in the partition function tables of the species checked so far, but documentation of the Kurucz linelists is unclear on whether this is the case for all species.
-        See :ref:`the provided example <example_potential_lowering_pfs>`
+        Use dedicated partition function tables (where available) in Kurucz database that depend on temperature and potential lowering. Otherwise, default to [Barklem & Collet 2016]_ Table 8. Can be changed on the fly by setting `sf.input.potential_lowering`. Typical allowed values: -500, -1000, -2000, -4000, -8000, -16000, -32000.
+        See :ref:`the provided example <example_potential_lowering_pfs>` for more details
 
     Examples
     --------

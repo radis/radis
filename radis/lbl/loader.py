@@ -1055,7 +1055,7 @@ class DatabankLoader(object):
             If ``'kurucz'``, if dedicated partition functions are available with the linelists for the species, they are used, otherwise partition functions from Barklem & Collett 2016 are used. Also see the documentation for the `potential_lowering` parameter of :py:class:`~radis.lbl.factory.SpectrumFactory`.
             Default ``'hapi'``.
         parfunc: filename or None
-            path to a tabulated partition function file to use. For kurucz linelists, this would be a dedicated partition function file for the species (dependant on both temperature and potential lowering).
+            path to a tabulated partition function file to use. For kurucz linelists, this file would be a dedicated table for the species (dependent on both temperature and potential lowering).
         levels: dict of str or None
             path to energy levels (needed for non-eq calculations). Format::
 
