@@ -55,7 +55,7 @@ References
 
 
 import sys
-from os.path import exists, join
+from os.path import exists
 from warnings import warn
 
 import numpy as np
@@ -79,7 +79,6 @@ from radis.misc.basics import all_in
 from radis.misc.debug import printdbg
 from radis.misc.printer import printg
 from radis.misc.progress_bar import ProgressBar
-from radis.misc.utils import getProjectRoot
 from radis.misc.warning import OutOfBoundError
 from radis.phys.constants import hc_k  # ~ 1.44 cm.K
 
@@ -132,6 +131,8 @@ class RovibParFuncTabulator(RovibPartitionFunction):
         ----------
         T: float
             equilibrium temperature
+        potential_lowering: float
+            The potential lowering in cm-1/Zeff**2, only relevant for Kurucz linelists which the partition function tables may have a dependence on this
 
         Returns
         -------
@@ -1179,18 +1180,24 @@ class PartFuncKurucz(RovibParFuncTabulator):
         # Interpolate to find the partition function at the desired temperature
         if potential_lowering is not None and self.partfn is not None:
             Temp = self.partfn['T']
-            Qvals = self.partfn[f'{potential_lowering}']
+            try:
+                Qvals = self.partfn[f'{potential_lowering}']
+            except KeyError:
+                print('Available values of potential lowering:')
+                print(*self.partfn.columns.difference(['T'], sort=False).to_list(), sep=', ')
+                raise
             addmsg = '. You might want to check whether the partition functions from Barklem & Collet (2016) have a different temperature range within which lies your input temperature.'
         else:
             if self.partfn is None:
-                warn('Table of partition functions by potential lowering not available for this species - using Barklem & Collet (2016) instead with just the temperature')
+                if potential_lowering is not None:
+                    warn('Table of partition functions by potential lowering not available for this species - using Barklem & Collet (2016) instead with just the temperature')
                 addmsg = ''
-                addmsg2 = ''
+                addmsg2 = ', nor are any dedicated tables available for this species.'
             else:
                 addmsg = '. You might want to check whether the table of partition functions dependent on potential lowering for this species has a different temperature range within which lies your input temperature.'
                 addmsg2 = '. Specify the potential lowering so the dedicated table of partition functions for this species can be used.'
             if self.pf_values is None:
-                raise Exception("The partition functions from Barklem & Collet (2016) don't include this species." + addmsg2)
+                raise Exception("The partition functions from Barklem & Collet (2016) don't include this species" + addmsg2)
             
             Temp = self.pfT_values
             Qvals = self.pf_values

@@ -392,7 +392,7 @@ def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, i
     """(This function is derived from exojax.spec.atomll.gamma_vald3)
     
     HWHM of Lorentzian (cm-1) caluculated as gamma/(4*pi*c) [cm-1] for lines
-    with the van der Waals gamma in the line list (VALD or Kurucz), otherwise
+    with the van der Waals gamma in the line list (such as VALD or Kurucz), otherwise
     estimated according to the [Unsöld-1955]
 
     Parameters

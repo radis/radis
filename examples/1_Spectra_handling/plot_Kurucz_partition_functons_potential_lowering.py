@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+.. _example_potential_lowering_pfs:
+
 ========================
 Kurucz partition functions and potential lowering
 ========================
@@ -10,7 +12,7 @@ When such tables are unavailable or `potential_lowering` is `None` (the default)
 
 The value can thereafter be changed on the fly by changing the `sf.input.potential_lowering` attribute of the :py:class:`~radis.lbl.factory.SpectrumFactory` instance ``sf``, the result of which is reflected the next time partition function interpolator's `._at` method is used, without any need to re-initialise it.
 
-Allowable values are usually: -500, -1000, -2000, -4000, -8000, -16000, -32000. This is based on what's been encountered in the partition function tables of the species checked so far, but documentation of the Kurucz linelists is unclear on whether this is the case for all species.
+Allowable values are usually (in cm-1/Zeff**2): -500, -1000, -2000, -4000, -8000, -16000, -32000. This is based on what's been encountered in the partition function tables of the species checked so far, but documentation of the Kurucz linelists is unclear on whether this is the case for all species.
 
 The temperature ranges of the partition functions from [Barklem & Collet 2016]_ may differ from those of the dedicated Kurucz tables, so where you can calculate spectra at a particular temperature with the Kurucz tables:
 """
@@ -26,9 +28,9 @@ s, sf = calc_spectrum(
     species="Y_I",
     Tgas=50000,
     databank="kurucz",
-    potential_lowering=-500,
+    potential_lowering=-500, # any of [-500, -1000, -2000, -4000, -8000, -16000, -32000]
     return_factory=True,
-    save_memory=False,
+    save_memory=False, #to be able to recalculate spectra with the same SpectrumFactory
 )
 
 s.plot("radiance_noslit", wunit="cm-1")

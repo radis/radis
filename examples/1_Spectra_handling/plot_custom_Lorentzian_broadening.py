@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+.. _example_custom_lorentzian_broadening:
+
 ========================
 Using a custom broadening function for atomic spectra
 ========================
@@ -12,29 +14,27 @@ By default, RADIS calculates the total Lorentzian broadening of atomic lines as 
 
 To make use of it, familiarise yourself with the column names that RADIS assigns to the relevant quantities you intend to use in `lbfunc`.
 
-We take an example of neutral atomic Oxygen and calculate a spectrum using the broadening formula (and default values) of SpectraPlot (https://spectraplot.com/), and assume there is no line shift.
+We take an example of neutral atomic oxygen (O_I) and calculate a spectrum using the broadening formula (and default values) of SpectraPlot (https://spectraplot.com/), and assume there is no line shift.
 """
-from radis import calc_spectrum
+from radis import SpectrumFactory
 
 def lbfunc1(**kwargs):
     return 0.1*(296/kwargs['Tgas'])**0.8, None
 
 mole_fraction = 0.01
 
-s1, sf = calc_spectrum(
+sf = SpectrumFactory(
     12850,
     12870,
     species="O_I",
-    Tgas=4000,
-    databank="kurucz",
     pressure=1.01325, # = 1 atm
     diluent={'H':1-mole_fraction-1e-3, 'e-': 1e-3}, #so it all adds up to 1
     mole_fraction=mole_fraction,
     path_length=15,
-    lbfunc=lbfunc1,
-    return_factory=True,
-    save_memory=False #to be able to recalculate spectra with the same SpectrumFactory
+    lbfunc=lbfunc1
 )
+sf.fetch_databank('kurucz', parfuncfmt="kurucz")
+s1 = sf.eq_spectrum(4000)
 
 #%%
 # Now compare the result with that of the default handling of broadening in RADIS by removing the `lbfunc` parameter, recalculating the spectrum without it, and plotting the diff between the results:

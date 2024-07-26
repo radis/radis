@@ -3,7 +3,6 @@ import numpy as np
 import pytest
 
 from radis.api.kuruczapi import load_pf_Barklem2016, read_kurucz
-from radis.io.kurucz import fetch_kurucz
 from radis.test.utils import getTestFile
 
 @pytest.mark.fast

@@ -100,7 +100,7 @@ from radis import config
 from radis.db.classes import is_atom, is_neutral
 from radis.misc.basics import flatten, is_float, is_range, list_if_float, round_off
 from radis.misc.utils import Default
-from radis.phys.constants import k_b, k_b_CGS
+from radis.phys.constants import k_b
 from radis.phys.convert import conv2
 from radis.phys.units import convert_universal
 from radis.phys.units_astropy import convert_and_strip_units
@@ -153,8 +153,8 @@ class SpectrumFactory(BandFactory):
             The positive or neutral atomic species. It may be given in spectroscopic notation or any form that can be converted by :py:func:`~radis.db.classes.to_conventional_name`
         Default ``None``.
     isotope: ``int``, ``list``, ``str`` of the form ``'1,2'``, or ``'all'``
-        isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
-        For molecules, see [HITRAN-2020]_ documentation for isotope list for all species. For atoms, use the isotope number of the isotope (the total number of protons and neutrons in the nucleus) - use 0 to select rows where the isotope is unspecified, in which case the standard atomic weight from the ``periodictable`` module is used when mass is required. If ``'all'``,
+        isotope id
+        For molecules, this is the isotopologue ID (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2) - see [HITRAN-2020]_ documentation for isotope list for all species. For atoms, use the isotope number of the isotope (the total number of protons and neutrons in the nucleus) - use 0 to select rows where the isotope is unspecified, in which case the standard atomic weight from the ``periodictable`` module is used when mass is required. If ``'all'``,
         all isotopes in database are used (this may result in larger computation
         times!). Default ``'all'``
     medium: ``'air'``, ``'vacuum'``
@@ -306,10 +306,12 @@ class SpectrumFactory(BandFactory):
         Returns:
             gamma_lb, shift - The total Lorentzian HWHM [cm^-1], and the shift [cm^-1] to be subtracted from the wavenumber array to account for lineshift. If setting the lineshift here is not desired, the 2nd return object can be anything for which `bool(shift)==False` like `None`. gamma_lb must be array-like but can also be a vaex expression if the dataframe type is vaex.
         If unspecified, the broadening is handled by default by ``radis.lbl.broadening.gamma_vald3`` for atoms and ``radis.lbl.broadening.pressure_broadening_HWHM`` for molecules
+        See :ref:`the provided example <example_custom_lorentzian_broadening>`
     potential_lowering: float (cm-1/Zeff**2)
         Some species with Kurucz linelists also come with dedicated partition function tables provided, which depend on both temperature and potential lowering. Setting this parameter results in the partition function interpolator using that table for the species if it's available, otherwise if it's unavailable or this parameter remains `None`, the default partition functions use [Barklem & Collet 2016]_ Table 8.
         The value can thereafter be changed on the fly by changing the `sf.input.potential_lowering` attribute of the SpectrumFactory instance ``sf``, the result of which is reflected the next time partition function interpolator's `._at` method is used, without any need to re-initialise it.
         Allowable values are usually: -500, -1000, -2000, -4000, -8000, -16000, -32000. This is based on what's been encountered in the partition function tables of the species checked so far, but documentation of the Kurucz linelists is unclear on whether this is the case for all species.
+        See :ref:`the provided example <example_potential_lowering_pfs>`
 
     Examples
     --------
@@ -446,13 +448,13 @@ class SpectrumFactory(BandFactory):
         if "molecule" in kwargs:
             if species is not None:
                 if species != kwargs['molecule']:
-                    raise Exception("Both `molecule` and `species` arguments have been given and aren't equal, but `molecule` is deprecated and `species` is just its replacement.")
+                    raise Exception("Both `molecule` and `species` arguments have been given and aren't equal, but `molecule` is just an alias for `species`.")
             species = molecule = kwargs['molecule']
-            warn(
-                DeprecationWarning(
-                    "`molecule` is deprected - use `species` instead"
-                )
-            )
+            # warn(
+            #     DeprecationWarning(
+            #         "`molecule` is deprected - use `species` instead"
+            #     )
+            # )
             kwargs0.pop(
                 "molecule"
             )  # remove it from kwargs0 so it doesn't trigger the error later
@@ -871,7 +873,7 @@ class SpectrumFactory(BandFactory):
         self._calc_broadening_HWHM()
 
         # Calculate line shift
-        self.calc_lineshift()  # scales wav to shiftwav (equivalent to v0)
+        self.calc_lineshift()  # scales wav to shiftwav (equivalent to v0) - done after _calc_broadening_HWHM as atomic lineshift depends on VdW HWHM
 
         # ... generates all wstep related entities
         self._generate_wavenumber_arrays()
@@ -1485,9 +1487,10 @@ class SpectrumFactory(BandFactory):
 
     def non_eq_spectrum(
         self,
-        Tvib,
-        Trot,
+        Tvib=None,
+        Trot=None,
         Ttrans=None,
+        Telec=None,
         mole_fraction=None,
         path_length=None,
         diluent=None,
@@ -1506,13 +1509,15 @@ class SpectrumFactory(BandFactory):
         Tvib: float
             vibrational temperature [K]
             can be a tuple of float for the special case of more-than-diatomic
-            molecules (e.g: CO2)
+            molecules (e.g: CO2); only applicable for molecules, not atoms
         Trot: float
-            rotational temperature [K]
+            rotational temperature [K]; only applicable for molecules, not atoms
         Ttrans: float
             translational temperature [K]. If None, translational temperature is
             taken as rotational temperature (valid at 1 atm for times above ~ 2ns
             which is the RT characteristic time)
+        Telec: float
+            electronic temperature [K]; only implemented for atoms, not molecules
         mole_fraction: float
             database species mole fraction. If None, Factory mole fraction is used.
         diluent: str or dictionary
@@ -1599,15 +1604,13 @@ class SpectrumFactory(BandFactory):
         :meth:`~radis.lbl.factory.SpectrumFactory.optically_thin_power`
         """
 
-        if self.input.isatom:
-            raise NotImplementedError("non_eq_spectrum hasn't been implemented for atomic spectra yet")
-
         # %% Preprocessing
         # --------------------------------------------------------------------
         # Convert units
         Tvib = convert_and_strip_units(Tvib, u.K)
         Trot = convert_and_strip_units(Trot, u.K)
         Ttrans = convert_and_strip_units(Ttrans, u.K)
+        Telec = convert_and_strip_units(Telec, u.K)
         path_length = convert_and_strip_units(path_length, u.cm)
         pressure = convert_and_strip_units(pressure, u.bar)
 
@@ -1618,29 +1621,33 @@ class SpectrumFactory(BandFactory):
             self.input.mole_fraction = mole_fraction
         if pressure is not None:
             self.input.pressure = pressure
-        if isinstance(Tvib, tuple):
-            Tvib = tuple([convert_and_strip_units(T, u.K) for T in Tvib])
-        elif not is_float(Tvib):
-            raise TypeError(
-                "Tvib should be float, or tuple (got {0})".format(type(Tvib))
-            )
-        singleTvibmode = is_float(Tvib)
-        if not is_float(Trot):
-            raise ValueError("Trot should be float")
-        if overpopulation is None:
-            overpopulation = {}
-        assert vib_distribution in ["boltzmann", "treanor"]
-        assert rot_distribution in ["boltzmann"]
-        self.input.overpopulation = overpopulation
-        self.input.rot_distribution = rot_distribution
-        self.input.vib_distribution = vib_distribution
-        # Get translational temperature
+        if self.input.isatom:
+            self.input.Telec = Telec
+            singleTvibmode = True # to trigger calc_populations_noneq below
+        else:
+            if isinstance(Tvib, tuple):
+                Tvib = tuple([convert_and_strip_units(T, u.K) for T in Tvib])
+            elif not is_float(Tvib):
+                raise TypeError(
+                    "Tvib should be float, or tuple (got {0})".format(type(Tvib))
+                )
+            singleTvibmode = is_float(Tvib)
+            if not is_float(Trot):
+                raise ValueError("Trot should be float")
+            if overpopulation is None:
+                overpopulation = {}
+            assert vib_distribution in ["boltzmann", "treanor"]
+            assert rot_distribution in ["boltzmann"]
+            self.input.overpopulation = overpopulation
+            self.input.rot_distribution = rot_distribution
+            self.input.vib_distribution = vib_distribution
+            self.input.Tvib = Tvib
+            self.input.Trot = Trot
+            # Get translational temperature
         Tgas = Ttrans
         if Tgas is None:
-            Tgas = Trot  # assuming Ttrans = Trot
+            Tgas = Trot or Telec  # assuming Ttrans = Trot
         self.input.Tgas = Tgas
-        self.input.Tvib = Tvib
-        self.input.Trot = Trot
 
         # Init variables
         path_length = self.input.path_length
@@ -1651,7 +1658,11 @@ class SpectrumFactory(BandFactory):
         # New Profiler object
         self._reset_profiler(verbose)
         # Check variables
-        self._check_inputs(mole_fraction, max(flatten(Tgas, Tvib, Trot)))
+        if self.input.isatom:
+            Tmax = None # irrelevant
+        else:
+            Tmax = max(flatten(Tgas, Tvib, Trot))
+        self._check_inputs(mole_fraction, Tmax)
 
         # Retrieve Spectrum from database if it exists
         if self.autoretrievedatabase:
@@ -1671,9 +1682,13 @@ class SpectrumFactory(BandFactory):
         # ----------
         self._check_line_databank()
 
+        if 'int' not in self.df0.columns and self.input.isatom:
+            self.df0['int'] = self.calc_reference_linestrength()
+
         # add nonequilibrium energies if needed (this may be a bottleneck
         # for a first calculation):
         self._calc_noneq_parameters(vib_distribution, singleTvibmode)
+        # self.df0.Aul = 1e7 # SpectraPlot default
         self._reinitialize()  # creates scaled dataframe df1 from df0
 
         # ----------------------------------------------------------------------
@@ -1682,6 +1697,7 @@ class SpectrumFactory(BandFactory):
             self.calc_populations_noneq(
                 Tvib,
                 Trot,
+                Telec,
                 vib_distribution=vib_distribution,
                 rot_distribution=rot_distribution,
                 overpopulation=overpopulation,
@@ -1704,11 +1720,6 @@ class SpectrumFactory(BandFactory):
 
         # ----------------------------------------------------------------------
 
-        # Calculate lineshift
-        self.calc_lineshift()
-
-        # ----------------------------------------------------------------------
-
         # Line broadening
 
         # ... generates molefraction for diluents
@@ -1716,6 +1727,11 @@ class SpectrumFactory(BandFactory):
 
         # ... calculate broadening  HWHM
         self._calc_broadening_HWHM()
+
+        # ----------------------------------------------------------------------
+
+        # Calculate lineshift
+        self.calc_lineshift()
 
         # ... generates all wstep related entities
         self._generate_wavenumber_arrays()

@@ -44,6 +44,7 @@ def calc_spectrum(
     Tgas=None,
     Tvib=None,
     Trot=None,
+    Telec=None,
     pressure=1.01325,
     species=None,
     isotope="all",
@@ -99,7 +100,9 @@ def calc_spectrum(
         Default ``300`` K​
     Tvib, Trot: float [:math:`K`]
         Vibrational and rotational temperatures (for non-LTE calculations).
-        If ``None``, they are at equilibrium with ``Tgas`` ​.
+        If ``None``, they are at equilibrium with ``Tgas`` ​. Only applicable for molecules, not atoms.
+    Telec: float [:math:`K`]
+        Electronic temperature (for non-LTE calculations). If ``None``, it is at equilibrium with ``Tgas`` ​. Only implemented for atoms, not molecules.
     pressure: float [:math:`bar`] or `~astropy.units.quantity.Quantity`
         partial pressure of gas in bar. Default ``1.01325`` (1 atm)​. Use arbitrary units::
 
@@ -119,8 +122,8 @@ def calc_spectrum(
             The positive or neutral atomic species. It may be given in spectroscopic notation or any form that can be converted by :py:func:`~radis.db.classes.to_conventional_name`
         Default ``None``.​
     isotope: int, list, str of the form ``'1,2'``, or ``'all'``, or dict
-        isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
-        For molecules, see [HITRAN-2020]_ documentation for isotope list for all species.
+        isotope id
+        For molecules, this is the isotopologue ID (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2) - see [HITRAN-2020]_ documentation for isotope list for all species.
         For atoms, use the isotope number of the isotope (the total number of protons and neutrons in the nucleus) - use 0 to select rows where the isotope is unspecified, in which case the standard atomic weight from the ``periodictable`` module is used when mass is required.
         If ``'all'``,
         all isotopes in database are used (this may result in larger computation
@@ -396,13 +399,13 @@ def calc_spectrum(
     if "molecule" in kwargs:
         if species is not None:
             if species != kwargs['molecule']:
-                raise Exception("Both `molecule` and `species` arguments have been given and aren't equal, but `molecule` is deprecated and `species` is just its replacement.")
+                raise Exception("Both `molecule` and `species` arguments have been given and aren't equal, but `molecule` is just an alias for `species`.")
         species = molecule = kwargs.pop("molecule") #remove molecule from kwargs
-        warn(
-            DeprecationWarning(
-                "`molecule` is deprected - use `species` instead"
-            )
-        )
+        # warn(
+        #     DeprecationWarning(
+        #         "`molecule` is deprected - use `species` instead"
+        #     )
+        # )
     else:
         molecule = species
 
@@ -567,6 +570,7 @@ def calc_spectrum(
             Tgas=Tgas,
             Tvib=Tvib,
             Trot=Trot,
+            Telec=Telec,
             pressure=pressure,
             # overpopulation=overpopulation,  # now in dict_arguments
             molecule=molecule,
@@ -626,6 +630,7 @@ def _calc_spectrum_one_molecule(
     Tgas,
     Tvib,
     Trot,
+    Telec,
     pressure,
     overpopulation,
     molecule,
@@ -689,6 +694,7 @@ def _calc_spectrum_one_molecule(
 
     def _is_at_equilibrium():
         try:
+            assert Telec is None or Telec == Tgas
             assert Tvib is None or (np.array(Tvib) == np.array(Tgas)).all()
             assert Trot is None or Trot == Tgas
             assert overpopulation is None
@@ -961,6 +967,7 @@ def _calc_spectrum_one_molecule(
             Tvib=Tvib,
             Trot=Trot,
             Ttrans=Tgas,
+            Telec=Telec,
             overpopulation=overpopulation,
             mole_fraction=mole_fraction,
             path_length=path_length,

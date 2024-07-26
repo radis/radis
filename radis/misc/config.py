@@ -935,19 +935,6 @@ def addDatabankEntries(dbname, dict_entries, verbose=True, configpath=CONFIG_PAT
             })
     """
 
-    # Get ~/radis.json if exists, else create it
-    # dbnames = getDatabankList(configpath)
-
-    # # Check database doesnt exist
-    # if dbname in dbnames:
-    #     raise DatabaseAlreadyExists(
-    #         f"Database {dbname} already exists in {configpath}. Cant add it"
-    #     )
-
-    # # Loading `~/radis.json`
-    # with open(configpath, "r") as json_file:
-    #     _config = json.load(json_file)
-
     # Loading `~/radis.json`
     _config = get_user_config(configpath)
     

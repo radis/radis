@@ -57,7 +57,6 @@ from uuid import uuid1
 
 import numpy as np
 import pandas as pd
-import periodictable
 
 from radis import config
 from radis.api.cdsdapi import cdsd2df
@@ -409,7 +408,8 @@ class Input(ConditionDict):
         "species",
         "isatom",
         "isneutral",
-        "potential_lowering"
+        "potential_lowering",
+        "Telec"
     ]
 
     def __init__(self):
@@ -1055,7 +1055,7 @@ class DatabankLoader(object):
             If ``'kurucz'``, if dedicated partition functions are available with the linelists for the species, they are used, otherwise partition functions from Barklem & Collett 2016 are used. Also see the documentation for the `potential_lowering` parameter of :py:class:`~radis.lbl.factory.SpectrumFactory`.
             Default ``'hapi'``.
         parfunc: filename or None
-            path to a tabulated partition function file to use. For kurucz linelists, this would be the path to a dedicated partition function file for the species (dependant on both temperature and potential lowering).
+            path to a tabulated partition function file to use. For kurucz linelists, this would be a dedicated partition function file for the species (dependant on both temperature and potential lowering).
         levels: dict of str or None
             path to energy levels (needed for non-eq calculations). Format::
 
@@ -1103,7 +1103,7 @@ class DatabankLoader(object):
             and dropping them with ``drop_columns``.
             If ``diluent`` then all additional columns required for calculating spectrum
             in that diluent is loaded.
-            Only ``'all'`` is available for kurucz linelists.
+            This parameter is ignored for Kurucz linelists, for which only ``all`` is available.
             Default ``'equilibrium'``.
 
             .. warning::
@@ -1627,7 +1627,7 @@ class DatabankLoader(object):
         # If energy levels are given, initialize the partition function calculator
         # (necessary for non-equilibrium). If levelsfmt == 'radis' then energies
         # are calculated ab initio from radis internal species database constants
-        if load_energies:
+        if load_energies and not self.input.isatom:
             try:
                 self._init_rovibrational_energies(levels, levelsfmt)
             except KeyError as err:
@@ -1845,6 +1845,9 @@ class DatabankLoader(object):
             self.input.isneutral = is_neutral(self.input.species)
             if isinstance(self.params.diluent, Default):
                 self.params.diluent = 'H'
+            for key in ['lvl_use_cached', 'levelsfmt']:
+                del self.params[key]
+            del self.misc.load_energies
         else:
             self.input.isatom = False
             self.input.isneutral = None # irrelevant for molecules
@@ -1858,7 +1861,7 @@ class DatabankLoader(object):
         # If energy levels are given, initialize the partition function calculator
         # (necessary for non-equilibrium). If levelsfmt == 'radis' then energies
         # are calculated ab initio from radis internal species database constants
-        if load_energies:
+        if load_energies and not self.input.isatom:
             self._init_rovibrational_energies(levels, levelsfmt)
 
         return
@@ -2533,18 +2536,6 @@ class DatabankLoader(object):
                     elif dbformat in ["exomol"]:
                         # self.reftracker.add("10.1016/j.jqsrt.2020.107228", "line database")  # [ExoMol-2020]
                         raise NotImplementedError("use fetch_databank('exomol')")
-                    # elif dbformat in ["kurucz"]:
-                    #     # if self.dataframe_type == "pandas":
-                    #     #     engine = "pytables"
-                    #     # elif self.dataframe_type == "vaex":
-                    #     #     engine = "vaex"
-                    #     # if isotope == "all":
-                    #     #     isotope_list = None
-                    #     # else:
-                    #     #     isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
-                    #     # df = fetch_kurucz(self.input.species, isotope=isotope_list, engine=engine)[1]
-                    #     raise NotImplementedError("use fetch_databank('kurucz')")
-
                     else:
                         raise ValueError("Unknown dbformat: {0}".format(dbformat))
                 except IrrelevantFileWarning as err:
