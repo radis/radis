@@ -1304,12 +1304,11 @@ class BroadenFactory(BaseFactory):
                 assert bool(shift) == False
             except:
                 # convoluted solution for vaex, account for case where wl is e.g. int or float, and for case where it's e.g. list
-                if self.dataframe_type == 'vaex':
-                    if not isinstance(shift, vaex.expression.Expression):
-                        try:
-                            df['shft'] = np.asarray(shift)
-                        except Exception:
-                            df['shft'] = np.asarray(shift) + df['wav']*0
+                if self.dataframe_type == 'vaex' and not isinstance(shift, vaex.expression.Expression):
+                    try:
+                        df['shft'] = np.asarray(shift)
+                    except Exception:
+                        df['shft'] = np.asarray(shift) + df['wav']*0
                 else:
                     df['shft'] = shift
         else:
@@ -1360,12 +1359,11 @@ class BroadenFactory(BaseFactory):
 
         # Update dataframe
         # convoluted solution for vaex, account for case where wl is e.g. int or float, and for case where it's e.g. list
-        if self.dataframe_type == 'vaex':
-            if not isinstance(wl, vaex.expression.Expression):
-                try:
-                    df["hwhm_lorentz"] = np.asarray(wl)
-                except Exception:
-                    df["hwhm_lorentz"] = np.asarray(wl) + df['wav']*0
+        if self.dataframe_type == 'vaex' and not isinstance(wl, vaex.expression.Expression):
+            try:
+                df["hwhm_lorentz"] = np.asarray(wl)
+            except Exception:
+                df["hwhm_lorentz"] = np.asarray(wl) + df['wav']*0
         else:
             df["hwhm_lorentz"] = wl
 

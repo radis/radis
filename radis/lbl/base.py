@@ -288,14 +288,12 @@ class BaseFactory(DatabankLoader):
         plt.figure()
         df = getattr(self, dataframe)
         a = np.log10(np.array(df[what]))
-        try:
-            assert isinstance(a, vaex.expression.Expression)
-        except Exception:
-            checknan = np.isnan(a).any()
-            withoutnan = a[~np.isnan(a)]
-        else:
+        if self.dataframe_type == 'vaex':
             checknan = a.countnan()
             withoutnan = a.dropnan()
+        else:
+            checknan = np.isnan(a).any()
+            withoutnan = a[~np.isnan(a)]
         if checknan:
             printwarn("NaN values in log10(lines)")
         plt.hist(np.round(withoutnan))
