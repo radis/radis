@@ -393,7 +393,7 @@ def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, i
     
     HWHM of Lorentzian (cm-1) caluculated as gamma/(4*pi*c) [cm-1] for lines
     with the van der Waals gamma in the line list (such as VALD or Kurucz), otherwise
-    estimated according to the [Unsöld-1955]
+    estimated according to the [Unsöld-1955]_
 
     Parameters
     ----------
@@ -427,7 +427,7 @@ def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, i
     
     Notes
     -----
-    ``gamVdW`` given in the Kurucz linelists is, as [Kurucz & Avrett 1981] state, ":math:`\\frac{Gamma_{W}}{N_{H}}` at 10000 K for pure hydrogen"
+    ``gamVdW`` given in the Kurucz linelists is, as [Kurucz-&-Avrett-1981]_ state, ":math:`\\frac{\\Gamma_{W}}{N_{H}}` at 10000 K for pure hydrogen"
 
     ``gamSta`` given in the Kurucz linelists can be recovered with a small error for a large proportion of lines from the values of :math:`C_4` given in the associated .gam files using an equation of the form:
 
@@ -435,7 +435,7 @@ def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, i
 
         \\gamma_{4} = 40 {\\left(\\frac{8kT}{\pi m_e}\\right)}^{\\frac{1}{6}} C_4^2 N_e
     
-    See e.g. [Aller-1963] p318 and [Gray-2005] p244 for the background. See [Rivière et al 2002] for a treatment distinguishing between neutral and ionised radiators.
+    See e.g. [Aller-1963]_ p318 and [Gray-2005]_ p244 for the background. See [Rivière-et-al-2002]_ for a treatment distinguishing between neutral and ionised radiators.
 
     References
     ----------
@@ -443,9 +443,9 @@ def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, i
     .. [Unsöld-1955] `"Physik der Sternatmospharen, MIT besonderer Berucksichtigung der Sonne." <https://ui.adsabs.harvard.edu/abs/1955psmb.book.....U>`_
     .. [Aller-1963] `" Astrophysics The atmospheres of the sun and stars" <https://ui.adsabs.harvard.edu/abs/1963aass.book.....A>`_
     .. [Gray-2005] `"The Observation and Analysis of Stellar Photospheres" <https://ui.adsabs.harvard.edu/abs/2005oasp.book.....G>`_
-    .. [Kurucz & Avrett 1981] `"Solar Spectrum Synthesis. I. A Sample Atlas from 224 to 300 nm" <https://ui.adsabs.harvard.edu/abs/1981SAOSR.391.....K>`_
-    .. [Barklem et al 2000] `"A list of data for the broadening of metallic lines by neutral hydrogen collisions" <https://ui.adsabs.harvard.edu/abs/2000A%2526AS..142..467B>`_
-    .. [Rivière et al 2002] `"Systematic semi-classical calculations of Stark broadening parameters of NI, OI, NII, OII multiplets for modelling the radiative transfer in atmospheric air mixture plasmas" <https://ui.adsabs.harvard.edu/abs/2002JQSRT..73...91R>`_
+    .. [Kurucz-&-Avrett-1981] `"Solar Spectrum Synthesis. I. A Sample Atlas from 224 to 300 nm" <https://ui.adsabs.harvard.edu/abs/1981SAOSR.391.....K>`_
+    .. [Barklem-et-al-2000] `"A list of data for the broadening of metallic lines by neutral hydrogen collisions" <https://ui.adsabs.harvard.edu/abs/2000A%2526AS..142..467B>`_
+    .. [Rivière-et-al-2002] `"Systematic semi-classical calculations of Stark broadening parameters of NI, OI, NII, OII multiplets for modelling the radiative transfer in atmospheric air mixture plasmas" <https://ui.adsabs.harvard.edu/abs/2002JQSRT..73...91R>`_
 
     See Also
     --------

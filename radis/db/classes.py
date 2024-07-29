@@ -298,11 +298,17 @@ def get_ielem_charge(species):
 def to_conventional_name(species):
     """
     To convert an atomic species given in any of the following forms to spectroscopic notation (with an underscore rather than whitespace):
+
     - as a ``str`` in spectroscopic notation with a space separating the symbol and ionisation level (e.g. 'O II' for singly ionised oxygen)
+
     - as an ``int`` composed of the atomic number xx multiplied by 100 and then added to the charge (801 for O_II, 2600 for Fe_I)
+
     - as a **``str``** (not a float) in the form 'xx.yy', i.e. the charge divided by 100 and then added to the atomic number
+
     - For neutrals, as a ``str`` with just the atomic symbol
+
     - For ions, as a ``str`` composed of the atomic symbol followed by a string of + signs the number of which matches the charge on the ion
+    
     If given a molecule name or HITRAN ID, it is returned unchanged
     """
     if isinstance(species, float):

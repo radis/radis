@@ -47,7 +47,7 @@ from radis import plot_diff
 plot_diff(s1, s_default, label1='s1', label2='s_default')
 
 #%%
-# Here's another example adding self broadening, calculated using eq(16) of [Minesi et al 2020]_, to the 3 broadening types already handled by RADIS, and keeping the default handling of the line shift:
+# Here's another example adding self broadening, calculated using eq(16) of [Minesi-et-al-2020]_, to the 3 broadening types already handled by RADIS, and keeping the default handling of the line shift:
 #
 
 from radis.phys.constants import k_b_CGS
@@ -93,4 +93,4 @@ plot_diff(s3, s_default, label1='s3', label2='s_default')
 #%%
 # References
 # ----------
-# [Minesi et al 2020] `"Fully ionized nanosecond discharges in air: the thermal spark" <https://ui.adsabs.harvard.edu/abs/2020PSST...29h5003M>`_
+# .. [Minesi-et-al-2020] `"Fully ionized nanosecond discharges in air: the thermal spark" <https://ui.adsabs.harvard.edu/abs/2020PSST...29h5003M>`_

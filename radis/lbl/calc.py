@@ -123,11 +123,16 @@ def calc_spectrum(
         Default ``None``.​
     isotope: int, list, str of the form ``'1,2'``, or ``'all'``, or dict
         isotope id
+
         For molecules, this is the isotopologue ID (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2) - see [HITRAN-2020]_ documentation for isotope list for all species.
+
         For atoms, use the isotope number of the isotope (the total number of protons and neutrons in the nucleus) - use 0 to select rows where the isotope is unspecified, in which case the standard atomic weight from the ``periodictable`` module is used when mass is required.
+
         If ``'all'``,
         all isotopes in database are used (this may result in larger computation
-        times!). Default ``'all'``.
+        times!).
+        
+        Default ``'all'``.
 
         For multiple molecules, use a dictionary with molecule names as keys ::
 
@@ -151,7 +156,9 @@ def calc_spectrum(
 
                 diluent = { 'CO2': 0.6, 'H2O':0.2}
             
-            For free electrons, use the symbol 'e-'. Currently, only H, H2, H2, and e- are supported for atoms - any other diluents have no effect besides diluting the mole fractions of the other constituents. If left as ``None``, it defaults to ``'air'`` for molecules and atomic hydrogen 'H' for atoms.
+            For free electrons, use the symbol 'e-'. Currently, only H, H2, H2, and e- are supported for atoms - any other diluents have no effect besides diluting the mole fractions of the other constituents.
+            
+            If left as ``None``, it defaults to ``'air'`` for molecules and atomic hydrogen 'H' for atoms.
 
     path_length: float [:math:`cm`] or `~astropy.units.quantity.Quantity`
         slab size. Default ``1`` cm​. Use arbitrary units::

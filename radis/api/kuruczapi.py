@@ -346,10 +346,11 @@ def read_kurucz(kuruczf, preserve_orig_levels=False):
     - https://github.com/followthesheep/specutils/blob/e2873719f3820e83ab29c79062d7a59a7664fa2f/specutils/read_kurucz_linelist.py
     - https://github.com/ajwheeler/Korg.jl/blob/53420d38c23e21a7fe202b8680bdb201c9a62a2a/src/linelist.jl#L153
 
-    Args:
-        kuruczf: file path
-        preserve_orig_levels: (boolean)
-            whether to preserve the original columns pertaining to the levels prior to transforming them, with '_orig' appended to their name; note the columns are still reversed so that the database index increases in wavenumber rather than wavelength
+    Parameters
+    ----------
+    kuruczf: file path
+    preserve_orig_levels: (boolean)
+        whether to preserve the original columns pertaining to the levels prior to transforming them, with '_orig' appended to their name; note the columns are still reversed so that the database index increases in wavenumber rather than wavelength
 
     Returns:
         Pandas DataFrame containing the required columns for the Kurucz linelist database

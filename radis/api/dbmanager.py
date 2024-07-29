@@ -176,6 +176,11 @@ class DatabaseManager(object):
     def get_filenames(self, return_reg_urls=False):
         """Get names of all files in the database (even if not downloaded yet)
 
+        Parameters
+        ----------
+        return_reg_urls: (boolean)
+            When the database is registered, whether to return the registered urls (``True``) or ``None`` (``False``)
+
         See Also
         --------
         :py:meth:`~radis.api.dbmanager.DatabaseManager.get_files_to_download`"""
