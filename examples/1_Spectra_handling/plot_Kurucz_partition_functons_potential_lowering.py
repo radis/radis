@@ -18,19 +18,20 @@ The temperature ranges of the partition functions from [Barklem-&-Collet-2016]_ 
 """
 #%%
 
-from radis import calc_spectrum, SpectrumFactory
 import traceback
+
+from radis import SpectrumFactory, calc_spectrum
 
 s, sf = calc_spectrum(
     205,
     263,
-    wunit='nm',
+    wunit="nm",
     species="Y_I",
     Tgas=50000,
     databank="kurucz",
-    potential_lowering=-500, # any of [-500, -1000, -2000, -4000, -8000, -16000, -32000]
+    potential_lowering=-500,  # any of [-500, -1000, -2000, -4000, -8000, -16000, -32000]
     return_factory=True,
-    save_memory=False, #to be able to recalculate spectra with the same SpectrumFactory
+    save_memory=False,  # to be able to recalculate spectra with the same SpectrumFactory
 )
 
 s.plot("radiance_noslit", wunit="cm-1")
@@ -82,7 +83,7 @@ s = calc_spectrum(
     species="Os_II",
     Tgas=4000,
     databank="kurucz",
-    potential_lowering=-1100
+    potential_lowering=-1100,
 )
 
 s.plot("radiance_noslit", wunit="cm-1")
@@ -92,14 +93,7 @@ s.plot("radiance_noslit", wunit="cm-1")
 #
 
 try:
-    calc_spectrum(
-        100,
-        10000,
-        species="Y_V",
-        Tgas=4000,
-        databank="kurucz",
-        cutoff=0
-    )
+    calc_spectrum(100, 10000, species="Y_V", Tgas=4000, databank="kurucz", cutoff=0)
 except Exception:
     print(traceback.format_exc())
 
@@ -114,7 +108,7 @@ s = calc_spectrum(
     Tgas=4000,
     databank="kurucz",
     cutoff=0,
-    potential_lowering=-1000
+    potential_lowering=-1000,
 )
 
 s.plot("radiance_noslit", wunit="cm-1")

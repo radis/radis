@@ -27,7 +27,7 @@ def test_equations(*args, **kwargs):
     # Recompute quantities ourselves
     new_absorbance = new_abscoeff * s.conditions["path_length"]
     new_transmittance_noslit = exp(-new_absorbance)
-    new_emissivity_noslit = -expm1(-new_absorbance) # 1 - new_transmittance_noslit
+    new_emissivity_noslit = -expm1(-new_absorbance)  # 1 - new_transmittance_noslit
 
     new_radiance_noslit = new_emissivity_noslit * planck_wn(
         s.get_wavenumber(),

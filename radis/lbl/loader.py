@@ -89,7 +89,7 @@ from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
 from radis.misc.printer import printg
 from radis.misc.profiler import Profiler
-from radis.misc.utils import get_files_from_regex, Default
+from radis.misc.utils import Default, get_files_from_regex
 from radis.misc.warning import (
     EmptyDatabaseError,
     IrrelevantFileWarning,
@@ -409,7 +409,7 @@ class Input(ConditionDict):
         "isatom",
         "isneutral",
         "potential_lowering",
-        "Telec"
+        "Telec",
     ]
 
     def __init__(self):
@@ -1525,7 +1525,9 @@ class DatabankLoader(object):
             self.reftracker.add(doi["Kurucz-2017"], "line database")
 
             if columns is not None:
-                self.warn("The required columns for Kurucz don't match those of existing moleculear databases, so all columns are being loaded")
+                self.warn(
+                    "The required columns for Kurucz don't match those of existing moleculear databases, so all columns are being loaded"
+                )
                 columns = None
 
             if memory_mapping_engine == "auto":
@@ -1844,15 +1846,15 @@ class DatabankLoader(object):
             self.input.isatom = True
             self.input.isneutral = is_neutral(self.input.species)
             if isinstance(self.params.diluent, Default):
-                self.params.diluent = 'H'
-            for key in ['lvl_use_cached', 'levelsfmt']:
+                self.params.diluent = "H"
+            for key in ["lvl_use_cached", "levelsfmt"]:
                 del self.params[key]
             del self.misc.load_energies
         else:
             self.input.isatom = False
-            self.input.isneutral = None # irrelevant for molecules
+            self.input.isneutral = None  # irrelevant for molecules
             if isinstance(self.params.diluent, Default):
-                self.params.diluent = 'air'
+                self.params.diluent = "air"
         # %% Load Partition functions (and energies if needed)
         # ----------------------------------------------------
 
@@ -2631,11 +2633,14 @@ class DatabankLoader(object):
         minwavdb = df.wav.min()
 
         # ... Explicitly write molecule if not given
-        if self.input.species in [None, ""]:# and self.input.species not in [None, ""]:
+        if self.input.species in [
+            None,
+            "",
+        ]:  # and self.input.species not in [None, ""]:
 
             try:
                 id_set = df.id.unique()
-            except AttributeError: # for kurucz
+            except AttributeError:  # for kurucz
                 species_unique = df.species.unique()
                 assert len(species_unique) == 1
                 self.input.species = to_conventional_name(species_unique[0])
@@ -2659,7 +2664,7 @@ class DatabankLoader(object):
             elif output == "pandas":
                 for k, v in attrs.items():
                     df.attrs[k] = v
-        
+
         # ... explicitly write all isotopes based on isotopes found in the database
         if self.input.isotope == "all":
             self.input.isotope = ",".join(

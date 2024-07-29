@@ -88,7 +88,7 @@ from ..misc.plot import fix_style, set_style
 from ..misc.progress_bar import ProgressBar
 from ..misc.utils import NotInstalled, not_installed_vaex_args
 from ..misc.warning import reset_warnings
-from ..phys.constants import Na, c_CGS, k_b_CGS, eV2wn
+from ..phys.constants import Na, c_CGS, eV2wn, k_b_CGS
 
 try:
     import vaex
@@ -98,11 +98,8 @@ except ImportError:
 
 # %% Broadening functions
 
-atomic_broadening_coeff = {
-    'H': 1.,
-    'He': 0.41336,
-    'H2': 0.85
-}
+atomic_broadening_coeff = {"H": 1.0, "He": 0.41336, "H2": 0.85}
+
 
 def doppler_broadening_HWHM(wav, molar_mass, Tgas):
     """Computes Gaussian (Doppler) broadening HWHM over all lines with [1]_,
@@ -388,9 +385,22 @@ def pressure_broadening_HWHM(
 
     return gamma_lb
 
-def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, is_neutral, enh_damp=1.0):  # , vdW_meth="V"):
+
+def gamma_vald3(
+    T,
+    P,
+    nu_lines,
+    elower,
+    ionE,
+    gamRad,
+    gamSta,
+    gamVdW,
+    diluent,
+    is_neutral,
+    enh_damp=1.0,
+):  # , vdW_meth="V"):
     """(This function is derived from exojax.spec.atomll.gamma_vald3)
-    
+
     HWHM of Lorentzian (cm-1) caluculated as gamma/(4*pi*c) [cm-1] for lines
     with the van der Waals gamma in the line list (such as VALD or Kurucz), otherwise
     estimated according to the [Unsöld-1955]_
@@ -419,12 +429,12 @@ def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, i
         True if the radiating species is neutral, False if it's ionised
     enh_damp: float
         empirical "enhancement factor" for classical Unsoeld's damping constant
-      
+
     Returns
     -------
     gammma_rad, gamma_stark, gamma_vdw: (cm-1) numpy array or Vaex expression (depending on input type) [length N]
         Radiation, Stark, and Van der Waals HWHM
-    
+
     Notes
     -----
     ``gamVdW`` given in the Kurucz linelists is, as [Kurucz-&-Avrett-1981]_ state, ":math:`\\frac{\\Gamma_{W}}{N_{H}}` at 10000 K for pure hydrogen"
@@ -434,7 +444,7 @@ def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, i
     .. math::
 
         \\gamma_{4} = 40 {\\left(\\frac{8kT}{\pi m_e}\\right)}^{\\frac{1}{6}} C_4^2 N_e
-    
+
     See e.g. [Aller-1963]_ p318 and [Gray-2005]_ p244 for the background. See [Rivière-et-al-2002]_ for a treatment distinguishing between neutral and ionised radiators.
 
     References
@@ -453,67 +463,88 @@ def gamma_vald3(T, P, nu_lines, elower, ionE, gamRad, gamSta, gamVdW, diluent, i
     :py:func:`~radis.lbl.broadening.doppler_broadening_HWHM`,
     """
     # based on: https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/spec/atomll.py#L40
-    try: # using this syntax to account for the case where vaex isn't installed
+    try:  # using this syntax to account for the case where vaex isn't installed
         assert isinstance(gamRad, vaex.expression.Expression)
     except Exception:
-        gamRad = np.where(gamRad == 0., -99, gamRad)
+        gamRad = np.where(gamRad == 0.0, -99, gamRad)
     else:
-        gamRad = (gamRad == 0.).where(-99, gamRad)
+        gamRad = (gamRad == 0.0).where(-99, gamRad)
     try:
         assert isinstance(gamRad, vaex.expression.Expression)
     except Exception:
-        gamRad = np.where(gamRad == 0., -99, gamRad)
+        gamRad = np.where(gamRad == 0.0, -99, gamRad)
     else:
-        gamRad = (gamRad == 0.).where(-99, gamRad)
-    chi_lam = nu_lines/eV2wn  # [cm-1] -> [eV]
-    chi = elower/eV2wn  # [cm-1] -> [eV]
+        gamRad = (gamRad == 0.0).where(-99, gamRad)
+    chi_lam = nu_lines / eV2wn  # [cm-1] -> [eV]
+    chi = elower / eV2wn  # [cm-1] -> [eV]
 
-    C6 = 0.3e-30 * ((1/(ionE-chi-chi_lam)**2) - (1/(ionE-chi)**2))
+    C6 = 0.3e-30 * ((1 / (ionE - chi - chi_lam) ** 2) - (1 / (ionE - chi) ** 2))
     C6 = np.abs(C6)
-    
+
     weighted_coeff = {}
-    #assuming diluent is dictionary
+    # assuming diluent is dictionary
     for key in diluent:
-        if key != 'e-' and key in atomic_broadening_coeff:
-            weighted_coeff[key] = diluent[key]*atomic_broadening_coeff[key]
+        if key != "e-" and key in atomic_broadening_coeff:
+            weighted_coeff[key] = diluent[key] * atomic_broadening_coeff[key]
     gamma6 = 0
     for key in weighted_coeff:
-        gamma6 += 1e20 * C6**0.4 * P*1e6*weighted_coeff[key] / T**0.7
+        gamma6 += 1e20 * C6**0.4 * P * 1e6 * weighted_coeff[key] / T**0.7
     gamma6 *= enh_damp
-    gamma_case1 = gamma6 / (4*np.pi*c_CGS)
-    #gamma_case1 = np.nan_to_num(gamma_case1) #revisit if NaN or NA ever does appear
+    gamma_case1 = gamma6 / (4 * np.pi * c_CGS)
+    # gamma_case1 = np.nan_to_num(gamma_case1) #revisit if NaN or NA ever does appear
     try:
         if gamma_case1.countna():
-            raise Exception('NA values were encountered in the estimated van der Waals gamma')
+            raise Exception(
+                "NA values were encountered in the estimated van der Waals gamma"
+            )
     except Exception:
         if np.isnan(gamma_case1).any():
-            raise Exception('NaN values were encountered in the estimated van der Waals gamma')
+            raise Exception(
+                "NaN values were encountered in the estimated van der Waals gamma"
+            )
 
     Texp = 0.38  # Barklem+2000
     gamma6 = 0
     for key in weighted_coeff:
-        gamma6 += 10**gamVdW * (T/10000.)**Texp * P*1e6*weighted_coeff[key] / (k_b_CGS*T)
-    gamma_case2 =  gamma6 / (4*np.pi*c_CGS)
+        gamma6 += (
+            10**gamVdW
+            * (T / 10000.0) ** Texp
+            * P
+            * 1e6
+            * weighted_coeff[key]
+            / (k_b_CGS * T)
+        )
+    gamma_case2 = gamma6 / (4 * np.pi * c_CGS)
 
     try:
         assert isinstance(gamVdW, vaex.expression.Expression)
     except Exception:
-        gamma_vdw = np.where(gamVdW >= 0., gamma_case1, gamma_case2)
+        gamma_vdw = np.where(gamVdW >= 0.0, gamma_case1, gamma_case2)
     else:
-        gamma_vdw = (gamVdW >= 0.).where(gamma_case1, gamma_case2)
-    
-    if 'e-' in diluent:
-        gamma_stark = (10**gamSta) * P*1e6*diluent['e-'] / (k_b_CGS*T) / (4*np.pi*c_CGS) #see e.g. Gray p244 for temperature scaling
+        gamma_vdw = (gamVdW >= 0.0).where(gamma_case1, gamma_case2)
+
+    if "e-" in diluent:
+        gamma_stark = (
+            (10**gamSta)
+            * P
+            * 1e6
+            * diluent["e-"]
+            / (k_b_CGS * T)
+            / (4 * np.pi * c_CGS)
+        )  # see e.g. Gray p244 for temperature scaling
         if is_neutral:
-            gamma_stark *= ((T/10000)**(1.0/6.0)) #see e.g. Gray 2005 p244
+            gamma_stark *= (T / 10000) ** (1.0 / 6.0)  # see e.g. Gray 2005 p244
         else:
-            gamma_stark *= ((T/10000)**(-1.0/2.0)) #see e.g. Rivière et al 2002 §2.2, v ∝ T^1/2
+            gamma_stark *= (T / 10000) ** (
+                -1.0 / 2.0
+            )  # see e.g. Rivière et al 2002 §2.2, v ∝ T^1/2
     else:
         gamma_stark = 0
-    
-    gammma_rad = 10**gamRad / (4*np.pi*c_CGS)
+
+    gammma_rad = 10**gamRad / (4 * np.pi * c_CGS)
 
     return gammma_rad, gamma_stark, gamma_vdw
+
 
 def lorentzian_lineshape(w_centered, gamma_lb):
     r"""Computes collisional broadening over all lines [1]_
@@ -1049,7 +1080,7 @@ class BroadenFactory(BaseFactory):
         new_diluent = diluent.copy()
         if self.input.isatom:
             for key in diluent:
-                if key != 'e-' and key not in atomic_broadening_coeff:
+                if key != "e-" and key not in atomic_broadening_coeff:
                     raise ValueError(
                         f"Broadening Coefficient of {key} not available. Broadening coefficients are only available for: {list(atomic_broadening_coeff.keys()) + ['e-']}."
                     )
@@ -1107,9 +1138,13 @@ class BroadenFactory(BaseFactory):
                     # ]  # note @dev : check it doesn't create a new memory object
 
                 if "n_" + diluent_name in df.columns:
-                    diluent_broadening_coeff["n_" + diluent_name] = df["n_" + diluent_name]
+                    diluent_broadening_coeff["n_" + diluent_name] = df[
+                        "n_" + diluent_name
+                    ]
                     # Check if there are Nans in the gamma column
-                    num_nans = diluent_broadening_coeff["n_" + diluent_name].isna().sum()
+                    num_nans = (
+                        diluent_broadening_coeff["n_" + diluent_name].isna().sum()
+                    )
                     if num_nans > 0:
                         msg = """
                         Temperature dependance of Broadening Coefficient of
@@ -1152,13 +1187,15 @@ class BroadenFactory(BaseFactory):
             Tref,
             diluent,
             diluent_broadening_coeff,
-            isneutral
+            isneutral,
         )
         # Add hwhm_gauss:
         self._add_doppler_broadening_HWHM(df, Tgas)
         if broadening_method == "voigt":
             # Adds hwhm_voigt:
-            df["hwhm_voigt"] = olivero_1977(2*df["hwhm_gauss"], 2*df["hwhm_lorentz"]) / 2
+            df["hwhm_voigt"] = (
+                olivero_1977(2 * df["hwhm_gauss"], 2 * df["hwhm_lorentz"]) / 2
+            )
         elif broadening_method not in ["convolve", "fft"]:
             raise ValueError(
                 "Unexpected lineshape broadening algorithm : broadening_method={0}".format(
@@ -1265,7 +1302,7 @@ class BroadenFactory(BaseFactory):
         Tref,
         diluent,
         diluent_broadening_coeff,
-        isneutral
+        isneutral,
     ):
         """Update dataframe with Lorentzian HWHM [1]_
 
@@ -1298,23 +1335,38 @@ class BroadenFactory(BaseFactory):
                 Tref=Tref,
                 diluent=diluent,
                 diluent_broadening_coeff=diluent_broadening_coeff,
-                isneutral=isneutral
+                isneutral=isneutral,
             )
             try:
                 assert bool(shift) == False
             except:
                 # convoluted solution for vaex, account for case where wl is e.g. int or float, and for case where it's e.g. list
-                if self.dataframe_type == 'vaex' and not isinstance(shift, vaex.expression.Expression):
+                if self.dataframe_type == "vaex" and not isinstance(
+                    shift, vaex.expression.Expression
+                ):
                     try:
-                        df['shft'] = np.asarray(shift)
+                        df["shft"] = np.asarray(shift)
                     except Exception:
-                        df['shft'] = np.asarray(shift) + df['wav']*0
+                        df["shft"] = np.asarray(shift) + df["wav"] * 0
                 else:
-                    df['shft'] = shift
+                    df["shft"] = shift
         else:
             if self.input.isatom:
-                gammma_rad, gamma_stark, gamma_vdw = gamma_vald3(Tgas, pressure_atm*1.01325, df['wav'], df['El'], df['ionE'], df['gamRad'], df['gamSta'], df['gamvdW'], diluent, isneutral)
-                df['shft'] = (1.0/3.0)*2*gamma_vdw #Konjević et al. 2012 §4.1.3.2, neglect stark shift by default
+                gammma_rad, gamma_stark, gamma_vdw = gamma_vald3(
+                    Tgas,
+                    pressure_atm * 1.01325,
+                    df["wav"],
+                    df["El"],
+                    df["ionE"],
+                    df["gamRad"],
+                    df["gamSta"],
+                    df["gamvdW"],
+                    diluent,
+                    isneutral,
+                )
+                df["shft"] = (
+                    (1.0 / 3.0) * 2 * gamma_vdw
+                )  # Konjević et al. 2012 §4.1.3.2, neglect stark shift by default
                 wl = gammma_rad + gamma_stark + gamma_vdw
             else:
                 # Check self broadening temperature-dependance coefficient is here
@@ -1359,11 +1411,13 @@ class BroadenFactory(BaseFactory):
 
         # Update dataframe
         # convoluted solution for vaex, account for case where wl is e.g. int or float, and for case where it's e.g. list
-        if self.dataframe_type == 'vaex' and not isinstance(wl, vaex.expression.Expression):
+        if self.dataframe_type == "vaex" and not isinstance(
+            wl, vaex.expression.Expression
+        ):
             try:
                 df["hwhm_lorentz"] = np.asarray(wl)
             except Exception:
-                df["hwhm_lorentz"] = np.asarray(wl) + df['wav']*0
+                df["hwhm_lorentz"] = np.asarray(wl) + df["wav"] * 0
         else:
             df["hwhm_lorentz"] = wl
 
@@ -1560,13 +1614,9 @@ class BroadenFactory(BaseFactory):
             columns = list(dg.keys())
 
         if not "hwhm_voigt" in columns:
-            raise KeyError(
-                "hwhm_voigt: Calculate broadening first"
-            )
+            raise KeyError("hwhm_voigt: Calculate broadening first")
         if not "hwhm_lorentz" in columns:
-            raise KeyError(
-                "hwhm_lorentz: Calculate broadening first"
-            )
+            raise KeyError("hwhm_lorentz: Calculate broadening first")
 
         hwhm_lorentz = dg.hwhm_lorentz
         hwhm_voigt = dg.hwhm_voigt

@@ -67,7 +67,7 @@ Parameters
         python -O *.py
 
 "ALLOW_OVERWRITE": False
-    
+
     bool: Whether to allow RADIS to overwrite values of a databank entry that is already registered.
     If True, allow RADIS to download files and make changes to the local database folder even when the databank is already registered, and then re-register it with the values for the new files, overwriting the previously registered values. This could occur when e.g. running `fetch_databank` with the `cache` argument set to "regen" or the registered "paths" not including the path to the databank itself or some of the registered files missing from the disk, resulting in files being re-downloaded and the "download_date" (and possibly "paths") value being updated.
     If False, no changes are made to the local database folder when a databank is already registered, and an exception is raised in cases where re-registering would have been required, so e.g. in the example above, this setting would prevent the "download_date" from being updated and hence an exception would be raised instead.

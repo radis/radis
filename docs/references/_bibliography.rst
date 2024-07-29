@@ -84,7 +84,7 @@ The GEISA 2020 database is automatically downloaded with ``databank='geisa'``.
 .. [GEISA-2020] Delahaye et al, The 2020 edition of the GEISA spectroscopic database,
                 J. Molec. Spectrosc., 380, 111510 (2021) `doi:10.1016/j.jms.2021.111510 <https://www.sciencedirect.com/science/article/pii/S0022285221000928>`
 
-.. [Kurucz-2017] Kurucz, R L., Including all the lines: data releases for spectra and opacities, 
+.. [Kurucz-2017] Kurucz, R L., Including all the lines: data releases for spectra and opacities,
                 Canadian Journal of Physics, vol. 95, issue 9, pp. 825-827 (2017) `doi:10.1139/cjp-2016-0794 <https://doi.org/10.1139/cjp-2016-0794>`
 
 The latest supported Kurucz database is automatically downloaded if using ``databank='kurucz'``.

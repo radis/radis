@@ -893,9 +893,9 @@ def _recompute_from_abscoeff_at_equilibrium(
         "emissivity_noslit" in recompute
         or "radiance_noslit" in recompute
         or "emisscoeff" in recompute
-    ): # is only run when `transmittance_noslit = exp(-absorbance)` above is run
+    ):  # is only run when `transmittance_noslit = exp(-absorbance)` above is run
         # Calculate emissivity
-        emissivity_noslit = -expm1(-absorbance) #1 - transmittance_noslit
+        emissivity_noslit = -expm1(-absorbance)  # 1 - transmittance_noslit
         # Store:
         rescaled["emissivity_noslit"] = emissivity_noslit
         units["emissivity_noslit"] = ""
@@ -910,15 +910,21 @@ def _recompute_from_abscoeff_at_equilibrium(
         rescaled["radiance_noslit"] = radiance_noslit
         units["radiance_noslit"] = Iunit_radiance
 
-    if "emisscoeff" in recompute: # is only run when `transmittance_noslit = exp(-absorbance)` above is run
+    if (
+        "emisscoeff" in recompute
+    ):  # is only run when `transmittance_noslit = exp(-absorbance)` above is run
         # Calculate emission coefficient
-        b = absorbance == 0 #transmittance_noslit == 1  # optically thin mask
+        b = absorbance == 0  # transmittance_noslit == 1  # optically thin mask
         emisscoeff = np.empty_like(abscoeff)
         emisscoeff[b] = (
             radiance_noslit[b] / new_path_length_cm
         )  # recalculate (opt thin)
         emisscoeff[~b] = (
-            radiance_noslit[~b] / -expm1(-absorbance[~b]) * abscoeff[~b] #(1 - transmittance_noslit[~b]) # is only run when `transmittance_noslit = exp(-absorbance)` above is run
+            radiance_noslit[~b]
+            / -expm1(-absorbance[~b])
+            * abscoeff[
+                ~b
+            ]  # (1 - transmittance_noslit[~b]) # is only run when `transmittance_noslit = exp(-absorbance)` above is run
         )  # recalculate (non opt thin)
         # Store:
         rescaled["emisscoeff"] = emisscoeff
@@ -1548,9 +1554,11 @@ def rescale_radiance_noslit(
         transmittance_noslit = rescaled["transmittance_noslit"]
         b = transmittance_noslit == 1  # optically thin mask
         radiance_noslit = np.empty_like(emisscoeff)  # calculate L
-        if '_transmittance_noslitm1' in rescaled:
+        if "_transmittance_noslitm1" in rescaled:
             radiance_noslit[~b] = (
-                emisscoeff[~b] / abscoeff[~b] * -rescaled["_transmittance_noslitm1"] #(1 - transmittance_noslit[~b])
+                emisscoeff[~b]
+                / abscoeff[~b]
+                * -rescaled["_transmittance_noslitm1"]  # (1 - transmittance_noslit[~b])
             )
         else:
             radiance_noslit[~b] = (
@@ -1726,7 +1734,7 @@ def rescale_emissivity_noslit(spec, rescaled, rescaled_units, extra, true_path_l
         if __debug__:
             printdbg("... rescale: emissivity_noslit e_2 = 1 - T_2")
         # transmissivity already scaled
-        if '_transmittance_noslitm1' in rescaled:
+        if "_transmittance_noslitm1" in rescaled:
             emissivity_noslit = -rescaled["_transmittance_noslitm1"]  # recalculate
         else:
             T2 = rescaled["transmittance_noslit"]

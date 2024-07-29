@@ -303,7 +303,7 @@ def print_conditions(
 
     :data:`~radis.spectrum.utils.PHYSICAL_PARAMS`, :data:`~radis.spectrum.utils.INFORMATIVE_PARAMS`
     """
-    
+
     def align(a, space=20):
         r"""fix alignment."""
         return a + " " * max(1, (space - len(str(a))))

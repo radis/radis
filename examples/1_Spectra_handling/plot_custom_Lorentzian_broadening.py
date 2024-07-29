@@ -18,8 +18,10 @@ We take an example of neutral atomic oxygen (O_I) and calculate a spectrum using
 """
 from radis import SpectrumFactory
 
+
 def lbfunc1(**kwargs):
-    return 0.1*(296/kwargs['Tgas'])**0.8, None
+    return 0.1 * (296 / kwargs["Tgas"]) ** 0.8, None
+
 
 mole_fraction = 0.01
 
@@ -27,13 +29,13 @@ sf = SpectrumFactory(
     12850,
     12870,
     species="O_I",
-    pressure=1.01325, # = 1 atm
-    diluent={'H':1-mole_fraction-1e-3, 'e-': 1e-3}, #so it all adds up to 1
+    pressure=1.01325,  # = 1 atm
+    diluent={"H": 1 - mole_fraction - 1e-3, "e-": 1e-3},  # so it all adds up to 1
     mole_fraction=mole_fraction,
     path_length=15,
-    lbfunc=lbfunc1
+    lbfunc=lbfunc1,
 )
-sf.fetch_databank('kurucz', parfuncfmt="kurucz")
+sf.fetch_databank("kurucz", parfuncfmt="kurucz")
 s1 = sf.eq_spectrum(4000)
 
 #%%
@@ -44,51 +46,82 @@ s_default = sf.eq_spectrum(4000)
 
 from radis import plot_diff
 
-plot_diff(s1, s_default, label1='s1', label2='s_default')
+plot_diff(s1, s_default, label1="s1", label2="s_default")
 
 #%%
 # Here's another example adding self broadening, calculated using eq(16) of [Minesi-et-al-2020]_, to the 3 broadening types already handled by RADIS, and keeping the default handling of the line shift:
 #
 
-from radis.phys.constants import k_b_CGS
 from radis.lbl.broadening import gamma_vald3
+from radis.phys.constants import k_b_CGS
 
-def lbfunc2(df, pressure_atm, mole_fraction, Tgas, diluent, isneutral, **kwargs): # assign variable names to the quantities we use and put the rest in kwargs which can be ignored
-    beta = 1e-4 # example
-    n_emitter = pressure_atm*1.01325*1e6*mole_fraction / (k_b_CGS*Tgas)
-    gamma_self = ((1e7/df['wav'])**2)*beta*n_emitter/2.7e19
+
+def lbfunc2(
+    df, pressure_atm, mole_fraction, Tgas, diluent, isneutral, **kwargs
+):  # assign variable names to the quantities we use and put the rest in kwargs which can be ignored
+    beta = 1e-4  # example
+    n_emitter = pressure_atm * 1.01325 * 1e6 * mole_fraction / (k_b_CGS * Tgas)
+    gamma_self = ((1e7 / df["wav"]) ** 2) * beta * n_emitter / 2.7e19
     print(gamma_self)
     # copied from default code in RADIS:
-    gammma_rad, gamma_stark, gamma_vdw = gamma_vald3(Tgas, pressure_atm*1.01325, 
-    df['wav'], df['El'], df['ionE'], df['gamRad'], df['gamSta'], df['gamvdW'], diluent, isneutral)
+    gammma_rad, gamma_stark, gamma_vdw = gamma_vald3(
+        Tgas,
+        pressure_atm * 1.01325,
+        df["wav"],
+        df["El"],
+        df["ionE"],
+        df["gamRad"],
+        df["gamSta"],
+        df["gamvdW"],
+        diluent,
+        isneutral,
+    )
     print(gammma_rad, gamma_stark, gamma_vdw)
-    shift = (1.0/3.0)*2*gamma_vdw #Konjević et al. 2012 §4.1.3.2, neglect stark shift by default
+    shift = (
+        (1.0 / 3.0) * 2 * gamma_vdw
+    )  # Konjević et al. 2012 §4.1.3.2, neglect stark shift by default
     wl = gammma_rad + gamma_stark + gamma_vdw + gamma_self
     return wl, shift
+
 
 sf.params.lbfunc = lbfunc2
 s2 = sf.eq_spectrum(4000)
 
-plot_diff(s2, s_default, label1='s2', label2='s_default')
+plot_diff(s2, s_default, label1="s2", label2="s_default")
 
 #%%
 # We can even modify broadening parameters of individual lines:
 #
 
+
 def lbfunc3(df, Tgas, pressure_atm, diluent, isneutral, **kwargs):
     # only for Pandas dataframes:
-    df.loc[df['orig_wavelen'] == 777.5388, 'gamvdW'] = -7 # should also result in a different shift
-    df.loc[df['orig_wavelen'] == 777.1944, 'gamSta'] = -5
+    df.loc[
+        df["orig_wavelen"] == 777.5388, "gamvdW"
+    ] = -7  # should also result in a different shift
+    df.loc[df["orig_wavelen"] == 777.1944, "gamSta"] = -5
     # copied from default code in RADIS:
-    gammma_rad, gamma_stark, gamma_vdw = gamma_vald3(Tgas, pressure_atm*1.01325, df['wav'], df['El'], df['ionE'], df['gamRad'], df['gamSta'], df['gamvdW'], diluent, isneutral)
-    shift = (1.0/3.0)*2*gamma_vdw #Konjević et al. 2012 §4.1.3.2
+    gammma_rad, gamma_stark, gamma_vdw = gamma_vald3(
+        Tgas,
+        pressure_atm * 1.01325,
+        df["wav"],
+        df["El"],
+        df["ionE"],
+        df["gamRad"],
+        df["gamSta"],
+        df["gamvdW"],
+        diluent,
+        isneutral,
+    )
+    shift = (1.0 / 3.0) * 2 * gamma_vdw  # Konjević et al. 2012 §4.1.3.2
     wl = gammma_rad + gamma_stark + gamma_vdw
     return wl, shift
+
 
 sf.params.lbfunc = lbfunc3
 s3 = sf.eq_spectrum(4000)
 
-plot_diff(s3, s_default, label1='s3', label2='s_default')
+plot_diff(s3, s_default, label1="s3", label2="s_default")
 
 #%%
 # References

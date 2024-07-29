@@ -204,7 +204,7 @@ class DatabaseManager(object):
             else:
                 local_files = entries["path"]
             if return_reg_urls:
-                urlnames = entries['download_url']
+                urlnames = entries["download_url"]
             else:
                 urlnames = None
 
@@ -440,7 +440,6 @@ class DatabaseManager(object):
         pbar_Ntot_estimate_factor=None,
         pbar_Nlines_already=0,
         pbar_last=True,
-
     ) -> list:
         """This function should be overwritten by the DatabaseManager subclass
 

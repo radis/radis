@@ -1153,10 +1153,9 @@ class PartFuncExoMol(RovibParFuncTabulator):
 
 
 class PartFuncKurucz(RovibParFuncTabulator):
-    """Return partition function using interpolation of tabulated values of local file kuruczpartfn.txt
-    """
+    """Return partition function using interpolation of tabulated values of local file kuruczpartfn.txt"""
 
-    def __init__(self, species, pfpath = None):
+    def __init__(self, species, pfpath=None):
         super(PartFuncKurucz, self).__init__()
         # Load data in constructor
         self.species = species
@@ -1165,10 +1164,14 @@ class PartFuncKurucz(RovibParFuncTabulator):
         try:
             pf_atom = self.pfdat.loc[f"{species}"]
         except KeyError:
-            warn("Note: the partition functions from Barklem & Collet (2016) don't include this species.")
+            warn(
+                "Note: the partition functions from Barklem & Collet (2016) don't include this species."
+            )
             self.pf_values = self.pfT_values = None
         else:
-            self.pfT_values = self.pfTdat.values.flatten().astype(float)#namespace["pfT_values"]
+            self.pfT_values = self.pfTdat.values.flatten().astype(
+                float
+            )  # namespace["pfT_values"]
             self.pf_values = pf_atom.values.astype(float)
 
         if pfpath:
@@ -1179,32 +1182,41 @@ class PartFuncKurucz(RovibParFuncTabulator):
     def _at(self, T, potential_lowering=None):
         # Interpolate to find the partition function at the desired temperature
         if potential_lowering is not None and self.partfn is not None:
-            Temp = self.partfn['T']
+            Temp = self.partfn["T"]
             try:
-                Qvals = self.partfn[f'{potential_lowering}']
+                Qvals = self.partfn[f"{potential_lowering}"]
             except KeyError:
-                print('Available values of potential lowering:')
-                print(*self.partfn.columns.difference(['T'], sort=False).to_list(), sep=', ')
+                print("Available values of potential lowering:")
+                print(
+                    *self.partfn.columns.difference(["T"], sort=False).to_list(),
+                    sep=", ",
+                )
                 raise
-            addmsg = '. You might want to check whether the partition functions from Barklem & Collet (2016) have a different temperature range within which lies your input temperature.'
+            addmsg = ". You might want to check whether the partition functions from Barklem & Collet (2016) have a different temperature range within which lies your input temperature."
         else:
             if self.partfn is None:
                 if potential_lowering is not None:
-                    warn('Table of partition functions by potential lowering not available for this species - using Barklem & Collet (2016) instead with just the temperature')
-                addmsg = ''
-                addmsg2 = ', nor are any dedicated tables available for this species.'
+                    warn(
+                        "Table of partition functions by potential lowering not available for this species - using Barklem & Collet (2016) instead with just the temperature"
+                    )
+                addmsg = ""
+                addmsg2 = ", nor are any dedicated tables available for this species."
             else:
-                addmsg = '. You might want to check whether the table of partition functions dependent on potential lowering for this species has a different temperature range within which lies your input temperature.'
-                addmsg2 = '. Specify the potential lowering so the dedicated table of partition functions for this species can be used.'
+                addmsg = ". You might want to check whether the table of partition functions dependent on potential lowering for this species has a different temperature range within which lies your input temperature."
+                addmsg2 = ". Specify the potential lowering so the dedicated table of partition functions for this species can be used."
             if self.pf_values is None:
-                raise Exception("The partition functions from Barklem & Collet (2016) don't include this species" + addmsg2)
-            
+                raise Exception(
+                    "The partition functions from Barklem & Collet (2016) don't include this species"
+                    + addmsg2
+                )
+
             Temp = self.pfT_values
             Qvals = self.pf_values
-        
+
         if T < Temp.min() or T > Temp.max():
             raise ValueError(
-                f"The temperature {T} K is outside the tabulated range of the partition functions [{Temp.min()}, {Temp.max()}] K" + addmsg
+                f"The temperature {T} K is outside the tabulated range of the partition functions [{Temp.min()}, {Temp.max()}] K"
+                + addmsg
             )
         return np.interp(T, Temp, Qvals)
 

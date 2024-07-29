@@ -46,6 +46,7 @@ from os.path import dirname, exists, expanduser, join
 import hjson
 
 import radis
+
 from ..misc.basics import compare_dict, compare_lists, stdpath
 from ..misc.utils import DatabankNotFound, getProjectRoot
 from ..misc.warning import DatabaseAlreadyExists
@@ -937,7 +938,7 @@ def addDatabankEntries(dbname, dict_entries, verbose=True, configpath=CONFIG_PAT
 
     # Loading `~/radis.json`
     _config = get_user_config(configpath)
-    
+
     try:
         # Accessing `database` key in file
         config = _config["database"]
@@ -950,7 +951,7 @@ def addDatabankEntries(dbname, dict_entries, verbose=True, configpath=CONFIG_PAT
         raise DatabaseAlreadyExists(
             f"Database {dbname} already exists in {configpath}. Cant add it"
         )
-    
+
     # Adding entries in `config[dbname]`
     config[dbname] = {}
 

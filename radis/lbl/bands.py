@@ -322,7 +322,9 @@ class BandFactory(BroadenFactory):
             # Generate output quantities
             # transmittance_noslit = exp(-absorbance)
             # emissivity_noslit = 1 - transmittance_noslit
-            emissivity_noslit = -expm1(-absorbance) #to handle small values of absorbance
+            emissivity_noslit = -expm1(
+                -absorbance
+            )  # to handle small values of absorbance
             transmittance_noslit = 1 - emissivity_noslit
             radiance_noslit = calc_radiance(
                 wavenumber,
@@ -669,7 +671,9 @@ class BandFactory(BroadenFactory):
                 b = abscoeff == 0  # optically thin mask
                 radiance_noslit = np.zeros_like(emisscoeff)
                 radiance_noslit[~b] = (
-                    emisscoeff[~b] / abscoeff[~b] * -expm1(-absorbance[~b]) #(1 - transmittance_noslit[~b])
+                    emisscoeff[~b]
+                    / abscoeff[~b]
+                    * -expm1(-absorbance[~b])  # (1 - transmittance_noslit[~b])
                 )
                 radiance_noslit[b] = emisscoeff[b] * path_length
             else:

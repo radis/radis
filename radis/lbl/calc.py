@@ -19,9 +19,9 @@ Routine Listing
 
 from copy import deepcopy
 from os.path import exists
+from warnings import warn
 
 import numpy as np
-from warnings import warn
 
 try:  # Proper import
     from .base import get_wavenumber_range
@@ -131,7 +131,7 @@ def calc_spectrum(
         If ``'all'``,
         all isotopes in database are used (this may result in larger computation
         times!).
-        
+
         Default ``'all'``.
 
         For multiple molecules, use a dictionary with molecule names as keys ::
@@ -155,9 +155,9 @@ def calc_spectrum(
             For multiple diluents ::
 
                 diluent = { 'CO2': 0.6, 'H2O':0.2}
-            
+
             For free electrons, use the symbol 'e-'. Currently, only H, H2, H2, and e- are supported for atoms - any other diluents have no effect besides diluting the mole fractions of the other constituents.
-            
+
             If left as ``None``, it defaults to ``'air'`` for molecules and atomic hydrogen 'H' for atoms.
 
     path_length: float [:math:`cm`] or `~astropy.units.quantity.Quantity`
@@ -195,7 +195,7 @@ def calc_spectrum(
             databank='PATH/TO/co_*.par'
 
         - ``'kurucz'`` to fetch the Kurucz linelists for atoms through :py:func:`~radis.io.kurucz.fetch_kurucz`. Downloads al lines and all isotopes.
-        
+
         - the name of a spectral database registered in your ``~/radis.json``
           :ref:`configuration file <label_lbl_config_file>` ::
 
@@ -405,9 +405,11 @@ def calc_spectrum(
     # Check inputs
     if "molecule" in kwargs:
         if species is not None:
-            if species != kwargs['molecule']:
-                raise Exception("Both `molecule` and `species` arguments have been given and aren't equal, but `molecule` is just an alias for `species`.")
-        species = molecule = kwargs.pop("molecule") #remove molecule from kwargs
+            if species != kwargs["molecule"]:
+                raise Exception(
+                    "Both `molecule` and `species` arguments have been given and aren't equal, but `molecule` is just an alias for `species`."
+                )
+        species = molecule = kwargs.pop("molecule")  # remove molecule from kwargs
         # warn(
         #     DeprecationWarning(
         #         "`molecule` is deprected - use `species` instead"
@@ -809,10 +811,7 @@ def _calc_spectrum_one_molecule(
                 # TODO: replace with GEISA partition function someday.............
             }
         elif databank in ["kurucz"]:
-            conditions = {
-                "source": "kurucz",
-                "parfuncfmt": "kurucz"
-            }
+            conditions = {"source": "kurucz", "parfuncfmt": "kurucz"}
 
         elif isinstance(databank, tuple) and databank[0] == "exomol":
             conditions = {
@@ -960,8 +959,8 @@ def _calc_spectrum_one_molecule(
                 pressure=pressure,
                 path_length=path_length,
                 name=name,
-                backend=('cpu-cuda' if mode == "emulated_gpu" else 'gpu-cuda')
-                #emulate=(True if mode == "emulated_gpu" else False),
+                backend=("cpu-cuda" if mode == "emulated_gpu" else "gpu-cuda")
+                # emulate=(True if mode == "emulated_gpu" else False),
             )
         else:
             raise ValueError(

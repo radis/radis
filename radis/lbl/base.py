@@ -72,10 +72,10 @@ from numpy import exp, pi
 from psutil import virtual_memory
 
 import radis
+from radis.api.kuruczapi import get_element_symbol
 
 # TODO: rename in get_molecule_name
 from radis.db.classes import get_molecule, get_molecule_identifier
-from radis.api.kuruczapi import get_element_symbol
 
 try:  # Proper import
     from .loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
@@ -288,7 +288,7 @@ class BaseFactory(DatabankLoader):
         plt.figure()
         df = getattr(self, dataframe)
         a = np.log10(np.array(df[what]))
-        if self.dataframe_type == 'vaex':
+        if self.dataframe_type == "vaex":
             checknan = a.countnan()
             withoutnan = a.dropnan()
         else:
@@ -1784,14 +1784,16 @@ class BaseFactory(DatabankLoader):
 
         # ... Make sure upper J' is calculated  (needed to compute populations)
         if not "ju" in df:
-            self._add_ju(df) # doesn't actually work for Kurucz as no 'branch' column; not needed for now as 'ju' is already present
+            self._add_ju(
+                df
+            )  # doesn't actually work for Kurucz as no 'branch' column; not needed for now as 'ju' is already present
 
         # ... Make sure upper energy level is calculated (needed to compute populations)
         if not "Eu" in df:
             self._add_Eu(df)
 
         if self.input.isatom:
-            degeneracy_cols = ['gu', 'gl']
+            degeneracy_cols = ["gu", "gl"]
         else:
             # Check spectroscopic parameters required for non-equilibrium (to identify lines)
             for k in ["branch"]:
@@ -1852,14 +1854,15 @@ class BaseFactory(DatabankLoader):
                     )
             elif self.dataframe_type == "vaex":
                 if not (
-                    (df.Erotu > tol).sum() == len(df) and (df.Erotl > tol).sum() == len(df)
+                    (df.Erotu > tol).sum() == len(df)
+                    and (df.Erotl > tol).sum() == len(df)
                 ):
                     self.warn(
                         "There are negative rotational energies in the database",
                         "NegativeEnergiesWarning",
                     )
             degeneracy_cols = ["gju", "gjl", "gvibu", "gvibl", "gu", "gl"]
-        
+
         # ... Make sure degeneracies are calculated
         if not all_in(degeneracy_cols, df):
             self._calc_degeneracies(df)
@@ -1878,12 +1881,12 @@ class BaseFactory(DatabankLoader):
         :func:`~radis.db.degeneracies.gs`, :func:`~radis.db.degeneracies.gi`
         """
         if self.input.isatom:
-            if not 'gu' in df.columns:
-                df['gu'] = 2 * df.ju + 1
-            if not 'gl' in df.columns:
-                df['gl'] = 2 * df.jl + 1
+            if not "gu" in df.columns:
+                df["gu"] = 2 * df.ju + 1
+            if not "gl" in df.columns:
+                df["gl"] = 2 * df.jl + 1
             return
-        
+
         from radis.db.degeneracies import gi, gs
 
         dbformat = self.params.dbformat
@@ -2103,7 +2106,9 @@ class BaseFactory(DatabankLoader):
             molar_mass_dict = {}
             for iso in iso_set:
                 if self.input.isatom:
-                    molar_mass_dict[iso] = iso or get_element_symbol(molecule).mass #if isotope number is given then use it, otherwise resort to standard atomic weight
+                    molar_mass_dict[iso] = (
+                        iso or get_element_symbol(molecule).mass
+                    )  # if isotope number is given then use it, otherwise resort to standard atomic weight
                 else:
                     molar_mass_dict[iso] = molpar.get(molecule, iso, "mol_mass")
             molar_mass = df["iso"].map(molar_mass_dict)
@@ -2359,10 +2364,10 @@ class BaseFactory(DatabankLoader):
         air_pressure = self.input.pressure / 1.01325  # convert from bar to atm
 
         if self.input.isatom:
-            if 'shft' in df.columns:
-                df["shiftwav"] = df.wav - df['shft']
+            if "shft" in df.columns:
+                df["shiftwav"] = df.wav - df["shft"]
             else:
-                self.warn('wavenumber shift not given in database: assumed 0 shift')
+                self.warn("wavenumber shift not given in database: assumed 0 shift")
                 df["shiftwav"] = df.wav
         elif "Pshft" in df.columns:
             df["shiftwav"] = df.wav + (df.Pshft * air_pressure)
@@ -2514,7 +2519,9 @@ class BaseFactory(DatabankLoader):
                 df1.attrs["id"] = int(id_set)
 
         if "molecule" in df1.attrs:
-            molecule = df1.attrs["molecule"]  # used for ExoMol and others, which have no HITRAN-id
+            molecule = df1.attrs[
+                "molecule"
+            ]  # used for ExoMol and others, which have no HITRAN-id
         else:
             molecule = get_molecule(df1.attrs["id"])
         state = self.input.state
@@ -2564,7 +2571,9 @@ class BaseFactory(DatabankLoader):
                 df1.attrs["id"] = int(id_set)
 
         if "molecule" in df1.attrs:
-            molecule = df1.attrs["molecule"]  # used for ExoMol and others, which has no HITRAN-id
+            molecule = df1.attrs[
+                "molecule"
+            ]  # used for ExoMol and others, which has no HITRAN-id
         else:
             molecule = get_molecule(df1.attrs["id"])
         state = self.input.state
@@ -2599,7 +2608,7 @@ class BaseFactory(DatabankLoader):
             df1.attrs["Qref"] = Qref
             Qref_Qgas = Qref / Qgas
         return Qref_Qgas
-    
+
     def calc_linestrength_eq(self, Tgas):
         """Calculate linestrength at temperature Tgas correcting the database
         linestrength tabulated at temperature :math:`T_{ref}`.
@@ -2893,7 +2902,7 @@ class BaseFactory(DatabankLoader):
                     # ... make sure PartitionFunction above is calculated with the same
                     # ... temperatures, rovibrational distributions and overpopulations
                     # ... as the populations of active levels (somewhere below)
-                    #print(df.columns)
+                    # print(df.columns)
                     df.loc[idx, "Qvib"] = Qvib
                     df.loc[idx, "Q"] = Q
 

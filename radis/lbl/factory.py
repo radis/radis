@@ -156,13 +156,13 @@ class SpectrumFactory(BandFactory):
         isotope id
 
         For molecules, this is the isotopologue ID (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2) - see [HITRAN-2020]_ documentation for isotope list for all species.
-        
+
         For atoms, use the isotope number of the isotope (the total number of protons and neutrons in the nucleus) - use 0 to select rows where the isotope is unspecified, in which case the standard atomic weight from the ``periodictable`` module is used when mass is required.
-        
+
         If ``'all'``,
         all isotopes in database are used (this may result in larger computation
         times!).
-        
+
         Default ``'all'``
     medium: ``'air'``, ``'vacuum'``
         propagating medium when giving inputs with ``'wavenum_min'``, ``'wavenum_max'``.
@@ -170,9 +170,9 @@ class SpectrumFactory(BandFactory):
     diluent: ``str`` or ``dictionary``
             can be a string of a single diluent or a dictionary containing diluent
             name as key and its mole_fraction as value.
-            
+
             If left unspecified, it defaults to ``'air'`` for molecules and atomic hydrogen 'H' for atoms.
-            
+
             For free electrons, use the symbol 'e-'. Currently, only H, H2, H2, and e- are supported for atoms - any other diluents have no effect besides diluting the mole fractions of the other constituents.
 
     Other Parameters
@@ -457,9 +457,11 @@ class SpectrumFactory(BandFactory):
         kwargs0 = kwargs  # kwargs is used to deal with Deprecated names
         if "molecule" in kwargs:
             if species is not None:
-                if species != kwargs['molecule']:
-                    raise Exception("Both `molecule` and `species` arguments have been given and aren't equal, but `molecule` is just an alias for `species`.")
-            species = molecule = kwargs['molecule']
+                if species != kwargs["molecule"]:
+                    raise Exception(
+                        "Both `molecule` and `species` arguments have been given and aren't equal, but `molecule` is just an alias for `species`."
+                    )
+            species = molecule = kwargs["molecule"]
             # warn(
             #     DeprecationWarning(
             #         "`molecule` is deprected - use `species` instead"
@@ -555,15 +557,14 @@ class SpectrumFactory(BandFactory):
         # --------------
         # Get molecule name
 
-        if molecule is not None:# and species is not None:
+        if molecule is not None:  # and species is not None:
             species = molecule = to_conventional_name(molecule)
             if isinstance(molecule, int):
                 species = molecule = get_molecule(molecule)
             if not is_atom(molecule):
                 if (
                     molecule
-                    not in MOLECULES_LIST_EQUILIBRIUM
-                    + MOLECULES_LIST_NONEQUILIBRIUM
+                    not in MOLECULES_LIST_EQUILIBRIUM + MOLECULES_LIST_NONEQUILIBRIUM
                 ):
                     raise ValueError(
                         "Unsupported molecule: {0}.\n".format(molecule)
@@ -576,14 +577,14 @@ class SpectrumFactory(BandFactory):
                         + "\n\nNote that RADIS now has ExoMol support, but not all ExoMol molecules are referenced in RADIS. If a molecule is available in ExoMol but does not appear in RADIS yet, please contact the RADIS team or write on https://github.com/radis/radis/issues/319"
                     )
                 self.input.isatom = False
-                self.input.isneutral = None # irrelevant for molecules
+                self.input.isneutral = None  # irrelevant for molecules
                 if isinstance(diluent, Default):
-                    diluent = 'air'
+                    diluent = "air"
             else:
                 self.input.isatom = True
                 self.input.isneutral = is_neutral(molecule)
                 if isinstance(diluent, Default):
-                    diluent = 'H'
+                    diluent = "H"
 
         # Store isotope identifier in str format (list wont work in database queries)
         if not isinstance(isotope, str):
@@ -918,8 +919,10 @@ class SpectrumFactory(BandFactory):
         # Generate output quantities
         # transmittance_noslit = exp(-absorbance)
         # emissivity_noslit = 1 - transmittance_noslit
-        emissivity_noslit = -expm1(-absorbance) #to handle small values of absorbance
-        transmittance_noslit = 1 - emissivity_noslit #still 1 for small values of emissivity_noslit
+        emissivity_noslit = -expm1(-absorbance)  # to handle small values of absorbance
+        transmittance_noslit = (
+            1 - emissivity_noslit
+        )  # still 1 for small values of emissivity_noslit
         radiance_noslit = calc_radiance(
             wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
         )
@@ -1093,8 +1096,10 @@ class SpectrumFactory(BandFactory):
 
         # Check inputs
         if self.input.isatom:
-            raise NotImplementedError("eq_spectrum_gpu hasn't been implemented for atomic spectra")
-        
+            raise NotImplementedError(
+                "eq_spectrum_gpu hasn't been implemented for atomic spectra"
+            )
+
         if not self.input.self_absorption:
             raise ValueError(
                 "Use non_eq_spectrum(Tgas, Tgas) to calculate spectra "
@@ -1268,7 +1273,7 @@ class SpectrumFactory(BandFactory):
         # Generate output quantities
         # transmittance_noslit = exp(-absorbance)
         # emissivity_noslit = 1 - transmittance_noslit
-        emissivity_noslit = -expm1(-absorbance) #to handle small values of absorbance
+        emissivity_noslit = -expm1(-absorbance)  # to handle small values of absorbance
         transmittance_noslit = 1 - emissivity_noslit
         radiance_noslit = calc_radiance(
             self.wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
@@ -1421,7 +1426,9 @@ class SpectrumFactory(BandFactory):
 
         """
         if self.input.isatom:
-            raise NotImplementedError("eq_spectrum_gpu hasn't been implemented for atomic spectra")
+            raise NotImplementedError(
+                "eq_spectrum_gpu hasn't been implemented for atomic spectra"
+            )
 
         from matplotlib import use
 
@@ -1633,7 +1640,7 @@ class SpectrumFactory(BandFactory):
             self.input.pressure = pressure
         if self.input.isatom:
             self.input.Telec = Telec
-            singleTvibmode = True # to trigger calc_populations_noneq below
+            singleTvibmode = True  # to trigger calc_populations_noneq below
         else:
             if isinstance(Tvib, tuple):
                 Tvib = tuple([convert_and_strip_units(T, u.K) for T in Tvib])
@@ -1669,7 +1676,7 @@ class SpectrumFactory(BandFactory):
         self._reset_profiler(verbose)
         # Check variables
         if self.input.isatom:
-            Tmax = None # irrelevant
+            Tmax = None  # irrelevant
         else:
             Tmax = max(flatten(Tgas, Tvib, Trot))
         self._check_inputs(mole_fraction, Tmax)
@@ -1692,8 +1699,8 @@ class SpectrumFactory(BandFactory):
         # ----------
         self._check_line_databank()
 
-        if 'int' not in self.df0.columns and self.input.isatom:
-            self.df0['int'] = self.calc_reference_linestrength()
+        if "int" not in self.df0.columns and self.input.isatom:
+            self.df0["int"] = self.calc_reference_linestrength()
 
         # add nonequilibrium energies if needed (this may be a bottleneck
         # for a first calculation):
@@ -1785,7 +1792,9 @@ class SpectrumFactory(BandFactory):
             b = abscoeff == 0  # optically thin mask
             radiance_noslit = np.zeros_like(emisscoeff)
             radiance_noslit[~b] = (
-                emisscoeff[~b] / abscoeff[~b] * -expm1(-absorbance[~b]) #(1 - transmittance_noslit[~b])
+                emisscoeff[~b]
+                / abscoeff[~b]
+                * -expm1(-absorbance[~b])  # (1 - transmittance_noslit[~b])
             )
             radiance_noslit[b] = emisscoeff[b] * path_length
         else:
@@ -2068,11 +2077,15 @@ class SpectrumFactory(BandFactory):
 
         def _is_at_equilibrium():
             try:
-                if 'Tvib' in self.input: assert self.input.Tvib is None or self.input.Tvib == self.input.Tgas
-                if 'Trot' in self.input: assert self.input.Trot is None or self.input.Trot == self.input.Tgas
-                if 'overpopulation' in self.input: assert (
-                    self.input.overpopulation is None or self.input.overpopulation == {}
-                )
+                if "Tvib" in self.input:
+                    assert self.input.Tvib is None or self.input.Tvib == self.input.Tgas
+                if "Trot" in self.input:
+                    assert self.input.Trot is None or self.input.Trot == self.input.Tgas
+                if "overpopulation" in self.input:
+                    assert (
+                        self.input.overpopulation is None
+                        or self.input.overpopulation == {}
+                    )
                 try:
                     if self.input.self_absorption:
                         assert self.input.self_absorption  # == True

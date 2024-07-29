@@ -1,5 +1,7 @@
-from radis.db.classes import is_atom, to_conventional_name
 import pytest
+
+from radis.db.classes import is_atom, to_conventional_name
+
 
 @pytest.mark.fast
 def test_is_atom():
@@ -7,6 +9,7 @@ def test_is_atom():
     assert is_atom("Fe_I")
     assert is_atom("H_II")
     assert not is_atom("CO2")
+
 
 @pytest.mark.fast
 def test_to_conventional_name():
@@ -24,7 +27,8 @@ def test_to_conventional_name():
     # confirm it is friendly to molcules:
     assert to_conventional_name("CO2") == "CO2"
     assert to_conventional_name("OH") == "OH"
-    assert to_conventional_name(49) == 49 # ID for COCl2
+    assert to_conventional_name(49) == 49  # ID for COCl2
+
 
 if __name__ == "__main__":
     test_is_atom()
