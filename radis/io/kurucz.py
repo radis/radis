@@ -7,7 +7,7 @@ Kurucz database parser
 
 -----------------------
 
-Defines :py:func:`~radis.io.fetch_kurucz` based on :py:class:`~AdBKurucz`
+Defines :func:`~radis.io.fetch_kurucz` based on :class:`~radis.api.kuruczapi.KuruczDatabaseManager`
 
 """
 
@@ -28,7 +28,6 @@ def fetch_kurucz(
     columns=None,
     cache=True,
     verbose=True,
-    chunksize=100000,
     clean_cache_files=True,
     return_local_path=False,
     engine="default",
@@ -36,9 +35,15 @@ def fetch_kurucz(
     parallel=True,
 ):
     """
-    Note: if a registered entry already exists and `radis.config["ALLOW_OVERWRITE"]` is True:
-    - if any situation arises where the databank needs to be re-downloaded, the possible urls are attempted in their usual order of preference, as if the databank hadn't been registered, rather than directly re-downloading from the same url that was previously registered, in case e.g. a new linelist has been uploaded since the databank was previously registered
-    - If no partition function file is registered, e.g because one wasn't available server-side when the databank was last registered, an attempt is still made again to download it, to account for e.g. the case where one has since been uploaded
+    See e.g. :func:`~radis.io.hitemp.fetch_hitemp` for an explanation of the parameters largely applicable to `fetch_kurucz`
+
+    .. note::
+
+        if a registered entry already exists and `radis.config["ALLOW_OVERWRITE"]` is `True`:
+        
+        - if any situation arises where the databank needs to be re-downloaded, the possible urls are attempted in their usual order of preference, as if the databank hadn't been registered, rather than directly re-downloading from the same url that was previously registered, in case e.g. a new linelist has been uploaded since the databank was previously registered
+        
+        - If no partition function file is registered, e.g because one wasn't available server-side when the databank was last registered, an attempt is still made again to download it, to account for e.g. the case where one has since been uploaded
     """
 
     # largely based on :py:func:`~radis.io.fetch_geisa`

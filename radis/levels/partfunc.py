@@ -1192,17 +1192,17 @@ class PartFuncKurucz(RovibParFuncTabulator):
                     sep=", ",
                 )
                 raise
-            addmsg = ". You might want to check whether the partition functions from Barklem & Collet (2016) have a different temperature range within which lies your input temperature."
+            addmsg = "the dedicated Kurucz tables. You might want to check whether the partition functions from Barklem & Collet (2016) have a different temperature range within which lies your input temperature (leave `potential_lowering` as `None` to use)."
         else:
             if self.partfn is None:
                 if potential_lowering is not None:
                     warn(
                         "Table of partition functions by potential lowering not available for this species - using Barklem & Collet (2016) instead with just the temperature"
                     )
-                addmsg = ""
+                addmsg = "Barklem & Collet (2016)."
                 addmsg2 = ", nor are any dedicated tables available for this species."
             else:
-                addmsg = ". You might want to check whether the table of partition functions dependent on potential lowering for this species has a different temperature range within which lies your input temperature."
+                addmsg = "Barklem & Collet (2016). You might want to check whether the Kurucz table of partition functions dependent on potential lowering for this species has a different temperature range within which lies your input temperature (set `potential_lowering` to use)."
                 addmsg2 = ". Specify the potential lowering so the dedicated table of partition functions for this species can be used."
             if self.pf_values is None:
                 raise Exception(
@@ -1215,7 +1215,7 @@ class PartFuncKurucz(RovibParFuncTabulator):
 
         if T < Temp.min() or T > Temp.max():
             raise ValueError(
-                f"The temperature {T} K is outside the tabulated range of the partition functions [{Temp.min()}, {Temp.max()}] K"
+                f"The temperature {T} K is outside the tabulated range of the partition functions [{Temp.min()}, {Temp.max()}] K for "
                 + addmsg
             )
         return np.interp(T, Temp, Qvals)

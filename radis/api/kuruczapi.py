@@ -28,39 +28,32 @@ from radis.misc.warning import DatabaseAlreadyExists
 from radis.phys.air import air2vacuum
 from radis.phys.constants import c_CGS, e_CGS, m_e_CGS
 
+def pick_ionE(ielem, charge):
+    # This method was extracted from exojax/src/exojax/spec/atomllapi.py
+    # (https://github.com/HajimeKawahara/exojax.git)
 
-def load_ionization_energies():
-    # based on https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/spec/atomllapi.py#L308; the file 'NIST_Atomic_Ionization_Energies.txt' is taken from https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/data/atom/NIST_Atomic_Ionization_Energies.txt;
-    """Load atomic ionization energies.
+    """Pick out the ionization energy of a specific atomic species from NIST.
 
-    Returns:
-        df_ionE (pd.DataFrame): table of ionization energies
+    Parameters
+    ----------
+    ielem: int
+        atomic number (e.g., Fe=26)
+    charge: int
+        charge of the species
+
+    Returns
+    -------
+    ionE: float
+        ionization energy
 
     """
+
     fn_IonE = os.path.join(
         getProjectRoot(), "db", "NIST_Atomic_Ionization_Energies.txt"
     )  # pkgutil.get_data(
     #     "exojax", "data/atom/NIST_Atomic_Ionization_Energies.txt"
     # )
     df_ionE = pd.read_csv(fn_IonE, sep="|", skiprows=6, header=0)
-    return df_ionE
-
-
-def pick_ionE(ielem, charge, df_ionE):
-    # This method was extracted from exojax/src/exojax/spec/atomllapi.py
-    # (https://github.com/HajimeKawahara/exojax.git)
-
-    """Pick up ionization energy of a specific atomic species.
-
-    Args:
-        ielem (int): atomic number (e.g., Fe=26)
-        charge (int): charge of the species
-        df_ionE (pd.DataFrame): table of ionization energies
-
-    Returns:
-        ionE (float): ionization energy
-
-    """
 
     def f_droppare(x):
         return (
@@ -76,7 +69,10 @@ def pick_ionE(ielem, charge, df_ionE):
             "      Ionization Energy (a) (eV)      "
         ]
     )
-    return ionE
+
+    assert ionE.size == 1
+    
+    return float(ionE.iloc[0])
 
 
 def get_atomic_number(species):
@@ -112,12 +108,16 @@ def get_element_symbol(species):
 
 
 def read_kurucz_pfs(file):
-    """Convert a Kurucz partfnxxyy.dat file containing a table of partition functions by temperature and potential lowering to a Pandas dataframe
+    """Convert a Kurucz partfnxxyy.dat file containing a table of partition functions by temperature and potential lowering to a Pandas DataFrame
 
     Parameters
     ----------
     fname: str
         file name
+
+    Returns
+    ----------
+    df: Pandas DataFrame
     """
     df = pd.read_csv(file, sep="\s+", header=2)
     df.set_index("LOG10(T)", inplace=True)
@@ -366,17 +366,22 @@ def read_kurucz(kuruczf, preserve_orig_levels=False):
     Parse a Kurucz linelist, process its columns as required, and return as a Pandas DataFrame
 
     Inspired by: https://github.com/rasmus98/NLTE-Helium/blob/fc6161a30ebecfcf59f36386b1dc7f02ff749905/Grotrian_diagram_Helium.ipynb cell 2. Also see:
+    
     - https://github.com/DBerke/varconlib/blob/e57250ca359026ae8b8059dae179fb0ad9625aa2/varconlib/scripts/select_line_pairs.py#L711
+
     - https://github.com/followthesheep/specutils/blob/e2873719f3820e83ab29c79062d7a59a7664fa2f/specutils/read_kurucz_linelist.py
+    
     - https://github.com/ajwheeler/Korg.jl/blob/53420d38c23e21a7fe202b8680bdb201c9a62a2a/src/linelist.jl#L153
 
     Parameters
     ----------
-    kuruczf: file path
-    preserve_orig_levels: (boolean)
+    kuruczf: str
+        file path
+    preserve_orig_levels: boolean
         whether to preserve the original columns pertaining to the levels prior to transforming them, with '_orig' appended to their name; note the columns are still reversed so that the database index increases in wavenumber rather than wavelength
 
-    Returns:
+    Returns
+    ----------
         Pandas DataFrame containing the required columns for the Kurucz linelist database
     """
     colspecs = (
@@ -399,7 +404,7 @@ def read_kurucz(kuruczf, preserve_orig_levels=False):
     dtypes = (
         np.float64,
         np.float64,
-        "object",  # make species string rather than float for easier parsing
+        "object",  # make species object rather than float for easier parsing as a string
         np.float64,
         np.float64,
         "object",
@@ -440,9 +445,7 @@ def read_kurucz(kuruczf, preserve_orig_levels=False):
     species_unique = df["species"].unique()
     assert len(species_unique) == 1
     ielem, charge = get_ielem_charge(species_unique[0])
-    ionE = pick_ionE(ielem, charge, load_ionization_energies())
-    assert ionE.size == 1
-    df["ionE"] = float(ionE.iloc[0])
+    df["ionE"] = pick_ionE(ielem, charge)
 
     # simple method to preserve dtypes of each column:
     cond = (df["eupper_orig"] - df["elower_orig"]) > 0

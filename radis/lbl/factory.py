@@ -150,7 +150,7 @@ class SpectrumFactory(BandFactory):
             in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
             and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
         For atoms:
-            The positive or neutral atomic species. It may be given in spectroscopic notation or any form that can be converted by :py:func:`~radis.db.classes.to_conventional_name`
+            The positive or neutral atomic species (negative ions aren't supported). It may be given in spectroscopic notation or any form that can be converted by :py:func:`~radis.db.classes.to_conventional_name`
         Default ``None``.
     isotope: ``int``, ``list``, ``str`` of the form ``'1,2'``, or ``'all'``
         isotope id
@@ -305,22 +305,22 @@ class SpectrumFactory(BandFactory):
         If ``>=2``, gives more detailed messages (for instance, details of
         calculation times). Default ``True``.
     lbfunc: callable
-        An alternative function to be used instead of the default in calculating Lorentzian broadening, which receives the following keyword arguments:
-            - df: the dataframe ``self.df1`` containing the quantities used for calculating the spectrum
-            - pressure_atm: ``self.pressure`` in units of atmospheric pressure (1.01325 bar)
-            - mole_fraction: ``self.input.mole_fraction``, the mole fraction of the species for which the spectrum is being calculated
-            - Tgas: ``self.input.Tgas``, gas temperature in K
-            - Tref: ``self.input.Tref``, reference temperature for calculations in K
-            - diluent: ``self._diluent``, the dictionary of diluents giving the mole fraction of each
-            - diluent_broadening_coeff: a dictionary of the broadening coefficients for each diluent
-            - isneutral: When calculating the spectrum of an atomic species, whether or not it is neutral (always ``None`` for molecules)
+        An alternative function to be used instead of the default in calculating Lorentzian broadening, which receives the following:
+            - `df`: the dataframe ``self.df1`` containing the quantities used for calculating the spectrum
+            - `pressure_atm`: ``self.pressure`` in units of atmospheric pressure (1.01325 bar)
+            - `mole_fraction`: ``self.input.mole_fraction``, the mole fraction of the species for which the spectrum is being calculated
+            - `Tgas`: ``self.input.Tgas``, gas temperature in K
+            - `Tref`: ``self.input.Tref``, reference temperature for calculations in K
+            - `diluent`: ``self._diluent``, the dictionary of diluents giving the mole fraction of each
+            - `diluent_broadening_coeff`: a dictionary of the broadening coefficients for each diluent
+            - `isneutral`: When calculating the spectrum of an atomic species, whether or not it is neutral (always ``None`` for molecules)
         Returns:
-            gamma_lb, shift - The total Lorentzian HWHM [:math:`cm^{-1}`], and the shift [:math:`cm^{-1}`] to be subtracted from the wavenumber array to account for lineshift. If setting the lineshift here is not desired, the 2nd return object can be anything for which `bool(shift)==False` like `None`. gamma_lb must be array-like but can also be a vaex expression if the dataframe type is vaex.
+            `gamma_lb`, `shift` - The total Lorentzian HWHM [:math:`cm^{-1}`], and the shift [:math:`cm^{-1}`] to be subtracted from the wavenumber array to account for lineshift. If setting the lineshift here is not desired, the 2nd return object can be anything for which `bool(shift)==False` like `None`. gamma_lb must be array-like but can also be a vaex expression if the dataframe type is vaex.
         If unspecified, the broadening is handled by default by :func:`~radis.lbl.broadening.gamma_vald3` for atoms and :func:`~radis.lbl.broadening.pressure_broadening_HWHM` for molecules
 
         See :ref:`the provided example <example_custom_lorentzian_broadening>`
     potential_lowering: float (cm-1/Zeff**2)
-        Use dedicated partition function tables (where available) in Kurucz database that depend on temperature and potential lowering. Otherwise, default to [Barklem-&-Collet-2016]_ Table 8. Can be changed on the fly by setting `sf.input.potential_lowering`. Allowed values are typically: -500, -1000, -2000, -4000, -8000, -16000, -32000.
+        Use dedicated partition function tables (where available) in Kurucz database that depend on temperature and potential lowering. Otherwise, default to [Barklem-\&-Collet-2016]_ Table 8. Can be changed on the fly by setting `sf.input.potential_lowering`. Allowed values are typically: -500, -1000, -2000, -4000, -8000, -16000, -32000.
         See :ref:`the provided example <example_potential_lowering_pfs>` for more details
 
     Examples
@@ -384,7 +384,7 @@ class SpectrumFactory(BandFactory):
     References
     ----------
 
-    .. [Barklem-&-Collet-2016] `"Partition functions and equilibrium constants for diatomic molecules and atoms of astrophysical interest" <https://ui.adsabs.harvard.edu/abs/2016A%2526A...588A..96B>`_
+    .. [Barklem-\&-Collet-2016] `"Partition functions and equilibrium constants for diatomic molecules and atoms of astrophysical interest" <https://ui.adsabs.harvard.edu/abs/2016A%2526A...588A..96B>`_
 
     See Also
     --------

@@ -245,7 +245,7 @@ roman_numerals = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 100
 
 def roman_to_int(roman):
     """
-    A function to convert a string of roman numerals to an int
+    A function to convert a `str` of roman numerals to an `int`
 
     Should support 'Standard form', 'Other additive forms', and 'Other subtractive forms' mentioned here: https://en.wikipedia.org/wiki/Roman_numerals
     """
@@ -268,7 +268,7 @@ invert_roman_numerals = dict(
 
 def int_to_roman(num):
     """
-    A function to convert an int to a string of roman numerals
+    A function to convert an `int` to a `str` of roman numerals
     """
     count = {}
     for factor in invert_roman_numerals:
@@ -299,7 +299,7 @@ def int_to_roman(num):
 
 
 def get_ielem_charge(species):
-    """return the atomic number xx and the charge yy of a positive or neutral atomic species input in the form of a string xx.yy"""
+    """return the atomic number xx and the charge yy of a positive or neutral atomic species input in the form of a `str` 'xx.yy'"""
     ielemstr, chargem1str = species.split(".")
     ielem = int(ielemstr)
     charge = int(chargem1str)
