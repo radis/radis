@@ -19,7 +19,6 @@ Routine Listing
 
 from copy import deepcopy
 from os.path import exists
-from warnings import warn
 
 import numpy as np
 

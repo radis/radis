@@ -20,7 +20,7 @@ The temperature ranges of the partition functions from [Barklem-\&-Collet-2016]_
 
 import traceback
 
-from radis import SpectrumFactory, calc_spectrum
+from radis import calc_spectrum
 
 s, sf = calc_spectrum(
     205,

@@ -28,6 +28,7 @@ from radis.misc.warning import DatabaseAlreadyExists
 from radis.phys.air import air2vacuum
 from radis.phys.constants import c_CGS, e_CGS, m_e_CGS
 
+
 def pick_ionE(ielem, charge):
     # This method was extracted from exojax/src/exojax/spec/atomllapi.py
     # (https://github.com/HajimeKawahara/exojax.git)
@@ -71,7 +72,7 @@ def pick_ionE(ielem, charge):
     )
 
     assert ionE.size == 1
-    
+
     return float(ionE.iloc[0])
 
 
@@ -366,11 +367,11 @@ def read_kurucz(kuruczf, preserve_orig_levels=False):
     Parse a Kurucz linelist, process its columns as required, and return as a Pandas DataFrame
 
     Inspired by: https://github.com/rasmus98/NLTE-Helium/blob/fc6161a30ebecfcf59f36386b1dc7f02ff749905/Grotrian_diagram_Helium.ipynb cell 2. Also see:
-    
+
     - https://github.com/DBerke/varconlib/blob/e57250ca359026ae8b8059dae179fb0ad9625aa2/varconlib/scripts/select_line_pairs.py#L711
 
     - https://github.com/followthesheep/specutils/blob/e2873719f3820e83ab29c79062d7a59a7664fa2f/specutils/read_kurucz_linelist.py
-    
+
     - https://github.com/ajwheeler/Korg.jl/blob/53420d38c23e21a7fe202b8680bdb201c9a62a2a/src/linelist.jl#L153
 
     Parameters

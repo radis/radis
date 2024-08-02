@@ -40,9 +40,9 @@ def fetch_kurucz(
     .. note::
 
         if a registered entry already exists and `radis.config["ALLOW_OVERWRITE"]` is `True`:
-        
+
         - if any situation arises where the databank needs to be re-downloaded, the possible urls are attempted in their usual order of preference, as if the databank hadn't been registered, rather than directly re-downloading from the same url that was previously registered, in case e.g. a new linelist has been uploaded since the databank was previously registered
-        
+
         - If no partition function file is registered, e.g because one wasn't available server-side when the databank was last registered, an attempt is still made again to download it, to account for e.g. the case where one has since been uploaded
     """
 
