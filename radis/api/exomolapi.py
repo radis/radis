@@ -423,7 +423,7 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
         --------
         ::
 
-            map_add("E", "E_lower", "i_lower")
+            trans = map_add(trans, "E", "E_lower", "i_lower")
         """
         if engine == "pytables":
             # Rename the columns in the states DataFrame
@@ -467,8 +467,8 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
     # -----------------------------------------------------------------
     if not skip_optional_data:
         for q in dic_def["quantum_labels"]:
-            map_add(q, f"{q}_l", "i_lower")
-            map_add(q, f"{q}_u", "i_upper")
+            trans = map_add(trans, q, f"{q}_l", "i_lower")
+            trans = map_add(trans, q, f"{q}_u", "i_upper")
 
     return trans
 
