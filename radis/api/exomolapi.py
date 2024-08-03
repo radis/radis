@@ -460,7 +460,7 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
             return column.hasnans
 
     if not "nu_lines" in trans or has_nan(trans["nu_lines"]):
-        map_add("E", "eupper", "i_upper")
+        trans = map_add(trans, "E", "eupper", "i_upper")
         trans["nu_lines"] = trans["eupper"] - trans["elower"]
 
     ### Step 2. Extra quantum numbers (e/f parity, vib and rot numbers)
@@ -1203,7 +1203,7 @@ class MdbExomol(DatabaseManager):
 
                 # Complete transition data with lookup on upper & lower state :
                 # In particular, compute gup and elower
-
+                
                 trans = pickup_gE(
                     states,
                     trans,
