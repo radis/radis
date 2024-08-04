@@ -1203,7 +1203,7 @@ class MdbExomol(DatabaseManager):
 
                 # Complete transition data with lookup on upper & lower state :
                 # In particular, compute gup and elower
-                
+
                 trans = pickup_gE(
                     states,
                     trans,
