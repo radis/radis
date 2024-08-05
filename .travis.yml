@@ -43,16 +43,17 @@ before_script:
 # >> stops immediately. (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
   - export MPLBACKEND=Agg
   - python --version #to check and be sure of the python version
-  - echo ">>> Run Fast tests first"
+  - echo ">>> Run fast tests first"
   # use XVFB to have headless display port, and still run the Matplotlib tests.
+  - sleep $((RANDOM % 60)) #add random delay to avoid overloading the server and fail the query tests
   - xvfb-run -a pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10
 
 script:
   # Your test script goes here
   # >> If script returns a non-zero exit code, the build is failed, but continues to run before being
   # >> marked as failed.  (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
-  - echo ">>> Run All tests now"
-  - xvfb-run -a pytest --cov=./ --durations=10 #re-run fast tests but that is ok because they are fast
+  - echo ">>> Run long tests now"
+  - xvfb-run -a pytest -m "not fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10
   # --durations=N to print the slowest N tests
   # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
 
@@ -69,14 +70,14 @@ stages: #This sequence defines the order of the stages
     if: branch = master OR branch = develop
   - name: deploy
     if: branch = master
-  # - name: MacOS_py310
-  #   if: branch = master OR branch = develop
-  # - name: Win_py310
-  #   if: branch = master OR branch = develop
   - name: Py38
     if: branch = master
   - name: Py312
     if: branch = master
+  # - name: MacOS_py310
+  #   if: branch = master OR branch = develop
+  # - name: Win_py310
+  #   if: branch = master OR branch = develop
 
 jobs:
   include: #start by testing other OS - TO-DO sort install of micromamba https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html
