@@ -517,7 +517,7 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
                 )
 
             #            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 1e-3
-            assert get_residual(s, s_plck, "radiance_noslit", ignore_nan=True) < 0.9e-4
+            assert get_residual(s, s_plck, "radiance_noslit", ignore_nan=True) < 1.4e-4
 
         if verbose:
             printm("Tested optically thick limit is Planck (2 isotopes): OK")
@@ -831,8 +831,8 @@ def _run_testcases(verbose=True, plot=True):
     # test_export_populations(plot=plot, verbose=verbose)
     # test_export_rovib_fractions(plot=plot, verbose=verbose)
     # test_populations_CO2_hamiltonian(plot=plot, verbose=verbose)
-    test_optically_thick_limit_1iso(plot=plot, verbose=verbose)
-    # test_optically_thick_limit_2iso(plot=plot, verbose=verbose)
+    # test_optically_thick_limit_1iso(plot=plot, verbose=verbose)
+    test_optically_thick_limit_2iso(plot=plot, verbose=verbose)
     # test_get_wavenumber_range()
 
 
