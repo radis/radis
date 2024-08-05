@@ -72,6 +72,7 @@ from numpy import exp, pi
 from psutil import virtual_memory
 
 import radis
+from radis.api.kuruczapi import get_element_symbol
 
 # TODO: rename in get_molecule_name
 from radis.db.classes import get_molecule, get_molecule_identifier
@@ -287,9 +288,15 @@ class BaseFactory(DatabankLoader):
         plt.figure()
         df = getattr(self, dataframe)
         a = np.log10(np.array(df[what]))
-        if np.isnan(a).any():
+        if self.dataframe_type == "vaex":
+            checknan = a.countnan()
+            withoutnan = a.dropnan()
+        else:
+            checknan = np.isnan(a).any()
+            withoutnan = a[~np.isnan(a)]
+        if checknan:
             printwarn("NaN values in log10(lines)")
-        plt.hist(np.round(a[~np.isnan(a)]))
+        plt.hist(np.round(withoutnan))
         if axvline is not None:
             plt.axvline(axvline, color="r")
         plt.xlabel("log10({0})".format(what))
@@ -326,7 +333,7 @@ class BaseFactory(DatabankLoader):
         except AssertionError as err:
             if self.dataframe_type == "pandas":
                 index = np.isnan(df[column]).idxmax()
-                if self.input.molecule == "CO2":
+                if self.input.species == "CO2":
                     fix_idea = (
                         "If using HITEMP2010 for CO2, some lines are unlabelled and therefore cannot be used at "
                         "equilibrium. This is a known issue of the HITEMP database and will soon be fixed in the "
@@ -340,7 +347,7 @@ class BaseFactory(DatabankLoader):
                     )
                 ) from err
             elif self.dataframe_type == "vaex":
-                if self.input.molecule == "CO2":
+                if self.input.species == "CO2":
                     fix_idea = (
                         "If using HITEMP2010 for CO2, some lines are unlabelled and therefore cannot be used at "
                         "equilibrium. This is a known issue of the HITEMP database and will soon be fixed in the "
@@ -402,7 +409,7 @@ class BaseFactory(DatabankLoader):
         # calculate directly with Dunham expansions, whose terms are included in
         # the radis.db database
         elif self.params.levelsfmt == "radis":
-            molecule = self.input.molecule
+            molecule = self.input.species
             if molecule in HITRAN_CLASS1:  # class 1
                 return self._add_EvibErot_RADIS_cls1(
                     df, calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic
@@ -455,7 +462,7 @@ class BaseFactory(DatabankLoader):
             raise NotImplementedError("3 Tvib mode for CDSD in pcN convention")  # TODO
 
         elif self.params.levelsfmt == "radis":  # calculate with Dunham expansions
-            if self.input.molecule in HITRAN_CLASS5:  # class 5
+            if self.input.species in HITRAN_CLASS5:  # class 5
                 if calc_Evib_harmonic_anharmonic:
                     return self._add_Evib123Erot_RADIS_cls5_harmonicanharmonic(df)
                 else:
@@ -498,7 +505,7 @@ class BaseFactory(DatabankLoader):
         if calc_Evib_harmonic_anharmonic:
             raise NotImplementedError
 
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
         assert molecule == "CO2"
@@ -672,7 +679,7 @@ class BaseFactory(DatabankLoader):
         if calc_Evib_harmonic_anharmonic:
             raise NotImplementedError
 
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
         assert molecule == "CO2"
@@ -799,7 +806,7 @@ class BaseFactory(DatabankLoader):
         if calc_Evib_harmonic_anharmonic:
             raise NotImplementedError
 
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
         assert molecule == "CO2"
@@ -942,7 +949,7 @@ class BaseFactory(DatabankLoader):
         if calc_Evib_harmonic_anharmonic:
             raise NotImplementedError
 
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
         assert molecule == "CO2"
@@ -1138,7 +1145,7 @@ class BaseFactory(DatabankLoader):
         if calc_Evib_harmonic_anharmonic:
             raise NotImplementedError
 
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
 
@@ -1279,7 +1286,7 @@ class BaseFactory(DatabankLoader):
         if __debug__:
             printdbg("called _add_Evib123Erot_RADIS_cls5()")
 
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
 
@@ -1457,7 +1464,7 @@ class BaseFactory(DatabankLoader):
         if __debug__:
             printdbg("called _add_Evib123Erot_RADIS_cls5_harmonicanharmonic()")
 
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state  # electronic state
         # TODO: for multi-molecule mode: add loops on molecules and states too
 
@@ -1765,7 +1772,7 @@ class BaseFactory(DatabankLoader):
         """
 
         # Checks and loads Energy level database
-        if self.misc.load_energies == False:
+        if not self.input.isatom and self.misc.load_energies == False:
             self._init_rovibrational_energies(self.levels, self.params.levelsfmt)
             self.misc.load_energies = True
 
@@ -1775,82 +1782,89 @@ class BaseFactory(DatabankLoader):
         if len(df) == 0:
             return  # no lines
 
-        # Check spectroscopic parameters required for non-equilibrium (to identify lines)
-        for k in ["branch"]:
-            if k not in df:
-                error_details = ""
-                if "globu" in df:
-                    error_details = ". However, it looks like `globu` is defined. Maybe HITRAN-like database wasn't fully parsed? See radis.api.hitranapi.hit2df"
-                raise KeyError(
-                    f"`{k}` not defined in database ({list(df.columns)}). "
-                    + error_details
-                    + f"Make sure you properly load parameters required for non-LTE calculations by adding `load_columns=['{k}', ...]` or simply `load_columns='noneq'` in fetch_databank / load_databank()"
-                )
-
-        # Make sure database has pre-computed non equilibrium quantities
-
         # ... Make sure upper J' is calculated  (needed to compute populations)
         if not "ju" in df:
-            self._add_ju(df)
+            self._add_ju(
+                df
+            )  # doesn't actually work for Kurucz as no 'branch' column; not needed for now as 'ju' is already present
 
         # ... Make sure upper energy level is calculated (needed to compute populations)
         if not "Eu" in df:
             self._add_Eu(df)
 
-        # (Evib, Erot, etc.)
-        # This may be a bottleneck for a first calculation (has to calculate
-        # the nonequilibrium energies)
-        calc_Evib_harmonic_anharmonic = vib_distribution in ["treanor"]
-        if calc_Evib_harmonic_anharmonic:
-            if singleTvibmode:
-                required_columns = ["Evibl_a", "Evibl_h"]
-            else:
-                required_columns = [
-                    "Evib1l_a",
-                    "Evib1l_h",
-                    "Evib2l_a",
-                    "Evib2l_h",
-                    "Evib3l_a",
-                    "Evib3l_h",
-                ]
+        if self.input.isatom:
+            degeneracy_cols = ["gu", "gl"]
         else:
-            if singleTvibmode:
-                required_columns = ["Evibl"]
-            else:
-                required_columns = ["Evib1l", "Evib2l", "Evib3l"]
+            # Check spectroscopic parameters required for non-equilibrium (to identify lines)
+            for k in ["branch"]:
+                if k not in df:
+                    error_details = ""
+                    if "globu" in df:
+                        error_details = ". However, it looks like `globu` is defined. Maybe HITRAN-like database wasn't fully parsed? See radis.api.hitranapi.hit2df"
+                    raise KeyError(
+                        f"`{k}` not defined in database ({list(df.columns)}). "
+                        + error_details
+                        + f"Make sure you properly load parameters required for non-LTE calculations by adding `load_columns=['{k}', ...]` or simply `load_columns='noneq'` in fetch_databank / load_databank()"
+                    )
 
-        if not all_in(required_columns, df):
-            if singleTvibmode:
-                self._add_EvibErot(
-                    df,
-                    calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic,
-                )
-            else:
-                self._add_Evib123Erot(
-                    df,
-                    calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic,
-                )
-            assert all_in(required_columns, df)
+            # Make sure database has pre-computed non equilibrium quantities
 
-        # ... Check no negative energies
-        tol = -1e-4  # tolerance for negative energies (in cm-1)
-        if self.dataframe_type == "pandas":
-            if not ((df.Erotu > tol).all() and (df.Erotl > tol).all()):
-                self.warn(
-                    "There are negative rotational energies in the database",
-                    "NegativeEnergiesWarning",
-                )
-        elif self.dataframe_type == "vaex":
-            if not (
-                (df.Erotu > tol).sum() == len(df) and (df.Erotl > tol).sum() == len(df)
-            ):
-                self.warn(
-                    "There are negative rotational energies in the database",
-                    "NegativeEnergiesWarning",
-                )
+            # (Evib, Erot, etc.)
+            # This may be a bottleneck for a first calculation (has to calculate
+            # the nonequilibrium energies)
+            calc_Evib_harmonic_anharmonic = vib_distribution in ["treanor"]
+            if calc_Evib_harmonic_anharmonic:
+                if singleTvibmode:
+                    required_columns = ["Evibl_a", "Evibl_h"]
+                else:
+                    required_columns = [
+                        "Evib1l_a",
+                        "Evib1l_h",
+                        "Evib2l_a",
+                        "Evib2l_h",
+                        "Evib3l_a",
+                        "Evib3l_h",
+                    ]
+            else:
+                if singleTvibmode:
+                    required_columns = ["Evibl"]
+                else:
+                    required_columns = ["Evib1l", "Evib2l", "Evib3l"]
+
+            if not all_in(required_columns, df):
+                if singleTvibmode:
+                    self._add_EvibErot(
+                        df,
+                        calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic,
+                    )
+                else:
+                    self._add_Evib123Erot(
+                        df,
+                        calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic,
+                    )
+                assert all_in(required_columns, df)
+
+            # ... Check no negative energies
+            tol = -1e-4  # tolerance for negative energies (in cm-1)
+            if self.dataframe_type == "pandas":
+                if not ((df.Erotu > tol).all() and (df.Erotl > tol).all()):
+                    self.warn(
+                        "There are negative rotational energies in the database",
+                        "NegativeEnergiesWarning",
+                    )
+            elif self.dataframe_type == "vaex":
+                if not (
+                    (df.Erotu > tol).sum() == len(df)
+                    and (df.Erotl > tol).sum() == len(df)
+                ):
+                    self.warn(
+                        "There are negative rotational energies in the database",
+                        "NegativeEnergiesWarning",
+                    )
+            degeneracy_cols = ["gju", "gjl", "gvibu", "gvibl", "gu", "gl"]
 
         # ... Make sure degeneracies are calculated
-        if not all_in(["gju", "gjl", "gvibu", "gvibl", "gu", "gl"], df):
+        if not all_in(degeneracy_cols, df):
             self._calc_degeneracies(df)
 
         if not "Aul" in df:
@@ -1860,12 +1874,19 @@ class BaseFactory(DatabankLoader):
         self.profiler.stop("check_non_eq_param", "Checked nonequilibrium parameters")
 
     def _calc_degeneracies(self, df):
-        """Calculate vibrational and rotational degeneracies.
+        """Calculate upper and lower state degeneracies; includes calculating vibrational and rotational degeneracies for molecules
 
         See Also
         --------
         :func:`~radis.db.degeneracies.gs`, :func:`~radis.db.degeneracies.gi`
         """
+        if self.input.isatom:
+            if not "gu" in df.columns:
+                df["gu"] = 2 * df.ju + 1
+            if not "gl" in df.columns:
+                df["gl"] = 2 * df.jl + 1
+            return
+
         from radis.db.degeneracies import gi, gs
 
         dbformat = self.params.dbformat
@@ -2084,11 +2105,19 @@ class BaseFactory(DatabankLoader):
             iso_set = df.iso.unique()
             molar_mass_dict = {}
             for iso in iso_set:
-                molar_mass_dict[iso] = molpar.get(molecule, iso, "mol_mass")
+                if self.input.isatom:
+                    molar_mass_dict[iso] = (
+                        iso or get_element_symbol(molecule).mass
+                    )  # if isotope number is given then use it, otherwise resort to standard atomic weight
+                else:
+                    molar_mass_dict[iso] = molpar.get(molecule, iso, "mol_mass")
             molar_mass = df["iso"].map(molar_mass_dict)
         else:
             iso = df.attrs["iso"]
-            molar_mass = molpar.get(molecule, iso, "mol_mass")
+            if self.input.isatom:
+                molar_mass = iso or get_element_symbol(molecule).mass
+            else:
+                molar_mass = molpar.get(molecule, iso, "mol_mass")
 
         return molar_mass
 
@@ -2118,7 +2147,10 @@ class BaseFactory(DatabankLoader):
         self.profiler.start("calc_weight_trans", 2)
 
         # get abundance
-        abundance = self.get_lines_abundance(df)
+        if self.input.isatom:
+            abundance = 1
+        else:
+            abundance = self.get_lines_abundance(df)
         if not self.molparam.terrestrial_abundances:
             raise NotImplementedError(
                 "Formula not corrected for non-terrestrial isotopic abundances"
@@ -2157,69 +2189,74 @@ class BaseFactory(DatabankLoader):
         if self.profiler:
             self.profiler.start("calc_ref_linestrength", 2)
 
-        if "id" in df:
-            id_set = df.id.unique()
-            if len(id_set) > 1:
-                raise NotImplementedError("> 1 molecules in same DataFrame")
-            else:
-                self.warn(
-                    "There shouldn't be a Column 'id' with a unique value",
-                    "PerformanceWarning",
-                )
-            df.attrs["id"] = int(id_set)
-        molecule = get_molecule(df.attrs["id"])
-
-        if not "iso" in df:
-
-            # Shortcut if only 1 isotope. We attribute molar_mass & abundance
-            # as attributes of the line database, instead of columns. Much
-            # faster!
-
-            state = self.input.state
-            parsum = self.get_partition_function_calculator(
-                molecule, df.attrs["iso"], state
-            )  # partition function
-            df.attrs["Qref"] = parsum.at(
-                Tref, update_populations=False
-            )  # stored as attribute, not column
-            assert "Qref" not in df.columns
-            Qref = df.attrs["Qref"]
-
+        if self.input.isatom:
+            Qref = self.Qgas(df, Tref)
+            Ia = 1
         else:
-            iso_set = df.iso.unique()
-            if len(iso_set) == 1:
-                self.warn(
-                    "There shouldn't be a Column 'iso' with a unique value",
-                    "PerformanceWarning",
-                )
+            if "id" in df:
+                id_set = df.id.unique()
+                if len(id_set) > 1:
+                    raise NotImplementedError("> 1 molecules in same DataFrame")
+                else:
+                    self.warn(
+                        "There shouldn't be a Column 'id' with a unique value",
+                        "PerformanceWarning",
+                    )
+                df.attrs["id"] = int(id_set)
+            molecule = get_molecule(df.attrs["id"])
 
-            # normal method
-            # still much faster than the groupby().apply() method (see radis<=0.9.19)
-            # (tested + see https://stackoverflow.com/questions/44954514/efficient-way-to-conditionally-populate-elements-in-a-pandas-groupby-object-pos)
+            if not "iso" in df:
 
-            Qref_dict = {}
+                # Shortcut if only 1 isotope. We attribute molar_mass & abundance
+                # as attributes of the line database, instead of columns. Much
+                # faster!
 
-            dgb = df.groupby(by=["iso"])
-            for (iso), idx in dgb.indices.items():
                 state = self.input.state
                 parsum = self.get_partition_function_calculator(
-                    molecule, iso, state
+                    molecule, df.attrs["iso"], state
                 )  # partition function
-                Qref_dict[iso] = parsum.at(Tref, update_populations=False)
-                # ... note: do not update the populations here, so populations in the
-                # ... energy level list correspond to the one calculated for T and not Tref
+                df.attrs["Qref"] = parsum.at(
+                    Tref, update_populations=False
+                )  # stored as attribute, not column
+                assert "Qref" not in df.columns
+                Qref = df.attrs["Qref"]
 
-                if radis.config["DEBUG_MODE"]:
-                    if "id" in df:
-                        assert (df.loc[idx, "id"] == id).all()
-                    assert (df.loc[idx, "iso"] == iso).all()
+            else:
+                iso_set = df.iso.unique()
+                if len(iso_set) == 1:
+                    self.warn(
+                        "There shouldn't be a Column 'iso' with a unique value",
+                        "PerformanceWarning",
+                    )
 
-            Qref = df["iso"].map(Qref_dict)
+                # normal method
+                # still much faster than the groupby().apply() method (see radis<=0.9.19)
+                # (tested + see https://stackoverflow.com/questions/44954514/efficient-way-to-conditionally-populate-elements-in-a-pandas-groupby-object-pos)
+
+                Qref_dict = {}
+
+                dgb = df.groupby(by=["iso"])
+                for (iso), idx in dgb.indices.items():
+                    state = self.input.state
+                    parsum = self.get_partition_function_calculator(
+                        molecule, iso, state
+                    )  # partition function
+                    Qref_dict[iso] = parsum.at(Tref, update_populations=False)
+                    # ... note: do not update the populations here, so populations in the
+                    # ... energy level list correspond to the one calculated for T and not Tref
+
+                    if radis.config["DEBUG_MODE"]:
+                        if "id" in df:
+                            assert (df.loc[idx, "id"] == id).all()
+                        assert (df.loc[idx, "iso"] == iso).all()
+
+                Qref = df["iso"].map(Qref_dict)
+            Ia = df.Ia
         # NOTE: This S0 is not the same as the one calculated by calc_S0()!!!
         # The difference is that this one is multiplied by the fractional population of transition's levels
         # TO-DO: Resolve this ambiguity
         S0 = linestrength_from_Einstein(
-            A=df.A, gu=df.gu, El=df.El, Ia=df.Ia, nu=df.wav, Q=Qref, T=Tref
+            A=df.A, gu=df.gu, El=df.El, Ia=Ia, nu=df.wav, Q=Qref, T=Tref
         )
 
         if self.profiler:
@@ -2326,7 +2363,13 @@ class BaseFactory(DatabankLoader):
         # Calculate
         air_pressure = self.input.pressure / 1.01325  # convert from bar to atm
 
-        if "Pshft" in df.columns:
+        if self.input.isatom:
+            if "shft" in df.columns:
+                df["shiftwav"] = df.wav - df["shft"]
+            else:
+                self.warn("wavenumber shift not given in database: assumed 0 shift")
+                df["shiftwav"] = df.wav
+        elif "Pshft" in df.columns:
             df["shiftwav"] = df.wav + (df.Pshft * air_pressure)
         else:
             self.warn(
@@ -2402,7 +2445,10 @@ class BaseFactory(DatabankLoader):
 
         A = df0["A"]
         wav = df0["wav"]
-        Ia = self.get_lines_abundance(df0)
+        if self.input.isatom:
+            Ia = 1
+        else:
+            Ia = self.get_lines_abundance(df0)
 
         S0 = Ia * gp * A / (8 * pi * c_cm * wav**2)
 
@@ -2426,7 +2472,7 @@ class BaseFactory(DatabankLoader):
 
         try:
             parsum = self.get_partition_function_interpolator(molecule, iso, state)
-            Q = parsum.at(T)
+            Q = parsum.at(T, self.input.potential_lowering)
         except OutOfBoundError as err:
             # Try to calculate
             try:
@@ -2461,7 +2507,6 @@ class BaseFactory(DatabankLoader):
         --------
         :py:meth:`~radis.lbl.base.BaseFactory.Qgas_Qref_ratio`
         """
-
         if "id" in df1.columns:
             id_set = df1.id.unique()
             if len(id_set) > 1:
@@ -2474,7 +2519,9 @@ class BaseFactory(DatabankLoader):
                 df1.attrs["id"] = int(id_set)
 
         if "molecule" in df1.attrs:
-            molecule = df1.attrs["molecule"]  # used for ExoMol, which has no HITRAN-id
+            molecule = df1.attrs[
+                "molecule"
+            ]  # used for ExoMol and others, which have no HITRAN-id
         else:
             molecule = get_molecule(df1.attrs["id"])
         state = self.input.state
@@ -2524,7 +2571,9 @@ class BaseFactory(DatabankLoader):
                 df1.attrs["id"] = int(id_set)
 
         if "molecule" in df1.attrs:
-            molecule = df1.attrs["molecule"]  # used for ExoMol, which has no HITRAN-id
+            molecule = df1.attrs[
+                "molecule"
+            ]  # used for ExoMol and others, which has no HITRAN-id
         else:
             molecule = get_molecule(df1.attrs["id"])
         state = self.input.state
@@ -2613,7 +2662,7 @@ class BaseFactory(DatabankLoader):
         # %% Calculate line strength at desired temperature
         # -------------------------------------------------
 
-        if self.molparam.terrestrial_abundances:
+        if self.molparam.terrestrial_abundances and "int" in df1.columns:
 
             # This calculation is based on equation (A11) in Rothman 1998: "JQSRT, vol.
             # 60, No. 5, pp. 665-710"
@@ -2640,7 +2689,10 @@ class BaseFactory(DatabankLoader):
                     self._add_ju(df1)
                 self._calc_degeneracies(df1)
 
-            Ia = self.get_lines_abundance(df1)
+            if self.input.isatom:
+                Ia = 1
+            else:
+                Ia = self.get_lines_abundance(df1)
             df1["S"] = linestrength_from_Einstein(
                 df1.A, df1.gu, df1.El, Ia, df1.wav, self.Qgas(df1, Tgas), Tgas
             )
@@ -2850,7 +2902,7 @@ class BaseFactory(DatabankLoader):
                     # ... make sure PartitionFunction above is calculated with the same
                     # ... temperatures, rovibrational distributions and overpopulations
                     # ... as the populations of active levels (somewhere below)
-                    print(df.columns)
+                    # print(df.columns)
                     df.loc[idx, "Qvib"] = Qvib
                     df.loc[idx, "Q"] = Q
 
@@ -2988,30 +3040,31 @@ class BaseFactory(DatabankLoader):
     # %%
     def calc_populations_noneq(
         self,
-        Tvib,
-        Trot,
+        Tvib=None,
+        Trot=None,
+        Telec=None,
         vib_distribution="boltzmann",
         rot_distribution="boltzmann",
         overpopulation=None,
     ):
         """Calculate upper and lower state population for all active
         transitions, as well as all levels (through
-        :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq`)
+        :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq` for molecules)
 
         Parameters
         ----------
-        Tvib, Trot: float (K)
+        Tvib, Trot, Telec: float (K)
             temperatures
         vib_distribution: ``'boltzmann'``, ``'treanor'``
-            vibrational level distribution
+            vibrational level  (only applicable for molecules)
         rot_distribution: ``'boltzmann'``
-            rotational level distribution
+            rotational level distribution (only applicable for molecules)
         overpopulation: dict, or ``None``
-            dictionary of overpopulation factors for vibrational levels
+            dictionary of overpopulation factors for vibrational levels (only applicable for molecules)
 
         Returns
         -------
-        None: `nu`, `nl`, `nu_vib`, `nl_vib` are stored in self.df1
+        None: `nu`, `nl`, (and `nu_vib`, `nl_vib` too for molecules) are stored in self.df1
 
         Notes
         -----
@@ -3079,113 +3132,117 @@ class BaseFactory(DatabankLoader):
         if len(df) == 0:
             return  # no lines in database, no need to go further
 
-        # Get vibrational levels for both upper and lower states
-        if not ("viblvl_u" in df and not "viblvl_l" in df):
-            from radis.lbl.bands import add_bands
+        if self.input.isatom:
+            df["nu"] = df.gu * exp(-df.Eu * hc_k / Telec) / self.Qgas(df, Telec)
+            df["nl"] = df.gl * exp(-df.El * hc_k / Telec) / self.Qgas(df, Telec)
+        else:
+            # Get vibrational levels for both upper and lower states
+            if not ("viblvl_u" in df and not "viblvl_l" in df):
+                from radis.lbl.bands import add_bands
 
-            add_bands(
-                df,
-                dbformat=self.params.dbformat,
-                lvlformat=self.params.levelsfmt,
-                dataframe_type=self.dataframe_type,
-                verbose=self.verbose,
-            )
-            assert "viblvl_u" in df
-            assert "viblvl_l" in df
-
-        # %%
-
-        #  Derive populations
-        if not self.misc.export_rovib_fraction:
-            if overpopulation != {}:
-                raise NotImplementedError(
-                    "Overpopulation not implemented in multi-Tvib mode"
+                add_bands(
+                    df,
+                    dbformat=self.params.dbformat,
+                    lvlformat=self.params.levelsfmt,
+                    dataframe_type=self.dataframe_type,
+                    verbose=self.verbose,
                 )
-            # ... vibrational distribution
-            if vib_distribution == "boltzmann":
-                df["nu_vib_x_Qvib"] = df.gvibu * exp(-hc_k * df.Evibu / Tvib)
-                df["nl_vib_x_Qvib"] = df.gvibl * exp(-hc_k * df.Evibl / Tvib)
-            elif vib_distribution == "treanor":
-                raise NotImplementedError("TO DO!")  #!!!TODO
-            else:
-                raise ValueError(
-                    "Unknown vibrational distribution: {0}".format(vib_distribution)
-                )
+                assert "viblvl_u" in df
+                assert "viblvl_l" in df
 
-            # ... Rotational distributions
-            if rot_distribution == "boltzmann":
-                df["nu_rot_x_Qrot"] = df.grotu * exp(-df.Erotu * hc_k / Trot)
-                df["nl_rot_x_Qrot"] = df.grotl * exp(-df.Erotl * hc_k / Trot)
-            else:
-                raise ValueError(
-                    "Unknown rotational distribution: {0}".format(rot_distribution)
-                )
+            # %%
 
-            # ... Partition functions
-            Qneq = self.Qneq(
-                df,
-                Tvib,
-                Trot,
-                vib_distribution=vib_distribution,
-                rot_distribution=rot_distribution,
-                overpopulation=overpopulation,
-            )
+            #  Derive populations
+            if not self.misc.export_rovib_fraction:
+                if overpopulation != {}:
+                    raise NotImplementedError(
+                        "Overpopulation not implemented in multi-Tvib mode"
+                    )
+                # ... vibrational distribution
+                if vib_distribution == "boltzmann":
+                    df["nu_vib_x_Qvib"] = df.gvibu * exp(-hc_k * df.Evibu / Tvib)
+                    df["nl_vib_x_Qvib"] = df.gvibl * exp(-hc_k * df.Evibl / Tvib)
+                elif vib_distribution == "treanor":
+                    raise NotImplementedError("TO DO!")  #!!!TODO
+                else:
+                    raise ValueError(
+                        "Unknown vibrational distribution: {0}".format(vib_distribution)
+                    )
 
-            # ... Total
-            df["nu"] = df.nu_vib_x_Qvib * df.nu_rot_x_Qrot / Qneq
-            df["nl"] = df.nl_vib_x_Qvib * df.nl_rot_x_Qrot / Qneq
+                # ... Rotational distributions
+                if rot_distribution == "boltzmann":
+                    df["nu_rot_x_Qrot"] = df.grotu * exp(-df.Erotu * hc_k / Trot)
+                    df["nl_rot_x_Qrot"] = df.grotl * exp(-df.Erotl * hc_k / Trot)
+                else:
+                    raise ValueError(
+                        "Unknown rotational distribution: {0}".format(rot_distribution)
+                    )
 
-        else:  # self.misc.export_rovib_fraction:
-            # ... Partition functions
-            Q, Qvib, Qrotu, Qrotl = self.Qneq_Qvib_Qrotu_Qrotl(
-                df,
-                Tvib,
-                Trot,
-                vib_distribution=vib_distribution,
-                rot_distribution=rot_distribution,
-                overpopulation=overpopulation,
-            )
-
-            # ... vibrational distribution
-            if vib_distribution == "boltzmann":
-                # equation generated with @pytexit.py2tex > see docstrings.
-                df["nu_vib"] = df.gvibu / Qvib * exp(-hc_k * df.Evibu / Tvib)
-                df["nl_vib"] = df.gvibl / Qvib * exp(-hc_k * df.Evibl / Tvib)
-            elif vib_distribution == "treanor":
-                df["nu_vib"] = (
-                    df.gvibu
-                    / Qvib
-                    * exp(-hc_k * (df.Evibu_h / Tvib + df.Evibu_a / Trot))
-                )
-                df["nl_vib"] = (
-                    df.gvibl
-                    / Qvib
-                    * exp(-hc_k * (df.Evibl_h / Tvib + df.Evibl_a / Trot))
-                )
-            else:
-                raise ValueError(
-                    "Unknown vibrational distribution: {0}".format(vib_distribution)
+                # ... Partition functions
+                Qneq = self.Qneq(
+                    df,
+                    Tvib,
+                    Trot,
+                    vib_distribution=vib_distribution,
+                    rot_distribution=rot_distribution,
+                    overpopulation=overpopulation,
                 )
 
-            # ... Add vibrational-specific overpopulation factors
-            if overpopulation != {}:
-                for viblvl, ov in overpopulation.items():
-                    if ov != 1:
-                        df.loc[df.viblvl_u == viblvl, "nu_vib"] *= ov
-                        df.loc[df.viblvl_l == viblvl, "nl_vib"] *= ov
+                # ... Total
+                df["nu"] = df.nu_vib_x_Qvib * df.nu_rot_x_Qrot / Qneq
+                df["nl"] = df.nl_vib_x_Qvib * df.nl_rot_x_Qrot / Qneq
 
-            # ... Rotational distributions
-            if rot_distribution == "boltzmann":
-                df["nu_rot"] = df.grotu / df.Qrotu * exp(-df.Erotu * hc_k / Trot)
-                df["nl_rot"] = df.grotl / df.Qrotl * exp(-df.Erotl * hc_k / Trot)
-            else:
-                raise ValueError(
-                    "Unknown rotational distribution: {0}".format(rot_distribution)
+            else:  # self.misc.export_rovib_fraction:
+                # ... Partition functions
+                Q, Qvib, Qrotu, Qrotl = self.Qneq_Qvib_Qrotu_Qrotl(
+                    df,
+                    Tvib,
+                    Trot,
+                    vib_distribution=vib_distribution,
+                    rot_distribution=rot_distribution,
+                    overpopulation=overpopulation,
                 )
 
-            # ... Total
-            df["nu"] = df.nu_vib * df.nu_rot * (Qrotu * Qvib / Q)
-            df["nl"] = df.nl_vib * df.nl_rot * (Qrotl * Qvib / Q)
+                # ... vibrational distribution
+                if vib_distribution == "boltzmann":
+                    # equation generated with @pytexit.py2tex > see docstrings.
+                    df["nu_vib"] = df.gvibu / Qvib * exp(-hc_k * df.Evibu / Tvib)
+                    df["nl_vib"] = df.gvibl / Qvib * exp(-hc_k * df.Evibl / Tvib)
+                elif vib_distribution == "treanor":
+                    df["nu_vib"] = (
+                        df.gvibu
+                        / Qvib
+                        * exp(-hc_k * (df.Evibu_h / Tvib + df.Evibu_a / Trot))
+                    )
+                    df["nl_vib"] = (
+                        df.gvibl
+                        / Qvib
+                        * exp(-hc_k * (df.Evibl_h / Tvib + df.Evibl_a / Trot))
+                    )
+                else:
+                    raise ValueError(
+                        "Unknown vibrational distribution: {0}".format(vib_distribution)
+                    )
+
+                # ... Add vibrational-specific overpopulation factors
+                if overpopulation != {}:
+                    for viblvl, ov in overpopulation.items():
+                        if ov != 1:
+                            df.loc[df.viblvl_u == viblvl, "nu_vib"] *= ov
+                            df.loc[df.viblvl_l == viblvl, "nl_vib"] *= ov
+
+                # ... Rotational distributions
+                if rot_distribution == "boltzmann":
+                    df["nu_rot"] = df.grotu / df.Qrotu * exp(-df.Erotu * hc_k / Trot)
+                    df["nl_rot"] = df.grotl / df.Qrotl * exp(-df.Erotl * hc_k / Trot)
+                else:
+                    raise ValueError(
+                        "Unknown rotational distribution: {0}".format(rot_distribution)
+                    )
+
+                # ... Total
+                df["nu"] = df.nu_vib * df.nu_rot * (Qrotu * Qvib / Q)
+                df["nl"] = df.nl_vib * df.nl_rot * (Qrotl * Qvib / Q)
 
         if __debug__:
             assert "nu" in self.df1
@@ -3412,7 +3469,7 @@ class BaseFactory(DatabankLoader):
 
         pops = {}
         # Loop over molecules, isotopes, electronic states
-        for molecule in [self.input.molecule]:
+        for molecule in [self.input.species]:
             pops[molecule] = {}
 
             for isotope in self._get_isotope_list(molecule):
@@ -3538,6 +3595,11 @@ class BaseFactory(DatabankLoader):
         line_strength *= 1 - df.gl / df.gu * nu / nl
         df["S"] = line_strength
 
+        # should produce the same result:
+        # self.calc_S0() # makes S0 column in df0 (requires save_memory to be False)
+        # df["S1"] = self.df0['S0'] * nl * (1 - df.gl / df.gu * nu / nl) / df.gl
+        # print(np.isclose(df.S,df.S1).all())
+
         self.profiler.stop(
             "scaled_non_eq_linestrength", "scaled nonequilibrium linestrength"
         )
@@ -3599,7 +3661,10 @@ class BaseFactory(DatabankLoader):
         # adim. (#/#) (multiplied by n_tot later)
         n_u = df["nu"]
         # correct for abundance
-        n_ua = n_u * self.get_lines_abundance(df)
+        if self.input.isatom:
+            n_ua = n_u
+        else:
+            n_ua = n_u * self.get_lines_abundance(df)
 
         A_ul = df["Aul"]  # (s-1)
 
@@ -3832,7 +3897,7 @@ class BaseFactory(DatabankLoader):
 
         self.profiler.start("reset_population", 3)
         # Reset populations from RovibrationalPartitionFunctions objects
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state
         for isotope in self._get_isotope_list(molecule):
             # ... Get partition function calculator
@@ -3875,7 +3940,7 @@ class BaseFactory(DatabankLoader):
             self.warn("mole_fraction is > 1", "InputConditionsWarning")
 
         # Check temperature range
-        if Tmax > 700 and self.params.dbformat in ["hitran"]:
+        if self.params.dbformat in ["hitran"] and Tmax > 700:
             self.warn(
                 "HITRAN is valid for low temperatures (typically < 700 K). "
                 + "For higher temperatures you may need HITEMP or CDSD. See the "
@@ -3949,7 +4014,7 @@ class BaseFactory(DatabankLoader):
                 raise ValueError("isotope number is needed")
 
         # Get levels
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state
         levels = self.get_partition_function_calculator(molecule, isotope, state).df
         if what == "vib":
@@ -4196,10 +4261,10 @@ def linestrength_from_Einstein(
     """
 
     return (
-        (1 / (8 * np.pi * c_CGS * nu**2))
+        (1 / (8 * pi * c_CGS * nu**2))
         * A
-        * ((Ia * gu * np.exp(-hc_k * El / T)) / Q)
-        * (1 - np.exp(-hc_k * nu / T))
+        * ((Ia * gu * exp(-hc_k * El / T)) / Q)
+        * (1 - exp(-hc_k * nu / T))
     )
 
 

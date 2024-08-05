@@ -17,10 +17,18 @@ eV = 1.602176634e-19  # J
 https://physics.nist.gov/cgi-bin/cuu/Value?e
 """
 
+eV2wn = 8065.54  # 1[eV]=8065.54[cm^-1] # from: https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/utils/constants.py#L35
+
 h = 6.62607015e-34
 """float: Planck constant (m2.kg.s-1 = J.s)
 
 https://physics.nist.gov/cgi-bin/cuu/Value?h|search_for=planck"""
+
+e_CGS = 4.80320450e-10
+"""[esu]=[dyn^0.5*cm] #elementary charge"""
+
+m_e_CGS = 9.10938356e-28
+"""[g] !electron mass"""
 
 k_b = 1.3806490e-23
 """float: Boltzmann constant (m2.kg.s-2.K-1)

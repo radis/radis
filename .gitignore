@@ -17,6 +17,7 @@
 *.pdf
 *.tif
 *.h5
+*.hdf5
 radis/test/test.nfig
 radis/test/*.png
 radis/test/validation/*.png

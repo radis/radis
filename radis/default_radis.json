@@ -14,6 +14,7 @@
     # global parameters
     # -----------------
     "DEBUG_MODE": false,
+    "ALLOW_OVERWRITE": false                # allow overwriting of registered databank entries
     "AUTO_UPDATE_DATABASE": false           # auto-convert 'pytables' files to 'vaex'
     "AUTO_UPDATE_SPEC": false               # auto-update saved Spectrum objects to latest format.
     "OLDEST_COMPATIBLE_VERSION": "0.9.1"    # automatically regenerate cache, files generated with versions anterior to this one,

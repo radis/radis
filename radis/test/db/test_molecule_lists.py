@@ -167,8 +167,8 @@ def generate_molparam_for_non_HITRAN_species():
     # hitran_molecules = fetch_HITRAN_molecules()
     isotopes_full_names = fetch_ExoMol_isotopes()
 
-    # %%
-    from mendeleev import element  # may create ImportError, not added in requirement.
+    #%%
+    import periodictable
 
     Ia_dict = {}
     Mm_dict = {}
@@ -201,7 +201,7 @@ def generate_molparam_for_non_HITRAN_species():
         "As",
         "He",
     ]:
-        el = element(atom)
+        el = getattr(periodictable, atom)
         Ia_dict[atom] = {}
         Mm_dict[atom] = {}
         for iso in el.isotopes:
