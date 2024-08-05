@@ -1992,7 +1992,8 @@ class BroadenFactory(BaseFactory):
         ----------
         broadened_param: pandas Series (or numpy array)   [size N = number of lines]
             Series to apply lineshape to. Typically linestrength `S` for absorption,
-            or `nu * Aul / 4pi * DeltaE` for emission
+            or `nu * A / 4pi * DeltaE` for emission, where A [s-1] is the Einstein
+            coeffient
         line_profile:   (1/cm-1)        2D array of lines_profiles for all lines
                 (size B * N, B = width of lineshape)
         shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
@@ -2149,7 +2150,7 @@ class BroadenFactory(BaseFactory):
         ----------
         broadened_param: pandas Series (or numpy array)   [size N = number of lines]
             Series to apply lineshape to. Typically linestrength `S` for absorption,
-            or `nu * Aul / 4pi * DeltaE` for emission
+            or `nu * A / 4pi * DeltaE` for emission
         line_profile_LDM:  dict
             dict of line profiles ::
 

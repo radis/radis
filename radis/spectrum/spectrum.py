@@ -3342,7 +3342,7 @@ class Spectrum(object):
             show wavelength either in air or vacuum. Default ``'air'``
         plot: str
             what to plot. Default ``'S'`` (scaled line intensity). But it can be
-            any key in the lines, such as population (``'nu'``), or Einstein coefficient (``'Aul'``)
+            any key in the lines, such as population (``'nu'``), or Einstein coefficient (``'A'``)
         lineinfo: list, or ``'all'``
             extra line information to plot. Should be a column name in the databank
             (s.lines). For instance: ``'int'``, ``'selbrd'``, etc... Default [``'int'``]
