@@ -3,31 +3,36 @@
 .. _example_potential_lowering_pfs:
 
 ========================
-Kurucz partition functions and potential lowering
+Atomic spectrum #1: Partition functions and potential lowering
 ========================
 
-For atomic species in the Kurucz databank, some species come with dedicated partition function tables provided, which depend on both temperature and potential lowering. The `potential_lowering` parameter of :py:class:`~radis.lbl.factory.SpectrumFactory` provides a way for the user to set this value to make use of these tables in the interpolator.
+Two sources can be used for the partition function: Kurucz and [Barklem-\&-Collet-2016]_.
+These sources have different temperature ranges.
+The Kurucz partition function includes a dependence on potential lowering. The
+latter can be set with the `potential_lowering` parameter of :py:class:`~radis.lbl.factory.SpectrumFactory`.
 
-When such tables are unavailable or `potential_lowering` is `None` (the default), the partition functions are instead interpolated from [Barklem-\&-Collet-2016]_ Table 8.
+By default, the [Barklem-\&-Collet-2016]_ partition functions are employed. The
+Kurucz partition functions can be used instead by setting the potential lowering
+to a non-zero value. The `sf.input.potential_lowering` attribute of the
+:py:class:`~radis.lbl.factory.SpectrumFactory` instance ``sf`` can be changed
+on the fly to modify the potential lowering value. The change will be reflected
+the next time the partition function interpolator's `._at` method is used,
+without re-initialization.
 
-The value can thereafter be changed on the fly by changing the `sf.input.potential_lowering` attribute of the :py:class:`~radis.lbl.factory.SpectrumFactory` instance ``sf``, the result of which is reflected the next time partition function interpolator's `._at` method is used, without any need to re-initialise it.
-
-Allowable values are usually (in cm-1/Zeff**2): -500, -1000, -2000, -4000, -8000, -16000, -32000. This is based on what's been encountered in the partition function tables of the species checked so far, but documentation of the Kurucz linelists is unclear on whether this is the case for all species.
-
-The temperature ranges of the partition functions from [Barklem-\&-Collet-2016]_ may differ from those of the dedicated Kurucz tables, so where you can calculate spectra at a particular temperature with the Kurucz tables:
+Allowable values for `potential_lowering` are usually (in cm-1/Zeff**2): -500, -1000, -2000, -4000, -8000, -16000, -32000.
 """
 #%%
-
 import traceback
 
 from radis import calc_spectrum
 
+T_high = 50000  # K
 s, sf = calc_spectrum(
     205,
     263,
     wunit="nm",
     species="Y_I",
-    Tgas=50000,
+    Tgas=T_high,
     databank="kurucz",
     potential_lowering=-500,  # any of [-500, -1000, -2000, -4000, -8000, -16000, -32000]
     return_factory=True,
@@ -37,29 +42,29 @@ s, sf = calc_spectrum(
 s.plot("radiance_noslit", wunit="cm-1")
 
 #%%
-# you encounter an error at the same temperature with [Barklem-\&-Collet-2016]_:
+# Setting potential_lowering = None automatically sets [Barklem-\&-Collet-2016]_ as the reference partition function.
+# In this case, 50 000 K is beyond the maximal temperature in [Barklem-\&-Collet-2016]_.
 #
 sf.input.potential_lowering = None
 
 try:
-    sf.eq_spectrum(50000)
+    sf.eq_spectrum(T_high)
 except ValueError:
     print(traceback.format_exc())
+#%%
+# In this case, 99 K is within the temperature range of [Barklem-\&-Collet-2016]_:
+#
+T_low = 99  # K
+s2 = sf.eq_spectrum(Tgas=T_low)
+s2.plot("radiance_noslit", wunit="cm-1")
 
 #%%
-# and where you can calculate spectra at a particular temperature with [Barklem-\&-Collet-2016]_:
+# However, 99 K is *not* within the temperature range of Kurucz:
 #
-
-s = sf.eq_spectrum(Tgas=99)
-s.plot("radiance_noslit", wunit="cm-1")
-
-#%%
-# you encounter an error at the same temperature with the Kurucz tables:
-#
-sf.input.potential_lowering = -500
+sf.input.potential_lowering = -500  # to use the Kurucz partition function
 
 try:
-    sf.eq_spectrum(Tgas=99)
+    sf.eq_spectrum(Tgas=T_low)
 except ValueError:
     print(traceback.format_exc())
 

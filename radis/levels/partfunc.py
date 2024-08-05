@@ -1192,7 +1192,7 @@ class PartFuncKurucz(RovibParFuncTabulator):
                     sep=", ",
                 )
                 raise
-            addmsg = "the dedicated Kurucz tables. You might want to check whether the partition functions from Barklem & Collet (2016) have a different temperature range within which lies your input temperature (leave `potential_lowering` as `None` to use)."
+            addmsg = "the Kurucz partition function. You can try the Barklem & Collet (2016) partition function by setting `potential_lowering=None`."
         else:
             if self.partfn is None:
                 if potential_lowering is not None:
@@ -1202,8 +1202,8 @@ class PartFuncKurucz(RovibParFuncTabulator):
                 addmsg = "Barklem & Collet (2016)."
                 addmsg2 = ", nor are any dedicated tables available for this species."
             else:
-                addmsg = "Barklem & Collet (2016). You might want to check whether the Kurucz table of partition functions dependent on potential lowering for this species has a different temperature range within which lies your input temperature (set `potential_lowering` to use)."
-                addmsg2 = ". Specify the potential lowering so the dedicated table of partition functions for this species can be used."
+                addmsg = "Barklem & Collet (2016). You can try the Kurucz partition function by setting a potential lowering (e.g. `potential_lowering=-500`)."
+                addmsg2 = ". Please specify the potential lowering."
             if self.pf_values is None:
                 raise Exception(
                     "The partition functions from Barklem & Collet (2016) don't include this species"

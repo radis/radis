@@ -3,7 +3,7 @@
 .. _example_custom_lorentzian_broadening:
 
 ========================
-Using a custom broadening function for atomic spectra
+Atomic spectrum #2: Custom broadening function
 ========================
 
 The `lbfunc` parameter of :py:class:`~radis.lbl.factory.SpectrumFactory` allows us to specify a custom function to use for the Lorentzian broadening of a spectrum. This is especially useful for handling pressure broadening of atomic lines for which multiple theories exist.
@@ -13,8 +13,6 @@ By default, RADIS calculates the total Lorentzian broadening of atomic lines as 
 `lbfunc` can be changed on the fly by changing the `sf.params.lbfunc` attribute of the :py:class:`~radis.lbl.factory.SpectrumFactory` instance, the result of which is reflected next time the library calculates its Lorentzian broadening.
 
 To make use of it, familiarise yourself with the column names that RADIS assigns to the relevant quantities you intend to use in `lbfunc`.
-
-We take an example of neutral atomic oxygen (O_I) and calculate a spectrum using the broadening formula (and default values) of SpectraPlot (https://spectraplot.com/), and assume there is no line shift.
 """
 from radis import SpectrumFactory
 
