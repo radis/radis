@@ -1172,7 +1172,7 @@ class BroadenFactory(BaseFactory):
                         raise ValueError(f"{msg_Nan_Tdep}{list_solutions}")
                     elif num_nans > 0:  # radis.config['MISSING_BROAD_COEF'] == 'air':
                         self.warn(
-                            message=f"{msg_Nan_Tdep}.\nYou set radis.config['MISSING_BROAD_COEF'] = 'air' and the broadening coefficients of air is used instead of {key}.\nYou can silence this warning by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.",
+                            message=f"{msg_Nan_Tdep}\nYou set radis.config['MISSING_BROAD_COEF'] = 'air' and the broadening coefficients of air is used instead of {key}.\nYou can silence this warning by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.",
                             category="MissingDiluentBroadeningTdepWarning",
                         )
                         diluent_broadening_coeff["n_" + diluent_name] = df[
@@ -1183,7 +1183,7 @@ class BroadenFactory(BaseFactory):
                         raise ValueError(f"{msg_miss_Tdep}{list_solutions}")
                     else:  # radis.config['MISSING_BROAD_COEF'] == 'air'
                         self.warn(
-                            message=f"{msg_miss_Tdep}.\nYou set radis.config['MISSING_BROAD_COEF'] = 'air' and the broadening coefficients of air is used instead of {key}.\nYou can silence this warning by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.",
+                            message=f"{msg_miss_Tdep}\nYou set radis.config['MISSING_BROAD_COEF'] = 'air' and the broadening coefficients of air is used instead of {key}.\nYou can silence this warning by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.",
                             category="MissingDiluentBroadeningTdepWarning",
                         )
                         diluent_broadening_coeff["n_" + diluent_name] = df[
