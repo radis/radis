@@ -1016,7 +1016,10 @@ def diluents_for_molecule(mole_fraction, diluent, molecule):
     diluent_for_this_molecule = {
         k: v for k, v in diluent_for_this_molecule.items() if v != 0
     }
-    return diluent_for_this_molecule
+    if diluent_for_this_molecule == {}:
+        return Default(None)
+    else:
+        return diluent_for_this_molecule
 
 
 # --------------------------
