@@ -993,13 +993,13 @@ class BroadenFactory(BaseFactory):
         """ See :py:meth:`~radis.lbl.factory.SpectrumFactory`
         """
 
-        # Try to use Cython ?
-        self.use_cython = radis.config[
-            "USE_CYTHON"
-        ]  # default value (read from config file)
-        # ... Note: whether Cython will be used eventually depends whether it was installed,
-        # ... else it default to the non-cython version. What was used eventually
-        # ... is stored in self.params.use_cython
+        # # Try to use Cython ?
+        # self.use_cython = radis.config[
+        #     "USE_CYTHON"
+        # ]  # default value (read from config file)
+        # # ... Note: whether Cython will be used eventually depends whether it was installed,
+        # # ... else it default to the non-cython version. What was used eventually
+        # # ... is stored in self.params.use_cython
 
         # Predict broadening times (helps trigger warnings for optimization)
         self._broadening_time_ruleofthumb = 1e-7  # s / lines / point

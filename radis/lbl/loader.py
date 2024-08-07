@@ -698,7 +698,7 @@ class DatabankLoader(object):
         "save_memory",
         "truncation",
         "units",
-        "use_cython",
+        # "use_cython",
         "verbose",
         "warnings",
         "wavenumber",

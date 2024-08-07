@@ -18,7 +18,6 @@
     "AUTO_UPDATE_DATABASE": false           # auto-convert 'pytables' files to 'vaex'
     "AUTO_UPDATE_SPEC": false               # auto-update saved Spectrum objects to latest format.
     "OLDEST_COMPATIBLE_VERSION": "0.9.1"    # automatically regenerate cache, files generated with versions anterior to this one,
-    "USE_CYTHON": true                      # use Cython module if available (else default to Python)
     "GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD": 3    # raise a warning if less than THIS number of grid points per lineshape,
     "GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD": 1   # raise an error if less than THIS number of grid points per lineshape,
     "MEMORY_MAPPING_ENGINE": "auto"         # "vaex",/"pytables"/"feather". "auto" uses "vaex" in most cases
@@ -27,6 +26,7 @@
     "RESAMPLING_TOLERANCE_THRESHOLD": 5e-3  # an error if raises if areas do not match by a value above, this threshold during resampling. See :py:meth:`~radis.spectrum.spectrum.Spectrum.resample`
     "DATAFRAME_ENGINE" : "pandas"
     "MISSING_BROAD_COEF" : false            # accepted values: false and "air". If "air", missing boradening coefficients are replaced by those of air.
+    #"USE_CYTHON": true                      # use Cython module if available (else default to Python)
     # molecular parameters
     # --------------------
     # Additional parameters are read from radis.db.molparams_extra.json

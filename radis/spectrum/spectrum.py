@@ -3525,7 +3525,6 @@ class Spectrum(object):
                    NwG                  3
                    NwL                  5
                    Tref                 296 K
-                   add_at_used          cython
                    broadening_method    voigt
                    cutoff               1e-27 cm-1/(#.cm-2)
                    dbformat             hitran
