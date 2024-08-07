@@ -4401,8 +4401,10 @@ class Spectrum(object):
         # Check output match the rest of the spectrum conditions
         try:
             assert conditions["Tgas"] != r"N/A"
-            assert conditions["Tvib"] == conditions["Tgas"]
-            assert conditions["Trot"] == conditions["Tgas"]
+            if "Tvib" in conditions:
+                assert conditions["Tvib"] == conditions["Tgas"]
+            if "Trot" in conditions:
+                assert conditions["Trot"] == conditions["Tgas"]
             if "overpopulation" in conditions:
                 assert conditions["overpopulation"] is None
             assert conditions["self_absorption"]  # is True
