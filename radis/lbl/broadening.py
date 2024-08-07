@@ -73,8 +73,7 @@ from scipy.signal import oaconvolve
 import radis
 from radis.db.references import doi
 from radis.lbl.base import BaseFactory
-from radis.misc.arrays import (
-    add_at,
+from radis.misc.arrays import (  # add_at, #cython
     arange_len,
     boolean_array_from_ranges,
     non_zero_ranges_in_array,
@@ -2215,15 +2214,22 @@ class BroadenFactory(BaseFactory):
         broadening_method = self.params.broadening_method
 
         # Get add-at method
+
+        # before v0.15 with Cython
         # ... 1. allow user to use non-cython method (useful for tests ?)
         # ... 2. write in the Spectrum object whether Cython was used or not
         # ...    (either because deactivated, or because not installed)
-        if self.use_cython and add_at != numpy_add_at:
-            _add_at = add_at
-            self.misc.add_at_used = "cython"
-        else:
-            _add_at = numpy_add_at
-            self.misc.add_at_used = "numpy"
+        # if self.use_cython and add_at != numpy_add_at:
+        #     _add_at = add_at
+        #     self.misc.add_at_used = "cython"
+        # else:
+        #     _add_at = numpy_add_at
+        #     self.misc.add_at_used = "numpy"
+
+        # after v0.15 without Cython
+        _add_at = numpy_add_at
+        self.misc.add_at_used = "numpy"
+
         # Vectorize the chunk of lines
         S = broadened_param
 
