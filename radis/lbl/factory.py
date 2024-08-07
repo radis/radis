@@ -107,8 +107,6 @@ from radis.phys.units_astropy import convert_and_strip_units
 from radis.spectrum.equations import calc_radiance
 from radis.spectrum.spectrum import Spectrum
 
-c_cm = c * 100
-
 # %% Main functions
 
 
@@ -2162,36 +2160,6 @@ class SpectrumFactory(BandFactory):
         gamma_self = df["selbrd"].to_numpy()
         gamma = x * gamma_self + (1 - x) * gamma_air
         return gamma
-
-    ##    def _get_S0(self, Ia_arr):
-    ##        """Returns S0 if it already exists, otherwise computes the value using
-    ##        abundance, upper level degeneracy and Einstein's number."""
-    ##        df = self.df0
-    ##
-    ##        # if the column already exists, then return it
-    ##        if "S0" in df.columns:
-    ##            return df["S0"]
-    ##
-    ##        ## TO-DO: I don't think 'int' and 'S0' are the same quantity!
-    ##        ##elif "int" in df.columns:
-    ##        ##    return df["int"]
-    ##
-    ##        try:
-    ##            v0 = df["wav"].to_numpy()
-    ##            iso = df["iso"].to_numpy()
-    ##            A21 = df["A"].to_numpy()
-    ##            Jl = df["jl"].to_numpy()
-    ##            DJ = df["branch"].to_numpy()
-    ##            Ju = Jl + DJ
-    ##            gu = 2 * Ju + 1  # g_up
-    ##            S0 = Ia_arr.take(iso) * gu * A21 / (8 * pi * c_cm * v0 ** 2)
-    ##            df["S0"] = S0
-    ##            return S0
-    ##
-    ##        except KeyError as err:
-    ##            raise KeyError(
-    ##                "Could not find wavenumber, Einstein's coefficient, lower state energy or S0 in the dataframe. PLease check the database"
-    ##            ) from err
 
     def optically_thin_power(
         self,
