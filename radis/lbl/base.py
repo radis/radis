@@ -2180,92 +2180,6 @@ class BaseFactory(DatabankLoader):
 
         return
 
-    def calc_reference_linestrength(self):
-        """Calculate reference linestrength from Einstein coefficients"""
-
-        df = self.df0
-        Tref = self.input.Tref
-
-        if self.profiler:
-            self.profiler.start("calc_ref_linestrength", 2)
-
-        if self.input.isatom:
-            Qref = self.Qgas(df, Tref)
-            Ia = 1
-        else:
-            if "id" in df:
-                id_set = df.id.unique()
-                if len(id_set) > 1:
-                    raise NotImplementedError("> 1 molecules in same DataFrame")
-                else:
-                    self.warn(
-                        "There shouldn't be a Column 'id' with a unique value",
-                        "PerformanceWarning",
-                    )
-                df.attrs["id"] = int(id_set)
-            molecule = get_molecule(df.attrs["id"])
-
-            if not "iso" in df:
-
-                # Shortcut if only 1 isotope. We attribute molar_mass & abundance
-                # as attributes of the line database, instead of columns. Much
-                # faster!
-
-                state = self.input.state
-                parsum = self.get_partition_function_calculator(
-                    molecule, df.attrs["iso"], state
-                )  # partition function
-                df.attrs["Qref"] = parsum.at(
-                    Tref, update_populations=False
-                )  # stored as attribute, not column
-                assert "Qref" not in df.columns
-                Qref = df.attrs["Qref"]
-
-            else:
-                iso_set = df.iso.unique()
-                if len(iso_set) == 1:
-                    self.warn(
-                        "There shouldn't be a Column 'iso' with a unique value",
-                        "PerformanceWarning",
-                    )
-
-                # normal method
-                # still much faster than the groupby().apply() method (see radis<=0.9.19)
-                # (tested + see https://stackoverflow.com/questions/44954514/efficient-way-to-conditionally-populate-elements-in-a-pandas-groupby-object-pos)
-
-                Qref_dict = {}
-
-                dgb = df.groupby(by=["iso"])
-                for (iso), idx in dgb.indices.items():
-                    state = self.input.state
-                    parsum = self.get_partition_function_calculator(
-                        molecule, iso, state
-                    )  # partition function
-                    Qref_dict[iso] = parsum.at(Tref, update_populations=False)
-                    # ... note: do not update the populations here, so populations in the
-                    # ... energy level list correspond to the one calculated for T and not Tref
-
-                    if radis.config["DEBUG_MODE"]:
-                        if "id" in df:
-                            assert (df.loc[idx, "id"] == id).all()
-                        assert (df.loc[idx, "iso"] == iso).all()
-
-                Qref = df["iso"].map(Qref_dict)
-            Ia = df.Ia
-        # NOTE: This S0 is not the same as the one calculated by calc_S0()!!!
-        # The difference is that this one is multiplied by the fractional population of transition's levels
-        # TO-DO: Resolve this ambiguity
-        S0 = linestrength_from_Einstein(
-            A=df.A, gu=df.gu, El=df.El, Ia=Ia, nu=df.wav, Q=Qref, T=Tref
-        )
-
-        if self.profiler:
-            self.profiler.stop(
-                "calc_ref_linestrength", "Calculated reference linestrength"
-            )
-
-        return S0
-
     def calc_einstein_coefficients(self):
         """Calculate :math:`A (= A_{ul})`, :math:`B_{lu}`, :math:`B_{ul}` Einstein coefficients from weighted
         transition moments squared :math:`R_s^2`.
@@ -2395,16 +2309,17 @@ class BaseFactory(DatabankLoader):
 
         return
 
-    def calc_S0(self):
+    def calc_S0(self, df):
         """Calculate the unscaled intensity from the tabulated Einstein coefficient.
 
         Parameters
         ----------
-        None
+        df: DataFrame
+            The DataFrame to which the ``S0`` column is to be added
 
         Returns
         -------
-        None: ``self.df0`` is updated directly with new column ``S0``
+        None: ``df`` is updated directly with new column ``S0``
 
         References
         ----------
@@ -2414,7 +2329,7 @@ class BaseFactory(DatabankLoader):
 
         Notes
         -----
-        Currently this value is only used in GPU calculations.
+        Currently this value is used in GPU calculations.
         It is one of the columns that is transferred to the GPU
         memory. The idea behind S0 is that it is scaled with all
         variables that do not change during iterations as to
@@ -2427,11 +2342,7 @@ class BaseFactory(DatabankLoader):
 
         """
 
-        from radis.phys.constants import c  # m.s-1
-
-        c_cm = c * 100  # cm.s-1
-
-        df0 = self.df0
+        df0 = df
 
         if len(df0) == 0:
             return  # no lines
@@ -2455,11 +2366,11 @@ class BaseFactory(DatabankLoader):
         else:
             Ia = self.get_lines_abundance(df0)
 
-        S0 = Ia * gp * A / (8 * pi * c_cm * wav**2)
+        S0 = Ia * gp * A / (8 * pi * c_CGS * wav**2) # without the temperature-dependent term (the fractional population of transition's levels)
 
         df0["S0"] = S0  # [cm-1/(molecules/cm-2)]
 
-        assert "S0" in self.df0
+        assert "S0" in df0
 
         self.profiler.stop("scaled_S0", "Scaled equilibrium linestrength")
 
@@ -3582,28 +3493,42 @@ class BaseFactory(DatabankLoader):
         nl = df.nl
         # ... remove Qref, nref, etc.
         # start from for tabulated linestrength
-        if self.dataframe_type == "pandas":
-            line_strength = df.int.copy()  # TODO: savememory; replace the "int" column
-        elif self.dataframe_type == "vaex":
-            line_strength = df.int
-        if not self.molparam.terrestrial_abundances:
-            raise NotImplementedError(
-                "Formula not corrected for non-terrestrial isotopic abundances"
-            )
+
+        self.calc_S0(df)
+        line_strength = df["S0"]
 
         # ... correct for lower state population
-        line_strength /= df.gl * exp(-hc_k * df.El / Tref) / self.Qgas(df, Tref)
+        line_strength /= df.gl
         line_strength *= nl
 
         # ... correct effect of stimulated emission
-        line_strength /= 1 - exp(-hc_k * df.wav / Tref)
         line_strength *= 1 - df.gl / df.gu * nu / nl
+
         df["S"] = line_strength
 
-        # should produce the same result:
-        # self.calc_S0() # makes S0 column in df0 (requires save_memory to be False)
-        # df["S1"] = self.df0['S0'] * nl * (1 - df.gl / df.gu * nu / nl) / df.gl
-        # print(np.isclose(df.S,df.S1).all())
+        # should produce the same result, for cases where an 'int' column in present, by just removing the temperature dependence:
+        
+        # if 'int' in df.columns:
+        #     if self.dataframe_type == "pandas":
+        #         line_strength = df.int.copy()  # TODO: savememory; replace the "int" column
+        #     elif self.dataframe_type == "vaex":
+        #         line_strength = df.int
+        #     if not self.molparam.terrestrial_abundances:
+        #         raise NotImplementedError(
+        #             "Formula not corrected for non-terrestrial isotopic abundances"
+        #         )
+
+        #     # ... correct for lower state population
+        #     line_strength /= df.gl * exp(-hc_k * df.El / Tref) / self.Qgas(df, Tref)
+        #     line_strength *= nl
+
+        #     # ... correct effect of stimulated emission
+        #     line_strength /= 1 - exp(-hc_k * df.wav / Tref)
+        #     line_strength *= 1 - df.gl / df.gu * nu / nl
+
+        #     df["S1"] = line_strength
+        #     print(np.isclose(df.S,df.S1).all())
+
 
         self.profiler.stop(
             "scaled_non_eq_linestrength", "scaled nonequilibrium linestrength"

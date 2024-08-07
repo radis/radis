@@ -1209,7 +1209,7 @@ class SpectrumFactory(BandFactory):
         gamma_arr[0] = self.df0["selbrd"].to_numpy(dtype=np.float32)
         gamma_arr[1] = self.df0["airbrd"].to_numpy(dtype=np.float32)
 
-        self.calc_S0()
+        self.calc_S0(self.df0)
 
         if verbose >= 2:
             print("Initializing parameters...", end=" ")
@@ -1698,9 +1698,6 @@ class SpectrumFactory(BandFactory):
         # Check line database and parameters, reset populations and scaled line dataframe
         # ----------
         self._check_line_databank()
-
-        if "int" not in self.df0.columns and self.input.isatom:
-            self.df0["int"] = self.calc_reference_linestrength()
 
         # add nonequilibrium energies if needed (this may be a bottleneck
         # for a first calculation):
