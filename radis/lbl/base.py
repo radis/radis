@@ -2135,7 +2135,7 @@ class BaseFactory(DatabankLoader):
         References
         ----------
         Weighted transition-moment squared :math:`R_s^2` from linestrength :math:`S_0`
-        at temperature :math:`T_ref`, derived from Eq.(A5) in [Rothman-1998]_
+        at temperature :math:`T_{ref}`, derived from Eq.(A5) in [Rothman-1998]_
 
         .. math:
             R_s^2=10^{+36}\\frac{3h c}{8{\\pi}^3} \\frac{1}{n_u} \\frac{1}{\\frac{I_a g_l}{Q_{ref}} \\operatorname{exp}\\left(\\frac{-E_l}{T_{ref}}\\right)} \\frac{1}{1-\\operatorname{exp}\\left(\\frac{-n_u}{T_{ref}}\\right)} S_0
@@ -2310,7 +2310,8 @@ class BaseFactory(DatabankLoader):
         return
 
     def calc_S0(self, df):
-        """Calculate the unscaled intensity from the tabulated Einstein coefficient.
+        """Calculate S0 from A [s-1], the tabulated Einstein coefficient. S0 is
+        the part of the linestrength that does not depend on the temperature.
 
         Parameters
         ----------
@@ -2325,7 +2326,12 @@ class BaseFactory(DatabankLoader):
         ----------
 
         .. math::
-            S_0 = \\frac{I_a g' A_{21}}{8 \\pi c \\nu^2}
+            S_0 = \\frac{I_a A_{21} g'}{8 \\pi c \\nu^2}
+
+        Do not confuse with S(T = 296 K), the definition of Eq. (1) in https://hitran.org/docs/definitions-and-units/ or Eq.(A11) in [Rothman-1998]_
+
+        .. math::
+            S(T_{ref} = 296 K) = \\frac{I_a A_{21}}{8 \\pi c \\nu^2} \\frac{g' e^{-c_2E''/T_{ref}}(1-e^{-c_2\\nu_{ij}/T_{ref}})}{Q(T_{ref})}
 
         Notes
         -----
@@ -2335,10 +2341,7 @@ class BaseFactory(DatabankLoader):
         variables that do not change during iterations as to
         minimize calculations.
 
-        Units: cm-1/(molecules/cm-2
-
-        NOTE: S0 is not directly related to S(T) used elsewhere!!!
-              (It may even differ in units!!!)
+        Units: cm-1/(molecules/cm-2)
 
         """
 
@@ -2366,7 +2369,9 @@ class BaseFactory(DatabankLoader):
         else:
             Ia = self.get_lines_abundance(df0)
 
-        S0 = Ia * gp * A / (8 * pi * c_CGS * wav**2) # without the temperature-dependent term (the fractional population of transition's levels)
+        S0 = (
+            Ia * gp * A / (8 * pi * c_CGS * wav**2)
+        )  # without the temperature-dependent term (the fractional population of transition's levels)
 
         df0["S0"] = S0  # [cm-1/(molecules/cm-2)]
 
@@ -3436,7 +3441,8 @@ class BaseFactory(DatabankLoader):
         return pops
 
     def calc_linestrength_noneq(self):
-        """Calculate linestrengths at non-LTE
+        """Calculate linestrengths at non-LTE. This value must be divided by
+        the partition function to get the actual spectrum.
 
         Parameters
         ----------
@@ -3450,6 +3456,18 @@ class BaseFactory(DatabankLoader):
         -------
         None
             Linestrength `S` added in self.df
+
+        References
+        ----------
+        This function returns S(T)
+
+        .. math::
+            S(T) = \\frac{I_a A_{21} g'}{8 \\pi c \\nu^2} g' e^{-c_2E''/T}(1-e^{-c_2\\nu_{ij}/T})
+
+        Do not confuse with S(T), the definition of Eq. (1) in https://hitran.org/docs/definitions-and-units/ or Eq.(A11) in [Rothman-1998]_
+
+        .. math::
+            S_{HITRAN}(T) = \\frac{I_a A_{21}}{8 \\pi c \\nu^2} \\frac{g' e^{-c_2E''/T}(1-e^{-c_2\\nu_{ij}/T})}{Q(T)}
 
 
         Notes
@@ -3474,7 +3492,6 @@ class BaseFactory(DatabankLoader):
 
         df = self.df1
         df.attrs = self.df1.attrs
-        Tref = self.input.Tref
 
         if len(df) == 0:
             return  # no lines in database, no need to go further
@@ -3507,7 +3524,8 @@ class BaseFactory(DatabankLoader):
         df["S"] = line_strength
 
         # should produce the same result, for cases where an 'int' column in present, by just removing the temperature dependence:
-        
+
+        # Tref = self.input.Tref
         # if 'int' in df.columns:
         #     if self.dataframe_type == "pandas":
         #         line_strength = df.int.copy()  # TODO: savememory; replace the "int" column
@@ -3528,7 +3546,6 @@ class BaseFactory(DatabankLoader):
 
         #     df["S1"] = line_strength
         #     print(np.isclose(df.S,df.S1).all())
-
 
         self.profiler.stop(
             "scaled_non_eq_linestrength", "scaled nonequilibrium linestrength"
