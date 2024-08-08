@@ -1110,7 +1110,6 @@ class BroadenFactory(BaseFactory):
                     "Set radis.config['MISSING_BROAD_COEF'] = 'air'"
                     + f" This will assume {self.get_conditions()['species']} is broadened by 'air' instead of {key}."
                 )
-                list_solutions = f"\n==> Solution1: {solution1}\n==> Solution2: {solution2}\n==> Solution3: {solution3}"
                 list_solutions = f"\n*** Solution1 ***\n==> {solution1}\n*** Solution2 ***\n==> {solution2}\n*** Solution3 ***\n==> {solution3}"
                 if key == "air":
                     # no need to add broadening dictionary with air, as "airbrd" and "Tdpair" is already in the dataframe
@@ -1161,14 +1160,14 @@ class BroadenFactory(BaseFactory):
                     num_nans = (
                         diluent_broadening_coeff["n_" + diluent_name].isna().sum()
                     )
+                    msg_Nan_Tdep = """
+                    Temperature dependance of Broadening Coefficient of
+                    {self.get_conditions()['species']} by {key} has Nan values in the database.
+                    \nWe found {num_nans} nans out of
+                    {diluent_broadening_coeff['gamma_' + diluent_name].shape[0]}
+                    elements in the columns {'gamma_' + diluent_name}.
+                    """
                     if num_nans > 0 and not radis.config["MISSING_BROAD_COEF"]:
-                        msg_Nan_Tdep = """
-                        Temperature dependance of Broadening Coefficient of
-                        {self.get_conditions()['species']} by {key} has Nan values in the database.
-                        \nWe found {num_nans} nans out of
-                        {diluent_broadening_coeff['gamma_' + diluent_name].shape[0]}
-                        elements in the columns {'gamma_' + diluent_name}.
-                        """
                         raise ValueError(f"{msg_Nan_Tdep}{list_solutions}")
                     elif num_nans > 0:  # radis.config['MISSING_BROAD_COEF'] == 'air':
                         self.warn(
