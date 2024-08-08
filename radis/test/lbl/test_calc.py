@@ -464,7 +464,7 @@ def test_calc_spectrum_overpopulations(
 
 
 def test_all_calc_methods_CO2pcN(
-    verbose=True, plot=False, warnings=True, rtol=1e-3, *args, **kwargs
+    verbose=True, plot=False, warnings=True, rtol=2e-2, *args, **kwargs
 ):
     """Test same spectrum for 3 different calculation variants (equilibrium,
     non-equilibrium, per band and recombine
@@ -477,6 +477,11 @@ def test_all_calc_methods_CO2pcN(
 
     This corresponds to the levelsfmt = 'cdsd-pcN' in
     :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`
+
+    Notes:
+        The relative error, rtol=2e-2, can be improved down to 5e-4 by using
+        the hitran database. However, it requires to download the database
+        which takes time for the test suite. See https://github.com/radis/radis/pull/676
     """
 
     from radis.misc.config import getDatabankEntries
@@ -953,16 +958,16 @@ def test_diluents_for_molecule():
 
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
-    # Test sPlanck and conversion functions
-    test_sPlanck_conversions()
+    # # Test sPlanck and conversion functions
+    # test_sPlanck_conversions()
 
-    # Test calc_spectrum function
-    test_calc_spectrum()
+    # # Test calc_spectrum function
+    # test_calc_spectrum()
 
-    # Test calc_spectrum with overpopulation
-    test_calc_spectrum_overpopulations(
-        verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
-    )
+    # # Test calc_spectrum with overpopulation
+    # test_calc_spectrum_overpopulations(
+    #     verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
+    # )
 
     # Compare all calc methods
     #    test_all_calc_methods_CO2(
@@ -972,20 +977,20 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
         verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
     )
 
-    # Compare same spectrum with two calculation methods
-    test_eq_vs_noneq_isotope(
-        verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
-    )
+    # # Compare same spectrum with two calculation methods
+    # test_eq_vs_noneq_isotope(
+    #     verbose=verbose, plot=plot, warnings=warnings, *args, **kwargs
+    # )
 
-    # Run test for multiple molecules
-    test_calc_spectrum_multiple_molecules()
-    # test_calc_spectrum_multiple_molecules_otherinputs()
-    test_calc_spectrum_multiple_molecules_inputerror()
-    # test_calc_spectrum_multiple_molecules_wstep_auto()
+    # # Run test for multiple molecules
+    # test_calc_spectrum_multiple_molecules()
+    # # test_calc_spectrum_multiple_molecules_otherinputs()
+    # test_calc_spectrum_multiple_molecules_inputerror()
+    # # test_calc_spectrum_multiple_molecules_wstep_auto()
 
-    test_check_wavelength_range()
-    test_non_air_diluent_calc()
-    test_diluents_for_molecule()
+    # test_check_wavelength_range()
+    # test_non_air_diluent_calc()
+    # test_diluents_for_molecule()
 
     return True
 
