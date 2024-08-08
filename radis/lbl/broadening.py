@@ -73,8 +73,7 @@ from scipy.signal import oaconvolve
 import radis
 from radis.db.references import doi
 from radis.lbl.base import BaseFactory
-from radis.misc.arrays import (
-    add_at,
+from radis.misc.arrays import (  # add_at, #cython
     arange_len,
     boolean_array_from_ranges,
     non_zero_ranges_in_array,
@@ -993,13 +992,13 @@ class BroadenFactory(BaseFactory):
         """ See :py:meth:`~radis.lbl.factory.SpectrumFactory`
         """
 
-        # Try to use Cython ?
-        self.use_cython = radis.config[
-            "USE_CYTHON"
-        ]  # default value (read from config file)
-        # ... Note: whether Cython will be used eventually depends whether it was installed,
-        # ... else it default to the non-cython version. What was used eventually
-        # ... is stored in self.params.use_cython
+        # # Try to use Cython ?
+        # self.use_cython = radis.config[
+        #     "USE_CYTHON"
+        # ]  # default value (read from config file)
+        # # ... Note: whether Cython will be used eventually depends whether it was installed,
+        # # ... else it default to the non-cython version. What was used eventually
+        # # ... is stored in self.params.use_cython
 
         # Predict broadening times (helps trigger warnings for optimization)
         self._broadening_time_ruleofthumb = 1e-7  # s / lines / point
@@ -1077,6 +1076,7 @@ class BroadenFactory(BaseFactory):
         # diluent and their broadening coeff dictionary
         diluent_broadening_coeff = {}
 
+        ###### Atoms ######
         new_diluent = diluent.copy()
         if self.input.isatom:
             for key in diluent:
@@ -1093,8 +1093,24 @@ class BroadenFactory(BaseFactory):
                     # new_diluent['H'] = new_diluent.get('H', 0) + new_diluent[key]
                     # del new_diluent[key]
             diluent = new_diluent
+        ###### Molecules ######
         else:
+            if not radis.config["MISSING_BROAD_COEF"] in ["air", False]:
+                raise ValueError(
+                    f"radis.config is set to '{radis.config['MISSING_BROAD_COEF']}'. Only 'air' or {False} is allowed."
+                )
             for key in diluent:
+                msg_missing = f"Broadening Coefficient of {self.get_conditions()['species']} by {key} not present in database."
+                msg_miss_Tdep = f"Temperature dependance of Broadening Coefficient of {self.get_conditions()['species']} by {key} not present in database."
+                solution1 = "If the database should include these coefficients, update the database once with `use_cached='regen'` in `calc_spectrum(...)` or `db_use_cached='regen'` in `fetch_databank(...)`."
+                solution2 = (
+                    f"Replace manually '{key}' by 'air' in the `diluent=` parameter."
+                )
+                solution3 = (
+                    "Set radis.config['MISSING_BROAD_COEF'] = 'air'"
+                    + f" This will assume {self.get_conditions()['species']} is broadened by 'air' instead of {key}."
+                )
+                list_solutions = f"\n*** Solution1 ***\n==> {solution1}\n*** Solution2 ***\n==> {solution2}\n*** Solution3 ***\n==> {solution3}"
                 if key == "air":
                     # no need to add broadening dictionary with air, as "airbrd" and "Tdpair" is already in the dataframe
                     continue
@@ -1107,35 +1123,34 @@ class BroadenFactory(BaseFactory):
                     num_nans = (
                         diluent_broadening_coeff["gamma_" + diluent_name].isna().sum()
                     )
-                    if num_nans > 0:
-                        msg = """
-                        Broadening Coefficient by {key} has Nan values in the database.
-                        \nWe found {num_nans} nans out of
-                        {diluent_broadening_coeff['gamma_' + diluent_name].shape[0]} elements
-                        in the columns {'gamma_' + diluent_name}.
-                        """
-                        raise ValueError(
-                            f"{msg}\nClean the database or replace '{key}' by 'air' in the `diluent=` parameter."
+                    msg_Nan = f"""
+                    Broadening Coefficient by {key} has Nan values in the database.
+                    We found {num_nans} nans out of
+                    {diluent_broadening_coeff['gamma_' + diluent_name].shape[0]} elements
+                    in the columns {'gamma_' + diluent_name}.
+                    """
+                    if num_nans > 0 and not radis.config["MISSING_BROAD_COEF"]:
+                        raise ValueError(f"""{msg_Nan}{list_solutions}""")
+                    elif num_nans > 0:  # radis.config['MISSING_BROAD_COEF'] == 'air':
+                        self.warn(
+                            message=f"""{msg_Nan}\nYou set radis.config['MISSING_BROAD_COEF'] = 'air' and the broadening coefficients of air is used instead of {key}.\nYou can silence this warning by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.""",
+                            category="MissingDiluentBroadeningWarning",
                         )
-                        # self.warn(
-                        #     message=msg+"You can silence this error by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.\nThe broadening coefficient of air is used instead.",
-                        #     category="MissingDiluentBroadeningWarning",
-                        # )
-                        # diluent_broadening_coeff["gamma_" + diluent_name] = df[
-                        #     "airbrd"
-                        # ]  # note @dev : check it doesn't create a new memory object
+                        diluent_broadening_coeff["gamma_" + diluent_name] = df[
+                            "airbrd"
+                        ]  # note @dev : check it doesn't create a new memory object
+
                 else:
-                    msg = f"Broadening Coefficient of {self.get_conditions()['species']} by {key} not present in database. \nIf the database should include these coefficients, try removing the cache by using once `use_cached='regen'` in calc_spectrum."
-                    raise ValueError(
-                        f"{msg}\nOtherwise, replace '{key}' by 'air' in the `diluent=` parameter."
-                    )
-                    # self.warn(
-                    #     message="f{msg}\nIf not, you can silence this error by using `warnings['MissingDiluentBroadeningTdepWarning']='ignore'`.\nThe temperature-dependance coefficient of air is used instead.",
-                    #     category="MissingDiluentBroadeningTdepWarning",
-                    # )
-                    # diluent_broadening_coeff["n_" + diluent_name] = df[
-                    #     "Tdpair"
-                    # ]  # note @dev : check it doesn't create a new memory object
+                    if not radis.config["MISSING_BROAD_COEF"]:
+                        raise ValueError(f"""{msg_missing}{list_solutions}""")
+                    else:  # radis.config['MISSING_BROAD_COEF'] == 'air'
+                        self.warn(
+                            message=f"""{msg_missing}.\nYou set radis.config['MISSING_BROAD_COEF'] = 'air' and the broadening coefficients of air is used instead of {key}.\nYou can silence this warning by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.""",
+                            category="MissingDiluentBroadeningWarning",
+                        )
+                        diluent_broadening_coeff["n_" + diluent_name] = df[
+                            "Tdpair"
+                        ]  # note @dev : check it doesn't create a new memory object
 
                 if "n_" + diluent_name in df.columns:
                     diluent_broadening_coeff["n_" + diluent_name] = df[
@@ -1145,37 +1160,34 @@ class BroadenFactory(BaseFactory):
                     num_nans = (
                         diluent_broadening_coeff["n_" + diluent_name].isna().sum()
                     )
-                    if num_nans > 0:
-                        msg = """
-                        Temperature dependance of Broadening Coefficient of
-                        {self.get_conditions()['species']} by {key} has Nan values in the database.
-                        \nWe found {num_nans} nans out of
-                        {diluent_broadening_coeff['gamma_' + diluent_name].shape[0]}
-                        elements in the columns {'gamma_' + diluent_name}.
-                        """
-                        raise ValueError(
-                            f"{msg}\nClean the database or replace '{key}' by 'air' in the `diluent=` parameter."
+                    msg_Nan_Tdep = """
+                    Temperature dependance of Broadening Coefficient of
+                    {self.get_conditions()['species']} by {key} has Nan values in the database.
+                    \nWe found {num_nans} nans out of
+                    {diluent_broadening_coeff['gamma_' + diluent_name].shape[0]}
+                    elements in the columns {'gamma_' + diluent_name}.
+                    """
+                    if num_nans > 0 and not radis.config["MISSING_BROAD_COEF"]:
+                        raise ValueError(f"{msg_Nan_Tdep}{list_solutions}")
+                    elif num_nans > 0:  # radis.config['MISSING_BROAD_COEF'] == 'air':
+                        self.warn(
+                            message=f"{msg_Nan_Tdep}\nYou set radis.config['MISSING_BROAD_COEF'] = 'air' and the broadening coefficients of air is used instead of {key}.\nYou can silence this warning by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.",
+                            category="MissingDiluentBroadeningTdepWarning",
                         )
-
-                        # self.warn(
-                        #     message=f"{msg}\nYou can silence this error by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.\nThe broadening coefficient of air is used instead.",
-                        #     category="MissingDiluentBroadeningWarning",
-                        # )
-                        # diluent_broadening_coeff["n_" + diluent_name] = df[
-                        #     "Tdpair"
-                        # ]  # note @dev : check it doesn't create a new memory object
+                        diluent_broadening_coeff["n_" + diluent_name] = df[
+                            "Tdpair"
+                        ]  # note @dev : check it doesn't create a new memory object
                 else:
-                    msg = f"Temperature dependance of Broadening Coefficient of {self.get_conditions()['species']} by {key} not present in database. \nIf the database should include these coefficients, try removing the cache by using once `use_cached='regen'` in calc_spectrum."
-                    raise ValueError(
-                        f"{msg}\nOtherwise, replace '{key}' by 'air' in the `diluent=` parameter."
-                    )
-                    # self.warn(
-                    #     message="f{msg}\nIf not, you can silence this error by using `warnings['MissingDiluentBroadeningTdepWarning']='ignore'`.\nThe temperature-dependance coefficient of air is used instead.",
-                    #     category="MissingDiluentBroadeningTdepWarning",
-                    # )
-                    # diluent_broadening_coeff["n_" + diluent_name] = df[
-                    #     "Tdpair"
-                    # ]  # note @dev : check it doesn't create a new memory object
+                    if not radis.config["MISSING_BROAD_COEF"]:
+                        raise ValueError(f"{msg_miss_Tdep}{list_solutions}")
+                    else:  # radis.config['MISSING_BROAD_COEF'] == 'air'
+                        self.warn(
+                            message=f"{msg_miss_Tdep}\nYou set radis.config['MISSING_BROAD_COEF'] = 'air' and the broadening coefficients of air is used instead of {key}.\nYou can silence this warning by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.",
+                            category="MissingDiluentBroadeningTdepWarning",
+                        )
+                        diluent_broadening_coeff["n_" + diluent_name] = df[
+                            "Tdpair"
+                        ]  # note @dev : check it doesn't create a new memory object
 
         # Get broadenings
         # Adds hwhm_lorentz:
@@ -2201,15 +2213,22 @@ class BroadenFactory(BaseFactory):
         broadening_method = self.params.broadening_method
 
         # Get add-at method
+
+        # before v0.15 with Cython
         # ... 1. allow user to use non-cython method (useful for tests ?)
         # ... 2. write in the Spectrum object whether Cython was used or not
         # ...    (either because deactivated, or because not installed)
-        if self.use_cython and add_at != numpy_add_at:
-            _add_at = add_at
-            self.misc.add_at_used = "cython"
-        else:
-            _add_at = numpy_add_at
-            self.misc.add_at_used = "numpy"
+        # if self.use_cython and add_at != numpy_add_at:
+        #     _add_at = add_at
+        #     self.misc.add_at_used = "cython"
+        # else:
+        #     _add_at = numpy_add_at
+        #     self.misc.add_at_used = "numpy"
+
+        # after v0.15 without Cython
+        _add_at = numpy_add_at
+        self.misc.add_at_used = "numpy"
+
         # Vectorize the chunk of lines
         S = broadened_param
 

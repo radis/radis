@@ -564,7 +564,11 @@ def calc_spectrum(
         kwargs_molecule.update(**dict_arguments)
 
         # getting diluents for this molecule
-        if isinstance(diluent, Default):
+        if len(list(molecule_dict.keys())) > 1:
+            diluent_for_this_molecule = diluents_for_molecule(
+                mole_fraction, diluent, molecule
+            )
+        elif isinstance(diluent, Default):
             diluent_for_this_molecule = diluent
         else:
             diluent_for_this_molecule = diluents_for_molecule(
@@ -988,6 +992,8 @@ def _calc_spectrum_one_molecule(
 # Function to get diluent(s) for a molecule
 def diluents_for_molecule(mole_fraction, diluent, molecule):
     diluent_for_this_molecule = {}
+    if isinstance(diluent, Default):
+        diluent = "air"
     if isinstance(diluent, dict):
         diluent_for_this_molecule = diluent.copy()
     else:
@@ -995,6 +1001,7 @@ def diluents_for_molecule(mole_fraction, diluent, molecule):
             diluent_for_this_molecule[diluent] = 1 - sum(list(mole_fraction.values()))
         else:
             diluent_for_this_molecule[diluent] = 1 - mole_fraction
+        # Note: will be rounded later, e.g. 1-0.7 = 0.30000000000000004 - see https://docs.python.org/3.10/tutorial/floatingpoint.html
 
     # Adding the other molecules from the gas mixture as diluent for the calculation of this particular molecule
     if isinstance(mole_fraction, dict):
@@ -1005,7 +1012,14 @@ def diluents_for_molecule(mole_fraction, diluent, molecule):
                 else:
                     diluent_for_this_molecule[other_molecule] = other_fraction
 
-    return diluent_for_this_molecule
+    # finaly, remove mole fraction of diluent equal to 0 (weird input or air when molecules add up to 1)
+    diluent_for_this_molecule = {
+        k: v for k, v in diluent_for_this_molecule.items() if v != 0
+    }
+    if diluent_for_this_molecule == {}:
+        return Default(None)
+    else:
+        return diluent_for_this_molecule
 
 
 # --------------------------

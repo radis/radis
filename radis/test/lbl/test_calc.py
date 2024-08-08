@@ -675,52 +675,57 @@ def test_calc_spectrum_multiple_molecules(
     return True
 
 
-# @pytest.mark.needs_connection
-# def test_calc_spectrum_multiple_molecules_otherinputs(
-#     verbose=True, plot=True, warnings=True, *args, **kwargs
-# ):
-#     """Test calculations with different kind of inputs for multiple molecules
+@pytest.mark.needs_connection
+def test_calc_spectrum_multiple_molecules_otherinputs(
+    verbose=True, plot=True, warnings=True, *args, **kwargs
+):
+    """Test calculations with different kind of inputs for multiple molecules
 
-#     Note: try to keep the same wavelength ranges for each of the multi-molecule
-#     tests, so that databases are only downloaded once, and cached!"""
+    Note: try to keep the same wavelength ranges for each of the multi-molecule
+    tests, so that databases are only downloaded once, and cached!"""
+    from radis import config
 
-#     # Give molecule:
-#     s = calc_spectrum(
-#         wavelength_min=4165,
-#         wavelength_max=5000,
-#         Tgas=1000,
-#         path_length=0.1,
-#         molecule=["CO2", "CO"],
-#         mole_fraction=1,
-#         isotope={"CO2": "1,2", "CO": "1,2,3"},
-#         verbose=verbose,
-#     )
-#     assert set(s.conditions["species"]) == set(["CO2", "CO"])
+    prev_conf = config["MISSING_BROAD_COEF"]
+    config["MISSING_BROAD_COEF"] = "air"
 
-#     # Give isotope only
-#     s = calc_spectrum(
-#         wavelength_min=4165,
-#         wavelength_max=5000,
-#         Tgas=1000,
-#         path_length=0.1,
-#         isotope={"CO2": "1,2", "CO": "1,2,3"},
-#         verbose=verbose,
-#     )
-#     assert set(s.conditions["species"]) == set(["CO2", "CO"])
+    # Give molecule:
+    s = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,
+        Tgas=1000,
+        path_length=0.1,
+        molecule=["CO2", "CO"],
+        mole_fraction=1,
+        isotope={"CO2": "1,2", "CO": "1,2,3"},
+        verbose=verbose,
+    )
+    assert set(s.conditions["species"]) == set(["CO2", "CO"])
 
-#     # Give mole fractions only
-#     s = calc_spectrum(
-#         wavelength_min=4165,
-#         wavelength_max=5000,
-#         Tgas=1000,
-#         path_length=0.1,
-#         mole_fraction={"CO2": 0.2, "CO": 0.8},
-#         isotope="1,2",
-#         verbose=verbose,
-#     )
-#     assert set(s.conditions["species"]) == set(["CO2", "CO"])
+    # Give isotope only
+    s = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,
+        Tgas=1000,
+        path_length=0.1,
+        isotope={"CO2": "1,2", "CO": "1,2,3"},
+        verbose=verbose,
+    )
+    assert set(s.conditions["species"]) == set(["CO2", "CO"])
 
-#     return True
+    # Give mole fractions only
+    s = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,
+        Tgas=1000,
+        path_length=0.1,
+        mole_fraction={"CO2": 0.2, "CO": 0.8},
+        isotope="1,2",
+        verbose=verbose,
+    )
+    assert set(s.conditions["species"]) == set(["CO2", "CO"])
+
+    config["MISSING_BROAD_COEF"] = prev_conf
+    return True
 
 
 # @pytest.mark.needs_config_file
@@ -764,61 +769,66 @@ def test_calc_spectrum_multiple_molecules_inputerror(
 
 
 # @pytest.mark.fast #this is not fastfor Travis because it requires a download
-# @pytest.mark.needs_connection
-# def test_calc_spectrum_multiple_molecules_wstep_auto(
-#     verbose=True, plot=True, warnings=True, *args, **kwargs
-# ):
-#     """Tests multiple molecules spectrum for wstep = 'auto'
-#     and checks that minimum wstep value is selected with
-#     resample = "intersect"""
-#     from radis import calc_spectrum
+@pytest.mark.needs_connection
+def test_calc_spectrum_multiple_molecules_wstep_auto(
+    verbose=True, plot=True, warnings=True, *args, **kwargs
+):
+    """Tests multiple molecules spectrum for wstep = 'auto'
+    and checks that minimum wstep value is selected with
+    resample = "intersect"""
+    from radis import calc_spectrum, config
 
-#     # Merging the CO, CO2 spectrum itself in calc_spectrum
-#     s = calc_spectrum(
-#         wavelength_min=4165,
-#         wavelength_max=5000,  # cm-1
-#         isotope="1",
-#         pressure=10.01325,  # bar
-#         Tgas=700,  # K
-#         mole_fraction={"CO": 0.01, "CO2": 0.01},
-#         path_length=1,  # cm
-#         wstep="auto",
-#         databank="hitran",  # or use 'hitemp'
-#         verbose=verbose,
-#     )
-#     s_just_CO = calc_spectrum(
-#         wavelength_min=4165,
-#         wavelength_max=5000,  # cm-1
-#         isotope="1",
-#         pressure=10.01325,  # bar
-#         Tgas=700,  # K
-#         mole_fraction={"CO": 0.01},
-#         diluent={"CO2": 0.01, "air": 0.98},
-#         path_length=1,  # cm
-#         wstep="auto",
-#         databank="hitran",  # or use 'hitemp'
-#         verbose=verbose,
-#     )
-#     s_just_CO2 = calc_spectrum(
-#         wavelength_min=4165,
-#         wavelength_max=5000,  # cm-1
-#         isotope="1",
-#         pressure=10.01325,  # bar
-#         Tgas=700,  # K
-#         mole_fraction={"CO2": 0.01},
-#         diluent={"CO": 0.01, "air": 0.98},
-#         path_length=1,  # cm
-#         wstep="auto",
-#         databank="hitran",  # or use 'hitemp'
-#         verbose=verbose,
-#     )
-#     wCO = s_just_CO.get_conditions()["wstep"]
-#     wCO2 = s_just_CO2.get_conditions()["wstep"]
+    prev_conf = config["MISSING_BROAD_COEF"]
+    config["MISSING_BROAD_COEF"] = "air"
 
-#     # Check calculation went fine:
-#     assert set(s.conditions["species"]) == set(["CO2", "CO"])
-#     assert wCO < wCO2
-#     assert np.isclose(s.get_conditions()["wstep"], wCO)
+    # Merging the CO, CO2 spectrum itself in calc_spectrum
+    s = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,  # cm-1
+        isotope="1",
+        pressure=10.01325,  # bar
+        Tgas=700,  # K
+        mole_fraction={"CO": 0.01, "CO2": 0.01},
+        path_length=1,  # cm
+        wstep="auto",
+        databank="hitran",  # or use 'hitemp'
+        verbose=verbose,
+    )
+    s_just_CO = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,  # cm-1
+        isotope="1",
+        pressure=10.01325,  # bar
+        Tgas=700,  # K
+        mole_fraction={"CO": 0.01},
+        diluent={"CO2": 0.01, "air": 0.98},
+        path_length=1,  # cm
+        wstep="auto",
+        databank="hitran",  # or use 'hitemp'
+        verbose=verbose,
+    )
+    s_just_CO2 = calc_spectrum(
+        wavelength_min=4165,
+        wavelength_max=5000,  # cm-1
+        isotope="1",
+        pressure=10.01325,  # bar
+        Tgas=700,  # K
+        mole_fraction={"CO2": 0.01},
+        diluent={"CO": 0.01, "air": 0.98},
+        path_length=1,  # cm
+        wstep="auto",
+        databank="hitran",  # or use 'hitemp'
+        verbose=verbose,
+    )
+    wCO = s_just_CO.get_conditions()["wstep"]
+    wCO2 = s_just_CO2.get_conditions()["wstep"]
+
+    # Check calculation went fine:
+    assert set(s.conditions["species"]) == set(["CO2", "CO"])
+    assert wCO < wCO2
+    assert np.isclose(s.get_conditions()["wstep"], wCO)
+
+    config["MISSING_BROAD_COEF"] = prev_conf
 
 
 def test_check_wavelength_range(verbose=True, warnings=True, *args, **kwargs):

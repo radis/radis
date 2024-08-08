@@ -22,6 +22,8 @@ try:
 except ImportError:
     vaex = NotInstalled(*not_installed_vaex_args)
 
+pytestmark = pytest.mark.random_order(disabled=True)
+
 
 @pytest.mark.needs_connection
 @pytest.mark.fast
@@ -360,7 +362,7 @@ def test_partial_loading_vaex(*args, **kwargs):
         df = fetch_hitemp(
             "OH",
             local_databases=join(getTestFile("."), "hitemp"),
-            databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
+            databank_name="HITEMP-OH-TEST-PARTIAL-LOADING-VAEX",
             engine="vaex",
         )
     finally:
@@ -373,7 +375,7 @@ def test_partial_loading_vaex(*args, **kwargs):
     df = fetch_hitemp(
         "OH",
         local_databases=join(getTestFile("."), "hitemp"),
-        databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
+        databank_name="HITEMP-OH-TEST-PARTIAL-LOADING-VAEX",
         load_wavenum_min=wmin2,
         load_wavenum_max=wmax2,
         isotope="2,3",

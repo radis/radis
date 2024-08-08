@@ -105,6 +105,13 @@ Parameters
 	--------
 	:py:func:`~radis.api.hdf5.hdf2df`
 
+"MISSING_BROAD_COEF" : False
+
+    str: Accepted values: False (default) and "air". If "air", missing boradening coefficients are replaced by those of air.
+
+    See Also
+    --------
+    :py:func:`~radis.lbl.broadening._calc_broadening_HWHM`
 
 "OLDEST_COMPATIBLE_VERSION": "0.9.1"
     str: forces to regenerate cache files that were created in a previous version
@@ -114,10 +121,10 @@ Parameters
     :py:func:`~radis.api.cache_files.load_h5_cache_file`
 
 
-"USE_CYTHON": True
-    bool: try to use Cython functions when possible
+# "USE_CYTHON": True
+#     bool: try to use Cython functions when possible
 
-    See more in :py:func:`radis.misc.arrays.add_at`
+#     See more in :py:func:`radis.misc.arrays.add_at`
 
 
 "GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD": 3

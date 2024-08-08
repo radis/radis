@@ -124,20 +124,16 @@ def cast_to_int64_with_missing_values(dg, keys, dataframe_type="pandas"):
             dtype = dg.data_type(c)
 
         if dtype != int64:
+            # replace empty strings by -1, e.g. HCN
+            # Warning: -1 may be a valid non-equilibirum quantum number for some
+            # molecules, e.g. H2O, see https://github.com/radis/radis/issues/280#issuecomment-896120510
             if dataframe_type == "pandas":
-                dg[c].replace(
-                    r"^\s+$", -1, regex=True, inplace=True
-                )  # replace empty strings by -1, e.g. HCN
-                # Warning: -1 may be a valid non-equilibirum quantum number for some
-                # molecules, e.g. H2O, see https://github.com/radis/radis/issues/280#issuecomment-896120510
+                dg[c] = dg[c].replace(r"^\s+$", -1, regex=True)
                 dg[c] = dg[c].fillna(-1).astype(int64)  # replace nans with -1
             elif dataframe_type == "vaex":
                 dg[c] = dg[c].str.replace(
                     r"^\s+$", "-1", regex=True
-                )  # replace empty strings by -1, e.g. HCN
-                # Warning: -1 may be a valid non-equilibirum quantum number for some
-                # molecules, e.g. H2O, see https://github.com/radis/radis/issues/280#issuecomment-896120510
-                # dg[c] = dg[c].apply(lambda x : int(x))
+                )  # replace empty strings by -1
             else:
                 raise NotImplementedError(dataframe_type)
 

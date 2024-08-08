@@ -33,6 +33,7 @@ install:
   - micromamba list
   - pip install pytest-cov
   - pip install -e . -v
+  - pip install pytest-random-order #to avoid being rejected by the servers when downloading the same databases by tests in parallel
 
 services:
   - xvfb
@@ -45,8 +46,7 @@ before_script:
   - python --version #to check and be sure of the python version
   - echo ">>> Run fast tests first"
   # use XVFB to have headless display port, and still run the Matplotlib tests.
-  - sleep $((RANDOM % 60)) #add random delay to avoid overloading the server and fail the query tests
-  - xvfb-run -a pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10
+  - xvfb-run -a pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10 --random-order
 
 script:
   # Your test script goes here

@@ -28,7 +28,6 @@ __pycache__/
 *.py[cod]
 *.pyc
 *.c
-radis/cython/*.cpp
 
 # IPython notebook checkpoints
 *-checkpoint.ipynb

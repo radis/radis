@@ -22,6 +22,8 @@ from radis.misc.printer import printm
 from radis.spectrum.spectrum import Spectrum
 from radis.test.utils import setup_test_line_databases
 
+pytestmark = pytest.mark.random_order(disabled=True)
+
 
 @pytest.mark.fast
 @pytest.mark.needs_connection
