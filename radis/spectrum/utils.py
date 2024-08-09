@@ -59,7 +59,7 @@ for _q in CONVOLUTED_QUANTITIES:
 # These parameters are shown below "Physical Conditions" rather than "Computation
 # Parameters
 PHYSICAL_PARAMS = [
-    "molecule",
+    "species",
     "wavenum_max",
     "wavenum_min",
     "mole_fraction",

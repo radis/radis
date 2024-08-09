@@ -3,46 +3,20 @@
 Line databases
 ==============
 
-List of supported line databases formats: :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT`
+List of supported line databases formats: :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT`.
+The databases are stored in a hidden folder ``~/.radisdb`` on the user's computer.
+The informations regarding each database are stored in the configuration file ``~/radis.json``, see the :ref:`Configuration file <label_lbl_config_file>` section.
 
-HITRAN
+HITRAN / HITEMP
 ------
 
-RADIS can automatically fetch HITRAN lines using the `Astroquery <https://astroquery.readthedocs.io>`_
-module. This is done by specifying ``databank=='hitran'`` in :py:func:`~radis.lbl.calc.calc_spectrum`
-or by using the :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank` method in
-:class:`~radis.lbl.factory.SpectrumFactory`.
-Refer to :py:func:`~radis.io.query.fetch_astroquery` for more information.
+HITRAN is designed for atmospheric applications. It is the most widely used line database.
+The HITRAN group also supports the HITEMP database, which is designed for high-temperature applications.
+The files of the HITEMP database are formatted in the same way as HITRAN files but are much larger.
 
-You can also download the HITRAN databases files locally:
-
-- HITRAN can be downloaded from https://hitran.org/lbl/. Expect
-  ~80 Mb for CO2, or 50 Mb for H2O. Cite with [HITRAN-2020]_.
-
-.. note::
-
-    RADIS has parsers to read line databases in Pandas dataframes.
-    This can be useful if you want to edit the database.
-    see :func:`~radis.io.hitran.hit2df`
-
-    There are also functions to get HITRAN molecule ids, and vice-versa:
-    :func:`~radis.db.classes.get_molecule`, :func:`~radis.db.classes.get_molecule_identifier`
-
-
-HITEMP
-------
-
-RADIS can read files from the HITEMP database.
-
-- HITEMP-2010 files can be downloaded from https://hitran.org/hitemp/. Expect
-  ~3 Gb for CO2 or ~10 Gb for H2O. Cite with [HITEMP-2010]_
-
-The ``~/radis.json`` is then used to properly handle the line databases
-on the User environment. See the :ref:`Configuration file <label_lbl_config_file>` section, as well as
-the :py:mod:`radis.misc.config` module and the :py:func:`~radis.misc.config.getDatabankList`
-function for more information.
-
-📣 starting from radis==0.9.28 you can also download HITEMP directly. Example ::
+By default, RADIS automatically fetch HITRAN/HITEMP lines using the `Astroquery <https://astroquery.readthedocs.io>`_
+module. This is done by specifying ``databank=='hitran'`` or ``databank=='hitemp'``.
+- See the following example for :py:func:`~radis.lbl.calc.calc_spectrum` ::
 
     from radis import calc_spectrum
     calc_spectrum(
@@ -54,14 +28,28 @@ function for more information.
         verbose=False,
     )
 
-- Some HITEMP line databases are pre-configured in the :ref:`RADIS-lab <label_radis_lab>` online environment.
-  No install needed !
-
-- If you just want to parse the HITEMP files, use :py:func:`~radis.io.hitemp.fetch_hitemp` ::
+- If you just want to parse the HITEMP files, use :py:func:`~radis.io.hitemp.fetch_hitemp`. You can also refer to :py:func:`~radis.io.query.fetch_astroquery` for more information. ::
 
     from radis.io.hitemp import fetch_hitemp
     fetch_hitemp("NO")
 
+
+
+You can also download the HITRAN/HITEMP databases files locally, but you will have to properly refer to your database in ``~/radis.json``.
+
+.. note::
+
+    RADIS has parsers to read line databases in Pandas dataframes.
+    This can be useful if you want to edit the database.
+    see :func:`~radis.io.hitran.hit2df`
+
+    There are also functions to get HITRAN molecule ids, and vice-versa:
+    :func:`~radis.db.classes.get_molecule`, :func:`~radis.db.classes.get_molecule_identifier`
+
+GEISA
+---------
+
+The GEISA database is designed for atmospheric applications. Using GEISA in RADIS is similar to the HITRAN database, simply specify ``databank=='geisa'``.
 
 CDSD-4000
 ---------

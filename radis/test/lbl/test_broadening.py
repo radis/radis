@@ -439,7 +439,7 @@ def test_broadening_LDM_FT(verbose=True, plot=False, *args, **kwargs):
     assert res < 5e-6
 
 
-@pytest.mark.fast
+# @pytest.mark.fast #not fast, Nicolas Minesi 08/04/2024
 def test_broadening_LDM_noneq(verbose=True, plot=False, *args, **kwargs):
     """
     Test Noneq version of LDM and makes sure it gives the same results as the eq
@@ -1003,7 +1003,7 @@ def test_broadening_chunksize_eq(verbose=True, plot=False, *args, **kwargs):
             )
 
 
-@pytest.mark.fast
+# @pytest.mark.fast #not fast due to connection, Nicolas Minesi 08/04/2024
 def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
     """Test collisional broadening by other species than air and self (resonant)
 
@@ -1028,7 +1028,7 @@ def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
     )
     sf.warnings.update(
         {
-            "MissingSelfBroadeningWarning": "ignore",
+            # "MissingSelfBroadeningWarning": "ignore",
             "NegativeEnergiesWarning": "ignore",
             "LinestrengthCutoffWarning": "ignore",
             "HighTemperatureWarning": "ignore",
@@ -1042,9 +1042,9 @@ def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
         extra_params="all",
         db_use_cached="regen",  # required to download extra broadening parameters
     )
-    # set default behavior of missing custom broadening to be an error:
-    sf.warnings["MissingDiluentBroadeningWarning"] = "error"
-    sf.warnings["MissingDiluentBroadeningTdepWarning"] = "error"
+    # set default behavior of missing custom broadening to be an error: ###Depreciated since radis=0.15
+    # sf.warnings["MissingDiluentBroadeningWarning"] = "error"
+    # sf.warnings["MissingDiluentBroadeningTdepWarning"] = "error"
 
     # (1) Calculating spectrum for different diluents
     sf.eq_spectrum(Tgas=2000)
@@ -1064,19 +1064,11 @@ def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
 
     # (2) Now, ensures that asking broadening by some species not in database raises
     # an error
-    from radis.misc.warning import MissingDiluentBroadeningWarning
-
-    with pytest.raises(MissingDiluentBroadeningWarning):
-        sf.eq_spectrum(Tgas=2000, diluent="X")  # "X" is not a real molecule
-
-    # Ensure it still works and that the warning is raised (air broadening will be used instead)
-    sf.warnings["MissingDiluentBroadeningWarning"] = "warn"
-    sf.warnings["MissingDiluentBroadeningTdepWarning"] = "warn"
-    with pytest.warns(MissingDiluentBroadeningWarning):
+    with pytest.raises(ValueError):
         sf.eq_spectrum(Tgas=2000, diluent="X")  # "X" is not a real molecule
 
 
-@pytest.mark.fast
+# @pytest.mark.fast #not fast due to connection, Nicolas Minesi 08/04/2024
 def test_diluents_molefraction(verbose=True, plot=False, *args, **kwargs):
     """
     Assert an error is raised when Molefraction (molecule + diluent) < 1 or > 1
@@ -1085,16 +1077,29 @@ def test_diluents_molefraction(verbose=True, plot=False, *args, **kwargs):
     from radis.misc.warning import MoleFractionError
 
     sf = SpectrumFactory(
-        wavelength_min=4300,
+        wavelength_min=4200,
         wavelength_max=4500,
-        wstep=0.01,
-        cutoff=1e-30,
-        pressure=1,
-        isotope=[1],
+        cutoff=1e-23,
+        molecule="CO",
+        isotope="1,2",
+        truncation=5,
+        neighbour_lines=10,
+        path_length=0.1,
+        mole_fraction=0.1,
+        medium="vacuum",
+        optimization=None,
         verbose=verbose,
         diluent={"CO2": 0.4, "air": 0.2},
     )
-    sf.load_databank("HITRAN-CO", load_columns=["diluent", "equilibrium"])
+    sf.fetch_databank(
+        "hitran",
+        load_columns=["diluent", "equilibrium"],
+        extra_params="all",
+        db_use_cached="regen",  # required to download extra broadening parameters
+    )
+    # set default behavior of missing custom broadening to be an error:
+    sf.warnings["MissingDiluentBroadeningWarning"] = "error"
+    sf.warnings["MissingDiluentBroadeningTdepWarning"] = "error"
 
     # Assert an error is raised when Molefraction (molecule + diluent) < 1
     with pytest.raises(MoleFractionError) as err:

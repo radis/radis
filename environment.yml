@@ -5,13 +5,13 @@ channels:
 - astropy
 - plotly
 dependencies:
-- python=3.8
+- python
 - astropy>=4.3.1  # Unit aware calculations
 - astroquery>=0.4.6  # to fetch HITRAN databases
 - beautifulsoup4>=4.10.0 # parse ExoMol website
 - cantera>=2.5.1   # for chemical equilibrium computations
 - configparser
-- cython          # EP : really needed? pipreqs doesn't say so
+#- cython          # Not needed, see #647
 - habanero>=1.2.0  # CrossRef API to retrieve data from doi
 - h5py>=3.2.1   # load HDF5
 - joblib  # for parallel loading of SpecDatabase
@@ -19,18 +19,18 @@ dependencies:
 - matplotlib
 - numpy
 - numba  # just-in-time compiler
-- pandas<2.0.0   # not ready for 2.0 yet ; some breaking compatibility, see issue #600
+- pandas
 - plotly>=2.5.1  # for line survey HTML output
-- progressbar2    # used in vaex
+#- progressbar2    # used in vaex
 - psutil # to get user RAM
 - pytables # for pandas to HDF5 export
 - scipy>=1.4.0
 - seaborn   # other matplotlib themes
 - termcolor  # terminal colors
 - specutils
-- vaex-core>=4.17.0   # load HDF5 files  (version needed to fix https://github.com/radis/radis/issues/598)
-- vaex-hdf5
-- vaex-viz
+#- vaex-core>=4.17.0   # load HDF5 files  (version needed to fix https://github.com/radis/radis/issues/598)
+#- vaex-hdf5
+#- vaex-viz
 - pip
 - pip:
   - -r requirements.txt              # add all packages directly in requirements.txt

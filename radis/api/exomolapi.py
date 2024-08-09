@@ -3,10 +3,9 @@
    * MdbExomol is the MDB for ExoMol
 
 Initial code borrowed from the `Exojax <https://github.com/HajimeKawahara/exojax>`__
-code (which you should also have a look at !), by @HajimeKawahara, under MIT License.
+code (which you should also have a look at!), by @HajimeKawahara, under MIT License.
 
 """
-
 
 import os
 import pathlib
@@ -14,7 +13,7 @@ import warnings
 
 import numpy as np
 
-from radis.api.dbmanager import DatabaseManager
+from radis.api.dbmanager import DatabaseManager, get_auto_MEMORY_MAPPING_ENGINE
 from radis.db.classes import EXOMOL_MOLECULES, EXOMOL_ONLY_ISOTOPES_NAMES
 
 EXOMOL_URL = "http://www.exomol.com/db/"
@@ -383,7 +382,7 @@ def read_states(
     return dat
 
 
-def pickup_gE(states, trans, dic_def, skip_optional_data=True):
+def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
     """extract g_upper (gup), E_lower (elower), and J_lower and J_upper from states
     DataFrame and insert them into the transition DataFrame.
 
@@ -416,7 +415,7 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True):
     ### Step 1. Essential quantum number for spectra
     # ----------------------------------------------
 
-    def map_add(col, new_col, trans_key, states_key="i"):
+    def map_add(trans, col, new_col, trans_key, states_key="i"):
         """Lookup `key` in states and add it in trans, using the level ``i``
         for upper and lower state
 
@@ -424,11 +423,17 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True):
         --------
         ::
 
-            map_add("E", "E_lower", "i_lower")
+            trans = map_add(trans, "E", "E_lower", "i_lower")
         """
-        try:  # pytable
-            trans[new_col] = trans[trans_key].map(dict(states[col]))
-        except:  # a priori, vaex version  (TODO : replace with dict() approach in vaex too)
+        if engine == "pytables":
+            # Rename the columns in the states DataFrame
+            states_map = states.copy()
+            states_map.rename(
+                columns={col: new_col, states_key: trans_key}, inplace=True
+            )
+            states_map = states_map[[new_col, trans_key]]  # drop useless columns
+            trans = trans.join(states_map.set_index(trans_key), on=trans_key)
+        elif engine == "vaex":
             col = vaexsafe_colname(col)
             new_col = vaexsafe_colname(new_col)
 
@@ -441,11 +446,12 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True):
             )
             trans.drop(states_key, inplace=True)
             trans.rename(col, new_col)
+        return trans
 
-    map_add("g", "gup", "i_upper")
-    map_add("J", "jlower", "i_lower")
-    map_add("J", "jupper", "i_upper")
-    map_add("E", "elower", "i_lower")
+    trans = map_add(trans, "g", "gup", "i_upper")
+    trans = map_add(trans, "J", "jlower", "i_lower")
+    trans = map_add(trans, "J", "jupper", "i_upper")
+    trans = map_add(trans, "E", "elower", "i_lower")
 
     def has_nan(column):
         try:  # Vaex
@@ -454,15 +460,15 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True):
             return column.hasnans
 
     if not "nu_lines" in trans or has_nan(trans["nu_lines"]):
-        map_add("E", "eupper", "i_upper")
+        trans = map_add(trans, "E", "eupper", "i_upper")
         trans["nu_lines"] = trans["eupper"] - trans["elower"]
 
     ### Step 2. Extra quantum numbers (e/f parity, vib and rot numbers)
     # -----------------------------------------------------------------
     if not skip_optional_data:
         for q in dic_def["quantum_labels"]:
-            map_add(q, f"{q}_l", "i_lower")
-            map_add(q, f"{q}_u", "i_upper")
+            trans = map_add(trans, q, f"{q}_l", "i_lower")
+            trans = map_add(trans, q, f"{q}_u", "i_upper")
 
     return trans
 
@@ -765,6 +771,7 @@ def get_exomol_database_list(molecule, isotope_full_name=None):
         "a", {"class": "list-group-item link-list-group-item recommended"}
     )
     databases_recommended = [r.get_attribute_list("title")[0] for r in rows]
+    databases_recommended = list(np.unique(databases_recommended))
 
     # All others
     rows = soup.find_all("a", {"class": "list-group-item link-list-group-item"})
@@ -790,7 +797,7 @@ def get_exomol_database_list(molecule, isotope_full_name=None):
     else:
         recommended_database = False
 
-    return databases, recommended_database
+    return list(np.unique(databases)), recommended_database
 
 
 # def fetch_exomol_molecule_list():
@@ -1010,7 +1017,7 @@ class MdbExomol(DatabaseManager):
 
             engine = config["MEMORY_MAPPING_ENGINE"]
             if engine == "auto":
-                engine = "vaex"
+                engine = get_auto_MEMORY_MAPPING_ENGINE()
 
         self.path = pathlib.Path(path)
         if local_databases is not None:
@@ -1032,11 +1039,15 @@ class MdbExomol(DatabaseManager):
         self.def_file = self.path / pathlib.Path(molec + ".def")
         self.broad_file = self.path / pathlib.Path(molecbroad + ".broad")
 
+        mgr = self.get_datafile_manager()
         if not self.def_file.exists():
             self.download(molec, extension=[".def"])
         if not self.pf_file.exists():
             self.download(molec, extension=[".pf"])
-        if not self.states_file.exists():
+        if (
+            not self.states_file.exists()
+            and not mgr.cache_file(self.states_file).exists()
+        ):
             self.download(molec, extension=[".states.bz2"])
         if (not self.broad_file.exists()) and self.broadf:
             self.download(molec, extension=[".broad"])
@@ -1075,7 +1086,6 @@ class MdbExomol(DatabaseManager):
             )
 
         # load states
-        mgr = self.get_datafile_manager()
         if cache == "regen" and mgr.cache_file(self.states_file).exists():
             if self.verbose:
                 print("Removing existing file ", mgr.cache_file(self.states_file))
@@ -1194,11 +1204,12 @@ class MdbExomol(DatabaseManager):
                 # Complete transition data with lookup on upper & lower state :
                 # In particular, compute gup and elower
 
-                pickup_gE(
+                trans = pickup_gE(
                     states,
                     trans,
                     dic_def,
                     skip_optional_data=skip_optional_data,
+                    engine=engine,
                 )
 
                 ##Recompute Line strength:
@@ -1259,10 +1270,8 @@ class MdbExomol(DatabaseManager):
                     )
                 )
 
-                self.alpha_ref = np.array(
-                    self.alpha_ref_def * np.ones_like(df["jlower"])
-                )
-                self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df["jlower"]))
+                self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
+                self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
             else:
                 codelv = check_bdat(bdat)
                 if self.verbose:
@@ -1281,20 +1290,24 @@ class MdbExomol(DatabaseManager):
                         bdat,
                         alpha_ref_default=self.alpha_ref_def,
                         n_Texp_default=self.n_Texp_def,
-                        jlower_max=np.max(df["jlower"]),
+                        jlower_max=df["jlower"].max(),
                     )
                     jj2alpha_ref, jj2n_Texp = make_jj2b(
                         bdat,
                         j2alpha_ref_def=j2alpha_ref,
                         j2n_Texp_def=j2n_Texp,
-                        jupper_max=np.max(df["jupper"]),
+                        jupper_max=df["jupper"].max(),
                     )
-                    self.alpha_ref = np.array(jj2alpha_ref[df["jlower"], df["jupper"]])
-                    self.n_Texp = np.array(jj2n_Texp[df["jlower"], df["jupper"]])
+                    self.alpha_ref = np.array(
+                        jj2alpha_ref[df["jlower"].values, df["jupper"].values]
+                    )
+                    self.n_Texp = np.array(
+                        jj2n_Texp[df["jlower"].values, df["jupper"].values]
+                    )
         else:
             print("The default broadening parameters are used.")
-            self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(df["jlower"]))
-            self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df["jlower"]))
+            self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
+            self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
 
         if add_columns:
             # Add values
@@ -1419,12 +1432,12 @@ if __name__ == "__main__":
     # # sf.fetch_databank('hitran')  # placeholder. Load lines (will be replaced), load partition function.
     # # s_hit = sf.eq_spectrum(500, name='HITRAN')
 
-    #%% Test by direct calculation
+    # %% Test by direct calculation
     # import pytest
 
     # print("Testing factory:", pytest.main(["../test/io/test_exomol.py"]))
 
-    #%% RADIS-like Example
+    # %% RADIS-like Example
     # uses fetch_exomol() internally
 
     from radis import calc_spectrum
@@ -1438,7 +1451,6 @@ if __name__ == "__main__":
         Tgas=1000,  # K
         mole_fraction=0.1,
         path_length=1,  # cm
-        # broadening_method="fft",  # @ dev: Doesn't work with 'voigt'
         databank=(
             "exomol",
             "YT10to10",
@@ -1567,7 +1579,7 @@ if __name__ == "__main__":
     )
     # ... ready to run Jax calculations
 
-    #%%
+    # %%
 
     # """ExoMol lines can be downloaded and accessed separately using
     # :py:func:`~radis.io.exomol.fetch_exomol`

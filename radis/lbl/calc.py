@@ -43,11 +43,12 @@ def calc_spectrum(
     Tgas=None,
     Tvib=None,
     Trot=None,
+    Telec=None,
     pressure=1.01325,
-    molecule=None,
+    species=None,
     isotope="all",
     mole_fraction=1,
-    diluent="air",
+    diluent=Default(None),
     path_length=1,
     databank="hitran",
     medium="air",
@@ -71,7 +72,7 @@ def calc_spectrum(
 ) -> Spectrum:
     r"""Calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
 
-    Can automatically download databases (HITRAN/HITEMP) or use manually downloaded
+    Can automatically download databases or use manually downloaded
     local databases, under equilibrium or non-equilibrium, with or without overpopulation,
     using either CPU or GPU.
 
@@ -98,27 +99,39 @@ def calc_spectrum(
         Default ``300`` K​
     Tvib, Trot: float [:math:`K`]
         Vibrational and rotational temperatures (for non-LTE calculations).
-        If ``None``, they are at equilibrium with ``Tgas`` ​.
+        If ``None``, they are at equilibrium with ``Tgas`` ​. Only applicable for molecules, not atoms.
+    Telec: float [:math:`K`]
+        Electronic temperature (for non-LTE calculations). If ``None``, it is at equilibrium with ``Tgas`` ​. Only implemented for atoms, not molecules.
     pressure: float [:math:`bar`] or `~astropy.units.quantity.Quantity`
         partial pressure of gas in bar. Default ``1.01325`` (1 atm)​. Use arbitrary units::
 
             import astropy.units as u
             calc_spectrum(..., pressure=20*u.mbar)
 
-    molecule: int, str, list or ``None``
-        molecule id (HITRAN format) or name. For multiple molecules, use a list.
-        The ``'isotope'``, ``'mole_fraction'``, ``'databank'`` and ``'overpopulation'`` parameters must then
-        be dictionaries.
-        If ``None``, the molecule can be inferred
-        from the database files being loaded. See the list of supported molecules
-        in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
-        and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
+    species: int, str, list or ``None``
+        For molecules:
+            molecule id (HITRAN format) or name. For multiple molecules, use a list.
+            The ``'isotope'``, ``'mole_fraction'``, ``'databank'`` and ``'overpopulation'`` parameters must then
+            be dictionaries.
+            If ``None``, the molecule can be inferred
+            from the database files being loaded. See the list of supported molecules
+            in :py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`
+            and :py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`.
+        For atoms:
+            The positive or neutral atomic species. It may be given in spectroscopic notation or any form that can be converted by :py:func:`~radis.db.classes.to_conventional_name`
         Default ``None``.​
     isotope: int, list, str of the form ``'1,2'``, or ``'all'``, or dict
-        isotope id (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2).
-        See [HITRAN-2020]_ documentation for isotope list for all species. If ``'all'``,
+        isotope id
+
+        For molecules, this is the isotopologue ID (sorted by relative density: (eg: 1: CO2-626, 2: CO2-636 for CO2) - see [HITRAN-2020]_ documentation for isotope list for all species.
+
+        For atoms, use the isotope number of the isotope (the total number of protons and neutrons in the nucleus) - use 0 to select rows where the isotope is unspecified, in which case the standard atomic weight from the ``periodictable`` module is used when mass is required.
+
+        If ``'all'``,
         all isotopes in database are used (this may result in larger computation
-        times!). Default ``'all'``.
+        times!).
+
+        Default ``'all'``.
 
         For multiple molecules, use a dictionary with molecule names as keys ::
 
@@ -141,6 +154,10 @@ def calc_spectrum(
             For multiple diluents ::
 
                 diluent = { 'CO2': 0.6, 'H2O':0.2}
+
+            For free electrons, use the symbol 'e-'. Currently, only H, H2, H2, and e- are supported for atoms - any other diluents have no effect besides diluting the mole fractions of the other constituents.
+
+            If left as ``None``, it defaults to ``'air'`` for molecules and atomic hydrogen 'H' for atoms.
 
     path_length: float [:math:`cm`] or `~astropy.units.quantity.Quantity`
         slab size. Default ``1`` cm​. Use arbitrary units::
@@ -175,6 +192,8 @@ def calc_spectrum(
           Accepts wildcards ``'*'`` to select multiple files ::
 
             databank='PATH/TO/co_*.par'
+
+        - ``'kurucz'`` to fetch the Kurucz linelists for atoms through :py:func:`~radis.io.kurucz.fetch_kurucz`. Downloads al lines and all isotopes.
 
         - the name of a spectral database registered in your ``~/radis.json``
           :ref:`configuration file <label_lbl_config_file>` ::
@@ -211,11 +230,11 @@ def calc_spectrum(
         Half-width over which to compute the lineshape, i.e. lines are truncated
         on each side after ``truncation`` (:math:`cm^{-1}`) from the line center.
         If ``None``, use no truncation (lineshapes spread on the full spectral range).
-        Default is ``300`` :math:`cm^{-1}`
+        Default is ``50`` :math:`cm^{-1}`
 
         .. note::
                 Large values (> ``50``) can induce a performance drop (computation of lineshape
-                typically scale as :math:`~truncation ^2` ). The default ``300`` was
+                typically scale as :math:`~truncation ^2` ). The default ``50`` was
                 chosen to maintain a good accuracy, and still exhibit the sub-Lorentzian
                 behavior of most lines far (few hundreds :math:`cm^{-1}`) from the line center.
     neighbour_lines: float (:math:`cm^{-1}`)
@@ -283,6 +302,7 @@ def calc_spectrum(
         methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`__
         To try the GPU code without an actual GPU, you can use ``mode='emulated_gpu'``.
         This will run the GPU equivalent code on the CPU.
+        Only ``'cpu'`` is available for atoms.
     return_factory: bool
         if ``True``, return the :py:class:`~radis.lbl.factory.SpectrumFactory` that
         computes the spectrum. Useful to access computational parameters, the line database,
@@ -291,8 +311,6 @@ def calc_spectrum(
                 s, sf = calc_spectrum(..., return_factory=True)
                 sf.df1  # see the lines calculated
                 sf.eq_spectrum(...)  #  new calculation without reloading the database
-    engine : string
-        Vaex or Pandas . Default Pandas, if engine is vaex memory performance is improved
     **kwargs: other inputs forwarded to SpectrumFactory
         For instance: ``warnings``.
         See :py:class:`~radis.lbl.factory.SpectrumFactory` documentation for more
@@ -384,8 +402,20 @@ def calc_spectrum(
     """
 
     # Check inputs
-
-    # ... wavelengths / wavenumbers
+    if "molecule" in kwargs:
+        if species is not None:
+            if species != kwargs["molecule"]:
+                raise Exception(
+                    "Both `molecule` and `species` arguments have been given and aren't equal, but `molecule` is just an alias for `species`."
+                )
+        species = molecule = kwargs.pop("molecule")  # remove molecule from kwargs
+        # warn(
+        #     DeprecationWarning(
+        #         "`molecule` is deprected - use `species` instead"
+        #     )
+        # )
+    else:
+        molecule = species
 
     # Get wavenumber, based on whatever was given as input.
     wavenum_min, wavenum_max, input_wunit = get_wavenumber_range(
@@ -399,7 +429,6 @@ def calc_spectrum(
         medium,
         return_input_wunit=True,
     )
-
     # Deal with Multi-molecule mode:
 
     from radis.los.slabs import MergeSlabs
@@ -463,6 +492,7 @@ def calc_spectrum(
 
     # ... Now we are sure there are no contradictions. Just ensure we have molecules:
     if molecule_reference_set is None:
+
         raise ValueError(
             "Please enter the molecule(s) to calculate in the `molecule=` argument or as a dictionary in the following: {0}".format(
                 list(DICT_INPUT_ARGUMENTS.keys())
@@ -534,9 +564,12 @@ def calc_spectrum(
         kwargs_molecule.update(**dict_arguments)
 
         # getting diluents for this molecule
-        diluent_for_this_molecule = diluents_for_molecule(
-            mole_fraction, diluent, molecule
-        )
+        if isinstance(diluent, Default):
+            diluent_for_this_molecule = diluent
+        else:
+            diluent_for_this_molecule = diluents_for_molecule(
+                mole_fraction, diluent, molecule
+            )
 
         generated_spectrum = _calc_spectrum_one_molecule(
             wavenum_min=wavenum_min,
@@ -545,6 +578,7 @@ def calc_spectrum(
             Tgas=Tgas,
             Tvib=Tvib,
             Trot=Trot,
+            Telec=Telec,
             pressure=pressure,
             # overpopulation=overpopulation,  # now in dict_arguments
             molecule=molecule,
@@ -604,6 +638,7 @@ def _calc_spectrum_one_molecule(
     Tgas,
     Tvib,
     Trot,
+    Telec,
     pressure,
     overpopulation,
     molecule,
@@ -625,8 +660,8 @@ def _calc_spectrum_one_molecule(
     verbose,
     mode,
     export_lines,
+    diluent,
     return_factory=False,
-    diluent="air",
     **kwargs,
 ) -> Spectrum:
     """See :py:func:`~radis.lbl.calc.calc_spectrum`
@@ -667,6 +702,7 @@ def _calc_spectrum_one_molecule(
 
     def _is_at_equilibrium():
         try:
+            assert Telec is None or Telec == Tgas
             assert Tvib is None or (np.array(Tvib) == np.array(Tgas)).all()
             assert Trot is None or Trot == Tgas
             assert overpopulation is None
@@ -689,7 +725,7 @@ def _calc_spectrum_one_molecule(
         wavenum_min=wavenum_min,
         wavenum_max=wavenum_max,
         medium=medium,
-        molecule=molecule,
+        species=molecule,
         isotope=isotope,
         pressure=pressure,
         wstep=wstep,
@@ -716,9 +752,10 @@ def _calc_spectrum_one_molecule(
         else:
             diluent_other_than_air = True
     else:
-        diluent_other_than_air = len(diluent) > 1 or (
-            len(diluent) == 1 and "air" not in diluent
-        )
+        diluent_other_than_air = not isinstance(diluent, Default)
+        # diluent_other_than_air = len(diluent) > 1 or (
+        #     len(diluent) == 1 and "air" not in diluent
+        # )
     if diluent_other_than_air and databank == "exomol":
         raise NotImplementedError(
             "Only air broadening is implemented in RADIS with ExoMol. Please reach out on https://github.com/radis/radis/issues"
@@ -737,6 +774,7 @@ def _calc_spectrum_one_molecule(
             "hitemp",
             "exomol",
             "geisa",
+            "kurucz",
         ]
         or (isinstance(databank, tuple) and databank[0] == "exomol")
         or (isinstance(databank, tuple) and databank[0] == "hitran")
@@ -771,6 +809,9 @@ def _calc_spectrum_one_molecule(
                 "parfuncfmt": "hapi",
                 # TODO: replace with GEISA partition function someday.............
             }
+        elif databank in ["kurucz"]:
+            conditions = {"source": "kurucz", "parfuncfmt": "kurucz"}
+
         elif isinstance(databank, tuple) and databank[0] == "exomol":
             conditions = {
                 "source": "exomol",
@@ -917,7 +958,8 @@ def _calc_spectrum_one_molecule(
                 pressure=pressure,
                 path_length=path_length,
                 name=name,
-                emulate=(True if mode == "emulated_gpu" else False),
+                backend=("cpu-cuda" if mode == "emulated_gpu" else "gpu-cuda")
+                # emulate=(True if mode == "emulated_gpu" else False),
             )
         else:
             raise ValueError(
@@ -930,6 +972,7 @@ def _calc_spectrum_one_molecule(
             Tvib=Tvib,
             Trot=Trot,
             Ttrans=Tgas,
+            Telec=Telec,
             overpopulation=overpopulation,
             mole_fraction=mole_fraction,
             path_length=path_length,

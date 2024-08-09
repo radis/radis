@@ -98,12 +98,10 @@ Methods from the Flow Chart: this methods are called successively from the
 
 - Voigt Broadening: methods of :py:class:`~radis.lbl.broadening.BroadenFactory` :
 
-    - :py:func:`radis.lbl.broadening.voigt_broadening_FWHM`
     - :py:func:`radis.lbl.broadening.voigt_lineshape`
     - :py:func:`radis.lbl.broadening._whiting`
     - :py:func:`radis.lbl.broadening._whiting_jit`
     - :py:meth:`radis.lbl.broadening.BroadenFactory._calc_broadening_FWHM`
-    - :py:meth:`radis.lbl.broadening.BroadenFactory._add_voigt_broadening_FWHM`
 
 - Pseudo-continuum: methods of :py:class:`~radis.lbl.broadening.BroadenFactory` :
 
