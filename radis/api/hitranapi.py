@@ -1778,7 +1778,9 @@ def hitranxsc(hitranXSC):
         lines = [line.split() for line in lines]
         lines = [item for sublist in lines for item in sublist]
         data["spectrum"] = np.array(lines, dtype=np.float64)
-
+        # remove zeros from end of file
+        while data["spectrum"][-1] == 0:
+            data["spectrum"] = data["spectrum"][:-1]
     return data
 
 
