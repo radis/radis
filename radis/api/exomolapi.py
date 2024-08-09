@@ -3,7 +3,7 @@
    * MdbExomol is the MDB for ExoMol
 
 Initial code borrowed from the `Exojax <https://github.com/HajimeKawahara/exojax>`__
-code (which you should also have a look at !), by @HajimeKawahara, under MIT License.
+code (which you should also have a look at!), by @HajimeKawahara, under MIT License.
 
 """
 
