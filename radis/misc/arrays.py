@@ -313,7 +313,7 @@ def evenly_distributed(w, atolerance=1e-5):
     :py:func:`~radis.misc.arrays.evenly_distributed_fast`
     """
     mean_step = np.diff(w).mean()
-    return (np.abs((np.diff(w) - mean_step)) > atolerance).sum() == 0
+    return np.allclose(np.diff(w), mean_step, atol=atolerance)
 
 
 # TODO : rewrite so it works in one loop only ; Jit it

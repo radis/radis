@@ -4,7 +4,8 @@ Spectrum Database
 =================
 
 RADIS has :py:class:`~radis.tools.database.SpecDatabase` feature used to store
-and retrieve calculated Spectrums. A path can be specified for SpecDatabase all
+and retrieve calculated Spectrums. This feature is convinient if a spectrum takes a
+long time to compute. A path can be specified for SpecDatabase all
 Spectrums are stored as .spec files which can be loaded
 from the SpecDatabase object itself.  A csv file is generated which contains all
 input and conditional parameters of Spectrum.

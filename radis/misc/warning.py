@@ -145,7 +145,7 @@ class MissingSelfBroadeningTdepWarning(UserWarning):
     """Self broadening temperature-dependance-coefficient is missing in Line Database.
 
     Usually, use Air broadening temperature dependance coefficient instead. See
-    :py:meth:`~radis.lbl.broadening.BroadenFactory._add_collisional_broadening_HWHM`
+    :py:meth:`~radis.lbl.broadening.BroadenFactory._add_Lorentzian_broadening_HWHM`
     """
 
     pass
@@ -155,7 +155,7 @@ class MissingSelfBroadeningWarning(UserWarning):
     """Self broadening tabulated width is missing in Line Database.
 
     Usually, use Air broadening tabulated width instead. See
-    :py:meth:`~radis.lbl.broadening.BroadenFactory._add_collisional_broadening_HWHM`
+    :py:meth:`~radis.lbl.broadening.BroadenFactory._add_Lorentzian_broadening_HWHM`
     """
 
     pass
@@ -165,9 +165,12 @@ class MissingDiluentBroadeningTdepWarning(UserWarning):
     """Diluent broadening temperature-dependance-coefficient is missing in Line Database.
 
     Usually, suggest user to use Air broadening temperature dependance coefficient instead. See
-    :py:meth:`~radis.lbl.broadening.BroadenFactory._add_collisional_broadening_HWHM`
+    :py:meth:`~radis.lbl.broadening.BroadenFactory._add_Lorentzian_broadening_HWHM`
     """
 
+    # warnings.warn(
+    #     "This Warning is depreciated since radis=0.15. A missing coefficient for broadening should be an error."
+    # )
     pass
 
 
@@ -175,9 +178,12 @@ class MissingDiluentBroadeningWarning(UserWarning):
     """Diluent broadening tabulated width is missing in Line Database.
 
     Usually, suggest user to use Air broadening tabulated width instead. See
-    :py:meth:`~radis.lbl.broadening.BroadenFactory._add_collisional_broadening_HWHM`
+    :py:meth:`~radis.lbl.broadening.BroadenFactory._add_Lorentzian_broadening_HWHM`
     """
 
+    # warnings.warn(
+    #     "This Warning is depreciated since radis=0.15. A missing coefficient for broadening should be an error."
+    # )
     pass
 
 

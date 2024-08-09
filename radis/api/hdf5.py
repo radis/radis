@@ -13,6 +13,13 @@ import h5py
 import pandas as pd
 from tables.exceptions import NoSuchNodeError
 
+from ..misc.utils import NotInstalled, not_installed_vaex_args
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
+
 
 def vaexsafe_colname(name):
     """replace '/' (forbidden in HDF5 vaex column names with '_'
@@ -25,7 +32,6 @@ def vaexsafe_colname(name):
 def update_pytables_to_vaex(fname, remove_initial=False, verbose=True, key="df"):
     """Convert a HDF5 file generated from PyTables to a
     Vaex-friendly HDF5 format, preserving metadata"""
-    import vaex
 
     if fname.endswith(".h5"):
         fname_vaex = fname.replace(".h5", ".hdf5")
@@ -110,8 +116,6 @@ class DataFileManager(object):
         if self.engine == "pytables":
             return pd.HDFStore(file, mode=mode, complib="blosc", complevel=9)
         elif self.engine == "vaex":
-            import vaex
-
             return vaex.open(file)
         else:
             raise NotImplementedError(self.engine)
@@ -141,6 +145,21 @@ class DataFileManager(object):
             only these column names will be searchable directly on disk to
             load certain lines only. See :py:func:`~radis.api.hdf5.hdf2df`
         """
+        # a bit brutal but simply removes the columns that raise the problem in #656 for CO2
+        if "CO2" in str(file):  # file can be a WindowsPath type
+            bad_columns = [
+                "Fl",
+                "Fu",
+                "ierr",
+                "iref",
+                "line_mixing_flag",
+                "statep",
+                "statepp",
+            ]
+            for col in bad_columns:
+                if col in df.columns:
+                    df = df.drop(col, axis=1)
+
         file = expanduser(file)
         if self.engine == "pytables":
             if key == "default":
@@ -153,14 +172,13 @@ class DataFileManager(object):
                     format=format,
                     data_columns=data_columns,
                 )
+
         elif self.engine == "pytables-fixed":
             assert not append
             # export dataframe
             df.to_hdf(file, key, format="fixed", mode="w", complevel=9, complib="blosc")
         elif self.engine == "vaex":
             if isinstance(df, pd.DataFrame):
-                import vaex
-
                 df = vaex.from_pandas(df)
 
             for c in df.columns:  # remove "/" in columns (forbidden)
@@ -201,8 +219,6 @@ class DataFileManager(object):
         engine = self.engine
         local_file = expanduser(local_file)
         if engine == "vaex":
-            import vaex
-
             # by default vaex does not load everything
             df = vaex.open(local_file)
             columns = df.column_names
@@ -234,8 +250,6 @@ class DataFileManager(object):
                 raise ValueError(f"No batch temp files were written for {file}")
             if key == "default":
                 key = r"/table"
-            import vaex
-
             df = vaex.open(self._temp_batch_files, group=key)
             # Removing NaN values columns
             if delete_nan_columns:
@@ -370,7 +384,7 @@ class DataFileManager(object):
             # df = df.extract()  # Not required # return DataFrame containing only the filtered rows
             if columns:  # load only these columns (if they exist)
                 columns = [c for c in columns if c in df.columns]
-            if columns is not None:
+            if columns is not None and columns != []:
                 df = df[columns]
 
         return df
@@ -435,8 +449,6 @@ class DataFileManager(object):
         elif self.engine == "vaex":
             if key == "default":
                 key = r"/table"
-
-            import vaex
 
             # Open file
             assert len(store_kwargs) == 0
@@ -530,11 +542,11 @@ class DataFileManager(object):
         if self.engine == "pytables":
             # Selection
             where = []
-            for (column, lbound) in lower_bound:
+            for column, lbound in lower_bound:
                 where.append(f"{column} > {lbound}")
-            for (column, ubound) in upper_bound:
+            for column, ubound in upper_bound:
                 where.append(f"{column} < {ubound}")
-            for (column, withinv) in within:
+            for column, withinv in within:
                 where.append(f"{column} in {withinv.split(',')}")
 
         elif self.engine in ["vaex", "feather"]:
@@ -554,11 +566,11 @@ class DataFileManager(object):
 
             # Selection
             b = True
-            for (column, lbound) in lower_bound:
+            for column, lbound in lower_bound:
                 b *= df[column] > lbound
-            for (column, ubound) in upper_bound:
+            for column, ubound in upper_bound:
                 b *= df[column] < ubound
-            for (column, withinv) in within:
+            for column, withinv in within:
                 b2 = False
                 for val in withinv.split(","):
                     b2 += df[column] == float(val)
@@ -566,7 +578,7 @@ class DataFileManager(object):
             if b is not True and False in b:
                 df = df[
                     b
-                ]  # note in Vaex mode, this is a vaex Expression, not the DataFrame yet
+                ].extract()  # note in Vaex mode, this is a vaex Expression, not the DataFrame yet
 
         return df
 
@@ -749,8 +761,6 @@ class DataFileManager(object):
         """Convert DataFrame to numpy"""
 
         if self.engine == "vaex":
-            import vaex
-
             return vaex.array_types.to_numpy(df)
         elif self.engine == "feather":
             return df.to_numpy()
@@ -933,7 +943,7 @@ def hdf2df(
     return df
 
 
-#%%
+# %%
 
 if __name__ == "__main__":
 

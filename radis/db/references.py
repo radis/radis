@@ -17,6 +17,7 @@ doi = {
     "GEISA-2020": "10.1016/j.jms.2021.111510",
     "CDSD-4000": "10.1016/j.jqsrt.2011.03.005",
     "ExoMol-2020": "10.1016/j.jqsrt.2020.107228",
+    "Kurucz-2017": "10.1139/cjp-2016-0794",
     # Tabulated Partition functions
     "TIPS-2020": "10.1016/j.jqsrt.2021.107713",
     # Retrieval tools:

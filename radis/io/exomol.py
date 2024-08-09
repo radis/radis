@@ -146,7 +146,7 @@ def fetch_exomol(
 
     See Also
     --------
-    :py:func:`~radis.io.hitran.fetch_hitran`, :py:func:`~radis.io.hitemp.fetch_hitemp`
+    :py:func:`~radis.io.hitran.fetch_hitran`, :py:func:`~radis.io.hitemp.fetch_hitemp`, :py:func:`~radis.io.kurucz.fetch_kurucz`
     :py:func:`~radis.api.hdf5.hdf2df`
 
     """
@@ -274,7 +274,7 @@ def fetch_exomol(
     assert "wav" in df
 
     # ... include isotopic abundance in linestrength :
-    # Note : ExoMol treats isotopes as independent molecules ; linestrength is not
+    # Note: ExoMol treats isotopes as independent molecules ; linestrength is not
     # corrected by isotopic abundance.
     # Below, replace Linestrength with Line Intensity taking into account
     # Terrestrial isotopic abundance (to be compatible with HITRAN/HITEMP/etc. )

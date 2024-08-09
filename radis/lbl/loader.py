@@ -57,14 +57,14 @@ from uuid import uuid1
 
 import numpy as np
 import pandas as pd
-import vaex
 
 from radis import config
 from radis.api.cdsdapi import cdsd2df
+from radis.api.dbmanager import get_auto_MEMORY_MAPPING_ENGINE
 from radis.api.hdf5 import hdf2df
 from radis.api.hitranapi import hit2df, parse_global_quanta, parse_local_quanta
 from radis.api.tools import drop_object_format_columns, replace_PQR_with_m101
-from radis.db.classes import get_molecule
+from radis.db.classes import get_molecule, is_atom, is_neutral, to_conventional_name
 from radis.db.molecules import getMolecule
 from radis.db.molparam import MOLPARAMS_EXTRA_PATH, MolParams
 from radis.db.references import doi
@@ -72,9 +72,11 @@ from radis.io.exomol import fetch_exomol
 from radis.io.geisa import fetch_geisa
 from radis.io.hitemp import fetch_hitemp
 from radis.io.hitran import fetch_hitran
+from radis.io.kurucz import fetch_kurucz
 from radis.io.query import fetch_astroquery
 from radis.levels.partfunc import (
     PartFunc_Dunham,
+    PartFuncKurucz,
     PartFuncTIPS,
     RovibParFuncCalculator,
     RovibParFuncTabulator,
@@ -87,7 +89,7 @@ from radis.misc.debug import printdbg
 from radis.misc.log import printwarn
 from radis.misc.printer import printg
 from radis.misc.profiler import Profiler
-from radis.misc.utils import get_files_from_regex
+from radis.misc.utils import Default, get_files_from_regex
 from radis.misc.warning import (
     EmptyDatabaseError,
     IrrelevantFileWarning,
@@ -97,6 +99,13 @@ from radis.misc.warning import (
 from radis.phys.convert import cm2nm
 from radis.tools.database import SpecDatabase
 from radis.tools.track_ref import RefTracker
+
+from ..misc.utils import NotInstalled, not_installed_vaex_args
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
 
 KNOWN_DBFORMAT = [
     "hitran",
@@ -145,7 +154,7 @@ See Also
 :ref:`Configuration file <label_lbl_config_file>`
  """
 
-KNOWN_PARFUNCFORMAT = ["cdsd", "hapi"]
+KNOWN_PARFUNCFORMAT = ["cdsd", "hapi", "kurucz"]
 """list: Known formats for partition function (tabulated files to read), or 'hapi'
 to fetch Partition Functions using HITRAN Python interface instead of reading
 a tabulated file.
@@ -396,31 +405,39 @@ class Input(ConditionDict):
         "wavelength_min",
         "wavenum_max",
         "wavenum_min",
+        "species",
+        "isatom",
+        "isneutral",
+        "potential_lowering",
+        "Telec",
     ]
 
     def __init__(self):
         super(Input, self).__init__()
 
-        self.Tgas = None  #: float: gas (translational) temperature. Overwritten by SpectrumFactory.eq/noneq_spectrum
-        self.Tref = None  #: float: reference temperature for line database.
-        self.Tvib = None  #: float: vibrational temperature. Overwritten by SpectrumFactory.eq/noneq_spectrum
-        self.Trot = None  #: float: rotational temperature. Overwritten by SpectrumFactory.eq/noneq_spectrum
-        self.isotope = None  #: str: isotope list. Can be '1,2,3', etc. or 'all'
-        self.mole_fraction = None  #: float: mole fraction
-        self.molecule = None  #: str: molecule
-        self.overpopulation = None  #: dict: overpopulation
-        self.path_length = None  #: float: path length (cm)
-        self.pressure = 1.01325  #: float: pressure (bar)
-        self.rot_distribution = "boltzmann"  #: str: rotational levels distribution
-        self.self_absorption = (
-            True  #: bool: self absorption (if True, not optically thin)
-        )
-        self.state = None  #: str: electronic state
-        self.vib_distribution = (
-            "boltzmann"  #: str: vibrational levels distribution (boltzmann, treanor)
-        )
-        self.wavenum_max = None  #: str: wavenumber max (cm-1)
-        self.wavenum_min = None  #: str: wavenumber min (cm-1)
+        # let subclasses define values for these instead of setting defaults:
+
+        # self.Tgas = None  #: float: gas (translational) temperature. Overwritten by SpectrumFactory.eq/noneq_spectrum
+        # self.Tref = None  #: float: reference temperature for line database.
+        # # self.Tvib = None  #: float: vibrational temperature. Overwritten by SpectrumFactory.eq/noneq_spectrum
+        # # self.Trot = None  #: float: rotational temperature. Overwritten by SpectrumFactory.eq/noneq_spectrum
+        # self.isotope = None  #: str: isotope list. Can be '1,2,3', etc. or 'all'
+        # self.mole_fraction = None  #: float: mole fraction
+        # self.molecule = None  #: str: molecule
+        # self.overpopulation = None  #: dict: overpopulation
+        # self.path_length = None  #: float: path length (cm)
+        # self.pressure = 1.01325  #: float: pressure (bar)
+        # #self.rot_distribution = "boltzmann"  #: str: rotational levels distribution
+        # self.self_absorption = (
+        #     True  #: bool: self absorption (if True, not optically thin)
+        # )
+        # self.state = None  #: str: electronic state
+        # # self.vib_distribution = (
+        # #     "boltzmann"  #: str: vibrational levels distribution (boltzmann, treanor)
+        # # )
+        # self.wavenum_max = None  #: str: wavenumber max (cm-1)
+        # self.wavenum_min = None  #: str: wavenumber min (cm-1)
+        # self.species = None
 
 
 # TO-DO: these error estimations are horribly outdated...
@@ -482,6 +499,7 @@ class Parameters(ConditionDict):
         "waveunit",
         "wstep",
         "diluent",
+        "lbfunc",
     ]
 
     def __init__(self):
@@ -709,7 +727,7 @@ class DatabankLoader(object):
         # ... They will be stored in the Spectrum object
         self.input = Input()
         self.input.isotope = "all"
-        self.input.molecule = ""
+        self.input.species = ""
         self.input.state = ""
 
         # an computation parameters:
@@ -998,12 +1016,12 @@ class DatabankLoader(object):
         extra_params=None,
     ):
         """Fetch the latest files from [HITRAN-2020]_, [HITEMP-2010]_ (or newer),
-        [ExoMol-2020]_  or [GEISA-2020] , and store them locally in memory-mapping
+        [ExoMol-2020]_  or [GEISA-2020] or [Kurucz-2017], and store them locally in memory-mapping
         formats for extremely fast access.
 
         Parameters
         ----------
-        source: ``'hitran'``, ``'hitemp'``, ``'exomol'``, ``'geisa'``
+        source: ``'hitran'``, ``'hitemp'``, ``'exomol'``, ``'geisa'``, ``'kurucz'``
             which database to use.
         database: ``'full'``, ``'range'``, name of an ExoMol database, or ``'default'``
             if fetching from HITRAN, ``'full'`` download the full database and register
@@ -1016,7 +1034,7 @@ class DatabankLoader(object):
 
             Default is ``'full'``.
 
-            If fetching from HITEMP, only ``'full'`` is available.
+            If fetching from HITEMP or Kurucz, only ``'full'`` is available.
 
             if fetching from ''`exomol`'', use this parameter to choose which database
             to use. Keep ``'default'`` to use the recommended one. See all available databases
@@ -1029,14 +1047,15 @@ class DatabankLoader(object):
 
         Other Parameters
         ----------------
-        parfuncfmt: ``'cdsd'``, ``'hapi'``, ``'exomol'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
+        parfuncfmt: ``'cdsd'``, ``'hapi'``, ``'exomol'``, ``'kurucz'`` or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
             format to read tabulated partition function file. If ``'hapi'``, then
             [HAPI]_ (HITRAN Python interface) is used to retrieve [TIPS-2020]_
             tabulated partition functions.
             If ``'exomol'`` then partition functions are downloaded from ExoMol.
+            If ``'kurucz'``, if dedicated partition functions are available with the linelists for the species, they are used, otherwise partition functions from Barklem & Collett 2016 are used. Also see the documentation for the `potential_lowering` parameter of :py:class:`~radis.lbl.factory.SpectrumFactory`.
             Default ``'hapi'``.
         parfunc: filename or None
-            path to a tabulated partition function file to use.
+            path to a tabulated partition function file to use. For kurucz linelists, this file would be a dedicated table for the species (dependent on both temperature and potential lowering).
         levels: dict of str or None
             path to energy levels (needed for non-eq calculations). Format::
 
@@ -1084,6 +1103,7 @@ class DatabankLoader(object):
             and dropping them with ``drop_columns``.
             If ``diluent`` then all additional columns required for calculating spectrum
             in that diluent is loaded.
+            This parameter is ignored for Kurucz linelists, for which only ``all`` is available.
             Default ``'equilibrium'``.
 
             .. warning::
@@ -1121,7 +1141,7 @@ class DatabankLoader(object):
                 )
             )
             source = "hitran"
-        if source not in ["hitran", "hitemp", "exomol", "geisa"]:
+        if source not in ["hitran", "hitemp", "exomol", "geisa", "kurucz"]:
             raise NotImplementedError("source: {0}".format(source))
         if source == "hitran":
             dbformat = "hitran"
@@ -1131,6 +1151,11 @@ class DatabankLoader(object):
             dbformat = (
                 "hitemp-radisdb"  # downloaded in RADIS local databases ~/.radisdb
             )
+            if database == "default":
+                database = "full"
+
+        elif source == "kurucz":
+            dbformat = "kurucz"
             if database == "default":
                 database = "full"
         elif source == "exomol":
@@ -1154,10 +1179,12 @@ class DatabankLoader(object):
             memory_mapping_engine = self.misc.memory_mapping_engine
 
         # Get inputs
-        molecule = self.input.molecule
+        molecule = self.input.species
         isotope = self.input.isotope
         if not molecule:
-            raise ValueError("Please define `molecule=` so the database can be fetched")
+            raise ValueError(
+                "Please define `molecule=` in the definition SpectrumFactory() so the database can be fetched"
+            )
 
         output = config["DATAFRAME_ENGINE"]
         self.dataframe_type = output
@@ -1222,7 +1249,7 @@ class DatabankLoader(object):
                 self.reftracker.add(doi["HAPI"], "data retrieval")  # [HAPI]_
 
                 if memory_mapping_engine == "auto":
-                    memory_mapping_engine = "vaex"
+                    memory_mapping_engine = get_auto_MEMORY_MAPPING_ENGINE()
 
                 if isotope == "all":
                     isotope_list = None
@@ -1309,7 +1336,7 @@ class DatabankLoader(object):
             self.reftracker.add(doi["HITEMP-2010"], "line database")  # [HITEMP-2010]_
 
             if memory_mapping_engine == "auto":
-                memory_mapping_engine = "vaex"
+                memory_mapping_engine = get_auto_MEMORY_MAPPING_ENGINE()
 
             if database != "full":
                 raise ValueError(
@@ -1349,7 +1376,7 @@ class DatabankLoader(object):
             self.reftracker.add(doi["ExoMol-2020"], "line database")  # [ExoMol-2020]
 
             if memory_mapping_engine == "auto":
-                memory_mapping_engine = "vaex"
+                memory_mapping_engine = get_auto_MEMORY_MAPPING_ENGINE()
 
             if database in ["full", "range"]:
                 raise ValueError(
@@ -1429,7 +1456,6 @@ class DatabankLoader(object):
                     for df in frames:
                         if "iso" not in df.columns:
                             assert "iso" in df.attrs
-                            import vaex
 
                             df["iso"] = vaex.vconstant(
                                 int(df.attrs["iso"]), length=df.length_unfiltered()
@@ -1443,7 +1469,6 @@ class DatabankLoader(object):
                         attrs = intersect(attrs, df.attrs)
                     del attrs["iso"]  # added as a column (different for each line)
                     # Merge:
-                    import vaex
 
                     df = vaex.concat(Frames)  # reindex
                     df.attrs = attrs
@@ -1460,7 +1485,7 @@ class DatabankLoader(object):
             self.reftracker.add(doi["GEISA-2020"], "line database")
 
             if memory_mapping_engine == "auto":
-                memory_mapping_engine = "vaex"
+                memory_mapping_engine = get_auto_MEMORY_MAPPING_ENGINE()
 
             if database != "full":
                 raise ValueError(
@@ -1489,6 +1514,53 @@ class DatabankLoader(object):
                 parallel=parallel,
             )
             self.params.dbpath = ",".join(local_paths)
+
+            # ... explicitly write all isotopes based on isotopes found in the database
+            if isotope == "all":
+                self.input.isotope = ",".join(
+                    [str(k) for k in self._get_isotope_list(df=df)]
+                )
+
+        elif source == "kurucz":
+            self.reftracker.add(doi["Kurucz-2017"], "line database")
+
+            if columns is not None:
+                self.warn(
+                    "The required columns for Kurucz don't match those of existing moleculear databases, so all columns are being loaded"
+                )
+                columns = None
+
+            if memory_mapping_engine == "auto":
+                memory_mapping_engine = get_auto_MEMORY_MAPPING_ENGINE()
+
+            if database != "full":
+                raise ValueError(
+                    f"Got `database={database}`. When fetching Kurucz, only the `database='full'` option is available."
+                )
+
+            # Download, setup local databases, and fetch (use existing if possible)
+
+            if isotope == "all":
+                isotope_list = None
+            else:
+                isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
+            df, local_paths, parfuncpath = fetch_kurucz(
+                molecule,
+                isotope=isotope_list,
+                local_databases=join(local_databases, "kurucz"),
+                load_wavenum_min=wavenum_min,
+                load_wavenum_max=wavenum_max,
+                columns=columns,
+                cache=db_use_cached,
+                verbose=self.verbose,
+                return_local_path=True,
+                engine=memory_mapping_engine,
+                output=output,
+                parallel=parallel,
+            )
+            self.params.dbpath = ",".join(local_paths)
+            if not parfunc:
+                self.params.parfuncpath = parfunc = format_paths(parfuncpath)
 
             # ... explicitly write all isotopes based on isotopes found in the database
             if isotope == "all":
@@ -1557,7 +1629,7 @@ class DatabankLoader(object):
         # If energy levels are given, initialize the partition function calculator
         # (necessary for non-equilibrium). If levelsfmt == 'radis' then energies
         # are calculated ab initio from radis internal species database constants
-        if load_energies:
+        if load_energies and not self.input.isatom:
             try:
                 self._init_rovibrational_energies(levels, levelsfmt)
             except KeyError as err:
@@ -1766,14 +1838,23 @@ class DatabankLoader(object):
         )
         self.misc.total_lines = len(self.df0)  # will be stored in Spectrum metadata
 
-        # Check the molecule is what we expected
-        if self.input.molecule not in ["", None]:
-            assert self.input.molecule == get_molecule(
-                self.df0.attrs["id"]
-            )  # assert molecule is what we expected
+        if "molecule" in self.df0.attrs:
+            self.input.species = self.df0.attrs["molecule"]
         else:
-            self.input.molecule = get_molecule(self.df0.attrs["id"])  # get molecule
-
+            self.input.species = get_molecule(self.df0.attrs["id"])
+        if is_atom(self.input.species):
+            self.input.isatom = True
+            self.input.isneutral = is_neutral(self.input.species)
+            if isinstance(self.params.diluent, Default):
+                self.params.diluent = "H"
+            for key in ["lvl_use_cached", "levelsfmt"]:
+                del self.params[key]
+            del self.misc.load_energies
+        else:
+            self.input.isatom = False
+            self.input.isneutral = None  # irrelevant for molecules
+            if isinstance(self.params.diluent, Default):
+                self.params.diluent = "air"
         # %% Load Partition functions (and energies if needed)
         # ----------------------------------------------------
 
@@ -1782,7 +1863,7 @@ class DatabankLoader(object):
         # If energy levels are given, initialize the partition function calculator
         # (necessary for non-equilibrium). If levelsfmt == 'radis' then energies
         # are calculated ab initio from radis internal species database constants
-        if load_energies:
+        if load_energies and not self.input.isatom:
             self._init_rovibrational_energies(levels, levelsfmt)
 
         return
@@ -2099,7 +2180,7 @@ class DatabankLoader(object):
         """
 
         # Let's get the tabulated partition function (to calculate eq spectra)
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state
         self.parsum_tab[molecule] = {}
         for iso in self._get_isotope_list():
@@ -2107,7 +2188,7 @@ class DatabankLoader(object):
             ParsumTab = self._build_partition_function_interpolator(
                 parfunc,
                 parfuncfmt,
-                self.input.molecule,
+                self.input.species,
                 isotope=iso,
                 predefined_partition_functions=predefined_partition_functions,
             )
@@ -2130,7 +2211,7 @@ class DatabankLoader(object):
             possible.
         """
 
-        molecule = self.input.molecule
+        molecule = self.input.species
         state = self.input.state
         # only defined for one molecule at the moment (add loops later!)
         self.parsum_calc[molecule] = {}
@@ -2457,7 +2538,6 @@ class DatabankLoader(object):
                     elif dbformat in ["exomol"]:
                         # self.reftracker.add("10.1016/j.jqsrt.2020.107228", "line database")  # [ExoMol-2020]
                         raise NotImplementedError("use fetch_databank('exomol')")
-
                     else:
                         raise ValueError("Unknown dbformat: {0}".format(dbformat))
                 except IrrelevantFileWarning as err:
@@ -2553,15 +2633,37 @@ class DatabankLoader(object):
         minwavdb = df.wav.min()
 
         # ... Explicitly write molecule if not given
-        if self.input.molecule in [None, ""]:
-            id_set = df.id.unique()
-            if len(id_set) > 1:
-                raise NotImplementedError(
-                    "RADIS expects one molecule per run for the "
-                    + "moment. Got {0}. Use different runs ".format(id_set)
-                    + "and use MergeSlabs(out='transparent' afterwards"
-                )
-            self.input.molecule = get_molecule(id_set[0])
+        if self.input.species in [
+            None,
+            "",
+        ]:  # and self.input.species not in [None, ""]:
+
+            try:
+                id_set = df.id.unique()
+            except AttributeError:  # for kurucz
+                species_unique = df.species.unique()
+                assert len(species_unique) == 1
+                self.input.species = to_conventional_name(species_unique[0])
+            else:
+                if len(id_set) > 1:
+                    raise NotImplementedError(
+                        "RADIS expects one molecule per run for the "
+                        + "moment. Got {0}. Use different runs ".format(id_set)
+                        + "and use MergeSlabs(out='transparent' afterwards"
+                    )
+                self.input.species = get_molecule(id_set[0])
+
+        # Add necessary attribute for databases without 'id' column, else _remove_unecessary_columns below raises an AssertionError
+        if output in ["pandas", "vaex"]:  # no attribtes in "Jax" or "Vaex" mode
+            attrs = {}
+            attrs["molecule"] = self.input.species
+
+            if output == "vaex":
+                df.attrs = {}
+                df.attrs = attrs
+            elif output == "pandas":
+                for k, v in attrs.items():
+                    df.attrs[k] = v
 
         # ... explicitly write all isotopes based on isotopes found in the database
         if self.input.isotope == "all":
@@ -2693,10 +2795,10 @@ class DatabankLoader(object):
             line database to parse. Default ``None``
         """
 
-        if molecule is not None and self.input.molecule != molecule:
+        if molecule is not None and self.input.species != molecule:
             raise ValueError(
                 "Expected molecule is {0} according to the inputs, but got {1} ".format(
-                    self.input.molecule, molecule
+                    self.input.species, molecule
                 )
                 + "in line database. Check your `molecule=` parameter, or your "
                 + "line database."
@@ -2832,6 +2934,9 @@ class DatabankLoader(object):
             parsum = PartFuncTIPS(
                 M=molecule, I=isotope, path=parfunc, verbose=self.verbose
             )
+        elif parfuncfmt in ["kurucz"]:
+            parsum = PartFuncKurucz(molecule, parfunc)
+
         elif parfuncfmt == "cdsd":  # Use tabulated CDSD partition functions
             self.reftracker.add(doi["CDSD-4000"], "partition function")
             assert len(predefined_partition_functions) == 0
@@ -2905,7 +3010,7 @@ class DatabankLoader(object):
         elif levelsfmt == "radis":
             self.reftracker.add(doi["RADIS-2018"], "rovibrational energies")
             state = getMolecule(
-                self.input.molecule, isotope, self.input.state, verbose=self.verbose
+                self.input.species, isotope, self.input.state, verbose=self.verbose
             )
             if state.doi is not None:
                 self.reftracker.add(state.doi, "spectroscopic constants")

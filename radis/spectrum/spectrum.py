@@ -1561,7 +1561,7 @@ class Spectrum(object):
             name = "{0}".format(basename(self.file))
         else:
             name_params = []
-            for (key, unit) in [("molecule", ""), ("dbformat", ""), ("Tgas", "K")]:
+            for (key, unit) in [("species", ""), ("dbformat", ""), ("Tgas", "K")]:
                 if key in self.conditions:
                     name_params.append(f"{self.conditions[key]}{unit}")
 
@@ -2353,7 +2353,9 @@ class Spectrum(object):
 
         from radis.phys.convert import cm2nm, div_safe, nm2cm
 
-        if "cm⁻¹" in ylabel:
+        if ax.child_axes != []:
+            pass
+        elif "cm⁻¹" in ylabel:
             secx = ax.secondary_xaxis(
                 "top", functions=(div_safe(cm2nm), div_safe(nm2cm))
             )
@@ -3395,7 +3397,7 @@ class Spectrum(object):
             show wavelength either in air or vacuum. Default ``'air'``
         plot: str
             what to plot. Default ``'S'`` (scaled line intensity). But it can be
-            any key in the lines, such as population (``'nu'``), or Einstein coefficient (``'Aul'``)
+            any key in the lines, such as population (``'nu'``), or Einstein coefficient (``'A'``)
         lineinfo: list, or ``'all'``
             extra line information to plot. Should be a column name in the databank
             (s.lines). For instance: ``'int'``, ``'selbrd'``, etc... Default [``'int'``]
@@ -5386,8 +5388,9 @@ class Spectrum(object):
             how to normalize. ``'max'`` is the default but may not be suited for very
             noisy experimental spectra. ``'area'`` will normalize the integral to 1.
             ``'mean'`` will normalize by the mean amplitude value
-        wrange: tuple
-            if not empty, normalize on this range
+        wrange: tuple of floats, float
+            normalize on this range if a tuple, else normalise at that point.
+            If an empty tuple, use the entire range.
         wunit: ``"nm"``, ``"cm-1"``, ``"nm_vac"``
             unit of the normalisation range above. If ``None``, use the
             spectrum default waveunit.
@@ -5430,7 +5433,54 @@ class Spectrum(object):
         if wunit is None:
             wunit = s.get_waveunit()
 
-        if wrange is not None and len(wrange) > 0:
+        if isinstance(wrange, (int, float)):
+            # Use user provided point. Only makes sense to normalize using
+            # normalize_how='max', otherwise raise an error.
+            w, I = s.get(
+                var, wunit=wunit, Iunit=s.units[var], copy=False
+            )  # (faster not to copy)
+            if normalize_how == "max":
+                # Find the value of I closest to the given w
+                norm = I[np.argmin(np.abs(w - wrange))]
+                norm_unit = s.units[var]
+            elif normalize_how == "mean" or normalize_how == "area":
+                raise ValueError(
+                    "Unexpected `normalize_how`: {0}. "
+                    "For a single value wrange only `normalize_how='max'` is "
+                    "defined.".format(normalize_how)
+                )
+            else:
+                raise ValueError(
+                    "Unexpected `normalize_how`: {0}".format(normalize_how)
+                )
+
+            out = multiply(s, 1 / (norm * Unit(norm_unit)), inplace=inplace)
+
+        elif len(wrange) == 0:
+            # Use entire wavelength range
+            if normalize_how == "max":
+                norm = np.nanmax(
+                    s.get(var, wunit=wunit, Iunit=s.units[var], copy=False)[1]
+                )
+                norm_unit = s.units[var]
+            elif normalize_how == "mean":
+                norm = np.nanmean(
+                    s.get(var, wunit=wunit, Iunit=s.units[var], copy=False)[1]
+                )
+                norm_unit = s.units[var]
+            elif normalize_how == "area":
+                w, I = s.get(var, wunit=wunit, Iunit=s.units[var], copy=False)
+                norm = nantrapz(I, w)
+                norm_unit = Unit(s.units[var]) * Unit(wunit)
+            else:
+                raise ValueError(
+                    "Unexpected `normalize_how`: {0}".format(normalize_how)
+                )
+            # Ensure we use the same unit system!
+            out = multiply(s, 1 / (norm * Unit(norm_unit)), inplace=inplace)
+
+        elif len(wrange) == 2:
+            # Use the user provided range
             wmin, wmax = wrange
             w, I = s.get(
                 var, wunit=wunit, Iunit=s.units[var], copy=False
@@ -5453,27 +5503,8 @@ class Spectrum(object):
             out = multiply(s, 1 / (norm * Unit(norm_unit)), inplace=inplace)
 
         else:
-            if normalize_how == "max":
-                norm = np.nanmax(
-                    s.get(var, wunit=wunit, Iunit=s.units[var], copy=False)[1]
-                )
-                norm_unit = s.units[var]
-            elif normalize_how == "mean":
-                norm = np.nanmean(
-                    s.get(var, wunit=wunit, Iunit=s.units[var], copy=False)[1]
-                )
-                norm_unit = s.units[var]
-            elif normalize_how == "area":
-                w, I = s.get(var, wunit=wunit, Iunit=s.units[var], copy=False)
-                norm = nantrapz(I, w)
-                norm_unit = Unit(s.units[var]) * Unit(wunit)
+            raise ValueError("Unexpected `wrange`: {0}".format(wrange))
 
-            else:
-                raise ValueError(
-                    "Unexpected `normalize_how`: {0}".format(normalize_how)
-                )
-            # Ensure we use the same unit system!
-            out = multiply(s, 1 / (norm * Unit(norm_unit)), inplace=inplace)
         if verbose:
             print("Normalization factor : {0}".format(norm))
         if return_norm:

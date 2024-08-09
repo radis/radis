@@ -34,6 +34,13 @@ from radis.test.utils import setup_test_line_databases
 
 fig_prefix = basename(__file__) + ": "
 
+from radis.misc.utils import NotInstalled, not_installed_vaex_args
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
+
 # %% ======================================================================
 # TEST
 # ---------------------
@@ -607,7 +614,7 @@ def test_wstep_auto_method_sf(verbose=True, plot=False, *args, **kwargs):
     )
 
 
-@pytest.mark.fast
+# @pytest.mark.fast #not fast, Nicolas Minesi 08/04/2024
 def test_all_spectrum_using_wstep_auto(verbose=True, plot=False, *args, **kwargs):
     """Checks all methods to calculate Spectrum works with "auto" mode"""
     Tgas = 1000
@@ -645,6 +652,7 @@ def test_all_spectrum_using_wstep_auto(verbose=True, plot=False, *args, **kwargs
     assert sf._wstep == "auto"
 
 
+@pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
 def test_vaex_and_pandas_spectrum():
     """Compares spectrum calculated using vaex and pandas are same.
     CONVOLUTED_QUANTITIES and dataframe df is compared to ensure the spectrum is same.
@@ -727,6 +735,7 @@ def test_vaex_and_pandas_spectrum():
 
 
 #%%
+@pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
 def test_vaex_and_pandas_spectrum_noneq():
     """Compares the Spectrum calculated under non-equilibrium conditions .
     Comparison is made between CONVOLUTED_QUANTITIES and dataframe df.

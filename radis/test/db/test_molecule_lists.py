@@ -31,10 +31,12 @@ def fetch_ExoMol_molecules():
         "a", {"class": "list-group-item link-list-group-item molecule_link"}
     )
     molecules = [r.get_attribute_list("href")[0] for r in rows]
+    molecules = [molecule.split("/")[-2] for molecule in molecules]  # 03/07/2024
 
     return molecules
 
 
+@pytest.mark.fast  # this test fails as soon as ExoMol adds a new molecule (often!)
 @pytest.mark.needs_connection
 def test_ExoMol_molecules_list(verbose=True, *args, **kwargs):
     """Test that ExoMol molecule list in RADIS remains up to date"""
@@ -45,10 +47,10 @@ def test_ExoMol_molecules_list(verbose=True, *args, **kwargs):
     molecules = fetch_ExoMol_molecules()
 
     if verbose:
-        print("ExoMol molecules, fetched online ")
+        print("ExoMol molecules, fetched online:")
         print(sorted(molecules))
 
-        print("Comparing Radis hardcoded ExoMol molecules list to the ExoMol website: ")
+        print("Comparing Radis hardcoded ExoMol molecules list to the ExoMol website:")
 
     assert (
         compare_lists(
@@ -60,6 +62,7 @@ def test_ExoMol_molecules_list(verbose=True, *args, **kwargs):
         )
         == 1
     )
+    print("----")
 
 
 def fetch_ExoMol_isotopes(verbose=True, *args, **kwargs):
@@ -71,7 +74,6 @@ def fetch_ExoMol_isotopes(verbose=True, *args, **kwargs):
     if verbose:
         print("Parsing ExoMol molecules", flush=True)
     for molecule in tqdm(molecules, disable=not verbose):
-
         url = f"https://exomol.com/data/molecules/{molecule}"
         try:
             response = urlopen(url).read()
@@ -90,11 +92,8 @@ def fetch_ExoMol_isotopes(verbose=True, *args, **kwargs):
     return isotopes_full_names
 
 
-#%%
-
-
+# %%
 def fetch_HITRAN_molecules():
-
     import re
 
     url = "https://hitran.org/lbl/"
@@ -114,6 +113,7 @@ def fetch_HITRAN_molecules():
     return molecules
 
 
+@pytest.mark.fast
 @pytest.mark.needs_connection
 def test_HITRAN_molecules_list(verbose=True, *args, **kwargs):
     """Test that HITRAN molecule list in RADIS remains up to date"""
@@ -124,10 +124,10 @@ def test_HITRAN_molecules_list(verbose=True, *args, **kwargs):
     molecules = fetch_HITRAN_molecules()
 
     if verbose:
-        print("HITRAN molecules, fetched online ")
+        print("HITRAN molecules, fetched online:")
         print(molecules)
 
-        print("Comparing Radis hardcoded HITRAN molecules list to the HITRAN website: ")
+        print("Comparing Radis hardcoded HITRAN molecules list to the HITRAN website:")
 
     assert (
         compare_lists(
@@ -139,9 +139,10 @@ def test_HITRAN_molecules_list(verbose=True, *args, **kwargs):
         )
         == 1
     )
+    print("----")
 
 
-#%%
+# %%
 
 
 def generate_molparam_for_non_HITRAN_species():
@@ -159,7 +160,7 @@ def generate_molparam_for_non_HITRAN_species():
     should be pasted in ``default_radis.json``
     """
 
-    #%%
+    # %%
     import numpy as np
 
     exomol_molecules = fetch_ExoMol_molecules()
@@ -167,7 +168,7 @@ def generate_molparam_for_non_HITRAN_species():
     isotopes_full_names = fetch_ExoMol_isotopes()
 
     #%%
-    from mendeleev import element  # may create ImportError, not added in requirement.
+    import periodictable
 
     Ia_dict = {}
     Mm_dict = {}
@@ -200,7 +201,7 @@ def generate_molparam_for_non_HITRAN_species():
         "As",
         "He",
     ]:
-        el = element(atom)
+        el = getattr(periodictable, atom)
         Ia_dict[atom] = {}
         Mm_dict[atom] = {}
         for iso in el.isotopes:
@@ -220,7 +221,6 @@ def generate_molparam_for_non_HITRAN_species():
     _parse_molecule = re.compile("(\d+)+([A-Z][a-z]?)(\d+)?")
 
     def get_isotopic_atomic_composition(molecule):
-
         atoms = {}
         for mass_number, atom, number in _parse_molecule.findall(molecule):
             if number == "":
@@ -292,7 +292,7 @@ def generate_molparam_for_non_HITRAN_species():
             ),
         )
 
-    #%% Generate dictionary of terrestrial abundances for all molecules not in HITRAN
+    # %% Generate dictionary of terrestrial abundances for all molecules not in HITRAN
     EXTRA_ABUNDANCES_DICT = {}
     EXTRA_MOLAR_MASS_DICT = {}
     EXTRA_ISOTOPE_FULLNAME_DICT = {}
@@ -356,9 +356,8 @@ def generate_molparam_for_non_HITRAN_species():
     return EXTRA_ABUNDANCES_DICT, EXTRA_MOLAR_MASS_DICT, EXTRA_ISOTOPE_FULLNAME_DICT
 
 
-#%%
+# %%
 
 if __name__ == "__main__":
-
     test_ExoMol_molecules_list()
     test_HITRAN_molecules_list()

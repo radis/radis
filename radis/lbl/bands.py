@@ -49,7 +49,7 @@ from warnings import warn
 import astropy.units as u
 import numpy as np
 import pandas as pd
-from numpy import exp
+from numpy import exp, expm1
 
 from radis.api.hitranapi import HITRAN_CLASS1, get_molecule
 from radis.lbl.broadening import BroadenFactory
@@ -320,8 +320,12 @@ class BandFactory(BroadenFactory):
             absorbance = abscoeff * path_length
 
             # Generate output quantities
-            transmittance_noslit = exp(-absorbance)
-            emissivity_noslit = 1 - transmittance_noslit
+            # transmittance_noslit = exp(-absorbance)
+            # emissivity_noslit = 1 - transmittance_noslit
+            emissivity_noslit = -expm1(
+                -absorbance
+            )  # to handle small values of absorbance
+            transmittance_noslit = 1 - emissivity_noslit
             radiance_noslit = calc_radiance(
                 wavenumber,
                 emissivity_noslit,
@@ -667,7 +671,9 @@ class BandFactory(BroadenFactory):
                 b = abscoeff == 0  # optically thin mask
                 radiance_noslit = np.zeros_like(emisscoeff)
                 radiance_noslit[~b] = (
-                    emisscoeff[~b] / abscoeff[~b] * (1 - transmittance_noslit[~b])
+                    emisscoeff[~b]
+                    / abscoeff[~b]
+                    * -expm1(-absorbance[~b])  # (1 - transmittance_noslit[~b])
                 )
                 radiance_noslit[b] = emisscoeff[b] * path_length
             else:

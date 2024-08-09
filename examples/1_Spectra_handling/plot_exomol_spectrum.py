@@ -13,7 +13,7 @@ from radis import calc_spectrum
 s = calc_spectrum(
     1080,
     1320,  # cm-1
-    molecule="SiO",
+    species="SiO",
     isotope="1",
     pressure=1.01325,  # bar
     Tgas=1000,  # K
