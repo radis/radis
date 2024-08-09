@@ -15,16 +15,24 @@ rescaled for arbitrary mole fractions or path length
 from radis import Spectrum
 from radis.phys.units import Unit as u
 
-# Here we use a downloaded cross-section file from the test suite :
+### In this example:
+# The cross-section "CH3COCH3_233.4_375.2_700.0-1780.0_13.xsc" was manually downloaded by RADIS developper
+# For another cross-section: 1/perform manual download from HITRAN and 2/ adapt `path_to_datafile`
 from radis.test.utils import getTestFile
 
-datafile = getTestFile("CH3COCH3_233.4_375.2_700.0-1780.0_13.xsc")
+path_to_datafile = getTestFile("CH3COCH3_233.4_375.2_700.0-1780.0_13.xsc")
+path_to_datafile = (
+    r"C:\Users\Nicolas Minesi\Desktop\C6H6_298.0_760.0_600.0-6500.0_09.xsc"
+)
+path_to_datafile = (
+    r"C:\Users\Nicolas Minesi\Desktop\C6H6_263.3K-0.5Torr_630.0-690.0_112.xsc"
+)
 
-# Temperature and pressure are given by the cross-section file used (above: 233.4 K; 375.2 Torr)
+# Temperature and pressure are given by the cross-section file used above: 233.4 K; 375.2 Torr
 # Mole fraction and path length can be recomputed arbitrarily :
 conditions = {"mole_fraction": 0.1, "path_length": 20 * u("mm")}
 
-s = Spectrum.from_xsc(datafile, conditions)
+s = Spectrum.from_xsc(path_to_datafile, conditions)
 
 s.plot("transmittance_noslit", lw=2)
 
