@@ -247,9 +247,45 @@ def run_setup(with_binary):
             "line-by-line",
         ],
         packages=find_packages(),
-        install_requires=[],
-        # do not add requirements here, add them directly in the requirements.txt file
-        # note EP : generate a requirement.txt by Mamba & pip freeze for Pypi deployment ? see https://stackoverflow.com/a/75239980/5622825
+        install_requires=[
+            # Although it seems like a duplicate of requirements.txt, it is NECESSARY to tell pip what are the dependencies, issue #680.
+            # (requirements.txt is only for the user, not for pip, see https://packaging.python.org/discussions/install-requires-vs-requirements/ and https://stackoverflow.com/questions/14399534/reference-requirements-txt-for-the-install-requires-kwarg-in-setuptools-setup-py)
+            ### From environment.yml
+            "astropy>=4.3.1",  # Unit aware calculations
+            "astroquery>=0.4.6",  # to fetch HITRAN databases
+            "beautifulsoup4>=4.10.0",  # parse ExoMol website
+            "cantera>=2.5.1",  # for chemical equilibrium computations
+            "configparser",
+            "habanero>=1.2.0",  # CrossRef API to retrieve data from doi
+            "h5py>=3.2.1",  # load HDF5
+            "joblib",  # for parallel loading of SpecDatabase
+            "lmfit",  # for new fitting modules
+            "matplotlib",
+            "numpy",
+            "numba",  # just-in-time compiler
+            "pandas",
+            "plotly>=2.5.1",  # for line survey HTML output
+            "psutil",  # to get user RAM
+            "pytables",  # for pandas to HDF5 export
+            "scipy>=1.4.0",
+            "seaborn",  # other matplotlib themes
+            "termcolor",  # terminal colors
+            "specutils",
+            ### From requirements.txt
+            "lxml",  # parser used for ExoMol website
+            "hjson",  # Json with comments (for default_radis.json)
+            "publib",  # Plotting styles for Matplotlib. Version, update to 0.4.0 needed for matplotlib==3.8. However, only 0.3.2 is compatible with python==3.8 (see #647)
+            "hitran-api",  # HAPI, used to access TIPS partition functions
+            "peakutils",
+            "ruamel.yaml",
+            "json-tricks>=3.15.0",  # to deal with non jsonable formats
+            "mpldatacursor",
+            "nvidia-cufft-cu11",
+            "periodictable",
+            'vaex-core ; python_version < "3.11"',
+            'vaex-hdf5 ; python_version < "3.11"',
+            'vaex-viz ; python_version < "3.11"',
+        ],
         extras_require={
             "dev": [
                 "numpydoc",  # for Jedi (autocompletion) to recognize
