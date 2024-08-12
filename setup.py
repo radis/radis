@@ -329,7 +329,7 @@ def run_setup(with_binary):
 
 # %% Run Main install routine
 try:
-    run_setup(with_binary=True)
+    run_setup(with_binary=False)  # radis 0.15 - Cython is not implemented anymore
 except BuildFailed:
     import traceback
 

@@ -4,6 +4,7 @@ hjson          # Json with comments (for default_radis.json)
 publib 		   # Plotting styles for Matplotlib. Version, update to 0.4.0 needed for matplotlib==3.8. However, only 0.3.2 is compatible with python==3.8 (see #647)
 hitran-api     # HAPI, used to access TIPS partition functions
 peakutils
+psutil 			# to get user RAM - Build failed when installed with conda
 ruamel.yaml
 json-tricks>=3.15.0  # to deal with non jsonable formats
 mpldatacursor

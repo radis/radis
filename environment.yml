@@ -22,7 +22,6 @@ dependencies:
 - pandas
 - plotly>=2.5.1  # for line survey HTML output
 #- progressbar2    # used in vaex
-- psutil # to get user RAM
 - pytables # for pandas to HDF5 export
 - scipy>=1.4.0
 - seaborn   # other matplotlib themes
