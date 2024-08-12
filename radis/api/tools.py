@@ -234,7 +234,7 @@ def drop_object_format_columns(df, verbose=True):
     df_type = type(df)
     objects = [k for k, v in df.dtypes.items() if v == object]
     if df_type == pd.DataFrame:
-        df.drop(objects, axis=1)
+        df.drop(objects, axis=1, inplace=True)
     elif (
         not isinstance(vaex, NotInstalled) and df_type == vaex.dataframe.DataFrameLocal
     ):  # no objects in vaex
