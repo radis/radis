@@ -459,6 +459,7 @@ EXOMOL_MOLECULES = [
     "C2H2",
     "C2H4",
     "C3",
+    "CaCl",
     "CH",
     "CH3",
     "CH3Cl",

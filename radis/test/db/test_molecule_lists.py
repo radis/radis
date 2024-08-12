@@ -360,4 +360,4 @@ def generate_molparam_for_non_HITRAN_species():
 
 if __name__ == "__main__":
     test_ExoMol_molecules_list()
-    test_HITRAN_molecules_list()
+    # test_HITRAN_molecules_list()

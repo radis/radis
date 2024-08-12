@@ -36,17 +36,17 @@ spectrum. See the :ref:`Calculate a large spectrum by part <example_large_range_
 
 
 #%%
-
 import astropy.units as u
 
-from radis import calc_spectrum
+from radis import calc_spectrum, config
+
+# This next line is needed, because the brodening coefficient of H2O by CO2 is not known.
+config["MISSING_BROAD_COEF"] = "air"
 
 s = calc_spectrum(
     wmin=0.5 * u.um,
     wmax=15 * u.um,  # cm-1
-    mole_fraction={
-        "H2O": 0.02
-    },  # {"CO2": 420e-6, "H2O": 0.02} #this option will be possible when issue #633 is solved
+    mole_fraction={"CO2": 420e-6, "H2O": 0.02},
     isotope="1,2,3",
     pressure=1.01325,  # bar
     Tgas=300,  # K
