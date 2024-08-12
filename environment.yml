@@ -5,7 +5,7 @@ channels:
 - astropy
 - plotly
 dependencies:
-- python
+- python=3.10
 - astropy>=4.3.1  # Unit aware calculations
 - astroquery>=0.4.6  # to fetch HITRAN databases
 - beautifulsoup4>=4.10.0 # parse ExoMol website
@@ -22,6 +22,7 @@ dependencies:
 - pandas
 - plotly>=2.5.1  # for line survey HTML output
 #- progressbar2    # used in vaex
+- psutil # to get user RAM
 - pytables # for pandas to HDF5 export
 - scipy>=1.4.0
 - seaborn   # other matplotlib themes

@@ -266,7 +266,7 @@ def run_setup(with_binary):
             "pandas",
             "plotly>=2.5.1",  # for line survey HTML output
             "psutil",  # to get user RAM
-            "pytables",  # for pandas to HDF5 export
+            "tables",  # for pandas to HDF5 export - WARNING named "pytables" in conda
             "scipy>=1.4.0",
             "seaborn",  # other matplotlib themes
             "termcolor",  # terminal colors
