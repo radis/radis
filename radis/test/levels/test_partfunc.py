@@ -175,7 +175,10 @@ def test_reduced_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
     """Test 1: compare calculated PartFunc to the tabulated one
 
     Version where we use the reduced set of CO2 levels (< 3000 cm-1)"""
+    from radis import setup_test_line_databases
     from radis.misc.config import getDatabankEntries
+
+    setup_test_line_databases()  # needed for "HITEMP-CO2-HAMIL-TEST"
 
     iso = 1
     database = "HITEMP-CO2-HAMIL-TEST"
