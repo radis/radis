@@ -2019,9 +2019,12 @@ def _recalculate(
 
     # check the slab is homogeneous to compute the cross-section
     for key in ["Tgas", "pressure", "mole_fraction"]:
-        good = isinstance(spec.conditions[key], (int, float)) and not isinstance(
-            spec.conditions[key], bool
-        )
+        if key in spec.conditions:
+            good = isinstance(spec.conditions[key], (int, float)) and not isinstance(
+                spec.conditions[key], bool
+            )
+        else:
+            continue
         if "xsection" in recompute and not good:
             recompute.remove("xsection")
             warn(
