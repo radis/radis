@@ -24,9 +24,11 @@ except ImportError:
 
 pytestmark = pytest.mark.random_order(
     disabled=True
-)  # to make sure HITEMP-CO2-TEST is downloaded for every test
+)  # to make sure HITEMP-CO2-TEST is downloaded in 1st test and used after
 
 
+@pytest.mark.needs_connection
+@pytest.mark.fast
 def test_retrieve_from_database(
     plot=False, verbose=True, warnings=True, *args, **kwargs
 ):
@@ -233,6 +235,8 @@ def test_custom_abundance(verbose=True, plot=False, *args, **kwargs):
     assert s.compare_with((3 * s3.take("abscoeff")), "abscoeff", rtol=0.5e-2, plot=True)
 
 
+@pytest.mark.needs_connection
+@pytest.mark.download_large_databases
 @pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
 def test_vaex_and_pandas_dataframe_fetch_databank():
     """
@@ -254,9 +258,10 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
         1500,
         2000,
         molecule="CO",
-        isotope="1,2,3",
+        isotope="1,2",  # testing only 2 isotopes to save (a bit of) time
         pressure=1.01325,  # bar
         path_length=1,  # cm
+        verbose=3,
     )
 
     def compare_dataframe(df_vaex, df_pandas, columns):
@@ -338,6 +343,7 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
     # Comparing the dataframe fetched from GEISA
     assert compare_dataframe(df1, df2, df2.columns)
 
+    # Kurucz
     # Using an atom rather than molecule:
     sf = SpectrumFactory(
         1500,
@@ -438,12 +444,12 @@ def test_vaex_and_pandas_dataframe_load_databank():
 
 def _run_testcases(verbose=True, plot=False):
 
-    test_retrieve_from_database(plot=plot, verbose=verbose)
-    test_ignore_cached_files()
-    test_ignore_irrelevant_files(verbose=verbose)
-    test_custom_abundance()
+    # test_retrieve_from_database(plot=plot, verbose=verbose)
+    # test_ignore_cached_files()
+    # test_ignore_irrelevant_files(verbose=verbose)
+    # test_custom_abundance()
     test_vaex_and_pandas_dataframe_fetch_databank()
-    test_vaex_and_pandas_dataframe_load_databank()
+    # test_vaex_and_pandas_dataframe_load_databank()
 
 
 if __name__ == "__main__":
