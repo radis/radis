@@ -2017,6 +2017,20 @@ def _recalculate(
         recompute.append("abscoeff")
     recompute = set(recompute)  # remove duplicates
 
+    # check the slab is homogeneous to compute the cross-section
+    for key in ["Tgas", "pressure", "mole_fraction"]:
+        good = isinstance(spec.conditions[key], (int, float)) and not isinstance(
+            spec.conditions[key], bool
+        )
+        if "xsection" in recompute and not good:
+            recompute.remove("xsection")
+            warn(
+                f"Rescaling the 'xsection' of Spectrum {spec.get_name()} but"
+                + " the spectrum is not homogeneous or not defined:\n"
+                + f"s.conditions[{key}] = 'N/A'\n"
+                + "If you are merging two spectra, make sure cross-sections are not included in the initial spectra, see https://github.com/radis/radis/issues/682."
+            )
+
     # Get units
     rescaled_units = spec.units.copy()
 
@@ -2272,7 +2286,7 @@ def _recalculate(
     for q in wanted:
         if not q in rescaled_list:
             raise AssertionError(
-                "{0} could not be rescaled as wanted. ".format(q)
+                "'{0}' could not be rescaled as wanted. ".format(q)
                 + "The following properties were rescaled: {0}".format(rescaled_list)
             )
     # ... everyone was added in the Spectrum properly
@@ -2280,14 +2294,14 @@ def _recalculate(
     for q in wanted:
         if not q in final_list:
             raise AssertionError(
-                "{0} is not in the final Spectrum. ".format(q)
+                "'{0}' is not in the final Spectrum. ".format(q)
                 + "Rescaled spectrum contains: {0}".format(final_list)
             )
     # ... "everyone was rescaled": check we didnt scale only part of the spectrum
     for q in initial:
         if not q in rescaled_list:
             raise AssertionError(
-                "{0} was initially in the Spectrum but was not ".format(q)
+                "'{0}' was initially in the Spectrum but was not ".format(q)
                 + "rescaled. This can lead to error. Rescaled spectrum "
                 + "contains: {0}".format(rescaled_list)
             )
