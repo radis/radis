@@ -1172,7 +1172,7 @@ class DatabankLoader(object):
         if [parfuncfmt, source].count("exomol") == 1:
             self.warn(
                 f"Using lines from {source} but partition functions from {parfuncfmt}"
-                + "for consistency we recommend using lines and partition functions from the same database",
+                + " for consistency we recommend using lines and partition functions from the same database",
                 "AccuracyWarning",
             )
         if memory_mapping_engine == "default":
