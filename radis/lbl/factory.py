@@ -82,6 +82,7 @@ from warnings import warn
 import astropy.units as u
 import numpy as np
 from numpy import arange, exp, expm1
+from scipy.constants import c
 from scipy.optimize import OptimizeResult
 
 from radis import version
@@ -110,7 +111,7 @@ from radis.spectrum.spectrum import Spectrum
 
 
 class SpectrumFactory(BandFactory):
-    r"""A class to put together all functions related to loading CDSD / HITRAN
+    """A class to put together all functions related to loading CDSD / HITRAN
     databases, calculating the broadenings, and summing over all the lines.
 
     Parameters
@@ -313,9 +314,7 @@ class SpectrumFactory(BandFactory):
             - `isneutral`: When calculating the spectrum of an atomic species, whether or not it is neutral (always ``None`` for molecules)
         Returns:
             `gamma_lb`, `shift` - The total Lorentzian HWHM [:math:`cm^{-1}`], and the shift [:math:`cm^{-1}`] to be subtracted from the wavenumber array to account for lineshift. If setting the lineshift here is not desired, the 2nd return object can be anything for which `bool(shift)==False` like `None`. gamma_lb must be array-like but can also be a vaex expression if the dataframe type is vaex.
-        For the Kurucz databank, if unspecified, the broadening is handled by default by :func:`~radis.lbl.broadening.gamma_vald3` for atoms when using the Kurucz databank, and :func:`~radis.lbl.broadening.pressure_broadening_HWHM` for molecules.
-
-        For the NIST databank, the `lbfunc` parameter is compulsory as NIST doesn't provide broadening parameters.
+        If unspecified, the broadening is handled by default by :func:`~radis.lbl.broadening.gamma_vald3` for atoms when using the Kurucz databank, and :func:`~radis.lbl.broadening.pressure_broadening_HWHM` for molecules. When using the NIST databank for atoms, the `lbfunc` parameter is compulsory as NIST doesn't provide broadening parameters.
 
         See :ref:`the provided example <example_custom_lorentzian_broadening>`
     potential_lowering: float (cm-1/Zeff**2)
@@ -1205,19 +1204,8 @@ class SpectrumFactory(BandFactory):
         # )
 
         gamma_arr = np.zeros((2, _Nlines_calculated), dtype=np.float32)
-        # gamma_arr[0] = self.df0["selbrd"].to_numpy(dtype=np.float32)
-        gamma_arr[0] = self.df0["airbrd"].to_numpy(
-            dtype=np.float32
-        )  # dirty, but working for the moment
+        gamma_arr[0] = self.df0["selbrd"].to_numpy(dtype=np.float32)
         gamma_arr[1] = self.df0["airbrd"].to_numpy(dtype=np.float32)
-
-        # Check if pressure shift exists (12/2024: not the case in Exomol)
-        if "Pshft" not in self.df0:
-            self.warn(
-                "Pressure-shift coefficient not given in database: assumed 0 pressure shift",
-                "MissingPressureShiftWarning",
-            )
-            self.df0["Pshft"] = 0
 
         self.calc_S0(self.df0)
 

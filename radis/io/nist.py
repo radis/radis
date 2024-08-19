@@ -15,6 +15,7 @@ from os.path import abspath, expanduser, join
 
 import radis
 from radis.api.nistapi import NISTDatabaseManager
+from radis.misc.config import getDatabankEntries
 
 
 def fetch_nist(

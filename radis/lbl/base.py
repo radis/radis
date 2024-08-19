@@ -72,9 +72,10 @@ from numpy import exp, pi
 from psutil import virtual_memory
 
 import radis
+from radis.db.classes import get_element_symbol
 
 # TODO: rename in get_molecule_name
-from radis.db.classes import get_element_symbol, get_molecule, get_molecule_identifier
+from radis.db.classes import get_molecule, get_molecule_identifier
 
 try:  # Proper import
     from .loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
@@ -2387,7 +2388,7 @@ class BaseFactory(DatabankLoader):
 
         try:
             parsum = self.get_partition_function_interpolator(molecule, iso, state)
-            Q = parsum.at(T)
+            Q = parsum.at(T, self.input.potential_lowering)
         except OutOfBoundError as err:
             # Try to calculate
             try:
@@ -2422,54 +2423,47 @@ class BaseFactory(DatabankLoader):
         --------
         :py:meth:`~radis.lbl.base.BaseFactory.Qgas_Qref_ratio`
         """
-        if self.input.isatom:
-            if self.input.pfsource.casefold() == "kurucz":
-                Q = self.parsum.at(Tgas, self.input.potential_lowering)
+        if "id" in df1.columns:
+            id_set = df1.id.unique()
+            if len(id_set) > 1:
+                raise NotImplementedError(">1 molecule.")
             else:
-                Q = self.parsum.at(Tgas)
-            return Q
+                self.warn(
+                    "There shouldn't be a Column 'id' with a unique value",
+                    "PerformanceWarning",
+                )
+                df1.attrs["id"] = int(id_set)
+
+        if "molecule" in df1.attrs:
+            molecule = df1.attrs[
+                "molecule"
+            ]  # used for ExoMol and others, which have no HITRAN-id
         else:
-            if "id" in df1.columns:
-                id_set = df1.id.unique()
-                if len(id_set) > 1:
-                    raise NotImplementedError(">1 molecule.")
-                else:
-                    self.warn(
-                        "There shouldn't be a Column 'id' with a unique value",
-                        "PerformanceWarning",
-                    )
-                    df1.attrs["id"] = int(id_set)
+            molecule = get_molecule(df1.attrs["id"])
+        state = self.input.state
 
-            if "molecule" in df1.attrs:
-                molecule = df1.attrs[
-                    "molecule"
-                ]  # used for ExoMol and others, which have no HITRAN-id
-            else:
-                molecule = get_molecule(df1.attrs["id"])
-            state = self.input.state
-
-            if "iso" in df1:
-                iso_set = df1.iso.unique()
-                if len(iso_set) == 1:
-                    self.warn(
-                        "There shouldn't be a Column 'iso' with a unique value",
-                        "PerformanceWarning",
-                    )
-                    iso = int(iso_set)
-                    Q = self._calc_Q(molecule, iso, state, Tgas)
-                    df1.attrs["Q"] = Q
-                    return Q
-                else:
-                    Qgas_dict = {}
-                    for iso in iso_set:
-                        Qgas_dict[iso] = self._calc_Q(molecule, iso, state, Tgas)
-                    return df1["iso"].map(Qgas_dict)
-
-            else:  # "iso" not in df:
-                iso = df1.attrs["iso"]
+        if "iso" in df1:
+            iso_set = df1.iso.unique()
+            if len(iso_set) == 1:
+                self.warn(
+                    "There shouldn't be a Column 'iso' with a unique value",
+                    "PerformanceWarning",
+                )
+                iso = int(iso_set)
                 Q = self._calc_Q(molecule, iso, state, Tgas)
                 df1.attrs["Q"] = Q
                 return Q
+            else:
+                Qgas_dict = {}
+                for iso in iso_set:
+                    Qgas_dict[iso] = self._calc_Q(molecule, iso, state, Tgas)
+                return df1["iso"].map(Qgas_dict)
+
+        else:  # "iso" not in df:
+            iso = df1.attrs["iso"]
+            Q = self._calc_Q(molecule, iso, state, Tgas)
+            df1.attrs["Q"] = Q
+            return Q
 
     def Qref_Qgas_ratio(self, df1, Tgas, Tref):
         """Calculate Qref/Qgas at temperature ``Tgas``, ``Tref``, for all lines
