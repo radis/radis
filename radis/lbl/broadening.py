@@ -2501,10 +2501,14 @@ class BroadenFactory(BaseFactory):
                             mask = boolean_array_from_ranges(
                                 LDM_ranges[(l, m)], len(sumoflines_calc)
                             )
+                            # TAG: RADIS 1.0 paper - This is where the sparse wavenumber range is used
+                            # (temporarily Fig. 9 in the RADIS 1.0 paper)
                             sumoflines_calc[mask] += oaconvolve(
                                 LDM_reduced[(l, m)], lineshape, "same"
                             )
                     else:
+                        # TAG: RADIS 1.0 paper - This is where the sparse wavenumber range is used
+                        # (temporarily Fig. 9 in the RADIS 1.0 paper)
                         sumoflines_calc += oaconvolve(LDM[:, l, m], lineshape, "same")
 
         elif broadening_method == "fft":

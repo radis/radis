@@ -439,7 +439,6 @@ def test_partfunckurucz():
     ), f"Interpolation failed at T={T_test}"
 
 
-@pytest.mark.fast
 def test_reduced_CDSD_calc_noneq(verbose=True, warnings=True, *args, **kwargs):
     """Compare calculated partition function at equilibrium and nonequilibrium
     using the CDSD-format
