@@ -173,8 +173,13 @@ class DatabaseManager(object):
             4  #: type: int. If there are less files, don't use parallel mode.
         )
 
-    def get_filenames(self):
+    def get_filenames(self, return_reg_urls=False):
         """Get names of all files in the database (even if not downloaded yet)
+
+        Parameters
+        ----------
+        return_reg_urls: (boolean)
+            When the database is registered, whether to return the registered urls (``True``) or ``None`` (``False``)
 
         See Also
         --------
@@ -198,7 +203,10 @@ class DatabaseManager(object):
                 ) from err
             else:
                 local_files = entries["path"]
-            urlnames = None
+            if return_reg_urls:
+                urlnames = entries["download_url"]
+            else:
+                urlnames = None
 
             # Check that local files are the one we expect :
             for f in local_files:
@@ -210,7 +218,6 @@ class DatabaseManager(object):
                     )
 
         elif self.is_downloadable():
-            # local_files = self.fetch_filenames()
             urlnames = self.fetch_urlnames()
             local_fnames = [
                 (
@@ -240,11 +247,11 @@ class DatabaseManager(object):
                 for local_fname in local_fnames
             ]
 
+            if engine == "vaex":
+                local_files = [fname.replace(".h5", ".hdf5") for fname in local_files]
+
         else:
             raise NotImplementedError
-
-        if engine == "vaex":
-            local_files = [fname.replace(".h5", ".hdf5") for fname in local_files]
 
         local_files = [expanduser(f) for f in local_files]
 
@@ -347,8 +354,10 @@ class DatabaseManager(object):
             engine = self.engine
         return DataFileManager(engine=engine)
 
-    def download_and_parse(self, urlnames, local_files):
-        all_local_files, _ = self.get_filenames()
+    def download_and_parse(self, urlnames, local_files, N_files_total=None):
+        if N_files_total is None:
+            all_local_files, _ = self.get_filenames()
+            N_files_total = len(all_local_files)
 
         verbose = self.verbose
         molecule = self.molecule
@@ -358,11 +367,11 @@ class DatabaseManager(object):
 
         t0 = time()
         pbar_Ntot_estimate_factor = None
-        if len(urlnames) != len(all_local_files):
+        if len(urlnames) != N_files_total:
             # we're only downloading a part of the database
             # expected number of lines is approximately Ntot * N_files/N_files_total
             # (this is just to give the user an expected download & parse time)
-            pbar_Ntot_estimate_factor = len(urlnames) / len(all_local_files)
+            pbar_Ntot_estimate_factor = len(urlnames) / N_files_total
         else:
             pbar_Ntot_estimate_factor = None
         Nlines_total = 0
@@ -420,6 +429,32 @@ class DatabaseManager(object):
                 urlnames, local_files, range(1, len(local_files) + 1)
             ):
                 download_and_parse_one_file(urlname, local_file, Ndownload)
+
+    def parse_to_local_file(
+        self,
+        opener,
+        urlname,
+        local_file,
+        pbar_active=True,
+        pbar_t0=0,
+        pbar_Ntot_estimate_factor=None,
+        pbar_Nlines_already=0,
+        pbar_last=True,
+    ) -> list:
+        """This function should be overwritten by the DatabaseManager subclass
+
+        Uncompress ``urlname`` into ``local_file``.
+        Also add metadata
+
+        Returns
+        -------
+        list: list of urlnames
+
+        See for instance :py:class:`radis.api.hitempapi.HITEMPDatabaseManager"""
+
+        raise NotImplementedError(
+            "This function should be overwritten by the DatabaseManager subclass"
+        )
 
     def clean_download_files(self):
         """Fully unzipped (and working, as it was reloaded): clean files

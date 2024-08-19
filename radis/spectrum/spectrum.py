@@ -1506,7 +1506,7 @@ class Spectrum(object):
             name = "{0}".format(basename(self.file))
         else:
             name_params = []
-            for (key, unit) in [("molecule", ""), ("dbformat", ""), ("Tgas", "K")]:
+            for (key, unit) in [("species", ""), ("dbformat", ""), ("Tgas", "K")]:
                 if key in self.conditions:
                     name_params.append(f"{self.conditions[key]}{unit}")
 
@@ -3342,7 +3342,7 @@ class Spectrum(object):
             show wavelength either in air or vacuum. Default ``'air'``
         plot: str
             what to plot. Default ``'S'`` (scaled line intensity). But it can be
-            any key in the lines, such as population (``'nu'``), or Einstein coefficient (``'Aul'``)
+            any key in the lines, such as population (``'nu'``), or Einstein coefficient (``'A'``)
         lineinfo: list, or ``'all'``
             extra line information to plot. Should be a column name in the databank
             (s.lines). For instance: ``'int'``, ``'selbrd'``, etc... Default [``'int'``]
@@ -3525,7 +3525,6 @@ class Spectrum(object):
                    NwG                  3
                    NwL                  5
                    Tref                 296 K
-                   add_at_used          cython
                    broadening_method    voigt
                    cutoff               1e-27 cm-1/(#.cm-2)
                    dbformat             hitran
@@ -4402,8 +4401,10 @@ class Spectrum(object):
         # Check output match the rest of the spectrum conditions
         try:
             assert conditions["Tgas"] != r"N/A"
-            assert conditions["Tvib"] == conditions["Tgas"]
-            assert conditions["Trot"] == conditions["Tgas"]
+            if "Tvib" in conditions:
+                assert conditions["Tvib"] == conditions["Tgas"]
+            if "Trot" in conditions:
+                assert conditions["Trot"] == conditions["Tgas"]
             if "overpopulation" in conditions:
                 assert conditions["overpopulation"] is None
             assert conditions["self_absorption"]  # is True

@@ -25,6 +25,7 @@ PUBLIC FUNCTIONS - BROADENING
 - :py:func:`radis.lbl.broadening.doppler_broadening_HWHM`
 - :py:func:`radis.lbl.broadening.gaussian_lineshape`
 - :py:func:`radis.lbl.broadening.pressure_broadening_HWHM`
+- :py:func:`radis.lbl.broadening.gamma_vald3`
 - :py:func:`radis.lbl.broadening.lorentzian_lineshape`
 - :py:func:`radis.lbl.broadening.voigt_broadening_HWHM`
 - :py:func:`radis.lbl.broadening.voigt_lineshape`
@@ -36,7 +37,6 @@ convolve them, apply them on all calculated range)
 - :py:func:`radis.lbl.broadening.whiting`
 - :py:func:`radis.lbl.broadening._whiting_jit` : precompiled version
 - :py:meth:`radis.lbl.broadening.BroadenFactory._calc_broadening_HWHM`
-- :py:meth:`radis.lbl.broadening.BroadenFactory._add_voigt_broadening_HWHM`
 - :py:meth:`radis.lbl.broadening.BroadenFactory._voigt_broadening`
 - :py:meth:`radis.lbl.broadening.BroadenFactory._calc_lineshape`
 - :py:meth:`radis.lbl.broadening.BroadenFactory._calc_lineshape_LDM`
@@ -73,8 +73,7 @@ from scipy.signal import oaconvolve
 import radis
 from radis.db.references import doi
 from radis.lbl.base import BaseFactory
-from radis.misc.arrays import (
-    add_at,
+from radis.misc.arrays import (  # add_at, #cython
     arange_len,
     boolean_array_from_ranges,
     non_zero_ranges_in_array,
@@ -88,7 +87,7 @@ from ..misc.plot import fix_style, set_style
 from ..misc.progress_bar import ProgressBar
 from ..misc.utils import NotInstalled, not_installed_vaex_args
 from ..misc.warning import reset_warnings
-from ..phys.constants import Na, c_CGS, k_b_CGS
+from ..phys.constants import Na, c_CGS, eV2wn, k_b_CGS
 
 try:
     import vaex
@@ -97,6 +96,8 @@ except ImportError:
 
 
 # %% Broadening functions
+
+atomic_broadening_coeff = {"H": 1.0, "He": 0.41336, "H2": 0.85}
 
 
 def doppler_broadening_HWHM(wav, molar_mass, Tgas):
@@ -384,6 +385,166 @@ def pressure_broadening_HWHM(
     return gamma_lb
 
 
+def gamma_vald3(
+    T,
+    P,
+    nu_lines,
+    elower,
+    ionE,
+    gamRad,
+    gamSta,
+    gamVdW,
+    diluent,
+    is_neutral,
+    enh_damp=1.0,
+):  # , vdW_meth="V"):
+    """(This function is derived from exojax.spec.atomll.gamma_vald3)
+
+    HWHM of Lorentzian (cm-1) caluculated as gamma/(4*pi*c) [cm-1] for lines
+    with the van der Waals gamma in the line list (such as VALD or Kurucz), otherwise
+    estimated according to the [Unsöld-1955]_
+
+    Parameters
+    ----------
+    T: float [K]
+        (translational) gas temperature
+    P: float  [bar]
+        pressure in bar
+    nu_lines: array or Vaex expression   (cm-1)        [length N]
+        transition wavenumber
+    elower: array or Vaex expression   (cm-1)        [length N]
+        excitation potential (lower level)
+    ionE: array or Vaex expression   (eV)        [length N]
+        ionization potential
+    gamRad: array or Vaex expression   (s-1)        [length N]
+        log of the half-width half maximum coefficient (HWHM) for radiative broadening
+    gamSta: array or Vaex expression   (s-1 * cm-3)         [length N]
+        log of the half-width half maximum coefficient (HWHM) per electron density for Stark broadening, at 10000 K
+    gamVdW: array or Vaex expression   (s-1 * cm-3)        [length N]
+        log of the half-width half maximum coefficient (HWHM) per atomic hydrogen density for Van der Waals broadening, at 10000 K
+    diluent: dictionary
+        contains diluent and their mole fraction
+    is_neutral: bool
+        True if the radiating species is neutral, False if it's ionised
+    enh_damp: float
+        empirical "enhancement factor" for classical Unsoeld's damping constant
+
+    Returns
+    -------
+    gammma_rad, gamma_stark, gamma_vdw: (cm-1) numpy array or Vaex expression (depending on input type) [length N]
+        Radiation, Stark, and Van der Waals HWHM
+
+    Notes
+    -----
+    ``gamVdW`` given in the Kurucz linelists is, as [Kurucz-\&-Avrett-1981]_ state, ":math:`\\frac{\\Gamma_{W}}{N_{H}}` at 10000 K for pure hydrogen"
+
+    ``gamSta`` given in the Kurucz linelists can be recovered with a small error for a large proportion of lines from the values of :math:`C_4` given in the associated .gam files using an equation of the form:
+
+    .. math::
+
+        \\gamma_{4} = 40 {\\left(\\frac{8kT}{\pi m_e}\\right)}^{\\frac{1}{6}} C_4^2 N_e
+
+    See e.g. [Aller-1963]_ p318 and [Gray-2005]_ p244 for the background. See [Rivière-et-al-2002]_ for a treatment distinguishing between neutral and ionised radiators.
+
+    References
+    ----------
+
+    .. [Unsöld-1955] `"Physik der Sternatmospharen, MIT besonderer Berucksichtigung der Sonne." <https://ui.adsabs.harvard.edu/abs/1955psmb.book.....U>`_
+    .. [Aller-1963] `" Astrophysics The atmospheres of the sun and stars" <https://ui.adsabs.harvard.edu/abs/1963aass.book.....A>`_
+    .. [Gray-2005] `"The Observation and Analysis of Stellar Photospheres" <https://ui.adsabs.harvard.edu/abs/2005oasp.book.....G>`_
+    .. [Kurucz-\&-Avrett-1981] `"Solar Spectrum Synthesis. I. A Sample Atlas from 224 to 300 nm" <https://ui.adsabs.harvard.edu/abs/1981SAOSR.391.....K>`_
+    .. [Barklem-et-al-2000] `"A list of data for the broadening of metallic lines by neutral hydrogen collisions" <https://ui.adsabs.harvard.edu/abs/2000A%2526AS..142..467B>`_
+    .. [Rivière-et-al-2002] `"Systematic semi-classical calculations of Stark broadening parameters of NI, OI, NII, OII multiplets for modelling the radiative transfer in atmospheric air mixture plasmas" <https://ui.adsabs.harvard.edu/abs/2002JQSRT..73...91R>`_
+
+    See Also
+    --------
+
+    :py:func:`~radis.lbl.broadening.doppler_broadening_HWHM`,
+    """
+    # based on: https://github.com/HajimeKawahara/exojax/blob/78466cef0170ee1a2768b6a6f7b7c911d715c1bd/src/exojax/spec/atomll.py#L40
+    try:  # using this syntax to account for the case where vaex isn't installed
+        assert isinstance(gamRad, vaex.expression.Expression)
+    except Exception:
+        gamRad = np.where(gamRad == 0.0, -99, gamRad)
+    else:
+        gamRad = (gamRad == 0.0).where(-99, gamRad)
+    try:
+        assert isinstance(gamRad, vaex.expression.Expression)
+    except Exception:
+        gamRad = np.where(gamRad == 0.0, -99, gamRad)
+    else:
+        gamRad = (gamRad == 0.0).where(-99, gamRad)
+    chi_lam = nu_lines / eV2wn  # [cm-1] -> [eV]
+    chi = elower / eV2wn  # [cm-1] -> [eV]
+
+    C6 = 0.3e-30 * ((1 / (ionE - chi - chi_lam) ** 2) - (1 / (ionE - chi) ** 2))
+    C6 = np.abs(C6)
+
+    weighted_coeff = {}
+    # assuming diluent is dictionary
+    for key in diluent:
+        if key != "e-" and key in atomic_broadening_coeff:
+            weighted_coeff[key] = diluent[key] * atomic_broadening_coeff[key]
+    gamma6 = 0
+    for key in weighted_coeff:
+        gamma6 += 1e20 * C6**0.4 * P * 1e6 * weighted_coeff[key] / T**0.7
+    gamma6 *= enh_damp
+    gamma_case1 = gamma6 / (4 * np.pi * c_CGS)
+    # gamma_case1 = np.nan_to_num(gamma_case1) #revisit if NaN or NA ever does appear
+    try:
+        if gamma_case1.countna():
+            raise Exception(
+                "NA values were encountered in the estimated van der Waals gamma"
+            )
+    except Exception:
+        if np.isnan(gamma_case1).any():
+            raise Exception(
+                "NaN values were encountered in the estimated van der Waals gamma"
+            )
+
+    Texp = 0.38  # Barklem+2000
+    gamma6 = 0
+    for key in weighted_coeff:
+        gamma6 += (
+            10**gamVdW
+            * (T / 10000.0) ** Texp
+            * P
+            * 1e6
+            * weighted_coeff[key]
+            / (k_b_CGS * T)
+        )
+    gamma_case2 = gamma6 / (4 * np.pi * c_CGS)
+
+    try:
+        assert isinstance(gamVdW, vaex.expression.Expression)
+    except Exception:
+        gamma_vdw = np.where(gamVdW >= 0.0, gamma_case1, gamma_case2)
+    else:
+        gamma_vdw = (gamVdW >= 0.0).where(gamma_case1, gamma_case2)
+
+    if "e-" in diluent:
+        gamma_stark = (
+            (10**gamSta)
+            * P
+            * 1e6
+            * diluent["e-"]
+            / (k_b_CGS * T)
+            / (4 * np.pi * c_CGS)
+        )  # see e.g. Gray p244 for temperature scaling
+        if is_neutral:
+            gamma_stark *= (T / 10000) ** (1.0 / 6.0)  # see e.g. Gray 2005 p244
+        else:
+            gamma_stark *= (T / 10000) ** (
+                -1.0 / 2.0
+            )  # see e.g. Rivière et al 2002 §2.2, v ∝ T^1/2
+    else:
+        gamma_stark = 0
+
+    gammma_rad = 10**gamRad / (4 * np.pi * c_CGS)
+
+    return gammma_rad, gamma_stark, gamma_vdw
+
+
 def lorentzian_lineshape(w_centered, gamma_lb):
     r"""Computes collisional broadening over all lines [1]_
 
@@ -660,6 +821,7 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
     # ... - it is defined for wavelengths only. Here we may have wavenumbers as well
 
     integral = np.trapz(lineshape, w_centered, axis=0)
+
     # Normalize
     lineshape /= integral
 
@@ -830,13 +992,13 @@ class BroadenFactory(BaseFactory):
         """ See :py:meth:`~radis.lbl.factory.SpectrumFactory`
         """
 
-        # Try to use Cython ?
-        self.use_cython = radis.config[
-            "USE_CYTHON"
-        ]  # default value (read from config file)
-        # ... Note: whether Cython will be used eventually depends whether it was installed,
-        # ... else it default to the non-cython version. What was used eventually
-        # ... is stored in self.params.use_cython
+        # # Try to use Cython ?
+        # self.use_cython = radis.config[
+        #     "USE_CYTHON"
+        # ]  # default value (read from config file)
+        # # ... Note: whether Cython will be used eventually depends whether it was installed,
+        # # ... else it default to the non-cython version. What was used eventually
+        # # ... is stored in self.params.use_cython
 
         # Predict broadening times (helps trigger warnings for optimization)
         self._broadening_time_ruleofthumb = 1e-7  # s / lines / point
@@ -902,124 +1064,151 @@ class BroadenFactory(BaseFactory):
         Tgas = self.input.Tgas
         pressure = self.input.pressure
         mole_fraction = self.input.mole_fraction
-        # convert from mbar to atm for linebroadening calculation
+        # convert from bar to atm for linebroadening calculation
         pressure_atm = pressure / 1.01325
         # coefficients tabulation temperature
         Tref = self.input.Tref
         broadening_method = (
             self.params.broadening_method
         )  # Lineshape broadening algorithm
+        isneutral = self.input.isneutral
 
         # diluent and their broadening coeff dictionary
         diluent_broadening_coeff = {}
 
-        for key in diluent:
-            if key == "air":
-                # no need to add broadening dictionary with air, as "airbrd" and "Tdpair" is already in the dataframe
-                continue
-            diluent_name = key.lower()
-            if "gamma_" + diluent_name in df.columns:
-                diluent_broadening_coeff["gamma_" + diluent_name] = df[
-                    "gamma_" + diluent_name
-                ]
-
-                # Check if there are Nans in the gamma column
-                num_nans = (
-                    diluent_broadening_coeff["gamma_" + diluent_name].isna().sum()
+        ###### Atoms ######
+        new_diluent = diluent.copy()
+        if self.input.isatom:
+            for key in diluent:
+                if key != "e-" and key not in atomic_broadening_coeff:
+                    raise ValueError(
+                        f"Broadening Coefficient of {key} not available. Broadening coefficients are only available for: {list(atomic_broadening_coeff.keys()) + ['e-']}."
+                    )
+                    # self.warn(
+                    #     message="Broadening Coefficient of "
+                    #     + key
+                    #     + " not available. You can silence this error by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.\nThe broadening coefficient of atomic hydrogen is used instead.",
+                    #     category="MissingDiluentBroadeningWarning",
+                    # )
+                    # new_diluent['H'] = new_diluent.get('H', 0) + new_diluent[key]
+                    # del new_diluent[key]
+            diluent = new_diluent
+        ###### Molecules ######
+        else:
+            if not radis.config["MISSING_BROAD_COEF"] in ["air", False]:
+                raise ValueError(
+                    f"radis.config is set to '{radis.config['MISSING_BROAD_COEF']}'. Only 'air' or {False} is allowed."
                 )
-                if num_nans > 0:
-                    msg = """
+            for key in diluent:
+                msg_missing = f"Broadening Coefficient of {self.get_conditions()['species']} by {key} not present in database."
+                msg_miss_Tdep = f"Temperature dependance of Broadening Coefficient of {self.get_conditions()['species']} by {key} not present in database."
+                solution1 = "If the database should include these coefficients, update the database once with `use_cached='regen'` in `calc_spectrum(...)` or `db_use_cached='regen'` in `fetch_databank(...)`."
+                solution2 = (
+                    f"Replace manually '{key}' by 'air' in the `diluent=` parameter."
+                )
+                solution3 = (
+                    "Set radis.config['MISSING_BROAD_COEF'] = 'air'"
+                    + f" This will assume {self.get_conditions()['species']} is broadened by 'air' instead of {key}."
+                )
+                list_solutions = f"\n*** Solution1 ***\n==> {solution1}\n*** Solution2 ***\n==> {solution2}\n*** Solution3 ***\n==> {solution3}"
+                if key == "air":
+                    # no need to add broadening dictionary with air, as "airbrd" and "Tdpair" is already in the dataframe
+                    continue
+                diluent_name = key.lower()
+                if "gamma_" + diluent_name in df.columns:
+                    diluent_broadening_coeff["gamma_" + diluent_name] = df[
+                        "gamma_" + diluent_name
+                    ]
+                    # Check if there are Nans in the gamma column
+                    num_nans = (
+                        diluent_broadening_coeff["gamma_" + diluent_name].isna().sum()
+                    )
+                    msg_Nan = f"""
                     Broadening Coefficient by {key} has Nan values in the database.
-                    \nWe found {num_nans} nans out of
+                    We found {num_nans} nans out of
                     {diluent_broadening_coeff['gamma_' + diluent_name].shape[0]} elements
                     in the columns {'gamma_' + diluent_name}.
                     """
-                    raise ValueError(
-                        f"{msg}\nClean the database or replace '{key}' by 'air' in the `diluent=` parameter."
+                    if num_nans > 0 and not radis.config["MISSING_BROAD_COEF"]:
+                        raise ValueError(f"""{msg_Nan}{list_solutions}""")
+                    elif num_nans > 0:  # radis.config['MISSING_BROAD_COEF'] == 'air':
+                        self.warn(
+                            message=f"""{msg_Nan}\nYou set radis.config['MISSING_BROAD_COEF'] = 'air' and the broadening coefficients of air is used instead of {key}.\nYou can silence this warning by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.""",
+                            category="MissingDiluentBroadeningWarning",
+                        )
+                        diluent_broadening_coeff["gamma_" + diluent_name] = df[
+                            "airbrd"
+                        ]  # note @dev : check it doesn't create a new memory object
+
+                else:
+                    if not radis.config["MISSING_BROAD_COEF"]:
+                        raise ValueError(f"""{msg_missing}{list_solutions}""")
+                    else:  # radis.config['MISSING_BROAD_COEF'] == 'air'
+                        self.warn(
+                            message=f"""{msg_missing}.\nYou set radis.config['MISSING_BROAD_COEF'] = 'air' and the broadening coefficients of air is used instead of {key}.\nYou can silence this warning by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.""",
+                            category="MissingDiluentBroadeningWarning",
+                        )
+                        diluent_broadening_coeff["n_" + diluent_name] = df[
+                            "Tdpair"
+                        ]  # note @dev : check it doesn't create a new memory object
+
+                if "n_" + diluent_name in df.columns:
+                    diluent_broadening_coeff["n_" + diluent_name] = df[
+                        "n_" + diluent_name
+                    ]
+                    # Check if there are Nans in the gamma column
+                    num_nans = (
+                        diluent_broadening_coeff["n_" + diluent_name].isna().sum()
                     )
-                    # self.warn(
-                    #     message=msg+"You can silence this error by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.\nThe broadening coefficient of air is used instead.",
-                    #     category="MissingDiluentBroadeningWarning",
-                    # )
-                    # diluent_broadening_coeff["gamma_" + diluent_name] = df[
-                    #     "airbrd"
-                    # ]  # note @dev : check it doesn't create a new memory object
-            else:
-                msg = f"Broadening Coefficient of {self.get_conditions()['molecule']} by {key} not present in database. \nIf the database should include these coefficients, try removing the cache by using once `use_cached='regen'` in calc_spectrum."
-                raise ValueError(
-                    f"{msg}\nOtherwise, replace '{key}' by 'air' in the `diluent=` parameter."
-                )
-                # self.warn(
-                #     message="f{msg}\nIf not, you can silence this error by using `warnings['MissingDiluentBroadeningTdepWarning']='ignore'`.\nThe temperature-dependance coefficient of air is used instead.",
-                #     category="MissingDiluentBroadeningTdepWarning",
-                # )
-                # diluent_broadening_coeff["n_" + diluent_name] = df[
-                #     "Tdpair"
-                # ]  # note @dev : check it doesn't create a new memory object
-
-            if "n_" + diluent_name in df.columns:
-                diluent_broadening_coeff["n_" + diluent_name] = df["n_" + diluent_name]
-
-                # Check if there are Nans in the gamma column
-                num_nans = diluent_broadening_coeff["n_" + diluent_name].isna().sum()
-                if num_nans > 0:
-                    msg = """
+                    msg_Nan_Tdep = """
                     Temperature dependance of Broadening Coefficient of
-                    {self.get_conditions()['molecule']} by {key} has Nan values in the database.
+                    {self.get_conditions()['species']} by {key} has Nan values in the database.
                     \nWe found {num_nans} nans out of
                     {diluent_broadening_coeff['gamma_' + diluent_name].shape[0]}
                     elements in the columns {'gamma_' + diluent_name}.
                     """
-                    raise ValueError(
-                        f"{msg}\nClean the database or replace '{key}' by 'air' in the `diluent=` parameter."
-                    )
-
-                    # self.warn(
-                    #     message=f"{msg}\nYou can silence this error by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.\nThe broadening coefficient of air is used instead.",
-                    #     category="MissingDiluentBroadeningWarning",
-                    # )
-                    # diluent_broadening_coeff["n_" + diluent_name] = df[
-                    #     "Tdpair"
-                    # ]  # note @dev : check it doesn't create a new memory object
-            else:
-                msg = f"Temperature dependance of Broadening Coefficient of {self.get_conditions()['molecule']} by {key} not present in database. \nIf the database should include these coefficients, try removing the cache by using once `use_cached='regen'` in calc_spectrum."
-                raise ValueError(
-                    f"{msg}\nOtherwise, replace '{key}' by 'air' in the `diluent=` parameter."
-                )
-                # self.warn(
-                #     message="f{msg}\nIf not, you can silence this error by using `warnings['MissingDiluentBroadeningTdepWarning']='ignore'`.\nThe temperature-dependance coefficient of air is used instead.",
-                #     category="MissingDiluentBroadeningTdepWarning",
-                # )
-                # diluent_broadening_coeff["n_" + diluent_name] = df[
-                #     "Tdpair"
-                # ]  # note @dev : check it doesn't create a new memory object
+                    if num_nans > 0 and not radis.config["MISSING_BROAD_COEF"]:
+                        raise ValueError(f"{msg_Nan_Tdep}{list_solutions}")
+                    elif num_nans > 0:  # radis.config['MISSING_BROAD_COEF'] == 'air':
+                        self.warn(
+                            message=f"{msg_Nan_Tdep}\nYou set radis.config['MISSING_BROAD_COEF'] = 'air' and the broadening coefficients of air is used instead of {key}.\nYou can silence this warning by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.",
+                            category="MissingDiluentBroadeningTdepWarning",
+                        )
+                        diluent_broadening_coeff["n_" + diluent_name] = df[
+                            "Tdpair"
+                        ]  # note @dev : check it doesn't create a new memory object
+                else:
+                    if not radis.config["MISSING_BROAD_COEF"]:
+                        raise ValueError(f"{msg_miss_Tdep}{list_solutions}")
+                    else:  # radis.config['MISSING_BROAD_COEF'] == 'air'
+                        self.warn(
+                            message=f"{msg_miss_Tdep}\nYou set radis.config['MISSING_BROAD_COEF'] = 'air' and the broadening coefficients of air is used instead of {key}.\nYou can silence this warning by using `warnings['MissingDiluentBroadeningWarning']='ignore'`.",
+                            category="MissingDiluentBroadeningTdepWarning",
+                        )
+                        diluent_broadening_coeff["n_" + diluent_name] = df[
+                            "Tdpair"
+                        ]  # note @dev : check it doesn't create a new memory object
 
         # Get broadenings
+        # Adds hwhm_lorentz:
+        self._add_Lorentzian_broadening_HWHM(
+            df,
+            pressure_atm,
+            mole_fraction,
+            Tgas,
+            Tref,
+            diluent,
+            diluent_broadening_coeff,
+            isneutral,
+        )
+        # Add hwhm_gauss:
+        self._add_doppler_broadening_HWHM(df, Tgas)
         if broadening_method == "voigt":
-            # Adds hwhm_voigt, hwhm_gauss, hwhm_lorentz:
-            self._add_voigt_broadening_HWHM(
-                df,
-                pressure_atm,
-                mole_fraction,
-                Tgas,
-                Tref,
-                diluent,
-                diluent_broadening_coeff,
+            # Adds hwhm_voigt:
+            df["hwhm_voigt"] = (
+                olivero_1977(2 * df["hwhm_gauss"], 2 * df["hwhm_lorentz"]) / 2
             )
-        elif broadening_method in ["convolve", "fft"]:
-            # Adds hwhm_lorentz:
-            self._add_collisional_broadening_HWHM(
-                df,
-                pressure_atm,
-                mole_fraction,
-                Tgas,
-                Tref,
-                diluent,
-                diluent_broadening_coeff,
-            )
-            # Add hwhm_gauss:
-            self._add_doppler_broadening_HWHM(df, Tgas)
-        else:
+        elif broadening_method not in ["convolve", "fft"]:
             raise ValueError(
                 "Unexpected lineshape broadening algorithm : broadening_method={0}".format(
                     broadening_method
@@ -1116,7 +1305,7 @@ class BroadenFactory(BaseFactory):
 
         return
 
-    def _add_voigt_broadening_HWHM(
+    def _add_Lorentzian_broadening_HWHM(
         self,
         df,
         pressure_atm,
@@ -1125,85 +1314,9 @@ class BroadenFactory(BaseFactory):
         Tref,
         diluent,
         diluent_broadening_coeff,
+        isneutral,
     ):
-        """Update dataframe with Voigt HWHM.
-
-        Returns
-        -------
-        None:
-            But input pandas Dataframe ``'df'`` is updated with keys:
-
-            - ``hwhm_voigt``
-
-            - ``hwhm_lorentz``
-
-            - ``hwhm_gauss``
-        """
-
-        # Check self broadening is here
-
-        if self.dataframe_type == "pandas":
-            columns = list(df.keys())
-        elif self.dataframe_type == "vaex":
-            columns = df.column_names
-
-        if not "Tdpsel" in columns:
-            self.warn(
-                "Self-broadening temperature coefficient Tdpsel not given in database: used Tdpair instead",
-                "MissingSelfBroadeningWarning",
-                level=2,  # only appear if verbose>=2
-            )
-            Tdpsel = None  # if None, voigt_broadening_HWHM uses df.Tdpair
-        else:
-            Tdpsel = df.Tdpsel
-
-        molar_mass = self.get_molar_mass(df)
-
-        if not "selbrd" in columns:
-            self.warn(
-                "Self-broadening coefficient selbrd not given in database: used airbrd instead",
-                "MissingSelfBroadeningWarning",
-                level=2,  # only appear if verbose>=2
-            )
-
-            selbrd = df.airbrd
-        else:
-            selbrd = df.selbrd
-
-        # Calculate broadening FWHM
-        wv, wl, wg = voigt_broadening_HWHM(
-            df.airbrd,
-            selbrd,
-            df.Tdpair,
-            Tdpsel,
-            df.wav,
-            molar_mass,
-            pressure_atm,
-            mole_fraction,
-            Tgas,
-            Tref,
-            diluent,
-            diluent_broadening_coeff,
-        )
-
-        # Update dataframe
-        df["hwhm_voigt"] = wv
-        df["hwhm_lorentz"] = wl
-        df["hwhm_gauss"] = wg
-
-        return
-
-    def _add_collisional_broadening_HWHM(
-        self,
-        df,
-        pressure_atm,
-        mole_fraction,
-        Tgas,
-        Tref,
-        diluent,
-        diluent_broadening_coeff,
-    ):
-        """Update dataframe with collisional HWHM [1]_
+        """Update dataframe with Lorentzian HWHM [1]_
 
         Returns
         -------
@@ -1215,7 +1328,7 @@ class BroadenFactory(BaseFactory):
         -----
         Temperature and pressure dependent half width
 
-        Hypothesis: we only consider self broadening, and air broadening,
+        Hypothesis: For molecules, we only consider self broadening, and air broadening,
         weighted with mole fractions
 
         If not ``Tdpsel``, ``Tdpair`` is used
@@ -1225,48 +1338,100 @@ class BroadenFactory(BaseFactory):
         .. [1] `Rothman 1998 (HITRAN 1996) eq (A.12) <https://www.sciencedirect.com/science/article/pii/S0022407398000788>`_
         """
 
-        # Check self broadening temperature-dependance coefficient is here
-        if self.dataframe_type == "pandas":
-            columns = list(df.keys())
-        elif self.dataframe_type == "vaex":
-            columns = df.column_names
-        if not "Tdpsel" in columns:
-            self.warn(
-                "Self-broadening temperature coefficient `Tdpsel` not given in database: used `Tdpair` instead",
-                "MissingSelfBroadeningTdepWarning",
-                level=2,  # only appear if verbose>=2
+        if self.params.lbfunc:
+            wl, shift = self.params.lbfunc(
+                df=df,
+                pressure_atm=pressure_atm,
+                mole_fraction=mole_fraction,
+                Tgas=Tgas,
+                Tref=Tref,
+                diluent=diluent,
+                diluent_broadening_coeff=diluent_broadening_coeff,
+                isneutral=isneutral,
             )
-            Tdpsel = None  # will be corrected in pressure_broadening_HWHM()
+            try:
+                assert bool(shift) == False
+            except:
+                # convoluted solution for vaex, account for case where wl is e.g. int or float, and for case where it's e.g. list
+                if self.dataframe_type == "vaex" and not isinstance(
+                    shift, vaex.expression.Expression
+                ):
+                    try:
+                        df["shft"] = np.asarray(shift)
+                    except Exception:
+                        df["shft"] = np.asarray(shift) + df["wav"] * 0
+                else:
+                    df["shft"] = shift
         else:
-            Tdpsel = df.Tdpsel
+            if self.input.isatom:
+                gammma_rad, gamma_stark, gamma_vdw = gamma_vald3(
+                    Tgas,
+                    pressure_atm * 1.01325,
+                    df["wav"],
+                    df["El"],
+                    df["ionE"],
+                    df["gamRad"],
+                    df["gamSta"],
+                    df["gamvdW"],
+                    diluent,
+                    isneutral,
+                )
+                df["shft"] = (
+                    (1.0 / 3.0) * 2 * gamma_vdw
+                )  # Konjević et al. 2012 §4.1.3.2, neglect stark shift by default
+                wl = gammma_rad + gamma_stark + gamma_vdw
+            else:
+                # Check self broadening temperature-dependance coefficient is here
+                if self.dataframe_type == "pandas":
+                    columns = list(df.keys())
+                elif self.dataframe_type == "vaex":
+                    columns = df.column_names
+                if not "Tdpsel" in columns:
+                    self.warn(
+                        "Self-broadening temperature coefficient `Tdpsel` not given in database: used `Tdpair` instead",
+                        "MissingSelfBroadeningTdepWarning",
+                        level=2,  # only appear if verbose>=2
+                    )
+                    Tdpsel = None  # will be corrected in pressure_broadening_HWHM()
+                else:
+                    Tdpsel = df.Tdpsel
 
-        # Check self broadening is here
-        if not "selbrd" in columns:
-            self.warn(
-                "Self-broadening reference width `selbrd` not given in database: used air broadening reference width `airbrd` instead",
-                "MissingSelfBroadeningWarning",
-                level=2,  # only appear if verbose>=2
-            )
-            selbrd = df.airbrd
-        else:
-            selbrd = df.selbrd
+                # Check self broadening is here
+                if not "selbrd" in columns:
+                    self.warn(
+                        "Self-broadening reference width `selbrd` not given in database: used air broadening reference width `airbrd` instead",
+                        "MissingSelfBroadeningWarning",
+                        level=2,  # only appear if verbose>=2
+                    )
+                    selbrd = df.airbrd
+                else:
+                    selbrd = df.selbrd
 
-        # Calculate broadening HWHM
-        wl = pressure_broadening_HWHM(
-            df.airbrd,
-            selbrd,
-            df.Tdpair,
-            Tdpsel,
-            pressure_atm,
-            mole_fraction,
-            Tgas,
-            Tref,
-            diluent,
-            diluent_broadening_coeff,
-        )
+                # Calculate broadening HWHM
+                wl = pressure_broadening_HWHM(
+                    df.airbrd,
+                    selbrd,
+                    df.Tdpair,
+                    Tdpsel,
+                    pressure_atm,
+                    mole_fraction,
+                    Tgas,
+                    Tref,
+                    diluent,
+                    diluent_broadening_coeff,
+                )
 
         # Update dataframe
-        df["hwhm_lorentz"] = wl
+        # convoluted solution for vaex, account for case where wl is e.g. int or float, and for case where it's e.g. list
+        if self.dataframe_type == "vaex" and not isinstance(
+            wl, vaex.expression.Expression
+        ):
+            try:
+                df["hwhm_lorentz"] = np.asarray(wl)
+            except Exception:
+                df["hwhm_lorentz"] = np.asarray(wl) + df["wav"] * 0
+        else:
+            df["hwhm_lorentz"] = wl
 
         #####
 
@@ -1461,15 +1626,9 @@ class BroadenFactory(BaseFactory):
             columns = list(dg.keys())
 
         if not "hwhm_voigt" in columns:
-            raise KeyError(
-                "hwhm_voigt: Calculate broadening with "
-                + "calc_voigt_broadening_HWHM first"
-            )
+            raise KeyError("hwhm_voigt: Calculate broadening first")
         if not "hwhm_lorentz" in columns:
-            raise KeyError(
-                "hwhm_lorentz: Calculate broadening with "
-                + "calc_voigt_broadening_HWHM first"
-            )
+            raise KeyError("hwhm_lorentz: Calculate broadening first")
 
         hwhm_lorentz = dg.hwhm_lorentz
         hwhm_voigt = dg.hwhm_voigt
@@ -1845,7 +2004,8 @@ class BroadenFactory(BaseFactory):
         ----------
         broadened_param: pandas Series (or numpy array)   [size N = number of lines]
             Series to apply lineshape to. Typically linestrength `S` for absorption,
-            or `nu * Aul / 4pi * DeltaE` for emission
+            or `nu * A / 4pi * DeltaE` for emission, where A [s-1] is the Einstein
+            coeffient
         line_profile:   (1/cm-1)        2D array of lines_profiles for all lines
                 (size B * N, B = width of lineshape)
         shifted_wavenum: (cm-1)     pandas Series (size N = number of lines)
@@ -2002,7 +2162,7 @@ class BroadenFactory(BaseFactory):
         ----------
         broadened_param: pandas Series (or numpy array)   [size N = number of lines]
             Series to apply lineshape to. Typically linestrength `S` for absorption,
-            or `nu * Aul / 4pi * DeltaE` for emission
+            or `nu * A / 4pi * DeltaE` for emission
         line_profile_LDM:  dict
             dict of line profiles ::
 
@@ -2053,15 +2213,22 @@ class BroadenFactory(BaseFactory):
         broadening_method = self.params.broadening_method
 
         # Get add-at method
+
+        # before v0.15 with Cython
         # ... 1. allow user to use non-cython method (useful for tests ?)
         # ... 2. write in the Spectrum object whether Cython was used or not
         # ...    (either because deactivated, or because not installed)
-        if self.use_cython and add_at != numpy_add_at:
-            _add_at = add_at
-            self.misc.add_at_used = "cython"
-        else:
-            _add_at = numpy_add_at
-            self.misc.add_at_used = "numpy"
+        # if self.use_cython and add_at != numpy_add_at:
+        #     _add_at = add_at
+        #     self.misc.add_at_used = "cython"
+        # else:
+        #     _add_at = numpy_add_at
+        #     self.misc.add_at_used = "numpy"
+
+        # after v0.15 without Cython
+        _add_at = numpy_add_at
+        self.misc.add_at_used = "numpy"
+
         # Vectorize the chunk of lines
         S = broadened_param
 
@@ -2334,10 +2501,14 @@ class BroadenFactory(BaseFactory):
                             mask = boolean_array_from_ranges(
                                 LDM_ranges[(l, m)], len(sumoflines_calc)
                             )
+                            # TAG: RADIS 1.0 paper - This is where the sparse wavenumber range is used
+                            # (temporarily Fig. 9 in the RADIS 1.0 paper)
                             sumoflines_calc[mask] += oaconvolve(
                                 LDM_reduced[(l, m)], lineshape, "same"
                             )
                     else:
+                        # TAG: RADIS 1.0 paper - This is where the sparse wavenumber range is used
+                        # (temporarily Fig. 9 in the RADIS 1.0 paper)
                         sumoflines_calc += oaconvolve(LDM[:, l, m], lineshape, "same")
 
         elif broadening_method == "fft":

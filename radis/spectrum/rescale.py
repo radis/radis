@@ -16,7 +16,7 @@ from warnings import warn
 
 import astropy.units as u
 import numpy as np
-from numpy import exp
+from numpy import exp, expm1
 from numpy import log as ln
 
 from radis.misc.basics import all_in, any_in, compare_lists
@@ -883,17 +883,19 @@ def _recompute_from_abscoeff_at_equilibrium(
     ):
         # Calculate transmittance
         transmittance_noslit = exp(-absorbance)
+        _transmittance_noslitm1 = expm1(-absorbance)
         # Store:
         rescaled["transmittance_noslit"] = transmittance_noslit
+        rescaled["_transmittance_noslitm1"] = _transmittance_noslitm1
         units["transmittance_noslit"] = ""
 
     if (
         "emissivity_noslit" in recompute
         or "radiance_noslit" in recompute
         or "emisscoeff" in recompute
-    ):
+    ):  # is only run when `transmittance_noslit = exp(-absorbance)` above is run
         # Calculate emissivity
-        emissivity_noslit = 1 - transmittance_noslit
+        emissivity_noslit = -expm1(-absorbance)  # 1 - transmittance_noslit
         # Store:
         rescaled["emissivity_noslit"] = emissivity_noslit
         units["emissivity_noslit"] = ""
@@ -908,15 +910,21 @@ def _recompute_from_abscoeff_at_equilibrium(
         rescaled["radiance_noslit"] = radiance_noslit
         units["radiance_noslit"] = Iunit_radiance
 
-    if "emisscoeff" in recompute:
+    if (
+        "emisscoeff" in recompute
+    ):  # is only run when `transmittance_noslit = exp(-absorbance)` above is run
         # Calculate emission coefficient
-        b = transmittance_noslit == 1  # optically thin mask
+        b = absorbance == 0  # transmittance_noslit == 1  # optically thin mask
         emisscoeff = np.empty_like(abscoeff)
         emisscoeff[b] = (
             radiance_noslit[b] / new_path_length_cm
         )  # recalculate (opt thin)
         emisscoeff[~b] = (
-            radiance_noslit[~b] / (1 - transmittance_noslit[~b]) * abscoeff[~b]
+            radiance_noslit[~b]
+            / -expm1(-absorbance[~b])
+            * abscoeff[
+                ~b
+            ]  # (1 - transmittance_noslit[~b]) # is only run when `transmittance_noslit = exp(-absorbance)` above is run
         )  # recalculate (non opt thin)
         # Store:
         rescaled["emisscoeff"] = emisscoeff
@@ -1324,6 +1332,7 @@ def rescale_transmittance_noslit(
             printdbg("... rescale: transmittance_noslit T_2 = exp(-A_2)")
         absorbance = rescaled["absorbance"]  # x and L already scaled
         transmittance_noslit = exp(-absorbance)  # recalculate
+        _transmittance_noslitm1 = expm1(-absorbance)
         unit = get_transmittance_unit()
     elif "abscoeff" in rescaled and true_path_length:
         if __debug__:
@@ -1332,6 +1341,7 @@ def rescale_transmittance_noslit(
         assert units["abscoeff"] == "cm-1"
         absorbance = abscoeff * new_path_length_cm  # calculate
         transmittance_noslit = exp(-absorbance)  # recalculate
+        _transmittance_noslitm1 = expm1(-absorbance)
         unit = get_transmittance_unit()
     elif "transmittance_noslit" in initial:
         if __debug__:
@@ -1367,6 +1377,7 @@ def rescale_transmittance_noslit(
         absorbance *= new_mole_fraction / old_mole_fraction  # rescale x
         absorbance *= new_path_length_cm / old_path_length_cm  # rescale L
         transmittance_noslit = exp(-absorbance)
+        _transmittance_noslitm1 = expm1(-absorbance)
         unit = get_transmittance_unit()
     else:
         msg = "Missing data to rescale transmittance. Expected scaled absorbance ({0})".format(
@@ -1384,6 +1395,7 @@ def rescale_transmittance_noslit(
     # Export rescaled value
     if transmittance_noslit is not None:
         rescaled["transmittance_noslit"] = transmittance_noslit
+        rescaled["_transmittance_noslitm1"] = _transmittance_noslitm1
     if unit is not None:
         units["transmittance_noslit"] = unit
 
@@ -1542,9 +1554,16 @@ def rescale_radiance_noslit(
         transmittance_noslit = rescaled["transmittance_noslit"]
         b = transmittance_noslit == 1  # optically thin mask
         radiance_noslit = np.empty_like(emisscoeff)  # calculate L
-        radiance_noslit[~b] = (
-            emisscoeff[~b] / abscoeff[~b] * (1 - transmittance_noslit[~b])
-        )
+        if "_transmittance_noslitm1" in rescaled:
+            radiance_noslit[~b] = (
+                emisscoeff[~b]
+                / abscoeff[~b]
+                * -rescaled["_transmittance_noslitm1"]  # (1 - transmittance_noslit[~b])
+            )
+        else:
+            radiance_noslit[~b] = (
+                emisscoeff[~b] / abscoeff[~b] * (1 - transmittance_noslit[~b])
+            )
         radiance_noslit[b] = emisscoeff[b] * new_path_length_cm  # optically thin limit
         unit = get_radiance_unit(unit_emisscoeff=rescaled_units["emisscoeff"])
 
@@ -1715,8 +1734,11 @@ def rescale_emissivity_noslit(spec, rescaled, rescaled_units, extra, true_path_l
         if __debug__:
             printdbg("... rescale: emissivity_noslit e_2 = 1 - T_2")
         # transmissivity already scaled
-        T2 = rescaled["transmittance_noslit"]
-        emissivity_noslit = 1 - T2  # recalculate
+        if "_transmittance_noslitm1" in rescaled:
+            emissivity_noslit = -rescaled["_transmittance_noslitm1"]  # recalculate
+        else:
+            T2 = rescaled["transmittance_noslit"]
+            emissivity_noslit = 1 - T2
     else:
         msg = "transmittance_noslit needed to recompute emissivity_noslit"
         if "emissivity_noslit" in extra:  # cant calculate this one but let it go
@@ -1995,6 +2017,23 @@ def _recalculate(
         recompute.append("abscoeff")
     recompute = set(recompute)  # remove duplicates
 
+    # check the slab is homogeneous to compute the cross-section
+    for key in ["Tgas", "pressure", "mole_fraction"]:
+        if key in spec.conditions:
+            good = isinstance(spec.conditions[key], (int, float)) and not isinstance(
+                spec.conditions[key], bool
+            )
+        else:
+            continue
+        if "xsection" in recompute and not good:
+            recompute.remove("xsection")
+            warn(
+                f"Rescaling the 'xsection' of Spectrum {spec.get_name()} but"
+                + " the spectrum is not homogeneous or not defined:\n"
+                + f"s.conditions[{key}] = 'N/A'\n"
+                + "If you are merging two spectra, make sure cross-sections are not included in the initial spectra, see https://github.com/radis/radis/issues/682."
+            )
+
     # Get units
     rescaled_units = spec.units.copy()
 
@@ -2250,7 +2289,7 @@ def _recalculate(
     for q in wanted:
         if not q in rescaled_list:
             raise AssertionError(
-                "{0} could not be rescaled as wanted. ".format(q)
+                "'{0}' could not be rescaled as wanted. ".format(q)
                 + "The following properties were rescaled: {0}".format(rescaled_list)
             )
     # ... everyone was added in the Spectrum properly
@@ -2258,14 +2297,14 @@ def _recalculate(
     for q in wanted:
         if not q in final_list:
             raise AssertionError(
-                "{0} is not in the final Spectrum. ".format(q)
+                "'{0}' is not in the final Spectrum. ".format(q)
                 + "Rescaled spectrum contains: {0}".format(final_list)
             )
     # ... "everyone was rescaled": check we didnt scale only part of the spectrum
     for q in initial:
         if not q in rescaled_list:
             raise AssertionError(
-                "{0} was initially in the Spectrum but was not ".format(q)
+                "'{0}' was initially in the Spectrum but was not ".format(q)
                 + "rescaled. This can lead to error. Rescaled spectrum "
                 + "contains: {0}".format(rescaled_list)
             )

@@ -551,14 +551,14 @@ def test_astropy_units(verbose=True, warnings=True, *args, **kwargs):
 
 
 def _run_all_tests(verbose=True, warnings=True, *args, **kwargs):
-    test_compression(verbose=verbose, warnings=warnings, *args, **kwargs)
+    # test_compression(verbose=verbose, warnings=warnings, *args, **kwargs)
     test_update_transmittance(verbose=verbose, warnings=warnings, *args, **kwargs)
-    test_get_recompute(verbose=verbose, warnings=warnings, *args, **kwargs)
-    test_rescale_vs_direct_computation(verbose=verbose, *args, **kwargs)
-    test_recompute_equilibrium(verbose=verbose, warnings=warnings, *args, **kwargs)
-    test_rescale_all_quantities(verbose=verbose, *args, **kwargs)
-    test_xsections(*args, **kwargs)
-    test_astropy_units(verbose=True, warnings=True, *args, **kwargs)
+    # test_get_recompute(verbose=verbose, warnings=warnings, *args, **kwargs)
+    # test_rescale_vs_direct_computation(verbose=verbose, *args, **kwargs)
+    # test_recompute_equilibrium(verbose=verbose, warnings=warnings, *args, **kwargs)
+    # test_rescale_all_quantities(verbose=verbose, *args, **kwargs)
+    # test_xsections(*args, **kwargs)
+    # test_astropy_units(verbose=True, warnings=True, *args, **kwargs)
     return True
 
 

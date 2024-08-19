@@ -29,7 +29,7 @@ from numpy import exp
 
 from radis import SpectrumFactory
 from radis.db.molecules import Molecules
-from radis.levels.partfunc import PartFunc_Dunham, PartFuncTIPS
+from radis.levels.partfunc import PartFunc_Dunham, PartFuncKurucz, PartFuncTIPS
 from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDcalc, PartFuncCO2_CDSDtab
 from radis.misc.printer import printm
 from radis.misc.warning import DeprecatedFileWarning
@@ -175,7 +175,10 @@ def test_reduced_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
     """Test 1: compare calculated PartFunc to the tabulated one
 
     Version where we use the reduced set of CO2 levels (< 3000 cm-1)"""
+    from radis import setup_test_line_databases
     from radis.misc.config import getDatabankEntries
+
+    setup_test_line_databases()  # needed for "HITEMP-CO2-HAMIL-TEST"
 
     iso = 1
     database = "HITEMP-CO2-HAMIL-TEST"
@@ -356,7 +359,86 @@ def test_CDSD_calc_vs_ref(warnings=True, verbose=True, *args, **kwargs):
         printm("Tested Q_CDSD values are correct : OK")
 
 
-@pytest.mark.fast
+def test_partfunckurucz():
+    species = "Ca_I"
+    kurucz_data = PartFuncKurucz(species)
+
+    temperatures = np.array(
+        [
+            1e-05,
+            1e-04,
+            1e-03,
+            1e-02,
+            1e-01,
+            1.5e-01,
+            2e-01,
+            3e-01,
+            5e-01,
+            7e-01,
+            1.0,
+            1.3,
+            1.7,
+            2.0,
+            3.0,
+            5.0,
+            7.0,
+            10.0,
+            15.0,
+            20.0,
+            30.0,
+            50.0,
+            70.0,
+            100.0,
+            130.0,
+            170.0,
+            200.0,
+            250.0,
+            300.0,
+            500.0,
+            700.0,
+            1e03,
+            1.5e03,
+            2e03,
+            3e03,
+            4e03,
+            5e03,
+            6e03,
+            7e03,
+            8e03,
+            9e03,
+            1e04,
+        ]
+    )
+    pf_values = np.array(
+        [1.0] * 33
+        + [
+            1.00016,
+            1.00701,
+            1.04991,
+            1.17173,
+            1.41809,
+            1.85725,
+            2.60365,
+            3.81954,
+            5.69578,
+        ]
+    )
+
+    for T, expected_pf in zip(temperatures, pf_values):
+        assert np.isclose(
+            kurucz_data._at(T), expected_pf, atol=1e-4
+        ), f"Failed at T={T}"
+
+    T_test = 3000  # Temperature at which to test interpolation
+
+    # Compute expected partition function value using np.interp directly on the original data
+    expected_pf = np.interp(T_test, temperatures, pf_values)
+
+    assert np.isclose(
+        kurucz_data._at(T_test), expected_pf, atol=1e-4
+    ), f"Interpolation failed at T={T_test}"
+
+
 def test_reduced_CDSD_calc_noneq(verbose=True, warnings=True, *args, **kwargs):
     """Compare calculated partition function at equilibrium and nonequilibrium
     using the CDSD-format
@@ -1058,6 +1140,9 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
     # Test 9 : tabulation
     test_tabulated_partition_functions(verbose=verbose, *args, **kwargs)
     test_parsum_mode_in_factory(verbose=verbose, *args, **kwargs)
+
+    # Test 10:
+    test_partfunckurucz()
 
     return True
 

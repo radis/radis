@@ -37,7 +37,12 @@ Or::
 
 Routine Listing
 ---------------
-
+- :func:`~radis.db.classes.is_atom`
+- :func:`~radis.db.classes.is_neutral`
+- :func:`~radis.db.classes.roman_to_int`
+- :func:`~radis.db.classes.int_to_roman`
+- :func:`~radis.db.classes.get_ielem_charge`
+- :func:`~radis.db.classes.to_conventional_name`
 - :func:`~radis.db.classes.get_molecule`
 - :func:`~radis.db.classes.get_molecule_identifier`
 
@@ -46,6 +51,8 @@ Routine Listing
 
 import re
 from os.path import dirname, exists, join
+
+import periodictable
 
 from radis.db.conventions import get_convention
 from radis.db.utils import (
@@ -217,6 +224,145 @@ HITRAN_MOLECULES = list(trans.values())
 """ str: list of [HITRAN-2020]_ molecules. """
 
 
+def is_atom(species):
+    """
+    determine whether the input species is atomic
+    """
+    return species.split("_")[0] in [
+        i.symbol for i in list(periodictable.elements)[1:]
+    ]  # first element is neutron, symbol 'n'
+
+
+def is_neutral(species):
+    """
+    determine whether the input species is a neutral atom
+    """
+    return species.endswith("_I")
+
+
+roman_numerals = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000}
+
+
+def roman_to_int(roman):
+    """
+    A function to convert a `str` of roman numerals to an `int`
+
+    Should support 'Standard form', 'Other additive forms', and 'Other subtractive forms' mentioned here: https://en.wikipedia.org/wiki/Roman_numerals
+    """
+    roman = roman.upper()
+    total = 0
+    current_max = 0  # the current largest 'digit'
+    for i in range(len(roman) - 1, -1, -1):  # in reverse, from last character to first
+        current_max = max(roman_numerals[roman[i]], current_max)
+        if roman_numerals[roman[i]] < current_max:
+            total -= roman_numerals[roman[i]]
+        else:
+            total += roman_numerals[roman[i]]
+    return total
+
+
+invert_roman_numerals = dict(
+    (v, k) for k, v in sorted(roman_numerals.items(), key=lambda x: x[1], reverse=True)
+)
+
+
+def int_to_roman(num):
+    """
+    A function to convert an `int` to a `str` of roman numerals
+    """
+    count = {}
+    for factor in invert_roman_numerals:
+        count[factor] = num // factor
+        num = num % factor
+    string = count[1000] * "M"
+    nums = list(invert_roman_numerals)
+    i = 0
+    while i < len(invert_roman_numerals) - 2:
+        if count[nums[i + 2]] == 4:
+            if count[nums[i + 1]] == 1:  # so overall i+2 digit is 9
+                addstring = (
+                    invert_roman_numerals[nums[i + 2]] + invert_roman_numerals[nums[i]]
+                )
+            else:  # overall i+2 digit is 4
+                addstring = (
+                    invert_roman_numerals[nums[i + 2]]
+                    + invert_roman_numerals[nums[i + 1]]
+                )
+        else:
+            addstring = (
+                count[nums[i + 1]] * invert_roman_numerals[nums[i + 1]]
+                + count[nums[i + 2]] * invert_roman_numerals[nums[i + 2]]
+            )
+        string += addstring
+        i += 2
+    return string
+
+
+def get_ielem_charge(species):
+    """return the atomic number xx and the charge yy of a positive or neutral atomic species input in the form of a `str` 'xx.yy'"""
+    ielemstr, chargem1str = species.split(".")
+    ielem = int(ielemstr)
+    charge = int(chargem1str)
+    return ielem, charge
+
+
+def to_conventional_name(species):
+    """
+    To convert an atomic species given in any of the following forms to spectroscopic notation (with an underscore rather than whitespace):
+
+    - as a ``str`` in spectroscopic notation with a space separating the symbol and ionisation level (e.g. 'O II' for singly ionised oxygen)
+
+    - as an ``int`` composed of the atomic number xx multiplied by 100 and then added to the charge (801 for O_II, 2600 for Fe_I)
+
+    - as a **``str``** (not a float) in the form 'xx.yy', i.e. the charge divided by 100 and then added to the atomic number
+
+    - For neutrals, as a ``str`` with just the atomic symbol
+
+    - For ions, as a ``str`` composed of the atomic symbol followed by a string of + signs the number of which matches the charge on the ion
+
+    If given a molecule name or HITRAN ID, it is returned unchanged
+    """
+    if isinstance(species, float):
+        raise Exception(
+            "If you are trying to input the species in the form xx.yy, input as a string, not a float"
+        )
+    if isinstance(species, int):
+        atomic_number = species // 100
+        if (
+            atomic_number == 0
+        ):  # looks like it's just the molecule ID of a molecule instead
+            return species
+        symbol = periodictable.elements[atomic_number]
+        roman = int_to_roman(species % 100 + 1)
+        return f"{symbol}_{roman}"
+    if "." in species:
+        ielem, charge = get_ielem_charge(species)
+        symbol = periodictable.elements[ielem]
+        roman = int_to_roman(charge + 1)
+        return f"{symbol}_{roman}"
+    if "+" in species:
+        # Count the number of positive charges
+        chargeplus1 = (
+            species.count("+") + 1
+        )  # Add one to convert to conventional notation
+        # Get the element of the species without the charge
+        element_name = species.split("+")[0]
+        # Convert the charge to roman notation
+        chargeplus1_in_roman = int_to_roman(chargeplus1)
+        return f"{element_name}_{chargeplus1_in_roman}"
+    if " " in species.strip():
+        species = species.replace(" ", "_")
+    atomic_symbol = species.split("_")[0]
+    if atomic_symbol == species:
+        try:  # confirm it actually is an atom
+            getattr(periodictable, atomic_symbol)
+        except AttributeError:
+            return species
+        else:
+            return f"{species}_I"
+    return species
+
+
 def get_molecule_identifier(molecule_name):
     r"""
     For a given input molecular formula, return the corresponding
@@ -313,6 +459,7 @@ EXOMOL_MOLECULES = [
     "C2H2",
     "C2H4",
     "C3",
+    "CaCl",
     "CH",
     "CH3",
     "CH3Cl",
@@ -625,7 +772,7 @@ class ElectronicState(Isotope):
         vmax_morse=None,
         Jmax=None,
         Ediss=None,
-        **kwargs
+        **kwargs,
     ):
 
         super(ElectronicState, self).__init__(
