@@ -9,6 +9,7 @@ from os.path import exists
 from shutil import rmtree
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 
 from radis import config
@@ -248,7 +249,6 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
     - Ensure dataframes are same across all the databanks available in RADIS
     Added in https://github.com/radis/radis/pull/580
     """
-    import numpy as np
     import pandas
     import vaex
 
@@ -383,7 +383,6 @@ def test_vaex_and_pandas_dataframe_load_databank():
     of dataframe in pandas format .
     Added in https://github.com/radis/radis/pull/580
     """
-    import numpy as np
 
     from radis import SpectrumFactory
 
