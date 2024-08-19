@@ -452,6 +452,7 @@ EXOMOL_MOLECULES = [
     "AlO",
     "AsH3",
     "BeH",
+    "CaCl",
     "C2",
     "C3",
     "C2H2",
