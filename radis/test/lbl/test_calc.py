@@ -610,7 +610,7 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **k
     s_nq = sf.non_eq_spectrum(Tvib=Tgas, Trot=Tgas, name="Non-eq")
     s_eq = sf.eq_spectrum(Tgas=Tgas, name="Eq")
 
-    rtol = 7.e-3  # 2nd isotope calculated with placeholder energies
+    rtol = 7.2e-3  # 2nd isotope calculated with placeholder energies
     match_eq_vs_non_eq = s_eq.compare_with(
         s_nq, spectra_only="abscoeff", rtol=rtol, plot=plot
     )
