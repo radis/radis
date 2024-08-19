@@ -184,9 +184,7 @@ class DatabaseManager(object):
         See Also
         --------
         :py:meth:`~radis.api.dbmanager.DatabaseManager.get_files_to_download`"""
-        verbose = self.verbose
         local_databases = self.local_databases
-        engine = self.engine
 
         # First; checking if the database is registered in radis.json
         if self.is_registered():
@@ -206,7 +204,7 @@ class DatabaseManager(object):
             if return_reg_urls:
                 urlnames = entries["download_url"]
             else:
-                urlnames = None
+                urlnames = []
 
             # Check that local files are the one we expect :
             for f in local_files:
@@ -219,37 +217,7 @@ class DatabaseManager(object):
 
         elif self.is_downloadable():
             urlnames = self.fetch_urlnames()
-            local_fnames = [
-                (
-                    splitext(splitext(url.split("/")[-1])[0])[
-                        0
-                    ]  # twice to remove .par.bz2
-                    + ".h5"
-                )
-                for url in urlnames
-            ]
-
-            try:
-                os.mkdir(local_databases)
-            except OSError:
-                pass
-            else:
-                if verbose:
-                    print("Created folder :", local_databases)
-
-            local_files = [
-                abspath(
-                    join(
-                        local_databases,
-                        self.molecule + "-" + local_fname,
-                    )
-                )
-                for local_fname in local_fnames
-            ]
-
-            if engine == "vaex":
-                local_files = [fname.replace(".h5", ".hdf5") for fname in local_files]
-
+            local_files = self.fetch_filenames(urlnames, local_databases)
         else:
             raise NotImplementedError
 
@@ -332,8 +300,45 @@ class DatabaseManager(object):
     def is_registered(self):
         return self.name in getDatabankList()
 
-    def fetch_filenames(self):
-        raise NotImplementedError
+    def fetch_filenames(self, urlnames, local_databases):
+        engine = self.engine
+        verbose = self.verbose
+
+        local_fnames = [
+            (
+                splitext(splitext(url.split("/")[-1])[0])[
+                    0
+                ]  # twice to remove .par.bz2
+                + ".h5"
+            )
+            for url in urlnames
+        ]
+
+        try:
+            os.mkdir(local_databases)
+        except OSError:
+            pass
+        else:
+            if verbose:
+                print("Created folder :", local_databases)
+
+        local_files = [
+            abspath(
+                join(
+                    local_databases,
+                    self.molecule + "-" + local_fname,
+                )
+            )
+            for local_fname in local_fnames
+        ]
+
+        if engine == "vaex":
+            local_files = [fname.replace(".h5", ".hdf5") for fname in local_files]
+        
+        local_files = [expanduser(f) for f in local_files]
+
+        return local_files
+
 
     def get_today(self):
         return date.today().strftime(
