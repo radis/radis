@@ -41,7 +41,7 @@ import numpy as np
 import pandas as pd
 from dateutil.parser import parse as parse_date
 from joblib import Parallel, delayed
-from numpy import DataSource
+from numpy.lib.npyio import DataSource
 
 LAST_VALID_DATE = (
     "01 Jan 2010"  # set to a later date to force re-download of all databases
