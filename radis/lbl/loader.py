@@ -73,6 +73,7 @@ from radis.io.geisa import fetch_geisa
 from radis.io.hitemp import fetch_hitemp
 from radis.io.hitran import fetch_hitran
 from radis.io.kurucz import fetch_kurucz
+from radis.io.nist import fetch_nist
 from radis.io.query import fetch_astroquery
 from radis.levels.partfunc import (
     PartFunc_Dunham,
@@ -1034,7 +1035,7 @@ class DatabankLoader(object):
 
             Default is ``'full'``.
 
-            If fetching from HITEMP or Kurucz, only ``'full'`` is available.
+            If fetching from HITEMP or Kurucz or NIST, only ``'full'`` is available.
 
             if fetching from ''`exomol`'', use this parameter to choose which database
             to use. Keep ``'default'`` to use the recommended one. See all available databases
@@ -1052,7 +1053,7 @@ class DatabankLoader(object):
             [HAPI]_ (HITRAN Python interface) is used to retrieve [TIPS-2020]_
             tabulated partition functions.
             If ``'exomol'`` then partition functions are downloaded from ExoMol.
-            If ``'kurucz'``, if dedicated partition functions are available with the linelists for the species, they are used, otherwise partition functions from Barklem & Collett 2016 are used. Also see the documentation for the `potential_lowering` parameter of :py:class:`~radis.lbl.factory.SpectrumFactory`.
+            If ``'kurucz'``, if dedicated partition functions are available with the linelists for the species, they are used, otherwise partition functions from Barklem & Collett 2016 are used. Also see the documentation for the `potential_lowering` parameter of :py:class:`~radis.lbl.factory.SpectrumFactory`. The NIST implementation currently uses 'kurucz' as the `parfuncfmt` but doesn't use the dedicated tables, rather it only uses Barklem & Collett 2016 even if `potential_lowering` is specified.
             Default ``'hapi'``.
         parfunc: filename or None
             path to a tabulated partition function file to use. For kurucz linelists, this file would be a dedicated table for the species (dependent on both temperature and potential lowering).
@@ -1141,7 +1142,7 @@ class DatabankLoader(object):
                 )
             )
             source = "hitran"
-        if source not in ["hitran", "hitemp", "exomol", "geisa", "kurucz"]:
+        if source not in ["hitran", "hitemp", "exomol", "geisa", "kurucz", "nist"]:
             raise NotImplementedError("source: {0}".format(source))
         if source == "hitran":
             dbformat = "hitran"
@@ -1158,6 +1159,11 @@ class DatabankLoader(object):
             dbformat = "kurucz"
             if database == "default":
                 database = "full"
+        elif source == "nist":
+            dbformat = "nist"
+            if database == "default":
+                database = "full"
+
         elif source == "exomol":
             dbformat = (
                 "exomol-radisdb"  # downloaded in RADIS local databases ~/.radisdb
@@ -1582,7 +1588,50 @@ class DatabankLoader(object):
                 self.input.isotope = ",".join(
                     [str(k) for k in self._get_isotope_list(df=df)]
                 )
+        elif source == "nist":
+            #self.reftracker.add(doi["Kurucz-2017"], "line database")
 
+            if columns is not None:
+                self.warn(
+                    "The required columns for NIST don't match those of existing moleculear databases, so all columns are being loaded"
+                )
+                columns = None
+
+            if memory_mapping_engine == "auto":
+                memory_mapping_engine = get_auto_MEMORY_MAPPING_ENGINE()
+
+            if database != "full":
+                raise ValueError(
+                    f"Got `database={database}`. When fetching NIST, only the `database='full'` option is available."
+                )
+
+            # Download, setup local databases, and fetch (use existing if possible)
+
+            if isotope == "all":
+                isotope_list = None
+            else:
+                isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
+            df, local_paths = fetch_nist(
+                molecule,
+                isotope=isotope_list,
+                local_databases=join(local_databases, "NIST"),
+                load_wavenum_min=wavenum_min,
+                load_wavenum_max=wavenum_max,
+                columns=columns,
+                cache=db_use_cached,
+                verbose=self.verbose,
+                return_local_path=True,
+                engine=memory_mapping_engine,
+                output=output,
+                parallel=parallel,
+            )
+            self.params.dbpath = ",".join(local_paths)
+
+            # ... explicitly write all isotopes based on isotopes found in the database
+            if isotope == "all":
+                self.input.isotope = ",".join(
+                    [str(k) for k in self._get_isotope_list(df=df)]
+                )
         else:
             raise NotImplementedError("source: {0}".format(source))
 

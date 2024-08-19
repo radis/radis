@@ -72,7 +72,7 @@ from numpy import exp, pi
 from psutil import virtual_memory
 
 import radis
-from radis.api.kuruczapi import get_element_symbol
+from radis.db.classes import get_element_symbol
 
 # TODO: rename in get_molecule_name
 from radis.db.classes import get_molecule, get_molecule_identifier

@@ -195,6 +195,8 @@ def calc_spectrum(
 
         - ``'kurucz'`` to fetch the Kurucz linelists for atoms through :py:func:`~radis.io.kurucz.fetch_kurucz`. Downloads al lines and all isotopes.
 
+        - ``'NIST'`` to fetch the linelists for atoms through :py:func:`~radis.io.nist.fetch_nist`. Downloads al lines and all isotopes.
+
         - the name of a spectral database registered in your ``~/radis.json``
           :ref:`configuration file <label_lbl_config_file>` ::
 
@@ -779,6 +781,7 @@ def _calc_spectrum_one_molecule(
             "exomol",
             "geisa",
             "kurucz",
+            "nist"
         ]
         or (isinstance(databank, tuple) and databank[0] == "exomol")
         or (isinstance(databank, tuple) and databank[0] == "hitran")
@@ -815,7 +818,8 @@ def _calc_spectrum_one_molecule(
             }
         elif databank in ["kurucz"]:
             conditions = {"source": "kurucz", "parfuncfmt": "kurucz"}
-
+        elif databank in ["nist"]:
+            conditions = {"source": "nist", "parfuncfmt": "kurucz"}
         elif isinstance(databank, tuple) and databank[0] == "exomol":
             conditions = {
                 "source": "exomol",
