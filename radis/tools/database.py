@@ -1018,9 +1018,12 @@ def query(df, conditions="", **kwconditions):
             # cut in <32-long parts
             N = len(query) // 32 + 1
             querypart = " & ".join(query[::N])
+            print(querypart)
             dg = df.query(querypart)
             for i in range(1, N + 1):
                 querypart = " & ".join(query[i::N])
+                print("----")
+                print(querypart)
                 if __debug__:
                     printdbg("Database query: {0}".format(querypart))
                 dg = dg.query(querypart)
