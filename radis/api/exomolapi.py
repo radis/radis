@@ -3,7 +3,7 @@
    * MdbExomol is the MDB for ExoMol
 
 Initial code borrowed from the `Exojax <https://github.com/HajimeKawahara/exojax>`__
-code (which you should also have a look at !), by @HajimeKawahara, under MIT License.
+code (which you should also have a look at!), by @HajimeKawahara, under MIT License.
 
 """
 
@@ -550,27 +550,27 @@ def read_broad(broadf):
     return bdat
 
 
-def check_bdat(bdat):
-    """checking codes in .broad
-    Args:
-       bdat: exomol .broad data given by exomolapi.read_broad
-    Returns:
-       code level: None, a0, a1, other codes unavailable currently,
-    """
+# def check_bdat(bdat):
+#     """checking codes in .broad
+#     Args:
+#        bdat: exomol .broad data given by exomolapi.read_broad
+#     Returns:
+#        code level: None, a0, a1, other codes unavailable currently,
+#     """
 
-    def checkcode(code):
-        cmask = bdat["code"] == code
-        if len(bdat["code"][cmask]) > 0:
-            return True
-        else:
-            return False
+#     def checkcode(code):
+#         cmask = bdat["code"] == code
+#         if len(bdat["code"][cmask]) > 0:
+#             return True
+#         else:
+#             return False
 
-    codelv = None
-    for code in ["a0", "a1"]:
-        if checkcode(code):
-            codelv = code
+#     codelv = None
+#     for code in ["a0", "a1"]:
+#         if checkcode(code):
+#             codelv = code
 
-    return codelv
+#     return codelv
 
 
 def make_j2b(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
@@ -1254,58 +1254,67 @@ class MdbExomol(DatabaseManager):
         if n_Texp_def:
             self.n_Texp_def = n_Texp_def
 
-        if self.broadf:
-            try:
-                bdat = read_broad(self.broad_file)
-                if self.verbose > 1:
-                    print(
-                        "The file `{}` is used.".format(
-                            os.path.basename(self.broad_file)
-                        )
-                    )
-            except FileNotFoundError:
+        if self.broadf and os.path.exists(self.broad_file):
+            bdat = read_broad(self.broad_file)
+            if self.verbose > 1:
+                print(
+                    "The file `{}` is used.".format(os.path.basename(self.broad_file))
+                )
+
+            # codelv = check_bdat(bdat)
+            codelv = np.unique(bdat["code"])
+            if self.verbose:
+                print("Broadening code level:", codelv)
+
+            if len(codelv) > 1:
+                warnings.warn(
+                    f"The broadening file contains more than one broadening code: {codelv}. This feature is NOT implemented yet."
+                )
+            elif codelv == "a0":
+                j2alpha_ref, j2n_Texp = make_j2b(
+                    bdat,
+                    alpha_ref_default=self.alpha_ref_def,
+                    n_Texp_default=self.n_Texp_def,
+                    jlower_max=df["jlower"].max(),
+                )
+                self.alpha_ref = j2alpha_ref[df["jlower"].values]
+                self.n_Texp = j2n_Texp[df["jlower"].values]
+            elif codelv == "a1":
+                j2alpha_ref, j2n_Texp = make_j2b(
+                    bdat,
+                    alpha_ref_default=self.alpha_ref_def,
+                    n_Texp_default=self.n_Texp_def,
+                    jlower_max=df["jlower"].max(),
+                )
+                jj2alpha_ref, jj2n_Texp = make_jj2b(
+                    bdat,
+                    j2alpha_ref_def=j2alpha_ref,
+                    j2n_Texp_def=j2n_Texp,
+                    jupper_max=df["jupper"].max(),
+                )
+                self.alpha_ref = np.array(
+                    jj2alpha_ref[df["jlower"].values, df["jupper"].values]
+                )
+                self.n_Texp = np.array(
+                    jj2n_Texp[df["jlower"].values, df["jupper"].values]
+                )
+            else:
+                warnings.warn(
+                    f"The broadening file contains this broadening code: {codelv}."
+                    + " This broadening code is NOT implemented yet.\n"
+                    + "Using default parameters instead."
+                )
+                self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
+                self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
+        else:
+            if not os.path.exists(self.broad_file):
                 warnings.warn(
                     "Could not load `{}`. The default broadening parameters are used.\n".format(
                         os.path.basename(self.broad_file)
                     )
                 )
-
-                self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
-                self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
-            else:
-                codelv = check_bdat(bdat)
-                if self.verbose:
-                    print("Broadening code level:", codelv)
-                if codelv == "a0":
-                    j2alpha_ref, j2n_Texp = make_j2b(
-                        bdat,
-                        alpha_ref_default=self.alpha_ref_def,
-                        n_Texp_default=self.n_Texp_def,
-                        jlower_max=df["jlower"].max(),
-                    )
-                    self.alpha_ref = j2alpha_ref[df["jlower"].values]
-                    self.n_Texp = j2n_Texp[df["jlower"].values]
-                elif codelv == "a1":
-                    j2alpha_ref, j2n_Texp = make_j2b(
-                        bdat,
-                        alpha_ref_default=self.alpha_ref_def,
-                        n_Texp_default=self.n_Texp_def,
-                        jlower_max=df["jlower"].max(),
-                    )
-                    jj2alpha_ref, jj2n_Texp = make_jj2b(
-                        bdat,
-                        j2alpha_ref_def=j2alpha_ref,
-                        j2n_Texp_def=j2n_Texp,
-                        jupper_max=df["jupper"].max(),
-                    )
-                    self.alpha_ref = np.array(
-                        jj2alpha_ref[df["jlower"].values, df["jupper"].values]
-                    )
-                    self.n_Texp = np.array(
-                        jj2n_Texp[df["jlower"].values, df["jupper"].values]
-                    )
-        else:
             print("The default broadening parameters are used.")
+
             self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
             self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
 

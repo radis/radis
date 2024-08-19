@@ -699,7 +699,7 @@ class DatabankLoader(object):
         "save_memory",
         "truncation",
         "units",
-        "use_cython",
+        # "use_cython",
         "verbose",
         "warnings",
         "wavenumber",
@@ -1178,7 +1178,7 @@ class DatabankLoader(object):
         if [parfuncfmt, source].count("exomol") == 1:
             self.warn(
                 f"Using lines from {source} but partition functions from {parfuncfmt}"
-                + "for consistency we recommend using lines and partition functions from the same database",
+                + " for consistency we recommend using lines and partition functions from the same database",
                 "AccuracyWarning",
             )
         if memory_mapping_engine == "default":
@@ -1217,18 +1217,33 @@ class DatabankLoader(object):
         self.params.parfuncfmt = parfuncfmt
         self.params.db_use_cached = db_use_cached
         self.params.lvl_use_cached = lvl_use_cached
-
+        msg_dil = "Add the argument `load_columns=['diluent', 'equilibrium'] ` or  `load_columns=['diluent', 'noneq'] or `load_columns='all' in `fetch_databank(...)`."
         # Which columns to load
         columns = []
         if "all" in load_columns:
             columns = None  # see fetch_hitemp, fetch_hitran, etc.
-        elif isinstance(load_columns, str) and load_columns in ["equilibrium", "noneq"]:
-            columns = self.columns_list_to_load(load_columns)
+
+        # dealing with diluents
         elif load_columns == "diluent":
             raise ValueError(
-                "Please use diluent along with 'equilibrium' or 'noneq' in a list like ['diluent','noneq']"
+                f"""Please indicate if the spectrum is a at equilibrium or non-equilibrium.
+==> {msg_dil}"""
+            )
+        elif (
+            isinstance(load_columns, dict)
+            and not "diluent" in load_columns
+            and list(self.params.diluent.keys()) != ["air"]
+        ):
+            raise ValueError(
+                f"""Diluents other than air are detected: {list(self.params.diluent.keys())}.
+==> {msg_dil}"""
             )
 
+        # easy case with just one str
+        elif isinstance(load_columns, str) and load_columns in ["equilibrium", "noneq"]:
+            columns = self.columns_list_to_load(load_columns)
+
+        # composed case
         elif isinstance(load_columns, list) and "all" not in load_columns:
             for load_columns_type in load_columns:
                 if load_columns_type in ["equilibrium", "noneq", "diluent"]:

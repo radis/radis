@@ -33,6 +33,7 @@ install:
   - micromamba list
   - pip install pytest-cov
   - pip install -e . -v
+  - pip install pytest-random-order #to avoid being rejected by the servers when downloading the same databases by tests in parallel
 
 services:
   - xvfb
@@ -45,8 +46,7 @@ before_script:
   - python --version #to check and be sure of the python version
   - echo ">>> Run fast tests first"
   # use XVFB to have headless display port, and still run the Matplotlib tests.
-  - sleep $((RANDOM % 60)) #add random delay to avoid overloading the server and fail the query tests
-  - xvfb-run -a pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10
+  - xvfb-run -a pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10 --random-order
 
 script:
   # Your test script goes here
@@ -138,8 +138,15 @@ jobs:
 
     - stage: deploy
       name: Deploy to PyPI
+      services:
+        - xvfb
       install:
         - sudo apt-get update
+        #Next is to test after deploy
+        - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/1.5.8 | tar -xvj bin/micromamba
+        - ./bin/micromamba shell init -s bash -p ~/micromamba
+        - source ~/.bashrc
+        - micromamba activate base
       before_script: skip #do NOT run the before_script of "tests" stage
       script:
         - echo "Deploying to PyPI"
@@ -154,3 +161,9 @@ jobs:
         skip_existing: true
         skip_cleanup: true    # to keep wheels (in the ./dist folder?)
         distributions: "sdist bdist_wheel"
+      after_deploy:
+      - VERSION_RADIS=$(cat radis/__version__.txt)
+      - pip install radis==$VERSION_RADIS
+      - pip install pytest
+      - xvfb-run -a pytest -m "fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
+
