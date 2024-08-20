@@ -5,7 +5,7 @@ channels:
 - astropy
 - plotly
 dependencies:
-- python=3.10
+- python
 - astropy>=4.3.1  # Unit aware calculations
 - astroquery>=0.4.6  # to fetch HITRAN databases
 - beautifulsoup4>=4.10.0 # parse ExoMol website
@@ -17,7 +17,7 @@ dependencies:
 - joblib  # for parallel loading of SpecDatabase
 - lmfit  # for new fitting modules
 - matplotlib
-- numpy
+- numpy<2.0
 - numba  # just-in-time compiler
 - pandas
 - plotly>=2.5.1  # for line survey HTML output

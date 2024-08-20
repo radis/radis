@@ -82,7 +82,6 @@ from warnings import warn
 import astropy.units as u
 import numpy as np
 from numpy import arange, exp, expm1
-from scipy.constants import c
 from scipy.optimize import OptimizeResult
 
 from radis import version
