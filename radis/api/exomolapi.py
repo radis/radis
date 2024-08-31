@@ -549,8 +549,8 @@ def read_broad(broadf):
 
     return bdat
 
-def check_bdat(bdat):
-    """checking codes in .broad
+def check_code_level(bdat):
+    """checking code level in .broad
     Args:
         bdat: exomol .broad data given by exomolapi.read_broad
     
@@ -1257,7 +1257,7 @@ class MdbExomol(DatabaseManager):
                     "The file `{}` is used.".format(os.path.basename(self.broad_file))
                 )
 
-            codelv = check_bdat(bdat)
+            codelv = check_code_level(bdat)
             if self.verbose:
                 print("Broadening code level:", codelv)
 
