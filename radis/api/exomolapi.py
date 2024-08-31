@@ -549,7 +549,6 @@ def read_broad(broadf):
 
     return bdat
 
-
 def check_bdat(bdat):
     """checking codes in .broad
     Args:
@@ -559,33 +558,25 @@ def check_bdat(bdat):
         code level: None, a0, a1, other codes unavailable currently,
         if a0 and a1 are available, a1 is returned.
     """
-
-    def checkcode(code):
-        cmask = bdat["code"] == code
-        if len(bdat["code"][cmask]) > 0:
-            return True
-        else:
-            return False
-
-    codelv = None
-    for code in ["a0", "a1"]:
-        if checkcode(code):
-            codelv = code
-
-    return codelv
+    input_list = bdat["code"]
+    if input_list == ["a0"]:
+        return "a0"
+    elif input_list == ["a1"] or set(input_list) == {"a0", "a1"}:
+        return "a1"
+    return None  # Default case for other inputs
 
 
 def make_j2b(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
     """compute j2b (code a0, map from jlower to alpha_ref)
 
     Args:
-       bdat: exomol .broad data given by exomolapi.read_broad
-       alpha_ref_default: default value
-       n_Texp_default: default value
-       jlower_max: maximum number of jlower
+        bdat: exomol .broad data given by exomolapi.read_broad
+        alpha_ref_default: default value
+        n_Texp_default: default value
+        jlower_max: maximum number of jlower
     Returns:
-       j2alpha_ref[jlower] provides alpha_ref for jlower
-       j2n_Texp[jlower]  provides nT_exp for jlower
+        j2alpha_ref[jlower] provides alpha_ref for jlower
+        j2n_Texp[jlower]  provides nT_exp for jlower
     """
     # a0
     cmask = bdat["code"] == "a0"
