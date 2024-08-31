@@ -550,27 +550,29 @@ def read_broad(broadf):
     return bdat
 
 
-# def check_bdat(bdat):
-#     """checking codes in .broad
-#     Args:
-#        bdat: exomol .broad data given by exomolapi.read_broad
-#     Returns:
-#        code level: None, a0, a1, other codes unavailable currently,
-#     """
+def check_bdat(bdat):
+    """checking codes in .broad
+    Args:
+        bdat: exomol .broad data given by exomolapi.read_broad
+    
+    Returns:
+        code level: None, a0, a1, other codes unavailable currently,
+        if a0 and a1 are available, a1 is returned.
+    """
 
-#     def checkcode(code):
-#         cmask = bdat["code"] == code
-#         if len(bdat["code"][cmask]) > 0:
-#             return True
-#         else:
-#             return False
+    def checkcode(code):
+        cmask = bdat["code"] == code
+        if len(bdat["code"][cmask]) > 0:
+            return True
+        else:
+            return False
 
-#     codelv = None
-#     for code in ["a0", "a1"]:
-#         if checkcode(code):
-#             codelv = code
+    codelv = None
+    for code in ["a0", "a1"]:
+        if checkcode(code):
+            codelv = code
 
-#     return codelv
+    return codelv
 
 
 def make_j2b(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
