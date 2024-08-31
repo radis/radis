@@ -557,14 +557,17 @@ def check_bdat(bdat):
     Returns:
         code level: None, a0, a1, other codes unavailable currently,
         if a0 and a1 are available, a1 is returned.
+        the other cases returns None
     """
-    input_list = bdat["code"]
-    if input_list == ["a0"]:
+    input_array = np.unique(np.array(bdat["code"]))
+    if np.array_equal(input_array, np.array(["a0"])):
         return "a0"
-    elif input_list == ["a1"] or set(input_list) == {"a0", "a1"}:
+    elif np.array_equal(input_array, np.array(["a1"])):
         return "a1"
-    return None  # Default case for other inputs
-
+    elif np.array_equal(np.sort(input_array), np.array(["a0", "a1"])):
+        return "a1"
+    return None
+    
 
 def make_j2b(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
     """compute j2b (code a0, map from jlower to alpha_ref)
@@ -619,15 +622,15 @@ def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None):
     """compute jj2b (code a1, map from (jlower, jupper) to alpha_ref and n_Texp)
 
     Args:
-       bdat: exomol .broad data given by exomolapi.read_broad
-       j2alpha_ref_def: default value from a0
-       j2n_Texp_def: default value from a0
-       jupper_max: maximum number of jupper
+        bdat: exomol .broad data given by exomolapi.read_broad
+        j2alpha_ref_def: default value from a0
+        j2n_Texp_def: default value from a0
+        jupper_max: maximum number of jupper
     Returns:
-       jj2alpha_ref[jlower,jupper] provides alpha_ref for (jlower, jupper)
-       jj2n_Texp[jlower,jupper]  provides nT_exp for (jlower, jupper)
+        jj2alpha_ref[jlower,jupper] provides alpha_ref for (jlower, jupper)
+        jj2n_Texp[jlower,jupper]  provides nT_exp for (jlower, jupper)
     Note:
-       The pair of (jlower, jupper) for which broadening parameters are not given, jj2XXX contains None.
+        The pair of (jlower, jupper) for which broadening parameters are not given, jj2XXX contains None.
     """
     # a1
     cmask = bdat["code"] == "a1"
@@ -1254,16 +1257,11 @@ class MdbExomol(DatabaseManager):
                     "The file `{}` is used.".format(os.path.basename(self.broad_file))
                 )
 
-            # codelv = check_bdat(bdat)
-            codelv = np.unique(bdat["code"])
+            codelv = check_bdat(bdat)
             if self.verbose:
                 print("Broadening code level:", codelv)
 
-            if len(codelv) > 1:
-                warnings.warn(
-                    f"The broadening file contains more than one broadening code: {codelv}. This feature is NOT implemented yet."
-                )
-            elif codelv == "a0":
+            if codelv == "a0":
                 j2alpha_ref, j2n_Texp = make_j2b(
                     bdat,
                     alpha_ref_default=self.alpha_ref_def,
