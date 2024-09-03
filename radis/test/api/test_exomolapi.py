@@ -8,15 +8,16 @@ def test_check_bdat_a1(bdat_list):
     bdat["code"] = bdat_list
     assert check_code_level(bdat) == "a1"
 
+
 @pytest.mark.parametrize("bdat_list", [["a0"]])
 def test_check_bdat_a0(bdat_list):
     bdat = {}
     bdat["code"] = bdat_list
     assert check_code_level(bdat) == "a0"
 
-@pytest.mark.parametrize("bdat_list", [["a0","a1","a2"]])
+
+@pytest.mark.parametrize("bdat_list", [["a0", "a1", "a2"]])
 def test_check_bdat_a0(bdat_list):
     bdat = {}
     bdat["code"] = bdat_list
     assert check_code_level(bdat) == None
-
