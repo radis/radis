@@ -549,11 +549,12 @@ def read_broad(broadf):
 
     return bdat
 
+
 def check_code_level(bdat):
     """checking code level in .broad
     Args:
         bdat: exomol .broad data given by exomolapi.read_broad
-    
+
     Returns:
         code level: None, a0, a1, other codes unavailable currently,
         if a0 and a1 are available, a1 is returned.
@@ -567,7 +568,7 @@ def check_code_level(bdat):
     elif np.array_equal(np.sort(input_array), np.array(["a0", "a1"])):
         return "a1"
     return None
-    
+
 
 def make_j2b(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
     """compute j2b (code a0, map from jlower to alpha_ref)
