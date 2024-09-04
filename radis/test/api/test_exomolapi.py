@@ -1,4 +1,5 @@
 import pytest
+
 from radis.api.exomolapi import check_code_level
 
 
