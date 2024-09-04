@@ -550,40 +550,37 @@ def read_broad(broadf):
     return bdat
 
 
-# def check_bdat(bdat):
-#     """checking codes in .broad
-#     Args:
-#        bdat: exomol .broad data given by exomolapi.read_broad
-#     Returns:
-#        code level: None, a0, a1, other codes unavailable currently,
-#     """
+def check_code_level(bdat):
+    """checking code level in .broad
+    Args:
+        bdat: exomol .broad data given by exomolapi.read_broad
 
-#     def checkcode(code):
-#         cmask = bdat["code"] == code
-#         if len(bdat["code"][cmask]) > 0:
-#             return True
-#         else:
-#             return False
-
-#     codelv = None
-#     for code in ["a0", "a1"]:
-#         if checkcode(code):
-#             codelv = code
-
-#     return codelv
+    Returns:
+        code level: None, a0, a1, other codes unavailable currently,
+        if a0 and a1 are available, a1 is returned.
+        the other cases returns None
+    """
+    input_array = np.unique(np.array(bdat["code"]))
+    if np.array_equal(input_array, np.array(["a0"])):
+        return "a0"
+    elif np.array_equal(input_array, np.array(["a1"])):
+        return "a1"
+    elif np.array_equal(np.sort(input_array), np.array(["a0", "a1"])):
+        return "a1"
+    return None
 
 
 def make_j2b(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
     """compute j2b (code a0, map from jlower to alpha_ref)
 
     Args:
-       bdat: exomol .broad data given by exomolapi.read_broad
-       alpha_ref_default: default value
-       n_Texp_default: default value
-       jlower_max: maximum number of jlower
+        bdat: exomol .broad data given by exomolapi.read_broad
+        alpha_ref_default: default value
+        n_Texp_default: default value
+        jlower_max: maximum number of jlower
     Returns:
-       j2alpha_ref[jlower] provides alpha_ref for jlower
-       j2n_Texp[jlower]  provides nT_exp for jlower
+        j2alpha_ref[jlower] provides alpha_ref for jlower
+        j2n_Texp[jlower]  provides nT_exp for jlower
     """
     # a0
     cmask = bdat["code"] == "a0"
@@ -626,15 +623,15 @@ def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None):
     """compute jj2b (code a1, map from (jlower, jupper) to alpha_ref and n_Texp)
 
     Args:
-       bdat: exomol .broad data given by exomolapi.read_broad
-       j2alpha_ref_def: default value from a0
-       j2n_Texp_def: default value from a0
-       jupper_max: maximum number of jupper
+        bdat: exomol .broad data given by exomolapi.read_broad
+        j2alpha_ref_def: default value from a0
+        j2n_Texp_def: default value from a0
+        jupper_max: maximum number of jupper
     Returns:
-       jj2alpha_ref[jlower,jupper] provides alpha_ref for (jlower, jupper)
-       jj2n_Texp[jlower,jupper]  provides nT_exp for (jlower, jupper)
+        jj2alpha_ref[jlower,jupper] provides alpha_ref for (jlower, jupper)
+        jj2n_Texp[jlower,jupper]  provides nT_exp for (jlower, jupper)
     Note:
-       The pair of (jlower, jupper) for which broadening parameters are not given, jj2XXX contains None.
+        The pair of (jlower, jupper) for which broadening parameters are not given, jj2XXX contains None.
     """
     # a1
     cmask = bdat["code"] == "a1"
@@ -1261,16 +1258,11 @@ class MdbExomol(DatabaseManager):
                     "The file `{}` is used.".format(os.path.basename(self.broad_file))
                 )
 
-            # codelv = check_bdat(bdat)
-            codelv = np.unique(bdat["code"])
+            codelv = check_code_level(bdat)
             if self.verbose:
                 print("Broadening code level:", codelv)
 
-            if len(codelv) > 1:
-                warnings.warn(
-                    f"The broadening file contains more than one broadening code: {codelv}. This feature is NOT implemented yet."
-                )
-            elif codelv == "a0":
+            if codelv == "a0":
                 j2alpha_ref, j2n_Texp = make_j2b(
                     bdat,
                     alpha_ref_default=self.alpha_ref_def,
