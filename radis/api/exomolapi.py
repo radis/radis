@@ -52,19 +52,7 @@ def exact_molname_exomol_to_simple_molname(exact_exomol_molecule_name):
     """
 
     try:
-        t = exact_exomol_molecule_name.split("-")
-        molname_simple = ""
-        for ele in t:
-            alp = "".join(re.findall(r"\D", ele))
-            num0 = re.split("[A-Z]", ele)[1]
-            if num0.isdigit():
-                num = num0
-            else:
-                num = ""
-            molname_simple = molname_simple + alp + num
-            # ExoJAX Issue #528
-            if molname_simple == "HHO":
-                molname_simple = "H2O"
+        molname_simple = _molname_simple_no_exception(exact_exomol_molecule_name)
         return molname_simple
     except:
         print(
@@ -73,6 +61,23 @@ def exact_molname_exomol_to_simple_molname(exact_exomol_molecule_name):
             "cannot be converted to simple molname",
         )
         return exact_exomol_molecule_name
+
+def _molname_simple_no_exception(exact_exomol_molecule_name):
+    t = exact_exomol_molecule_name.split("-")
+    molname_simple = ""
+    for ele in t:
+        alp = "".join(re.findall(r"\D", ele))
+        num0 = re.split("[A-Z]", ele)[1]
+        if num0.isdigit():
+            num = num0
+        else:
+            num = ""
+        molname_simple = molname_simple + alp + num
+    
+    # ExoJAX Issue #528
+    if molname_simple == "HHO":
+        molname_simple = "H2O"
+    return molname_simple
 
 
 def read_def(deff):
