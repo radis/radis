@@ -98,7 +98,7 @@ def read_def(deff):
         tag for wavelength ranges.
 
     Note:
-       For some molecules, ExoMol provides multiple trans files. numinf and numtag are the ranges and identifiers for the multiple trans files.
+        For some molecules, ExoMol provides multiple trans files. numinf and numtag are the ranges and identifiers for the multiple trans files.
 
     """
 
@@ -161,6 +161,11 @@ def read_def(deff):
 
 
 def wavenumber_range_HDO_VTT():
+    """wave number range for HDO VTT as an exception
+    
+    Returns:
+        float: numinf
+    """
     numinf = np.array(
         [
             0.0,
@@ -186,6 +191,15 @@ def wavenumber_range_HDO_VTT():
 
 
 def compute_wavenumber_ranges(ntransf, maxnu):
+    """wavenumber range for general case
+    
+    Args:
+        ntransf: number of the trans files
+        maxnu: maximum wavenumber
+
+    Returns:
+        float: numinf
+    """
     if ntransf > 1:
         dnufile = maxnu / ntransf
         numinf = dnufile * np.array(range(ntransf + 1))
@@ -196,6 +210,15 @@ def compute_wavenumber_ranges(ntransf, maxnu):
 
 
 def wavenumber_tag(numinf):
+    """convert numinf to numtag (used in the name of trans file)
+    
+
+    Args:
+        numinf (_type_): wavenumber values for the range
+
+    Returns:
+        float: numtag wavenumber tag (such as 00000-00500) 
+    """
     if numinf is None:
         return ""
     numtag = []
