@@ -28,31 +28,31 @@ from bs4 import BeautifulSoup
 from radis.api.hdf5 import vaexsafe_colname
 
 
-def e2s(molname_exact):
-    """convert the exact molname (used in ExoMol) to the simple molname
+def exact_molname_exomol_to_simple_molname(exact_exomol_molecule_name):
+    """convert the exact molname (used in ExoMol) to the simple molname.
 
     Args:
-       molname_exact: the exact molname
+        exact_exomol_molecule_name: the exact exomol molecule name
 
     Returns:
-       simple molname
+        simple molname
 
-    Examples::
-
-       >>> print(e2s("12C-1H4"))
-       >>> CH4
-       >>> print(e2s("23Na-16O-1H"))
-       >>> NaOH
-       >>> print(e2s("HeH_p"))
-       >>> HeH_p
-       >>> print(e2s("trans-31P2-1H-2H")) #not working
-       >>> Warning: Exact molname  trans-31P2-1H-2H cannot be converted to simple molname
-       >>> trans-31P2-1H-2H
-
+    Examples:
+        >>> print(exact_molname_exomol_to_simple_molname("12C-1H4"))
+        >>> CH4
+        >>> print(exact_molname_exomol_to_simple_molname("23Na-16O-1H"))
+        >>> NaOH
+        >>> print(exact_molname_exomol_to_simple_molname("HeH_p"))
+        >>> HeH_p
+        >>> print(exact_molname_exomol_to_simple_molname("trans-31P2-1H-2H")) #not working
+        >>> Warning: Exact molname  trans-31P2-1H-2H cannot be converted to simple molname
+        >>> trans-31P2-1H-2H
+        >>> print(exact_molname_exomol_to_simple_molname("1H-2H-16O"))
+        >>> H2O
     """
 
     try:
-        t = molname_exact.split("-")
+        t = exact_exomol_molecule_name.split("-")
         molname_simple = ""
         for ele in t:
             alp = "".join(re.findall(r"\D", ele))
@@ -62,14 +62,17 @@ def e2s(molname_exact):
             else:
                 num = ""
             molname_simple = molname_simple + alp + num
+            # ExoJAX Issue #528
+            if molname_simple == "HHO":
+                molname_simple = "H2O"
         return molname_simple
     except:
         print(
             "Warning: Exact molname ",
-            molname_exact,
+            exact_exomol_molecule_name,
             "cannot be converted to simple molname",
         )
-        return molname_exact
+        return exact_exomol_molecule_name
 
 
 def read_def(deff):
@@ -136,17 +139,13 @@ def read_def(deff):
     if deff.stem == "16O-1H__MoLLIST":
         quantum_labels = ["e/f", "v", "F1/F2", "Es"]
 
-    if ntransf > 1:
-        dnufile = maxnu / ntransf
-        numinf = dnufile * np.array(range(ntransf + 1))
-        numtag = []
-        for i in range(len(numinf) - 1):
-            imin = "{:05}".format(int(numinf[i]))
-            imax = "{:05}".format(int(numinf[i + 1]))
-            numtag.append(imin + "-" + imax)
+    if deff.stem == "1H-2H-16O__VTT":
+        numinf = wavenumber_range_HDO_VTT()
     else:
-        numinf = None
-        numtag = ""
+        numinf = compute_wavenumber_ranges(ntransf, maxnu)
+
+    numtag = wavenumber_tag(numinf)
+
     output = {
         "n_Texp": n_Texp,
         "alpha_ref": alpha_ref,
@@ -159,6 +158,52 @@ def read_def(deff):
         "unc": unc,  # bool uncertainty of line center availability
     }
     return output
+
+
+def wavenumber_range_HDO_VTT():
+    numinf = np.array(
+        [
+            0.0,
+            250.0,
+            500.0,
+            750.0,
+            1000.0,
+            1500.0,
+            2000.0,
+            2250.0,
+            2750.0,
+            3500.0,
+            4500.0,
+            5500.0,
+            7000.0,
+            9000.0,
+            14000.0,
+            20000.0,
+            26000.0,
+        ]
+    )
+    return numinf
+
+
+def compute_wavenumber_ranges(ntransf, maxnu):
+    if ntransf > 1:
+        dnufile = maxnu / ntransf
+        numinf = dnufile * np.array(range(ntransf + 1))
+        wavenumber_tag(numinf)
+    else:
+        numinf = None
+    return numinf
+
+
+def wavenumber_tag(numinf):
+    if numinf is None:
+        return ""
+    numtag = []
+    for i in range(len(numinf) - 1):
+        imin = "{:05}".format(int(numinf[i]))
+        imax = "{:05}".format(int(numinf[i + 1]))
+        numtag.append(imin + "-" + imax)
+    return numtag
 
 
 def read_pf(pff):
@@ -1052,7 +1097,7 @@ class MdbExomol(DatabaseManager):
         # Add molecule name
         tag = molec.split("__")
         self.isotope_fullname = tag[0]
-        self.molecule = e2s(tag[0])
+        self.molecule = exact_molname_exomol_to_simple_molname(tag[0])
         # self.isotope = 1  # Placeholder. TODO : implement parsing of other isotopes.
 
         # load def
@@ -1361,7 +1406,7 @@ class MdbExomol(DatabaseManager):
         import urllib.request
 
         tag = molec.split("__")
-        molname_simple = e2s(tag[0])
+        molname_simple = exact_molname_exomol_to_simple_molname(tag[0])
         # TODO: add progress bar
         for ext in extension:
             if ext == ".trans.bz2" and numtag is not None:
@@ -1398,19 +1443,21 @@ class MdbExomol(DatabaseManager):
 
 
 if __name__ == "__main__":
-    print(e2s("12C-1H4"))
-    print(e2s("23Na-16O-1H"))
-    print(e2s("HeH_p"))
-    print(e2s("trans-31P2-1H-2H"))  # not working
+    print(exact_molname_exomol_to_simple_molname("12C-1H4"))
+    print(exact_molname_exomol_to_simple_molname("23Na-16O-1H"))
+    print(exact_molname_exomol_to_simple_molname("HeH_p"))
+    print(exact_molname_exomol_to_simple_molname("trans-31P2-1H-2H"))  # not working
 
     # TODO : move to unitary tests of exomol_utils
-    assert e2s("12C-1H4") == "CH4"
-    assert e2s("23Na-16O-1H") == "NaOH"
-    assert e2s("HeH_p") == "HeH_p"
-    assert e2s("trans-31P2-1H-2H") == "trans-31P2-1H-2H"  # convert not working
+    assert exact_molname_exomol_to_simple_molname("12C-1H4") == "CH4"
+    assert exact_molname_exomol_to_simple_molname("23Na-16O-1H") == "NaOH"
+    assert exact_molname_exomol_to_simple_molname("HeH_p") == "HeH_p"
+    assert (
+        exact_molname_exomol_to_simple_molname("trans-31P2-1H-2H") == "trans-31P2-1H-2H"
+    )  # convert not working
 
-    assert e2s("12C-16O2") == "CO2"
-    assert e2s("13C-16O2") == "CO2"
+    assert exact_molname_exomol_to_simple_molname("12C-16O2") == "CO2"
+    assert exact_molname_exomol_to_simple_molname("13C-16O2") == "CO2"
 
     # mdb=MdbExomol("/home/kawahara/exojax/data/CO/12C-16O/Li2015/")
     # mdb=MdbExomol("/home/kawahara/exojax/data/CH4/12C-1H4/YT34to10/",nurange=[6050.0,6150.0])
