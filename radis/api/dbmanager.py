@@ -310,9 +310,7 @@ class DatabaseManager(object):
 
         local_fnames = [
             (
-                splitext(splitext(url.split("/")[-1])[0])[
-                    0
-                ]  # twice to remove .par.bz2
+                splitext(splitext(url.split("/")[-1])[0])[0]  # twice to remove .par.bz2
                 + ".h5"
             )
             for url in urlnames
@@ -338,11 +336,10 @@ class DatabaseManager(object):
 
         if engine == "vaex":
             local_files = [fname.replace(".h5", ".hdf5") for fname in local_files]
-        
+
         local_files = [expanduser(f) for f in local_files]
 
         return local_files
-
 
     def get_today(self):
         return date.today().strftime(
