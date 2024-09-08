@@ -62,6 +62,7 @@ def exact_molname_exomol_to_simple_molname(exact_exomol_molecule_name):
         )
         return exact_exomol_molecule_name
 
+
 def _molname_simple_no_exception(exact_exomol_molecule_name):
     t = exact_exomol_molecule_name.split("-")
     molname_simple = ""
@@ -73,7 +74,7 @@ def _molname_simple_no_exception(exact_exomol_molecule_name):
         else:
             num = ""
         molname_simple = molname_simple + alp + num
-    
+
     # ExoJAX Issue #528
     if molname_simple == "HHO":
         molname_simple = "H2O"
@@ -167,7 +168,7 @@ def read_def(deff):
 
 def wavenumber_range_HDO_VTT():
     """wave number range for HDO VTT as an exception
-    
+
     Returns:
         float: numinf
     """
@@ -197,7 +198,7 @@ def wavenumber_range_HDO_VTT():
 
 def compute_wavenumber_ranges(ntransf, maxnu):
     """wavenumber range for general case
-    
+
     Args:
         ntransf: number of the trans files
         maxnu: maximum wavenumber
@@ -216,13 +217,13 @@ def compute_wavenumber_ranges(ntransf, maxnu):
 
 def wavenumber_tag(numinf):
     """convert numinf to numtag (used in the name of trans file)
-    
+
 
     Args:
         numinf (_type_): wavenumber values for the range
 
     Returns:
-        float: numtag wavenumber tag (such as 00000-00500) 
+        float: numtag wavenumber tag (such as 00000-00500)
     """
     if numinf is None:
         return ""
