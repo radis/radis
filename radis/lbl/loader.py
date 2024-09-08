@@ -1574,7 +1574,7 @@ class DatabankLoader(object):
                     [str(k) for k in self._get_isotope_list(df=df)]
                 )
         elif source == "nist":
-            #self.reftracker.add(doi["Kurucz-2017"], "line database")
+            # self.reftracker.add(doi["Kurucz-2017"], "line database")
 
             if columns is not None:
                 self.warn(
