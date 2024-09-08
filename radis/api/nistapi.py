@@ -1,8 +1,11 @@
-from radis.api.dbmanager import DatabaseManager
 import urllib
+
 import pandas as pd
+
+from radis.api.dbmanager import DatabaseManager
 from radis.misc.config import getDatabankEntries
 from radis.misc.warning import DatabaseAlreadyExists
+
 
 class NISTDatabaseManager(DatabaseManager):
     def __init__(
@@ -27,33 +30,35 @@ class NISTDatabaseManager(DatabaseManager):
         self.wmax = None
         self.downloadable = True
 
-    def fetch_urlnames(self, low_w='', upp_w=''):
+    def fetch_urlnames(self, low_w="", upp_w=""):
 
         payload = {
-            'spectra': self.molecule, # should accept spectroscopic notation with an underscore as is the current standard for atoms
-            'low_w': low_w, # the lower wavelength bound (not wavenumber, even if using 'show_wn=1' instead of 'show_calc_wl=1')
-            'upp_w': upp_w, # the upper wavelength bound
-            'unit': 1, # the unit for 'low_w' and 'upp_w', 1 for nm
-            'format': 3, # output format, 3 for tab-delimited
-            'line_out': 1, # output only lines with transition probabilities, otherwise it includes lines that don't have any of Aki, fik, Sik, loggf
-            'en_unit': 0, # the unit for energy returned, 0 for cm-1
-            'output': 0, # return output in its entirety rather than in pages
-            'show_calc_wl': 1, # return the Ritz wavelength
-            'order_out': 0, # order output by wavelength
-            'show_av': 3, # use vacuum wavelengths throughout
-            'A_out': 0, # return Einstein A coefficients rather than gA
-            'allowed_out': 1, # include 'Allowed (E1)' transitions
-            'forbid_out': 1, # include 'Forbidden (M1,E2,...)' transitions
-            'enrg_out': 'on', # output energies of upper and lower level
-            'g_out': 'on', # output statistical weights of upper and lower levels
+            "spectra": self.molecule,  # should accept spectroscopic notation with an underscore as is the current standard for atoms
+            "low_w": low_w,  # the lower wavelength bound (not wavenumber, even if using 'show_wn=1' instead of 'show_calc_wl=1')
+            "upp_w": upp_w,  # the upper wavelength bound
+            "unit": 1,  # the unit for 'low_w' and 'upp_w', 1 for nm
+            "format": 3,  # output format, 3 for tab-delimited
+            "line_out": 1,  # output only lines with transition probabilities, otherwise it includes lines that don't have any of Aki, fik, Sik, loggf
+            "en_unit": 0,  # the unit for energy returned, 0 for cm-1
+            "output": 0,  # return output in its entirety rather than in pages
+            "show_calc_wl": 1,  # return the Ritz wavelength
+            "order_out": 0,  # order output by wavelength
+            "show_av": 3,  # use vacuum wavelengths throughout
+            "A_out": 0,  # return Einstein A coefficients rather than gA
+            "allowed_out": 1,  # include 'Allowed (E1)' transitions
+            "forbid_out": 1,  # include 'Forbidden (M1,E2,...)' transitions
+            "enrg_out": "on",  # output energies of upper and lower level
+            "g_out": "on",  # output statistical weights of upper and lower levels
         }
 
         query = urllib.parse.urlencode(payload, doseq=True)
 
-        url = urllib.parse.urlunsplit(('https', 'physics.nist.gov', '/cgi-bin/ASD/lines1.pl', query, ''))
+        url = urllib.parse.urlunsplit(
+            ("https", "physics.nist.gov", "/cgi-bin/ASD/lines1.pl", query, "")
+        )
 
         return [url]
-        
+
     def parse_to_local_file(
         self,
         opener,
@@ -70,8 +75,8 @@ class NISTDatabaseManager(DatabaseManager):
         writer = self.get_datafile_manager()
         df = nist2df(opener.abspath(urlname))
 
-        df['species'] = self.molecule
-        df['iso'] = 0
+        df["species"] = self.molecule
+        df["iso"] = 0
 
         writer.write(local_file, df, append=False)
 
@@ -98,7 +103,7 @@ class NISTDatabaseManager(DatabaseManager):
         )
 
         return Nlines
-    
+
     def register(self, local_files, urlnames):
 
         if self.is_registered():
@@ -143,7 +148,7 @@ class NISTDatabaseManager(DatabaseManager):
 
 
 def nist2df(file):
-    df = pd.read_csv(file, sep='\t')
+    df = pd.read_csv(file, sep="\t")
 
     # based on Kurucz method:
     cond = (df["Ek(cm-1)"] - df["Ei(cm-1)"]) > 0
@@ -151,18 +156,18 @@ def nist2df(file):
     kcols = ["g_k", "Ek(cm-1)"]
     lcols = ["gl", "El"]
     ucols = ["gu", "Eu"]
-    for icol, kcol, lcol, ucol in zip(
-        icols, kcols, lcols, ucols
-    ):
+    for icol, kcol, lcol, ucol in zip(icols, kcols, lcols, ucols):
         df[lcol] = df[icol].where(cond, df[kcol])
         df[ucol] = df[kcol].where(cond, df[icol])
 
-    df['wav'] = 1e7 / df['ritz_wl_vac(nm)']
-    df[['jl', 'ju']] = (df[['gl', 'gu']] - 1)/2 # calculate J from g rather than requesting from NIST to avoid having to deal with half-integer '1/2' etc notation that NIST returns
-    df['A'] = df['Aki(s^-1)']
+    df["wav"] = 1e7 / df["ritz_wl_vac(nm)"]
+    df[["jl", "ju"]] = (
+        df[["gl", "gu"]] - 1
+    ) / 2  # calculate J from g rather than requesting from NIST to avoid having to deal with half-integer '1/2' etc notation that NIST returns
+    df["A"] = df["Aki(s^-1)"]
 
     df[:] = df[::-1]
 
-    df = df[['ritz_wl_vac(nm)', 'wav', 'A', 'gl', 'El', 'gu', 'Eu', 'jl', 'ju']]
+    df = df[["ritz_wl_vac(nm)", "wav", "A", "gl", "El", "gu", "Eu", "jl", "ju"]]
 
     return df
