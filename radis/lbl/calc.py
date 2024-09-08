@@ -773,16 +773,7 @@ def _calc_spectrum_one_molecule(
 
     # Get databank
     if (
-        databank
-        in [
-            "fetch",
-            "hitran",
-            "hitemp",
-            "exomol",
-            "geisa",
-            "kurucz",
-            "nist"
-        ]
+        databank in ["fetch", "hitran", "hitemp", "exomol", "geisa", "kurucz", "nist"]
         or (isinstance(databank, tuple) and databank[0] == "exomol")
         or (isinstance(databank, tuple) and databank[0] == "hitran")
     ):  # mode to get databank without relying on  Line databases

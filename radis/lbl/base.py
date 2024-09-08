@@ -72,10 +72,9 @@ from numpy import exp, pi
 from psutil import virtual_memory
 
 import radis
-from radis.db.classes import get_element_symbol
 
 # TODO: rename in get_molecule_name
-from radis.db.classes import get_molecule, get_molecule_identifier
+from radis.db.classes import get_element_symbol, get_molecule, get_molecule_identifier
 
 try:  # Proper import
     from .loader import KNOWN_LVLFORMAT, DatabankLoader, df_metadata
