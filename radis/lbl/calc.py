@@ -30,7 +30,6 @@ except ImportError:  # if ran from here
     from radis.lbl.base import get_wavenumber_range
 
 from radis import config
-from radis.db.utils import compare
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
 from radis.spectrum.spectrum import Spectrum
@@ -567,7 +566,11 @@ def calc_spectrum(
         kwargs_molecule.update(**dict_arguments)
 
         # getting diluents for this molecule
-        if isinstance(diluent, Default):
+        if len(list(molecule_dict.keys())) > 1:
+            diluent_for_this_molecule = diluents_for_molecule(
+                mole_fraction, diluent, molecule
+            )
+        elif isinstance(diluent, Default):
             diluent_for_this_molecule = diluent
         else:
             diluent_for_this_molecule = diluents_for_molecule(
@@ -759,7 +762,7 @@ def _calc_spectrum_one_molecule(
         # diluent_other_than_air = len(diluent) > 1 or (
         #     len(diluent) == 1 and "air" not in diluent
         # )
-    if diluent_other_than_air and compare(databank, "exomol"):
+    if diluent_other_than_air and databank == "exomol":
         raise NotImplementedError(
             "Only air broadening is implemented in RADIS with ExoMol. Please reach out on https://github.com/radis/radis/issues"
         )
@@ -770,19 +773,17 @@ def _calc_spectrum_one_molecule(
 
     # Get databank
     if (
-        compare(
-            databank, ["fetch", "hitran", "hitemp", "exomol", "geisa", "kurucz", "nist"]
-        )
-        or compare(databank, "exomol")
-        or compare(databank, "hitran")
+        databank in ["fetch", "hitran", "hitemp", "exomol", "geisa", "kurucz", "nist"]
+        or (isinstance(databank, tuple) and databank[0] == "exomol")
+        or (isinstance(databank, tuple) and databank[0] == "hitran")
     ):  # mode to get databank without relying on  Line databases
         # Line database :
-        if compare(databank, ["fetch", "hitran"]):
+        if databank in ["fetch", "hitran"]:
             conditions = {
                 "source": "hitran",
                 "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
             }
-        elif compare(databank, "hitran"):
+        elif isinstance(databank, tuple) and databank[0] == "hitran":
             conditions = {
                 "source": "hitran",
                 "database": databank[
@@ -790,27 +791,27 @@ def _calc_spectrum_one_molecule(
                 ],  # 'full' or 'partial', cf LoaderFactory.fetch_databank()
                 "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
             }
-        elif compare(databank, ["hitemp"]):
+        elif databank in ["hitemp"]:
             conditions = {
                 "source": "hitemp",
                 "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium}
             }
-        elif compare(databank, ["exomol"]):
+        elif databank in ["exomol"]:
             conditions = {
                 "source": "exomol",
                 "parfuncfmt": "exomol",  # download & use Exo partition functions for equilibrium}
             }
-        elif compare(databank, ["geisa"]):
+        elif databank in ["geisa"]:
             conditions = {
                 "source": "geisa",
                 "parfuncfmt": "hapi",
                 # TODO: replace with GEISA partition function someday.............
             }
-        elif compare(databank, ["kurucz"]):
-            conditions = {"source": "kurucz"}
-        elif compare(databank, ["nist"]):
-            conditions = {"source": "nist"}
-        elif compare(databank, "exomol"):
+        elif databank in ["kurucz"]:
+            conditions = {"source": "kurucz", "parfuncfmt": "kurucz"}
+        elif databank in ["nist"]:
+            conditions = {"source": "nist", "parfuncfmt": "kurucz"}
+        elif isinstance(databank, tuple) and databank[0] == "exomol":
             conditions = {
                 "source": "exomol",
                 "database": databank[1],
@@ -986,6 +987,8 @@ def _calc_spectrum_one_molecule(
 # Function to get diluent(s) for a molecule
 def diluents_for_molecule(mole_fraction, diluent, molecule):
     diluent_for_this_molecule = {}
+    if isinstance(diluent, Default):
+        diluent = "air"
     if isinstance(diluent, dict):
         diluent_for_this_molecule = diluent.copy()
     else:
@@ -993,6 +996,7 @@ def diluents_for_molecule(mole_fraction, diluent, molecule):
             diluent_for_this_molecule[diluent] = 1 - sum(list(mole_fraction.values()))
         else:
             diluent_for_this_molecule[diluent] = 1 - mole_fraction
+        # Note: will be rounded later, e.g. 1-0.7 = 0.30000000000000004 - see https://docs.python.org/3.10/tutorial/floatingpoint.html
 
     # Adding the other molecules from the gas mixture as diluent for the calculation of this particular molecule
     if isinstance(mole_fraction, dict):
@@ -1003,7 +1007,14 @@ def diluents_for_molecule(mole_fraction, diluent, molecule):
                 else:
                     diluent_for_this_molecule[other_molecule] = other_fraction
 
-    return diluent_for_this_molecule
+    # finaly, remove mole fraction of diluent equal to 0 (weird input or air when molecules add up to 1)
+    diluent_for_this_molecule = {
+        k: v for k, v in diluent_for_this_molecule.items() if v != 0
+    }
+    if diluent_for_this_molecule == {}:
+        return Default(None)
+    else:
+        return diluent_for_this_molecule
 
 
 # --------------------------
