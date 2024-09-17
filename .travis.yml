@@ -9,16 +9,16 @@ os: linux
 dist: focal #needed for python 3.10 (xenial is default for Travis-CI, but does not support python 3.10)
 
 name: Test and Coverage
-install:
+before_install:
   # Install Micromamba
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
   # For now use http instead of https according to this comment:
   # https://github.com/mamba-org/mamba/issues/1675#issuecomment-1127160021
-  # - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/1.5.8 | tar -xvj bin/micromamba
-  - "${SHELL}" <(curl -L micro.mamba.pm/install.sh)
+  - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/1.5.8 | tar -xvj bin/micromamba
   - ./bin/micromamba shell init -s bash -p ~/micromamba
   - source ~/.bashrc
+install:
   - micromamba activate base
   # Update python version in environment
   - sed -i -E 's/^- python$/- python='$TRAVIS_PYTHON_VERSION'/' ./environment.yml
@@ -88,6 +88,8 @@ jobs:
       os: osx
       osx_image: xcode11.2
       language: shell
+      before_install:
+        - brew install micromamba
     # - stage: Win_py310 #https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64
     #   name: Python 3.10 on Windows
     #   python: "3.10"
