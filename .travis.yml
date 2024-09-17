@@ -94,6 +94,7 @@ jobs:
         - ./micromamba shell init -s zsh -p ~/micromamba
         - source ~/.zshrc
         # - if [ "${TRAVIS_OS_NAME}" = "osx" ]; then ( sudo Xvfb :99 -ac -screen 0 1024x768x8; echo ok )& fi # start Xvfb - https://github.com/travis-ci/travis-ci/issues/7313
+      before_script: skip
       script:
         - pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10
 
