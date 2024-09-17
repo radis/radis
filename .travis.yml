@@ -93,7 +93,10 @@ jobs:
         - mv bin/micromamba ./micromamba
         - ./micromamba shell init -s zsh -p ~/micromamba
         - source ~/.zshrc
-        - if [ "${TRAVIS_OS_NAME}" = "osx" ]; then ( sudo Xvfb :99 -ac -screen 0 1024x768x8; echo ok )& fi # start Xvfb - https://github.com/travis-ci/travis-ci/issues/7313
+        # - if [ "${TRAVIS_OS_NAME}" = "osx" ]; then ( sudo Xvfb :99 -ac -screen 0 1024x768x8; echo ok )& fi # start Xvfb - https://github.com/travis-ci/travis-ci/issues/7313
+      script:
+        - pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10
+
     # - stage: Win_py310 #https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64
     #   name: Python 3.10 on Windows
     #   python: "3.10"
