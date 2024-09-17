@@ -15,10 +15,20 @@ import pytest
 import radis
 from radis import SpectrumFactory, get_residual
 from radis.misc.printer import printm
+from radis.misc.utils import NotInstalled, not_installed_nvidia_args
 from radis.misc.warning import NoGPUWarning
 from radis.test.utils import getTestFile
 
+try:
+    from nvidia.cufft import __path__ as cufft_path
+except ImportError:
+    cufft_path = NotInstalled(*not_installed_nvidia_args)
 
+
+@pytest.mark.skipif(
+    isinstance(cufft_path, NotInstalled),
+    reason="nvidia package not installed. Probably because on MAC OS",
+)
 @pytest.mark.fast
 def test_eq_spectrum_emulated_gpu(
     backend="cpu-cuda", verbose=False, plot=False, *args, **kwargs
@@ -86,6 +96,10 @@ def test_eq_spectrum_emulated_gpu(
         s_cpu.print_perf_profile()
 
 
+@pytest.mark.skipif(
+    isinstance(cufft_path, NotInstalled),
+    reason="nvidia package not installed. Probably because on MAC OS",
+)
 @pytest.mark.needs_cuda
 def test_eq_spectrum_gpu(plot=False, *args, **kwargs):
     """Compare Spectrum calculated in the GPU code
@@ -98,6 +112,10 @@ def test_eq_spectrum_gpu(plot=False, *args, **kwargs):
         test_eq_spectrum_emulated_gpu(backend="gpu-cuda", plot=plot, *args, **kwargs)
 
 
+@pytest.mark.skipif(
+    isinstance(cufft_path, NotInstalled),
+    reason="nvidia package not installed. Probably because on MAC OS",
+)
 @pytest.mark.fast
 def test_multiple_gpu_calls():
     from radis import SpectrumFactory

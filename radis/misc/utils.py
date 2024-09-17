@@ -146,7 +146,7 @@ class DatabankNotFound(FileNotFoundError):
 
 
 class NotInstalled(object):
-    """A class to deal with optional packages Will raise an error only if the
+    """A class to deal with optional packages. Will raise an error only if the
     package is used (but not if imported only)
 
     Examples
