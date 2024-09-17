@@ -76,7 +76,7 @@ stages: #This sequence defines the order of the stages
   - name: Py312
     if: branch = master
   - name: MacOS_py310
-    if: branch = master OR branch = develop
+    if: branch = master
   # - name: Win_py310
   #   if: branch = master OR branch = develop
 
