@@ -89,8 +89,9 @@ jobs:
       osx_image: xcode11.2
       language: shell
       before_install:
-        # - export HOMEBREW_NO_AUTO_UPDATE=1 #to avoid brew update
-        - HOMEBREW_NO_AUTO_UPDATE=1 brew install micromamba
+        - curl -Ls https://micromamba.snakepit.net/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
+        - mv bin/micromamba ./micromamba
+        - ./micromamba shell init -s zsh -p ~/micromamba
     # - stage: Win_py310 #https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64
     #   name: Python 3.10 on Windows
     #   python: "3.10"
