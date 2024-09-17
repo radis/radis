@@ -93,6 +93,7 @@ jobs:
         - mv bin/micromamba ./micromamba
         - ./micromamba shell init -s zsh -p ~/micromamba
         - source ~/.zshrc
+        - sudo Xvfb :99 -ac -screen 0 1024x768x8 # start Xvfb - https://github.com/travis-ci/travis-ci/issues/7313
     # - stage: Win_py310 #https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64
     #   name: Python 3.10 on Windows
     #   python: "3.10"
