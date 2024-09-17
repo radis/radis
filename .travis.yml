@@ -4,7 +4,7 @@ python:
   #- "2.7"    # not tested anymore starting from 0.9.19
   #- "3.8" #end of life, Novembre 2024, https://devguide.python.org/versions/
   - "3.10"
-  - "3.11"
+  #- "3.11"
 os: linux
 dist: focal #needed for python 3.10 (xenial is default for Travis-CI, but does not support python 3.10)
 
@@ -15,7 +15,8 @@ install:
   # version is the same.
   # For now use http instead of https according to this comment:
   # https://github.com/mamba-org/mamba/issues/1675#issuecomment-1127160021
-  - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/1.5.8 | tar -xvj bin/micromamba
+  # - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/1.5.8 | tar -xvj bin/micromamba
+  - "${SHELL}" <(curl -L micro.mamba.pm/install.sh)
   - ./bin/micromamba shell init -s bash -p ~/micromamba
   - source ~/.bashrc
   - micromamba activate base
@@ -64,6 +65,8 @@ after_success:
 
 
 stages: #This sequence defines the order of the stages
+  - name: MacOS_py310
+    if: branch = master OR branch = develop
   - name: test
     if: branch = master OR branch = develop
   - name: lint
@@ -74,19 +77,17 @@ stages: #This sequence defines the order of the stages
     if: branch = master
   - name: Py312
     if: branch = master
-  # - name: MacOS_py310
-  #   if: branch = master OR branch = develop
   # - name: Win_py310
   #   if: branch = master OR branch = develop
 
 jobs:
   include: #start by testing other OS - TO-DO sort install of micromamba https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html
-    # - stage: MacOS_py310
-    #   name: Python 3.10 on macOS
-    #   python: "3.10"
-    #   os: osx
-    #   osx_image: xcode11.2
-    #   language: shell
+    - stage: MacOS_py310
+      name: Python 3.10 on macOS
+      python: "3.10"
+      os: osx
+      osx_image: xcode11.2
+      language: shell
     # - stage: Win_py310 #https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64
     #   name: Python 3.10 on Windows
     #   python: "3.10"
