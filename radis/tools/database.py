@@ -993,7 +993,7 @@ def query(df, conditions="", **kwconditions):
         query = []
         for (k, v) in kwconditions.items():
             if isinstance(v, str):
-                query.append("{0} == r'{1}'".format(k, v))
+                query.append(f"{k} == r'{v}'")
             elif v is None:
                 # query "k == None" doesn't work. We use a workaround,
                 # checking if the column is different from itself (i.e. : is None):
@@ -1001,12 +1001,9 @@ def query(df, conditions="", **kwconditions):
                 query.append(f"{k} != {k}")
             else:
                 #                    query.append('{0} == {1}'.format(k,v))
-                query.append("{0} == {1}".format(k, v.__repr__()))
-                # ... for some reason {1}.format() would remove some digit
-                # ... to floats in Python2. Calling .__repr__() keeps
-                # ... the correct format, and has no other consequences as far
-                # ... as I can tell
-
+                # query.append("{0} == {1}".format(k, v.__repr__()))
+                query.append(f"{k} == {v}")
+            print(query)
         # There is a limitation in numpy: a max of 32 arguments is required.
         # Below we write a workaround when the Spectrum has more than 32 conditions
         if len(query) < 32:
