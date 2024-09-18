@@ -1015,7 +1015,7 @@ def query(df, conditions="", **kwconditions):
             # cut in <32-long parts
             N = len(query) // 32 + 1
             querypart = " & ".join(query[::N])
-            dg = df.query(querypart, engine="python")
+            dg = df.query(querypart)
             for i in range(1, N + 1):
                 querypart = " & ".join(query[i::N])
                 if __debug__:
