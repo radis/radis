@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 from radis.io.hitemp import fetch_hitemp
 
 #%% Adapt this example if vaex is installed or not
-# June 2024: vaex is not compatible with python>=3.11, see https://github.com/radis/radis/pull/656
+# November 2024: vaex is now compatible up to python>=3.12
 try:
     import vaex
 

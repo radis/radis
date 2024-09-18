@@ -51,7 +51,9 @@ LAST_VALID_DATE = (
 def get_auto_MEMORY_MAPPING_ENGINE():
     """see https://github.com/radis/radis/issues/653
 
-    Use Vaex by default if it exists (only Python <= 3.11 as of June 2024) ,
+    Use Vaex by default if it exists (compatible up to Python 3.12
+      - see https://github.com/vaexio/vaex/pull/2331#issuecomment-2357580016) and
+      TO-DO ADD RELEASE LINK
     else use PyTables"""
     try:
         import vaex
