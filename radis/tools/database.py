@@ -1001,7 +1001,6 @@ def query(df, conditions="", **kwconditions):
                 query.append(f"{k} != {k}")
             else:
                 #                    query.append('{0} == {1}'.format(k,v))
-                # query.append("{0} == {1}".format(k, v.__repr__()))
                 query.append(f"{k} == {v}")
             print(query)
         # There is a limitation in numpy: a max of 32 arguments is required.
