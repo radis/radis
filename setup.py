@@ -281,7 +281,7 @@ def run_setup():
             "ruamel.yaml",
             "json-tricks>=3.15.0",  # to deal with non jsonable formats
             "mpldatacursor",
-            "nvidia-cufft-cu11",
+            'nvidia-cufft-cu11; sys_platform != "darwin" ',
             "periodictable",
             'vaex-core ; python_version < "3.11"',
             'vaex-hdf5 ; python_version < "3.11"',
