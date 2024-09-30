@@ -8,5 +8,5 @@ if [[ $conda_env == *"radis-env"* ]]; then
     exit 0
 fi
 
-conda env create --file environment.yml --solver=libmamba
+conda env create --file environment.yml
 conda init 
