@@ -41,6 +41,7 @@ import numpy as np
 import pandas as pd
 from dateutil.parser import parse as parse_date
 from joblib import Parallel, delayed
+
 try:
     from numpy.lib.npyio import DataSource
 except ImportError:  # numpy <2.0.0?
