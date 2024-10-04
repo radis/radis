@@ -95,7 +95,7 @@ jobs:
           - export PATH=$HOME/micromamba/bin:$PATH
           - MAMBA_ROOT_PREFIX=~/micromamba
           - micromamba shell init -s zsh
-        # - if [ "${TRAVIS_OS_NAME}" = "osx" ]; then ( sudo Xvfb :99 -ac -screen 0 1024x768x8; echo ok )& fi # start Xvfb - https://github.com/travis-ci/travis-ci/issues/7313
+          - eval "$(micromamba shell hook --shell bash)"
       before_script:
         - echo ">>> Run fast tests first"
         - pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10
