@@ -65,6 +65,8 @@ after_success:
 
 
 stages: #This sequence defines the order of the stages
+  - name: MacOS_py310
+    if: branch = master
   - name: test
     if: branch = master OR branch = develop
   - name: lint
@@ -75,13 +77,11 @@ stages: #This sequence defines the order of the stages
     if: branch = master
   - name: Py312
     if: branch = master
-  - name: MacOS_py310
-    if: branch = master
   # - name: Win_py310
   #   if: branch = master OR branch = develop
 
 jobs:
-  include: #start by testing other OS - TO-DO sort install of micromamba https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html
+  include:
     - stage: MacOS_py310
       name: Python 3.10 on macOS
       python: "3.10"
@@ -91,7 +91,8 @@ jobs:
       before_install: #https://gist.github.com/wolfv/fe1ea521979973ab1d016d95a589dcde#os-x
         - curl -Ls https://micromamba.snakepit.net/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
         - mv bin/micromamba ./micromamba
-        - ./micromamba shell init -s zsh -p ~/micromamba
+        - MAMBA_ROOT_PREFIX=~/micromamba
+        - micromamba shell init -s zsh
         - source ~/.zshrc
         # - if [ "${TRAVIS_OS_NAME}" = "osx" ]; then ( sudo Xvfb :99 -ac -screen 0 1024x768x8; echo ok )& fi # start Xvfb - https://github.com/travis-ci/travis-ci/issues/7313
       before_script:
