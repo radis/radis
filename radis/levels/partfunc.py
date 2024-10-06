@@ -1197,10 +1197,10 @@ class PartFuncKurucz(RovibParFuncTabulator):
             if self.partfn is None:
                 if potential_lowering is not None:
                     warn(
-                        "Table of partition functions by potential lowering not available for this species - using Barklem & Collet (2016) instead with just the temperature"
+                        "Table of partition functions by potential lowering not available for this species or database - using Barklem & Collet (2016) instead with just the temperature"
                     )
                 addmsg = "Barklem & Collet (2016)."
-                addmsg2 = ", nor are any dedicated tables available for this species."
+                addmsg2 = ", nor are any dedicated tables available for this species or database."
             else:
                 addmsg = "Barklem & Collet (2016). You can try the Kurucz partition function by setting a potential lowering (e.g. `potential_lowering=-500`)."
                 addmsg2 = ". Please specify the potential lowering."

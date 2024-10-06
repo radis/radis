@@ -98,16 +98,6 @@ def get_ionization_state(species):
     return ionization_int  # formatted_str
 
 
-def get_element_symbol(species):
-    """
-    Extracts the element symbol from the species given in spectroscopic notation
-    """
-
-    atomic_symbol = species.split("_")[0]
-    el = getattr(periodictable, atomic_symbol)
-    return el
-
-
 def read_kurucz_pfs(file):
     """Convert a Kurucz partfnxxyy.dat file containing a table of partition functions by temperature and potential lowering to a Pandas DataFrame
 
@@ -217,44 +207,12 @@ class KuruczDatabaseManager(DatabaseManager):
         return path, url
 
     def get_possible_files(self, urlnames=None):
-        """returns the urls from fretch_urlnames and the derived file paths at which each would be saved after downloading and parsing"""
-        verbose = self.verbose
+        """returns the urls from fetch_urlnames and the derived file paths at which each would be saved after downloading and parsing"""
         local_databases = self.local_databases
-        engine = self.engine
 
-        # copied from DatabaseManager.get_filenames:
         if urlnames is None:
             urlnames = self.fetch_urlnames()
-        local_fnames = [
-            (
-                splitext(splitext(url.split("/")[-1])[0])[0]  # twice to remove .par.bz2
-                + ".h5"
-            )
-            for url in urlnames
-        ]
-
-        try:
-            os.mkdir(local_databases)
-        except OSError:
-            pass
-        else:
-            if verbose:
-                print("Created folder :", local_databases)
-
-        local_files = [
-            abspath(
-                join(
-                    local_databases,
-                    self.molecule + "-" + local_fname,
-                )
-            )
-            for local_fname in local_fnames
-        ]
-
-        if engine == "vaex":
-            local_files = [fname.replace(".h5", ".hdf5") for fname in local_files]
-
-        local_files = [expanduser(f) for f in local_files]
+        local_files = self.fetch_filenames(urlnames, local_databases)
 
         return local_files, urlnames
 
@@ -326,7 +284,7 @@ class KuruczDatabaseManager(DatabaseManager):
                     "download_url": urls,
                 }
             )
-            if self.wmin and self.wmin:
+            if self.wmin and self.wmax:
                 info = f"Kurucz {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1)."
                 dict_entries.update(
                     {
