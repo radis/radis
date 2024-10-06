@@ -180,7 +180,7 @@ class NotInstalled(object):
 not_installed_vaex_args = (
     "vaex",
     "You must install Vaex to use these features. Vaex is a fast, "
-    + "memory-mapped DataFrame library. However is not available yet on latest Python versions. "
+    + "memory-mapped DataFrame library. However is not always available on latest Python versions. "
     + "Use Pytables (slower) as an alternative in your Radis.json config file. To use Pytables, set "
     + '"MEMORY_MAPPING_ENGINE": "pytables" and "DATAFRAME_ENGINE": "pandas"',
 )
