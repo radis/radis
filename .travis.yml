@@ -9,7 +9,7 @@ os: linux
 dist: focal #needed for python 3.10 (xenial is default for Travis-CI, but does not support python 3.10)
 
 name: Test and Coverage
-install:
+before_install:
   # Install Micromamba
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
@@ -18,6 +18,7 @@ install:
   - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/1.5.8 | tar -xvj bin/micromamba
   - ./bin/micromamba shell init -s bash -p ~/micromamba
   - source ~/.bashrc
+install:
   - micromamba activate base
   # Update python version in environment
   - sed -i -E 's/^- python$/- python='$TRAVIS_PYTHON_VERSION'/' ./environment.yml
@@ -74,19 +75,34 @@ stages: #This sequence defines the order of the stages
     if: branch = master
   - name: Py312
     if: branch = master
-  # - name: MacOS_py310
-  #   if: branch = master OR branch = develop
+  - name: MacOS_py310
+    if: branch = master
   # - name: Win_py310
   #   if: branch = master OR branch = develop
 
 jobs:
-  include: #start by testing other OS - TO-DO sort install of micromamba https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html
-    # - stage: MacOS_py310
-    #   name: Python 3.10 on macOS
-    #   python: "3.10"
-    #   os: osx
-    #   osx_image: xcode11.2
-    #   language: shell
+  include:
+    - stage: MacOS_py310
+      name: Python 3.10 on macOS
+      python: "3.10"
+      os: osx
+      osx_image: xcode11.2
+      language: shell
+      before_install: #https://gist.github.com/wolfv/fe1ea521979973ab1d016d95a589dcde#os-x
+          - curl -Ls https://micromamba.snakepit.net/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
+          - mkdir -p ~/micromamba/bin
+          - mv bin/micromamba ~/micromamba/bin/
+          - export PATH=$HOME/micromamba/bin:$PATH
+          - MAMBA_ROOT_PREFIX=~/micromamba
+          - micromamba shell init -s zsh
+          - eval "$(micromamba shell hook --shell bash)"
+      before_script: #same as the other but without xvfb-run
+        - echo ">>> Run fast tests first"
+        - pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10
+      script: skip #there is a problem with test_exomol.py, but let's skip the long tests for the moment
+        # - echo ">>> Run long tests now"
+        # - pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
+
     # - stage: Win_py310 #https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64
     #   name: Python 3.10 on Windows
     #   python: "3.10"

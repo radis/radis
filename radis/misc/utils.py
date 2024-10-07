@@ -146,7 +146,7 @@ class DatabankNotFound(FileNotFoundError):
 
 
 class NotInstalled(object):
-    """A class to deal with optional packages Will raise an error only if the
+    """A class to deal with optional packages. Will raise an error only if the
     package is used (but not if imported only)
 
     Examples
@@ -183,6 +183,12 @@ not_installed_vaex_args = (
     + "memory-mapped DataFrame library. However is not available yet on latest Python versions. "
     + "Use Pytables (slower) as an alternative in your Radis.json config file. To use Pytables, set "
     + '"MEMORY_MAPPING_ENGINE": "pytables" and "DATAFRAME_ENGINE": "pandas"',
+)
+not_installed_nvidia_args = (
+    "nvidia-cufft",
+    "Nvidia was not installed on your computer. `nvidia-cufft` is"
+    + "not available on Mac OS. ALternative solutions are being developped "
+    + "with Vulkan, see https://github.com/radis/radis/pull/624. (latest update Oct. 2024). ",
 )
 
 
