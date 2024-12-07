@@ -120,7 +120,7 @@ def read_kurucz_pfs(file):
     ----------
     df: Pandas DataFrame
     """
-    df = pd.read_csv(file, sep="\s+", header=2)
+    df = pd.read_csv(file, sep=r"\s+", header=2)
     df.set_index("LOG10(T)", inplace=True)
     return df
 
@@ -144,13 +144,13 @@ def load_pf_Barklem2016():
     file_path = os.path.join(current_dir, "./../db/pfTKurucz_values.txt")
     with open(file_path, "r") as file:
         pfT_str = file.read()
-    pfTdat = pd.read_csv(io.StringIO(pfT_str), sep="\s+")
+    pfTdat = pd.read_csv(io.StringIO(pfT_str), sep=r"\s+")
     pfTdat = pd.Series(pfTdat.columns[1:]).astype(
         "float64"
     )  # Converts the values to float64, skipping the first value
 
     with open(os.path.join(getProjectRoot(), "db", "kuruczpartfn.txt"), "r") as f:
-        pfdat = pd.read_csv(f, sep="\s+", comment="#", names=pfTdat.index)
+        pfdat = pd.read_csv(f, sep=r"\s+", comment="#", names=pfTdat.index)
 
     return pfTdat, pfdat
 
