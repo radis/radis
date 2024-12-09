@@ -18,9 +18,14 @@ if os_name == "nt":
 else:
     from ctypes import cdll as dllobj
 
-
 import numpy as np
-from nvidia.cufft import __path__ as cufft_path
+
+from radis.misc.utils import NotInstalled, not_installed_nvidia_args
+
+try:
+    from nvidia.cufft import __path__ as cufft_path
+except ImportError:
+    cufft_path = NotInstalled(*not_installed_nvidia_args)
 
 _verbose = False
 

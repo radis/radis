@@ -15,6 +15,14 @@ from radis.api.hitempapi import (
 )
 from radis.io.hitemp import fetch_hitemp
 from radis.misc.config import getDatabankList
+from radis.misc.utils import NotInstalled, not_installed_vaex_args
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
+
+pytestmark = pytest.mark.random_order(disabled=True)
 
 
 @pytest.mark.needs_connection
@@ -123,6 +131,7 @@ def test_fetch_hitemp_OH_pytables(verbose=True, *args, **kwargs):
 
 
 @pytest.mark.needs_connection
+@pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
 def test_fetch_hitemp_OH_vaex(verbose=True, *args, **kwargs):
     """Test proper download of HITEMP OH database, with two engines.
 
@@ -272,11 +281,10 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
     assert len(df) == Nlines
 
 
+@pytest.mark.fast
 @pytest.mark.needs_connection
 def test_partial_loading(*args, **kwargs):
-    """Assert that using partial loading of the database works
-
-    Also check 'vaex' engine and ``radis.config["AUTO_UPDATE_DATABASE"]``"""
+    """Assert that using partial loading of the database works`"""
 
     from os.path import join
 
@@ -330,8 +338,23 @@ def test_partial_loading(*args, **kwargs):
     )
     assert set(df.iso.unique()) == {1, 2}
 
+
+@pytest.mark.fast
+@pytest.mark.needs_connection
+@pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
+def test_partial_loading_vaex(*args, **kwargs):
+    """Assert that using partial loading of the database works
+
+    Also check 'vaex' engine and ``radis.config["AUTO_UPDATE_DATABASE"]``"""
+
+    from os.path import join
+
     # Check vaex engine :
     import radis
+    from radis.test.utils import getTestFile
+
+    wmin2 = 1
+    wmax2 = 300
 
     old_config = radis.config["AUTO_UPDATE_DATABASE"]
     try:
@@ -339,7 +362,7 @@ def test_partial_loading(*args, **kwargs):
         df = fetch_hitemp(
             "OH",
             local_databases=join(getTestFile("."), "hitemp"),
-            databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
+            databank_name="HITEMP-OH-TEST-PARTIAL-LOADING-VAEX",
             engine="vaex",
         )
     finally:
@@ -352,7 +375,7 @@ def test_partial_loading(*args, **kwargs):
     df = fetch_hitemp(
         "OH",
         local_databases=join(getTestFile("."), "hitemp"),
-        databank_name="HITEMP-OH-TEST-PARTIAL-LOADING",
+        databank_name="HITEMP-OH-TEST-PARTIAL-LOADING-VAEX",
         load_wavenum_min=wmin2,
         load_wavenum_max=wmax2,
         isotope="2,3",
@@ -363,6 +386,7 @@ def test_partial_loading(*args, **kwargs):
     assert set(df.iso.unique()) == {2, 3}
 
 
+@pytest.mark.fast
 @pytest.mark.needs_connection
 def test_calc_hitemp_spectrum(*args, **kwargs):
     """
@@ -455,6 +479,7 @@ if __name__ == "__main__":
     test_fetch_hitemp_OH_pytables()
     test_fetch_hitemp_OH_vaex()
     test_partial_loading()
+    test_partial_loading_vaex()
     test_calc_hitemp_CO_noneq()
     test_fetch_hitemp_partial_download_CO2()
     test_calc_hitemp_spectrum()

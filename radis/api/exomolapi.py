@@ -3,16 +3,17 @@
    * MdbExomol is the MDB for ExoMol
 
 Initial code borrowed from the `Exojax <https://github.com/HajimeKawahara/exojax>`__
-code (which you should also have a look at !), by @HajimeKawahara, under MIT License.
+code (which you should also have a look at!), by @HajimeKawahara, under MIT License.
 
 """
+
 import os
 import pathlib
 import warnings
 
 import numpy as np
 
-from radis.api.dbmanager import DatabaseManager
+from radis.api.dbmanager import DatabaseManager, get_auto_MEMORY_MAPPING_ENGINE
 from radis.db.classes import EXOMOL_MOLECULES, EXOMOL_ONLY_ISOTOPES_NAMES
 
 EXOMOL_URL = "http://www.exomol.com/db/"
@@ -27,48 +28,57 @@ from bs4 import BeautifulSoup
 from radis.api.hdf5 import vaexsafe_colname
 
 
-def e2s(molname_exact):
-    """convert the exact molname (used in ExoMol) to the simple molname
+def exact_molname_exomol_to_simple_molname(exact_exomol_molecule_name):
+    """convert the exact molname (used in ExoMol) to the simple molname.
 
     Args:
-       molname_exact: the exact molname
+        exact_exomol_molecule_name: the exact exomol molecule name
 
     Returns:
-       simple molname
+        simple molname
 
-    Examples::
-
-       >>> print(e2s("12C-1H4"))
-       >>> CH4
-       >>> print(e2s("23Na-16O-1H"))
-       >>> NaOH
-       >>> print(e2s("HeH_p"))
-       >>> HeH_p
-       >>> print(e2s("trans-31P2-1H-2H")) #not working
-       >>> Warning: Exact molname  trans-31P2-1H-2H cannot be converted to simple molname
-       >>> trans-31P2-1H-2H
-
+    Examples:
+        >>> print(exact_molname_exomol_to_simple_molname("12C-1H4"))
+        >>> CH4
+        >>> print(exact_molname_exomol_to_simple_molname("23Na-16O-1H"))
+        >>> NaOH
+        >>> print(exact_molname_exomol_to_simple_molname("HeH_p"))
+        >>> HeH_p
+        >>> print(exact_molname_exomol_to_simple_molname("trans-31P2-1H-2H")) #not working
+        >>> Warning: Exact molname  trans-31P2-1H-2H cannot be converted to simple molname
+        >>> trans-31P2-1H-2H
+        >>> print(exact_molname_exomol_to_simple_molname("1H-2H-16O"))
+        >>> H2O
     """
 
     try:
-        t = molname_exact.split("-")
-        molname_simple = ""
-        for ele in t:
-            alp = "".join(re.findall(r"\D", ele))
-            num0 = re.split("[A-Z]", ele)[1]
-            if num0.isdigit():
-                num = num0
-            else:
-                num = ""
-            molname_simple = molname_simple + alp + num
+        molname_simple = _molname_simple_no_exception(exact_exomol_molecule_name)
         return molname_simple
     except:
         print(
             "Warning: Exact molname ",
-            molname_exact,
+            exact_exomol_molecule_name,
             "cannot be converted to simple molname",
         )
-        return molname_exact
+        return exact_exomol_molecule_name
+
+
+def _molname_simple_no_exception(exact_exomol_molecule_name):
+    t = exact_exomol_molecule_name.split("-")
+    molname_simple = ""
+    for ele in t:
+        alp = "".join(re.findall(r"\D", ele))
+        num0 = re.split("[A-Z]", ele)[1]
+        if num0.isdigit():
+            num = num0
+        else:
+            num = ""
+        molname_simple = molname_simple + alp + num
+
+    # ExoJAX Issue #528
+    if molname_simple == "HHO":
+        molname_simple = "H2O"
+    return molname_simple
 
 
 def read_def(deff):
@@ -94,7 +104,7 @@ def read_def(deff):
         tag for wavelength ranges.
 
     Note:
-       For some molecules, ExoMol provides multiple trans files. numinf and numtag are the ranges and identifiers for the multiple trans files.
+        For some molecules, ExoMol provides multiple trans files. numinf and numtag are the ranges and identifiers for the multiple trans files.
 
     """
 
@@ -135,17 +145,13 @@ def read_def(deff):
     if deff.stem == "16O-1H__MoLLIST":
         quantum_labels = ["e/f", "v", "F1/F2", "Es"]
 
-    if ntransf > 1:
-        dnufile = maxnu / ntransf
-        numinf = dnufile * np.array(range(ntransf + 1))
-        numtag = []
-        for i in range(len(numinf) - 1):
-            imin = "{:05}".format(int(numinf[i]))
-            imax = "{:05}".format(int(numinf[i + 1]))
-            numtag.append(imin + "-" + imax)
+    if deff.stem == "1H-2H-16O__VTT":
+        numinf = wavenumber_range_HDO_VTT()
     else:
-        numinf = None
-        numtag = ""
+        numinf = compute_wavenumber_ranges(ntransf, maxnu)
+
+    numtag = wavenumber_tag(numinf)
+
     output = {
         "n_Texp": n_Texp,
         "alpha_ref": alpha_ref,
@@ -158,6 +164,75 @@ def read_def(deff):
         "unc": unc,  # bool uncertainty of line center availability
     }
     return output
+
+
+def wavenumber_range_HDO_VTT():
+    """wave number range for HDO VTT as an exception
+
+    Returns:
+        float: numinf
+    """
+    numinf = np.array(
+        [
+            0.0,
+            250.0,
+            500.0,
+            750.0,
+            1000.0,
+            1500.0,
+            2000.0,
+            2250.0,
+            2750.0,
+            3500.0,
+            4500.0,
+            5500.0,
+            7000.0,
+            9000.0,
+            14000.0,
+            20000.0,
+            26000.0,
+        ]
+    )
+    return numinf
+
+
+def compute_wavenumber_ranges(ntransf, maxnu):
+    """wavenumber range for general case
+
+    Args:
+        ntransf: number of the trans files
+        maxnu: maximum wavenumber
+
+    Returns:
+        float: numinf
+    """
+    if ntransf > 1:
+        dnufile = maxnu / ntransf
+        numinf = dnufile * np.array(range(ntransf + 1))
+        wavenumber_tag(numinf)
+    else:
+        numinf = None
+    return numinf
+
+
+def wavenumber_tag(numinf):
+    """convert numinf to numtag (used in the name of trans file)
+
+
+    Args:
+        numinf (_type_): wavenumber values for the range
+
+    Returns:
+        float: numtag wavenumber tag (such as 00000-00500)
+    """
+    if numinf is None:
+        return ""
+    numtag = []
+    for i in range(len(numinf) - 1):
+        imin = "{:05}".format(int(numinf[i]))
+        imax = "{:05}".format(int(numinf[i + 1]))
+        numtag.append(imin + "-" + imax)
+    return numtag
 
 
 def read_pf(pff):
@@ -381,7 +456,7 @@ def read_states(
     return dat
 
 
-def pickup_gE(states, trans, dic_def, skip_optional_data=True):
+def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
     """extract g_upper (gup), E_lower (elower), and J_lower and J_upper from states
     DataFrame and insert them into the transition DataFrame.
 
@@ -414,7 +489,7 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True):
     ### Step 1. Essential quantum number for spectra
     # ----------------------------------------------
 
-    def map_add(col, new_col, trans_key, states_key="i"):
+    def map_add(trans, col, new_col, trans_key, states_key="i"):
         """Lookup `key` in states and add it in trans, using the level ``i``
         for upper and lower state
 
@@ -422,11 +497,17 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True):
         --------
         ::
 
-            map_add("E", "E_lower", "i_lower")
+            trans = map_add(trans, "E", "E_lower", "i_lower")
         """
-        try:  # pytable
-            trans[new_col] = trans[trans_key].map(dict(states[col]))
-        except:  # a priori, vaex version  (TODO : replace with dict() approach in vaex too)
+        if engine == "pytables":
+            # Rename the columns in the states DataFrame
+            states_map = states.copy()
+            states_map.rename(
+                columns={col: new_col, states_key: trans_key}, inplace=True
+            )
+            states_map = states_map[[new_col, trans_key]]  # drop useless columns
+            trans = trans.join(states_map.set_index(trans_key), on=trans_key)
+        elif engine == "vaex":
             col = vaexsafe_colname(col)
             new_col = vaexsafe_colname(new_col)
 
@@ -439,11 +520,12 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True):
             )
             trans.drop(states_key, inplace=True)
             trans.rename(col, new_col)
+        return trans
 
-    map_add("g", "gup", "i_upper")
-    map_add("J", "jlower", "i_lower")
-    map_add("J", "jupper", "i_upper")
-    map_add("E", "elower", "i_lower")
+    trans = map_add(trans, "g", "gup", "i_upper")
+    trans = map_add(trans, "J", "jlower", "i_lower")
+    trans = map_add(trans, "J", "jupper", "i_upper")
+    trans = map_add(trans, "E", "elower", "i_lower")
 
     def has_nan(column):
         try:  # Vaex
@@ -452,15 +534,15 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True):
             return column.hasnans
 
     if not "nu_lines" in trans or has_nan(trans["nu_lines"]):
-        map_add("E", "eupper", "i_upper")
+        trans = map_add(trans, "E", "eupper", "i_upper")
         trans["nu_lines"] = trans["eupper"] - trans["elower"]
 
     ### Step 2. Extra quantum numbers (e/f parity, vib and rot numbers)
     # -----------------------------------------------------------------
     if not skip_optional_data:
         for q in dic_def["quantum_labels"]:
-            map_add(q, f"{q}_l", "i_lower")
-            map_add(q, f"{q}_u", "i_upper")
+            trans = map_add(trans, q, f"{q}_l", "i_lower")
+            trans = map_add(trans, q, f"{q}_u", "i_upper")
 
     return trans
 
@@ -542,40 +624,37 @@ def read_broad(broadf):
     return bdat
 
 
-def check_bdat(bdat):
-    """checking codes in .broad
+def check_code_level(bdat):
+    """checking code level in .broad
     Args:
-       bdat: exomol .broad data given by exomolapi.read_broad
+        bdat: exomol .broad data given by exomolapi.read_broad
+
     Returns:
-       code level: None, a0, a1, other codes unavailable currently,
+        code level: None, a0, a1, other codes unavailable currently,
+        if a0 and a1 are available, a1 is returned.
+        the other cases returns None
     """
-
-    def checkcode(code):
-        cmask = bdat["code"] == code
-        if len(bdat["code"][cmask]) > 0:
-            return True
-        else:
-            return False
-
-    codelv = None
-    for code in ["a0", "a1"]:
-        if checkcode(code):
-            codelv = code
-
-    return codelv
+    input_array = np.unique(np.array(bdat["code"]))
+    if np.array_equal(input_array, np.array(["a0"])):
+        return "a0"
+    elif np.array_equal(input_array, np.array(["a1"])):
+        return "a1"
+    elif np.array_equal(np.sort(input_array), np.array(["a0", "a1"])):
+        return "a1"
+    return None
 
 
 def make_j2b(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
     """compute j2b (code a0, map from jlower to alpha_ref)
 
     Args:
-       bdat: exomol .broad data given by exomolapi.read_broad
-       alpha_ref_default: default value
-       n_Texp_default: default value
-       jlower_max: maximum number of jlower
+        bdat: exomol .broad data given by exomolapi.read_broad
+        alpha_ref_default: default value
+        n_Texp_default: default value
+        jlower_max: maximum number of jlower
     Returns:
-       j2alpha_ref[jlower] provides alpha_ref for jlower
-       j2n_Texp[jlower]  provides nT_exp for jlower
+        j2alpha_ref[jlower] provides alpha_ref for jlower
+        j2n_Texp[jlower]  provides nT_exp for jlower
     """
     # a0
     cmask = bdat["code"] == "a0"
@@ -618,15 +697,15 @@ def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None):
     """compute jj2b (code a1, map from (jlower, jupper) to alpha_ref and n_Texp)
 
     Args:
-       bdat: exomol .broad data given by exomolapi.read_broad
-       j2alpha_ref_def: default value from a0
-       j2n_Texp_def: default value from a0
-       jupper_max: maximum number of jupper
+        bdat: exomol .broad data given by exomolapi.read_broad
+        j2alpha_ref_def: default value from a0
+        j2n_Texp_def: default value from a0
+        jupper_max: maximum number of jupper
     Returns:
-       jj2alpha_ref[jlower,jupper] provides alpha_ref for (jlower, jupper)
-       jj2n_Texp[jlower,jupper]  provides nT_exp for (jlower, jupper)
+        jj2alpha_ref[jlower,jupper] provides alpha_ref for (jlower, jupper)
+        jj2n_Texp[jlower,jupper]  provides nT_exp for (jlower, jupper)
     Note:
-       The pair of (jlower, jupper) for which broadening parameters are not given, jj2XXX contains None.
+        The pair of (jlower, jupper) for which broadening parameters are not given, jj2XXX contains None.
     """
     # a1
     cmask = bdat["code"] == "a1"
@@ -763,6 +842,7 @@ def get_exomol_database_list(molecule, isotope_full_name=None):
         "a", {"class": "list-group-item link-list-group-item recommended"}
     )
     databases_recommended = [r.get_attribute_list("title")[0] for r in rows]
+    databases_recommended = list(np.unique(databases_recommended))
 
     # All others
     rows = soup.find_all("a", {"class": "list-group-item link-list-group-item"})
@@ -788,7 +868,7 @@ def get_exomol_database_list(molecule, isotope_full_name=None):
     else:
         recommended_database = False
 
-    return databases, recommended_database
+    return list(np.unique(databases)), recommended_database
 
 
 # def fetch_exomol_molecule_list():
@@ -1008,7 +1088,7 @@ class MdbExomol(DatabaseManager):
 
             engine = config["MEMORY_MAPPING_ENGINE"]
             if engine == "auto":
-                engine = "vaex"
+                engine = get_auto_MEMORY_MAPPING_ENGINE()
 
         self.path = pathlib.Path(path)
         if local_databases is not None:
@@ -1046,7 +1126,7 @@ class MdbExomol(DatabaseManager):
         # Add molecule name
         tag = molec.split("__")
         self.isotope_fullname = tag[0]
-        self.molecule = e2s(tag[0])
+        self.molecule = exact_molname_exomol_to_simple_molname(tag[0])
         # self.isotope = 1  # Placeholder. TODO : implement parsing of other isotopes.
 
         # load def
@@ -1195,11 +1275,12 @@ class MdbExomol(DatabaseManager):
                 # Complete transition data with lookup on upper & lower state :
                 # In particular, compute gup and elower
 
-                pickup_gE(
+                trans = pickup_gE(
                     states,
                     trans,
                     dic_def,
                     skip_optional_data=skip_optional_data,
+                    engine=engine,
                 )
 
                 ##Recompute Line strength:
@@ -1244,58 +1325,64 @@ class MdbExomol(DatabaseManager):
         if n_Texp_def:
             self.n_Texp_def = n_Texp_def
 
-        if self.broadf:
-            try:
-                bdat = read_broad(self.broad_file)
-                if self.verbose > 1:
-                    print(
-                        "The file `{}` is used.".format(
-                            os.path.basename(self.broad_file)
-                        )
-                    )
-            except FileNotFoundError:
+        if self.broadf and os.path.exists(self.broad_file):
+            bdat = read_broad(self.broad_file)
+            if self.verbose > 1:
+                print(
+                    "The file `{}` is used.".format(os.path.basename(self.broad_file))
+                )
+
+            codelv = check_code_level(bdat)
+            if self.verbose:
+                print("Broadening code level:", codelv)
+
+            if codelv == "a0":
+                j2alpha_ref, j2n_Texp = make_j2b(
+                    bdat,
+                    alpha_ref_default=self.alpha_ref_def,
+                    n_Texp_default=self.n_Texp_def,
+                    jlower_max=df["jlower"].max(),
+                )
+                self.alpha_ref = j2alpha_ref[df["jlower"].values]
+                self.n_Texp = j2n_Texp[df["jlower"].values]
+            elif codelv == "a1":
+                j2alpha_ref, j2n_Texp = make_j2b(
+                    bdat,
+                    alpha_ref_default=self.alpha_ref_def,
+                    n_Texp_default=self.n_Texp_def,
+                    jlower_max=df["jlower"].max(),
+                )
+                jj2alpha_ref, jj2n_Texp = make_jj2b(
+                    bdat,
+                    j2alpha_ref_def=j2alpha_ref,
+                    j2n_Texp_def=j2n_Texp,
+                    jupper_max=df["jupper"].max(),
+                )
+                self.alpha_ref = np.array(
+                    jj2alpha_ref[df["jlower"].values, df["jupper"].values]
+                )
+                self.n_Texp = np.array(
+                    jj2n_Texp[df["jlower"].values, df["jupper"].values]
+                )
+            else:
+                warnings.warn(
+                    f"The broadening file contains this broadening code: {codelv}."
+                    + " This broadening code is NOT implemented yet.\n"
+                    + "Using default parameters instead."
+                )
+                self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
+                self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
+        else:
+            if not os.path.exists(self.broad_file):
                 warnings.warn(
                     "Could not load `{}`. The default broadening parameters are used.\n".format(
                         os.path.basename(self.broad_file)
                     )
                 )
-
-                self.alpha_ref = np.array(
-                    self.alpha_ref_def * np.ones_like(df["jlower"])
-                )
-                self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df["jlower"]))
-            else:
-                codelv = check_bdat(bdat)
-                if self.verbose:
-                    print("Broadening code level:", codelv)
-                if codelv == "a0":
-                    j2alpha_ref, j2n_Texp = make_j2b(
-                        bdat,
-                        alpha_ref_default=self.alpha_ref_def,
-                        n_Texp_default=self.n_Texp_def,
-                        jlower_max=df["jlower"].max(),
-                    )
-                    self.alpha_ref = j2alpha_ref[df["jlower"].values]
-                    self.n_Texp = j2n_Texp[df["jlower"].values]
-                elif codelv == "a1":
-                    j2alpha_ref, j2n_Texp = make_j2b(
-                        bdat,
-                        alpha_ref_default=self.alpha_ref_def,
-                        n_Texp_default=self.n_Texp_def,
-                        jlower_max=np.max(df["jlower"]),
-                    )
-                    jj2alpha_ref, jj2n_Texp = make_jj2b(
-                        bdat,
-                        j2alpha_ref_def=j2alpha_ref,
-                        j2n_Texp_def=j2n_Texp,
-                        jupper_max=np.max(df["jupper"]),
-                    )
-                    self.alpha_ref = np.array(jj2alpha_ref[df["jlower"], df["jupper"]])
-                    self.n_Texp = np.array(jj2n_Texp[df["jlower"], df["jupper"]])
-        else:
             print("The default broadening parameters are used.")
-            self.alpha_ref = np.array(self.alpha_ref_def * np.ones_like(df["jlower"]))
-            self.n_Texp = np.array(self.n_Texp_def * np.ones_like(df["jlower"]))
+
+            self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
+            self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
 
         if add_columns:
             # Add values
@@ -1348,7 +1435,7 @@ class MdbExomol(DatabaseManager):
         import urllib.request
 
         tag = molec.split("__")
-        molname_simple = e2s(tag[0])
+        molname_simple = exact_molname_exomol_to_simple_molname(tag[0])
         # TODO: add progress bar
         for ext in extension:
             if ext == ".trans.bz2" and numtag is not None:
@@ -1385,19 +1472,21 @@ class MdbExomol(DatabaseManager):
 
 
 if __name__ == "__main__":
-    print(e2s("12C-1H4"))
-    print(e2s("23Na-16O-1H"))
-    print(e2s("HeH_p"))
-    print(e2s("trans-31P2-1H-2H"))  # not working
+    print(exact_molname_exomol_to_simple_molname("12C-1H4"))
+    print(exact_molname_exomol_to_simple_molname("23Na-16O-1H"))
+    print(exact_molname_exomol_to_simple_molname("HeH_p"))
+    print(exact_molname_exomol_to_simple_molname("trans-31P2-1H-2H"))  # not working
 
     # TODO : move to unitary tests of exomol_utils
-    assert e2s("12C-1H4") == "CH4"
-    assert e2s("23Na-16O-1H") == "NaOH"
-    assert e2s("HeH_p") == "HeH_p"
-    assert e2s("trans-31P2-1H-2H") == "trans-31P2-1H-2H"  # convert not working
+    assert exact_molname_exomol_to_simple_molname("12C-1H4") == "CH4"
+    assert exact_molname_exomol_to_simple_molname("23Na-16O-1H") == "NaOH"
+    assert exact_molname_exomol_to_simple_molname("HeH_p") == "HeH_p"
+    assert (
+        exact_molname_exomol_to_simple_molname("trans-31P2-1H-2H") == "trans-31P2-1H-2H"
+    )  # convert not working
 
-    assert e2s("12C-16O2") == "CO2"
-    assert e2s("13C-16O2") == "CO2"
+    assert exact_molname_exomol_to_simple_molname("12C-16O2") == "CO2"
+    assert exact_molname_exomol_to_simple_molname("13C-16O2") == "CO2"
 
     # mdb=MdbExomol("/home/kawahara/exojax/data/CO/12C-16O/Li2015/")
     # mdb=MdbExomol("/home/kawahara/exojax/data/CH4/12C-1H4/YT34to10/",nurange=[6050.0,6150.0])
@@ -1420,12 +1509,12 @@ if __name__ == "__main__":
     # # sf.fetch_databank('hitran')  # placeholder. Load lines (will be replaced), load partition function.
     # # s_hit = sf.eq_spectrum(500, name='HITRAN')
 
-    #%% Test by direct calculation
+    # %% Test by direct calculation
     # import pytest
 
     # print("Testing factory:", pytest.main(["../test/io/test_exomol.py"]))
 
-    #%% RADIS-like Example
+    # %% RADIS-like Example
     # uses fetch_exomol() internally
 
     from radis import calc_spectrum
@@ -1439,7 +1528,6 @@ if __name__ == "__main__":
         Tgas=1000,  # K
         mole_fraction=0.1,
         path_length=1,  # cm
-        # broadening_method="fft",  # @ dev: Doesn't work with 'voigt'
         databank=(
             "exomol",
             "YT10to10",
@@ -1568,7 +1656,7 @@ if __name__ == "__main__":
     )
     # ... ready to run Jax calculations
 
-    #%%
+    # %%
 
     # """ExoMol lines can be downloaded and accessed separately using
     # :py:func:`~radis.io.exomol.fetch_exomol`

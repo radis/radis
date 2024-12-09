@@ -60,6 +60,7 @@ isotope_name_dict = {
     (9, 1): "(32S)(16O)2",
     (9, 2): "(34S)(16O)2",
     (10, 1): "(14N)(16O)2",
+    (10, 2): "(15N)(16O)2",
     (11, 1): "(14N)H3",
     (11, 2): "(15N)H3",
     (12, 1): "H(14N)(16O)3",
@@ -249,7 +250,7 @@ class MolParams(object):
         if file is None:
             file = getFile("molparam.txt")
 
-        df = pd.read_csv(file, comment="#", delim_whitespace=True)
+        df = pd.read_csv(file, comment="#", sep="\s+")
         df = df.set_index(["id", "iso"])
 
         df["isotope_name_exomol"] = _add_exomol_name(df)
@@ -355,8 +356,8 @@ class MolParams(object):
 
         else:
             out = self.df.loc[(M, isotope), key]
-            assert len(out) == 1
-            return out.iloc[0]
+            assert isinstance(out, (float, str))
+            return out
 
 
 def _add_exomol_name(df):

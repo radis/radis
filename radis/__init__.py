@@ -66,6 +66,13 @@ Parameters
 
         python -O *.py
 
+"ALLOW_OVERWRITE": False
+
+    bool: Whether to allow RADIS to overwrite values of a databank entry that is already registered.
+    If True, allow RADIS to download files and make changes to the local database folder even when the databank is already registered, and then re-register it with the values for the new files, overwriting the previously registered values. This could occur when e.g. running `fetch_databank` with the `cache` argument set to "regen" or the registered "paths" not including the path to the databank itself or some of the registered files missing from the disk, resulting in files being re-downloaded and the "download_date" (and possibly "paths") value being updated.
+    If False, no changes are made to the local database folder when a databank is already registered, and an exception is raised in cases where re-registering would have been required, so e.g. in the example above, this setting would prevent the "download_date" from being updated and hence an exception would be raised instead.
+    False by default, so RADIS only ever inserts new databank entries and doesn't modify existing ones, hence a databank entry is only ever modified by the user and responsibility is on them to ensure it is adequate for the code to run as RADIS wouldn't automatically take steps to rectify inadequate entries.
+
 "AUTO_UPDATE_SPEC": False
 
     bool: experimental feature
@@ -98,6 +105,13 @@ Parameters
 	--------
 	:py:func:`~radis.api.hdf5.hdf2df`
 
+"MISSING_BROAD_COEF" : False
+
+    str: Accepted values: False (default) and "air". If "air", missing boradening coefficients are replaced by those of air.
+
+    See Also
+    --------
+    :py:func:`~radis.lbl.broadening._calc_broadening_HWHM`
 
 "OLDEST_COMPATIBLE_VERSION": "0.9.1"
     str: forces to regenerate cache files that were created in a previous version
@@ -107,10 +121,10 @@ Parameters
     :py:func:`~radis.api.cache_files.load_h5_cache_file`
 
 
-"USE_CYTHON": True
-    bool: try to use Cython functions when possible
+# "USE_CYTHON": True
+#     bool: try to use Cython functions when possible
 
-    See more in :py:func:`radis.misc.arrays.add_at`
+#     See more in :py:func:`radis.misc.arrays.add_at`
 
 
 "GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD": 3

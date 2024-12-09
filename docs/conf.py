@@ -22,6 +22,7 @@ import os
 import sys
 
 import sphinx_gallery.gen_rst
+from sphinx_gallery.sorting import FileNameSortKey
 
 # %% Custom Example header
 # https://github.com/sphinx-gallery/sphinx-gallery/issues/978
@@ -37,13 +38,8 @@ sphinx_gallery.gen_rst.EXAMPLE_HEADER = """
     .. note::
         :class: sphx-glr-download-link-note
 
-        Run this example online :
-
-        - Click :ref:`here <sphx_glr_download_{1}>`
-          to download the full example code{2}
-
-        - Then start `Radis-Lab <https://radis.github.io/radis-lab/>`__,
-          upload the Jupyter notebook, and run it from there.
+        You can download :ref:`below <sphx_glr_download_{1}>`
+        the full example code{2} and run it with 🔬 `Radis-Lab <https://radis.github.io/radis-lab/>`__,
 
 .. rst-class:: sphx-glr-example-title
 
@@ -110,6 +106,8 @@ sphinx_gallery_conf = {
     "doc_module": ("radis"),
     "inspect_global_variables": True,
     "show_signature": False,
+    # Sort example files within gallery subsections with their filename
+    "within_subsection_order": FileNameSortKey,
 }
 
 
@@ -300,6 +298,7 @@ html_theme_options = {
         "RADIS Website": "https://radis.github.io/",
         "Video Tutorials": "https://www.youtube.com/channel/UCO-7NXkubTAiGGxXmvtQlsA",
     },
+    "collapse_navigation": True,
 }
 
 # Add any paths that contain custom themes here, relative to this directory.

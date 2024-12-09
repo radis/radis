@@ -36,7 +36,8 @@ import re
 import sys
 from os.path import abspath, dirname, exists, join
 
-from setuptools import Extension, find_packages, setup
+# from setuptools import Extension, find_packages, setup #for cython - unused after v0.15
+from setuptools import setup
 
 # Build description from README (PyPi compatible)
 # -----------------------------------------------
@@ -132,7 +133,7 @@ class BuildFailed(Exception):
     pass
 
 
-from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
+# from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError #for cython - unused after v0.15
 
 
 def show_message(*lines):
@@ -143,84 +144,86 @@ def show_message(*lines):
     print("=" * 74, file=sys.stderr)
 
 
-def get_ext_modules(with_binaries):
-    """
-    Parameters
-    ----------
-    with_binaries: bool
-        if False, do not try to build Cython extensions
-    """
-    # Based on code from https://github.com/pallets/markupsafe/blob/main/setup.py
+# Deprecated - See Main install routine for radis<0.15
+# def get_ext_modules(with_binaries):
+#     """
+#     Parameters
+#     ----------
+#     with_binaries: bool
+#         if False, do not try to build Cython extensions
+#     """
+#     # Based on code from https://github.com/pallets/markupsafe/blob/main/setup.py
 
-    print(sys.version)
-    ext_modules = []
-    cmdclass = {}
+#     print(sys.version)
+#     ext_modules = []
+#     cmdclass = {}
 
-    if not with_binaries:
-        # skip building extensions
-        return {"cmdclass": cmdclass, "ext_modules": ext_modules}
+#     if not with_binaries:
+#         # skip building extensions
+#         return {"cmdclass": cmdclass, "ext_modules": ext_modules}
 
-    # TO-DO: set language level
+#     # TO-DO: set language level
 
-    try:
-        import cython
-    except (ModuleNotFoundError) as err:
-        raise BuildFailed(
-            "Cython not found : Skipping all Cython extensions...!"
-        ) from err
+#     #### Cython is now completely removed - August 2024 - Radis 0.15 ###
+#     # try:
+#     #     import cython
+#     # except (ModuleNotFoundError) as err:
+#     #     raise BuildFailed(
+#     #         "Cython not found : Skipping all Cython extensions...!"
+#     #     ) from err
 
-    print("Cython " + cython.__version__)
+#     # print("Cython " + cython.__version__)
 
-    from Cython.Distutils import build_ext
+#     # from Cython.Distutils import build_ext
 
-    class build_ext_subclass(build_ext):
-        def build_extensions(self):
-            c = self.compiler.compiler_type
-            copt = {
-                "msvc": ["/openmp", "/Ox", "/fp:fast", "/favor:INTEL64"],
-                "mingw32": ["-fopenmp", "-O3", "-ffast-math", "-march=native"],
-            }
+#     # class build_ext_subclass(build_ext):
+#     #     def build_extensions(self):
+#     #         c = self.compiler.compiler_type
+#     #         copt = {
+#     #             "msvc": ["/openmp", "/Ox", "/fp:fast", "/favor:INTEL64"],
+#     #             "mingw32": ["-fopenmp", "-O3", "-ffast-math", "-march=native"],
+#     #         }
 
-            lopt = {"mingw32": ["-fopenmp"]}
+#     #         lopt = {"mingw32": ["-fopenmp"]}
 
-            print("Compiling with " + c + "...")
-            try:
-                for e in self.extensions:
-                    e.extra_compile_args = copt[c]
-            except (KeyError):
-                pass
-            try:
-                for e in self.extensions:
-                    e.extra_link_args = lopt[c]
-            except (KeyError):
-                pass
-            try:
-                build_ext.build_extensions(self)
-            except (CCompilerError, DistutilsExecError, DistutilsPlatformError) as err:
-                raise BuildFailed() from err
+#     #         print("Compiling with " + c + "...")
+#     #         try:
+#     #             for e in self.extensions:
+#     #                 e.extra_compile_args = copt[c]
+#     #         except (KeyError):
+#     #             pass
+#     #         try:
+#     #             for e in self.extensions:
+#     #                 e.extra_link_args = lopt[c]
+#     #         except (KeyError):
+#     #             pass
+#     #         try:
+#     #             build_ext.build_extensions(self)
+#     #         except (CCompilerError, DistutilsExecError, DistutilsPlatformError) as err:
+#     #             raise BuildFailed() from err
 
-    from numpy import get_include
+#     # from numpy import get_include
 
-    ext_modules.append(
-        Extension(
-            "radis_cython_extensions",
-            sources=[
-                "./radis/cython/radis_cython_extensions.pyx",
-            ],
-            include_dirs=[get_include()],
-            language="c++",
-            extra_link_args=[],
-            define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
-        )
-    )
+#     # ext_modules.append(
+#     #     Extension(
+#     #         "radis_cython_extensions",
+#     #         sources=[
+#     #             "./radis/cython/radis_cython_extensions.pyx",
+#     #         ],
+#     #         include_dirs=[get_include()],
+#     #         language="c++",
+#     #         extra_link_args=[],
+#     #         define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+#     #     )
+#     # )
 
-    cmdclass["build_ext"] = build_ext_subclass
+#     # cmdclass["build_ext"] = build_ext_subclass
 
-    return {"cmdclass": cmdclass, "ext_modules": ext_modules}
+#     return {"cmdclass": cmdclass, "ext_modules": ext_modules}
 
 
 #%% Main install routine
-def run_setup(with_binary):
+def run_setup():
     setup(
         name="radis",
         version=__version__,
@@ -244,10 +247,46 @@ def run_setup(with_binary):
             "exomol",
             "line-by-line",
         ],
-        packages=find_packages(),
-        install_requires=[],
-        # do not add requirements here, add them directly in the requirements.txt file
-        # note EP : generate a requirement.txt by Mamba & pip freeze for Pypi deployment ? see https://stackoverflow.com/a/75239980/5622825
+        # packages=find_packages(), #this misses the gpu folder, see https://github.com/radis/radis/issues/681
+        install_requires=[
+            # Although it seems like a duplicate of requirements.txt, it is NECESSARY to tell pip what are the dependencies, issue #680.
+            # (requirements.txt is only for the user, not for pip, see https://packaging.python.org/discussions/install-requires-vs-requirements/ and https://stackoverflow.com/questions/14399534/reference-requirements-txt-for-the-install-requires-kwarg-in-setuptools-setup-py)
+            ### From environment.yml
+            "astropy>=4.3.1",  # Unit aware calculations
+            "astroquery>=0.4.6",  # to fetch HITRAN databases
+            "beautifulsoup4>=4.10.0",  # parse ExoMol website
+            "cantera>=2.5.1",  # for chemical equilibrium computations
+            "configparser",
+            "habanero>=1.2.0",  # CrossRef API to retrieve data from doi
+            "h5py>=3.2.1",  # load HDF5
+            "joblib",  # for parallel loading of SpecDatabase
+            "lmfit",  # for new fitting modules
+            "matplotlib",
+            "numpy",
+            "numba",  # just-in-time compiler
+            "pandas",
+            "plotly>=2.5.1",  # for line survey HTML output
+            "psutil",  # to get user RAM
+            "tables",  # for pandas to HDF5 export - WARNING named "pytables" in conda
+            "scipy>=1.4.0",
+            "seaborn",  # other matplotlib themes
+            "termcolor",  # terminal colors
+            "specutils",
+            ### From requirements.txt
+            "lxml",  # parser used for ExoMol website
+            "hjson",  # Json with comments (for default_radis.json)
+            "publib",  # Plotting styles for Matplotlib. Version, update to 0.4.0 needed for matplotlib==3.8. However, only 0.3.2 is compatible with python==3.8 (see #647)
+            "hitran-api",  # HAPI, used to access TIPS partition functions
+            "peakutils",
+            "ruamel.yaml",
+            "json-tricks>=3.15.0",  # to deal with non jsonable formats
+            "mpldatacursor",
+            'nvidia-cufft-cu11; sys_platform != "darwin" ',
+            "periodictable",
+            'vaex-core ; python_version < "3.11"',
+            'vaex-hdf5 ; python_version < "3.11"',
+            'vaex-viz ; python_version < "3.11"',
+        ],
         extras_require={
             "dev": [
                 "numpydoc",  # for Jedi (autocompletion) to recognize
@@ -274,12 +313,14 @@ def run_setup(with_binary):
             "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
             "Topic :: Scientific/Engineering",
             "Programming Language :: Python",
-            "Programming Language :: Python :: 3.7",
-            "Programming Language :: Python :: 3.8",
+            "Programming Language :: Python :: 3.8",  # end of life, Novembre 2024, https://devguide.python.org/versions/
             "Programming Language :: Python :: 3.9",
+            "Programming Language :: Python :: 3.10",
+            "Programming Language :: Python :: 3.11",
+            "Programming Language :: Python :: 3.12",
             "Operating System :: OS Independent",
         ],
-        **get_ext_modules(with_binary),
+        # **get_ext_modules(with_binary), #see Main install routine for radis<0.15
         include_package_data=True,  # add non .py data files in MANIFEST.in
         # package_data={'radis': ['radis/phys/units.txt']},
         zip_safe=False,  # impossible as long as we have external files read with __file__ syntax
@@ -288,21 +329,23 @@ def run_setup(with_binary):
 
 
 # %% Run Main install routine
-try:
-    run_setup(with_binary=True)
-except BuildFailed:
-    import traceback
+run_setup()
+# %% Run Main install routine for radis<0.15 - Cython is not implemented anymore
+# try:
+#     run_setup(with_binary=False)
+# except BuildFailed:
+#     import traceback
 
-    traceback.print_exc()
-    show_message(
-        "WARNING: RADIS C-extension could not be compiled, speedups",
-        " are not enabled.",
-        "Failure information, if any, is above.",
-        "Retrying the build without the C extension now.",
-    )
-    run_setup(with_binary=False)
-    show_message(
-        "WARNING: RADIS C-extension could not be compiled, speedups"
-        " are not enabled.",
-        "Plain-Python build succeeded.",
-    )
+#     traceback.print_exc()
+#     show_message(
+#         "WARNING: RADIS C-extension could not be compiled, speedups",
+#         " are not enabled.",
+#         "Failure information, if any, is above.",
+#         "Retrying the build without the C extension now.",
+#     )
+#     run_setup(with_binary=False)
+#     show_message(
+#         "WARNING: RADIS C-extension could not be compiled, speedups"
+#         " are not enabled.",
+#         "Plain-Python build succeeded.",
+#     )

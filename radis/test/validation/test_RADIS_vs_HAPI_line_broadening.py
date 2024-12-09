@@ -24,7 +24,7 @@ from radis.phys.convert import nm2cm
 from radis.test.utils import setup_test_line_databases
 
 
-@pytest.mark.fast
+# @pytest.mark.fast not fast due to connection
 @pytest.mark.needs_connection  # ignored by pytest with argument -m "not needs_http_connection"
 def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
     r"""

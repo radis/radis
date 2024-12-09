@@ -8,19 +8,32 @@ from io import BytesIO
 from os.path import abspath, dirname, exists, expanduser, join, split, splitext
 from zipfile import ZipFile
 
-from radis.misc.config import addDatabankEntries, getDatabankEntries, getDatabankList
-from radis.misc.printer import printr
-from radis.misc.warning import DatabaseAlreadyExists, DeprecatedFileWarning
-
 try:
+    from ..misc.config import addDatabankEntries, getDatabankEntries, getDatabankList
+    from ..misc.printer import printr
+    from ..misc.utils import NotInstalled, not_installed_vaex_args
+    from ..misc.warning import DatabaseAlreadyExists, DeprecatedFileWarning
     from .cache_files import check_not_deprecated
     from .hdf5 import DataFileManager
 except ImportError:
     if __name__ == "__main__":  # running from this file, as a script
         from radis.api.cache_files import check_not_deprecated
         from radis.api.hdf5 import DataFileManager
+        from radis.misc.config import (
+            addDatabankEntries,
+            getDatabankEntries,
+            getDatabankList,
+        )
+        from radis.misc.printer import printr
+        from radis.misc.utils import NotInstalled, not_installed_vaex_args
+        from radis.misc.warning import DatabaseAlreadyExists, DeprecatedFileWarning
     else:
         raise
+
+try:
+    import vaex
+except ImportError:
+    vaex = NotInstalled(*not_installed_vaex_args)
 
 from datetime import date
 
@@ -28,11 +41,31 @@ import numpy as np
 import pandas as pd
 from dateutil.parser import parse as parse_date
 from joblib import Parallel, delayed
-from numpy import DataSource
+
+try:
+    from numpy.lib.npyio import DataSource
+except ImportError:  # numpy <2.0.0?
+    from numpy import DataSource
 
 LAST_VALID_DATE = (
     "01 Jan 2010"  # set to a later date to force re-download of all databases
 )
+
+
+def get_auto_MEMORY_MAPPING_ENGINE():
+    """see https://github.com/radis/radis/issues/653
+
+    Use Vaex by default if it exists (only Python <= 3.11 as of June 2024) ,
+    else use PyTables"""
+    try:
+        import vaex
+
+        vaex
+    except ImportError:
+        return "pytables"
+    else:
+        return "vaex"
+
 
 # Add a zip opener to the datasource _file_openers
 def open_zip(zipname, mode="r", encoding=None, newline=None):
@@ -103,7 +136,7 @@ class DatabaseManager(object):
 
             engine = config["MEMORY_MAPPING_ENGINE"]  # 'pytables', 'vaex', 'feather'
             if engine == "auto":
-                engine = "vaex"
+                engine = get_auto_MEMORY_MAPPING_ENGINE()
 
         self.name = name
         self.molecule = molecule
@@ -144,8 +177,13 @@ class DatabaseManager(object):
             4  #: type: int. If there are less files, don't use parallel mode.
         )
 
-    def get_filenames(self):
+    def get_filenames(self, return_reg_urls=False):
         """Get names of all files in the database (even if not downloaded yet)
+
+        Parameters
+        ----------
+        return_reg_urls: (boolean)
+            When the database is registered, whether to return the registered urls (``True``) or ``None`` (``False``)
 
         See Also
         --------
@@ -169,7 +207,10 @@ class DatabaseManager(object):
                 ) from err
             else:
                 local_files = entries["path"]
-            urlnames = None
+            if return_reg_urls:
+                urlnames = entries["download_url"]
+            else:
+                urlnames = None
 
             # Check that local files are the one we expect :
             for f in local_files:
@@ -181,7 +222,6 @@ class DatabaseManager(object):
                     )
 
         elif self.is_downloadable():
-            # local_files = self.fetch_filenames()
             urlnames = self.fetch_urlnames()
             local_fnames = [
                 (
@@ -211,11 +251,11 @@ class DatabaseManager(object):
                 for local_fname in local_fnames
             ]
 
+            if engine == "vaex":
+                local_files = [fname.replace(".h5", ".hdf5") for fname in local_files]
+
         else:
             raise NotImplementedError
-
-        if engine == "vaex":
-            local_files = [fname.replace(".h5", ".hdf5") for fname in local_files]
 
         local_files = [expanduser(f) for f in local_files]
 
@@ -318,8 +358,10 @@ class DatabaseManager(object):
             engine = self.engine
         return DataFileManager(engine=engine)
 
-    def download_and_parse(self, urlnames, local_files):
-        all_local_files, _ = self.get_filenames()
+    def download_and_parse(self, urlnames, local_files, N_files_total=None):
+        if N_files_total is None:
+            all_local_files, _ = self.get_filenames()
+            N_files_total = len(all_local_files)
 
         verbose = self.verbose
         molecule = self.molecule
@@ -329,11 +371,11 @@ class DatabaseManager(object):
 
         t0 = time()
         pbar_Ntot_estimate_factor = None
-        if len(urlnames) != len(all_local_files):
+        if len(urlnames) != N_files_total:
             # we're only downloading a part of the database
             # expected number of lines is approximately Ntot * N_files/N_files_total
             # (this is just to give the user an expected download & parse time)
-            pbar_Ntot_estimate_factor = len(urlnames) / len(all_local_files)
+            pbar_Ntot_estimate_factor = len(urlnames) / N_files_total
         else:
             pbar_Ntot_estimate_factor = None
         Nlines_total = 0
@@ -391,6 +433,32 @@ class DatabaseManager(object):
                 urlnames, local_files, range(1, len(local_files) + 1)
             ):
                 download_and_parse_one_file(urlname, local_file, Ndownload)
+
+    def parse_to_local_file(
+        self,
+        opener,
+        urlname,
+        local_file,
+        pbar_active=True,
+        pbar_t0=0,
+        pbar_Ntot_estimate_factor=None,
+        pbar_Nlines_already=0,
+        pbar_last=True,
+    ) -> list:
+        """This function should be overwritten by the DatabaseManager subclass
+
+        Uncompress ``urlname`` into ``local_file``.
+        Also add metadata
+
+        Returns
+        -------
+        list: list of urlnames
+
+        See for instance :py:class:`radis.api.hitempapi.HITEMPDatabaseManager"""
+
+        raise NotImplementedError(
+            "This function should be overwritten by the DatabaseManager subclass"
+        )
 
     def clean_download_files(self):
         """Fully unzipped (and working, as it was reloaded): clean files
@@ -490,8 +558,6 @@ class DatabaseManager(object):
                 nrows = store.get_storer("df").nrows
 
         elif engine == "vaex":
-            import vaex
-
             # by default vaex does not load everything
             df = vaex.open(local_file)
             nrows = len(df)
@@ -512,8 +578,6 @@ class DatabaseManager(object):
         from radis.misc.basics import is_number
 
         if is_number(self.alpha_ref):
-            import vaex
-
             if isinstance(df, vaex.dataframe.DataFrameLocal):
                 # see https://github.com/vaexio/vaex/pull/1570
                 df[key] = vaex.vconstant(float(value), length=df.length_unfiltered())
@@ -527,9 +591,9 @@ class DatabaseManager(object):
 
         mdb.rename_columns(df, {"nu_lines":"wav"})
         """
-        import vaex
-
-        if isinstance(df, vaex.dataframe.DataFrameLocal):
+        if not isinstance(vaex, NotInstalled) and isinstance(
+            df, vaex.dataframe.DataFrameLocal
+        ):
             for k, v in rename_dict.items():
                 df.rename(k, v)
         elif isinstance(df, pd.DataFrame):

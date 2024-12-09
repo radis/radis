@@ -386,7 +386,10 @@ def define_Evib_as_min_of_polyad(levels, keys):
         return grp
 
     levels = levels.groupby(keys).apply(fill_EvibErot)
-    levels.reset_index()
+    # Note: The `allow_duplicates` parameter controls whether duplicate column
+    #   labels are allowed. The `True` behaviour used to be the default in
+    #   Pandas <2.0.
+    levels.reset_index(allow_duplicates=True)
 
     return levels
 

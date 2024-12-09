@@ -313,7 +313,7 @@ def evenly_distributed(w, atolerance=1e-5):
     :py:func:`~radis.misc.arrays.evenly_distributed_fast`
     """
     mean_step = np.diff(w).mean()
-    return (np.abs((np.diff(w) - mean_step)) > atolerance).sum() == 0
+    return np.allclose(np.diff(w), mean_step, atol=atolerance)
 
 
 # TODO : rewrite so it works in one loop only ; Jit it
@@ -506,20 +506,20 @@ def numpy_add_at(LDM, k, l, m, I):
     return np.add.at(LDM, (k, l, m), I)
 
 
-## Cython functions:
-try:
-    import radis_cython_extensions as rcx
-except (ModuleNotFoundError, ValueError):
-    add_at = numpy_add_at
-    """Wrapper to :py:func`radis.misc.arrays.numpy_add_at` or to the Radis
-    Cython version  (here, the numpy version was loaded)"""
-    #  or use radis.misc.utils.NotInstalled() ?
-# EP: Also got (after switching back to former Cython version) :
-#     File "radis\cython\radis_cython_extensions.pyx", line 1, in init radis_cython_extensions
-#     ValueError: numpy.ndarray size changed, may indicate binary incompatibility. Expected 88 from C header, got 80 from PyObject
-# we may consider escaping this.
-else:
-    add_at = rcx.add_at
+# ## Cython functions:
+# try:
+#     import radis_cython_extensions as rcx
+# except (ModuleNotFoundError, ValueError):
+#     add_at = numpy_add_at
+#     """Wrapper to :py:func`radis.misc.arrays.numpy_add_at` or to the Radis
+#     Cython version  (here, the numpy version was loaded)"""
+#     #  or use radis.misc.utils.NotInstalled() ?
+# # EP: Also got (after switching back to former Cython version) :
+# #     File "radis\cython\radis_cython_extensions.pyx", line 1, in init radis_cython_extensions
+# #     ValueError: numpy.ndarray size changed, may indicate binary incompatibility. Expected 88 from C header, got 80 from PyObject
+# # we may consider escaping this.
+# else:
+#     add_at = rcx.add_at
 
 
 # @numba.njit

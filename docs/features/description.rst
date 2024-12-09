@@ -1,14 +1,14 @@
-Description
+Introduction
 ===========
 
-Written as a general purpose radiative solver, the code is built around the [HITRAN-2020]_,
-[HITEMP-2010]_ and [CDSD-4000]_ databases for molecules in their electronic ground state. Energy
+Written as a general purpose radiative solver, the code is built around the spectroscopy databases
+(`HITRAN/HITEMP <https://hitran.org>`_, `GEISA <https://geisa.aeris-data.fr/>`_, `ExoMol <https://www.exomol.com/>`_, etc.)
+for molecules in their electronic ground state. Energy
 levels are read from tabulated databases or calculated from Dunham developments.
 Boltzmann, Treanor, and state specific vibrational distributions can be generated.
-Thus far, |CO2|, CO are featured for non-equilibrium calculations
-(:py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`),
-and all species present in the HITRAN database are featured for equilibrium
-calculations (:py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`).
+Spectra at thermal equilibrium can be computed for all species (:py:data:`~radis.db.MOLECULES_LIST_EQUILIBRIUM`).
+and non-equilibrium spectra can be computed for |CO2| and CO
+(:py:data:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`).
 
 To fit experimental spectra, RADIS includes a
 :py:class:`~radis.tools.line_survey.LineSurvey` tool, an

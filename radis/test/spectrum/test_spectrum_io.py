@@ -83,3 +83,4 @@ def test_reading_from_Matlab(verbose=True, plot=False, *args, **kwargs):
 
 if __name__ == "__main__":
     test_specutils_io(plot=True)
+    test_reading_from_Matlab()
