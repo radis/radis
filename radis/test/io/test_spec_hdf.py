@@ -1,8 +1,10 @@
-import pytest
-from unittest.mock import patch, MagicMock
-from radis.io.spec_hdf import spec2hdf, hdf2spec
-from radis import Spectrum
+from unittest.mock import MagicMock, patch
+
 import pandas as pd
+import pytest
+
+from radis import Spectrum
+from radis.io.spec_hdf import hdf2spec, spec2hdf
 
 
 @pytest.fixture
@@ -37,11 +39,22 @@ def test_spec2hdf(MockDataFileManager, mock_spectrum, test_file):
 
     # Verify that DataFileManager methods were called with correct arguments
     mock_mgr.write.assert_any_call(
-        test_file, mock_spectrum.to_pandas.return_value, key="arrays", append=False, data_columns=["wavespace"]
+        test_file,
+        mock_spectrum.to_pandas.return_value,
+        key="arrays",
+        append=False,
+        data_columns=["wavespace"],
     )
     mock_mgr.add_metadata.assert_any_call(test_file, mock_spectrum.units, key="arrays")
-    mock_mgr.add_metadata.assert_any_call(test_file, mock_spectrum.conditions, key="conditions", create_empty_dataset=True)
-    mock_mgr.add_metadata.assert_any_call(test_file, mock_spectrum.populations, key="populations", create_empty_dataset=True)
+    mock_mgr.add_metadata.assert_any_call(
+        test_file, mock_spectrum.conditions, key="conditions", create_empty_dataset=True
+    )
+    mock_mgr.add_metadata.assert_any_call(
+        test_file,
+        mock_spectrum.populations,
+        key="populations",
+        create_empty_dataset=True,
+    )
 
 
 @patch("radis.io.spec_hdf.DataFileManager")
@@ -51,12 +64,17 @@ def test_hdf2spec(MockDataFileManager, test_file):
     mock_mgr = MockDataFileManager.return_value
 
     # Mock return values for load and read_metadata methods
-    mock_mgr.load.return_value = pd.DataFrame({"wavespace": [1000, 2000, 3000], "intensity": [1.0, 2.0, 3.0]})
+    mock_mgr.load.return_value = pd.DataFrame(
+        {"wavespace": [1000, 2000, 3000], "intensity": [1.0, 2.0, 3.0]}
+    )
     mock_mgr.read_metadata.side_effect = [
-        {"wavespace": "cm-1", "intensity": "a.u."},          # units
-        {"temperature": 300, "waveunit": "cm-1"},            # conditions with waveunit defined
-        {"population_data": [0.1, 0.2, 0.3]},                # populations
-        {"reference": ["Sample Reference"], "10.1016/j.jqsrt.2018.09.027": ["post-processing"]},  # references as lists
+        {"wavespace": "cm-1", "intensity": "a.u."},  # units
+        {"temperature": 300, "waveunit": "cm-1"},  # conditions with waveunit defined
+        {"population_data": [0.1, 0.2, 0.3]},  # populations
+        {
+            "reference": ["Sample Reference"],
+            "10.1016/j.jqsrt.2018.09.027": ["post-processing"],
+        },  # references as lists
     ]
 
     # Call hdf2spec
@@ -73,7 +91,7 @@ def test_hdf2spec(MockDataFileManager, test_file):
     assert spectrum.populations == {"population_data": [0.1, 0.2, 0.3]}
     assert spectrum.references == {
         "reference": "Sample Reference",
-        "10.1016/j.jqsrt.2018.09.027": "post-processing"
+        "10.1016/j.jqsrt.2018.09.027": "post-processing",
     }
 
     # Verify that DataFileManager methods were called correctly

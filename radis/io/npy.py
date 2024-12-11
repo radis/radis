@@ -38,7 +38,7 @@ def npy2df(keywords, verbose=True):
     """
     # Comment before: this has to change. Now database should be a dictionary (cf Example) # TODO
     # Since 'keywords' is a dictionary, we cannot access it by index (e.g., database[0]).
-    # Instead, we get the first value (file path) using list(keywords.values())[0]. 
+    # Instead, we get the first value (file path) using list(keywords.values())[0].
     dir_path = list(keywords.values())[0]
 
     # Remove the filename portion to get the directory path.
@@ -47,7 +47,7 @@ def npy2df(keywords, verbose=True):
     # Example: If dir_path = "path/to/data/v0.npy"
     # dir_path.rindex("/") returns 11 (the position of the last "/")
     # dir_path[: dir_path.rindex("/") + 1] gives "path/to/data/"
-    
+
     try:
         if verbose >= 2:
             print("Loading iso...", end=" ")

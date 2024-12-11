@@ -1,7 +1,9 @@
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch  # , MagicMock
+
 import numpy as np
 import pandas as pd
+import pytest
+
 from radis.io.npy import npy2df
 
 
