@@ -101,7 +101,7 @@ atomic_broadening_coeff = {"H": 1.0, "He": 0.41336, "H2": 0.85}
 
 
 def doppler_broadening_HWHM(wav, molar_mass, Tgas):
-    """Computes Gaussian (Doppler) broadening HWHM over all lines with [1]_,
+    r"""Computes Gaussian (Doppler) broadening HWHM over all lines with [1]_,
     [2]_
 
     .. math::
@@ -398,7 +398,7 @@ def gamma_vald3(
     is_neutral,
     enh_damp=1.0,
 ):  # , vdW_meth="V"):
-    """(This function is derived from exojax.spec.atomll.gamma_vald3)
+    r"""(This function is derived from exojax.spec.atomll.gamma_vald3)
 
     HWHM of Lorentzian (cm-1) caluculated as gamma/(4*pi*c) [cm-1] for lines
     with the van der Waals gamma in the line list (such as VALD or Kurucz), otherwise
@@ -436,7 +436,7 @@ def gamma_vald3(
 
     Notes
     -----
-    ``gamVdW`` given in the Kurucz linelists is, as [Kurucz-\&-Avrett-1981]_ state, ":math:`\\frac{\\Gamma_{W}}{N_{H}}` at 10000 K for pure hydrogen"
+    ``gamVdW`` given in the Kurucz linelists is, as [Kurucz-\\&-Avrett-1981]_ state, ":math:`\\frac{\\Gamma_{W}}{N_{H}}` at 10000 K for pure hydrogen"
 
     ``gamSta`` given in the Kurucz linelists can be recovered with a small error for a large proportion of lines from the values of :math:`C_4` given in the associated .gam files using an equation of the form:
 
@@ -452,7 +452,7 @@ def gamma_vald3(
     .. [Unsöld-1955] `"Physik der Sternatmospharen, MIT besonderer Berucksichtigung der Sonne." <https://ui.adsabs.harvard.edu/abs/1955psmb.book.....U>`_
     .. [Aller-1963] `" Astrophysics The atmospheres of the sun and stars" <https://ui.adsabs.harvard.edu/abs/1963aass.book.....A>`_
     .. [Gray-2005] `"The Observation and Analysis of Stellar Photospheres" <https://ui.adsabs.harvard.edu/abs/2005oasp.book.....G>`_
-    .. [Kurucz-\&-Avrett-1981] `"Solar Spectrum Synthesis. I. A Sample Atlas from 224 to 300 nm" <https://ui.adsabs.harvard.edu/abs/1981SAOSR.391.....K>`_
+    .. [Kurucz-\\&-Avrett-1981] `"Solar Spectrum Synthesis. I. A Sample Atlas from 224 to 300 nm" <https://ui.adsabs.harvard.edu/abs/1981SAOSR.391.....K>`_
     .. [Barklem-et-al-2000] `"A list of data for the broadening of metallic lines by neutral hydrogen collisions" <https://ui.adsabs.harvard.edu/abs/2000A%2526AS..142..467B>`_
     .. [Rivière-et-al-2002] `"Systematic semi-classical calculations of Stark broadening parameters of NI, OI, NII, OII multiplets for modelling the radiative transfer in atmospheric air mixture plasmas" <https://ui.adsabs.harvard.edu/abs/2002JQSRT..73...91R>`_
 

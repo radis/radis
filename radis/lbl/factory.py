@@ -317,7 +317,7 @@ class SpectrumFactory(BandFactory):
 
         See :ref:`the provided example <example_custom_lorentzian_broadening>`
     potential_lowering: float (cm-1/Zeff**2)
-        Use dedicated partition function tables (where available) in Kurucz database that depend on temperature and potential lowering. Otherwise, default to [Barklem-\&-Collet-2016]_ Table 8. Can be changed on the fly by setting `sf.input.potential_lowering`. Allowed values are typically: -500, -1000, -2000, -4000, -8000, -16000, -32000.
+        Use dedicated partition function tables (where available) in Kurucz database that depend on temperature and potential lowering. Otherwise, default to [Barklem-\\&-Collet-2016]_ Table 8. Can be changed on the fly by setting `sf.input.potential_lowering`. Allowed values are typically: -500, -1000, -2000, -4000, -8000, -16000, -32000.
         See :ref:`the provided example <example_potential_lowering_pfs>` for more details
 
     Examples
@@ -381,7 +381,7 @@ class SpectrumFactory(BandFactory):
     References
     ----------
 
-    .. [Barklem-\&-Collet-2016] `"Partition functions and equilibrium constants for diatomic molecules and atoms of astrophysical interest" <https://ui.adsabs.harvard.edu/abs/2016A%2526A...588A..96B>`_
+    .. [Barklem-\\&-Collet-2016] `"Partition functions and equilibrium constants for diatomic molecules and atoms of astrophysical interest" <https://ui.adsabs.harvard.edu/abs/2016A%2526A...588A..96B>`_
 
     See Also
     --------

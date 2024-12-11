@@ -58,10 +58,10 @@ def pick_ionE(ielem, charge):
 
     def f_droppare(x):
         return (
-            x.str.replace("\(", "", regex=True)
-            .str.replace("\)", "", regex=True)
-            .str.replace("\[", "", regex=True)
-            .str.replace("\]", "", regex=True)
+            x.str.replace(r"\(", "", regex=True)
+            .str.replace(r"\)", "", regex=True)
+            .str.replace(r"\[", "", regex=True)
+            .str.replace(r"\]", "", regex=True)
             .str.replace("                                      ", "0", regex=True)
         )
 
