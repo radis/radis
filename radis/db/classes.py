@@ -228,9 +228,7 @@ def is_atom(species):
     """
     determine whether the input species is atomic
     """
-    return species.split("_")[0] in [
-        i.symbol for i in list(periodictable.elements)[1:]
-    ]  # first element is neutron, symbol 'n'
+    return species.split("_")[0] in map(str, periodictable.elements)
 
 
 def is_neutral(species):

@@ -1539,7 +1539,7 @@ class HITRANDatabaseManager(DatabaseManager):
 
                     if (
                         set(list_pattern).issubset(set(str(err)))
-                        and len(re.findall("\d", str(err))) >= 2
+                        and len(re.findall(r"\d", str(err))) >= 2
                         and get_molecule_identifier(molecule)
                         == int(
                             re.findall(r"[\w']+", str(err))[0]

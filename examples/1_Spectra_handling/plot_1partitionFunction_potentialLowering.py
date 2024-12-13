@@ -6,12 +6,12 @@
 Atomic spectrum #1: Partition functions and potential lowering
 ========================
 
-Two sources can be used for the partition function: Kurucz and [Barklem-\&-Collet-2016]_.
+Two sources can be used for the partition function: Kurucz and [Barklem-&-Collet-2016].
 These sources have different temperature ranges.
 The Kurucz partition function includes a dependence on potential lowering. The
 latter can be set with the `potential_lowering` parameter of :py:class:`~radis.lbl.factory.SpectrumFactory`.
 
-By default, the [Barklem-\&-Collet-2016]_ partition functions are employed. The
+By default, the [Barklem-&-Collet-2016] partition functions are employed. The
 Kurucz partition functions can be used instead by setting the potential lowering
 to a non-zero value. The `sf.input.potential_lowering` attribute of the
 :py:class:`~radis.lbl.factory.SpectrumFactory` instance ``sf`` can be changed
@@ -42,8 +42,8 @@ s, sf = calc_spectrum(
 s.plot("radiance_noslit", wunit="cm-1")
 
 #%%
-# Setting potential_lowering = None automatically sets [Barklem-\&-Collet-2016]_ as the reference partition function.
-# In this case, 50 000 K is beyond the maximal temperature in [Barklem-\&-Collet-2016]_.
+# Setting potential_lowering = None automatically sets [Barklem-&-Collet-2016] as the reference partition function.
+# In this case, 50 000 K is beyond the maximal temperature in [Barklem-&-Collet-2016].
 #
 sf.input.potential_lowering = None
 
@@ -52,7 +52,7 @@ try:
 except ValueError:
     print(traceback.format_exc())
 #%%
-# In this case, 99 K is within the temperature range of [Barklem-\&-Collet-2016]_:
+# In this case, 99 K is within the temperature range of [Barklem-&-Collet-2016]:
 #
 T_low = 99  # K
 s2 = sf.eq_spectrum(Tgas=T_low)
@@ -79,7 +79,7 @@ except KeyError:
     print(traceback.format_exc())
 
 #%%
-# Specifying the potential_lowering where the tables aren't available has no effect, and the partition functions from [Barklem-\&-Collet-2016]_ get used instead with just the temperature:
+# Specifying the potential_lowering where the tables aren't available has no effect, and the partition functions from [Barklem-&-Collet-2016] get used instead with just the temperature:
 #
 
 s = calc_spectrum(
@@ -94,7 +94,7 @@ s = calc_spectrum(
 s.plot("radiance_noslit", wunit="cm-1")
 
 #%%
-# Occasionally, the opposite is true, and the partition functions from [Barklem-\&-Collet-2016]_ don't include a species:
+# Occasionally, the opposite is true, and the partition functions from [Barklem-&-Collet-2016] don't include a species:
 #
 
 try:
@@ -121,4 +121,4 @@ s.plot("radiance_noslit", wunit="cm-1")
 #%%
 # References
 # ----------
-# .. [Barklem-\&-Collet-2016] `"Partition functions and equilibrium constants for diatomic molecules and atoms of astrophysical interest" <https://ui.adsabs.harvard.edu/abs/2016A%2526A...588A..96B>`_
+# .. [Barklem-&-Collet-2016] `"Partition functions and equilibrium constants for diatomic molecules and atoms of astrophysical interest" <https://ui.adsabs.harvard.edu/abs/2016A%2526A...588A..96B>`_

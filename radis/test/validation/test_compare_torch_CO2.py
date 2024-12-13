@@ -98,7 +98,7 @@ def test_compare_torch_CO2(
             "test_compare_torch_CO2_data/test_compare_torch_CO2_conditions_JTHT2003.dat"
         ),
         comment="#",
-        sep="\s+",
+        sep=r"\s+",
     )
     slab_width = 0.05  # cm,  WARNING. Hardcoded (look up the table)
 
@@ -253,7 +253,7 @@ def test_compare_torch_CO2(
             "test_compare_torch_CO2_data/test_compare_torch_CO2_spectrum_JTHT2003.dat"
         ),
         skiprows=5,
-        sep="\s+",
+        sep=r"\s+",
     )
     exp.w /= 10  # Angstrom to nm
     exp = exp[(exp.w > wlmin) & (exp.w < wlmax)]

@@ -101,7 +101,7 @@ atomic_broadening_coeff = {"H": 1.0, "He": 0.41336, "H2": 0.85}
 
 
 def doppler_broadening_HWHM(wav, molar_mass, Tgas):
-    """Computes Gaussian (Doppler) broadening HWHM over all lines with [1]_,
+    r"""Computes Gaussian (Doppler) broadening HWHM over all lines with [1]_,
     [2]_
 
     .. math::
@@ -398,7 +398,7 @@ def gamma_vald3(
     is_neutral,
     enh_damp=1.0,
 ):  # , vdW_meth="V"):
-    """(This function is derived from exojax.spec.atomll.gamma_vald3)
+    r"""(This function is derived from exojax.spec.atomll.gamma_vald3)
 
     HWHM of Lorentzian (cm-1) caluculated as gamma/(4*pi*c) [cm-1] for lines
     with the van der Waals gamma in the line list (such as VALD or Kurucz), otherwise
