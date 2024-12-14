@@ -9,4 +9,4 @@ if [[ $conda_env == *"radis-env"* ]]; then
 fi
 
 conda env create --file environment.yml
-conda init 
+conda init

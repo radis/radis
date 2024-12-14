@@ -306,7 +306,10 @@ def _fix_astroquery_file_format(filename):
     """
 
     if not isfile(filename):
-        raise "{} does not exist "
+        # change raise "{} does not exist " to
+        # raise FileNotFoundError(f"{filename} does not exist")
+        # which is better practice
+        raise FileNotFoundError(f"{filename} does not exist")
     with open(filename) as filehandle:
         lines = filehandle.readlines()
         non_empty_lines = [

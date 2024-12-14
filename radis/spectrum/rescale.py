@@ -1136,7 +1136,7 @@ def rescale_absorbance(
     extra,
     true_path_length,
 ):
-    """
+    r"""
 
     Parameters
     ----------

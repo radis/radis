@@ -850,15 +850,22 @@ def get_exomol_database_list(molecule, isotope_full_name=None):
 
     if len(databases_recommended) > 1:
         # Known exceptions :
-        if (
+        exception1 = (
             isotope_full_name == "28Si-16O"
             and databases_recommended[0] == "xsec-SiOUVenIR"
-        ):
+        )
+        exception2 = (
+            isotope_full_name == "12C-16O" and databases_recommended[0] == "DTU"
+        )
+        if exception1 or exception2:
             # this is a cross-section dataset, shouldn't be used. Reverse and use the other one:
             databases_recommended = databases_recommended[::-1]
+            print(
+                f"Multiple recommended databases found for {molecule} in ExoMol : {databases_recommended}. {isotope_full_name} is an exception, using {databases_recommended}"
+            )
         else:
             print(
-                f"Multiple recommended databases found for {molecule} in ExoMol : {databases_recommended}. This is unexpected. Using the first"
+                f"Multiple recommended databases found for {molecule} in ExoMol : {databases_recommended}. This is unexpected. Using the first: {databases_recommended}"
             )
 
     databases = databases + databases_recommended
