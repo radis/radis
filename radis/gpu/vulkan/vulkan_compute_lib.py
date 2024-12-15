@@ -149,9 +149,9 @@ class GPUApplication(object):
             self._pipelines.append(pipeline)
 
             if timestamp == True:
-                self.addTimestamp(shader_fname.split(".")[0]).writeCommand()
+                self.cmdAddTimestamp(shader_fname.split(".")[0]).writeCommand()
             elif isinstance(timestamp, str):
-                self.addTimestamp(timestamp).writeCommand()
+                self.cmdAddTimestamp(timestamp).writeCommand()
             else:
                 pass
 
@@ -169,7 +169,7 @@ class GPUApplication(object):
             },
         )
 
-    def fft(self, buf, buf_FT, timestamp=False):
+    def cmdFFT(self, buf, buf_FT, timestamp=False):
         def func(self, buf, buf_FT, timestamp=False):
             key = (id(buf), id(buf_FT))
 
@@ -182,15 +182,15 @@ class GPUApplication(object):
             fft_app.fft(self._commandBuffer, buf._buffer, buf_FT._buffer)
 
             if timestamp == True:
-                self.addTimestamp("fft").writeCommand()
+                self.cmdAddTimestamp("fft").writeCommand()
             elif isinstance(timestamp, str):
-                self.addTimestamp(timestamp).writeCommand()
+                self.cmdAddTimestamp(timestamp).writeCommand()
             else:
                 pass
 
         return GPUCommand(func, [self, buf, buf_FT], {"timestamp": timestamp})
 
-    def ifft(self, buf_FT, buf, timestamp=False):
+    def cmdIFFT(self, buf_FT, buf, timestamp=False):
         def func(self, buf_FT, buf, timestamp=False):
             key = (id(buf), id(buf_FT))
 
@@ -203,9 +203,9 @@ class GPUApplication(object):
             fft_app.ifft(self._commandBuffer, buf_FT._buffer, buf._buffer)
 
             if timestamp == True:
-                self.addTimestamp("fft").writeCommand()
+                self.cmdAddTimestamp("fft").writeCommand()
             elif isinstance(timestamp, str):
-                self.addTimestamp(timestamp).writeCommand()
+                self.cmdAddTimestamp(timestamp).writeCommand()
             else:
                 pass
 
@@ -387,13 +387,14 @@ class GPUApplication(object):
             sType=vk.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             flags=0,  # VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT #VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
         )
+        print('>>> Begin writing command buffer')
         vk.vkBeginCommandBuffer(self._commandBuffer, beginInfo)
-
         for obj in self.command_list:
+            print([*obj.kwargs.keys()])
             obj.writeCommand()
-
+        
         vk.vkEndCommandBuffer(self._commandBuffer)
-
+        print('>>> Done writing buffer')
     # find memory type with desired properties.
     def findMemoryType(self, memoryTypeBits, properties):
         memoryProperties = vk.vkGetPhysicalDeviceMemoryProperties(self._physicalDevice)
@@ -620,15 +621,15 @@ class GPUApplication(object):
         vk.vkWaitForFences(self._device, 1, [self._fence], vk.VK_TRUE, 100000000000)
         vk.vkResetFences(self._device, 1, [self._fence])
 
-    def clearBuffer(self, buffer_obj, timestamp=False):
+    def cmdClearBuffer(self, buffer_obj, timestamp=False):
         def func(self, buffer_obj, timestamp=False):
             vk.vkCmdFillBuffer(
                 self._commandBuffer, buffer_obj._buffer, 0, buffer_obj.nbytes, 0
             )
             if timestamp == True:
-                self.addTimestamp("clearBuffer").writeCommand()
+                self.cmdAddTimestamp("clearBuffer").writeCommand()
             elif isinstance(timestamp, str):
-                self.addTimestamp(timestamp).writeCommand()
+                self.cmdAddTimestamp(timestamp).writeCommand()
             else:
                 pass
 
@@ -648,7 +649,7 @@ class GPUApplication(object):
             0,
         )
 
-    def addTimestamp(self, label=None):
+    def cmdAddTimestamp(self, label=None):
         def func(self, label=None):
             query = len(self._timestampLabels)
             if label is None:

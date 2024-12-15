@@ -1180,7 +1180,7 @@ class SpectrumFactory(BandFactory):
         for iso in iso_list:
             if iso in iso_set:
                 params = molpar.df.loc[(mol_id, iso)]
-                molarmass_arr[iso] = params.molar_mass.iloc[0]
+                molarmass_arr[iso] = params.molar_mass
                 parsum = self.get_partition_function_interpolator(molecule, iso, state)
                 Q_interp_list.append(parsum.at)
                 T_max_parsum = np.min(
