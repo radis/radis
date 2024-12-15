@@ -22,7 +22,7 @@ def getVulkanPtr(obj):
 
 
 # Type to pass array size, omit and batch as int arrays
-ctype_int_size_p = np.ctypeslib.ndpointer(dtype=int, ndim=1, flags="C_CONTIGUOUS")
+ctype_int_size_p = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS")
 
 
 from radis.gpu.vulkan.pyvkfft_base import (
@@ -333,10 +333,10 @@ class VkFFTApp(VkFFTAppBase):
                 f"{len(self.shape)}>{vkfft_max_fft_dimensions()}"
             )
 
-        shape = np.ones(vkfft_max_fft_dimensions(), dtype=int)
+        shape = np.ones(vkfft_max_fft_dimensions(), dtype=np.int32)
         # shape[:len(self.shape)] = self.shape
 
-        skip = np.zeros(vkfft_max_fft_dimensions(), dtype=int)
+        skip = np.zeros(vkfft_max_fft_dimensions(), dtype=np.int32)
         # skip[:len(self.skip_axis)] = self.skip_axis
 
         shape[: len(self.shape)] = self.shape[::-1]
@@ -344,7 +344,7 @@ class VkFFTApp(VkFFTAppBase):
         FFTdim = len(self.shape)
         n_batch = 1
 
-        grouped_batch = np.empty(vkfft_max_fft_dimensions(), dtype=int)
+        grouped_batch = np.empty(vkfft_max_fft_dimensions(), dtype=np.int32)
         grouped_batch.fill(-1)
         grouped_batch[: len(self.groupedBatch)] = self.groupedBatch
 
@@ -376,7 +376,6 @@ class VkFFTApp(VkFFTAppBase):
 
         # ptr = ctypes.c_void_p(self.compute_app.getVulkanPtr('_physicalDevice'))
         # _vkfft_vulkan.get_dev_props(ctypes.byref(ptr), buf)
-
         return _vkfft_vulkan.make_config(
             shape,
             FFTdim,

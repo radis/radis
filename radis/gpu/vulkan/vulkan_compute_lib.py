@@ -387,14 +387,12 @@ class GPUApplication(object):
             sType=vk.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             flags=0,  # VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT #VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
         )
-        print('>>> Begin writing command buffer')
         vk.vkBeginCommandBuffer(self._commandBuffer, beginInfo)
         for obj in self.command_list:
-            print([*obj.kwargs.keys()])
             obj.writeCommand()
         
         vk.vkEndCommandBuffer(self._commandBuffer)
-        print('>>> Done writing buffer')
+
     # find memory type with desired properties.
     def findMemoryType(self, memoryTypeBits, properties):
         memoryProperties = vk.vkGetPhysicalDeviceMemoryProperties(self._physicalDevice)
