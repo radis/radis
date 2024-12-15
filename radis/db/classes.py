@@ -527,6 +527,7 @@ EXOMOL_MOLECULES = [
     "PN",
     "PO",
     "PS",
+    "ScO",  # added: 12/2024
     "SH",
     "SO",  # new
     "SO2",
