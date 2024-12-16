@@ -15,6 +15,7 @@ before_install:
   # version is the same.
   # For now use http instead of https according to this comment:
   # https://github.com/mamba-org/mamba/issues/1675#issuecomment-1127160021
+  - sudo apt-get -y install mesa-vulkan-drivers libvulkan1
   - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/1.5.8 | tar -xvj bin/micromamba
   - ./bin/micromamba shell init -s bash -p ~/micromamba
   - source ~/.bashrc
