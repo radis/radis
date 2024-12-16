@@ -29,8 +29,8 @@ sf = SpectrumFactory(
     wstep=0.002,
 )
 
-# sf.fetch_databank("hitemp")
-sf.fetch_databank("exomol")
+sf.fetch_databank("hitemp")
+##sf.fetch_databank("exomol")
 
 T_list = [1000.0, 1250.0, 1500.0, 1750.0, 2000.0]
 
@@ -40,6 +40,7 @@ s = sf.eq_spectrum_gpu(
     mole_fraction=0.8,
     path_length=0.2,  # cm
     # device_id='intel',
+    # device_id='nvidia',
     exit_gpu=False,
 )
 s.apply_slit(0.5, unit="cm-1")  # cm-1
