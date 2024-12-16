@@ -21,21 +21,19 @@ def getVulkanPtr(obj):
     return int(ffi.cast("unsigned long long", obj))
 
 
-
-
-
-
 # Type to pass array size, omit and batch as int arrays
-if os_name == "nt": #windows
+if os_name == "nt":  # windows
     libname = "vkfft_vulkan.dll"
-    vkfft_long_type = np.int32 
-else: #unix
+    vkfft_long_type = np.int32
+else:  # unix
     libname = "vkfft_vulkan.so"
     vkfft_long_type = np.int64
 
-#Regrettably, VkFFT was compiled using "long" types, which have different sizes on Windows/Linux; we patch this here.
-#TODO: recompile VkFFT replacing "long" with "int" (always 32 bit) or "long long' (always 64 bit).
-ctype_int_size_p = np.ctypeslib.ndpointer(dtype=vkfft_long_type, ndim=1, flags="C_CONTIGUOUS")
+# Regrettably, VkFFT was compiled using "long" types, which have different sizes on Windows/Linux; we patch this here.
+# TODO: recompile VkFFT replacing "long" with "int" (always 32 bit) or "long long' (always 64 bit).
+ctype_int_size_p = np.ctypeslib.ndpointer(
+    dtype=vkfft_long_type, ndim=1, flags="C_CONTIGUOUS"
+)
 
 
 from radis.gpu.vulkan.pyvkfft_base import (
@@ -54,8 +52,6 @@ from radis.gpu.vulkan.pyvkfft_base import (
 ##    return ctypes.cdll.LoadLibrary(
 ##        os.path.join(os.path.dirname(__file__) or os.path.curdir, basename + ext)
 ##    )
-
-
 
 
 vkfft_path = os.path.join(os.path.dirname(__file__), "bin", libname)

@@ -11,6 +11,7 @@ Created on Sun Aug 22 13:34:42 2020
 import warnings
 
 import pytest
+from numpy import allclose
 
 import radis
 from radis import SpectrumFactory, get_residual
@@ -117,7 +118,7 @@ def test_eq_spectrum_gpu(plot=False, *args, **kwargs):
     reason="nvidia package not installed. Probably because on MAC OS",
 )
 @pytest.mark.fast
-def test_multiple_gpu_calls():
+def test_multiple_gpu_calls(plot=False):
     from radis import SpectrumFactory
     from radis.gpu.gpu import gpu_exit
 
@@ -153,51 +154,35 @@ def test_multiple_gpu_calls():
     assert allclose(3 * A1, A2, rtol=1e-4)
 
 
-def test_multiple_gpu_calls(plot=False, Ntests=2):
-    from radis import SpectrumFactory, plot_diff
-
-    fixed_conditions = {
-        "path_length": 1,
-        "wmin": 2000,
-        "wmax": 2010,
-        "pressure": 0.1,
-        "wstep": 0.001,
-        "mole_fraction": 0.01,
-        "verbose": False,
-    }
-
-    sf = SpectrumFactory(**fixed_conditions, broadening_method="fft", molecule="CO")
-    sf.fetch_databank("hitran")
-
-    s_list = []
-
-    for i in range(Ntests):
-
-        s_gpu = sf.eq_spectrum_gpu(
-            Tgas=300,  #  + 200*(i&1),
-            backend="gpu-vulkan",
-            device_id=1,
-            diluent={"air": 0.99},  # K  # runs on GPU
-        )
-        print(s_gpu.get_power())  # , end=('\n' if i&1 else ' '))
-        s_list.append(s_gpu)
-    print("\n")
-
-    if plot:
-        plot_diff(s_list[0], s_list[-2], wunit="nm", method="diff")
-
-    assert (
-        abs(s_list[0].get_power() - s_list[-2].get_power()) / s_list[0].get_power()
-        < 1e-5
-    )
-    assert s_list[0].get_power() > 0
+##    s_list = []
+##
+##    for i in range(Ntests):
+##
+##        s_gpu = sf.eq_spectrum_gpu(
+##            Tgas=300,  #  + 200*(i&1),
+##            backend="gpu-vulkan",
+##            device_id=1,
+##            diluent={"air": 0.99},  # K  # runs on GPU
+##        )
+##        print(s_gpu.get_power())  # , end=('\n' if i&1 else ' '))
+##        s_list.append(s_gpu)
+##    print("\n")
+##
+##    if plot:
+##        plot_diff(s_list[0], s_list[-2], wunit="nm", method="diff")
+##
+##    assert (
+##        abs(s_list[0].get_power() - s_list[-2].get_power()) / s_list[0].get_power()
+##        < 1e-5
+##    )
+##    assert s_list[0].get_power() > 0
 
 
 # --------------------------
 if __name__ == "__main__":
 
-    # test_eq_spectrum_gpu(plot=True)
-    # test_multiple_gpu_calls(plot=True, N=10)
+    test_eq_spectrum_gpu(plot=True)
+    test_multiple_gpu_calls(plot=True)
     test_eq_spectrum_emulated_gpu(plot=True, verbose=2)
 
     printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))

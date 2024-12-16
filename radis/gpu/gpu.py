@@ -206,11 +206,11 @@ def gpu_init(
     app.command_list = [
         app.cmdAddTimestamp("start"),
         app.cmdClearBuffer(app.S_klm_d, timestamp=True),
-        app.fillLDM((init_h.N_lines // N_tpb + 1, 1, 1), threads, timestamp=True),
+        app.cmdFillLDM((init_h.N_lines // N_tpb + 1, 1, 1), threads, timestamp=True),
         app.cmdClearBuffer(app.S_klm_FT_d, timestamp=True),
         app.cmdFFT(app.S_klm_d, app.S_klm_FT_d, timestamp=True),
         # app.cmdClearBuffer(app.spectrum_FT_d, timestamp=True),
-        app.applyLineshapes(
+        app.cmdApplyLineshapes(
             (init_h.N_x_FT // N_tpb + 1, 1, 1), threads, timestamp=True
         ),
         app.cmdClearBuffer(app.spectrum_d, timestamp=True),

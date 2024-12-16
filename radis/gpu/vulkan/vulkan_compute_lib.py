@@ -390,7 +390,7 @@ class GPUApplication(object):
         vk.vkBeginCommandBuffer(self._commandBuffer, beginInfo)
         for obj in self.command_list:
             obj.writeCommand()
-        
+
         vk.vkEndCommandBuffer(self._commandBuffer)
 
     # find memory type with desired properties.
