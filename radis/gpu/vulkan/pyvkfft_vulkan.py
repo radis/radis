@@ -21,8 +21,21 @@ def getVulkanPtr(obj):
     return int(ffi.cast("unsigned long long", obj))
 
 
+
+
+
+
 # Type to pass array size, omit and batch as int arrays
-ctype_int_size_p = np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS")
+if os_name == "nt": #windows
+    libname = "vkfft_vulkan.dll"
+    vkfft_long_type = np.int32 
+else: #unix
+    libname = "vkfft_vulkan.so"
+    vkfft_long_type = np.int64
+
+#Regrettably, VkFFT was compiled using "long" types, which have different sizes on Windows/Linux; we patch this here.
+#TODO: recompile VkFFT replacing "long" with "int" (always 32 bit) or "long long' (always 64 bit).
+ctype_int_size_p = np.ctypeslib.ndpointer(dtype=vkfft_long_type, ndim=1, flags="C_CONTIGUOUS")
 
 
 from radis.gpu.vulkan.pyvkfft_base import (
@@ -43,7 +56,8 @@ from radis.gpu.vulkan.pyvkfft_base import (
 ##    )
 
 
-libname = "vkfft_vulkan.dll" if os_name == "nt" else "vkfft_vulkan.so"
+
+
 vkfft_path = os.path.join(os.path.dirname(__file__), "bin", libname)
 _vkfft_vulkan = ctypes.cdll.LoadLibrary(vkfft_path)
 
@@ -333,10 +347,10 @@ class VkFFTApp(VkFFTAppBase):
                 f"{len(self.shape)}>{vkfft_max_fft_dimensions()}"
             )
 
-        shape = np.ones(vkfft_max_fft_dimensions(), dtype=np.int32)
+        shape = np.ones(vkfft_max_fft_dimensions(), dtype=vkfft_long_type)
         # shape[:len(self.shape)] = self.shape
 
-        skip = np.zeros(vkfft_max_fft_dimensions(), dtype=np.int32)
+        skip = np.zeros(vkfft_max_fft_dimensions(), dtype=vkfft_long_type)
         # skip[:len(self.skip_axis)] = self.skip_axis
 
         shape[: len(self.shape)] = self.shape[::-1]
@@ -344,7 +358,7 @@ class VkFFTApp(VkFFTAppBase):
         FFTdim = len(self.shape)
         n_batch = 1
 
-        grouped_batch = np.empty(vkfft_max_fft_dimensions(), dtype=np.int32)
+        grouped_batch = np.empty(vkfft_max_fft_dimensions(), dtype=vkfft_long_type)
         grouped_batch.fill(-1)
         grouped_batch[: len(self.groupedBatch)] = self.groupedBatch
 
