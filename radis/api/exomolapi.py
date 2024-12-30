@@ -849,23 +849,30 @@ def get_exomol_database_list(molecule, isotope_full_name=None):
     databases = [r.get_attribute_list("title")[0] for r in rows]
 
     if len(databases_recommended) > 1:
-        # Known exceptions :
-        exception1 = (
+        old_recommended = databases_recommended.copy()
+
+        ### Known exception: SiO cross-section
+        # this is a cross-section dataset, shouldn't be used. Reverse and use the other one:
+        exception_SiO = (
             isotope_full_name == "28Si-16O"
             and databases_recommended[0] == "xsec-SiOUVenIR"
         )
-        exception2 = (
-            isotope_full_name == "12C-16O" and databases_recommended[0] == "DTU"
-        )
-        if exception1 or exception2:
-            # this is a cross-section dataset, shouldn't be used. Reverse and use the other one:
+        if exception_SiO:
             databases_recommended = databases_recommended[::-1]
+
+        ### Known exception: DTU cross-section
+        exception_DTU = "DTU" in databases_recommended
+        if exception_DTU:
+            databases_recommended.remove("DTU")
+
+        if exception_SiO or exception_DTU:
             print(
-                f"Multiple recommended databases found for {molecule} in ExoMol : {databases_recommended}. {isotope_full_name} is an exception, using {databases_recommended}"
+                f"Multiple recommended databases found for {molecule} in ExoMol : {old_recommended}. {isotope_full_name} is an exception, using {databases_recommended}"
             )
         else:
+            databases_recommended[::-1]
             print(
-                f"Multiple recommended databases found for {molecule} in ExoMol : {databases_recommended}. This is unexpected. Using the first: {databases_recommended}"
+                f"Multiple recommended databases found for {molecule} in ExoMol : {old_recommended}. This is unexpected. Trying with the first: {databases_recommended}"
             )
 
     databases = databases + databases_recommended
@@ -1310,7 +1317,13 @@ class MdbExomol(DatabaseManager):
                 mgr.write(mgr.cache_file(trans_file), trans)
 
     def set_broadening_coef(
-        self, df, alpha_ref_def=None, n_Texp_def=None, output=None, add_columns=True
+        self,
+        df,
+        alpha_ref_def=None,
+        n_Texp_def=None,
+        output=None,
+        add_columns=True,
+        file=None,
     ):
         """setting broadening parameters
 
@@ -1320,6 +1333,7 @@ class MdbExomol(DatabaseManager):
         alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
         n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
         add_columns: adds alpha_ref and n_Texp columns to df
+        file: to select which file, and which broadener will be used. Default is None which indicate that the default broadening file will be used: self.broad_file
 
         Returns
         -------
@@ -1333,7 +1347,11 @@ class MdbExomol(DatabaseManager):
             self.n_Texp_def = n_Texp_def
 
         if self.broadf and os.path.exists(self.broad_file):
-            bdat = read_broad(self.broad_file)
+            if file is None:
+                bdat = read_broad(self.broad_file)
+            else:
+                bdat = read_broad(file)
+
             if self.verbose > 1:
                 print(
                     "The file `{}` is used.".format(os.path.basename(self.broad_file))
