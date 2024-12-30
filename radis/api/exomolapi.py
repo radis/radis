@@ -1347,7 +1347,7 @@ class MdbExomol(DatabaseManager):
         n_Texp_def=None,
         output=None,
         add_columns=True,
-        file=None,
+        species=None,
     ):
         """setting broadening parameters
 
@@ -1357,7 +1357,7 @@ class MdbExomol(DatabaseManager):
         alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
         n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
         add_columns: adds alpha_ref and n_Texp columns to df
-        file: to select which file, and which broadener will be used. Default is None which indicate that the default broadening file will be used: self.broad_file
+        species: to select which broadener will be used. Default is "air".
 
         Returns
         -------
@@ -1370,8 +1370,7 @@ class MdbExomol(DatabaseManager):
         if n_Texp_def:
             self.n_Texp_def = n_Texp_def
 
-        if file is None:
-            file = self.broad_files["air"]
+        file = self.broad_files[species]
 
         if self.broadf and os.path.exists(file):
             bdat = read_broad(file)
@@ -1432,9 +1431,16 @@ class MdbExomol(DatabaseManager):
             self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
 
         if add_columns:
-            # Add values
-            self.add_column(df, "alpha_ref", self.alpha_ref)
-            self.add_column(df, "n_Texp", self.n_Texp)
+            if species == "air":
+                self.add_column(df, "alpha_ref", self.alpha_ref)
+                self.add_column(df, "n_Texp", self.n_Texp)
+            elif species == "self":
+                self.add_column(df, "selbrd", self.alpha_ref)
+                self.add_column(df, "selbrd_Tdpair", self.n_Texp)
+            else:
+                raise NotImplementedError(
+                    "Please post on https://github.com/radis/radis to ask for this feature."
+                )
 
     def QT_interp(self, T):
         """interpolated partition function
