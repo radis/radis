@@ -1110,8 +1110,6 @@ class MdbExomol(DatabaseManager):
 
         t0 = self.path.parents[0].stem
         molec = t0 + "__" + str(self.path.stem)
-        self.bkgdatm = bkgdatm  # TODO: for the moment, only air is possible in RADIS, although He and H are usually available in ExoMol
-        molecbroad = t0 + "__" + self.bkgdatm
 
         self.crit = crit
         self.margin = margin
@@ -1122,7 +1120,32 @@ class MdbExomol(DatabaseManager):
         self.states_file = self.path / pathlib.Path(molec + ".states.bz2")
         self.pf_file = self.path / pathlib.Path(molec + ".pf")
         self.def_file = self.path / pathlib.Path(molec + ".def")
-        self.broad_file = self.path / pathlib.Path(molecbroad + ".broad")
+
+        # self.bkgdatm = bkgdatm  # TODO: for the moment, only air is possible in RADIS, although He and H are usually available in ExoMol
+        # molecbroad = t0 + "__" + self.bkgdatm
+        # self.broad_file = self.path / pathlib.Path(molecbroad + ".broad")
+        self.broad_partners = [
+            "H2",
+            "He",
+            "air",
+            "self",
+            "Ar",
+            "CH4",
+            "CO",
+            "CO2",
+            "H2",
+            "H2O",
+            "N2",
+            "NH3",
+            "NO",
+            "O2",
+            "NH3",
+            "CS",
+        ]  # see ExoMol paper 2024
+        self.broad_files = {
+            partner: self.path / pathlib.Path(t0 + "__" + partner + ".broad")
+            for partner in self.broad_partners
+        }
 
         mgr = self.get_datafile_manager()
         if not self.def_file.exists():
@@ -1134,7 +1157,8 @@ class MdbExomol(DatabaseManager):
             and not mgr.cache_file(self.states_file).exists()
         ):
             self.download(molec, extension=[".states.bz2"])
-        if (not self.broad_file.exists()) and self.broadf:
+        # will attempt a download as long as "air" is not present in the database
+        if (not self.broad_files["air"].exists()) and self.broadf:
             self.download(molec, extension=[".broad"])
 
         # Add molecule name
@@ -1248,7 +1272,7 @@ class MdbExomol(DatabaseManager):
         if self.verbose:
             print("Molecule: ", molecule)
             print("Isotopologue: ", self.isotope_fullname)
-            print("Background atmosphere: ", self.bkgdatm)
+            # print("Background atmosphere: ", self.bkgdatm)
             print("ExoMol database: ", database)
             print("Local folder: ", self.path)
             print("Transition files: ")
@@ -1346,16 +1370,14 @@ class MdbExomol(DatabaseManager):
         if n_Texp_def:
             self.n_Texp_def = n_Texp_def
 
-        if self.broadf and os.path.exists(self.broad_file):
-            if file is None:
-                bdat = read_broad(self.broad_file)
-            else:
-                bdat = read_broad(file)
+        if file is None:
+            file = self.broad_files["air"]
+
+        if self.broadf and os.path.exists(file):
+            bdat = read_broad(file)
 
             if self.verbose > 1:
-                print(
-                    "The file `{}` is used.".format(os.path.basename(self.broad_file))
-                )
+                print("The file `{}` is used.".format(os.path.basename(file)))
 
             codelv = check_code_level(bdat)
             if self.verbose:
@@ -1398,10 +1420,10 @@ class MdbExomol(DatabaseManager):
                 self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
                 self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
         else:
-            if not os.path.exists(self.broad_file):
+            if not os.path.exists(file):
                 warnings.warn(
                     "Could not load `{}`. The default broadening parameters are used.\n".format(
-                        os.path.basename(self.broad_file)
+                        os.path.basename(file)
                     )
                 )
             print("The default broadening parameters are used.")
@@ -1467,17 +1489,15 @@ class MdbExomol(DatabaseManager):
                 ext = "__" + numtag + ext
 
             if ext == ".broad":
-                pfname_arr = [
-                    tag[0] + "__H2" + ext,
-                    tag[0] + "__He" + ext,
-                    tag[0] + "__air" + ext,
-                ]
+                partners_success = np.ones(len(self.broad_partners), dtype=bool)
+
+                pfname_arr = [tag[0] + "__" + s + ext for s in self.broad_partners]
                 url = EXOMOL_URL + molname_simple + "/" + tag[0] + "/"
             else:
                 pfname_arr = [molec + ext]
                 url = EXOMOL_URL + molname_simple + "/" + tag[0] + "/" + tag[1] + "/"
 
-            for pfname in pfname_arr:
+            for index, pfname in enumerate(pfname_arr):
                 pfpath = url + pfname
                 os.makedirs(str(self.path), exist_ok=True)
                 if self.verbose:
@@ -1487,7 +1507,15 @@ class MdbExomol(DatabaseManager):
                 try:
                     urllib.request.urlretrieve(pfpath, str(self.path / pfname))
                 except HTTPError:
+                    if ext == ".broad":
+                        partners_success[index] = False
                     print(f"Error: Couldn't download {ext} file at {pfpath} and save.")
+
+            if ext == ".broad" and self.verbose:
+                patners_arr = np.array(self.broad_partners)
+                print(
+                    f"\nSummary of broadening files downloaded:\n\tSuccess: {patners_arr[partners_success]}\n\tFail: {patners_arr[~partners_success]}\n"
+                )
 
     def to_partition_function_tabulator(self):
         """Generate a :py:class:`~radis.levels.partfunc.PartFuncExoMol` object"""
