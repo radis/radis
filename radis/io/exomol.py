@@ -231,13 +231,14 @@ def fetch_exomol(
     # Specific for RADIS : rename columns
     radis2exomol_columns = {
         "wav": "nu_lines",
-        "airbrd": "alpha_ref",
         "El": "elower",
         "ju": "jupper",
         "jl": "jlower",
         "gp": "gupper",
         "gpp": "glower",
-        "Tdpair": "n_Texp",
+        ### old, now we directly set "airbrd" and "Tdpair"
+        # "airbrd": "alpha_ref",
+        # "Tdpair": "n_Texp",
     }
     # get column name converting to exomol/exojax format if possible, else use the same
     if columns is not None:
