@@ -641,6 +641,8 @@ def check_code_level(bdat):
         return "a1"
     elif np.array_equal(np.sort(input_array), np.array(["a0", "a1"])):
         return "a1"
+    elif np.array_equal(input_array, np.array(["m0"])):
+        return "m0"
     return None
 
 
@@ -726,6 +728,55 @@ def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None):
     jj2n_Texp[jlower_arr, jupper_arr] = n_Texp_arr
 
     return jj2alpha_ref, jj2n_Texp
+
+
+def make_j2b_m0(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
+    """compute j2b (code m0, map from |m| to alpha_ref)
+
+    Args:
+        bdat: exomol .broad data given by exomolapi.read_broad
+        alpha_ref_default: default value
+        n_Texp_default: default value
+        jlower_max: maximum number of jlower
+    Returns:
+        j2alpha_ref[jlower] provides alpha_ref for jlower
+        j2n_Texp[jlower]  provides nT_exp for jlower
+    """
+    # m0
+    cmask = bdat["code"] == "m0"
+    jlower_arr = np.array(bdat["jlower"][cmask], dtype=int)
+    alpha_ref_arr = np.array(bdat["alpha_ref"][cmask])
+    n_Texp_arr = np.array(bdat["n_Texp"][cmask])
+
+    # Determine the array size based on jlower_max
+    if jlower_max is None:
+        Nblower = np.max(jlower_arr) + 1
+    else:
+        Nblower = np.max([jlower_max, np.max(jlower_arr)]) + 1
+
+    # Initialize arrays with default alpha_ref and n_Texp
+    j2alpha_ref = np.full(Nblower, alpha_ref_default)
+    j2n_Texp = np.full(Nblower, n_Texp_default)
+
+    # Populate the mapping arrays using known broadening coefficients
+    j2alpha_ref[jlower_arr] = alpha_ref_arr
+    j2n_Texp[jlower_arr] = n_Texp_arr
+
+    # Raise a minor warning if default values are used for high J values
+    if Nblower > (np.max(jlower_arr) + 1):
+        import warnings
+
+        from radis.misc.warning import AccuracyWarning
+
+        warnings.warn(
+            AccuracyWarning(
+                "The default broadening parameter (alpha = {2} cm^-1 and n = {3}) are used for J'' > {1} up to J'' = {0}".format(
+                    Nblower, np.max(jlower_arr), alpha_ref_default, n_Texp_default
+                )
+            )
+        )
+
+    return j2alpha_ref, j2n_Texp
 
 
 def get_exomol_full_isotope_name(molecule, isotope):
@@ -1121,9 +1172,6 @@ class MdbExomol(DatabaseManager):
         self.pf_file = self.path / pathlib.Path(molec + ".pf")
         self.def_file = self.path / pathlib.Path(molec + ".def")
 
-        # self.bkgdatm = bkgdatm  # TODO: for the moment, only air is possible in RADIS, although He and H are usually available in ExoMol
-        # molecbroad = t0 + "__" + self.bkgdatm
-        # self.broad_file = self.path / pathlib.Path(molecbroad + ".broad")
         self.broad_partners = [
             "H2",
             "He",
@@ -1272,7 +1320,6 @@ class MdbExomol(DatabaseManager):
         if self.verbose:
             print("Molecule: ", molecule)
             print("Isotopologue: ", self.isotope_fullname)
-            # print("Background atmosphere: ", self.bkgdatm)
             print("ExoMol database: ", database)
             print("Local folder: ", self.path)
             print("Transition files: ")
@@ -1410,6 +1457,34 @@ class MdbExomol(DatabaseManager):
                 self.n_Texp = np.array(
                     jj2n_Texp[df["jlower"].values, df["jupper"].values]
                 )
+            elif codelv == "m0":
+                # label P, Q, and R the transitions
+                df["PQR"] = df["jupper"] - df["jlower"]  # P:+1, Q:0, R:-1
+                df["m"] = np.where(
+                    df["PQR"] == -1,
+                    -df["jlower"],
+                    np.where(
+                        df["PQR"] == 0,
+                        df["jlower"],
+                        np.where(df["PQR"] == 1, df["jlower"] + 1, np.nan),
+                    ),
+                )
+
+                # Check for values outside -1, 0, 1 and raise a warning
+                invalid_pqr = df[~df["PQR"].isin([-1, 0, 1])]
+                if not invalid_pqr.empty:
+                    warnings.warn(
+                        f"Found {len(invalid_pqr)} values in 'PQR' outside of -1, 0, 1: {invalid_pqr['PQR'].unique()}"
+                    )
+
+                bdat.set_index("jlower", inplace=True)
+                self.alpha_ref = df["m"].map(bdat["alpha_ref"])
+                self.n_Texp = df["m"].map(bdat["n_Texp"])
+
+                # fill values outside of m range
+                self.alpha_ref = self.alpha_ref.fillna(self.alpha_ref_def)
+                self.n_Texp = self.n_Texp.fillna(self.n_Texp_def)
+
             else:
                 warnings.warn(
                     f"The broadening file contains this broadening code: {codelv}."
@@ -1419,10 +1494,10 @@ class MdbExomol(DatabaseManager):
                 self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
                 self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
         else:
-            if not os.path.exists(file):
+            if not os.path.exists(self.broad_file):
                 warnings.warn(
                     "Could not load `{}`. The default broadening parameters are used.\n".format(
-                        os.path.basename(file)
+                        os.path.basename(self.broad_file)
                     )
                 )
             print("The default broadening parameters are used.")
