@@ -1507,8 +1507,8 @@ class MdbExomol(DatabaseManager):
 
         if add_columns:
             if species == "air":
-                self.add_column(df, "alpha_ref", self.alpha_ref)
-                self.add_column(df, "n_Texp", self.n_Texp)
+                self.add_column(df, "airbrd", self.alpha_ref)
+                self.add_column(df, "Tdpair", self.n_Texp)
             elif species == "self":
                 self.add_column(df, "selbrd", self.alpha_ref)
                 self.add_column(df, "selbrd_Tdpair", self.n_Texp)
