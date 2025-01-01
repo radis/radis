@@ -88,8 +88,17 @@ from radis.spectrum.utils import (
 )
 from radis.tools.track_ref import RefTracker
 
+import sys
+import plotly.express as px
+import pandas as pd
+
 # %% Spectrum class to hold results )
 
+def is_kernel():
+    if 'IPython' not in sys.modules:
+        return False
+    from IPython import get_ipython
+    return getattr(get_ipython(), 'kernel', None) is not None
 
 class Spectrum(object):
     """This class holds results calculated with the
@@ -2074,8 +2083,8 @@ class Spectrum(object):
             k: (self._q["wavespace"], v) for k, v in self._q.items() if k != "wavespace"
         }
         return items
-
-    def plot(
+    
+    def _plot_matplotlib(
         self,
         var=None,
         wunit="default",
@@ -2334,10 +2343,69 @@ class Spectrum(object):
 
             add_ruler(fig, wunit=wunit, Iunit=Iunit)
 
+        plt.tight_layout()
+        
         if show:
             plt.show()
 
         return line
+
+    def _plot_plotly(self, 
+        var=None,
+        wunit="default",
+        Iunit="default",
+        show_points=False,
+        nfig=None,
+        yscale="linear",
+        show_medium="vacuum_only",
+        normalize=False,
+        force=False,
+        plot_by_parts=False,
+        show=True,
+        show_ruler=False,
+        template='plotly_dark',
+        **kwargs,
+    ):
+        
+        """
+        Plot the spectrum data using Plotly.
+
+        Parameters are same as Spectrum._plot_matplotlib
+
+        Additionally:
+
+        template : str, optional
+            The Plotly template to use for the plot. Default is 'plotly_dark'.
+        """
+        radiance_data = self.get('radiance_noslit')
+        df = pd.DataFrame({'Wavenumber': radiance_data[0], 'Radiance_noslit': radiance_data[1]})
+        fig = px.line(df, x="Wavenumber", y="Radiance_noslit", template='plotly_dark')  
+        fig.update_layout(
+            yaxis=dict(
+                tickmode="linear",  
+                dtick=0.01))
+        fig.show()
+
+    def plot(
+        self,
+        var=None,
+        wunit="default",
+        Iunit="default",
+        show_points=False,
+        nfig=None,
+        yscale="linear",
+        show_medium="vacuum_only",
+        normalize=False,
+        force=False,
+        plot_by_parts=False,
+        show=True,
+        show_ruler=False,
+        **kwargs,
+    ):
+        if is_kernel():
+            self._plot_plotly(var, wunit)
+        else:
+            self._plot_matplotlib(var, wunit, **kwargs)
 
     def get_populations(
         self, molecule=None, isotope=None, electronic_state=None, show_warning=True
