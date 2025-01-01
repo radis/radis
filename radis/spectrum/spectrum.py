@@ -2403,7 +2403,7 @@ class Spectrum(object):
         **kwargs,
     ):
         if is_kernel():
-            self._plot_plotly(var, wunit)
+            self._plot_plotly(var, wunit, **kwargs)
         else:
             self._plot_matplotlib(var, wunit, **kwargs)
 
