@@ -381,7 +381,21 @@ class DatabaseManager(object):
         Nlines_total = 0
         Ntotal_downloads = len(local_files)
 
-        def parse_one_file(urlname, local_file, Ndownload):
+        def download_and_parse_one_file(urlname, local_file, Ndownload):
+            if verbose:
+                inputf = urlname.split("/")[-1]
+                print(
+                    f"Downloading {inputf} for {molecule} ({Ndownload}/{Ntotal_downloads})."
+                )
+
+            # Check we can open the file, give the path if there is an error
+            try:
+                self.ds.open(urlname)
+            except Exception as err:
+                raise OSError(
+                    f"Problem opening : {self.ds._findfile(urlname)}. See above. You may want to delete the downloaded file."
+                ) from err
+
             try:
                 Nlines = self.parse_to_local_file(
                     self.ds,
@@ -417,65 +431,27 @@ class DatabaseManager(object):
 
             return Nlines
 
-        def download_and_parse_one_file(urlname, local_file, Ndownload):
-            if verbose:
-                inputf = urlname.split("/")[-1]
+        if parallel and len(local_files) > self.minimum_nfiles:
+            nJobs = self.nJobs
+            batch_size = self.batch_size
+            if self.verbose:
                 print(
-                    f"Downloading {inputf} for {molecule} ({Ndownload}/{Ntotal_downloads})."
+                    f"Downloading and parsing {urlnames} to {local_files} "
+                    + f"({len(local_files)}) files), in parallel ({nJobs} jobs)"
                 )
-
-            # Check we can open the file, give the path if there is an error
-            try:
-                self.ds.open(urlname)
-            except Exception as err:
-                raise OSError(
-                    f"Problem opening : {self.ds._findfile(urlname)}. See above. You may want to delete the downloaded file."
-                ) from err
-
-            return parse_one_file(urlname, local_file, Ndownload)
-
-        ############ [start]
-        #### Temporary fix to issue 717 ####
-        ############ [start]
-        # Check if the files were downloaded manualy
-        manual_download_bz2 = True
-        for urlname in urlnames:
-            if not exists(urlname):
-                manual_download_bz2 = False
-
-        if manual_download_bz2:
+            Nlines_total = sum(
+                Parallel(n_jobs=nJobs, batch_size=batch_size, verbose=self.verbose)(
+                    delayed(download_and_parse_one_file)(urlname, local_file, Ndownload)
+                    for urlname, local_file, Ndownload in zip(
+                        urlnames, local_files, range(1, len(local_files) + 1)
+                    )
+                )
+            )
+        else:
             for urlname, local_file, Ndownload in zip(
                 urlnames, local_files, range(1, len(local_files) + 1)
             ):
-                parse_one_file(urlname, local_file, Ndownload)
-
-        ############ [end]
-        #### Temporary fix to issue 717 ####
-        ############ [end]
-        else:
-            if parallel and len(local_files) > self.minimum_nfiles:
-                nJobs = self.nJobs
-                batch_size = self.batch_size
-                if self.verbose:
-                    print(
-                        f"Downloading and parsing {urlnames} to {local_files} "
-                        + f"({len(local_files)}) files), in parallel ({nJobs} jobs)"
-                    )
-                Nlines_total = sum(
-                    Parallel(n_jobs=nJobs, batch_size=batch_size, verbose=self.verbose)(
-                        delayed(download_and_parse_one_file)(
-                            urlname, local_file, Ndownload
-                        )
-                        for urlname, local_file, Ndownload in zip(
-                            urlnames, local_files, range(1, len(local_files) + 1)
-                        )
-                    )
-                )
-            else:
-                for urlname, local_file, Ndownload in zip(
-                    urlnames, local_files, range(1, len(local_files) + 1)
-                ):
-                    download_and_parse_one_file(urlname, local_file, Ndownload)
+                download_and_parse_one_file(urlname, local_file, Ndownload)
 
     def parse_to_local_file(
         self,

@@ -290,7 +290,7 @@ def replace_PQR_with_m101(df):
     if df.dtypes["branch"] != np.int64:
         mapping = {"P": -1, "Q": 0, "R": 1, "O": -2, "S": 2}
         if df_type == pd.DataFrame:  # pandas
-            new_col = df["branch"].replace(mapping)
+            new_col = df["branch"].replace(mapping).infer_objects(copy=False)
         else:  # vaex
             new_col = df["branch"].map(mapping, allow_missing=True)
         df["branch"] = new_col
