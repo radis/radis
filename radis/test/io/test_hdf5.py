@@ -95,11 +95,11 @@ def test_local_hdf5_lines_loading(*args, **kwargs):
 
     fetch_hitemp("OH")  # to initialize the database
 
-    path = getDatabankEntries("HITEMP-OH")["path"]
+    path = getDatabankEntries("HITRAN-OH")["path"]
 
     # Initialize the database
     fetch_hitemp("OH")
-    path = getDatabankEntries("HITEMP-OH")["path"][0]
+    path = getDatabankEntries("HITRAN-OH")["path"][0]
     df = hdf2df(path)
     wmin, wmax = df.wav.min(), df.wav.max()
     assert wmin < 2300  # needed for next test to be valid
