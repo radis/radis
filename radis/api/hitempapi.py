@@ -232,14 +232,28 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         molecule = self.molecule
 
-        if molecule in ["H2O", "CO2"]:
+        if molecule in ["H2O"]:  # CO2 is a single file since 01/2025
 
             base_url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
-            response = urllib.request.urlopen(base_url)
-            response_string = response.read().decode()
-            inputfiles = re.findall(r'href="(\S+.zip)"', response_string)
 
-            urlnames = [join(base_url, f) for f in inputfiles]
+            ### Issue 717 - https://github.com/radis/radis/issues/717
+
+            # response = urllib.request.urlopen(base_url)
+            # response_string = response.read().decode()
+            # inputfiles = re.findall(r'href="(\S+.zip)"', response_string)
+            # urlnames = [join(base_url, f) for f in inputfiles]
+
+            from radis.misc.utils import getProjectRoot
+
+            with open(
+                join(getProjectRoot(), "db", "H2O", "HITRANpage_january2025.htm")
+            ) as file:
+                response_string = file.read()
+
+            inputfiles = re.findall(r'href="(\S+.zip)"', response_string)
+            base_url = "https://hitran.org"
+            urlnames = [f"{base_url}{f}" for f in inputfiles]
+            ### Issue 717 [end]
 
         elif molecule in HITEMP_MOLECULES:
             url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
@@ -260,7 +274,7 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         If other molecule, return the file anyway.
         see :py:func:`radis.api.hitempapi.keep_only_relevant`"""
-        if self.molecule in ["CO2", "H2O"]:
+        if self.molecule in ["H2O"]:  # CO2 is a single file since 01/2025
             inputfiles, _, _ = keep_only_relevant(
                 inputfiles, wavenum_min, wavenum_max, verbose
             )

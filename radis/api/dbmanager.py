@@ -392,8 +392,28 @@ class DatabaseManager(object):
             try:
                 self.ds.open(urlname)
             except Exception as err:
+                if str(err) == "File is not a zip file":
+                    print("\n### RADIS - ISSUE 717 ###\n")
+                    print(
+                        f'Error: "{err}".\nThis issue occurs because HITEMP requires a login, which is not currently implemented in RADIS.\nFor more information and to contribute to resolving this issue, please visit: https://github.com/radis/radis/issues/717 \n'
+                    )
+
+                    print(
+                        "*** Temporary fix ***\nDownload manualy the following file and put it in the following location:"
+                    )
+                    temp_folder = os.path.join(
+                        os.path.dirname(local_file),
+                        "downloads__can_be_deleted",
+                        "hitran.org",
+                        "files",
+                        "HITEMP",
+                        "HITEMP-2010",
+                        f"{self.molecule}_line_list",
+                    )
+                    print(f"{urlname} ==> {temp_folder} \n")
+
                 raise OSError(
-                    f"Problem opening : {self.ds._findfile(urlname)}. See above. You may want to delete the downloaded file."
+                    f"Problem opening : {self.ds._findfile(urlname)}. See potential solution above!!! You may want to delete the downloaded file."
                 ) from err
 
             try:
@@ -427,7 +447,9 @@ class DatabaseManager(object):
                     )
                     print(f"{urlname} ==> {temp_folder} \n")
 
-                raise OSError(err)
+                raise OSError(
+                    f"Problem opening : {self.ds._findfile(urlname)}. See potential solution above!!! You may want to delete the downloaded file."
+                ) from err
 
             return Nlines
 
