@@ -17,9 +17,9 @@ RADIS allows you to use a Vaex DataFrame instead (out-of-RAM).
 See the :ref:`Explore Database with Vaex example <example_explore_database_vaex>`
 """
 
-from radis.io.hitemp import fetch_hitemp
+from radis.io.hitran import fetch_hitran
 
-df = fetch_hitemp("OH")
+df = fetch_hitran("OH")
 print(df.columns)
 
 
@@ -37,5 +37,5 @@ print(df.columns)
 # function. The already downloaded database will be used:
 #
 
-df = fetch_hitemp("OH", load_wavenum_min=31500, load_wavenum_max=33000, isotope="1")
+df = fetch_hitran("OH", load_wavenum_min=31500, load_wavenum_max=33000, isotope="1")
 df.plot("wav", "int")

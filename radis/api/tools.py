@@ -124,7 +124,7 @@ def _ndarray2df(data, columns, linereturnformat, molecule=None):
     data = _cast_to_dtype(data, dtype)
 
     # %% Create dataframe
-    df = pd.DataFrame(data.tolist(), columns=list(columns.keys()) + ["_linereturn"])
+    df = pd.DataFrame(data, columns=list(columns.keys()) + ["_linereturn"])
 
     # Delete dummy column than handled the line return character
     del df["_linereturn"]
