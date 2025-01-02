@@ -251,14 +251,12 @@ class DataFileManager(object):
             if key == "default":
                 key = r"/table"
             df = vaex.open(self._temp_batch_files, group=key)
+
             # Removing NaN values columns
             if delete_nan_columns:
-                import numpy as np
-
-                for column in df.columns:
-                    col = df[column].values
-                    if type(col[0]) in [np.int32, np.float64] and np.isnan(np.sum(col)):
-                        del df[column]
+                for column in df.get_column_names():
+                    if df[column].isna().sum() > 0:
+                        df = df.drop(column)
 
             if sort_values:
                 df.sort(by=sort_values).export_hdf5(file, group=key, mode="w")
