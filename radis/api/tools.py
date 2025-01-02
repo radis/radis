@@ -105,7 +105,7 @@ def _get_linereturnformat(data, columns, fname=""):
     return linereturnformat
 
 
-def _ndarray2df(data, columns, linereturnformat, molecule):
+def _ndarray2df(data, columns, linereturnformat, molecule=None):
     """ """
 
     # ... Cast to new type
