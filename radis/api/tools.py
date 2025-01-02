@@ -105,7 +105,7 @@ def _get_linereturnformat(data, columns, fname=""):
     return linereturnformat
 
 
-def _ndarray2df(data, columns, linereturnformat):
+def _ndarray2df(data, columns, linereturnformat, molecule):
     """ """
 
     # ... Cast to new type
@@ -116,6 +116,11 @@ def _ndarray2df(data, columns, linereturnformat):
     dtype = list(zip(list(columns.keys()), newtype)) + [
         ("_linereturn", linereturnformat)
     ]
+    if molecule == "CO2":
+        dtype[1] = (
+            "iso",
+            "<U1",
+        )  # in HITEMP2024, isotopologue 10, 11, 12 are a, b, c. Converted later
     data = _cast_to_dtype(data, dtype)
 
     # %% Create dataframe
@@ -212,6 +217,7 @@ def _cast_to_dtype(data, dtype):
             print(f"Error may be on row {r}:")
             print("-" * 30)
             for i in range(len(data[r])):
+                print(i, dtype[i], "\t\t", data[r][i])
                 print(i, dtype[i], "\t\t", np.array(data[r][i], dtype=dt[i]))
             print("-" * 30)
             print(">>> Next param:", dtype[i], ". Value:", data[r][i], "\n")

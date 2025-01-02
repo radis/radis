@@ -363,7 +363,13 @@ class HITEMPDatabaseManager(DatabaseManager):
                     # with End of file flag) so nbytes != 0
                     b = get_last(b)
 
-                df = _ndarray2df(b, columns, linereturnformat)
+                df = _ndarray2df(b, columns, linereturnformat, molecule=self.molecule)
+
+                # 19722
+                if molecule == "CO2":
+                    df["iso"] = (
+                        df["iso"].replace({"A": 10, "B": 11, "C": 12}).astype(int)
+                    )  # in HITEMP2024, isotopologue 10, 11, 12 are A, B, C. Converted later
 
                 # Post-processing :
                 # ... Add local quanta attributes, based on the HITRAN group
