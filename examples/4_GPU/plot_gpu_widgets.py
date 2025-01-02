@@ -35,7 +35,7 @@ sf = SpectrumFactory(
     wstep=0.002,
 )
 
-sf.fetch_databank("hitemp")
+sf.fetch_databank("hitran")
 
 s = sf.eq_spectrum_gpu_interactive(
     var="radiance",

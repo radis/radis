@@ -18,7 +18,7 @@ import numpy as np
 from radis import Spectrum, calc_spectrum
 from radis.test.utils import getTestFile
 
-real_experiment = False
+real_experiment = True
 if real_experiment:
     T_ref = 7515  # for index 9
     # Using a real experiment (CO in argon) from Minesi et al. (2022) - doi:10.1007/s00340-022-07931-7
@@ -37,6 +37,7 @@ else:
         2010.6,
         2011.6,  # cm-1
         molecule="CO",
+        isotope=1,
         pressure=1,  # bar
         Tgas=T_ref,
         mole_fraction=1,
@@ -141,7 +142,7 @@ for index in [0, 1]:
 msg = """
 **Result**: this fitting routine and the R(8,24)/(P(1,25) line pair
 are appropriate for temperature measurement. The R(4,7)/(P(1,25)
-line pair requires a more sophiscated fitting routine, due to the
+line pair may require a more sophiscated fitting routine, due to the
 underlying transition at 2011 cm-1 from R(10,115), see Minesi et al. (2022)
 """
 print(msg)

@@ -40,7 +40,3 @@ for (wmin, wmax) in [(50, 3000), (3000, 7000), (7000, 10000)]:
 s = MergeSlabs(*spectra, resample="full", out="transparent")
 print(s)
 s.plot("transmittance_noslit", wunit="nm")
-
-import matplotlib.pyplot as plt
-
-plt.ylim(0, 1)
