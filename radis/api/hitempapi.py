@@ -351,6 +351,16 @@ class HITEMPDatabaseManager(DatabaseManager):
 
             if verbose:
                 print(f"Download complete. Parsing {molecule} database to {local_file}")
+                print(
+                    "This step is executed only ONCE and will considerably accelerate the computation of spectra. It will also dramatically reduce the memory usage. The parsing/conversion can be very fast (e.g. HITEMP OH takes a few seconds) or extremely long (e.g. HITEMP CO2 takes approximately 1 hour)."
+                )
+            if molecule == "CO2":
+                from warnings import warn
+
+                warn(
+                    "Parsing will take approximately 1 hour for HITEMP CO2 (compressed = 6 GB",
+                    UserWarning,
+                )
 
             # assert not(exists(local_file))
 
@@ -369,7 +379,7 @@ class HITEMPDatabaseManager(DatabaseManager):
                 if molecule == "CO2":
                     df["iso"] = (
                         df["iso"].replace({"A": 10, "B": 11, "C": 12}).astype(int)
-                    )  # in HITEMP2024, isotopologue 10, 11, 12 are A, B, C. Converted later
+                    )  # in HITEMP2024, isotopologue 10, 11, 12 are A, B, C.
 
                 # Post-processing :
                 # ... Add local quanta attributes, based on the HITRAN group
