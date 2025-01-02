@@ -1494,10 +1494,10 @@ class MdbExomol(DatabaseManager):
                 self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
                 self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
         else:
-            if not os.path.exists(self.broad_file):
+            if not os.path.exists(file):
                 warnings.warn(
                     "Could not load `{}`. The default broadening parameters are used.\n".format(
-                        os.path.basename(self.broad_file)
+                        os.path.basename(file)
                     )
                 )
             print("The default broadening parameters are used.")
