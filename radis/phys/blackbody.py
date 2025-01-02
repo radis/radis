@@ -198,12 +198,7 @@ def sPlanck(
         waveunit = "cm-1"
     else:
         assert wavelength_min < wavelength_max
-        if medium == "air":
-            waveunit = "nm"
-        elif medium == "vacuum":
-            waveunit = "nm_vac"
-        else:
-            raise ValueError(medium)
+        waveunit = "nm_vac"
 
     if T is None:
         raise ValueError("T must be defined")
