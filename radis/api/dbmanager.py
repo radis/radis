@@ -381,6 +381,42 @@ class DatabaseManager(object):
         Nlines_total = 0
         Ntotal_downloads = len(local_files)
 
+        def parse_one_file(urlname, local_file, Ndownload):
+            try:
+                Nlines = self.parse_to_local_file(
+                    self.ds,
+                    urlname,
+                    local_file,
+                    pbar_active=(not parallel),
+                    pbar_t0=time() - t0,
+                    pbar_Ntot_estimate_factor=pbar_Ntot_estimate_factor,
+                    pbar_Nlines_already=Nlines_total,
+                    pbar_last=(Ndownload == Ntotal_downloads),
+                )
+            except OSError as err:
+                if str(err) == "Invalid data stream":
+                    print("\n### RADIS - ISSUE 717 ###\n")
+                    print(
+                        f'Error: "{err}".\nThis issue occurs because HITEMP requires a login, which is not currently implemented in RADIS.\nFor more information and to contribute to resolving this issue, please visit: https://github.com/radis/radis/issues/717 \n'
+                    )
+
+                    print(
+                        "*** Temporary fix ***\nDownload manualy the following file and put it in the following location:"
+                    )
+                    temp_folder = os.path.join(
+                        os.path.dirname(local_file),
+                        "downloads__can_be_deleted",
+                        "hitran.org",
+                        "files",
+                        "HITEMP",
+                        "bzip2format",
+                    )
+                    print(f"{urlname} ==> {temp_folder} \n")
+
+                raise OSError(err)
+
+            return Nlines
+
         def download_and_parse_one_file(urlname, local_file, Ndownload):
             if verbose:
                 inputf = urlname.split("/")[-1]
@@ -396,43 +432,50 @@ class DatabaseManager(object):
                     f"Problem opening : {self.ds._findfile(urlname)}. See above. You may want to delete the downloaded file."
                 ) from err
 
-            # try:
-            Nlines = self.parse_to_local_file(
-                self.ds,
-                urlname,
-                local_file,
-                pbar_active=(not parallel),
-                pbar_t0=time() - t0,
-                pbar_Ntot_estimate_factor=pbar_Ntot_estimate_factor,
-                pbar_Nlines_already=Nlines_total,
-                pbar_last=(Ndownload == Ntotal_downloads),
-            )
-            # except Exception as err:
-            #     raise IOError("Problem parsing `{0}`. Check the error above. It may arise if the file wasn't properly downloaded. Try to delete it".format(self.ds._findfile(urlname))) from err
+            return parse_one_file(urlname, local_file, Ndownload)
 
-            return Nlines
+        ############ [start]
+        #### Temporary fix to issue 717 ####
+        ############ [start]
+        # Check if the files were downloaded manualy
+        manual_download_bz2 = True
+        for urlname in urlnames:
+            if not exists(urlname):
+                manual_download_bz2 = False
 
-        if parallel and len(local_files) > self.minimum_nfiles:
-            nJobs = self.nJobs
-            batch_size = self.batch_size
-            if self.verbose:
-                print(
-                    f"Downloading and parsing {urlnames} to {local_files} "
-                    + f"({len(local_files)}) files), in parallel ({nJobs} jobs)"
-                )
-            Nlines_total = sum(
-                Parallel(n_jobs=nJobs, batch_size=batch_size, verbose=self.verbose)(
-                    delayed(download_and_parse_one_file)(urlname, local_file, Ndownload)
-                    for urlname, local_file, Ndownload in zip(
-                        urlnames, local_files, range(1, len(local_files) + 1)
-                    )
-                )
-            )
-        else:
+        if manual_download_bz2:
             for urlname, local_file, Ndownload in zip(
                 urlnames, local_files, range(1, len(local_files) + 1)
             ):
-                download_and_parse_one_file(urlname, local_file, Ndownload)
+                parse_one_file(urlname, local_file, Ndownload)
+
+        ############ [end]
+        #### Temporary fix to issue 717 ####
+        ############ [end]
+        else:
+            if parallel and len(local_files) > self.minimum_nfiles:
+                nJobs = self.nJobs
+                batch_size = self.batch_size
+                if self.verbose:
+                    print(
+                        f"Downloading and parsing {urlnames} to {local_files} "
+                        + f"({len(local_files)}) files), in parallel ({nJobs} jobs)"
+                    )
+                Nlines_total = sum(
+                    Parallel(n_jobs=nJobs, batch_size=batch_size, verbose=self.verbose)(
+                        delayed(download_and_parse_one_file)(
+                            urlname, local_file, Ndownload
+                        )
+                        for urlname, local_file, Ndownload in zip(
+                            urlnames, local_files, range(1, len(local_files) + 1)
+                        )
+                    )
+                )
+            else:
+                for urlname, local_file, Ndownload in zip(
+                    urlnames, local_files, range(1, len(local_files) + 1)
+                ):
+                    download_and_parse_one_file(urlname, local_file, Ndownload)
 
     def parse_to_local_file(
         self,
