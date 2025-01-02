@@ -94,11 +94,18 @@ import pandas as pd
 
 # %% Spectrum class to hold results )
 
-def is_kernel():
-    if 'IPython' not in sys.modules:
-        return False
-    from IPython import get_ipython
-    return getattr(get_ipython(), 'kernel', None) is not None
+def is_running_in_notebook():
+        """Check if the code is running in a Jupyter Notebook."""
+        try:
+            shell = get_ipython().__class__.__name__
+            if shell == 'ZMQInteractiveShell':
+                return True  # Jupyter notebook or qtconsole
+            elif shell == 'TerminalInteractiveShell':
+                return False  # Terminal running IPython
+            else:
+                return False  # Spyder
+        except NameError:
+            return False  # Probably standard Python interpreter
 
 class Spectrum(object):
     """This class holds results calculated with the
