@@ -2409,7 +2409,7 @@ class Spectrum(object):
         show_ruler=False,
         **kwargs,
     ):
-        if is_kernel():
+        if is_running_in_notebook():
             self._plot_plotly(var, wunit, **kwargs)
         else:
             self._plot_matplotlib(var, wunit, **kwargs)
