@@ -1,7 +1,0 @@
-contact_links:
-  - name: Radis glitter chat
-    url: https://gitter.im/radis-radiation/community
-    about: Chat to us about radis and ask general questions.
-  - name: Radis documentation
-    url: https://radis.readthedocs.io/en/latest/
-    about: The complete radis documentation.
