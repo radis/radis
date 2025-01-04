@@ -88,8 +88,24 @@ from radis.spectrum.utils import (
 )
 from radis.tools.track_ref import RefTracker
 
+import sys
+import plotly.express as px
+import pandas as pd
+
 # %% Spectrum class to hold results )
 
+def is_running_in_notebook():
+        """Check if the code is running in a Jupyter Notebook."""
+        try:
+            shell = get_ipython().__class__.__name__
+            if shell == 'ZMQInteractiveShell':
+                return True  # Jupyter notebook or qtconsole
+            elif shell == 'TerminalInteractiveShell':
+                return False  # Terminal running IPython
+            else:
+                return False  # Spyder
+        except NameError:
+            return False  # Probably standard Python interpreter
 
 class Spectrum(object):
     """This class holds results calculated with the
@@ -2075,7 +2091,7 @@ class Spectrum(object):
         }
         return items
 
-    def plot(
+        def _plot_matplotlib(
         self,
         var=None,
         wunit="default",
@@ -2334,10 +2350,78 @@ class Spectrum(object):
 
             add_ruler(fig, wunit=wunit, Iunit=Iunit)
 
+        plt.tight_layout()
+        
         if show:
             plt.show()
 
         return line
+
+    def _plot_plotly(self, 
+        var=None,
+        wunit="default",
+        Iunit="default",
+        show_points=False,
+        nfig=None,
+        yscale="linear",
+        show_medium="vacuum_only",
+        normalize=False,
+        force=False,
+        plot_by_parts=False,
+        show=True,
+        show_ruler=False,
+        template='plotly_dark',
+        **kwargs,
+    ):
+        
+        """
+        Plot the spectrum data using Plotly.
+
+        Parameters are same as Spectrum._plot_matplotlib
+
+        Additionally:
+
+        template : str, optional
+            The Plotly template to use for the plot. Default is 'plotly_dark'.
+        """
+        # Get variable
+        x, y, wunit, Iunit = self.get(
+        var, wunit=wunit, Iunit=Iunit, return_units="as_str"
+        )
+
+        # Get labels
+        xlabel = format_xlabel(wunit, show_medium)
+        ylabel = "{0} ({1})".format(make_up(var), make_up_unit(Iunit, var))
+
+        radiance_data = self.get('radiance_noslit')
+        df = pd.DataFrame({'Wavenumber': radiance_data[0], 'Radiance_noslit': radiance_data[1]})
+        fig = px.line(df, x="Wavenumber", y="Radiance_noslit", template='plotly_dark')  
+        fig.update_layout(
+            yaxis=dict(
+                tickmode="linear",  
+                dtick=0.01))
+        fig.show()
+
+    def plot(
+        self,
+        var=None,
+        wunit="default",
+        Iunit="default",
+        show_points=False,
+        nfig=None,
+        yscale="linear",
+        show_medium="vacuum_only",
+        normalize=False,
+        force=False,
+        plot_by_parts=False,
+        show=True,
+        show_ruler=False,
+        **kwargs,
+    ):
+        if is_running_in_notebook():
+            self._plot_plotly(var, wunit, **kwargs)
+        else:
+            self._plot_matplotlib(var, wunit, **kwargs)
 
     def get_populations(
         self, molecule=None, isotope=None, electronic_state=None, show_warning=True
