@@ -105,7 +105,7 @@ def _get_linereturnformat(data, columns, fname=""):
     return linereturnformat
 
 
-def _ndarray2df(data, columns, linereturnformat):
+def _ndarray2df(data, columns, linereturnformat, molecule=None):
     """ """
 
     # ... Cast to new type
@@ -116,10 +116,15 @@ def _ndarray2df(data, columns, linereturnformat):
     dtype = list(zip(list(columns.keys()), newtype)) + [
         ("_linereturn", linereturnformat)
     ]
+    if molecule == "CO2":
+        dtype[1] = (
+            "iso",
+            "<U1",
+        )  # in HITEMP2024, isotopologue 10, 11, 12 are a, b, c. Converted later
     data = _cast_to_dtype(data, dtype)
 
     # %% Create dataframe
-    df = pd.DataFrame(data.tolist(), columns=list(columns.keys()) + ["_linereturn"])
+    df = pd.DataFrame(data, columns=list(columns.keys()) + ["_linereturn"])
 
     # Delete dummy column than handled the line return character
     del df["_linereturn"]
@@ -212,6 +217,7 @@ def _cast_to_dtype(data, dtype):
             print(f"Error may be on row {r}:")
             print("-" * 30)
             for i in range(len(data[r])):
+                print(i, dtype[i], "\t\t", data[r][i])
                 print(i, dtype[i], "\t\t", np.array(data[r][i], dtype=dt[i]))
             print("-" * 30)
             print(">>> Next param:", dtype[i], ". Value:", data[r][i], "\n")
@@ -287,10 +293,12 @@ def replace_PQR_with_m101(df):
         raise NotImplementedError(df_type)
 
     # Then do the actual mapping
-    if df.dtypes["branch"] != np.int64:
+    if df.dtypes["branch"] != np.float64:
         mapping = {"P": -1, "Q": 0, "R": 1, "O": -2, "S": 2}
         if df_type == pd.DataFrame:  # pandas
-            new_col = df["branch"].replace(mapping)
+            pd.set_option("future.no_silent_downcasting", True)
+            new_col = df["branch"].replace(mapping).infer_objects(copy=False)
+            pd.set_option("future.no_silent_downcasting", False)
         else:  # vaex
             new_col = df["branch"].map(mapping, allow_missing=True)
         df["branch"] = new_col

@@ -129,25 +129,28 @@ You can see the benchmark result of these algorithms here:
 
 # -------------------- Step 3. Run the fitting and retrieve results -------------------- #
 
+try:
+    # Conduct the fitting process!
+    s_best, result, log = fit_spectrum(
+        s_exp=s_experimental,  # Experimental spectrum.
+        fit_params=fit_parameters,  # Fit parameters.
+        bounds=bounding_ranges,  # Bounding ranges for those fit parameters.
+        model=experimental_conditions,  # Experimental ground-truths conditions.
+        pipeline=fit_properties,  # # Fitting pipeline references.
+    )
 
-# Conduct the fitting process!
-s_best, result, log = fit_spectrum(
-    s_exp=s_experimental,  # Experimental spectrum.
-    fit_params=fit_parameters,  # Fit parameters.
-    bounds=bounding_ranges,  # Bounding ranges for those fit parameters.
-    model=experimental_conditions,  # Experimental ground-truths conditions.
-    pipeline=fit_properties,  # # Fitting pipeline references.
-)
+    # Now investigate the result logs for additional information about what's going on during the fitting process
 
+    print("\nResidual history: \n")
+    print(log["residual"])
 
-# Now investigate the result logs for additional information about what's going on during the fitting process
+    print("\nFitted values history: \n")
+    for fit_val in log["fit_vals"]:
+        print(fit_val)
 
-print("\nResidual history: \n")
-print(log["residual"])
-
-print("\nFitted values history: \n")
-for fit_val in log["fit_vals"]:
-    print(fit_val)
-
-print("\nTotal fitting time: ")
-print(log["time_fitting"], end=" s\n")
+    print("\nTotal fitting time: ")
+    print(log["time_fitting"], end=" s\n")
+except OSError as err:
+    print("HITEMP files must be downloaded manually. See error message.")
+    print(err)
+    s_experimental.plot()

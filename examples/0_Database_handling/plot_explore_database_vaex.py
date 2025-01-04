@@ -19,10 +19,10 @@ In this example, we plot the dependance of the broadening coefficients to the ro
 """
 import matplotlib.pyplot as plt
 
-from radis.io.hitemp import fetch_hitemp
+from radis.io.hitran import fetch_hitran
 
 #%% Adapt this example if vaex is installed or not
-# June 2024: vaex is not compatible with python>=3.11, see https://github.com/radis/radis/pull/656
+# June 2024: vaex is not compatible with python>=3.11, see https://github.com/radis/radis/pull/656 and the WIP solution here https://github.com/radis/radis/pull/698
 try:
     import vaex
 
@@ -31,7 +31,7 @@ try:
 except ImportError:
     output = "pytables"  # standard pandas format
 
-df = fetch_hitemp("CO2", output=output, load_wavenum_min=2150, load_wavenum_max=2450)
+df = fetch_hitran("CO2", output=output, load_wavenum_min=100, load_wavenum_max=10000)
 print(f"{len(df)} lines in HITEMP CO2; 2150 - 2450 cm-1")
 
 #%%

@@ -32,7 +32,7 @@ for (wmin, wmax) in [(50, 3000), (3000, 7000), (7000, 10000)]:
             path_length=1,
             mole_fraction=0.1,
             wstep=0.1,
-            databank="hitemp",
+            databank="hitran",
             verbose=False,
         )
     )
@@ -40,7 +40,3 @@ for (wmin, wmax) in [(50, 3000), (3000, 7000), (7000, 10000)]:
 s = MergeSlabs(*spectra, resample="full", out="transparent")
 print(s)
 s.plot("transmittance_noslit", wunit="nm")
-
-import matplotlib.pyplot as plt
-
-plt.ylim(0, 1)
