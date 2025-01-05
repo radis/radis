@@ -201,8 +201,12 @@ def sPlanck(
         waveunit = "cm-1"
     else:
         assert wavelength_min < wavelength_max
-        waveunit = "nm_vac"
-
+        if medium == "air":
+            waveunit = "nm"
+        elif medium == "vacuum":
+            waveunit = "nm_vac"
+        else:
+            raise NotImplementedError(f"The medium = {medium} was not implemented for a black body.")
     if T is None:
         raise ValueError("T must be defined")
 
