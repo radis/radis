@@ -1,8 +1,8 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Radis glitter chat
-    url: https://gitter.im/radis-radiation/community
-    about: Chat to us about radis and ask general questions.
+  - name: Radis Slack
+    url: https://radis.github.io/slack-invite/
+    about: Ask your questions to the developers and the RADIS community
   - name: Radis documentation
     url: https://radis.readthedocs.io/en/latest/
     about: The complete radis documentation.
