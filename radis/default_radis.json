@@ -10,10 +10,10 @@
         "plotlib": "publib"                 # library for plot style. "publib", "seaborn".
         "context": "paper"                  # "paper", "talk", "poster",
         "style": "origin"                    # default style. See Publib (https://github.com/erwanp/publib) or Seaborn (https://seaborn.pydata.org/)
+        "plotting_library": "auto",             # "matplotlib", "plotly", or "auto". Default backend for plotting, set to auto-detect.
     }
     # global parameters
     # -----------------
-    "plotting_library": "auto",             # Default backend for plotting, set to auto-detect.
     "DEBUG_MODE": false,
     "ALLOW_OVERWRITE": false                # allow overwriting of registered databank entries
     "AUTO_UPDATE_DATABASE": false           # auto-convert 'pytables' files to 'vaex'
