@@ -5,4 +5,4 @@ contact_links:
     about: Ask your questions to the developers and the RADIS community
   - name: Radis documentation
     url: https://radis.readthedocs.io/en/latest/
-    about: The complete radis documentation.
+    about: Before reaching out, please check our documentation to see if your question or suggestion has already been addressed. Also, explore our example gallery at [https://radis.readthedocs.io/en/latest/auto_examples/index.html](https://radis.readthedocs.io/en/latest/auto_examples/index.html) for inspiration and potential solutions. 
