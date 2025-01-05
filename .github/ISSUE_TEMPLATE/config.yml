@@ -1,7 +1,8 @@
 contact_links:
+  - name: Radis documentation
+    url: https://radis.readthedocs.io/en/latest/
+    about: Before reaching out, please check our documentation to see if your question or suggestion has already been addressed. Also, explore our [example gallery](https://radis.readthedocs.io/en/latest/auto_examples/index.html) for inspiration and potential solutions. 
   - name: Radis Slack
     url: https://radis.github.io/slack-invite/
     about: Ask your questions to the developers and the RADIS community
-  - name: Radis documentation
-    url: https://radis.readthedocs.io/en/latest/
-    about: Before reaching out, please check our documentation to see if your question or suggestion has already been addressed. Also, explore our example gallery at https://radis.readthedocs.io/en/latest/auto_examples/index.html for inspiration and potential solutions. 
+  
