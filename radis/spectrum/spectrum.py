@@ -2109,6 +2109,8 @@ class Spectrum(object):
     ):
         r"""Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
+        Plots the spectrum data using Matplotlib. 
+
         .. note::
             default plotting library and templates can be edited in :py:attr:`radis.config` ["plot"]
 
@@ -2134,8 +2136,8 @@ class Spectrum(object):
             plot on a particular figure. 'same' plots on current figure. For
             instance::
 
-                s1.plot()
-                s2.plot(nfig='same')
+                s1._plot_matplotlib()
+                s2._plot_matplotlib(nfig='same')
 
         show_medium: bool, ``'vacuum_only'``
             if ``True`` and ``wunit`` are wavelengths, plot the propagation medium
@@ -2173,24 +2175,6 @@ class Spectrum(object):
         -------
         line:
             line plot
-
-        Examples
-        --------
-        Plot an :py:func:`~radis.spectrum.models.experimental_spectrum` in
-        arbitrary units::
-
-            s = experimental_spectrum(..., Iunit='mW/cm2/sr/nm')
-            s.plot(Iunit='W/cm2/sr/cm-1')
-
-        See more examples in :ref:`the plot Spectral quantities page <label_spectrum_plot>`.
-
-
-        .. minigallery:: radis.Spectrum.plot
-
-        See Also
-        --------
-        :py:func:`~radis.spectrum.compare.plot_diff`,
-        :ref:`the Spectrum page <label_spectrum>`
         """
 
         import matplotlib.pyplot as plt
@@ -2373,17 +2357,77 @@ class Spectrum(object):
         template='plotly_dark',
         **kwargs,
     ):
-        
-        """
-        Plot the spectrum data using Plotly.
+        r"""Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
-        Parameters are same as Spectrum._plot_matplotlib
+        Plots the spectrum data using Plotly.
 
-        Additionally:
+        .. note::
+            default plotting library and templates can be edited in :py:attr:`radis.config` ["plot"]
 
+        Parameters
+        ----------
+        var: variable (`absorbance`, `transmittance`, `transmittance_noslit`, `xsection`, etc.)
+            For full list see :py:meth:`~radis.spectrum.spectrum.Spectrum.get_vars()`.
+            If ``None``, plot the first thing in the Spectrum. Default ``None``.
+        wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``,
+            wavelength air, wavenumber, or wavelength vacuum. If ``'default'``,
+            Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit` is used.
+        Iunit: unit for variable
+            if `default`, default unit for quantity `var` is used.
+            for radiance, one can use per wavelength (~ `W/m2/sr/nm`) or
+            per wavenumber (~ `W/m2/sr/cm-1`) units
+
+
+        Other Parameters
+        ----------------
+        show_points: boolean
+            show calculated points. Default ``True``.
+        nfig: int, None, or 'same'
+            plot on a particular figure. 'same' plots on current figure. For
+            instance::
+
+                s1._plot_plotly()
+
+        show_medium: bool, ``'vacuum_only'``
+            if ``True`` and ``wunit`` are wavelengths, plot the propagation medium
+            in the xaxis label (``[air]`` or ``[vacuum]``). If ``'vacuum_only'``,
+            plot only if ``wunit=='nm_vac'``. Default ``'vacuum_only'``
+            (prevents from inadvertently plotting spectra with different propagation
+            medium on the same graph).
+        yscale: 'linear', 'log'
+            plot yscale
+        normalize: boolean,  or tuple.
+            option to normalize quantity to 1 (ex: for radiance). Default ``False``
+        plot_by_parts: bool
+            if ``True``, look for discontinuities in the wavespace and plot
+            the different parts without connecting lines. Useful for experimental
+            spectra produced by overlapping step-and-glue. Additional parameters
+            read from ``kwargs`` : ``split_threshold`` and ``cutwings``. See more in
+            :py:func:`~radis.misc.plot.split_and_plot_by_parts`.
+        force: bool
+            plotting on an existing figure is forbidden if labels are not the
+            same. Use ``force=True`` to ignore that.
+        show: bool
+            show figure. Default ``False``. Will still show the figure in
+            interactive mode, e.g, `%matplotlib inline` in a Notebook.
+        show_ruler: bool
+            if `True`, add a ruler tool to the Matplotlib toolbar. Convenient
+            to measure distances between peaks, etc.
+
+            .. warning::
+                still experimental ! Try it, feedback welcome !
         template : str, optional
             The Plotly template to use for the plot. Default is 'plotly_dark'.
+        **kwargs: **dict
+            kwargs forwarded as argument to plot (e.g: lineshape
+            attributes: `lw=3, color='r'`)
+
+        Returns
+        -------
+        line:
+            line plot
         """
+
         # Get variable
         x, y, wunit, Iunit = self.get(
         var, wunit=wunit, Iunit=Iunit, return_units="as_str"
@@ -2419,6 +2463,103 @@ class Spectrum(object):
         plotting_library="default",
         **kwargs,
     ):
+
+        r"""Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
+
+        .. note::
+            default plotting library and templates can be edited in :py:attr:`radis.config` ["plot"]
+
+        Parameters
+        ----------
+        var: variable (`absorbance`, `transmittance`, `transmittance_noslit`, `xsection`, etc.)
+            For full list see :py:meth:`~radis.spectrum.spectrum.Spectrum.get_vars()`.
+            If ``None``, plot the first thing in the Spectrum. Default ``None``.
+        wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``,
+            wavelength air, wavenumber, or wavelength vacuum. If ``'default'``,
+            Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit` is used.
+        Iunit: unit for variable
+            if `default`, default unit for quantity `var` is used.
+            for radiance, one can use per wavelength (~ `W/m2/sr/nm`) or
+            per wavenumber (~ `W/m2/sr/cm-1`) units
+
+
+        Other Parameters
+        ----------------
+        show_points: boolean
+            show calculated points. Default ``True``.
+        nfig: int, None, or 'same'
+            plot on a particular figure. 'same' plots on current figure. For
+            instance::
+
+                s1.plot()
+                s2.plot(nfig='same')
+
+        show_medium: bool, ``'vacuum_only'``
+            if ``True`` and ``wunit`` are wavelengths, plot the propagation medium
+            in the xaxis label (``[air]`` or ``[vacuum]``). If ``'vacuum_only'``,
+            plot only if ``wunit=='nm_vac'``. Default ``'vacuum_only'``
+            (prevents from inadvertently plotting spectra with different propagation
+            medium on the same graph).
+        yscale: 'linear', 'log'
+            plot yscale
+        normalize: boolean,  or tuple.
+            option to normalize quantity to 1 (ex: for radiance). Default ``False``
+        plot_by_parts: bool
+            if ``True``, look for discontinuities in the wavespace and plot
+            the different parts without connecting lines. Useful for experimental
+            spectra produced by overlapping step-and-glue. Additional parameters
+            read from ``kwargs`` : ``split_threshold`` and ``cutwings``. See more in
+            :py:func:`~radis.misc.plot.split_and_plot_by_parts`.
+        force: bool
+            plotting on an existing figure is forbidden if labels are not the
+            same. Use ``force=True`` to ignore that.
+        show: bool
+            show figure. Default ``False``. Will still show the figure in
+            interactive mode, e.g, `%matplotlib inline` in a Notebook.
+        show_ruler: bool
+            if `True`, add a ruler tool to the Matplotlib toolbar. Convenient
+            to measure distances between peaks, etc.
+
+            .. warning::
+                still experimental ! Try it, feedback welcome !
+        
+        plotting_library (str): 
+            Specifies the plotting library to use for rendering the plot. 
+            Options:
+                - "auto" (default): Automatically selects the plotting backend based on the environment.
+                    - If running in a Jupyter notebook, it defaults to Plotly for interactive plots.
+                    - If running in a standard Python environment, it defaults to Matplotlib for static plots.
+                - "plotly": Forces the use of Plotly for interactive plots.
+                - "matplotlib": Forces the use of Matplotlib for static plots.
+            Raises:
+                ValueError: If an unsupported value (other than "auto", "plotly", or "matplotlib") is provided.
+        **kwargs: **dict
+            kwargs forwarded as argument to plot (e.g: lineshape
+            attributes: `lw=3, color='r'`)
+
+        Returns
+        -------
+        line:
+            line plot
+
+        Examples
+        --------
+        Plot an :py:func:`~radis.spectrum.models.experimental_spectrum` in
+        arbitrary units::
+
+            s = experimental_spectrum(..., Iunit='mW/cm2/sr/nm')
+            s.plot(Iunit='W/cm2/sr/cm-1')
+
+        See more examples in :ref:`the plot Spectral quantities page <label_spectrum_plot>`.
+
+
+        .. minigallery:: radis.Spectrum.plot
+
+        See Also
+        --------
+        :py:func:`~radis.spectrum.compare.plot_diff`,
+        :ref:`the Spectrum page <label_spectrum>`
+        """
 
         use_plotly = False
 
