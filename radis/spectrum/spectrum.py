@@ -2107,7 +2107,7 @@ class Spectrum(object):
         show_ruler=False,
         **kwargs,
     ):
-            r"""Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
+        r"""Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
         .. note::
             default plotting library and templates can be edited in :py:attr:`radis.config` ["plot"]
