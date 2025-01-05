@@ -2416,7 +2416,7 @@ class Spectrum(object):
         plot_by_parts=False,
         show=True,
         show_ruler=False,
-        plotting_library="auto",
+        plotting_library="default",
         **kwargs,
     ):
 
