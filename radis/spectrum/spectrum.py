@@ -2091,7 +2091,7 @@ class Spectrum(object):
         }
         return items
 
-        def _plot_matplotlib(
+    def _plot_matplotlib(
         self,
         var=None,
         wunit="default",
