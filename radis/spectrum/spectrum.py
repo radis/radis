@@ -2416,12 +2416,33 @@ class Spectrum(object):
         plot_by_parts=False,
         show=True,
         show_ruler=False,
+        plotting_library="auto",
         **kwargs,
     ):
-        if is_running_in_notebook():
-            self._plot_plotly(var, wunit, **kwargs)
+
+        use_plotly = False
+
+        if plotting_library == "default":
+            from radis.config import config
+            plotting_library = config["plotting_library"]
+
+        if plotting_library == "auto":
+            use_plotly = is_running_in_notebook()
+        elif plotting_library == "plotly":
+            use_plotly = True
+        elif plotting_library == "matplotlib":
+            use_plotly = False
         else:
-            self._plot_matplotlib(var, wunit, **kwargs)
+            raise ValueError("plotting_library must be 'auto', 'matplotlib' or 'plotly'")
+        
+        if use_plotly:
+            return self._plot_plotly(var=var, wunit=wunit, Iunit=Iunit, show_points=show_points, nfig=nfig,
+                                 yscale=yscale, show_medium=show_medium, normalize=normalize, force=force,
+                                 plot_by_parts=plot_by_parts, show=show, show_ruler=show_ruler, **kwargs)
+        else:
+            return self._plot_matplotlib(var=var, wunit=wunit, Iunit=Iunit, show_points=show_points, nfig=nfig,
+                                     yscale=yscale, show_medium=show_medium, normalize=normalize, force=force,
+                                     plot_by_parts=plot_by_parts, show=show, show_ruler=show_ruler, **kwargs)
 
     def get_populations(
         self, molecule=None, isotope=None, electronic_state=None, show_warning=True
