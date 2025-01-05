@@ -13,6 +13,7 @@
     }
     # global parameters
     # -----------------
+    "plotting_library": "auto",             # Default backend for plotting, set to auto-detect.
     "DEBUG_MODE": false,
     "ALLOW_OVERWRITE": false                # allow overwriting of registered databank entries
     "AUTO_UPDATE_DATABASE": false           # auto-convert 'pytables' files to 'vaex'
