@@ -17,6 +17,10 @@ from typing import Union
 
 import numpy as np
 
+import os
+import requests
+from bs4 import BeautifulSoup
+
 try:
     from .dbmanager import DatabaseManager
     from .hitranapi import columns_2004, parse_global_quanta, parse_local_quanta
@@ -111,6 +115,57 @@ def get_last(b):
     assert (non_zero[: threshold + 1] == 1).all()
     assert (non_zero[threshold + 1 :] == 0).all()
     return b[non_zero]
+
+
+def login_to_hitran():
+    login_url = 'https://hitran.org/login/'
+    username = os.getenv('HITRAN_USERNAME') or input("Enter HITRAN username: ")
+    password = os.getenv('HITRAN_PASSWORD') or input("Enter HITRAN password: ")
+    
+    session = requests.Session()
+    response = session.get(login_url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    csrf = soup.find('input', {'name': 'csrfmiddlewaretoken'})['value']
+    
+    login_data = {
+        'csrfmiddlewaretoken': csrf,
+        'email': username,
+        'password': password,
+    }
+    
+    headers = {
+        'Referer': login_url,
+        'Origin': 'https://hitran.org',
+        'Cookie': f'csrftoken={csrf}'
+    }
+    
+    login_response = session.post(login_url, data=login_data, headers=headers, allow_redirects=False)
+    
+    if login_response.status_code == 302:
+        print("Login successful.")
+        return session
+    else:
+        print(f"Login failed: {login_response.status_code}")
+        print("Response:", login_response.text[:500])
+        return None
+
+def download_hitemp_file(session, file_url, output_filename):
+    file_response = session.get(file_url, stream=True)
+    
+    if file_response.status_code == 200:
+        total_size = int(file_response.headers.get('content-length', 0))
+        with open(output_filename, 'wb') as f:
+            downloaded = 0
+            for chunk in file_response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+                    downloaded += len(chunk)
+                    done = int(50 * downloaded / total_size)
+                    print(f'\rProgress: [{"=" * done}{" " * (50-done)}] {downloaded}/{total_size} bytes', end='')
+        print("\nDownload complete!")
+    else:
+        print(f"Download failed: {file_response.status_code}")
+        print("Response:", file_response.text[:500])
 
 
 class HITEMPDatabaseManager(DatabaseManager):
@@ -256,8 +311,13 @@ class HITEMPDatabaseManager(DatabaseManager):
             ### Issue 717 [end]
 
         elif molecule in HITEMP_MOLECULES:
-            url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
-            urlnames = [url]
+            session = login_to_hitran()
+            if session:
+                url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
+                download_hitemp_file(session, url, basename(url))
+                urlnames = [basename(url)]
+            else:
+                return []  # Exit if login failed
         else:
             raise KeyError(
                 f"Please choose one of HITEMP molecules : {HITEMP_MOLECULES}. Got '{molecule}'"
@@ -344,6 +404,14 @@ class HITEMPDatabaseManager(DatabaseManager):
         wmax = 0
 
         writer = self.get_datafile_manager()
+
+        if molecule == "CO2":
+            session = login_to_hitran()
+            if session:
+                download_hitemp_file(session, 'https://hitran.org/files/HITEMP/bzip2format/02_HITEMP2024.par.bz2', '02_HITEMP2024.par.bz2')
+                urlname = '02_HITEMP2024.par.bz2'
+            else:
+                return 0  # Exit if login failed
 
         with opener.open(urlname) as gfile:  # locally downloaded file
 
