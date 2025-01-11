@@ -181,7 +181,8 @@ def sPlanck(
         \epsilon 2h c^2 {\nu}^3 \frac{1}{\operatorname{exp}\left(\frac{h c \nu}{k T}\right)-1}
 
     Additional Reference:
-    - ["Blackbody Radiation and Planck's Law," Optics Express](https://opg.optica.org/oe/fulltext.cfm?uri=oe-14-18-8121&id=97928).
+    - ["Blackbody Radiation and Planck's Law," Optics Express]
+    (https://opg.optica.org/oe/fulltext.cfm?uri=oe-14-18-8121&id=97928).
 
     See Also
     --------
