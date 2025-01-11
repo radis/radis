@@ -2564,7 +2564,7 @@ class Spectrum(object):
         use_plotly = False
 
         if plotting_library == "default":
-            from radis.config import config
+            from radis.misc.config import get_config
             plotting_library = config["plotting_library"]
 
         if plotting_library == "auto":
