@@ -92,6 +92,8 @@ import sys
 import plotly.express as px
 import pandas as pd
 
+from radis.misc.config import get_config
+
 # %% Spectrum class to hold results )
 
 def is_running_in_notebook():
@@ -2564,7 +2566,7 @@ class Spectrum(object):
         use_plotly = False
 
         if plotting_library == "default":
-            from radis.misc.config import get_config
+            config = get_config()
             plotting_library = config["plotting_library"]
 
         if plotting_library == "auto":
