@@ -314,7 +314,9 @@ class SpectrumFactory(BandFactory):
             - `isneutral`: When calculating the spectrum of an atomic species, whether or not it is neutral (always ``None`` for molecules)
         Returns:
             `gamma_lb`, `shift` - The total Lorentzian HWHM [:math:`cm^{-1}`], and the shift [:math:`cm^{-1}`] to be subtracted from the wavenumber array to account for lineshift. If setting the lineshift here is not desired, the 2nd return object can be anything for which `bool(shift)==False` like `None`. gamma_lb must be array-like but can also be a vaex expression if the dataframe type is vaex.
-        If unspecified, the broadening is handled by default by :func:`~radis.lbl.broadening.gamma_vald3` for atoms when using the Kurucz databank, and :func:`~radis.lbl.broadening.pressure_broadening_HWHM` for molecules. When using the NIST databank for atoms, the `lbfunc` parameter is compulsory as NIST doesn't provide broadening parameters.
+        For the Kurucz databank, if unspecified, the broadening is handled by default by :func:`~radis.lbl.broadening.gamma_vald3` for atoms when using the Kurucz databank, and :func:`~radis.lbl.broadening.pressure_broadening_HWHM` for molecules.
+
+        For the NIST databank, the `lbfunc` parameter is compulsory as NIST doesn't provide broadening parameters.
 
         See :ref:`the provided example <example_custom_lorentzian_broadening>`
     potential_lowering: float (cm-1/Zeff**2)
