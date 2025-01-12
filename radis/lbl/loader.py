@@ -1022,7 +1022,7 @@ class DatabankLoader(object):
 
         Parameters
         ----------
-        source: ``'hitran'``, ``'hitemp'``, ``'exomol'``, ``'geisa'``, ``'kurucz'``
+        source: ``'hitran'``, ``'hitemp'``, ``'exomol'``, ``'geisa'``, ``'kurucz'``, ``'nist'``
             which database to use.
         database: ``'full'``, ``'range'``, name of an ExoMol database, or ``'default'``
             if fetching from HITRAN, ``'full'`` download the full database and register
