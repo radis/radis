@@ -82,7 +82,6 @@ from warnings import warn
 import astropy.units as u
 import numpy as np
 from numpy import arange, exp, expm1
-from scipy.constants import c
 from scipy.optimize import OptimizeResult
 
 from radis import version
@@ -111,7 +110,7 @@ from radis.spectrum.spectrum import Spectrum
 
 
 class SpectrumFactory(BandFactory):
-    """A class to put together all functions related to loading CDSD / HITRAN
+    r"""A class to put together all functions related to loading CDSD / HITRAN
     databases, calculating the broadenings, and summing over all the lines.
 
     Parameters
@@ -314,16 +313,14 @@ class SpectrumFactory(BandFactory):
             - `isneutral`: When calculating the spectrum of an atomic species, whether or not it is neutral (always ``None`` for molecules)
         Returns:
             `gamma_lb`, `shift` - The total Lorentzian HWHM [:math:`cm^{-1}`], and the shift [:math:`cm^{-1}`] to be subtracted from the wavenumber array to account for lineshift. If setting the lineshift here is not desired, the 2nd return object can be anything for which `bool(shift)==False` like `None`. gamma_lb must be array-like but can also be a vaex expression if the dataframe type is vaex.
-        If unspecified, the broadening is handled by default by :func:`~radis.lbl.broadening.gamma_vald3` for atoms when using the Kurucz databank, and :func:`~radis.lbl.broadening.pressure_broadening_HWHM` for molecules.
+        For the Kurucz databank, if unspecified, the broadening is handled by default by :func:`~radis.lbl.broadening.gamma_vald3` for atoms when using the Kurucz databank, and :func:`~radis.lbl.broadening.pressure_broadening_HWHM` for molecules.
 
         For the NIST databank, the `lbfunc` parameter is compulsory as NIST doesn't provide broadening parameters.
 
         See :ref:`the provided example <example_custom_lorentzian_broadening>`
-    pfsource : ``string``
-        The source for the partition function tables for an interpolator or energy level tables for a calculator. Sources implemented so far are 'barklem' and 'kurucz' for the former, and 'nist' for the latter. 'default' is currently 'nist'. The `pfsource` can be changed post-initialisation using the :meth:`~radis.lbl.loader.DatabankLoader.set_atomic_partition_functions` method. See :ref:`the provided example <example_potential_lowering_pfs>` for more details.
     potential_lowering: float (cm-1/Zeff**2)
-        The value of potential lowering, only relevant when `pfsource` is 'kurucz' as it depends on both temperature and potential lowering. Can be changed on the fly by setting `sf.input.potential_lowering`. Allowed values are typically: -500, -1000, -2000, -4000, -8000, -16000, -32000.
-        Again, see :ref:`the provided example <example_potential_lowering_pfs>` for more details.
+        Use dedicated partition function tables (where available) in Kurucz database that depend on temperature and potential lowering. Otherwise, default to [Barklem-\&-Collet-2016]_ Table 8. Can be changed on the fly by setting `sf.input.potential_lowering`. Allowed values are typically: -500, -1000, -2000, -4000, -8000, -16000, -32000.
+        See :ref:`the provided example <example_potential_lowering_pfs>` for more details. The NIST implementation currently uses the same class for partition functions as Kurucz but doesn't use the dedicated tables, rather it only uses Barklem & Collett 2016 even if `potential_lowering` is specified.
 
     Examples
     --------
@@ -447,7 +444,6 @@ class SpectrumFactory(BandFactory):
         diluent=Default(None),
         lbfunc=None,
         potential_lowering=None,
-        pfsource="default",
         **kwargs,
     ):
 
@@ -625,7 +621,6 @@ class SpectrumFactory(BandFactory):
         )
         self.input.self_absorption = self_absorption
         self.input.potential_lowering = potential_lowering
-        self.input.pfsource = pfsource
 
         # Initialize computation variables
         self.params.wstep = wstep
@@ -1210,8 +1205,19 @@ class SpectrumFactory(BandFactory):
         # )
 
         gamma_arr = np.zeros((2, _Nlines_calculated), dtype=np.float32)
-        gamma_arr[0] = self.df0["selbrd"].to_numpy(dtype=np.float32)
+        # gamma_arr[0] = self.df0["selbrd"].to_numpy(dtype=np.float32)
+        gamma_arr[0] = self.df0["airbrd"].to_numpy(
+            dtype=np.float32
+        )  # dirty, but working for the moment
         gamma_arr[1] = self.df0["airbrd"].to_numpy(dtype=np.float32)
+
+        # Check if pressure shift exists (12/2024: not the case in Exomol)
+        if "Pshft" not in self.df0:
+            self.warn(
+                "Pressure-shift coefficient not given in database: assumed 0 pressure shift",
+                "MissingPressureShiftWarning",
+            )
+            self.df0["Pshft"] = 0
 
         self.calc_S0(self.df0)
 
