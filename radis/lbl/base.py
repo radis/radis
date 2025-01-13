@@ -1987,6 +1987,7 @@ class BaseFactory(DatabankLoader):
             "hitemp-radisdb",
             "cdsd-hitemp",
             "cdsd-4000",
+            "exomol-radisdb",
         ]:
             # In HITRAN, AFAIK all molecules have a complete assignment of rovibrational
             # levels hence gvib=1 for all vibrational levels.
@@ -1994,6 +1995,8 @@ class BaseFactory(DatabankLoader):
             # Complete rovibrational assignment would not be True, for instance, for
             # bending levels of CO2 if all levels are considered degenerated
             # (with a v2+1 degeneracy)
+            #
+            # In ExoMol, same as HITRAN. Derivation: set exomol vib degeneracy to 1 and compare with HITRAN calculation.
             if self.dataframe_type == "pandas":
                 df["gvibu"] = 1
                 df["gvibl"] = 1
