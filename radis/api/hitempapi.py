@@ -10,14 +10,13 @@ https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 
 """
 
+import os
 import re
 import urllib.request
 from os.path import basename, commonpath, join
 from typing import Union
 
 import numpy as np
-
-import os
 import requests
 from bs4 import BeautifulSoup
 
@@ -118,29 +117,31 @@ def get_last(b):
 
 
 def login_to_hitran():
-    login_url = 'https://hitran.org/login/'
-    username = os.getenv('HITRAN_USERNAME') or input("Enter HITRAN username: ")
-    password = os.getenv('HITRAN_PASSWORD') or input("Enter HITRAN password: ")
-    
+    login_url = "https://hitran.org/login/"
+    username = os.getenv("HITRAN_USERNAME") or input("Enter HITRAN username: ")
+    password = os.getenv("HITRAN_PASSWORD") or input("Enter HITRAN password: ")
+
     session = requests.Session()
     response = session.get(login_url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    csrf = soup.find('input', {'name': 'csrfmiddlewaretoken'})['value']
-    
+    soup = BeautifulSoup(response.text, "html.parser")
+    csrf = soup.find("input", {"name": "csrfmiddlewaretoken"})["value"]
+
     login_data = {
-        'csrfmiddlewaretoken': csrf,
-        'email': username,
-        'password': password,
+        "csrfmiddlewaretoken": csrf,
+        "email": username,
+        "password": password,
     }
-    
+
     headers = {
-        'Referer': login_url,
-        'Origin': 'https://hitran.org',
-        'Cookie': f'csrftoken={csrf}'
+        "Referer": login_url,
+        "Origin": "https://hitran.org",
+        "Cookie": f"csrftoken={csrf}",
     }
-    
-    login_response = session.post(login_url, data=login_data, headers=headers, allow_redirects=False)
-    
+
+    login_response = session.post(
+        login_url, data=login_data, headers=headers, allow_redirects=False
+    )
+
     if login_response.status_code == 302:
         print("Login successful.")
         return session
@@ -149,19 +150,23 @@ def login_to_hitran():
         print("Response:", login_response.text[:500])
         return None
 
+
 def download_hitemp_file(session, file_url, output_filename):
     file_response = session.get(file_url, stream=True)
-    
+
     if file_response.status_code == 200:
-        total_size = int(file_response.headers.get('content-length', 0))
-        with open(output_filename, 'wb') as f:
+        total_size = int(file_response.headers.get("content-length", 0))
+        with open(output_filename, "wb") as f:
             downloaded = 0
             for chunk in file_response.iter_content(chunk_size=8192):
                 if chunk:
                     f.write(chunk)
                     downloaded += len(chunk)
                     done = int(50 * downloaded / total_size)
-                    print(f'\rProgress: [{"=" * done}{" " * (50-done)}] {downloaded}/{total_size} bytes', end='')
+                    print(
+                        f'\rProgress: [{"=" * done}{" " * (50-done)}] {downloaded}/{total_size} bytes',
+                        end="",
+                    )
         print("\nDownload complete!")
     else:
         print(f"Download failed: {file_response.status_code}")
@@ -408,8 +413,12 @@ class HITEMPDatabaseManager(DatabaseManager):
         if molecule == "CO2":
             session = login_to_hitran()
             if session:
-                download_hitemp_file(session, 'https://hitran.org/files/HITEMP/bzip2format/02_HITEMP2024.par.bz2', '02_HITEMP2024.par.bz2')
-                urlname = '02_HITEMP2024.par.bz2'
+                download_hitemp_file(
+                    session,
+                    "https://hitran.org/files/HITEMP/bzip2format/02_HITEMP2024.par.bz2",
+                    "02_HITEMP2024.par.bz2",
+                )
+                urlname = "02_HITEMP2024.par.bz2"
             else:
                 return 0  # Exit if login failed
 
