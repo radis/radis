@@ -48,7 +48,6 @@ More in :ref:`The Spectrum object <label_spectrum>`.
 
 """
 
-import sys
 from copy import deepcopy
 from os.path import basename
 from warnings import warn
@@ -2445,7 +2444,10 @@ class Spectrum(object):
             {"Wavenumber": radiance_data[0], "Radiance_noslit": radiance_data[1]}
         )
         fig = px.line(df, x="Wavenumber", y="Radiance_noslit", template="plotly_dark")
-        fig.update_layout(yaxis=dict(tickmode="linear", dtick=0.01))
+        fig.update_layout(
+            xaxis_title=xlabel,
+            yaxis_title=ylabel,
+            yaxis=dict(tickmode="linear", dtick=0.01))
         fig.show()
 
     def plot(
