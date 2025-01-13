@@ -2443,7 +2443,7 @@ class Spectrum(object):
         df = pd.DataFrame(
             {"Wavenumber": radiance_data[0], "Radiance_noslit": radiance_data[1]}
         )
-        fig = px.line(df, x="Wavenumber", y="Radiance_noslit", template="plotly_dark")
+        fig = px.line(df, x="Wavenumber", y="Radiance_noslit", template=template)
         fig.update_layout(
             xaxis_title=xlabel,
             yaxis_title=ylabel,
