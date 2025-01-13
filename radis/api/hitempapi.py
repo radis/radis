@@ -182,6 +182,7 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
             f"Failed to download {file_url}. Please download manually and place it in the appropriate directory."
         )
 
+
 class HITEMPDatabaseManager(DatabaseManager):
     def __init__(
         self,
