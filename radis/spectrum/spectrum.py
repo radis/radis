@@ -2447,7 +2447,8 @@ class Spectrum(object):
         fig.update_layout(
             xaxis_title=xlabel,
             yaxis_title=ylabel,
-            yaxis=dict(tickmode="linear", dtick=0.01))
+            yaxis=dict(tickmode="linear", dtick=0.01),
+        )
         fig.show()
 
     def plot(
