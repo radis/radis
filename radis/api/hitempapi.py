@@ -116,7 +116,7 @@ def get_last(b):
     return b[non_zero]
 
 
-def login_to_hitran():
+def login_to_hitran(verbose=False):
     login_url = "https://hitran.org/login/"
     username = os.getenv("HITRAN_USERNAME") or input("Enter HITRAN username: ")
     password = os.getenv("HITRAN_PASSWORD") or input("Enter HITRAN password: ")
@@ -143,15 +143,19 @@ def login_to_hitran():
     )
 
     if login_response.status_code == 302:
-        print("Login successful.")
+        if verbose:
+            print("Login successful.")
         return session
     else:
-        print(f"Login failed: {login_response.status_code}")
-        print("Response:", login_response.text[:500])
-        return None
+        if verbose:
+            print(f"Login failed: {login_response.status_code}")
+            print("Response:", login_response.text[:500])
+        raise Warning(
+            "HITRAN login failed. Ensure credentials are correct. Refer to: https://hitran.org/login/ for troubleshooting."
+        )
 
 
-def download_hitemp_file(session, file_url, output_filename):
+def download_hitemp_file(session, file_url, output_filename, verbose=False):
     file_response = session.get(file_url, stream=True)
 
     if file_response.status_code == 200:
@@ -162,16 +166,21 @@ def download_hitemp_file(session, file_url, output_filename):
                 if chunk:
                     f.write(chunk)
                     downloaded += len(chunk)
-                    done = int(50 * downloaded / total_size)
-                    print(
-                        f'\rProgress: [{"=" * done}{" " * (50-done)}] {downloaded}/{total_size} bytes',
-                        end="",
-                    )
-        print("\nDownload complete!")
+                    if verbose:
+                        done = int(50 * downloaded / total_size)
+                        print(
+                            f'\rProgress: [{"=" * done}{" " * (50-done)}] {downloaded}/{total_size} bytes',
+                            end="",
+                        )
+        if verbose:
+            print("\nDownload complete!")
     else:
-        print(f"Download failed: {file_response.status_code}")
-        print("Response:", file_response.text[:500])
-
+        if verbose:
+            print(f"Download failed: {file_response.status_code}")
+            print("Response:", file_response.text[:500])
+        raise Warning(
+            f"Failed to download {file_url}. Please download manually and place it in the appropriate directory."
+        )
 
 class HITEMPDatabaseManager(DatabaseManager):
     def __init__(
@@ -296,8 +305,6 @@ class HITEMPDatabaseManager(DatabaseManager):
 
             base_url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
 
-            ### Issue 717 - https://github.com/radis/radis/issues/717
-
             # response = urllib.request.urlopen(base_url)
             # response_string = response.read().decode()
             # inputfiles = re.findall(r'href="(\S+.zip)"', response_string)
@@ -313,7 +320,6 @@ class HITEMPDatabaseManager(DatabaseManager):
             inputfiles = re.findall(r'href="(\S+.zip)"', response_string)
             base_url = "https://hitran.org"
             urlnames = [f"{base_url}{f}" for f in inputfiles]
-            ### Issue 717 [end]
 
         elif molecule in HITEMP_MOLECULES:
             session = login_to_hitran()
