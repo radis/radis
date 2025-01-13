@@ -48,12 +48,15 @@ More in :ref:`The Spectrum object <label_spectrum>`.
 
 """
 
+import sys
 from copy import deepcopy
 from os.path import basename
 from warnings import warn
 
 import astropy.units as u
 import numpy as np
+import pandas as pd
+import plotly.express as px
 from numpy import abs, diff
 
 from radis.db.references import doi
@@ -67,6 +70,7 @@ from radis.misc.arrays import (
     last_nonnan_index,
     nantrapz,
 )
+from radis.misc.config import get_config
 from radis.misc.debug import printdbg
 from radis.misc.plot import split_and_plot_by_parts
 from radis.misc.signal import resample, resample_even
@@ -88,26 +92,22 @@ from radis.spectrum.utils import (
 )
 from radis.tools.track_ref import RefTracker
 
-import sys
-import plotly.express as px
-import pandas as pd
-
-from radis.misc.config import get_config
-
 # %% Spectrum class to hold results )
 
+
 def is_running_in_notebook():
-        """Check if the code is running in a Jupyter Notebook."""
-        try:
-            shell = get_ipython().__class__.__name__
-            if shell == 'ZMQInteractiveShell':
-                return True  # Jupyter notebook or qtconsole
-            elif shell == 'TerminalInteractiveShell':
-                return False  # Terminal running IPython
-            else:
-                return False  # Spyder
-        except NameError:
-            return False  # Probably standard Python interpreter
+    """Check if the code is running in a Jupyter Notebook."""
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == "ZMQInteractiveShell":
+            return True  # Jupyter notebook or qtconsole
+        elif shell == "TerminalInteractiveShell":
+            return False  # Terminal running IPython
+        else:
+            return False  # Spyder
+    except NameError:
+        return False  # Probably standard Python interpreter
+
 
 class Spectrum(object):
     """This class holds results calculated with the
@@ -2111,7 +2111,7 @@ class Spectrum(object):
     ):
         r"""Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
-        Plots the spectrum data using Matplotlib. 
+        Plots the spectrum data using Matplotlib.
 
         .. note::
             default plotting library and templates can be edited in :py:attr:`radis.config` ["plot"]
@@ -2337,13 +2337,14 @@ class Spectrum(object):
             add_ruler(fig, wunit=wunit, Iunit=Iunit)
 
         plt.tight_layout()
-        
+
         if show:
             plt.show()
 
         return line
 
-    def _plot_plotly(self, 
+    def _plot_plotly(
+        self,
         var=None,
         wunit="default",
         Iunit="default",
@@ -2356,7 +2357,7 @@ class Spectrum(object):
         plot_by_parts=False,
         show=True,
         show_ruler=False,
-        template='plotly_dark',
+        template="plotly_dark",
         **kwargs,
     ):
         r"""Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
@@ -2432,20 +2433,19 @@ class Spectrum(object):
 
         # Get variable
         x, y, wunit, Iunit = self.get(
-        var, wunit=wunit, Iunit=Iunit, return_units="as_str"
+            var, wunit=wunit, Iunit=Iunit, return_units="as_str"
         )
 
         # Get labels
         xlabel = format_xlabel(wunit, show_medium)
         ylabel = "{0} ({1})".format(make_up(var), make_up_unit(Iunit, var))
 
-        radiance_data = self.get('radiance_noslit')
-        df = pd.DataFrame({'Wavenumber': radiance_data[0], 'Radiance_noslit': radiance_data[1]})
-        fig = px.line(df, x="Wavenumber", y="Radiance_noslit", template='plotly_dark')  
-        fig.update_layout(
-            yaxis=dict(
-                tickmode="linear",  
-                dtick=0.01))
+        radiance_data = self.get("radiance_noslit")
+        df = pd.DataFrame(
+            {"Wavenumber": radiance_data[0], "Radiance_noslit": radiance_data[1]}
+        )
+        fig = px.line(df, x="Wavenumber", y="Radiance_noslit", template="plotly_dark")
+        fig.update_layout(yaxis=dict(tickmode="linear", dtick=0.01))
         fig.show()
 
     def plot(
@@ -2524,9 +2524,9 @@ class Spectrum(object):
 
             .. warning::
                 still experimental ! Try it, feedback welcome !
-        
-        plotting_library (str): 
-            Specifies the plotting library to use for rendering the plot. 
+
+        plotting_library (str):
+            Specifies the plotting library to use for rendering the plot.
             Options:
                 - "auto" (default): Automatically selects the plotting backend based on the environment.
                     - If running in a Jupyter notebook, it defaults to Plotly for interactive plots.
@@ -2576,16 +2576,42 @@ class Spectrum(object):
         elif plotting_library == "matplotlib":
             use_plotly = False
         else:
-            raise ValueError("plotting_library must be 'auto', 'matplotlib' or 'plotly'")
-        
+            raise ValueError(
+                "plotting_library must be 'auto', 'matplotlib' or 'plotly'"
+            )
+
         if use_plotly:
-            return self._plot_plotly(var=var, wunit=wunit, Iunit=Iunit, show_points=show_points, nfig=nfig,
-                                 yscale=yscale, show_medium=show_medium, normalize=normalize, force=force,
-                                 plot_by_parts=plot_by_parts, show=show, show_ruler=show_ruler, **kwargs)
+            return self._plot_plotly(
+                var=var,
+                wunit=wunit,
+                Iunit=Iunit,
+                show_points=show_points,
+                nfig=nfig,
+                yscale=yscale,
+                show_medium=show_medium,
+                normalize=normalize,
+                force=force,
+                plot_by_parts=plot_by_parts,
+                show=show,
+                show_ruler=show_ruler,
+                **kwargs,
+            )
         else:
-            return self._plot_matplotlib(var=var, wunit=wunit, Iunit=Iunit, show_points=show_points, nfig=nfig,
-                                     yscale=yscale, show_medium=show_medium, normalize=normalize, force=force,
-                                     plot_by_parts=plot_by_parts, show=show, show_ruler=show_ruler, **kwargs)
+            return self._plot_matplotlib(
+                var=var,
+                wunit=wunit,
+                Iunit=Iunit,
+                show_points=show_points,
+                nfig=nfig,
+                yscale=yscale,
+                show_medium=show_medium,
+                normalize=normalize,
+                force=force,
+                plot_by_parts=plot_by_parts,
+                show=show,
+                show_ruler=show_ruler,
+                **kwargs,
+            )
 
     def get_populations(
         self, molecule=None, isotope=None, electronic_state=None, show_warning=True
