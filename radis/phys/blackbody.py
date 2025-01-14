@@ -127,7 +127,7 @@ def sPlanck(
     eps=1,
     wstep=0.01,
     medium="air",
-    **kwargs
+    **kwargs,
 ):
     r"""Return a RADIS :py:class:`~radis.spectrum.spectrum.Spectrum` object with blackbody radiation.
 
@@ -207,7 +207,9 @@ def sPlanck(
         elif medium == "vacuum":
             waveunit = "nm_vac"
         else:
-            raise NotImplementedError(f"The medium = {medium} was not implemented for a black body.")
+            raise NotImplementedError(
+                f"The medium = {medium} was not implemented for a black body."
+            )
     if T is None:
         raise ValueError("T must be defined")
 
