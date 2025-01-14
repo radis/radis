@@ -25,11 +25,13 @@ sf = SpectrumFactory(
     2150,
     2450,  # cm-1
     molecule="CO2",
-    isotope="1,2,3",
+    isotope="1",
     wstep=0.002,
 )
 
-sf.fetch_databank("hitemp")
+sf.fetch_databank(
+    source="hitran"
+)  # use hitemp or exomol for accuracy at high tempertatures
 
 T = 1500.0  # K
 p = 1.0  # bar

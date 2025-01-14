@@ -232,14 +232,28 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         molecule = self.molecule
 
-        if molecule in ["H2O", "CO2"]:
+        if molecule in ["H2O"]:  # CO2 is a single file since 01/2025
 
             base_url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
-            response = urllib.request.urlopen(base_url)
-            response_string = response.read().decode()
-            inputfiles = re.findall('href="(\S+.zip)"', response_string)
 
-            urlnames = [join(base_url, f) for f in inputfiles]
+            ### Issue 717 - https://github.com/radis/radis/issues/717
+
+            # response = urllib.request.urlopen(base_url)
+            # response_string = response.read().decode()
+            # inputfiles = re.findall(r'href="(\S+.zip)"', response_string)
+            # urlnames = [join(base_url, f) for f in inputfiles]
+
+            from radis.misc.utils import getProjectRoot
+
+            with open(
+                join(getProjectRoot(), "db", "H2O", "HITRANpage_january2025.htm")
+            ) as file:
+                response_string = file.read()
+
+            inputfiles = re.findall(r'href="(\S+.zip)"', response_string)
+            base_url = "https://hitran.org"
+            urlnames = [f"{base_url}{f}" for f in inputfiles]
+            ### Issue 717 [end]
 
         elif molecule in HITEMP_MOLECULES:
             url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
@@ -260,7 +274,7 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         If other molecule, return the file anyway.
         see :py:func:`radis.api.hitempapi.keep_only_relevant`"""
-        if self.molecule in ["CO2", "H2O"]:
+        if self.molecule in ["H2O"]:  # CO2 is a single file since 01/2025
             inputfiles, _, _ = keep_only_relevant(
                 inputfiles, wavenum_min, wavenum_max, verbose
             )
@@ -337,6 +351,16 @@ class HITEMPDatabaseManager(DatabaseManager):
 
             if verbose:
                 print(f"Download complete. Parsing {molecule} database to {local_file}")
+                print(
+                    "This step is executed only ONCE and will considerably accelerate the computation of spectra. It will also dramatically reduce the memory usage. The parsing/conversion can be very fast (e.g. HITEMP OH takes a few seconds) or extremely long (e.g. HITEMP CO2 takes approximately 1 hour)."
+                )
+            if molecule == "CO2":
+                from warnings import warn
+
+                warn(
+                    "Parsing will take approximately 1 hour for HITEMP CO2 (compressed = 6 GB",
+                    UserWarning,
+                )
 
             # assert not(exists(local_file))
 
@@ -349,7 +373,13 @@ class HITEMPDatabaseManager(DatabaseManager):
                     # with End of file flag) so nbytes != 0
                     b = get_last(b)
 
-                df = _ndarray2df(b, columns, linereturnformat)
+                df = _ndarray2df(b, columns, linereturnformat, molecule=self.molecule)
+
+                # 19722
+                if molecule == "CO2":
+                    df["iso"] = (
+                        df["iso"].replace({"A": 10, "B": 11, "C": 12}).astype(int)
+                    )  # in HITEMP2024, isotopologue 10, 11, 12 are A, B, C.
 
                 # Post-processing :
                 # ... Add local quanta attributes, based on the HITRAN group

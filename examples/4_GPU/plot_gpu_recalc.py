@@ -28,7 +28,7 @@ sf = SpectrumFactory(
     wstep=0.002,
 )
 
-sf.fetch_databank("hitemp")
+sf.fetch_databank("hitran")  # use hitemp or exomol for accuracy at high tempertatures
 
 T_list = [1000.0, 1500.0, 2000.0]
 

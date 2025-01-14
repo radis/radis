@@ -41,7 +41,11 @@ import numpy as np
 import pandas as pd
 from dateutil.parser import parse as parse_date
 from joblib import Parallel, delayed
-from numpy import DataSource
+
+try:
+    from numpy.lib.npyio import DataSource
+except ImportError:  # numpy <2.0.0?
+    from numpy import DataSource
 
 LAST_VALID_DATE = (
     "01 Jan 2010"  # set to a later date to force re-download of all databases
@@ -390,23 +394,64 @@ class DatabaseManager(object):
             try:
                 self.ds.open(urlname)
             except Exception as err:
+                if str(err) == "File is not a zip file":
+                    print("\n### RADIS - ISSUE 717 ###\n")
+                    print(
+                        f'Error: "{err}".\nThis issue occurs because HITEMP requires a login, which is not currently implemented in RADIS.\nFor more information and to contribute to resolving this issue, please visit: https://github.com/radis/radis/issues/717 \n'
+                    )
+
+                    print(
+                        "*** Temporary fix ***\nDownload manualy the following file and put it in the following location:"
+                    )
+                    temp_folder = os.path.join(
+                        os.path.dirname(local_file),
+                        "downloads__can_be_deleted",
+                        "hitran.org",
+                        "files",
+                        "HITEMP",
+                        "HITEMP-2010",
+                        f"{self.molecule}_line_list",
+                    )
+                    print(f"{urlname} ==> {temp_folder} \n")
+
                 raise OSError(
-                    f"Problem opening : {self.ds._findfile(urlname)}. See above. You may want to delete the downloaded file."
+                    f"Problem opening : {self.ds._findfile(urlname)}. See potential solution above!!! You may want to delete the downloaded file."
                 ) from err
 
-            # try:
-            Nlines = self.parse_to_local_file(
-                self.ds,
-                urlname,
-                local_file,
-                pbar_active=(not parallel),
-                pbar_t0=time() - t0,
-                pbar_Ntot_estimate_factor=pbar_Ntot_estimate_factor,
-                pbar_Nlines_already=Nlines_total,
-                pbar_last=(Ndownload == Ntotal_downloads),
-            )
-            # except Exception as err:
-            #     raise IOError("Problem parsing `{0}`. Check the error above. It may arise if the file wasn't properly downloaded. Try to delete it".format(self.ds._findfile(urlname))) from err
+            try:
+                Nlines = self.parse_to_local_file(
+                    self.ds,
+                    urlname,
+                    local_file,
+                    pbar_active=(not parallel),
+                    pbar_t0=time() - t0,
+                    pbar_Ntot_estimate_factor=pbar_Ntot_estimate_factor,
+                    pbar_Nlines_already=Nlines_total,
+                    pbar_last=(Ndownload == Ntotal_downloads),
+                )
+            except OSError as err:
+                if str(err) == "Invalid data stream":
+                    print("\n### RADIS - ISSUE 717 ###\n")
+                    print(
+                        f'Error: "{err}".\nThis issue occurs because HITEMP requires a login, which is not currently implemented in RADIS.\nFor more information and to contribute to resolving this issue, please visit: https://github.com/radis/radis/issues/717 \n'
+                    )
+
+                    print(
+                        "*** Temporary fix ***\nDownload manualy the following file and put it in the following location:"
+                    )
+                    temp_folder = os.path.join(
+                        os.path.dirname(local_file),
+                        "downloads__can_be_deleted",
+                        "hitran.org",
+                        "files",
+                        "HITEMP",
+                        "bzip2format",
+                    )
+                    print(f"{urlname} ==> {temp_folder} \n")
+
+                raise OSError(
+                    f"Problem opening : {self.ds._findfile(urlname)}. See potential solution above!!! You may want to delete the downloaded file."
+                ) from err
 
             return Nlines
 

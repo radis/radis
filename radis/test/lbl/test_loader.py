@@ -9,6 +9,7 @@ from os.path import exists
 from shutil import rmtree
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 
 from radis import config
@@ -88,14 +89,15 @@ def test_retrieve_from_database(
         # the spectrum is retrieved. Else, an error will be raised
         sf.autoretrievedatabase = "force"
 
+        import radis
+
+        radis.debug = True
         # Calculate spectrum under the same conditions
         s2 = sf.non_eq_spectrum(2000, 1000)
 
         # Note that s1 == s2 won't work because populations are not stored
         # by default in the database
         assert s1.compare_with(s2, spectra_only=True, plot=plot)
-
-        return True
 
     finally:
         rmtree(temp_database_name)
@@ -248,7 +250,6 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
     - Ensure dataframes are same across all the databanks available in RADIS
     Added in https://github.com/radis/radis/pull/580
     """
-    import numpy as np
     import pandas
     import vaex
 
@@ -383,7 +384,6 @@ def test_vaex_and_pandas_dataframe_load_databank():
     of dataframe in pandas format .
     Added in https://github.com/radis/radis/pull/580
     """
-    import numpy as np
 
     from radis import SpectrumFactory
 
@@ -444,11 +444,11 @@ def test_vaex_and_pandas_dataframe_load_databank():
 
 def _run_testcases(verbose=True, plot=False):
 
-    # test_retrieve_from_database(plot=plot, verbose=verbose)
+    test_retrieve_from_database(plot=plot, verbose=verbose)
     # test_ignore_cached_files()
     # test_ignore_irrelevant_files(verbose=verbose)
     # test_custom_abundance()
-    test_vaex_and_pandas_dataframe_fetch_databank()
+    # test_vaex_and_pandas_dataframe_fetch_databank()
     # test_vaex_and_pandas_dataframe_load_databank()
 
 

@@ -28,48 +28,57 @@ from bs4 import BeautifulSoup
 from radis.api.hdf5 import vaexsafe_colname
 
 
-def e2s(molname_exact):
-    """convert the exact molname (used in ExoMol) to the simple molname
+def exact_molname_exomol_to_simple_molname(exact_exomol_molecule_name):
+    """convert the exact molname (used in ExoMol) to the simple molname.
 
     Args:
-       molname_exact: the exact molname
+        exact_exomol_molecule_name: the exact exomol molecule name
 
     Returns:
-       simple molname
+        simple molname
 
-    Examples::
-
-       >>> print(e2s("12C-1H4"))
-       >>> CH4
-       >>> print(e2s("23Na-16O-1H"))
-       >>> NaOH
-       >>> print(e2s("HeH_p"))
-       >>> HeH_p
-       >>> print(e2s("trans-31P2-1H-2H")) #not working
-       >>> Warning: Exact molname  trans-31P2-1H-2H cannot be converted to simple molname
-       >>> trans-31P2-1H-2H
-
+    Examples:
+        >>> print(exact_molname_exomol_to_simple_molname("12C-1H4"))
+        >>> CH4
+        >>> print(exact_molname_exomol_to_simple_molname("23Na-16O-1H"))
+        >>> NaOH
+        >>> print(exact_molname_exomol_to_simple_molname("HeH_p"))
+        >>> HeH_p
+        >>> print(exact_molname_exomol_to_simple_molname("trans-31P2-1H-2H")) #not working
+        >>> Warning: Exact molname  trans-31P2-1H-2H cannot be converted to simple molname
+        >>> trans-31P2-1H-2H
+        >>> print(exact_molname_exomol_to_simple_molname("1H-2H-16O"))
+        >>> H2O
     """
 
     try:
-        t = molname_exact.split("-")
-        molname_simple = ""
-        for ele in t:
-            alp = "".join(re.findall(r"\D", ele))
-            num0 = re.split("[A-Z]", ele)[1]
-            if num0.isdigit():
-                num = num0
-            else:
-                num = ""
-            molname_simple = molname_simple + alp + num
+        molname_simple = _molname_simple_no_exception(exact_exomol_molecule_name)
         return molname_simple
     except:
         print(
             "Warning: Exact molname ",
-            molname_exact,
+            exact_exomol_molecule_name,
             "cannot be converted to simple molname",
         )
-        return molname_exact
+        return exact_exomol_molecule_name
+
+
+def _molname_simple_no_exception(exact_exomol_molecule_name):
+    t = exact_exomol_molecule_name.split("-")
+    molname_simple = ""
+    for ele in t:
+        alp = "".join(re.findall(r"\D", ele))
+        num0 = re.split("[A-Z]", ele)[1]
+        if num0.isdigit():
+            num = num0
+        else:
+            num = ""
+        molname_simple = molname_simple + alp + num
+
+    # ExoJAX Issue #528
+    if molname_simple == "HHO":
+        molname_simple = "H2O"
+    return molname_simple
 
 
 def read_def(deff):
@@ -95,7 +104,7 @@ def read_def(deff):
         tag for wavelength ranges.
 
     Note:
-       For some molecules, ExoMol provides multiple trans files. numinf and numtag are the ranges and identifiers for the multiple trans files.
+        For some molecules, ExoMol provides multiple trans files. numinf and numtag are the ranges and identifiers for the multiple trans files.
 
     """
 
@@ -136,17 +145,13 @@ def read_def(deff):
     if deff.stem == "16O-1H__MoLLIST":
         quantum_labels = ["e/f", "v", "F1/F2", "Es"]
 
-    if ntransf > 1:
-        dnufile = maxnu / ntransf
-        numinf = dnufile * np.array(range(ntransf + 1))
-        numtag = []
-        for i in range(len(numinf) - 1):
-            imin = "{:05}".format(int(numinf[i]))
-            imax = "{:05}".format(int(numinf[i + 1]))
-            numtag.append(imin + "-" + imax)
+    if deff.stem == "1H-2H-16O__VTT":
+        numinf = wavenumber_range_HDO_VTT()
     else:
-        numinf = None
-        numtag = ""
+        numinf = compute_wavenumber_ranges(ntransf, maxnu)
+
+    numtag = wavenumber_tag(numinf)
+
     output = {
         "n_Texp": n_Texp,
         "alpha_ref": alpha_ref,
@@ -159,6 +164,75 @@ def read_def(deff):
         "unc": unc,  # bool uncertainty of line center availability
     }
     return output
+
+
+def wavenumber_range_HDO_VTT():
+    """wave number range for HDO VTT as an exception
+
+    Returns:
+        float: numinf
+    """
+    numinf = np.array(
+        [
+            0.0,
+            250.0,
+            500.0,
+            750.0,
+            1000.0,
+            1500.0,
+            2000.0,
+            2250.0,
+            2750.0,
+            3500.0,
+            4500.0,
+            5500.0,
+            7000.0,
+            9000.0,
+            14000.0,
+            20000.0,
+            26000.0,
+        ]
+    )
+    return numinf
+
+
+def compute_wavenumber_ranges(ntransf, maxnu):
+    """wavenumber range for general case
+
+    Args:
+        ntransf: number of the trans files
+        maxnu: maximum wavenumber
+
+    Returns:
+        float: numinf
+    """
+    if ntransf > 1:
+        dnufile = maxnu / ntransf
+        numinf = dnufile * np.array(range(ntransf + 1))
+        wavenumber_tag(numinf)
+    else:
+        numinf = None
+    return numinf
+
+
+def wavenumber_tag(numinf):
+    """convert numinf to numtag (used in the name of trans file)
+
+
+    Args:
+        numinf (_type_): wavenumber values for the range
+
+    Returns:
+        float: numtag wavenumber tag (such as 00000-00500)
+    """
+    if numinf is None:
+        return ""
+    numtag = []
+    for i in range(len(numinf) - 1):
+        imin = "{:05}".format(int(numinf[i]))
+        imax = "{:05}".format(int(numinf[i + 1]))
+        numtag.append(imin + "-" + imax)
+    return numtag
 
 
 def read_pf(pff):
@@ -550,40 +624,39 @@ def read_broad(broadf):
     return bdat
 
 
-# def check_bdat(bdat):
-#     """checking codes in .broad
-#     Args:
-#        bdat: exomol .broad data given by exomolapi.read_broad
-#     Returns:
-#        code level: None, a0, a1, other codes unavailable currently,
-#     """
+def check_code_level(bdat):
+    """checking code level in .broad
+    Args:
+        bdat: exomol .broad data given by exomolapi.read_broad
 
-#     def checkcode(code):
-#         cmask = bdat["code"] == code
-#         if len(bdat["code"][cmask]) > 0:
-#             return True
-#         else:
-#             return False
-
-#     codelv = None
-#     for code in ["a0", "a1"]:
-#         if checkcode(code):
-#             codelv = code
-
-#     return codelv
+    Returns:
+        code level: None, a0, a1, other codes unavailable currently,
+        if a0 and a1 are available, a1 is returned.
+        the other cases returns None
+    """
+    input_array = np.unique(np.array(bdat["code"]))
+    if np.array_equal(input_array, np.array(["a0"])):
+        return "a0"
+    elif np.array_equal(input_array, np.array(["a1"])):
+        return "a1"
+    elif np.array_equal(np.sort(input_array), np.array(["a0", "a1"])):
+        return "a1"
+    elif np.array_equal(input_array, np.array(["m0"])):
+        return "m0"
+    return None
 
 
 def make_j2b(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
     """compute j2b (code a0, map from jlower to alpha_ref)
 
     Args:
-       bdat: exomol .broad data given by exomolapi.read_broad
-       alpha_ref_default: default value
-       n_Texp_default: default value
-       jlower_max: maximum number of jlower
+        bdat: exomol .broad data given by exomolapi.read_broad
+        alpha_ref_default: default value
+        n_Texp_default: default value
+        jlower_max: maximum number of jlower
     Returns:
-       j2alpha_ref[jlower] provides alpha_ref for jlower
-       j2n_Texp[jlower]  provides nT_exp for jlower
+        j2alpha_ref[jlower] provides alpha_ref for jlower
+        j2n_Texp[jlower]  provides nT_exp for jlower
     """
     # a0
     cmask = bdat["code"] == "a0"
@@ -626,15 +699,15 @@ def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None):
     """compute jj2b (code a1, map from (jlower, jupper) to alpha_ref and n_Texp)
 
     Args:
-       bdat: exomol .broad data given by exomolapi.read_broad
-       j2alpha_ref_def: default value from a0
-       j2n_Texp_def: default value from a0
-       jupper_max: maximum number of jupper
+        bdat: exomol .broad data given by exomolapi.read_broad
+        j2alpha_ref_def: default value from a0
+        j2n_Texp_def: default value from a0
+        jupper_max: maximum number of jupper
     Returns:
-       jj2alpha_ref[jlower,jupper] provides alpha_ref for (jlower, jupper)
-       jj2n_Texp[jlower,jupper]  provides nT_exp for (jlower, jupper)
+        jj2alpha_ref[jlower,jupper] provides alpha_ref for (jlower, jupper)
+        jj2n_Texp[jlower,jupper]  provides nT_exp for (jlower, jupper)
     Note:
-       The pair of (jlower, jupper) for which broadening parameters are not given, jj2XXX contains None.
+        The pair of (jlower, jupper) for which broadening parameters are not given, jj2XXX contains None.
     """
     # a1
     cmask = bdat["code"] == "a1"
@@ -655,6 +728,55 @@ def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None):
     jj2n_Texp[jlower_arr, jupper_arr] = n_Texp_arr
 
     return jj2alpha_ref, jj2n_Texp
+
+
+def make_j2b_m0(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
+    """compute j2b (code m0, map from |m| to alpha_ref)
+
+    Args:
+        bdat: exomol .broad data given by exomolapi.read_broad
+        alpha_ref_default: default value
+        n_Texp_default: default value
+        jlower_max: maximum number of jlower
+    Returns:
+        j2alpha_ref[jlower] provides alpha_ref for jlower
+        j2n_Texp[jlower]  provides nT_exp for jlower
+    """
+    # m0
+    cmask = bdat["code"] == "m0"
+    jlower_arr = np.array(bdat["jlower"][cmask], dtype=int)
+    alpha_ref_arr = np.array(bdat["alpha_ref"][cmask])
+    n_Texp_arr = np.array(bdat["n_Texp"][cmask])
+
+    # Determine the array size based on jlower_max
+    if jlower_max is None:
+        Nblower = np.max(jlower_arr) + 1
+    else:
+        Nblower = np.max([jlower_max, np.max(jlower_arr)]) + 1
+
+    # Initialize arrays with default alpha_ref and n_Texp
+    j2alpha_ref = np.full(Nblower, alpha_ref_default)
+    j2n_Texp = np.full(Nblower, n_Texp_default)
+
+    # Populate the mapping arrays using known broadening coefficients
+    j2alpha_ref[jlower_arr] = alpha_ref_arr
+    j2n_Texp[jlower_arr] = n_Texp_arr
+
+    # Raise a minor warning if default values are used for high J values
+    if Nblower > (np.max(jlower_arr) + 1):
+        import warnings
+
+        from radis.misc.warning import AccuracyWarning
+
+        warnings.warn(
+            AccuracyWarning(
+                "The default broadening parameter (alpha = {2} cm^-1 and n = {3}) are used for J'' > {1} up to J'' = {0}".format(
+                    Nblower, np.max(jlower_arr), alpha_ref_default, n_Texp_default
+                )
+            )
+        )
+
+    return j2alpha_ref, j2n_Texp
 
 
 def get_exomol_full_isotope_name(molecule, isotope):
@@ -778,16 +900,30 @@ def get_exomol_database_list(molecule, isotope_full_name=None):
     databases = [r.get_attribute_list("title")[0] for r in rows]
 
     if len(databases_recommended) > 1:
-        # Known exceptions :
-        if (
+        old_recommended = databases_recommended.copy()
+
+        ### Known exception: SiO cross-section
+        # this is a cross-section dataset, shouldn't be used. Reverse and use the other one:
+        exception_SiO = (
             isotope_full_name == "28Si-16O"
             and databases_recommended[0] == "xsec-SiOUVenIR"
-        ):
-            # this is a cross-section dataset, shouldn't be used. Reverse and use the other one:
+        )
+        if exception_SiO:
             databases_recommended = databases_recommended[::-1]
-        else:
+
+        ### Known exception: DTU cross-section
+        exception_DTU = "DTU" in databases_recommended
+        if exception_DTU:
+            databases_recommended.remove("DTU")
+
+        if exception_SiO or exception_DTU:
             print(
-                f"Multiple recommended databases found for {molecule} in ExoMol : {databases_recommended}. This is unexpected. Using the first"
+                f"Multiple recommended databases found for {molecule} in ExoMol : {old_recommended}. {isotope_full_name} is an exception, using {databases_recommended}"
+            )
+        else:
+            databases_recommended[::-1]
+            print(
+                f"Multiple recommended databases found for {molecule} in ExoMol : {old_recommended}. This is unexpected. Trying with the first: {databases_recommended}"
             )
 
     databases = databases + databases_recommended
@@ -1025,8 +1161,6 @@ class MdbExomol(DatabaseManager):
 
         t0 = self.path.parents[0].stem
         molec = t0 + "__" + str(self.path.stem)
-        self.bkgdatm = bkgdatm  # TODO: for the moment, only air is possible in RADIS, although He and H are usually available in ExoMol
-        molecbroad = t0 + "__" + self.bkgdatm
 
         self.crit = crit
         self.margin = margin
@@ -1037,7 +1171,29 @@ class MdbExomol(DatabaseManager):
         self.states_file = self.path / pathlib.Path(molec + ".states.bz2")
         self.pf_file = self.path / pathlib.Path(molec + ".pf")
         self.def_file = self.path / pathlib.Path(molec + ".def")
-        self.broad_file = self.path / pathlib.Path(molecbroad + ".broad")
+
+        self.broad_partners = [
+            "H2",
+            "He",
+            "air",
+            "self",
+            "Ar",
+            "CH4",
+            "CO",
+            "CO2",
+            "H2",
+            "H2O",
+            "N2",
+            "NH3",
+            "NO",
+            "O2",
+            "NH3",
+            "CS",
+        ]  # see ExoMol paper 2024
+        self.broad_files = {
+            partner: self.path / pathlib.Path(t0 + "__" + partner + ".broad")
+            for partner in self.broad_partners
+        }
 
         mgr = self.get_datafile_manager()
         if not self.def_file.exists():
@@ -1049,13 +1205,14 @@ class MdbExomol(DatabaseManager):
             and not mgr.cache_file(self.states_file).exists()
         ):
             self.download(molec, extension=[".states.bz2"])
-        if (not self.broad_file.exists()) and self.broadf:
+        # will attempt a download as long as "air" is not present in the database
+        if (not self.broad_files["air"].exists()) and self.broadf:
             self.download(molec, extension=[".broad"])
 
         # Add molecule name
         tag = molec.split("__")
         self.isotope_fullname = tag[0]
-        self.molecule = e2s(tag[0])
+        self.molecule = exact_molname_exomol_to_simple_molname(tag[0])
         # self.isotope = 1  # Placeholder. TODO : implement parsing of other isotopes.
 
         # load def
@@ -1163,7 +1320,6 @@ class MdbExomol(DatabaseManager):
         if self.verbose:
             print("Molecule: ", molecule)
             print("Isotopologue: ", self.isotope_fullname)
-            print("Background atmosphere: ", self.bkgdatm)
             print("ExoMol database: ", database)
             print("Local folder: ", self.path)
             print("Transition files: ")
@@ -1232,7 +1388,13 @@ class MdbExomol(DatabaseManager):
                 mgr.write(mgr.cache_file(trans_file), trans)
 
     def set_broadening_coef(
-        self, df, alpha_ref_def=None, n_Texp_def=None, output=None, add_columns=True
+        self,
+        df,
+        alpha_ref_def=None,
+        n_Texp_def=None,
+        output=None,
+        add_columns=True,
+        species=None,
     ):
         """setting broadening parameters
 
@@ -1242,6 +1404,7 @@ class MdbExomol(DatabaseManager):
         alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
         n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
         add_columns: adds alpha_ref and n_Texp columns to df
+        species: to select which broadener will be used. Default is "air".
 
         Returns
         -------
@@ -1254,23 +1417,19 @@ class MdbExomol(DatabaseManager):
         if n_Texp_def:
             self.n_Texp_def = n_Texp_def
 
-        if self.broadf and os.path.exists(self.broad_file):
-            bdat = read_broad(self.broad_file)
-            if self.verbose > 1:
-                print(
-                    "The file `{}` is used.".format(os.path.basename(self.broad_file))
-                )
+        file = self.broad_files[species]
 
-            # codelv = check_bdat(bdat)
-            codelv = np.unique(bdat["code"])
+        if self.broadf and os.path.exists(file):
+            bdat = read_broad(file)
+
+            if self.verbose > 1:
+                print("The file `{}` is used.".format(os.path.basename(file)))
+
+            codelv = check_code_level(bdat)
             if self.verbose:
                 print("Broadening code level:", codelv)
 
-            if len(codelv) > 1:
-                warnings.warn(
-                    f"The broadening file contains more than one broadening code: {codelv}. This feature is NOT implemented yet."
-                )
-            elif codelv == "a0":
+            if codelv == "a0":
                 j2alpha_ref, j2n_Texp = make_j2b(
                     bdat,
                     alpha_ref_default=self.alpha_ref_def,
@@ -1298,6 +1457,34 @@ class MdbExomol(DatabaseManager):
                 self.n_Texp = np.array(
                     jj2n_Texp[df["jlower"].values, df["jupper"].values]
                 )
+            elif codelv == "m0":
+                # label P, Q, and R the transitions
+                df["PQR"] = df["jupper"] - df["jlower"]  # P:+1, Q:0, R:-1
+                df["m"] = np.where(
+                    df["PQR"] == -1,
+                    -df["jlower"],
+                    np.where(
+                        df["PQR"] == 0,
+                        df["jlower"],
+                        np.where(df["PQR"] == 1, df["jlower"] + 1, np.nan),
+                    ),
+                )
+
+                # Check for values outside -1, 0, 1 and raise a warning
+                invalid_pqr = df[~df["PQR"].isin([-1, 0, 1])]
+                if not invalid_pqr.empty:
+                    warnings.warn(
+                        f"Found {len(invalid_pqr)} values in 'PQR' outside of -1, 0, 1: {invalid_pqr['PQR'].unique()}"
+                    )
+
+                bdat.set_index("jlower", inplace=True)
+                self.alpha_ref = df["m"].map(bdat["alpha_ref"])
+                self.n_Texp = df["m"].map(bdat["n_Texp"])
+
+                # fill values outside of m range
+                self.alpha_ref = self.alpha_ref.fillna(self.alpha_ref_def)
+                self.n_Texp = self.n_Texp.fillna(self.n_Texp_def)
+
             else:
                 warnings.warn(
                     f"The broadening file contains this broadening code: {codelv}."
@@ -1307,10 +1494,10 @@ class MdbExomol(DatabaseManager):
                 self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
                 self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
         else:
-            if not os.path.exists(self.broad_file):
+            if not os.path.exists(file):
                 warnings.warn(
                     "Could not load `{}`. The default broadening parameters are used.\n".format(
-                        os.path.basename(self.broad_file)
+                        os.path.basename(file)
                     )
                 )
             print("The default broadening parameters are used.")
@@ -1319,9 +1506,16 @@ class MdbExomol(DatabaseManager):
             self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
 
         if add_columns:
-            # Add values
-            self.add_column(df, "alpha_ref", self.alpha_ref)
-            self.add_column(df, "n_Texp", self.n_Texp)
+            if species == "air":
+                self.add_column(df, "airbrd", self.alpha_ref)
+                self.add_column(df, "Tdpair", self.n_Texp)
+            elif species == "self":
+                self.add_column(df, "selbrd", self.alpha_ref)
+                self.add_column(df, "selbrd_Tdpair", self.n_Texp)
+            else:
+                raise NotImplementedError(
+                    "Please post on https://github.com/radis/radis to ask for this feature."
+                )
 
     def QT_interp(self, T):
         """interpolated partition function
@@ -1369,24 +1563,22 @@ class MdbExomol(DatabaseManager):
         import urllib.request
 
         tag = molec.split("__")
-        molname_simple = e2s(tag[0])
+        molname_simple = exact_molname_exomol_to_simple_molname(tag[0])
         # TODO: add progress bar
         for ext in extension:
             if ext == ".trans.bz2" and numtag is not None:
                 ext = "__" + numtag + ext
 
             if ext == ".broad":
-                pfname_arr = [
-                    tag[0] + "__H2" + ext,
-                    tag[0] + "__He" + ext,
-                    tag[0] + "__air" + ext,
-                ]
+                partners_success = np.ones(len(self.broad_partners), dtype=bool)
+
+                pfname_arr = [tag[0] + "__" + s + ext for s in self.broad_partners]
                 url = EXOMOL_URL + molname_simple + "/" + tag[0] + "/"
             else:
                 pfname_arr = [molec + ext]
                 url = EXOMOL_URL + molname_simple + "/" + tag[0] + "/" + tag[1] + "/"
 
-            for pfname in pfname_arr:
+            for index, pfname in enumerate(pfname_arr):
                 pfpath = url + pfname
                 os.makedirs(str(self.path), exist_ok=True)
                 if self.verbose:
@@ -1396,7 +1588,15 @@ class MdbExomol(DatabaseManager):
                 try:
                     urllib.request.urlretrieve(pfpath, str(self.path / pfname))
                 except HTTPError:
+                    if ext == ".broad":
+                        partners_success[index] = False
                     print(f"Error: Couldn't download {ext} file at {pfpath} and save.")
+
+            if ext == ".broad" and self.verbose:
+                patners_arr = np.array(self.broad_partners)
+                print(
+                    f"\nSummary of broadening files downloaded:\n\tSuccess: {patners_arr[partners_success]}\n\tFail: {patners_arr[~partners_success]}\n"
+                )
 
     def to_partition_function_tabulator(self):
         """Generate a :py:class:`~radis.levels.partfunc.PartFuncExoMol` object"""
@@ -1406,19 +1606,21 @@ class MdbExomol(DatabaseManager):
 
 
 if __name__ == "__main__":
-    print(e2s("12C-1H4"))
-    print(e2s("23Na-16O-1H"))
-    print(e2s("HeH_p"))
-    print(e2s("trans-31P2-1H-2H"))  # not working
+    print(exact_molname_exomol_to_simple_molname("12C-1H4"))
+    print(exact_molname_exomol_to_simple_molname("23Na-16O-1H"))
+    print(exact_molname_exomol_to_simple_molname("HeH_p"))
+    print(exact_molname_exomol_to_simple_molname("trans-31P2-1H-2H"))  # not working
 
     # TODO : move to unitary tests of exomol_utils
-    assert e2s("12C-1H4") == "CH4"
-    assert e2s("23Na-16O-1H") == "NaOH"
-    assert e2s("HeH_p") == "HeH_p"
-    assert e2s("trans-31P2-1H-2H") == "trans-31P2-1H-2H"  # convert not working
+    assert exact_molname_exomol_to_simple_molname("12C-1H4") == "CH4"
+    assert exact_molname_exomol_to_simple_molname("23Na-16O-1H") == "NaOH"
+    assert exact_molname_exomol_to_simple_molname("HeH_p") == "HeH_p"
+    assert (
+        exact_molname_exomol_to_simple_molname("trans-31P2-1H-2H") == "trans-31P2-1H-2H"
+    )  # convert not working
 
-    assert e2s("12C-16O2") == "CO2"
-    assert e2s("13C-16O2") == "CO2"
+    assert exact_molname_exomol_to_simple_molname("12C-16O2") == "CO2"
+    assert exact_molname_exomol_to_simple_molname("13C-16O2") == "CO2"
 
     # mdb=MdbExomol("/home/kawahara/exojax/data/CO/12C-16O/Li2015/")
     # mdb=MdbExomol("/home/kawahara/exojax/data/CH4/12C-1H4/YT34to10/",nurange=[6050.0,6150.0])

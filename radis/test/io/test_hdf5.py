@@ -8,7 +8,7 @@ Created on Tue Jan 26 20:36:38 2021
 import pytest
 
 from radis.api.hdf5 import DataFileManager, hdf2df
-from radis.io.hitemp import fetch_hitemp
+from radis.io.hitran import fetch_hitran
 from radis.misc.config import getDatabankEntries
 from radis.misc.utils import NotInstalled, not_installed_vaex_args
 
@@ -84,7 +84,7 @@ def test_hdf5_io_engines(*args, **kwargs):
 @pytest.mark.needs_connection
 def test_local_hdf5_lines_loading(*args, **kwargs):
     """
-    We use the OH HITEMP line database to test :py:func:`~radis.io.hitemp.fetch_hitemp`
+    We use the OH HITRAN line database to test :py:func:`~radis.io.hitemp.fetch_hitran`
     and :py:func:`~radis.api.hdf5.hdf2df`
 
     - Partial loading (only specific wavenumbers)
@@ -93,13 +93,13 @@ def test_local_hdf5_lines_loading(*args, **kwargs):
 
     """
 
-    fetch_hitemp("OH")  # to initialize the database
+    fetch_hitran("OH")  # to initialize the database
 
-    path = getDatabankEntries("HITEMP-OH")["path"]
+    path = getDatabankEntries("HITRAN-OH")["path"]
 
     # Initialize the database
-    fetch_hitemp("OH")
-    path = getDatabankEntries("HITEMP-OH")["path"][0]
+    fetch_hitran("OH")
+    path = getDatabankEntries("HITRAN-OH")["path"][0]
     df = hdf2df(path)
     wmin, wmax = df.wav.min(), df.wav.max()
     assert wmin < 2300  # needed for next test to be valid
