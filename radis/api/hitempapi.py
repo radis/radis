@@ -188,7 +188,7 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
             "files",
             "HITEMP",
             "HITEMP-2024",
-            f"{self.molecule}_line_list",
+            f"{molecule}_line_list",
         )
         print(f"{file_url} ==> {temp_folder} \n")
 
