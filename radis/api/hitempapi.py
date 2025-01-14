@@ -179,9 +179,18 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
             print(f"Download failed: {file_response.status_code}")
             print("Response:", file_response.text[:500])
         raise Warning(
-            f"Failed to download {file_url}. Please download manually and place it in the appropriate directory."
+            f"Failed to download {file_url}. Please download manually and place it in the following location:"
         )
-
+        temp_folder = os.path.join(
+            os.path.dirname(output_filename),
+            "downloads__can_be_deleted",
+            "hitran.org",
+            "files",
+            "HITEMP",
+            "HITEMP-2024",
+            f"{self.molecule}_line_list",
+        )
+        print(f"{file_url} ==> {temp_folder} \n")
 
 class HITEMPDatabaseManager(DatabaseManager):
     def __init__(
