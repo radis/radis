@@ -192,6 +192,7 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
         )
         print(f"{file_url} ==> {temp_folder} \n")
 
+
 class HITEMPDatabaseManager(DatabaseManager):
     def __init__(
         self,
