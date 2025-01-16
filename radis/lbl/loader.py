@@ -1016,108 +1016,57 @@ class DatabankLoader(object):
         parallel=True,
         extra_params=None,
     ):
-        """Fetch the latest files from [HITRAN-2020]_, [HITEMP-2010]_ (or newer),
+        """
+        Fetch the latest files from [HITRAN-2020]_, [HITEMP-2010]_ (or newer),
         [ExoMol-2020]_  or [GEISA-2020] or [Kurucz-2017], and store them locally in memory-mapping
         formats for extremely fast access.
 
         Parameters
         ----------
-        source: ``'hitran'``, ``'hitemp'``, ``'exomol'``, ``'geisa'``, ``'kurucz'``, ``'nist'``
-            which database to use.
-        database: ``'full'``, ``'range'``, name of an ExoMol database, or ``'default'``
-            if fetching from HITRAN, ``'full'`` download the full database and register
-            it, ``'range'`` download only the lines in the range of the molecule.
-
-            .. note::
-                ``'range'`` will be faster, but will require a new download each time
-                you'll change the range. ``'full'`` is slower the 1st time and takes
-                more on-disk memory, but will be faster over time.
-
+        source: str
+            Which database to use. Options are ``'hitran'``, ``'hitemp'``, ``'exomol'``, ``'geisa'``, ``'kurucz'``, ``'nist'``.
+        database: str
+            If fetching from HITRAN, ``'full'`` downloads the full database and registers it, ``'range'`` downloads only the lines in the range of the molecule.
+            If fetching from HITEMP, Kurucz, or NIST, only ``'full'`` is available.
+            If fetching from ExoMol, use this parameter to choose which database to use. Keep ``'default'`` to use the recommended one.
             Default is ``'full'``.
-
-            If fetching from HITEMP or Kurucz or NIST, only ``'full'`` is available.
-
-            if fetching from ''`exomol`'', use this parameter to choose which database
-            to use. Keep ``'default'`` to use the recommended one. See all available databases
-            with :py:func:`radis.io.exomol.get_exomol_database_list`
-
-            By default, databases are download in ``~/.radisdb``.
-            Can be changed in ``radis.config["DEFAULT_DOWNLOAD_PATH"]`` or in
-            ``~/radis.json`` config file
-
-
-        Other Parameters
-        ----------------
-        parfuncfmt: ``'cdsd'``, ``'hapi'``, ``'exomol'``, ``'kurucz'`` or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
-            format to read tabulated partition function file. If ``'hapi'``, then
-            [HAPI]_ (HITRAN Python interface) is used to retrieve [TIPS-2020]_
-            tabulated partition functions.
-            If ``'exomol'`` then partition functions are downloaded from ExoMol.
-            If ``'kurucz'``, if dedicated partition functions are available with the linelists for the species, they are used, otherwise partition functions from Barklem & Collett 2016 are used. Also see the documentation for the `potential_lowering` parameter of :py:class:`~radis.lbl.factory.SpectrumFactory`. The NIST implementation currently uses 'kurucz' as the `parfuncfmt` but doesn't use the dedicated tables, rather it only uses Barklem & Collett 2016 even if `potential_lowering` is specified.
-            Default ``'hapi'``.
-        parfunc: filename or None
-            path to a tabulated partition function file to use. For kurucz linelists, this file would be a dedicated table for the species (dependent on both temperature and potential lowering).
-        levels: dict of str or None
-            path to energy levels (needed for non-eq calculations). Format::
-
-                {1:path_to_levels_iso_1, 3:path_to_levels_iso3}.
-
-            Default ``None``
-        levelsfmt: ``'cdsd-pc'``, ``'radis'`` (or any of :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`) or ``None``
-            how to read the previous file. Known formats: (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`).
-            If ``radis``, energies are calculated using the diatomic constants in radis.db database
-            if available for given molecule. Look up references there.
-            If ``None``, non equilibrium calculations are not possible. Default ``'radis'``.
-        load_energies: boolean
-            if ``False``, dont load energy levels. This means that nonequilibrium
-            spectra cannot be calculated, but it saves some memory. Default ``False``
+        parfuncfmt: str
+            Format to read tabulated partition function file. Options are ``'cdsd'``, ``'hapi'``, ``'exomol'``, ``'kurucz'`` or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`.
+            Default is ``'hapi'``.
+        parfunc: str or None
+            Path to a tabulated partition function file to use.
+        levels: dict or None
+            Path to energy levels (needed for non-eq calculations). Format: {1:path_to_levels_iso_1, 3:path_to_levels_iso3}.
+            Default is ``None``.
+        levelsfmt: str or None
+            How to read the previous file. Known formats: ``'cdsd-pc'``, ``'radis'`` or any of :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`.
+            Default is ``'radis'``.
+        load_energies: bool
+            If ``False``, don't load energy levels. This means that nonequilibrium spectra cannot be calculated, but it saves some memory.
+            Default is ``False``.
         include_neighbouring_lines: bool
-            if ``True``, includes off-range, neighbouring lines that contribute
-            because of lineshape broadening. The ``neighbour_lines``
-            parameter is used to determine the limit. Default ``True``.
-        parse_local_global_quanta: bool, or ``'auto'``
-            if ``True``, parses the HITRAN/HITEMP 'glob' and 'loc' columns to extract
-            quanta identifying the lines. Required for nonequilibrium calculations,
-            or to use :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`,
-            but takes up more space.
-        drop_non_numeric: boolean
-            if ``True``, non numeric columns are dropped. This improves performances,
-            but make sure all the columns you need are converted to numeric formats
-            before hand. Default ``True``. Note that if a cache file is loaded it
-            will be left untouched.
-        db_use_cached: bool, or ``'regen'``
-            use cached
-        memory_mapping_engine: ``'pytables'``, ``'vaex'``, ``'feather'``
-            which library to use to read HDF5 files (they are incompatible: ``'pytables'`` is
-            row-major while ``'vaex'`` is column-major) or other memory-mapping formats
-            If ``'default'``, use the value from ~/radis.json `["MEMORY_MAPPING_ENGINE"]`
+            If ``True``, includes off-range, neighbouring lines that contribute because of lineshape broadening.
+            Default is ``True``.
+        parse_local_global_quanta: bool or ``'auto'``
+            If ``True``, parses the HITRAN/HITEMP 'glob' and 'loc' columns to extract quanta identifying the lines.
+            Default is ``True``.
+        drop_non_numeric: bool
+            If ``True``, non-numeric columns are dropped. This improves performance.
+            Default is ``True``.
+        db_use_cached: bool or ``'regen'``
+            Use cached database if available.
+        memory_mapping_engine: str
+            Which library to use to read HDF5 files. Options are ``'pytables'``, ``'vaex'``, ``'feather'``.
+            Default is ``'default'``.
         parallel: bool
-            if ``True``, uses joblib.parallel to load database with multiple processes
-            (works only for HITEMP files)
-        load_columns: list, ``'all'``, ``'equilibrium'``, ``'noneq'``, ``diluent``,
-            columns names to load.
-            If ``'equilibrium'``, only load the columns required for equilibrium
-            calculations. If ``'noneq'``, also load the columns required for
-            non-LTE calculations. See :data:`~radis.lbl.loader.drop_all_but_these`.
-            If ``'all'``, load everything. Note that for performances, it is
-            better to load only certain columns rather than loading them all
-            and dropping them with ``drop_columns``.
-            If ``diluent`` then all additional columns required for calculating spectrum
-            in that diluent is loaded.
-            This parameter is ignored for Kurucz linelists, for which only ``all`` is available.
-            Default ``'equilibrium'``.
-
-            .. warning::
-                if using ``'equilibrium'``, not all parameters will be available
-                for a Spectrum :py:func:`~radis.spectrum.spectrum.Spectrum.line_survey`.
-                If you are calculating equilibrium (LTE) spectra, it is recommended to
-                use ``'equilibrium'``. If you are calculating non-LTE spectra, it is
-                recommended to use ``'noneq'``.
+            If ``True``, uses joblib.parallel to load database with multiple processes.
+            Default is ``True``.
+        load_columns: list, ``'all'``, ``'equilibrium'``, ``'noneq'``, ``diluent``
+            Columns names to load. Default is ``'equilibrium'``.
 
         Notes
         -----
-        HITRAN is fetched with Astroquery [1]_ or [HAPI]_,  and HITEMP with
-        :py:func:`~radis.io.hitemp.fetch_hitemp`
+        HITRAN is fetched with Astroquery or HAPI, and HITEMP with :py:func:`~radis.io.hitemp.fetch_hitemp`.
         HITEMP files are generated in a ~/.radisdb database.
 
         See Also
