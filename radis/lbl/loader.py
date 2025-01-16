@@ -1175,6 +1175,11 @@ class DatabankLoader(object):
 
         local_databases = config["DEFAULT_DOWNLOAD_PATH"]
 
+        if parfuncfmt in ["hapi", "exomol"] and source in ["nist", "kurucz"]:
+            raise ValueError(
+                f"The partition function format is `parfuncfmt={parfuncfmt}` (molecular) for an atomic database `source={source}`"
+            )
+
         if [parfuncfmt, source].count("exomol") == 1:
             self.warn(
                 f"Using lines from {source} but partition functions from {parfuncfmt}"
