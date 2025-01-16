@@ -19,6 +19,8 @@ from typing import Union
 import numpy as np
 import requests
 from bs4 import BeautifulSoup
+from getpass4 import getpass
+from tqdm import tqdm
 
 try:
     from .dbmanager import DatabaseManager
@@ -119,7 +121,7 @@ def get_last(b):
 def login_to_hitran(verbose=False):
     login_url = "https://hitran.org/login/"
     username = os.getenv("HITRAN_USERNAME") or input("Enter HITRAN username: ")
-    password = os.getenv("HITRAN_PASSWORD") or input("Enter HITRAN password: ")
+    password = os.getenv("HITRAN_PASSWORD") or getpass("Enter HITRAN password: ")
 
     session = requests.Session()
     response = session.get(login_url)
@@ -156,28 +158,24 @@ def login_to_hitran(verbose=False):
 
 
 def download_hitemp_file(session, file_url, output_filename, verbose=False):
+    print(f"Starting download from {file_url} to {output_filename}")
     file_response = session.get(file_url, stream=True)
-
     if file_response.status_code == 200:
         total_size = int(file_response.headers.get("content-length", 0))
-        with open(output_filename, "wb") as f:
-            downloaded = 0
+        print(f"Total size to download: {total_size} bytes")
+
+        with open(output_filename, "wb") as f, tqdm(
+            total=total_size, unit="B", unit_scale=True, desc=output_filename
+        ) as pbar:
             for chunk in file_response.iter_content(chunk_size=8192):
                 if chunk:
                     f.write(chunk)
-                    downloaded += len(chunk)
-                    if verbose:
-                        done = int(50 * downloaded / total_size)
-                        print(
-                            f'\rProgress: [{"=" * done}{" " * (50-done)}] {downloaded}/{total_size} bytes',
-                            end="",
-                        )
-        if verbose:
-            print("\nDownload complete!")
+                    pbar.update(len(chunk))
+
+        print("\nDownload complete!")
     else:
-        if verbose:
-            print(f"Download failed: {file_response.status_code}")
-            print("Response:", file_response.text[:500])
+        print(f"Download failed: {file_response.status_code}")
+        print("Response:", file_response.text[:500])
         raise Warning(
             f"Failed to download {file_url}. Please download manually and place it in the following location:"
         )
@@ -333,7 +331,7 @@ class HITEMPDatabaseManager(DatabaseManager):
             urlnames = [f"{base_url}{f}" for f in inputfiles]
 
         elif molecule in HITEMP_MOLECULES:
-            session = login_to_hitran()
+            session = login_to_hitran(verbose=self.verbose)
             if session:
                 url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
                 download_hitemp_file(session, url, basename(url))
@@ -429,15 +427,12 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         if molecule == "CO2":
             session = login_to_hitran()
-            if session:
-                download_hitemp_file(
-                    session,
-                    "https://hitran.org/files/HITEMP/bzip2format/02_HITEMP2024.par.bz2",
-                    "02_HITEMP2024.par.bz2",
-                )
-                urlname = "02_HITEMP2024.par.bz2"
-            else:
-                return 0  # Exit if login failed
+            download_hitemp_file(
+                session,
+                "https://hitran.org/files/HITEMP/bzip2format/02_HITEMP2024.par.bz2",
+                "02_HITEMP2024.par.bz2",
+            )
+            urlname = "02_HITEMP2024.par.bz2"
 
         with opener.open(urlname) as gfile:  # locally downloaded file
 
