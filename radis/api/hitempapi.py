@@ -19,6 +19,7 @@ from typing import Union
 import numpy as np
 import requests
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
 from getpass4 import getpass
 from tqdm import tqdm
 
@@ -52,6 +53,17 @@ from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
 from radis.misc.progress_bar import ProgressBar
 
 HITEMP_MOLECULES = ["H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"]
+
+
+def running_in_spyder():
+    """Check if the console is running within Spyder."""
+    return "SPYDER_ARGS" in os.environ
+
+
+if running_in_spyder():
+    raise EnvironmentError(
+        "This script cannot be run within Spyder due to getpass4/maskpass limitations."
+    )
 
 
 def keep_only_relevant(
@@ -118,42 +130,106 @@ def get_last(b):
     return b[non_zero]
 
 
+def setup_credentials():
+    """Set up HITRAN credentials and store them in .env file"""
+    # Get credentials from user
+    username = input("Enter HITRAN username: ")
+    password = getpass("Enter HITRAN password: ")
+    return username, password
+
+
+def store_credentials(username, password):
+    """Store HITRAN credentials in radis.env file in misc folder"""
+    # Get the misc folder path
+    import os.path
+
+    from radis.misc.utils import getProjectRoot
+
+    env_path = os.path.join(getProjectRoot(), "misc", "radis.env")
+
+    # Create misc directory if it doesn't exist
+    os.makedirs(os.path.dirname(env_path), exist_ok=True)
+
+    with open(env_path, "w") as f:
+        f.write(f"HITRAN_USERNAME={username}\n")
+        f.write(f"HITRAN_PASSWORD={password}\n")
+
+
 def login_to_hitran(verbose=False):
+    """Login to HITRAN using stored credentials or prompt if not available"""
     login_url = "https://hitran.org/login/"
-    username = os.getenv("HITRAN_USERNAME") or input("Enter HITRAN username: ")
-    password = os.getenv("HITRAN_PASSWORD") or getpass("Enter HITRAN password: ")
-
     session = requests.Session()
-    response = session.get(login_url)
-    soup = BeautifulSoup(response.text, "html.parser")
-    csrf = soup.find("input", {"name": "csrfmiddlewaretoken"})["value"]
 
-    login_data = {
-        "csrfmiddlewaretoken": csrf,
-        "email": username,
-        "password": password,
-    }
+    def attempt_login(username, password):
+        """Attempt to login with provided credentials"""
+        # Get CSRF token
+        response = session.get(login_url)
+        soup = BeautifulSoup(response.text, "html.parser")
+        csrf = soup.find("input", {"name": "csrfmiddlewaretoken"})["value"]
 
-    headers = {
-        "Referer": login_url,
-        "Origin": "https://hitran.org",
-        "Cookie": f"csrftoken={csrf}",
-    }
+        login_data = {
+            "csrfmiddlewaretoken": csrf,
+            "email": username,
+            "password": password,
+        }
 
-    login_response = session.post(
-        login_url, data=login_data, headers=headers, allow_redirects=False
-    )
+        headers = {
+            "Referer": login_url,
+            "Origin": "https://hitran.org",
+            "Cookie": f"csrftoken={csrf}",
+        }
 
-    if login_response.status_code == 302:
+        login_response = session.post(
+            login_url, data=login_data, headers=headers, allow_redirects=False
+        )
+
+        return login_response, session
+
+    def is_login_successful(response):
+        """Check if login was successful by looking for specific elements"""
+        return response.status_code == 302 or "Logout" in response.text
+
+    # Check if radis.env exists in misc folder
+    import os.path
+
+    from radis.misc.utils import getProjectRoot
+
+    env_path = os.path.join(getProjectRoot(), "misc", "radis.env")
+
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
+        username = os.getenv("HITRAN_USERNAME")
+        password = os.getenv("HITRAN_PASSWORD")
+
+        if username and password:
+            login_response, session = attempt_login(username, password)
+            if is_login_successful(login_response):
+                if verbose:
+                    print("Login successful.")
+                return session
+            else:
+                # Delete invalid credentials from radis.env
+                if os.path.exists(env_path):
+                    os.remove(env_path)
+                print(
+                    "Invalid stored credentials. Please enter your HITRAN credentials again."
+                )
+                # Continue to new user flow
+
+    # First time use or no stored credentials
+    username, password = setup_credentials()
+    login_response, session = attempt_login(username, password)
+
+    if is_login_successful(login_response):
         if verbose:
             print("Login successful.")
+        store_credentials(username, password)
         return session
     else:
         if verbose:
             print(f"Login failed: {login_response.status_code}")
-            print("Response:", login_response.text[:500])
-        raise Warning(
-            "HITRAN login failed. Ensure credentials are correct. Refer to: https://hitran.org/login/ for troubleshooting."
+        raise OSError(
+            "HITRAN login failed. Please ensure you entered correct credentials from https://hitran.org/login/"
         )
 
 
