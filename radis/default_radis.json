@@ -10,7 +10,7 @@
         "plotlib": "publib"                 # library for plot style. "publib", "seaborn".
         "context": "paper"                  # "paper", "talk", "poster",
         "style": "origin"                    # default style. See Publib (https://github.com/erwanp/publib) or Seaborn (https://seaborn.pydata.org/)
-        "plotting_library": "auto",             # "matplotlib", "plotly", or "auto". Default backend for plotting, set to auto-detect.
+        "plotting_library": "auto",             # Default backend for plotting. "matplotlib", "plotly", or "auto". Auto will use matplotlib if run from scripts and plotly if run from jupyter notebooks.
     }
     # global parameters
     # -----------------
