@@ -2536,8 +2536,6 @@ class Spectrum(object):
                     - If running in a standard Python environment, it defaults to Matplotlib for static plots.
                 - "plotly": Forces the use of Plotly for interactive plots.
                 - "matplotlib": Forces the use of Matplotlib for static plots.
-            Raises:
-                ValueError: If an unsupported value (other than "auto", "plotly", or "matplotlib") is provided.
         **kwargs: **dict
             kwargs forwarded as argument to plot (e.g: lineshape
             attributes: `lw=3, color='r'`)
