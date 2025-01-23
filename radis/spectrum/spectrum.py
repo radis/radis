@@ -94,7 +94,7 @@ from radis.tools.track_ref import RefTracker
 # %% Spectrum class to hold results )
 
 
-def is_running_in_notebook():
+def _is_running_in_notebook():
     """Check if the code is running in a Jupyter Notebook."""
     try:
         shell = get_ipython().__class__.__name__
@@ -2571,7 +2571,7 @@ class Spectrum(object):
             plotting_library = config["plotting_library"]
 
         if plotting_library == "auto":
-            use_plotly = is_running_in_notebook()
+            use_plotly = _is_running_in_notebook()
         elif plotting_library == "plotly":
             use_plotly = True
         elif plotting_library == "matplotlib":
