@@ -2182,33 +2182,6 @@ class Spectrum(object):
 
         from radis.misc.plot import fix_style, set_style
 
-        # Deprecated
-        if "plot_medium" in kwargs:
-            show_medium = kwargs.pop("plot_medium")
-            warn(DeprecationWarning("`plot_medium` was renamed to `show_medium`"))
-
-        # Check inputs, get defaults
-        # ------
-
-        if var in ["intensity", "intensity_noslit"]:
-            raise ValueError("`intensity` not defined. Use `radiance` instead")
-
-        if var is None:  # if nothing is defined, try these first:
-            params = self.get_vars()
-            if "radiance" in params:
-                var = "radiance"
-            elif "radiance_noslit" in params:
-                var = "radiance_noslit"
-            elif "transmittance" in params:
-                var = "transmittance"
-            elif "transmittance_noslit" in params:
-                var = "transmittance_noslit"
-            else:
-                # or plot the first variable we find
-                var = list(params)[0]
-                if var.replace("_noslit", "") in params:  # favour convolved quantities
-                    var = var.replace("_noslit", "")
-
         # Get variable
         x, y, wunit, Iunit = self.get(
             var, wunit=wunit, Iunit=Iunit, return_units="as_str"
@@ -2563,6 +2536,33 @@ class Spectrum(object):
         :py:func:`~radis.spectrum.compare.plot_diff`,
         :ref:`the Spectrum page <label_spectrum>`
         """
+
+        # Deprecated
+        if "plot_medium" in kwargs:
+            show_medium = kwargs.pop("plot_medium")
+            warn(DeprecationWarning("`plot_medium` was renamed to `show_medium`"))
+
+        # Check inputs, get defaults
+        # ------
+
+        if var in ["intensity", "intensity_noslit"]:
+            raise ValueError("`intensity` not defined. Use `radiance` instead")
+
+        if var is None:  # if nothing is defined, try these first:
+            params = self.get_vars()
+            if "radiance" in params:
+                var = "radiance"
+            elif "radiance_noslit" in params:
+                var = "radiance_noslit"
+            elif "transmittance" in params:
+                var = "transmittance"
+            elif "transmittance_noslit" in params:
+                var = "transmittance_noslit"
+            else:
+                # or plot the first variable we find
+                var = list(params)[0]
+                if var.replace("_noslit", "") in params:  # favour convolved quantities
+                    var = var.replace("_noslit", "")
 
         use_plotly = False
 
