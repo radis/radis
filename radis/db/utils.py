@@ -366,3 +366,15 @@ def ignore_trailing_number(coef):
     if is_number(coef[-1]):
         coef = coef[:-1]
     return coef
+
+
+def compare(databank, compare_with):
+    """Simply to make databank case-insensitive!"""
+    if isinstance(compare_with, str) and (
+        (isinstance(databank, str) and databank.casefold() == compare_with.casefold())
+        or (isinstance(databank, tuple) and databank[0].casefold() == compare_with.casefold())
+    ):
+        return True
+    if (isinstance(databank, str) and databank.casefold() in compare_with):
+        return True
+    return False
