@@ -62,8 +62,9 @@ def test_Kurucz_vs_NISTandSpectraplot(plot=True, verbose=True):
             pressure=1,  # atm
             verbose=0,
             lbfunc=broad_arbitrary,
+            pfsource="barklem",
         )
-        sf.fetch_databank(source, parfuncfmt="kurucz")
+        sf.fetch_databank(source)
         # sf.load_databank('Kurucz-O_I', drop_columns=[], load_columns='all')
         s_RADIS = sf.eq_spectrum(Tgas=10000, name=f"{source} by RADIS")
         # s_RADIS.plot("radiance_noslit", wunit="cm-1")

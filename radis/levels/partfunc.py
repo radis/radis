@@ -63,7 +63,6 @@ import pandas as pd
 from numpy import exp
 
 import radis
-
 from radis.api.atomic_pf_api import (
     fetch_kurucz_pfs,
     fetch_NIST_pfs,

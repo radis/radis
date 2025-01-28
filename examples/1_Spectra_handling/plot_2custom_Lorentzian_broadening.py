@@ -32,8 +32,9 @@ sf = SpectrumFactory(
     mole_fraction=mole_fraction,
     path_length=15,
     lbfunc=lbfunc1,
+    pfsource="barklem",
 )
-sf.fetch_databank("kurucz", parfuncfmt="kurucz")
+sf.fetch_databank("kurucz")
 s1 = sf.eq_spectrum(4000)
 
 #%%
