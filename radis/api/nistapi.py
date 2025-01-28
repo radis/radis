@@ -72,6 +72,13 @@ class NISTDatabaseManager(DatabaseManager):
     ):
         """overwrites parent class method as required"""
 
+        with opener.open(urlname) as file:
+            if (
+                "No lines are available in ASD with the parameters selected"
+                in file.read()
+            ):
+                raise Exception(f"No lines available for {self.molecule} in NIST")
+
         writer = self.get_datafile_manager()
         df = nist2df(opener.abspath(urlname))
 
@@ -149,6 +156,10 @@ class NISTDatabaseManager(DatabaseManager):
 
 def nist2df(file):
     df = pd.read_csv(file, sep="\t")
+
+    for col in ["Ei(cm-1)", "Ek(cm-1)"]:
+        if df[col].dtype == ("object" or "string"):
+            df[col] = df[col].str.rstrip("?").astype("float")
 
     # based on Kurucz method:
     cond = (df["Ek(cm-1)"] - df["Ei(cm-1)"]) > 0

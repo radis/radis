@@ -133,7 +133,7 @@ except Exception:
     print(traceback.format_exc())
 
 #%%
-# An example of the opposite, where 'kurucz' does include the species "Y_V":
+# An example of the opposite, where 'kurucz' does include a species:
 #
 
 
