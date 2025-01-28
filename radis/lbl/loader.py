@@ -1088,47 +1088,50 @@ class DatabankLoader(object):
         # | see implementation in load_databank.
 
         # Check inputs
-        if source == "astroquery":
+        compare_source = source.casefold()
+        
+        if compare_source == "astroquery":
             warnings.warn(
                 DeprecationWarning(
                     "source='astroquery' replaced with source='hitran' in 0.9.28"
                 )
             )
             source = "hitran"
-        if source not in ["hitran", "hitemp", "exomol", "geisa", "kurucz", "nist"]:
+            compare_source = source.casefold()
+        if compare_source not in ["hitran", "hitemp", "exomol", "geisa", "kurucz", "nist"]:
             raise NotImplementedError("source: {0}".format(source))
-        if source == "hitran":
+        if compare_source == "hitran":
             dbformat = "hitran"
             if database == "default":
                 database = "full"
-        elif source == "hitemp":
+        elif compare_source == "hitemp":
             dbformat = (
                 "hitemp-radisdb"  # downloaded in RADIS local databases ~/.radisdb
             )
             if database == "default":
                 database = "full"
 
-        elif source == "kurucz":
+        elif compare_source == "kurucz":
             dbformat = "kurucz"
             if database == "default":
                 database = "full"
-        elif source == "nist":
+        elif compare_source == "nist":
             dbformat = "nist"
             if database == "default":
                 database = "full"
 
-        elif source == "exomol":
+        elif compare_source == "exomol":
             dbformat = (
                 "exomol-radisdb"  # downloaded in RADIS local databases ~/.radisdb
             )
-        elif source == "geisa":
+        elif compare_source == "geisa":
             dbformat = "geisa"
             if database == "default":
                 database = "full"
 
         local_databases = config["DEFAULT_DOWNLOAD_PATH"]
 
-        if [parfuncfmt, source].count("exomol") == 1:
+        if [parfuncfmt, compare_source].count("exomol") == 1:
             self.warn(
                 f"Using lines from {source} but partition functions from {parfuncfmt}"
                 + " for consistency we recommend using lines and partition functions from the same database",
@@ -1216,7 +1219,7 @@ class DatabankLoader(object):
         # ---------------------
         self._reset_references()  # bibliographic references
 
-        if source == "hitran":
+        if compare_source == "hitran":
             self.reftracker.add(doi["HITRAN-2020"], "line database")  # [HITRAN-2020]_
 
             if database == "full":
@@ -1306,7 +1309,7 @@ class DatabankLoader(object):
                     f"Got `database={database}`. When fetching HITRAN, choose `database='full'` to download all database (once for all) or `database='range'` to download only the lines in the current range."
                 )
 
-        elif source == "hitemp":
+        elif compare_source == "hitemp":
             self.reftracker.add(doi["HITEMP-2010"], "line database")  # [HITEMP-2010]_
 
             if memory_mapping_engine == "auto":
@@ -1346,7 +1349,7 @@ class DatabankLoader(object):
                     [str(k) for k in self._get_isotope_list(df=df)]
                 )
 
-        elif source == "exomol":
+        elif compare_source == "exomol":
             self.reftracker.add(doi["ExoMol-2020"], "line database")  # [ExoMol-2020]
 
             if memory_mapping_engine == "auto":
@@ -1454,7 +1457,7 @@ class DatabankLoader(object):
                 df = frames[0]
                 self.params.dbpath = local_paths[0]
 
-        elif source == "geisa":
+        elif compare_source == "geisa":
 
             self.reftracker.add(doi["GEISA-2020"], "line database")
 
@@ -1495,7 +1498,7 @@ class DatabankLoader(object):
                     [str(k) for k in self._get_isotope_list(df=df)]
                 )
 
-        elif source == "kurucz":
+        elif compare_source == "kurucz":
             self.reftracker.add(doi["Kurucz-2017"], "line database")
 
             if columns is not None:
@@ -1539,7 +1542,7 @@ class DatabankLoader(object):
                 self.input.isotope = ",".join(
                     [str(k) for k in self._get_isotope_list(df=df)]
                 )
-        elif source == "nist":
+        elif compare_source == "nist":
             # self.reftracker.add(doi["Kurucz-2017"], "line database")
 
             if columns is not None:
@@ -1609,12 +1612,12 @@ class DatabankLoader(object):
         # ------------------------------------
         # (note : this is now done in 'fetch_hitemp' before saving to the disk)
         # spectroscopic quantum numbers will be needed for nonequilibrium calculations, and line survey.
-        if parse_local_global_quanta and "locu" in df and source != "geisa":
+        if parse_local_global_quanta and "locu" in df and compare_source != "geisa":
             df = parse_local_quanta(
                 df, molecule, verbose=self.verbose, dataframe_type=output
             )
         if (
-            parse_local_global_quanta and "globu" in df and source != "geisa"
+            parse_local_global_quanta and "globu" in df and compare_source != "geisa"
         ):  # spectroscopic quantum numbers will be needed for nonequilibrium calculations :
             df = parse_global_quanta(
                 df, molecule, verbose=self.verbose, dataframe_type=output
