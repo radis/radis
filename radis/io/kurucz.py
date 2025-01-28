@@ -42,8 +42,6 @@ def fetch_kurucz(
         if a registered entry already exists and `radis.config["ALLOW_OVERWRITE"]` is `True`:
 
         - if any situation arises where the databank needs to be re-downloaded, the possible urls are attempted in their usual order of preference, as if the databank hadn't been registered, rather than directly re-downloading from the same url that was previously registered, in case e.g. a new linelist has been uploaded since the databank was previously registered
-
-        - If no partition function file is registered, e.g because one wasn't available server-side when the databank was last registered, an attempt is still made again to download it, to account for e.g. the case where one has since been uploaded
     """
 
     # largely based on :py:func:`~radis.io.fetch_geisa`
@@ -65,23 +63,17 @@ def fetch_kurucz(
     )
 
     local_files, urlnames = [], []
-    pf_path = []
     if ldb.is_registered():
         entries = getDatabankEntries(ldb.name)
         local_files, urlnames = entries["path"], entries["download_url"]
-        if "parfunc" in entries:
-            pf_path = [entries["parfunc"]]
 
-    get_pf_files = True
     if ldb.is_registered() and not radis.config["ALLOW_OVERWRITE"]:
         error = False
         if cache == "regen" or not local_files:
             error = True
-        files_to_check = local_files + pf_path
+        files_to_check = local_files
         if ldb.get_missing_files(files_to_check):
             error = True
-        if not pf_path:
-            get_pf_files = False  # assume partition function file is either unavailable or undesired for current species
         if error:
             raise Exception(
                 'Changes are required to the local database, and hence updating the registered entry, but "ALLOW_OVERWRITE" is False. Set `radis.config["ALLOW_OVERWRITE"]=True` to allow the changes to be made and config file to be automatically updated accordingly.'
@@ -90,7 +82,7 @@ def fetch_kurucz(
     # Delete files if needed:
 
     if cache == "regen":
-        ldb.remove_local_files(local_files + pf_path)
+        ldb.remove_local_files(local_files)
     ldb.check_deprecated_files(
         ldb.get_existing_files(local_files),
         auto_remove=True if cache != "force" else False,
@@ -104,9 +96,6 @@ def fetch_kurucz(
     if local_files and not ldb.get_missing_files(local_files):
         get_main_files = False
         ldb.actual_file = local_files[0]  # for ldb.load below
-    if pf_path and not ldb.get_missing_files(pf_path):
-        get_pf_files = False
-        ldb.pf_path = pf_path[0]
 
     # Download files
     if get_main_files:
@@ -132,21 +121,11 @@ def fetch_kurucz(
                 # local_files = [file]
                 break  # no need to search any further
 
-    if get_pf_files:
-        pf_path, pf_url = ldb.get_pf_path()
-        ldb.pf_path = pf_path
-        try:
-            ldb.download_and_parse([pf_url], [pf_path], 1)
-        except OSError:
-            print("a partition function file specific to this species was not found")
-            get_pf_files = False
-            ldb.pf_path = None
-
     # Register
-    if get_main_files or get_pf_files or not ldb.is_registered():
-        ldb.register(get_main_files, get_pf_files)
+    if get_main_files or not ldb.is_registered():
+        ldb.register(get_main_files)
 
-    if (get_main_files or get_pf_files) and clean_cache_files:
+    if get_main_files and clean_cache_files:
         ldb.clean_download_files()
 
     if isotope and type(isotope) == int:
@@ -175,4 +154,4 @@ def fetch_kurucz(
             for k, v in attrs.items():
                 df.attrs[k] = v
 
-    return (df, local_files, ldb.pf_path) if return_local_path else df
+    return (df, [ldb.actual_file]) if return_local_path else df
