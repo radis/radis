@@ -808,9 +808,9 @@ def _calc_spectrum_one_molecule(
                 # TODO: replace with GEISA partition function someday.............
             }
         elif databank in ["kurucz"]:
-            conditions = {"source": "kurucz", "parfuncfmt": "kurucz"}
+            conditions = {"source": "kurucz"}
         elif databank in ["nist"]:
-            conditions = {"source": "nist", "parfuncfmt": "kurucz"}
+            conditions = {"source": "nist"}
         elif isinstance(databank, tuple) and databank[0] == "exomol":
             conditions = {
                 "source": "exomol",

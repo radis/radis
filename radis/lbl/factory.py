@@ -318,9 +318,11 @@ class SpectrumFactory(BandFactory):
         For the NIST databank, the `lbfunc` parameter is compulsory as NIST doesn't provide broadening parameters.
 
         See :ref:`the provided example <example_custom_lorentzian_broadening>`
+    pfsource : ``string``
+        The source for the partition function tables for an interpolator or energy level tables for a calculator. Sources implemented so far are 'barklem' and 'kurucz' for the former, and 'nist' for the latter. 'default' is currently 'nist'. The `pfsource` can be changed post-initialisation using the :meth:`~radis.lbl.loader.DatabankLoader.set_atomic_partition_functions` method. See :ref:`the provided example <example_potential_lowering_pfs>` for more details.
     potential_lowering: float (cm-1/Zeff**2)
-        Use dedicated partition function tables (where available) in Kurucz database that depend on temperature and potential lowering. Otherwise, default to [Barklem-\&-Collet-2016]_ Table 8. Can be changed on the fly by setting `sf.input.potential_lowering`. Allowed values are typically: -500, -1000, -2000, -4000, -8000, -16000, -32000.
-        See :ref:`the provided example <example_potential_lowering_pfs>` for more details. The NIST implementation currently uses the same class for partition functions as Kurucz but doesn't use the dedicated tables, rather it only uses Barklem & Collett 2016 even if `potential_lowering` is specified.
+        The value of potential lowering, only relevant when `pfsource` is 'kurucz' as it depends on both temperature and potential lowering. Can be changed on the fly by setting `sf.input.potential_lowering`. Allowed values are typically: -500, -1000, -2000, -4000, -8000, -16000, -32000.
+        Again, see :ref:`the provided example <example_potential_lowering_pfs>` for more details.
 
     Examples
     --------
@@ -444,6 +446,7 @@ class SpectrumFactory(BandFactory):
         diluent=Default(None),
         lbfunc=None,
         potential_lowering=None,
+        pfsource="default",
         **kwargs,
     ):
 
@@ -621,6 +624,7 @@ class SpectrumFactory(BandFactory):
         )
         self.input.self_absorption = self_absorption
         self.input.potential_lowering = potential_lowering
+        self.input.pfsource = pfsource
 
         # Initialize computation variables
         self.params.wstep = wstep

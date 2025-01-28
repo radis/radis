@@ -77,7 +77,9 @@ from radis.io.nist import fetch_nist
 from radis.io.query import fetch_astroquery
 from radis.levels.partfunc import (
     PartFunc_Dunham,
+    PartFuncBarklem,
     PartFuncKurucz,
+    PartFuncNIST,
     PartFuncTIPS,
     RovibParFuncCalculator,
     RovibParFuncTabulator,
@@ -411,6 +413,7 @@ class Input(ConditionDict):
         "isneutral",
         "potential_lowering",
         "Telec",
+        "pfsource",
     ]
 
     def __init__(self):
@@ -692,6 +695,7 @@ class DatabankLoader(object):
         "misc",
         "molparam",
         "params",
+        "parsum",
         "parsum_calc",
         "parsum_tab",
         "profiler",
@@ -1032,17 +1036,17 @@ class DatabankLoader(object):
             Default is ``'full'``.
         parfuncfmt: str
             Format to read tabulated partition function file. Options are ``'cdsd'``, ``'hapi'``, ``'exomol'``, ``'kurucz'`` or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`.
-            Default is ``'hapi'``.
+            Default is ``'hapi'``. This argument only affects molecules.
         parfunc: str or None
-            Path to a tabulated partition function file to use.
+            Path to a tabulated partition function file to use. This argument only affects molecules.
         levels: dict or None
-            Path to energy levels (needed for non-eq calculations). Format: {1:path_to_levels_iso_1, 3:path_to_levels_iso3}.
+            Path to energy levels (needed for non-eq calculations). Format: {1:path_to_levels_iso_1, 3:path_to_levels_iso3}. This argument only affects molecules.
             Default is ``None``.
         levelsfmt: str or None
-            How to read the previous file. Known formats: ``'cdsd-pc'``, ``'radis'`` or any of :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`.
+            How to read the previous file. Known formats: ``'cdsd-pc'``, ``'radis'`` or any of :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`. This argument only affects molecules.
             Default is ``'radis'``.
         load_energies: bool
-            If ``False``, don't load energy levels. This means that nonequilibrium spectra cannot be calculated, but it saves some memory.
+            If ``False``, don't load energy levels. This means that nonequilibrium spectra cannot be calculated, but it saves some memory. This argument only affects molecules.
             Default is ``False``.
         include_neighbouring_lines: bool
             If ``True``, includes off-range, neighbouring lines that contribute because of lineshape broadening.
@@ -1123,11 +1127,6 @@ class DatabankLoader(object):
                 database = "full"
 
         local_databases = config["DEFAULT_DOWNLOAD_PATH"]
-
-        if parfuncfmt in ["hapi", "exomol"] and source in ["nist", "kurucz"]:
-            raise ValueError(
-                f"The partition function format is `parfuncfmt={parfuncfmt}` (molecular) for an atomic database `source={source}`"
-            )
 
         if [parfuncfmt, source].count("exomol") == 1:
             self.warn(
@@ -1519,7 +1518,7 @@ class DatabankLoader(object):
                 isotope_list = None
             else:
                 isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
-            df, local_paths, parfuncpath = fetch_kurucz(
+            df, local_paths = fetch_kurucz(
                 molecule,
                 isotope=isotope_list,
                 local_databases=join(local_databases, "kurucz"),
@@ -1534,8 +1533,6 @@ class DatabankLoader(object):
                 parallel=parallel,
             )
             self.params.dbpath = ",".join(local_paths)
-            if not parfunc:
-                self.params.parfuncpath = parfunc = format_paths(parfuncpath)
 
             # ... explicitly write all isotopes based on isotopes found in the database
             if isotope == "all":
@@ -1635,7 +1632,11 @@ class DatabankLoader(object):
         # %% Init Partition functions (with energies)
         # ------------
 
-        if parfuncfmt == "exomol":
+        self._remove_unecessary_columns(df, output)
+
+        if self.input.isatom:
+            self.set_atomic_partition_functions()
+        elif parfuncfmt == "exomol":
             self._init_equilibrium_partition_functions(
                 parfunc,
                 parfuncfmt,
@@ -1662,7 +1663,6 @@ class DatabankLoader(object):
                     + "in fetch_databank"
                 )
 
-        self._remove_unecessary_columns(df, output)
         return
 
     def load_databank(
@@ -1715,18 +1715,21 @@ class DatabankLoader(object):
             HAPI (HITRAN Python interface) [1]_ is used to retrieve them (valid if
             your database is HITRAN data). HAPI is embedded into RADIS. Check the
             version. If partfuncfmt is None then ``hapi`` is used. Default ``hapi``.
+            This argument only affects molecules.
         parfunc: filename or None
             path to tabulated partition function to use.
             If `parfuncfmt` is `hapi` then `parfunc` should be the link to the
-            hapi.py file. If not given, then the hapi.py embedded in RADIS is used (check version)
+            hapi.py file. If not given, then the hapi.py embedded in RADIS is used (check version). This argument only affects molecules.
         levels: dict of str or None
             path to energy levels (needed for non-eq calculations). Format:
-            {1:path_to_levels_iso_1, 3:path_to_levels_iso3}. Default ``None``
+            {1:path_to_levels_iso_1, 3:path_to_levels_iso3}. Default ``None``.
+            This argument only affects molecules.
         levelsfmt: 'cdsd-pc', 'radis' (or any of :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`) or ``None``
             how to read the previous file. Known formats: (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`).
             If ``radis``, energies are calculated using the diatomic constants in radis.db database
             if available for given molecule. Look up references there.
             If ``None``, non equilibrium calculations are not possible. Default ``'radis'``.
+            This argument only affects molecules.
         db_use_cached: boolean, or ``None``
             if ``True``, a pandas-readable csv file is generated on first access,
             and later used. This saves on the datatype cast and conversion and
@@ -1738,6 +1741,7 @@ class DatabankLoader(object):
         load_energies: boolean
             if ``False``, dont load energy levels. This means that nonequilibrium
             spectra cannot be calculated, but it saves some memory. Default ``True``
+            This argument only affects molecules.
         include_neighbouring_lines: bool
             ``True``, includes off-range, neighbouring lines that contribute
             because of lineshape broadening. The ``neighbour_lines``
@@ -1876,7 +1880,10 @@ class DatabankLoader(object):
         # %% Load Partition functions (and energies if needed)
         # ----------------------------------------------------
 
-        self._init_equilibrium_partition_functions(parfunc, parfuncfmt)
+        if self.input.isatom:
+            self.set_atomic_partition_functions()
+        else:
+            self._init_equilibrium_partition_functions(parfunc, parfuncfmt)
 
         # If energy levels are given, initialize the partition function calculator
         # (necessary for non-equilibrium). If levelsfmt == 'radis' then energies
@@ -2211,6 +2218,51 @@ class DatabankLoader(object):
                 predefined_partition_functions=predefined_partition_functions,
             )
             self.parsum_tab[molecule][iso][state] = ParsumTab
+
+    def set_atomic_partition_functions(self, pfsource=None):
+        """
+        Construct an interpolator or calculator for atomic partition functions and store it in the `parsum` attribute
+
+        Parameters
+        ----------
+        pfsource : ``string``
+            The source for the partition function tables for an interpolator or energy level tables for a calculator. Sources implemented so far are 'barklem' and 'kurucz' for the former, and 'nist' for the latter. 'default' is currently 'nist'.
+        """
+        if pfsource is None:
+            pfsource = self.input.pfsource
+        else:
+            self.input.pfsource = pfsource
+        species = self.input.species
+        error = False
+        if pfsource.casefold() == "default":
+            pfsource = "nist"
+        if pfsource.casefold() == "kurucz":
+            self.parsum = PartFuncKurucz(species)
+            if self.parsum.partfn is None:
+                error = True
+            # else:
+            #     self.params.parfuncpath = format_paths(self.parsum.parfuncpath)
+            #     self.params.parfuncfmt = 'atomic'
+        elif pfsource.casefold() == "barklem":
+            self.parsum = PartFuncBarklem(species)
+            if self.parsum.pf_values is None:
+                error = True
+            # else:
+            #     self.params.parfuncfmt = 'atomic'
+        elif pfsource.casefold() == "nist":
+            self.parsum = PartFuncNIST(species)
+            # self.params.levelsfmt = 'atomic'
+            # self.levelspath = format_paths(self.parsum.levelspath)
+        if error:
+            self.warn(
+                f"`pfsource` {pfsource} is not available for the species {species}. Try running `set_atomic_partition_functions` again with a different `pfsource`."
+            )
+        else:
+            self.params.parfuncpath = (
+                self.params.parfuncfmt
+            ) = (
+                self.params.levelsfmt
+            ) = self.levelspath = None  # all these parameters are irrelevant for atoms
 
     def _init_rovibrational_energies(self, levels, levelsfmt):
         """Initializes non equilibrium partition (which contain rovibrational
@@ -2952,8 +3004,6 @@ class DatabankLoader(object):
             parsum = PartFuncTIPS(
                 M=molecule, I=isotope, path=parfunc, verbose=self.verbose
             )
-        elif parfuncfmt in ["kurucz"]:
-            parsum = PartFuncKurucz(molecule, parfunc)
 
         elif parfuncfmt == "cdsd":  # Use tabulated CDSD partition functions
             self.reftracker.add(doi["CDSD-4000"], "partition function")
