@@ -372,12 +372,9 @@ def compare(databank, compare_with):
     """Simply to make databank case-insensitive!"""
     if isinstance(compare_with, str) and (
         (isinstance(databank, str) and databank.casefold() == compare_with.casefold())
-        or (
-            isinstance(databank, tuple)
-            and databank[0].casefold() == compare_with.casefold()
-        )
+        or (isinstance(databank, tuple) and databank[0].casefold() == compare_with.casefold())
     ):
         return True
-    if isinstance(databank, str) and databank.casefold() in compare_with:
+    if (isinstance(databank, str) and databank.casefold() in compare_with):
         return True
     return False

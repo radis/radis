@@ -32,6 +32,7 @@ except ImportError:  # if ran from here
 from radis import config
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
+from radis.db.utils import compare
 from radis.spectrum.spectrum import Spectrum
 
 
@@ -758,7 +759,7 @@ def _calc_spectrum_one_molecule(
         # diluent_other_than_air = len(diluent) > 1 or (
         #     len(diluent) == 1 and "air" not in diluent
         # )
-    if diluent_other_than_air and databank == "exomol":
+    if diluent_other_than_air and compare(databank, "exomol"):
         raise NotImplementedError(
             "Only air broadening is implemented in RADIS with ExoMol. Please reach out on https://github.com/radis/radis/issues"
         )
@@ -769,17 +770,17 @@ def _calc_spectrum_one_molecule(
 
     # Get databank
     if (
-        databank in ["fetch", "hitran", "hitemp", "exomol", "geisa", "kurucz", "nist"]
-        or (isinstance(databank, tuple) and databank[0] == "exomol")
-        or (isinstance(databank, tuple) and databank[0] == "hitran")
+        compare(databank, ["fetch", "hitran", "hitemp", "exomol", "geisa", "kurucz", "nist"])
+        or compare(databank, "exomol")
+        or compare(databank, "hitran")
     ):  # mode to get databank without relying on  Line databases
         # Line database :
-        if databank in ["fetch", "hitran"]:
+        if compare(databank, ["fetch", "hitran"]):
             conditions = {
                 "source": "hitran",
                 "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
             }
-        elif isinstance(databank, tuple) and databank[0] == "hitran":
+        elif compare(databank, "hitran"):
             conditions = {
                 "source": "hitran",
                 "database": databank[
@@ -787,27 +788,27 @@ def _calc_spectrum_one_molecule(
                 ],  # 'full' or 'partial', cf LoaderFactory.fetch_databank()
                 "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
             }
-        elif databank in ["hitemp"]:
+        elif compare(databank, ["hitemp"]):
             conditions = {
                 "source": "hitemp",
                 "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium}
             }
-        elif databank in ["exomol"]:
+        elif compare(databank, ["exomol"]):
             conditions = {
                 "source": "exomol",
                 "parfuncfmt": "exomol",  # download & use Exo partition functions for equilibrium}
             }
-        elif databank in ["geisa"]:
+        elif compare(databank, ["geisa"]):
             conditions = {
                 "source": "geisa",
                 "parfuncfmt": "hapi",
                 # TODO: replace with GEISA partition function someday.............
             }
-        elif databank in ["kurucz"]:
+        elif compare(databank, ["kurucz"]):
             conditions = {"source": "kurucz"}
-        elif databank in ["nist"]:
+        elif compare(databank, ["nist"]):
             conditions = {"source": "nist"}
-        elif isinstance(databank, tuple) and databank[0] == "exomol":
+        elif compare(databank, "exomol"):
             conditions = {
                 "source": "exomol",
                 "database": databank[1],
