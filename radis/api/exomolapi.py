@@ -1512,9 +1512,29 @@ class MdbExomol(DatabaseManager):
             elif species == "self":
                 self.add_column(df, "selbrd", self.alpha_ref)
                 self.add_column(df, "selbrd_Tdpair", self.n_Texp)
+            elif species in [
+            "H2",
+            "He",
+            "air",
+            "self",
+            "Ar",
+            "CH4",
+            "CO",
+            "CO2",
+            "H2",
+            "H2O",
+            "N2",
+            "NH3",
+            "NO",
+            "O2",
+            "NH3",
+            "CS",
+            ]:   
+                self.add_column(df, species + "brd", self.alpha_ref)
+                self.add_column(df, species + "s_Tdpair", self.n_Texp)      
             else:
                 raise NotImplementedError(
-                    "Please post on https://github.com/radis/radis to ask for this feature."
+                    "Not available as broadening partner."
                 )
 
     def QT_interp(self, T):

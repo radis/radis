@@ -749,21 +749,7 @@ def _calc_spectrum_one_molecule(
     # Have consistent output units
     sf.input_wunit = input_wunit
 
-    # Checking diluent other than air present
-    if isinstance(diluent, str):
-        if diluent == "air":
-            diluent_other_than_air = False
-        else:
-            diluent_other_than_air = True
-    else:
-        diluent_other_than_air = not isinstance(diluent, Default)
-        # diluent_other_than_air = len(diluent) > 1 or (
-        #     len(diluent) == 1 and "air" not in diluent
-        # )
-    if diluent_other_than_air and databank == "exomol":
-        raise NotImplementedError(
-            "Only air broadening is implemented in RADIS with ExoMol. Please reach out on https://github.com/radis/radis/issues"
-        )
+    
 
     # Load databank
     # -------------
