@@ -16,8 +16,6 @@ It shows:
 
 from radis.test.utils import getTestFile
 from radis.tools.database import load_spec
-from radis.spectrum.compare import plot_diff
-import matplotlib.pyplot as plt
 
 # Load an example spectrum
 my_file = getTestFile("synth-NH3-1-500-2000cm-P10-mf0.01-p1.spec")
@@ -31,20 +29,15 @@ s1.to_hdf5("spectrum_data.h5")
 
 #%% Load and plot retrieved spectrum
 s2 = s1.from_hdf5("spectrum_data.h5")
-s2.plot('radiance', nfig="same", label='Retrieved')
+s2.plot("radiance", nfig="same", label="Retrieved")
 
 #%% Load and plot partial spectrum (specific wavenumber range) from retrieved spectrum
-s_partial = s1.from_hdf5("spectrum_data.h5", 
-                       wmin=1020,  
-                       wmax=1040   
-                       )
-s_partial.plot('radiance', nfig="same",label='Partial (1020-1040 cm-1)')
+s_partial = s1.from_hdf5("spectrum_data.h5", wmin=1020, wmax=1040)
+s_partial.plot("radiance", nfig="same", label="Partial (1020-1040 cm-1)")
 
 #%% Load specific quantities and compare
-s_specific = s1.from_hdf5("spectrum_data.h5",
-                        columns=['radiance']
-                        )
-s_specific.plot('radiance', nfig="same", label='Specific (radiance)')
+s_specific = s1.from_hdf5("spectrum_data.h5", columns=["radiance"])
+s_specific.plot("radiance", nfig="same", label="Specific (radiance)")
 
 # Print metadata to verify it's preserved
 print("\nOriginal Spectrum conditions:")

@@ -888,6 +888,8 @@ class Spectrum(object):
 
             Spectrum.from_hdf5("rad_hdf.h5", wmin=2100, wmax=2200, columns=['abscoeff', 'emisscoeff'])
 
+        .. minigallery:: radis.Spectrum.from_hdf5
+
         See Also
         --------
         :py:func:`~radis.spectrum.spectrum.Spectrum.to_hdf5`
@@ -3986,17 +3988,50 @@ class Spectrum(object):
         return self.store(compress=False, *args, **kwargs)
 
     def to_hdf5(self, file, engine="pytables"):
-        r"""Stores the Spectrum under HDF5 format. Uses :py:func:`~radis.io.spec_hdf.spec2hdf`
+        r"""Convert a ``radis`` :py:class:`~radis.spectrum.spectrum.Spectrum` object
+        to HDF5 format. Uses :py:func:`~radis.io.spec_hdf.spec2hdf`
+
+        Parameters
+        ----------
+        file: str
+            path to save the HDF5 file
+        engine: {'pytables'}, optional
+            HDF5 library to use for writing the file. Default is 'pytables'.
+
+        Returns
+        -------
+        None
+            The spectrum is saved to disk in HDF5 format
+
+        Notes
+        -----
+        The HDF5 file will contain:
+        - All spectral arrays in a 'arrays' group with their units as metadata
+        - Lines database in a 'lines' group if present
+        - Populations in metadata if present
+        - Conditions and references in metadata
+        - Slit function data if present
+
+        Use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_hdf5` to load the spectrum back.
 
         Examples
         --------
         ::
 
-            s.to_hdf5('spec01.h5')
+            s.to_hdf5('spectrum.h5')
+
+        Load back with::
+
+            from radis import Spectrum
+            s2 = Spectrum.from_hdf5('spectrum.h5')
+
+        .. minigallery:: radis.Spectrum.to_hdf5
 
         See Also
         --------
-        :py:func:`~radis.spectrum.spectrum.Spectrum.from_hdf5`
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.from_hdf5`
+        :py:func:`~radis.io.spec_hdf.spec2hdf`
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.store`
         """
         from radis.io.spec_hdf import spec2hdf
 
