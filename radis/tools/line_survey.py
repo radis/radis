@@ -659,7 +659,10 @@ def LineSurvey(
             range=(x_range.min(), x_range.max()),
         ),
         yaxis=dict(
-            title={"text": ylabel, "font": {"color": "#1f77b4"}},
+            title={
+                "text": ylabel, 
+                "font": {"color": "#1f77b4"}
+            },
             # note: LaTeX doesnt seem to work in Offline mode yet.
             type=yscale,
             range=plot_range,
