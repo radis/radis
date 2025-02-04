@@ -6,12 +6,7 @@ HDF5 Spectrum Handling
 
 This example demonstrates how to save and load spectrum data using HDF5 format.
 
-It shows:
-- Saving a spectrum to HDF5
-- Loading complete spectrum
-- Loading partial spectrum (specific wavenumber range)
-- Loading specific quantities
-- Comparing original vs loaded spectra
+It shows saving a spectrum to HDF5, loading the spectrum from a file, loading a partial spectrum for a specific wavenumber range, and loading specific quantities.
 """
 
 from radis.test.utils import getTestFile

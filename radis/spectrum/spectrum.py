@@ -3995,22 +3995,18 @@ class Spectrum(object):
         ----------
         file: str
             path to save the HDF5 file
-        engine: {'pytables'}, optional
-            HDF5 library to use for writing the file. Default is 'pytables'.
+        engine : str, optional
+            Which HDF5 library to use for reading/writing data. Options are:
+
+            - 'pytables' (default) : Use PyTables library
 
         Returns
         -------
-        None
-            The spectrum is saved to disk in HDF5 format
+        The spectrum is saved to disk in HDF5 format
 
-        Notes
-        -----
-        The HDF5 file will contain:
-        - All spectral arrays in a 'arrays' group with their units as metadata
-        - Lines database in a 'lines' group if present
-        - Populations in metadata if present
-        - Conditions and references in metadata
-        - Slit function data if present
+
+        .. note::
+            The HDF5 file will contain all spectral arrays in an 'arrays' group with their units as metadata, the lines database in a 'lines' group if present, populations in metadata if present, and conditions and references in metadata.
 
         Use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_hdf5` to load the spectrum back.
 
