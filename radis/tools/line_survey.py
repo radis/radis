@@ -659,11 +659,10 @@ def LineSurvey(
             range=(x_range.min(), x_range.max()),
         ),
         yaxis=dict(
-            title=ylabel,
+            title={"text": ylabel, "font": {"color": "#1f77b4"}},
             # note: LaTeX doesnt seem to work in Offline mode yet.
             type=yscale,
             range=plot_range,
-            titlefont=dict(color="#1f77b4"),
             tickfont=dict(color="#1f77b4"),
         ),
         showlegend=False,
@@ -689,14 +688,15 @@ def LineSurvey(
         )
 
         layout["yaxis2"] = dict(
-            title="{0} ({1})".format(
-                over_name.capitalize(), over_units
-            ),  # note: LaTeX doesnt seem to
+            title={
+                "text": "{0} ({1})".format(over_name.capitalize(), over_units),
+                "font": {"color": "#ff7f0e"},
+            },
+            # note: LaTeX doesnt seem to
             # work in Offline mode yet.
             overlaying="y",
             type="log",
             side="right",
-            titlefont=dict(color="#ff7f0e"),
             tickfont=dict(color="#ff7f0e"),
         )
 
