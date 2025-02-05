@@ -155,5 +155,7 @@ except OSError as err:
     print(err)
     s_experimental.plot()
 except EOFError:
-    print("Error: Unable to read input for HITRAN credentials. Please ensure you have the necessary credentials.")
+    print(
+        "Error: Unable to read input for HITRAN credentials. Please ensure you have the necessary credentials."
+    )
     s_experimental.plot()
