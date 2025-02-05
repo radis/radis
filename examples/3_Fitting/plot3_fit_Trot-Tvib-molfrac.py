@@ -154,3 +154,6 @@ except OSError as err:
     print("HITEMP files must be downloaded manually. See error message.")
     print(err)
     s_experimental.plot()
+except EOFError:
+    print("Error: Unable to read input for HITRAN credentials. Please ensure you have the necessary credentials.")
+    s_experimental.plot()
