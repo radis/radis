@@ -1,0 +1,131 @@
+[build-system]
+requires = ["setuptools>=64.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# Installation Instructions:
+# Install (normal, use-only):
+#     pip install radis
+#
+# For developers (create an alias, so you can still edit):
+#     pip install -e .
+#
+# When creating a new version, just update the __version__.txt file
+
+[project]
+name = "radis"
+dynamic = ["version", "readme"]  # Version is read from radis/__version__.txt
+description = "A fast line-by-line code for high-resolution infrared molecular spectra"
+readme = "README.md"
+authors = [
+    {name = "Erwan Pannier", email = "erwan.pannier@gmail.com"},
+]
+license = {text = "GNU Lesser General Public License v3 (LGPLv3)"}
+keywords = [
+    "spectrum",
+    "infrared",
+    "spectra",
+    "radiation",
+    "nonequilibrium",
+    "spectroscopy",
+    "molecules",
+    "HITRAN",
+    "hitemp",
+    "exomol",
+    "line-by-line",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+    "Topic :: Scientific/Engineering",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.8"
+dependencies = [
+    # Although it seems like a duplicate of requirements.txt, it is NECESSARY to tell pip what are the dependencies, issue #680.
+    # (requirements.txt is only for the user, not for pip, see https://packaging.python.org/discussions/install-requires-vs-requirements/ and https://stackoverflow.com/questions/14399534/reference-requirements-txt-for-the-install-requires-kwarg-in-setuptools-setup-py)
+    ### From environment.yml
+    "astropy>=4.3.1",
+    "astroquery>=0.4.6",
+    "beautifulsoup4>=4.10.0",
+    "cantera>=2.5.1",
+    "configparser",
+    "habanero>=1.2.0",
+    "h5py>=3.2.1",
+    "joblib",
+    "lmfit",
+    "matplotlib",
+    "numpy",
+    "numba",
+    "pandas",
+    "plotly>=2.5.1",
+    "psutil",
+    "tables",
+    "scipy>=1.4.0",
+    "seaborn",
+    "termcolor",
+    "specutils",
+    "lxml",
+    "hjson",
+    "publib",
+    "hitran-api",
+    "peakutils",
+    "ruamel.yaml",
+    "json-tricks>=3.15.0",
+    "mpldatacursor",
+    'nvidia-cufft-cu11; sys_platform != "darwin"',
+    "periodictable",
+    'vaex-core; python_version < "3.11"',
+    'vaex-hdf5; python_version < "3.11"',
+    'vaex-viz; python_version < "3.11"',
+]
+
+[project.optional-dependencies]
+dev = [
+    "numpydoc",
+    "black>=20.8b1",
+    "isort",
+    "pre-commit",
+    "pytest",
+    "ipython>=7.0.0",
+]
+docs = [
+    "sphinx-autodoc-annotation",
+    "sphinx_autodoc_defaultargs>=0.1.2",
+    "sphinx>=1.7.0",
+    "astroquery>=0.3.9",
+    "sphinxcontrib-apidoc",
+    "sphinx-gallery",
+    "lmfit",
+    "pytest",
+]
+
+[tool.setuptools]
+# Note: Previously used Cython extensions were removed in v0.15
+# If re-adding Cython support in the future, add build requirements in build-system.requires
+include-package-data = true     # add non .py data files in MANIFEST.in
+zip-safe = false  # impossible as long as we have external files read with __file__ syntax
+platforms = ["any"]
+
+# Previously in setup.py:
+# **get_ext_modules(with_binary)  # see Main install routine for radis<0.15
+# package_data={'radis': ['radis/phys/units.txt']}  # now handled through MANIFEST.in
+
+[tool.setuptools.dynamic]
+version = {file = "radis/__version__.txt"}
+readme = {file = "README.md", content-type = "text/markdown"}
+
+# Note: The following RST cleanup functionality was previously used when README was in RST format
+# It's preserved here for reference in case it's needed in the future:
+#
+# RST cleanup for PyPI compatibility included:
+# - Removing Sphinx-only roles (:abbr:, :ref:, :term:, :dfn:, etc.)
+# - Converting Sphinx directives (.. doctest, .. plot::, etc.)
+# - Handling special cases for RADIS documentation
+# For full details see the original yield_sphinx_only_markup function in setup.py
