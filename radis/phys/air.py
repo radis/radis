@@ -30,10 +30,33 @@ def air_index_dispersion(lbd):
     .. [1] `P. E. Ciddor. "Refractive index of air: new equations for the visible and near infrared", Appl. Optics 35, 1566-1573 (1996) <https://refractiveindex.info/?shelf=other&book=air&page=Ciddor>`__
 
     Standard air: dry air at 15 °C, 101.325 kPa and with 450 ppm CO2 content
+    Range of validity: "approximately 300 nm to 1690 nm"
     """
 
     n = 1 + 0.05792105 / (238.0185 - lbd**-2) + 0.00167917 / (57.362 - lbd**-2)
 
+    # outside validity range
+    left = 0.3
+
+    if type(lbd) in (int, float) and lbd < left:
+        n = 1
+
+        import warnings
+
+        warnings.warn(
+            f"air_index_dispersion used below its lower limit of validity: {left*1000:.0f} nm"
+        )
+
+    import numpy as np
+
+    if type(lbd) == np.ndarray and any(lbd < left):
+        n[lbd < left] = 1
+
+        import warnings
+
+        warnings.warn(
+            f"air_index_dispersion used below its lower limit of validity: {left*1000:.0f} nm"
+        )
     return n
 
 
