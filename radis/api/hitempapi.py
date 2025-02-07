@@ -134,11 +134,14 @@ def store_credentials(username, password):
 
     from radis.misc.utils import getProjectRoot
 
-    env_path = os.path.join(getProjectRoot(), "misc", "radis.env")
+    env_path = os.path.join(getProjectRoot(), "db", "radis.env")
 
     # Create misc directory if it doesn't exist
     os.makedirs(os.path.dirname(env_path), exist_ok=True)
 
+    print(
+        "Your HITRAN credentials will be saved in {env_path}. You can delete this file if you wish but you will have to prompt your password at next download."
+    )
     with open(env_path, "w") as f:
         f.write(f"HITRAN_USERNAME={username}\n")
         f.write(f"HITRAN_PASSWORD={password}\n")
