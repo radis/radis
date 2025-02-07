@@ -21,7 +21,7 @@ import sys
 from os.path import abspath, dirname, exists, join
 
 # from setuptools import Extension, find_packages, setup #for cython - unused after v0.15
-from setuptools import setup
+# from setuptools import setup
 
 # Build description from README (PyPi compatible)
 # -----------------------------------------------
