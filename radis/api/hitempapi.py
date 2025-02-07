@@ -55,17 +55,6 @@ from radis.misc.progress_bar import ProgressBar
 HITEMP_MOLECULES = ["H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"]
 
 
-def running_in_spyder():
-    """Check if the console is running within Spyder."""
-    return "SPYDER_ARGS" in os.environ
-
-
-if running_in_spyder():
-    raise EnvironmentError(
-        "This script cannot be run within Spyder due to getpass4/maskpass limitations."
-    )
-
-
 def keep_only_relevant(
     inputfiles, wavenum_min=None, wavenum_max=None, verbose=True
 ) -> Union[list, float, float]:
