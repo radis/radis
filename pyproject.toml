@@ -13,7 +13,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "radis"
-dynamic = ["version", "readme"]  # Version is read from radis/__version__.txt
+dynamic = ["version"]  # Version is read from radis/__version__.txt
 description = "A fast line-by-line code for high-resolution infrared molecular spectra"
 readme = "README.md"
 authors = [
