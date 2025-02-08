@@ -19,6 +19,7 @@ from typing import Union
 import numpy as np
 import requests
 from bs4 import BeautifulSoup
+from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 from getpass4 import getpass
 from tqdm import tqdm
@@ -127,24 +128,63 @@ def setup_credentials():
     return username, password
 
 
-def store_credentials(username, password):
-    """Store HITRAN credentials in radis.env file in misc folder"""
-    # Get the misc folder path
-    import os.path
+def get_encryption_key():
+    """Get or create encryption key for HITRAN credentials"""
+    from radis.misc.utils import getProjectRoot
 
+    key_path = os.path.join(getProjectRoot(), "db", ".radis.key")
+    if os.path.exists(key_path):
+        with open(key_path, "rb") as f:
+            return f.read()
+    else:
+        # Generate a new key
+        key = Fernet.generate_key()
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(key_path), exist_ok=True)
+        # Save the key
+        with open(key_path, "wb") as f:
+            f.write(key)
+        # Set restrictive permissions on key file
+        os.chmod(key_path, 0o600)
+        return key
+
+
+def encrypt_password(password):
+    """Encrypt password using Fernet symmetric encryption"""
+    key = get_encryption_key()
+    f = Fernet(key)
+    return f.encrypt(password.encode()).decode()
+
+
+def decrypt_password(encrypted_password):
+    """Decrypt password using Fernet symmetric encryption"""
+    key = get_encryption_key()
+    f = Fernet(key)
+    return f.decrypt(encrypted_password.encode()).decode()
+
+
+def store_credentials(username, password):
+    """Store HITRAN credentials in radis.env file in db folder with encrypted username and password"""
     from radis.misc.utils import getProjectRoot
 
     env_path = os.path.join(getProjectRoot(), "db", "radis.env")
 
-    # Create misc directory if it doesn't exist
+    # Create db directory if it doesn't exist
     os.makedirs(os.path.dirname(env_path), exist_ok=True)
 
+    # Encrypt both username and password before storing
+    encrypted_username = encrypt_password(username)  # reuse same encryption function
+    encrypted_password = encrypt_password(password)
+
     print(
-        f"Your HITRAN credentials will be saved in {env_path}. You can delete this file if you wish but you will have to prompt your password at next download."
+        f"Your HITRAN credentials will be saved securely in {env_path}. You can delete this file if you wish but you will have to prompt your credentials at next download."
     )
     with open(env_path, "w") as f:
-        f.write(f"HITRAN_USERNAME={username}\n")
-        f.write(f"HITRAN_PASSWORD={password}\n")
+        f.write(f"HITRAN_USERNAME={encrypted_username}\n")
+        f.write(f"HITRAN_PASSWORD={encrypted_password}\n")
+
+    # Set restrictive permissions on env file
+    os.chmod(env_path, 0o600)
 
 
 def login_to_hitran(verbose=False):
@@ -181,25 +221,29 @@ def login_to_hitran(verbose=False):
         """Check if login was successful by looking for specific elements"""
         return response.status_code == 302 or "Logout" in response.text
 
-    # Check if radis.env exists in misc folder
-    import os.path
-
+    # Check if radis.env exists in db folder
     from radis.misc.utils import getProjectRoot
 
-    env_path = os.path.join(getProjectRoot(), "misc", "radis.env")
+    env_path = os.path.join(getProjectRoot(), "db", "radis.env")
 
     if os.path.exists(env_path):
         load_dotenv(env_path)
-        username = os.getenv("HITRAN_USERNAME")
-        password = os.getenv("HITRAN_PASSWORD")
+        encrypted_username = os.getenv("HITRAN_USERNAME")
+        encrypted_password = os.getenv("HITRAN_PASSWORD")
 
-        if username and password:
-            login_response, session = attempt_login(username, password)
-            if is_login_successful(login_response):
+        if encrypted_username and encrypted_password:
+            try:
+                # Decrypt both username and password
+                username = decrypt_password(encrypted_username)
+                password = decrypt_password(encrypted_password)
+                login_response, session = attempt_login(username, password)
+                if is_login_successful(login_response):
+                    if verbose:
+                        print("Login successful.")
+                    return session
+            except Exception as e:
                 if verbose:
-                    print("Login successful.")
-                return session
-            else:
+                    print(f"Error decrypting credentials: {str(e)}")
                 # Delete invalid credentials from radis.env
                 if os.path.exists(env_path):
                     os.remove(env_path)
