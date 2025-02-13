@@ -2431,7 +2431,7 @@ class BaseFactory(DatabankLoader):
         :py:meth:`~radis.lbl.base.BaseFactory.Qgas_Qref_ratio`
         """
         if self.input.isatom:
-            if self.input.pfsource == "kurucz":
+            if self.input.pfsource.casefold() == "kurucz":
                 Q = self.parsum.at(Tgas, self.input.potential_lowering)
             else:
                 Q = self.parsum.at(Tgas)

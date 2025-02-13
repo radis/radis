@@ -7,7 +7,7 @@ Atomic spectrum #0: Calculate an atomic spectrum
 ========================
 
 In this example, the NIST and Kurucz databases are used to compute an atomic spectrum.
-The same partition function are employed. The Lorentzian broadening is assumed equal for all lines.
+The same partition functions are employed. The Lorentzian broadening is assumed equal for all lines.
 
 """
 #%%
@@ -30,14 +30,15 @@ sf = SpectrumFactory(
     mole_fraction=0.1,
     verbose=0,  # to keep output quiet
     lbfunc=broad_arbitrary,
+    pfsource="barklem",
 )
 
 # NIST
-sf.fetch_databank("nist", parfuncfmt="kurucz")
+sf.fetch_databank("nist")
 s_NIST = sf.eq_spectrum(Tgas=10000, name="NIST")
 
-# NIST
-sf.fetch_databank("kurucz", parfuncfmt="kurucz")
+# Kurucz
+sf.fetch_databank("kurucz")
 s_KURUCZ = sf.eq_spectrum(Tgas=10000, name="Kurucz")
 
 plot_diff(s_NIST, s_KURUCZ, "radiance_noslit", wunit="nm")

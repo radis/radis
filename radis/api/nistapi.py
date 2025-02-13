@@ -159,7 +159,9 @@ def nist2df(file):
 
     for col in ["Ei(cm-1)", "Ek(cm-1)"]:
         if df[col].dtype == ("object" or "string"):
-            df[col] = df[col].str.rstrip("?").astype("float") # see https://physics.nist.gov/PhysRefData/ASD/Html/levelshelp.html about question mark following an energy level
+            df[col] = (
+                df[col].str.strip(["(", ")", "[", "]", "?"]).astype("float")
+            )  # see https://physics.nist.gov/PhysRefData/ASD/Html/levelshelp.html about meaning of question mark, brackets and parentheses
 
     # based on Kurucz method:
     cond = (df["Ek(cm-1)"] - df["Ei(cm-1)"]) > 0
