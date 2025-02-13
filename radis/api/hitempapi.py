@@ -10,6 +10,7 @@ https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 
 """
 
+import json
 import os
 import re
 import urllib.request
@@ -19,9 +20,11 @@ from typing import Union
 import numpy as np
 import requests
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
+from cryptography.fernet import Fernet
 from getpass4 import getpass
 from tqdm import tqdm
+
+from radis.misc.config import CONFIG_PATH_JSON
 
 try:
     from .dbmanager import DatabaseManager
@@ -127,28 +130,88 @@ def setup_credentials():
     return username, password
 
 
+def get_encryption_key():
+    """Get or create encryption key for HITRAN credentials"""
+    # Read existing radis.json
+    if os.path.exists(CONFIG_PATH_JSON):
+        with open(CONFIG_PATH_JSON, "r") as f:
+            config = json.load(f)
+    else:
+        config = {}
+
+    # Check if encryption key exists
+    if "credentials" in config and "ENCRYPTION_KEY" in config["credentials"]:
+        return config["credentials"]["ENCRYPTION_KEY"].encode()
+    else:
+        # Generate a new key
+        key = Fernet.generate_key()
+
+        # Add credentials section if it doesn't exist
+        if "credentials" not in config:
+            config["credentials"] = {}
+
+        # Store the key
+        config["credentials"]["ENCRYPTION_KEY"] = key.decode()
+
+        # Write back to radis.json
+        with open(CONFIG_PATH_JSON, "w") as f:
+            json.dump(config, f, indent=4)
+
+        # Set restrictive permissions
+        os.chmod(CONFIG_PATH_JSON, 0o600)
+
+        return key
+
+
+def encrypt_password(password):
+    """Encrypt password using Fernet symmetric encryption"""
+    key = get_encryption_key()
+    f = Fernet(key)
+    return f.encrypt(password.encode()).decode()
+
+
+def decrypt_password(encrypted_password):
+    """Decrypt password using Fernet symmetric encryption"""
+    key = get_encryption_key()
+    f = Fernet(key)
+    return f.decrypt(encrypted_password.encode()).decode()
+
+
 def store_credentials(username, password):
-    """Store HITRAN credentials in radis.env file in misc folder"""
-    # Get the misc folder path
-    import os.path
+    """Store HITRAN credentials in radis.json file with encrypted username and password"""
+    # Encrypt both username and password before storing
+    encrypted_username = encrypt_password(username)  # reuse same encryption function
+    encrypted_password = encrypt_password(password)
 
-    from radis.misc.utils import getProjectRoot
+    # Read existing radis.json
+    if os.path.exists(CONFIG_PATH_JSON):
+        with open(CONFIG_PATH_JSON, "r") as f:
+            config = json.load(f)
+    else:
+        config = {}
 
-    env_path = os.path.join(getProjectRoot(), "db", "radis.env")
+    # Add credentials section if it doesn't exist
+    if "credentials" not in config:
+        config["credentials"] = {}
 
-    # Create misc directory if it doesn't exist
-    os.makedirs(os.path.dirname(env_path), exist_ok=True)
+    # Store encrypted credentials
+    config["credentials"]["HITRAN_USERNAME"] = encrypted_username
+    config["credentials"]["HITRAN_PASSWORD"] = encrypted_password
 
     print(
-        f"Your HITRAN credentials will be saved in {env_path}. You can delete this file if you wish but you will have to prompt your password at next download."
+        f"Your HITRAN credentials will be saved securely in {CONFIG_PATH_JSON}. You can delete the credentials section if you wish but you will have to prompt your credentials at next download."
     )
-    with open(env_path, "w") as f:
-        f.write(f"HITRAN_USERNAME={username}\n")
-        f.write(f"HITRAN_PASSWORD={password}\n")
+
+    # Write back to radis.json
+    with open(CONFIG_PATH_JSON, "w") as f:
+        json.dump(config, f, indent=4)
+
+    # Set restrictive permissions
+    os.chmod(CONFIG_PATH_JSON, 0o600)
 
 
 def login_to_hitran(verbose=False):
-    """Login to HITRAN using stored credentials or prompt if not available"""
+    """Login to HITRAN using stored credentials from radis.json or prompt if not available"""
     login_url = "https://hitran.org/login/"
     session = requests.Session()
 
@@ -181,32 +244,38 @@ def login_to_hitran(verbose=False):
         """Check if login was successful by looking for specific elements"""
         return response.status_code == 302 or "Logout" in response.text
 
-    # Check if radis.env exists in misc folder
-    import os.path
+    # Check if credentials exist in radis.json
+    if os.path.exists(CONFIG_PATH_JSON):
+        with open(CONFIG_PATH_JSON, "r") as f:
+            config = json.load(f)
 
-    from radis.misc.utils import getProjectRoot
+        if "credentials" in config:
+            encrypted_username = config["credentials"].get("HITRAN_USERNAME")
+            encrypted_password = config["credentials"].get("HITRAN_PASSWORD")
 
-    env_path = os.path.join(getProjectRoot(), "misc", "radis.env")
+            if encrypted_username and encrypted_password:
+                try:
+                    # Decrypt both username and password
+                    username = decrypt_password(encrypted_username)
+                    password = decrypt_password(encrypted_password)
 
-    if os.path.exists(env_path):
-        load_dotenv(env_path)
-        username = os.getenv("HITRAN_USERNAME")
-        password = os.getenv("HITRAN_PASSWORD")
-
-        if username and password:
-            login_response, session = attempt_login(username, password)
-            if is_login_successful(login_response):
-                if verbose:
-                    print("Login successful.")
-                return session
-            else:
-                # Delete invalid credentials from radis.env
-                if os.path.exists(env_path):
-                    os.remove(env_path)
-                print(
-                    "Invalid stored credentials. Please enter your HITRAN credentials again."
-                )
-                # Continue to new user flow
+                    login_response, session = attempt_login(username, password)
+                    if is_login_successful(login_response):
+                        if verbose:
+                            print("Login successful.")
+                        return session
+                except Exception as e:
+                    if verbose:
+                        print(f"Error decrypting credentials: {str(e)}")
+                    # Remove invalid credentials from radis.json
+                    if "credentials" in config:
+                        del config["credentials"]
+                        with open(CONFIG_PATH_JSON, "w") as f:
+                            json.dump(config, f, indent=4)
+                    print(
+                        "Invalid stored credentials. Please enter your HITRAN credentials again."
+                    )
+                    # Continue to new user flow
 
     # First time use or no stored credentials
     username, password = setup_credentials()
