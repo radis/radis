@@ -1089,7 +1089,7 @@ class DatabankLoader(object):
 
         # Check inputs
         compare_source = source.casefold()
-        
+
         if compare_source == "astroquery":
             warnings.warn(
                 DeprecationWarning(
@@ -1098,7 +1098,14 @@ class DatabankLoader(object):
             )
             source = "hitran"
             compare_source = source.casefold()
-        if compare_source not in ["hitran", "hitemp", "exomol", "geisa", "kurucz", "nist"]:
+        if compare_source not in [
+            "hitran",
+            "hitemp",
+            "exomol",
+            "geisa",
+            "kurucz",
+            "nist",
+        ]:
             raise NotImplementedError("source: {0}".format(source))
         if compare_source == "hitran":
             dbformat = "hitran"
@@ -1623,6 +1630,19 @@ class DatabankLoader(object):
         self._remove_unecessary_columns(df, output)
 
         if self.input.isatom:
+            if parfuncfmt == "kurucz":
+                warnings.warn(
+                    DeprecationWarning(
+                        "The `parfuncfmt` attribute is no longer applicable for atoms. Use the new architecture with the `pfsource` parameter instead."
+                    )
+                )
+                if not self.input.pfsource:
+                    if self.input.potential_lowering:
+                        self.warn("Assuming `pfsource = 'kurucz'`")
+                        self.input.pfsource = "kurucz"
+                    else:
+                        self.warn("Assuming `pfsource = 'barklem'`")
+                        self.input.pfsource = "barklem"
             self.set_atomic_partition_functions()
         elif parfuncfmt == "exomol":
             self._init_equilibrium_partition_functions(
@@ -1869,6 +1889,19 @@ class DatabankLoader(object):
         # ----------------------------------------------------
 
         if self.input.isatom:
+            if parfuncfmt == "kurucz":
+                warnings.warn(
+                    DeprecationWarning(
+                        "The `parfuncfmt` attribute is no longer applicable for atoms. Use the new architecture with the `pfsource` parameter instead."
+                    )
+                )
+                if not self.input.pfsource:
+                    if self.input.potential_lowering:
+                        self.warn("Assuming `pfsource = 'kurucz'`")
+                        self.input.pfsource = "kurucz"
+                    else:
+                        self.warn("Assuming `pfsource = 'barklem'`")
+                        self.input.pfsource = "barklem"
             self.set_atomic_partition_functions()
         else:
             self._init_equilibrium_partition_functions(parfunc, parfuncfmt)

@@ -30,9 +30,9 @@ except ImportError:  # if ran from here
     from radis.lbl.base import get_wavenumber_range
 
 from radis import config
+from radis.db.utils import compare
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
-from radis.db.utils import compare
 from radis.spectrum.spectrum import Spectrum
 
 
@@ -770,7 +770,9 @@ def _calc_spectrum_one_molecule(
 
     # Get databank
     if (
-        compare(databank, ["fetch", "hitran", "hitemp", "exomol", "geisa", "kurucz", "nist"])
+        compare(
+            databank, ["fetch", "hitran", "hitemp", "exomol", "geisa", "kurucz", "nist"]
+        )
         or compare(databank, "exomol")
         or compare(databank, "hitran")
     ):  # mode to get databank without relying on  Line databases
