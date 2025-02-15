@@ -8,8 +8,13 @@ Created on Tue Feb  2 13:51:40 2021
 
 import pytest
 
-from radis.api.hitempapi import keep_only_relevant
+from radis.api.hitempapi import (
+    HITEMP_MOLECULES,
+    HITEMPDatabaseManager,
+    keep_only_relevant,
+)
 from radis.io.hitemp import fetch_hitemp
+from radis.misc.config import getDatabankList
 from radis.misc.utils import NotInstalled, not_installed_vaex_args
 
 try:
