@@ -160,7 +160,7 @@ def nist2df(file):
     for col in ["Ei(cm-1)", "Ek(cm-1)"]:
         if df[col].dtype == ("object" or "string"):
             df[col] = (
-                df[col].str.strip(["(", ")", "[", "]", "?"]).astype("float")
+                df[col].str.strip("()[]?").astype("float")
             )  # see https://physics.nist.gov/PhysRefData/ASD/Html/levelshelp.html about meaning of question mark, brackets and parentheses
 
     # based on Kurucz method:
