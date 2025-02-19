@@ -31,6 +31,9 @@ keywords = [
     "HITRAN",
     "hitemp",
     "exomol",
+    "GEISA",
+    "NIST",
+    "Kurucz",
     "line-by-line",
 ]
 classifiers = [
