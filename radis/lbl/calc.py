@@ -308,7 +308,7 @@ def calc_spectrum(
         computes the spectrum. Useful to access computational parameters, the line database,
         or to start batch-computations from a first spectrum calculation.
         By default, ``save_memory=True`` is set when using ``calc_spectrum``.
-        If you need to retain the full database without reloading, explicitly set ``save_memory=False``. Ex:
+        If you need to retain the full database without reloading, explicitly set ``save_memory=False``. Ex::
 
                 s, sf = calc_spectrum(..., return_factory=True, save_memory=False)
                 sf.df1  # see the lines calculated
