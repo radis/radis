@@ -149,7 +149,7 @@ def _prompt_password(user):
         raise ValueError("Must specify a valid password")
     except ModuleNotFoundError:
         # If PyQt5 is not available, use getpass
-        from getpass import getpass
+        from getpass4 import getpass
 
         return getpass(f"Enter password for {user}: ")
 
