@@ -1154,6 +1154,7 @@ class MdbExomol(DatabaseManager):
             engine = config["MEMORY_MAPPING_ENGINE"]
             if engine == "auto":
                 engine = get_auto_MEMORY_MAPPING_ENGINE()
+        self.engine = engine
 
         self.path = pathlib.Path(path)
         if local_databases is not None:
@@ -1458,32 +1459,55 @@ class MdbExomol(DatabaseManager):
                     jj2n_Texp[df["jlower"].values, df["jupper"].values]
                 )
             elif codelv == "m0":
+
                 # label P, Q, and R the transitions
                 df["PQR"] = df["jupper"] - df["jlower"]  # P:+1, Q:0, R:-1
-                df["m"] = np.where(
-                    df["PQR"] == -1,
-                    -df["jlower"],
-                    np.where(
-                        df["PQR"] == 0,
-                        df["jlower"],
-                        np.where(df["PQR"] == 1, df["jlower"] + 1, np.nan),
-                    ),
-                )
 
-                # Check for values outside -1, 0, 1 and raise a warning
-                invalid_pqr = df[~df["PQR"].isin([-1, 0, 1])]
-                if not invalid_pqr.empty:
-                    warnings.warn(
-                        f"Found {len(invalid_pqr)} values in 'PQR' outside of -1, 0, 1: {invalid_pqr['PQR'].unique()}"
+                if self.engine == "vaex":
+                    df["m"] = df.func.where(
+                        df["PQR"] == -1,
+                        -df["jlower"],
+                        df.func.where(
+                            df["PQR"] == 0,
+                            df["jlower"],
+                            df.func.where(df["PQR"] == 1, df["jlower"] + 1, 0),
+                        ),
+                    )
+                    # np.nan causes the error in vaex when using map,
+                    # 0 is regarded as the exeption value because m must not be zero
+                else:
+                    df["m"] = np.where(
+                        df["PQR"] == -1,
+                        -df["jlower"],
+                        np.where(
+                            df["PQR"] == 0,
+                            df["jlower"],
+                            np.where(df["PQR"] == 1, df["jlower"] + 1, np.nan),
+                        ),
                     )
 
-                bdat.set_index("jlower", inplace=True)
-                self.alpha_ref = df["m"].map(bdat["alpha_ref"])
-                self.n_Texp = df["m"].map(bdat["n_Texp"])
+                    # Check for values outside -1, 0, 1 and raise a warning
+                    invalid_pqr = df[~df["PQR"].isin([-1, 0, 1])]
+                    # Not working for Vaex
+                    if not invalid_pqr.empty:
+                        warnings.warn(
+                            f"Found {len(invalid_pqr)} values in 'PQR' outside of -1, 0, 1: {invalid_pqr['PQR'].unique()}"
+                        )
 
-                # fill values outside of m range
-                self.alpha_ref = self.alpha_ref.fillna(self.alpha_ref_def)
-                self.n_Texp = self.n_Texp.fillna(self.n_Texp_def)
+                # vaex/pandas
+                alpha_ref_dict = dict(zip(bdat["jlower"], bdat["alpha_ref"]))
+                self.alpha_ref = np.array((df["m"].map(alpha_ref_dict)).values)
+
+                n_Texp_dict = dict(zip(bdat["jlower"], bdat["n_Texp"]))
+                self.n_Texp = np.array((df["m"].map(n_Texp_dict)).values)
+
+                ## for pandas but returns DataFrame
+                # bdat.set_index("jlower", inplace=True)
+                # self.alpha_ref = df["m"].map(bdat["alpha_ref"])
+                # self.n_Texp = df["m"].map(bdat["n_Texp"])
+                ## fill values outside of m range (but this gives DataFrame instead of np.array)
+                # self.alpha_ref = self.alpha_ref.fillna(self.alpha_ref_def)
+                # self.n_Texp = self.n_Texp.fillna(self.n_Texp_def)
 
             else:
                 warnings.warn(
