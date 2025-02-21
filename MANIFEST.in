@@ -21,3 +21,13 @@ recursive-include radis/db *.json
 include radis/test/validation/test_CO2_3Tvib_vs_klarenaar_data/*.csv
 include radis/test/validation/test_compare_torch_CO2_data/*.dat
 include radis/test/validation/test_validation_vs_specair_noneqCO_data/*.spec
+
+# Exclude files for package distribution
+global-exclude *.rst
+global-exclude docs/*
+global-exclude test/*
+global-exclude *test*
+
+# Include tests and docs for development
+recursive-include docs *
+recursive-include test *
