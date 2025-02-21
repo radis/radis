@@ -1470,11 +1470,11 @@ class MdbExomol(DatabaseManager):
                         df.func.where(
                             df["PQR"] == 0,
                             df["jlower"],
-                            df.func.where(df["PQR"] == 1, df["jlower"] + 1, 0), 
+                            df.func.where(df["PQR"] == 1, df["jlower"] + 1, 0),
                         ),
                     )
-                    # np.nan causes the error in vaex when using map, 
-                    # 0 is regarded as the exeption value because m must not be zero 
+                    # np.nan causes the error in vaex when using map,
+                    # 0 is regarded as the exeption value because m must not be zero
                 else:
                     df["m"] = np.where(
                         df["PQR"] == -1,
