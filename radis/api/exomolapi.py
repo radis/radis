@@ -1026,7 +1026,9 @@ class MdbExomol(DatabaseManager):
     bkgdatm: str
         background atmosphere for broadening. e.g. H2, He,
     broadf: bool
-        if False, the default broadening parameters in .def file is used
+        if False, the default broadening parameters in .def file is used, default is True
+    broadf_download: bool
+        if False, not try to download potential broadening files, default is True
 
     Other Parameters
     ----------------
@@ -1134,6 +1136,7 @@ class MdbExomol(DatabaseManager):
         crit=-np.inf,
         bkgdatm="Air",  # TODO: use Air whenever possible (consistent with HITRAN/HITEMP). This is not a parameter for the moment.
         broadf=True,
+        broadf_download=True,
         engine="vaex",
         verbose=True,
         cache=True,
@@ -1168,6 +1171,8 @@ class MdbExomol(DatabaseManager):
         self.nurange = [np.min(nurange), np.max(nurange)]
         self.wmin, self.wmax = np.min(nurange), np.max(nurange)
         self.broadf = broadf
+        self.broadf_download = broadf_download
+
         # Where exomol files are
         self.states_file = self.path / pathlib.Path(molec + ".states.bz2")
         self.pf_file = self.path / pathlib.Path(molec + ".pf")
@@ -1207,7 +1212,7 @@ class MdbExomol(DatabaseManager):
         ):
             self.download(molec, extension=[".states.bz2"])
         # will attempt a download as long as "air" is not present in the database
-        if (not self.broad_files["air"].exists()) and self.broadf:
+        if (not self.broad_files["air"].exists()) and self.broadf and self.broadf_download:
             self.download(molec, extension=[".broad"])
 
         # Add molecule name
