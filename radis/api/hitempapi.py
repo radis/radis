@@ -121,8 +121,15 @@ def get_last(b):
     return b[non_zero]
 
 
+def running_in_spyder():
+    """Check if the console is running within Spyder."""
+    return "SPYDER_ARGS" in os.environ
+
+
 def _prompt_password(user):
     """
+    Prompts the user for a password securely and handels input if spyder is used.
+    
     Parameters
     ----------
     user : str
@@ -133,24 +140,26 @@ def _prompt_password(user):
     text : str
         User input password.
     """
-    try:
-        from PyQt5.QtCore import QCoreApplication
-        from PyQt5.QtWidgets import QApplication, QInputDialog, QLineEdit
+    if running_in_spyder():
+        try:
+            from PyQt5.QtCore import QCoreApplication
+            from PyQt5.QtWidgets import QApplication, QInputDialog, QLineEdit
 
-        app = QCoreApplication.instance()
-        if app is None:
-            app = QApplication([])
+            app = QCoreApplication.instance()
+            if app is None:
+                app = QApplication([])
 
-        text, ok = QInputDialog.getText(
-            None, "Credential", f"User {user}:", QLineEdit.Password
-        )
-        if ok and text:
-            return text
-        raise ValueError("Must specify a valid password")
-    except ModuleNotFoundError:
-        # If PyQt5 is not available, use getpass
+            text, ok = QInputDialog.getText(
+                None, "Credential", f"User {user}:", QLineEdit.Password
+            )
+            if ok and text:
+                return text
+            raise ValueError("Password entry was canceled by the user or left empty. A valid password is required.")
+        except ModuleNotFoundError:
+            raise ImportError("You are using Spyder; please install PyQt5 to use the password prompt.")
+    else:
+        # If not using spyder use getpass
         from getpass4 import getpass
-
         return getpass(f"Enter password for {user}: ")
 
 
