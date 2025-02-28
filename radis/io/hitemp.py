@@ -5,13 +5,10 @@ Created on Sun May 22 17:35:05 2022
 @author: erwan
 """
 
-import os
 from os.path import abspath, exists, expanduser, join
 
 from radis.api.hdf5 import update_pytables_to_vaex
 from radis.api.hitempapi import HITEMPDatabaseManager
-
-
 
 
 def fetch_hitemp(

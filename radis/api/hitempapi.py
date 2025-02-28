@@ -129,7 +129,7 @@ def running_in_spyder():
 def _prompt_password(user):
     """
     Prompts the user for a password securely and handels input if spyder is used.
-    
+
     Parameters
     ----------
     user : str
@@ -154,12 +154,17 @@ def _prompt_password(user):
             )
             if ok and text:
                 return text
-            raise ValueError("Password entry was canceled by the user or left empty. A valid password is required.")
+            raise ValueError(
+                "Password entry was canceled by the user or left empty. A valid password is required."
+            )
         except ModuleNotFoundError:
-            raise ImportError("You are using Spyder; please install PyQt5 to use the password prompt.")
+            raise ImportError(
+                "You are using Spyder; please install PyQt5 with `pip install PyQt5` to use the password prompt."
+            )
     else:
         # If not using spyder use getpass
         from getpass4 import getpass
+
         return getpass(f"Enter password for {user}: ")
 
 
