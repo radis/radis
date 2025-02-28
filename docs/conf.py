@@ -85,7 +85,6 @@ extensions = [
     #'numpydoc',
     #'sphinxcontrib.napoleon',
     "sphinx.ext.napoleon",
-    "sphinx_autodoc_defaultargs",
     "sphinx.ext.intersphinx",
     "sphinx.ext.inheritance_diagram",
     # "sphinxcontrib.apidoc",  # not needed, we run run_apidoc() manually implemented below
@@ -186,8 +185,12 @@ intersphinx_mapping = {
     "vaex": ("https://vaex.readthedocs.io/en/latest/", None),
 }
 
-napoleon_google_docstring = False
-napoleon_use_param = False  # fixes https://github.com/sphinx-doc/sphinx/issues/2227
+napoleon_google_docstring = True  # Enable Google style
+napoleon_numpy_docstring = True  # Enable NumPy style
+napoleon_include_init_with_doc = True
+napoleon_use_param = True
+napoleon_use_rtype = True
+napoleon_preprocess_types = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
