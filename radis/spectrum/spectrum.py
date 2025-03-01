@@ -1706,6 +1706,7 @@ class Spectrum(object):
         See Also
         --------
         :ref:`the Spectrum page <label_spectrum>`
+        :ref:`the provided example <example_spectrum_for_multiple_molecules>`
         """
 
         return rescale_path_length(
