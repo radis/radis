@@ -166,7 +166,7 @@ sf.set_atomic_partition_functions("barklem")
 
 try:
     sf.eq_spectrum(4000)
-except ValueError:
+except Exception:
     print(traceback.format_exc())
 
 #%%
