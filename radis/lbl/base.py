@@ -2350,7 +2350,7 @@ class BaseFactory(DatabankLoader):
 
         try:
             gp = df0["gp"]
-        except (KeyError):
+        except KeyError:
 
             if not "gu" in df0:
                 if not "ju" in df0:
@@ -2365,7 +2365,9 @@ class BaseFactory(DatabankLoader):
         else:
             Ia = self.get_lines_abundance(df0)
 
-        S0 = Ia * gp * A / (8 * pi * c_CGS * wav**2) # without the temperature-dependent term (the fractional population of transition's levels)
+        S0 = (
+            Ia * gp * A / (8 * pi * c_CGS * wav**2)
+        )  # without the temperature-dependent term (the fractional population of transition's levels)
 
         df0["S0"] = S0  # [cm-1/(molecules/cm-2)]
 
@@ -3480,7 +3482,6 @@ class BaseFactory(DatabankLoader):
 
         df = self.df1
         df.attrs = self.df1.attrs
-        Tref = self.input.Tref
 
         if len(df) == 0:
             return  # no lines in database, no need to go further
@@ -3513,7 +3514,7 @@ class BaseFactory(DatabankLoader):
         df["S"] = line_strength
 
         # should produce the same result, for cases where an 'int' column in present, by just removing the temperature dependence:
-        
+
         # if 'int' in df.columns:
         #     if self.dataframe_type == "pandas":
         #         line_strength = df.int.copy()  # TODO: savememory; replace the "int" column
@@ -3534,7 +3535,6 @@ class BaseFactory(DatabankLoader):
 
         #     df["S1"] = line_strength
         #     print(np.isclose(df.S,df.S1).all())
-
 
         self.profiler.stop(
             "scaled_non_eq_linestrength", "scaled nonequilibrium linestrength"
@@ -3826,7 +3826,9 @@ class BaseFactory(DatabankLoader):
                 elif self.dataframe_type == "vaex":
                     if self.verbose:
                         print("Using Vaex to save memory")
-            except ValueError:  # had some unexplained ValueError: __sizeof__() should return >= 0
+            except (
+                ValueError
+            ):  # had some unexplained ValueError: __sizeof__() should return >= 0
                 pass
 
         self.profiler.stop("memory_usage_warning", "Check Memory usage of database")
