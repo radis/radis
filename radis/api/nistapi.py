@@ -142,7 +142,7 @@ class NISTDatabaseManager(DatabaseManager):
 
         dict_entries.update(
             {
-                "parfuncfmt": "kurucz",
+                "parfuncfmt": "NIST",
             }
         )
 
