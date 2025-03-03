@@ -1212,7 +1212,11 @@ class MdbExomol(DatabaseManager):
         ):
             self.download(molec, extension=[".states.bz2"])
         # will attempt a download as long as "air" is not present in the database
-        if (not self.broad_files["air"].exists()) and self.broadf and self.broadf_download:
+        if (
+            (not self.broad_files["air"].exists())
+            and self.broadf
+            and self.broadf_download
+        ):
             self.download(molec, extension=[".broad"])
 
         # Add molecule name
