@@ -157,7 +157,7 @@ See Also
 :ref:`Configuration file <label_lbl_config_file>`
  """
 
-KNOWN_PARFUNCFORMAT = ["cdsd", "hapi", "kurucz"]
+KNOWN_PARFUNCFORMAT = ["cdsd", "hapi"]
 """list: Known formats for partition function (tabulated files to read), or 'hapi'
 to fetch Partition Functions using HITRAN Python interface instead of reading
 a tabulated file.

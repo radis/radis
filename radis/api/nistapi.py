@@ -140,12 +140,6 @@ class NISTDatabaseManager(DatabaseManager):
                 }
             )
 
-        dict_entries.update(
-            {
-                "parfuncfmt": "NIST",
-            }
-        )
-
         try:
             super().register(dict_entries)
         except DatabaseAlreadyExists as e:

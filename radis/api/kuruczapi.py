@@ -227,11 +227,6 @@ class KuruczDatabaseManager(DatabaseManager):
                         "wavenumber_max": self.wmax,
                     }
                 )
-        dict_entries.update(
-            {
-                "parfuncfmt": "kurucz",
-            }
-        )
 
         try:
             super().register(dict_entries)
