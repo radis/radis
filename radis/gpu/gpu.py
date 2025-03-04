@@ -118,14 +118,6 @@ def gpu_init(
     app.init_d = GPUBuffer(sizeof(initData_t), usage='uniform', binding=0)  #host_visible, device_local, (host_cached)
     app.iter_d = GPUBuffer(sizeof(iterData_t), usage='uniform', binding=1)  #host_visible, device_local, (host_cached) 
 
-    # init_h = initData_t()
-    # iter_h = iterData_t()
-    
-    # app.init_d = GPUStruct.fromStruct(init_h, binding=0)
-    # app.iter_d = GPUStruct.fromStruct(iter_h, binding=1)
-
-
-
     init_h = app.init_d.getHostStructPtr(initData_t)
     iter_h = app.iter_d.getHostStructPtr(iterData_t)
 
@@ -152,22 +144,8 @@ def gpu_init(
     init_Q(Q_intp_list)
     log_2vMm = np.log(v0) + log_c2Mm_arr.take(iso)
 
-    # gpu_mod.setConstant("init_d", init_h)
-
     init_G_params(log_2vMm.astype(np.float32), verbose)
     init_L_params(na, gamma_arr, verbose)
-
-    # Calulate params once to obtain N_G_max and N_L_max:
-    p_max = 5.0  # bar #TODO: obtain this from defaults/keywords
-    if T_max_parsum is not None:
-        T_max = T_max_parsum  # K
-    else:
-        T_max = 3500.0  # default value for now
-
-        
-    set_pTQ(p_max, T_max, 0.5, iter_h, l=1.0, slit_FWHM=0.0)
-    set_G_params(init_h, iter_h)
-    set_L_params(init_h, iter_h)
 
     if verbose >= 2:
         print("done!")
@@ -190,55 +168,23 @@ def gpu_init(
     N_db = np.sum(
         [np.sum(arr.shape[:-1]) if len(arr.shape) > 1 else 1 for arr in database_arrays]
     )
-
-
-
-    
-    # app.database_d = GPUArray(
-    #     (N_db, init_h.N_lines),
-    #     np.float32,  # Not all arrays are np.float32, but it doesn't matter because all dtypes have size 4 (=sizeof(float32)), and the host never reads this buffer.
-    #     binding=2,
-    # )
     app.database_d = GPUBuffer(N_db * v0.nbytes, binding=2)
 
     byte_offset = 0
     for arr in database_arrays:
-        #byte_offset += app.database_d.setData(arr, byte_offset=byte_offset)
         byte_offset += app.database_d.copyToBuffer(arr, device_offset=byte_offset, chunksize=32*1024*1024)
         
     app.S_kl_d = GPUBuffer(fftSize=init_h.N_v_FT, binding=3) #req: large, device_local
     app.spectrum_d = GPUBuffer(fftSize=init_h.N_v_FT, binding=4) #req: device_local, host_visible, host_cached, (large)
 
     app.indirect_d = GPUBuffer(sizeof(workGroupSizeArray_t), usage='indirect', binding=10) #host_visible, device_local, (host_cached)
-    indirect_h = app.setIndirectBuffer(app.indirect_d, workGroupSizeArray_t) #TODO: set fwd/inv
+    indirect_h = app.setIndirectBuffer(app.indirect_d, workGroupSizeArray_t)
 
-
-    # app.S_klm_d = GPUArray((N_L_max, N_G_max, init_h.N_v_FT), np.float32, binding=3)
-    # app.S_klm_FT_d = GPUArray(
-    #     (N_L_max, N_G_max, init_h.N_x_FT), np.complex64, binding=4
-    # )
-
-    # app.spectrum_FT_d = GPUArray((init_h.N_x_FT,), np.complex64, binding=5)
-    # app.spectrum_d = GPUArray((init_h.N_v_FT,), np.float32, binding=6)
 
     # Write command buffer:
     N_tpb = 128  # threads per block
     threads = (N_tpb, 1, 1)
-
-    # app.command_list = [
-    #     app.cmdAddTimestamp("start"),
-    #     app.cmdClearBuffer(app.S_klm_d, timestamp=True),
-    #     app.cmdFillLDM((init_h.N_lines // N_tpb + 1, 1, 1), threads, timestamp=True),
-    #     app.cmdClearBuffer(app.S_klm_FT_d, timestamp=True),
-    #     app.cmdFFT(app.S_klm_d, app.S_klm_FT_d, timestamp=True),
-    #     # app.cmdClearBuffer(app.spectrum_FT_d, timestamp=True),
-    #     app.cmdApplyLineshapes(
-    #         (init_h.N_x_FT // N_tpb + 1, 1, 1), threads, timestamp=True
-    #     ),
-    #     app.cmdClearBuffer(app.spectrum_d, timestamp=True),
-    #     app.cmdIFFT(app.spectrum_FT_d, app.spectrum_d, timestamp=True),
-    # ]
-
+    
     app.appendCommands([
         app.cmdAddTimestamp('Initialization'),
         app.indirect_d.cmdTransferStagingBuffer('H2D'),
@@ -268,7 +214,7 @@ def gpu_init(
     if verbose >= 2:
         print("done!")
 
-    return init_h
+    return init_h #TODO: why return this?
 
 
 def gpu_iterate(
@@ -316,7 +262,6 @@ def gpu_iterate(
     set_pTQ(p, T, mole_fraction, iter_h, l=l, slit_FWHM=slit_FWHM)
     set_G_params(init_h, iter_h)
     set_L_params(init_h, iter_h)
-    #app.iter_d.setData(iter_h)
 
     if verbose >= 2:
         print("Running compute pipelines...")
@@ -325,7 +270,6 @@ def gpu_iterate(
     app.run()
     gpu_times = app.get_timestamps()
 
-    #abscoeff_h = np.copy(app.spectrum_d.getData()[: init_h.N_v])
     abscoeff_h = np.zeros(init_h.N_v, dtype=np.float32)
     app.spectrum_d.toArray(abscoeff_h)
 
