@@ -155,7 +155,7 @@ def _prompt_password(user):
             if ok and text:
                 return text
             raise ValueError(
-                "Password entry was canceled by the user or left empty. A valid password is required."
+                "The dialog window was probably closed and the password could not be retrieved left empty. A valid password is required."
             )
         except ModuleNotFoundError:
             raise ImportError(
