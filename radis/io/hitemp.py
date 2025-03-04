@@ -5,10 +5,16 @@ Created on Sun May 22 17:35:05 2022
 @author: erwan
 """
 
+import os
 from os.path import abspath, exists, expanduser, join
 
 from radis.api.hdf5 import update_pytables_to_vaex
 from radis.api.hitempapi import HITEMPDatabaseManager
+
+
+def running_in_spyder():
+    """Check if the console is running within Spyder."""
+    return "SPYDER_ARGS" in os.environ
 
 
 def fetch_hitemp(
@@ -176,6 +182,12 @@ def fetch_hitemp(
 
     # Download files
     if len(download_files) > 0:
+
+        if running_in_spyder():
+            raise EnvironmentError(
+                "This script cannot be run within Spyder because the modules getpass4/maskpass are required to input the HITRAN credentials - see also comment of Carlos Cordoba here: https://stackoverflow.com/questions/45814910/data-hiding-for-python-qtconsole \n\nPotential solution: If you attempted to download a database, you can run your code once in a console or an alternative to Spyder. Once the database is downloaded, you should be able to run in Spyder again."
+            )
+
         if urlnames is None:
             urlnames = ldb.fetch_urlnames()
         filesmap = dict(zip(local_files, urlnames))

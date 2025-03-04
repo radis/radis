@@ -110,7 +110,7 @@ def fetch_nist(
 
     # Load and return
     df = ldb.load(
-        local_files[0],
+        local_files,
         columns=columns,
         within=[("iso", isotope)] if isotope is not None else [],
         # for relevant files, get only the right range :

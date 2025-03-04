@@ -1986,7 +1986,6 @@ class BaseFactory(DatabankLoader):
             "hitemp-radisdb",
             "cdsd-hitemp",
             "cdsd-4000",
-            "exomol-radisdb",
         ]:
             # In HITRAN, AFAIK all molecules have a complete assignment of rovibrational
             # levels hence gvib=1 for all vibrational levels.
@@ -1994,8 +1993,6 @@ class BaseFactory(DatabankLoader):
             # Complete rovibrational assignment would not be True, for instance, for
             # bending levels of CO2 if all levels are considered degenerated
             # (with a v2+1 degeneracy)
-            #
-            # In ExoMol, same as HITRAN. Derivation: set exomol vib degeneracy to 1 and compare with HITRAN calculation.
             if self.dataframe_type == "pandas":
                 df["gvibu"] = 1
                 df["gvibl"] = 1
@@ -2137,7 +2134,7 @@ class BaseFactory(DatabankLoader):
         References
         ----------
         Weighted transition-moment squared :math:`R_s^2` from linestrength :math:`S_0`
-        at temperature :math:`T_{ref}`, derived from Eq.(A5) in [Rothman-1998]_
+        at temperature :math:`T_ref`, derived from Eq.(A5) in [Rothman-1998]_
 
         .. math:
             R_s^2=10^{+36}\\frac{3h c}{8{\\pi}^3} \\frac{1}{n_u} \\frac{1}{\\frac{I_a g_l}{Q_{ref}} \\operatorname{exp}\\left(\\frac{-E_l}{T_{ref}}\\right)} \\frac{1}{1-\\operatorname{exp}\\left(\\frac{-n_u}{T_{ref}}\\right)} S_0
@@ -2312,8 +2309,7 @@ class BaseFactory(DatabankLoader):
         return
 
     def calc_S0(self, df):
-        """Calculate S0 from A [s-1], the tabulated Einstein coefficient. S0 is
-        the part of the linestrength that does not depend on the temperature.
+        """Calculate the unscaled intensity from the tabulated Einstein coefficient.
 
         Parameters
         ----------
@@ -2328,12 +2324,7 @@ class BaseFactory(DatabankLoader):
         ----------
 
         .. math::
-            S_0 = \\frac{I_a A_{21} g'}{8 \\pi c \\nu^2}
-
-        Do not confuse with S(T = 296 K), the definition of Eq. (1) in https://hitran.org/docs/definitions-and-units/ or Eq.(A11) in [Rothman-1998]_
-
-        .. math::
-            S(T_{ref} = 296 K) = \\frac{I_a A_{21}}{8 \\pi c \\nu^2} \\frac{g' e^{-c_2E''/T_{ref}}(1-e^{-c_2\\nu_{ij}/T_{ref}})}{Q(T_{ref})}
+            S_0 = \\frac{I_a g' A_{21}}{8 \\pi c \\nu^2}
 
         Notes
         -----
@@ -2343,7 +2334,10 @@ class BaseFactory(DatabankLoader):
         variables that do not change during iterations as to
         minimize calculations.
 
-        Units: cm-1/(molecules/cm-2)
+        Units: cm-1/(molecules/cm-2
+
+        NOTE: S0 is not directly related to S(T) used elsewhere!!!
+              (It may even differ in units!!!)
 
         """
 
@@ -2356,7 +2350,7 @@ class BaseFactory(DatabankLoader):
 
         try:
             gp = df0["gp"]
-        except (KeyError):
+        except KeyError:
 
             if not "gu" in df0:
                 if not "ju" in df0:
@@ -3450,8 +3444,7 @@ class BaseFactory(DatabankLoader):
         return pops
 
     def calc_linestrength_noneq(self):
-        """Calculate linestrengths at non-LTE. This value must be divided by
-        the partition function to get the actual spectrum.
+        """Calculate linestrengths at non-LTE
 
         Parameters
         ----------
@@ -3465,18 +3458,6 @@ class BaseFactory(DatabankLoader):
         -------
         None
             Linestrength `S` added in self.df
-
-        References
-        ----------
-        This function returns S(T)
-
-        .. math::
-            S(T) = \\frac{I_a A_{21} g'}{8 \\pi c \\nu^2} g' e^{-c_2E''/T}(1-e^{-c_2\\nu_{ij}/T})
-
-        Do not confuse with S(T), the definition of Eq. (1) in https://hitran.org/docs/definitions-and-units/ or Eq.(A11) in [Rothman-1998]_
-
-        .. math::
-            S_{HITRAN}(T) = \\frac{I_a A_{21}}{8 \\pi c \\nu^2} \\frac{g' e^{-c_2E''/T}(1-e^{-c_2\\nu_{ij}/T})}{Q(T)}
 
 
         Notes
@@ -3534,7 +3515,6 @@ class BaseFactory(DatabankLoader):
 
         # should produce the same result, for cases where an 'int' column in present, by just removing the temperature dependence:
 
-        # Tref = self.input.Tref
         # if 'int' in df.columns:
         #     if self.dataframe_type == "pandas":
         #         line_strength = df.int.copy()  # TODO: savememory; replace the "int" column
@@ -3846,7 +3826,9 @@ class BaseFactory(DatabankLoader):
                 elif self.dataframe_type == "vaex":
                     if self.verbose:
                         print("Using Vaex to save memory")
-            except ValueError:  # had some unexplained ValueError: __sizeof__() should return >= 0
+            except (
+                ValueError
+            ):  # had some unexplained ValueError: __sizeof__() should return >= 0
                 pass
 
         self.profiler.stop("memory_usage_warning", "Check Memory usage of database")
