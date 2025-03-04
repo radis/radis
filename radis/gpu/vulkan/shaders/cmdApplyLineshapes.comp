@@ -35,11 +35,11 @@ layout(std430, binding = 1) uniform iterData{
     float Q[16];
 } iter_d;
 
-layout(std430, binding = 4) readonly buffer SSBO1 {
+layout(std430, binding = 3) readonly buffer SSBO1 {
    complex64_t data_LDM_FT_d[];
 };
 
-layout(std430, binding = 5) writeonly buffer SSBO2 {
+layout(std430, binding = 4) writeonly buffer SSBO2 {
    complex64_t spectrum_FT_d[];
 };
 

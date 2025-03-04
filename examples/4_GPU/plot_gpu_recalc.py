@@ -29,7 +29,7 @@ sf = SpectrumFactory(
     wstep=0.002,
 )
 
-sf.fetch_databank("hitemp")
+sf.fetch_databank("hitran")
 ##sf.fetch_databank("exomol")
 
 T_list = [1000.0, 1250.0, 1500.0, 1750.0, 2000.0]

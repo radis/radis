@@ -10,12 +10,17 @@ from functools import partial
 
 import numpy as np
 import vulkan as vk
+import sys
 
 from radis.gpu.vulkan.pyvkfft_vulkan import prepare_fft
+##from pyvkfft_vulkan import prepare_fft
+
 
 QUERY_POOL_SIZE = 32  # Max number of queries (=timestamps)
+DEV_PROPS = vk.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+HOST_PROPS = vk.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | vk.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
 
-
+#TODO: split this up in a purely vulkan class and a radis class
 class GPUApplication(object):
     def __init__(self, deviceID=0, path="./", verbose=True):
         # In order to use Vulkan, you must create an instance
@@ -29,50 +34,61 @@ class GPUApplication(object):
         self.verbose = verbose
         # self._deviceID = deviceID
         self._shaderPath = path
-        self._fftApps = {}
+        #self._fftApps = {}
+        self._fftAppFwd = None
+        self._fftAppInv = None
+        self._descriptorSetInitialized = False
+        self.updateBatchSizeFunctionList = []
+
 
         self._computeShaderModules = []
-        self._descriptorPools = []
-        self._descriptorSetLayouts = []
+        self._descriptorPool = None
+        self._descriptorSetLayout = None
+        self._descriptorSet = None
         self._pipelineLayouts = []
         self._pipelines = []
 
         self._commandPool = None
         self._commandBuffer = None
+        self._commandBufferInitialized = False
+        self._oneTimeCommandBuffer = None
         self.command_list = []
         self._queryPool = None
 
         self._enabledLayers = []
         self._enabledExtensions = []
 
+        self._submitInfo = None
         self._queue = None
         self._queueFamilyIndex = -1
+        self._memHeapList = []
+        self._memTypeDict = {}
 
         # Initialize vulkan
         self.createInstance()
         self.selectPhysicalDevice(deviceID, verbose=verbose)
         self.createDevice()
-        self.init_shaders()
-
+        #self.init_shaders()
+        
         self.createCommandBuffer()
+
+        
 
     def free(self):
 
         self.command_list = []
 
-        fft_keys = [*self._fftApps.keys()]
-        for key in fft_keys:
-            del self._fftApps[key]
-
+        self._fftAppFwd = None
+        self._fftAppInv = None
+        
         for bufferObject in self._bufferObjects:
             bufferObject.free()
 
         for computeShaderModule in self._computeShaderModules:
             vk.vkDestroyShaderModule(self._device, computeShaderModule, None)
-        for descriptorPool in self._descriptorPools:
-            vk.vkDestroyDescriptorPool(self._device, descriptorPool, None)
-        for descriptorSetLayout in self._descriptorSetLayouts:
-            vk.vkDestroyDescriptorSetLayout(self._device, descriptorSetLayout, None)
+        
+        vk.vkDestroyDescriptorPool(self._device, self._descriptorPool, None)
+        vk.vkDestroyDescriptorSetLayout(self._device, self._descriptorSetLayout, None)
         for pipelineLayout in self._pipelineLayouts:
             vk.vkDestroyPipelineLayout(self._device, pipelineLayout, None)
         for pipeline in self._pipelines:
@@ -94,26 +110,26 @@ class GPUApplication(object):
             vk.vkDestroyInstance(self._instance, None)
 
     def __setattr__(self, name, val):
-        if isinstance(val, GPUObject):
+        if isinstance(val, GPUBuffer):
             val.app = self
-            val._init_buffer()
-            val._delayedSetData()
+            val.name = name
+            val.init_buffer()
+            #val._delayedSetData()
         self.__dict__[name] = val
 
-    def init_shaders(self):
-        shader_fnames = [f for f in os.listdir(self._shaderPath) if f[-3:] == "spv"]
-        for shader_fname in shader_fnames:
-            fun_name = shader_fname.split(".")[0]  # TODO: do this with os.path.basename
-            named_shader = partial(self.schedule_shader, shader_fname)
-            setattr(self.__class__, fun_name, named_shader)
+    # def init_shaders(self):
+    #     shader_fnames = [f for f in os.listdir(self._shaderPath) if f[-3:] == "spv"]
+    #     for shader_fname in shader_fnames:
+    #         fun_name = shader_fname.split(".")[0]  # TODO: do this with os.path.basename
+    #         named_shader = staticmethod(partial(self.cmdScheduleShader, shader_fname))
+    #         setattr(self.__class__, fun_name, named_shader)
 
-    def schedule_shader(
+    def cmdScheduleShader(
         self,
         shader_fname=None,
         global_workgroup=(1, 1, 1),
         local_workgroup=(1, 1, 1),
         sync=True,
-        timestamp=False,
     ):
         def func(
             self,
@@ -121,39 +137,24 @@ class GPUApplication(object):
             global_workgroup=(1, 1, 1),
             local_workgroup=(1, 1, 1),
             sync=True,
-            timestamp=False,
         ):
 
             shader_fpath = os.path.join(self._shaderPath, shader_fname)
 
-            # Descriptor set:
-            descriptorSetLayout = self.createDescriptorSetLayout()
-            descriptorPool, descriptorSet = self.createDescriptorSet(
-                descriptorSetLayout
-            )
-
             # Compute Pipeline:
             pipeline, pipelineLayout, computeShaderModule = self.createComputePipeline(
-                shader_fpath, local_workgroup, descriptorSetLayout
+                shader_fpath, local_workgroup, self._descriptorSetLayout
             )
             self.bindAndDispatch(
-                global_workgroup, descriptorSet, pipeline, pipelineLayout
+                global_workgroup, self._descriptorSet, pipeline, pipelineLayout
             )
             if sync:
                 self.sync()
 
             self._computeShaderModules.append(computeShaderModule)
-            self._descriptorPools.append(descriptorPool)
-            self._descriptorSetLayouts.append(descriptorSetLayout)
+            
             self._pipelineLayouts.append(pipelineLayout)
             self._pipelines.append(pipeline)
-
-            if timestamp == True:
-                self.cmdAddTimestamp(shader_fname.split(".")[0]).writeCommand()
-            elif isinstance(timestamp, str):
-                self.cmdAddTimestamp(timestamp).writeCommand()
-            else:
-                pass
 
         return GPUCommand(
             func,
@@ -165,55 +166,89 @@ class GPUApplication(object):
                 "global_workgroup": global_workgroup,
                 "local_workgroup": local_workgroup,
                 "sync": sync,
-                "timestamp": timestamp,
             },
         )
 
-    def cmdFFT(self, buf, buf_FT, timestamp=False):
-        def func(self, buf, buf_FT, timestamp=False):
-            key = (id(buf), id(buf_FT))
 
-            try:
-                fft_app = self._fftApps[key]
-            except (KeyError):
-                fft_app = prepare_fft(buf, buf_FT, compute_app=self)
-                self._fftApps[key] = fft_app
 
-            fft_app.fft(self._commandBuffer, buf._buffer, buf_FT._buffer)
+    def cmdScheduleShaderIndirect(
+        self,
+        shader_fname=None,
+        indirect_buffer=None,
+        indirect_offset=0,
+        local_workgroup=(1, 1, 1),
+        sync=True,
+    ):
+        def func(
+            self,
+            shader_fname=None,
+            indirect_buffer=None,
+            indirect_offset=0,
+            local_workgroup=(1, 1, 1),
+            sync=True,
+        ):
 
-            if timestamp == True:
-                self.cmdAddTimestamp("fft").writeCommand()
-            elif isinstance(timestamp, str):
-                self.cmdAddTimestamp(timestamp).writeCommand()
-            else:
-                pass
+            shader_fpath = os.path.join(self._shaderPath, shader_fname)
 
-        return GPUCommand(func, [self, buf, buf_FT], {"timestamp": timestamp})
+            # Compute Pipeline:
+            pipeline, pipelineLayout, computeShaderModule = self.createComputePipeline(
+                shader_fpath, local_workgroup, self._descriptorSetLayout
+            )
+            self.bindAndDispatchIndirect(
+                indirect_buffer, indirect_offset, self._descriptorSet, pipeline, pipelineLayout
+            )
+            if sync:
+                self.sync()
 
-    def cmdIFFT(self, buf_FT, buf, timestamp=False):
-        def func(self, buf_FT, buf, timestamp=False):
-            key = (id(buf), id(buf_FT))
+            self._computeShaderModules.append(computeShaderModule)
+            
+            self._pipelineLayouts.append(pipelineLayout)
+            self._pipelines.append(pipeline)
 
-            try:
-                fft_app = self._fftApps[key]
-            except (KeyError):
-                fft_app = prepare_fft(buf, buf_FT, compute_app=self)
-                self._fftApps[key] = fft_app
 
-            fft_app.ifft(self._commandBuffer, buf_FT._buffer, buf._buffer)
+        return GPUCommand(
+            func,
+            [
+                self,
+            ],
+            {
+                "shader_fname": shader_fname,
+                "indirect_buffer": indirect_buffer,
+                "indirect_offset": indirect_offset,
+                "local_workgroup": local_workgroup,
+                "sync": sync,
+            },
+        )
 
-            if timestamp == True:
-                self.cmdAddTimestamp("fft").writeCommand()
-            elif isinstance(timestamp, str):
-                self.cmdAddTimestamp(timestamp).writeCommand()
-            else:
-                pass
 
-        return GPUCommand(func, [self, buf_FT, buf], {"timestamp": timestamp})
+
+    def cmdFFT(self, buf, name=""):
+        def func(self, buf, name=""):
+            
+            if self._fftAppFwd is None:
+                self._fftAppFwd = prepare_fft(buf, name=name, compute_app=self, indirectOffset=0, exclusivePlan=1)
+            self._fftAppFwd.fft(self._commandBuffer, buf._buffer)
+
+
+        return GPUCommand(func, [self, buf], {"name":name})
+
+    def cmdIFFT(self, buf, name=""):
+        def func(self, buf, name=""):
+            
+            if self._fftAppInv is None:
+                self._fftAppInv = prepare_fft(buf, name=name, compute_app=self, indirectOffset=16*4, exclusivePlan=-1)
+            self._fftAppInv.ifft(self._commandBuffer, buf._buffer)
+
+        return GPUCommand(func, [self, buf], {"name": name})
+
 
     def run(self):
+        if self._commandBuffer is None: 
+            #print('writing command buffer')
+            self.writeCommandBuffer()
+        #print('cmdbuf:',self._commandBuffer)
         self.runCommandBuffer()
-
+        
     @staticmethod
     def debugReportCallbackFn(*args):
         print("Debug Report: {} {}".format(args[5], args[6]))
@@ -275,6 +310,9 @@ class GPUApplication(object):
             for i, device in enumerate(devices):
                 props = vk.vkGetPhysicalDeviceProperties(device)
                 devname = vk.ffi.string(props.obj.deviceName).decode()
+                if i == self._deviceID:
+                    self._timestampPeriod = props.limits.timestampPeriod
+
                 print(
                     "[{:s}] {:d}: {:s}".format(
                         "X" if i == self._deviceID else " ", i, devname
@@ -349,6 +387,117 @@ class GPUApplication(object):
 
         self._queryPool = vk.vkCreateQueryPool(self._device, queryPoolCreateInfo, None)
 
+
+    def query_memory_properties(self):
+
+        vk_mem_props = {"DEVICE_LOCAL":vk.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                     "HOST_VISIBLE":vk.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                     "HOST_COHERENT":vk.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                     "HOST_CACHED":vk.VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+                     "LAZILY_ALLOCATED":vk.VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT,
+                     "DEVICE_COHERENT (AMD)":vk.VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD,
+                     "DEVICE_UNCACHED (AMD)":vk.VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD,
+                     }
+    
+        mem_properties = vk.vkGetPhysicalDeviceMemoryProperties(self._physicalDevice)
+       
+
+        
+        for i in range(mem_properties.memoryHeapCount):
+            heap = mem_properties.memoryHeaps[i]
+            self._memHeapList.append(heap.size)
+            self._memTypeDict[i] = []
+        
+        self._memTypeCount = mem_properties.memoryTypeCount        
+        for i in range(mem_properties.memoryTypeCount):
+            mem_type = mem_properties.memoryTypes[i]
+            prop_list = []
+            for key in vk_mem_props:
+                if mem_type.propertyFlags & vk_mem_props[key]:
+                    prop_list.append(key)
+            self._memTypeDict[mem_type.heapIndex].append([i, prop_list])
+
+    def print_memory_properties(self):
+        if not len(self._memHeapList):
+            self.query_memory_properties()
+
+        for key in self._memTypeDict.keys():
+            print(f'heap {key:d} ({self._memHeapList[key]//(1024*1024):d} MB)')
+            for i, (j, l) in enumerate(self._memTypeDict[key]):
+                bullet = ' └─' if i == len(self._memTypeDict[key])-1 else ' ├─'
+                subbul = '   ' if i == len(self._memTypeDict[key])-1 else ' │ '
+                print(bullet +'type:',j)
+                for lk in l:
+                    bullet = subbul + ('  └─' if lk == l[-1] else '  ├─')
+                    print(bullet+lk)
+            print('')
+
+
+
+    # find memory type with desired properties.
+    def findMemoryType2(self, memoryTypeBits, kind):
+        
+        memoryTypeBits = 31
+        
+        # Look through the heaps, starting from the largest one:
+        heap_ids = np.argsort(self._memHeapList)[::-1]
+        for heap_id in heap_ids:
+            for type, props in self._memTypeDict[heap_id]:
+                if not memoryTypeBits&(1<<type):
+                    continue
+                    
+                print(type, props)
+    
+    
+    
+        return -1
+    
+    # find memory type with desired properties.
+    def findLargeMemoryType(self, memoryTypeBits, kind):
+        
+        # dev_props = vk.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        # host_props = vk.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | vk.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+        # dual_props = dev_props | host_props
+
+        mem_properties = vk.vkGetPhysicalDeviceMemoryProperties(self._physicalDevice)
+        
+        # First find the largest heap with/without the DEVICE_LOCAL bit:
+        heap_dict = {}
+        flip = (0 if kind & vk.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT else vk.VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)
+        for i, heap in enumerate(mem_properties.memoryHeaps):
+            if (heap.flags & vk.VK_MEMORY_HEAP_DEVICE_LOCAL_BIT)^flip: # look for device/host local memory
+                heap_dict[heap.size // (1024 * 1024)] = i
+        
+        heap_id = heap_dict[sorted(heap_dict)[-1]] #select the biggest heap that is device/host local
+
+        #First check if we can find dual host/device memory:
+        for i, type in enumerate(mem_properties.memoryTypes):
+            if (type.heapIndex != heap_id) or (not memoryTypeBits&(1<<i)):
+                continue
+        
+            # If memtype has all requested flags (and possibly others), return
+            if (type.propertyFlags & kind) == kind:
+                # print(i, type.propertyFlags, kind)
+                return i
+
+        return -1
+
+
+
+    # find memory type with desired properties.
+    def findMemoryType(self, memoryTypeBits, properties):
+        memoryProperties = vk.vkGetPhysicalDeviceMemoryProperties(self._physicalDevice)
+
+        for i, mt in enumerate(memoryProperties.memoryTypes):
+            if (
+                memoryTypeBits & (1 << i)
+                and (mt.propertyFlags & properties) == properties
+            ):
+                return i
+
+        return -1
+        
+        
     def createCommandBuffer(self):
         # We are getting closer to the end. In order to send commands to the device(GPU),
         # we must first record commands into a command buffer.
@@ -373,40 +522,26 @@ class GPUApplication(object):
             # A secondary buffer has to be called from some primary command buffer, and cannot be directly
             # submitted to a queue. To keep things simple, we use a primary command buffer.
             level=vk.VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-            commandBufferCount=1,
+            commandBufferCount=2,
         )
 
-        self._commandBuffer = vk.vkAllocateCommandBuffers(
+        self._commandBuffer, self._oneTimeCommandBuffer = vk.vkAllocateCommandBuffers(
             self._device, commandBufferAllocateInfo
-        )[0]
-
-    def writeCommandBuffer(self):
-
-        # Now we shall start recording commands into the newly allocated command buffer.
-        beginInfo = vk.VkCommandBufferBeginInfo(
-            sType=vk.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-            flags=0,  # VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT #VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
         )
-        vk.vkBeginCommandBuffer(self._commandBuffer, beginInfo)
-        for obj in self.command_list:
-            obj.writeCommand()
+        
+        self._commandBufferInitialized = True
+        
+        
 
-        vk.vkEndCommandBuffer(self._commandBuffer)
 
-    # find memory type with desired properties.
-    def findMemoryType(self, memoryTypeBits, properties):
-        memoryProperties = vk.vkGetPhysicalDeviceMemoryProperties(self._physicalDevice)
+    def initDescriptorSet(self):
+        # Descriptor set:
+        self._descriptorSetLayout = self.createDescriptorSetLayout()
+        self._descriptorPool = self.createDescriptorPool()
+        self._descriptorSet = self.createDescriptorSet(self._descriptorPool, self._descriptorSetLayout)
 
-        # How does this search work?
-        # See the documentation of VkPhysicalDeviceMemoryProperties for a detailed description.
-        for i, mt in enumerate(memoryProperties.memoryTypes):
-            if (
-                memoryTypeBits & (1 << i)
-                and (mt.propertyFlags & properties) == properties
-            ):
-                return i
+        self._descriptorSetInitialized = True
 
-        return -1
 
     def createDescriptorSetLayout(self):
         # Here we specify a descriptor set layout. This allows us to bind our descriptors to
@@ -437,11 +572,7 @@ class GPUApplication(object):
             self._device, descriptorSetLayoutCreateInfo, None
         )
 
-    def createDescriptorSet(self, descriptorSetLayout):
-        # So we will allocate a descriptor set here.
-        # But we need to first create a descriptor pool to do that.
-
-        # Our descriptor pool can only allocate a single storage buffer.
+    def createDescriptorPool(self):
         descriptorPoolSize = vk.VkDescriptorPoolSize(
             type=vk.VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             descriptorCount=len(self._bufferObjects),
@@ -458,6 +589,11 @@ class GPUApplication(object):
         descriptorPool = vk.vkCreateDescriptorPool(
             self._device, descriptorPoolCreateInfo, None
         )
+        return descriptorPool
+
+    def createDescriptorSet(self, descriptorPool, descriptorSetLayout):
+        # So we will allocate a descriptor set here.
+
 
         # With the pool allocated, we can now allocate the descriptor set.
         descriptorSetAllocateInfo = vk.VkDescriptorSetAllocateInfo(
@@ -471,10 +607,11 @@ class GPUApplication(object):
         descriptorSet = vk.vkAllocateDescriptorSets(
             self._device, descriptorSetAllocateInfo
         )[0]
+        
+        return descriptorSet
 
-        # Next, we need to connect our actual storage buffer with the descrptor.
-        # We use vkUpdateDescriptorSets() to update the descriptor set.
 
+    def updateDescriptorSet(self, descriptorSet):
         writeDescriptorSets = [
             vk.VkWriteDescriptorSet(
                 sType=vk.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -488,14 +625,14 @@ class GPUApplication(object):
                     range=bufferObject._bufferSize,
                 ),
             )
-            for bufferObject in self._bufferObjects
+            for bufferObject in self._bufferObjects if bufferObject._descriptorType
         ]
 
         # perform the update of the descriptor set.
         vk.vkUpdateDescriptorSets(
             self._device, len(writeDescriptorSets), writeDescriptorSets, 0, None
         )
-        return descriptorPool, descriptorSet
+
 
     def createComputePipeline(
         self, shaderFileName, localWorkGroup, descriptorSetLayout
@@ -575,6 +712,7 @@ class GPUApplication(object):
 
         return pipeline, pipelineLayout, computeShaderModule
 
+
     def bindAndDispatch(self, globalWorkGroup, descriptorSet, pipeline, pipelineLayout):
         # We need to bind a pipeline, AND a descriptor set before we dispatch.
         # The validation layer will NOT give warnings if you forget these, so be very careful not to forget them.
@@ -599,17 +737,137 @@ class GPUApplication(object):
 
     # def endCommandBuffer(self):
     # vk.vkEndCommandBuffer(self._commandBuffer)
+    
+    
+    def bindAndDispatchIndirect(self, indirect_buffer, indirect_offset, descriptorSet, pipeline, pipelineLayout):
+        # We need to bind a pipeline, AND a descriptor set before we dispatch.
+        # The validation layer will NOT give warnings if you forget these, so be very careful not to forget them.
+        vk.vkCmdBindPipeline(
+            self._commandBuffer, vk.VK_PIPELINE_BIND_POINT_COMPUTE, pipeline
+        )
+        vk.vkCmdBindDescriptorSets(
+            self._commandBuffer,
+            vk.VK_PIPELINE_BIND_POINT_COMPUTE,
+            pipelineLayout,
+            0,
+            1,
+            [descriptorSet],
+            0,
+            None,
+        )
+
+        # Calling vkCmdDispatch basically starts the compute pipeline, and executes the compute shader.
+        # The number of workgroups is specified in the arguments.
+        # If you are already familiar with compute shaders from OpenGL, this should be nothing new to you.
+        vk.vkCmdDispatchIndirect(self._commandBuffer, indirect_buffer._buffer, indirect_offset)
+
+    # def endCommandBuffer(self):
+    # vk.vkEndCommandBuffer(self._commandBuffer)
+    
+    
+    
+    def createBuffer(self, bufferSize, 
+                     kind=vk.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                     descriptorType = vk.VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                     usage=vk.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                     sharingMode=vk.VK_SHARING_MODE_EXCLUSIVE,
+                     
+    ):
+        # create buffer:
+        bufferCreateInfo = vk.VkBufferCreateInfo(
+            sType=vk.VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            size=bufferSize,  # buffer size in bytes.
+            usage=usage,
+            sharingMode=sharingMode,  # buffer is exclusive to a single queue family at a time.
+        )
+        buffer = vk.vkCreateBuffer(self._device, bufferCreateInfo, None)
+        
+        # allocate memory:
+        memoryRequirements = vk.vkGetBufferMemoryRequirements(self._device, buffer)
+        if (usage & vk.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT == vk.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT
+            or usage & vk.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT == vk.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT):
+            #if looking for an indirect buffer, prioritize a host visible device buffer
+            index = self.findMemoryType(memoryRequirements.memoryTypeBits, kind)
+        else:
+            #otherwise, prioritize the largest buffer, possible exclusively device local:
+            index = self.findLargeMemoryType(memoryRequirements.memoryTypeBits, kind)
+        
+        #print(memoryRequirements.memoryTypeBits)
+        #print(' Found type ',index)
+        
+        if index < 0:
+            vk.vkDestroyBuffer(self._device, buffer, None)
+            return None, None, index
+        
+        #print('memtype found:', index)
+
+        allocateInfo = vk.VkMemoryAllocateInfo(
+            sType=vk.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            allocationSize=memoryRequirements.size,
+            memoryTypeIndex=index,
+        )
+
+        bufferMemory = vk.vkAllocateMemory(self._device, allocateInfo, None)
+        
+        #bind buffer:
+        vk.vkBindBufferMemory(self._device, buffer, bufferMemory, 0)
+
+        # self._pmappedMemory = vk.vkMapMemory(
+            # self._device, bufferMemory, 0, bufferSize, 0
+        # )
+        # self._hostPtr = int(vk.ffi.cast("unsigned long long", vk.ffi.from_buffer(self._pmappedMemory)))
+        # self._bufferObjects.append(self)
+
+        # self._isInitialized = True
+        return buffer, bufferMemory, index
+
+
+    def writeCommandBuffer(self):
+
+        if not self._descriptorSetInitialized:
+            #print('Initializing descriptor set... ', end='')
+            self.initDescriptorSet()
+            #print('Done!')
+        
+        #print('Updating descriptor set... ', end='')
+        self.updateDescriptorSet(self._descriptorSet)
+        #print('Done!')
+
+        if self._commandBuffer is None:
+            #print('Creating command buffer... ',end='')
+            self.createCommandBuffer()
+            #print('Done!')
+        else:
+            #print('Resetting command buffer... ', end='')
+            vk.vkQueueWaitIdle(self._queue)
+            vk.vkResetCommandBuffer(self._commandBuffer, 0)
+            self._timestampLabels = []
+            #print('Done!')
+
+
+        # Now we shall start recording commands into the newly allocated command buffer.
+        beginInfo = vk.VkCommandBufferBeginInfo(
+            sType=vk.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            flags=0,  # VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT #VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
+        )
+        vk.vkBeginCommandBuffer(self._commandBuffer, beginInfo)
+        for obj in self.command_list:
+            obj.writeCommand()
+
+        vk.vkEndCommandBuffer(self._commandBuffer)
+        #print('Command buffer written!')
 
     def runCommandBuffer(self):
         # Now we shall finally submit the recorded command buffer to a queue.
-        submitInfo = vk.VkSubmitInfo(
-            sType=vk.VK_STRUCTURE_TYPE_SUBMIT_INFO,
-            commandBufferCount=1,  # submit a single command buffer
-            pCommandBuffers=[self._commandBuffer],  # the command buffer to submit.
-        )
+        if self._submitInfo is None:
+            self._submitInfo = vk.VkSubmitInfo(
+                sType=vk.VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                commandBufferCount=1,  # submit a single command buffer
+                pCommandBuffers=[self._commandBuffer],  # the command buffer to submit.
+            )
 
         # We submit the command buffer on the queue, at the same time giving a fence.
-        vk.vkQueueSubmit(self._queue, 1, submitInfo, self._fence)
+        vk.vkQueueSubmit(self._queue, 1, self._submitInfo, self._fence)
 
         # The command will not have finished executing until the fence is signalled.
         # So we wait here.
@@ -619,19 +877,61 @@ class GPUApplication(object):
         vk.vkWaitForFences(self._device, 1, [self._fence], vk.VK_TRUE, 100000000000)
         vk.vkResetFences(self._device, 1, [self._fence])
 
-    def cmdClearBuffer(self, buffer_obj, timestamp=False):
-        def func(self, buffer_obj, timestamp=False):
-            vk.vkCmdFillBuffer(
-                self._commandBuffer, buffer_obj._buffer, 0, buffer_obj.nbytes, 0
+    def freeCommandBuffer(self, wait=True):
+        if wait:
+            vk.vkQueueWaitIdle(self._queue)
+            
+        #self.command_list = []
+            
+        vk.vkFreeCommandBuffers(device=self._device, 
+                                commandPool=self._commandPool, 
+                                commandBufferCount=1, 
+                                pCommandBuffers=[self._commandBuffer],
+                                )
+        #print('Command buffer freed!')
+        
+    def oneTimeCommand(self, command, *vargs, **kwargs):
+            
+            # wait for queue
+            vk.vkQueueWaitIdle(self._queue)
+            # reset command buffer
+            #vk.vkResetCommandBuffer(command_buffer, 0) # Reset but don't return resources
+            
+            # Now we shall start recording commands into the newly allocated command buffer.
+            beginInfo = vk.VkCommandBufferBeginInfo(
+                sType=vk.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                flags=vk.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
             )
-            if timestamp == True:
-                self.cmdAddTimestamp("clearBuffer").writeCommand()
-            elif isinstance(timestamp, str):
-                self.cmdAddTimestamp(timestamp).writeCommand()
-            else:
-                pass
+            #vk.vkResetCommandBuffer(self._oneTimeCommandBuffer, 0)
+            vk.vkBeginCommandBuffer(self._oneTimeCommandBuffer, beginInfo)
+            command(self._oneTimeCommandBuffer, *vargs, **kwargs)
+            vk.vkEndCommandBuffer(self._oneTimeCommandBuffer)
 
-        return GPUCommand(func, [self, buffer_obj], {"timestamp": timestamp})
+            # Now we shall finally submit the recorded command buffer to a queue.
+            submitInfo = vk.VkSubmitInfo(
+                sType=vk.VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                commandBufferCount=1,  # submit a single command buffer
+                pCommandBuffers=[self._oneTimeCommandBuffer],  # the command buffer to submit.
+            )
+            # We submit the command buffer on the queue, at the same time giving a fence.
+            vk.vkQueueSubmit(self._queue, 1, submitInfo, self._fence)
+
+            # The command will not have finished executing until the fence is signalled.
+            # So we wait here.
+            # We will directly after this read our buffer from the GPU,
+            # and we will not be sure that the command has finished executing unless we wait for the fence.
+            # Hence, we use a fence here.
+            vk.vkWaitForFences(self._device, 1, [self._fence], vk.VK_TRUE, 100000000000)
+            vk.vkResetFences(  self._device, 1, [self._fence])
+            
+
+    def cmdClearBuffer(self, buffer_obj):
+        def func(self, buffer_obj):
+            vk.vkCmdFillBuffer(
+                self._commandBuffer, buffer_obj._buffer, 0, buffer_obj._bufferSize, 0
+            )
+
+        return GPUCommand(func, [self, buffer_obj], {})
 
     def sync(self):
         vk.vkCmdPipelineBarrier(
@@ -668,7 +968,7 @@ class GPUApplication(object):
             )
 
             if query == QUERY_POOL_SIZE + 1:
-                print("Max pool size reached!!!")
+                print("Max query pool size reached!!!")
                 # TODO: handle exception
 
         return GPUCommand(
@@ -691,12 +991,33 @@ class GPUApplication(object):
             self._device, self._queryPool, 0, length, dsize * length, pData, dsize, 0
         )
 
-        result_arr = np.array([*queryResult]) * 1e-6  # in ms
+        result_arr = np.array([*queryResult]) * self._timestampPeriod * 1e-6  # in ms
         result_arr -= result_arr[0]
-        result_dict = dict(zip(self._timestampLabels, result_arr))
-        result_dict["total"] = result_arr[-1]
+        result_dict = dict(zip(self._timestampLabels[:-1], result_arr[1:]-result_arr[:-1]))
+        result_dict["Total"] = result_arr[-1]
 
         return result_dict
+
+    def setIndirectBuffer(self, buffer, host_type):
+        indirect_h = buffer.getHostStructPtr(host_type)
+        self._indirect_h = indirect_h
+        return indirect_h
+    
+    def setBatchSize(self, N):
+        for f in self.updateBatchSizeFunctionList:
+            f(N)
+
+    def setFwdFFTWorkGroupSize(self, N):
+        self._fftAppFwd.setFFTWorkGroupSize(N)
+
+    def registerBatchSizeUpdateFunction(self, f):
+        self.updateBatchSizeFunctionList.append(f)
+
+    def appendCommands(self, cmd):
+        if isinstance(cmd, list):
+            self.command_list += cmd
+        else:
+            self.command_list.append(cmd)
 
 
 class GPUCommand:
@@ -709,192 +1030,243 @@ class GPUCommand:
         self.func(*self.vargs, **self.kwargs)
 
 
-class GPUObject:
-    def __init__(self, bufferSize=0, uniform=False, binding=None, app=None):
+class GPUBuffer:
+    def __init__(self, bufferSize=0, fftSize=None, usage='storage', binding=None, dtype=None, app=None):
         # customization:
 
-        if uniform:
+        if usage == 'indirect':
+            self._usage = vk.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT
+            self._descriptorType = None
+        elif usage == 'uniform':
             self._usage = vk.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
             self._descriptorType = vk.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
-        else:
+        else:# usage == 'storage':
             self._usage = vk.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
-            self._descriptorType = vk.VK_DESCRIPTOR_TYPE_STORAGE_BUFFER
-
-        self._bufferSize = bufferSize
+            self._descriptorType = vk.VK_DESCRIPTOR_TYPE_STORAGE_BUFFER    
+        
+        if fftSize is not None:
+            fftSize = np.atleast_1d(fftSize)
+            self._batchSize = 1 if len(fftSize) == 1 else fftSize[-2]
+            self._fftSize = fftSize[-1]
+            self._dtype = np.dtype(np.float32 if dtype is None else dtype)
+            self._itemsize = self._dtype.itemsize
+            self._bufferSize = self._batchSize * (self._fftSize // 2 + 1) * 2 * self._itemsize
+            #self._shape = (self._batchSize, self._fftSize)
+        else:
+            self._bufferSize = bufferSize
+              
         self._dstBinding = binding
 
         self._isInitialized = False
-        self._delayedSetDataList = []
-
+        self._stagingBufferInitialized = False
+        
+        self.name = ''
         self.app = app
         if self.app is not None:
-            self._init_buffer()
+            self.init_buffer()
 
-    def _init_buffer(self):
+
+    def init_buffer(self):
         self._device = self.app._device
 
         if self._dstBinding is None:
             self._dstBinding = self.app._nextDstBinding
         self.app._nextDstBinding = self._dstBinding + 1
 
-        self._buffer = None
-        self._bufferMemory = None
-        self._pmappedMemory = None
-
-        # create buffer:
-        bufferCreateInfo = vk.VkBufferCreateInfo(
-            sType=vk.VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            size=self._bufferSize,  # buffer size in bytes.
+        self._buffer, self._bufferMemory, index = self.app.createBuffer(self._bufferSize, 
+            kind=(vk.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT|vk.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | vk.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT),
+            descriptorType = self._descriptorType,
             usage=self._usage,
-            sharingMode=vk.VK_SHARING_MODE_EXCLUSIVE,  # buffer is exclusive to a single queue family at a time.
-        )
-
-        self._buffer = vk.vkCreateBuffer(self._device, bufferCreateInfo, None)
-        memoryRequirements = vk.vkGetBufferMemoryRequirements(
-            self._device, self._buffer
-        )
-
-        index = self.app.findMemoryType(
-            memoryRequirements.memoryTypeBits,
-            vk.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-            | vk.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-            | vk.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-        )
-
-        allocateInfo = vk.VkMemoryAllocateInfo(
-            sType=vk.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            allocationSize=memoryRequirements.size,
-            memoryTypeIndex=index,
-        )
-
-        self._bufferMemory = vk.vkAllocateMemory(self._device, allocateInfo, None)
-        vk.vkBindBufferMemory(self._device, self._buffer, self._bufferMemory, 0)
-
-        self._pmappedMemory = vk.vkMapMemory(
-            self._device, self._bufferMemory, 0, self._bufferSize, 0
-        )
+            # sharingMode=vk.VK_SHARING_MODE_EXCLUSIVE,
+        
+            )
+        self._combined = True
+        
+        if index < 0:
+            # apparently we don't have memory type that is both host_visible& host_coherent, as well as device_local.
+            # this is the case on dedicated GPU's. In this case we only look for device_local.
+        
+            self._buffer, self._bufferMemory, index = self.app.createBuffer(self._bufferSize, 
+            kind=vk.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            descriptorType = self._descriptorType,
+            usage=self._usage,
+            # sharingMode=vk.VK_SHARING_MODE_EXCLUSIVE,
+            )
+            self._combined = False
+        
         self.app._bufferObjects.append(self)
 
         self._isInitialized = True
+    
+    
+    def initStagingBuffer(self, chunksize=None):
+        
+        if not self._isInitialized:
+            print('buffer {self._name} not initialized! First execute self.init_buffer()!')
+            return -1
 
-    def _delayedSetData(self):
-        while len(self._delayedSetDataList):
-            vargs = self._delayedSetDataList.pop(0)
-            self.setData(*vargs)
+        # self._combined should tell us whether we have a combined host/device buffer
+ 
+        if self._combined: #we're dealing with a buffer that is both 
+            self._stagingBufferSize = self._bufferSize
+            self._stagingBuffer = self._buffer
+            self._stagingBufferMemory = self._bufferMemory
+    
+        else:
+            chunksize = (self._bufferSize if chunksize is None else chunksize)
+            self._stagingBufferSize = chunksize  
+                
+            self._stagingBuffer, self._stagingBufferMemory, _  = self.app.createBuffer(self._stagingBufferSize, 
+            kind=vk.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | vk.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+            descriptorType = self._descriptorType,
+            usage=self._usage,
+            )
 
-    def free(self):
-        if self._pmappedMemory:
-            vk.vkUnmapMemory(self._device, self._bufferMemory)
-            self._pmappedMemory = None
-        if self._bufferMemory:
-            vk.vkFreeMemory(self._device, self._bufferMemory, None)
+        self._pmappedMemory = vk.vkMapMemory(
+                self._device, self._stagingBufferMemory, 0, self._stagingBufferSize, 0
+            )
+        self._hostPtr = int(vk.ffi.cast("unsigned long long", vk.ffi.from_buffer(self._pmappedMemory)))
+            
+
+        self._stagingBufferInitialized = True
+
+
+    def copyToBuffer(self, arr, device_offset=0, chunksize=None):
+        if not self._stagingBufferInitialized:
+            self.initStagingBuffer(chunksize=chunksize)
+
+        data_size = arr.nbytes
+        dstOffset = device_offset if self._combined else 0
+        offset = 0
+        while offset < data_size:
+            copy_size = min(self._stagingBufferSize, data_size - offset) 
+            self.fromArray(arr, srcOffset=offset, dstOffset=dstOffset, copy_size=copy_size)
+            self.transferStagingBuffer(direction='H2D', dstOffset=offset + device_offset, size=copy_size)
+            offset += copy_size
+        
+        return offset #returns the amount of bytes copied
+
+
+    def copyFromBuffer(self, arr, device_offset=0, chunksize=None):
+        if not self._stagingBufferInitialized:
+            self.initStagingBuffer(chunksize=chunksize)
+
+        data_size = arr.nbytes
+        srcOffset = device_offset if self._combined else 0
+        offset = 0
+        while offset < data_size:
+            copy_size = min(self._stagingBufferSize, data_size - offset) 
+            self.transferStagingBuffer(direction='D2H', srcOffset=offset + device_offset, size=copy_size)
+            self.toArray(arr, srcOffset=srcOffset, dstOffset=offset, copy_size=copy_size)
+            offset += copy_size
+        
+        return offset #returns the amount of bytes copied
+
+
+    def toArray(self, arr, srcOffset=0, dstOffset=0, copy_size=None):
+        if not self._stagingBufferInitialized:
+            self.initStagingBuffer()
+
+        if copy_size is None:
+            copy_size = arr.nbytes
+        ctypes.memmove(arr.ctypes.data + dstOffset, ctypes.c_void_p(self._hostPtr + srcOffset),  copy_size)
+        return copy_size
+
+
+    def fromArray(self, arr, srcOffset=0, dstOffset=0, copy_size=None):
+        if not self._stagingBufferInitialized:
+            self.initStagingBuffer()
+
+        if copy_size is None:
+            copy_size = arr.nbytes
+        ctypes.memmove(ctypes.c_void_p(self._hostPtr + dstOffset), arr.ctypes.data + srcOffset, copy_size)
+        return copy_size
+    
+    
+    def transferStagingBuffer(self, direction='H2D', srcOffset=0, dstOffset=0, size=None, transfer_now=True):
+                
+        if not self._stagingBufferInitialized:
+            self.initStagingBuffer()
+
+        if self._combined:
+            return
+
+        if direction == 'H2D':
+            srcBuffer = self._stagingBuffer
+            dstBuffer = self._buffer
+            
+        elif direction == 'D2H':
+            srcBuffer = self._buffer
+            dstBuffer = self._stagingBuffer
+        
+        else:
+            return
+       
+        if size is None:
+            size = self._stagingBufferSize     
+        
+        copy_region = vk.VkBufferCopy(srcOffset=srcOffset, dstOffset=dstOffset, size=size)
+        
+        if transfer_now:    
+            self.app.oneTimeCommand(
+                vk.vkCmdCopyBuffer,
+                srcBuffer=srcBuffer,
+                dstBuffer=dstBuffer,
+                regionCount=1,
+                pRegions=[copy_region],
+                )  
+
+        else:
+            vk.vkCmdCopyBuffer(
+                self.app._commandBuffer, 
+                srcBuffer=srcBuffer, 
+                dstBuffer=dstBuffer,
+                regionCount=1,
+                pRegions=[copy_region])
+
+        
+    def cmdTransferStagingBuffer(self, direction='H2D', srcOffset=0, dstOffset=0, size=None):
+        #TODO: add timestamp , timestamp=False
+        return GPUCommand(self.transferStagingBuffer, [], { "direction":direction,
+                                                            "srcOffset":srcOffset, 
+                                                            "dstOffset":dstOffset, 
+                                                            "size":size, 
+                                                            "transfer_now":False})
+
+    def cmdClearBuffer(self):
+        return self.app.cmdClearBuffer(self)
+
+
+    def setBatchSize(self, batch, grow_only=True, factor=1.5):
+        if batch > self._batchSize:
+            self._batchSize = int(factor * batch)
+            new_size = self._batchSize * (self._fftSize // 2 + 1) * 2 * self._itemsize
+            self.resizeBuffer(new_size)
+            #print('batch:', batch)
+                    
+    
+    def resizeBuffer(self, nbytes):
+        #print('resizing buffer from',self._bufferSize, 'to', nbytes)
+        self.app._fftAppFwd = None
+        self.free()
+        self._bufferSize = nbytes
+        self.init_buffer()
+        
+        if self.app._commandBuffer is not None: #only rewrite if one already exists
+            self.app.writeCommandBuffer()
+
+    
+    def getHostStructPtr(self, struct):
+        if not self._stagingBufferInitialized:
+            self.initStagingBuffer()
+        self._structPtr = ctypes.cast(self._hostPtr, ctypes.POINTER(struct))
+        return self._structPtr.contents
+
+    def free(self): #TODO: is this up to date?
+        self._isInitialized = False
+  
         if self._buffer:
             vk.vkDestroyBuffer(self._device, self._buffer, None)
-
-
-class GPUArray(GPUObject):
-    def __init__(
-        self, shape=(1,), dtype=np.int32, strides=None, binding=None, app=None
-    ):
-        self.shape = shape
-        self.dtype = np.dtype(dtype)
-        self.itemsize = self.dtype.itemsize
-        self.size = int(np.prod(self.shape))
-        self.nbytes = self.size * self.itemsize
-
-        if strides is None:
-            self._calcStrides()
-        else:
-            self.strides = strides
-
-        super().__init__(
-            bufferSize=self.size * self.itemsize,
-            uniform=False,
-            binding=binding,
-            app=app,
-        )
-
-        self._arr = None
-        if self._isInitialized:
-            self._arr = np.frombuffer(self._pmappedMemory, self.dtype).reshape(
-                self.shape
-            )
-
-    def _init_buffer(self):
-        super()._init_buffer()
-        if self._arr is None:
-            self._arr = np.frombuffer(self._pmappedMemory, self.dtype).reshape(
-                self.shape
-            )
-
-    @staticmethod
-    def fromArr(arr, binding=None, app=None):
-        bufferObject = GPUArray(
-            arr.shape, arr.dtype, arr.strides, binding=binding, app=app
-        )
-        bufferObject.setData(arr)
-        return bufferObject
-
-    def _calcStrides(self, order="c"):
-
-        sshape = np.zeros_like(self.shape)
-        sshape[
-            0
-        ] = 1  # TODO: Check this, should maybe be sshape[-1]=1; shape[:-1] = self.shape[:-1]??
-        sshape[1:] = self.shape[:-1]
-        sshape *= self.itemsize
-
-        if order == "c":
-            self.strides = np.multiply.accumulate(sshape[::-1])[::-1]
-        else:
-            self.strides = np.multiply.accumulate(sshape)
-
-    def setData(self, arr, byte_offset=0):
-        if self._isInitialized:
-            ctypes.memmove(
-                self._arr.ctypes.data + byte_offset, arr.ctypes.data, arr.nbytes
-            )
-        else:
-            self._delayedSetDataList.append((arr, byte_offset))
-
-        return arr.nbytes
-
-    def getData(self):
-        return self._arr
-
-
-class GPUStruct(GPUObject):
-    def __init__(self, bufferSize=0, binding=None, app=None):
-        super().__init__(bufferSize=bufferSize, uniform=True, binding=binding, app=app)
-
-    def fromStruct(struct, binding=None, app=None):
-        bufferSize = ctypes.sizeof(struct)
-        bufferObject = GPUStruct(bufferSize=bufferSize, binding=binding, app=app)
-        bufferObject.setData(struct)
-        return bufferObject
-
-    # def fromStruct(structPtr, binding=None, app=None):
-    # bufferSize = ffi.sizeof(structPtr[0])
-    # bufferObject = GPUStruct(bufferSize=bufferSize, binding=binding, app=app)
-    # bufferObject.setData(structPtr)
-    # return bufferObject
-
-    # def setData(self, structPtr):
-    # ffi.memmove(self._pmappedMemory, structPtr, self._bufferSize)
-
-    def setData(self, struct):
-        if self._isInitialized:
-            ptr = ctypes.c_void_p(
-                int(
-                    vk.ffi.cast(
-                        "unsigned long long", vk.ffi.from_buffer(self._pmappedMemory)
-                    )
-                )
-            )
-            ctypes.memmove(ptr, ctypes.byref(struct), self._bufferSize)
-        else:
-            self._delayedSetDataList.append((struct,))
-
-    def getData(self):
-        # not implemented
-        pass
+        if self._bufferMemory:
+            vk.vkFreeMemory(self._device, self._bufferMemory, None)
+        

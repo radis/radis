@@ -1,4 +1,4 @@
-from ctypes import Structure, c_float, c_int, c_size_t
+from ctypes import Structure, c_float, c_int, c_size_t, c_uint
 
 c_float_arr_16 = c_float * 16
 
@@ -33,6 +33,18 @@ class gridDim_t(Structure):
         ("y", c_size_t),
         ("z", c_size_t),
     ]
+
+
+class workGroupSize_t(Structure):
+    _fields_ = [
+        ("x", c_uint),
+        ("y", c_uint),
+        ("z", c_uint),
+        ("id", c_uint),
+    ]
+
+workGroupSizeArray_t = workGroupSize_t * 4
+
 
 
 class initData_t(Structure):
