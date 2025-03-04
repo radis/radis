@@ -83,6 +83,10 @@ def get_config(configpath=CONFIG_PATH_JSON):
                 err.pos,
             ) from err
 
+    # Add default for plotting_library if missing
+    if "plotting_library" not in config:
+        config["plotting_library"] = "auto"
+
     user_config = get_user_config(configpath)
 
     config.update(user_config)

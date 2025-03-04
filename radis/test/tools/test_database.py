@@ -190,7 +190,7 @@ def test_lazy_loading(verbose=True, *args, **kwargs):
                 wavenum_max=4500,
                 molecule="CO",
                 Tgas=T,
-                databank="hitemp",  # test by fetching directly
+                databank="hitran",  # test by fetching directly
                 verbose=False,
             )
             .apply_slit(2, "nm")
@@ -204,7 +204,7 @@ def test_lazy_loading(verbose=True, *args, **kwargs):
                 wavenum_max=4500,
                 molecule="OH",
                 Tgas=T,
-                databank="hitemp",  # test by fetching directly
+                databank="hitran",  # test by fetching directly
                 verbose=False,
             )
             .apply_slit(2, "nm")

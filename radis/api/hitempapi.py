@@ -10,12 +10,21 @@ https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 
 """
 
+import json
+import os
 import re
 import urllib.request
 from os.path import basename, commonpath, join
 from typing import Union
 
 import numpy as np
+import requests
+from bs4 import BeautifulSoup
+from cryptography.fernet import Fernet
+from getpass4 import getpass
+from tqdm import tqdm
+
+from radis.misc.config import CONFIG_PATH_JSON
 
 try:
     from .dbmanager import DatabaseManager
@@ -111,6 +120,212 @@ def get_last(b):
     assert (non_zero[: threshold + 1] == 1).all()
     assert (non_zero[threshold + 1 :] == 0).all()
     return b[non_zero]
+
+
+def setup_credentials():
+    """Set up HITRAN credentials and store them in .env file"""
+    # Get credentials from user
+    username = input("Enter HITRAN username: ")
+    password = getpass("Enter HITRAN password: ")
+    return username, password
+
+
+def get_encryption_key():
+    """Get or create encryption key for HITRAN credentials"""
+    # Read existing radis.json
+    if os.path.exists(CONFIG_PATH_JSON):
+        with open(CONFIG_PATH_JSON, "r") as f:
+            config = json.load(f)
+    else:
+        config = {}
+
+    # Check if encryption key exists
+    if "credentials" in config and "ENCRYPTION_KEY" in config["credentials"]:
+        return config["credentials"]["ENCRYPTION_KEY"].encode()
+    else:
+        # Generate a new key
+        key = Fernet.generate_key()
+
+        # Add credentials section if it doesn't exist
+        if "credentials" not in config:
+            config["credentials"] = {}
+
+        # Store the key
+        config["credentials"]["ENCRYPTION_KEY"] = key.decode()
+
+        # Write back to radis.json
+        with open(CONFIG_PATH_JSON, "w") as f:
+            json.dump(config, f, indent=4)
+
+        # Set restrictive permissions
+        os.chmod(CONFIG_PATH_JSON, 0o600)
+
+        return key
+
+
+def encrypt_password(password):
+    """Encrypt password using Fernet symmetric encryption"""
+    key = get_encryption_key()
+    f = Fernet(key)
+    return f.encrypt(password.encode()).decode()
+
+
+def decrypt_password(encrypted_password):
+    """Decrypt password using Fernet symmetric encryption"""
+    key = get_encryption_key()
+    f = Fernet(key)
+    return f.decrypt(encrypted_password.encode()).decode()
+
+
+def store_credentials(username, password):
+    """Store HITRAN credentials in radis.json file with encrypted username and password"""
+    # Encrypt both username and password before storing
+    encrypted_username = encrypt_password(username)  # reuse same encryption function
+    encrypted_password = encrypt_password(password)
+
+    # Read existing radis.json
+    if os.path.exists(CONFIG_PATH_JSON):
+        with open(CONFIG_PATH_JSON, "r") as f:
+            config = json.load(f)
+    else:
+        config = {}
+
+    # Add credentials section if it doesn't exist
+    if "credentials" not in config:
+        config["credentials"] = {}
+
+    # Store encrypted credentials
+    config["credentials"]["HITRAN_USERNAME"] = encrypted_username
+    config["credentials"]["HITRAN_PASSWORD"] = encrypted_password
+
+    print(
+        f"Your HITRAN credentials will be saved securely in {CONFIG_PATH_JSON}. You can delete the credentials section if you wish but you will have to prompt your credentials at next download."
+    )
+
+    # Write back to radis.json
+    with open(CONFIG_PATH_JSON, "w") as f:
+        json.dump(config, f, indent=4)
+
+    # Set restrictive permissions
+    os.chmod(CONFIG_PATH_JSON, 0o600)
+
+
+def login_to_hitran(verbose=False):
+    """Login to HITRAN using stored credentials from radis.json or prompt if not available"""
+    login_url = "https://hitran.org/login/"
+    session = requests.Session()
+
+    def attempt_login(username, password):
+        """Attempt to login with provided credentials"""
+        # Get CSRF token
+        response = session.get(login_url)
+        soup = BeautifulSoup(response.text, "html.parser")
+        csrf = soup.find("input", {"name": "csrfmiddlewaretoken"})["value"]
+
+        login_data = {
+            "csrfmiddlewaretoken": csrf,
+            "email": username,
+            "password": password,
+        }
+
+        headers = {
+            "Referer": login_url,
+            "Origin": "https://hitran.org",
+            "Cookie": f"csrftoken={csrf}",
+        }
+
+        login_response = session.post(
+            login_url, data=login_data, headers=headers, allow_redirects=False
+        )
+
+        return login_response, session
+
+    def is_login_successful(response):
+        """Check if login was successful by looking for specific elements"""
+        return response.status_code == 302 or "Logout" in response.text
+
+    # Check if credentials exist in radis.json
+    if os.path.exists(CONFIG_PATH_JSON):
+        with open(CONFIG_PATH_JSON, "r") as f:
+            config = json.load(f)
+
+        if "credentials" in config:
+            encrypted_username = config["credentials"].get("HITRAN_USERNAME")
+            encrypted_password = config["credentials"].get("HITRAN_PASSWORD")
+
+            if encrypted_username and encrypted_password:
+                try:
+                    # Decrypt both username and password
+                    username = decrypt_password(encrypted_username)
+                    password = decrypt_password(encrypted_password)
+
+                    login_response, session = attempt_login(username, password)
+                    if is_login_successful(login_response):
+                        if verbose:
+                            print("Login successful.")
+                        return session
+                except Exception as e:
+                    if verbose:
+                        print(f"Error decrypting credentials: {str(e)}")
+                    # Remove invalid credentials from radis.json
+                    if "credentials" in config:
+                        del config["credentials"]
+                        with open(CONFIG_PATH_JSON, "w") as f:
+                            json.dump(config, f, indent=4)
+                    print(
+                        "Invalid stored credentials. Please enter your HITRAN credentials again."
+                    )
+                    # Continue to new user flow
+
+    # First time use or no stored credentials
+    username, password = setup_credentials()
+    login_response, session = attempt_login(username, password)
+
+    if is_login_successful(login_response):
+        if verbose:
+            print("Login successful.")
+        store_credentials(username, password)
+        return session
+    else:
+        if verbose:
+            print(f"Login failed: {login_response.status_code}")
+        raise OSError(
+            "HITRAN login failed. Please ensure you entered correct credentials from https://hitran.org/login/"
+        )
+
+
+def download_hitemp_file(session, file_url, output_filename, verbose=False):
+    print(f"Starting download from {file_url} to {output_filename}")
+    file_response = session.get(file_url, stream=True)
+    if file_response.status_code == 200:
+        total_size = int(file_response.headers.get("content-length", 0))
+        print(f"Total size to download: {total_size} bytes")
+
+        with open(output_filename, "wb") as f, tqdm(
+            total=total_size, unit="B", unit_scale=True, desc=output_filename
+        ) as pbar:
+            for chunk in file_response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+                    pbar.update(len(chunk))
+
+        print("\nDownload complete!")
+    else:
+        print(f"Download failed: {file_response.status_code}")
+        print("Response:", file_response.text[:500])
+        raise Warning(
+            f"Failed to download {file_url}. Please download manually and place it in the following location:"
+        )
+        temp_folder = os.path.join(
+            os.path.dirname(output_filename),
+            "downloads__can_be_deleted",
+            "hitran.org",
+            "files",
+            "HITEMP",
+            "HITEMP-2024",
+            "CO2_line_list",
+        )
+        print(f"{file_url} ==> {temp_folder} \n")
 
 
 class HITEMPDatabaseManager(DatabaseManager):
@@ -232,18 +447,34 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         molecule = self.molecule
 
-        if molecule in ["H2O", "CO2"]:
+        if molecule in ["H2O"]:  # CO2 is a single file since 01/2025
 
             base_url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
-            response = urllib.request.urlopen(base_url)
-            response_string = response.read().decode()
-            inputfiles = re.findall(r'href="(\S+.zip)"', response_string)
 
-            urlnames = [join(base_url, f) for f in inputfiles]
+            # response = urllib.request.urlopen(base_url)
+            # response_string = response.read().decode()
+            # inputfiles = re.findall(r'href="(\S+.zip)"', response_string)
+            # urlnames = [join(base_url, f) for f in inputfiles]
+
+            from radis.misc.utils import getProjectRoot
+
+            with open(
+                join(getProjectRoot(), "db", "H2O", "HITRANpage_january2025.htm")
+            ) as file:
+                response_string = file.read()
+
+            inputfiles = re.findall(r'href="(\S+.zip)"', response_string)
+            base_url = "https://hitran.org"
+            urlnames = [f"{base_url}{f}" for f in inputfiles]
 
         elif molecule in HITEMP_MOLECULES:
-            url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
-            urlnames = [url]
+            session = login_to_hitran(verbose=self.verbose)
+            if session:
+                url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
+                download_hitemp_file(session, url, basename(url))
+                urlnames = [basename(url)]
+            else:
+                return []  # Exit if login failed
         else:
             raise KeyError(
                 f"Please choose one of HITEMP molecules : {HITEMP_MOLECULES}. Got '{molecule}'"
@@ -260,7 +491,7 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         If other molecule, return the file anyway.
         see :py:func:`radis.api.hitempapi.keep_only_relevant`"""
-        if self.molecule in ["CO2", "H2O"]:
+        if self.molecule in ["H2O"]:  # CO2 is a single file since 01/2025
             inputfiles, _, _ = keep_only_relevant(
                 inputfiles, wavenum_min, wavenum_max, verbose
             )
@@ -331,12 +562,31 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         writer = self.get_datafile_manager()
 
+        if molecule == "CO2":
+            session = login_to_hitran()
+            download_hitemp_file(
+                session,
+                "https://hitran.org/files/HITEMP/bzip2format/02_HITEMP2024.par.bz2",
+                "02_HITEMP2024.par.bz2",
+            )
+            urlname = "02_HITEMP2024.par.bz2"
+
         with opener.open(urlname) as gfile:  # locally downloaded file
 
             dt = _create_dtype(columns, linereturnformat)
 
             if verbose:
                 print(f"Download complete. Parsing {molecule} database to {local_file}")
+                print(
+                    "This step is executed only ONCE and will considerably accelerate the computation of spectra. It will also dramatically reduce the memory usage. The parsing/conversion can be very fast (e.g. HITEMP OH takes a few seconds) or extremely long (e.g. HITEMP CO2 takes approximately 1 hour)."
+                )
+            if molecule == "CO2":
+                from warnings import warn
+
+                warn(
+                    "Parsing will take approximately 1 hour for HITEMP CO2 (compressed = 6 GB",
+                    UserWarning,
+                )
 
             # assert not(exists(local_file))
 
@@ -349,7 +599,13 @@ class HITEMPDatabaseManager(DatabaseManager):
                     # with End of file flag) so nbytes != 0
                     b = get_last(b)
 
-                df = _ndarray2df(b, columns, linereturnformat)
+                df = _ndarray2df(b, columns, linereturnformat, molecule=self.molecule)
+
+                # 19722
+                if molecule == "CO2":
+                    df["iso"] = (
+                        df["iso"].replace({"A": 10, "B": 11, "C": 12}).astype(int)
+                    )  # in HITEMP2024, isotopologue 10, 11, 12 are A, B, C.
 
                 # Post-processing :
                 # ... Add local quanta attributes, based on the HITRAN group

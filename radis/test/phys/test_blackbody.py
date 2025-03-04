@@ -91,7 +91,7 @@ def test_planck_nm(verbose=True, plot=True, *args, **kwargs):
 
     # Check that max is correct
     # hardcoded for 2200 K, epsilon = 0.36 (~1.3 µm)
-    assert I_nm.max() == 75.98736024707178
+    assert np.isclose(I_nm.max(), 75.98736024707178)
 
     # Test planck and planck_wn
     assert np.allclose(planck(w_nm, T, eps, unit=Iunit_per_nm), I_nm)

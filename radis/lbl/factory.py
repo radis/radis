@@ -1210,8 +1210,19 @@ class SpectrumFactory(BandFactory):
         # )
 
         gamma_arr = np.zeros((2, _Nlines_calculated), dtype=np.float32)
-        gamma_arr[0] = self.df0["selbrd"].to_numpy(dtype=np.float32)
+        # gamma_arr[0] = self.df0["selbrd"].to_numpy(dtype=np.float32)
+        gamma_arr[0] = self.df0["airbrd"].to_numpy(
+            dtype=np.float32
+        )  # dirty, but working for the moment
         gamma_arr[1] = self.df0["airbrd"].to_numpy(dtype=np.float32)
+
+        # Check if pressure shift exists (12/2024: not the case in Exomol)
+        if "Pshft" not in self.df0:
+            self.warn(
+                "Pressure-shift coefficient not given in database: assumed 0 pressure shift",
+                "MissingPressureShiftWarning",
+            )
+            self.df0["Pshft"] = 0
 
         self.calc_S0(self.df0)
 

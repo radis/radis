@@ -10,6 +10,11 @@ mpldatacursor
 vulkan>1.1.99.1 # Fix driver compatibility?
 nvidia-cufft-cu11; sys_platform != "darwin"
 periodictable
+requests        # for making HTTP requests to HITRAN database
+beautifulsoup4  # for parsing HTML responses from HITRAN website
+getpass4       # for handling password input securely
+tqdm          # for progress bars
+python-dotenv  # for managing environment variables
 # tuna            # to generate visual/interactive performance profiles
 vaex-core ; python_version < '3.11'
 vaex-hdf5 ; python_version < '3.11'
