@@ -1412,6 +1412,8 @@ class MdbExomol(DatabaseManager):
         None. Store values in Data Frame.
 
         """
+        if self.engine == "vaex":
+            import vaex
 
         if alpha_ref_def:
             self.alpha_ref_def = alpha_ref_def
@@ -1437,8 +1439,16 @@ class MdbExomol(DatabaseManager):
                     n_Texp_default=self.n_Texp_def,
                     jlower_max=df["jlower"].max(),
                 )
-                self.alpha_ref = j2alpha_ref[df["jlower"].values]
-                self.n_Texp = j2n_Texp[df["jlower"].values]
+                self.alpha_ref = (
+                    j2alpha_ref[df["jlower"].values]
+                    if self.engine != "vaex"
+                    else vaex.array(j2alpha_ref[df["jlower"].values])
+                )
+                self.n_Texp = (
+                    j2n_Texp[df["jlower"].values]
+                    if self.engine != "vaex"
+                    else vaex.array(j2n_Texp[df["jlower"].values])
+                )
             elif codelv == "a1":
                 j2alpha_ref, j2n_Texp = make_j2b(
                     bdat,
@@ -1452,11 +1462,15 @@ class MdbExomol(DatabaseManager):
                     j2n_Texp_def=j2n_Texp,
                     jupper_max=df["jupper"].max(),
                 )
-                self.alpha_ref = np.array(
-                    jj2alpha_ref[df["jlower"].values, df["jupper"].values]
+                self.alpha_ref = (
+                    np.array(jj2alpha_ref[df["jlower"].values, df["jupper"].values])
+                    if self.engine != "vaex"
+                    else vaex.array(jj2alpha_ref[df["jlower"].values, df["jupper"].values])
                 )
-                self.n_Texp = np.array(
-                    jj2n_Texp[df["jlower"].values, df["jupper"].values]
+                self.n_Texp = (
+                    np.array(jj2n_Texp[df["jlower"].values, df["jupper"].values])
+                    if self.engine != "vaex"
+                    else vaex.array(jj2n_Texp[df["jlower"].values, df["jupper"].values])
                 )
             elif codelv == "m0":
 
@@ -1493,14 +1507,19 @@ class MdbExomol(DatabaseManager):
                         warnings.warn(
                             f"Found {len(invalid_pqr)} values in 'PQR' outside of -1, 0, 1: {invalid_pqr['PQR'].unique()}"
                         )
-
-                # vaex/pandas
                 alpha_ref_dict = dict(zip(bdat["jlower"], bdat["alpha_ref"]))
-                self.alpha_ref = np.array((df["m"].map(alpha_ref_dict)).values)
-
+                self.alpha_ref = (
+                    np.array(df["m"].map(alpha_ref_dict).values)
+                    if self.engine != "vaex"
+                    else vaex.array(df["m"].map(alpha_ref_dict).values)
+                )
+                
                 n_Texp_dict = dict(zip(bdat["jlower"], bdat["n_Texp"]))
-                self.n_Texp = np.array((df["m"].map(n_Texp_dict)).values)
-
+                self.n_Texp = (
+                np.array(df["m"].map(n_Texp_dict).values)
+                    if self.engine != "vaex"
+                    else vaex.array(df["m"].map(n_Texp_dict).values)
+                )
                 ## for pandas but returns DataFrame
                 # bdat.set_index("jlower", inplace=True)
                 # self.alpha_ref = df["m"].map(bdat["alpha_ref"])
@@ -1515,8 +1534,16 @@ class MdbExomol(DatabaseManager):
                     + " This broadening code is NOT implemented yet.\n"
                     + "Using default parameters instead."
                 )
-                self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
-                self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
+                self.alpha_ref = (
+                    np.array(self.alpha_ref_def * np.ones(len(df)))
+                    if self.engine != "vaex"
+                    else vaex.array(self.alpha_ref_def * np.ones(len(df)))
+                )
+                self.n_Texp = (
+                    np.array(self.n_Texp_def * np.ones(len(df)))
+                    if self.engine != "vaex"
+                    else vaex.array(self.n_Texp_def * np.ones(len(df)))
+                )
         else:
             if not os.path.exists(file):
                 warnings.warn(
@@ -1525,9 +1552,17 @@ class MdbExomol(DatabaseManager):
                     )
                 )
             print("The default broadening parameters are used.")
-
-            self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
-            self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
+            
+            self.alpha_ref = (
+                np.array(self.alpha_ref_def * np.ones(len(df)))
+                if self.engine != "vaex"
+                else vaex.array(self.alpha_ref_def * np.ones(len(df)))
+            )
+            self.n_Texp = (
+                np.array(self.n_Texp_def * np.ones(len(df)))
+                if self.engine != "vaex"
+                else vaex.array(self.n_Texp_def * np.ones(len(df)))
+            )
 
         if add_columns:
             if species == "air":
