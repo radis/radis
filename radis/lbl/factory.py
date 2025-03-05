@@ -1229,7 +1229,7 @@ class SpectrumFactory(BandFactory):
         if verbose >= 2:
             print("Initializing parameters...", end=" ")
 
-        from radis.gpu.gpu import gpu_exit, gpu_init, gpu_iterate
+        from radis.gpu.gpu import gpu_exit, gpu_init, gpu_iterate, gpu_get_griddims
 
         gpu_init(
             self.params.wavenum_min_calc,
@@ -1257,7 +1257,7 @@ class SpectrumFactory(BandFactory):
         if verbose >= 2:
             print("Calculating spectra...", end=" ")
 
-        abscoeff_calc, iter_params, times = gpu_iterate(
+        abscoeff_calc, times = gpu_iterate(
             pressure,
             Tgas,
             mole_fraction,
@@ -1312,6 +1312,7 @@ class SpectrumFactory(BandFactory):
         self.profiler.start("generate_spectrum_obj", 2)
 
         # Get lines (intensities + populations)
+        iter_N_L, iter_N_G = gpu_get_griddims()
 
         conditions = self.get_conditions(add_config=True)
         conditions.update(
@@ -1330,15 +1331,15 @@ class SpectrumFactory(BandFactory):
                 ),
                 "add_at_used": "gpu-backend",
                 "profiler": dict(self.profiler.final),
-                "NwL": iter_params.N_L,
-                "NwG": iter_params.N_G,
+                "NwL": iter_N_L,
+                "NwG": iter_N_G,
             }
         )
         if self.params.optimization != None:
             conditions.update(
                 {
-                    "NwL": iter_params.N_L,
-                    "NwG": iter_params.N_G,
+                    "NwL": iter_N_L,
+                    "NwG": iter_N_G,
                 }
             )
         del self.profiler.final[list(self.profiler.final)[-1]][

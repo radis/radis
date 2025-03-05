@@ -77,12 +77,16 @@ class GPUApplication(object):
     def free(self):
 
         self.command_list = []
-
+        #print('Freeing FFT apps... ', end='')
         self._fftAppFwd = None
         self._fftAppInv = None
+        #print('Done!')
         
+        #print('Freeing buffer objects... ')
         for bufferObject in self._bufferObjects:
+            #print(bufferObject.name)
             bufferObject.free()
+        #print('Done!')
 
         for computeShaderModule in self._computeShaderModules:
             vk.vkDestroyShaderModule(self._device, computeShaderModule, None)
@@ -1094,7 +1098,8 @@ class GPUBuffer:
             )
             self._combined = False
         
-        self.app._bufferObjects.append(self)
+        if self not in self.app._bufferObjects:
+            self.app._bufferObjects.append(self)
 
         self._isInitialized = True
     
@@ -1238,11 +1243,11 @@ class GPUBuffer:
 
 
     def setBatchSize(self, batch, grow_only=True, factor=1.5):
+        #print('batch:', batch)
         if batch > self._batchSize:
             self._batchSize = int(factor * batch)
             new_size = self._batchSize * (self._fftSize // 2 + 1) * 2 * self._itemsize
             self.resizeBuffer(new_size)
-            #print('batch:', batch)
                     
     
     def resizeBuffer(self, nbytes):

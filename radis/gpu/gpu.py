@@ -16,7 +16,6 @@ from radis.gpu.params import (
 from radis.gpu.structs import initData_t, iterData_t, workGroupSizeArray_t
 from radis.misc.utils import getProjectRoot
 from ctypes import sizeof
-
 # from radis.misc.warning import NoGPUWarning
 
 
@@ -99,7 +98,7 @@ def gpu_init(
         during iterations.
     """
 
-    global app, init_h, iter_h
+    global app
 
     from radis.gpu.vulkan.vulkan_compute_lib import GPUApplication, GPUBuffer
 
@@ -118,18 +117,18 @@ def gpu_init(
     app.init_d = GPUBuffer(sizeof(initData_t), usage='uniform', binding=0)  #host_visible, device_local, (host_cached)
     app.iter_d = GPUBuffer(sizeof(iterData_t), usage='uniform', binding=1)  #host_visible, device_local, (host_cached) 
 
-    init_h = app.init_d.getHostStructPtr(initData_t)
-    iter_h = app.iter_d.getHostStructPtr(iterData_t)
+    app.init_h = app.init_d.getHostStructPtr(initData_t)
+    app.iter_h = app.iter_d.getHostStructPtr(iterData_t)
 
-    init_h.v_min = vmin
-    init_h.dv = dv
-    init_h.N_v = Nv
-    init_h.N_v_FT = next_fast_len_even(2 * init_h.N_v)
-    init_h.N_x_FT = init_h.N_v_FT // 2 + 1
-    init_h.dxG = dxG
-    init_h.dxL = dxL
-    init_h.N_lines = int(len(v0))
-    init_h.N_coll = gamma_arr.shape[0]
+    app.init_h.v_min = vmin
+    app.init_h.dv = dv
+    app.init_h.N_v = Nv
+    app.init_h.N_v_FT = next_fast_len_even(2 * app.init_h.N_v)
+    app.init_h.N_x_FT = app.init_h.N_v_FT // 2 + 1
+    app.init_h.dxG = dxG
+    app.init_h.dxL = dxL
+    app.init_h.N_lines = int(len(v0))
+    app.init_h.N_coll = gamma_arr.shape[0]
 
     log_c2Mm_arr = np.array(
         [0]
@@ -139,7 +138,7 @@ def gpu_init(
         ]
     )
     for i in range(len(log_c2Mm_arr)):
-        init_h.log_c2Mm[i] = log_c2Mm_arr[i]
+        app.init_h.log_c2Mm[i] = log_c2Mm_arr[i]
 
     init_Q(Q_intp_list)
     log_2vMm = np.log(v0) + log_c2Mm_arr.take(iso)
@@ -159,7 +158,7 @@ def gpu_init(
     ## Next the variables are initialized on the GPU. Constant variables
     ## that don't change (i.e. pertaining to the database) are immediately
     ## copied to the GPU through GPUArray.fromArray().
-    ## Other variables are only allocated. S_klm_d and S_klm_FT_d are
+    ## Other variables are only allocated. S_klm_d is
     ## special cases because their shape changes during iteration.
     ## They are not allocated, only given a device pointer by which
     ## they can be referenced later.
@@ -174,8 +173,8 @@ def gpu_init(
     for arr in database_arrays:
         byte_offset += app.database_d.copyToBuffer(arr, device_offset=byte_offset, chunksize=32*1024*1024)
         
-    app.S_kl_d = GPUBuffer(fftSize=init_h.N_v_FT, binding=3) #req: large, device_local
-    app.spectrum_d = GPUBuffer(fftSize=init_h.N_v_FT, binding=4) #req: device_local, host_visible, host_cached, (large)
+    app.S_klm_d = GPUBuffer(fftSize=app.init_h.N_v_FT, binding=3) #req: large, device_local
+    app.spectrum_d = GPUBuffer(fftSize=app.init_h.N_v_FT, binding=4) #req: device_local, host_visible, host_cached, (large)
 
     app.indirect_d = GPUBuffer(sizeof(workGroupSizeArray_t), usage='indirect', binding=10) #host_visible, device_local, (host_cached)
     indirect_h = app.setIndirectBuffer(app.indirect_d, workGroupSizeArray_t)
@@ -190,15 +189,15 @@ def gpu_init(
         app.indirect_d.cmdTransferStagingBuffer('H2D'),
         app.iter_d.cmdTransferStagingBuffer('H2D'),
         app.cmdAddTimestamp('Zeroing buffers'),
-        app.S_kl_d.cmdClearBuffer(),
+        app.S_klm_d.cmdClearBuffer(),
         app.spectrum_d.cmdClearBuffer(),
         app.cmdAddTimestamp('Line addition'),
-        app.cmdScheduleShader('cmdFillLDM.spv', (init_h.N_lines // N_tpb + 1, 1, 1), threads),
+        app.cmdScheduleShader('cmdFillLDM.spv', (app.init_h.N_lines // N_tpb + 1, 1, 1), threads),
         app.cmdAddTimestamp('FFT fwd'),
-        app.cmdFFT(app.S_kl_d, name='FFTa'),
+        app.cmdFFT(app.S_klm_d, name='FFTa'),
         app.cmdAddTimestamp('Apply conv.'),
-        app.cmdScheduleShader('cmdApplyLineshapes.spv', (init_h.N_x_FT // N_tpb + 1, 1, 1), threads),
-        #app.cmdScheduleShader('cmdTestApplyLineshapesP.spv', (init_h.N_x_FT // N_tpb + 1, N_G*N_L, 1), threads),
+        app.cmdScheduleShader('cmdApplyLineshapes.spv', (app.init_h.N_x_FT // N_tpb + 1, 1, 1), threads),
+        #app.cmdScheduleShader('cmdTestApplyLineshapesP.spv', (app.init_h.N_x_FT // N_tpb + 1, N_G*N_L, 1), threads),
         app.cmdAddTimestamp('FFT inv'),
         app.cmdIFFT(app.spectrum_d, name='FFTb'), 
         app.spectrum_d.cmdTransferStagingBuffer('D2H'),
@@ -207,15 +206,15 @@ def gpu_init(
 
     app.writeCommandBuffer()
 
-    app.registerBatchSizeUpdateFunction(app.S_kl_d.setBatchSize)
+    app.registerBatchSizeUpdateFunction(app.S_klm_d.setBatchSize)
     app.registerBatchSizeUpdateFunction(app.setFwdFFTWorkGroupSize)
 
 
     if verbose >= 2:
         print("done!")
 
-    return init_h #TODO: why return this?
-
+    #don't return init_h so as not to increase the reference count
+    #return app.init_h 
 
 def gpu_iterate(
     p,
@@ -259,24 +258,29 @@ def gpu_iterate(
     if verbose >= 2:
         print("Copying iteration parameters to device...")
 
-    set_pTQ(p, T, mole_fraction, iter_h, l=l, slit_FWHM=slit_FWHM)
-    set_G_params(init_h, iter_h)
-    set_L_params(init_h, iter_h)
+    set_pTQ(p, T, mole_fraction, app.iter_h, l=l, slit_FWHM=slit_FWHM)
+    set_G_params(app.init_h, app.iter_h)
+    set_L_params(app.init_h, app.iter_h)
 
     if verbose >= 2:
         print("Running compute pipelines...")
 
-    app.setBatchSize(iter_h.N_G * iter_h.N_L)
+    app.setBatchSize(app.iter_h.N_G * app.iter_h.N_L)
     app.run()
     gpu_times = app.get_timestamps()
 
-    abscoeff_h = np.zeros(init_h.N_v, dtype=np.float32)
+    abscoeff_h = np.zeros(app.init_h.N_v, dtype=np.float32)
     app.spectrum_d.toArray(abscoeff_h)
 
     if verbose == 1:
         print("Finished calculating spectrum!")
 
-    return abscoeff_h, iter_h, gpu_times
+    return abscoeff_h, gpu_times
+
+
+def gpu_get_griddims():
+    # use separate getter so as not to increase the app.iter_h reference count
+    return app.iter_h.N_L, app.iter_h.N_G
 
 
 def gpu_exit(event=None):

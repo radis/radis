@@ -59,7 +59,7 @@ import plotly.express as px
 from numpy import abs, diff
 
 from radis.db.references import doi
-from radis.gpu.gpu import gpu_iterate
+from radis.gpu.gpu import gpu_iterate, gpu_get_griddims
 
 # from radis.lbl.base import print_conditions
 from radis.misc.arrays import (
@@ -6278,7 +6278,7 @@ class Spectrum(object):
         profiler.stop("setting_params", "Input parameters set")
         profiler.start("gpu_iterate", 2)
 
-        abscoeff, iter_params, times = gpu_iterate(
+        abscoeff, times = gpu_iterate(
             self.conditions["pressure"],
             self.conditions["Tgas"],
             self.conditions["mole_fraction"],
@@ -6289,9 +6289,10 @@ class Spectrum(object):
         )
         profiler.stop("gpu_iterate", "GPU calculations done")
         profiler.start("spectral_quantities", 2)
-
-        self.conditions["NwL"] = iter_params.N_L
-        self.conditions["NwG"] = iter_params.N_G
+        
+        iter_N_L, iter_N_G = gpu_get_griddims()
+        self.conditions["NwL"] = iter_N_L
+        self.conditions["NwG"] = iter_N_G
 
         # TODO : refactor this function and the update() mechanism. Ensure conditions are correct.
         for k in list(self._q.keys()):  # reset all quantities
