@@ -41,6 +41,7 @@ s = sf.eq_spectrum_gpu(
     path_length=0.2,  # cm
     # device_id='intel',
     # device_id='nvidia',
+    # backend='cuda-gpu',
     exit_gpu=False,
 )
 s.apply_slit(0.5, unit="cm-1")  # cm-1

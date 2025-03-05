@@ -26,12 +26,8 @@ except ImportError:
     cufft_path = NotInstalled(*not_installed_nvidia_args)
 
 
-@pytest.mark.skipif(
-    isinstance(cufft_path, NotInstalled),
-    reason="nvidia package not installed. Probably because on MAC OS",
-)
 @pytest.mark.fast
-def test_eq_spectrum_emulated_gpu(
+def test_eq_spectrum_gpu(
     backend="vulkan", verbose=False, plot=False, *args, **kwargs
 ):
     """Compare Spectrum calculated in the emulated-GPU code
@@ -75,8 +71,10 @@ def test_eq_spectrum_emulated_gpu(
     s_cpu.name += f" [{s_cpu.c['calculation_time']:.2f}s]"
     s_gpu = sf.eq_spectrum_gpu(
         Tgas=T,
-        #backend=backend,
-        name="GPU (emulate)" if backend == "cpu-vulkan" else "GPU",
+        backend=backend,
+        # device_id='nvidia',
+        device_id='intel',
+        name="GPU (emulate)" if backend == "vulkan" else "GPU",
     )
     s_gpu.name += f"[{s_gpu.c['calculation_time']:.2f}s]"
     s_cpu.crop(wmin=2284.2, wmax=2284.8)  # remove edge lines
@@ -102,7 +100,7 @@ def test_eq_spectrum_emulated_gpu(
     reason="nvidia package not installed. Probably because on MAC OS",
 )
 @pytest.mark.needs_cuda
-def test_eq_spectrum_gpu(plot=False, *args, **kwargs):
+def test_eq_spectrum_gpu_cuda(plot=False, *args, **kwargs):
     """Compare Spectrum calculated in the GPU code
     :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu` to Spectrum
     calculated with the CPU code :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum`
@@ -110,17 +108,13 @@ def test_eq_spectrum_gpu(plot=False, *args, **kwargs):
     # Ensure that GPU is not deactivated (which triggers a NoGPUWarning)
     with warnings.catch_warnings():
         warnings.simplefilter("error", category=NoGPUWarning)
-        test_eq_spectrum_emulated_gpu(backend="gpu-cuda", plot=plot, *args, **kwargs)
+        test_eq_spectrum_gpu(backend="cuda-gpu", plot=plot, *args, **kwargs)
 
 
-@pytest.mark.skipif(
-    isinstance(cufft_path, NotInstalled),
-    reason="nvidia package not installed. Probably because on MAC OS",
-)
+
 @pytest.mark.fast
 def test_multiple_gpu_calls(plot=False):
     from radis import SpectrumFactory
-    from radis.gpu.gpu import gpu_exit
 
     fixed_conditions = {
         "wmin": 2000,
@@ -136,13 +130,13 @@ def test_multiple_gpu_calls(plot=False):
     s_gpu = sf.eq_spectrum_gpu(
         Tgas=300.0,
         path_length=1.0,
-        backend="gpu-vulkan",
+        backend="vulkan",
         diluent={"air": 0.99},  # K  # runs on GPU
         exit_gpu=False,  # GPU will be reused
     )
     wl, A1 = s_gpu.get("absorbance")
     A2 = s_gpu.recalc_gpu("absorbance", path_length=3.0)
-    gpu_exit()
+    sf.gpu_exit()
 
     if plot:
         import matplotlib.pyplot as plt
@@ -181,8 +175,9 @@ def test_multiple_gpu_calls(plot=False):
 # --------------------------
 if __name__ == "__main__":
 
-    #test_eq_spectrum_gpu(plot=True)
-    test_multiple_gpu_calls(plot=True)
-    #test_eq_spectrum_emulated_gpu(plot=True, verbose=2)
+    test_eq_spectrum_gpu(plot=True, verbose=2)
+    #test_eq_spectrum_gpu_cuda(plot=True)
+    #test_multiple_gpu_calls(plot=True)
 
-    printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))
+
+    #printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))

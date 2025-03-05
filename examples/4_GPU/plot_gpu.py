@@ -54,6 +54,8 @@ s_gpu = sf.eq_spectrum_gpu(
     pressure=p,
     mole_fraction=x,
     path_length=l,
+    #device_id='nvidia',
+    #backend='cuda-gpu',
 )
 s_gpu.apply_slit(w_slit, unit="cm-1")
 
