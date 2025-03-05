@@ -59,7 +59,6 @@ import plotly.express as px
 from numpy import abs, diff
 
 from radis.db.references import doi
-from radis.gpu.gpu import gpu_iterate, gpu_get_griddims
 
 # from radis.lbl.base import print_conditions
 from radis.misc.arrays import (
@@ -6260,6 +6259,15 @@ class Spectrum(object):
                 "GPU not initialized, spectrum.recalc_gpu() can only be called on spectrum objects produced by sf.eq_spectrum_gpu()!",
                 GPUInitWarning,
             )
+
+
+        if self.conditions["gpu_backend"] == 'vulkan':
+            from radis.gpu.gpu import gpu_iterate, gpu_get_griddims
+        elif self.conditions["gpu_backend"][:4] == 'cuda':
+            from radis.gpu.gpu_cuda import gpu_iterate, gpu_get_griddims
+        else:
+            # not implemented
+            return
 
         # Update conditions:
         if Tgas is not None:

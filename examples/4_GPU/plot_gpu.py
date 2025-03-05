@@ -14,7 +14,7 @@ using CUDA, check :ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>`
 
     in the example below, the code runs on the GPU by default. In case no Nvidia GPU is
     detected, the code will instead be ran on CPU. This can be toggled manually by setting
-    the ``backend`` keyword either to ``'gpu-cuda'`` or ``'cpu-cuda'``.
+    the ``backend`` keyword either to ``'cuda-gpu'`` or ``'cuda-cpu'``.
     The run time reported below is for CPU.
 
 """
@@ -54,7 +54,6 @@ s_gpu = sf.eq_spectrum_gpu(
     pressure=p,
     mole_fraction=x,
     path_length=l,
-    backend="gpu-cuda",
 )
 s_gpu.apply_slit(w_slit, unit="cm-1")
 

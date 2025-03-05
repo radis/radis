@@ -46,7 +46,6 @@ def gpu_init(
     verbose=0,
     backend="gpu-vulkan",
     device_id=0,
-    T_max_parsum=None,
 ):
     """
     Initialize GPU-based calculation for emission and absorption spectra in spectroscopy.
@@ -89,9 +88,7 @@ def gpu_init(
         Which backend to use; currently only CUDA backends (Nvidia) are supported. ``'cpu-cuda'`` runs the kernel on CPU. Default is ``'gpu-cuda'``.
     device_id : int
         The id of the selected GPU. Check the console output for more details. ``'cpu-cuda'`` runs the kernel on CPU. Default is ``'gpu-cuda'``.
-    T_max_parsum : int
-        The maximum temperature at which the partition function of all the isotopologues is calculated (at higher T, the partition function should raise an error).
-    Returns
+   Returns
     -------
     init_h : radis.gpu.structs.initData_t
         structue with parameters used for GPU computation that are constant

@@ -46,6 +46,7 @@ def gpu_init(
     Q_intp_list,
     verbose=0,
     backend="gpu-cuda",
+    device_id=0, #for vulkan compatibility
 ):
     """
     Initialize GPU-based calculation for emission and absorption spectra in spectroscopy.
@@ -104,12 +105,13 @@ def gpu_init(
     ## If this fails, None is returned and calculations are
     ## defaulted to CPU emulation
 
-    if backend == "cpu-cuda":
+    if backend == "cuda-cpu":
         from radis.gpu.cuda.emulate import CuContext as GPUContext
 
         ctx = GPUContext.Open(verbose=verbose)
         import radis.gpu.cuda.emulate as backend_module
-
+        if verbose:
+            print("Backend: ", 'cuda-cpu')
     else:
         # Try to load GPU
         from radis.gpu.cuda.driver import CuContext as GPUContext
@@ -130,11 +132,13 @@ def gpu_init(
 
             ctx = GPUContext.Open(verbose=verbose)
             import radis.gpu.cuda.emulate as backend_module
-
+            if verbose:
+                print("Backend: ", 'cuda-cpu')
         else:
             # successfully initialized CUDA context, continue with GPU:
             import radis.gpu.cuda.driver as backend_module
-
+            if verbose:
+                print("Backend: ", 'cuda-gpu')
     GPUContext, GPUModule, GPUArray, GPUFFT, GPUTimer = backend_module.getClasses()
 
     if verbose:
@@ -236,7 +240,9 @@ def gpu_init(
     if verbose >= 2:
         print("done!")
 
-    return init_h
+    app.timer = GPUTimer()
+
+    #return init_h
 
 
 def gpu_iterate(
@@ -344,7 +350,11 @@ def gpu_iterate(
     ##    diffs = app.timer.getDiffs()
     ##    print(diffs['fillLDM'], diffs['fft_fwd'])
 
-    return abscoeff_h, iter_h, times
+    return abscoeff_h, times
+
+def gpu_get_griddims():
+    # use separate getter so as not to increase the app.iter_h reference count
+    return iter_h.N_L, iter_h.N_G
 
 
 def gpu_exit(event=None):

@@ -682,6 +682,7 @@ class DatabankLoader(object):
         "dataframe_type",
         "df0",
         "df1",
+        "gpu_backend",
         "input",
         "input_wunit",
         "interactive_params",

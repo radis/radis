@@ -1032,7 +1032,7 @@ class SpectrumFactory(BandFactory):
         path_length=None,
         pressure=None,
         name=None,
-        backend="gpu-vulkan",
+        backend="vulkan",
         device_id=0,
         exit_gpu=True,
         verbose=None,
@@ -1063,8 +1063,8 @@ class SpectrumFactory(BandFactory):
         Other Parameters
         ----------------
         backend: str
-            if ``'gpu-cuda'``, set CUDA as backend to run code on Nvidia GPU.
-            if ``'cpu-cuda'``, execute the GPU code on the CPU (useful for development)
+            if ``'cuda-gpu'``, set CUDA as backend to run code on Nvidia GPU.
+            if ``'cuda-cpu'``, execute the GPU code on the CPU (useful for development)
 
         Returns
         -------
@@ -1175,7 +1175,7 @@ class SpectrumFactory(BandFactory):
             iso_list, dtype=np.float32
         )  # molar mass of each isotope
 
-        T_max_parsum = float("inf")
+        # T_max_parsum = float("inf")
         Q_interp_list = []
         for iso in iso_list:
             if iso in iso_set:
@@ -1183,9 +1183,9 @@ class SpectrumFactory(BandFactory):
                 molarmass_arr[iso] = params.molar_mass
                 parsum = self.get_partition_function_interpolator(molecule, iso, state)
                 Q_interp_list.append(parsum.at)
-                T_max_parsum = np.min(
-                    (T_max_parsum, parsum.Tmax)
-                )  # from all the isotopologues partition function, the lowest maximum temperature
+                # T_max_parsum = np.min(
+                #     (T_max_parsum, parsum.Tmax)
+                # )  # from all the isotopologues partition function, the lowest maximum temperature
             else:
                 Q_interp_list.append(lambda T: 1.0)
 
@@ -1228,9 +1228,16 @@ class SpectrumFactory(BandFactory):
 
         if verbose >= 2:
             print("Initializing parameters...", end=" ")
-
-        from radis.gpu.gpu import gpu_exit, gpu_init, gpu_iterate, gpu_get_griddims
-
+        
+        self.gpu_backend = backend
+        if backend == 'vulkan':
+            from radis.gpu.gpu import gpu_init, gpu_iterate, gpu_get_griddims
+        elif backend.split('-')[0] == 'cuda':
+            from radis.gpu.gpu_cuda import gpu_init, gpu_iterate, gpu_get_griddims
+        else:
+            # not implemented
+            return
+            
         gpu_init(
             self.params.wavenum_min_calc,
             len(self.wavenumber_calc),
@@ -1249,7 +1256,6 @@ class SpectrumFactory(BandFactory):
             verbose=verbose,
             backend=backend,
             device_id=device_id,
-            T_max_parsum=T_max_parsum,
         )
         if verbose >= 2:
             print("Initialization complete!")
@@ -1272,7 +1278,7 @@ class SpectrumFactory(BandFactory):
         # because more calls to gpu_iterate() will follow. This is controlled by the exit_gpu keyword.
                 
         if exit_gpu:
-            gpu_exit()
+            self.gpu_exit()
 
         # Calculate output quantities
         # ----------------------------------------------------------------------
@@ -1315,7 +1321,6 @@ class SpectrumFactory(BandFactory):
         self.profiler.start("generate_spectrum_obj", 2)
 
         # Get lines (intensities + populations)
-
         conditions = self.get_conditions(add_config=True)
         conditions.update(
             {
@@ -1458,8 +1463,6 @@ class SpectrumFactory(BandFactory):
         import matplotlib.pyplot as plt
         from matplotlib.widgets import Slider
 
-        from radis.gpu.gpu import gpu_exit
-
         self.interactive_params = {}
 
         for key in kwargs:
@@ -1515,12 +1518,25 @@ class SpectrumFactory(BandFactory):
             n_sliders += 1
 
         fig.subplots_adjust(bottom=0.05 * n_sliders + 0.15)
-        fig.canvas.mpl_connect("close_event", gpu_exit)
+        fig.canvas.mpl_connect("close_event", self.gpu_exit)
 
         if not was_interactive:
             plt.ioff()
 
         return s
+
+
+    def gpu_exit(self):
+        if self.gpu_backend == 'vulkan':
+            from radis.gpu.gpu import gpu_exit
+            gpu_exit()
+        elif self.gpu_backend[:4] == 'cuda':
+            from radis.gpu.gpu_cuda import gpu_exit
+            gpu_exit()
+        else:
+            #not implemented
+            return
+
 
     def non_eq_spectrum(
         self,

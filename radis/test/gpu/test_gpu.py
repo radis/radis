@@ -32,7 +32,7 @@ except ImportError:
 )
 @pytest.mark.fast
 def test_eq_spectrum_emulated_gpu(
-    backend="cpu-vulkan", verbose=False, plot=False, *args, **kwargs
+    backend="vulkan", verbose=False, plot=False, *args, **kwargs
 ):
     """Compare Spectrum calculated in the emulated-GPU code
     :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu` to Spectrum
@@ -75,7 +75,7 @@ def test_eq_spectrum_emulated_gpu(
     s_cpu.name += f" [{s_cpu.c['calculation_time']:.2f}s]"
     s_gpu = sf.eq_spectrum_gpu(
         Tgas=T,
-        backend=backend,
+        #backend=backend,
         name="GPU (emulate)" if backend == "cpu-vulkan" else "GPU",
     )
     s_gpu.name += f"[{s_gpu.c['calculation_time']:.2f}s]"
@@ -181,8 +181,8 @@ def test_multiple_gpu_calls(plot=False):
 # --------------------------
 if __name__ == "__main__":
 
-    test_eq_spectrum_gpu(plot=True)
-    #test_multiple_gpu_calls(plot=True)
+    #test_eq_spectrum_gpu(plot=True)
+    test_multiple_gpu_calls(plot=True)
     #test_eq_spectrum_emulated_gpu(plot=True, verbose=2)
 
     printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))

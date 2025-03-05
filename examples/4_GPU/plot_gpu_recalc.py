@@ -18,7 +18,6 @@ with spectrum.recalc_gpu().
 """
 
 from radis import SpectrumFactory
-from radis.gpu.gpu import gpu_exit
 
 sf = SpectrumFactory(
     2150,
@@ -58,4 +57,4 @@ for i, T in enumerate(T_list[1:]):
     show = True if T == T_list[-1] else False
     s.plot("radiance", wunit="nm", show=show, nfig="same")
 
-gpu_exit()
+sf.gpu_exit()
