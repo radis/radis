@@ -72,9 +72,7 @@ def test_eq_spectrum_gpu(
     s_gpu = sf.eq_spectrum_gpu(
         Tgas=T,
         backend=backend,
-        # device_id='nvidia',
-        device_id='intel',
-        name="GPU (emulate)" if backend == "vulkan" else "GPU",
+        name="GPU",
     )
     s_gpu.name += f"[{s_gpu.c['calculation_time']:.2f}s]"
     s_cpu.crop(wmin=2284.2, wmax=2284.8)  # remove edge lines

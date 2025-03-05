@@ -42,6 +42,7 @@ class workGroupSize_t(Structure):
         ("z", c_uint),
         ("id", c_uint),
     ]
+    _pack_ = 1
 
 workGroupSizeArray_t = workGroupSize_t * 4
 

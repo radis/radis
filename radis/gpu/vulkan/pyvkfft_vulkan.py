@@ -411,8 +411,8 @@ class VkFFTApp(VkFFTAppBase):
     def setFFTWorkGroupSize(self, N):
         for wg in self.indirectHost:
             #print(wg.id, ':', wg.x, wg.y, wg.z, '->', end=' ')
-            if wg.id:
-                ax = 'xyz'[wg.id]
+            if wg.id > 0:
+                ax = ['x', 'y', 'z'][wg.id]
                 setattr(wg, ax, N)
             #print(wg.x, wg.y, wg.z)
 
