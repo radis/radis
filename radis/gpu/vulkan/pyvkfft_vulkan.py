@@ -410,10 +410,11 @@ class VkFFTApp(VkFFTAppBase):
 
     def setFFTWorkGroupSize(self, N):
         for wg in self.indirectHost:
-            # print(wg.id, ':', wg.x, wg.y, wg.z, '->', end=' ')
-            ax = 'y' if wg.id & 2 else 'z'
-            setattr(wg, ax, N)
-            # print(wg.x, wg.y, wg.z)
+            #print(wg.id, ':', wg.x, wg.y, wg.z, '->', end=' ')
+            if wg.id:
+                ax = 'xyz'[wg.id]
+                setattr(wg, ax, N)
+            #print(wg.x, wg.y, wg.z)
 
 def vkfft_version():
     """
