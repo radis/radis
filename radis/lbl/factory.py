@@ -1264,10 +1264,13 @@ class SpectrumFactory(BandFactory):
             verbose=verbose,
         )
 
+        iter_N_L, iter_N_G = gpu_get_griddims()
+
         # If sf.eq_spectrum_gpu() was called directly by the user, this is the time to
         # destroy the CUDA context since we're done with all GPU calculations.
         # When called from within sf.eq_spectrum_gpu_interactive(), the context must remain active
         # because more calls to gpu_iterate() will follow. This is controlled by the exit_gpu keyword.
+                
         if exit_gpu:
             gpu_exit()
 
@@ -1312,7 +1315,6 @@ class SpectrumFactory(BandFactory):
         self.profiler.start("generate_spectrum_obj", 2)
 
         # Get lines (intensities + populations)
-        iter_N_L, iter_N_G = gpu_get_griddims()
 
         conditions = self.get_conditions(add_config=True)
         conditions.update(
