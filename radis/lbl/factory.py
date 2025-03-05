@@ -1526,13 +1526,13 @@ class SpectrumFactory(BandFactory):
         return s
 
 
-    def gpu_exit(self):
+    def gpu_exit(self, event=None):
         if self.gpu_backend == 'vulkan':
             from radis.gpu.gpu import gpu_exit
-            gpu_exit()
+            gpu_exit(event)
         elif self.gpu_backend[:4] == 'cuda':
             from radis.gpu.gpu_cuda import gpu_exit
-            gpu_exit()
+            gpu_exit(event)
         else:
             #not implemented
             return
