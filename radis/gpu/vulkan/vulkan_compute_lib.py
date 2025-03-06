@@ -82,21 +82,28 @@ class GPUApplication(object):
         self._fftAppInv = None
         #print('Done!')
         
+
+
+        for pipeline in self._pipelines:
+            vk.vkDestroyPipeline(self._device, pipeline, None)
+
+        for pipelineLayout in self._pipelineLayouts:
+            vk.vkDestroyPipelineLayout(self._device, pipelineLayout, None)
+
+        vk.vkDestroyDescriptorSetLayout(self._device, self._descriptorSetLayout, None)
+
+        vk.vkDestroyDescriptorPool(self._device, self._descriptorPool, None)
+
+        for computeShaderModule in self._computeShaderModules:
+            vk.vkDestroyShaderModule(self._device, computeShaderModule, None)
+        
         print('>>> Freeing buffer objects... ')
         for bufferObject in self._bufferObjects:
             print('>>>  --'+bufferObject.name)
             bufferObject.free()
         print('>>> Done!')
 
-        for computeShaderModule in self._computeShaderModules:
-            vk.vkDestroyShaderModule(self._device, computeShaderModule, None)
-        
-        vk.vkDestroyDescriptorPool(self._device, self._descriptorPool, None)
-        vk.vkDestroyDescriptorSetLayout(self._device, self._descriptorSetLayout, None)
-        for pipelineLayout in self._pipelineLayouts:
-            vk.vkDestroyPipelineLayout(self._device, pipelineLayout, None)
-        for pipeline in self._pipelines:
-            vk.vkDestroyPipeline(self._device, pipeline, None)
+
 
         # TODO: [developers-note]: VkFFT used to free some resources, which has now all moved to here. The two freeings below have been removed from VkFFT and not been replaced here:
         # if (config->physicalDevice) free(config->physicalDevice);
