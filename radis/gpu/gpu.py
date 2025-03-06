@@ -173,7 +173,7 @@ class gpuApp(GPUApplication):
         self.spectrum_d = GPUBuffer(fftSize=self.init_h.N_v_FT, binding=4) #req: device_local, host_visible, host_cached, (large)
     
         self.indirect_d = GPUBuffer(sizeof(workGroupSizeArray_t), usage='indirect', binding=10) #host_visible, device_local, (host_cached)
-        indirect_h = self.setIndirectBuffer(self.indirect_d, workGroupSizeArray_t)
+        self.setIndirectBuffer(self.indirect_d, workGroupSizeArray_t)
     
     
         # Write command buffer:
@@ -281,4 +281,7 @@ class gpuApp(GPUApplication):
 
     def __del__(self):
         # print('>>> Deleting gpuApp...')
+        self.init_h = None
+        self.iter_h = None
+        self._indirect_h = None
         self.free()

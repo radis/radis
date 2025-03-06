@@ -82,11 +82,11 @@ class GPUApplication(object):
         self._fftAppInv = None
         #print('Done!')
         
-        #print('Freeing buffer objects... ')
+        print('>>> Freeing buffer objects... ')
         for bufferObject in self._bufferObjects:
-            #print(bufferObject.name)
+            print('>>>  --'+bufferObject.name)
             bufferObject.free()
-        #print('Done!')
+        print('>>> Done!')
 
         for computeShaderModule in self._computeShaderModules:
             vk.vkDestroyShaderModule(self._device, computeShaderModule, None)
@@ -1271,11 +1271,62 @@ class GPUBuffer:
         self._structPtr = ctypes.cast(self._hostPtr, ctypes.POINTER(struct))
         return self._structPtr.contents
 
+
+
+  # def initStagingBuffer(self, chunksize=None):
+      
+  #     if not self._isInitialized:
+  #         print('buffer {self._name} not initialized! First execute self.init_buffer()!')
+  #         return -1
+
+  #     # self._combined should tell us whether we have a combined host/device buffer
+
+  #     if self._combined: #we're dealing with a buffer that is both 
+  #         self._stagingBufferSize = self._bufferSize
+  #         self._stagingBuffer = self._buffer
+  #         self._stagingBufferMemory = self._bufferMemory
+  
+  #     else:
+  #         chunksize = (self._bufferSize if chunksize is None else chunksize)
+  #         self._stagingBufferSize = chunksize  
+              
+  #         self._stagingBuffer, self._stagingBufferMemory, _  = self.app.createBuffer(self._stagingBufferSize, 
+  #         kind=vk.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | vk.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+  #         descriptorType = self._descriptorType,
+  #         usage=self._usage,
+  #         )
+
+  #     self._pmappedMemory = vk.vkMapMemory(
+  #             self._device, self._stagingBufferMemory, 0, self._stagingBufferSize, 0
+  #         )
+  #     self._hostPtr = int(vk.ffi.cast("unsigned long long", vk.ffi.from_buffer(self._pmappedMemory)))
+          
+
+  #     self._stagingBufferInitialized = True
+
+
     def free(self): #TODO: is this up to date?
         self._isInitialized = False
-  
+        
+        if self._stagingBufferInitialized:
+            self._stagingBufferInitialized = False
+            
+            vk.vkUnmapMemory(self._device, self._stagingBufferMemory)
+            self._hostPtr = None
+            self._structPtr = None
+            
+            if not self._combined:
+                vk.vkDestroyBuffer(self._device, self._stagingBuffer, None)
+                vk.vkFreeMemory(self._device, self._stagingBufferMemory, None)
+            self._stagingBufferMemory = None
+            self._stagingBuffer = None
+            self._stagingBufferSize = 0        
+
         if self._buffer:
             vk.vkDestroyBuffer(self._device, self._buffer, None)
         if self._bufferMemory:
             vk.vkFreeMemory(self._device, self._bufferMemory, None)
-        
+            
+        self._buffer = None
+        self._bufferMemory = None
+        self._bufferSize = 0
