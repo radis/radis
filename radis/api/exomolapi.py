@@ -646,7 +646,9 @@ def check_code_level(bdat):
     return None
 
 
-def make_j2b(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
+def make_j2b(
+    bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None, engine="NumPy"
+):
     """compute j2b (code a0, map from jlower to alpha_ref)
 
     Args:
@@ -654,32 +656,70 @@ def make_j2b(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
         alpha_ref_default: default value
         n_Texp_default: default value
         jlower_max: maximum number of jlower
+        engine: "NumPy" (default) for NumPy/Pandas processing, "vaex" for Vaex processing.
     Returns:
         j2alpha_ref[jlower] provides alpha_ref for jlower
         j2n_Texp[jlower]  provides nT_exp for jlower
     """
     # a0
-    cmask = bdat["code"] == "a0"
-    jlower_arr = np.array(bdat["jlower"][cmask], dtype=int)
-    alpha_ref_arr = np.array(bdat["alpha_ref"][cmask])
-    n_Texp_arr = np.array(bdat["n_Texp"][cmask])
+    if engine == "vaex":
+        import vaex
+
+        bdat = vaex.from_pandas(bdat)
+        bdat = bdat[bdat["code"] == "a0"]
+        jlower_arr = bdat["jlower"].values
+        alpha_ref_arr = bdat["alpha_ref"].values
+        n_Texp_arr = bdat["n_Texp"].values
+    else:
+        cmask = bdat["code"] == "a0"
+        jlower_arr = np.array(bdat["jlower"][cmask], dtype=int)
+        alpha_ref_arr = np.array(bdat["alpha_ref"][cmask])
+        n_Texp_arr = np.array(bdat["n_Texp"][cmask])
 
     # Determine the array size based on jlower_max
-    if jlower_max is None:
-        Nblower = np.max(jlower_arr) + 1
+    if engine == "vaex":
+        # calculate the maximum jlower in the data with vaex
+        max_jlower_in_data = bdat["jlower"].max()
+        if jlower_max is None:
+            Nblower = max_jlower_in_data + 1
+        else:
+            Nblower = max(jlower_max, max_jlower_in_data) + 1
     else:
-        Nblower = np.max([jlower_max, np.max(jlower_arr)]) + 1
+        # calculate the maximum jlower in the data with numpy
+        max_jlower_in_data = np.max(jlower_arr)
+        if jlower_max is None:
+            Nblower = max_jlower_in_data + 1
+        else:
+            Nblower = np.max([jlower_max, max_jlower_in_data]) + 1
 
-    # Initialize arrays with default alpha_ref and n_Texp
-    j2alpha_ref = np.full(Nblower, alpha_ref_default)
-    j2n_Texp = np.full(Nblower, n_Texp_default)
+    if engine == "vaex":
+        # Initialize arrays with default alpha_ref and n_Texp
+        df_defaults = vaex.from_arrays(
+            jlower=vaex.vrange(0, Nblower, dtype="int64"),
+            alpha_ref=np.full(Nblower, alpha_ref_default),
+            n_Texp=np.full(Nblower, n_Texp_default),
+        )
+        df_defaults = df_defaults.join(bdat, on="jlower", how="left", rsuffix="_new")
 
-    # Populate the mapping arrays using known broadening coefficients
-    j2alpha_ref[jlower_arr] = alpha_ref_arr
-    j2n_Texp[jlower_arr] = n_Texp_arr
+        df_defaults["alpha_ref"] = df_defaults["alpha_ref_new"].fillna(
+            alpha_ref_default
+        )
+        df_defaults["n_Texp"] = df_defaults["n_Texp_new"].fillna(n_Texp_default)
+
+        # Populate the mapping arrays using known broadening coefficients
+        j2alpha_ref = df_defaults["alpha_ref"].values
+        j2n_Texp = df_defaults["n_Texp"].values
+    else:
+        # Initialize arrays with default alpha_ref and n_Texp
+        j2alpha_ref = np.full(Nblower, alpha_ref_default)
+        j2n_Texp = np.full(Nblower, n_Texp_default)
+
+        # Populate the mapping arrays using known broadening coefficients
+        j2alpha_ref[jlower_arr] = alpha_ref_arr
+        j2n_Texp[jlower_arr] = n_Texp_arr
 
     # Raise a minor warning if default values are used for high J values
-    if Nblower > (np.max(jlower_arr) + 1):
+    if Nblower > (max_jlower_in_data + 1):
         import warnings
 
         from radis.misc.warning import AccuracyWarning
@@ -687,7 +727,7 @@ def make_j2b(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
         warnings.warn(
             AccuracyWarning(
                 "The default broadening parameter (alpha = {2} cm^-1 and n = {3}) are used for J'' > {1} up to J'' = {0}".format(
-                    Nblower, np.max(jlower_arr), alpha_ref_default, n_Texp_default
+                    Nblower, max_jlower_in_data, alpha_ref_default, n_Texp_default
                 )
             )
         )
@@ -695,7 +735,7 @@ def make_j2b(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
     return j2alpha_ref, j2n_Texp
 
 
-def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None):
+def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None, engine="NumPy"):
     """compute jj2b (code a1, map from (jlower, jupper) to alpha_ref and n_Texp)
 
     Args:
@@ -703,6 +743,7 @@ def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None):
         j2alpha_ref_def: default value from a0
         j2n_Texp_def: default value from a0
         jupper_max: maximum number of jupper
+        engine: "NumPy" (default) for NumPy/Pandas processing, "vaex" for Vaex processing.
     Returns:
         jj2alpha_ref[jlower,jupper] provides alpha_ref for (jlower, jupper)
         jj2n_Texp[jlower,jupper]  provides nT_exp for (jlower, jupper)
@@ -710,19 +751,54 @@ def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None):
         The pair of (jlower, jupper) for which broadening parameters are not given, jj2XXX contains None.
     """
     # a1
-    cmask = bdat["code"] == "a1"
-    jlower_arr = np.array(bdat["jlower"][cmask], dtype=int)
-    jupper_arr = np.array(bdat["jupper"][cmask], dtype=int)
-    alpha_ref_arr = np.array(bdat["alpha_ref"][cmask])
-    n_Texp_arr = np.array(bdat["n_Texp"][cmask])
+    if engine == "vaex":
+        import vaex
 
-    if jupper_max is None:
-        Nbupper = np.max(jupper_arr) + 1
+        bdat = vaex.from_pandas(bdat)
+
+        bdat = bdat[bdat["code"] == "a1"]
+        jlower_arr = bdat["jlower"].values
+        jupper_arr = bdat["jupper"].values
+        alpha_ref_arr = bdat["alpha_ref"].values
+        n_Texp_arr = bdat["n_Texp"].values
     else:
-        Nbupper = np.max([jupper_max, np.max(jupper_arr)]) + 1
+        cmask = bdat["code"] == "a1"
+        jlower_arr = np.array(bdat["jlower"][cmask], dtype=int)
+        jupper_arr = np.array(bdat["jupper"][cmask], dtype=int)
+        alpha_ref_arr = np.array(bdat["alpha_ref"][cmask])
+        n_Texp_arr = np.array(bdat["n_Texp"][cmask])
+    # Determine the array size based on jupper_max
+    if engine == "vaex":
+        # calculate the maximum jupper in the data with vaex
+        max_jupper_in_data = bdat["jlower"].max()
+        if jupper_max is None:
+            Nbupper = max_jupper_in_data + 1
+        else:
+            Nbupper = max(jupper_max, max_jupper_in_data) + 1
+    else:
+        # calculate the maximum jupper in the data with numpy
+        max_jupper_in_data = np.max(jupper_arr)
+        if jupper_max is None:
+            Nbupper = max_jupper_in_data + 1
+        else:
+            Nbupper = np.max([jupper_max, max_jupper_in_data]) + 1
 
-    jj2alpha_ref = j2alpha_ref_def[:, np.newaxis] * np.ones(Nbupper)
-    jj2n_Texp = j2n_Texp_def[:, np.newaxis] * np.ones(Nbupper)
+    if engine == "vaex":
+        df = vaex.from_arrays(
+            j2alpha_ref_def=[j2alpha_ref_def], j2n_Texp_def=[j2n_Texp_def]
+        )
+        df["j2alpha_ref_column"] = df["j2alpha_ref_def"]
+        df["j2n_Texp_column"] = df["j2n_Texp_def"]
+
+        df["jj2alpha_ref"] = df["j2alpha_ref_column"] * 1
+        df["jj2n_Texp"] = df["j2n_Texp_column"] * 1
+        ones_array = np.ones(Nbupper)
+
+        jj2alpha_ref = np.outer(df["j2alpha_ref_def"].to_numpy(), ones_array)
+        jj2n_Texp = np.outer(df["j2n_Texp_def"].to_numpy(), ones_array)
+    else:
+        jj2alpha_ref = j2alpha_ref_def[:, np.newaxis] * np.ones(Nbupper)
+        jj2n_Texp = j2n_Texp_def[:, np.newaxis] * np.ones(Nbupper)
 
     jj2alpha_ref[jlower_arr, jupper_arr] = alpha_ref_arr
     jj2n_Texp[jlower_arr, jupper_arr] = n_Texp_arr
@@ -1438,23 +1514,17 @@ class MdbExomol(DatabaseManager):
                     alpha_ref_default=self.alpha_ref_def,
                     n_Texp_default=self.n_Texp_def,
                     jlower_max=df["jlower"].max(),
+                    engine=self.engine,
                 )
-                self.alpha_ref = (
-                    j2alpha_ref[df["jlower"].values]
-                    if self.engine != "vaex"
-                    else vaex.array(j2alpha_ref[df["jlower"].values])
-                )
-                self.n_Texp = (
-                    j2n_Texp[df["jlower"].values]
-                    if self.engine != "vaex"
-                    else vaex.array(j2n_Texp[df["jlower"].values])
-                )
+                self.alpha_ref = j2alpha_ref[df["jlower"].values]
+                self.n_Texp = j2n_Texp[df["jlower"].values]
             elif codelv == "a1":
                 j2alpha_ref, j2n_Texp = make_j2b(
                     bdat,
                     alpha_ref_default=self.alpha_ref_def,
                     n_Texp_default=self.n_Texp_def,
                     jlower_max=df["jlower"].max(),
+                    engine=self.engine,
                 )
                 jj2alpha_ref, jj2n_Texp = make_jj2b(
                     bdat,
@@ -1465,12 +1535,12 @@ class MdbExomol(DatabaseManager):
                 self.alpha_ref = (
                     np.array(jj2alpha_ref[df["jlower"].values, df["jupper"].values])
                     if self.engine != "vaex"
-                    else vaex.array(jj2alpha_ref[df["jlower"].values, df["jupper"].values])
+                    else jj2alpha_ref[df["jlower"], df["jupper"]]
                 )
                 self.n_Texp = (
                     np.array(jj2n_Texp[df["jlower"].values, df["jupper"].values])
                     if self.engine != "vaex"
-                    else vaex.array(jj2n_Texp[df["jlower"].values, df["jupper"].values])
+                    else jj2n_Texp[df["jlower"], df["jupper"]]
                 )
             elif codelv == "m0":
 
@@ -1511,14 +1581,14 @@ class MdbExomol(DatabaseManager):
                 self.alpha_ref = (
                     np.array(df["m"].map(alpha_ref_dict).values)
                     if self.engine != "vaex"
-                    else vaex.array(df["m"].map(alpha_ref_dict).values)
+                    else df["m"].map(alpha_ref_dict).values
                 )
-                
+
                 n_Texp_dict = dict(zip(bdat["jlower"], bdat["n_Texp"]))
                 self.n_Texp = (
-                np.array(df["m"].map(n_Texp_dict).values)
+                    np.array(df["m"].map(n_Texp_dict).values)
                     if self.engine != "vaex"
-                    else vaex.array(df["m"].map(n_Texp_dict).values)
+                    else df["m"].map(n_Texp_dict).values
                 )
                 ## for pandas but returns DataFrame
                 # bdat.set_index("jlower", inplace=True)
@@ -1534,16 +1604,14 @@ class MdbExomol(DatabaseManager):
                     + " This broadening code is NOT implemented yet.\n"
                     + "Using default parameters instead."
                 )
-                self.alpha_ref = (
-                    np.array(self.alpha_ref_def * np.ones(len(df)))
-                    if self.engine != "vaex"
-                    else vaex.array(self.alpha_ref_def * np.ones(len(df)))
-                )
-                self.n_Texp = (
-                    np.array(self.n_Texp_def * np.ones(len(df)))
-                    if self.engine != "vaex"
-                    else vaex.array(self.n_Texp_def * np.ones(len(df)))
-                )
+                if self.engine != "vaex":
+                    self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
+                    self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
+                else:
+                    df = vaex.from_arrays(alpha_ref=[alpha_ref_def] * np.ones(len(df)))
+                    self.alpha_ref = df["alpha_ref"].values
+                    df = vaex.from_arrays(n_Texp=[n_Texp_def] * np.ones(len(df)))
+                    self.n_Texp = df["n_Texp"].values
         else:
             if not os.path.exists(file):
                 warnings.warn(
@@ -1552,17 +1620,15 @@ class MdbExomol(DatabaseManager):
                     )
                 )
             print("The default broadening parameters are used.")
-            
-            self.alpha_ref = (
-                np.array(self.alpha_ref_def * np.ones(len(df)))
-                if self.engine != "vaex"
-                else vaex.array(self.alpha_ref_def * np.ones(len(df)))
-            )
-            self.n_Texp = (
-                np.array(self.n_Texp_def * np.ones(len(df)))
-                if self.engine != "vaex"
-                else vaex.array(self.n_Texp_def * np.ones(len(df)))
-            )
+
+            if self.engine != "vaex":
+                self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
+                self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
+            else:
+                df = vaex.from_arrays(alpha_ref=[alpha_ref_def] * np.ones(len(df)))
+                self.alpha_ref = df["alpha_ref"].values
+                df = vaex.from_arrays(n_Texp=[n_Texp_def] * np.ones(len(df)))
+                self.n_Texp = df["n_Texp"].values
 
         if add_columns:
             if species == "air":
