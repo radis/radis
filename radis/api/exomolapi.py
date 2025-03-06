@@ -9,6 +9,7 @@ code (which you should also have a look at!), by @HajimeKawahara, under MIT Lice
 
 import os
 import pathlib
+import urllib.request
 import warnings
 
 import numpy as np
@@ -26,6 +27,9 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 from radis.api.hdf5 import vaexsafe_colname
+from radis.misc.config import get_config
+
+config = get_config()
 
 
 def exact_molname_exomol_to_simple_molname(exact_exomol_molecule_name):
@@ -1545,6 +1549,46 @@ class MdbExomol(DatabaseManager):
         """
         return self.QT_interp(T) / self.QT_interp(self.Tref)
 
+    def _calculate_download_size(self, url, pfname_arr):
+        """Calculates the total download size of all files"""
+        total_download_size_bytes = 0
+
+        for pfname in pfname_arr:
+            try:
+                request = urllib.request.Request(url + pfname, method="HEAD")
+                with urllib.request.urlopen(request) as response:
+                    file_size = response.headers.get("Content-Length")
+
+                    if file_size is None:
+                        warnings.warn(
+                            f"Missing Content-Length for {pfname}. Skipping.",
+                            UserWarning,
+                        )
+                        continue
+
+                    file_size = int(file_size)
+                    total_download_size_bytes += file_size
+            except Exception as e:
+                warnings.warn(f"Failed to fetch size for {pfname}: {e}", UserWarning)
+
+        total_download_size_gb = total_download_size_bytes / (1024**3)
+
+        return total_download_size_gb
+
+    def _construct_filenames_and_url(self, ext, molname_simple, tag, molec, numtag):
+        if ext == ".trans.bz2" and numtag is not None:
+            ext = "__" + numtag + ext
+
+        if ext == ".broad":
+            partners_success = np.ones(len(self.broad_partners), dtype=bool)
+            pfname_arr = [tag[0] + "__" + s + ext for s in self.broad_partners]
+            url = EXOMOL_URL + molname_simple + "/" + tag[0] + "/"
+            return pfname_arr, url, partners_success
+        else:
+            pfname_arr = [molec + ext]
+            url = EXOMOL_URL + molname_simple + "/" + tag[0] + "/" + tag[1] + "/"
+            return pfname_arr, url
+
     def download(self, molec, extension, numtag=None):
         """Downloading Exomol files
 
@@ -1565,18 +1609,45 @@ class MdbExomol(DatabaseManager):
         tag = molec.split("__")
         molname_simple = exact_molname_exomol_to_simple_molname(tag[0])
         # TODO: add progress bar
+        total_download_size_gb = 0
         for ext in extension:
             if ext == ".trans.bz2" and numtag is not None:
                 ext = "__" + numtag + ext
 
             if ext == ".broad":
-                partners_success = np.ones(len(self.broad_partners), dtype=bool)
-
-                pfname_arr = [tag[0] + "__" + s + ext for s in self.broad_partners]
-                url = EXOMOL_URL + molname_simple + "/" + tag[0] + "/"
+                pfname_arr, url, partners_success = self._construct_filenames_and_url(
+                    ext, molname_simple, tag, molec, numtag
+                )
             else:
-                pfname_arr = [molec + ext]
-                url = EXOMOL_URL + molname_simple + "/" + tag[0] + "/" + tag[1] + "/"
+                pfname_arr, url = self._construct_filenames_and_url(
+                    ext, molname_simple, tag, molec, numtag
+                )
+
+            total_download_size_gb += self._calculate_download_size(url, pfname_arr)
+
+        print(f"Total download size: {total_download_size_gb:.6f} GB")
+        MAX_SIZE_GB = config.get("PREVENT_LARGE_DOWNLOAD_ABOVE_X_GB", 1)
+
+        if total_download_size_gb > MAX_SIZE_GB:
+            warning_msg = (
+                f"The total download size is {total_download_size_gb:.2f} GB, "
+                f"which exceeds the threshold of {MAX_SIZE_GB} GB. "
+                "Downloading may consume significant resources and take time."
+            )
+            warnings.warn(warning_msg, UserWarning)
+
+        for ext in extension:
+            if ext == ".trans.bz2" and numtag is not None:
+                ext = "__" + numtag + ext
+
+            if ext == ".broad":
+                pfname_arr, url, partners_success = self._construct_filenames_and_url(
+                    ext, molname_simple, tag, molec, numtag
+                )
+            else:
+                pfname_arr, url = self._construct_filenames_and_url(
+                    ext, molname_simple, tag, molec, numtag
+                )
 
             for index, pfname in enumerate(pfname_arr):
                 pfpath = url + pfname

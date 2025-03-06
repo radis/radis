@@ -9,11 +9,11 @@ https://stackoverflow.com/questions/55610891/numpy-load-from-io-bytesio-stream
 https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 
 """
-
 import json
 import os
 import re
 import urllib.request
+import warnings
 from os.path import basename, commonpath, join
 from typing import Union
 
@@ -53,8 +53,10 @@ except ImportError:  # ran from here
         raise
 
 from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
+from radis.misc.config import get_config
 from radis.misc.progress_bar import ProgressBar
 
+config = get_config()
 HITEMP_MOLECULES = ["H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"]
 
 
@@ -300,6 +302,15 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
     if file_response.status_code == 200:
         total_size = int(file_response.headers.get("content-length", 0))
         print(f"Total size to download: {total_size} bytes")
+        file_size_in_GB = total_size / (1024**3)
+        MAX_SIZE_GB = config.get("PREVENT_LARGE_DOWNLOAD_ABOVE_X_GB", 1)
+
+        if file_size_in_GB > MAX_SIZE_GB:
+            warning_msg = (
+                f"The file is {file_size_in_GB:.2f} GB which exceeds the threshold of {file_size_in_GB} GB. "
+                "Downloading this file will consume significant resources and may take time."
+            )
+            warnings.warn(warning_msg, UserWarning)
 
         with open(output_filename, "wb") as f, tqdm(
             total=total_size, unit="B", unit_scale=True, desc=output_filename
