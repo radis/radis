@@ -58,4 +58,4 @@ for i, T in enumerate(T_list[1:]):
     show = True if T == T_list[-1] else False
     s.plot("radiance", wunit="nm", show=show, nfig="same")
 
-sf.gpu_exit()
+s.exit_gpu()

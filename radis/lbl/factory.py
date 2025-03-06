@@ -1231,14 +1231,14 @@ class SpectrumFactory(BandFactory):
         
         self.gpu_backend = backend
         if backend == 'vulkan':
-            from radis.gpu.gpu import gpu_init, gpu_iterate, gpu_get_griddims
-        elif backend.split('-')[0] == 'cuda':
-            from radis.gpu.gpu_cuda import gpu_init, gpu_iterate, gpu_get_griddims
+            from radis.gpu.gpu import gpuApp
+        # elif backend.split('-')[0] == 'cuda':
+        #     from radis.gpu.gpu_cuda import gpu_init, gpu_iterate, gpu_get_griddims
         else:
             # not implemented
             return
             
-        gpu_init(
+        gpu_app = gpuApp(
             self.params.wavenum_min_calc,
             len(self.wavenumber_calc),
             self.params.wstep,
@@ -1263,22 +1263,20 @@ class SpectrumFactory(BandFactory):
         if verbose >= 2:
             print("Calculating spectra...", end=" ")
 
-        abscoeff_calc, times = gpu_iterate(
+        abscoeff_calc, times = gpu_app.iterate(
             pressure,
             Tgas,
             mole_fraction,
             verbose=verbose,
         )
 
-        iter_N_L, iter_N_G = gpu_get_griddims()
+        iter_N_L, iter_N_G = gpu_app.get_griddims()
 
         # If sf.eq_spectrum_gpu() was called directly by the user, this is the time to
         # destroy the CUDA context since we're done with all GPU calculations.
         # When called from within sf.eq_spectrum_gpu_interactive(), the context must remain active
         # because more calls to gpu_iterate() will follow. This is controlled by the exit_gpu keyword.
-                
-        if exit_gpu:
-            self.gpu_exit()
+
 
         # Calculate output quantities
         # ----------------------------------------------------------------------
@@ -1369,6 +1367,7 @@ class SpectrumFactory(BandFactory):
             quantities=quantities,
             units=self.units,
             conditions=conditions,
+            gpu_app=(None if exit_gpu else gpu_app),
             lines=lines,
             cond_units=self.cond_units,
             # dont check input (much faster, and Spectrum
@@ -1518,24 +1517,12 @@ class SpectrumFactory(BandFactory):
             n_sliders += 1
 
         fig.subplots_adjust(bottom=0.05 * n_sliders + 0.15)
-        fig.canvas.mpl_connect("close_event", self.gpu_exit)
+        fig.canvas.mpl_connect("close_event", s.exit_gpu)
 
         if not was_interactive:
             plt.ioff()
 
         return s
-
-
-    def gpu_exit(self, event=None):
-        if self.gpu_backend == 'vulkan':
-            from radis.gpu.gpu import gpu_exit
-            gpu_exit(event)
-        elif self.gpu_backend[:4] == 'cuda':
-            from radis.gpu.gpu_cuda import gpu_exit
-            gpu_exit(event)
-        else:
-            #not implemented
-            return
 
 
     def non_eq_spectrum(

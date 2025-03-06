@@ -134,7 +134,7 @@ def test_multiple_gpu_calls(plot=False):
     )
     wl, A1 = s_gpu.get("absorbance")
     A2 = s_gpu.recalc_gpu("absorbance", path_length=3.0)
-    sf.gpu_exit()
+    s_gpu.exit_gpu()
 
     if plot:
         import matplotlib.pyplot as plt

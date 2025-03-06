@@ -412,8 +412,13 @@ class VkFFTApp(VkFFTAppBase):
         for wg in self.indirectHost:
             #print(wg.id, ':', wg.x, wg.y, wg.z, '->', end=' ')
             if wg.id > 0:
-                ax = ['x', 'y', 'z'][wg.id]
-                setattr(wg, ax, N)
+                try:
+                    ax = 'xyz'[wg.id]
+                    setattr(wg, ax, N)
+                    #print(wg.id)
+                except(IndexError):
+                    # wg.id should be in [0,1,2]
+                    print('Vulkan Workgroup ID error:', wg.id)
             #print(wg.x, wg.y, wg.z)
 
 def vkfft_version():

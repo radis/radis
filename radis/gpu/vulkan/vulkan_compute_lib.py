@@ -112,6 +112,9 @@ class GPUApplication(object):
             vk.vkDestroyDevice(self._device, None)
         if self._instance:
             vk.vkDestroyInstance(self._instance, None)
+            
+        # print(">>> Freeing Vulkan data...")
+        
 
     def __setattr__(self, name, val):
         if isinstance(val, GPUBuffer):
@@ -1003,6 +1006,7 @@ class GPUApplication(object):
         return result_dict
 
     def setIndirectBuffer(self, buffer, host_type):
+        #self._fftAppFwd = None #Reset forward FFT app to prevent an old app referencing an old buffer
         indirect_h = buffer.getHostStructPtr(host_type)
         self._indirect_h = indirect_h
         return indirect_h

@@ -347,6 +347,7 @@ class Spectrum(object):
         "c",
         "conditions",
         "cond_units",
+        "gpu_app",
         "populations",
         "references",  # doi entries
         "lines",
@@ -361,6 +362,7 @@ class Spectrum(object):
         units=None,
         conditions=None,
         cond_units=None,
+        gpu_app=None,
         populations=None,
         lines=None,
         wunit=None,
@@ -515,6 +517,9 @@ class Spectrum(object):
                     self._add_quantity(k, w, I, check_wavespace=False)
 
         # Finally, add our attributes
+
+        self.gpu_app = gpu_app
+
         self.conditions = self.c = conditions
         """ dict: computation conditions, or experimental parameters, or
         any metadata you need to store with the Spectrum object.
@@ -6261,14 +6266,6 @@ class Spectrum(object):
             )
 
 
-        if self.conditions["gpu_backend"] == 'vulkan':
-            from radis.gpu.gpu import gpu_iterate, gpu_get_griddims
-        elif self.conditions["gpu_backend"][:4] == 'cuda':
-            from radis.gpu.gpu_cuda import gpu_iterate, gpu_get_griddims
-        else:
-            # not implemented
-            return
-
         # Update conditions:
         if Tgas is not None:
             self.conditions["Tgas"] = Tgas
@@ -6286,7 +6283,7 @@ class Spectrum(object):
         profiler.stop("setting_params", "Input parameters set")
         profiler.start("gpu_iterate", 2)
 
-        abscoeff, times = gpu_iterate(
+        abscoeff, times = self.gpu_app.iterate(
             self.conditions["pressure"],
             self.conditions["Tgas"],
             self.conditions["mole_fraction"],
@@ -6298,7 +6295,7 @@ class Spectrum(object):
         profiler.stop("gpu_iterate", "GPU calculations done")
         profiler.start("spectral_quantities", 2)
         
-        iter_N_L, iter_N_G = gpu_get_griddims()
+        iter_N_L, iter_N_G = self.gpu_app.get_griddims()
         self.conditions["NwL"] = iter_N_L
         self.conditions["NwG"] = iter_N_G
 
@@ -6323,6 +6320,13 @@ class Spectrum(object):
             "value"
         ]
         return new_y
+
+
+    def exit_gpu(self, event=None):
+        self.gpu_app.__del__()
+        self.gpu_app = None
+
+
 
 
 # %% Private functions
