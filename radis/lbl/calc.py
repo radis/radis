@@ -18,7 +18,7 @@ Routine Listing
 
 
 from copy import deepcopy
-from os.path import exists
+from os.path import exists, join
 
 import numpy as np
 
@@ -30,9 +30,11 @@ except ImportError:  # if ran from here
     from radis.lbl.base import get_wavenumber_range
 
 from radis import config
+from radis.api.tools import root_dir
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
 from radis.spectrum.spectrum import Spectrum
+from radis.tools.database import load_spec
 
 
 # %%
@@ -400,6 +402,16 @@ def calc_spectrum(
     --------
     :py:class:`~radis.lbl.factory.SpectrumFactory`
     """
+
+    # path = join(radis.root_dir(), 'cache', f"{s_name}.spec")
+    path = join(root_dir(), "cache", "CO-hitran-700K-#5328.spec")
+    print(path)
+    if exists(path):
+        try:
+            s = load_spec(path)
+            return s
+        except Exception as exc:
+            print("Error loading cached spectrum, recalculating them again", exc)
 
     # Check inputs
     if "molecule" in kwargs:
