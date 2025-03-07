@@ -1034,16 +1034,11 @@ class SpectrumFactory(BandFactory):
         name=None,
         backend="vulkan",
         device_id=0,
-        exit_gpu=True,
+        exit_gpu=False,
         verbose=None,
     ) -> Spectrum:
         """Generate a spectrum at equilibrium with calculation of lineshapes
         and broadening done on the GPU.
-
-        .. note::
-            This method requires CUDA compatible hardware to execute.
-            For more information on how to setup your system to run GPU-accelerated methods
-            using CUDA and Cython, check :ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>`
 
         Parameters
         ----------
@@ -1063,8 +1058,17 @@ class SpectrumFactory(BandFactory):
         Other Parameters
         ----------------
         backend: str
-            if ``'cuda-gpu'``, set CUDA as backend to run code on Nvidia GPU.
-            if ``'cuda-cpu'``, execute the GPU code on the CPU (useful for development)
+            currently only ``'vulkan'`` backend is supported.
+            ``'gpu-cuda'`` and``'cpu-cuda'`` used to be available to switch to a CUDA backend,
+            but have been deprecated in favor of the Vulkan backend.
+        device_id: int, str
+            Select the Vulkan device. If ``int``, specifies the device index, which is printed when Vulkan is loaded.
+            If ``str`` find a device that includes the specified string (case in-sesitive). If not found, return the device at index 0.
+            default = 0
+        exit_gpu: bool
+            Specifies whether the GPU app should be exited after producing the spectrum. Usually this is undesirable, because the GPU
+            benefits manifest *after* the first spectrum by calling s.recalc_gpu(). See also :meth:`~radis.spectrum.spectrum.Spectrum.recalc_gpu`
+            default = False
 
         Returns
         -------
@@ -1229,13 +1233,13 @@ class SpectrumFactory(BandFactory):
         if verbose >= 2:
             print("Initializing parameters...", end=" ")
         
-        self.gpu_backend = backend
         if backend == 'vulkan':
             from radis.gpu.gpu import gpuApp
-        # elif backend.split('-')[0] == 'cuda':
-        #     from radis.gpu.gpu_cuda import gpu_init, gpu_iterate, gpu_get_griddims
+        elif backend in ['cpu-cuda', 'gpu-cuda']:
+            raise NotImplementedError("CUDA backend is deprecated. If you have a good reason you need CUDA in favor of Vulkan please open an issue on Github")
+            return
         else:
-            # not implemented
+            raise NotImplementedError("Unknown GPU backend")
             return
             
         gpu_app = gpuApp(
@@ -1271,12 +1275,6 @@ class SpectrumFactory(BandFactory):
         )
 
         iter_N_L, iter_N_G = gpu_app.get_griddims()
-
-        # If sf.eq_spectrum_gpu() was called directly by the user, this is the time to
-        # destroy the CUDA context since we're done with all GPU calculations.
-        # When called from within sf.eq_spectrum_gpu_interactive(), the context must remain active
-        # because more calls to gpu_iterate() will follow. This is controlled by the exit_gpu keyword.
-
 
         # Calculate output quantities
         # ----------------------------------------------------------------------

@@ -55,8 +55,9 @@ s_gpu = sf.eq_spectrum_gpu(
     mole_fraction=x,
     path_length=l,
     #device_id='nvidia',
-    #backend='cuda-gpu',
 )
 s_gpu.apply_slit(w_slit, unit="cm-1")
 
 plot_diff(s_cpu, s_gpu, var="emissivity", wunit="nm", method="diff")
+
+s_gpu.exit_gpu()

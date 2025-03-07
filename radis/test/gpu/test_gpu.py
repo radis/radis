@@ -16,26 +16,19 @@ from numpy import allclose
 import radis
 from radis import SpectrumFactory, get_residual
 from radis.misc.printer import printm
-from radis.misc.utils import NotInstalled, not_installed_nvidia_args
 from radis.misc.warning import NoGPUWarning
 from radis.test.utils import getTestFile
 
-try:
-    from nvidia.cufft import __path__ as cufft_path
-except ImportError:
-    cufft_path = NotInstalled(*not_installed_nvidia_args)
-
 
 @pytest.mark.fast
-def test_eq_spectrum_gpu(
-    backend="vulkan", verbose=False, plot=False, *args, **kwargs
+def test_eq_spectrum_gpu(device_id=0,
+    verbose=False, plot=False, *args, **kwargs
 ):
-    """Compare Spectrum calculated in the emulated-GPU code
+    """Compare Spectrum calculated in the GPU code
     :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu` to Spectrum
     calculated with the CPU code :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum`
     """
 
-    print("Backend: ", backend)
     T = 1000
     p = 0.1
     wstep = 0.001
@@ -71,8 +64,8 @@ def test_eq_spectrum_gpu(
     s_cpu.name += f" [{s_cpu.c['calculation_time']:.2f}s]"
     s_gpu = sf.eq_spectrum_gpu(
         Tgas=T,
-        backend=backend,
         name="GPU",
+        exit_gpu=True,
     )
     s_gpu.name += f"[{s_gpu.c['calculation_time']:.2f}s]"
     s_cpu.crop(wmin=2284.2, wmax=2284.8)  # remove edge lines
@@ -93,20 +86,18 @@ def test_eq_spectrum_gpu(
         s_cpu.print_perf_profile()
 
 
-@pytest.mark.skipif(
-    isinstance(cufft_path, NotInstalled),
-    reason="nvidia package not installed. Probably because on MAC OS",
-)
+
 @pytest.mark.needs_cuda
 def test_eq_spectrum_gpu_cuda(plot=False, *args, **kwargs):
     """Compare Spectrum calculated in the GPU code
     :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu` to Spectrum
-    calculated with the CPU code :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum`
+    calculated with the CPU code :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum`,
+    specifically using an Nvidia GPU.
     """
     # Ensure that GPU is not deactivated (which triggers a NoGPUWarning)
     with warnings.catch_warnings():
         warnings.simplefilter("error", category=NoGPUWarning)
-        test_eq_spectrum_gpu(backend="cuda-gpu", plot=plot, *args, **kwargs)
+        test_eq_spectrum_gpu(device_id='nvidia', plot=plot, *args, **kwargs)
 
 
 
@@ -130,7 +121,6 @@ def test_multiple_gpu_calls(plot=False):
         path_length=1.0,
         backend="vulkan",
         diluent={"air": 0.99},  # K  # runs on GPU
-        exit_gpu=False,  # GPU will be reused
     )
     wl, A1 = s_gpu.get("absorbance")
     A2 = s_gpu.recalc_gpu("absorbance", path_length=3.0)
@@ -146,36 +136,13 @@ def test_multiple_gpu_calls(plot=False):
     assert allclose(3 * A1, A2, rtol=1e-4)
 
 
-##    s_list = []
-##
-##    for i in range(Ntests):
-##
-##        s_gpu = sf.eq_spectrum_gpu(
-##            Tgas=300,  #  + 200*(i&1),
-##            backend="gpu-vulkan",
-##            device_id=1,
-##            diluent={"air": 0.99},  # K  # runs on GPU
-##        )
-##        print(s_gpu.get_power())  # , end=('\n' if i&1 else ' '))
-##        s_list.append(s_gpu)
-##    print("\n")
-##
-##    if plot:
-##        plot_diff(s_list[0], s_list[-2], wunit="nm", method="diff")
-##
-##    assert (
-##        abs(s_list[0].get_power() - s_list[-2].get_power()) / s_list[0].get_power()
-##        < 1e-5
-##    )
-##    assert s_list[0].get_power() > 0
-
 
 # --------------------------
 if __name__ == "__main__":
 
-    test_eq_spectrum_gpu(plot=True, verbose=2)
+    #test_eq_spectrum_gpu(plot=True, verbose=2)
     #test_eq_spectrum_gpu_cuda(plot=True)
     #test_multiple_gpu_calls(plot=True)
 
 
-    #printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))
+    printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))

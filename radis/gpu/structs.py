@@ -71,8 +71,6 @@ class iterData_t(Structure):
         ("c2T", c_float),
         ("N", c_float),
         ("x", c_float_arr_16),
-        # ("l", c_float),
-        # ("slit_FWHM", c_float),
         ("log_wG_min", c_float),
         ("log_wL_min", c_float),
         ("N_G", c_int),
