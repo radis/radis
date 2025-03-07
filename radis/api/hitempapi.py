@@ -307,8 +307,9 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
 
         if file_size_in_GB > MAX_SIZE_GB:
             warning_msg = (
-                f"The file is {file_size_in_GB:.2f} GB which exceeds the threshold of {MAX_SIZE_GB} GB. "
-                "Downloading this file will consume significant resources and may take time."
+                f"The total download size is {file_size_in_GB:.2f} GB, "
+                f"which exceeds the threshold of {MAX_SIZE_GB} GB. "
+                "Downloading may consume significant resources and take time."
             )
             warnings.warn(warning_msg, UserWarning)
 
