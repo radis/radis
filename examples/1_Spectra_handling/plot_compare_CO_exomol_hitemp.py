@@ -46,16 +46,16 @@ ax0.set_ylim(ymax=ax0.get_ylim()[1] * 10)  # more space for legend
 
 # Note: these two spectra are alike.
 
-#%% ExoMol VS HITRAN
-s_exomol = calc_spectrum(**conditions, databank="exomol", name="ExoMol - recommended")
-fig, [ax0, ax1] = plot_diff(s_exomol, s_hitran, "xsection", yscale="log")
-# Adjust diff plot to be in linear scale
-ax1.set_yscale("linear")
-ax0.set_ylim(ymax=ax0.get_ylim()[1] * 10)  # more space for legend
+# #%% ExoMol VS HITRAN
+# s_exomol = calc_spectrum(**conditions, databank="exomol", name="ExoMol - recommended")
+# fig, [ax0, ax1] = plot_diff(s_exomol, s_hitran, "xsection", yscale="log")
+# # Adjust diff plot to be in linear scale
+# ax1.set_yscale("linear")
+# ax0.set_ylim(ymax=ax0.get_ylim()[1] * 10)  # more space for legend
 
 # Broadening coefficients are different in these databases, so lineshapes
 # end up being very different; however the areas under the lines should be the same.
 # We verify this :
-print(
-    f"Ratio of integrated area = {s_exomol.get_integral('xsection')/s_hitran.get_integral('xsection'):.2f}"
-)
+# print(
+#     f"Ratio of integrated area = {s_exomol.get_integral('xsection')/s_hitran.get_integral('xsection'):.2f}"
+# )

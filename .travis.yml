@@ -4,7 +4,7 @@ python:
   #- "2.7"    # not tested anymore starting from 0.9.19
   #- "3.8" #end of life, Novembre 2024, https://devguide.python.org/versions/
   - "3.10"
-  - "3.11"
+  #- "3.11"
 os: linux
 dist: focal #needed for python 3.10 (xenial is default for Travis-CI, but does not support python 3.10)
 
@@ -73,6 +73,8 @@ stages: #This sequence defines the order of the stages
     if: branch = master
   - name: Py38
     if: branch = master
+  - name: Py311
+    if: branch = master OR branch = develop
   - name: Py312
     if: branch = master
   - name: MacOS_py310
@@ -136,6 +138,9 @@ jobs:
     - stage: Py38
       name: "Python 3.8"
       python: 3.8
+    - stage: Py311
+      name: "Python 3.11"
+      python: 3.11
     - stage: Py312
       name: "Python 3.12"
       python: 3.12
