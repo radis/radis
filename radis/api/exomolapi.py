@@ -585,41 +585,45 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
 #     return A, nu_lines, elower, gup
 
 
-def read_broad(broadf):
+def read_broad(broadf, engine="pytables"):
     """Reading broadening file (.broad)
     Parameters
     ----------
     broadf: .broad file
+    engine: "pytables" (default) for NumPy/Pandas processing, "vaex" for Vaex processing.
 
     Returns
     -------
-    broadening info in bdat form (pandas), defined by this instance.
+    broadening info in bdat form (pandas or vaex dataframe), defined by this instance.
 
     Notes
     -----
     See Table 16 in https://arxiv.org/pdf/1603.05890.pdf
     """
-    bdat = pd.read_csv(
-        broadf,
-        sep=r"\s+",
-        names=(
-            "code",
-            "alpha_ref",
-            "n_Texp",
-            "jlower",
-            "jupper",
-            "kalower",
-            "kclower",
-            "kaupper",
-            "kcupper",
-            "v1lower",
-            "v2lower",
-            "v3lower",
-            "v1upper",
-            "v2upper",
-            "v3upper",
-        ),
-    )
+    column_names = [
+        "code",
+        "alpha_ref",
+        "n_Texp",
+        "jlower",
+        "jupper",
+        "kalower",
+        "kclower",
+        "kaupper",
+        "kcupper",
+        "v1lower",
+        "v2lower",
+        "v3lower",
+        "v1upper",
+        "v2upper",
+        "v3upper",
+    ]
+
+    if engine == "vaex":
+        import vaex
+
+        bdat = vaex.from_csv(broadf, sep=r"\s+", names=column_names)
+    else:
+        bdat = pd.read_csv(broadf, sep=r"\s+", names=column_names)
 
     return bdat
 
@@ -647,7 +651,7 @@ def check_code_level(bdat):
 
 
 def make_j2b(
-    bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None, engine="NumPy"
+    bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None, engine="pytables"
 ):
     """compute j2b (code a0, map from jlower to alpha_ref)
 
@@ -656,7 +660,7 @@ def make_j2b(
         alpha_ref_default: default value
         n_Texp_default: default value
         jlower_max: maximum number of jlower
-        engine: "NumPy" (default) for NumPy/Pandas processing, "vaex" for Vaex processing.
+        engine: "pytables" (default) for NumPy/Pandas processing, "vaex" for Vaex processing.
     Returns:
         j2alpha_ref[jlower] provides alpha_ref for jlower
         j2n_Texp[jlower]  provides nT_exp for jlower
@@ -665,7 +669,6 @@ def make_j2b(
     if engine == "vaex":
         import vaex
 
-        bdat = vaex.from_pandas(bdat)
         bdat = bdat[bdat["code"] == "a0"]
         jlower_arr = bdat["jlower"].values
         alpha_ref_arr = bdat["alpha_ref"].values
@@ -677,20 +680,10 @@ def make_j2b(
         n_Texp_arr = np.array(bdat["n_Texp"][cmask])
 
     # Determine the array size based on jlower_max
-    if engine == "vaex":
-        # calculate the maximum jlower in the data with vaex
-        max_jlower_in_data = bdat["jlower"].max()
-        if jlower_max is None:
-            Nblower = max_jlower_in_data + 1
-        else:
-            Nblower = max(jlower_max, max_jlower_in_data) + 1
+    if jlower_max is None:
+        Nblower = np.max(jlower_arr) + 1
     else:
-        # calculate the maximum jlower in the data with numpy
-        max_jlower_in_data = np.max(jlower_arr)
-        if jlower_max is None:
-            Nblower = max_jlower_in_data + 1
-        else:
-            Nblower = np.max([jlower_max, max_jlower_in_data]) + 1
+        Nblower = np.max([jlower_max, np.max(jlower_arr)]) + 1
 
     if engine == "vaex":
         # Initialize arrays with default alpha_ref and n_Texp
@@ -719,7 +712,7 @@ def make_j2b(
         j2n_Texp[jlower_arr] = n_Texp_arr
 
     # Raise a minor warning if default values are used for high J values
-    if Nblower > (max_jlower_in_data + 1):
+    if Nblower > (np.max(jlower_arr) + 1):
         import warnings
 
         from radis.misc.warning import AccuracyWarning
@@ -727,7 +720,7 @@ def make_j2b(
         warnings.warn(
             AccuracyWarning(
                 "The default broadening parameter (alpha = {2} cm^-1 and n = {3}) are used for J'' > {1} up to J'' = {0}".format(
-                    Nblower, max_jlower_in_data, alpha_ref_default, n_Texp_default
+                    Nblower, np.max(jlower_arr), alpha_ref_default, n_Texp_default
                 )
             )
         )
@@ -735,7 +728,7 @@ def make_j2b(
     return j2alpha_ref, j2n_Texp
 
 
-def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None, engine="NumPy"):
+def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None, engine="pytables"):
     """compute jj2b (code a1, map from (jlower, jupper) to alpha_ref and n_Texp)
 
     Args:
@@ -743,7 +736,7 @@ def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None, engine="NumP
         j2alpha_ref_def: default value from a0
         j2n_Texp_def: default value from a0
         jupper_max: maximum number of jupper
-        engine: "NumPy" (default) for NumPy/Pandas processing, "vaex" for Vaex processing.
+        engine: "pytables" (default) for NumPy/Pandas processing, "vaex" for Vaex processing.
     Returns:
         jj2alpha_ref[jlower,jupper] provides alpha_ref for (jlower, jupper)
         jj2n_Texp[jlower,jupper]  provides nT_exp for (jlower, jupper)
@@ -753,8 +746,6 @@ def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None, engine="NumP
     # a1
     if engine == "vaex":
         import vaex
-
-        bdat = vaex.from_pandas(bdat)
 
         bdat = bdat[bdat["code"] == "a1"]
         jlower_arr = bdat["jlower"].values
@@ -767,21 +758,12 @@ def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None, engine="NumP
         jupper_arr = np.array(bdat["jupper"][cmask], dtype=int)
         alpha_ref_arr = np.array(bdat["alpha_ref"][cmask])
         n_Texp_arr = np.array(bdat["n_Texp"][cmask])
+
     # Determine the array size based on jupper_max
-    if engine == "vaex":
-        # calculate the maximum jupper in the data with vaex
-        max_jupper_in_data = bdat["jlower"].max()
-        if jupper_max is None:
-            Nbupper = max_jupper_in_data + 1
-        else:
-            Nbupper = max(jupper_max, max_jupper_in_data) + 1
+    if jupper_max is None:
+        Nbupper = np.max(jupper_arr) + 1
     else:
-        # calculate the maximum jupper in the data with numpy
-        max_jupper_in_data = np.max(jupper_arr)
-        if jupper_max is None:
-            Nbupper = max_jupper_in_data + 1
-        else:
-            Nbupper = np.max([jupper_max, max_jupper_in_data]) + 1
+        Nbupper = np.max([jupper_max, np.max(jupper_arr)]) + 1
 
     if engine == "vaex":
         df = vaex.from_arrays(
@@ -1499,7 +1481,7 @@ class MdbExomol(DatabaseManager):
         file = self.broad_files[species]
 
         if self.broadf and os.path.exists(file):
-            bdat = read_broad(file)
+            bdat = read_broad(file, self.engine)
 
             if self.verbose > 1:
                 print("The file `{}` is used.".format(os.path.basename(file)))
