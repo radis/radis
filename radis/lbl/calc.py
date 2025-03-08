@@ -178,6 +178,7 @@ def calc_spectrum(
         - ``'hitemp'``, to fetch the latest HITEMP version
           through :py:func:`~radis.io.hitemp.fetch_hitemp`. Downloads all lines
           and all isotopes.
+
         - ``'exomol'``, to fetch the latest ExoMol database
           through :py:func:`~radis.io.exomol.fetch_exomol`. To download a specific
           database use (more info in fetch_exomol) ::
@@ -187,7 +188,8 @@ def calc_spectrum(
         - ``'geisa'``, to fetch the GEISA 2020 database
           through :py:func:`~radis.io.geisa.fetch_geisa`. Downloads all lines
           and all isotopes.
-        - the name of a a valid database file, in which case the format is inferred.
+
+        - the name of a valid database file, in which case the format is inferred.
           For instance, ``'.par'`` is recognized as ``hitran/hitemp`` format.
           Accepts wildcards ``'*'`` to select multiple files ::
 
