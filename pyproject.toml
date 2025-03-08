@@ -17,7 +17,7 @@ dynamic = ["version"]  # Version is read from radis/__version__.txt
 description = "A fast line-by-line code for high-resolution infrared molecular spectra"
 readme = "README.md"
 authors = [
-    {name = "Erwan Pannier", email = "erwan.pannier@gmail.com"},
+    {name = "Erwan Pannier", email = ""},
 ]
 license = {text = "GNU Lesser General Public License v3 (LGPLv3)"}
 keywords = [
