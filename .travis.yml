@@ -25,9 +25,7 @@ install:
   - sed -i -E 's/^- python$/- python='$TRAVIS_PYTHON_VERSION'/' ./environment.yml
   # Create conda environment
   - micromamba install xtensor -c conda-forge -y
-  # move requirements.txt to the /tmp folder, required so that .environment.yml finds it
   - pwd
-  - cp requirements.txt /tmp/requirements.txt
   # Create the environment:
   - micromamba create -f ./environment.yml -y
   # Activate and install test-only dependencies
@@ -180,8 +178,6 @@ jobs:
     #     - (Get-Content -Path 'environment.yml') -replace '(python=)(.*)', ('$1' + $env:TRAVIS_PYTHON_VERSION) | Set-Content -Path 'environment.yml'
     #     # Create conda environment
     #     - micromamba install xtensor -c conda-forge -y
-    #     # move requirements.txt to the /tmp folder, required so that .environment.yml finds it
-    #     - Copy-Item -Path 'requirements.txt' -Destination 'C:\tmp\requirements.txt'
     #     # Create the environment:
     #     - micromamba create -f 'environment.yml' -y
     #     # Activate and install test-only dependencies

@@ -1,6 +1,5 @@
 include README.rst
 include LICENSE
-include requirements.txt
 include radis/__version__.txt
 include radis/gpu/cuda/*.cu
 include radis/gpu/cuda/*.h

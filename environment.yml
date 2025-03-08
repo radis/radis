@@ -1,4 +1,12 @@
-# See https://github.com/binder-examples/conda
+# Create a new environment from this file with :
+#   conda create -n radis-env python=3.12 -y
+#
+# Or update an existing environment OTHER-ENV from this file with :
+#   conda activate OTHER-ENV
+#   conda env update --file environment.yml
+#
+# Dependencies in environment.yml and pyproject.toml should be kept consistent.
+# This is tested automatically https://github.com/radis/radis/pull/734
 name: radis-env
 channels:
 - conda-forge

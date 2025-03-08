@@ -51,9 +51,9 @@ classifiers = [
 ]
 requires-python = ">=3.8"
 dependencies = [
-    # Although it seems like a duplicate of requirements.txt, it is NECESSARY to tell pip what are the dependencies, issue #680.
-    # (requirements.txt is only for the user, not for pip, see https://packaging.python.org/discussions/install-requires-vs-requirements/ and https://stackoverflow.com/questions/14399534/reference-requirements-txt-for-the-install-requires-kwarg-in-setuptools-setup-py)
-    ### From environment.yml
+    # This is a duplicate of environment.yml; but it is NECESSARY to tell pip what are the dependencies.
+    # Dependencies in environment.yml and here should be kept consistent.
+    # This is tested automatically https://github.com/radis/radis/pull/734
     "astropy>=4.3.1",  # Unit aware calculations
     "astroquery>=0.4.6",  # to fetch HITRAN databases
     "beautifulsoup4>=4.10.0",  # parse ExoMol website and HITRAN responses
