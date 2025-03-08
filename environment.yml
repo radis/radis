@@ -2,8 +2,7 @@
 name: radis-env
 channels:
 - conda-forge
-- astropy
-- plotly
+- nodefauts
 dependencies:
 - python
 - astropy>=4.3.1  # Unit aware calculations
