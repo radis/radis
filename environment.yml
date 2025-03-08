@@ -10,7 +10,7 @@
 name: radis-env
 channels:
 - conda-forge
-- nodefauts
+- nodefaults  # no defaults packages (only conda-forge)
 dependencies:
 - python
 - astropy>=4.3.1  # Unit aware calculations
