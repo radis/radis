@@ -63,35 +63,35 @@ dependencies = [
     "getpass4",  # for handling password input securely
     "habanero>=1.2.0",  # CrossRef API to retrieve data from doi
     "h5py>=3.2.1",  # load HDF5
+    "hjson",  # Json with comments (for default_radis.json)
+    "hitran-api",  # HAPI, used to access TIPS partition functions
     "joblib",  # for parallel loading of SpecDatabase
+    "json-tricks>=3.15.0",  # to deal with non jsonable formats
     "lmfit",  # for new fitting modules
+    "lxml",  # parser used for ExoMol website
     "matplotlib",  # for plotting
-    "numpy",  # numerical computations
+    "mpldatacursor",  # interactive data cursors for matplotlib
     "numba",  # just-in-time compiler
+    "numpy",  # numerical computations
     "pandas",  # data manipulation and analysis
+    "peakutils",  # peak detection and fitting
+    "periodictable",  # periodic table data
     "plotly>=2.5.1",  # for line survey HTML output
     "psutil",  # to get user RAM
+    "publib",  # Plotting styles for Matplotlib. Version, update to 0.4.0 needed for matplotlib==3.8. However, only 0.3.2 is compatible with python==3.8 (see #647)
     "python-dotenv",  # for managing environment variables
     "requests",  # for making HTTP requests to HITRAN database
-    "tables",  # for pandas to HDF5 export - WARNING named "pytables" in conda
+    "ruamel.yaml",  # YAML parsing and writing
     "scipy>=1.4.0",  # scientific computing
     "seaborn",  # other matplotlib themes
-    "termcolor",  # terminal colors
     "specutils",  # spectroscopic data handling
-    "lxml",  # parser used for ExoMol website
-    "hjson",  # Json with comments (for default_radis.json)
-    "publib",  # Plotting styles for Matplotlib. Version, update to 0.4.0 needed for matplotlib==3.8. However, only 0.3.2 is compatible with python==3.8 (see #647)
-    "hitran-api",  # HAPI, used to access TIPS partition functions
-    "peakutils",  # peak detection and fitting
-    "ruamel.yaml",  # YAML parsing and writing
-    "json-tricks>=3.15.0",  # to deal with non jsonable formats
-    "mpldatacursor",  # interactive data cursors for matplotlib
-    'nvidia-cufft-cu11; sys_platform != "darwin"',  # CUDA FFT library
-    "periodictable",  # periodic table data
+    "tables",  # for pandas to HDF5 export - WARNING named "pytables" in conda
+    "termcolor",  # terminal colors
     "tqdm",  # for progress bars
     'vaex-core; python_version < "3.11"',  # out-of-core dataframes
     'vaex-hdf5; python_version < "3.11"',  # HDF5 support for vaex
     'vaex-viz; python_version < "3.11"',  # visualization for vaex
+    'nvidia-cufft-cu11; sys_platform != "darwin"',  # CUDA FFT library
 ]
 
 [project.optional-dependencies]
