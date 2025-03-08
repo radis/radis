@@ -2,9 +2,9 @@
 language: python
 python:
   #- "2.7"    # not tested anymore starting from 0.9.19
-  #- "3.8" #end of life, Novembre 2024, https://devguide.python.org/versions/
+  #- "3.8"    # end of life, Novembre 2024, https://devguide.python.org/versions/
   - "3.10"
-  - "3.11"
+  #- "3.11"
 os: linux
 dist: focal #needed for python 3.10 (xenial is default for Travis-CI, but does not support python 3.10)
 
@@ -65,13 +65,15 @@ after_success:
 
 
 stages: #This sequence defines the order of the stages
-  - name: test
+  - name: Py311
+    if: branch = master OR branch = develop
+  - name: Py310
     if: branch = master OR branch = develop
   - name: lint
     if: branch = master OR branch = develop
   - name: deploy
     if: branch = master
-  - name: Py38
+  - name: Py38 #DEV MESSAGE: as long as we can pass the tests with Python 3.8, we will keep it. If a problem comes up, we will announce that RADIS is not compatible with Python 3.8 anymore.
     if: branch = master
   - name: Py312
     if: branch = master
@@ -133,9 +135,15 @@ jobs:
     #     - pip install pytest-cov
     #     - pip install -e . -v
   ### Extra Python versions - start
-    - stage: Py38
+    - stage: Py38 #DEV MESSAGE: as long as we can pass the tests with Python 3.8, we will keep it. If a problem comes up, we will announce that RADIS is not compatible with Python 3.8 anymore.
       name: "Python 3.8"
       python: 3.8
+    - stage: Py311
+      name: "Python 3.11"
+      python: 3.11
+    - stage: Py310
+      name: "Python 3.10"
+      python: 3.10
     - stage: Py312
       name: "Python 3.12"
       python: 3.12
