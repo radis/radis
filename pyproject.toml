@@ -87,6 +87,7 @@ dependencies = [
     "specutils",  # spectroscopic data handling
     "tables",  # for pandas to HDF5 export - WARNING named "pytables" in conda
     "termcolor",  # terminal colors
+    "toml",
     "tqdm",  # for progress bars
     'vaex-core; python_version < "3.11"',  # out-of-core dataframes
     'vaex-hdf5; python_version < "3.11"',  # HDF5 support for vaex

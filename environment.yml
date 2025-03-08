@@ -54,6 +54,7 @@ dependencies:
   - python-dotenv
   - requests
   - ruamel.yaml
+  - toml
   - tqdm
   - vaex-core ; python_version < '3.11'
   - vaex-hdf5 ; python_version < '3.11'
