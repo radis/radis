@@ -140,7 +140,8 @@ def test_calc_geisa_spectrum(verbose=True, plot=True, *args, **kwargs):
         s.plot("absorbance")
 
 
-def test_fod_debugging_doc(plot=True):
+@pytest.mark.fast  # for faster debugging
+def test_debugging_doc(plot=True):
     import astropy.units as u
 
     from radis import calc_spectrum, plot_diff
@@ -178,7 +179,7 @@ def _run_testcases(verbose=True, *args, **kwargs):
     test_local_geisa_h2o(verbose=verbose, *args, **kwargs)
     test_local_geisa_co2(verbose=verbose, *args, **kwargs)
     test_calc_geisa_spectrum(*args, **kwargs)
-    test_fod_debugging_doc(plot=True)
+    test_debugging_doc(plot=True)
 
     return True
 
