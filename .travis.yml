@@ -138,12 +138,12 @@ jobs:
     - stage: Py38 #DEV MESSAGE: as long as we can pass the tests with Python 3.8, we will keep it. If a problem comes up, we will announce that RADIS is not compatible with Python 3.8 anymore.
       name: "Python 3.8"
       python: 3.8
-    - stage: Py310
-      name: "Python 3.10"
-      python: 3.10
     - stage: Py311
       name: "Python 3.11"
       python: 3.11
+    - stage: Py310
+      name: "Python 3.10"
+      python: 3.10
     - stage: Py312
       name: "Python 3.12"
       python: 3.12
