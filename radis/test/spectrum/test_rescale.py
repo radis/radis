@@ -397,6 +397,9 @@ def test_recompute_equilibrium(verbose=True, warnings=True, plot=True, *args, **
 
 
 def test_rescale_all_quantities(verbose=True, warnings=True, *args, **kwargs):
+    """Test rescaling of all quantities, from all possible sets of other quantities.
+
+    We test all the pathways given by ``radis.spectrum.rescale._build_update_graph``."""
 
     new_mole_fraction = 0.5
     new_path_length = 0.1
@@ -457,7 +460,14 @@ def test_rescale_all_quantities(verbose=True, warnings=True, *args, **kwargs):
             s.rescale_path_length(new_path_length)
 
             # Compare
-            assert s.compare_with(sscaled, spectra_only=quantity, plot=False)
+            try:
+                assert s.compare_with(sscaled, spectra_only=quantity, plot=False)
+            except AssertionError:
+                print(
+                    f"\nERROR while trying to rescale `{quantity}` from {combinations}:\n"
+                )
+                assert s.compare_with(sscaled, spectra_only=quantity, plot=True)
+                raise  # normally unecessary; error should retrigger on the previous line (but with a plot)
 
     if verbose >= 2:
         radis.config["DEBUG_MODE"] = DEBUG_MODE
@@ -555,16 +565,17 @@ def test_astropy_units(verbose=True, warnings=True, *args, **kwargs):
 
 
 def _run_all_tests(verbose=True, warnings=True, *args, **kwargs):
-    # test_compression(verbose=verbose, warnings=warnings, *args, **kwargs)
+    test_compression(verbose=verbose, warnings=warnings, *args, **kwargs)
     test_update_transmittance(verbose=verbose, warnings=warnings, *args, **kwargs)
-    # test_get_recompute(verbose=verbose, warnings=warnings, *args, **kwargs)
-    # test_rescale_vs_direct_computation(verbose=verbose, *args, **kwargs)
-    # test_recompute_equilibrium(verbose=verbose, warnings=warnings, *args, **kwargs)
-    # test_rescale_all_quantities(verbose=verbose, *args, **kwargs)
-    # test_xsections(*args, **kwargs)
-    # test_astropy_units(verbose=True, warnings=True, *args, **kwargs)
+    test_get_recompute(verbose=verbose, warnings=warnings, *args, **kwargs)
+    test_rescale_vs_direct_computation(verbose=verbose, *args, **kwargs)
+    test_recompute_equilibrium(verbose=verbose, warnings=warnings, *args, **kwargs)
+    test_rescale_all_quantities(verbose=verbose, *args, **kwargs)
+    test_xsections(*args, **kwargs)
+    test_astropy_units(verbose=True, warnings=True, *args, **kwargs)
     return True
 
 
 if __name__ == "__main__":
+
     print(("Testing test_rescale.py:", _run_all_tests(verbose=True)))

@@ -836,7 +836,9 @@ def _recompute_from_abscoeff_at_equilibrium(
     units,
     recompute,
 ):
-    """
+    """Recompute all spectral quantities from the absorption coefficient.
+
+    Requires that were are at Thermal equilibrium.
 
     Parameters
     ----------
@@ -887,6 +889,29 @@ def _recompute_from_abscoeff_at_equilibrium(
         rescaled["absorbance"] = absorbance
         units["absorbance"] = ""
 
+    # Calculate cross-section
+    if (
+        "xsection" in recompute
+        and "pressure" in spec.conditions
+        and "Tgas" in spec.conditions
+        and "mole_fraction" in spec.conditions
+        and spec.get_condition("mole_fraction") != "N/A" # ensure the slab is homogeneous 
+    ):
+        # Calculate cross-section
+        pressure_Pa, _ = spec.get_condition("pressure", "Pa", return_unit=True)
+        Tgas_K, _ = spec.get_condition("Tgas", "K", return_unit=True)
+        mole_fraction = spec.get_condition("mole_fraction")
+        xsection = abscoeff2xsection(
+            abscoeff_cm1=abscoeff,
+            Tgas_K=Tgas,
+            mole_fraction=mole_fraction,
+            pressure_Pa=pressure_Pa,
+        )
+        # Store:
+        rescaled["xsection"] = xsection
+        units["xsection"] = "cm2"
+
+    # Calculate transmittance (without slit function)
     if (
         "transmittance_noslit" in recompute
         or "emissivity_noslit" in recompute
@@ -901,6 +926,7 @@ def _recompute_from_abscoeff_at_equilibrium(
         rescaled["_transmittance_noslitm1"] = _transmittance_noslitm1
         units["transmittance_noslit"] = ""
 
+    # Calculate emissivity (without slit function)
     if (
         "emissivity_noslit" in recompute
         or "radiance_noslit" in recompute
@@ -912,6 +938,7 @@ def _recompute_from_abscoeff_at_equilibrium(
         rescaled["emissivity_noslit"] = emissivity_noslit
         units["emissivity_noslit"] = ""
 
+    # Calculate radiance (without slit function)
     if "radiance_noslit" in recompute or "emisscoeff" in recompute:
         # Calculate radiance
         Iunit_radiance = get_unit_radiance()
@@ -922,6 +949,7 @@ def _recompute_from_abscoeff_at_equilibrium(
         rescaled["radiance_noslit"] = radiance_noslit
         units["radiance_noslit"] = Iunit_radiance
 
+    # Calculate emission coefficient
     if (
         "emisscoeff" in recompute
     ):  # is only run when `transmittance_noslit = exp(-absorbance)` above is run
@@ -2033,23 +2061,6 @@ def _recalculate(
         recompute.append("abscoeff")
     recompute = set(recompute)  # remove duplicates
 
-    # check the slab is homogeneous to compute the cross-section
-    for key in ["Tgas", "pressure", "mole_fraction"]:
-        if key in spec.conditions:
-            good = isinstance(spec.conditions[key], (int, float)) and not isinstance(
-                spec.conditions[key], bool
-            )
-        else:
-            continue
-        if "xsection" in recompute and not good:
-            recompute.remove("xsection")
-            warn(
-                f"Rescaling the 'xsection' of Spectrum {spec.get_name()} but"
-                + " the spectrum is not homogeneous or not defined:\n"
-                + f"s.conditions[{key}] = 'N/A'\n"
-                + "If you are merging two spectra, make sure cross-sections are not included in the initial spectra, see https://github.com/radis/radis/issues/682."
-            )
-
     # Get units
     rescaled_units = spec.units.copy()
 
@@ -2214,20 +2225,20 @@ def _recalculate(
             )
             apply_slit = apply_slit or slit_needed
 
-    if "xsection" in recompute:
-        rescaled, rescaled_units = rescale_xsection(
-            spec,
-            rescaled,
-            initial,
-            old_mole_fraction,
-            new_mole_fraction,
-            old_path_length_cm,
-            optically_thin,
-            waveunit,
-            rescaled_units,
-            extra,
-            true_path_length,
-        )
+        if "xsection" in recompute:
+            rescaled, rescaled_units = rescale_xsection(
+                spec,
+                rescaled,
+                initial,
+                old_mole_fraction,
+                new_mole_fraction,
+                old_path_length_cm,
+                optically_thin,
+                waveunit,
+                rescaled_units,
+                extra,
+                true_path_length,
+            )
 
     # delete former convoluted value if apply_slit will be used (just to be sure
     # we arent keeping a non rescaled value if something goes wrong)
