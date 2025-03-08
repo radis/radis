@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 =========================================================
-Compare OH cross-sections from HITRAN and ExoMol
+Compare NO cross-sections from HITRAN and ExoMol
 =========================================================
 
-Auto-download, calculate, and compare CO spectra from the HITRAN and GEISA databases
+Auto-download, calculate, and compare NO spectra from the HITRAN and GEISA databases
 
 """
 import astropy.units as u
