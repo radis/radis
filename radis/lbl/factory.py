@@ -1232,16 +1232,18 @@ class SpectrumFactory(BandFactory):
 
         if verbose >= 2:
             print("Initializing parameters...", end=" ")
-        
-        if backend == 'vulkan':
+
+        if backend == "vulkan":
             from radis.gpu.gpu import gpuApp
-        elif backend in ['cpu-cuda', 'gpu-cuda']:
-            raise NotImplementedError("CUDA backend is deprecated. If you have a good reason you need CUDA in favor of Vulkan please open an issue on Github")
+        elif backend in ["cpu-cuda", "gpu-cuda"]:
+            raise NotImplementedError(
+                "CUDA backend is deprecated. If you have a good reason you need CUDA in favor of Vulkan please open an issue on Github"
+            )
             return
         else:
             raise NotImplementedError("Unknown GPU backend")
             return
-            
+
         gpu_app = gpuApp(
             self.params.wavenum_min_calc,
             len(self.wavenumber_calc),
@@ -1521,7 +1523,6 @@ class SpectrumFactory(BandFactory):
             plt.ioff()
 
         return s
-
 
     def non_eq_spectrum(
         self,

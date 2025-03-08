@@ -39,7 +39,7 @@ ctype_int_size_p = np.ctypeslib.ndpointer(
 
 
 from radis.gpu.vulkan.pyvkfft_base import (
-   VkFFTApp as VkFFTAppBase,  # , check_vkfft_result
+    VkFFTApp as VkFFTAppBase,  # , check_vkfft_result
 )
 
 # from pyvkfft_base import VkFFTApp as VkFFTAppBase  # , check_vkfft_result
@@ -62,7 +62,9 @@ _vkfft_vulkan = ctypes.cdll.LoadLibrary(vkfft_path)
 ##silent = os.open(os.devnull, os.O_WRONLY)
 
 
-def prepare_fft(buffer, name="", norm=1, compute_app=None, indirectOffset=0, exclusivePlan=0):
+def prepare_fft(
+    buffer, name="", norm=1, compute_app=None, indirectOffset=0, exclusivePlan=0
+):
 
     return VkFFTApp(
         buffer=buffer,
@@ -116,15 +118,13 @@ _vkfft_vulkan.make_config.argtypes = [
     ctypes.c_size_t,
     _types.VkBuffer,
     _types.VkBuffer,
-    #ctypes.c_int,
-    #_types.VkBuffer,
-    #ctypes.c_int,
-    
+    # ctypes.c_int,
+    # _types.VkBuffer,
+    # ctypes.c_int,
     ctypes.c_int,
     _types.VkBuffer,
     ctypes.c_int,
     ctypes.c_void_p,
-    
     ctypes.POINTER(_types.VkPhysicalDevice),
     ctypes.POINTER(_types.VkDevice),
     ctypes.POINTER(_types.VkQueue),
@@ -161,16 +161,40 @@ _vkfft_vulkan.init_app.argtypes = [
 ]
 
 _vkfft_vulkan.fft.restype = ctypes.c_int
-_vkfft_vulkan.fft.argtypes = [_types.vkfft_app, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+_vkfft_vulkan.fft.argtypes = [
+    _types.vkfft_app,
+    ctypes.c_void_p,
+    ctypes.c_void_p,
+    ctypes.c_void_p,
+]
 
 _vkfft_vulkan.ffto.restype = ctypes.c_int
-_vkfft_vulkan.ffto.argtypes = [_types.vkfft_app, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
+_vkfft_vulkan.ffto.argtypes = [
+    _types.vkfft_app,
+    ctypes.c_void_p,
+    ctypes.c_void_p,
+    ctypes.c_void_p,
+    ctypes.c_int,
+    ctypes.c_int,
+]
 
 _vkfft_vulkan.ifft.restype = ctypes.c_int
-_vkfft_vulkan.ifft.argtypes = [_types.vkfft_app, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+_vkfft_vulkan.ifft.argtypes = [
+    _types.vkfft_app,
+    ctypes.c_void_p,
+    ctypes.c_void_p,
+    ctypes.c_void_p,
+]
 
 _vkfft_vulkan.iffto.restype = ctypes.c_int
-_vkfft_vulkan.iffto.argtypes = [_types.vkfft_app, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
+_vkfft_vulkan.iffto.argtypes = [
+    _types.vkfft_app,
+    ctypes.c_void_p,
+    ctypes.c_void_p,
+    ctypes.c_void_p,
+    ctypes.c_int,
+    ctypes.c_int,
+]
 
 _vkfft_vulkan.free_app.restype = None
 _vkfft_vulkan.free_app.argtypes = [_types.vkfft_app]
@@ -195,9 +219,8 @@ class VkFFTApp(VkFFTAppBase):
         # buffer_size,
         # buffer_src,
         # buffer_dst,
-        
-        #currentBatchUBO,
-        #currentBatchUBOOffset,
+        # currentBatchUBO,
+        # currentBatchUBOOffset,
         indirectOffset,
         indirectBuffer,
         indirectHost,
@@ -212,15 +235,18 @@ class VkFFTApp(VkFFTAppBase):
         r2c=False,
         dct=False,
         axes=None,
-        #strides=None,
+        # strides=None,
         tune_config=None,
         name="",
         exclusivePlan=0,
         **kwargs,
     ):
 
-        
-        shape_in = (buffer._fftSize,) if buffer._batchSize == 1 else (buffer._batchSize, buffer._fftSize)
+        shape_in = (
+            (buffer._fftSize,)
+            if buffer._batchSize == 1
+            else (buffer._batchSize, buffer._fftSize)
+        )
         dtype = buffer._dtype
         super().__init__(
             shape_in,
@@ -245,7 +271,7 @@ class VkFFTApp(VkFFTAppBase):
         self.queue = _types.VkQueue(getVulkanPtr(queue))
         self.commandPool = _types.VkCommandPool(getVulkanPtr(command_pool))
         self.fence = _types.VkFence(getVulkanPtr(fence))
-        self.name= name.encode()
+        self.name = name.encode()
         self.exclusivePlan = exclusivePlan
         # buf = ctypes.create_string_buffer(256)
 
@@ -271,20 +297,20 @@ class VkFFTApp(VkFFTAppBase):
         VkFFTApplication and VkFFTConfiguration.
         """
 
-        #print('VkFFT.app.__del__... ')
-        #print('free_app @',hex(self.app), end='... ')
+        # print('VkFFT.app.__del__... ')
+        # print('free_app @',hex(self.app), end='... ')
         if self.app is not None:
             _vkfft_vulkan.free_app(self.app)
             self.app = None
-        #print('Done!')
+        # print('Done!')
 
-        #print('free_config @',hex(self.config), end='... ')
+        # print('free_config @',hex(self.config), end='... ')
         if self.config is not None:
             _vkfft_vulkan.free_config(self.config)
             self.config = None
-        #print('Done!')
+        # print('Done!')
 
-        #print('VkFFT.app.__del__ done!')
+        # print('VkFFT.app.__del__ done!')
 
     def _make_config(self):
         """Create a vkfft configuration for a FFT transform"""
@@ -300,27 +326,18 @@ class VkFFTApp(VkFFTAppBase):
 
         shape[0] = self.shape[-1]
         # skip[1 : len(self.shape)] = 1
-        #FFTdim = 1
+        # FFTdim = 1
         n_batch = 1 if len(self.shape) == 1 else self.shape[-2]
-
-        # grouped_batch = np.empty(vkfft_max_fft_dimensions(), dtype=vkfft_long_type)
-        # grouped_batch.fill(-1)
-        # grouped_batch[: len(self.groupedBatch)] = self.groupedBatch
 
         indirectDispatch = 1 if self.exclusivePlan == 1 else 0
 
-        # if self.norm == "ortho":
-        #     norm = 0
-        # else:
-        #     norm = self.norm
-        
         return _vkfft_vulkan.make_config(
             shape,
             self.bufferSize,
-            0, #self.bufferSize,
-            1,#FFTdim,
+            0,  # self.bufferSize,
+            1,  # FFTdim,
             self.bufferSrc,
-            None, #self.bufferDest,
+            None,  # self.bufferDest,
             indirectDispatch,
             self.indirectBuffer,
             self.indirectOffset,
@@ -330,16 +347,16 @@ class VkFFTApp(VkFFTAppBase):
             ctypes.byref(self.queue),
             ctypes.byref(self.commandPool),
             ctypes.byref(self.fence),
-            0, #isCompilerInitialized
-            1,#norm,
+            0,  # isCompilerInitialized
+            1,  # norm,
             self.precision,
-            1,#int(self.r2c),
-            0,#int(self.dct),
-            0,#int(self.disableReorderFourStep),
+            1,  # int(self.r2c),
+            0,  # int(self.dct),
+            0,  # int(self.disableReorderFourStep),
             int(self.registerBoost),
             int(self.use_lut),
             int(self.keepShaderCode),
-            #min(6,n_batch),
+            # min(6,n_batch),
             n_batch,
             skip,
             int(self.coalescedMemory),
@@ -349,11 +366,11 @@ class VkFFTApp(VkFFTAppBase):
             int(self.registerBoostNonPow2),
             int(self.registerBoost4Step),
             int(self.warpSize),
-            0,#1,#int(1), #specify offset at launch
+            0,  # 1,#int(1), #specify offset at launch
             grouped_batch,
             self.name,
             self.exclusivePlan,
-            0, #debugEnable
+            0,  # debugEnable
         )
 
     def getBufSize(self, src):
@@ -382,7 +399,7 @@ class VkFFTApp(VkFFTAppBase):
             self.app,
             ctypes.byref(self.commandBufferFwd),
             ctypes.byref(self.bufferSrc),
-            None
+            None,
         )
 
     def ifft(self, cmd_buf, src):
@@ -395,7 +412,6 @@ class VkFFTApp(VkFFTAppBase):
         :return: the transformed array. For a C2R inplace transform, the float view of the
             array is returned.
         """
-        
 
         self.bufferSrc = _types.VkBuffer(getVulkanPtr(src))
         self.commandBufferRev = _types.VkCommandBuffer(getVulkanPtr(cmd_buf))
@@ -407,19 +423,23 @@ class VkFFTApp(VkFFTAppBase):
             ctypes.byref(self.bufferSrc),
         )
 
-
     def setFFTWorkGroupSize(self, N):
         for wg in self.indirectHost:
-            #print(wg.id, ':', wg.x, wg.y, wg.z, '->', end=' ')
+            # print(wg.id, ':', wg.x, wg.y, wg.z, '->', end=' ')
             if wg.id > 0:
                 try:
-                    ax = 'xyz'[wg.id]
+                    ax = "xyz"[wg.id]
                     setattr(wg, ax, N)
-                    #print(wg.id)
-                except(IndexError):
-                    # wg.id should be in [0,1,2]
-                    print('Vulkan Workgroup ID error:', wg.id)
-            #print(wg.x, wg.y, wg.z)
+                    # print(wg.id)
+                except (IndexError):
+                    # the wg.id is set by VkFFT to either 0, 1, or 2,
+                    # to specify which axis contains the batch number.
+                    # this exception is to catch issues with the wg.id being any other number.
+                    # However, this issue was likely solved by zeroing the values in
+                    # vulkan_compute_lib.setIndirectBuffer().
+                    print("Vulkan Workgroup ID error:", wg.id)
+            # print(wg.x, wg.y, wg.z)
+
 
 def vkfft_version():
     """
@@ -440,4 +460,3 @@ def vkfft_max_fft_dimensions():
     :return: VKFFT_MAX_FFT_DIMENSIONS
     """
     return _vkfft_vulkan.vkfft_max_fft_dimensions()
-

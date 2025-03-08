@@ -43,8 +43,8 @@ class workGroupSize_t(Structure):
         ("id", c_uint),
     ]
 
-workGroupSizeArray_t = workGroupSize_t * 4
 
+workGroupSizeArray_t = workGroupSize_t * 4
 
 
 class initData_t(Structure):

@@ -21,9 +21,7 @@ from radis.test.utils import getTestFile
 
 
 @pytest.mark.fast
-def test_eq_spectrum_gpu(device_id=0,
-    verbose=False, plot=False, *args, **kwargs
-):
+def test_eq_spectrum_gpu(device_id=0, verbose=False, plot=False, *args, **kwargs):
     """Compare Spectrum calculated in the GPU code
     :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu` to Spectrum
     calculated with the CPU code :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum`
@@ -86,7 +84,6 @@ def test_eq_spectrum_gpu(device_id=0,
         s_cpu.print_perf_profile()
 
 
-
 @pytest.mark.needs_cuda
 def test_eq_spectrum_gpu_cuda(plot=False, *args, **kwargs):
     """Compare Spectrum calculated in the GPU code
@@ -97,12 +94,11 @@ def test_eq_spectrum_gpu_cuda(plot=False, *args, **kwargs):
     # Ensure that GPU is not deactivated (which triggers a NoGPUWarning)
     with warnings.catch_warnings():
         warnings.simplefilter("error", category=NoGPUWarning)
-        test_eq_spectrum_gpu(device_id='nvidia', plot=plot, *args, **kwargs)
-
+        test_eq_spectrum_gpu(device_id="nvidia", plot=plot, *args, **kwargs)
 
 
 @pytest.mark.fast
-def test_multiple_gpu_calls(plot=False):
+def test_multiple_gpu_calls(plot=False, hard_test=False):
     from radis import SpectrumFactory
 
     fixed_conditions = {
@@ -112,6 +108,8 @@ def test_multiple_gpu_calls(plot=False):
         "wstep": 0.001,
         "mole_fraction": 0.01,
     }
+    if plot:
+        import matplotlib.pyplot as plt
 
     sf = SpectrumFactory(**fixed_conditions, broadening_method="fft", molecule="CO")
     sf.fetch_databank("hitran")
@@ -121,28 +119,55 @@ def test_multiple_gpu_calls(plot=False):
         path_length=1.0,
         backend="vulkan",
         diluent={"air": 0.99},  # K  # runs on GPU
+        device_id="nvidia",
     )
     wl, A1 = s_gpu.get("absorbance")
     A2 = s_gpu.recalc_gpu("absorbance", path_length=3.0)
     s_gpu.exit_gpu()
 
     if plot:
-        import matplotlib.pyplot as plt
-
         plt.plot(wl, 3 * A1, "k", lw=3)
         plt.plot(wl, A2, "r", lw=1)
-        plt.show()
 
     assert allclose(3 * A1, A2, rtol=1e-4)
 
+    if not hard_test:
+        if plot:
+            plt.show()
+        return
+
+    # Cleaning resources is hard.
+    # The second part of the tests spawns a new gpuApp.
+    # this is only possible if all cleaning up went well the first time.
+    # we still have issures with this so the "hard_part" of the test is ignored for now.
+
+    s_gpu3 = sf.eq_spectrum_gpu(
+        Tgas=300.0,
+        path_length=2.0,
+        backend="vulkan",
+        diluent={"air": 0.99},  # K  # runs on GPU
+        # exit_gpu=True,
+        device_id="nvidia",
+    )
+    wl, A3 = s_gpu3.get("absorbance")
+    s_gpu3.exit_gpu()
+
+    if plot:
+        import matplotlib.pyplot as plt
+
+        plt.plot(wl, 1.5 * A3, "m+")
+
+    assert allclose(2 * A1, A3, rtol=1e-4)
+
+    if plot:
+        plt.show()
 
 
 # --------------------------
 if __name__ == "__main__":
 
-    #test_eq_spectrum_gpu(plot=True, verbose=2)
-    #test_eq_spectrum_gpu_cuda(plot=True)
-    #test_multiple_gpu_calls(plot=True)
-
+    # test_eq_spectrum_gpu(plot=True, verbose=2)
+    # test_eq_spectrum_gpu_cuda(plot=True)
+    test_multiple_gpu_calls(plot=True, hard_test=True)
 
     printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))
