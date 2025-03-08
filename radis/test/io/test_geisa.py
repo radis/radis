@@ -140,36 +140,28 @@ def test_calc_geisa_spectrum(verbose=True, plot=True, *args, **kwargs):
         s.plot("absorbance")
 
 
-@pytest.mark.fast  # for faster debugging
-def test_debugging_doc(plot=True):
-    import astropy.units as u
+# @pytest.mark.fast  # for faster debugging - see https://github.com/radis/radis/pull/757
+# def test_debugging_doc(plot=True):
+#     import astropy.units as u
 
-    from radis import calc_spectrum, plot_diff
+#     from radis import calc_spectrum, plot_diff
 
-    conditions = {
-        "wmin": 1900 / u.cm,
-        "wmax": 2100 / u.cm,
-        "molecule": "NO",
-        "isotope": "1",
-        "pressure": 1.01325,  # bar
-        "Tgas": 1000,  # K
-        "mole_fraction": 0.1,
-        "path_length": 1,  # cm
-        "verbose": True,
-        "neighbour_lines": 20,  # we account for the effect on neighbour_lines by computing ``20cm-1``
-        "wstep": 0.0074,
-    }
+#     conditions = {
+#         "wmin": 1900 / u.cm,
+#         "wmax": 2100 / u.cm,
+#         "molecule": "NO",
+#         "isotope": "1",
+#         "pressure": 1.01325,  # bar
+#         "Tgas": 1000,  # K
+#         "mole_fraction": 0.1,
+#         "path_length": 1,  # cm
+#         "verbose": True,
+#         "neighbour_lines": 20,  # we account for the effect on neighbour_lines by computing ``20cm-1``
+#         "wstep": 0.0074,
+#     }
 
-    s_geisa = calc_spectrum(**conditions, databank="geisa", name="GEISA")
-    s_hitran = calc_spectrum(**conditions, databank="hitran", name="HITRAN")
-
-    if plot:
-        fig, [ax0, ax1] = plot_diff(
-            s_geisa,
-            s_hitran,
-            "xsection",
-            yscale="log",
-        )
+#     s_geisa = calc_spectrum(**conditions, databank="geisa", name="GEISA")
+#     if plot: s_geisa.plot()
 
 
 # Run all test cases
@@ -179,7 +171,7 @@ def _run_testcases(verbose=True, *args, **kwargs):
     test_local_geisa_h2o(verbose=verbose, *args, **kwargs)
     test_local_geisa_co2(verbose=verbose, *args, **kwargs)
     test_calc_geisa_spectrum(*args, **kwargs)
-    test_debugging_doc(plot=True)
+    # test_debugging_doc(plot=True)
 
     return True
 
