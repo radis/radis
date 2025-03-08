@@ -98,7 +98,7 @@ def test_eq_spectrum_gpu_cuda(plot=False, *args, **kwargs):
 
 
 @pytest.mark.fast
-def test_multiple_gpu_calls(plot=False, hard_test=False):
+def test_multiple_gpu_calls(plot=False, hard_test=True):
     from radis import SpectrumFactory
 
     fixed_conditions = {

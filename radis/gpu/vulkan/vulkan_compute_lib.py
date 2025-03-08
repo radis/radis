@@ -68,8 +68,6 @@ class GPUApplication(object):
         self.createInstance()
         self.selectPhysicalDevice(deviceID, verbose=verbose)
         self.createDevice()
-        # self.init_shaders()
-
         self.createCommandBuffer()
 
     def free(self):
@@ -84,7 +82,6 @@ class GPUApplication(object):
         self._indirect_h = None
         self._fftAppFwd = None
         self._fftAppInv = None
-        # print('Done!')
 
         while len(self._pipelines):
             pipeline = self._pipelines.pop()
@@ -111,7 +108,8 @@ class GPUApplication(object):
             self._descriptorPool = None
 
         # print(">>> Freeing buffer objects... ")
-        for bufferObject in self._bufferObjects:
+        while len(self._bufferObjects):
+            bufferObject = self._bufferObjects.pop()
             # print(">>>  --" + bufferObject.name)
             bufferObject.free()
         # print(">>> Done!")

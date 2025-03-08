@@ -190,7 +190,7 @@ def get_distance(
     s1: Spectrum, s2: Spectrum, var, wunit="default", Iunit="default", resample=True
 ):
     # type: (Spectrum, Spectrum, str, str, str, str, bool) -> np.array, np.array
-    """Get a regularized Euclidian distance between two spectra ``s1`` and
+    r"""Get a regularized Euclidian distance between two spectra ``s1`` and
     ``s2``
 
     This regularized Euclidian distance minimizes the effect of a small shift in
@@ -204,7 +204,7 @@ def get_distance(
 
     .. math::
 
-        \hat{A} = \\frac{A}{max(A) - min(A)}
+        \hat{A} = \frac{A}{max(A) - min(A)}
 
     If waveranges dont match, ``s2`` is interpolated over ``s1``.
 
