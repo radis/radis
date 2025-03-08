@@ -895,7 +895,8 @@ def _recompute_from_abscoeff_at_equilibrium(
         and "pressure" in spec.conditions
         and "Tgas" in spec.conditions
         and "mole_fraction" in spec.conditions
-        and spec.get_condition("mole_fraction") != "N/A" # ensure the slab is homogeneous 
+        and spec.get_condition("mole_fraction")
+        != "N/A"  # ensure the slab is homogeneous
     ):
         # Calculate cross-section
         pressure_Pa, _ = spec.get_condition("pressure", "Pa", return_unit=True)
