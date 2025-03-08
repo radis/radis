@@ -76,43 +76,65 @@ class GPUApplication(object):
 
         self.command_list = []
         # print('Freeing FFT apps... ', end='')
+
+        if self._fftAppFwd is not None:
+            self._fftAppFwd.indirectHost = None
+            self._fftAppFwd.indirectBuffer = None
+
+        self._indirect_h = None
         self._fftAppFwd = None
         self._fftAppInv = None
         # print('Done!')
 
-        for pipeline in self._pipelines:
+        while len(self._pipelines):
+            pipeline = self._pipelines.pop()
             vk.vkDestroyPipeline(self._device, pipeline, None)
 
-        for pipelineLayout in self._pipelineLayouts:
+        while len(self._pipelineLayouts):
+            pipelineLayout = self._pipelineLayouts.pop()
             vk.vkDestroyPipelineLayout(self._device, pipelineLayout, None)
 
-        vk.vkDestroyDescriptorSetLayout(self._device, self._descriptorSetLayout, None)
-
-        vk.vkDestroyDescriptorPool(self._device, self._descriptorPool, None)
-
-        for computeShaderModule in self._computeShaderModules:
+        while len(self._computeShaderModules):
+            computeShaderModule = self._computeShaderModules.pop()
             vk.vkDestroyShaderModule(self._device, computeShaderModule, None)
 
-        print(">>> Freeing buffer objects... ")
-        for bufferObject in self._bufferObjects:
-            print(">>>  --" + bufferObject.name)
-            bufferObject.free()
-        print(">>> Done!")
+        self._descriptorSet = None
 
-        # TODO: [developers-note]: VkFFT used to free some resources, which has now all moved to here. The two freeings below have been removed from VkFFT and not been replaced here:
-        # if (config->physicalDevice) free(config->physicalDevice);
-        # if (config->queue) free(config->queue);
+        if self._descriptorSetLayout:
+            vk.vkDestroyDescriptorSetLayout(
+                self._device, self._descriptorSetLayout, None
+            )
+            self._descriptorSetLayout = None
+
+        if self._descriptorPool:
+            vk.vkDestroyDescriptorPool(self._device, self._descriptorPool, None)
+            self._descriptorPool = None
+
+        # print(">>> Freeing buffer objects... ")
+        for bufferObject in self._bufferObjects:
+            # print(">>>  --" + bufferObject.name)
+            bufferObject.free()
+        # print(">>> Done!")
 
         if self._queryPool:
             vk.vkDestroyQueryPool(self._device, self._queryPool, None)
-        if self._commandPool:
-            vk.vkDestroyCommandPool(self._device, self._commandPool, None)
+            self._queryPool = None
+
         if self._fence:
             vk.vkDestroyFence(self._device, self._fence, None)
+            self._fence = None
+
+        if self._commandPool:
+            vk.vkDestroyCommandPool(self._device, self._commandPool, None)
+            self._commandPool = None
+
         if self._device:
             vk.vkDestroyDevice(self._device, None)
+            self._device = None
+
         if self._instance:
             vk.vkDestroyInstance(self._instance, None)
+            self._instance = None
 
         # print(">>> Freeing Vulkan data...")
 
@@ -123,13 +145,6 @@ class GPUApplication(object):
             val.init_buffer()
             # val._delayedSetData()
         self.__dict__[name] = val
-
-    # def init_shaders(self):
-    #     shader_fnames = [f for f in os.listdir(self._shaderPath) if f[-3:] == "spv"]
-    #     for shader_fname in shader_fnames:
-    #         fun_name = shader_fname.split(".")[0]  # TODO: do this with os.path.basename
-    #         named_shader = staticmethod(partial(self.cmdScheduleShader, shader_fname))
-    #         setattr(self.__class__, fun_name, named_shader)
 
     def cmdScheduleShader(
         self,
@@ -1015,6 +1030,7 @@ class GPUApplication(object):
     def setIndirectBuffer(self, buffer, host_type):
         # self._fftAppFwd = None #Reset forward FFT app to prevent an old app referencing an old buffer
         indirect_h = buffer.getHostStructPtr(host_type)
+        ctypes.memset(ctypes.byref(indirect_h), 0, ctypes.sizeof(indirect_h))
         self._indirect_h = indirect_h
         return indirect_h
 
@@ -1316,37 +1332,7 @@ class GPUBuffer:
         self._structPtr = ctypes.cast(self._hostPtr, ctypes.POINTER(struct))
         return self._structPtr.contents
 
-    # def initStagingBuffer(self, chunksize=None):
-
-    #     if not self._isInitialized:
-    #         print('buffer {self._name} not initialized! First execute self.init_buffer()!')
-    #         return -1
-
-    #     # self._combined should tell us whether we have a combined host/device buffer
-
-    #     if self._combined: #we're dealing with a buffer that is both
-    #         self._stagingBufferSize = self._bufferSize
-    #         self._stagingBuffer = self._buffer
-    #         self._stagingBufferMemory = self._bufferMemory
-
-    #     else:
-    #         chunksize = (self._bufferSize if chunksize is None else chunksize)
-    #         self._stagingBufferSize = chunksize
-
-    #         self._stagingBuffer, self._stagingBufferMemory, _  = self.app.createBuffer(self._stagingBufferSize,
-    #         kind=vk.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | vk.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-    #         descriptorType = self._descriptorType,
-    #         usage=self._usage,
-    #         )
-
-    #     self._pmappedMemory = vk.vkMapMemory(
-    #             self._device, self._stagingBufferMemory, 0, self._stagingBufferSize, 0
-    #         )
-    #     self._hostPtr = int(vk.ffi.cast("unsigned long long", vk.ffi.from_buffer(self._pmappedMemory)))
-
-    #     self._stagingBufferInitialized = True
-
-    def free(self):  # TODO: is this up to date?
+    def free(self):
         self._isInitialized = False
 
         if self._stagingBufferInitialized:

@@ -298,8 +298,4 @@ class gpuApp(GPUApplication):
         # print('>>> Deleting gpuApp...')
         self.init_h = None
         self.iter_h = None
-        self._indirect_h = None
-        if self._fftAppFwd is not None:
-            self._fftAppFwd.indirectHost = None
-            self._fftAppFwd.indirectBuffer = None
         self.free()

@@ -1067,7 +1067,7 @@ class SpectrumFactory(BandFactory):
             default = 0
         exit_gpu: bool
             Specifies whether the GPU app should be exited after producing the spectrum. Usually this is undesirable, because the GPU
-            benefits manifest *after* the first spectrum by calling s.recalc_gpu(). See also :meth:`~radis.spectrum.spectrum.Spectrum.recalc_gpu`
+            computations start to benefit *after* the first spectrum is produced by calling s.recalc_gpu(). See also :meth:`~radis.spectrum.spectrum.Spectrum.recalc_gpu`
             default = False
 
         Returns

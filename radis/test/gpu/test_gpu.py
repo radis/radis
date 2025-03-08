@@ -119,7 +119,6 @@ def test_multiple_gpu_calls(plot=False, hard_test=False):
         path_length=1.0,
         backend="vulkan",
         diluent={"air": 0.99},  # K  # runs on GPU
-        device_id="nvidia",
     )
     wl, A1 = s_gpu.get("absorbance")
     A2 = s_gpu.recalc_gpu("absorbance", path_length=3.0)
@@ -130,27 +129,24 @@ def test_multiple_gpu_calls(plot=False, hard_test=False):
         plt.plot(wl, A2, "r", lw=1)
 
     assert allclose(3 * A1, A2, rtol=1e-4)
+    assert allclose(3 * A1, A2, atol=1e-6)
 
     if not hard_test:
         if plot:
             plt.show()
         return
 
-    # Cleaning resources is hard.
     # The second part of the tests spawns a new gpuApp.
     # this is only possible if all cleaning up went well the first time.
-    # we still have issures with this so the "hard_part" of the test is ignored for now.
 
     s_gpu3 = sf.eq_spectrum_gpu(
         Tgas=300.0,
         path_length=2.0,
         backend="vulkan",
         diluent={"air": 0.99},  # K  # runs on GPU
-        # exit_gpu=True,
-        device_id="nvidia",
+        exit_gpu=True,
     )
     wl, A3 = s_gpu3.get("absorbance")
-    s_gpu3.exit_gpu()
 
     if plot:
         import matplotlib.pyplot as plt
@@ -168,6 +164,6 @@ if __name__ == "__main__":
 
     # test_eq_spectrum_gpu(plot=True, verbose=2)
     # test_eq_spectrum_gpu_cuda(plot=True)
-    test_multiple_gpu_calls(plot=True, hard_test=True)
+    # test_multiple_gpu_calls(plot=True, hard_test=True)
 
     printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))
