@@ -73,7 +73,7 @@ stages: #This sequence defines the order of the stages
     if: branch = master OR branch = develop
   - name: deploy
     if: branch = master
-  - name: Py38
+  - name: Py38 #DEV MESSAGE: as long as we can pass the tests with Python 3.8, we will keep it. If a problem comes up, we will announce that RADIS is not compatible with Python 3.8 anymore.
     if: branch = master
   - name: Py312
     if: branch = master
@@ -135,7 +135,7 @@ jobs:
     #     - pip install pytest-cov
     #     - pip install -e . -v
   ### Extra Python versions - start
-    - stage: Py38
+    - stage: Py38 #DEV MESSAGE: as long as we can pass the tests with Python 3.8, we will keep it. If a problem comes up, we will announce that RADIS is not compatible with Python 3.8 anymore.
       name: "Python 3.8"
       python: 3.8
     - stage: Py310
