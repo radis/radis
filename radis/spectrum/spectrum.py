@@ -6257,11 +6257,14 @@ class Spectrum(object):
                 I.append(s.recalc_gpu('radiance', Tgas=T)
 
         """
+
         profiler = Profiler(False)
         profiler.start("spectrum_calculation", 1)
         profiler.start("setting_params", 2)
         try:
             self.conditions["gpu_backend"]
+            if self.gpu_app is None:
+                raise KeyError
 
         except (KeyError):
             warn(
@@ -6329,6 +6332,9 @@ class Spectrum(object):
             self.gpu_app.__del__()
             self.gpu_app = None
 
+    # #Not working:
+    # def __del__(self):
+    #     self.exit_gpu()
 
 # %% Private functions
 

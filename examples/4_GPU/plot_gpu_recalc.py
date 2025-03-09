@@ -11,9 +11,14 @@ with spectrum.recalc_gpu().
 
 .. note::
 
-    make sure you pass ``exit_gpu=False`` when producing the spectrum object, otherwise
-    it will destroy the GPU context which is needed for spectrum.recalc_gpu().
-    Also be sure to call gpu_exit() at the end.
+    Systems with a dedicated GPU often have multiple devices available, because they also have an integrated GPU in the 
+    main processor. This can be selected by chosing a different device_id.
+    Look at the device overview printed when running the GPU spectrum to see what options are available.
+
+    Make sure to call gpu_exit() at the end to release all GPU resources.
+    This can't be done automatically because Radis doesn't know how long you want to keep using the GPU.
+    If you want to immediately exit the GPU calculations, the keyword exit_gpu=True can be passed to
+    sf.eq_spectrum_gpu(), but this is uncommon because it doesn't leverage the full power of GPU calculations.
 
 """
 

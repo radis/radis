@@ -385,9 +385,6 @@ class VkFFTApp(VkFFTAppBase):
         """
         Compute the forward FFT
 
-        :param src: the source pycuda.gpuarray.GPUArray or cupy.ndarray
-        :param dest: the destination GPU array. Should be None for an inplace transform
-        :raises RuntimeError: in case of a GPU kernel launch error
         :return: the transformed array. For a R2C inplace transform, the complex view of the
             array is returned.
         """
@@ -406,9 +403,6 @@ class VkFFTApp(VkFFTAppBase):
         """
         Compute the backward FFT
 
-        :param src: the source pycuda.gpuarray.GPUArray or cupy.ndarray
-        :param dest: the destination GPU array. Should be None for an inplace transform
-        :raises RuntimeError: in case of a GPU kernel launch error
         :return: the transformed array. For a C2R inplace transform, the float view of the
             array is returned.
         """

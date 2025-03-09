@@ -8,19 +8,16 @@ Real-time GPU Accelerated Spectra (Interactive)
 
 Example using GPU sliders and GPU calculation with :py:meth:`~radis.lbl.SpectrumFactory.eq_spectrum_gpu_intereactive`
 
-This method requires a GPU - Currently, only Nvidia GPU's are supported.
-For more information on how to setup your system to run GPU-accelerated methods
-using CUDA, check :ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>`
-
 .. note::
 
     In some cases matplotlib immediately closes the window and returns; this is solved
     by running python in interactive mode as follows: ``python -i plot_gpu_widgets.py``.
 
-    in the example below, the code runs on the GPU by default. In case no Nvidia GPU is
-    detected, the code will instead be ran on CPU. This can be toggled manually by setting
-    the ``backend`` keyword either to ``'gpu-cuda'`` or ``'cpu-cuda'``.
-    The run time reported below is for CPU.
+    Systems with a dedicated GPU often have multiple devices available, because they also have an integrated GPU in the 
+    main processor. This can be selected by chosing a different device_id.
+    Look at the device overview printed when running the GPU spectrum to see what options are available.
+    
+    s.gpu_exit() does not have to be called explicitly because it is called when the interactive window is closed.
 
 """
 

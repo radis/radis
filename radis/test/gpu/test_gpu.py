@@ -85,7 +85,7 @@ def test_eq_spectrum_gpu(device_id=0, verbose=False, plot=False, *args, **kwargs
 
 
 @pytest.mark.needs_cuda
-def test_eq_spectrum_gpu_cuda(plot=False, *args, **kwargs):
+def test_eq_spectrum_gpu_nvidia(plot=False, *args, **kwargs):
     """Compare Spectrum calculated in the GPU code
     :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu` to Spectrum
     calculated with the CPU code :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum`,
@@ -163,7 +163,7 @@ def test_multiple_gpu_calls(plot=False, hard_test=True):
 if __name__ == "__main__":
 
     # test_eq_spectrum_gpu(plot=True, verbose=2)
-    # test_eq_spectrum_gpu_cuda(plot=True)
+    # test_eq_spectrum_gpu_nvidia(plot=True)
     # test_multiple_gpu_calls(plot=True, hard_test=True)
 
     printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))

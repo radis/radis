@@ -1260,7 +1260,6 @@ class SpectrumFactory(BandFactory):
             molarmass_arr,
             Q_interp_list,
             verbose=verbose,
-            backend=backend,
             device_id=device_id,
         )
         if verbose >= 2:

@@ -469,8 +469,7 @@ def check_vkfft_result(
 
 class VkFFTApp:
     """
-    VkFFT application interface implementing a FFT plan, base implementation
-    handling functions and paremeters common to the CUDA and OpenCL backends.
+    VkFFT application interface implementing a FFT plan
     """
 
     def __init__(

@@ -295,16 +295,14 @@ def calc_spectrum(
         If ``False``, stays quiet. If ``True``, tells what is going on.
         If ``>=2``, gives more detailed messages (for instance, details of
         calculation times). Default ``True``.​
-    mode: ``'cpu'``, ``'gpu'``, ``'emulated_gpu'``
+    mode: ``'cpu'``, ``'gpu'``
         if set to ``'cpu'``, computes the spectra purely on the CPU. if set to ``'gpu'``,
         offloads the calculations of lineshape and broadening steps to the GPU
-        making use of parallel computations to speed up the process. Default ``'cpu'``.
-        Note that ``mode='gpu'`` requires CUDA compatible hardware to execute.
-        For more information on how to setup your system to run GPU-accelerated
-        methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`__
-        To try the GPU code without an actual GPU, you can use ``mode='emulated_gpu'``.
-        This will run the GPU equivalent code on the CPU.
+        making use of parallel computations to speed up the process. GPU computations
+        initiated in this way will use the Vulkan backend; use :py:class:`~radis.lbl.factory.SpectrumFactory` for more flexibility.
+        GPU spectra will be returned with exit_gpu=False, so the user should call Spectrum.gpu_exit() when they're done with GPU computations.
         Only ``'cpu'`` is available for atoms.
+        Default ``'cpu'``.
     return_factory: bool
         if ``True``, return the :py:class:`~radis.lbl.factory.SpectrumFactory` that
         computes the spectrum. Useful to access computational parameters, the line database,
@@ -364,21 +362,30 @@ def calc_spectrum(
 
     Calculate a CO2 spectrum from the CDSD-4000 database::
 
+        T_list = [1000.0, 1500.0, 2000.0]
         s = calc_spectrum(2200, 2400,   # cm-1
                           molecule='CO2',
                           isotope='1',
                           databank='/path/to/cdsd/databank/in/npy/format/',
                           pressure=0.1,  # bar
-                          Tgas=1000,
+                          Tgas=T_list[0],
                           mole_fraction=0.1,
-                          mode='gpu'
+                          mode='gpu',
                           )
+        s.plot('absorbance', show=False)
+    
+        for T in T_list[1:]:
+            s.recalc_gpu(Tgas=T)
+            show = (True if T == T_list[-1] else False)
+            s.plot("absorbance", show=show, nfig="same")
 
-        s.plot('absorbance')
+        s.exit_gpu()
 
     This example uses the :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu` method to calculate
     the spectrum on the GPU. The databank points to the CDSD-4000 databank that has been
     pre-processed and stored in ``numpy.npy`` format.
+    Consecutive spectra are calulated using the s.recalc_gpu() method, which uses the GPU to rapidly speed up calculations.
+    Without using consecutive s.recalc_gpu() calls, GPU computations do not provide significant advantage to CPU mode.
     ​
     Refer to the online :ref:`Examples <label_examples>` for more cases, and to
     the :ref:`Spectrum page <label_spectrum>` for details on post-processing methods.
@@ -949,28 +956,22 @@ def _calc_spectrum_one_molecule(
     # ------------------
     # Use the standard eq_spectrum / non_eq_spectrum functions
     if _equilibrium:
-        if mode == "cpu":
-            s = sf.eq_spectrum(
-                Tgas=Tgas,
-                mole_fraction=mole_fraction,
-                path_length=path_length,
-                name=name,
-            )
-
-        elif mode in ("gpu", "emulated_gpu"):
-            s = sf.eq_spectrum_gpu(
-                Tgas=Tgas,
-                mole_fraction=mole_fraction,
-                pressure=pressure,
-                path_length=path_length,
-                name=name,
-                backend=("cpu-cuda" if mode == "emulated_gpu" else "gpu-cuda")
-                # emulate=(True if mode == "emulated_gpu" else False),
-            )
-        else:
+        
+        if mode not in ['cpu', 'gpu']:
             raise ValueError(
-                f"mode= should be one of 'cpu', 'gpu', 'emulated_gpu' (GPU code running on CPU). Got {mode}"
+                f"mode= should be 'cpu' or 'gpu'; got {mode}"
             )
+            return
+        
+        eq_spectrum_mode = sf.eq_spectrum if mode == 'cpu' else sf.eq_spectrum_gpu
+        
+        s = eq_spectrum_mode(
+            Tgas=Tgas,
+            mole_fraction=mole_fraction,
+            path_length=path_length,
+            name=name,
+        )
+
     else:
         if mode != "cpu":
             raise NotImplementedError(mode)
