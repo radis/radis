@@ -698,7 +698,6 @@ class DatabankLoader(object):
         "save_memory",
         "truncation",
         "units",
-        # "use_cython",
         "verbose",
         "warnings",
         "wavenumber",
@@ -2949,6 +2948,9 @@ class DatabankLoader(object):
             parsum = PartFuncTIPS(
                 M=molecule, I=isotope, path=parfunc, verbose=self.verbose
             )
+            self.parsum_tab[molecule][isotope]["Tmin"] = parsum.Tmin
+            self.parsum_tab[molecule][isotope]["Tmax"] = parsum.Tmax
+
         elif parfuncfmt in ["kurucz"]:
             parsum = PartFuncKurucz(molecule, parfunc)
 
