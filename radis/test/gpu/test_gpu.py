@@ -159,11 +159,54 @@ def test_multiple_gpu_calls(plot=False, hard_test=True):
         plt.show()
 
 
+def test_broadening(plot=False):
+    """Compare broadening to ensure it is the same in cpu and gpu"""
+
+    from radis import SpectrumFactory, plot_diff
+
+    sf = SpectrumFactory(
+        2305,
+        2307,  # cm-1
+        molecule="CO2",
+        isotope="1",
+        wstep=0.002,
+    )
+
+    sf.fetch_databank(source="hitran")
+
+    T = 1500.0  # K
+    p = 2.0  # bar
+    x = 0.95
+    l = 0.2  # cm
+
+    s_cpu = sf.eq_spectrum(
+        name="CPU",
+        Tgas=T,
+        pressure=p,
+        mole_fraction=x,
+        path_length=l,
+    )
+
+    s_gpu = sf.eq_spectrum_gpu(
+        name="GPU",
+        Tgas=T,
+        pressure=p,
+        mole_fraction=x,
+        path_length=l,
+        exit_gpu=True,
+    )
+    if plot:
+        plot_diff(s_cpu, s_gpu, var="emissivity_noslit", wunit="nm", method="diff")
+
+    assert get_residual(s_cpu, s_gpu, "emissivity_noslit") < 1.5e-4
+
+
 # --------------------------
 if __name__ == "__main__":
 
     # test_eq_spectrum_gpu(plot=True, verbose=2)
     # test_eq_spectrum_gpu_nvidia(plot=True)
     # test_multiple_gpu_calls(plot=True, hard_test=True)
+    # test_broadening(plot=True)
 
     printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))
