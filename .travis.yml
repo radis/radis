@@ -85,7 +85,6 @@ stages: #This sequence defines the order of the stages
 
 jobs:
   include:
-# <<<<<<< HEAD
     # - stage: test
       # name: Test and Coverage
 
@@ -139,7 +138,7 @@ jobs:
 
       # before_script:
         # - export MPLBACKEND=Agg
-# =======
+
     - stage: MacOS_py310
       name: Python 3.10 on macOS
       python: "3.10"

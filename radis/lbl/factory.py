@@ -1062,8 +1062,8 @@ class SpectrumFactory(BandFactory):
             ``'gpu-cuda'`` and``'cpu-cuda'`` used to be available to switch to a CUDA backend,
             but have been deprecated in favor of the Vulkan backend.
         device_id: int, str
-            Select the GPU device. If ``int``, specifies the device index, which is printed when Vulkan (the GPU backen d) is loaded.
-            If ``str`` find a device that includes the specified string (case in-sesitive). If not found, return the device at index 0.
+            Select the GPU device. If ``int``, specifies the device index, which is printed for convenience during GPU initialization with backend='vulkan' (default).
+            If ``str``, return the first device that includes the specified string (case in-sesitive). If not found, return the device at index 0.
             default = 0
         exit_gpu: bool
             Specifies whether the GPU app should be exited after producing the spectrum. Usually this is undesirable, because the GPU
