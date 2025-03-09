@@ -1062,7 +1062,7 @@ class SpectrumFactory(BandFactory):
             ``'gpu-cuda'`` and``'cpu-cuda'`` used to be available to switch to a CUDA backend,
             but have been deprecated in favor of the Vulkan backend.
         device_id: int, str
-            Select the Vulkan device. If ``int``, specifies the device index, which is printed when Vulkan is loaded.
+            Select the GPU device. If ``int``, specifies the device index, which is printed when Vulkan (the GPU backen d) is loaded.
             If ``str`` find a device that includes the specified string (case in-sesitive). If not found, return the device at index 0.
             default = 0
         exit_gpu: bool
