@@ -21,7 +21,7 @@ shader_path = os.path.join(getProjectRoot(), "gpu", "vulkan", "shaders")
 
 def next_fast_len_even(n):
     # Find an FFT length that can be processed quickly.
-    # The length needs to be divisible by 2 because of the 
+    # The length needs to be divisible by 2 because of the
     # length doubling for prevention of circular convolution.
     n = next_fast_len(n)
     while n & 1:
@@ -54,60 +54,60 @@ class gpuApp(GPUApplication):
     ):
 
         """
-         Initialize gpuApp object required for GPU calculations
+        Initialize gpuApp object required for GPU calculations
 
-         Parameters
-         ----------
-         vmin : float
-             Minimum value frequency/wavenumber axis
-         Nv : int
-             Total number of frequency/wavenumber points.
-         dv : float
-             Stepsize of frequency/wavenumber axis (called wstep elsewhere in RADIS).
-         dxG : float
-             Relative grid spacing for Gaussian lineshapes.
-         dxL : float
-             Relative grid spacing for Lorentzian lineshapes.
-         v0 : numpy.ndarray[np.float32]
-             Array of line center frequencies (in cm-1).
-         da : numpy.ndarray[np.float32]
-             Pressure shift  (in cm-1.atm-1).
-         na : numpy.ndarray[np.float32]
-             Temperature dependency of Lorentzian widths
-         S0 : numpy.ndarray[np.float32]
-             Line intensity scaling factors.
-         El : numpy.ndarray[np.float32]
-             Lower level energy levels.
-         gamma_arr : numpy.ndarray[np.float32]
-             (m,n) shaped array with Lorentzian width parameters, with n the number of lines in the database
-             and m the number of collision partners included. This is usually at least two,
-             with the first (m=0) always self broadening and the last (m=-1) always air broadening.
-         iso : numpy.ndarray[np.uint32]
-             Index of isotopologue.
-         Mm_arr : numpy.ndarray
-             Molecular masses for all isotopologues in the database (Mm_arr[0] is always 0).
-         Q_intp_list : list
-             List of Q branch interpolators.
-         verbose : bool, optional
-             Print verbosity level. Default is 0.
-         device_id: int, str
-             Select the GPU device. If ``int``, specifies the device index, which is printed for convenience during GPU initialization with backend='vulkan' (default).
-             If ``str``, return the first device that includes the specified string (case in-sesitive). If not found, return the device at index 0.
-             default = 0
-             
+        Parameters
+        ----------
+        vmin : float
+            Minimum value frequency/wavenumber axis
+        Nv : int
+            Total number of frequency/wavenumber points.
+        dv : float
+            Stepsize of frequency/wavenumber axis (called wstep elsewhere in RADIS).
+        dxG : float
+            Relative grid spacing for Gaussian lineshapes.
+        dxL : float
+            Relative grid spacing for Lorentzian lineshapes.
+        v0 : numpy.ndarray[np.float32]
+            Array of line center frequencies (in cm-1).
+        da : numpy.ndarray[np.float32]
+            Pressure shift  (in cm-1.atm-1).
+        na : numpy.ndarray[np.float32]
+            Temperature dependency of Lorentzian widths
+        S0 : numpy.ndarray[np.float32]
+            Line intensity scaling factors.
+        El : numpy.ndarray[np.float32]
+            Lower level energy levels.
+        gamma_arr : numpy.ndarray[np.float32]
+            (m,n) shaped array with Lorentzian width parameters, with n the number of lines in the database
+            and m the number of collision partners included. This is usually at least two,
+            with the first (m=0) always self broadening and the last (m=-1) always air broadening.
+        iso : numpy.ndarray[np.uint32]
+            Index of isotopologue.
+        Mm_arr : numpy.ndarray
+            Molecular masses for all isotopologues in the database (Mm_arr[0] is always 0).
+        Q_intp_list : list
+            List of Q branch interpolators.
+        verbose : bool, optional
+            Print verbosity level. Default is 0.
+        device_id: int, str
+            Select the GPU device. If ``int``, specifies the device index, which is printed for convenience during GPU initialization with backend='vulkan' (default).
+            If ``str``, return the first device that includes the specified string (case in-sesitive). If not found, return the device at index 0.
+            default = 0
+
         """
 
-        self.backend = 'vulkan'
-        
+        self.backend = "vulkan"
+
         # Initialize the vulkan GPUApplication:
         super().__init__(deviceID=device_id, path=shader_path, verbose=verbose)
-        
+
         ## Next, the GPU is made aware of a number of parameters.
         ## Parameters that don't change during iteration are stored
-        ## in init_h. 
-        
+        ## in init_h.
+
         ## When using the GPU, we distinguish objects for host (=CPU side) use (_h)
-        ## and device (=GPU side) use (_d). 
+        ## and device (=GPU side) use (_d).
 
         ## The init_d/init_h pair is created by first making a GPUBuffer object
         ## init_d. Then that object makes the init_h object, which guarantees
@@ -117,7 +117,7 @@ class gpuApp(GPUApplication):
         ## during execution of the shader (=GPU code). This means that iter_d
         ## is also a Uniform buffer, because it only changes before/after execution
         ## of the shader.
-        
+
         ## Radis configures Uniform buffers as using memory that is visible to both
         ## host (CPU) and device (GPU). For this reason, no explicit transfers between
         ## host and device memory are required.
@@ -155,19 +155,16 @@ class gpuApp(GPUApplication):
         log_2vMm = np.log(v0) + log_c2Mm_arr.take(iso)
 
         init_G_params(log_2vMm.astype(np.float32), verbose)
-        init_L_params(na, gamma_arr, verbose) #TODO: do this on GPU?
-
+        init_L_params(na, gamma_arr, verbose)  # TODO: do this on GPU?
 
         # Parameters that *do* change are stored in iter_h.
         # We only assign values to them in the iterate() method,
         # but already allocate the buffers here.
-        
+
         self.iter_d = GPUBuffer(
             sizeof(iterData_t), usage="uniform", binding=1
         )  # host_visible, device_local, (host_cached)
         self.iter_h = self.iter_d.getHostStructPtr(iterData_t)
-
-
 
         if verbose >= 2:
             print("done!")
@@ -176,17 +173,17 @@ class gpuApp(GPUApplication):
             print("Allocating device memory and copying data...")
 
         ## Next the database memory is initialized. The database is potentially the largest buffer,
-        ## Which could take up gigabytes of device memory. Radis tells the Vulkan API to allocate 
+        ## Which could take up gigabytes of device memory. Radis tells the Vulkan API to allocate
         ## this buffer as 'storage' buffer. In dedicated GPU's, this is the largest memory heap,
         ## but usually not directly visible to the host. In order to copy memory from device to the host,
         ## internally a staging buffer is created. the staging buffer is small host memory where data is temporarily copied to,
         ## which can be used to transfer data from host to device. This transfer thus consists of two separate transfers:
         ## 1. transfer data from RAM to staging buffer, 2. transfer data from staging buffer to device memory.
         ## The staging buffer is typically smaller than the data to-be-transferred, so this process repeats until all data is copied.
-        ## The staging buffer size is given by the chunksize keyword, which is only used the first time when the buffer is initialized, and ignored 
+        ## The staging buffer size is given by the chunksize keyword, which is only used the first time when the buffer is initialized, and ignored
         ## during consecutive calls.
         ## In the code below we copy multiple arrays to the device, so for each array the staging buffer transfers are repeated internally until each array is fully copied.
-        
+
         ## By using database_d.copyToBuffer(), the transfer from staging buffer to device buffer happens immediately.
         ## Alternatively, one could split up the transfer by first using .fromArray() to copy data to the staging buffer, and then
         ## call .transferStagingBuffer() separately. We will use this later for buffers that are copied every iteration.
@@ -213,20 +210,20 @@ class gpuApp(GPUApplication):
         ## the N_G*N_L size increases. Increasing the buffer size will happen during the iteration step,
         ## but to allow for dynamic resizing we specify it as a FFT buffer by using fftSize. fftSize specifies the size of the FT, which may be
         ## smaller than the actual buffer size. In fact, in order to use in-place transforms with VkFFT, the length of the buffer is that of the reverse FT,
-        ## i.e. N_v_FT//2+1 of type complex64 (8 byte), instead of N_v_FT of type float32 (4 byte). This means that the buffer size is 2 elements larger per 
+        ## i.e. N_v_FT//2+1 of type complex64 (8 byte), instead of N_v_FT of type float32 (4 byte). This means that the buffer size is 2 elements larger per
         ## nu-axis.
-        
+
         ## The S_klm_d buffer is (implicitly) created with batchSize = 1. During iteration the batchSize will be set to N_G * N_L.
 
         self.S_klm_d = GPUBuffer(
             fftSize=self.init_h.N_v_FT, usage="storage", binding=3
         )  # req: large, device_local
-        
+
         ## The spectrum_d buffer receives the resulting spectrum. This is a storage buffer like S_klm_d, but does not have to change size dynamically.
         ## It *does* have to transfer data from device buffers to host buffers, and since it's contents change during shader execution, we cannot use Uniform for this.
         ## To make this transfer as efficient as possible, the device-to-host (staging buffe) transfer is recorded in the command buffer (see ahead),
         ## while the staging buffer to RAM is done in python code after the comman buffer is done executing.
-        
+
         self.spectrum_d = GPUBuffer(
             fftSize=self.init_h.N_v_FT, usage="storage", binding=4
         )  # req: device_local, host_visible, host_cached, (large)
@@ -249,7 +246,7 @@ class gpuApp(GPUApplication):
         # Finally it is time to write the command buffer. The command buffer is a list of commands that the GPU needs to execute.
         # Timestamp labels can be added as desired, to help with benchmarking GPU performance. The command buffer is written at this step,
         # but will not be ran until the iterate() stage.
-        
+
         # The command buffer starts with copying the new iter_d and indirect_d data from the staging buffer to the device.
         # This is however not needed explicitly, because we took care to use memory that is already device_local.
         # Then the S_klm_d and spectrum_d buffers are zeroed. The "cmdFillLDM.spv" shader is executed, which is a separate file in the shader folder.
@@ -258,9 +255,9 @@ class gpuApp(GPUApplication):
 
         self.appendCommands(
             [
-                #self.cmdAddTimestamp("Transfer staging buffers"),
-                #self.indirect_d.cmdTransferStagingBuffer("H2D"),
-                #self.iter_d.cmdTransferStagingBuffer("H2D"),
+                # self.cmdAddTimestamp("Transfer staging buffers"),
+                # self.indirect_d.cmdTransferStagingBuffer("H2D"),
+                # self.iter_d.cmdTransferStagingBuffer("H2D"),
                 self.cmdAddTimestamp("Zeroing buffers"),
                 self.S_klm_d.cmdClearBuffer(),
                 self.spectrum_d.cmdClearBuffer(),
@@ -287,17 +284,16 @@ class gpuApp(GPUApplication):
 
         self.writeCommandBuffer()
 
-        
         ## During iteration, we only run .setBatchSize() to update the Vulkan buffers.
         ## Here we specify what needs to happen when .setBatchSize() is called.
         ## that is two things: the size of S_klm_d needs to be updated, and the workgroup size (indirect_d buffer contents)
         ## must be updated.
-        
+
         ## If S_klm_d.setBatchSize() needs to increase the buffer size, the internal forward FFT plan (stored in ._fftAppFwd)
         ## will be removed such that it will be rewritten with the new maximum sizes. Note that this happens much less often
         ## than a change in N_G*N_L, because of the 50% extra margin. When it does happen, the performance of that particular iteration
         ## will drop, but this is only once every so often.
-        
+
         self.registerBatchSizeUpdateFunction(self.S_klm_d.setBatchSize)
         self.registerBatchSizeUpdateFunction(self.setFwdFFTWorkGroupSize)
 
@@ -357,10 +353,10 @@ class gpuApp(GPUApplication):
         ## Update the batch size, which internally re-allocates buffers and re-plan the FFT if required,
         ## as well as update the workgroup size in the indirect_d buffer
         self.setBatchSize(self.iter_h.N_G * self.iter_h.N_L)
-        
+
         ## RUN THE COMMAND BUFFER
         self.run()
-        
+
         ## get the timestamp values
         gpu_times = self.get_timestamps()
 
@@ -379,7 +375,7 @@ class gpuApp(GPUApplication):
         return self.iter_h.N_L, self.iter_h.N_G
 
     def __del__(self):
-        #print('>>> Deleting gpuApp...')
+        # print('>>> Deleting gpuApp...')
         self.init_h = None
         self.iter_h = None
         self.free()

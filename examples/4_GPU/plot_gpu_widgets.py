@@ -13,10 +13,10 @@ Example using GPU sliders and GPU calculation with :py:meth:`~radis.lbl.Spectrum
     In some cases matplotlib immediately closes the window and returns; this is solved
     by running python in interactive mode as follows: ``python -i plot_gpu_widgets.py``.
 
-    Systems with a dedicated GPU often have multiple devices available, because they also have an integrated GPU in the 
+    Systems with a dedicated GPU often have multiple devices available, because they also have an integrated GPU in the
     main processor. This can be selected by chosing a different device_id.
     Look at the device overview printed when running the GPU spectrum to see what options are available.
-    
+
     s.gpu_exit() does not have to be called explicitly because it is called when the interactive window is closed.
 
 """

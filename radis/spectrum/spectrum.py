@@ -6336,6 +6336,7 @@ class Spectrum(object):
     # def __del__(self):
     #     self.exit_gpu()
 
+
 # %% Private functions
 
 # to cut

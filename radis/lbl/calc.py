@@ -373,7 +373,7 @@ def calc_spectrum(
                           mode='gpu',
                           )
         s.plot('absorbance', show=False)
-    
+
         for T in T_list[1:]:
             s.recalc_gpu(Tgas=T)
             show = (True if T == T_list[-1] else False)
@@ -956,15 +956,13 @@ def _calc_spectrum_one_molecule(
     # ------------------
     # Use the standard eq_spectrum / non_eq_spectrum functions
     if _equilibrium:
-        
-        if mode not in ['cpu', 'gpu']:
-            raise ValueError(
-                f"mode= should be 'cpu' or 'gpu'; got {mode}"
-            )
+
+        if mode not in ["cpu", "gpu"]:
+            raise ValueError(f"mode= should be 'cpu' or 'gpu'; got {mode}")
             return
-        
-        eq_spectrum_mode = sf.eq_spectrum if mode == 'cpu' else sf.eq_spectrum_gpu
-        
+
+        eq_spectrum_mode = sf.eq_spectrum if mode == "cpu" else sf.eq_spectrum_gpu
+
         s = eq_spectrum_mode(
             Tgas=Tgas,
             mole_fraction=mole_fraction,

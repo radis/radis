@@ -11,7 +11,7 @@ with spectrum.recalc_gpu().
 
 .. note::
 
-    Systems with a dedicated GPU often have multiple devices available, because they also have an integrated GPU in the 
+    Systems with a dedicated GPU often have multiple devices available, because they also have an integrated GPU in the
     main processor. This can be selected by chosing a different device_id.
     Look at the device overview printed when running the GPU spectrum to see what options are available.
 
