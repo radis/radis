@@ -21,7 +21,6 @@ import numpy as np
 import requests
 from bs4 import BeautifulSoup
 from cryptography.fernet import Fernet
-from getpass4 import getpass
 from tqdm import tqdm
 
 from radis.misc.config import CONFIG_PATH_JSON
@@ -122,11 +121,57 @@ def get_last(b):
     return b[non_zero]
 
 
+def running_in_spyder():
+    """Check if the console is running within Spyder."""
+    return "SPYDER_ARGS" in os.environ
+
+
+def _prompt_password(user):
+    """
+    Prompts the user for a password securely and handels input if spyder is used.
+
+    Parameters
+    ----------
+    user : str
+        Username.
+
+    Returns
+    -------
+    text : str
+        User input password.
+    """
+    if running_in_spyder():
+        try:
+            from PyQt5.QtCore import QCoreApplication
+            from PyQt5.QtWidgets import QApplication, QInputDialog, QLineEdit
+
+            app = QCoreApplication.instance()
+            if app is None:
+                app = QApplication([])
+
+            text, ok = QInputDialog.getText(
+                None, "Credential", f"User {user}:", QLineEdit.Password
+            )
+            if ok and text:
+                return text
+            raise ValueError(
+                "The dialog window was probably closed or left empty. Please enter a valid password."
+            )
+        except ModuleNotFoundError:
+            raise ImportError(
+                "You are using Spyder; please install PyQt5 with `pip install PyQt5` to use the password prompt."
+            )
+    else:
+        # If not using spyder use getpass
+        from getpass4 import getpass
+
+        return getpass(f"Enter password for {user}: ")
+
+
 def setup_credentials():
-    """Set up HITRAN credentials and store them in .env file"""
-    # Get credentials from user
+    """Set up HITRAN credentials and store them in .env file."""
     username = input("Enter HITRAN username: ")
-    password = getpass("Enter HITRAN password: ")
+    password = _prompt_password(username)
     return username, password
 
 
