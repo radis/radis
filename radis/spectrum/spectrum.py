@@ -2310,25 +2310,6 @@ class Spectrum(object):
                     secx.set_xlabel("wavenumber (cm⁻¹)")
                 else:
                     raise NotImplementedError(wunit_2nd_axis)
-        if ax.child_axes != []:
-            pass
-        elif "cm⁻¹" in ylabel:
-            secx = ax.secondary_xaxis(
-                "top", functions=(div_safe(cm2nm), div_safe(nm2cm))
-            )
-            secx.set_xlabel("Wavelength (nm)")
-        elif "nm" in ylabel:
-            if wunit == "nm" or wunit == "nm_air":
-                secx = ax.secondary_xaxis(
-                    "top", functions=(div_safe(nm2cm), div_safe(cm2nm))
-                )
-            else:
-                from radis.phys.convert import cm2nm_air, nm_air2cm
-
-                secx = ax.secondary_xaxis(
-                    "top", functions=(div_safe(nm_air2cm), div_safe(cm2nm_air))
-                )
-            secx.set_xlabel("wavenumber (cm⁻¹)")
 
         # Add plotting tools
         # ... Add cursor
