@@ -965,6 +965,7 @@ def _calc_spectrum_one_molecule(
 
         s = eq_spectrum_mode(
             Tgas=Tgas,
+            pressure=pressure,
             mole_fraction=mole_fraction,
             path_length=path_length,
             name=name,
@@ -978,6 +979,7 @@ def _calc_spectrum_one_molecule(
             Trot=Trot,
             Ttrans=Tgas,
             Telec=Telec,
+            pressure=pressure,
             overpopulation=overpopulation,
             mole_fraction=mole_fraction,
             path_length=path_length,
