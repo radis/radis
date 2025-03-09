@@ -95,7 +95,6 @@ except ImportError:  # if ran from here
     from radis.lbl.bands import BandFactory
     from radis.lbl.base import get_wavenumber_range
 
-from radis import config
 from radis.db.classes import is_atom, is_neutral
 from radis.misc.arrays import get_overlapping_ranges
 from radis.misc.basics import flatten, is_float, is_range, list_if_float, round_off
@@ -913,13 +912,15 @@ class SpectrumFactory(BandFactory):
             # Generate output quantities
             # transmittance_noslit = exp(-absorbance)
             # emissivity_noslit = 1 - transmittance_noslit
-            emissivity_noslit = -expm1(-absorbance)  # to handle small values of absorbance
+            emissivity_noslit = -expm1(
+                -absorbance
+            )  # to handle small values of absorbance
             transmittance_noslit = (
                 1 - emissivity_noslit
             )  # still 1 for small values of emissivity_noslit
             radiance_noslit = calc_radiance(
-                    wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
-                )
+                wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
+            )
         assert self.units["abscoeff"] == "cm-1"
 
         self.profiler.stop(
@@ -1291,10 +1292,15 @@ class SpectrumFactory(BandFactory):
             # Generate output quantities
             # transmittance_noslit = exp(-absorbance)
             # emissivity_noslit = 1 - transmittance_noslit
-            emissivity_noslit = -expm1(-absorbance)  # to handle small values of absorbance
+            emissivity_noslit = -expm1(
+                -absorbance
+            )  # to handle small values of absorbance
             transmittance_noslit = 1 - emissivity_noslit
             radiance_noslit = calc_radiance(
-                self.wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
+                self.wavenumber,
+                emissivity_noslit,
+                Tgas,
+                unit=self.units["radiance_noslit"],
             )
         assert self.units["abscoeff"] == "cm-1"
 
@@ -1950,13 +1956,13 @@ class SpectrumFactory(BandFactory):
         `SpectrumFactory.wavenumber` is the output spectral range and
         ``SpectrumFactory.wavenumber_calc`` the spectral range used for calculation, that
         includes neighbour lines within ``neighbour_lines`` distance.
-        
+
         Other Parameters
         ----------------
         check: bool
             check == False is used to bypass some stuff that isn't known at this point for GPU calculations
 
-        
+
         """
 
         import radis
@@ -1965,7 +1971,9 @@ class SpectrumFactory(BandFactory):
 
         multisparsegrid = radis.config["MULTI_SPARSE_GRID"]
 
-        if checks:  # check == False is used to bypass some stuff that isn't known at this point for GPU calculations
+        if (
+            checks
+        ):  # check == False is used to bypass some stuff that isn't known at this point for GPU calculations
             # calculates minimum FWHM of lines
             self._calc_min_width(self.df1)
 
@@ -1977,8 +1985,8 @@ class SpectrumFactory(BandFactory):
                     / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
                 )
 
-                if (
-                    isinstance(self.params.wstep, list)
+                if isinstance(
+                    self.params.wstep, list
                 ):  # previously computed wstep; to keep a similar step when computing spectra with multiple molecules (and saving on interpolation)
                     self.params.wstep = min(self.params.wstep[1], wstep_calc_narrow)
                 else:
@@ -1986,7 +1994,7 @@ class SpectrumFactory(BandFactory):
 
                     self.warnings["AccuracyWarning"] = "ignore"
 
-        else: # check == False, used in GPU mode 
+        else:  # check == False, used in GPU mode
             if self._wstep == "auto" or isinstance(self.params.wstep, list):
                 raise ValueError(
                     "Current configuration incompatible with wstep='auto', please provide value for wstep"
@@ -2088,7 +2096,18 @@ class SpectrumFactory(BandFactory):
             # (note that this means 3x wavenumber_calc will be required when applying lineshapes)
             truncation = wavenumber_calc[-1] - wavenumber_calc[0]
 
-        wbroad_centered = _generate_broadening_range(self.params.wstep, truncation)
+        if not multisparsegrid:
+            wbroad_centered = _generate_broadening_range(self.params.wstep, truncation)
+        else:
+            # create waveranges with a center hollow zone for coarser grids
+            hollow_zone_start_from = np.r_[
+                [0], truncation_multigrid[:-1]
+            ]  # start the coarser grid just after the end of the narrower grid
+            truncation_multigrid[:-1] -= wstep_multigrid[:-1]  # remove overlaps
+            wbroad_centered = _generate_broadening_range_multigrid(
+                wstep_multigrid, hollow_zone_start_from, truncation_multigrid
+            )
+
         self.truncation = truncation
         # store value for use in lineshape broadening.
         # Note : may be different from self.params.truncation if None was given.
@@ -2106,6 +2125,7 @@ class SpectrumFactory(BandFactory):
 
         # Setting wstep to optimal value and rounding it to a degree 3
         if checks:
+            # Check the interest of Sparse / Regular Mode
             if self._sparse_ldm == "auto":
                 sparsity = len(wavenumber_calc) / len(self.df1)
                 self.params["sparse_ldm"] = (
@@ -2116,8 +2136,23 @@ class SpectrumFactory(BandFactory):
                         f"Sparsity (grid points/lines) = {sparsity:.1f}. Set sparse_ldm to {self.params['sparse_ldm']}"
                     )
 
-        if radis.config["DEBUG_MODE"]:
-            assert (wavenumber_calc[woutrange[0] : woutrange[1]] == wavenumber).all()
+            # Check wavenumber grids (in single grid & multi grid modes)
+            if radis.config["DEBUG_MODE"]:
+                if not self._multisparsegrid:
+                    assert (
+                        wavenumber_calc[woutrange[0] : woutrange[1]] == wavenumber
+                    ).all()
+                else:
+                    for gridnb in range(len(self.wavenumber)):
+                        for wavenumber, wavenumber_calc, woutrange in zip(
+                            self.wavenumber[gridnb],
+                            self.wavenumber_calc[gridnb],
+                            self.woutrange[gridnb],
+                        ):
+                            assert (
+                                wavenumber_calc[woutrange[0] : woutrange[1]]
+                                == wavenumber
+                            ).all()
 
         self.profiler.stop("generate_wavenumber_arrays", "Generated Wavenumber Arrays")
 
@@ -2750,7 +2785,7 @@ def _generate_wavenumber_range_sparse(
     assert wstep > 0
     assert len(line_positions) > 0
 
-    i_ranges = get_overlapping_ranges(line_positions, lineshape_half_width)
+    i_ranges = get_overlapping_ranges(line_positions.values, lineshape_half_width)
 
     wavenumber_list = []
     wavenumber_calc_list = []
@@ -2842,6 +2877,101 @@ def _generate_broadening_range(wstep, truncation):
     assert len(wbroad_centered) % 2 == 1
 
     return wbroad_centered
+
+
+def _generate_broadening_range_multigrid(
+    wstep_multigrid, hollow_range_start, truncation_multigrid
+):
+    """Generate array on which to compute line broadening (multigrid version).
+
+    Each grid is regular so that the LDM algorithm can be applied. Coarser
+    grids have a hollow center.
+    ::
+                      .......
+             . . . . .       . . . .
+    .    .                             .    .    .
+
+
+    Parameters
+    ----------
+    wstep_multigrid: list of float
+        wavenumber step (cm-1) for each grid
+    hollow_range_start:
+        create waveranges with a center hollow zone for coarser grids.
+    truncation_multigrid: float
+        wavenumber half-width of broadening calculation: used to define which
+        neighbour lines shall be included in the calculation
+
+    Returns
+    -------
+    wbroad_centered: list of numpy array
+        list of evenly spaced array, of odd-parity length, centered on 0, and of width
+        ``truncation``
+    """
+
+    wbroad_centered_list = []
+
+    # Narrowest grid
+    # --------------
+    wstep, hollow_start_from, truncation = (
+        wstep_multigrid[0],
+        hollow_range_start[0],
+        truncation_multigrid[0],
+    )
+    # Odd number is important
+    wbroad_centered = np.hstack(
+        (
+            -arange(wstep, truncation + wstep, wstep)[::-1],
+            [0],
+            arange(wstep, truncation + wstep, wstep),
+        )
+    )
+    wbroad_centered_list.append(wbroad_centered)
+    # wstep_narrower_grid = wstep
+
+    # Coarser grids
+    # -------------
+    for i, (wstep, hollow_start_from, truncation) in enumerate(
+        zip(wstep_multigrid[1:], hollow_range_start[1:], truncation_multigrid[1:])
+    ):
+        i += 1
+        # create a broadening array, on which lineshape will be calculated.
+        # Odd number is important for the narrower grid; coarser grids should have even number of elements
+
+        # Note : we make sure the narrower grid extends just-until the start of the coarser grid
+        # e.g.  GRID 1    -0.2 -0.1  [                         ]   0.1 0.2
+        #       GRID 0    [        ]  -0.09 -0.08 (..) 0.08 0.09   [     ]
+        wbroad_centered = np.hstack(
+            (
+                -arange(hollow_start_from, truncation + wstep, wstep)[::-1],
+                arange(hollow_start_from, truncation + wstep, wstep),
+            )
+        )
+
+        # Assert even number of lines for coarser grids (which are supposed to be hollow)
+        assert len(wbroad_centered) % 2 == 0
+
+        # assert coarser grids are hollow (i.e. have a hole in the center ):
+        if i > 0:
+            if (
+                wbroad_centered[len(wbroad_centered) // 2]
+                - wbroad_centered[len(wbroad_centered) // 2 - 1]
+                <= 2 * wstep
+            ):
+                from radis.misc.warning import AccuracyError
+
+                raise AccuracyError(
+                    f"Grid {i+1} is not hollow, we will be counting the center of the lines "
+                    + """multiple times (both in coarser & more refined grids) resulting in
+            large errors. """
+                    + f"Adjust the grid parameters : \n- wstep : {wstep_multigrid} cm-1\n- truncations : {truncation_multigrid} cm-1"
+                    + "\nA good rule of thumb is to ensure wstep of grid N+1 is < truncation of grid N"
+                )
+
+        wbroad_centered_list.append(wbroad_centered)
+        # wstep_narrower_grid = wstep
+
+    return wbroad_centered_list
 
 
 # %% Test

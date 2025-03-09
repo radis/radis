@@ -679,6 +679,7 @@ class DatabankLoader(object):
         "_neighbour_lines",
         "_sparse_ldm",
         "_wstep",
+        "_wstep_multigrid",
         "autoretrievedatabase",
         "autoupdatedatabase",
         "cond_units",
@@ -692,7 +693,7 @@ class DatabankLoader(object):
         "interactive_params",
         "levels",
         "levelspath",
-        "min_width",
+        "_min_width",
         "misc",
         "molparam",
         "params",
@@ -710,6 +711,9 @@ class DatabankLoader(object):
         "wavenumber_calc",
         "wbroad_centered",
         "woutrange",
+        "_multisparsegrid",
+        "_truncation_multigrid",
+        "_ix_ranges",
     ]
 
     def __init__(self):
