@@ -1630,9 +1630,8 @@ class MdbExomol(DatabaseManager):
 
         if total_download_size_gb > MAX_SIZE_GB:
             warning_msg = (
-                f"The total download size is {total_download_size_gb:.2f} GB, "
-                f"which exceeds the threshold of {MAX_SIZE_GB} GB. "
-                "Downloading may consume significant resources and take time."
+                f"The total download size is {total_download_size_gb:.2f} GB, which will take time and potential a significant portion of your disk memory."
+                "To prevent this warning, you increase the limit using `radis.config['PREVENT_LARGE_DOWNLOAD_ABOVE_X_GB'] =  1`."
             )
             warnings.warn(warning_msg, UserWarning)
 
