@@ -2238,7 +2238,7 @@ class Spectrum(object):
                 still experimental ! Try it, feedback welcome !
         **kwargs: **dict
             kwargs forwarded as argument to plot (e.g: lineshape
-            attributes: `lw=3, color='r'`)
+            attributes: `lw=3, color='r', width=800, height=600`)
 
         Returns
         -------
@@ -2275,9 +2275,14 @@ class Spectrum(object):
 
         set_style()
 
+        # set figure size (width, height)
+        dpi = 100  # dots per inch
+        width = kwargs.pop("width", 800)
+        height = kwargs.pop("height", 600)
+
         if nfig == "same":
             nfig = plt.gcf().number
-        fig = plt.figure(nfig)
+        fig = plt.figure(nfig, figsize=(width / dpi, height / dpi))
 
         # If figure exist, ensures xlabel and ylabel are the same (prevents some
         # users errors if plotting difference units!)... Note that since
@@ -2463,7 +2468,7 @@ class Spectrum(object):
             The Plotly template to use for the plot. Default is 'plotly_dark'.
         **kwargs: **dict
             kwargs forwarded as argument to plot (e.g: lineshape
-            attributes: `lw=3, color='r'`)
+            attributes: `lw=3, color='r', width=800, height=600`)
 
         Returns
         -------
@@ -2480,11 +2485,27 @@ class Spectrum(object):
         xlabel = format_xlabel(wunit, show_medium)
         ylabel = "{0} ({1})".format(make_up(var), make_up_unit(Iunit, var))
 
-        fig = px.line(x=x, y=y, template=template)
+        radiance_data = self.get("radiance_noslit")
+        df = pd.DataFrame(
+            {"Wavenumber": radiance_data[0], "Radiance_noslit": radiance_data[1]}
+        )
+
+        # Add extra plotting parameters
+        if "lw" in kwargs:
+            kwargs["line_width"] = kwargs.pop("lw")
+        if "color" in kwargs:
+            kwargs["line_color"] = kwargs.pop("color")
+        width = kwargs.pop("width", None)
+        height = kwargs.pop("height", None)
+
+        fig = px.line(df, x="Wavenumber", y="Radiance_noslit", template=template)
+        fig.update_traces(**kwargs)
         fig.update_layout(
             xaxis_title=xlabel,
             yaxis_title=ylabel,
             yaxis=dict(tickmode="linear", dtick=0.01),
+            width=width,
+            height=height,
         )
         fig.show()
 
@@ -2575,7 +2596,7 @@ class Spectrum(object):
                 - "matplotlib": Forces the use of Matplotlib for static plots.
         **kwargs: **dict
             kwargs forwarded as argument to plot (e.g: lineshape
-            attributes: `lw=3, color='r'`)
+            attributes: `lw=3, color='r', width=800, height=600`)
 
         Returns
         -------
