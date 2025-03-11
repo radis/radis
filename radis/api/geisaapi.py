@@ -11,10 +11,12 @@ GEISA database parser
 """
 
 
+import os
+
 # import re
 import time
 from collections import OrderedDict
-from os.path import exists, getmtime
+from os.path import abspath, exists, expanduser, getmtime, join, splitext
 
 import numpy as np
 
@@ -32,6 +34,8 @@ except ImportError:
 # from typing import Union
 from radis.api.dbmanager import DatabaseManager
 from radis.api.hdf5 import DataFileManager
+from radis.misc.config import getDatabankEntries
+from radis.misc.warning import DatabaseAlreadyExists
 
 # %% Parsing functions
 
@@ -373,6 +377,48 @@ class GEISADatabaseManager(DatabaseManager):
 
         return urlnames
 
+    def get_possible_files(self, urlnames=None):
+        """returns the urls from fretch_urlnames and the derived file paths at which each would be saved after downloading and parsing"""
+        verbose = self.verbose
+        local_databases = self.local_databases
+        engine = self.engine
+
+        # copied from DatabaseManager.get_filenames:
+        if urlnames is None:
+            urlnames = self.fetch_urlnames()
+        local_fnames = [
+            (
+                splitext(splitext(url.split("/")[-1])[0])[0]  # twice to remove .par.bz2
+                + ".h5"
+            )
+            for url in urlnames
+        ]
+
+        try:
+            os.mkdir(local_databases)
+        except OSError:
+            pass
+        else:
+            if verbose:
+                print("Created folder :", local_databases)
+
+        local_files = [
+            abspath(
+                join(
+                    local_databases,
+                    self.molecule + "-" + local_fname,
+                )
+            )
+            for local_fname in local_fnames
+        ]
+
+        if engine == "vaex":
+            local_files = [fname.replace(".h5", ".hdf5") for fname in local_files]
+
+        local_files = [expanduser(f) for f in local_files]
+
+        return local_files, urlnames
+
     def parse_to_local_file(
         self,
         opener,
@@ -431,24 +477,49 @@ class GEISADatabaseManager(DatabaseManager):
 
         return Nlines
 
-    def register(self):
-        r"""register in ~/radis.json"""
+    def register(self, get_main_files):
 
-        local_files, urlnames = self.get_filenames()
-        info = f"GEISA {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1)"
+        if self.is_registered():
+            dict_entries = getDatabankEntries(
+                self.name
+            )  # just update previous register details
+        else:
+            dict_entries = {}
 
-        dict_entries = {
-            "info": info,
-            "path": local_files,
-            "format": "geisa-radisdb",
-            "parfuncfmt": "hapi",
-            "wavenumber_min": self.wmin,
-            "wavenumber_max": self.wmax,
-            "download_date": self.get_today(),
-            "download_url": urlnames,
-        }
+        if get_main_files:
+            files = [self.actual_file]
+            urls = [self.actual_url]
+            dict_entries.update(
+                {
+                    "path": files,
+                    "format": "geisa-radisdb",
+                    "download_date": self.get_today(),
+                    "download_url": urls,
+                }
+            )
+            if self.wmin and self.wmin:
+                info = f"GEISA {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1)."
+                dict_entries.update(
+                    {
+                        "info": info,
+                        "wavenumber_min": self.wmin,
+                        "wavenumber_max": self.wmax,
+                    }
+                )
+        # else:
+        #     raise Exception("GEISA database can't be registered until the correct url to use is known")
+        dict_entries.update(
+            {
+                "parfuncfmt": "GEISA",
+            }
+        )
 
-        super().register(dict_entries)
+        try:
+            super().register(dict_entries)
+        except DatabaseAlreadyExists as e:
+            raise Exception(
+                'If you want RADIS to overwrite the existing entry for a registered databank, set the config option "ALLOW_OVERWRITE" to True.'
+            ) from e
 
 
 #%%
