@@ -308,7 +308,7 @@ def calc_spectrum(
         computes the spectrum. Useful to access computational parameters, the line database,
         or to start batch-computations from a first spectrum calculation. Ex::
 
-                s, sf = calc_spectrum(..., return_factory=True)
+                s, sf = calc_spectrum(..., return_factory=True, save_memory=False)
                 sf.df1  # see the lines calculated
                 sf.eq_spectrum(...)  #  new calculation without reloading the database
     **kwargs: other inputs forwarded to SpectrumFactory
