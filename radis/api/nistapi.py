@@ -11,7 +11,7 @@ class NISTDatabaseManager(DatabaseManager):
     def __init__(
         self,
         name,
-        molecule,
+        molecule,  # replace this
         local_databases,
         engine="default",
         verbose=True,
@@ -43,7 +43,7 @@ class NISTDatabaseManager(DatabaseManager):
             "output": 0,  # return output in its entirety rather than in pages
             "show_calc_wl": 1,  # return the Ritz wavelength
             "order_out": 0,  # order output by wavelength
-            "show_av": 3,  # use vacuum wavelengths throughout
+            "show_av": 2,  # 2 is Vacuum (< 200 nm)   Air (200 - 2,000 nm)   Vacuum (> 2,000 nm) (default parameter of NIST website), 3 = use vacuum wavelengths throughout
             "A_out": 0,  # return Einstein A coefficients rather than gA
             "allowed_out": 1,  # include 'Allowed (E1)' transitions
             "forbid_out": 1,  # include 'Forbidden (M1,E2,...)' transitions
@@ -56,6 +56,9 @@ class NISTDatabaseManager(DatabaseManager):
         url = urllib.parse.urlunsplit(
             ("https", "physics.nist.gov", "/cgi-bin/ASD/lines1.pl", query, "")
         )
+
+        if payload["spectra"] == "H_I":
+            url = f"{url}&term_out=on"  # used to remove redondant lines in `nist2df`
 
         return [url]
 
@@ -80,7 +83,7 @@ class NISTDatabaseManager(DatabaseManager):
                 raise Exception(f"No lines available for {self.molecule} in NIST")
 
         writer = self.get_datafile_manager()
-        df = nist2df(opener.abspath(urlname))
+        df = nist2df(opener.abspath(urlname), self.molecule)
 
         df["species"] = self.molecule
         df["iso"] = 0
@@ -154,14 +157,23 @@ class NISTDatabaseManager(DatabaseManager):
             ) from e
 
 
-def nist2df(file):
+def nist2df(file, species):
     df = pd.read_csv(file, sep="\t")
 
-    for col in ["Ei(cm-1)", "Ek(cm-1)"]:
+    df = df[
+        df["Acc"] != "Acc"
+    ]  # remove text header rows when switching from vacuum wavelengths to air wavelengths
+    if species == "H_I":
+        df = df[
+            df["term_i"].isnull() | df["term_k"].isnull()
+        ]  # some lines are redondant in NIST H_I. See justification of this filter at https://github.com/radis/radis/pull/689
+
+    # for col in ["Ei(cm-1)", "Ek(cm-1)"]:
+    for col in ["Ei(cm-1)", "Ek(cm-1)", "Aki(s^-1)", "g_i", "g_k"]:
         if df[col].dtype == ("object" or "string"):
             df[col] = (
                 df[col].str.strip("()[]?").astype("float")
-            )  # see https://physics.nist.gov/PhysRefData/ASD/Html/levelshelp.html about meaning of question mark, brackets and parentheses
+            )  # see `fetch_urlnames` or https://physics.nist.gov/PhysRefData/ASD/Html/levelshelp.html about meaning of question mark, brackets and parentheses
 
     # based on Kurucz method:
     cond = (df["Ek(cm-1)"] - df["Ei(cm-1)"]) > 0
@@ -173,7 +185,7 @@ def nist2df(file):
         df[lcol] = df[icol].where(cond, df[kcol])
         df[ucol] = df[kcol].where(cond, df[icol])
 
-    df["wav"] = 1e7 / df["ritz_wl_vac(nm)"]
+    df["wav"] = df["Eu"] - df["El"]
     df[["jl", "ju"]] = (
         df[["gl", "gu"]] - 1
     ) / 2  # calculate J from g rather than requesting from NIST to avoid having to deal with half-integer '1/2' etc notation that NIST returns
@@ -181,6 +193,6 @@ def nist2df(file):
 
     df[:] = df[::-1]
 
-    df = df[["ritz_wl_vac(nm)", "wav", "A", "gl", "El", "gu", "Eu", "jl", "ju"]]
+    df = df[["wav", "A", "gl", "El", "gu", "Eu", "jl", "ju"]]
 
     return df

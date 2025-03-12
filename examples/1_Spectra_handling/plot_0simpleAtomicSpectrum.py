@@ -18,19 +18,25 @@ def broad_arbitrary(**kwargs):
     return HWHM, shift
 
 
+import radis
 from radis import SpectrumFactory, plot_diff
 
+radis.config["ALLOW_OVERWRITE"] = True
+
 sf = SpectrumFactory(
-    wavelength_min=777,
-    wavelength_max=777.8,
-    species="O_I",
+    # wavelength_min=777,
+    # wavelength_max=777.8,
+    # species="O_I",
+    wavelength_min=655,
+    wavelength_max=657,
+    species="H_I",
     wstep=0.01,
     path_length=1,  # cm
     pressure=1,  # atm
     mole_fraction=0.1,
     verbose=0,  # to keep output quiet
     lbfunc=broad_arbitrary,
-    pfsource="barklem",
+    pfsource="nist",
 )
 
 # NIST
@@ -41,4 +47,4 @@ s_NIST = sf.eq_spectrum(Tgas=10000, name="NIST")
 sf.fetch_databank("kurucz")
 s_KURUCZ = sf.eq_spectrum(Tgas=10000, name="Kurucz")
 
-plot_diff(s_NIST, s_KURUCZ, "radiance_noslit", wunit="nm")
+plot_diff(s_NIST, s_KURUCZ, "radiance_noslit", wunit="cm-1")
