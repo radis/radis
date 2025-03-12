@@ -254,9 +254,11 @@ def run_setup():
             ### From environment.yml
             "astropy>=4.3.1",  # Unit aware calculations
             "astroquery>=0.4.6",  # to fetch HITRAN databases
-            "beautifulsoup4>=4.10.0",  # parse ExoMol website
+            "beautifulsoup4>=4.10.0",  # parse ExoMol website and HITRAN responses
             "cantera>=2.5.1",  # for chemical equilibrium computations
             "configparser",
+            "cryptography",  # for encryption and security features
+            "getpass4",  # for handling password input securely
             "habanero>=1.2.0",  # CrossRef API to retrieve data from doi
             "h5py>=3.2.1",  # load HDF5
             "joblib",  # for parallel loading of SpecDatabase
@@ -267,10 +269,13 @@ def run_setup():
             "pandas",
             "plotly>=2.5.1",  # for line survey HTML output
             "psutil",  # to get user RAM
+            "python-dotenv",  # for managing environment variables
+            "requests",  # for making HTTP requests to HITRAN database
             "tables",  # for pandas to HDF5 export - WARNING named "pytables" in conda
             "scipy>=1.4.0",
             "seaborn",  # other matplotlib themes
             "termcolor",  # terminal colors
+            "tqdm",  # for progress bars
             "specutils",
             ### From requirements.txt
             "lxml",  # parser used for ExoMol website

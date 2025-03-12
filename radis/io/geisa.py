@@ -158,6 +158,7 @@ def fetch_geisa(
     if len(download_files) > 0:
         if urlnames is None:
             urlnames = ldb.fetch_urlnames()
+
         filesmap = dict(zip(local_files, urlnames))
         download_urls = [filesmap[k] for k in download_files]
         ldb.download_and_parse(download_urls, download_files)

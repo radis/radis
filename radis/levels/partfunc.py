@@ -1336,6 +1336,13 @@ class PartFuncTIPS(RovibParFuncTabulator):
         self.molecule = get_molecule(M)
         self.I = I
 
+        # Get min and maximum of partition functions in TIPS
+        from hapi import TIPS_2021_ISOT_HASH
+
+        TT = TIPS_2021_ISOT_HASH[(M, I)]
+        self.Tmin = min(TT)
+        self.Tmax = max(TT)
+
     def import_from_file(self, path):
         r"""Import hapi.py from a given file (in case user wants to specify a
         different HAPI version than the one embedded in RADIS)"""

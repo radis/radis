@@ -2,11 +2,11 @@
 language: python
 python:
   #- "2.7"    # not tested anymore starting from 0.9.19
-  #- "3.8" #end of life, Novembre 2024, https://devguide.python.org/versions/
+  #- "3.8"    # end of life, Novembre 2024, https://devguide.python.org/versions/
   - "3.10"
-  - "3.11"
+  #- "3.11"
 os: linux
-dist: focal #needed for python 3.10 (xenial is default for Travis-CI, but does not support python 3.10)
+dist: focal # this gives us Ubuntu 20.04, needed for GPU tests #needed for python 3.10 (xenial is default for Travis-CI, but does not support python 3.10)
 
 name: Test and Coverage
 before_install:
@@ -15,6 +15,7 @@ before_install:
   # version is the same.
   # For now use http instead of https according to this comment:
   # https://github.com/mamba-org/mamba/issues/1675#issuecomment-1127160021
+  - sudo apt-get -y install mesa-vulkan-drivers libvulkan1
   - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/1.5.8 | tar -xvj bin/micromamba
   - ./bin/micromamba shell init -s bash -p ~/micromamba
   - source ~/.bashrc
@@ -65,13 +66,15 @@ after_success:
 
 
 stages: #This sequence defines the order of the stages
-  - name: test
+  - name: Py311
+    if: branch = master OR branch = develop
+  - name: Py310
     if: branch = master OR branch = develop
   - name: lint
     if: branch = master OR branch = develop
   - name: deploy
     if: branch = master
-  - name: Py38
+  - name: Py38 #DEV MESSAGE: as long as we can pass the tests with Python 3.8, we will keep it. If a problem comes up, we will announce that RADIS is not compatible with Python 3.8 anymore.
     if: branch = master
   - name: Py312
     if: branch = master
@@ -82,6 +85,60 @@ stages: #This sequence defines the order of the stages
 
 jobs:
   include:
+    # - stage: test
+      # name: Test and Coverage
+
+      # before_install:
+        # # Install Vulkan drivers for GPU tests:
+        # - sudo apt-get -y install mesa-vulkan-drivers libvulkan1
+
+      # install:
+        # # Install Micromamba
+        # # We do this conditionally because it saves us some downloading if the
+        # # version is the same.
+        # # For now use http instead of https according to this comment:
+        # # https://github.com/mamba-org/mamba/issues/1675#issuecomment-1127160021
+        # - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/0.25.1 | tar -xvj bin/micromamba
+        # - ./bin/micromamba shell init -s bash -p ~/micromamba
+        # - source ~/.bashrc
+        # - micromamba activate base
+        # # Useful for debugging any issues with conda/mamba
+        # - micromamba info
+        # - micromamba config list
+        # # Update python version in environment
+        # - sed -i -E 's/(python=)(.*)/\1'$TRAVIS_PYTHON_VERSION'/' ./environment.yml
+        # # Create conda environment
+        # - micromamba install xtensor -c conda-forge -y
+        # # move requirements.txt to the /tmp folder, required so that .environment.yml finds it
+        # - pwd
+        # - cp requirements.txt /tmp/requirements.txt
+        # # Create the environment:
+        # - micromamba create -f ./environment.yml -y
+        # # Activate and install test-only dependencies
+        # - micromamba activate radis-env
+        # - micromamba list
+        # - pip install pytest-cov
+        # - pip install -e . -v
+
+      # script:
+        # # Your test script goes here
+        # - echo ">>> Run tests"
+        # # use XVFB to have headless display port, and still run the Matplotlib tests.
+        # - xvfb-run -a pytest --cov=./ --durations=10
+        # # --durations=N to print the slowest N tests
+        # # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
+
+      # services:
+        # - xvfb
+
+      # after_success:
+        # # codecoverage
+        # - pip install codecov
+        # - codecov
+
+      # before_script:
+        # - export MPLBACKEND=Agg
+
     - stage: MacOS_py310
       name: Python 3.10 on macOS
       python: "3.10"
@@ -133,9 +190,15 @@ jobs:
     #     - pip install pytest-cov
     #     - pip install -e . -v
   ### Extra Python versions - start
-    - stage: Py38
+    - stage: Py38 #DEV MESSAGE: as long as we can pass the tests with Python 3.8, we will keep it. If a problem comes up, we will announce that RADIS is not compatible with Python 3.8 anymore.
       name: "Python 3.8"
       python: 3.8
+    - stage: Py311
+      name: "Python 3.11"
+      python: 3.11
+    - stage: Py310
+      name: "Python 3.10"
+      python: 3.10
     - stage: Py312
       name: "Python 3.12"
       python: 3.12
