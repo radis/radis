@@ -13,7 +13,7 @@ The same partition functions are employed. The Lorentzian broadening is assumed 
 #%%
 def broad_arbitrary(**kwargs):
     """An arbitrary broadening formula for the Lorentzian component"""
-    HWHM = 1 * (296 / kwargs["Tgas"]) ** 0.8
+    HWHM = kwargs["pressure_atm"] * (296 / kwargs["Tgas"]) ** 0.8
     shift = None
     return HWHM, shift
 
@@ -24,15 +24,12 @@ from radis import SpectrumFactory, plot_diff
 radis.config["ALLOW_OVERWRITE"] = True
 
 sf = SpectrumFactory(
-    # wavelength_min=777,
-    # wavelength_max=777.8,
-    # species="O_I",
-    wavelength_min=655,
-    wavelength_max=657,
-    species="H_I",
+    wavelength_min=498,
+    wavelength_max=508,
+    species="N_II",
     wstep=0.01,
     path_length=1,  # cm
-    pressure=1,  # atm
+    pressure=20,  # atm
     mole_fraction=0.1,
     verbose=0,  # to keep output quiet
     lbfunc=broad_arbitrary,
@@ -47,4 +44,9 @@ s_NIST = sf.eq_spectrum(Tgas=10000, name="NIST")
 sf.fetch_databank("kurucz")
 s_KURUCZ = sf.eq_spectrum(Tgas=10000, name="Kurucz")
 
-plot_diff(s_NIST, s_KURUCZ, "radiance_noslit", wunit="cm-1")
+plot_diff(
+    s_NIST,
+    s_KURUCZ,
+    "radiance_noslit",
+    wunit="nm",  # "nm" or "cm-1"
+)
