@@ -973,10 +973,11 @@ def addDatabankEntries(dbname, dict_entries, verbose=True, configpath=CONFIG_PAT
             config[dbname]["path"] = dict_entries.pop("path")
 
     config[dbname]["format"] = dict_entries.pop("format")
-    config[dbname]["parfuncfmt"] = dict_entries.pop("parfuncfmt")
 
     # Optional:
     # ... partition functions:
+    if "parfuncfmt" in dict_entries:
+        config[dbname]["parfuncfmt"] = dict_entries.pop("parfuncfmt")
     if "parfunc" in dict_entries:
         config[dbname]["parfunc"] = dict_entries.pop("parfunc")
 
