@@ -898,6 +898,8 @@ class Spectrum(object):
 
             Spectrum.from_hdf5("rad_hdf.h5", wmin=2100, wmax=2200, columns=['abscoeff', 'emisscoeff'])
 
+        .. minigallery:: radis.Spectrum.from_hdf5
+
         See Also
         --------
         :py:func:`~radis.spectrum.spectrum.Spectrum.to_hdf5`
@@ -3996,17 +3998,46 @@ class Spectrum(object):
         return self.store(compress=False, *args, **kwargs)
 
     def to_hdf5(self, file, engine="pytables"):
-        r"""Stores the Spectrum under HDF5 format. Uses :py:func:`~radis.io.spec_hdf.spec2hdf`
+        r"""Convert a ``radis`` :py:class:`~radis.spectrum.spectrum.Spectrum` object
+        to HDF5 format. Uses :py:func:`~radis.io.spec_hdf.spec2hdf`
+
+        Parameters
+        ----------
+        file: str
+            path to save the HDF5 file
+        engine : str, optional
+            Which HDF5 library to use for reading/writing data. Options are:
+
+            - 'pytables' (default) : Use PyTables library
+
+        Returns
+        -------
+        The spectrum is saved to disk in HDF5 format
+
+
+        .. note::
+            The HDF5 file will contain all spectral arrays in an 'arrays' group with their units as metadata, the lines database in a 'lines' group if present, populations in metadata if present, and conditions and references in metadata.
+
+        Use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_hdf5` to load the spectrum back.
 
         Examples
         --------
         ::
 
-            s.to_hdf5('spec01.h5')
+            s.to_hdf5('spectrum.h5')
+
+        Load back with::
+
+            from radis import Spectrum
+            s2 = Spectrum.from_hdf5('spectrum.h5')
+
+        .. minigallery:: radis.Spectrum.to_hdf5
 
         See Also
         --------
-        :py:func:`~radis.spectrum.spectrum.Spectrum.from_hdf5`
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.from_hdf5`
+        :py:func:`~radis.io.spec_hdf.spec2hdf`
+        :py:meth:`~radis.spectrum.spectrum.Spectrum.store`
         """
         from radis.io.spec_hdf import spec2hdf
 
