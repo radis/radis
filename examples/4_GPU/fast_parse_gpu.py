@@ -20,17 +20,6 @@ data_str = """
 """
 
 
-
-# str_list = [
-#     '0.031765',
-#     '0.034993',
-#     '0.041964',
-#     '0.054618',
-#     '0.059566',
-#     '0.085666',
-#     ]
-
-
 # for line in str_list:
 #     res = np.zeros(6, dtype=np.float32)
 #     for i, s in enumerate(line[2:]):
