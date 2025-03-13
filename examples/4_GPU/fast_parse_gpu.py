@@ -1,6 +1,7 @@
 
 import numpy as np
 import os.path
+import sys
 
 from radis.misc.utils import getProjectRoot
 from radis.gpu.vulkan.vulkan_compute_lib import GPUApplication, GPUBuffer
@@ -18,11 +19,31 @@ data_str = """
  61    0.117500 1.555E-40 0.000E+00.05190.068 6553.60760.66-.000000                                                  el        003333715947141313     0.0    0.0
 """
 
+
+
+# str_list = [
+#     '0.031765',
+#     '0.034993',
+#     '0.041964',
+#     '0.054618',
+#     '0.059566',
+#     '0.085666',
+#     ]
+
+
+# for line in str_list:
+#     res = np.zeros(6, dtype=np.float32)
+#     for i, s in enumerate(line[2:]):
+#         res[i] = np.float32(ord(s) - ord('0'))*np.float32(10**-i)
+#     print(np.sum(res))
+
+# sys.exit()
+
 line_length = 161
 
 # fname = '05_HITEMP2019.par'
-# fname = '06_HITEMP2020.par'
-fname = '06_HITEMP2020_small.par'
+fname = '06_HITEMP2020.par'
+# fname = '06_HITEMP2020_small.par'
 
 # sname = '06_HITEMP2020_small.par'
 # with open(fname, 'rb') as f, open(sname, 'wb') as fw:
@@ -82,9 +103,11 @@ app.output_d.toArray(arr_out)
 app.free()
 app = None
 
-print(arr_out[:10])
-
-
+for a in arr_out[:5]: 
+    print(a)
+print('...')
+for a in arr_out[-5:]: 
+    print(a)
 
 
 
