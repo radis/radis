@@ -92,7 +92,7 @@ dependencies = [
     'vaex-core; python_version < "3.11"',  # out-of-core dataframes
     'vaex-hdf5; python_version < "3.11"',  # HDF5 support for vaex
     'vaex-viz; python_version < "3.11"',  # visualization for vaex
-    'nvidia-cufft-cu11; sys_platform != "darwin"',  # CUDA FFT library
+    'vulkan',
 ]
 
 [project.optional-dependencies]
