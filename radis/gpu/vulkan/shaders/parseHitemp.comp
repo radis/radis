@@ -1,0 +1,35 @@
+#version 450
+#extension GL_EXT_scalar_block_layout : enable
+layout (local_size_x_id = 0, local_size_y_id = 1, local_size_z_id = 2 ) in;
+
+struct layout (std430) InstanceData
+{
+   char mol_s[2];
+   char iso_s[1];
+   char _pad0[6];
+   char n[7];
+   char _pad1[145];
+};
+
+layout(std430, binding = 0) readonly buffer SSBO1 {
+   InstanceData arr[];  
+};
+
+layout(std430, binding = 1) writeonly buffer SSBO2 {
+   int output[];
+};
+
+void main(){
+	
+	uint k = gl_GlobalInvocationID.x;
+	InstanceData data = arr[k];
+	
+	int res = 0;
+	int mult = 1;
+	for (int i=0; i<7; i++){
+		res += int(data.n[7 - 1 - i] - '0') * mult;
+		mult *= 10;
+	}
+	output[k] = res;
+}
+
