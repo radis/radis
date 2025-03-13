@@ -265,10 +265,26 @@ def fetch_exomol(
         )
 
     # Add broadening
-    mdb.set_broadening_coef(df, output=output, species="air")
-
-    # Add self broadening if available
-    mdb.set_broadening_coef(df, output=output, species="self")
+    available_broad_partners = [
+            "H2",
+            "He",
+            "air",
+            "self",
+            "Ar",
+            "CH4",
+            "CO",
+            "CO2",
+            "H2",
+            "H2O",
+            "N2",
+            "NH3",
+            "NO",
+            "O2",
+            "NH3",
+            "CS",
+        ]
+    for species in available_broad_partners :
+      mdb.set_broadening_coef(df, output=output, str(species))     
 
     # Specific for RADIS :
     # ... Get RADIS column names:
