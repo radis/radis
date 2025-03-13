@@ -1,10 +1,6 @@
 
 import numpy as np
-import os.path
-import sys
-from ctypes import sizeof, Structure, c_int
-from radis.misc.utils import getProjectRoot
-from radis.gpu.vulkan.vulkan_compute_lib import GPUApplication, GPUBuffer
+from time import perf_counter
 
 data_str = """
  62    0.031765 5.400E-34 5.865E-17.05130.072  690.05010.750.000000    0 0 0 0 1A1    0 0 0 0 1A1   11F1  3        11F2  3     5323331111 4 1 1 1   138.0  138.0
@@ -26,19 +22,6 @@ data_str = """
  61    0.157500 3.276E-38 0.000E+00.05190.068 5412.62250.66-.000000                                                  el        003333715947141313     0.0    0.0
 """
 
-class initData_t(Structure):
-    _fields_ = [
-        ("N_lines", c_int),
-    ]
-
-
-# for line in str_list:
-#     res = np.zeros(6, dtype=np.float32)
-#     for i, s in enumerate(line[2:]):
-#         res[i] = np.float32(ord(s) - ord('0'))*np.float32(10**-i)
-#     print(np.sum(res))
-
-# sys.exit()
 
 line_length = 161
 
@@ -46,76 +29,38 @@ line_length = 161
 fname = '06_HITEMP2020.par'
 # fname = '06_HITEMP2020_small.par'
 
-# sname = '06_HITEMP2020_small.par'
-# with open(fname, 'rb') as f, open(sname, 'wb') as fw:
-#     fw.write(f.read(10_000*line_length))
 
-
-print('Initializing GPU... ',end='')
-shader_path = os.path.join(getProjectRoot(), "gpu", "vulkan", "shaders")
-app = GPUApplication(deviceID=0, path=shader_path, verbose=True)
-print('Done!')
-
-
-N_lines_read = 10_000_000
+N_lines_read = 50_000_000
 nbytes = N_lines_read * line_length
 print('Loading limited to {:d} MB'.format(nbytes//1024//1024))
 
 print('Loading data... ', end='')
+t0 = perf_counter()
 arr = np.fromfile(fname, dtype=np.ubyte, count=N_lines_read*line_length)
+t1 = perf_counter()
 N_lines = arr.nbytes // line_length
-arr_out = np.zeros((N_lines, 2), dtype=np.float32)
+print('Done! (in {:.2f}s)'.format(t1-t0))
 
-app.init_d = GPUBuffer(sizeof(initData_t), binding=0, usage='uniform')
-init_h = app.init_d.getHostStructPtr(initData_t)
-init_h.N_lines = N_lines
-
-app.buf_d = GPUBuffer(bufferSize=arr.nbytes, binding=1)
-app.buf_d.fromArray(arr)
-
-app.output_d = GPUBuffer(bufferSize=arr_out.nbytes, binding=2)
-
+print('Reshaping... ', end='')
+arr = arr.reshape((N_lines, line_length))
 print('Done!')
 
+# v
+print('v... ', end='')
+t0 = perf_counter()
+arr_v = arr[:,3:15].view('S12')[:,0]
+arr_v = np.fromiter(map(float, arr_v), dtype=np.float32)
+t1 = perf_counter()
+print('Done! (in {:.2f}s)'.format(t1-t0))
 
+print('I... ',end='')
+t0 = perf_counter()
+arr_I = arr[:,15:25].view('S10')[:,0]
+arr_I = np.fromiter(map(float, arr_I), dtype=np.float32)
+t1 = perf_counter()
+print('Done! (in {:.2f}s)'.format(t1-t0))
 
-N_tpb = 128  # threads per block
-threads = (N_tpb, 1, 1)
-
-
-print('Writing command buffer... ',end='')
-app.appendCommands(
-    [
-        app.cmdAddTimestamp("Parsing"),
-        app.cmdScheduleShader(
-            "cmdParseHitemp.spv", (N_lines // N_tpb + 1, 1, 1), threads
-        ),
-        app.cmdAddTimestamp("End"),
-    ]
-)
-app.writeCommandBuffer()
-print('Done!')
-
-print('Running app... ', end='')
-app.run()
-times = app.get_timestamps()
-print('Done! (in {:.3f} ms)'.format(times['Total']))
-
-
-app.output_d.toArray(arr_out)
-
-app.free()
-app = None
-
-for a in arr_out[:15]: 
-    print(a)
-print('...')
-for a in arr_out[-15:]: 
-    print(a)
-
-
-
-
-
-
+print('')
+for v, I in zip(arr_v[:10], arr_I[:10]):
+    print(v,I)
 

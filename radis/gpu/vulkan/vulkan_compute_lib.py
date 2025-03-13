@@ -65,10 +65,18 @@ class GPUApplication(object):
         self._memTypeDict = {}
 
         # Initialize vulkan
+        print('Creating vkInstance... ', end='')
         self.createInstance()
+        print('Done!')
+        print('Selecting physical device... ')
         self.selectPhysicalDevice(deviceID, verbose=verbose)
+        print('Done!')
+        print('Creating device... ', end='')
         self.createDevice()
+        print('Done!')
+        print('Creating command buffer... ',end='')
         self.createCommandBuffer()
+        print('Done!')
 
     def free(self):
 
