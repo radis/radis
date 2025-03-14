@@ -15,17 +15,12 @@ include radis/default_radis.json
 recursive-include radis/db *.json
 
 # Exclude test files and directories
-global-exclude test/*
 global-exclude */test/*
-global-exclude */tests/*
-global-exclude */*/test/*
 global-exclude *test*.py
 
 # Exclude documentation
 global-exclude docs/*
-global-exclude */docs/*
 global-exclude *.rst
 
 # Exclude examples
 global-exclude examples/*
-global-exclude */examples/*
