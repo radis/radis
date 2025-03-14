@@ -2,9 +2,6 @@ include README.rst
 include LICENSE
 include requirements.txt
 include radis/__version__.txt
-include radis/gpu/cuda/*.cu
-include radis/gpu/cuda/*.h
-include radis/gpu/cuda/build/*.*
 include radis/gpu/vulkan/shaders/*.comp
 include radis/gpu/vulkan/shaders/*.spv
 include radis/gpu/vulkan/bin/*.*
