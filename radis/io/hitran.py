@@ -5,8 +5,10 @@ RADIS Hitran Functions; based on Common API hitranapi.py
 
 from os.path import abspath, expanduser, join
 
+from radis import config
 from radis.api.hitranapi import HITRANDatabaseManager
 from radis.misc.warning import AccuracyWarning
+from radis.misc.config import getDatabankEntries
 
 
 # TODO: implement parallel=True for all isotopes ?
@@ -119,6 +121,10 @@ def fetch_hitran(
     the expected wavenumber range & isotopes are returned. The .HFD5 parsing uses
     :py:func:`~radis.io.hdf5.hdf2df`
 
+    if a registered entry already exists and `radis.config["ALLOW_OVERWRITE"]` is `True`:
+    - if any situation arises where the databank needs to be re-downloaded, the possible urls are attempted in their usual order of preference, as if the databank hadn't been registered, rather than directly re-downloading from the same url that was previously registered, in case e.g. a new linelist has been uploaded since the databank was previously registered
+    - If no partition function file is registered, e.g because one wasn't available server-side when the databank was last registered, an attempt is still made again to download it, to account for e.g. the case where one has since been uploaded
+
     See Also
     --------
     :py:func:`~radis.io.hitemp.fetch_hitemp`, :py:func:`~radis.io.exomol.fetch_exomol`,
@@ -132,9 +138,8 @@ def fetch_hitran(
         databank_name = databank_name.format(**{"molecule": molecule})
 
     if local_databases is None:
-        import radis
 
-        local_databases = join(radis.config["DEFAULT_DOWNLOAD_PATH"], "hitran")
+        local_databases = join(config["DEFAULT_DOWNLOAD_PATH"], "hitran")
     local_databases = abspath(local_databases.replace("~", expanduser("~")))
 
     ldb = HITRANDatabaseManager(
@@ -147,16 +152,31 @@ def fetch_hitran(
         parallel=parallel,
     )
 
-    # Get expected local files for this database:
-    local_file = ldb.get_filenames()
+    # Check if the database is registered in radis.json
+    local_files = []
+    if ldb.is_registered():
+        entries = getDatabankEntries(ldb.name)
+        local_files = entries["path"]
 
+    if ldb.is_registered() and not config["ALLOW_OVERWRITE"]:
+        error = False
+        if cache == "regen" or not local_files:
+            error = True
+        files_to_check = local_files
+        if ldb.get_missing_files(files_to_check):
+            error = True
+        if error:
+            raise Exception(
+                'Changes are required to the local database, and hence updating the registered entry, but "ALLOW_OVERWRITE" is False. Set `radis.config["ALLOW_OVERWRITE"]=True` to allow the changes to be made and config file to be automatically updated accordingly.'
+            )
+        
     # Delete files if needed:
     if cache == "regen":
-        ldb.remove_local_files(local_file)
+        ldb.remove_local_files(local_files)
     else:
         # Raising AccuracyWarning if local_file exists and doesn't have extra columns in it
-        if ldb.get_existing_files(local_file) and extra_params == "all":
-            columns = ldb.get_columns(local_file[0])
+        if ldb.get_existing_files(local_files) and extra_params == "all":
+            columns = ldb.get_columns(local_files[0])
             extra_columns = ["y_", "gamma_", "n_"]
             found = False
             for key in extra_columns:
@@ -173,27 +193,41 @@ def fetch_hitran(
                         "All columns are not downloaded currently, please use cache = 'regen' and extra_params='all' to download all columns."
                     )
                 )
-
     ldb.check_deprecated_files(
-        ldb.get_existing_files(local_file),
+        ldb.get_existing_files(local_files),
         auto_remove=True if cache != "force" else False,
     )
 
+    # Check if local files are available so we don't have to download
+    download_files = True
+    if local_files and not ldb.get_missing_files(local_files):
+        download_files = False
+        ldb.actual_file = local_files[0]
+
     # Download files
-    download_files = ldb.get_missing_files(local_file)
     if download_files:
-        ldb.download_and_parse(download_files, cache=cache, parse_quanta=parse_quanta)
+        main_files = ldb.get_filenames()
+        print(f"Attempting to download {main_files}")
+        if main_files:
+            try:
+                ldb.download_and_parse(main_files, cache=cache, parse_quanta=parse_quanta)
+            except OSError as err:
+                    print(f"Error downloading : {err}.")
+                    raise
+            else:
+                if verbose: print(f"Successfully downloaded")
+                ldb.actual_file = main_files[0]
 
     # Register
-    if not ldb.is_registered():
-        ldb.register()
+    if download_files or not ldb.is_registered():
+        ldb.register(download_files)
 
-    if len(download_files) > 0 and clean_cache_files:
+    if download_files and clean_cache_files:
         ldb.clean_download_files()
 
     # Load and return
     df = ldb.load(
-        local_file,
+        [ldb.actual_file],
         columns=columns,
         within=[("iso", isotope)] if isotope is not None else [],
         # for relevant files, get only the right range :
@@ -202,7 +236,7 @@ def fetch_hitran(
         output=output,
     )
 
-    return (df, local_file) if return_local_path else df
+    return (df, local_files) if return_local_path else df
 
 
 # ======================================================

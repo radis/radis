@@ -28,6 +28,8 @@ import sys
 import time
 from collections import OrderedDict
 from os.path import abspath, exists, expanduser, getmtime, join, split
+from radis.misc.warning import DatabaseAlreadyExists
+from radis.misc.config import getDatabankEntries
 
 import pandas as pd
 from numpy import int64
@@ -1443,6 +1445,7 @@ class HITRANDatabaseManager(DatabaseManager):
         self.wmin = None
         self.wmax = None
 
+        self.actual_file = None
     def get_filenames(self):
         if self.engine == "vaex":
             return [join(self.local_databases, f"{self.molecule}.hdf5")]
@@ -1642,53 +1645,65 @@ class HITRANDatabaseManager(DatabaseManager):
         # for file in data_file_list + header_file_list:
         #     os.remove(join(self.local_databases, "downloads", file))
 
-    def register(self):
+    def register(self,download_files):
         """register in ~/radis.json"""
+        
+        if self.is_registered():
+            dict_entries = getDatabankEntries(
+                self.name
+            )  # just update previous register details
+        else:
 
-        from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
+            dict_entries = {}
 
-        local_files = self.get_filenames()
-
-        if self.wmin is None or self.wmax is None:
-            print(
-                "Somehow wmin and wmax was not given for this database. Reading from the files"
-            )
-            ##  fix:
-            # (can happen if database was downloaded & parsed, but registration failed a first time)
-            df_full = self.load(
-                local_files,
-                columns=["wav"],
-                within=[],
-                lower_bound=[],
-                upper_bound=[],
-            )
-            self.wmin = df_full.wav.min()
-            self.wmax = df_full.wav.max()
-            print(
-                f"Somehow wmin and wmax was not given for this database. Read {self.wmin}, {self.wmax} directly from the files"
-            )
+        if download_files:
+            files = [self.actual_file]
+            if self.wmin is None or self.wmax is None:
+                print(
+                    "Somehow wmin and wmax was not given for this database. Reading from the files"
+                )
+                ##  fix:
+                # (can happen if database was downloaded & parsed, but registration failed a first time)
+                df_full = self.load(
+                    local_files=files,
+                    columns=["wav"],
+                    within=[],
+                    lower_bound=[],
+                    upper_bound=[],
+                )
+                self.wmin = df_full.wav.min()
+                self.wmax = df_full.wav.max()
+                print(
+                    f"Somehow wmin and wmax was not given for this database. Read {self.wmin}, {self.wmax} directly from the files"
+                )
 
         info = f"HITRAN {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1) with TIPS-2021 (through HAPI) for partition functions"
-
-        dict_entries = {
-            "info": info,
-            "path": local_files,
-            "format": "hdf5-radisdb",
-            "parfuncfmt": "hapi",
-            "wavenumber_min": self.wmin,
-            "wavenumber_max": self.wmax,
-            "download_date": self.get_today(),
-        }
+        dict_entries.update(
+            {
+                "path": files,
+                "format": "hdf5-radisdb",
+                "info": info,
+                "wavenumber_min": self.wmin,
+                "wavenumber_max": self.wmax,
+                "download_date": self.get_today(),
+                "parfuncfmt": "hapi",
+            }
+            )
 
         # Add energy level calculation
+        from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
         if self.molecule in MOLECULES_LIST_NONEQUILIBRIUM:
             dict_entries[
                 "info"
             ] += " and RADIS spectroscopic constants for rovibrational energies (nonequilibrium)"
             dict_entries["levelsfmt"] = "radis"
 
-        super().register(dict_entries)
-
+        try:
+            super().register(dict_entries)
+        except DatabaseAlreadyExists as e:
+            raise Exception(
+                'If you want RADIS to overwrite the existing entry for a registered databank, set the config option "ALLOW_OVERWRITE" to True.'
+            ) from e
 
 #%%
 def hitranxsc(hitranXSC):
