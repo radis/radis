@@ -15,7 +15,7 @@ Defines :py:func:`~radis.io.fetch_geisa` based on :py:class:`~radis.api.geisaapi
 
 from os.path import abspath, expanduser, join
 
-import radis
+from radis import config
 from radis.api.geisaapi import GEISADatabaseManager
 from radis.misc.config import getDatabankEntries
 
@@ -131,7 +131,7 @@ def fetch_geisa(
 
     if local_databases is None:
 
-        local_databases = join(radis.config["DEFAULT_DOWNLOAD_PATH"], "geisa")
+        local_databases = join(config["DEFAULT_DOWNLOAD_PATH"], "geisa")
     local_databases = abspath(expanduser(local_databases))
 
     ldb = GEISADatabaseManager(
@@ -150,7 +150,7 @@ def fetch_geisa(
         entries = getDatabankEntries(ldb.name)
         local_files, urlnames = entries["path"], entries["download_url"]
 
-    if ldb.is_registered() and not radis.config["ALLOW_OVERWRITE"]:
+    if ldb.is_registered() and not config["ALLOW_OVERWRITE"]:
         error = False
         if cache == "regen" or not local_files:
             error = True
