@@ -7,8 +7,8 @@ from os.path import abspath, expanduser, join
 
 from radis import config
 from radis.api.hitranapi import HITRANDatabaseManager
-from radis.misc.warning import AccuracyWarning
 from radis.misc.config import getDatabankEntries
+from radis.misc.warning import AccuracyWarning
 
 
 # TODO: implement parallel=True for all isotopes ?
@@ -169,7 +169,7 @@ def fetch_hitran(
             raise Exception(
                 'Changes are required to the local database, and hence updating the registered entry, but "ALLOW_OVERWRITE" is False. Set `radis.config["ALLOW_OVERWRITE"]=True` to allow the changes to be made and config file to be automatically updated accordingly.'
             )
-        
+
     # Delete files if needed:
     if cache == "regen":
         ldb.remove_local_files(local_files)
@@ -210,12 +210,15 @@ def fetch_hitran(
         print(f"Attempting to download {main_files}")
         if main_files:
             try:
-                ldb.download_and_parse(main_files, cache=cache, parse_quanta=parse_quanta)
+                ldb.download_and_parse(
+                    main_files, cache=cache, parse_quanta=parse_quanta
+                )
             except OSError as err:
-                    print(f"Error downloading : {err}.")
-                    raise
+                print(f"Error downloading : {err}.")
+                raise
             else:
-                if verbose: print(f"Successfully downloaded")
+                if verbose:
+                    print(f"Successfully downloaded")
                 ldb.actual_file = main_files[0]
 
     # Register

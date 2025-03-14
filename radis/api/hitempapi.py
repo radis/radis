@@ -23,8 +23,7 @@ from bs4 import BeautifulSoup
 from cryptography.fernet import Fernet
 from tqdm import tqdm
 
-from radis.misc.config import CONFIG_PATH_JSON
-from radis.misc.config import getDatabankEntries
+from radis.misc.config import CONFIG_PATH_JSON, getDatabankEntries
 from radis.misc.warning import DatabaseAlreadyExists
 
 try:
@@ -741,7 +740,7 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         return Nlines
 
-    def register(self,download):
+    def register(self, download):
         r"""register in ~/radis.json"""
         if self.is_registered():
             dict_entries = getDatabankEntries(
@@ -756,18 +755,22 @@ class HITEMPDatabaseManager(DatabaseManager):
             info = f"HITEMP {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1) with TIPS-2017 (through HAPI) for partition functions"
 
             if self.molecule in ["CO2", "H2O"]:
-                info = "(registered files will be downloaded only when required) " + info
+                info = (
+                    "(registered files will be downloaded only when required) " + info
+                )
 
-            dict_entries.update ( {
-                "info": info,
-                "path": local_files,
-                "format": "hitemp-radisdb",
-                "parfuncfmt": "hapi",
-                "wavenumber_min": self.wmin,
-                "wavenumber_max": self.wmax,
-                "download_date": self.get_today(),
-                "download_url": urlnames,
-            })
+            dict_entries.update(
+                {
+                    "info": info,
+                    "path": local_files,
+                    "format": "hitemp-radisdb",
+                    "parfuncfmt": "hapi",
+                    "wavenumber_min": self.wmin,
+                    "wavenumber_max": self.wmax,
+                    "download_date": self.get_today(),
+                    "download_url": urlnames,
+                }
+            )
 
             # Add energy level calculation
             if self.molecule in MOLECULES_LIST_NONEQUILIBRIUM:
@@ -782,6 +785,7 @@ class HITEMPDatabaseManager(DatabaseManager):
             raise Exception(
                 'If you want RADIS to overwrite the existing entry for a registered databank, set the config option "ALLOW_OVERWRITE" to True.'
             ) from e
+
 
 #%%
 

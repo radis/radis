@@ -172,9 +172,9 @@ def fetch_geisa(
 
     if len(local_files) > 1 or len(urlnames) > 1:
         raise Exception(
-        f"Found the following files {local_files} but only 1 is expected"
-        if len(local_files) > 1
-        else f"Found the following urls {urlnames} but only 1 is expected"
+            f"Found the following files {local_files} but only 1 is expected"
+            if len(local_files) > 1
+            else f"Found the following urls {urlnames} but only 1 is expected"
         )
 
     # Check if local files are available so we don't have to download
@@ -201,7 +201,8 @@ def fetch_geisa(
                     print(f"Error downloading {url}: {err}")
                     continue
             else:
-                if verbose: print(f"Successfully downloaded {url}")
+                if verbose:
+                    print(f"Successfully downloaded {url}")
                 ldb.actual_file = file
                 ldb.actual_url = url
                 break  # no need to search any further

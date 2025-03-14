@@ -28,8 +28,6 @@ import sys
 import time
 from collections import OrderedDict
 from os.path import abspath, exists, expanduser, getmtime, join, split
-from radis.misc.warning import DatabaseAlreadyExists
-from radis.misc.config import getDatabankEntries
 
 import pandas as pd
 from numpy import int64
@@ -53,6 +51,8 @@ from radis.db.classes import (  # get_molecule_identifier,
     HITRAN_GROUP6,
     get_molecule,
 )
+from radis.misc.config import getDatabankEntries
+from radis.misc.warning import DatabaseAlreadyExists
 
 try:
     from .cache_files import load_h5_cache_file, save_to_hdf
@@ -1446,6 +1446,7 @@ class HITRANDatabaseManager(DatabaseManager):
         self.wmax = None
 
         self.actual_file = None
+
     def get_filenames(self):
         if self.engine == "vaex":
             return [join(self.local_databases, f"{self.molecule}.hdf5")]
@@ -1645,9 +1646,9 @@ class HITRANDatabaseManager(DatabaseManager):
         # for file in data_file_list + header_file_list:
         #     os.remove(join(self.local_databases, "downloads", file))
 
-    def register(self,download_files):
+    def register(self, download_files):
         """register in ~/radis.json"""
-        
+
         if self.is_registered():
             dict_entries = getDatabankEntries(
                 self.name
@@ -1688,10 +1689,11 @@ class HITRANDatabaseManager(DatabaseManager):
                 "download_date": self.get_today(),
                 "parfuncfmt": "hapi",
             }
-            )
+        )
 
         # Add energy level calculation
         from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
+
         if self.molecule in MOLECULES_LIST_NONEQUILIBRIUM:
             dict_entries[
                 "info"
@@ -1704,6 +1706,7 @@ class HITRANDatabaseManager(DatabaseManager):
             raise Exception(
                 'If you want RADIS to overwrite the existing entry for a registered databank, set the config option "ALLOW_OVERWRITE" to True.'
             ) from e
+
 
 #%%
 def hitranxsc(hitranXSC):

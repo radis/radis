@@ -6,6 +6,7 @@ Created on Sun May 22 17:35:05 2022
 """
 
 from os.path import abspath, exists, expanduser, join
+
 from radis import config
 from radis.api.hdf5 import update_pytables_to_vaex
 from radis.api.hitempapi import HITEMPDatabaseManager
@@ -172,7 +173,7 @@ def fetch_hitemp(
 
     # Get list of all expected local files for this database if there is no registry
     downloaded = True
-    if len(local_files) < 1 :
+    if len(local_files) < 1:
         local_files, urlnames = ldb.get_filenames()
 
     # Get missing files
@@ -199,7 +200,7 @@ def fetch_hitemp(
 
     if len(download_files) < 1:
         downloaded = False
-    
+
     # Download files
     if downloaded:
         if len(urlnames) == 0:

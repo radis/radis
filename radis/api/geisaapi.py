@@ -11,7 +11,6 @@ GEISA database parser
 """
 
 
-
 # import re
 import time
 from collections import OrderedDict
@@ -355,6 +354,7 @@ class GEISADatabaseManager(DatabaseManager):
 
         self.actual_file = None
         self.actual_url = None
+
     def fetch_urlnames(self):
         r"""requires connexion"""
 
