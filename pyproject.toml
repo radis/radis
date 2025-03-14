@@ -111,7 +111,6 @@ docs = [
     "sphinx-gallery",  # for documentation examples gallery
     "lmfit",  # for documentation examples
     "pytest",  # Sphinx autodoc also parses test suite
-    "cantera>=2.5.1",  # for chemical equilibrium computations
     "specutils",  # spectroscopic data handling
 ]
 
