@@ -53,10 +53,8 @@ except ImportError:  # ran from here
         raise
 
 from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
-from radis.misc.config import get_config
 from radis.misc.progress_bar import ProgressBar
 
-config = get_config()
 HITEMP_MOLECULES = ["H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"]
 
 
@@ -303,7 +301,9 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
         total_size = int(file_response.headers.get("content-length", 0))
         print(f"Total size to download: {total_size} bytes")
         file_size_in_GB = total_size / (1024**3)
-        MAX_SIZE_GB = config.get("PREVENT_LARGE_DOWNLOAD_ABOVE_X_GB", 1)
+        from radis import config
+
+        MAX_SIZE_GB = config["PREVENT_LARGE_DOWNLOAD_ABOVE_X_GB"]
 
         if file_size_in_GB > MAX_SIZE_GB:
             warning_msg = (

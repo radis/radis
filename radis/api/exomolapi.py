@@ -27,9 +27,6 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 from radis.api.hdf5 import vaexsafe_colname
-from radis.misc.config import get_config
-
-config = get_config()
 
 
 def exact_molname_exomol_to_simple_molname(exact_exomol_molecule_name):
@@ -1626,7 +1623,9 @@ class MdbExomol(DatabaseManager):
             total_download_size_gb += self._calculate_download_size(url, pfname_arr)
 
         print(f"Total download size: {total_download_size_gb:.6f} GB")
-        MAX_SIZE_GB = config.get("PREVENT_LARGE_DOWNLOAD_ABOVE_X_GB", 1)
+        from radis import config
+
+        MAX_SIZE_GB = config["PREVENT_LARGE_DOWNLOAD_ABOVE_X_GB"]
 
         if total_download_size_gb > MAX_SIZE_GB:
             warning_msg = (
