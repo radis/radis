@@ -122,6 +122,10 @@ include-package-data = true     # add non .py data files in MANIFEST.in
 zip-safe = false  # impossible as long as we have external files read with __file__ syntax
 platforms = ["any"]
 
+[tool.setuptools.packages.find]
+include = ["radis*"]
+exclude = ["radis.test*", "docs*", "examples*", "test*"]
+
 # Previously in setup.py:
 # **get_ext_modules(with_binary)  # see Main install routine for radis<0.15
 # package_data={'radis': ['radis/phys/units.txt']}  # now handled through MANIFEST.in
