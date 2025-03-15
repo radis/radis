@@ -5,7 +5,6 @@
 """
 # TODO refactor : rename this file as hitran_utils.py
 
-import pathlib
 from warnings import warn
 
 import numpy as np
@@ -18,8 +17,6 @@ try:
 except ImportError:
     vaex = NotInstalled(*not_installed_vaex_args)
 
-
-import radis
 
 from ..misc.warning import PerformanceWarning
 
@@ -320,8 +317,3 @@ def replace_PQR_with_m101(df):
             ),
             category=PerformanceWarning,
         )
-
-
-def root_dir():
-    """return the root directory of the Radis package"""
-    return str(pathlib.Path(radis.__path__[0]).parent)
