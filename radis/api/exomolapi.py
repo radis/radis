@@ -1622,7 +1622,11 @@ class MdbExomol(DatabaseManager):
 
             total_download_size_gb += self._calculate_download_size(url, pfname_arr)
 
-        print(f"Total download size: {total_download_size_gb:.6f} GB")
+        if self.verbose:
+            print(
+                f"Total download size {pfname_arr} is: {total_download_size_gb:.6f} GB"
+            )
+
         from radis import config
 
         MAX_SIZE_GB = config["WARN_LARGE_DOWNLOAD_ABOVE_X_GB"]
