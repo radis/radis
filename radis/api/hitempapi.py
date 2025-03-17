@@ -303,12 +303,12 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
         file_size_in_GB = total_size / (1024**3)
         from radis import config
 
-        MAX_SIZE_GB = config["PREVENT_LARGE_DOWNLOAD_ABOVE_X_GB"]
+        MAX_SIZE_GB = config["WARN_LARGE_DOWNLOAD_ABOVE_X_GB"]
 
         if file_size_in_GB > MAX_SIZE_GB:
             warning_msg = (
                 f"The total download size is {file_size_in_GB:.2f} GB, which will take time and potential a significant portion of your disk memory."
-                "To prevent this warning, you increase the limit using `radis.config['PREVENT_LARGE_DOWNLOAD_ABOVE_X_GB'] =  1`."
+                "To prevent this warning, you increase the limit using `radis.config['WARN_LARGE_DOWNLOAD_ABOVE_X_GB'] =  1`."
             )
             warnings.warn(warning_msg, UserWarning)
 
