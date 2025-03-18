@@ -250,7 +250,10 @@ class NISTPFManager(DatabaseManager):
         """overwrites parent class method as required"""
 
         writer = self.get_datafile_manager()
-        df = read_NIST_pfs(opener.abspath(urlname))
+        from io import StringIO
+
+        file = StringIO(opener.text)
+        df = read_NIST_pfs(file)
         writer.write(local_file, df, append=False)
 
         writer.combine_temp_batch_files(local_file)

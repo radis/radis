@@ -51,6 +51,10 @@ def test_Kurucz_vs_NISTandSpectraplot(plot=True, verbose=True):
     A_SpectraPlot = s_SpectraPlot.get_integral("abscoeff", wunit="nm")
 
     for source in ["nist", "kurucz"]:
+        if source == "nist":
+            pfsource = "nist"
+        else:
+            pfsource = "barklem"
         #%% Employ the same inputs than in example file 'spectraplot_O_10000K.txt'
         sf = SpectrumFactory(
             wavelength_min=777,
@@ -62,7 +66,7 @@ def test_Kurucz_vs_NISTandSpectraplot(plot=True, verbose=True):
             pressure=1,  # atm
             verbose=0,
             lbfunc=broad_arbitrary,
-            pfsource="barklem",
+            pfsource=pfsource,
         )
         sf.fetch_databank(source)
         # sf.load_databank('Kurucz-O_I', drop_columns=[], load_columns='all')
