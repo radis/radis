@@ -33,9 +33,7 @@ except ImportError:
     vaex = NotInstalled(*not_installed_vaex_args)
 
 # %% Test routines
-
-
-@pytest.mark.fast
+# @pytest.mark.fast #Removed from "fast" tag because it seems this test needs to be performed after other ones (minouHub)
 def test_populations(verbose=True, *args, **kwargs):
     """Test that vib and rovib populations are calculated correctly"""
 

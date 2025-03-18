@@ -32,23 +32,6 @@ def test_Kurucz_vs_NISTandSpectraplot(plot=True, verbose=True):
         """An arbitrary broadening formula in SpectraPlot (https://spectraplot.com/)"""
         return 1 * (296 / kwargs["Tgas"]) ** 0.8, None
 
-    #%% Employ the same inputs than in example file 'spectraplot_O_10000K.txt'
-    sf = SpectrumFactory(
-        wavelength_min=777,
-        wavelength_max=778,
-        wstep=0.001,
-        species="O_I",
-        optimization="simple",
-        path_length=1,  # cm
-        pressure=1,  # atm
-        verbose=0,
-        lbfunc=broad_arbitrary,
-    )
-    sf.fetch_databank("kurucz", parfuncfmt="kurucz")
-    # sf.load_databank('Kurucz-O_I', drop_columns=[], load_columns='all')
-    s_RADIS = sf.eq_spectrum(Tgas=10000, name="Kurucz by RADIS")
-    # s_RADIS.plot("radiance_noslit", wunit="cm-1")
-
     #%% Experimental spectrum
     L = 1  # cm - Input in SpectraPlot software
     raw_data = np.loadtxt(
@@ -65,18 +48,41 @@ def test_Kurucz_vs_NISTandSpectraplot(plot=True, verbose=True):
         name="NIST by SpectraPlot",
     )
     # s_SpectraPlot.plot('abscoeff', wunit='cm-1')
-
-    if plot:
-        plot_diff(s_RADIS, s_SpectraPlot, "abscoeff", wunit="nm")
-    A_RADIS = s_RADIS.get_integral("abscoeff", wunit="nm")
     A_SpectraPlot = s_SpectraPlot.get_integral("abscoeff", wunit="nm")
 
-    if verbose:
-        print(
-            f"Ratio of area under abscoef ('k') is A_RADIS/A_SpectraPlot = {A_RADIS/A_SpectraPlot:.3f}"
+    for source in ["nist", "kurucz"]:
+        if source == "nist":
+            pfsource = "nist"
+        else:
+            pfsource = "barklem"
+        #%% Employ the same inputs than in example file 'spectraplot_O_10000K.txt'
+        sf = SpectrumFactory(
+            wavelength_min=777,
+            wavelength_max=778,
+            wstep=0.001,
+            species="O_I",
+            optimization="simple",
+            path_length=1,  # cm
+            pressure=1,  # atm
+            verbose=0,
+            lbfunc=broad_arbitrary,
+            pfsource=pfsource,
         )
+        sf.fetch_databank(source)
+        # sf.load_databank('Kurucz-O_I', drop_columns=[], load_columns='all')
+        s_RADIS = sf.eq_spectrum(Tgas=10000, name=f"{source} by RADIS")
+        # s_RADIS.plot("radiance_noslit", wunit="cm-1")
 
-    assert np.isclose(A_RADIS, A_SpectraPlot, rtol=1e-2)
+        if plot:
+            plot_diff(s_RADIS, s_SpectraPlot, "abscoeff", wunit="nm")
+        A_RADIS = s_RADIS.get_integral("abscoeff", wunit="nm")
+
+        if verbose:
+            print(
+                f"Ratio of area under abscoef ('k') is A_RADIS/A_SpectraPlot = {A_RADIS/A_SpectraPlot:.3f}"
+            )
+
+        assert np.isclose(A_RADIS, A_SpectraPlot, rtol=1e-2)
 
 
 @pytest.mark.needs_connection
@@ -135,4 +141,4 @@ def test_Kurucz_vs_NISTandSpectraplot_4000(plot=True, verbose=True):
 
 if __name__ == "__main__":
     test_Kurucz_vs_NISTandSpectraplot()
-    test_Kurucz_vs_NISTandSpectraplot_4000()
+    # test_Kurucz_vs_NISTandSpectraplot_4000()
