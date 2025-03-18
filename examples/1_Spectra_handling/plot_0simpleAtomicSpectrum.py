@@ -7,7 +7,7 @@ Atomic spectrum #0: Calculate an atomic spectrum
 ========================
 
 In this example, the NIST and Kurucz databases are used to compute an atomic spectrum.
-The same partition functions are employed. The Lorentzian broadening is assumed equal for all lines.
+The same partition function is employed. The Lorentzian broadening is assumed equal for all lines.
 
 """
 #%%

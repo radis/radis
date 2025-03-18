@@ -75,19 +75,23 @@ class NISTDatabaseManager(DatabaseManager):
     ):
         """overwrites parent class method as required"""
 
-        with opener.open(urlname) as file:
-            if (
-                "No lines are available in ASD with the parameters selected"
-                in file.read()
-            ):
-                raise Exception(f"No lines available for {self.molecule} in NIST")
+        # TODO: write an error message in case the NIST page is empty
+        # with opener.open(urlname) as file:
+        #     if (
+        #         "No lines are available in ASD with the parameters selected"
+        #         in file.read()
+        #     ):
+        #         raise Exception(f"No lines available for {self.molecule} in NIST")
 
-        writer = self.get_datafile_manager()
-        df = nist2df(opener.abspath(urlname), self.molecule)
+        from io import StringIO
+
+        file = StringIO(opener.text)
+        df = nist2df(file, self.molecule)
 
         df["species"] = self.molecule
         df["iso"] = 0
 
+        writer = self.get_datafile_manager()
         writer.write(local_file, df, append=False)
 
         self.wmin = df.wav.min()

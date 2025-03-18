@@ -46,6 +46,7 @@ try:
     from numpy.lib.npyio import DataSource
 except ImportError:  # numpy <2.0.0?
     from numpy import DataSource
+import requests
 
 LAST_VALID_DATE = (
     "01 Jan 2010"  # set to a later date to force re-download of all databases
@@ -391,12 +392,18 @@ class DatabaseManager(object):
                 )
 
             # Check we can open the file, give the path if there is an error
-            try:
-                self.ds.open(urlname)
-            except Exception as err:
-                raise OSError(
-                    f"Problem opening : {self.ds._findfile(urlname)}. See above. You may want to delete the downloaded file."
-                ) from err
+            if (
+                "nist" in urlname
+            ):  # Known incompatibility with numpy.DataSource and NIST. Trying with requests")
+                self.ds = requests.get(urlname)
+                self.ds.raise_for_status()  # Raise an error if request fails
+            else:
+                try:
+                    self.ds.open(urlname)
+                except Exception as err:
+                    raise OSError(
+                        f"Problem opening : {self.ds._findfile(urlname)}. See above. You may want to delete the downloaded file."
+                    ) from err
 
             # try:
             Nlines = self.parse_to_local_file(
