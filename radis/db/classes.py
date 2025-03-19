@@ -1322,3 +1322,13 @@ if __name__ == "__main__":
     from radis.test.db.test_molecules import _run_testcases
 
     print(("Testing molecules.py", _run_testcases()))
+
+
+def get_element_symbol(species):
+    """
+    Extracts the element symbol from the species given in spectroscopic notation
+    """
+
+    atomic_symbol = species.split("_")[0]
+    el = getattr(periodictable, atomic_symbol)
+    return el
