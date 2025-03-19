@@ -3,25 +3,24 @@
 Summary
 -----------------------
 
-Kurucz database parser
+NIST database parser
 
 -----------------------
 
-Defines :func:`~radis.io.fetch_kurucz` based on :class:`~radis.api.kuruczapi.KuruczDatabaseManager`
+Defines :func:`~radis.io.fetch_nist` based on :class:`~radis.api.nistapi.NISTDatabaseManager`
 
 """
 
 from os.path import abspath, expanduser, join
 
 import radis
-from radis.api.kuruczapi import KuruczDatabaseManager
-from radis.misc.config import getDatabankEntries
+from radis.api.nistapi import NISTDatabaseManager
 
 
-def fetch_kurucz(
-    molecule,
+def fetch_nist(
+    molecule,  # replace
     local_databases=None,
-    databank_name="Kurucz-{molecule}",
+    databank_name="NIST-{molecule}",
     isotope=None,
     load_wavenum_min=None,
     load_wavenum_max=None,
@@ -35,13 +34,14 @@ def fetch_kurucz(
     parallel=True,
 ):
     """
-    See e.g. :func:`~radis.io.hitemp.fetch_hitemp` for an explanation of the parameters largely applicable to `fetch_kurucz`
+    See e.g. :func:`~radis.io.hitemp.fetch_hitemp` for an explanation of the parameters largely applicable to `fetch_nist`
 
     .. note::
 
         if a registered entry already exists and `radis.config["ALLOW_OVERWRITE"]` is `True`:
 
         - if any situation arises where the databank needs to be re-downloaded, the possible urls are attempted in their usual order of preference, as if the databank hadn't been registered, rather than directly re-downloading from the same url that was previously registered, in case e.g. a new linelist has been uploaded since the databank was previously registered
+
     """
 
     # largely based on :py:func:`~radis.io.fetch_geisa`
@@ -50,10 +50,10 @@ def fetch_kurucz(
 
     if local_databases is None:
 
-        local_databases = join(radis.config["DEFAULT_DOWNLOAD_PATH"], "kurucz")
+        local_databases = join(radis.config["DEFAULT_DOWNLOAD_PATH"], "NIST")
     local_databases = abspath(expanduser(local_databases))
 
-    ldb = KuruczDatabaseManager(
+    ldb = NISTDatabaseManager(
         databank_name,
         molecule=molecule,
         local_databases=local_databases,
@@ -62,17 +62,14 @@ def fetch_kurucz(
         engine=engine,
     )
 
-    local_files, urlnames = [], []
-    if ldb.is_registered():
-        entries = getDatabankEntries(ldb.name)
-        local_files, urlnames = entries["path"], entries["download_url"]
+    # Get list of all expected local files for this database:
+    local_files, urlnames = ldb.get_filenames()
 
     if ldb.is_registered() and not radis.config["ALLOW_OVERWRITE"]:
         error = False
         if cache == "regen" or not local_files:
             error = True
-        files_to_check = local_files
-        if ldb.get_missing_files(files_to_check):
+        if ldb.get_missing_files(local_files):
             error = True
         if error:
             raise Exception(
@@ -95,35 +92,15 @@ def fetch_kurucz(
 
     if local_files and not ldb.get_missing_files(local_files):
         get_main_files = False
-        ldb.actual_file = local_files[0]  # for ldb.load below
 
     # Download files
     if get_main_files:
-        main_files, main_urls = ldb.get_possible_files()
-        for i in range(len(main_urls)):
-            url = main_urls[i]
-            file = main_files[i]
-            print(f"Attempting to download {url}")
-            try:
-                ldb.download_and_parse([url], [file], 1)
-            except OSError:
-                if i == len(main_urls) - 1:  # all possible urls exhausted
-                    print(f"Error downloading {url}.")
-                    print(f"No source found for {ldb.molecule}")
-                    raise
-                else:
-                    print(f"Error downloading {url}")
-                    continue
-            else:
-                print(f"Successfully downloaded {url}")
-                ldb.actual_file = file
-                ldb.actual_url = url
-                # local_files = [file]
-                break  # no need to search any further
+        urlnames = ldb.fetch_urlnames()
+        ldb.download_and_parse(urlnames, local_files, 1)
 
     # Register
     if get_main_files or not ldb.is_registered():
-        ldb.register(get_main_files)
+        ldb.register(local_files, urlnames)
 
     if get_main_files and clean_cache_files:
         ldb.clean_download_files()
@@ -133,7 +110,7 @@ def fetch_kurucz(
 
     # Load and return
     df = ldb.load(
-        [ldb.actual_file],
+        local_files,
         columns=columns,
         within=[("iso", isotope)] if isotope is not None else [],
         # for relevant files, get only the right range :
@@ -154,4 +131,4 @@ def fetch_kurucz(
             for k, v in attrs.items():
                 df.attrs[k] = v
 
-    return (df, [ldb.actual_file]) if return_local_path else df
+    return (df, local_files) if return_local_path else df
