@@ -39,14 +39,10 @@ from datetime import date
 
 import numpy as np
 import pandas as pd
+import requests
 from dateutil.parser import parse as parse_date
 from joblib import Parallel, delayed
-
-try:
-    from numpy.lib.npyio import DataSource
-except ImportError:  # numpy <2.0.0?
-    from numpy import DataSource
-import requests
+from requests.adapters import HTTPAdapter
 
 LAST_VALID_DATE = (
     "01 Jan 2010"  # set to a later date to force re-download of all databases
@@ -80,6 +76,37 @@ def open_zip(zipname, mode="r", encoding=None, newline=None):
 
 
 np.lib._datasource._file_openers._file_openers[".zip"] = open_zip
+
+
+class RequestsDataManager:
+    """A replacement for numpy.DataSource that uses requests library for downloads"""
+
+    def __init__(self, cache_dir):
+        self.cache_dir = cache_dir
+        # Configure session with retries
+        self.session = requests.Session()
+        adapter = HTTPAdapter(
+            max_retries=3
+        )  # Simple retry logic: 3 retries for failed requests
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
+
+    def open(self, url):
+        """Download and return a file-like object.
+        Handles zip files automatically."""
+        response = self.session.get(url, stream=True)
+        response.raise_for_status()
+        content = BytesIO(response.content)
+
+        # Handle zip files
+        if url.lower().endswith(".zip"):
+            return open_zip(content)
+        return content
+
+    def _findfile(self, url):
+        """Return the local path where the file would be cached"""
+        filename = url.split("/")[-1]
+        return join(self.cache_dir, filename)
 
 
 class DatabaseManager(object):
@@ -167,7 +194,7 @@ class DatabaseManager(object):
         self.engine = engine
 
         self.tempdir = join(self.local_databases, "downloads__can_be_deleted")
-        self.ds = DataSource(self.tempdir)
+        self.ds = RequestsDataManager(self.tempdir)
 
         self.verbose = verbose
 
@@ -391,35 +418,29 @@ class DatabaseManager(object):
                     f"Downloading {inputf} for {molecule} ({Ndownload}/{Ntotal_downloads})."
                 )
 
-            # Check we can open the file, give the path if there is an error
-            if (
-                "nist" in urlname
-            ):  # Known incompatibility with numpy.DataSource and NIST. Trying with requests")
-                self.ds = requests.get(urlname)
-                self.ds.raise_for_status()  # Raise an error if request fails
-            else:
-                try:
-                    self.ds.open(urlname)
-                except Exception as err:
-                    raise OSError(
-                        f"Problem opening : {self.ds._findfile(urlname)}. See above. You may want to delete the downloaded file."
-                    ) from err
+            try:
+                file_obj = self.ds.open(urlname)
+            except Exception as err:
+                raise OSError(
+                    f"Problem downloading: {urlname}. Error: {str(err)}"
+                ) from err
 
-            # try:
-            Nlines = self.parse_to_local_file(
-                self.ds,
-                urlname,
-                local_file,
-                pbar_active=(not parallel),
-                pbar_t0=time() - t0,
-                pbar_Ntot_estimate_factor=pbar_Ntot_estimate_factor,
-                pbar_Nlines_already=Nlines_total,
-                pbar_last=(Ndownload == Ntotal_downloads),
-            )
-            # except Exception as err:
-            #     raise IOError("Problem parsing `{0}`. Check the error above. It may arise if the file wasn't properly downloaded. Try to delete it".format(self.ds._findfile(urlname))) from err
-
-            return Nlines
+            try:
+                Nlines = self.parse_to_local_file(
+                    file_obj,
+                    urlname,
+                    local_file,
+                    pbar_active=(not parallel),
+                    pbar_t0=time() - t0,
+                    pbar_Ntot_estimate_factor=pbar_Ntot_estimate_factor,
+                    pbar_Nlines_already=Nlines_total,
+                    pbar_last=(Ndownload == Ntotal_downloads),
+                )
+                return Nlines
+            except Exception as err:
+                raise IOError(
+                    f"Problem parsing `{urlname}`. Check the error above. It may arise if the file wasn't properly downloaded."
+                ) from err
 
         if parallel and len(local_files) > self.minimum_nfiles:
             nJobs = self.nJobs
