@@ -42,7 +42,6 @@ import pandas as pd
 import requests
 from dateutil.parser import parse as parse_date
 from joblib import Parallel, delayed
-from requests.adapters import HTTPAdapter
 
 LAST_VALID_DATE = (
     "01 Jan 2010"  # set to a later date to force re-download of all databases
@@ -75,38 +74,9 @@ def open_zip(zipname, mode="r", encoding=None, newline=None):
     return output
 
 
+# This was originally used with numpy.DataSource but is being migrated to requests
+# Keeping the function in case it's used elsewhere
 np.lib._datasource._file_openers._file_openers[".zip"] = open_zip
-
-
-class RequestsDataManager:
-    """A replacement for numpy.DataSource that uses requests library for downloads"""
-
-    def __init__(self, cache_dir):
-        self.cache_dir = cache_dir
-        # Configure session with retries
-        self.session = requests.Session()
-        adapter = HTTPAdapter(
-            max_retries=3
-        )  # Simple retry logic: 3 retries for failed requests
-        self.session.mount("http://", adapter)
-        self.session.mount("https://", adapter)
-
-    def open(self, url):
-        """Download and return a file-like object.
-        Handles zip files automatically."""
-        response = self.session.get(url, stream=True)
-        response.raise_for_status()
-        content = BytesIO(response.content)
-
-        # Handle zip files
-        if url.lower().endswith(".zip"):
-            return open_zip(content)
-        return content
-
-    def _findfile(self, url):
-        """Return the local path where the file would be cached"""
-        filename = url.split("/")[-1]
-        return join(self.cache_dir, filename)
 
 
 class DatabaseManager(object):
@@ -194,7 +164,9 @@ class DatabaseManager(object):
         self.engine = engine
 
         self.tempdir = join(self.local_databases, "downloads__can_be_deleted")
-        self.ds = RequestsDataManager(self.tempdir)
+        # Create the temp directory if it doesn't exist
+        if not exists(self.tempdir):
+            os.makedirs(self.tempdir, exist_ok=True)
 
         self.verbose = verbose
 
@@ -418,16 +390,37 @@ class DatabaseManager(object):
                     f"Downloading {inputf} for {molecule} ({Ndownload}/{Ntotal_downloads})."
                 )
 
+            # Download file with requests
             try:
-                file_obj = self.ds.open(urlname)
-            except Exception as err:
-                raise OSError(
-                    f"Problem downloading: {urlname}. Error: {str(err)}"
-                ) from err
+                response = requests.get(urlname, stream=True)
+                response.raise_for_status()  # Raise an error if request fails
 
-            try:
+                # Create a temporary file to store the downloaded content
+                temp_file_path = join(self.tempdir, urlname.split("/")[-1])
+                with open(temp_file_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:  # filter out keep-alive new chunks
+                            f.write(chunk)
+
+                # class to mimic DataSource behavior
+                class RequestsFileOpener:
+                    def __init__(self, file_path):
+                        self.file_path = file_path
+
+                    def open(self, url_or_path=None):
+                        """Open the file for reading"""
+                        return open(self.file_path, "rb")
+
+                    def abspath(self, url_or_path=None):
+                        """Return the absolute path of the file"""
+                        return self.file_path
+
+                # Create an opener object that mimics numpy.DataSource
+                opener = RequestsFileOpener(temp_file_path)
+
+                # Pass the opener to the parse function (maintaining backward compatibility)
                 Nlines = self.parse_to_local_file(
-                    file_obj,
+                    opener,
                     urlname,
                     local_file,
                     pbar_active=(not parallel),
@@ -436,11 +429,16 @@ class DatabaseManager(object):
                     pbar_Nlines_already=Nlines_total,
                     pbar_last=(Ndownload == Ntotal_downloads),
                 )
-                return Nlines
+            except requests.RequestException as err:
+                raise OSError(
+                    f"Problem downloading: {urlname}. Error: {str(err)}"
+                ) from err
             except Exception as err:
                 raise IOError(
-                    f"Problem parsing `{urlname}`. Check the error above. It may arise if the file wasn't properly downloaded."
+                    f"Problem parsing downloaded file from {urlname}. Check the error above. It may arise if the file wasn't properly downloaded. Try to delete it."
                 ) from err
+
+            return Nlines
 
         if parallel and len(local_files) > self.minimum_nfiles:
             nJobs = self.nJobs
@@ -491,10 +489,7 @@ class DatabaseManager(object):
         )
 
     def clean_download_files(self):
-        """Fully unzipped (and working, as it was reloaded): clean files
-
-        Note : we do not let np.DataSource clean its own tempfiles; as
-        they may be downloaded but not fully parsed / registered."""
+        """Fully unzipped (and working, as it was reloaded): clean files"""
         if exists(self.tempdir):
             try:
                 shutil.rmtree(self.tempdir)
