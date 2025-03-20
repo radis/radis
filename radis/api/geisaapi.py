@@ -469,7 +469,7 @@ class GEISADatabaseManager(DatabaseManager):
 
         dict_entries.update(
             {
-                "parfuncfmt": "GEISA",
+                "parfuncfmt": "hapi",
             }
         )
 
