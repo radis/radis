@@ -417,7 +417,7 @@ latex_elements = {
     # The font size ('10pt', '11pt' or '12pt').
     #'pointsize': '10pt',
     # Additional stuff for the LaTeX preamble.
-    "preamble": "\setcounter{tocdepth}{3}",
+    "preamble": r"\setcounter{tocdepth}{3}",
     # Latex figure (float) alignment
     #'figure_align': 'htbp',
 }

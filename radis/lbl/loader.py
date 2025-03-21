@@ -73,10 +73,13 @@ from radis.io.geisa import fetch_geisa
 from radis.io.hitemp import fetch_hitemp
 from radis.io.hitran import fetch_hitran
 from radis.io.kurucz import fetch_kurucz
+from radis.io.nist import fetch_nist
 from radis.io.query import fetch_astroquery
 from radis.levels.partfunc import (
     PartFunc_Dunham,
+    PartFuncBarklem,
     PartFuncKurucz,
+    PartFuncNIST,
     PartFuncTIPS,
     RovibParFuncCalculator,
     RovibParFuncTabulator,
@@ -154,7 +157,7 @@ See Also
 :ref:`Configuration file <label_lbl_config_file>`
  """
 
-KNOWN_PARFUNCFORMAT = ["cdsd", "hapi", "kurucz"]
+KNOWN_PARFUNCFORMAT = ["cdsd", "hapi"]
 """list: Known formats for partition function (tabulated files to read), or 'hapi'
 to fetch Partition Functions using HITRAN Python interface instead of reading
 a tabulated file.
@@ -410,6 +413,7 @@ class Input(ConditionDict):
         "isneutral",
         "potential_lowering",
         "Telec",
+        "pfsource",
     ]
 
     def __init__(self):
@@ -691,6 +695,7 @@ class DatabankLoader(object):
         "misc",
         "molparam",
         "params",
+        "parsum",
         "parsum_calc",
         "parsum_tab",
         "profiler",
@@ -698,7 +703,6 @@ class DatabankLoader(object):
         "save_memory",
         "truncation",
         "units",
-        # "use_cython",
         "verbose",
         "warnings",
         "wavenumber",
@@ -1015,108 +1019,57 @@ class DatabankLoader(object):
         parallel=True,
         extra_params=None,
     ):
-        """Fetch the latest files from [HITRAN-2020]_, [HITEMP-2010]_ (or newer),
+        """
+        Fetch the latest files from [HITRAN-2020]_, [HITEMP-2010]_ (or newer),
         [ExoMol-2020]_  or [GEISA-2020] or [Kurucz-2017], and store them locally in memory-mapping
         formats for extremely fast access.
 
         Parameters
         ----------
-        source: ``'hitran'``, ``'hitemp'``, ``'exomol'``, ``'geisa'``, ``'kurucz'``
-            which database to use.
-        database: ``'full'``, ``'range'``, name of an ExoMol database, or ``'default'``
-            if fetching from HITRAN, ``'full'`` download the full database and register
-            it, ``'range'`` download only the lines in the range of the molecule.
-
-            .. note::
-                ``'range'`` will be faster, but will require a new download each time
-                you'll change the range. ``'full'`` is slower the 1st time and takes
-                more on-disk memory, but will be faster over time.
-
+        source: str
+            Which database to use. Options are ``'hitran'``, ``'hitemp'``, ``'exomol'``, ``'geisa'``, ``'kurucz'``, ``'nist'``.
+        database: str
+            If fetching from HITRAN, ``'full'`` downloads the full database and registers it, ``'range'`` downloads only the lines in the range of the molecule.
+            If fetching from HITEMP, Kurucz, or NIST, only ``'full'`` is available.
+            If fetching from ExoMol, use this parameter to choose which database to use. Keep ``'default'`` to use the recommended one.
             Default is ``'full'``.
-
-            If fetching from HITEMP or Kurucz, only ``'full'`` is available.
-
-            if fetching from ''`exomol`'', use this parameter to choose which database
-            to use. Keep ``'default'`` to use the recommended one. See all available databases
-            with :py:func:`radis.io.exomol.get_exomol_database_list`
-
-            By default, databases are download in ``~/.radisdb``.
-            Can be changed in ``radis.config["DEFAULT_DOWNLOAD_PATH"]`` or in
-            ``~/radis.json`` config file
-
-
-        Other Parameters
-        ----------------
-        parfuncfmt: ``'cdsd'``, ``'hapi'``, ``'exomol'``, ``'kurucz'`` or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
-            format to read tabulated partition function file. If ``'hapi'``, then
-            [HAPI]_ (HITRAN Python interface) is used to retrieve [TIPS-2020]_
-            tabulated partition functions.
-            If ``'exomol'`` then partition functions are downloaded from ExoMol.
-            If ``'kurucz'``, if dedicated partition functions are available with the linelists for the species, they are used, otherwise partition functions from Barklem & Collett 2016 are used. Also see the documentation for the `potential_lowering` parameter of :py:class:`~radis.lbl.factory.SpectrumFactory`.
-            Default ``'hapi'``.
-        parfunc: filename or None
-            path to a tabulated partition function file to use. For kurucz linelists, this file would be a dedicated table for the species (dependent on both temperature and potential lowering).
-        levels: dict of str or None
-            path to energy levels (needed for non-eq calculations). Format::
-
-                {1:path_to_levels_iso_1, 3:path_to_levels_iso3}.
-
-            Default ``None``
-        levelsfmt: ``'cdsd-pc'``, ``'radis'`` (or any of :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`) or ``None``
-            how to read the previous file. Known formats: (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`).
-            If ``radis``, energies are calculated using the diatomic constants in radis.db database
-            if available for given molecule. Look up references there.
-            If ``None``, non equilibrium calculations are not possible. Default ``'radis'``.
-        load_energies: boolean
-            if ``False``, dont load energy levels. This means that nonequilibrium
-            spectra cannot be calculated, but it saves some memory. Default ``False``
+        parfuncfmt: str
+            Format to read tabulated partition function file. Options are ``'cdsd'``, ``'hapi'``, ``'exomol'``, ``'kurucz'`` or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`.
+            Default is ``'hapi'``. This argument only affects molecules.
+        parfunc: str or None
+            Path to a tabulated partition function file to use. This argument only affects molecules.
+        levels: dict or None
+            Path to energy levels (needed for non-eq calculations). Format: {1:path_to_levels_iso_1, 3:path_to_levels_iso3}. This argument only affects molecules.
+            Default is ``None``.
+        levelsfmt: str or None
+            How to read the previous file. Known formats: ``'cdsd-pc'``, ``'radis'`` or any of :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`. This argument only affects molecules.
+            Default is ``'radis'``.
+        load_energies: bool
+            If ``False``, don't load energy levels. This means that nonequilibrium spectra cannot be calculated, but it saves some memory. This argument only affects molecules.
+            Default is ``False``.
         include_neighbouring_lines: bool
-            if ``True``, includes off-range, neighbouring lines that contribute
-            because of lineshape broadening. The ``neighbour_lines``
-            parameter is used to determine the limit. Default ``True``.
-        parse_local_global_quanta: bool, or ``'auto'``
-            if ``True``, parses the HITRAN/HITEMP 'glob' and 'loc' columns to extract
-            quanta identifying the lines. Required for nonequilibrium calculations,
-            or to use :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`,
-            but takes up more space.
-        drop_non_numeric: boolean
-            if ``True``, non numeric columns are dropped. This improves performances,
-            but make sure all the columns you need are converted to numeric formats
-            before hand. Default ``True``. Note that if a cache file is loaded it
-            will be left untouched.
-        db_use_cached: bool, or ``'regen'``
-            use cached
-        memory_mapping_engine: ``'pytables'``, ``'vaex'``, ``'feather'``
-            which library to use to read HDF5 files (they are incompatible: ``'pytables'`` is
-            row-major while ``'vaex'`` is column-major) or other memory-mapping formats
-            If ``'default'``, use the value from ~/radis.json `["MEMORY_MAPPING_ENGINE"]`
+            If ``True``, includes off-range, neighbouring lines that contribute because of lineshape broadening.
+            Default is ``True``.
+        parse_local_global_quanta: bool or ``'auto'``
+            If ``True``, parses the HITRAN/HITEMP 'glob' and 'loc' columns to extract quanta identifying the lines.
+            Default is ``True``.
+        drop_non_numeric: bool
+            If ``True``, non-numeric columns are dropped. This improves performance.
+            Default is ``True``.
+        db_use_cached: bool or ``'regen'``
+            Use cached database if available.
+        memory_mapping_engine: str
+            Which library to use to read HDF5 files. Options are ``'pytables'``, ``'vaex'``, ``'feather'``.
+            Default is ``'default'``.
         parallel: bool
-            if ``True``, uses joblib.parallel to load database with multiple processes
-            (works only for HITEMP files)
-        load_columns: list, ``'all'``, ``'equilibrium'``, ``'noneq'``, ``diluent``,
-            columns names to load.
-            If ``'equilibrium'``, only load the columns required for equilibrium
-            calculations. If ``'noneq'``, also load the columns required for
-            non-LTE calculations. See :data:`~radis.lbl.loader.drop_all_but_these`.
-            If ``'all'``, load everything. Note that for performances, it is
-            better to load only certain columns rather than loading them all
-            and dropping them with ``drop_columns``.
-            If ``diluent`` then all additional columns required for calculating spectrum
-            in that diluent is loaded.
-            This parameter is ignored for Kurucz linelists, for which only ``all`` is available.
-            Default ``'equilibrium'``.
-
-            .. warning::
-                if using ``'equilibrium'``, not all parameters will be available
-                for a Spectrum :py:func:`~radis.spectrum.spectrum.Spectrum.line_survey`.
-                If you are calculating equilibrium (LTE) spectra, it is recommended to
-                use ``'equilibrium'``. If you are calculating non-LTE spectra, it is
-                recommended to use ``'noneq'``.
+            If ``True``, uses joblib.parallel to load database with multiple processes.
+            Default is ``True``.
+        load_columns: list, ``'all'``, ``'equilibrium'``, ``'noneq'``, ``diluent``
+            Columns names to load. Default is ``'equilibrium'``.
 
         Notes
         -----
-        HITRAN is fetched with Astroquery [1]_ or [HAPI]_,  and HITEMP with
-        :py:func:`~radis.io.hitemp.fetch_hitemp`
+        HITRAN is fetched with Astroquery or HAPI, and HITEMP with :py:func:`~radis.io.hitemp.fetch_hitemp`.
         HITEMP files are generated in a ~/.radisdb database.
 
         See Also
@@ -1134,45 +1087,60 @@ class DatabankLoader(object):
         # | see implementation in load_databank.
 
         # Check inputs
-        if source == "astroquery":
+        compare_source = source.casefold()
+
+        if compare_source == "astroquery":
             warnings.warn(
                 DeprecationWarning(
                     "source='astroquery' replaced with source='hitran' in 0.9.28"
                 )
             )
             source = "hitran"
-        if source not in ["hitran", "hitemp", "exomol", "geisa", "kurucz"]:
+            compare_source = source.casefold()
+        if compare_source not in [
+            "hitran",
+            "hitemp",
+            "exomol",
+            "geisa",
+            "kurucz",
+            "nist",
+        ]:
             raise NotImplementedError("source: {0}".format(source))
-        if source == "hitran":
+        if compare_source == "hitran":
             dbformat = "hitran"
             if database == "default":
                 database = "full"
-        elif source == "hitemp":
+        elif compare_source == "hitemp":
             dbformat = (
                 "hitemp-radisdb"  # downloaded in RADIS local databases ~/.radisdb
             )
             if database == "default":
                 database = "full"
 
-        elif source == "kurucz":
+        elif compare_source == "kurucz":
             dbformat = "kurucz"
             if database == "default":
                 database = "full"
-        elif source == "exomol":
+        elif compare_source == "nist":
+            dbformat = "nist"
+            if database == "default":
+                database = "full"
+
+        elif compare_source == "exomol":
             dbformat = (
                 "exomol-radisdb"  # downloaded in RADIS local databases ~/.radisdb
             )
-        elif source == "geisa":
+        elif compare_source == "geisa":
             dbformat = "geisa"
             if database == "default":
                 database = "full"
 
         local_databases = config["DEFAULT_DOWNLOAD_PATH"]
 
-        if [parfuncfmt, source].count("exomol") == 1:
+        if [parfuncfmt, compare_source].count("exomol") == 1:
             self.warn(
                 f"Using lines from {source} but partition functions from {parfuncfmt}"
-                + " for consistency we recommend using lines and partition functions from the same database",
+                + "for consistency we recommend using lines and partition functions from the same database",
                 "AccuracyWarning",
             )
         if memory_mapping_engine == "default":
@@ -1211,33 +1179,18 @@ class DatabankLoader(object):
         self.params.parfuncfmt = parfuncfmt
         self.params.db_use_cached = db_use_cached
         self.params.lvl_use_cached = lvl_use_cached
-        msg_dil = "Add the argument `load_columns=['diluent', 'equilibrium'] ` or  `load_columns=['diluent', 'noneq'] or `load_columns='all' in `fetch_databank(...)`."
+
         # Which columns to load
         columns = []
         if "all" in load_columns:
             columns = None  # see fetch_hitemp, fetch_hitran, etc.
-
-        # dealing with diluents
-        elif load_columns == "diluent":
-            raise ValueError(
-                f"""Please indicate if the spectrum is a at equilibrium or non-equilibrium.
-==> {msg_dil}"""
-            )
-        elif (
-            isinstance(load_columns, dict)
-            and not "diluent" in load_columns
-            and list(self.params.diluent.keys()) != ["air"]
-        ):
-            raise ValueError(
-                f"""Diluents other than air are detected: {list(self.params.diluent.keys())}.
-==> {msg_dil}"""
-            )
-
-        # easy case with just one str
         elif isinstance(load_columns, str) and load_columns in ["equilibrium", "noneq"]:
             columns = self.columns_list_to_load(load_columns)
+        elif load_columns == "diluent":
+            raise ValueError(
+                "Please use diluent along with 'equilibrium' or 'noneq' in a list like ['diluent','noneq']"
+            )
 
-        # composed case
         elif isinstance(load_columns, list) and "all" not in load_columns:
             for load_columns_type in load_columns:
                 if load_columns_type in ["equilibrium", "noneq", "diluent"]:
@@ -1257,7 +1210,7 @@ class DatabankLoader(object):
         # ---------------------
         self._reset_references()  # bibliographic references
 
-        if source == "hitran":
+        if compare_source == "hitran":
             self.reftracker.add(doi["HITRAN-2020"], "line database")  # [HITRAN-2020]_
 
             if database == "full":
@@ -1347,7 +1300,7 @@ class DatabankLoader(object):
                     f"Got `database={database}`. When fetching HITRAN, choose `database='full'` to download all database (once for all) or `database='range'` to download only the lines in the current range."
                 )
 
-        elif source == "hitemp":
+        elif compare_source == "hitemp":
             self.reftracker.add(doi["HITEMP-2010"], "line database")  # [HITEMP-2010]_
 
             if memory_mapping_engine == "auto":
@@ -1387,7 +1340,7 @@ class DatabankLoader(object):
                     [str(k) for k in self._get_isotope_list(df=df)]
                 )
 
-        elif source == "exomol":
+        elif compare_source == "exomol":
             self.reftracker.add(doi["ExoMol-2020"], "line database")  # [ExoMol-2020]
 
             if memory_mapping_engine == "auto":
@@ -1495,7 +1448,7 @@ class DatabankLoader(object):
                 df = frames[0]
                 self.params.dbpath = local_paths[0]
 
-        elif source == "geisa":
+        elif compare_source == "geisa":
 
             self.reftracker.add(doi["GEISA-2020"], "line database")
 
@@ -1536,7 +1489,7 @@ class DatabankLoader(object):
                     [str(k) for k in self._get_isotope_list(df=df)]
                 )
 
-        elif source == "kurucz":
+        elif compare_source == "kurucz":
             self.reftracker.add(doi["Kurucz-2017"], "line database")
 
             if columns is not None:
@@ -1559,7 +1512,7 @@ class DatabankLoader(object):
                 isotope_list = None
             else:
                 isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
-            df, local_paths, parfuncpath = fetch_kurucz(
+            df, local_paths = fetch_kurucz(
                 molecule,
                 isotope=isotope_list,
                 local_databases=join(local_databases, "kurucz"),
@@ -1574,15 +1527,56 @@ class DatabankLoader(object):
                 parallel=parallel,
             )
             self.params.dbpath = ",".join(local_paths)
-            if not parfunc:
-                self.params.parfuncpath = parfunc = format_paths(parfuncpath)
 
             # ... explicitly write all isotopes based on isotopes found in the database
             if isotope == "all":
                 self.input.isotope = ",".join(
                     [str(k) for k in self._get_isotope_list(df=df)]
                 )
+        elif compare_source == "nist":
+            # self.reftracker.add(doi["Kurucz-2017"], "line database")
 
+            if columns is not None:
+                self.warn(
+                    "The required columns for NIST don't match those of existing moleculear databases, so all columns are being loaded"
+                )
+                columns = None
+
+            if memory_mapping_engine == "auto":
+                memory_mapping_engine = get_auto_MEMORY_MAPPING_ENGINE()
+
+            if database != "full":
+                raise ValueError(
+                    f"Got `database={database}`. When fetching NIST, only the `database='full'` option is available."
+                )
+
+            # Download, setup local databases, and fetch (use existing if possible)
+
+            if isotope == "all":
+                isotope_list = None
+            else:
+                isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
+            df, local_paths = fetch_nist(
+                molecule,
+                isotope=isotope_list,
+                local_databases=join(local_databases, "NIST"),
+                load_wavenum_min=wavenum_min,
+                load_wavenum_max=wavenum_max,
+                columns=columns,
+                cache=db_use_cached,
+                verbose=self.verbose,
+                return_local_path=True,
+                engine=memory_mapping_engine,
+                output=output,
+                parallel=parallel,
+            )
+            self.params.dbpath = ",".join(local_paths)
+
+            # ... explicitly write all isotopes based on isotopes found in the database
+            if isotope == "all":
+                self.input.isotope = ",".join(
+                    [str(k) for k in self._get_isotope_list(df=df)]
+                )
         else:
             raise NotImplementedError("source: {0}".format(source))
 
@@ -1609,12 +1603,12 @@ class DatabankLoader(object):
         # ------------------------------------
         # (note : this is now done in 'fetch_hitemp' before saving to the disk)
         # spectroscopic quantum numbers will be needed for nonequilibrium calculations, and line survey.
-        if parse_local_global_quanta and "locu" in df and source != "geisa":
+        if parse_local_global_quanta and "locu" in df and compare_source != "geisa":
             df = parse_local_quanta(
                 df, molecule, verbose=self.verbose, dataframe_type=output
             )
         if (
-            parse_local_global_quanta and "globu" in df and source != "geisa"
+            parse_local_global_quanta and "globu" in df and compare_source != "geisa"
         ):  # spectroscopic quantum numbers will be needed for nonequilibrium calculations :
             df = parse_global_quanta(
                 df, molecule, verbose=self.verbose, dataframe_type=output
@@ -1632,7 +1626,24 @@ class DatabankLoader(object):
         # %% Init Partition functions (with energies)
         # ------------
 
-        if parfuncfmt == "exomol":
+        self._remove_unecessary_columns(df, output)
+
+        if self.input.isatom:
+            if parfuncfmt == "kurucz":
+                warnings.warn(
+                    DeprecationWarning(
+                        "The `parfuncfmt` attribute is no longer applicable for atoms. Use the new architecture with the `pfsource` parameter instead."
+                    )
+                )
+                if not self.input.pfsource:
+                    if self.input.potential_lowering:
+                        self.warn("Assuming `pfsource = 'kurucz'`")
+                        self.input.pfsource = "kurucz"
+                    else:
+                        self.warn("Assuming `pfsource = 'barklem'`")
+                        self.input.pfsource = "barklem"
+            self.set_atomic_partition_functions()
+        elif parfuncfmt == "exomol":
             self._init_equilibrium_partition_functions(
                 parfunc,
                 parfuncfmt,
@@ -1659,7 +1670,6 @@ class DatabankLoader(object):
                     + "in fetch_databank"
                 )
 
-        self._remove_unecessary_columns(df, output)
         return
 
     def load_databank(
@@ -1712,18 +1722,21 @@ class DatabankLoader(object):
             HAPI (HITRAN Python interface) [1]_ is used to retrieve them (valid if
             your database is HITRAN data). HAPI is embedded into RADIS. Check the
             version. If partfuncfmt is None then ``hapi`` is used. Default ``hapi``.
+            This argument only affects molecules.
         parfunc: filename or None
             path to tabulated partition function to use.
             If `parfuncfmt` is `hapi` then `parfunc` should be the link to the
-            hapi.py file. If not given, then the hapi.py embedded in RADIS is used (check version)
+            hapi.py file. If not given, then the hapi.py embedded in RADIS is used (check version). This argument only affects molecules.
         levels: dict of str or None
             path to energy levels (needed for non-eq calculations). Format:
-            {1:path_to_levels_iso_1, 3:path_to_levels_iso3}. Default ``None``
+            {1:path_to_levels_iso_1, 3:path_to_levels_iso3}. Default ``None``.
+            This argument only affects molecules.
         levelsfmt: 'cdsd-pc', 'radis' (or any of :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`) or ``None``
             how to read the previous file. Known formats: (see :data:`~radis.lbl.loader.KNOWN_LVLFORMAT`).
             If ``radis``, energies are calculated using the diatomic constants in radis.db database
             if available for given molecule. Look up references there.
             If ``None``, non equilibrium calculations are not possible. Default ``'radis'``.
+            This argument only affects molecules.
         db_use_cached: boolean, or ``None``
             if ``True``, a pandas-readable csv file is generated on first access,
             and later used. This saves on the datatype cast and conversion and
@@ -1735,6 +1748,7 @@ class DatabankLoader(object):
         load_energies: boolean
             if ``False``, dont load energy levels. This means that nonequilibrium
             spectra cannot be calculated, but it saves some memory. Default ``True``
+            This argument only affects molecules.
         include_neighbouring_lines: bool
             ``True``, includes off-range, neighbouring lines that contribute
             because of lineshape broadening. The ``neighbour_lines``
@@ -1873,7 +1887,23 @@ class DatabankLoader(object):
         # %% Load Partition functions (and energies if needed)
         # ----------------------------------------------------
 
-        self._init_equilibrium_partition_functions(parfunc, parfuncfmt)
+        if self.input.isatom:
+            if parfuncfmt == "kurucz":
+                warnings.warn(
+                    DeprecationWarning(
+                        "The `parfuncfmt` attribute is no longer applicable for atoms. Use the new architecture with the `pfsource` parameter instead."
+                    )
+                )
+                if not self.input.pfsource:
+                    if self.input.potential_lowering:
+                        self.warn("Assuming `pfsource = 'kurucz'`")
+                        self.input.pfsource = "kurucz"
+                    else:
+                        self.warn("Assuming `pfsource = 'barklem'`")
+                        self.input.pfsource = "barklem"
+            self.set_atomic_partition_functions()
+        else:
+            self._init_equilibrium_partition_functions(parfunc, parfuncfmt)
 
         # If energy levels are given, initialize the partition function calculator
         # (necessary for non-equilibrium). If levelsfmt == 'radis' then energies
@@ -2208,6 +2238,51 @@ class DatabankLoader(object):
                 predefined_partition_functions=predefined_partition_functions,
             )
             self.parsum_tab[molecule][iso][state] = ParsumTab
+
+    def set_atomic_partition_functions(self, pfsource=None):
+        """
+        Construct an interpolator or calculator for atomic partition functions and store it in the `parsum` attribute
+
+        Parameters
+        ----------
+        pfsource : ``string``
+            The source for the partition function tables for an interpolator or energy level tables for a calculator. Sources implemented so far are 'barklem' and 'kurucz' for the former, and 'nist' for the latter. 'default' is currently 'nist'.
+        """
+        if pfsource is None:
+            pfsource = self.input.pfsource
+        else:
+            self.input.pfsource = pfsource
+        species = self.input.species
+        error = False
+        if pfsource.casefold() == "default":
+            pfsource = "nist"
+        if pfsource.casefold() == "kurucz":
+            self.parsum = PartFuncKurucz(species)
+            if self.parsum.partfn is None:
+                error = True
+            # else:
+            #     self.params.parfuncpath = format_paths(self.parsum.parfuncpath)
+            #     self.params.parfuncfmt = 'atomic'
+        elif pfsource.casefold() == "barklem":
+            self.parsum = PartFuncBarklem(species)
+            if self.parsum.pf_values is None:
+                error = True
+            # else:
+            #     self.params.parfuncfmt = 'atomic'
+        elif pfsource.casefold() == "nist":
+            self.parsum = PartFuncNIST(species)
+            # self.params.levelsfmt = 'atomic'
+            # self.levelspath = format_paths(self.parsum.levelspath)
+        if error:
+            self.warn(
+                f"`pfsource` {pfsource} is not available for the species {species}. Try running `set_atomic_partition_functions` again with a different `pfsource`."
+            )
+        else:
+            self.params.parfuncpath = (
+                self.params.parfuncfmt
+            ) = (
+                self.params.levelsfmt
+            ) = self.levelspath = None  # all these parameters are irrelevant for atoms
 
     def _init_rovibrational_energies(self, levels, levelsfmt):
         """Initializes non equilibrium partition (which contain rovibrational
@@ -2949,8 +3024,8 @@ class DatabankLoader(object):
             parsum = PartFuncTIPS(
                 M=molecule, I=isotope, path=parfunc, verbose=self.verbose
             )
-        elif parfuncfmt in ["kurucz"]:
-            parsum = PartFuncKurucz(molecule, parfunc)
+            self.parsum_tab[molecule][isotope]["Tmin"] = parsum.Tmin
+            self.parsum_tab[molecule][isotope]["Tmax"] = parsum.Tmax
 
         elif parfuncfmt == "cdsd":  # Use tabulated CDSD partition functions
             self.reftracker.add(doi["CDSD-4000"], "partition function")

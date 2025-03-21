@@ -5,11 +5,15 @@ include radis/__version__.txt
 include radis/gpu/cuda/*.cu
 include radis/gpu/cuda/*.h
 include radis/gpu/cuda/build/*.*
+include radis/gpu/vulkan/shaders/*.comp
+include radis/gpu/vulkan/shaders/*.spv
+include radis/gpu/vulkan/bin/*.*
 include radis/phys/units.txt
 include radis/test/files/*.txt
 include radis/test/files/*.spec
 include radis/test/files/*.mat
 include radis/test/files/*.par
+include radis/test/files/*.xsc
 include radis/test/files/*.levels
 include radis/db/molparam.txt
 include radis/db/molparams_extra.json

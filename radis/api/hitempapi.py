@@ -9,11 +9,11 @@ https://stackoverflow.com/questions/55610891/numpy-load-from-io-bytesio-stream
 https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 
 """
-
 import json
 import os
 import re
 import urllib.request
+import warnings
 from os.path import basename, commonpath, join
 from typing import Union
 
@@ -21,7 +21,6 @@ import numpy as np
 import requests
 from bs4 import BeautifulSoup
 from cryptography.fernet import Fernet
-from getpass4 import getpass
 from tqdm import tqdm
 
 from radis.misc.config import CONFIG_PATH_JSON
@@ -122,11 +121,57 @@ def get_last(b):
     return b[non_zero]
 
 
+def running_in_spyder():
+    """Check if the console is running within Spyder."""
+    return "SPYDER_ARGS" in os.environ
+
+
+def _prompt_password(user):
+    """
+    Prompts the user for a password securely and handels input if spyder is used.
+
+    Parameters
+    ----------
+    user : str
+        Username.
+
+    Returns
+    -------
+    text : str
+        User input password.
+    """
+    if running_in_spyder():
+        try:
+            from PyQt5.QtCore import QCoreApplication
+            from PyQt5.QtWidgets import QApplication, QInputDialog, QLineEdit
+
+            app = QCoreApplication.instance()
+            if app is None:
+                app = QApplication([])
+
+            text, ok = QInputDialog.getText(
+                None, "Credential", f"User {user}:", QLineEdit.Password
+            )
+            if ok and text:
+                return text
+            raise ValueError(
+                "The dialog window was probably closed or left empty. Please enter a valid password."
+            )
+        except ModuleNotFoundError:
+            raise ImportError(
+                "You are using Spyder; please install PyQt5 with `pip install PyQt5` to use the password prompt."
+            )
+    else:
+        # If not using spyder use getpass
+        from getpass4 import getpass
+
+        return getpass(f"Enter password for {user}: ")
+
+
 def setup_credentials():
-    """Set up HITRAN credentials and store them in .env file"""
-    # Get credentials from user
+    """Set up HITRAN credentials and store them in .env file."""
     username = input("Enter HITRAN username: ")
-    password = getpass("Enter HITRAN password: ")
+    password = _prompt_password(username)
     return username, password
 
 
@@ -300,6 +345,17 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
     if file_response.status_code == 200:
         total_size = int(file_response.headers.get("content-length", 0))
         print(f"Total size to download: {total_size} bytes")
+        file_size_in_GB = total_size / (1024**3)
+        from radis import config
+
+        MAX_SIZE_GB = config["WARN_LARGE_DOWNLOAD_ABOVE_X_GB"]
+
+        if file_size_in_GB > MAX_SIZE_GB:
+            warning_msg = (
+                f"The total download size is {file_size_in_GB:.2f} GB, which will take time and potential a significant portion of your disk memory."
+                "To prevent this warning, you increase the limit using `radis.config['WARN_LARGE_DOWNLOAD_ABOVE_X_GB'] =  1`."
+            )
+            warnings.warn(warning_msg, UserWarning)
 
         with open(output_filename, "wb") as f, tqdm(
             total=total_size, unit="B", unit_scale=True, desc=output_filename

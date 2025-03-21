@@ -218,7 +218,7 @@ def generate_molparam_for_non_HITRAN_species():
 
     import re
 
-    _parse_molecule = re.compile("(\d+)+([A-Z][a-z]?)(\d+)?")
+    _parse_molecule = re.compile(r"(\d+)+([A-Z][a-z]?)(\d+)?")
 
     def get_isotopic_atomic_composition(molecule):
         atoms = {}

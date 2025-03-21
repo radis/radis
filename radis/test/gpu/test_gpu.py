@@ -11,34 +11,22 @@ Created on Sun Aug 22 13:34:42 2020
 import warnings
 
 import pytest
+from numpy import allclose
 
 import radis
 from radis import SpectrumFactory, get_residual
 from radis.misc.printer import printm
-from radis.misc.utils import NotInstalled, not_installed_nvidia_args
 from radis.misc.warning import NoGPUWarning
 from radis.test.utils import getTestFile
 
-try:
-    from nvidia.cufft import __path__ as cufft_path
-except ImportError:
-    cufft_path = NotInstalled(*not_installed_nvidia_args)
 
-
-@pytest.mark.skipif(
-    isinstance(cufft_path, NotInstalled),
-    reason="nvidia package not installed. Probably because on MAC OS",
-)
 @pytest.mark.fast
-def test_eq_spectrum_emulated_gpu(
-    backend="cpu-cuda", verbose=False, plot=False, *args, **kwargs
-):
-    """Compare Spectrum calculated in the emulated-GPU code
+def test_eq_spectrum_gpu(device_id=0, verbose=False, plot=False, *args, **kwargs):
+    """Compare Spectrum calculated in the GPU code
     :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu` to Spectrum
     calculated with the CPU code :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum`
     """
 
-    print("Backend: ", backend)
     T = 1000
     p = 0.1
     wstep = 0.001
@@ -74,8 +62,8 @@ def test_eq_spectrum_emulated_gpu(
     s_cpu.name += f" [{s_cpu.c['calculation_time']:.2f}s]"
     s_gpu = sf.eq_spectrum_gpu(
         Tgas=T,
-        backend=backend,
-        name="GPU (emulate)" if backend == "cpu-cuda" else "GPU",
+        name="GPU",
+        exit_gpu=True,
     )
     s_gpu.name += f"[{s_gpu.c['calculation_time']:.2f}s]"
     s_cpu.crop(wmin=2284.2, wmax=2284.8)  # remove edge lines
@@ -96,57 +84,129 @@ def test_eq_spectrum_emulated_gpu(
         s_cpu.print_perf_profile()
 
 
-@pytest.mark.skipif(
-    isinstance(cufft_path, NotInstalled),
-    reason="nvidia package not installed. Probably because on MAC OS",
-)
 @pytest.mark.needs_cuda
-def test_eq_spectrum_gpu(plot=False, *args, **kwargs):
+def test_eq_spectrum_gpu_nvidia(plot=False, *args, **kwargs):
     """Compare Spectrum calculated in the GPU code
     :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu` to Spectrum
-    calculated with the CPU code :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum`
+    calculated with the CPU code :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum`,
+    specifically using an Nvidia GPU.
     """
     # Ensure that GPU is not deactivated (which triggers a NoGPUWarning)
     with warnings.catch_warnings():
         warnings.simplefilter("error", category=NoGPUWarning)
-        test_eq_spectrum_emulated_gpu(backend="gpu-cuda", plot=plot, *args, **kwargs)
+        test_eq_spectrum_gpu(device_id="nvidia", plot=plot, *args, **kwargs)
 
 
-@pytest.mark.skipif(
-    isinstance(cufft_path, NotInstalled),
-    reason="nvidia package not installed. Probably because on MAC OS",
-)
 @pytest.mark.fast
-def test_multiple_gpu_calls():
+def test_multiple_gpu_calls(plot=False, hard_test=True):
     from radis import SpectrumFactory
 
     fixed_conditions = {
-        "path_length": 1,
         "wmin": 2000,
         "wmax": 2010,
         "pressure": 0.1,
         "wstep": 0.001,
         "mole_fraction": 0.01,
     }
+    if plot:
+        import matplotlib.pyplot as plt
 
     sf = SpectrumFactory(**fixed_conditions, broadening_method="fft", molecule="CO")
     sf.fetch_databank("hitran")
 
-    s1_gpu = sf.eq_spectrum_gpu(
-        Tgas=300, backend="gpu-cuda", diluent={"air": 0.99}  # K  # runs on GPU
+    s_gpu = sf.eq_spectrum_gpu(
+        Tgas=300.0,
+        path_length=1.0,
+        backend="vulkan",
+        diluent={"air": 0.99},  # K  # runs on GPU
     )
-    s2_gpu = sf.eq_spectrum_gpu(
-        Tgas=300, backend="gpu-cuda", diluent={"air": 0.99}  # K  # runs on GPU
+    wl, A1 = s_gpu.get("absorbance")
+    A2 = s_gpu.recalc_gpu("absorbance", path_length=3.0)
+    s_gpu.exit_gpu()
+
+    if plot:
+        plt.plot(wl, 3 * A1, "k", lw=3)
+        plt.plot(wl, A2, "r", lw=1)
+
+    assert allclose(3 * A1, A2, rtol=1e-4)
+    assert allclose(3 * A1, A2, atol=1e-6)
+
+    if not hard_test:
+        if plot:
+            plt.show()
+        return
+
+    # The second part of the tests spawns a new gpuApp.
+    # this is only possible if all cleaning up went well the first time.
+
+    s_gpu3 = sf.eq_spectrum_gpu(
+        Tgas=300.0,
+        path_length=2.0,
+        backend="vulkan",
+        diluent={"air": 0.99},  # K  # runs on GPU
+        exit_gpu=True,
+    )
+    wl, A3 = s_gpu3.get("absorbance")
+
+    if plot:
+        import matplotlib.pyplot as plt
+
+        plt.plot(wl, 1.5 * A3, "m+")
+
+    assert allclose(2 * A1, A3, rtol=1e-4)
+
+    if plot:
+        plt.show()
+
+
+def test_broadening(plot=False):
+    """Compare broadening to ensure it is the same in cpu and gpu"""
+
+    from radis import SpectrumFactory, plot_diff
+
+    sf = SpectrumFactory(
+        2305,
+        2307,  # cm-1
+        molecule="CO2",
+        isotope="1",
+        wstep=0.002,
     )
 
-    assert abs(s1_gpu.get_power() - s2_gpu.get_power()) / s1_gpu.get_power() < 1e-5
-    assert s1_gpu.get_power() > 0
+    sf.fetch_databank(source="hitran")
+
+    T = 1500.0  # K
+    p = 2.0  # bar
+    x = 0.95
+    l = 0.2  # cm
+
+    s_cpu = sf.eq_spectrum(
+        name="CPU",
+        Tgas=T,
+        pressure=p,
+        mole_fraction=x,
+        path_length=l,
+    )
+
+    s_gpu = sf.eq_spectrum_gpu(
+        name="GPU",
+        Tgas=T,
+        pressure=p,
+        mole_fraction=x,
+        path_length=l,
+        exit_gpu=True,
+    )
+    if plot:
+        plot_diff(s_cpu, s_gpu, var="emissivity_noslit", wunit="nm", method="diff")
+
+    assert get_residual(s_cpu, s_gpu, "emissivity_noslit") < 1.5e-4
 
 
 # --------------------------
 if __name__ == "__main__":
 
-    # test_eq_spectrum_gpu(plot=True)
-    test_eq_spectrum_emulated_gpu(plot=True, verbose=2)
+    # test_eq_spectrum_gpu(plot=True, verbose=2)
+    # test_eq_spectrum_gpu_nvidia(plot=True)
+    # test_multiple_gpu_calls(plot=True, hard_test=True)
+    # test_broadening(plot=True)
 
     printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))

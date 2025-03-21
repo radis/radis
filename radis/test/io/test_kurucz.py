@@ -2,7 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from radis.api.kuruczapi import load_pf_Barklem2016, read_kurucz
+from radis.api.atomic_pf_api import load_pf_Barklem2016
+from radis.api.kuruczapi import read_kurucz
 from radis.test.utils import getTestFile
 
 

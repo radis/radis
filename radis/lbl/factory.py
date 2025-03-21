@@ -110,7 +110,7 @@ from radis.spectrum.spectrum import Spectrum
 
 
 class SpectrumFactory(BandFactory):
-    r"""A class to put together all functions related to loading CDSD / HITRAN
+    """A class to put together all functions related to loading CDSD / HITRAN
     databases, calculating the broadenings, and summing over all the lines.
 
     Parameters
@@ -193,7 +193,7 @@ class SpectrumFactory(BandFactory):
     neighbour_lines: float (:math:`cm^{-1}`)
         The calculated spectral range is increased (by ``neighbour_lines`` cm-1
         on each side) to take into account overlaps from out-of-range lines.
-        Default is ``0`` :math:`cm^{-1}`.​
+        Default is ``0`` :math:`cm^{-1}`.​ #TODO: Check weird character
     wstep: float (cm-1) or `'auto'`
         Resolution of wavenumber grid. Default ``0.01`` cm-1.
         If `'auto'`, it is ensured that there
@@ -248,7 +248,7 @@ class SpectrumFactory(BandFactory):
         - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [Spectral-Synthesis-Algorithm]_)
         - ``"simple"`` : weights equal to their relative position in the grid
 
-        If using the LDM optimization, broadening method is automatically set to ``'fft'``.
+        If using the LDM optimization, broadening method is automatically set to ``'fft'``. #TODO: Check if this is still true
         If ``None``, no lineshape interpolation is performed and the lineshape of all lines is calculated.
 
         Refer to [Spectral-Synthesis-Algorithm]_ for more explanation on the LDM method for lineshape interpolation.
@@ -313,12 +313,16 @@ class SpectrumFactory(BandFactory):
             - `isneutral`: When calculating the spectrum of an atomic species, whether or not it is neutral (always ``None`` for molecules)
         Returns:
             `gamma_lb`, `shift` - The total Lorentzian HWHM [:math:`cm^{-1}`], and the shift [:math:`cm^{-1}`] to be subtracted from the wavenumber array to account for lineshift. If setting the lineshift here is not desired, the 2nd return object can be anything for which `bool(shift)==False` like `None`. gamma_lb must be array-like but can also be a vaex expression if the dataframe type is vaex.
-        If unspecified, the broadening is handled by default by :func:`~radis.lbl.broadening.gamma_vald3` for atoms and :func:`~radis.lbl.broadening.pressure_broadening_HWHM` for molecules
+        If unspecified, the broadening is handled by default by :func:`~radis.lbl.broadening.gamma_vald3` for atoms when using the Kurucz databank, and :func:`~radis.lbl.broadening.pressure_broadening_HWHM` for molecules.
+
+        For the NIST databank, the `lbfunc` parameter is compulsory as NIST doesn't provide broadening parameters.
 
         See :ref:`the provided example <example_custom_lorentzian_broadening>`
+    pfsource : ``string``
+        The source for the partition function tables for an interpolator or energy level tables for a calculator. Sources implemented so far are 'barklem' and 'kurucz' for the former, and 'nist' for the latter. 'default' is currently 'nist'. The `pfsource` can be changed post-initialisation using the :meth:`~radis.lbl.loader.DatabankLoader.set_atomic_partition_functions` method. See :ref:`the provided example <example_potential_lowering_pfs>` for more details.
     potential_lowering: float (cm-1/Zeff**2)
-        Use dedicated partition function tables (where available) in Kurucz database that depend on temperature and potential lowering. Otherwise, default to [Barklem-\&-Collet-2016]_ Table 8. Can be changed on the fly by setting `sf.input.potential_lowering`. Allowed values are typically: -500, -1000, -2000, -4000, -8000, -16000, -32000.
-        See :ref:`the provided example <example_potential_lowering_pfs>` for more details
+        The value of potential lowering, only relevant when `pfsource` is 'kurucz' as it depends on both temperature and potential lowering. Can be changed on the fly by setting `sf.input.potential_lowering`. Allowed values are typically: -500, -1000, -2000, -4000, -8000, -16000, -32000.
+        Again, see :ref:`the provided example <example_potential_lowering_pfs>` for more details.
 
     Examples
     --------
@@ -442,6 +446,7 @@ class SpectrumFactory(BandFactory):
         diluent=Default(None),
         lbfunc=None,
         potential_lowering=None,
+        pfsource="default",
         **kwargs,
     ):
 
@@ -619,6 +624,7 @@ class SpectrumFactory(BandFactory):
         )
         self.input.self_absorption = self_absorption
         self.input.potential_lowering = potential_lowering
+        self.input.pfsource = pfsource
 
         # Initialize computation variables
         self.params.wstep = wstep
@@ -1032,16 +1038,13 @@ class SpectrumFactory(BandFactory):
         path_length=None,
         pressure=None,
         name=None,
-        backend="gpu-cuda",
-        exit_gpu=True,
+        backend="vulkan",
+        device_id=0,
+        exit_gpu=False,
+        verbose=None,
     ) -> Spectrum:
         """Generate a spectrum at equilibrium with calculation of lineshapes
         and broadening done on the GPU.
-
-        .. note::
-            This method requires CUDA compatible hardware to execute.
-            For more information on how to setup your system to run GPU-accelerated methods
-            using CUDA and Cython, check :ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>`
 
         Parameters
         ----------
@@ -1061,8 +1064,17 @@ class SpectrumFactory(BandFactory):
         Other Parameters
         ----------------
         backend: str
-            if ``'gpu-cuda'``, set CUDA as backend to run code on Nvidia GPU.
-            if ``'cpu-cuda'``, execute the GPU code on the CPU (useful for development)
+            currently only ``'vulkan'`` backend is supported.
+            ``'gpu-cuda'`` and``'cpu-cuda'`` used to be available to switch to a CUDA backend,
+            but have been deprecated in favor of the Vulkan backend.
+        device_id: int, str
+            Select the GPU device. If ``int``, specifies the device index, which is printed for convenience during GPU initialization with backend='vulkan' (default).
+            If ``str``, return the first device that includes the specified string (case in-sesitive). If not found, return the device at index 0.
+            default = 0
+        exit_gpu: bool
+            Specifies whether the GPU app should be exited after producing the spectrum. Usually this is undesirable, because the GPU
+            computations start to benefit *after* the first spectrum is produced by calling s.recalc_gpu(). See also :meth:`~radis.spectrum.spectrum.Spectrum.recalc_gpu`
+            default = False
 
         Returns
         -------
@@ -1125,7 +1137,8 @@ class SpectrumFactory(BandFactory):
         self.input.Tvib = Tgas  # just for info
         self.input.Trot = Tgas  # just for info
 
-        verbose = self.verbose
+        if verbose is None:
+            verbose = self.verbose
 
         # New Profiler object
         self._reset_profiler(verbose)
@@ -1172,6 +1185,7 @@ class SpectrumFactory(BandFactory):
             iso_list, dtype=np.float32
         )  # molar mass of each isotope
 
+        # T_max_parsum = float("inf")
         Q_interp_list = []
         for iso in iso_list:
             if iso in iso_set:
@@ -1179,6 +1193,9 @@ class SpectrumFactory(BandFactory):
                 molarmass_arr[iso] = params.molar_mass
                 parsum = self.get_partition_function_interpolator(molecule, iso, state)
                 Q_interp_list.append(parsum.at)
+                # T_max_parsum = np.min(
+                #     (T_max_parsum, parsum.Tmax)
+                # )  # from all the isotopologues partition function, the lowest maximum temperature
             else:
                 Q_interp_list.append(lambda T: 1.0)
 
@@ -1192,9 +1209,9 @@ class SpectrumFactory(BandFactory):
 
         # load the data
         if len(iso_set) > 1:
-            iso = self.df0["iso"].to_numpy(dtype=np.uint8)
+            iso = self.df0["iso"].to_numpy(dtype=np.uint32)
         elif len(iso_set) == 1:
-            iso = np.full(_Nlines_calculated, iso_set[0], dtype=np.uint8)
+            iso = np.full(_Nlines_calculated, iso_set[0], dtype=np.uint32)
         else:
             warn("Zero isotopes found... Is the database empty?")
 
@@ -1203,28 +1220,26 @@ class SpectrumFactory(BandFactory):
         # )
 
         gamma_arr = np.zeros((2, _Nlines_calculated), dtype=np.float32)
-        # gamma_arr[0] = self.df0["selbrd"].to_numpy(dtype=np.float32)
-        gamma_arr[0] = self.df0["airbrd"].to_numpy(
-            dtype=np.float32
-        )  # dirty, but working for the moment
+        gamma_arr[0] = self.df0["selbrd"].to_numpy(dtype=np.float32)
         gamma_arr[1] = self.df0["airbrd"].to_numpy(dtype=np.float32)
-
-        # Check if pressure shift exists (12/2024: not the case in Exomol)
-        if "Pshft" not in self.df0:
-            self.warn(
-                "Pressure-shift coefficient not given in database: assumed 0 pressure shift",
-                "MissingPressureShiftWarning",
-            )
-            self.df0["Pshft"] = 0
 
         self.calc_S0(self.df0)
 
         if verbose >= 2:
             print("Initializing parameters...", end=" ")
 
-        from radis.gpu.gpu import gpu_exit, gpu_init, gpu_iterate
+        if backend == "vulkan":
+            from radis.gpu.gpu import gpuApp
+        elif backend in ["cpu-cuda", "gpu-cuda"]:
+            raise NotImplementedError(
+                "CUDA backend is deprecated. If you have a good reason you need CUDA in favor of Vulkan please open an issue on Github"
+            )
+            return
+        else:
+            raise NotImplementedError("Unknown GPU backend")
+            return
 
-        gpu_init(
+        gpu_app = gpuApp(
             self.params.wavenum_min_calc,
             len(self.wavenumber_calc),
             self.params.wstep,
@@ -1240,7 +1255,7 @@ class SpectrumFactory(BandFactory):
             molarmass_arr,
             Q_interp_list,
             verbose=verbose,
-            backend=backend,
+            device_id=device_id,
         )
         if verbose >= 2:
             print("Initialization complete!")
@@ -1248,19 +1263,14 @@ class SpectrumFactory(BandFactory):
         if verbose >= 2:
             print("Calculating spectra...", end=" ")
 
-        abscoeff_calc, iter_params, times = gpu_iterate(
+        abscoeff_calc, times = gpu_app.iterate(
             pressure,
             Tgas,
             mole_fraction,
             verbose=verbose,
         )
 
-        # If sf.eq_spectrum_gpu() was called directly by the user, this is the time to
-        # destroy the CUDA context since we're done with all GPU calculations.
-        # When called from within sf.eq_spectrum_gpu_interactive(), the context must remain active
-        # because more calls to gpu_iterate() will follow. This is controlled by the exit_gpu keyword.
-        if exit_gpu:
-            gpu_exit()
+        iter_N_L, iter_N_G = gpu_app.get_griddims()
 
         # Calculate output quantities
         # ----------------------------------------------------------------------
@@ -1303,7 +1313,6 @@ class SpectrumFactory(BandFactory):
         self.profiler.start("generate_spectrum_obj", 2)
 
         # Get lines (intensities + populations)
-
         conditions = self.get_conditions(add_config=True)
         conditions.update(
             {
@@ -1321,15 +1330,15 @@ class SpectrumFactory(BandFactory):
                 ),
                 "add_at_used": "gpu-backend",
                 "profiler": dict(self.profiler.final),
-                "NwL": iter_params.N_L,
-                "NwG": iter_params.N_G,
+                "NwL": iter_N_L,
+                "NwG": iter_N_G,
             }
         )
         if self.params.optimization != None:
             conditions.update(
                 {
-                    "NwL": iter_params.N_L,
-                    "NwG": iter_params.N_G,
+                    "NwL": iter_N_L,
+                    "NwG": iter_N_G,
                 }
             )
         del self.profiler.final[list(self.profiler.final)[-1]][
@@ -1352,6 +1361,7 @@ class SpectrumFactory(BandFactory):
             quantities=quantities,
             units=self.units,
             conditions=conditions,
+            gpu_app=(None if exit_gpu else gpu_app),
             lines=lines,
             cond_units=self.cond_units,
             # dont check input (much faster, and Spectrum
@@ -1446,8 +1456,6 @@ class SpectrumFactory(BandFactory):
         import matplotlib.pyplot as plt
         from matplotlib.widgets import Slider
 
-        from radis.gpu.gpu import gpu_exit
-
         self.interactive_params = {}
 
         for key in kwargs:
@@ -1503,7 +1511,7 @@ class SpectrumFactory(BandFactory):
             n_sliders += 1
 
         fig.subplots_adjust(bottom=0.05 * n_sliders + 0.15)
-        fig.canvas.mpl_connect("close_event", gpu_exit)
+        fig.canvas.mpl_connect("close_event", s.exit_gpu)
 
         if not was_interactive:
             plt.ioff()
