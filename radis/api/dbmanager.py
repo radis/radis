@@ -63,22 +63,6 @@ def get_auto_MEMORY_MAPPING_ENGINE():
         return "vaex"
 
 
-# Add a zip opener to the datasource _file_openers
-def open_zip(zipname, mode="r", encoding=None, newline=None):
-    output = BytesIO()
-    with ZipFile(zipname, mode[0]) as myzip:
-        fnames = myzip.namelist()
-        for fname in fnames:
-            output.write(myzip.read(fname))
-    output.seek(0)
-    return output
-
-
-# This was originally used with numpy.DataSource but is being migrated to requests
-# Keeping the function in case it's used elsewhere
-np.lib._datasource._file_openers._file_openers[".zip"] = open_zip
-
-
 class DatabaseManager(object):
     """Line Database parser
 
