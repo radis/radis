@@ -65,5 +65,11 @@ print("Single Iteration Performance Results:")
 print("Direct Calculation time: {:.4f} seconds".format(time_direct))
 print("Precomputed then Combined time: {:.4f} seconds".format(time_precomputed))
 
+# Convert combined_spectrum from wavenumber to wavelength in nm
+combined_spectrum_nm = combined_spectrum.resample(
+    combined_spectrum.get_wavelength(), "nm", inplace=False
+)
+
+# Plot both spectra using wavelength as the x-axis
 direct_h2o_co2.plot("abscoeff", label="Direct Calculation")
-combined_spectrum.plot(label="Combined Precomputed Spectra", linestyle="--")
+combined_spectrum_nm.plot(label="Combined Precomputed Spectra", linestyle="--")
