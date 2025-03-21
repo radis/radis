@@ -14,12 +14,15 @@ This example demonstrates how to:
 
 """
 
+import time
+
 from radis import calc_spectrum, config
 
 # Configure RADIS to handle missing broadening coefficients
 config["MISSING_BROAD_COEF"] = "air"
 
-# Approach 1: Direct calculation with multiple molecules
+# Direct Calculation
+start_time_direct = time.perf_counter()
 direct_h2o_co2 = calc_spectrum(
     wavelength_min=4800,
     wavelength_max=5000,
@@ -29,8 +32,10 @@ direct_h2o_co2 = calc_spectrum(
     isotope="1,2",
     verbose=False,
 )
+time_direct = time.perf_counter() - start_time_direct
 
-# Approach 2: Precompute individual spectra and combine
+# Precompute and Combine Individual Spectra
+start_time_precomputed = time.perf_counter()
 s_h2o = calc_spectrum(
     wavelength_min=4800,
     wavelength_max=5000,
@@ -40,7 +45,6 @@ s_h2o = calc_spectrum(
     isotope="1,2",
     verbose=False,
 )
-
 s_co2 = calc_spectrum(
     wavelength_min=4800,
     wavelength_max=5000,
@@ -50,16 +54,16 @@ s_co2 = calc_spectrum(
     isotope="1,2",
     verbose=False,
 )
-
-# Select abscoeff data from precomputed spectra
 s_h2o_selected = s_h2o.take("abscoeff")
 s_co2_selected = s_co2.take("abscoeff")
-
-# Rescale and combine spectra
-pre_computed_then_combined = s_h2o_selected.rescale_mole_fraction(
+combined_spectrum = s_h2o_selected.rescale_mole_fraction(
     0.2
 ) + s_co2_selected.rescale_mole_fraction(0.8)
+time_precomputed = time.perf_counter() - start_time_precomputed
 
-# Plot the results
+print("Single Iteration Performance Results:")
+print("Direct Calculation time: {:.4f} seconds".format(time_direct))
+print("Precomputed then Combined time: {:.4f} seconds".format(time_precomputed))
+
 direct_h2o_co2.plot("abscoeff", label="Direct Calculation")
-pre_computed_then_combined.plot(label="Combined Precomputed Spectra", linestyle="--")
+combined_spectrum.plot(label="Combined Precomputed Spectra", linestyle="--")
