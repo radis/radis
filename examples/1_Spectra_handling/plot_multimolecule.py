@@ -14,8 +14,6 @@ This example demonstrates how to:
 
 """
 
-import matplotlib.pyplot as plt
-
 from radis import calc_spectrum, config
 
 # Configure RADIS to handle missing broadening coefficients
@@ -23,18 +21,18 @@ config["MISSING_BROAD_COEF"] = "air"
 
 # Approach 1: Direct calculation with multiple molecules
 direct_h2o_co2 = calc_spectrum(
-    wavelength_min=4165,
+    wavelength_min=4800,
     wavelength_max=5000,
     Tgas=300,
     path_length=0.1,
-    mole_fraction={"H2O": 0.19, "CO2": 0.095},
+    mole_fraction={"H2O": 0.2, "CO2": 0.8},
     isotope="1,2",
     verbose=False,
 )
 
 # Approach 2: Precompute individual spectra and combine
 s_h2o = calc_spectrum(
-    wavelength_min=4165,
+    wavelength_min=4800,
     wavelength_max=5000,
     Tgas=300,
     path_length=0.1,
@@ -44,7 +42,7 @@ s_h2o = calc_spectrum(
 )
 
 s_co2 = calc_spectrum(
-    wavelength_min=4165,
+    wavelength_min=4800,
     wavelength_max=5000,
     Tgas=300,
     path_length=0.1,
@@ -53,15 +51,15 @@ s_co2 = calc_spectrum(
     verbose=False,
 )
 
+# Select abscoeff data from precomputed spectra
+s_h2o_selected = s_h2o.take("abscoeff")
+s_co2_selected = s_co2.take("abscoeff")
+
 # Rescale and combine spectra
-pre_computed_then_combined = s_h2o.rescale_mole_fraction(
-    0.19
-) + s_co2.rescale_mole_fraction(0.095)
+pre_computed_then_combined = s_h2o_selected.rescale_mole_fraction(
+    0.2
+) + s_co2_selected.rescale_mole_fraction(0.8)
 
 # Plot the results
-plt.figure(figsize=(8, 5))
-direct_h2o_co2.plot(label="Direct Calculation")
+direct_h2o_co2.plot("abscoeff", label="Direct Calculation")
 pre_computed_then_combined.plot(label="Combined Precomputed Spectra", linestyle="--")
-plt.legend()
-plt.title("Comparison of Multi-Molecule Spectrum Approaches")
-plt.show()
