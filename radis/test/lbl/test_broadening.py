@@ -16,13 +16,14 @@ import matplotlib.pyplot as plt
 import pytest
 from numpy import isclose
 
-from radis import get_residual, get_residual_integral, plot_diff
+from radis import config, get_residual, get_residual_integral, plot_diff
 from radis.lbl.factory import SpectrumFactory
 from radis.misc.printer import printm
 from radis.spectrum.spectrum import Spectrum
 from radis.test.utils import setup_test_line_databases
 
 pytestmark = pytest.mark.random_order(disabled=True)
+config["ALLOW_OVERWRITE"] = True
 
 
 @pytest.mark.fast
