@@ -4,9 +4,7 @@
 """
 import os
 import shutil
-from io import BytesIO
 from os.path import abspath, dirname, exists, expanduser, join, split, splitext
-from zipfile import ZipFile
 
 try:
     from ..misc.config import addDatabankEntries, getDatabankEntries, getDatabankList
@@ -37,7 +35,6 @@ except ImportError:
 
 from datetime import date
 
-import numpy as np
 import pandas as pd
 import requests
 from dateutil.parser import parse as parse_date
@@ -61,6 +58,24 @@ def get_auto_MEMORY_MAPPING_ENGINE():
         return "pytables"
     else:
         return "vaex"
+
+
+# Class to mimic numpy.DataSource behavior
+class RequestsFileOpener:
+    """Simple file opener class that mimics the behavior of numpy.DataSource
+    but works with files downloaded via requests.
+    """
+
+    def __init__(self, file_path):
+        self.file_path = file_path
+
+    def open(self, url_or_path=None):
+        """Open the file for reading"""
+        return open(self.file_path, "rb")
+
+    def abspath(self, url_or_path=None):
+        """Return the absolute path of the file"""
+        return self.file_path
 
 
 class DatabaseManager(object):
@@ -385,19 +400,6 @@ class DatabaseManager(object):
                     for chunk in response.iter_content(chunk_size=8192):
                         if chunk:  # filter out keep-alive new chunks
                             f.write(chunk)
-
-                # class to mimic DataSource behavior
-                class RequestsFileOpener:
-                    def __init__(self, file_path):
-                        self.file_path = file_path
-
-                    def open(self, url_or_path=None):
-                        """Open the file for reading"""
-                        return open(self.file_path, "rb")
-
-                    def abspath(self, url_or_path=None):
-                        """Return the absolute path of the file"""
-                        return self.file_path
 
                 # Create an opener object that mimics numpy.DataSource
                 opener = RequestsFileOpener(temp_file_path)
