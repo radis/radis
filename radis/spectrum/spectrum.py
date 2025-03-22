@@ -2424,11 +2424,7 @@ class Spectrum(object):
         xlabel = format_xlabel(wunit, show_medium)
         ylabel = "{0} ({1})".format(make_up(var), make_up_unit(Iunit, var))
 
-        radiance_data = self.get("radiance_noslit")
-        df = pd.DataFrame(
-            {"Wavenumber": radiance_data[0], "Radiance_noslit": radiance_data[1]}
-        )
-        fig = px.line(df, x="Wavenumber", y="Radiance_noslit", template=template)
+        fig = px.line(x=x, y=y, template=template)
         fig.update_layout(
             xaxis_title=xlabel,
             yaxis_title=ylabel,
@@ -4058,7 +4054,6 @@ class Spectrum(object):
         See discussion in https://github.com/pandas-dev/pandas/issues/10349
 
         For the moment, we store units as metadata"""
-        import pandas as pd
 
         df = pd.DataFrame(self._q, copy=copy)
 
