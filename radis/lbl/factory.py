@@ -237,11 +237,14 @@ class SpectrumFactory(BandFactory):
         if ``True``, saves details of all calculated lines in Spectrum. This is
         necessary to later use :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey`,
         but can take some space. Default ``False``.
-    chunksize: int, or ``None``
+    chunksize: int, 'auto', or ``None``
         Splits the lines database in several chunks during calculation, else
         the multiplication of lines over all spectral range takes too much memory
-        and slows the system down. Chunksize let you change the default chunk
-        size. If ``None``, all lines are processed directly. Usually faster but
+        and slows the system down. Chunksize let you change the default chunk size.
+        If ``'auto'``, the optimal Chunksize is determined dynamically based on the
+        number of lines, grid points, and available system memory. This helps balance
+        performance and memory usage by ensuring a reasonable number of lines per chunk.
+        If ``None``, all lines are processed directly. Usually faster but
         can create memory problems. Default ``None``
     optimization : ``"simple"``, ``"min-RMS"``, ``None``
         If either ``"simple"`` or ``"min-RMS"`` LDM optimization for lineshape calculation is used:
@@ -695,6 +698,22 @@ class SpectrumFactory(BandFactory):
         self.params.lbfunc = lbfunc
 
         # used to split lines into blocks not too big for memory
+        if chunksize == "auto":
+            from sys import getsizeof
+
+            from psutil import virtual_memory
+
+            from radis.lbl.factory import _generate_broadening_range
+
+            n = 1
+            if isinstance(truncation, Default):
+                truncation = truncation.value
+            x = virtual_memory().available / getsizeof(
+                _generate_broadening_range(wstep, truncation)
+            )
+            chunksize = round(x * 10 ** (-np.floor(np.log10(x))), n - 1) * 10 ** (
+                np.floor(np.log10(x))
+            )
         self.misc.chunksize = chunksize
         # Other parameters:
         self.save_memory = save_memory
