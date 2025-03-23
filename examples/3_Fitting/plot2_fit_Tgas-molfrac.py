@@ -53,7 +53,7 @@ experimental_conditions = {
     * u.bar,  # Total pressure of gas, in "bar" unit by default, but you can use Astropy units too.
     "path_length": 10
     * u.cm,  # Experimental path length, in "cm" unit by default, but you can use Astropy units too.
-    "databank": "exomol",  # hitemp is recommended
+    "databank": "hitemp",  # HITEMP is recommended
     "wstep": "auto",
 }
 

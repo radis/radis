@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 =========================================================
-Compare NO cross-sections from HITRAN and ExoMol
+Compare NO cross-sections from GEISA and ExoMol
 =========================================================
 
 Auto-download, calculate, and compare NO spectra from the HITRAN and GEISA databases
