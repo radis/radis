@@ -3,7 +3,7 @@
 .. _example_download_hitemp:
 
 ============================
-Download the HITEMP database
+Download the HITRAN database
 ============================
 
 Database will be downloaded automatically and can be edited locally.

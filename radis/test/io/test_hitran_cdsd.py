@@ -290,6 +290,21 @@ def test_cache_regeneration(verbose=True, warnings=True, **kwargs):
     assert cache_last_modification_again > cache_last_modification
 
 
+def test_hitran_cross_sections(*args, **kwargs):
+
+    datafile = "CH3COCH3_233.4_375.2_700.0-1780.0_13.xsc"
+
+    from radis.api.hitranapi import hitranxsc
+
+    data = hitranxsc(getTestFile(datafile))
+
+    assert data["T"] == 233.4  # K
+    assert data["P"] == 375.2  # Pa
+    assert data["name"] == "Acetone"
+    assert data["wavenumber"].min() == 700.004
+    assert data["wavenumber"].max() == 1780.0066
+
+
 def _run_testcases(verbose=True, *args, **kwargs):
 
     test_hitran_names_match(verbose=verbose, *args, **kwargs)
@@ -299,6 +314,7 @@ def _run_testcases(verbose=True, *args, **kwargs):
     test_local_hitemp_file(verbose=verbose, *args, **kwargs)
     test_irrelevant_file_loading()
     test_cache_regeneration(verbose=verbose, *args, **kwargs)
+    test_hitran_cross_sections(*args, **kwargs)
     return True
 
 
