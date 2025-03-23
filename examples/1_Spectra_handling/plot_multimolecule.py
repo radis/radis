@@ -16,7 +16,7 @@ This example demonstrates how to:
 
 import time
 
-from radis import calc_spectrum, config
+from radis import calc_spectrum, config, plot_diff
 
 # Configure RADIS to handle missing broadening coefficients
 config["MISSING_BROAD_COEF"] = "air"
@@ -69,7 +69,5 @@ print("Precomputed then Combined time: {:.4f} seconds".format(time_precomputed))
 combined_spectrum_nm = combined_spectrum.resample(
     combined_spectrum.get_wavelength(), "nm", inplace=False
 )
-
-# Plot both spectra using wavelength as the x-axis
-direct_h2o_co2.plot("abscoeff", label="Direct Calculation")
-combined_spectrum_nm.plot(label="Combined Precomputed Spectra", linestyle="--")
+# Plot the difference between the combined spectrum and the directly calculated spectrum.
+plot_diff(combined_spectrum_nm, direct_h2o_co2)
