@@ -29,7 +29,7 @@ from numpy import exp
 
 from radis import SpectrumFactory
 from radis.db.molecules import Molecules
-from radis.levels.partfunc import PartFunc_Dunham, PartFuncKurucz, PartFuncTIPS
+from radis.levels.partfunc import PartFunc_Dunham, PartFuncBarklem, PartFuncTIPS
 from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDcalc, PartFuncCO2_CDSDtab
 from radis.misc.printer import printm
 from radis.misc.warning import DeprecatedFileWarning
@@ -359,9 +359,9 @@ def test_CDSD_calc_vs_ref(warnings=True, verbose=True, *args, **kwargs):
         printm("Tested Q_CDSD values are correct : OK")
 
 
-def test_partfunckurucz():
+def test_partfuncbarklem():
     species = "Ca_I"
-    kurucz_data = PartFuncKurucz(species)
+    kurucz_data = PartFuncBarklem(species)
 
     temperatures = np.array(
         [
@@ -1142,7 +1142,7 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
     test_parsum_mode_in_factory(verbose=verbose, *args, **kwargs)
 
     # Test 10:
-    test_partfunckurucz()
+    test_partfuncbarklem()
 
     return True
 

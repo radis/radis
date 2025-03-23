@@ -19,6 +19,7 @@
     "AUTO_UPDATE_DATABASE": false           # auto-convert 'pytables' files to 'vaex'
     "AUTO_UPDATE_SPEC": false               # auto-update saved Spectrum objects to latest format.
     "OLDEST_COMPATIBLE_VERSION": "0.9.1"    # automatically regenerate cache, files generated with versions anterior to this one,
+    "WARN_LARGE_DOWNLOAD_ABOVE_X_GB": 1  # Warn the user when downloading databases larger than X GB but does *not* stop the download,
     "GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD": 3    # raise a warning if less than THIS number of grid points per lineshape,
     "GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD": 1   # raise an error if less than THIS number of grid points per lineshape,
     "MEMORY_MAPPING_ENGINE": "auto"         # "vaex",/"pytables"/"feather". "auto" uses "vaex" in most cases
