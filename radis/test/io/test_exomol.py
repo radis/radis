@@ -72,61 +72,58 @@ def test_calc_exomol_spectrum(verbose=True, plot=True, *args, **kwargs):
         s.plot("radiance")
 
 
-# Removed due to issue 717 - https://github.com/radis/radis/issues/717
-# @pytest.mark.needs_connection
-# def test_calc_exomol_vs_hitemp(verbose=True, plot=True, *args, **kwargs):
-#     """Auto-fetch and calculate a CO spectrum from the ExoMol database
-#     (HITEMP lineset) and compare to HITEMP (on the HITRAN server)
+@pytest.mark.needs_connection
+def test_calc_exomol_vs_hitemp(verbose=True, plot=True, *args, **kwargs):
+    """Auto-fetch and calculate a CO spectrum from the ExoMol database
+    (HITEMP lineset) and compare to HITEMP (on the HITRAN server)
 
-#     https://github.com/radis/radis/pull/320#issuecomment-884508206
-#     """
-#     import astropy.units as u
+    https://github.com/radis/radis/pull/320#issuecomment-884508206
+    """
+    import astropy.units as u
 
-#     from radis import calc_spectrum
+    from radis import calc_spectrum
 
-#     conditions = {
-#         "wmin": 2002 / u.cm,
-#         "wmax": 2300 / u.cm,
-#         "molecule": "CO",
-#         "isotope": "2",
-#         "pressure": 1.01325,  # bar
-#         "Tgas": 1000,  # K
-#         "mole_fraction": 0.1,
-#         "path_length": 1,  # cm
-#         "broadening_method": "fft",
-#         "verbose": True,
-#     }
+    conditions = {
+        "wmin": 2002 / u.cm,
+        "wmax": 2300 / u.cm,
+        "molecule": "CO",
+        "isotope": "2",
+        "pressure": 1.01325,  # bar
+        "Tgas": 1000,  # K
+        "mole_fraction": 0.1,
+        "path_length": 1,  # cm
+        "broadening_method": "fft",
+        "verbose": True,
+    }
 
-#     s_exomol = calc_spectrum(
-#         **conditions,
-#         databank="exomol",
-#         name="EXOMOL (default broadening)",  # June 2017, default ref is Li2015
-#     )
-#     s_hitemp = calc_spectrum(
-#         **conditions,
-#         databank="hitemp",
-#         name="HITEMP (Air broadened)",
-#     )
-#     if plot:
-#         s_exomol.plot(
-#             lw=3,
-#         )
-#         s_hitemp.plot(lw=1, nfig="same")
-#         import matplotlib.pyplot as plt
+    s_exomol = calc_spectrum(
+        **conditions,
+        databank="exomol",
+        name="EXOMOL (default broadening)",  # June 2017, default ref is Li2015
+    )
+    s_hitemp = calc_spectrum(
+        **conditions,
+        databank="hitemp",
+        name="HITEMP (Air broadened)",
+    )
+    if plot:
+        s_exomol.plot(
+            lw=3,
+        )
+        s_hitemp.plot(lw=1, nfig="same")
+        import matplotlib.pyplot as plt
 
-#         plt.legend()
+        plt.legend()
 
-#     # Broadening coefficients are different but areas under the lines should be the same :
-#     import numpy as np
+    # Broadening coefficients are different but areas under the lines should be the same :
+    import numpy as np
 
-#     assert np.isclose(
-#         s_exomol.get_integral("abscoeff"), s_hitemp.get_integral("abscoeff"), rtol=0.001
-#     )
+    assert np.isclose(
+        s_exomol.get_integral("abscoeff"), s_hitemp.get_integral("abscoeff"), rtol=0.001
+    )
 
 
 if __name__ == "__main__":
     test_exomol_parsing_functions()
     test_calc_exomol_spectrum()
-
-    # Removed due to issue 717 - https://github.com/radis/radis/issues/717
-    # test_calc_exomol_vs_hitemp()
+    test_calc_exomol_vs_hitemp()

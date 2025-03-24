@@ -757,6 +757,8 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
         if "abscoeff" in recompute and "path_length" in conditions:
             recompute.append("absorbance")
             recompute.append("transmittance_noslit")
+        if "xsection" in requested and "abscoeff" not in recompute:
+            recompute.append("abscoeff")
 
         # %% Calculate total emisscoeff and abscoeff
         # To make it easier, we start from abscoeff and emisscoeff of all slabs
