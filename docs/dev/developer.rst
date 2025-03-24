@@ -18,6 +18,32 @@ Sources
 =======
 .. include:: _install.rst
 
+Dependency Management
+===================
+
+RADIS uses modern Python packaging with ``pyproject.toml`` for pip installations and ``environment.yml`` for conda installations.
+These files are kept in sync through automated tests.
+
+Adding Dependencies
+-----------------
+
+When adding new dependencies:
+
+1. Add them to both ``pyproject.toml`` and ``environment.yml``
+2. Run the sync test locally: ``python radis/test/test_sync_dependencies.py``
+3. Choose the appropriate dependency group:
+   - Core dependencies: Add to both files' main section
+   - Development tools: Add to ``[project.optional-dependencies].dev`` in ``pyproject.toml``
+   - Documentation tools: Add to ``[project.optional-dependencies].docs`` in ``pyproject.toml``
+
+Package Structure
+---------------
+
+The package is structured to exclude tests and documentation from the main installation:
+- Tests are available when installing with ``pip install -e .[dev]``
+- Documentation tools are available with ``pip install -e .[docs]``
+- The main installation (``pip install radis`` or ``pip install -e .``) includes only the core package
+
 Update your changes online (push)
 ---------------------------------
 
@@ -27,6 +53,7 @@ Online tests will be run automatically. They will check for:
 
 - Physics test cases, to ensure that the code is still working as expected (see :ref:`Test Section <label_dev_test>` to run them locally).
 - Code format (see :ref:`Code linting below <label_linting>`).
+- Dependency synchronization between ``pyproject.toml`` and ``environment.yml``
 
 .. include:: _test.rst
 

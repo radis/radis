@@ -21,13 +21,23 @@ You can create a radis environment with all dependencies with::
 4. Then install Radis in the `radis-env` environment::
 
     conda activate radis-env
-    pip install -e .[dev] -v
+    pip install -e . -v
 
 - The ``-e`` (editable) argument creates a link from the local folder ``./`` into Python
   site-packages.
 
-- ``[dev]`` is optional, but installs additional developer packages that may be useful for testing and
-  linting your code.
+- For development, you can install additional packages with ``pip install -e .[dev]``
+  These include tools for testing and linting your code.
+
+- For documentation development, use ``pip install -e .[docs]`` to install
+  additional packages needed for building the documentation.
+
+Dependencies are managed in two files:
+- ``pyproject.toml``: for pip installation
+- ``environment.yml``: for conda installation
+
+These files are kept in sync through automated tests. When adding new dependencies,
+make sure to add them to both files.
 
 To make sure the install worked, run the :ref:`first example <label_first_example>`
 from the Quick Start page. Then, you're all set.
@@ -38,9 +48,11 @@ Update
 Whenever you want to update your local copy of Radis, run::
 
     git pull
-    pip install -e .[dev]
+    pip install -e .
+
+For development or documentation updates, use ``pip install -e .[dev]`` or ``pip install -e .[docs]`` respectively.
 
 .. note::
-    The command `pip install -e .[dev]` is different from `pip install radis --upgrade`. The former will install the latest version from the local folder, which may be more recent than the latest release on PyPI.
+    The command `pip install -e .` is different from `pip install radis --upgrade`. The former will install the latest version from the local folder, which may be more recent than the latest release on PyPI.
 
 
