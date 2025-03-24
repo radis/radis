@@ -10,9 +10,72 @@ RADIS is an open-source project, and therefore anyone can contribute, whether yo
 know spectroscopy or not. The project is organized around a
 `GitHub repository <https://github.com/radis/radis/>`__.
 
-You want to become a `contributor <https://github.com/radis/radis/graphs/contributors>`__? Welcome!
-First follow the install procedure for developpers below. Then, you can have a look at all the `GitHub opened issues <https://github.com/radis/radis/issues>`__.
-and tackle specifically one of the `Good First Issues <https://github.com/radis/radis/contribute>`__.
+Getting Started
+=============
+
+New to open source? Welcome! 👋 Here's how to get started:
+
+1. Look for `Good First Issues <https://github.com/radis/radis/contribute>`__ - these are specifically tagged to help new contributors.
+2. The `Documentation TODO List <https://github.com/radis/radis/issues/77>`__ is also a great place to start.
+3. Feel free to ask questions in our community chats:
+
+.. image:: https://badges.gitter.im/Join%20Chat.svg
+    :target: https://gitter.im/radis-radiation/community
+    :alt: Gitter
+
+.. image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
+    :target: https://radis.github.io/slack-invite/
+    :alt: Slack
+
+Making Changes
+============
+
+We use the `GitHub Flow <https://guides.github.com/introduction/flow/index.html>`__ for all code changes:
+
+1. Fork the repository
+2. Create a branch for your feature
+3. Make your changes
+4. Open a Pull Request (PR)
+5. Address review comments
+6. Get merged!
+
+For small changes (like fixing typos), you can edit directly on GitHub and open a PR.
+
+Code Style and Linting
+--------------------
+
+We use the Black coding style and Flake8 to ensure consistent code formatting. If you're a first-time contributor,
+don't worry about linting - other developers can help format your code during review.
+
+For regular contributors, we recommend setting up pre-commit hooks::
+
+    cd radis
+    pip install pre-commit
+    pre-commit install
+
+This will automatically format your code before each commit.
+
+Keeping Your Fork Updated
+----------------------
+
+If you're a regular contributor, keep your fork in sync with the main repository:
+
+1. Add the upstream remote::
+
+    git remote add upstream git://github.com/radis/radis.git
+    git fetch upstream
+
+2. Create new branches from the latest upstream version::
+
+    git branch -b [NEW_BRANCH] upstream/develop
+
+3. Update your branch with upstream changes::
+
+    git pull --rebase upstream [NEW_BRANCH]
+
+4. Push to your fork::
+
+    git push -u origin [NEW-BRANCH]
 
 Sources
 =======
@@ -64,15 +127,14 @@ Online tests will be run automatically. They will check for:
 Help
 ----
 
-If you encounter any problem, please `report an Issue <https://github.com/radis/radis/issues?utf8=%E2%9C%93&q=is%3Aissue>`_ on GitHub.
+If you encounter any problem:
+
+1. Check if it's a known issue in our `GitHub Issues <https://github.com/radis/radis/issues>`__
+2. If not, please `open a new issue <https://github.com/radis/radis/issues/new/choose>`__ with:
+   - A quick summary
+   - Steps to reproduce
+   - Expected vs actual behavior
+   - Any relevant notes or attempted solutions
 
 You can also ask for advice on the `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__
-or the community chat:
-
-.. image:: https://badges.gitter.im/Join%20Chat.svg
-    :target: https://gitter.im/radis-radiation/community
-    :alt: Gitter
-
-.. image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
-    :target: https://radis.github.io/slack-invite/
-    :alt: Slack
+or join our community chat.
