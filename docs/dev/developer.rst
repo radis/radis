@@ -150,8 +150,7 @@ If you encounter any problem:
    - Expected vs actual behavior
    - Any relevant notes or attempted solutions
 
-You can also ask for advice on the `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__
-or the community chat:
+You can also ask for advice on the community chat:
 
 .. image:: https://badges.gitter.im/Join%20Chat.svg
     :target: https://gitter.im/radis-radiation/community
