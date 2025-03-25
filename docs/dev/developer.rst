@@ -17,15 +17,6 @@ New to open source? Welcome! 👋 Here's how to get started:
 
 1. Look for `Good First Issues <https://github.com/radis/radis/contribute>`__ - these are specifically tagged to help new contributors.
 2. The `Documentation TODO List <https://github.com/radis/radis/issues/77>`__ is also a great place to start.
-3. Feel free to ask questions in our community chats:
-
-.. image:: https://badges.gitter.im/Join%20Chat.svg
-    :target: https://gitter.im/radis-radiation/community
-    :alt: Gitter
-
-.. image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
-    :target: https://radis.github.io/slack-invite/
-    :alt: Slack
 
 Making Changes
 ============
@@ -137,4 +128,12 @@ If you encounter any problem:
    - Any relevant notes or attempted solutions
 
 You can also ask for advice on the `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__
-or join our community chat.
+or the community chat:
+
+.. image:: https://badges.gitter.im/Join%20Chat.svg
+    :target: https://gitter.im/radis-radiation/community
+    :alt: Gitter
+
+.. image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
+    :target: https://radis.github.io/slack-invite/
+    :alt: Slack
