@@ -7,18 +7,13 @@ Testing RADIS
 Test status
 -----------
 
-Test routines are performed automatically by `Travis CI <https://travis-ci.com/radis/radis>`_
+Test routines are performed automatically by `Travis CI <https://app.travis-ci.com/github/radis/radis/branches>`_
 whenever a change is made on the `GitHub <https://github.com/radis/radis>`_ repository.
-See the current test status below:
-
-.. image:: https://img.shields.io/travis/radis/radis.svg
-    :target: https://travis-ci.com/radis/radis
-    :alt: https://travis-ci.com/radis/radis
 
 It is a good practice to perform these tests locally to detect potential
 errors before pushing.
 To run the tests locally, assuming you cloned the source code
-(see the :ref:`Install section <label_install>` ), run the following command in
+(see the :ref:`Install section <label_install>`), run the following command in
 the ``radis`` directory::
 
     cd radis
@@ -38,11 +33,10 @@ run only the fast tests with::
 
     pytest -m fast --cov=./
 
-The list of tags is:
+Some of the most used tags:
 
 - fast : each test should run under 1s
 - needs_connection : requires an internet connection
-- needs_python3 : a Python-3 only test
 - needs_config_file: needs ``~/radis.json`` to be defined.
 
 Plus some tags for user-defined [HITEMP-2010]_ databases, as given in the :ref:`Configuration file <label_lbl_config_file>`
@@ -52,13 +46,11 @@ section
 - needs_db_HITEMP_CO_DUNHAM : requires HITEMP-CO-DUNHAM database in ``~/radis.json``
 - needs_db_CDSD_HITEMP_PC : requires CDSD-HITEMP-PC database in ``~/radis.json``
 
-The default test routine run on `Travis CI <https://travis-ci.com/radis/radis>`__
-is (see the ``radis/.gitlab-ci.yml`` file)::
+The default test routine run on Travis is (see the ``radis/.travis.yml`` file)::
 
-    pytest -m "not needs_config_file" --cov=./;
+    pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM"
 
-Which ignores all test that rely on the [HITEMP-2010]_ databases, as they cannot (yet) be downloaded
-automatically on the test machine.
+Which ignores all test that require large files from databases.
 
 Write new tests
 ---------------
@@ -77,10 +69,7 @@ adding the following lines within your test function::
         import matplotlib.pyplot as plt
         plt.ion()   # dont get stuck with Matplotlib if executing through pytest
 
-You can refer to Pull Request: https://github.com/radis/radis/pull/495 to see
-how test cases are written when a new feature is added.
-
-See: https://github.com/statsmodels/statsmodels/issues/3697
+You can refer to previous Pull Request to see how test cases are written when a new feature is added (https://github.com/radis/radis/pull/495 or https://github.com/statsmodels/statsmodels/issues/3697).
 
 
 
