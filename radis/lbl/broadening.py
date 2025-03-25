@@ -1382,7 +1382,7 @@ class BroadenFactory(BaseFactory):
                 wl = gammma_rad + gamma_stark + gamma_vdw
             elif self.input.isatom and self.get_conditions()["dbformat"] == "nist":
                 raise Exception(
-                    "The NIST database does not have Lorentzian broadening parameters. You must use the argument `lbfunc` in `SpectrumFactory` to specify the Lorentizian HWHM and a shift. See the help of `SpectrumFactory` or the examples for atomic spectra in https://radis.readthedocs.io/en/latest/auto_examples/index.html . \n\nSuggestion:\ndef broad_arbitrary(**kwargs):\n\treturn 1 * (296 / kwargs['Tgas']) ** 0.8, None"
+                    "The NIST database does not have Lorentzian broadening parameters. You must use the argument `lbfunc` in `SpectrumFactory` to specify the Lorentizian HWHM and a shift. See the help of `SpectrumFactory` or the examples for atomic spectra in https://radis.readthedocs.io/en/latest/auto_examples/index.html . \n\nSuggestion:\ndef broad_arbitrary(**kwargs):\n\treturn 1 * (296 / kwargs['Tgas']) ** 0.7, None"
                 )
             else:  # for molecules
                 # Check self broadening temperature-dependance coefficient is here

@@ -140,7 +140,7 @@ except Exception:
 def lbfunc1(
     **kwargs,
 ):  # an arbitrary broadening formula as NIST databank requires `lbfunc`
-    return 0.1 * (296 / kwargs["Tgas"]) ** 0.8, None
+    return 0.1 * (296 / kwargs["Tgas"]) ** 0.7, None
 
 
 s, sf = calc_spectrum(

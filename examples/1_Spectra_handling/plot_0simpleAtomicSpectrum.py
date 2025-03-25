@@ -13,15 +13,12 @@ The same partition function is employed. The Lorentzian broadening is assumed eq
 #%%
 def broad_arbitrary(**kwargs):
     """An arbitrary broadening formula for the Lorentzian component"""
-    HWHM = kwargs["pressure_atm"] * (296 / kwargs["Tgas"]) ** 0.8
+    HWHM = kwargs["pressure_atm"] * (296 / kwargs["Tgas"]) ** 0.7
     shift = None
     return HWHM, shift
 
 
-import radis
 from radis import SpectrumFactory, plot_diff
-
-radis.config["ALLOW_OVERWRITE"] = True
 
 sf = SpectrumFactory(
     wavelength_min=498,

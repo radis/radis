@@ -20,7 +20,7 @@ from radis import SpectrumFactory
 
 
 def lbfunc1(**kwargs):
-    return 0.1 * (296 / kwargs["Tgas"]) ** 0.8, None
+    return 0.1 * (296 / kwargs["Tgas"]) ** 0.7, None
 
 
 mole_fraction = 0.01

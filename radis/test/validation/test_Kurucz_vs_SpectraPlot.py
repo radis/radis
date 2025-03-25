@@ -23,7 +23,7 @@ def func1(**kwargs):
     """An example implementing the default broadening formula and values of SpectraPlot"""
     # print(kwargs.keys())
     # print(kwargs['df'].columns)
-    return 0.1 * (296 / kwargs["Tgas"]) ** 0.8, None
+    return 0.1 * (296 / kwargs["Tgas"]) ** 0.7, None
 
 
 @pytest.mark.needs_connection
