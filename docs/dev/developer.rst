@@ -111,6 +111,7 @@ When adding new dependencies:
 1. Add them to both ``pyproject.toml`` and ``environment.yml``
 2. Run the sync test locally: ``python radis/test/test_sync_dependencies.py``
 3. Choose the appropriate dependency group:
+
    - Core dependencies: Add to both files' main section
    - Development tools: Add to ``[project.optional-dependencies].dev`` in ``pyproject.toml``
    - Documentation tools: Add to ``[project.optional-dependencies].docs`` in ``pyproject.toml``
@@ -119,6 +120,7 @@ Package Structure
 ---------------
 
 The package is structured to exclude tests and documentation from the main installation:
+
 - Tests are available when installing with ``pip install -e .[dev]``
 - Documentation tools are available with ``pip install -e .[docs]``
 - The main installation (``pip install radis`` or ``pip install -e .``) includes only the core package
@@ -145,6 +147,7 @@ If you encounter any problem:
 
 1. Check if it's a known issue in our `GitHub Issues <https://github.com/radis/radis/issues>`__
 2. If not, please `open a new issue <https://github.com/radis/radis/issues/new/choose>`__ with:
+
    - A quick summary
    - Steps to reproduce
    - Expected vs actual behavior
