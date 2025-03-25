@@ -23,14 +23,14 @@ def func1(**kwargs):
     """An example implementing the default broadening formula and values of SpectraPlot"""
     # print(kwargs.keys())
     # print(kwargs['df'].columns)
-    return 0.1 * (296 / kwargs["Tgas"]) ** 0.8, None
+    return 0.1 * (296 / kwargs["Tgas"]) ** 0.7, None
 
 
 @pytest.mark.needs_connection
 def test_Kurucz_vs_NISTandSpectraplot(plot=True, verbose=True):
     def broad_arbitrary(**kwargs):
         """An arbitrary broadening formula in SpectraPlot (https://spectraplot.com/)"""
-        return 1 * (296 / kwargs["Tgas"]) ** 0.8, None
+        return 1 * (296 / kwargs["Tgas"]) ** 0.7, None
 
     #%% Experimental spectrum
     L = 1  # cm - Input in SpectraPlot software
