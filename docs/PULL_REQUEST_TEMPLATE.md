@@ -1,5 +1,5 @@
-<!-- Please be sure to check out our contributing guidelines,
-https://github.com/radis/radis/blob/develop/CONTRIBUTING.md . -->
+<!-- Please be sure to check out our developer guide,
+https://radis.readthedocs.io/en/latest/dev/developer.html -->
 
 ### Description
 <!-- Provide a general description of what your pull request does. -->

@@ -2,7 +2,9 @@
 language: python
 python:
   #- "2.7"    # not tested anymore starting from 0.9.19
-  #- "3.8"    # end of life, November 2024, https://devguide.python.org/versions/
+
+  #- "3.8"    # not tested anymore starting from 0.16
+
   - "3.10"
   #- "3.11"
 os: linux
@@ -25,9 +27,7 @@ install:
   - sed -i -E 's/^- python$/- python='$TRAVIS_PYTHON_VERSION'/' ./environment.yml
   # Create conda environment
   - micromamba install xtensor -c conda-forge -y
-  # move requirements.txt to the /tmp folder, required so that .environment.yml finds it
   - pwd
-  - cp requirements.txt /tmp/requirements.txt
   # Create the environment:
   - micromamba create -f ./environment.yml -y
   # Activate and install test-only dependencies
@@ -74,7 +74,7 @@ stages: #This sequence defines the order of the stages
     if: branch = master OR branch = develop
   - name: deploy
     if: branch = master
-  - name: Py38 #DEV MESSAGE: as long as we can pass the tests with Python 3.8, we will keep it. If a problem comes up, we will announce that RADIS is not compatible with Python 3.8 anymore.
+  - name: Py39
     if: branch = master
   - name: Py312
     if: branch = master
@@ -180,8 +180,6 @@ jobs:
     #     - (Get-Content -Path 'environment.yml') -replace '(python=)(.*)', ('$1' + $env:TRAVIS_PYTHON_VERSION) | Set-Content -Path 'environment.yml'
     #     # Create conda environment
     #     - micromamba install xtensor -c conda-forge -y
-    #     # move requirements.txt to the /tmp folder, required so that .environment.yml finds it
-    #     - Copy-Item -Path 'requirements.txt' -Destination 'C:\tmp\requirements.txt'
     #     # Create the environment:
     #     - micromamba create -f 'environment.yml' -y
     #     # Activate and install test-only dependencies
@@ -190,9 +188,9 @@ jobs:
     #     - pip install pytest-cov
     #     - pip install -e . -v
   ### Extra Python versions - start
-    - stage: Py38 #DEV MESSAGE: as long as we can pass the tests with Python 3.8, we will keep it. If a problem comes up, we will announce that RADIS is not compatible with Python 3.8 anymore.
-      name: "Python 3.8"
-      python: 3.8
+    - stage: Py39 #DEV MESSAGE: end of life, October 2025, https://devguide.python.org/versions/.
+      name: "Python 3.9" #DEV MESSAGE: as long as we can pass the tests with Python 3.9, we will keep it. If a problem comes up, we will announce that RADIS is not compatible with Python 3.9 anymore.
+      python: 3.9
     - stage: Py311
       name: "Python 3.11"
       python: 3.11
