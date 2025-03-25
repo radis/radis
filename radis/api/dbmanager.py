@@ -63,7 +63,7 @@ def get_auto_MEMORY_MAPPING_ENGINE():
 # Class to mimic numpy.DataSource behavior
 class RequestsFileOpener:
     """Simple file opener class that mimics the behavior of numpy.DataSource
-    but works with files downloaded via requests.
+    using the requests pip package.
     """
 
     def __init__(self, file_path):
@@ -400,6 +400,19 @@ class DatabaseManager(object):
                     for chunk in response.iter_content(chunk_size=8192):
                         if chunk:  # filter out keep-alive new chunks
                             f.write(chunk)
+
+                # class to mimic numpy.DataSource behavior
+                class RequestsFileOpener:
+                    def __init__(self, file_path):
+                        self.file_path = file_path
+
+                    def open(self, url_or_path=None):
+                        """Open the file for reading"""
+                        return open(self.file_path, "rb")
+
+                    def abspath(self, url_or_path=None):
+                        """Return the absolute path of the file"""
+                        return self.file_path
 
                 # Create an opener object that mimics numpy.DataSource
                 opener = RequestsFileOpener(temp_file_path)

@@ -543,7 +543,7 @@ class HITEMPDatabaseManager(DatabaseManager):
             if session:
                 url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
                 download_hitemp_file(session, url, basename(url))
-                urlnames = [basename(url)]
+                urlnames = [url]
             else:
                 return []  # Exit if login failed
         else:
