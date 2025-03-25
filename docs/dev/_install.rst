@@ -32,12 +32,6 @@ You can create a radis environment with all dependencies with::
 - For documentation development, use ``pip install -e .[docs]`` to install
   additional packages needed for building the documentation.
 
-Dependencies are managed in two files:
-- ``pyproject.toml``: for pip installation
-- ``environment.yml``: for conda installation
-
-These files are kept in sync through automated tests. When adding new dependencies,
-make sure to add them to both files.
 
 To make sure the install worked, run the :ref:`first example <label_first_example>`
 from the Quick Start page. Then, you're all set.
