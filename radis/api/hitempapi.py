@@ -170,8 +170,23 @@ def _prompt_password(user):
 
 def setup_credentials():
     """Set up HITRAN credentials and store them in .env file."""
-    username = input("Enter HITRAN username: ")
-    password = _prompt_password(username)
+    # Check if running on ReadTheDocs or Travis CI environment
+    is_rtd = os.environ.get("READTHEDOCS", "").lower() == "true"
+    is_travis = os.environ.get("TRAVIS", "").lower() == "true"
+
+    if is_rtd or is_travis:
+        # In CI/CD environments, only use environment variables
+        username = os.environ.get("HITRAN_USERNAME")
+        password = os.environ.get("HITRAN_PASSWORD")
+        if not username or not password:
+            print(
+                "Warning: HITRAN_USERNAME or HITRAN_PASSWORD not set in environment variables"
+            )
+    else:
+        # In normal usage, try environment variables first, then prompt
+        username = input("Enter HITRAN username: ")
+        password = _prompt_password(username)
+
     return username, password
 
 
