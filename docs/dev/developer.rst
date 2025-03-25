@@ -35,7 +35,7 @@ For small changes (like fixing typos), you can edit directly on GitHub and open 
 Code Style and Linting
 --------------------
 
-We use the `Black <https://black.readthedocs.io/en/stable/>`__ and `Flake8 <https://flake8-nb.readthedocs.io/en/latest/>`__ coding style to ensure consistent code formatting. 
+We use the `Black <https://black.readthedocs.io/en/stable/>`__ and `Flake8 <https://flake8-nb.readthedocs.io/en/latest/>`__ coding style to ensure consistent code formatting.
 Code style is checked using CI services
 which run automatically on each pull request. **Black** is automatically installed when radis
 is set-up in developer mode.
