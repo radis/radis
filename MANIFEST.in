@@ -10,6 +10,8 @@ include radis/db/molparam.txt
 include radis/db/molparams_extra.json
 include radis/default_radis.json
 recursive-include radis/db *.json
+include radis/db/H2O/HITRANpage_january2025.htm
+recursive-include radis/db/H2O *
 
 # Exclude test files and directories
 global-exclude */test/*
