@@ -50,7 +50,7 @@ dependencies:
   - nvidia-cufft-cu11; sys_platform != "darwin"
   - periodictable
   - peakutils
-  - publib         # Plotting styles for Matplotlib. Version, update to 0.4.0 needed for matplotlib==3.8. However, only 0.3.2 is compatible with python==3.8 (see #647)
+  - publib         # Plotting styles for Matplotlib.
   - python-dotenv
   - requests
   - ruamel.yaml

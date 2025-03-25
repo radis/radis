@@ -42,14 +42,13 @@ classifiers = [
     "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Topic :: Scientific/Engineering",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.8",    # end of life, Novembre 2024, https://devguide.python.org/versions/
-    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.9",    #DEV MESSAGE: end of life, October 2025, https://devguide.python.org/versions/.
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Operating System :: OS Independent",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
     # This is a duplicate of environment.yml; but it is NECESSARY to tell pip what are the dependencies.
     # Dependencies in environment.yml and here should be kept consistent.
@@ -77,7 +76,7 @@ dependencies = [
     "periodictable",  # periodic table data
     "plotly>=2.5.1",  # for line survey HTML output
     "psutil",  # to get user RAM
-    "publib",  # Plotting styles for Matplotlib. Version, update to 0.4.0 needed for matplotlib==3.8. However, only 0.3.2 is compatible with python==3.8 (see #647)
+    "publib",  # Plotting styles for Matplotlib.
     "python-dotenv",  # for managing environment variables
     "requests",  # for making HTTP requests to HITRAN database
     "ruamel.yaml",  # YAML parsing and writing
