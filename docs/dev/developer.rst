@@ -106,12 +106,10 @@ Submit a `Pull Request <https://github.com/radis/radis/pulls>`__ from GitHub.
 Online tests will be run automatically. They will check for:
 
 - Physics test cases, to ensure that the code is still working as expected (see :ref:`Test Section <label_dev_test>` to run them locally).
-- Code format (see :ref:`Code linting below <label_linting>`).
+- Code format (see :ref:`Code Style and Linting <label_linting>`).
 - Dependency synchronization between ``pyproject.toml`` and ``environment.yml``
 
 .. include:: _test.rst
-
-.. include:: _linting.rst
 
 .. include:: _architecture.rst
 
