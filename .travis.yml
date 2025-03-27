@@ -64,6 +64,8 @@ after_success:
 
 
 stages: #This sequence defines the order of the stages
+  - name: Py39
+    if: branch = master OR branch = develop
   - name: Py311
     if: branch = master OR branch = develop
   - name: Py310
@@ -71,8 +73,6 @@ stages: #This sequence defines the order of the stages
   - name: lint
     if: branch = master OR branch = develop
   - name: deploy
-    if: branch = master
-  - name: Py39
     if: branch = master
   - name: Py312
     if: branch = master
@@ -158,33 +158,6 @@ jobs:
         # - echo ">>> Run long tests now"
         # - pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
 
-    # - stage: Win_py310 #https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64
-    #   name: Python 3.10 on Windows
-    #   python: "3.10"
-    #   os: windows
-    #   language: shell
-    #   before_install:
-    #     - choco upgrade python -y --version 3.10.0
-    #     - python -m pip install --upgrade pip
-    #   env: PATH=/c/Python310:/c/Python310/Scripts:$PATH
-    #   install:
-    #     # Install Micromamba
-    #     - Invoke-WebRequest -Uri 'https://micro.mamba.pm/api/micromamba/win-64/1.5.8' -OutFile 'micromamba.tar.bz2'
-    #     - Expand-Archive -Path 'micromamba.tar.bz2' -DestinationPath 'micromamba'
-    #     - Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-    #     - micromamba shell init -s powershell -p ~/micromamba
-    #     - micromamba activate base
-    #     # Update python version in environment
-    #     - (Get-Content -Path 'environment.yml') -replace '(python=)(.*)', ('$1' + $env:TRAVIS_PYTHON_VERSION) | Set-Content -Path 'environment.yml'
-    #     # Create conda environment
-    #     - micromamba install xtensor -c conda-forge -y
-    #     # Create the environment:
-    #     - micromamba create -f 'environment.yml' -y
-    #     # Activate and install test-only dependencies
-    #     - micromamba activate radis-env
-    #     - micromamba list
-    #     - pip install pytest-cov
-    #     - pip install -e . -v
   ### Extra Python versions - start
     - stage: Py39 #DEV MESSAGE: end of life, October 2025, https://devguide.python.org/versions/.
       name: "Python 3.9" #DEV MESSAGE: as long as we can pass the tests with Python 3.9, we will keep it. If a problem comes up, we will announce that RADIS is not compatible with Python 3.9 anymore.
