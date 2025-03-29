@@ -38,6 +38,15 @@ from radis.spectrum.spectrum import Spectrum
 
 # %%
 def calc_spectrum(
+if chunksize == 'auto':
+        from radis.misc.utils import calculate_auto_chunksize
+        chunksize = calculate_auto_chunksize(
+            nlines=len(line_dataframe),
+            ngridpoints=len(wavenum_grid)
+        )
+        if verbose:
+            print(f"Auto-chunksize: {chunksize:,} lines")
+    
     wmin=None,
     wmax=None,
     wunit=Default("cm-1"),
