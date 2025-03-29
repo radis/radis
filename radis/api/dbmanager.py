@@ -6,7 +6,7 @@ import os
 import shutil
 from io import BytesIO
 from os.path import abspath, dirname, exists, expanduser, join, split, splitext
-from zipfile import ZipFile
+from zipfile import ZipFile, BadZipFile
 
 try:
     from ..misc.config import addDatabankEntries, getDatabankEntries, getDatabankList
@@ -68,17 +68,46 @@ def get_auto_MEMORY_MAPPING_ENGINE():
         return "vaex"
 
 
-# Add a zip opener to the datasource _file_openers
 def open_zip(zipname, mode="r", encoding=None, newline=None):
-    output = BytesIO()
-    with ZipFile(zipname, mode[0]) as myzip:
-        fnames = myzip.namelist()
-        for fname in fnames:
-            output.write(myzip.read(fname))
-    output.seek(0)
-    return output
+    """Enhanced ZIP opener with validation that:
+    1. Checks for valid ZIP signature
+    2. Detects HTML files
+    3. Validates contents before extraction
+    """
+    try:
+        # First validate it's actually a ZIP file
+        with open(zipname, 'rb') as f:
+            header = f.read(1024)
+            if header[:4] != b'PK\x03\x04':
+                if b'<html' in header.lower():
+                    raise ValueError(
+                        f"Downloaded file {zipname} is HTML (likely authentication error) "
+                        f"instead of ZIP. Full error:\n{header.decode(errors='ignore')}"
+                    )
+                raise BadZipFile(f"File {zipname} is not a valid ZIP file")
 
+        output = BytesIO()
+        with ZipFile(zipname, mode[0]) as myzip:
+            fnames = myzip.namelist()
+            if not fnames:
+                raise RuntimeError(f"Empty ZIP file: {zipname}")
+                
+            for fname in fnames:
+                output.write(myzip.read(fname))
+        
+        output.seek(0)
+        return output
 
+    except Exception as e:
+        # Clean up if something went wrong
+        if os.path.exists(zipname):
+            try:
+                os.remove(zipname)
+            except OSError:
+                pass  # Don't mask the original error
+        raise  # Re-raise the original exception
+
+# Maintain numpy datasource integration
 np.lib._datasource._file_openers._file_openers[".zip"] = open_zip
 
 
