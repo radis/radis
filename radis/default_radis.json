@@ -29,6 +29,9 @@
     "DATAFRAME_ENGINE" : "pandas"
     "MISSING_BROAD_COEF" : false            # accepted values: false and "air". If "air", missing boradening coefficients are replaced by those of air.
     #"USE_CYTHON": true                      # use Cython module if available (else default to Python)
+    "MULTI_SPARSE_GRID": false              # Compute with multiple coarser sparse wavenumber grids
+    "PRECOMPUTE_ALL_QUANTITIES": true       # if `true` Spectrum objects contain radiance, transmittance, etc. Else only abscoeff is computed.
+
     # molecular parameters
     # --------------------
     # Additional parameters are read from radis.db.molparams_extra.json

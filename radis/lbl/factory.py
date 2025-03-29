@@ -84,7 +84,7 @@ import numpy as np
 from numpy import arange, exp, expm1
 from scipy.optimize import OptimizeResult
 
-from radis import version
+from radis import config, version
 from radis.db import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
 from radis.db.classes import get_molecule, get_molecule_identifier, to_conventional_name
 
@@ -95,8 +95,8 @@ except ImportError:  # if ran from here
     from radis.lbl.bands import BandFactory
     from radis.lbl.base import get_wavenumber_range
 
-from radis import config
 from radis.db.classes import is_atom, is_neutral
+from radis.misc.arrays import get_overlapping_ranges
 from radis.misc.basics import flatten, is_float, is_range, list_if_float, round_off
 from radis.misc.utils import Default
 from radis.phys.constants import k_b
@@ -1287,12 +1287,15 @@ class SpectrumFactory(BandFactory):
         # TODO: this should is inconistent with eq_spectrum_gpu_interactive, where all quantities
         #      are calculated on CPU. (here the transmittance comes from GPU)
 
+        # get absorbance (technically it's the optical depth `tau`,
+        #                absorbance `A` being `A = tau/ln(10)` )
         absorbance = abscoeff * path_length
         # Generate output quantities
         # transmittance_noslit = exp(-absorbance)
         # emissivity_noslit = 1 - transmittance_noslit
         emissivity_noslit = -expm1(-absorbance)  # to handle small values of absorbance
         transmittance_noslit = 1 - emissivity_noslit
+        transmittance_noslit = exp(-absorbance)
         radiance_noslit = calc_radiance(
             self.wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
         )
@@ -1809,20 +1812,6 @@ class SpectrumFactory(BandFactory):
                 / abscoeff[~b]
                 * -expm1(-absorbance[~b])  # (1 - transmittance_noslit[~b])
             )
-            radiance_noslit[b] = emisscoeff[b] * path_length
-        else:
-            # Note that for k -> 0,
-            radiance_noslit = emisscoeff * path_length  # (mW/cm2/sr/cm-1)
-
-        # Convert `radiance_noslit` from (mW/sr/cm2/cm-1) to output unit
-        radiance_noslit = convert_universal(
-            radiance_noslit,
-            from_unit="mW/cm2/sr/cm-1",
-            to_unit=self.units["radiance_noslit"],
-            wavenum=wavenumber,
-            per_nm_is_like="mW/cm2/sr/nm",
-            per_cm_is_like="mW/cm2/sr/cm-1",
-        )
         # Convert 'emisscoeff' from (mW/sr/cm3/cm-1) to output unit
         emisscoeff = convert_universal(
             emisscoeff,
@@ -1889,8 +1878,8 @@ class SpectrumFactory(BandFactory):
         quantities = {
             "wavenumber": wavenumber,
             "abscoeff": abscoeff,
-            "absorbance": absorbance,
             "emisscoeff": emisscoeff,
+            "absorbance": absorbance,
             "transmittance_noslit": transmittance_noslit,
             "radiance_noslit": radiance_noslit,
         }
@@ -1952,17 +1941,24 @@ class SpectrumFactory(BandFactory):
 
             # Setting wstep to optimal value and rounding it to a degree 3
             if self._wstep == "auto" or type(self.params.wstep) == list:
-                wstep_calc = round_off(
+                wstep_calc_narrow = round_off(
                     self.min_width
                     / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
                 )
 
                 if type(self.params.wstep) == list:
-                    self.params.wstep = min(self.params.wstep[1], wstep_calc)
+                    self.params.wstep = min(self.params.wstep[1], wstep_calc_narrow)
                 else:
-                    self.params.wstep = wstep_calc
+                    self.params.wstep = wstep_calc_narrow
 
                 self.warnings["AccuracyWarning"] = "ignore"
+
+            multisparsegrid = radis.config["MULTI_SPARSE_GRID"]
+
+            if multisparsegrid:
+                wstep_calc_narrow = self.params.wstep
+                # wstep_calc_coarse1 = wstep_calc_narrow * 10
+                # wstep_calc_coarse2 = wstep_calc_narrow * 100
 
         elif self._wstep == "auto" or type(self.params.wstep) == list:
             self.warn(
@@ -1980,12 +1976,75 @@ class SpectrumFactory(BandFactory):
                 "PerformanceWarning",
             )
 
-        wavenumber, wavenumber_calc, woutrange = _generate_wavenumber_range(
-            self.input.wavenum_min,
-            self.input.wavenum_max,
-            self.params.wstep,
-            neighbour_lines,
-        )
+        # TODO / save memory : do not build self.wavenumber; only use wavenumber_calc?
+        self._multisparsegrid = multisparsegrid
+        if not multisparsegrid:
+            wavenumber, wavenumber_calc, woutrange = _generate_wavenumber_range(
+                self.input.wavenum_min,
+                self.input.wavenum_max,
+                self.params.wstep,
+                neighbour_lines,
+            )
+        else:
+            # In the first Proof-of-concept, we set 3 grids based on wstep (which
+            # will be considered the minimum wstep ):
+            #    - wavecenter to 2 * wstep  : wstep  (typically 0.01 cm-1)
+            #    - 2 * wstep to 10*wstep : 10*wstep   (typically 0.1 cm-1)
+            #    - 10*wstep  to truncation (typically 50 cm-1) : 100*wstep (typically 1 cm-1)
+            # TODO : update to arbitrary number of grids?
+            wavenumber_list = []
+            wavenumber_calc_list = []
+            woutrange_list = []
+            ix_ranges_list = []
+
+            wstep_multigrid = np.array(
+                [self.params.wstep, 20 * self.params.wstep, 500 * self.params.wstep]
+            )
+            truncation_multigrid = np.array(
+                [40 * self.params.wstep, 1000 * self.params.wstep, truncation]
+            )
+            while truncation_multigrid[-2] > truncation_multigrid[-1]:
+                # 1st-before-last grid is wider than the last : remove last grid
+                wstep_multigrid = wstep_multigrid[:-1]
+                truncation_multigrid = truncation_multigrid[:-1]
+                truncation_multigrid[-1] = truncation
+
+            # raise
+            self._wstep_multigrid = wstep_multigrid  # TEMP. Save them here so they can be used by apply_lineshape(). TODO refactor
+            self._truncation_multigrid = truncation_multigrid
+
+            for i, (wstep, lineshape_half_width) in enumerate(
+                zip(
+                    # [self.params.wstep, 10 * self.params.wstep, 100 * self.params.wstep],
+                    # [2 * self.params.wstep, 10 * self.params.wstep, truncation],
+                    wstep_multigrid,
+                    truncation_multigrid,
+                )
+            ):
+                (
+                    wavenumber,
+                    wavenumber_calc,
+                    woutrange,
+                    ix_ranges,
+                ) = _generate_wavenumber_range_sparse(
+                    self.input.wavenum_min,
+                    self.input.wavenum_max,
+                    wstep,
+                    neighbour_lines,
+                    self.df1.wav,
+                    lineshape_half_width,
+                )
+                wavenumber_list.append(wavenumber)
+                wavenumber_calc_list.append(wavenumber_calc)
+                woutrange_list.append(woutrange)
+                ix_ranges_list.append(ix_ranges)
+
+            wavenumber = wavenumber_list
+            wavenumber_calc = wavenumber_calc_list
+            woutrange = woutrange_list
+            ix_ranges = ix_ranges_list
+
+            self._ix_ranges = ix_ranges
 
         # Generate lineshape array
         if truncation is None:
@@ -1993,7 +2052,18 @@ class SpectrumFactory(BandFactory):
             # (note that this means 3x wavenumber_calc will be required when applying lineshapes)
             truncation = wavenumber_calc[-1] - wavenumber_calc[0]
 
-        wbroad_centered = _generate_broadening_range(self.params.wstep, truncation)
+        if not multisparsegrid:
+            wbroad_centered = _generate_broadening_range(self.params.wstep, truncation)
+        else:
+            # create waveranges with a center hollow zone for coarser grids
+            hollow_zone_start_from = np.r_[
+                [0], truncation_multigrid[:-1]
+            ]  # start the coarser grid just after the end of the narrower grid
+            truncation_multigrid[:-1] -= wstep_multigrid[:-1]  # remove overlaps
+            wbroad_centered = _generate_broadening_range_multigrid(
+                wstep_multigrid, hollow_zone_start_from, truncation_multigrid
+            )
+
         self.truncation = truncation
         # store value for use in lineshape broadening.
         # Note : may be different from self.params.truncation if None was given.
@@ -2021,10 +2091,23 @@ class SpectrumFactory(BandFactory):
                         f"Sparsity (grid points/lines) = {sparsity:.1f}. Set sparse_ldm to {self.params['sparse_ldm']}"
                     )
 
-        self.profiler.stop("generate_wavenumber_arrays", "Generated Wavenumber Arrays")
-
         if radis.config["DEBUG_MODE"]:
-            assert (wavenumber_calc[woutrange[0] : woutrange[1]] == wavenumber).all()
+            if not self._multisparsegrid:
+                assert (
+                    wavenumber_calc[woutrange[0] : woutrange[1]] == wavenumber
+                ).all()
+            else:
+                for gridnb in range(len(self.wavenumber)):
+                    for wavenumber, wavenumber_calc, woutrange in zip(
+                        self.wavenumber[gridnb],
+                        self.wavenumber_calc[gridnb],
+                        self.woutrange[gridnb],
+                    ):
+                        assert (
+                            wavenumber_calc[woutrange[0] : woutrange[1]] == wavenumber
+                        ).all()
+
+        self.profiler.stop("generate_wavenumber_arrays", "Generated Wavenumber Arrays")
 
         return
 
@@ -2617,6 +2700,119 @@ def _generate_wavenumber_range(wavenum_min, wavenum_max, wstep, neighbour_lines)
     return wavenumber, wavenumber_calc, woutrange
 
 
+def _generate_wavenumber_range_sparse(
+    wavenum_min,
+    wavenum_max,
+    wstep,
+    neighbour_lines,
+    line_positions,
+    lineshape_half_width,
+):
+    """define waverange vectors, with ``wavenumber`` the output spectral range
+    and ``wavenumber_calc`` the spectral range used for calculation, that
+    includes neighbour lines within ``neighbour_lines`` distance.
+
+    Sparse version of :py:func:`radis.lbl.factory._generate_wavenumber_range`;
+    i.e. intervals where there will be no lines; are removed.
+
+    .. note::
+        WIP
+
+    Parameters
+    ----------
+    wavenum_min, wavenum_max: float
+        wavenumber range limits (cm-1)
+    wstep: float
+        wavenumber step (cm-1)
+    neighbour_lines: float
+        wavenumber full width of broadening calculation: used to define which
+        neighbour lines shall be included in the calculation
+    line_positions: array
+        position of line centers, to remove empty ranges
+    lineshape_half_width: float
+        half-linewidth of lines, to remove empty ranges
+
+    Returns
+    -------
+    wavenumber: numpy array
+        an evenly spaced array between ``wavenum_min`` and ``wavenum_max`` with
+        a spacing of ``wstep``
+    wavenumber_calc: numpy array
+        an evenly spaced array between ``wavenum_min-neighbour_lines`` and
+        ``wavenum_max+neighbour_lines`` with a spacing of ``wstep``
+    woutrange: (wmin, wmax)
+        index to project the full range including neighbour lines `wavenumber_calc`
+        on the final range `wavenumber`, i.e. : wavenumber_calc[woutrange[0]:woutrange[1]] = wavenumber
+    i_ranges: list of (i_start, i_end)
+        list of ranges of line_positions that are included in the calculation  # TODO : confirm description
+    """
+    assert wavenum_min < wavenum_max
+    assert wstep > 0
+    assert len(line_positions) > 0
+
+    # Get index of blocks of lines that will overlap :
+    i_ranges = get_overlapping_ranges(line_positions.values, lineshape_half_width)
+
+    wavenumber_list = []
+    wavenumber_calc_list = []
+    woutrange_list = []
+
+    # Create wavenumber arrays for each block of lines
+    for i, (i_start, i_end) in enumerate(i_ranges):
+        wavenum_min_i = max(
+            wavenum_min, line_positions.iloc[i_start] - lineshape_half_width
+        )
+        wavenum_max_i = min(
+            wavenum_max, line_positions.iloc[i_end] + lineshape_half_width
+        )
+
+        # Output range
+        # generate the final vector of wavenumbers (shape M)
+        wavenumber = arange(wavenum_min_i, wavenum_max_i + wstep, wstep)
+
+        # generate the calculation vector of wavenumbers (shape M + space on the side)
+        # ... Calculation range
+        wavenum_min_calc = wavenumber[0] - neighbour_lines  # cm-1
+        wavenum_max_calc = wavenumber[-1] + neighbour_lines  # cm-1
+        w_out_of_range_left = arange(
+            wavenumber[0] - wstep, wavenum_min_calc - wstep, -wstep
+        )[::-1]
+        w_out_of_range_right = arange(
+            wavenumber[-1] + wstep, wavenum_max_calc + wstep, wstep
+        )
+
+        # ... deal with rounding errors: 1 side may have 1 more point
+        if len(w_out_of_range_left) > len(w_out_of_range_right):
+            w_out_of_range_left = w_out_of_range_left[1:]
+        elif len(w_out_of_range_left) < len(w_out_of_range_right):
+            w_out_of_range_right = w_out_of_range_right[:-1]
+
+        wavenumber_calc = np.hstack(
+            (w_out_of_range_left, wavenumber, w_out_of_range_right)
+        )
+        if i == 0:
+            # remove left part
+            woutrange = len(w_out_of_range_left)
+        else:
+            # keep full array:
+            woutrange = 0
+        if i == len(i_ranges):
+            # remove right part
+            woutrange = woutrange, len(w_out_of_range_left) + len(wavenumber)
+        else:
+            # keep full array:
+            woutrange = woutrange, len(wavenumber_calc)
+
+        assert len(w_out_of_range_left) == len(w_out_of_range_right)
+        assert len(wavenumber_calc) == len(wavenumber) + 2 * len(w_out_of_range_left)
+
+        wavenumber_list.append(wavenumber)
+        wavenumber_calc_list.append(wavenumber_calc)
+        woutrange_list.append(woutrange)
+
+    return wavenumber_list, wavenumber_calc_list, woutrange_list, i_ranges
+
+
 def _generate_broadening_range(wstep, truncation):
     """Generate array on which to compute line broadening.
 
@@ -2648,6 +2844,91 @@ def _generate_broadening_range(wstep, truncation):
     assert len(wbroad_centered) % 2 == 1
 
     return wbroad_centered
+
+
+def _generate_broadening_range_multigrid(
+    wstep_multigrid, start_multigrid, truncation_multigrid
+):
+    """Generate array on which to compute line broadening; multigrid version
+
+    Parameters
+    ----------
+    wstep: list of float
+        wavenumber step (cm-1) for each grid
+    truncation: float
+        wavenumber half-width of broadening calculation: used to define which
+        neighbour lines shall be included in the calculation
+
+    Returns
+    -------
+    wbroad_centered: list of numpy array
+        list of evenly spaced array, of odd-parity length, centered on 0, and of width
+        ``truncation``
+    """
+
+    wbroad_centered_list = []
+
+    # Narrowest grid
+    # --------------
+    wstep, start_from, truncation = (
+        wstep_multigrid[0],
+        start_multigrid[0],
+        truncation_multigrid[0],
+    )
+    # Odd number is important
+    wbroad_centered = np.hstack(
+        (
+            -arange(wstep, truncation + wstep, wstep)[::-1],
+            [0],
+            arange(wstep, truncation + wstep, wstep),
+        )
+    )
+    wbroad_centered_list.append(wbroad_centered)
+    # wstep_narrower_grid = wstep
+
+    # Coarser grids
+    # -------------
+    for i, (wstep, start_from, truncation) in enumerate(
+        zip(wstep_multigrid[1:], start_multigrid[1:], truncation_multigrid[1:])
+    ):
+        i += 1
+        # create a broadening array, on which lineshape will be calculated.
+        # Odd number is important for the narrower grid; coarser grids should have even number of elements
+
+        # Note : we make sure the narrower grid extends just-until the start of the coarser grid
+        # e.g.  GRID 1    -0.2 -0.1  [                         ]   0.1 0.2
+        #       GRID 0    [        ]  -0.09 -0.08 (..) 0.08 0.09   [     ]
+        wbroad_centered = np.hstack(
+            (
+                -arange(start_from, truncation + wstep, wstep)[::-1],
+                arange(start_from, truncation + wstep, wstep),
+            )
+        )
+
+        # Assert even number of lines for coarser grids (which are supposed to be hollow)
+        assert len(wbroad_centered) % 2 == 0
+
+        # assert coarser grids are hollow (i.e. have a hole in the center ):
+        if i > 0:
+            if (
+                wbroad_centered[len(wbroad_centered) // 2]
+                - wbroad_centered[len(wbroad_centered) // 2 - 1]
+                <= 2 * wstep
+            ):
+                from radis.misc.warning import AccuracyError
+
+                raise AccuracyError(
+                    f"Grid {i+1} is not hollow, we will be counting the center of the lines "
+                    + """multiple times (both in coarser & more refined grids) resulting in
+            large errors. """
+                    + f"Adjust the grid parameters : \n- wstep : {wstep_multigrid} cm-1\n- truncations : {truncation_multigrid} cm-1"
+                    + "\nA good rule of thumb is to ensure wstep of grid N+1 is < truncation of grid N"
+                )
+
+        wbroad_centered_list.append(wbroad_centered)
+        # wstep_narrower_grid = wstep
+
+    return wbroad_centered_list
 
 
 # %% Test

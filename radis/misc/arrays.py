@@ -521,6 +521,167 @@ def numpy_add_at(LDM, k, l, m, I):
 # else:
 #     add_at = rcx.add_at
 
+# %%
+# Functions for legacy aggregation of lineshapes over an array
+def numpy_aggregate_at_indices(
+    sumoflines_calc,
+    I_low_in_left,
+    I_low_in_right,
+    I_high_in_left,
+    I_high_in_right,
+    profile_S_T,
+    frac_left,
+    frac_right,
+):
+    for i, (fr_left, fr_right, profS) in enumerate(
+        zip(frac_left, frac_right, profile_S_T)
+    ):
+        sumoflines_calc[I_low_in_left[i] : I_high_in_left[i] + 1] += fr_left * profS
+        sumoflines_calc[I_low_in_right[i] : I_high_in_right[i] + 1] += fr_right * profS
+    return sumoflines_calc
+
+
+@numba.njit(
+    fastmath=True,  # eq. O3, march-native,fastmath
+    cache=True,
+)
+def numba_aggregate_at_indices(
+    sumoflines_calc,
+    I_low_in_left,
+    I_low_in_right,
+    I_high_in_left,
+    I_high_in_right,
+    profile_S_T,
+    frac_left,
+    frac_right,
+):
+    N_lines = len(profile_S_T)
+
+    # loop over all lines
+    for i in range(N_lines):
+        # we keep track of 2 index: one `j` for the profile [0-len(profS)]
+        # and one `k` for the corresponding position in sumoflines_calc, which
+        # has jumps because the profile is hollow
+        j = 0
+        # Left side:
+        for k in range(I_low_in_left[i], I_high_in_left[i] + 1):
+            sumoflines_calc[k] += frac_left[i] * profile_S_T[i][j]
+            j += 1
+        # Right side:
+        j = 0
+        for k in range(I_low_in_right[i], I_high_in_right[i] + 1):
+            sumoflines_calc[k] += frac_right[i] * profile_S_T[i][j]
+            j += 1
+
+    return sumoflines_calc
+
+
+if (
+    False
+):  # EP 15/08 : as of manual benchmark, Cython version is 10x slower than numba version. Deactivated
+    import radis_cython_extensions as rcx
+
+    aggregate_at_indices = rcx.aggregate_at_indices_64
+# aggregate_at_indices = numpy_aggregate_at_indices
+aggregate_at_indices = numba_aggregate_at_indices
+
+
+def numpy_aggregate_at_indices_hollow(
+    sumoflines_calc,
+    I_low_in_left,
+    I_low_in_right,
+    I_high_in_left,
+    I_high_in_right,
+    I_low_nearest_left,
+    I_high_nearest_left,
+    I_low_nearest_right,
+    I_high_nearest_right,
+    profile_S_T,
+    frac_left,
+    frac_right,
+):
+    for i, (fr_left, fr_right, profS) in enumerate(
+        zip(frac_left, frac_right, profile_S_T)
+    ):
+        # if radis.config[
+        #     "DEBUG_MODE"
+        # ]:  #  @dev: used to test the indices used in the multigrid boundary corrections
+        #     sumoflines_calc_0 = sumoflines_calc.copy()
+        sumoflines_calc[
+            np.r_[
+                I_low_in_left[i] : I_low_nearest_left[i] + 1,
+                I_high_nearest_left[i] : I_high_in_left[i] + 1,
+            ]
+        ] += (
+            fr_left * profS
+        )
+        sumoflines_calc[
+            np.r_[
+                I_low_in_right[i] : I_low_nearest_right[i] + 1,
+                I_high_nearest_right[i] : I_high_in_right[i] + 1,
+            ]
+        ] += (
+            fr_right * profS
+        )
+    return sumoflines_calc
+
+
+@numba.njit(
+    fastmath=True,  # eq. O3, march-native,fastmath
+    cache=True,
+)
+def numba_aggregate_at_indices_hollow(
+    sumoflines_calc,
+    I_low_in_left,
+    I_low_in_right,
+    I_high_in_left,
+    I_high_in_right,
+    I_low_nearest_left,
+    I_high_nearest_left,
+    I_low_nearest_right,
+    I_high_nearest_right,
+    profile_S_T,
+    frac_left,
+    frac_right,
+):
+    N_lines = len(profile_S_T)
+
+    # loop over all lines
+    for i in range(N_lines):
+        # we keep track of 2 index: one `j` for the profile [0-len(profS)]
+        # and one `k` for the corresponding position in sumoflines_calc, which
+        # has jumps because the profile is hollow
+        j = 0
+        # Left side:
+        for k in range(I_low_in_left[i], I_low_nearest_left[i] + 1):
+            sumoflines_calc[k] += frac_left[i] * profile_S_T[i][j]
+            j += 1
+        for k in range(I_high_nearest_left[i], I_high_in_left[i] + 1):
+            sumoflines_calc[k] += frac_left[i] * profile_S_T[i][j]
+            j += 1
+        # Right side:
+        j = 0
+        for k in range(I_low_in_right[i], I_low_nearest_right[i] + 1):
+            sumoflines_calc[k] += frac_right[i] * profile_S_T[i][j]
+            j += 1
+        for k in range(I_high_nearest_right[i], I_high_in_right[i] + 1):
+            sumoflines_calc[k] += frac_right[i] * profile_S_T[i][j]
+            j += 1
+
+    return sumoflines_calc
+
+
+if (
+    False
+):  # EP 15/08 : as of manual benchmark, Cython version is 10x slower than numba version. Deactivated
+    import radis_cython_extensions as rcx
+
+    aggregate_at_indices = rcx.aggregate_at_indices_hollow_64
+# aggregate_at_indices_hollow = numpy_aggregate_at_indices_hollow
+aggregate_at_indices_hollow = numba_aggregate_at_indices_hollow
+
+
+# %%
 
 # @numba.njit
 # def non_zero_values_around2(a, n):
@@ -672,6 +833,10 @@ def non_zero_ranges_in_array(b):
         non_zero_ranges_in_array(b)
         >> ([2, 5, 7],
             [4, 6, 8])
+
+    See Also
+    --------
+    :py:func:`~radis.misc.arrays.boolean_array_from_ranges`
     """
 
     # build the list
@@ -707,9 +872,14 @@ def boolean_array_from_ranges(ranges, n):
     --------
     ::
 
-        L = np.array([[2,4], [5,6], [7,8]])
-        boolean_array_from_coordinates(*L.T, 8)
+        L = np.array([[2,4], [5,6], [7,8]], dtype=np.int64)
+        boolean_array_from_ranges(L.T, 8)
         >>> np.array([0, 0, 1, 1, 0, 1, 0, 1], dtype=bool)
+
+
+    See Also
+    --------
+    :py:func:`~radis.misc.arrays.non_zero_ranges_in_array`
 
     """
     # build the list
@@ -718,6 +888,68 @@ def boolean_array_from_ranges(ranges, n):
         b[ranges[i][0] : ranges[i][1]] = True
 
     return b
+
+
+def get_overlapping_ranges(wav_positions, half_width):
+    """Returns list of overlapping ranges for lines in ``wav_positions``
+    whose lineshapes have a (same) half_width ``half_width``
+
+    .. note::
+        wav_positions is assumed sorted.
+
+    Parameters
+    ----------
+    wav_positions: numpy array (typically wavenumbers in cm-1)
+    half_width: float (typically cm-1)
+
+    Returns
+    -------
+    numpy array: list of (start, end) index so that all lines contained
+        in ``wav_positions[start_i:end_i+1]`` overlap
+
+    Examples
+    --------
+    ::
+        # All lines contained within a same block :
+        get_overlapping_ranges(wav_positions=np.array([2300, 2305]), half_width=50.0)
+        >> np.array([(0,1)])
+
+        # 1 single line
+        get_overlapping_ranges(wav_positions=np.array([2300]), half_width=50.0)
+        >> np.array([(0,0)]))
+
+        # 2 distinct blocks :
+        get_overlapping_ranges(wav_positions=np.array([2300, 2301, 2305, 2500, 2505]), half_width=50.0)
+        >>> np.array([(0,2), (3,4)]))
+
+
+
+
+    See Also
+    --------
+    Used to generate sparse wavenumber grids, see :py:func:`radis.lbl.factory._generate_wavenumber_range_sparse`
+
+    """
+
+    # We start by normalizing wavenumber array by half_width :
+    start = wav_positions // (half_width)  # start of lineshape on our new scale
+    end = start + 2  # end of lineshape
+
+    # Now we identify the different groups :
+    # Starting from the 2nd line, doesn't it overlap with the previous line ?
+    # => When line is separated by >2half-width from the next [1:] ;there is no overlap
+    b = (start[1:] - end[:-1]) > 0
+    # b tells if line (starting from the 2nd line) is separated with the previous line
+
+    # Now let's build the ranges:
+    # ... 1st line is necessarily the start of a new block,
+    # ... b.nonzero() are the start of new blocks (starting from 2nd line) i.e.
+    # ... the end of the previous block
+    # ... last line is necesarily the end of the last block
+    i_end = np.hstack((b.nonzero()[0], [len(b)]))
+    i_start = np.hstack(([0], i_end[:-1] + 1))
+
+    return np.vstack((i_start, i_end)).T
 
 
 @numba.njit(
