@@ -2188,9 +2188,12 @@ class Spectrum(object):
         var: variable (`absorbance`, `transmittance`, `transmittance_noslit`, `xsection`, etc.)
             For full list see :py:meth:`~radis.spectrum.spectrum.Spectrum.get_vars()`.
             If ``None``, plot the first thing in the Spectrum. Default ``None``.
-        wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``,
+        wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``, or tuple of these
             wavelength air, wavenumber, or wavelength vacuum. If ``'default'``,
             Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit` is used.
+            To use multiple units add two::
+
+                wunit=["nm", "cm-1"]  # will add a secondary axis in `cm-1`
         Iunit: unit for variable
             if `default`, default unit for quantity `var` is used.
             for radiance, one can use per wavelength (~ `W/m2/sr/nm`) or
@@ -2251,6 +2254,11 @@ class Spectrum(object):
         from radis.misc.plot import fix_style, set_style
 
         # Get variable
+        if isinstance(wunit, list) or isinstance(wunit, tuple):
+            wunit, wunit_2nd_axis = wunit
+        else:
+            wunit_2nd_axis = None
+
         x, y, wunit, Iunit = self.get(
             var, wunit=wunit, Iunit=Iunit, return_units="as_str"
         )
@@ -2338,7 +2346,8 @@ class Spectrum(object):
             ax.legend()
         fix_style()
 
-        from radis.phys.convert import cm2nm, div_safe, nm2cm
+        if wunit_2nd_axis:
+            from radis.phys.convert import cm2nm, cm2nm_air, div_safe, nm2cm, nm_air2cm
 
         if ax.child_axes != []:
             pass
@@ -2353,8 +2362,6 @@ class Spectrum(object):
                     "top", functions=(div_safe(nm2cm), div_safe(cm2nm))
                 )
             else:
-                from radis.phys.convert import cm2nm_air, nm_air2cm
-
                 secx = ax.secondary_xaxis(
                     "top", functions=(div_safe(nm_air2cm), div_safe(cm2nm_air))
                 )
