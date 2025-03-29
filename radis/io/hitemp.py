@@ -27,6 +27,7 @@ def fetch_hitemp(
     engine="default",
     output="pandas",
     parallel=True,
+    database=None,
 ):
     """Stream HITEMP file from HITRAN website. Unzip and build a HDF5 file directly.
 
@@ -120,6 +121,7 @@ def fetch_hitemp(
 
     if r"{molecule}" in databank_name:
         databank_name = databank_name.format(**{"molecule": molecule})
+        databank_name += "-2010" if database == "2010" else ""
 
     if local_databases is None:
         import radis
@@ -135,6 +137,7 @@ def fetch_hitemp(
         chunksize=chunksize,
         parallel=parallel,
         engine=engine,
+        database=database,
     )
 
     # Get list of all expected local files for this database:
@@ -190,7 +193,8 @@ def fetch_hitemp(
             nrows = ldb.get_nrows(local_files[0])
             # assert nrows == Nlines
             _, Ntotal_lines_expected, _, _ = ldb.fetch_url_Nlines_wmin_wmax()
-            if nrows != Ntotal_lines_expected:
+            # Do not raise an exception for the 2010 version since it is not available on the HITEMP website.
+            if nrows != Ntotal_lines_expected and Ntotal_lines_expected != 0:
                 raise AssertionError(
                     f"Number of lines in local database ({nrows:,}) "
                     + "differ from the expected number of lines for "

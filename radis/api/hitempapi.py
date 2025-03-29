@@ -409,6 +409,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         verbose=True,
         chunksize=100000,
         parallel=True,
+        database="full",
     ):
         r"""
         See Also
@@ -431,8 +432,9 @@ class HITEMPDatabaseManager(DatabaseManager):
         self.wmin = None  # available on HITEMP website. See HITEMPDatabaseManager.fetch_url_Nlines_wmin_wmax
         self.wmax = None  # available on HITEMP website. See HITEMPDatabaseManager.fetch_url_Nlines_wmin_wmax
         self.urlnames = None
+        self.database = database
 
-    def fetch_url_Nlines_wmin_wmax(self, hitemp_url="https://hitran.org/hitemp/"):
+    def fetch_url_Nlines_wmin_wmax(self, session=None, hitemp_url="https://hitran.org"):
         r"""requires connexion"""
 
         molecule = self.molecule
@@ -444,10 +446,39 @@ class HITEMPDatabaseManager(DatabaseManager):
             and self.wmax is not None
         ):
             return self.base_url, self.Nlines, self.wmin, self.wmax
+        elif self.database == "2010":
+            if session is None:
+                return self.base_url, 0, self.wmin, self.wmax
+            base_url = (
+                hitemp_url
+                + "/files/HITEMP/HITEMP-2010/"
+                + self.molecule
+                + "_line_list/"
+            )
+            file_response = session.get(base_url)
+            text = file_response.text
 
+            # Parse the HTML then Extract valid file URLs
+            soup = BeautifulSoup(text, "html.parser")
+            table = soup.find("table")
+            links = table.find_all("a", href=True)
+            zip_urls = [
+                hitemp_url + link["href"]
+                for link in links
+                if link["href"].endswith(".zip")
+            ]
+
+            # Since wmin and wmax for the 2010 version are not available on the website, we will retrieve them from the file itself.
+            self.base_url, self.Nlines, self.wmin, self.wmax = (
+                zip_urls[0],
+                None,
+                None,
+                None,
+            )
+            return zip_urls[0], None, None, None
         else:
 
-            response = urllib.request.urlopen(hitemp_url)
+            response = urllib.request.urlopen(hitemp_url + "/hitemp/")
 
             # Alternative to return a Pandas Dataframe :
             # ... Doesnt work because missing <tr> in HITEMP website table for N2O
@@ -541,7 +572,9 @@ class HITEMPDatabaseManager(DatabaseManager):
         elif molecule in HITEMP_MOLECULES:
             session = login_to_hitran(verbose=self.verbose)
             if session:
-                url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
+                url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax(
+                    session
+                )
                 download_hitemp_file(session, url, basename(url))
                 urlnames = [basename(url)]
             else:
@@ -693,6 +726,11 @@ class HITEMPDatabaseManager(DatabaseManager):
 
                 wmin = np.min((wmin, df.wav.min()))
                 wmax = np.max((wmax, df.wav.max()))
+
+                # Cause wmin and wmax for 2010 version is not avalible on website
+                if self.wmin is None or self.wmax is None:
+                    self.wmin = wmin
+                    self.wmax = wmax
 
                 Nlines += len(df)
                 Nlines_tot += len(df)

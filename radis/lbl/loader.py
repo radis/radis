@@ -1305,10 +1305,9 @@ class DatabankLoader(object):
 
             if memory_mapping_engine == "auto":
                 memory_mapping_engine = get_auto_MEMORY_MAPPING_ENGINE()
-
-            if database != "full":
+            if database not in ["full", "2010"]:
                 raise ValueError(
-                    f"Got `database={database}`. When fetching HITEMP, only the `database='full'` option is available."
+                    f"Got `database={database}`. When fetching HITEMP, only `database='full'` or `database='2010'` options are available."
                 )
 
             # Download, setup local databases, and fetch (use existing if possible)
@@ -1331,6 +1330,7 @@ class DatabankLoader(object):
                 engine=memory_mapping_engine,
                 output=output,
                 parallel=parallel,
+                database=database,
             )
             self.params.dbpath = ",".join(local_paths)
 
