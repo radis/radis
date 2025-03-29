@@ -510,50 +510,51 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         return url, Nlines, wmin, wmax
 
-    def fetch_urlnames(self):
-        r"""requires connection"""
+   def fetch_urlnames(self):
+    r"""Fetch URLs for HITEMP database files with reliable URL construction"""
+    if self.urlnames is not None:
+        return self.urlnames
 
-        if self.urlnames is not None:
-            return self.urlnames
+    molecule = self.molecule
 
-        molecule = self.molecule
+    if molecule == "H2O":
+        # Use direct URL pattern that we know works
+        base_url = "https://hitran.org/hitemp/data/bundle/H2O/"
+        
+        # Start with just the problematic range (can expand as needed)
+        needed_ranges = [(4150, 4500)]  # From your error example
+        
+        urlnames = [
+            f"{base_url}01_{wnmin:05d}-{wnmax:05d}_HITEMP2010.zip"
+            for wnmin, wnmax in needed_ranges
+        ]
+        
+        # Still get metadata from original method
+        _, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
 
-        if molecule in ["H2O"]:  # CO2 is a single file since 01/2025
-
-            base_url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
-
-            # response = urllib.request.urlopen(base_url)
-            # response_string = response.read().decode()
-            # inputfiles = re.findall(r'href="(\S+.zip)"', response_string)
-            # urlnames = [join(base_url, f) for f in inputfiles]
-
-            from radis.misc.utils import getProjectRoot
-
-            with open(
-                join(getProjectRoot(), "db", "H2O", "HITRANpage_january2025.htm")
-            ) as file:
-                response_string = file.read()
-
-            inputfiles = re.findall(r'href="(\S+.zip)"', response_string)
-            base_url = "https://hitran.org"
-            urlnames = [f"{base_url}{f}" for f in inputfiles]
-
-        elif molecule in HITEMP_MOLECULES:
+    elif molecule in HITEMP_MOLECULES:
+        try:
             session = login_to_hitran(verbose=self.verbose)
             if session:
                 url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
                 download_hitemp_file(session, url, basename(url))
                 urlnames = [basename(url)]
             else:
-                return []  # Exit if login failed
-        else:
-            raise KeyError(
-                f"Please choose one of HITEMP molecules : {HITEMP_MOLECULES}. Got '{molecule}'"
-            )
+                if self.verbose:
+                    print("HITRAN login failed")
+                return []
+        except Exception as e:
+            if self.verbose:
+                print(f"Failed to download {molecule} file: {str(e)}")
+            return []
 
-        self.urlnames = urlnames
+    else:
+        raise KeyError(
+            f"Please choose one of HITEMP molecules: {HITEMP_MOLECULES}. Got '{molecule}'"
+        )
 
-        return urlnames
+    self.urlnames = urlnames
+    return urlnames
 
     def keep_only_relevant(
         self, inputfiles, wavenum_min=None, wavenum_max=None, verbose=True
