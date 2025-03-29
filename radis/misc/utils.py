@@ -114,6 +114,22 @@ def getarglist(function):
 
         return list(signature(function).parameters)
 
+def calculate_auto_chunksize(nlines, ngridpoints, available_mem=None):
+    """Auto-determine chunksize to balance speed/memory.
+    Defaults to using 70% of available RAM.
+    """
+    if available_mem is None:
+        import psutil
+        available_mem = psutil.virtual_memory().available / 1e9  # GB
+
+    # Empirical memory usage (1e6 lines × 1e5 gridpoints ≈ 1GB)
+    MEM_PER_PAIR = 1e-11  # GB per (line×gridpoint)
+    
+    safe_mem = available_mem * 0.7
+    chunksize = int(safe_mem / (ngridpoints * MEM_PER_PAIR))
+    
+    # Constrain between 1k lines and full dataset
+    return max(1000, min(chunksize, nlines))
 
 def get_default_arg(func, arg):
     """Get default value of argument ``arg`` in function ``func``
