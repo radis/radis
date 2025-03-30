@@ -16,7 +16,17 @@ from radis.api.exomolapi import (
 )
 from radis.db.classes import get_molecule_identifier
 
-
+def _get_exomol_broadening_files(local_path):
+    """Return available broadening partners from .broad files in ExoMol directory"""
+    broad_files = list(pathlib.Path(local_path).glob("*.broad"))
+    partners = {}
+    for file in broad_files:
+        # Example: Parse "H2O__H2.broad" -> "H2"
+        partner = file.stem.split("__")[-1]
+        partners[partner] = str(file)
+    return partners
+    
+# Add new parameter to function signature:
 def fetch_exomol(
     molecule,
     database=None,
@@ -34,6 +44,8 @@ def fetch_exomol(
     engine="default",
     output="pandas",
     skip_optional_data=True,
+    # New parameter:
+    broadeners=None,  # dict of {partner: mole_fraction}
 ):
     """Stream ExoMol file from EXOMOL website. Unzip and build a HDF5 file directly.
 
@@ -264,12 +276,36 @@ def fetch_exomol(
             f"jlower not found. Maybe try to delete cache file {local_files} and restart?"
         )
 
-    # Add broadening
-    mdb.set_broadening_coef(df, output=output, species="air")
+   # Handle broadening
+available_partners = _get_exomol_broadening_files(local_path)
 
-    # Add self broadening if available
-    mdb.set_broadening_coef(df, output=output, species="self")
+# Apply default broadening if none specified
+if broadeners is None:
+    broadeners = {"air": 1.0}  # Default to air broadening
+    
+# Apply each requested broadening
+for partner, mole_fraction in broadeners.items():
+    if partner not in available_partners:
+        if partner in ["air", "self"]:  # Fallback to defaults
+            if verbose:
+                print(f"Using default broadening coefficients for {partner}")
+            continue
+        raise ValueError(
+            f"Broadening partner '{partner}' not found. "
+            f"Available partners: {list(available_partners.keys())}"
+        )
+    if verbose:
+        print(f"Applying {partner} broadening (mole fraction: {mole_fraction})")
+    mdb.set_broadening_coef(df, output=output, species=partner)
 
+     """
+    Other Parameters
+    ----------------
+    broadeners: dict
+        Dictionary of broadening partners and their mole fractions, e.g. 
+        {"H2": 0.9, "He": 0.1}. If None, defaults to air broadening.
+        Available partners are auto-detected from .broad files in the ExoMol database.
+    """
     # Specific for RADIS :
     # ... Get RADIS column names:
     exomol2radis_columns = {v: k for k, v in radis2exomol_columns.items()}
