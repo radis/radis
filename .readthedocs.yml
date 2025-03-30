@@ -10,9 +10,7 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.9"
-  apt_packages:
-    - mesa-vulkan-drivers #for running GPU examples
-    - libvulkan1          #for running GPU examples
+  
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
