@@ -5,11 +5,11 @@
 # Required
 version: 2
 
-# Set the OS, Python version and other tools you might need
+# Set the OS, Python version, and other tools you might need
 build:
   os: ubuntu-22.04
   tools:
-    python: "mambaforge-4.10"
+    python: "3.9"
   apt_packages:
     - mesa-vulkan-drivers #for running GPU examples
     - libvulkan1          #for running GPU examples
@@ -17,7 +17,7 @@ build:
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
   configuration: docs/conf.py
-  # You can configure Sphinx to use a different builder, for instance use the dirhtml builder for simpler URLs
+  # You can configure Sphinx to use a different builder, for instance, use the dirhtml builder for simpler URLs
   # builder: "dirhtml"
   # Fail on all warnings to avoid broken references
   # fail_on_warning: true
