@@ -1403,7 +1403,7 @@ class BroadenFactory(BaseFactory):
                 # Check self broadening is here
                 if not "selbrd" in columns:
                     self.warn(
-                        "Self-broadening reference width `selbrd` not given in database: used air broadening reference width `airbrd` instead",
+                        "Self-broadening reference width `selbrd` not given in database: using air broadening reference width `airbrd` instead",
                         "MissingSelfBroadeningWarning",
                         level=2,  # only appear if verbose>=2
                     )

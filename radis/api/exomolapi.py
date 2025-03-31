@@ -17,7 +17,7 @@ import numpy as np
 from radis.api.dbmanager import DatabaseManager, get_auto_MEMORY_MAPPING_ENGINE
 from radis.db.classes import EXOMOL_MOLECULES, EXOMOL_ONLY_ISOTOPES_NAMES
 
-EXOMOL_URL = "http://www.exomol.com/db/"
+EXOMOL_URL = "https://www.exomol.com/db/"
 
 import bz2
 import re
@@ -586,12 +586,12 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
 #     return A, nu_lines, elower, gup
 
 
-def read_broad(broadf, engine="pytables"):
+def read_broad(broadf, output="pytables"):
     """Reading broadening file (.broad)
     Parameters
     ----------
     broadf: .broad file
-    engine: "pytables" (default) for NumPy/Pandas processing, "vaex" for Vaex processing.
+    output: "pytables" (default) for NumPy/Pandas processing, "vaex" for Vaex processing.
 
     Returns
     -------
@@ -619,7 +619,7 @@ def read_broad(broadf, engine="pytables"):
         "v3upper",
     ]
 
-    if engine == "vaex":
+    if output == "vaex":
         import vaex
 
         bdat = vaex.from_csv(broadf, sep=r"\s+", names=column_names)
@@ -629,17 +629,21 @@ def read_broad(broadf, engine="pytables"):
     return bdat
 
 
-def check_code_level(bdat):
+def check_code_level(bdat, output):
     """checking code level in .broad
     Args:
         bdat: exomol .broad data given by exomolapi.read_broad
-
+        output: "pytables" (default) for NumPy/Pandas processing, "vaex" for Vaex processing.
     Returns:
         code level: None, a0, a1, other codes unavailable currently,
         if a0 and a1 are available, a1 is returned.
         the other cases returns None
     """
-    input_array = np.unique(np.array(bdat["code"]))
+    if output == "vaex":
+        input_array = bdat.unique(bdat.code)
+    else:
+        input_array = pd.unique(bdat.code)
+
     if np.array_equal(input_array, np.array(["a0"])):
         return "a0"
     elif np.array_equal(input_array, np.array(["a1"])):
@@ -1491,12 +1495,12 @@ class MdbExomol(DatabaseManager):
         file = self.broad_files[species]
 
         if self.broadf and os.path.exists(file):
-            bdat = read_broad(file, self.engine)
+            bdat = read_broad(file, output=output)
 
             if self.verbose > 1:
                 print("The file `{}` is used.".format(os.path.basename(file)))
 
-            codelv = check_code_level(bdat)
+            codelv = check_code_level(bdat, output=output)
             if self.verbose:
                 print("Broadening code level:", codelv)
 
@@ -1539,7 +1543,7 @@ class MdbExomol(DatabaseManager):
                 # label P, Q, and R the transitions
                 df["PQR"] = df["jupper"] - df["jlower"]  # P:+1, Q:0, R:-1
 
-                if self.engine == "vaex":
+                if output == "vaex":
                     df["m"] = df.func.where(
                         df["PQR"] == -1,
                         -df["jlower"],
@@ -1617,9 +1621,9 @@ class MdbExomol(DatabaseManager):
                 self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
                 self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
             else:
-                df = vaex.from_arrays(alpha_ref=[alpha_ref_def] * np.ones(len(df)))
+                df = vaex.from_arrays(alpha_ref=self.alpha_ref_def * np.ones(len(df)))
                 self.alpha_ref = df["alpha_ref"].values
-                df = vaex.from_arrays(n_Texp=[n_Texp_def] * np.ones(len(df)))
+                df = vaex.from_arrays(n_Texp=self.n_Texp_def * np.ones(len(df)))
                 self.n_Texp = df["n_Texp"].values
 
         if add_columns:

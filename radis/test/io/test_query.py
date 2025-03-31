@@ -204,7 +204,7 @@ def test_pytable_vs_vaex(verbose=True):
         "wmin": 2116 / u.cm,
         "wmax": 2123 / u.cm,
         "molecule": "CO",
-        "isotope": "2",
+        "isotope": "1",
         "pressure": 1.01325,  # bar
         "mole_fraction": 0.1,
         "path_length": 1,  # cm
@@ -223,6 +223,9 @@ def test_pytable_vs_vaex(verbose=True):
         "exomol", memory_mapping_engine="vaex", db_use_cached="regen"
     )
     s_exo_vaex = sf_exo_vaex.eq_spectrum(Tgas=Tgas * u.K, path_length=1 * u.cm)
+
+    for key in ["Tdpair", "airbrd", "selbrd", "selbrd_Tdpair"]:
+        assert (sf_exo_vaex.df0[key] == sf_exo_pytables.df0[key]).all()
 
     assert np.isclose(
         s_exo_vaex.get_integral("abscoeff"),
