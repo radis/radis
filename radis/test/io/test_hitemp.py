@@ -281,6 +281,34 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
     assert len(df) == Nlines
 
 
+@pytest.mark.needs_connection
+@pytest.mark.download_large_databases
+@pytest.mark.parametrize("molecule", [mol for mol in HITEMP_MOLECULES])
+def test_fetch_hitemp_all_molecules_2010_version(
+    molecule, verbose=True, *args, **kwargs
+):
+    """Test fetch HITEMP for all molecules whose download URL is available for the 2010 version.
+
+    If it fails, check the databases downloaded in ~/.radisdb
+
+    Notes
+    -----
+
+    Currently, this works for all molecules except CO2 and H2O
+    """
+
+    df, local_files = fetch_hitemp(
+        molecule,
+        columns=["int", "wav"],
+        verbose=verbose,
+        return_local_path=True,
+        engine="default",
+        database="2010",
+    )
+
+    assert f"HITEMP-{molecule}-2010" in getDatabankList()
+
+
 @pytest.mark.fast
 @pytest.mark.needs_connection
 def test_partial_loading(*args, **kwargs):

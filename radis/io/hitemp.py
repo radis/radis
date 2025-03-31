@@ -27,7 +27,7 @@ def fetch_hitemp(
     engine="default",
     output="pandas",
     parallel=True,
-    database=None,
+    database="full",
 ):
     """Stream HITEMP file from HITRAN website. Unzip and build a HDF5 file directly.
 
@@ -77,7 +77,10 @@ def fetch_hitemp(
 
     parallel: bool
         if ``True``, uses joblib.parallel to load database with multiple processes
-
+    database: ``str``
+        The name of the database, e.g., ``full`` or ``2010`` for CO.
+        The full option retrieves the most recent available version, while ``2010``
+        specifically selects the 2010 version. If not provided, it defaults to ``full``
     Returns
     -------
     df: pd.DataFrame
