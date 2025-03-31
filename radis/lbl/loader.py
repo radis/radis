@@ -538,6 +538,7 @@ class Parameters(ConditionDict):
         self.dxG = _gaussian_step(
             0.01
         )  #: float : Gaussian step LDM lineshape database. Default _gaussian_step(0.01)
+        # self.add_at_used = None  # use Cython-accelerated code
         self.include_neighbouring_lines = True
         """bool: if ``True``, includes the contribution of off-range, neighbouring
         lines because of lineshape broadening. Default ``True``."""

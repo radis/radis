@@ -73,7 +73,7 @@ from scipy.signal import oaconvolve
 import radis
 from radis.db.references import doi
 from radis.lbl.base import BaseFactory
-from radis.misc.arrays import (
+from radis.misc.arrays import (  # add_at, #cython
     arange_len,
     boolean_array_from_ranges,
     non_zero_ranges_in_array,
@@ -991,6 +991,14 @@ class BroadenFactory(BaseFactory):
         self.params.broadening_method = ""
         """ See :py:meth:`~radis.lbl.factory.SpectrumFactory`
         """
+
+        # # Try to use Cython ?
+        # self.use_cython = radis.config[
+        #     "USE_CYTHON"
+        # ]  # default value (read from config file)
+        # # ... Note: whether Cython will be used eventually depends whether it was installed,
+        # # ... else it default to the non-cython version. What was used eventually
+        # # ... is stored in self.params.use_cython
 
         # Predict broadening times (helps trigger warnings for optimization)
         self._broadening_time_ruleofthumb = 1e-7  # s / lines / point

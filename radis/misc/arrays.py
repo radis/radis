@@ -495,7 +495,7 @@ def numpy_add_at(LDM, k, l, m, I):
 
     Notes
     -----
-    Cython version previously implemented in https://github.com/radis/radis/pull/234 but now deprecated.
+    Cython version implemented in https://github.com/radis/radis/pull/234
 
     See Also
     --------
@@ -504,6 +504,45 @@ def numpy_add_at(LDM, k, l, m, I):
     """
     # print('Numpy add.at()')
     return np.add.at(LDM, (k, l, m), I)
+
+
+# ## Cython functions:
+# try:
+#     import radis_cython_extensions as rcx
+# except (ModuleNotFoundError, ValueError):
+#     add_at = numpy_add_at
+#     """Wrapper to :py:func`radis.misc.arrays.numpy_add_at` or to the Radis
+#     Cython version  (here, the numpy version was loaded)"""
+#     #  or use radis.misc.utils.NotInstalled() ?
+# # EP: Also got (after switching back to former Cython version) :
+# #     File "radis\cython\radis_cython_extensions.pyx", line 1, in init radis_cython_extensions
+# #     ValueError: numpy.ndarray size changed, may indicate binary incompatibility. Expected 88 from C header, got 80 from PyObject
+# # we may consider escaping this.
+# else:
+#     add_at = rcx.add_at
+
+
+# @numba.njit
+# def non_zero_values_around2(a, n):
+#     """return a boolean array of same size as ``a`` where each position ``i``
+#     is ``True`` if there are non-zero points less than ``n`` index position
+#     away from ``a[i]``, and ``False`` if all points in ``a`` are 0 ``n``  index
+#     position away from ``a[i]``
+#     """
+#     # # Cleaner version, but about 2x slower on real-life test cases:
+#     # #
+#     # %timeit non_zero_values_around(LDM[:, l, m], truncation)
+#     # 2.92 ms ± 99.3 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+
+#     # %timeit non_zero_values_around2(LDM[:, l, m], truncation)
+#     # 5.11 ms ± 110 µs per loop (mean ± std. dev. of 7 runs, 100 loops each)
+#     # --------------
+
+#     # non_zero_values_around2()
+#     b = np.zeros(len(a)+2*n+1,  dtype=np.bool_)
+#     for pos in np.nonzero(a)[0]:
+#         b[pos:pos+2*n+1] = True
+#     return b[n:len(a)+n]
 
 
 @numba.njit(
