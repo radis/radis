@@ -64,6 +64,8 @@ after_success:
 
 
 stages: #This sequence defines the order of the stages
+  - name: Py39
+    if: branch = master OR branch = develop
   - name: Py311
     if: branch = master OR branch = develop
   - name: Py310
@@ -71,8 +73,6 @@ stages: #This sequence defines the order of the stages
   - name: lint
     if: branch = master OR branch = develop
   - name: deploy
-    if: branch = master
-  - name: Py39
     if: branch = master
   - name: Py312
     if: branch = master
