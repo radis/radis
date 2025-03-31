@@ -133,7 +133,7 @@ def _prompt_password(user):
     Parameters
     ----------
     user : str
-        Username.
+        Email.
 
     Returns
     -------
@@ -176,18 +176,18 @@ def setup_credentials():
 
     if is_rtd or is_travis:
         # In CI/CD environments, only use environment variables
-        username = os.environ.get("HITRAN_USERNAME")
+        email = os.environ.get("HITRAN_EMAIL")
         password = os.environ.get("HITRAN_PASSWORD")
-        if not username or not password:
+        if not email or not password:
             print(
-                "Warning: HITRAN_USERNAME or HITRAN_PASSWORD not set in environment variables"
+                "Warning: HITRAN_EMAIL or HITRAN_PASSWORD not set in environment variables"
             )
     else:
         # In normal usage, try environment variables first, then prompt
-        username = input("Enter HITRAN username: ")
-        password = _prompt_password(username)
+        email = input("Enter HITRAN email: ")
+        password = _prompt_password(email)
 
-    return username, password
+    return email, password
 
 
 def get_encryption_key():
@@ -237,10 +237,10 @@ def decrypt_password(encrypted_password):
     return f.decrypt(encrypted_password.encode()).decode()
 
 
-def store_credentials(username, password):
-    """Store HITRAN credentials in radis.json file with encrypted username and password"""
-    # Encrypt both username and password before storing
-    encrypted_username = encrypt_password(username)  # reuse same encryption function
+def store_credentials(email, password):
+    """Store HITRAN credentials in radis.json file with encrypted email and password"""
+    # Encrypt both email and password before storing
+    encrypted_email = encrypt_password(email)  # reuse same encryption function
     encrypted_password = encrypt_password(password)
 
     # Read existing radis.json
@@ -255,7 +255,7 @@ def store_credentials(username, password):
         config["credentials"] = {}
 
     # Store encrypted credentials
-    config["credentials"]["HITRAN_USERNAME"] = encrypted_username
+    config["credentials"]["HITRAN_EMAIL"] = encrypted_email
     config["credentials"]["HITRAN_PASSWORD"] = encrypted_password
 
     print(
@@ -275,7 +275,7 @@ def login_to_hitran(verbose=False):
     login_url = "https://hitran.org/login/"
     session = requests.Session()
 
-    def attempt_login(username, password):
+    def attempt_login(email, password):
         """Attempt to login with provided credentials"""
         # Get CSRF token
         response = session.get(login_url)
@@ -284,7 +284,7 @@ def login_to_hitran(verbose=False):
 
         login_data = {
             "csrfmiddlewaretoken": csrf,
-            "email": username,
+            "email": email,
             "password": password,
         }
 
@@ -310,16 +310,16 @@ def login_to_hitran(verbose=False):
             config = json.load(f)
 
         if "credentials" in config:
-            encrypted_username = config["credentials"].get("HITRAN_USERNAME")
+            encrypted_email = config["credentials"].get("HITRAN_EMAIL")
             encrypted_password = config["credentials"].get("HITRAN_PASSWORD")
 
-            if encrypted_username and encrypted_password:
+            if encrypted_email and encrypted_password:
                 try:
-                    # Decrypt both username and password
-                    username = decrypt_password(encrypted_username)
+                    # Decrypt both email and password
+                    email = decrypt_password(encrypted_email)
                     password = decrypt_password(encrypted_password)
 
-                    login_response, session = attempt_login(username, password)
+                    login_response, session = attempt_login(email, password)
                     if is_login_successful(login_response):
                         if verbose:
                             print("Login successful.")
@@ -338,13 +338,13 @@ def login_to_hitran(verbose=False):
                     # Continue to new user flow
 
     # First time use or no stored credentials
-    username, password = setup_credentials()
-    login_response, session = attempt_login(username, password)
+    email, password = setup_credentials()
+    login_response, session = attempt_login(email, password)
 
     if is_login_successful(login_response):
         if verbose:
             print("Login successful.")
-        store_credentials(username, password)
+        store_credentials(email, password)
         return session
     else:
         if verbose:
