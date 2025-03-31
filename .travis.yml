@@ -76,8 +76,8 @@ stages: #This sequence defines the order of the stages
     if: branch = master
   - name: Py312
     if: branch = master
-  - name: MacOS_py310
-    if: branch = master
+  # - name: MacOS_py310
+  #   if: branch = master
   # - name: Win_py310
   #   if: branch = master OR branch = develop
 
@@ -137,26 +137,26 @@ jobs:
       # before_script:
         # - export MPLBACKEND=Agg
 
-    - stage: MacOS_py310
-      name: Python 3.10 on macOS
-      python: "3.10"
-      os: osx
-      osx_image: xcode11.2
-      language: shell
-      before_install: #https://gist.github.com/wolfv/fe1ea521979973ab1d016d95a589dcde#os-x
-          - curl -Ls https://micromamba.snakepit.net/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
-          - mkdir -p ~/micromamba/bin
-          - mv bin/micromamba ~/micromamba/bin/
-          - export PATH=$HOME/micromamba/bin:$PATH
-          - MAMBA_ROOT_PREFIX=~/micromamba
-          - micromamba shell init -s zsh
-          - eval "$(micromamba shell hook --shell bash)"
-      before_script: #same as the other but without xvfb-run
-        - echo ">>> Run fast tests first"
-        - pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10
-      script: skip #there is a problem with test_exomol.py, but let's skip the long tests for the moment
-        # - echo ">>> Run long tests now"
-        # - pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
+    # - stage: MacOS_py310
+    #   name: Python 3.10 on macOS
+    #   python: "3.10"
+    #   os: osx
+    #   osx_image: xcode11.2
+    #   language: shell
+    #   before_install: #https://gist.github.com/wolfv/fe1ea521979973ab1d016d95a589dcde#os-x
+    #       - curl -Ls https://micromamba.snakepit.net/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
+    #       - mkdir -p ~/micromamba/bin
+    #       - mv bin/micromamba ~/micromamba/bin/
+    #       - export PATH=$HOME/micromamba/bin:$PATH
+    #       - MAMBA_ROOT_PREFIX=~/micromamba
+    #       - micromamba shell init -s zsh
+    #       - eval "$(micromamba shell hook --shell bash)"
+    #   before_script: #same as the other but without xvfb-run
+    #     - echo ">>> Run fast tests first"
+    #     - pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10
+    #   script: skip #there is a problem with test_exomol.py, but let's skip the long tests for the moment
+    #     # - echo ">>> Run long tests now"
+    #     # - pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
 
     # - stage: Win_py310 #https://github.com/mamba-org/micromamba-releases/releases/latest/download/micromamba-win-64
     #   name: Python 3.10 on Windows
