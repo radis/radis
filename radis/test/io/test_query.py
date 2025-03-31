@@ -192,6 +192,7 @@ def test_calc_hitran_spectrum(verbose=True, plot=False, *args, **kwargs):
     return
 
 
+@pytest.mark.fast
 @pytest.mark.needs_connection
 @pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
 def test_pytable_vs_vaex(verbose=True):
@@ -230,7 +231,7 @@ def test_pytable_vs_vaex(verbose=True):
     assert np.isclose(
         s_exo_vaex.get_integral("abscoeff"),
         s_exo_pytables.get_integral("abscoeff"),
-    )  # June 2024, should be 0.0026227144035907727
+    )  # April 2025, s_exo_vaex.get_integral("abscoeff") - s_exo_pytables.get_integral("abscoeff") == 0.0
 
 
 def _run_testcases(verbose=True, *args, **kwargs):

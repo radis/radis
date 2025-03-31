@@ -1621,10 +1621,15 @@ class MdbExomol(DatabaseManager):
                 self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
                 self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
             else:
-                df = vaex.from_arrays(alpha_ref=self.alpha_ref_def * np.ones(len(df)))
-                self.alpha_ref = df["alpha_ref"].values
-                df = vaex.from_arrays(n_Texp=self.n_Texp_def * np.ones(len(df)))
-                self.n_Texp = df["n_Texp"].values
+                self.alpha_ref = vaex.from_arrays(
+                    alpha_ref=self.alpha_ref_def * np.ones(len(df))
+                )
+                self.n_Texp = vaex.from_arrays(
+                    n_Texp=self.n_Texp_def * np.ones(len(df))
+                )
+
+        # Status: the 2 solumns self.alpha_ref and self.n_Texp are ready.
+        # Next step: add the 2 solumns in df with the proper labels
 
         if add_columns:
             if species == "air":
