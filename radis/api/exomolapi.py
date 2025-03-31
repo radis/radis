@@ -656,7 +656,7 @@ def check_code_level(bdat, output):
 
 
 def make_j2b(
-    bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None, engine="pytables"
+    bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None, output="pytables"
 ):
     """compute j2b (code a0, map from jlower to alpha_ref)
 
@@ -665,13 +665,13 @@ def make_j2b(
         alpha_ref_default: default value
         n_Texp_default: default value
         jlower_max: maximum number of jlower
-        engine: "pytables" (default) for NumPy/Pandas processing, "vaex" for Vaex processing.
+        output: "pytables" (default) for NumPy/Pandas processing, "vaex" for Vaex processing.
     Returns:
         j2alpha_ref[jlower] provides alpha_ref for jlower
         j2n_Texp[jlower]  provides nT_exp for jlower
     """
     # a0
-    if engine == "vaex":
+    if output == "vaex":
         import vaex
 
         bdat = bdat[bdat["code"] == "a0"]
@@ -690,7 +690,7 @@ def make_j2b(
     else:
         Nblower = np.max([jlower_max, np.max(jlower_arr)]) + 1
 
-    if engine == "vaex":
+    if output == "vaex":
         # Initialize arrays with default alpha_ref and n_Texp
         df_defaults = vaex.from_arrays(
             jlower=vaex.vrange(0, Nblower, dtype="int64"),
@@ -1510,7 +1510,7 @@ class MdbExomol(DatabaseManager):
                     alpha_ref_default=self.alpha_ref_def,
                     n_Texp_default=self.n_Texp_def,
                     jlower_max=df["jlower"].max(),
-                    engine=self.engine,
+                    output=output,
                 )
                 self.alpha_ref = j2alpha_ref[df["jlower"].values]
                 self.n_Texp = j2n_Texp[df["jlower"].values]
@@ -1520,7 +1520,7 @@ class MdbExomol(DatabaseManager):
                     alpha_ref_default=self.alpha_ref_def,
                     n_Texp_default=self.n_Texp_def,
                     jlower_max=df["jlower"].max(),
-                    engine=self.engine,
+                    output=output,
                 )
                 jj2alpha_ref, jj2n_Texp = make_jj2b(
                     bdat,
