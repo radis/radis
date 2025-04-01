@@ -1,38 +1,23 @@
 # .readthedocs.yml
-# Read the Docs configuration file for Sphinx projects
-# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
-
-# Required
 version: 2
 
-# Set the OS, Python version and other tools you might need
 build:
   os: ubuntu-22.04
   tools:
-    python: "mambaforge-4.10"
-  apt_packages:
-    - mesa-vulkan-drivers #for running GPU examples
-    - libvulkan1          #for running GPU examples
-
-# Build documentation in the "docs/" directory with Sphinx
-sphinx:
-  configuration: docs/conf.py
-  # You can configure Sphinx to use a different builder, for instance use the dirhtml builder for simpler URLs
-  # builder: "dirhtml"
-  # Fail on all warnings to avoid broken references
-  # fail_on_warning: true
-
-# Optionally build your docs in additional formats such as PDF and ePub
-#formats:
-#    - pdf
-#    - epub
+    python: "3.8"  # Changed from mambaforge to standard Python 3.8 (more stable)
 
 python:
   install:
     - method: pip
       path: .
-      extra_requirements:
-      - docs      #  ReadTheDocs will install Radis with "pip install .[docs]" so extra packages are read from setup.py ["docs":....]
+      extra_requirements: [docs]
+      use_venv: true  # Isolated environment
 
-conda:
-  environment: environment.yml
+sphinx:
+  configuration: docs/conf.py
+  fail_on_warning: false  # Temporarily disable to identify real errors
+
+# Removed sections:
+# - conda: environment.yml (causes conflicts)
+# - apt_packages: mesa-vulkan-drivers (not needed for docs)
+# - formats: pdf/epub (simplify initial build)
