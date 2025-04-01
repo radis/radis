@@ -642,7 +642,10 @@ def check_code_level(bdat, output="pytables"):
     if output == "vaex":
         input_array = bdat.unique(bdat.code)
     else:
-        input_array = pd.unique(bdat.code)
+        if type(bdat) == dict:
+            input_array = np.unique(bdat["code"])
+        else:
+            input_array = pd.unique(bdat.code)
     if np.array_equal(input_array, np.array(["a0"])):
         return "a0"
     elif np.array_equal(input_array, np.array(["a1"])):

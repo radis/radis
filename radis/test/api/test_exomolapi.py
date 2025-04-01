@@ -3,6 +3,7 @@ import pytest
 from radis.api.exomolapi import check_code_level
 
 
+@pytest.mark.NICOLAS
 @pytest.mark.parametrize("bdat_list", [["a1"], ["a0", "a1"], ["a1", "a0"]])
 def test_check_bdat_a1(bdat_list):
     bdat = {}
