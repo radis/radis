@@ -193,7 +193,7 @@ class SpectrumFactory(BandFactory):
     neighbour_lines: float (:math:`cm^{-1}`)
         The calculated spectral range is increased (by ``neighbour_lines`` cm-1
         on each side) to take into account overlaps from out-of-range lines.
-        Default is ``0`` :math:`cm^{-1}`.​ #TODO: Check weird character
+        Default is ``0`` :math:`cm^{-1}`.​
     wstep: float (cm-1) or `'auto'`
         Resolution of wavenumber grid. Default ``0.01`` cm-1.
         If `'auto'`, it is ensured that there

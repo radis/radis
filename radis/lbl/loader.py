@@ -1168,7 +1168,6 @@ class DatabankLoader(object):
         # and saved in output spectra information
         self.params.dbformat = dbformat
         self.misc.load_energies = load_energies
-        self.dataframe_type = output
         self.levels = levels
         if levels is not None:
             self.levelspath = ",".join([format_paths(lvl) for lvl in levels.values()])
