@@ -95,10 +95,25 @@ def setup(app):
 
 # Intersphinx mapping (simplified)
 intersphinx_mapping = {
+    # Core dependencies (from patch-4)
     "python": ("https://docs.python.org/3", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "matplotlib": ("https://matplotlib.org/stable/", None),
+    
+    # Additional mappings (from develop branch)
+    "astropy": ("https://docs.astropy.org/en/stable/", None),
+    "astroquery": ("https://astroquery.readthedocs.io/en/latest/", None),
+    "exojax": ("https://secondearths.sakura.ne.jp/exojax/objects.inv", None),
+    "fitroom": ("https://fitroom.readthedocs.io/en/latest/", None),
+    "habanero": ("https://habanero.readthedocs.io/en/latest/", None),
+    "joblib": ("https://joblib.readthedocs.io/en/latest/", None),
+    "lmfit": ("https://lmfit.github.io/lmfit-py/", None),
+    "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
+    "pytexit": ("https://pytexit.readthedocs.io/en/latest/", None),
+    "seaborn": ("https://seaborn.pydata.org/", None),
+    "specutils": ("https://specutils.readthedocs.io/en/stable/", None),
+    "vaex": ("https://vaex.readthedocs.io/en/latest/", None),
 }
 
 # Napoleon settings
