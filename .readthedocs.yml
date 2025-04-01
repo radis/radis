@@ -6,7 +6,6 @@ build:
     python: "3.8"
 
 python:
-  system_packages: false
   install:
     - requirements: docs/requirements.txt
     - method: pip
