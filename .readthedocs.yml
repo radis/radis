@@ -5,12 +5,13 @@ build:
   tools:
     python: "3.8"
 
+python:
+  system_packages: false
+  install:
+    - requirements: docs/requirements.txt
+    - method: pip
+      path: .
+
 sphinx:
   configuration: docs/conf.py
   fail_on_warning: false
-
-python:
-  install:
-    - method: pip
-      path: .
-      extra_requirements: [docs]
