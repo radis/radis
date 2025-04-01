@@ -1497,7 +1497,7 @@ class MdbExomol(DatabaseManager):
         file = self.broad_files[species]
 
         if self.broadf and os.path.exists(file):
-            bdat = read_broad(file, self.engine)
+            bdat = read_broad(file, output)
 
             if self.verbose > 1:
                 print("The file `{}` is used.".format(os.path.basename(file)))
