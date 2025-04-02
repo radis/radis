@@ -1115,7 +1115,7 @@ class DatabankLoader(object):
                 "hitemp-radisdb"  # downloaded in RADIS local databases ~/.radisdb
             )
             if database == "default":
-                database = "full"
+                database = "most_recent"
 
         elif compare_source == "kurucz":
             dbformat = "kurucz"
