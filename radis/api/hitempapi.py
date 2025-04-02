@@ -110,6 +110,53 @@ def keep_only_relevant(
     return relevantfiles, files_wmin, files_wmax
 
 
+def get_recent_hitemp_database_year(molecule):
+    """Retrieve the most recent available database year from the hitran website.
+
+    Parameters
+    ----------
+    molecule: str
+
+    Returns
+    -------
+    str
+        The year of the latest available database.
+
+    Examples
+    --------
+    Get the latest database year for CO2 from HITEMP :
+    ::
+
+        year = get_hitemp_database_list("CO2")
+        >>> "2024"
+    """
+
+    response = urllib.request.urlopen("https://hitran.org/hitemp/")
+
+    text = response.read().decode()
+    text = text[
+        text.find(
+            '<table id="hitemp-molecules-table" class="selectable-table list-table">'
+        ) : text.find("</table>")
+    ]
+    text = re.sub(r"<!--.+?-->\s*\n", "", text)
+    html_molecule = re.sub(r"(\d{1})", r"(<sub>\1</sub>)", molecule)
+    text = text[
+        re.search(
+            "<td>(?:<strong>)?" + html_molecule + "(?:</strong>)?</td>", text
+        ).start() :
+    ]
+    lines = text.splitlines()
+
+    recent_database = str(
+        re.findall(r"<td[^>]*>\s*(?:<strong>)?(\d{4})(?:</strong>)?\s*</td>", lines[6])[
+            0
+        ]
+    )
+
+    return recent_database
+
+
 #%%
 def get_last(b):
     """Get non-empty lines of a chunk b, parsing the bytes."""
@@ -409,7 +456,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         verbose=True,
         chunksize=100000,
         parallel=True,
-        database="full",
+        database="most_recent",
     ):
         r"""
         See Also

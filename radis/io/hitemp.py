@@ -8,7 +8,7 @@ Created on Sun May 22 17:35:05 2022
 from os.path import abspath, exists, expanduser, join
 
 from radis.api.hdf5 import update_pytables_to_vaex
-from radis.api.hitempapi import HITEMPDatabaseManager
+from radis.api.hitempapi import HITEMPDatabaseManager, get_recent_hitemp_database_year
 
 
 def fetch_hitemp(
@@ -27,7 +27,7 @@ def fetch_hitemp(
     engine="default",
     output="pandas",
     parallel=True,
-    database="full",
+    database="most_recent",
 ):
     """Stream HITEMP file from HITRAN website. Unzip and build a HDF5 file directly.
 
@@ -78,9 +78,11 @@ def fetch_hitemp(
     parallel: bool
         if ``True``, uses joblib.parallel to load database with multiple processes
     database: ``str``
-        The name of the database, e.g., ``full`` or ``2010`` for CO.
-        The full option retrieves the most recent available version, while ``2010``
-        specifically selects the 2010 version. If not provided, it defaults to ``full``
+        The database version to retrieve. Options include:
+        - `"most_recent"`: Fetches the latest available database version.
+        - A four-digit year (e.g., `"2010"`): Selects a specific version, such as the 2010 database for CO.
+
+        If not provided, the default is `"most_recent"`.
     Returns
     -------
     df: pd.DataFrame
@@ -121,6 +123,15 @@ def fetch_hitemp(
     :py:meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`
 
     """
+
+    recent_database = get_recent_hitemp_database_year(molecule)
+    if database == "most_recent":
+        database = recent_database
+    available_years = {"2010", str(recent_database)}
+    if database not in available_years:
+        raise KeyError(
+            f"The database '{database}' is not recognized as an available HITEMP database for '{molecule}'. Please choose from the following available years: {available_years}."
+        )
 
     if r"{molecule}" in databank_name:
         databank_name = databank_name.format(**{"molecule": molecule})
