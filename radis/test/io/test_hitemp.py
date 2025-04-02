@@ -446,6 +446,40 @@ def test_calc_hitemp_spectrum(*args, **kwargs):
     return
 
 
+@pytest.mark.fast
+@pytest.mark.needs_connection
+def test_calc_hitemp_spectrum_2010_version(*args, **kwargs):
+    """
+    Test direct loading of HDF5 files 2010 version
+    """
+
+    from astropy import units as u
+
+    from radis import calc_spectrum
+
+    calc_spectrum(
+        wavenum_min=1900 / u.cm,
+        wavenum_max=2500 / u.cm,
+        wstep="auto",
+        molecule="CO",
+        Tgas=300,
+        databank=("hitemp", "2010"),  # test by fetching directly
+        verbose=False,
+    )
+
+    calc_spectrum(
+        wavenum_min=1900 / u.cm,
+        wavenum_max=2500 / u.cm,
+        wstep="auto",
+        molecule="CO",
+        Tgas=300,
+        databank="HITEMP-CO-2010",  # test by loading the downloaded database
+        verbose=False,
+    )
+
+    return
+
+
 @pytest.mark.needs_connection
 def test_calc_hitemp_CO_noneq(verbose=True, *args, **kwargs):
     """Test proper download of HITEMP CO database.
