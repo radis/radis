@@ -7,13 +7,10 @@ Created on Tue Jan 26 20:36:38 2021
 
 import pytest
 
-from radis import config
 from radis.api.hdf5 import DataFileManager, hdf2df
 from radis.io.hitran import fetch_hitran
 from radis.misc.config import getDatabankEntries
 from radis.misc.utils import NotInstalled, not_installed_vaex_args
-
-config["ALLOW_OVERWRITE"] = True
 
 try:
     import vaex

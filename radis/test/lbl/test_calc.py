@@ -26,14 +26,12 @@ from os.path import basename
 import numpy as np
 import pytest
 
-from radis import config
 from radis.lbl import LevelsList, SpectrumFactory
 from radis.lbl.calc import calc_spectrum
 from radis.misc.printer import printm
 from radis.phys.blackbody import sPlanck
 
 fig_prefix = basename(__file__) + ": "
-config["ALLOW_OVERWRITE"] = True
 
 # %% Tests
 # ----------------
