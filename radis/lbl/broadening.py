@@ -1363,7 +1363,7 @@ class BroadenFactory(BaseFactory):
                 else:
                     df["shft"] = shift
         else:
-            if self.input.isatom:
+            if self.input.isatom and self.get_conditions()["dbformat"] == "kurucz":
                 gammma_rad, gamma_stark, gamma_vdw = gamma_vald3(
                     Tgas,
                     pressure_atm * 1.01325,
@@ -1380,7 +1380,11 @@ class BroadenFactory(BaseFactory):
                     (1.0 / 3.0) * 2 * gamma_vdw
                 )  # Konjević et al. 2012 §4.1.3.2, neglect stark shift by default
                 wl = gammma_rad + gamma_stark + gamma_vdw
-            else:
+            elif self.input.isatom and self.get_conditions()["dbformat"] == "nist":
+                raise Exception(
+                    "The NIST database does not have Lorentzian broadening parameters. You must use the argument `lbfunc` in `SpectrumFactory` to specify the Lorentizian HWHM and a shift. See the help of `SpectrumFactory` or the examples for atomic spectra in https://radis.readthedocs.io/en/latest/auto_examples/index.html . \n\nSuggestion:\ndef broad_arbitrary(**kwargs):\n\treturn 1 * (296 / kwargs['Tgas']) ** 0.7, None"
+                )
+            else:  # for molecules
                 # Check self broadening temperature-dependance coefficient is here
                 if self.dataframe_type == "pandas":
                     columns = list(df.keys())
@@ -2501,14 +2505,10 @@ class BroadenFactory(BaseFactory):
                             mask = boolean_array_from_ranges(
                                 LDM_ranges[(l, m)], len(sumoflines_calc)
                             )
-                            # TAG: RADIS 1.0 paper - This is where the sparse wavenumber range is used
-                            # (temporarily Fig. 9 in the RADIS 1.0 paper)
                             sumoflines_calc[mask] += oaconvolve(
                                 LDM_reduced[(l, m)], lineshape, "same"
                             )
                     else:
-                        # TAG: RADIS 1.0 paper - This is where the sparse wavenumber range is used
-                        # (temporarily Fig. 9 in the RADIS 1.0 paper)
                         sumoflines_calc += oaconvolve(LDM[:, l, m], lineshape, "same")
 
         elif broadening_method == "fft":

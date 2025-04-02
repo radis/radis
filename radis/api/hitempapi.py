@@ -9,11 +9,11 @@ https://stackoverflow.com/questions/55610891/numpy-load-from-io-bytesio-stream
 https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 
 """
-
 import json
 import os
 import re
 import urllib.request
+import warnings
 from os.path import basename, commonpath, join
 from typing import Union
 
@@ -170,8 +170,23 @@ def _prompt_password(user):
 
 def setup_credentials():
     """Set up HITRAN credentials and store them in .env file."""
-    username = input("Enter HITRAN username: ")
-    password = _prompt_password(username)
+    # Check if running on ReadTheDocs or Travis CI environment
+    is_rtd = os.environ.get("READTHEDOCS", "").lower() == "true"
+    is_travis = os.environ.get("TRAVIS", "").lower() == "true"
+
+    if is_rtd or is_travis:
+        # In CI/CD environments, only use environment variables
+        username = os.environ.get("HITRAN_USERNAME")
+        password = os.environ.get("HITRAN_PASSWORD")
+        if not username or not password:
+            print(
+                "Warning: HITRAN_USERNAME or HITRAN_PASSWORD not set in environment variables"
+            )
+    else:
+        # In normal usage, try environment variables first, then prompt
+        username = input("Enter HITRAN username: ")
+        password = _prompt_password(username)
+
     return username, password
 
 
@@ -345,6 +360,17 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
     if file_response.status_code == 200:
         total_size = int(file_response.headers.get("content-length", 0))
         print(f"Total size to download: {total_size} bytes")
+        file_size_in_GB = total_size / (1024**3)
+        from radis import config
+
+        MAX_SIZE_GB = config["WARN_LARGE_DOWNLOAD_ABOVE_X_GB"]
+
+        if file_size_in_GB > MAX_SIZE_GB:
+            warning_msg = (
+                f"The total download size is {file_size_in_GB:.2f} GB, which will take time and potential a significant portion of your disk memory."
+                "To prevent this warning, you increase the limit using `radis.config['WARN_LARGE_DOWNLOAD_ABOVE_X_GB'] =  1`."
+            )
+            warnings.warn(warning_msg, UserWarning)
 
         with open(output_filename, "wb") as f, tqdm(
             total=total_size, unit="B", unit_scale=True, desc=output_filename

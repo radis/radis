@@ -352,23 +352,20 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
         species="C_I",
         pressure=1.01325,  # bar
         path_length=1,  # cm
+        pfsource="barklem",
     )
 
     config["ALLOW_OVERWRITE"] = True
 
     # Fetching in vaex dataframe format
     config["DATAFRAME_ENGINE"] = "vaex"
-    sf.fetch_databank(
-        "kurucz", memory_mapping_engine="vaex", load_columns="all", parfuncfmt="kurucz"
-    )
+    sf.fetch_databank("kurucz", memory_mapping_engine="vaex", load_columns="all")
     df1 = sf.df0
     assert isinstance(df1, vaex.dataframe.DataFrameLocal)
 
     # Fetching in Pandas dataframe format
     config["DATAFRAME_ENGINE"] = "pandas"
-    sf.fetch_databank(
-        "kurucz", memory_mapping_engine="vaex", load_columns="all", parfuncfmt="kurucz"
-    )
+    sf.fetch_databank("kurucz", memory_mapping_engine="vaex", load_columns="all")
     df2 = sf.df0
     assert isinstance(df1, vaex.dataframe.DataFrameLocal)
 

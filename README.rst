@@ -11,8 +11,7 @@ equilibrium / non-LTE) based on HITRAN/HITEMP/ExoMol.
 It includes post-processing tools to compare experimental spectra and spectra calculated
 with RADIS or other spectral codes.
 
-User full documentation (advanced install and examples) are available on the `RADIS Website <http://radis.readthedocs.io/>`__.
-
+Full user documentation (advanced install and examples) are available on the `RADIS Website <http://radis.readthedocs.io/>`__.
 
 ===============
 Getting Started
@@ -149,7 +148,7 @@ Contribute
 ----------
 
 Want to contribute to RADIS? Join the Slack community and we'll help you through the process.
-Want to get started immediatly? Nice. Have a look at the the `Developer Guide <https://radis.readthedocs.io/en/latest/dev/developer.html>`__.
+Want to get started immediately? Nice. Have a look at the the `Developer Guide <https://radis.readthedocs.io/en/latest/dev/developer.html>`__.
 
 |badge_contributors| |badge_slack|
 
