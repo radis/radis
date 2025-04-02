@@ -2134,7 +2134,7 @@ class BaseFactory(DatabankLoader):
         References
         ----------
         Weighted transition-moment squared :math:`R_s^2` from linestrength :math:`S_0`
-        at temperature :math:`T_ref`, derived from Eq.(A5) in [Rothman-1998]_
+        at temperature :math:`T_{ref}`, derived from Eq.(A5) in [Rothman-1998]_
 
         .. math:
             R_s^2=10^{+36}\\frac{3h c}{8{\\pi}^3} \\frac{1}{n_u} \\frac{1}{\\frac{I_a g_l}{Q_{ref}} \\operatorname{exp}\\left(\\frac{-E_l}{T_{ref}}\\right)} \\frac{1}{1-\\operatorname{exp}\\left(\\frac{-n_u}{T_{ref}}\\right)} S_0

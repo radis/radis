@@ -16,7 +16,6 @@ dependencies:
 - astropy>=4.3.1  # Unit aware calculations
 - astroquery>=0.4.6  # to fetch HITRAN databases
 - beautifulsoup4>=4.10.0 # parse ExoMol website
-- cantera>=2.5.1    # for chemical equilibrium computations
 - configparser
 #- cython          # Not needed, see #647
 - habanero>=1.2.0  # CrossRef API to retrieve data from doi
@@ -50,7 +49,7 @@ dependencies:
   - nvidia-cufft-cu11; sys_platform != "darwin"
   - periodictable
   - peakutils
-  - publib         # Plotting styles for Matplotlib. Version, update to 0.4.0 needed for matplotlib==3.8. However, only 0.3.2 is compatible with python==3.8 (see #647)
+  - publib         # Plotting styles for Matplotlib.
   - python-dotenv
   - requests
   - ruamel.yaml

@@ -115,7 +115,7 @@ def test_calc_exomol_vs_hitemp(verbose=True, plot=True, *args, **kwargs):
 
         plt.legend()
 
-    # Broadening coefficients are different but areas under the lines should be the same :
+    # Broadening coefficients are different but areas under the lines should be the same:
     import numpy as np
 
     assert np.isclose(

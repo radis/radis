@@ -28,7 +28,7 @@
     "RESAMPLING_TOLERANCE_THRESHOLD": 5e-3  # an error if raises if areas do not match by a value above, this threshold during resampling. See :py:meth:`~radis.spectrum.spectrum.Spectrum.resample`
     "DATAFRAME_ENGINE" : "pandas"
     "MISSING_BROAD_COEF" : false            # accepted values: false and "air". If "air", missing boradening coefficients are replaced by those of air.
-    #"USE_CYTHON": true                      # use Cython module if available (else default to Python)
+
     # molecular parameters
     # --------------------
     # Additional parameters are read from radis.db.molparams_extra.json

@@ -224,10 +224,13 @@ def test_pytable_vs_vaex(verbose=True):
     )
     s_exo_vaex = sf_exo_vaex.eq_spectrum(Tgas=Tgas * u.K, path_length=1 * u.cm)
 
+    for key in ["Tdpair", "airbrd", "selbrd", "selbrd_Tdpair"]:
+        assert (sf_exo_vaex.df0[key] == sf_exo_pytables.df0[key]).all()
+
     assert np.isclose(
         s_exo_vaex.get_integral("abscoeff"),
         s_exo_pytables.get_integral("abscoeff"),
-    )  # June 2024, should be 0.0026227144035907727
+    )  # s_exo_vaex.get_integral("abscoeff") - s_exo_pytables.get_integral("abscoeff") = 0.0
 
 
 def _run_testcases(verbose=True, *args, **kwargs):
