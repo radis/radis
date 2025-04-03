@@ -391,7 +391,34 @@ class DatabaseManager(object):
 
             # Download file with requests
             try:
-                response = requests.get(urlname, stream=True)
+                # Get session from HITEMP API
+                from radis.api.hitempapi import login_to_hitran
+
+                session = login_to_hitran(verbose=verbose)
+
+                # Set headers to indicate we want the actual file
+                headers = {
+                    "Accept": "application/zip, application/octet-stream",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+                }
+
+                # First check if we can access the file
+                head_response = session.head(
+                    urlname, headers=headers, allow_redirects=True
+                )
+                if head_response.status_code != 200:
+                    raise OSError(f"Failed to access file: {head_response.status_code}")
+
+                # Check if we got redirected to login page
+                if "text/html" in head_response.headers.get("content-type", "").lower():
+                    raise OSError(
+                        "Got HTML response instead of file. Please ensure you're logged in and have access to the file."
+                    )
+
+                # Now download the file
+                response = session.get(
+                    urlname, headers=headers, stream=True, allow_redirects=True
+                )
                 response.raise_for_status()  # Raise an error if request fails
 
                 # Create a temporary file to store the downloaded content
@@ -408,7 +435,19 @@ class DatabaseManager(object):
 
                     def open(self, url_or_path=None):
                         """Open the file for reading"""
-                        return open(self.file_path, "rb")
+                        if self.file_path.endswith(".zip"):
+                            from io import BytesIO
+                            from zipfile import ZipFile
+
+                            output = BytesIO()
+                            with ZipFile(self.file_path, "r") as myzip:
+                                fnames = myzip.namelist()
+                                for fname in fnames:
+                                    output.write(myzip.read(fname))
+                            output.seek(0)
+                            return output
+                        else:
+                            return open(self.file_path, "rb")
 
                     def abspath(self, url_or_path=None):
                         """Return the absolute path of the file"""
