@@ -71,7 +71,33 @@ class RequestsFileOpener:
 
     def open(self, url_or_path=None):
         """Open the file for reading"""
-        return open(self.file_path, "rb")
+        if self.file_path.endswith(".zip"):
+            from io import BytesIO
+            from zipfile import ZipFile
+
+            output = BytesIO()
+            with ZipFile(self.file_path, "r") as myzip:
+                fnames = myzip.namelist()
+                for fname in fnames:
+                    output.write(myzip.read(fname))
+            output.seek(0)
+            return output
+        elif self.file_path.endswith(".bz2"):
+            import bz2
+            from io import BytesIO
+
+            # Read compressed file
+            with open(self.file_path, "rb") as f:
+                compressed_data = f.read()
+
+            # Decompress the data
+            decompressed_data = bz2.decompress(compressed_data)
+
+            # Create BytesIO object with decompressed data
+            output = BytesIO(decompressed_data)
+            return output
+        else:
+            return open(self.file_path, "rb")
 
     def abspath(self, url_or_path=None):
         """Return the absolute path of the file"""
@@ -428,32 +454,7 @@ class DatabaseManager(object):
                         if chunk:  # filter out keep-alive new chunks
                             f.write(chunk)
 
-                # class to mimic numpy.DataSource behavior
-                class RequestsFileOpener:
-                    def __init__(self, file_path):
-                        self.file_path = file_path
-
-                    def open(self, url_or_path=None):
-                        """Open the file for reading"""
-                        if self.file_path.endswith(".zip"):
-                            from io import BytesIO
-                            from zipfile import ZipFile
-
-                            output = BytesIO()
-                            with ZipFile(self.file_path, "r") as myzip:
-                                fnames = myzip.namelist()
-                                for fname in fnames:
-                                    output.write(myzip.read(fname))
-                            output.seek(0)
-                            return output
-                        else:
-                            return open(self.file_path, "rb")
-
-                    def abspath(self, url_or_path=None):
-                        """Return the absolute path of the file"""
-                        return self.file_path
-
-                # Create an opener object that mimics numpy.DataSource
+                # Create an opener object using the global RequestsFileOpener class
                 opener = RequestsFileOpener(temp_file_path)
 
                 # Pass the opener to the parse function (maintaining backward compatibility)
