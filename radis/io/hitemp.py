@@ -80,7 +80,7 @@ def fetch_hitemp(
     database: ``str``
         The database version to retrieve. Options include:
         - `"most_recent"`: Fetches the latest available database version.
-        - A four-digit year (e.g., `"2010"`): Selects a specific version, such as the 2010 database for CO.
+        - A four-digit year (e.g., `"2010"`): Selects a specific version, such as the 2010 or 2019 database for CO.
 
         If not provided, the default is `"most_recent"`.
     Returns

@@ -127,7 +127,7 @@ def get_recent_hitemp_database_year(molecule):
     Get the latest database year for CO2 from HITEMP :
     ::
 
-        year = get_hitemp_database_list("CO2")
+        year = get_recent_hitemp_database_year("CO2")
         >>> "2024"
     """
 
