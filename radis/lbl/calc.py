@@ -29,31 +29,11 @@ except ImportError:  # if ran from here
     from radis.lbl.factory import SpectrumFactory
     from radis.lbl.base import get_wavenumber_range
 
-from scipy.interpolate import interp1d
-
 from radis import config
 from radis.db.utils import compare
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
 from radis.spectrum.spectrum import Spectrum
-
-
-def interpolate_spectrum(spectrum, new_wavelengths, kind="cubic"):
-    """
-    Interpolates a spectrum to a new wavelength range.
-
-    Parameters:
-    - spectrum: radis Spectrum object
-    - new_wavelengths: numpy array of desired wavelengths
-    - kind: interpolation method ('linear', 'cubic', etc.)
-
-    Returns:
-    - interpolated intensity values at new wavelengths
-    """
-    f_interp = interp1d(
-        spectrum.wavelength, spectrum.radiance, kind=kind, fill_value="extrapolate"
-    )
-    return f_interp(new_wavelengths)
 
 
 # %%
