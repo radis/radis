@@ -10,6 +10,7 @@ include radis/db/molparam.txt
 include radis/db/molparams_extra.json
 include radis/default_radis.json
 recursive-include radis/db *.json
+recursive-include radis/misc *
 include radis/db/H2O/*.htm
 
 # Exclude test files and directories
