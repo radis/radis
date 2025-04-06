@@ -248,7 +248,6 @@ class SpectrumFactory(BandFactory):
         - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [Spectral-Synthesis-Algorithm]_)
         - ``"simple"`` : weights equal to their relative position in the grid
 
-        If using the LDM optimization, broadening method is automatically set to ``'fft'``. #TODO: Check if this is still true
         If ``None``, no lineshape interpolation is performed and the lineshape of all lines is calculated.
 
         Refer to [Spectral-Synthesis-Algorithm]_ for more explanation on the LDM method for lineshape interpolation.
