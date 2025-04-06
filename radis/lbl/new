@@ -1,0 +1,23 @@
+def _cutoff_linestrength(self, cutoff):
+    """Filter spectral lines by intensity threshold. Returns all lines if cutoff is None."""
+    if cutoff is None:
+        return self.df.copy()
+    return self.df[self.df.linestrength >= cutoff].copy()
+
+def _calculate_vibrational_levels(self, df, vib_distribution, Tvib, Trot, Qvib):
+    """Calculate vibrational populations using specified distribution model."""
+    hc_k = h * c / k
+    
+    if vib_distribution == "boltzmann":
+        df["nu_vib"] = (df.gvibu / Qvib) * exp(-hc_k * df.Evibu / Tvib)
+        df["nl_vib"] = (df.gvibl / Qvib) * exp(-hc_k * df.Evibl / Tvib)
+    
+    elif vib_distribution == "treanor":
+        df["nu_vib"] = (df.gvibu / Qvib) * exp(-hc_k * (df.Evibu_h/Tvib + df.Evibu_a/Trot))
+        df["nl_vib"] = (df.gvibl / Qvib) * exp(-hc_k * (df.Evibl_h/Tvib + df.Evibl_a/Trot))
+    
+    else:
+        raise ValueError(
+            f"Invalid vibrational distribution '{vib_distribution}'. "
+            "Must be either 'boltzmann' or 'treanor'"
+        )
