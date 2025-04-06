@@ -8,7 +8,7 @@ Created on Sun May 22 17:35:05 2022
 from os.path import abspath, exists, expanduser, join
 
 from radis.api.hdf5 import update_pytables_to_vaex
-from radis.api.hitempapi import HITEMPDatabaseManager
+from radis.api.hitempapi import HITEMPDatabaseManager, get_recent_hitemp_database_year
 
 
 def fetch_hitemp(
@@ -27,6 +27,7 @@ def fetch_hitemp(
     engine="default",
     output="pandas",
     parallel=True,
+    database="most_recent",
 ):
     """Stream HITEMP file from HITRAN website. Unzip and build a HDF5 file directly.
 
@@ -76,7 +77,12 @@ def fetch_hitemp(
 
     parallel: bool
         if ``True``, uses joblib.parallel to load database with multiple processes
+    database: ``str``
+        The database version to retrieve. Options include:
+        - `"most_recent"`: Fetches the latest available database version.
+        - A four-digit year (e.g., `"2010"`): Selects a specific version, such as the 2010 or 2019 database for CO.
 
+        If not provided, the default is `"most_recent"`.
     Returns
     -------
     df: pd.DataFrame
@@ -118,8 +124,18 @@ def fetch_hitemp(
 
     """
 
+    recent_database = get_recent_hitemp_database_year(molecule)
+    if database == "most_recent":
+        database = recent_database
+    available_years = {"2010", str(recent_database)}
+    if database not in available_years:
+        raise KeyError(
+            f"The database '{database}' is not recognized as an available HITEMP database for '{molecule}'. Please choose from the following available years: {available_years}."
+        )
+
     if r"{molecule}" in databank_name:
         databank_name = databank_name.format(**{"molecule": molecule})
+        databank_name += "-2010" if database == "2010" else ""
 
     if local_databases is None:
         import radis
@@ -135,6 +151,7 @@ def fetch_hitemp(
         chunksize=chunksize,
         parallel=parallel,
         engine=engine,
+        database=database,
     )
 
     # Get list of all expected local files for this database:
@@ -176,7 +193,8 @@ def fetch_hitemp(
 
     # Download files
     if len(download_files) > 0:
-        if urlnames is None:
+
+        if len(urlnames) == 0:
             urlnames = ldb.fetch_urlnames()
         filesmap = dict(zip(local_files, urlnames))
         download_urls = [filesmap[k] for k in download_files]
@@ -189,7 +207,8 @@ def fetch_hitemp(
             nrows = ldb.get_nrows(local_files[0])
             # assert nrows == Nlines
             _, Ntotal_lines_expected, _, _ = ldb.fetch_url_Nlines_wmin_wmax()
-            if nrows != Ntotal_lines_expected:
+            # Do not raise an exception for the 2010 version since it is not available on the HITEMP website.
+            if nrows != Ntotal_lines_expected and Ntotal_lines_expected != 0:
                 raise AssertionError(
                     f"Number of lines in local database ({nrows:,}) "
                     + "differ from the expected number of lines for "

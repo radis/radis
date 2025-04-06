@@ -1,4 +1,6 @@
-from ctypes import Structure, c_float, c_int, c_size_t
+from ctypes import Structure, c_float, c_int, c_size_t, c_uint
+
+c_float_arr_16 = c_float * 16
 
 
 class threadIdx_t(Structure):
@@ -33,6 +35,18 @@ class gridDim_t(Structure):
     ]
 
 
+class workGroupSize_t(Structure):
+    _fields_ = [
+        ("x", c_uint),
+        ("y", c_uint),
+        ("z", c_uint),
+        ("id", c_uint),
+    ]
+
+
+workGroupSizeArray_t = workGroupSize_t * 4
+
+
 class initData_t(Structure):
     _fields_ = [
         ("v_min", c_float),
@@ -43,8 +57,8 @@ class initData_t(Structure):
         ("dxG", c_float),
         ("dxL", c_float),
         ("N_lines", c_int),
-        ("N_collision_partners", c_int),
-        ("log_c2Mm", c_float * 16),
+        ("N_coll", c_int),
+        ("log_c2Mm", c_float_arr_16),
     ]
 
 
@@ -56,12 +70,10 @@ class iterData_t(Structure):
         ("log_rT", c_float),
         ("c2T", c_float),
         ("N", c_float),
-        ("x", c_float * 16),
-        ("l", c_float),
-        ("slit_FWHM", c_float),
+        ("x", c_float_arr_16),
         ("log_wG_min", c_float),
         ("log_wL_min", c_float),
         ("N_G", c_int),
         ("N_L", c_int),
-        ("Q", c_float * 16),
+        ("Q", c_float_arr_16),
     ]

@@ -170,7 +170,6 @@ def setup(app):
 intersphinx_mapping = {
     "astropy": ("https://docs.astropy.org/en/stable/", None),
     "astroquery": ("https://astroquery.readthedocs.io/en/latest/", None),
-    "cantera": ("https://www.cantera.org/documentation/docs-2.6/sphinx/html/", None),
     "exojax": ("https://secondearths.sakura.ne.jp/exojax/objects.inv", None),
     "fitroom": ("https://fitroom.readthedocs.io/en/latest/", None),
     "habanero": ("https://habanero.readthedocs.io/en/latest/", None),
@@ -417,7 +416,7 @@ latex_elements = {
     # The font size ('10pt', '11pt' or '12pt').
     #'pointsize': '10pt',
     # Additional stuff for the LaTeX preamble.
-    "preamble": "\setcounter{tocdepth}{3}",
+    "preamble": r"\setcounter{tocdepth}{3}",
     # Latex figure (float) alignment
     #'figure_align': 'htbp',
 }

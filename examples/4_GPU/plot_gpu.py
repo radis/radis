@@ -6,16 +6,17 @@ GPU Accelerated Spectra
 
 Example using GPU calculation with :py:meth:`~radis.lbl.SpectrumFactory.eq_spectrum_gpu`
 
-This method requires a GPU - Currently, only Nvidia GPU's are supported.
-For more information on how to setup your system to run GPU-accelerated methods
-using CUDA, check :ref:`GPU Spectrum Calculation on RADIS <label_radis_gpu>`
-
 .. note::
 
-    in the example below, the code runs on the GPU by default. In case no Nvidia GPU is
-    detected, the code will instead be ran on CPU. This can be toggled manually by setting
-    the ``backend`` keyword either to ``'gpu-cuda'`` or ``'cpu-cuda'``.
-    The run time reported below is for CPU.
+    Systems with a dedicated GPU often have multiple devices available, because they also have an integrated GPU in the
+    main processor. This can be selected by chosing a different device_id (e.g. 'nvidia' or 'intel').
+    The device id could be a string or an integer. The integer is the device number, starting from 0.
+    Look at the device overview printed when running the GPU spectrum to see what options are available.
+
+    Make sure to call gpu_exit() at the end to release all GPU resources.
+    This can't be done automatically because Radis doesn't know how long you want to keep using the GPU.
+    If you want to immediately exit the GPU calculations, the keyword exit_gpu=True can be passed to
+    sf.eq_spectrum_gpu(), but this is uncommon because it doesn't leverage the full power of GPU calculations.
 
 """
 
@@ -25,11 +26,13 @@ sf = SpectrumFactory(
     2150,
     2450,  # cm-1
     molecule="CO2",
-    isotope="1,2,3",
+    isotope="1",
     wstep=0.002,
 )
 
-sf.fetch_databank("hitemp")
+sf.fetch_databank(
+    source="hitran"
+)  # use hitemp or exomol for accuracy at high tempertatures
 
 T = 1500.0  # K
 p = 1.0  # bar
@@ -52,8 +55,11 @@ s_gpu = sf.eq_spectrum_gpu(
     pressure=p,
     mole_fraction=x,
     path_length=l,
-    backend="gpu-cuda",
+    # device_id='nvidia',
+    exit_gpu=True,
 )
 s_gpu.apply_slit(w_slit, unit="cm-1")
 
-plot_diff(s_cpu, s_gpu, var="radiance", wunit="nm", method="diff")
+plot_diff(s_cpu, s_gpu, var="emissivity", wunit="nm", method="diff")
+
+# s_gpu.exit_gpu()

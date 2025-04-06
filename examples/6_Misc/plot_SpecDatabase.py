@@ -43,7 +43,7 @@ sf = SpectrumFactory(
     wstep=0.1,
 )
 sf.warnings = {"AccuracyError": "ignore"}
-sf.fetch_databank("hitemp")
+sf.fetch_databank("hitran")
 
 # Generating a Spectrum
 s1 = sf.eq_spectrum(Tgas=300, path_length=1)
@@ -69,15 +69,15 @@ db.add(s1)
 sf.init_database(my_folder)
 
 wstep = np.linspace(0.1, 0.001, 4)
-Tgas = np.linspace(300, 3000, 4)
+Tgas_arr = np.linspace(300, 700, 7)
 
 
 # Multiple Spectrum calculation based on different values of Tgas and wstep
 for i in wstep:
     sf._wstep = i
     sf.params.wstep = i
-    for j in Tgas:
-        sf.eq_spectrum(Tgas=j, path_length=1)
+    for Tgas in Tgas_arr:
+        sf.eq_spectrum(Tgas=Tgas, path_length=1)
 
 
 # Loading SpecDatabase

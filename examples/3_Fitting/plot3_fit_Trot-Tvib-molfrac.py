@@ -129,7 +129,6 @@ You can see the benchmark result of these algorithms here:
 
 # -------------------- Step 3. Run the fitting and retrieve results -------------------- #
 
-
 # Conduct the fitting process!
 s_best, result, log = fit_spectrum(
     s_exp=s_experimental,  # Experimental spectrum.
@@ -138,7 +137,6 @@ s_best, result, log = fit_spectrum(
     model=experimental_conditions,  # Experimental ground-truths conditions.
     pipeline=fit_properties,  # # Fitting pipeline references.
 )
-
 
 # Now investigate the result logs for additional information about what's going on during the fitting process
 

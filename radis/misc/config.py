@@ -83,6 +83,10 @@ def get_config(configpath=CONFIG_PATH_JSON):
                 err.pos,
             ) from err
 
+    # Add default for plotting_library if missing
+    if "plotting_library" not in config:
+        config["plotting_library"] = "auto"
+
     user_config = get_user_config(configpath)
 
     config.update(user_config)
@@ -969,10 +973,11 @@ def addDatabankEntries(dbname, dict_entries, verbose=True, configpath=CONFIG_PAT
             config[dbname]["path"] = dict_entries.pop("path")
 
     config[dbname]["format"] = dict_entries.pop("format")
-    config[dbname]["parfuncfmt"] = dict_entries.pop("parfuncfmt")
 
     # Optional:
     # ... partition functions:
+    if "parfuncfmt" in dict_entries:
+        config[dbname]["parfuncfmt"] = dict_entries.pop("parfuncfmt")
     if "parfunc" in dict_entries:
         config[dbname]["parfunc"] = dict_entries.pop("parfunc")
 

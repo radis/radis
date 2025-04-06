@@ -9,6 +9,7 @@ code (which you should also have a look at!), by @HajimeKawahara, under MIT Lice
 
 import os
 import pathlib
+import urllib.request
 import warnings
 
 import numpy as np
@@ -16,7 +17,7 @@ import numpy as np
 from radis.api.dbmanager import DatabaseManager, get_auto_MEMORY_MAPPING_ENGINE
 from radis.db.classes import EXOMOL_MOLECULES, EXOMOL_ONLY_ISOTOPES_NAMES
 
-EXOMOL_URL = "http://www.exomol.com/db/"
+EXOMOL_URL = "https://www.exomol.com/db/"
 
 import bz2
 import re
@@ -585,67 +586,217 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
 #     return A, nu_lines, elower, gup
 
 
-def read_broad(broadf):
+def read_broad(broadf, output="pytables"):
     """Reading broadening file (.broad)
     Parameters
     ----------
     broadf: .broad file
+    engine: "pytables" (default) for NumPy/Pandas processing, "vaex" for Vaex processing.
 
     Returns
     -------
-    broadening info in bdat form (pandas), defined by this instance.
+    broadening info in bdat form (pandas or vaex dataframe), defined by this instance.
 
     Notes
     -----
     See Table 16 in https://arxiv.org/pdf/1603.05890.pdf
     """
-    bdat = pd.read_csv(
-        broadf,
-        sep=r"\s+",
-        names=(
-            "code",
-            "alpha_ref",
-            "n_Texp",
-            "jlower",
-            "jupper",
-            "kalower",
-            "kclower",
-            "kaupper",
-            "kcupper",
-            "v1lower",
-            "v2lower",
-            "v3lower",
-            "v1upper",
-            "v2upper",
-            "v3upper",
-        ),
-    )
+    column_names = [
+        "code",
+        "alpha_ref",
+        "n_Texp",
+        "jlower",
+        "jupper",
+        "kalower",
+        "kclower",
+        "kaupper",
+        "kcupper",
+        "v1lower",
+        "v2lower",
+        "v3lower",
+        "v1upper",
+        "v2upper",
+        "v3upper",
+    ]
+
+    if output == "vaex":
+        import vaex
+
+        bdat = vaex.from_csv(broadf, sep=r"\s+", names=column_names)
+    else:
+        bdat = pd.read_csv(broadf, sep=r"\s+", names=column_names)
 
     return bdat
 
 
-def check_code_level(bdat):
+def check_code_level(bdat, output="pytables"):
     """checking code level in .broad
     Args:
         bdat: exomol .broad data given by exomolapi.read_broad
-
+        output: "pytables" (default) for NumPy/Pandas processing, "vaex" for Vaex processing.
     Returns:
         code level: None, a0, a1, other codes unavailable currently,
         if a0 and a1 are available, a1 is returned.
         the other cases returns None
     """
-    input_array = np.unique(np.array(bdat["code"]))
+    if output == "vaex":
+        input_array = bdat.unique(bdat.code)
+    else:
+        if type(bdat) == dict:
+            input_array = np.unique(bdat["code"])
+        else:
+            input_array = pd.unique(bdat.code)
     if np.array_equal(input_array, np.array(["a0"])):
         return "a0"
     elif np.array_equal(input_array, np.array(["a1"])):
         return "a1"
     elif np.array_equal(np.sort(input_array), np.array(["a0", "a1"])):
         return "a1"
+    elif np.array_equal(input_array, np.array(["m0"])):
+        return "m0"
     return None
 
 
-def make_j2b(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
+def make_j2b(
+    bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None, output="pytables"
+):
     """compute j2b (code a0, map from jlower to alpha_ref)
+
+    Args:
+        bdat: exomol .broad data given by exomolapi.read_broad
+        alpha_ref_default: default value
+        n_Texp_default: default value
+        jlower_max: maximum number of jlower
+        engine: "pytables" (default) for NumPy/Pandas processing, "vaex" for Vaex processing.
+    Returns:
+        j2alpha_ref[jlower] provides alpha_ref for jlower
+        j2n_Texp[jlower]  provides nT_exp for jlower
+    """
+    # a0
+    if output == "vaex":
+        import vaex
+
+        bdat = bdat[bdat["code"] == "a0"]
+        jlower_arr = bdat["jlower"].values
+        alpha_ref_arr = bdat["alpha_ref"].values
+        n_Texp_arr = bdat["n_Texp"].values
+    else:
+        cmask = bdat["code"] == "a0"
+        jlower_arr = np.array(bdat["jlower"][cmask], dtype=int)
+        alpha_ref_arr = np.array(bdat["alpha_ref"][cmask])
+        n_Texp_arr = np.array(bdat["n_Texp"][cmask])
+
+    # Determine the array size based on jlower_max
+    if jlower_max is None:
+        Nblower = np.max(jlower_arr) + 1
+    else:
+        Nblower = np.max([jlower_max, np.max(jlower_arr)]) + 1
+
+    if output == "vaex":
+        # Initialize arrays with default alpha_ref and n_Texp
+        df_defaults = vaex.from_arrays(
+            jlower=vaex.vrange(0, Nblower, dtype="int64"),
+            alpha_ref=np.full(Nblower, alpha_ref_default),
+            n_Texp=np.full(Nblower, n_Texp_default),
+        )
+        df_defaults = df_defaults.join(bdat, on="jlower", how="left", rsuffix="_new")
+
+        df_defaults["alpha_ref"] = df_defaults["alpha_ref_new"].fillna(
+            alpha_ref_default
+        )
+        df_defaults["n_Texp"] = df_defaults["n_Texp_new"].fillna(n_Texp_default)
+
+        # Populate the mapping arrays using known broadening coefficients
+        j2alpha_ref = df_defaults["alpha_ref"].values
+        j2n_Texp = df_defaults["n_Texp"].values
+    else:
+        # Initialize arrays with default alpha_ref and n_Texp
+        j2alpha_ref = np.full(Nblower, alpha_ref_default)
+        j2n_Texp = np.full(Nblower, n_Texp_default)
+
+        # Populate the mapping arrays using known broadening coefficients
+        j2alpha_ref[jlower_arr] = alpha_ref_arr
+        j2n_Texp[jlower_arr] = n_Texp_arr
+
+    # Raise a minor warning if default values are used for high J values
+    if Nblower > (np.max(jlower_arr) + 1):
+        import warnings
+
+        from radis.misc.warning import AccuracyWarning
+
+        warnings.warn(
+            AccuracyWarning(
+                "The default broadening parameter (alpha = {2} cm^-1 and n = {3}) are used for J'' > {1} up to J'' = {0}".format(
+                    Nblower, np.max(jlower_arr), alpha_ref_default, n_Texp_default
+                )
+            )
+        )
+
+    return j2alpha_ref, j2n_Texp
+
+
+def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None, output="pytables"):
+    """compute jj2b (code a1, map from (jlower, jupper) to alpha_ref and n_Texp)
+
+    Args:
+        bdat: exomol .broad data given by exomolapi.read_broad
+        j2alpha_ref_def: default value from a0
+        j2n_Texp_def: default value from a0
+        jupper_max: maximum number of jupper
+        engine: "pytables" (default) for NumPy/Pandas processing, "vaex" for Vaex processing.
+    Returns:
+        jj2alpha_ref[jlower,jupper] provides alpha_ref for (jlower, jupper)
+        jj2n_Texp[jlower,jupper]  provides nT_exp for (jlower, jupper)
+    Note:
+        The pair of (jlower, jupper) for which broadening parameters are not given, jj2XXX contains None.
+    """
+    # a1
+    if output == "vaex":
+        import vaex
+
+        bdat = bdat[bdat["code"] == "a1"]
+        jlower_arr = bdat["jlower"].values
+        jupper_arr = bdat["jupper"].values
+        alpha_ref_arr = bdat["alpha_ref"].values
+        n_Texp_arr = bdat["n_Texp"].values
+    else:
+        cmask = bdat["code"] == "a1"
+        jlower_arr = np.array(bdat["jlower"][cmask], dtype=int)
+        jupper_arr = np.array(bdat["jupper"][cmask], dtype=int)
+        alpha_ref_arr = np.array(bdat["alpha_ref"][cmask])
+        n_Texp_arr = np.array(bdat["n_Texp"][cmask])
+
+    # Determine the array size based on jupper_max
+    if jupper_max is None:
+        Nbupper = np.max(jupper_arr) + 1
+    else:
+        Nbupper = np.max([jupper_max, np.max(jupper_arr)]) + 1
+
+    if output == "vaex":
+        df = vaex.from_arrays(
+            j2alpha_ref_def=[j2alpha_ref_def], j2n_Texp_def=[j2n_Texp_def]
+        )
+        df["j2alpha_ref_column"] = df["j2alpha_ref_def"]
+        df["j2n_Texp_column"] = df["j2n_Texp_def"]
+
+        df["jj2alpha_ref"] = df["j2alpha_ref_column"] * 1
+        df["jj2n_Texp"] = df["j2n_Texp_column"] * 1
+        ones_array = np.ones(Nbupper)
+
+        jj2alpha_ref = np.outer(df["j2alpha_ref_def"].to_numpy(), ones_array)
+        jj2n_Texp = np.outer(df["j2n_Texp_def"].to_numpy(), ones_array)
+    else:
+        jj2alpha_ref = j2alpha_ref_def[:, np.newaxis] * np.ones(Nbupper)
+        jj2n_Texp = j2n_Texp_def[:, np.newaxis] * np.ones(Nbupper)
+
+    jj2alpha_ref[jlower_arr, jupper_arr] = alpha_ref_arr
+    jj2n_Texp[jlower_arr, jupper_arr] = n_Texp_arr
+
+    return jj2alpha_ref, jj2n_Texp
+
+
+def make_j2b_m0(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
+    """compute j2b (code m0, map from |m| to alpha_ref)
 
     Args:
         bdat: exomol .broad data given by exomolapi.read_broad
@@ -656,8 +807,8 @@ def make_j2b(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
         j2alpha_ref[jlower] provides alpha_ref for jlower
         j2n_Texp[jlower]  provides nT_exp for jlower
     """
-    # a0
-    cmask = bdat["code"] == "a0"
+    # m0
+    cmask = bdat["code"] == "m0"
     jlower_arr = np.array(bdat["jlower"][cmask], dtype=int)
     alpha_ref_arr = np.array(bdat["alpha_ref"][cmask])
     n_Texp_arr = np.array(bdat["n_Texp"][cmask])
@@ -691,41 +842,6 @@ def make_j2b(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
         )
 
     return j2alpha_ref, j2n_Texp
-
-
-def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None):
-    """compute jj2b (code a1, map from (jlower, jupper) to alpha_ref and n_Texp)
-
-    Args:
-        bdat: exomol .broad data given by exomolapi.read_broad
-        j2alpha_ref_def: default value from a0
-        j2n_Texp_def: default value from a0
-        jupper_max: maximum number of jupper
-    Returns:
-        jj2alpha_ref[jlower,jupper] provides alpha_ref for (jlower, jupper)
-        jj2n_Texp[jlower,jupper]  provides nT_exp for (jlower, jupper)
-    Note:
-        The pair of (jlower, jupper) for which broadening parameters are not given, jj2XXX contains None.
-    """
-    # a1
-    cmask = bdat["code"] == "a1"
-    jlower_arr = np.array(bdat["jlower"][cmask], dtype=int)
-    jupper_arr = np.array(bdat["jupper"][cmask], dtype=int)
-    alpha_ref_arr = np.array(bdat["alpha_ref"][cmask])
-    n_Texp_arr = np.array(bdat["n_Texp"][cmask])
-
-    if jupper_max is None:
-        Nbupper = np.max(jupper_arr) + 1
-    else:
-        Nbupper = np.max([jupper_max, np.max(jupper_arr)]) + 1
-
-    jj2alpha_ref = j2alpha_ref_def[:, np.newaxis] * np.ones(Nbupper)
-    jj2n_Texp = j2n_Texp_def[:, np.newaxis] * np.ones(Nbupper)
-
-    jj2alpha_ref[jlower_arr, jupper_arr] = alpha_ref_arr
-    jj2n_Texp[jlower_arr, jupper_arr] = n_Texp_arr
-
-    return jj2alpha_ref, jj2n_Texp
 
 
 def get_exomol_full_isotope_name(molecule, isotope):
@@ -849,16 +965,30 @@ def get_exomol_database_list(molecule, isotope_full_name=None):
     databases = [r.get_attribute_list("title")[0] for r in rows]
 
     if len(databases_recommended) > 1:
-        # Known exceptions :
-        if (
+        old_recommended = databases_recommended.copy()
+
+        ### Known exception: SiO cross-section
+        # this is a cross-section dataset, shouldn't be used. Reverse and use the other one:
+        exception_SiO = (
             isotope_full_name == "28Si-16O"
             and databases_recommended[0] == "xsec-SiOUVenIR"
-        ):
-            # this is a cross-section dataset, shouldn't be used. Reverse and use the other one:
+        )
+        if exception_SiO:
             databases_recommended = databases_recommended[::-1]
-        else:
+
+        ### Known exception: DTU cross-section
+        exception_DTU = "DTU" in databases_recommended
+        if exception_DTU:
+            databases_recommended.remove("DTU")
+
+        if exception_SiO or exception_DTU:
             print(
-                f"Multiple recommended databases found for {molecule} in ExoMol : {databases_recommended}. This is unexpected. Using the first"
+                f"Multiple recommended databases found for {molecule} in ExoMol : {old_recommended}. {isotope_full_name} is an exception, using {databases_recommended}"
+            )
+        else:
+            databases_recommended[::-1]
+            print(
+                f"Multiple recommended databases found for {molecule} in ExoMol : {old_recommended}. This is unexpected. Trying with the first: {databases_recommended}"
             )
 
     databases = databases + databases_recommended
@@ -961,7 +1091,9 @@ class MdbExomol(DatabaseManager):
     bkgdatm: str
         background atmosphere for broadening. e.g. H2, He,
     broadf: bool
-        if False, the default broadening parameters in .def file is used
+        if False, the default broadening parameters in .def file is used, default is True
+    broadf_download: bool
+        if False, not try to download potential broadening files, default is True
 
     Other Parameters
     ----------------
@@ -1069,6 +1201,7 @@ class MdbExomol(DatabaseManager):
         crit=-np.inf,
         bkgdatm="Air",  # TODO: use Air whenever possible (consistent with HITRAN/HITEMP). This is not a parameter for the moment.
         broadf=True,
+        broadf_download=True,
         engine="vaex",
         verbose=True,
         cache=True,
@@ -1089,6 +1222,7 @@ class MdbExomol(DatabaseManager):
             engine = config["MEMORY_MAPPING_ENGINE"]
             if engine == "auto":
                 engine = get_auto_MEMORY_MAPPING_ENGINE()
+        self.engine = engine
 
         self.path = pathlib.Path(path)
         if local_databases is not None:
@@ -1096,19 +1230,41 @@ class MdbExomol(DatabaseManager):
 
         t0 = self.path.parents[0].stem
         molec = t0 + "__" + str(self.path.stem)
-        self.bkgdatm = bkgdatm  # TODO: for the moment, only air is possible in RADIS, although He and H are usually available in ExoMol
-        molecbroad = t0 + "__" + self.bkgdatm
 
         self.crit = crit
         self.margin = margin
         self.nurange = [np.min(nurange), np.max(nurange)]
         self.wmin, self.wmax = np.min(nurange), np.max(nurange)
         self.broadf = broadf
+        self.broadf_download = broadf_download
+
         # Where exomol files are
         self.states_file = self.path / pathlib.Path(molec + ".states.bz2")
         self.pf_file = self.path / pathlib.Path(molec + ".pf")
         self.def_file = self.path / pathlib.Path(molec + ".def")
-        self.broad_file = self.path / pathlib.Path(molecbroad + ".broad")
+
+        self.broad_partners = [
+            "H2",
+            "He",
+            "air",
+            "self",
+            "Ar",
+            "CH4",
+            "CO",
+            "CO2",
+            "H2",
+            "H2O",
+            "N2",
+            "NH3",
+            "NO",
+            "O2",
+            "NH3",
+            "CS",
+        ]  # see ExoMol paper 2024
+        self.broad_files = {
+            partner: self.path / pathlib.Path(t0 + "__" + partner + ".broad")
+            for partner in self.broad_partners
+        }
 
         mgr = self.get_datafile_manager()
         if not self.def_file.exists():
@@ -1120,7 +1276,12 @@ class MdbExomol(DatabaseManager):
             and not mgr.cache_file(self.states_file).exists()
         ):
             self.download(molec, extension=[".states.bz2"])
-        if (not self.broad_file.exists()) and self.broadf:
+        # will attempt a download as long as "air" is not present in the database
+        if (
+            (not self.broad_files["air"].exists())
+            and self.broadf
+            and self.broadf_download
+        ):
             self.download(molec, extension=[".broad"])
 
         # Add molecule name
@@ -1234,7 +1395,6 @@ class MdbExomol(DatabaseManager):
         if self.verbose:
             print("Molecule: ", molecule)
             print("Isotopologue: ", self.isotope_fullname)
-            print("Background atmosphere: ", self.bkgdatm)
             print("ExoMol database: ", database)
             print("Local folder: ", self.path)
             print("Transition files: ")
@@ -1303,7 +1463,13 @@ class MdbExomol(DatabaseManager):
                 mgr.write(mgr.cache_file(trans_file), trans)
 
     def set_broadening_coef(
-        self, df, alpha_ref_def=None, n_Texp_def=None, output=None, add_columns=True
+        self,
+        df,
+        alpha_ref_def=None,
+        n_Texp_def=None,
+        output=None,
+        add_columns=True,
+        species=None,
     ):
         """setting broadening parameters
 
@@ -1313,26 +1479,30 @@ class MdbExomol(DatabaseManager):
         alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
         n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
         add_columns: adds alpha_ref and n_Texp columns to df
+        species: to select which broadener will be used. Default is "air".
 
         Returns
         -------
         None. Store values in Data Frame.
 
         """
+        if self.engine == "vaex":
+            import vaex
 
         if alpha_ref_def:
             self.alpha_ref_def = alpha_ref_def
         if n_Texp_def:
             self.n_Texp_def = n_Texp_def
 
-        if self.broadf and os.path.exists(self.broad_file):
-            bdat = read_broad(self.broad_file)
-            if self.verbose > 1:
-                print(
-                    "The file `{}` is used.".format(os.path.basename(self.broad_file))
-                )
+        file = self.broad_files[species]
 
-            codelv = check_code_level(bdat)
+        if self.broadf and os.path.exists(file):
+            bdat = read_broad(file, output)
+
+            if self.verbose > 1:
+                print("The file `{}` is used.".format(os.path.basename(file)))
+
+            codelv = check_code_level(bdat, output=output)
             if self.verbose:
                 print("Broadening code level:", codelv)
 
@@ -1342,6 +1512,7 @@ class MdbExomol(DatabaseManager):
                     alpha_ref_default=self.alpha_ref_def,
                     n_Texp_default=self.n_Texp_def,
                     jlower_max=df["jlower"].max(),
+                    output=output,
                 )
                 self.alpha_ref = j2alpha_ref[df["jlower"].values]
                 self.n_Texp = j2n_Texp[df["jlower"].values]
@@ -1351,43 +1522,128 @@ class MdbExomol(DatabaseManager):
                     alpha_ref_default=self.alpha_ref_def,
                     n_Texp_default=self.n_Texp_def,
                     jlower_max=df["jlower"].max(),
+                    output=output,
                 )
                 jj2alpha_ref, jj2n_Texp = make_jj2b(
                     bdat,
                     j2alpha_ref_def=j2alpha_ref,
                     j2n_Texp_def=j2n_Texp,
                     jupper_max=df["jupper"].max(),
+                    output=output,
                 )
-                self.alpha_ref = np.array(
-                    jj2alpha_ref[df["jlower"].values, df["jupper"].values]
+                self.alpha_ref = (
+                    np.array(jj2alpha_ref[df["jlower"].values, df["jupper"].values])
+                    if self.engine != "vaex"
+                    else jj2alpha_ref[df["jlower"], df["jupper"]]
                 )
-                self.n_Texp = np.array(
-                    jj2n_Texp[df["jlower"].values, df["jupper"].values]
+                self.n_Texp = (
+                    np.array(jj2n_Texp[df["jlower"].values, df["jupper"].values])
+                    if self.engine != "vaex"
+                    else jj2n_Texp[df["jlower"], df["jupper"]]
                 )
+            elif codelv == "m0":
+
+                # label P, Q, and R the transitions
+                df["PQR"] = df["jupper"] - df["jlower"]  # P:+1, Q:0, R:-1
+
+                if output == "vaex":
+                    df["m"] = df.func.where(
+                        df["PQR"] == -1,
+                        -df["jlower"],
+                        df.func.where(
+                            df["PQR"] == 0,
+                            df["jlower"],
+                            df.func.where(df["PQR"] == 1, df["jlower"] + 1, 0),
+                        ),
+                    )
+                    # np.nan causes the error in vaex when using map,
+                    # 0 is regarded as the exeption value because m must not be zero
+                else:
+                    df["m"] = np.where(
+                        df["PQR"] == -1,
+                        -df["jlower"],
+                        np.where(
+                            df["PQR"] == 0,
+                            df["jlower"],
+                            np.where(df["PQR"] == 1, df["jlower"] + 1, np.nan),
+                        ),
+                    )
+
+                    # Check for values outside -1, 0, 1 and raise a warning
+                    invalid_pqr = df[~df["PQR"].isin([-1, 0, 1])]
+                    # Not working for Vaex
+                    if not invalid_pqr.empty:
+                        warnings.warn(
+                            f"Found {len(invalid_pqr)} values in 'PQR' outside of -1, 0, 1: {invalid_pqr['PQR'].unique()}"
+                        )
+                alpha_ref_dict = dict(zip(bdat["jlower"], bdat["alpha_ref"]))
+                self.alpha_ref = (
+                    np.array(df["m"].map(alpha_ref_dict).values)
+                    if self.engine != "vaex"
+                    else df["m"].map(alpha_ref_dict).values
+                )
+
+                n_Texp_dict = dict(zip(bdat["jlower"], bdat["n_Texp"]))
+                self.n_Texp = (
+                    np.array(df["m"].map(n_Texp_dict).values)
+                    if self.engine != "vaex"
+                    else df["m"].map(n_Texp_dict).values
+                )
+                ## for pandas but returns DataFrame
+                # bdat.set_index("jlower", inplace=True)
+                # self.alpha_ref = df["m"].map(bdat["alpha_ref"])
+                # self.n_Texp = df["m"].map(bdat["n_Texp"])
+                ## fill values outside of m range (but this gives DataFrame instead of np.array)
+                # self.alpha_ref = self.alpha_ref.fillna(self.alpha_ref_def)
+                # self.n_Texp = self.n_Texp.fillna(self.n_Texp_def)
+
             else:
                 warnings.warn(
                     f"The broadening file contains this broadening code: {codelv}."
                     + " This broadening code is NOT implemented yet.\n"
                     + "Using default parameters instead."
                 )
-                self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
-                self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
+                if output != "vaex":
+                    self.alpha_ref = self.alpha_ref_def * np.ones(len(df))
+                    self.n_Texp = self.n_Texp_def * np.ones(len(df))
+                else:
+                    self.alpha_ref = vaex.from_arrays(
+                        alpha_ref=[alpha_ref_def] * np.ones(len(df))
+                    )
+                    self.n_Texp = vaex.from_arrays(
+                        n_Texp=[n_Texp_def] * np.ones(len(df))
+                    )
         else:
-            if not os.path.exists(self.broad_file):
+            if not os.path.exists(file):
                 warnings.warn(
                     "Could not load `{}`. The default broadening parameters are used.\n".format(
-                        os.path.basename(self.broad_file)
+                        os.path.basename(file)
                     )
                 )
             print("The default broadening parameters are used.")
 
-            self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
-            self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
+            if output != "vaex":
+                self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
+                self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
+            else:
+                self.alpha_ref = vaex.from_arrays(
+                    alpha_ref=[alpha_ref_def] * np.ones(len(df))
+                )
+                self.n_Texp = vaex.from_arrays(n_Texp=[n_Texp_def] * np.ones(len(df)))
 
+        # Status: the 2 solumns self.alpha_ref and self.n_Texp are ready.
+        # Next step: add the 2 solumns in df with the proper labels
         if add_columns:
-            # Add values
-            self.add_column(df, "alpha_ref", self.alpha_ref)
-            self.add_column(df, "n_Texp", self.n_Texp)
+            if species == "air":
+                self.add_column(df, "airbrd", self.alpha_ref)
+                self.add_column(df, "Tdpair", self.n_Texp)
+            elif species == "self":
+                self.add_column(df, "selbrd", self.alpha_ref)
+                self.add_column(df, "selbrd_Tdpair", self.n_Texp)
+            else:
+                raise NotImplementedError(
+                    "Please post on https://github.com/radis/radis to ask for this feature."
+                )
 
     def QT_interp(self, T):
         """interpolated partition function
@@ -1417,6 +1673,46 @@ class MdbExomol(DatabaseManager):
         """
         return self.QT_interp(T) / self.QT_interp(self.Tref)
 
+    def _calculate_download_size(self, url, pfname_arr):
+        """Calculates the total download size of all files"""
+        total_download_size_bytes = 0
+
+        for pfname in pfname_arr:
+            try:
+                request = urllib.request.Request(url + pfname, method="HEAD")
+                with urllib.request.urlopen(request) as response:
+                    file_size = response.headers.get("Content-Length")
+
+                    if file_size is None:
+                        warnings.warn(
+                            f"Missing Content-Length for {pfname}. Skipping.",
+                            UserWarning,
+                        )
+                        continue
+
+                    file_size = int(file_size)
+                    total_download_size_bytes += file_size
+            except Exception as e:
+                warnings.warn(f"Failed to fetch size for {pfname}: {e}", UserWarning)
+
+        total_download_size_gb = total_download_size_bytes / (1024**3)
+
+        return total_download_size_gb
+
+    def _construct_filenames_and_url(self, ext, molname_simple, tag, molec, numtag):
+        if ext == ".trans.bz2" and numtag is not None:
+            ext = "__" + numtag + ext
+
+        if ext == ".broad":
+            partners_success = np.ones(len(self.broad_partners), dtype=bool)
+            pfname_arr = [tag[0] + "__" + s + ext for s in self.broad_partners]
+            url = EXOMOL_URL + molname_simple + "/" + tag[0] + "/"
+            return pfname_arr, url, partners_success
+        else:
+            pfname_arr = [molec + ext]
+            url = EXOMOL_URL + molname_simple + "/" + tag[0] + "/" + tag[1] + "/"
+            return pfname_arr, url
+
     def download(self, molec, extension, numtag=None):
         """Downloading Exomol files
 
@@ -1437,22 +1733,52 @@ class MdbExomol(DatabaseManager):
         tag = molec.split("__")
         molname_simple = exact_molname_exomol_to_simple_molname(tag[0])
         # TODO: add progress bar
+        total_download_size_gb = 0
         for ext in extension:
             if ext == ".trans.bz2" and numtag is not None:
                 ext = "__" + numtag + ext
 
             if ext == ".broad":
-                pfname_arr = [
-                    tag[0] + "__H2" + ext,
-                    tag[0] + "__He" + ext,
-                    tag[0] + "__air" + ext,
-                ]
-                url = EXOMOL_URL + molname_simple + "/" + tag[0] + "/"
+                pfname_arr, url, partners_success = self._construct_filenames_and_url(
+                    ext, molname_simple, tag, molec, numtag
+                )
             else:
-                pfname_arr = [molec + ext]
-                url = EXOMOL_URL + molname_simple + "/" + tag[0] + "/" + tag[1] + "/"
+                pfname_arr, url = self._construct_filenames_and_url(
+                    ext, molname_simple, tag, molec, numtag
+                )
 
-            for pfname in pfname_arr:
+            total_download_size_gb += self._calculate_download_size(url, pfname_arr)
+
+        if self.verbose:
+            print(
+                f"Total download size {pfname_arr} is: {total_download_size_gb:.6f} GB"
+            )
+
+        from radis import config
+
+        MAX_SIZE_GB = config["WARN_LARGE_DOWNLOAD_ABOVE_X_GB"]
+
+        if total_download_size_gb > MAX_SIZE_GB:
+            warning_msg = (
+                f"The total download size is {total_download_size_gb:.2f} GB, which will take time and potential a significant portion of your disk memory."
+                "To prevent this warning, you increase the limit using `radis.config['WARN_LARGE_DOWNLOAD_ABOVE_X_GB'] =  1`."
+            )
+            warnings.warn(warning_msg, UserWarning)
+
+        for ext in extension:
+            if ext == ".trans.bz2" and numtag is not None:
+                ext = "__" + numtag + ext
+
+            if ext == ".broad":
+                pfname_arr, url, partners_success = self._construct_filenames_and_url(
+                    ext, molname_simple, tag, molec, numtag
+                )
+            else:
+                pfname_arr, url = self._construct_filenames_and_url(
+                    ext, molname_simple, tag, molec, numtag
+                )
+
+            for index, pfname in enumerate(pfname_arr):
                 pfpath = url + pfname
                 os.makedirs(str(self.path), exist_ok=True)
                 if self.verbose:
@@ -1462,7 +1788,15 @@ class MdbExomol(DatabaseManager):
                 try:
                     urllib.request.urlretrieve(pfpath, str(self.path / pfname))
                 except HTTPError:
+                    if ext == ".broad":
+                        partners_success[index] = False
                     print(f"Error: Couldn't download {ext} file at {pfpath} and save.")
+
+            if ext == ".broad" and self.verbose:
+                patners_arr = np.array(self.broad_partners)
+                print(
+                    f"\nSummary of broadening files downloaded:\n\tSuccess: {patners_arr[partners_success]}\n\tFail: {patners_arr[~partners_success]}\n"
+                )
 
     def to_partition_function_tabulator(self):
         """Generate a :py:class:`~radis.levels.partfunc.PartFuncExoMol` object"""

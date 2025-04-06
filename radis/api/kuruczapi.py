@@ -12,9 +12,7 @@ Based largely on the `Exojax <https://github.com/HajimeKawahara/exojax>`__ code
 
 """
 
-import io
 import os
-from os.path import abspath, expanduser, join, splitext
 
 import numpy as np
 import pandas as pd
@@ -58,10 +56,10 @@ def pick_ionE(ielem, charge):
 
     def f_droppare(x):
         return (
-            x.str.replace("\(", "", regex=True)
-            .str.replace("\)", "", regex=True)
-            .str.replace("\[", "", regex=True)
-            .str.replace("\]", "", regex=True)
+            x.str.replace(r"\(", "", regex=True)
+            .str.replace(r"\)", "", regex=True)
+            .str.replace(r"\[", "", regex=True)
+            .str.replace(r"\]", "", regex=True)
             .str.replace("                                      ", "0", regex=True)
         )
 
@@ -98,63 +96,6 @@ def get_ionization_state(species):
     return ionization_int  # formatted_str
 
 
-def get_element_symbol(species):
-    """
-    Extracts the element symbol from the species given in spectroscopic notation
-    """
-
-    atomic_symbol = species.split("_")[0]
-    el = getattr(periodictable, atomic_symbol)
-    return el
-
-
-def read_kurucz_pfs(file):
-    """Convert a Kurucz partfnxxyy.dat file containing a table of partition functions by temperature and potential lowering to a Pandas DataFrame
-
-    Parameters
-    ----------
-    fname: str
-        file name
-
-    Returns
-    ----------
-    df: Pandas DataFrame
-    """
-    df = pd.read_csv(file, sep="\s+", header=2)
-    df.set_index("LOG10(T)", inplace=True)
-    return df
-
-
-def load_pf_Barklem2016():
-    """Load a table of the partition functions for 284 atomic species.
-
-    Returns
-    -------
-    pfTdat:  pd.DataFrame
-        Steps of temperature (K)
-    pfdat:  pd.DataFrame
-        Partition functions for 284 atomic species
-
-    References
-    ----------
-    `Barklem & Collet (2016), Table 8 <https://doi.org/10.1051/0004-6361/201526961>`_
-
-    """
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(current_dir, "./../db/pfTKurucz_values.txt")
-    with open(file_path, "r") as file:
-        pfT_str = file.read()
-    pfTdat = pd.read_csv(io.StringIO(pfT_str), sep="\s+")
-    pfTdat = pd.Series(pfTdat.columns[1:]).astype(
-        "float64"
-    )  # Converts the values to float64, skipping the first value
-
-    with open(os.path.join(getProjectRoot(), "db", "kuruczpartfn.txt"), "r") as f:
-        pfdat = pd.read_csv(f, sep="\s+", comment="#", names=pfTdat.index)
-
-    return pfTdat, pfdat
-
-
 class KuruczDatabaseManager(DatabaseManager):
     def __init__(
         self,
@@ -181,7 +122,6 @@ class KuruczDatabaseManager(DatabaseManager):
 
         self.actual_file = None
         self.actual_url = None
-        self.pf_path = None
 
     def fetch_urlnames(self):
         """returns the possible urls of the desired linelist file, pending confirmation upon attempting download as to which is correct"""
@@ -206,55 +146,13 @@ class KuruczDatabaseManager(DatabaseManager):
 
         return urlnames
 
-    def get_pf_path(self):
-        """returns the url at which the dedicated partition function file is expected to be located, and the derived file path at which it would be saved after downloading and parsing"""
-        code = f"{self.atomic_number}{self.ionization_state}"
-        url = "http://kurucz.harvard.edu/atoms/" + code + "/partfn" + code + ".dat"
-        fname = splitext(url.split("/")[-1])[0] + ".h5"
-        path = expanduser(
-            abspath(join(self.local_databases, self.molecule + "-" + fname))
-        )
-        return path, url
-
     def get_possible_files(self, urlnames=None):
-        """returns the urls from fretch_urlnames and the derived file paths at which each would be saved after downloading and parsing"""
-        verbose = self.verbose
+        """returns the urls from fetch_urlnames and the derived file paths at which each would be saved after downloading and parsing"""
         local_databases = self.local_databases
-        engine = self.engine
 
-        # copied from DatabaseManager.get_filenames:
         if urlnames is None:
             urlnames = self.fetch_urlnames()
-        local_fnames = [
-            (
-                splitext(splitext(url.split("/")[-1])[0])[0]  # twice to remove .par.bz2
-                + ".h5"
-            )
-            for url in urlnames
-        ]
-
-        try:
-            os.mkdir(local_databases)
-        except OSError:
-            pass
-        else:
-            if verbose:
-                print("Created folder :", local_databases)
-
-        local_files = [
-            abspath(
-                join(
-                    local_databases,
-                    self.molecule + "-" + local_fname,
-                )
-            )
-            for local_fname in local_fnames
-        ]
-
-        if engine == "vaex":
-            local_files = [fname.replace(".h5", ".hdf5") for fname in local_files]
-
-        local_files = [expanduser(f) for f in local_files]
+        local_files = self.fetch_filenames(urlnames, local_databases)
 
         return local_files, urlnames
 
@@ -272,41 +170,35 @@ class KuruczDatabaseManager(DatabaseManager):
         """overwrites parent class method as required"""
 
         writer = self.get_datafile_manager()
-        if local_file == self.pf_path:
-            df = read_kurucz_pfs(opener.abspath(urlname))
-            with pd.HDFStore(local_file, mode="w", complib="blosc", complevel=9) as f:
-                f.put(key="df", value=df)
-            Nlines = len(df)  # irrelevant
-        else:
-            df = read_kurucz(opener.abspath(urlname))
+        df = read_kurucz(opener.abspath(urlname))
 
-            writer.write(local_file, df, append=False)
+        writer.write(local_file, df, append=False)
 
-            self.wmin = df.wav.min()
-            self.wmax = df.wav.max()
+        self.wmin = df.wav.min()
+        self.wmax = df.wav.max()
 
-            Nlines = len(df)
+        Nlines = len(df)
 
-            writer.combine_temp_batch_files(local_file)
+        writer.combine_temp_batch_files(local_file)
 
-            # Add metadata
-            from radis import __version__
+        # Add metadata
+        from radis import __version__
 
-            writer.add_metadata(
-                local_file,
-                {
-                    "wavenumber_min": self.wmin,
-                    "wavenumber_max": self.wmax,
-                    "download_date": self.get_today(),
-                    "download_url": urlname,
-                    "total_lines": Nlines,
-                    "version": __version__,
-                },
-            )
+        writer.add_metadata(
+            local_file,
+            {
+                "wavenumber_min": self.wmin,
+                "wavenumber_max": self.wmax,
+                "download_date": self.get_today(),
+                "download_url": urlname,
+                "total_lines": Nlines,
+                "version": __version__,
+            },
+        )
 
         return Nlines
 
-    def register(self, get_main_files, get_pf_files):
+    def register(self, get_main_files):
 
         if self.is_registered():
             dict_entries = getDatabankEntries(
@@ -326,7 +218,7 @@ class KuruczDatabaseManager(DatabaseManager):
                     "download_url": urls,
                 }
             )
-            if self.wmin and self.wmin:
+            if self.wmin and self.wmax:
                 info = f"Kurucz {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1)."
                 dict_entries.update(
                     {
@@ -335,24 +227,6 @@ class KuruczDatabaseManager(DatabaseManager):
                         "wavenumber_max": self.wmax,
                     }
                 )
-        # else:
-        #     raise Exception("Kurucz database can't be registered until the correct url to use is known")
-
-        if get_pf_files:
-            # files.append(self.pf_path)
-            # urls.append(self.pf_url)
-            dict_entries.update(
-                {
-                    "parfunc": self.pf_path,
-                    "parfuncfmt": "kurucz",
-                }
-            )
-
-        dict_entries.update(
-            {
-                "parfuncfmt": "kurucz",
-            }
-        )
 
         try:
             super().register(dict_entries)

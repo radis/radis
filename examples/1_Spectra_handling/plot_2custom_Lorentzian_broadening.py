@@ -8,7 +8,9 @@ Atomic spectrum #2: Custom broadening function
 
 The `lbfunc` parameter of :py:class:`~radis.lbl.factory.SpectrumFactory` allows us to specify a custom function to use for the Lorentzian broadening of a spectrum. This is especially useful for handling pressure broadening of atomic lines for which multiple theories exist.
 
-By default, RADIS calculates the total Lorentzian broadening of atomic lines as the sum of the Van der Waals broadening, Stark broadening, and radiation broadening as returned by :py:func:`~radis.lbl.broadening.gamma_vald3` from the broadening parameters for each of these types provided in the databank. The line shift is also calculated as 2/3 times the Van der Waals broadening, and `lbfunc` allows you to specify an alternative line shift as the 2nd return argument if you wish.
+By default, RADIS calculates the total Lorentzian broadening of atomic lines as the sum of the Van der Waals broadening, Stark broadening, and radiation broadening as returned by :py:func:`~radis.lbl.broadening.gamma_vald3` from the broadening parameters for each of these types provided in the databank. When the databank doesn't provide these parameters (as is the case with NIST), `lbfunc` becomes a required argument as there is no default to cater for this case.
+
+The line shift is also calculated by default as 2/3 times the Van der Waals broadening, and `lbfunc` allows you to specify an alternative line shift as the 2nd return argument if you wish.
 
 `lbfunc` can be changed on the fly by changing the `sf.params.lbfunc` attribute of the :py:class:`~radis.lbl.factory.SpectrumFactory` instance, the result of which is reflected next time the library calculates its Lorentzian broadening.
 
@@ -18,7 +20,7 @@ from radis import SpectrumFactory
 
 
 def lbfunc1(**kwargs):
-    return 0.1 * (296 / kwargs["Tgas"]) ** 0.8, None
+    return 0.1 * (296 / kwargs["Tgas"]) ** 0.7, None
 
 
 mole_fraction = 0.01
@@ -32,8 +34,9 @@ sf = SpectrumFactory(
     mole_fraction=mole_fraction,
     path_length=15,
     lbfunc=lbfunc1,
+    pfsource="barklem",
 )
-sf.fetch_databank("kurucz", parfuncfmt="kurucz")
+sf.fetch_databank("kurucz")
 s1 = sf.eq_spectrum(4000)
 
 #%%

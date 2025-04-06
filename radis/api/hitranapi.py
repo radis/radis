@@ -12,6 +12,7 @@ Routine Listing
 - :func:`~radis.api.hitranapi.hit2df`
 - :func:`~radis.api.hitranapi.parse_local_quanta`
 - :func:`~radis.api.hitranapi.parse_global_quanta`
+- :func:`~radis.api.hitranapi.hitranxsc`
 
 
 -------------------------------------------------------------------------------
@@ -1539,7 +1540,7 @@ class HITRANDatabaseManager(DatabaseManager):
 
                     if (
                         set(list_pattern).issubset(set(str(err)))
-                        and len(re.findall("\d", str(err))) >= 2
+                        and len(re.findall(r"\d", str(err))) >= 2
                         and get_molecule_identifier(molecule)
                         == int(
                             re.findall(r"[\w']+", str(err))[0]
@@ -1687,6 +1688,96 @@ class HITRANDatabaseManager(DatabaseManager):
             dict_entries["levelsfmt"] = "radis"
 
         super().register(dict_entries)
+
+
+#%%
+def hitranxsc(hitranXSC):
+    """Parse Hitran Cross-section files manually downloaded from https://hitran.org/xsc/
+    Returns a dictionary
+
+    Example
+    -------
+    Read and plot a local acetone cross-section file:
+
+        datafile = 'CH3COCH3_233.4_375.2_700.0-1780.0_13.xsc'
+
+        data = hitran_crosssection(datafile)
+
+        # %% Plot cross section:
+        import matplotlib.pyplot as plt
+        plt.plot(data['wavenumber'], data['spectrum'])
+        plt.xlabel('Wavenumber (cm-1)')
+        plt.ylabel('Cross section (cm2/molecule)')
+        # add title with molecule name, pressure and temperature:
+        plt.title(data['name'] + ' at ' + str(data['P']) + ' Torr and ' + str(data['T']) + ' K')
+        plt.show()
+
+
+    Notes
+    -----
+
+    Code adapted from https://fr.mathworks.com/matlabcentral/fileexchange/74716-load-hitran-absorption-cross-section
+    by Mohammadamir Ghaderi
+
+    Under licence conditions ::
+
+        Copyright (c) 2020, Mohammadamir Ghaderi
+        All rights reserved.
+
+        Redistribution and use in source and binary forms, with or without
+        modification, are permitted provided that the following conditions are met:
+
+        * Redistributions of source code must retain the above copyright notice, this
+        list of conditions and the following disclaimer.
+
+        * Redistributions in binary form must reproduce the above copyright notice,
+        this list of conditions and the following disclaimer in the documentation
+        and/or other materials provided with the distribution
+        * Neither the name of  nor the names of its
+        contributors may be used to endorse or promote products derived from this
+        software without specific prior written permission.
+        THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+        AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+        IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+        DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+        FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+        DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+        SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+        CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+        OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+        OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+
+    """
+    import numpy as np
+
+    with open(hitranXSC, "r") as file:
+        line = file.readline()
+        info = line.split()
+        data = {}
+        data["molec"] = info[0]  # molecule
+        min_nu = float(info[1])  # minimum wavenumber (cm-1)
+        max_nu = float(info[2])  # maximum wavenumber (cm-1)
+        N = int(info[3])  # number of datapoints
+        data["T"] = float(info[4])  # Temperature (K)
+        data["P"] = float(info[5])  # Pressure (Torr)
+        data["InstrumentResolution"] = float(info[7])
+        data["name"] = info[8]  # Familiar name of molecule
+        if len(info) > 10:
+            data["Broadener"] = info[10]  # Broadening species
+        data["wavenumber"] = np.linspace(min_nu, max_nu, N)  # Wavenumber range (cm-1)
+
+    # Read all lines of file (except from header) and flatten into an array; knowing that all rows aren't the same length
+    with open(hitranXSC, "r") as file:
+        lines = file.readlines()[1:]
+        lines = [line.split() for line in lines]
+        lines = [item for sublist in lines for item in sublist]
+        data["spectrum"] = np.array(lines, dtype=np.float64)
+        # remove zeros from end of file
+        while data["spectrum"][-1] == 0:
+            data["spectrum"] = data["spectrum"][:-1]
+    return data
 
 
 # ======================================================

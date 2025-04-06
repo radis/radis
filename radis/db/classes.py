@@ -228,9 +228,7 @@ def is_atom(species):
     """
     determine whether the input species is atomic
     """
-    return species.split("_")[0] in [
-        i.symbol for i in list(periodictable.elements)[1:]
-    ]  # first element is neutron, symbol 'n'
+    return species.split("_")[0] in map(str, periodictable.elements)
 
 
 def is_neutral(species):
@@ -529,6 +527,7 @@ EXOMOL_MOLECULES = [
     "PN",
     "PO",
     "PS",
+    "ScO",  # added: 12/2024
     "SH",
     "SO",  # new
     "SO2",
@@ -1323,3 +1322,13 @@ if __name__ == "__main__":
     from radis.test.db.test_molecules import _run_testcases
 
     print(("Testing molecules.py", _run_testcases()))
+
+
+def get_element_symbol(species):
+    """
+    Extracts the element symbol from the species given in spectroscopic notation
+    """
+
+    atomic_symbol = species.split("_")[0]
+    el = getattr(periodictable, atomic_symbol)
+    return el

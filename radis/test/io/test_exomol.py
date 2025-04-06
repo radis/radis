@@ -75,7 +75,7 @@ def test_calc_exomol_spectrum(verbose=True, plot=True, *args, **kwargs):
 @pytest.mark.needs_connection
 def test_calc_exomol_vs_hitemp(verbose=True, plot=True, *args, **kwargs):
     """Auto-fetch and calculate a CO spectrum from the ExoMol database
-    (HITEMP lineset)   and compare to HITEMP (on the HITRAN server)
+    (HITEMP lineset) and compare to HITEMP (on the HITRAN server)
 
     https://github.com/radis/radis/pull/320#issuecomment-884508206
     """
@@ -115,7 +115,7 @@ def test_calc_exomol_vs_hitemp(verbose=True, plot=True, *args, **kwargs):
 
         plt.legend()
 
-    # Broadening coefficients are different but areas under the lines should be the same :
+    # Broadening coefficients are different but areas under the lines should be the same:
     import numpy as np
 
     assert np.isclose(

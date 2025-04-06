@@ -36,53 +36,68 @@ def npy2df(keywords, verbose=True):
 
     See definitions for instance in :py:data:`~radis.api.hitranapi.column_2004`
     """
+    # Comment before: this has to change. Now database should be a dictionary (cf Example) # TODO
+    # Since 'keywords' is a dictionary, we cannot access it by index (e.g., database[0]).
+    # Instead, we get the first value (file path) using list(keywords.values())[0].
+    dir_path = list(keywords.values())[0]
 
-    database = keywords  # this has to change. Now database should be a dictionary (cf Example) # TODO
+    # Remove the filename portion to get the directory path.
+    # This works by finding the last "/" in the file path and slicing up to that position.
+    dir_path = dir_path[: dir_path.rindex("/") + 1]
+    # Example: If dir_path = "path/to/data/v0.npy"
+    # dir_path.rindex("/") returns 11 (the position of the last "/")
+    # dir_path[: dir_path.rindex("/") + 1] gives "path/to/data/"
 
-    dir_path = database[0][
-        : database[0].rindex("/") + 1
-    ]  # remove the last *.npy portion
     try:
         if verbose >= 2:
             print("Loading iso...", end=" ")
         iso = np.load(dir_path + "iso.npy")
         if verbose >= 2:
             print("Done!")
+
         if verbose >= 2:
             print("Loading v0...", end=" ")
         v0 = np.load(dir_path + "v0.npy")
         if verbose >= 2:
             print("Done!")
+
         if verbose >= 2:
             print("Loading da...", end=" ")
         da = np.load(dir_path + "da.npy")
         if verbose >= 2:
             print("Done!")
+
         if verbose >= 2:
             print("Loading log_2gs...", end=" ")
         log_2gs = np.load(dir_path + "log_2gs.npy")
         if verbose >= 2:
             print("Done!")
+
         if verbose >= 2:
             print("Loading S0...", end=" ")
         S0 = np.load(dir_path + "S0.npy")
         if verbose >= 2:
             print("Done!")
+
         if verbose >= 2:
             print("Loading El...", end=" ")
         El = np.load(dir_path + "El.npy")
         if verbose >= 2:
             print("Done!")
+
         if verbose >= 2:
             print("Loading log_2vMm...", end=" ")
         log_2vMm = np.load(dir_path + "log_2vMm.npy")
         if verbose >= 2:
             print("Done!")
+
         if verbose >= 2:
             print("Loading na...", end=" ")
         na = np.load(dir_path + "na.npy")
         if verbose >= 2:
             print("Done!")
+
+        # Create DataFrame
         df = pd.DataFrame(
             {
                 "iso": iso,
@@ -94,8 +109,9 @@ def npy2df(keywords, verbose=True):
                 "int": S0,
                 "El": El,
             }
-        )  # create dataframe from these 8 arrays
-    except FileNotFoundError():
-        raise (FileNotFoundError("Could not find npy dataset in given directory"))
+        )
+
+    except FileNotFoundError:
+        raise FileNotFoundError("Could not find npy dataset in the given directory")
 
     return df

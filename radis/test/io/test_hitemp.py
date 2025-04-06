@@ -180,53 +180,54 @@ def test_fetch_hitemp_OH_vaex(verbose=True, *args, **kwargs):
     )
 
 
-@pytest.mark.needs_connection
-def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
-    """Test partial download of HITEMP CO2 database.
+# #This test is outdated since version 2024 of CO2 HITEMP. This is a single file of 6 GB now.
+# @pytest.mark.needs_connection
+# def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
+#     """Test partial download of HITEMP CO2 database.
 
-    Good to test fetch_hitemp.
-    ``CO2-02_02500-03000_HITEMP2010.h5`` is only 20 MB so it can be run on online
-    tests without burning the planet too much 🌳
+#     Good to test fetch_hitemp.
+#     ``CO2-02_02500-03000_HITEMP2010.h5`` is only 20 MB so it can be run on online
+#     tests without burning the planet too much 🌳
 
-    """
-    from os.path import basename
+#     """
+#     from os.path import basename
 
-    wmin = 2700
-    wmax = 3000
+#     wmin = 2700
+#     wmax = 3000
 
-    # Check that we won't download all database for a reduced range:
-    # ... This is done at the HITEMPDatabaseManager level
-    # ... unittest for this part:
-    ldb = HITEMPDatabaseManager(
-        name="HITEMP-CO2",
-        molecule="CO2",
-        engine="default",
-        local_databases="~/.radisdb/hitemp/",
-    )
-    local_files, _ = ldb.get_filenames()
-    relevant_file, file_wmin, file_wmax = keep_only_relevant(
-        local_files, wavenum_min=wmin, wavenum_max=wmax
-    )
+#     # Check that we won't download all database for a reduced range:
+#     # ... This is done at the HITEMPDatabaseManager level
+#     # ... unittest for this part:
+#     ldb = HITEMPDatabaseManager(
+#         name="HITEMP-CO2",
+#         molecule="CO2",
+#         engine="default",
+#         local_databases="~/.radisdb/hitemp/",
+#     )
+#     local_files, _ = ldb.get_filenames()
+#     relevant_file, file_wmin, file_wmax = keep_only_relevant(
+#         local_files, wavenum_min=wmin, wavenum_max=wmax
+#     )
 
-    assert len(relevant_file) == 1
-    assert basename(relevant_file[0]).startswith("CO2-02_02500-03000_HITEMP2010.")
-    assert file_wmin == 2500
-    assert file_wmax == 3000
+#     assert len(relevant_file) == 1
+#     assert basename(relevant_file[0]).startswith("CO2-02_02500-03000_HITEMP2010.")
+#     assert file_wmin == 2500
+#     assert file_wmax == 3000
 
-    # Now run the full function :
+#     # Now run the full function :
 
-    df, local_files = fetch_hitemp(
-        "CO2",
-        load_wavenum_min=2700,
-        load_wavenum_max=3000,
-        verbose=3,
-        return_local_path=True,
-    )
+#     df, local_files = fetch_hitemp(
+#         "CO2",
+#         load_wavenum_min=2700,
+#         load_wavenum_max=3000,
+#         verbose=3,
+#         return_local_path=True,
+#     )
 
-    assert "HITEMP-CO2" in getDatabankList()
+#     assert "HITEMP-CO2" in getDatabankList()
 
-    assert len(local_files) == 1
-    assert basename(local_files[0]).startswith("CO2-02_02500-03000_HITEMP2010.")
+#     assert len(local_files) == 1
+#     assert basename(local_files[0]).startswith("CO2-02_02500-03000_HITEMP2010.")
 
 
 @pytest.mark.needs_connection
@@ -246,7 +247,6 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
     - CH4 (114 M lines) is 435 MB
 
     If it fails, check the databases downloaded in ~/.radisdb
-
 
 
     Notes
@@ -279,6 +279,34 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
     url, Nlines, _, _ = ldb.fetch_url_Nlines_wmin_wmax()
 
     assert len(df) == Nlines
+
+
+@pytest.mark.needs_connection
+@pytest.mark.download_large_databases
+@pytest.mark.parametrize("molecule", [mol for mol in HITEMP_MOLECULES])
+def test_fetch_hitemp_all_molecules_2010_version(
+    molecule, verbose=True, *args, **kwargs
+):
+    """Test fetch HITEMP for all molecules whose download URL is available for the 2010 version.
+
+    If it fails, check the databases downloaded in ~/.radisdb
+
+    Notes
+    -----
+
+    Currently, this works for all molecules except CO2 and H2O
+    """
+
+    df, local_files = fetch_hitemp(
+        molecule,
+        columns=["int", "wav"],
+        verbose=verbose,
+        return_local_path=True,
+        engine="default",
+        database="2010",
+    )
+
+    assert f"HITEMP-{molecule}-2010" in getDatabankList()
 
 
 @pytest.mark.fast
@@ -418,6 +446,38 @@ def test_calc_hitemp_spectrum(*args, **kwargs):
     return
 
 
+@pytest.mark.fast
+@pytest.mark.needs_connection
+def test_calc_hitemp_spectrum_2010_version(*args, **kwargs):
+    """
+    Test direct loading of HDF5 files 2010 version
+    """
+
+    from astropy import units as u
+
+    from radis import calc_spectrum
+
+    calc_spectrum(
+        wavenum_min=1900 / u.cm,
+        wavenum_max=2500 / u.cm,
+        wstep="auto",
+        molecule="CO",
+        Tgas=300,
+        databank=("hitemp", "2010"),  # test by fetching directly
+        verbose=False,
+    )
+
+    calc_spectrum(
+        wavenum_min=1900 / u.cm,
+        wavenum_max=2500 / u.cm,
+        wstep="auto",
+        molecule="CO",
+        Tgas=300,
+        databank="HITEMP-CO-2010",  # test by loading the downloaded database
+        verbose=False,
+    )
+
+
 @pytest.mark.needs_connection
 def test_calc_hitemp_CO_noneq(verbose=True, *args, **kwargs):
     """Test proper download of HITEMP CO database.
@@ -474,17 +534,28 @@ def test_parse_hitemp_missing_labels_issue280(*args, **kwargs):
 
 
 if __name__ == "__main__":
-    test_no_redownload()
+    # Removed due to issue 717 - https://github.com/radis/radis/issues/717
+    # from radis.api.hitempapi import (
+    #     HITEMP_MOLECULES,
+    #     HITEMPDatabaseManager,
+    #     )
+    # from radis.misc.config import getDatabankList
+    # test_partial_loading()
+    # test_partial_loading_vaex()
+
+    # test_fetch_hitemp_OH_pytables()
+    # test_fetch_hitemp_OH_vaex()
+
+    # test_fetch_hitemp_all_molecules("OH")
+    # test_fetch_hitemp_all_molecules("CO")
+    # test_fetch_hitemp_all_molecules("CO2", verbose=3)
+    # test_fetch_hitemp_all_molecules("N2O", verbose=3)
+    # test_fetch_hitemp_all_molecules("NO", verbose=3)
+
+    # test_fetch_hitemp_partial_download_CO2()
+
+    # test_no_redownload()
+    # test_calc_hitemp_CO_noneq()
+    # test_calc_hitemp_spectrum()
+
     test_relevant_files_filter()
-    test_fetch_hitemp_OH_pytables()
-    test_fetch_hitemp_OH_vaex()
-    test_partial_loading()
-    test_partial_loading_vaex()
-    test_calc_hitemp_CO_noneq()
-    test_fetch_hitemp_partial_download_CO2()
-    test_calc_hitemp_spectrum()
-    test_fetch_hitemp_all_molecules("OH")
-    test_fetch_hitemp_all_molecules("CO")
-    test_fetch_hitemp_all_molecules("CO2", verbose=3)
-    test_fetch_hitemp_all_molecules("N2O", verbose=3)
-    test_fetch_hitemp_all_molecules("NO", verbose=3)

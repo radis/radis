@@ -967,7 +967,7 @@ def test_broadening_chunksize_eq(verbose=True, plot=False, *args, **kwargs):
         wstep=0.001,
         verbose=True,
     )
-    sf.fetch_databank("hitemp")
+    sf.fetch_databank("hitran")
     # sf.params.broadening_method = "convolve"
     Tgas = 2000
 

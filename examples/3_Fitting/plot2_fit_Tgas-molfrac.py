@@ -53,7 +53,7 @@ experimental_conditions = {
     * u.bar,  # Total pressure of gas, in "bar" unit by default, but you can use Astropy units too.
     "path_length": 10
     * u.cm,  # Experimental path length, in "cm" unit by default, but you can use Astropy units too.
-    "databank": "hitemp",  # Databank used for calculation. Must be stated.
+    "databank": "hitemp",  # HITEMP is recommended
     "wstep": "auto",
 }
 
@@ -62,7 +62,7 @@ fit_parameters = {
     "Tgas": 5000,  # Fit parameter, accompanied by its initial value.
     "mole_fraction": 0.05,  # Species mole fraction, from 0 to 1.
     "offset": "0 cm-1",  # Experimental offset, must be a blank space separating offset amount and unit.
-    # "pressure": 0.8,
+    "pressure": 0.8,
 }
 
 # List of bounding ranges applied for those fit parameters above.
@@ -70,7 +70,7 @@ bounding_ranges = {
     "Tgas": [2000, 9000],
     "mole_fraction": [0, 1],
     "offset": [-0.03, 0.02],
-    # "pressure": [0.1, 2],
+    "pressure": [0.1, 2],
 }
 
 # Fitting pipeline setups.
