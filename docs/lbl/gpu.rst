@@ -7,7 +7,7 @@ RADIS-GPU Spectrum Calculation
 RADIS provides GPU acceleration to massively speedup spectral computations.
 It uses the Vulkan API compute pipelines to perform parallel execution of spectral calculations
 
-GPU calculations are handked by the :py:class:`~radis.gpu.gpu.gpuApp` object, which takes care of initialization,
+GPU calculations are handled by the :py:class:`~radis.gpu.gpu.gpuApp` object, which takes care of initialization,
 updating spectra, and freeing all GPU resources.
 Generally GPU computations are memory bandwidth limited, meaning the computation time of
 a single spectrum is determined by the time it takes to move the database data from host

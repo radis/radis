@@ -53,4 +53,5 @@ dependencies:
   - vaex-core ; python_version < '3.11'
   - vaex-hdf5 ; python_version < '3.11'
   - vaex-viz ; python_version < '3.11'
+  - vulkan
 
