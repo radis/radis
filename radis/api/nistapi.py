@@ -85,7 +85,11 @@ class NISTDatabaseManager(DatabaseManager):
 
         from io import StringIO
 
-        file = StringIO(opener.text)
+        # Use the opener's open method which should be available in all implementations
+        with opener.open() as file:
+            file_content = file.read().decode("utf-8")
+        file = StringIO(file_content)
+
         df = nist2df(file, self.molecule)
 
         df["species"] = self.molecule

@@ -4,9 +4,7 @@
 """
 import os
 import shutil
-from io import BytesIO
 from os.path import abspath, dirname, exists, expanduser, join, split, splitext
-from zipfile import ZipFile
 
 try:
     from ..misc.config import addDatabankEntries, getDatabankEntries, getDatabankList
@@ -37,16 +35,10 @@ except ImportError:
 
 from datetime import date
 
-import numpy as np
 import pandas as pd
+import requests
 from dateutil.parser import parse as parse_date
 from joblib import Parallel, delayed
-
-try:
-    from numpy.lib.npyio import DataSource
-except ImportError:  # numpy <2.0.0?
-    from numpy import DataSource
-import requests
 
 LAST_VALID_DATE = (
     "01 Jan 2010"  # set to a later date to force re-download of all databases
@@ -68,18 +60,48 @@ def get_auto_MEMORY_MAPPING_ENGINE():
         return "vaex"
 
 
-# Add a zip opener to the datasource _file_openers
-def open_zip(zipname, mode="r", encoding=None, newline=None):
-    output = BytesIO()
-    with ZipFile(zipname, mode[0]) as myzip:
-        fnames = myzip.namelist()
-        for fname in fnames:
-            output.write(myzip.read(fname))
-    output.seek(0)
-    return output
+# Class to mimic numpy.DataSource behavior
+class RequestsFileOpener:
+    """Simple file opener class that mimics the behavior of numpy.DataSource
+    using the requests pip package.
+    """
 
+    def __init__(self, file_path):
+        self.file_path = file_path
 
-np.lib._datasource._file_openers._file_openers[".zip"] = open_zip
+    def open(self, url_or_path=None):
+        """Open the file for reading"""
+        if self.file_path.endswith(".zip"):
+            from io import BytesIO
+            from zipfile import ZipFile
+
+            output = BytesIO()
+            with ZipFile(self.file_path, "r") as myzip:
+                fnames = myzip.namelist()
+                for fname in fnames:
+                    output.write(myzip.read(fname))
+            output.seek(0)
+            return output
+        elif self.file_path.endswith(".bz2"):
+            import bz2
+            from io import BytesIO
+
+            # Read compressed file
+            with open(self.file_path, "rb") as f:
+                compressed_data = f.read()
+
+            # Decompress the data
+            decompressed_data = bz2.decompress(compressed_data)
+
+            # Create BytesIO object with decompressed data
+            output = BytesIO(decompressed_data)
+            return output
+        else:
+            return open(self.file_path, "rb")
+
+    def abspath(self, url_or_path=None):
+        """Return the absolute path of the file"""
+        return self.file_path
 
 
 class DatabaseManager(object):
@@ -167,7 +189,9 @@ class DatabaseManager(object):
         self.engine = engine
 
         self.tempdir = join(self.local_databases, "downloads__can_be_deleted")
-        self.ds = DataSource(self.tempdir)
+        # Create the temp directory if it doesn't exist
+        if not exists(self.tempdir):
+            os.makedirs(self.tempdir, exist_ok=True)
 
         self.verbose = verbose
 
@@ -391,33 +415,67 @@ class DatabaseManager(object):
                     f"Downloading {inputf} for {molecule} ({Ndownload}/{Ntotal_downloads})."
                 )
 
-            # Check we can open the file, give the path if there is an error
-            if (
-                "nist" in urlname
-            ):  # Known incompatibility with numpy.DataSource and NIST. Trying with requests")
-                self.ds = requests.get(urlname)
-                self.ds.raise_for_status()  # Raise an error if request fails
-            else:
-                try:
-                    self.ds.open(urlname)
-                except Exception as err:
-                    raise OSError(
-                        f"Problem opening : {self.ds._findfile(urlname)}. See above. You may want to delete the downloaded file."
-                    ) from err
+            # Download file with requests
+            try:
+                # Get session from HITEMP API
+                from radis.api.hitempapi import login_to_hitran
 
-            # try:
-            Nlines = self.parse_to_local_file(
-                self.ds,
-                urlname,
-                local_file,
-                pbar_active=(not parallel),
-                pbar_t0=time() - t0,
-                pbar_Ntot_estimate_factor=pbar_Ntot_estimate_factor,
-                pbar_Nlines_already=Nlines_total,
-                pbar_last=(Ndownload == Ntotal_downloads),
-            )
-            # except Exception as err:
-            #     raise IOError("Problem parsing `{0}`. Check the error above. It may arise if the file wasn't properly downloaded. Try to delete it".format(self.ds._findfile(urlname))) from err
+                session = login_to_hitran(verbose=verbose)
+
+                # Set headers to indicate we want the actual file
+                headers = {
+                    "Accept": "application/zip, application/octet-stream",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+                }
+
+                # First check if we can access the file
+                head_response = session.head(
+                    urlname, headers=headers, allow_redirects=True
+                )
+                if head_response.status_code != 200:
+                    raise OSError(f"Failed to access file: {head_response.status_code}")
+
+                # Check if we got redirected to login page
+                if "text/html" in head_response.headers.get("content-type", "").lower():
+                    raise OSError(
+                        "Got HTML response instead of file. Please ensure you're logged in and have access to the file."
+                    )
+
+                # Now download the file
+                response = session.get(
+                    urlname, headers=headers, stream=True, allow_redirects=True
+                )
+                response.raise_for_status()  # Raise an error if request fails
+
+                # Create a temporary file to store the downloaded content
+                temp_file_path = join(self.tempdir, urlname.split("/")[-1])
+                with open(temp_file_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:  # filter out keep-alive new chunks
+                            f.write(chunk)
+
+                # Create an opener object using the global RequestsFileOpener class
+                opener = RequestsFileOpener(temp_file_path)
+
+                # Pass the opener to the parse function (maintaining backward compatibility)
+                Nlines = self.parse_to_local_file(
+                    opener,
+                    urlname,
+                    local_file,
+                    pbar_active=(not parallel),
+                    pbar_t0=time() - t0,
+                    pbar_Ntot_estimate_factor=pbar_Ntot_estimate_factor,
+                    pbar_Nlines_already=Nlines_total,
+                    pbar_last=(Ndownload == Ntotal_downloads),
+                )
+            except requests.RequestException as err:
+                raise OSError(
+                    f"Problem downloading: {urlname}. Error: {str(err)}"
+                ) from err
+            except Exception as err:
+                raise IOError(
+                    f"Problem parsing downloaded file from {urlname}. Check the error above. It may arise if the file wasn't properly downloaded. Try to delete it."
+                ) from err
 
             return Nlines
 
@@ -470,10 +528,7 @@ class DatabaseManager(object):
         )
 
     def clean_download_files(self):
-        """Fully unzipped (and working, as it was reloaded): clean files
-
-        Note : we do not let np.DataSource clean its own tempfiles; as
-        they may be downloaded but not fully parsed / registered."""
+        """Fully unzipped (and working, as it was reloaded): clean files"""
         if exists(self.tempdir):
             try:
                 shutil.rmtree(self.tempdir)
