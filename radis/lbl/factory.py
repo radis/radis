@@ -1063,29 +1063,32 @@ class SpectrumFactory(BandFactory):
 
         Other Parameters
         ----------------
-        backend: str
-            currently only ``'vulkan'`` backend is supported.
-            ``'gpu-cuda'`` and``'cpu-cuda'`` used to be available to switch to a CUDA backend,
-            but have been deprecated in favor of the Vulkan backend.
         device_id: int, str
             Select the GPU device. If ``int``, specifies the device index, which is printed for convenience during GPU initialization with backend='vulkan' (default).
-            If ``str``, return the first device that includes the specified string (case in-sesitive). If not found, return the device at index 0.
+            If ``str``, return the first device that includes the specified string (case-insensitive). If not found, return the device at index 0.
             default = 0
         exit_gpu: bool
             Specifies whether the GPU app should be exited after producing the spectrum. Usually this is undesirable, because the GPU
             computations start to benefit *after* the first spectrum is produced by calling s.recalc_gpu(). See also :meth:`~radis.spectrum.spectrum.Spectrum.recalc_gpu`
             default = False
+        backend: str
+            Since version 0.16, only ``'vulkan'`` backend is supported.
+            In previous versions, ``'gpu-cuda'`` and ``'cpu-cuda'`` were available to switch to a CUDA backend,
+            but have been deprecated in favor of the Vulkan backend.
+
+        .. warning::
+            The `backend` parameter is deprecated. Only the Vulkan backend is supported.
 
         Returns
         -------
         s : Spectrum
             Returns a :class:`~radis.spectrum.spectrum.Spectrum` object
 
-                Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
-                among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
+            Use the :meth:`~radis.spectrum.spectrum.Spectrum.get` method to get something
+            among ``['radiance', 'radiance_noslit', 'absorbance', etc...]``
 
-                Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
-                to plot it. See [1]_ to get an overview of all Spectrum methods
+            Or directly the :meth:`~radis.spectrum.spectrum.Spectrum.plot` method
+            to plot it. See [1]_ to get an overview of all Spectrum methods
 
         Examples
         --------
