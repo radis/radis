@@ -1073,7 +1073,7 @@ class SpectrumFactory(BandFactory):
         backend: str
             Since version 0.16, only ``'vulkan'`` backend is supported.
             In previous versions, ``'gpu-cuda'`` and ``'cpu-cuda'`` were available to switch to a CUDA backend,
-            but have been deprecated in favor of the Vulkan backend.
+            but this has been deprecated in favor of the Vulkan backend.
 
         .. warning::
             The `backend` parameter is deprecated. Only the Vulkan backend is supported.
