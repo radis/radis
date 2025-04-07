@@ -3425,6 +3425,8 @@ class Spectrum(object):
         )
 
         # Check if dispersion is specified
+        print(f"slit_function = {slit_function}")
+        print(f"slit_dispersion = {slit_dispersion}")
         if slit_dispersion is not None:
             if waveunit == "nm":
                 w_nm = w
@@ -3437,6 +3439,37 @@ class Spectrum(object):
             )
         else:
             slice_windows = [np.ones_like(w, dtype=bool)]
+
+            # Prevent invalid use of constant-width slit in nm over broad range
+            if isinstance(slit_function, (int, float)) and unit == "nm":
+                w_nm = w
+                wslit0_nm = wslit0
+
+                # Estimate the relative change in effective resolution across the spectrum.
+                # Spectrometer resolving power is R = lambda / delta lambda;
+                # if delta lambda (the slit width in nm) is constant,
+                # then R ~ lambda, and inverse resolving power 1/R scales as 1/lambda.
+                # So the relative variation in resolution is approximated by the relative variation in 1/lambda:
+                #     rel_error = (max(1/lambda) - min(1/lambda)) / mean(1/lambda)
+                # This metric is unitless and captures how much resolution varies across the range,
+                # indicating whether a constant-nm slit is good enough without dispersion correction.
+
+                reciprocal_lambda = 1 / w_nm
+                rel_error = (
+                    np.max(reciprocal_lambda) - np.min(reciprocal_lambda)
+                ) / np.mean(reciprocal_lambda)
+                # TODO: Should consider more physical value
+                slit_resolution_variation_threshold = 0.2
+                if rel_error.max() > slit_resolution_variation_threshold:
+                    raise ValueError(
+                        f"Invalid use of constant {slit_function} nm slit over a wide wavelength range "
+                        f"({w_nm[0]:.1f}–{w_nm[-1]:.1f} nm) without a slit dispersion correction.\n"
+                        f"The relative resolution varies by up to {rel_error.max():.2%}, exceeding the "
+                        f"`slit_dispersion_threshold` of {slit_dispersion_threshold:.2%}.\n"
+                        f"Please provide `slit_dispersion`, or reduce the spectral range."
+                    )
+
+        # Loop over all waverange slices (needed if slit changes over the spectral range)
 
         # Create dictionary to store convolved
         I_conv_slices = {}
