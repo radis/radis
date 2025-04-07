@@ -48,14 +48,14 @@ before_script:
   - python --version #to check and be sure of the python version
   - echo ">>> Run fast tests first"
   # use XVFB to have headless display port, and still run the Matplotlib tests.
-  - xvfb-run -a pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10 --random-order
+  - xvfb-run -a pytest -n auto -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10 --random-order
 
 script:
   # Your test script goes here
   # >> If script returns a non-zero exit code, the build is failed, but continues to run before being
   # >> marked as failed.  (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
   - echo ">>> Run long tests now"
-  - xvfb-run -a pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
+  - xvfb-run -a pytest -n auto -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
   # --durations=N to print the slowest N tests
   # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
 
@@ -159,7 +159,7 @@ jobs:
       - VERSION_RADIS=$(cat radis/__version__.txt)
       - pip install radis==$VERSION_RADIS
       - pip install pytest
-      - xvfb-run -a pytest -m "fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
+      - xvfb-run -a pytest -n auto -m "fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
 
     - stage: Py310
       name: "Windows Python 3.10"
@@ -173,9 +173,11 @@ jobs:
             - C:\micromamba\pkgs
             - C:\micromamba\envs
       before_install:
-        - choco install micromamba
-        - refreshenv
-        - micromamba shell init -s powershell -p C:\micromamba
+        - curl -L -o micromamba.tar.bz2 https://micro.mamba.pm/api/micromamba/win-64/latest
+        - tar -xvjf micromamba.tar.bz2
+        - mkdir C:\micromamba
+        - move Library\bin\micromamba.exe C:\micromamba\
+        - set PATH=C:\micromamba;%PATH%
       install:
         - micromamba activate base
         - ((Get-Content -path environment.yml -Raw) -replace '^- python$', "- python=3.10") | Set-Content -Path environment.yml
@@ -186,6 +188,5 @@ jobs:
       before_script:
         - python --version
       script:
-        # Run fast tests in parallel (2 cores)
         - echo ">>> Running fast tests in parallel"
-        - pytest -n 2 -m "fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
+        - pytest -n auto -m "fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
