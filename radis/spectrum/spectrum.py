@@ -3448,23 +3448,23 @@ class Spectrum(object):
             w_conv_slices = []
             I_conv_slices[q] = []
 
-        if unit == "nm" and waveunit == "cm-1":
-            # special handling for wavelength-space convolution
-            return self._apply_slit_nm_on_cm1(
-                varlist,
-                slit_function,
-                norm_by,
-                shape,
-                center_wavespace,
-                mode,
-                plot_slit,
-                store,
-                auto_recenter_crop,
-                assert_evenly_spaced,
-                verbose,
-                *args,
-                **kwargs,
-            )
+        # if unit == "nm" and waveunit == "cm-1":
+        #     # special handling for wavelength-space convolution
+        #     return self._apply_slit_nm_on_cm1(
+        #         varlist,
+        #         slit_function,
+        #         norm_by,
+        #         shape,
+        #         center_wavespace,
+        #         mode,
+        #         plot_slit,
+        #         store,
+        #         auto_recenter_crop,
+        #         assert_evenly_spaced,
+        #         verbose,
+        #         *args,
+        #         **kwargs,
+        #     )
 
         # Loop over all waverange slices (needed if slit changes over the spectral range)
         for islice, slice_window in enumerate(slice_windows):
