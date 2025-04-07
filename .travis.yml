@@ -161,3 +161,31 @@ jobs:
       - pip install pytest
       - xvfb-run -a pytest -m "fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
 
+      - stage: Py310
+      name: "Windows Python 3.10"
+      os: windows
+      language: shell
+      python: "3.10"
+      if: branch =~ ^(master|develop|785-coverage-acceleration-windows)$
+      cache:
+        - pip
+        - directories:
+            - C:\micromamba\pkgs
+            - C:\micromamba\envs
+      before_install:
+        - choco install micromamba
+        - refreshenv
+        - micromamba shell init -s powershell -p C:\micromamba
+      install:
+        - micromamba activate base
+        - ((Get-Content -path environment.yml -Raw) -replace '^- python$', "- python=3.10") | Set-Content -Path environment.yml
+        - micromamba create -f environment.yml -y
+        - micromamba activate radis-env
+        - pip install -e . -v
+        - pip install pytest-cov pytest-xdist pytest-random-order
+      before_script:
+        - python --version
+      script:
+        # Run fast tests in parallel (2 cores)
+        - echo ">>> Running fast tests in parallel"
+        - pytest -n 2
