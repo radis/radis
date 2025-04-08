@@ -217,17 +217,19 @@ version = get_version(add_git_number=False)
 
 # %% Global namespace
 
-__all__ = [
+__all__ =
     "config",
     "version",
     "__version__",
+"calc_spectrum",
 ]
 
 # prevent cyclic imports:
 from . import api, db, io, lbl, los, misc, phys, spectrum, tools
-from .api import *  # input / output common with ExoJax
+from .api import *  # input/output common with ExoJax
 from .db import *  # database of molecules
 from .io import *  # input / output
+from .lbl.calc import calc_spectrum
 from .lbl import *  # line-by-line module
 from .levels import *  # rovibrational energies and partition functions
 from .los import *  # line-of-sight module
