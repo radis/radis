@@ -13,7 +13,7 @@ Defines :func:`~radis.io.fetch_kurucz` based on :class:`~radis.api.kuruczapi.Kur
 
 from os.path import abspath, expanduser, join
 
-import radis
+from radis import config
 from radis.api.kuruczapi import KuruczDatabaseManager
 from radis.misc.config import getDatabankEntries
 
@@ -50,7 +50,7 @@ def fetch_kurucz(
 
     if local_databases is None:
 
-        local_databases = join(radis.config["DEFAULT_DOWNLOAD_PATH"], "kurucz")
+        local_databases = join(config["DEFAULT_DOWNLOAD_PATH"], "kurucz")
     local_databases = abspath(expanduser(local_databases))
 
     ldb = KuruczDatabaseManager(
@@ -62,12 +62,13 @@ def fetch_kurucz(
         engine=engine,
     )
 
+    # Check if the database is registered in radis.json
     local_files, urlnames = [], []
     if ldb.is_registered():
         entries = getDatabankEntries(ldb.name)
         local_files, urlnames = entries["path"], entries["download_url"]
 
-    if ldb.is_registered() and not radis.config["ALLOW_OVERWRITE"]:
+    if ldb.is_registered() and not config["ALLOW_OVERWRITE"]:
         error = False
         if cache == "regen" or not local_files:
             error = True
@@ -80,7 +81,6 @@ def fetch_kurucz(
             )
 
     # Delete files if needed:
-
     if cache == "regen":
         ldb.remove_local_files(local_files)
     ldb.check_deprecated_files(
@@ -91,8 +91,13 @@ def fetch_kurucz(
     get_main_files = True
 
     if len(local_files) > 1 or len(urlnames) > 1:
-        raise Exception("only 1 database file is expected")
+        raise Exception(
+            f"Found the following files {local_files} but only 1 is expected"
+            if len(local_files) > 1
+            else f"Found the following urls {urlnames} but only 1 is expected"
+        )
 
+    # Check if local files are available so we don't have to download
     if local_files and not ldb.get_missing_files(local_files):
         get_main_files = False
         ldb.actual_file = local_files[0]  # for ldb.load below
@@ -106,16 +111,17 @@ def fetch_kurucz(
             print(f"Attempting to download {url}")
             try:
                 ldb.download_and_parse([url], [file], 1)
-            except OSError:
+            except OSError as err:
                 if i == len(main_urls) - 1:  # all possible urls exhausted
-                    print(f"Error downloading {url}.")
+                    print(f"Error downloading {url}: {err}")
                     print(f"No source found for {ldb.molecule}")
                     raise
                 else:
-                    print(f"Error downloading {url}")
+                    print(f"Error downloading {url}: {err}")
                     continue
             else:
-                print(f"Successfully downloaded {url}")
+                if verbose:
+                    print(f"Successfully downloaded {url}")
                 ldb.actual_file = file
                 ldb.actual_url = url
                 # local_files = [file]
