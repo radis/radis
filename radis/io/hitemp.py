@@ -10,6 +10,7 @@ from os.path import abspath, exists, expanduser, join
 from radis import config
 from radis.api.hdf5 import update_pytables_to_vaex
 from radis.api.hitempapi import HITEMPDatabaseManager, get_recent_hitemp_database_year
+from radis.misc.config import getDatabankEntries
 
 
 def fetch_hitemp(
