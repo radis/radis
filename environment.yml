@@ -27,16 +27,12 @@ dependencies:
 - numba  # just-in-time compiler
 - pandas
 - plotly>=2.5.1  # for line survey HTML output
-#- progressbar2    # used in vaex
 - psutil # to get user RAM
 - pytables # for pandas to HDF5 export
 - scipy>=1.4.0
 - seaborn   # other matplotlib themes
 - termcolor  # terminal colors
 - specutils
-#- vaex-core>=4.17.0   # load HDF5 files  (version needed to fix https://github.com/radis/radis/issues/598)
-#- vaex-hdf5
-#- vaex-viz
 - pip
 - pip:
   - cryptography
@@ -46,7 +42,6 @@ dependencies:
   - json-tricks>=3.15.0  # to deal with non jsonable formats
   - lxml           # parser used for ExoMol website
   - mpldatacursor
-  - nvidia-cufft-cu11; sys_platform != "darwin"
   - periodictable
   - peakutils
   - publib         # Plotting styles for Matplotlib.
@@ -58,4 +53,5 @@ dependencies:
   - vaex-core ; python_version < '3.11'
   - vaex-hdf5 ; python_version < '3.11'
   - vaex-viz ; python_version < '3.11'
+  - vulkan
 

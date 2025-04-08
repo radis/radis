@@ -111,6 +111,53 @@ def keep_only_relevant(
     return relevantfiles, files_wmin, files_wmax
 
 
+def get_recent_hitemp_database_year(molecule):
+    """Retrieve the most recent available database year from the hitran website.
+
+    Parameters
+    ----------
+    molecule: str
+
+    Returns
+    -------
+    str
+        The year of the latest available database.
+
+    Examples
+    --------
+    Get the latest database year for CO2 from HITEMP :
+    ::
+
+        year = get_recent_hitemp_database_year("CO2")
+        >>> "2024"
+    """
+
+    response = urllib.request.urlopen("https://hitran.org/hitemp/")
+
+    text = response.read().decode()
+    text = text[
+        text.find(
+            '<table id="hitemp-molecules-table" class="selectable-table list-table">'
+        ) : text.find("</table>")
+    ]
+    text = re.sub(r"<!--.+?-->\s*\n", "", text)
+    html_molecule = re.sub(r"(\d{1})", r"(<sub>\1</sub>)", molecule)
+    text = text[
+        re.search(
+            "<td>(?:<strong>)?" + html_molecule + "(?:</strong>)?</td>", text
+        ).start() :
+    ]
+    lines = text.splitlines()
+
+    recent_database = str(
+        re.findall(r"<td[^>]*>\s*(?:<strong>)?(\d{4})(?:</strong>)?\s*</td>", lines[6])[
+            0
+        ]
+    )
+
+    return recent_database
+
+
 #%%
 def get_last(b):
     """Get non-empty lines of a chunk b, parsing the bytes."""
@@ -410,6 +457,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         verbose=True,
         chunksize=100000,
         parallel=True,
+        database="most_recent",
     ):
         r"""
         See Also
@@ -432,8 +480,9 @@ class HITEMPDatabaseManager(DatabaseManager):
         self.wmin = None  # available on HITEMP website. See HITEMPDatabaseManager.fetch_url_Nlines_wmin_wmax
         self.wmax = None  # available on HITEMP website. See HITEMPDatabaseManager.fetch_url_Nlines_wmin_wmax
         self.urlnames = None
+        self.database = database
 
-    def fetch_url_Nlines_wmin_wmax(self, hitemp_url="https://hitran.org/hitemp/"):
+    def fetch_url_Nlines_wmin_wmax(self, session=None, hitemp_url="https://hitran.org"):
         r"""requires connexion"""
 
         molecule = self.molecule
@@ -445,10 +494,39 @@ class HITEMPDatabaseManager(DatabaseManager):
             and self.wmax is not None
         ):
             return self.base_url, self.Nlines, self.wmin, self.wmax
+        elif self.database == "2010":
+            if session is None:
+                return self.base_url, 0, self.wmin, self.wmax
+            base_url = (
+                hitemp_url
+                + "/files/HITEMP/HITEMP-2010/"
+                + self.molecule
+                + "_line_list/"
+            )
+            file_response = session.get(base_url)
+            text = file_response.text
 
+            # Parse the HTML then Extract valid file URLs
+            soup = BeautifulSoup(text, "html.parser")
+            table = soup.find("table")
+            links = table.find_all("a", href=True)
+            zip_urls = [
+                hitemp_url + link["href"]
+                for link in links
+                if link["href"].endswith(".zip")
+            ]
+
+            # Since wmin and wmax for the 2010 version are not available on the website, we will retrieve them from the file itself.
+            self.base_url, self.Nlines, self.wmin, self.wmax = (
+                zip_urls[0],
+                None,
+                None,
+                None,
+            )
+            return zip_urls[0], None, None, None
         else:
 
-            response = urllib.request.urlopen(hitemp_url)
+            response = urllib.request.urlopen(hitemp_url + "/hitemp/")
 
             # Alternative to return a Pandas Dataframe :
             # ... Doesnt work because missing <tr> in HITEMP website table for N2O
@@ -542,9 +620,11 @@ class HITEMPDatabaseManager(DatabaseManager):
         elif molecule in HITEMP_MOLECULES:
             session = login_to_hitran(verbose=self.verbose)
             if session:
-                url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
+                url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax(
+                    session
+                )
                 download_hitemp_file(session, url, basename(url))
-                urlnames = [basename(url)]
+                urlnames = [url]
             else:
                 return []  # Exit if login failed
         else:
@@ -694,6 +774,11 @@ class HITEMPDatabaseManager(DatabaseManager):
 
                 wmin = np.min((wmin, df.wav.min()))
                 wmax = np.max((wmax, df.wav.max()))
+
+                # Cause wmin and wmax for 2010 version is not avalible on website
+                if self.wmin is None or self.wmax is None:
+                    self.wmin = wmin
+                    self.wmax = wmax
 
                 Nlines += len(df)
                 Nlines_tot += len(df)
