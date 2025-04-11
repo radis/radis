@@ -38,7 +38,6 @@ from radis.lbl.labels import (
 )
 from radis.levels.partfunc import RovibParFuncCalculator, RovibParFuncTabulator
 from radis.misc.warning import OutOfBoundError
-from radis.test.utils import getTestFile
 
 # %% Variants of Tabulated partition functions (interpolate)
 
@@ -171,8 +170,9 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
     block, Evib and Erot (cm-1)  and jref
 
     For nonequilibrium, different strategies exist so as how to assign rotational and vibrational
-    energies in a CDSD database. See the E. Pannier "Limits on CO2 Nonequilibrium
-    model" article for a discussion on that.
+    energies in a CDSD database, see Dubuet et al. (2022) "Uncertainties in multi-temperature
+    nonequilibrium partition functions and application to CO2"
+    (https://doi.org/10.1016/j.jqsrt.2022.108314).
 
     Example of table format::
 
@@ -267,17 +267,15 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         self.use_cached = use_cached
         self.levelsfmt = levelsfmt
         self.viblvl_label = viblvl_label
-        self.last_modification = time.ctime(
-            getmtime(getTestFile(r"co2_cdsd_hamiltonian_fragment.levels"))
+        cdsd_fragment_path = join(
+            "radis", "test", "files", "co2_cdsd_hamiltonian_fragment.levels"
         )
+        self.last_modification = time.ctime(getmtime(cdsd_fragment_path))
         if verbose >= 2:
             print("Last modification time: {0}".format(self.last_modification))
 
         # Get variables to store in metadata  (after default values have been set)
         molecule = "CO2"  # will be stored in cache file metadata
-        last_modification = time.ctime(
-            getmtime(getTestFile(r"co2_cdsd_hamiltonian_fragment.levels"))
-        )
 
         _discard = [
             "self",
@@ -410,6 +408,8 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
 
 # %% Test
 if __name__ == "__main__":
+
+    from os.path import join
 
     from radis.test.levels.test_partfunc import _run_testcases
 
