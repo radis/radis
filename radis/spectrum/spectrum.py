@@ -2238,7 +2238,7 @@ class Spectrum(object):
                 still experimental ! Try it, feedback welcome !
         **kwargs: **dict
             kwargs forwarded as argument to plot (e.g: lineshape
-            attributes: `lw=3, color='r', width=800, height=600`)
+            attributes: `lw=3, color='r'`)
 
         Returns
         -------
@@ -2275,14 +2275,9 @@ class Spectrum(object):
 
         set_style()
 
-        # set figure size (width, height)
-        dpi = 100  # dots per inch
-        width = kwargs.pop("width", 800)
-        height = kwargs.pop("height", 600)
-
         if nfig == "same":
             nfig = plt.gcf().number
-        fig = plt.figure(nfig, figsize=(width / dpi, height / dpi))
+        fig = plt.figure(nfig)
 
         # If figure exist, ensures xlabel and ylabel are the same (prevents some
         # users errors if plotting difference units!)... Note that since
@@ -2385,8 +2380,8 @@ class Spectrum(object):
 
         if show:
             plt.show()
-
-        return line
+        else:
+            return plt
 
     def _plot_plotly(
         self,
@@ -2468,7 +2463,7 @@ class Spectrum(object):
             The Plotly template to use for the plot. Default is 'plotly_dark'.
         **kwargs: **dict
             kwargs forwarded as argument to plot (e.g: lineshape
-            attributes: `lw=3, color='r', width=800, height=600`)
+            attributes: `lw=3, color='r'`)
 
         Returns
         -------
@@ -2495,19 +2490,18 @@ class Spectrum(object):
             kwargs["line_width"] = kwargs.pop("lw")
         if "color" in kwargs:
             kwargs["line_color"] = kwargs.pop("color")
-        width = kwargs.pop("width", None)
-        height = kwargs.pop("height", None)
 
-        fig = px.line(df, x="Wavenumber", y="Radiance_noslit", template=template)
+        fig = px.line(df, x=x, y=y, template=template)
         fig.update_traces(**kwargs)
         fig.update_layout(
             xaxis_title=xlabel,
             yaxis_title=ylabel,
             yaxis=dict(tickmode="linear", dtick=0.01),
-            width=width,
-            height=height,
         )
-        fig.show()
+        if show is True:
+            fig.show()
+        else:
+            return fig
 
     def plot(
         self,
@@ -2577,8 +2571,9 @@ class Spectrum(object):
             plotting on an existing figure is forbidden if labels are not the
             same. Use ``force=True`` to ignore that.
         show: bool
-            show figure. Default ``False``. Will still show the figure in
+            show figure. Default ``True``. Will still show the figure in
             interactive mode, e.g, `%matplotlib inline` in a Notebook.
+            If ``show=False``, the function returns the Matplotlib or Plotly object for customization.
         show_ruler: bool
             if `True`, add a ruler tool to the Matplotlib toolbar. Convenient
             to measure distances between peaks, etc.
@@ -2596,8 +2591,8 @@ class Spectrum(object):
                 - "matplotlib": Forces the use of Matplotlib for static plots.
         **kwargs: **dict
             kwargs forwarded as argument to plot (e.g: lineshape
-            attributes: `lw=3, color='r', width=800, height=600`)
-
+            attributes: `lw=3, color='r'`)
+            Note: for more customizations set ``show=False`` to return the Matplotlib or Plotly object.
         Returns
         -------
         line:
