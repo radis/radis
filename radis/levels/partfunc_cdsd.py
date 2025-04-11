@@ -21,7 +21,7 @@ Which inherit from:
 
 
 import time
-from os.path import exists, getmtime
+from os.path import exists, getmtime, join
 from warnings import warn
 
 import pandas as pd
@@ -408,8 +408,6 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
 
 # %% Test
 if __name__ == "__main__":
-
-    from os.path import join
 
     from radis.test.levels.test_partfunc import _run_testcases
 
