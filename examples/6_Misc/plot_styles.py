@@ -48,3 +48,20 @@ for plotlib, context, style in [
     s.plot()
     plt.title(", ".join(f"{v}" for v in radis.config["plot"].values()))
     plt.tight_layout()
+
+#%%
+# You can also choose to not show the figure immediately, and instead return
+# the Matplotlib or Plotly object. This allows for **advanced customization**
+# (e.g., modifying the matplotlib figure).
+
+fig, ax = s.plot("radiance", plotting_library="matplotlib", show=False)
+
+ax.set_xlabel("Updated X-axis Label")
+ax.set_ylabel("Updated Y-axis Label")
+ax.grid(True, linestyle=":", linewidth=1)
+ax.set_facecolor("beige")
+
+fig.gcf().set_size_inches(8.6, 5)  # Resize
+fig.gcf().set_dpi(150)  # Change DPI
+# Then Show
+fig.show()

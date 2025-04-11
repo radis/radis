@@ -2381,7 +2381,7 @@ class Spectrum(object):
         if show:
             plt.show()
         else:
-            return plt
+            return plt, ax
 
     def _plot_plotly(
         self,
