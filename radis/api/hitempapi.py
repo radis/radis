@@ -176,7 +176,19 @@ def setup_credentials():
 
     if is_rtd or is_travis:
         # In CI/CD environments, only use environment variables
-        email = os.environ.get("HITRAN_EMAIL")
+
+        # compatibly with old versions
+        if os.environ.get("HITRAN_USERNAME"):
+            email = os.environ.get("HITRAN_USERNAME")
+            with open(CONFIG_PATH_JSON, "r") as f:
+                config = json.load(f)
+            config["credentials"]["HITRAN_EMAIL"] = email
+            # Save
+            with open(CONFIG_PATH_JSON, "w") as f:
+                json.dump(config, f, indent=4)
+        else:
+            email = os.environ.get("HITRAN_EMAIL")
+
         password = os.environ.get("HITRAN_PASSWORD")
         if not email or not password:
             print(
@@ -309,8 +321,16 @@ def login_to_hitran(verbose=False):
         with open(CONFIG_PATH_JSON, "r") as f:
             config = json.load(f)
 
+        # compatiplty with old versions
         if "credentials" in config:
-            encrypted_email = config["credentials"].get("HITRAN_EMAIL")
+            if config["credentials"].get("HITRAN_USERNAME"):
+                encrypted_email = config["credentials"].get("HITRAN_USERNAME")
+                config["credentials"]["HITRAN_EMAIL"] = encrypted_email
+                # Save
+                with open(CONFIG_PATH_JSON, "w") as f:
+                    json.dump(config, f, indent=4)
+            else:
+                encrypted_email = config["credentials"].get("HITRAN_EMAIL")
             encrypted_password = config["credentials"].get("HITRAN_PASSWORD")
 
             if encrypted_email and encrypted_password:
