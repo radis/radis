@@ -7,8 +7,9 @@
 
 RADIS is a fast line-by-line code for high resolution infrared molecular spectra (emission / absorption,
 equilibrium / non-LTE) based on HITRAN/HITEMP/ExoMol.
+Atomic spectra from the NIST and Kurucz databases are also available.
 
-It includes post-processing tools to compare experimental spectra and spectra calculated
+RADIS includes post-processing tools to compare experimental spectra and spectra calculated
 with RADIS or other spectral codes.
 
 User full documentation (advanced install and examples) are available on the `RADIS Website <http://radis.readthedocs.io/>`__.
