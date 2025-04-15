@@ -130,7 +130,6 @@ exclude = ["radis.test*", "docs*", "examples*", "test*"]
 
 [tool.setuptools.dynamic]
 version = {file = "radis/__version__.txt"}
-readme = {file = "README.md", content-type = "text/markdown"}
 
 # Note: The following RST cleanup functionality was previously used when README was in RST format
 # It's preserved here for reference in case it's needed in the future:
