@@ -688,12 +688,9 @@ def make_j2b(
 
     # Determine the array size based on jlower_max
     if jlower_max is None:
-        Nblower = np.max(jlower_arr) + 1
+        Nblower = np.nanmax(jlower_arr) + 1
     else:
-        Nblower = np.max([jlower_max, np.max(jlower_arr)]) + 1
-
-    if np.isnan(Nblower):
-        raise ValueError("Invalid value encountered: 'Nblower' is NaN.")
+        Nblower = np.nanmax([jlower_max, np.max(jlower_arr)]) + 1
 
     if output == "vaex":
         # Initialize arrays with default alpha_ref and n_Texp
