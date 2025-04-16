@@ -34,6 +34,7 @@ from radis.db.utils import compare
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
 from radis.spectrum.spectrum import Spectrum
+from radis.tools.database import load_spec
 
 
 # %%
@@ -69,6 +70,7 @@ def calc_spectrum(
     export_lines=False,
     verbose=True,
     return_factory=False,
+    cached_file_path=None,
     **kwargs,
 ) -> Spectrum:
     r"""Calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.
@@ -412,6 +414,18 @@ def calc_spectrum(
     --------
     :py:class:`~radis.lbl.factory.SpectrumFactory`
     """
+    if cached_file_path:
+        if exists(cached_file_path):
+            print(
+                "Using cached spectrum, if you want to recalculate the spectrum, set `use_cached=False`"
+            )
+            try:
+                s = load_spec(cached_file_path)
+                return s
+            except Exception as exc:
+                print("Error loading cached spectrum, recalculating them again", exc)
+        else:
+            print("Cached spectrum not found, recalculating them again")
 
     # Check inputs
     if "molecule" in kwargs:
