@@ -3544,7 +3544,7 @@ class BaseFactory(DatabankLoader):
 
     # %%
     def calc_emission_integral(self):
-        r"""Calculate the emission integral (in :math:`mW/sr`) of all lines in DataFrame ``df1``.
+        """Calculate the emission integral (in :math:`mW/sr`) of all lines in DataFrame ``df1``.
 
         .. math::
 
@@ -3618,8 +3618,8 @@ class BaseFactory(DatabankLoader):
         return
 
     # %%
-    def _cutoff_linestrength(self, cutoff=None):
-        """Discard linestrengths that are lower that this, to reduce
+    def _cutoff_linestrength(self, cutoff=None, cutoff_error=None):
+        r"""Discard linestrengths that are lower that this, to reduce
         calculation times. Set the number of lines cut in
         ``self._Nlines_cutoff``
 
@@ -3629,6 +3629,10 @@ class BaseFactory(DatabankLoader):
         cutoff: float (unit of linestrength:  cm-1/(molecule.cm-2))
             discard linestrengths that are lower that this, to reduce calculation
             times. If 0, no cutoff. Default 0
+
+        cutoff_error: float
+            keep the estimated error from exceeding this percentage,
+            adjusting the cutoff if necessary. If None, no error to consider. Default None.
 
         Notes
         -----
@@ -3642,9 +3646,12 @@ class BaseFactory(DatabankLoader):
         # Update defaults
         if cutoff is not None:
             self.params.cutoff = cutoff
+        if cutoff_error is not None:
+            self.params.cutoff_error = cutoff_error
 
         # Load variables
         cutoff = self.params.cutoff
+        cutoff_error = self.params.cutoff_error
         verbose = self.verbose
         df = self.df1
 
@@ -3678,6 +3685,65 @@ class BaseFactory(DatabankLoader):
             else:
                 error_cutoff = df.S[b].sum() / df.S.sum() * 100
 
+            if cutoff_error is not None:
+                if cutoff_error < error_cutoff:
+                    total = 0
+                    if self.dataframe_type == "vaex":
+                        cutoff_sum = (cutoff_error / 100) * df.sum(df.S)
+                        working_df = df[b].extract()
+                        working_df = working_df.sort(working_df.S)
+                        nbins = 100000
+                        bounds = working_df.minmax(working_df.S)
+                        filtered_df = working_df #initialising for the loop
+                        while filtered_df.length() > nbins:
+                            limits = bounds + [0,1] #add 1 to upper bound to make sure the highest value is included in last bin
+                            step = (limits[-1]-limits[0])/nbins #width of each bin
+                            binned_sum = filtered_df.sum(working_df.S, working_df.S, limits, nbins)
+                            cumsummed = np.cumsum(binned_sum) + total
+                            idx = np.searchsorted(cumsummed,cutoff_sum,side='right')
+                            if idx > 0:
+                                total += cumsummed[idx-1]
+                            minimum = filtered_df.min(working_df.S)
+                            bounds = np.array([minimum + idx*step, minimum + (idx+1)*step])
+                            filtered_df = filtered_df[(working_df.S >= bounds[0]) & (working_df.S <= bounds[1])].extract()
+                        lines_by_intensity = filtered_df.to_pandas_df().S
+                    else:
+                        cutoff_sum = (cutoff_error / 100) * df.S.sum()
+                        lines_by_intensity = df.S[b].sort_values()
+                    cumsummed = lines_by_intensity.cumsum() + total
+                    cond = cumsummed <= cutoff_sum
+                    post_cutoff = lines_by_intensity[cond]
+                    # to account for the unlikely case where the cutoff in cond lies between duplicate values:
+                    max_value = post_cutoff.max()
+                    if post_cutoff.value_counts()[max_value] < lines_by_intensity.value_counts()[max_value]:
+                        b = df.S < max_value # exclude max_value as including it pushes us over cutoff_error
+                        in_or_ex = 'exclusive'
+                    else:
+                        b = df.S <= max_value
+                        in_or_ex = 'inclusive'
+                    # Print current error
+                    if self.dataframe_type == "vaex":
+                        error_cutoff = df[b].sum(df[b].S) / df.sum(df.S) * 100
+                    else:
+                        error_cutoff = df.S[b].sum() / df.S.sum() * 100
+                    print(
+                        "Cutoff for discarded lines adjusted to {0} ({1}). ".format(max_value,in_or_ex)
+                        + "Current percentage error: {0:.2f}% ".format(error_cutoff)
+                        + "Inputted error: {0:.2f}%".format(cutoff_error)
+                    )
+
+                else:
+                    print(
+                        "Cutoff error is greater than the current error."
+                        + " Inputted cutoff error percentage is {0:.2f}%".format(
+                            cutoff_error
+                        )
+                        + " Estimated error: {0:.2f}%".format(error_cutoff)
+                    )
+                Nlines_cutoff = b.sum()
+            else:
+                print("Cutoff error not inputted.")
+
             if verbose >= 2:
                 print(
                     "Discarded {0:.2f}% of lines (linestrength<{1}cm-1/(#.cm-2))".format(
@@ -3690,7 +3756,7 @@ class BaseFactory(DatabankLoader):
                     "Estimated error after discarding lines is large: {0:.2f}%".format(
                         error_cutoff
                     )
-                    + ". Consider reducing cutoff",
+                    + ". Consider reducing cutoff (or cutoff_error if adjusted)",
                     "LinestrengthCutoffWarning",
                 )
 
