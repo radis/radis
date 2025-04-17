@@ -279,7 +279,7 @@ class VkFFTApp(VkFFTAppBase):
 
         if self.config is None:
             raise RuntimeError(
-                "Error creating VkFFTConfiguration. Was the CUDA context properly initialised ?"
+                "Error creating VkFFTConfiguration. Was the Vulkan context properly initialised ?"
             )
         res = ctypes.c_int(0)
 

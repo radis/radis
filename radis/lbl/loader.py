@@ -1115,7 +1115,7 @@ class DatabankLoader(object):
                 "hitemp-radisdb"  # downloaded in RADIS local databases ~/.radisdb
             )
             if database == "default":
-                database = "full"
+                database = "most_recent"
 
         elif compare_source == "kurucz":
             dbformat = "kurucz"
@@ -1304,10 +1304,11 @@ class DatabankLoader(object):
 
             if memory_mapping_engine == "auto":
                 memory_mapping_engine = get_auto_MEMORY_MAPPING_ENGINE()
-
-            if database != "full":
+            if database not in ["most_recent"] and not (
+                database.isdigit() and len(database) == 4
+            ):
                 raise ValueError(
-                    f"Got `database={database}`. When fetching HITEMP, only the `database='full'` option is available."
+                    f"Invalid database selection: '{database}'. When fetching HITEMP, you must choose either 'most_recent' or a valid four-digit year."
                 )
 
             # Download, setup local databases, and fetch (use existing if possible)
@@ -1330,6 +1331,7 @@ class DatabankLoader(object):
                 engine=memory_mapping_engine,
                 output=output,
                 parallel=parallel,
+                database=database,
             )
             self.params.dbpath = ",".join(local_paths)
 

@@ -1818,7 +1818,7 @@ class BroadenFactory(BaseFactory):
         # ------------------------------------
 
         def _init_w_axis(w_dat, log_p):
-            w_min = w_dat.min()
+            w_min = np.nanmin(w_dat)
             if w_min == 0:
                 self.warn(
                     f"{(w_dat==0).sum()}"
@@ -1829,7 +1829,7 @@ class BroadenFactory(BaseFactory):
                 )
                 w_min = w_dat[w_dat > 0].min()
             w_max = (
-                w_dat.max() + 1e-4
+                np.nanmax(w_dat) + 1e-4
             )  # Add small number to prevent w_max falling outside of the grid
             N = np.ceil((np.log(w_max) - np.log(w_min)) / log_p) + 1
             return w_min * np.exp(log_p * np.arange(N))

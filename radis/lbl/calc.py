@@ -698,7 +698,9 @@ def _calc_spectrum_one_molecule(
         )
         or compare(databank, "exomol")
         or compare(databank, "hitran")
-    ):
+        or compare(databank, "hitemp")
+    ):  # mode to get databank without relying on  Line databases
+        # Line database :
         if compare(databank, ["fetch", "hitran"]):
             conditions = {
                 "source": "hitran",
@@ -735,6 +737,14 @@ def _calc_spectrum_one_molecule(
                 "database": databank[1],
                 "parfuncfmt": "exomol",
             }
+
+        elif compare(databank, "hitemp"):
+            conditions = {
+                "source": "hitemp",
+                "database": databank[1],
+                "parfuncfmt": "hapi",
+            }
+        # Partition functions :
         conditions.update(
             **{
                 "levelsfmt": None,

@@ -12,7 +12,8 @@ with spectrum.recalc_gpu().
 .. note::
 
     Systems with a dedicated GPU often have multiple devices available, because they also have an integrated GPU in the
-    main processor. This can be selected by chosing a different device_id.
+    main processor. This can be selected by chosing a different device_id (e.g. 'nvidia' or 'intel').
+    The device id could be a string or an integer. The integer is the device number, starting from 0.
     Look at the device overview printed when running the GPU spectrum to see what options are available.
 
     Make sure to call gpu_exit() at the end to release all GPU resources.
