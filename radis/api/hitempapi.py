@@ -23,7 +23,8 @@ from bs4 import BeautifulSoup
 from cryptography.fernet import Fernet
 from tqdm import tqdm
 
-from radis.misc.config import CONFIG_PATH_JSON
+from radis.misc.config import CONFIG_PATH_JSON, getDatabankEntries
+from radis.misc.warning import DatabaseAlreadyExists
 
 try:
     from .dbmanager import DatabaseManager
@@ -180,7 +181,7 @@ def _prompt_password(user):
     Parameters
     ----------
     user : str
-        Username.
+        Email.
 
     Returns
     -------
@@ -223,18 +224,20 @@ def setup_credentials():
 
     if is_rtd or is_travis:
         # In CI/CD environments, only use environment variables
-        username = os.environ.get("HITRAN_USERNAME")
+
+        # compatibly with old versions
+        email = os.environ.get("HITRAN_USERNAME")
         password = os.environ.get("HITRAN_PASSWORD")
-        if not username or not password:
+        if not email or not password:
             print(
-                "Warning: HITRAN_USERNAME or HITRAN_PASSWORD not set in environment variables"
+                "Warning: HITRAN_EMAIL or HITRAN_PASSWORD not set in environment variables"
             )
     else:
         # In normal usage, try environment variables first, then prompt
-        username = input("Enter HITRAN username: ")
-        password = _prompt_password(username)
+        email = input("Enter HITRAN email: ")
+        password = _prompt_password(email)
 
-    return username, password
+    return email, password
 
 
 def get_encryption_key():
@@ -284,10 +287,10 @@ def decrypt_password(encrypted_password):
     return f.decrypt(encrypted_password.encode()).decode()
 
 
-def store_credentials(username, password):
-    """Store HITRAN credentials in radis.json file with encrypted username and password"""
-    # Encrypt both username and password before storing
-    encrypted_username = encrypt_password(username)  # reuse same encryption function
+def store_credentials(email, password):
+    """Store HITRAN credentials in radis.json file with encrypted email and password"""
+    # Encrypt both email and password before storing
+    encrypted_email = encrypt_password(email)  # reuse same encryption function
     encrypted_password = encrypt_password(password)
 
     # Read existing radis.json
@@ -302,7 +305,7 @@ def store_credentials(username, password):
         config["credentials"] = {}
 
     # Store encrypted credentials
-    config["credentials"]["HITRAN_USERNAME"] = encrypted_username
+    config["credentials"]["HITRAN_EMAIL"] = encrypted_email
     config["credentials"]["HITRAN_PASSWORD"] = encrypted_password
 
     print(
@@ -322,7 +325,7 @@ def login_to_hitran(verbose=False):
     login_url = "https://hitran.org/login/"
     session = requests.Session()
 
-    def attempt_login(username, password):
+    def attempt_login(email, password):
         """Attempt to login with provided credentials"""
         # Get CSRF token
         response = session.get(login_url)
@@ -331,7 +334,7 @@ def login_to_hitran(verbose=False):
 
         login_data = {
             "csrfmiddlewaretoken": csrf,
-            "email": username,
+            "email": email,
             "password": password,
         }
 
@@ -356,17 +359,26 @@ def login_to_hitran(verbose=False):
         with open(CONFIG_PATH_JSON, "r") as f:
             config = json.load(f)
 
+        # compatiplty with old versions
         if "credentials" in config:
-            encrypted_username = config["credentials"].get("HITRAN_USERNAME")
+            if config["credentials"].get("HITRAN_USERNAME"):
+                encrypted_email = config["credentials"].get("HITRAN_USERNAME")
+                config["credentials"]["HITRAN_EMAIL"] = encrypted_email
+                # Save
+                with open(CONFIG_PATH_JSON, "w") as f:
+                    json.dump(config, f, indent=4)
+                print("tosss ", config["credentials"])
+            else:
+                encrypted_email = config["credentials"].get("HITRAN_EMAIL")
             encrypted_password = config["credentials"].get("HITRAN_PASSWORD")
 
-            if encrypted_username and encrypted_password:
+            if encrypted_email and encrypted_password:
                 try:
-                    # Decrypt both username and password
-                    username = decrypt_password(encrypted_username)
+                    # Decrypt both email and password
+                    email = decrypt_password(encrypted_email)
                     password = decrypt_password(encrypted_password)
 
-                    login_response, session = attempt_login(username, password)
+                    login_response, session = attempt_login(email, password)
                     if is_login_successful(login_response):
                         if verbose:
                             print("Login successful.")
@@ -385,13 +397,13 @@ def login_to_hitran(verbose=False):
                     # Continue to new user flow
 
     # First time use or no stored credentials
-    username, password = setup_credentials()
-    login_response, session = attempt_login(username, password)
+    email, password = setup_credentials()
+    login_response, session = attempt_login(email, password)
 
     if is_login_successful(login_response):
         if verbose:
             print("Login successful.")
-        store_credentials(username, password)
+        store_credentials(email, password)
         return session
     else:
         if verbose:
@@ -824,34 +836,51 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         return Nlines
 
-    def register(self):
+    def register(self, download):
         r"""register in ~/radis.json"""
+        if self.is_registered():
+            dict_entries = getDatabankEntries(
+                self.name
+            )  # just update previous register details
+        else:
+            dict_entries = {}
 
-        local_files, urlnames = self.get_filenames()
-        info = f"HITEMP {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1) with TIPS-2017 (through HAPI) for partition functions"
+        # The "not registered" condition is included here because hitemp avoids re-downloading files if they already exist in a different format.
+        if download or not self.is_registered():
+            local_files, urlnames = self.get_filenames()
+            info = f"HITEMP {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1) with TIPS-2017 (through HAPI) for partition functions"
 
-        if self.molecule in ["CO2", "H2O"]:
-            info = "(registered files will be downloaded only when required) " + info
+            if self.molecule in ["CO2", "H2O"]:
+                info = (
+                    "(registered files will be downloaded only when required) " + info
+                )
 
-        dict_entries = {
-            "info": info,
-            "path": local_files,
-            "format": "hitemp-radisdb",
-            "parfuncfmt": "hapi",
-            "wavenumber_min": self.wmin,
-            "wavenumber_max": self.wmax,
-            "download_date": self.get_today(),
-            "download_url": urlnames,
-        }
+            dict_entries.update(
+                {
+                    "info": info,
+                    "path": local_files,
+                    "format": "hitemp-radisdb",
+                    "parfuncfmt": "hapi",
+                    "wavenumber_min": self.wmin,
+                    "wavenumber_max": self.wmax,
+                    "download_date": self.get_today(),
+                    "download_url": urlnames,
+                }
+            )
 
-        # Add energy level calculation
-        if self.molecule in MOLECULES_LIST_NONEQUILIBRIUM:
-            dict_entries[
-                "info"
-            ] += " and RADIS spectroscopic constants for rovibrational energies (nonequilibrium)"
-            dict_entries["levelsfmt"] = "radis"
+            # Add energy level calculation
+            if self.molecule in MOLECULES_LIST_NONEQUILIBRIUM:
+                dict_entries[
+                    "info"
+                ] += " and RADIS spectroscopic constants for rovibrational energies (nonequilibrium)"
+                dict_entries["levelsfmt"] = "radis"
 
-        super().register(dict_entries)
+        try:
+            super().register(dict_entries)
+        except DatabaseAlreadyExists as e:
+            raise Exception(
+                'If you want RADIS to overwrite the existing entry for a registered databank, set the config option "ALLOW_OVERWRITE" to True.'
+            ) from e
 
 
 #%%
