@@ -1590,7 +1590,7 @@ class Spectrum(object):
             name = "{0}".format(basename(self.file))
         else:
             name_params = []
-            for key, unit in [("species", ""), ("dbformat", ""), ("Tgas", "K")]:
+            for (key, unit) in [("species", ""), ("dbformat", ""), ("Tgas", "K")]:
                 if key in self.conditions:
                     name_params.append(f"{self.conditions[key]}{unit}")
 
@@ -2505,6 +2505,7 @@ class Spectrum(object):
         plotting_library="default",
         **kwargs,
     ):
+
         r"""Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
         .. note::
@@ -2797,104 +2798,6 @@ class Spectrum(object):
         # Return
         return populations[molecule][isotope][electronic_state]
 
-    def _apply_slit_nm_on_cm1(
-        self,
-        varlist,
-        slit_function,
-        norm_by,
-        shape,
-        center_wavespace,
-        mode,
-        plot_slit,
-        store,
-        auto_recenter_crop,
-        assert_evenly_spaced,
-        verbose,
-        *args,
-        **kwargs,
-    ):
-        from scipy.interpolate import interp1d
-
-        from radis.tools.slit import convolve_with_slit, get_slit_function
-
-        w_cm = self._q["wavespace"]
-        w_nm = cm2nm(w_cm[::-1])  # increasing order
-        w_uniform = np.linspace(w_nm.min(), w_nm.max(), len(w_nm))
-
-        I_conv_slices = {}
-
-        for qns in varlist:
-            q = qns[:-7]
-            I = self._q[qns][::-1]
-
-            interp_to_nm = interp1d(w_nm, I, kind="linear", fill_value="extrapolate")
-            I_interp = interp_to_nm(w_uniform)
-
-            wslit_nm, Islit_nm = get_slit_function(
-                slit_function,
-                unit="nm",
-                norm_by=norm_by,
-                shape=shape,
-                center_wavespace=center_wavespace,
-                return_unit="nm",
-                wstep=np.diff(w_uniform).min(),
-                auto_recenter_crop=auto_recenter_crop,
-                verbose=verbose,
-                plot=plot_slit,
-                *args,
-                **kwargs,
-            )
-
-            _, I_conv_nm = convolve_with_slit(
-                w_uniform,
-                I_interp,
-                wslit_nm,
-                Islit_nm,
-                mode=mode,
-                wunit="nm",
-                verbose=verbose,
-                assert_evenly_spaced=assert_evenly_spaced,
-            )
-
-            interp_back = interp1d(
-                w_uniform, I_conv_nm, kind="linear", fill_value="extrapolate"
-            )
-            I_final = interp_back(w_nm)[::-1]
-
-            I_conv_slices[q] = [I_final]
-
-        new_units = {}
-        for q in I_conv_slices.keys():
-            qns = q + "_noslit"
-            if norm_by == "area":
-                new_units[q] = self.units[qns]
-            elif norm_by == "max":
-                new_units[q] = (Unit("nm") * Unit(self.units[qns])).to_string()
-            else:
-                raise ValueError(f"Unknown normalization type: {norm_by}")
-
-        for q in I_conv_slices.keys():
-            I_conv = np.hstack(I_conv_slices[q])
-            self._q[q] = I_conv
-            self.units[q] = new_units[q]
-
-        if store:
-            self._slit["wavespace"] = wslit_nm
-            self._slit["intensity"] = Islit_nm
-
-        self.conditions.update(
-            {
-                "slit_function": slit_function,
-                "slit_unit": "nm",
-                "slit_dispersion": None,
-                "slit_dispersion_threshold": None,
-                "slit_shape": shape,
-                "norm_by": norm_by,
-            }
-        )
-
-        return self
-
     def get_vib_levels(
         self, molecule=None, isotope=None, electronic_state=None, first=None
     ):
@@ -3143,6 +3046,104 @@ class Spectrum(object):
                 fix_style(ax=ax)
 
     # %% ------------------ Instrumental Slit Function ---------------------
+
+    def _apply_slit_nm_on_cm1(
+        self,
+        varlist,
+        slit_function,
+        norm_by,
+        shape,
+        center_wavespace,
+        mode,
+        plot_slit,
+        store,
+        auto_recenter_crop,
+        assert_evenly_spaced,
+        verbose,
+        *args,
+        **kwargs,
+    ):
+        from scipy.interpolate import interp1d
+
+        from radis.tools.slit import convolve_with_slit, get_slit_function
+
+        w_cm = self._q["wavespace"]
+        w_nm = cm2nm(w_cm[::-1])  # increasing order
+        w_uniform = np.linspace(w_nm.min(), w_nm.max(), len(w_nm))
+
+        I_conv_slices = {}
+
+        for qns in varlist:
+            q = qns[:-7]
+            I = self._q[qns][::-1]
+
+            interp_to_nm = interp1d(w_nm, I, kind="linear", fill_value="extrapolate")
+            I_interp = interp_to_nm(w_uniform)
+
+            wslit_nm, Islit_nm = get_slit_function(
+                slit_function,
+                unit="nm",
+                norm_by=norm_by,
+                shape=shape,
+                center_wavespace=center_wavespace,
+                return_unit="nm",
+                wstep=np.diff(w_uniform).min(),
+                auto_recenter_crop=auto_recenter_crop,
+                verbose=verbose,
+                plot=plot_slit,
+                *args,
+                **kwargs,
+            )
+
+            _, I_conv_nm = convolve_with_slit(
+                w_uniform,
+                I_interp,
+                wslit_nm,
+                Islit_nm,
+                mode=mode,
+                wunit="nm",
+                verbose=verbose,
+                assert_evenly_spaced=assert_evenly_spaced,
+            )
+
+            interp_back = interp1d(
+                w_uniform, I_conv_nm, kind="linear", fill_value="extrapolate"
+            )
+            I_final = interp_back(w_nm)[::-1]
+
+            I_conv_slices[q] = [I_final]
+
+        new_units = {}
+        for q in I_conv_slices.keys():
+            qns = q + "_noslit"
+            if norm_by == "area":
+                new_units[q] = self.units[qns]
+            elif norm_by == "max":
+                new_units[q] = (Unit("nm") * Unit(self.units[qns])).to_string()
+            else:
+                raise ValueError(f"Unknown normalization type: {norm_by}")
+
+        for q in I_conv_slices.keys():
+            I_conv = np.hstack(I_conv_slices[q])
+            self._q[q] = I_conv
+            self.units[q] = new_units[q]
+
+        if store:
+            self._slit["wavespace"] = wslit_nm
+            self._slit["intensity"] = Islit_nm
+
+        self.conditions.update(
+            {
+                "slit_function": slit_function,
+                "slit_unit": "nm",
+                "slit_dispersion": None,
+                "slit_dispersion_threshold": None,
+                "slit_shape": shape,
+                "norm_by": norm_by,
+            }
+        )
+
+        return self
 
     def apply_slit(
         self,
@@ -3425,8 +3426,6 @@ class Spectrum(object):
         )
 
         # Check if dispersion is specified
-        print(f"slit_function = {slit_function}")
-        print(f"slit_dispersion = {slit_dispersion}")
         if slit_dispersion is not None:
             if waveunit == "nm":
                 w_nm = w
@@ -3440,37 +3439,6 @@ class Spectrum(object):
         else:
             slice_windows = [np.ones_like(w, dtype=bool)]
 
-        #     # Prevent invalid use of constant-width slit in nm over broad range
-        #     if isinstance(slit_function, (int, float)) and unit == "nm":
-        #         w_nm = w
-        #         wslit0_nm = wslit0
-
-        #         # Estimate the relative change in effective resolution across the spectrum.
-        #         # Spectrometer resolving power is R = lambda / delta lambda;
-        #         # if delta lambda (the slit width in nm) is constant,
-        #         # then R ~ lambda, and inverse resolving power 1/R scales as 1/lambda.
-        #         # So the relative variation in resolution is approximated by the relative variation in 1/lambda:
-        #         #     rel_error = (max(1/lambda) - min(1/lambda)) / mean(1/lambda)
-        #         # This metric is unitless and captures how much resolution varies across the range,
-        #         # indicating whether a constant-nm slit is good enough without dispersion correction.
-
-        #         reciprocal_lambda = 1 / w_nm
-        #         rel_error = (
-        #             np.max(reciprocal_lambda) - np.min(reciprocal_lambda)
-        #         ) / np.mean(reciprocal_lambda)
-        #         # TODO: Should consider more physical value
-        #         slit_resolution_variation_threshold = 0.2
-        #         if rel_error.max() > slit_resolution_variation_threshold:
-        #             raise ValueError(
-        #                 f"Invalid use of constant {slit_function} nm slit over a wide wavelength range "
-        #                 f"({w_nm[0]:.1f}–{w_nm[-1]:.1f} nm) without a slit dispersion correction.\n"
-        #                 f"The relative resolution varies by up to {rel_error.max():.2%}, exceeding the "
-        #                 f"`slit_dispersion_threshold` of {slit_dispersion_threshold:.2%}.\n"
-        #                 f"Please provide `slit_dispersion`, or reduce the spectral range."
-        #             )
-
-        # Loop over all waverange slices (needed if slit changes over the spectral range)
-
         # Create dictionary to store convolved
         I_conv_slices = {}
         for qns in varlist:
@@ -3481,26 +3449,28 @@ class Spectrum(object):
             w_conv_slices = []
             I_conv_slices[q] = []
 
-        # if unit == "nm" and waveunit == "cm-1":
-        #     # special handling for wavelength-space convolution
-        #     return self._apply_slit_nm_on_cm1(
-        #         varlist,
-        #         slit_function,
-        #         norm_by,
-        #         shape,
-        #         center_wavespace,
-        #         mode,
-        #         plot_slit,
-        #         store,
-        #         auto_recenter_crop,
-        #         assert_evenly_spaced,
-        #         verbose,
-        #         *args,
-        #         **kwargs,
-        #     )
+        if unit == "nm" and waveunit == "cm-1":
+            # special handling for wavelength-space convolution
+            # for constant nm slit
+            return self._apply_slit_nm_on_cm1(
+                varlist,
+                slit_function,
+                norm_by,
+                shape,
+                center_wavespace,
+                mode,
+                plot_slit,
+                store,
+                auto_recenter_crop,
+                assert_evenly_spaced,
+                verbose,
+                *args,
+                **kwargs,
+            )
 
         # Loop over all waverange slices (needed if slit changes over the spectral range)
         for islice, slice_window in enumerate(slice_windows):
+            print("Slice {0}/{1}".format(islice + 1, len(slice_windows)))
 
             # Scale slit
             if slit_dispersion is not None:
@@ -4611,7 +4581,7 @@ class Spectrum(object):
         # ... air2vacuum conversion in particular is quite slow, but has been
         # ... done once for all with get_wavelength() above )
 
-        for k, I in s._q.items():
+        for (k, I) in s._q.items():
             if k == "wavespace":
                 continue
             fill_with = get_filling(k)
@@ -4675,7 +4645,7 @@ class Spectrum(object):
             s = self.copy()
 
         w = s._q["wavespace"]  # wavelength or wavenumber range
-        for k, I in s._q.items():
+        for (k, I) in s._q.items():
             if k == "wavespace":
                 continue
             w_new, Inew = resample_even(
@@ -4688,7 +4658,7 @@ class Spectrum(object):
 
         return s
 
-    # %% Fonctions to fit a lineshape model
+    #%% Fonctions to fit a lineshape model
     #
 
     def fit_model(
@@ -4901,11 +4871,9 @@ class Spectrum(object):
 
             # Add units
             y_err = [
-                (
-                    mod.__getattribute__(param).unit * y_err[i]
-                    if mod.__getattribute__(param).unit
-                    else y_err[i]
-                )
+                mod.__getattribute__(param).unit * y_err[i]
+                if mod.__getattribute__(param).unit
+                else y_err[i]
                 for mod in model
                 for i, param in enumerate(mod.param_names)
             ]  # TODO refactor there is probably a better way to write it
@@ -5570,11 +5538,9 @@ class Spectrum(object):
             print(
                 " " * 2,
                 k,
-                (
-                    f"\t[{self.units[k]}]"
-                    if (k in self.units and self.units[k] != "")
-                    else ""
-                ),
+                f"\t[{self.units[k]}]"
+                if (k in self.units and self.units[k] != "")
+                else "",
                 "\t({0:,d} points{1})".format(
                     len(v),
                     ", {0} nans".format(count_nans(v)) if anynan(v) else "",
@@ -6571,7 +6537,7 @@ class Spectrum(object):
             if self.gpu_app is None:
                 raise KeyError
 
-        except KeyError:
+        except (KeyError):
             warn(
                 "GPU not initialized, spectrum.recalc_gpu() can only be called on spectrum objects produced by sf.eq_spectrum_gpu()!",
                 GPUInitWarning,
