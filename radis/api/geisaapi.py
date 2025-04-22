@@ -32,6 +32,8 @@ except ImportError:
 # from typing import Union
 from radis.api.dbmanager import DatabaseManager
 from radis.api.hdf5 import DataFileManager
+from radis.misc.config import getDatabankEntries
+from radis.misc.warning import DatabaseAlreadyExists
 
 # %% Parsing functions
 
@@ -350,6 +352,9 @@ class GEISADatabaseManager(DatabaseManager):
         self.wmax = None
         self.urlnames = None
 
+        self.actual_file = None
+        self.actual_url = None
+
     def fetch_urlnames(self):
         r"""requires connexion"""
 
@@ -431,24 +436,49 @@ class GEISADatabaseManager(DatabaseManager):
 
         return Nlines
 
-    def register(self):
+    def register(self, download_files):
         r"""register in ~/radis.json"""
 
-        local_files, urlnames = self.get_filenames()
-        info = f"GEISA {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1)"
+        if self.is_registered():
+            dict_entries = getDatabankEntries(
+                self.name
+            )  # just update previous register details
+        else:
+            dict_entries = {}
 
-        dict_entries = {
-            "info": info,
-            "path": local_files,
-            "format": "geisa-radisdb",
-            "parfuncfmt": "hapi",
-            "wavenumber_min": self.wmin,
-            "wavenumber_max": self.wmax,
-            "download_date": self.get_today(),
-            "download_url": urlnames,
-        }
+        if download_files:
+            files = [self.actual_file]
+            urls = [self.actual_url]
+            dict_entries.update(
+                {
+                    "path": files,
+                    "format": "geisa-radisdb",
+                    "download_date": self.get_today(),
+                    "download_url": urls,
+                }
+            )
+            if self.wmin and self.wmin:
+                info = f"GEISA {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1)."
+                dict_entries.update(
+                    {
+                        "info": info,
+                        "wavenumber_min": self.wmin,
+                        "wavenumber_max": self.wmax,
+                    }
+                )
 
-        super().register(dict_entries)
+        dict_entries.update(
+            {
+                "parfuncfmt": "hapi",
+            }
+        )
+
+        try:
+            super().register(dict_entries)
+        except DatabaseAlreadyExists as e:
+            raise Exception(
+                'If you want RADIS to overwrite the existing entry for a registered databank, set the config option "ALLOW_OVERWRITE" to True.'
+            ) from e
 
 
 #%%

@@ -7,7 +7,7 @@ RADIS-GPU Spectrum Calculation
 RADIS provides GPU acceleration to massively speedup spectral computations.
 It uses the Vulkan API compute pipelines to perform parallel execution of spectral calculations
 
-GPU calculations are handked by the :py:class:`~radis.gpu.gpu.gpuApp` object, which takes care of initialization,
+GPU calculations are handled by the :py:class:`~radis.gpu.gpu.gpuApp` object, which takes care of initialization,
 updating spectra, and freeing all GPU resources.
 Generally GPU computations are memory bandwidth limited, meaning the computation time of
 a single spectrum is determined by the time it takes to move the database data from host
@@ -28,13 +28,6 @@ RADIS implements two functions that expose GPU functionality:
   composition, updating the spectrum in real time. Because the database only has to be transferred
   once, the updated spectra are calculated extremely fast.
 
-By default both functions will be ran on a GPU if available. The CUDA code can also be compiled as pure
-C++, which means it can be compiled for CPU in addition to GPU.
-As a result, it ispossible to use the same GPU functions without an actual GPU by passing the
-keyword ``backend='cpu-cuda'``, which forces use of the CPU targeted compiled code. This feature is
-mostly for developers to check for errors in the CUDA code, but it can also be used for interactive
-plotting on the CPU for small spectra.
-
 GPU computation is currently only supported for equilibrium spectra. It is likely that
 non-equilibrium spectra will be supported at some point in the future.
 
@@ -45,6 +38,8 @@ Single Spectrum
 As mentioned above, the function :py:func:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`
 produces a single equilibrium spectrum using GPU acceleration. Consequent calls can then be to :py:meth:`~radis.spectrum.spectrum.Spectrum.recalc_gpu`. Below is a usage example::
 
+    from radis import SpectrumFactory
+
     sf = SpectrumFactory(
         2100,
         2400,  # cm-1
@@ -53,7 +48,9 @@ produces a single equilibrium spectrum using GPU acceleration. Consequent calls 
         wstep=0.002,
     )
 
-    sf.fetch_databank("hitemp")
+    sf.fetch_databank("hitran") #for a fast demonstration
+    # sf.fetch_databank("hitemp", "2010") #for an accurate high-temperature demonstration
+    # sf.fetch_databank("hitemp") #latest hitemp version, slow download and parsing
 
     T_list = [1000.0, 1500.0, 2000.0]
 
@@ -89,6 +86,8 @@ Another one is interactive plotting, which can be done by calling
 :py:func:`~radis.lbl.factory.eq_spectrum_gpu_interactive()`. A usage example is shown below::
 
     from radis.tools.plot_tools import ParamRange
+    from radis import SpectrumFactory
+
     sf = SpectrumFactory(
         2100,
         2400,  # cm-1
@@ -97,7 +96,7 @@ Another one is interactive plotting, which can be done by calling
         wstep=0.002,
     )
 
-    sf.fetch_databank("hitemp")
+    sf.fetch_databank("hitran")
 
     s = sf.eq_spectrum_gpu_interactive(
         var="radiance",
@@ -105,7 +104,7 @@ Another one is interactive plotting, which can be done by calling
         pressure=ParamRange(0.1, 2, 1),  # bar
         mole_fraction=ParamRange(0, 1, 0.8),
         path_length=ParamRange(0, 1, 0.2),  # cm
-        slit_FWHM=ParamRange(0, 1.5, 0.24),  # cm-1
+        slit_function=ParamRange(0, 1.5, 0.24),  # cm-1
         plotkwargs={"nfig": "same", "wunit": "nm"},
     )
 

@@ -8,15 +8,12 @@ Created on Sun Aug 22 13:34:42 2020
 
 """
 #%%
-import warnings
-
 import pytest
 from numpy import allclose
 
 import radis
 from radis import SpectrumFactory, get_residual
 from radis.misc.printer import printm
-from radis.misc.warning import NoGPUWarning
 from radis.test.utils import getTestFile
 
 
@@ -84,17 +81,17 @@ def test_eq_spectrum_gpu(device_id=0, verbose=False, plot=False, *args, **kwargs
         s_cpu.print_perf_profile()
 
 
-@pytest.mark.needs_cuda
-def test_eq_spectrum_gpu_nvidia(plot=False, *args, **kwargs):
-    """Compare Spectrum calculated in the GPU code
-    :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu` to Spectrum
-    calculated with the CPU code :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum`,
-    specifically using an Nvidia GPU.
-    """
-    # Ensure that GPU is not deactivated (which triggers a NoGPUWarning)
-    with warnings.catch_warnings():
-        warnings.simplefilter("error", category=NoGPUWarning)
-        test_eq_spectrum_gpu(device_id="nvidia", plot=plot, *args, **kwargs)
+# @pytest.mark.needs_cuda
+# def test_eq_spectrum_gpu_nvidia(plot=False, *args, **kwargs):
+# """Compare Spectrum calculated in the GPU code
+# :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu` to Spectrum
+# calculated with the CPU code :py:func:`radis.lbl.factory.SpectrumFactory.eq_spectrum`,
+# specifically using an Nvidia GPU.
+# """
+# # Ensure that GPU is not deactivated (which triggers a NoGPUWarning)
+# with warnings.catch_warnings():
+# warnings.simplefilter("error", category=NoGPUWarning)
+# test_eq_spectrum_gpu(device_id="nvidia", plot=plot, *args, **kwargs)
 
 
 @pytest.mark.fast

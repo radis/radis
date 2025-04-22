@@ -21,7 +21,6 @@
 radis/test/test.nfig
 radis/test/*.png
 radis/test/validation/*.png
-radis/gpu/vulkan/test_data
 .pytest_cache/*
 
 # Byte-compiled / optimized / DLL files
@@ -35,13 +34,11 @@ __pycache__/
 
 # C extensions
 *.so
-!radis/gpu/cuda/build/*.so
 !radis/gpu/vulkan/bin/*.so
 # Distribution / packaging
 .Python
 env/
 build/
-!radis/gpu/cuda/build/
 develop-eggs/
 develop-tests/
 dist/
