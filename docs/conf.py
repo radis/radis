@@ -53,6 +53,9 @@ sphinx_gallery.gen_rst.EXAMPLE_HEADER = """
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath(".."))
 
+# Debugging: Print sys.path to verify module import paths during ReadTheDocs build
+print("sys.path:", sys.path)
+
 
 # %% ------------------------------------
 # Added EP 2018:
