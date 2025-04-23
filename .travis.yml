@@ -79,7 +79,7 @@ stages: #This sequence defines the order of the stages
   - name: lint
     if: branch = master OR branch = develop
   - name: deploy
-    if: branch = master
+    if: branch = master OR branch = develop
 
 jobs:
   include:
