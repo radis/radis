@@ -148,7 +148,7 @@ jobs:
         # - twine upload dist/* --repository testpypi #test-pypi
         - sudo apt-get install pandoc
         - pandoc README.rst -o README.md
-        - twine upload dist/* --repository testpypi --verbose --config-file .\.pypirc
+        - twine upload dist/* --repository testpypi --verbose --config-file .pypirc
       deploy:
         provider: pypi
         # server: https://testpypi.python.org/pypi # Remove for deployment to official PyPi repo
