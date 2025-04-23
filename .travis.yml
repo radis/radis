@@ -77,7 +77,7 @@ stages: #This sequence defines the order of the stages
   # - name: MacOS_py310
   #   if: branch = master
   - name: lint
-    if: branch = master OR branch = develop
+    if: branch = master #OR branch = develop
   - name: deploy
     if: branch = master OR branch = develop
 
@@ -142,21 +142,21 @@ jobs:
         - source ~/.bashrc
         - micromamba activate base
       before_script:
-        - pip install build
+        - pip install build twine
         - python -m build --sdist --wheel
       script:
         # - twine upload dist/* --repository testpypi #test-pypi
-        - twine upload dist/* --repository radis
-      before_deploy:
         - sudo apt-get install pandoc
         - pandoc README.rst -o README.md
+        - twine upload dist/* --repository radis
       deploy:
         provider: pypi
         server: https://testpypi.python.org/pypi # Remove for deployment to official PyPi repo
         user: "__token__"
-        password:
-          # secure: dxZOpuKL1ezk3MM5FgY89zJYNL484x0jUZ+c3IB5q2GjpWl6qmCogoWG37iGZIcmldeIdVzga3pj5CC32eht4B0hJQX5QLVjCq9wwpfLs7Tkj4ODiAzvOchSLhfBOSLOIX33iW/+wxDjZ3fG61TzPI1z3ksdNh7+imdVYiV+G4FmOcxJKjFEgGm7CAwfbxso47ab9jbgm6FHbCC7HfpSiSrMpyIDSorJFk5XR11+Hoe6JjbKr11eeWuoO8EXKvSQeeJpsu0minqFyAy8nf9af/aU3NJU1LOlFM1DuoYlpQKwnbop5lBodU28zt4Asa1h8lp8Zu+wZSIaZSOeEoC6U/H/5zAE03W8SytWyWgNEtwuYLSiWacbOzeZOclVRoNu4P6Fz9hFdZuSANQlSQN7cBYFJiA8cbJDU4nb3srFoKlBLxCH9ZC3/K7rnZpjPmy7A35plNf+1dAEpB6adiWwsGy/VwCywHyJsBq7N3z6lN9wZ2SUPekl4y/sLobYPqg8y48u4bMqfd05Ub1QDUB3MSNALMa+OcczJvxNHZj+Bk4ooai/t/GOMOWNyy78VES7S/J77cWUheq+mW80ywCS8gcyF6ARR4EJxJGwp4q2RHwGdVvxbzc/uaKgi6I1bmLRw4cjJvOXx5ulLdANUftfMg4ATW/VAFqYLrdS/LpGX5A= #real
-          secure: pypi-AgENdGVzdC5weXBpLm9yZwIkNTc0YzM3MmYtZWE2My00OTI1LWJlNzctYjU2NmU2Y2M4ZmM3AAINWzEsWyJyYWRpcyJdXQACLFsyLFsiNTBkMzc5MGUtZDVmMC00NDEzLThjNGEtZGVmMzI4MjVhYjAxIl1dAAAGIN3R86sRd9GJ2vHFeUziKdyOeFvtF9D_CjX89HkfVlZe #test-pypi
+        # password:
+        #   secure: dxZOpuKL1ezk3MM5FgY89zJYNL484x0jUZ+c3IB5q2GjpWl6qmCogoWG37iGZIcmldeIdVzga3pj5CC32eht4B0hJQX5QLVjCq9wwpfLs7Tkj4ODiAzvOchSLhfBOSLOIX33iW/+wxDjZ3fG61TzPI1z3ksdNh7+imdVYiV+G4FmOcxJKjFEgGm7CAwfbxso47ab9jbgm6FHbCC7HfpSiSrMpyIDSorJFk5XR11+Hoe6JjbKr11eeWuoO8EXKvSQeeJpsu0minqFyAy8nf9af/aU3NJU1LOlFM1DuoYlpQKwnbop5lBodU28zt4Asa1h8lp8Zu+wZSIaZSOeEoC6U/H/5zAE03W8SytWyWgNEtwuYLSiWacbOzeZOclVRoNu4P6Fz9hFdZuSANQlSQN7cBYFJiA8cbJDU4nb3srFoKlBLxCH9ZC3/K7rnZpjPmy7A35plNf+1dAEpB6adiWwsGy/VwCywHyJsBq7N3z6lN9wZ2SUPekl4y/sLobYPqg8y48u4bMqfd05Ub1QDUB3MSNALMa+OcczJvxNHZj+Bk4ooai/t/GOMOWNyy78VES7S/J77cWUheq+mW80ywCS8gcyF6ARR4EJxJGwp4q2RHwGdVvxbzc/uaKgi6I1bmLRw4cjJvOXx5ulLdANUftfMg4ATW/VAFqYLrdS/LpGX5A= #real
+        password: pypi-AgENdGVzdC5weXBpLm9yZwIkNTc0YzM3MmYtZWE2My00OTI1LWJlNzctYjU2NmU2Y2M4ZmM3AAINWzEsWyJyYWRpcyJdXQACLFsyLFsiNTBkMzc5MGUtZDVmMC00NDEzLThjNGEtZGVmMzI4MjVhYjAxIl1dAAAGIN3R86sRd9GJ2vHFeUziKdyOeFvtF9D_CjX89HkfVlZe #test-pypi
+
         skip_existing: true
         distributions: "sdist bdist_wheel"
       after_deploy:
