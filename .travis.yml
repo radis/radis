@@ -143,12 +143,13 @@ jobs:
         - micromamba activate base
       before_script:
         - pip install build twine
-        - python -m build --sdist --wheel
       script:
-        # - twine upload dist/* --repository testpypi #test-pypi
+        - echo "Building distribution packages"
+        - python -m build --sdist --wheel
+        - ls -la dist/
+      before_deploy:
         - sudo apt-get install pandoc
         - pandoc README.rst -o README.md
-        - twine upload dist/* --repository testpypi --verbose --config-file .pypirc
       deploy:
         provider: pypi
         # server: https://testpypi.python.org/pypi # Remove for deployment to official PyPi repo
@@ -158,7 +159,12 @@ jobs:
         # password: pypi-AgENdGVzdC5weXBpLm9yZwIkNTc0YzM3MmYtZWE2My00OTI1LWJlNzctYjU2NmU2Y2M4ZmM3AAINWzEsWyJyYWRpcyJdXQACLFsyLFsiNTBkMzc5MGUtZDVmMC00NDEzLThjNGEtZGVmMzI4MjVhYjAxIl1dAAAGIN3R86sRd9GJ2vHFeUziKdyOeFvtF9D_CjX89HkfVlZe #test-pypi
 
         skip_existing: true
-        distributions: "sdist bdist_wheel"
+        distributions: "skip"  # Important: skip default sdist build
+        skip_cleanup: true    # Don't delete the dist/ directory
+        on:
+          tags: true
+          repo: radis/radis
+          branch: master
       after_deploy:
       - VERSION_RADIS=$(cat radis/__version__.txt)
       - pip install radis==$VERSION_RADIS
