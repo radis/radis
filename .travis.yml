@@ -69,17 +69,17 @@ stages: #This sequence defines the order of the stages
   - name: Py39
     if: branch = master
   - name: Py311
-    if: branch = master #OR branch = develop
+    if: branch = master OR branch = develop
   - name: Py310
-    if: branch = master #OR branch = develop
+    if: branch = master OR branch = develop
   - name: Py312
     if: branch = master
   # - name: MacOS_py310
   #   if: branch = master
   - name: lint
-    if: branch = master #OR branch = develop
-  - name: deploy
     if: branch = master OR branch = develop
+  - name: deploy
+    if: branch = master
 
 jobs:
   include:
