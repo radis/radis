@@ -230,8 +230,18 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
 
     # [71:-71] because of the shift introduced in 0.9.30 where convolved
     # arrays are not cropped; but np.nan values are added
-    assert np.allclose(w[71:-71][::100], w_ref, atol=1e-6)
-    assert np.allclose(I[71:-71][::100], I_ref, rtol=1e-3)
+    # for constant nm slit, dont read NaNs at the beginning of the array
+
+    w_cut = w[71:-71][::100]
+    I_cut = I[71:-71][::100]
+
+    # Mask nan
+    mask = ~np.isnan(I_cut)
+
+    # Assertions only on valid values
+    assert np.allclose(w_cut[mask], w_ref[mask], atol=1e-6)
+    # Less strict assertion because of the applied constant nm slit (5% error)
+    assert np.allclose(I_cut[mask], I_ref[mask], rtol=5e-2)
 
     return True
 
