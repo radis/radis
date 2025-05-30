@@ -1532,14 +1532,28 @@ class MdbExomol(DatabaseManager):
                     output=output,
                 )
                 self.alpha_ref = (
-                    np.array(jj2alpha_ref[df["jlower"].values.astype(int), df["jupper"].values.astype(int)])
+                    np.array(
+                        jj2alpha_ref[
+                            df["jlower"].values.astype(int),
+                            df["jupper"].values.astype(int),
+                        ]
+                    )
                     if self.engine != "vaex"
-                    else jj2alpha_ref[df["jlower"].values.astype(int), df["jupper"].values.astype(int)]
+                    else jj2alpha_ref[
+                        df["jlower"].values.astype(int), df["jupper"].values.astype(int)
+                    ]
                 )
                 self.n_Texp = (
-                    np.array(jj2n_Texp[df["jlower"].values.astype(int), df["jupper"].values.astype(int)])
+                    np.array(
+                        jj2n_Texp[
+                            df["jlower"].values.astype(int),
+                            df["jupper"].values.astype(int),
+                        ]
+                    )
                     if self.engine != "vaex"
-                    else jj2n_Texp[df["jlower"].values.astype(int), df["jupper"].values.astype(int)]
+                    else jj2n_Texp[
+                        df["jlower"].values.astype(int), df["jupper"].values.astype(int)
+                    ]
                 )
             elif codelv == "m0":
 
