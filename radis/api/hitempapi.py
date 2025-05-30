@@ -764,11 +764,10 @@ class HITEMPDatabaseManager(DatabaseManager):
 
                 df = _ndarray2df(b, columns, linereturnformat, molecule=self.molecule)
 
-                # 19722
                 if molecule == "CO2":
                     df["iso"] = (
-                        df["iso"].replace({"A": 10, "B": 11, "C": 12}).astype(int)
-                    )  # in HITEMP2024, isotopologue 10, 11, 12 are A, B, C.
+                        df["iso"].replace({"0": 10, "A": 11, "B": 12}).astype(int)
+                    )  # in HITEMP2024, isotopologue 10, 11, 12 are 0, A, B. See Table 4 of Hargreaves et al. (2024)
 
                 # Post-processing :
                 # ... Add local quanta attributes, based on the HITRAN group
