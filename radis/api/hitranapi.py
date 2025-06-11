@@ -197,6 +197,9 @@ def hit2df(
     parse_quanta: bool
         if ``True``, parse local & global quanta (required to identify lines
         for non-LTE calculations ; but sometimes lines are not labelled.)
+    fast_parsing: bool
+        if ``True``, uses vectorized parsing instead of regex for global quanta.
+        Default ``True``.
     output : str
         output format of data as pandas Dataformat or vaex Dataformat
 
@@ -278,7 +281,7 @@ def hit2df(
         molecule=mol,
         dataframe_type=output,
         parse_quanta=parse_quanta,
-        fast_parsing_parsing=fast_parsing,
+        fast_parsing=fast_parsing,
     )
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:
@@ -330,7 +333,7 @@ def post_process_hitran_data(
     parse_quanta=True,
     add_HITRAN_uncertainty_code=False,
     dataframe_type="pandas",
-    fast_parsing=False,
+    fast_parsing=True,
 ):
     """Parsing non-equilibrium parameters in HITRAN/HITEMP [1]_ file to and return final Pandas Dataframe
 
@@ -354,8 +357,11 @@ def post_process_hitran_data(
         for non-LTE calculations ; but sometimes lines are not labelled.)
     add_HITRAN_uncertainty_code: bool
         if ``True``, a column which contains HITRAN uncertainty code is converted to integer and not dropped.
-    engine: str
+    dataframe_type: str
         pandas or vaex
+    fast_parsing: bool
+        if ``True``, uses vectorized parsing instead of regex for global quanta.
+        Default ``True``.
 
     Returns
     -------
@@ -784,7 +790,41 @@ def _parse_HITRAN_class5(df, verbose=True, dataframe_type="pandas"):
 
 
 def _parse_HITRAN_class6_fast_parsing(df, verbose=True, dataframe_type="pandas"):
+    r"""Parse non-linear triatomic in HITRAN [1]_: H2O, O3, SO2, NO2, HOCl, H2S, HO2, HOBr
 
+    Parameters
+    ----------
+
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+    dataframe_type : str
+        pandas or vaex
+
+    Returns
+    -------
+        pandas Dataframe or Vaex Dataframe
+    Notes
+    -----
+
+    This function is a fast parsing version that does not use regular expressions.
+    This makes it faster but less flexible. Currently, it behaves the same as the
+    equivalent regex version.
+
+    Added in PR #826.
+
+    HITRAN syntax:
+
+    >>>     v1 v2 v3
+    >>>  9x I2 I2 I2
+
+    Note: I2 in regexp: [\d ]{2}
+
+    References
+    ----------
+
+    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
+
+    """
     _GLOBU_SLICES = {
         "v1u": (9, 11),
         "v2u": (11, 13),
@@ -1036,7 +1076,40 @@ def _parse_HITRAN_class10(df, verbose=True):
 
 
 def _parse_HITRAN_group1_fast_parsing(df, verbose=True, dataframe_type="pandas"):
+    r"""Parse asymmetric rotors (:py:attr:`~radis.db.classes.HITRAN_GROUP1` ):
+    H2O, O3, SO2, NO2, HNO3, H2CO, HOCl, H2O2, COF2, H2S, HO2, HCOOH, ClONO2, HOBr, C2H4
 
+    Parameters
+    ----------
+
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+    dataframe_type : str
+        pandas or vaex
+
+    Returns
+    -------
+        pandas Dataframe or Vaex Dataframe
+
+
+    Notes
+    -----
+
+    This function is a fast parsing version that does not use regular expressions.
+    This makes it faster but less flexible. Currently, it behaves the same as the
+    equivalent regex version.
+
+    Added in PR #826.
+
+    HITRAN syntax: [1]_
+
+    References
+    ----------
+
+    .. [1] `Table 4 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
+
+
+    """
     _LOCU_SLICES = {
         "ju": (0, 3),
         "Kau": (3, 6),
@@ -1413,7 +1486,7 @@ def _parse_HITRAN_group6(df, verbose=True):
 
 
 def parse_local_quanta(
-    df, mol, verbose=True, dataframe_type="pandas", fast_parsing=False
+    df, mol, verbose=True, dataframe_type="pandas", fast_parsing=True
 ):
     r"""
     Parameters
@@ -1454,7 +1527,7 @@ def parse_local_quanta(
 
 
 def parse_global_quanta(
-    df, mol, verbose=True, dataframe_type="pandas", fast_parsing=False
+    df, mol, verbose=True, dataframe_type="pandas", fast_parsing=True
 ):
     r"""
 
