@@ -166,7 +166,7 @@ def hit2df(
     engine="pytables",
     output="pandas",
     parse_quanta=True,
-    Fast=True,
+    fast_parsing=True,
 ):
     """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe
 
@@ -278,7 +278,7 @@ def hit2df(
         molecule=mol,
         dataframe_type=output,
         parse_quanta=parse_quanta,
-        Fast=Fast,
+        fast_parsing_parsing=fast_parsing,
     )
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:
@@ -330,7 +330,7 @@ def post_process_hitran_data(
     parse_quanta=True,
     add_HITRAN_uncertainty_code=False,
     dataframe_type="pandas",
-    Fast=False,
+    fast_parsing=False,
 ):
     """Parsing non-equilibrium parameters in HITRAN/HITEMP [1]_ file to and return final Pandas Dataframe
 
@@ -415,7 +415,11 @@ def post_process_hitran_data(
         # Add local quanta attributes, based on the HITRAN group
         try:
             df = parse_local_quanta(
-                df, molecule, verbose=verbose, dataframe_type=dataframe_type, Fast=Fast
+                df,
+                molecule,
+                verbose=verbose,
+                dataframe_type=dataframe_type,
+                fast_parsing=fast_parsing,
             )
         except ValueError as err:
             # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
@@ -431,7 +435,11 @@ def post_process_hitran_data(
         # Add global quanta attributes, based on the HITRAN class
         try:
             df = parse_global_quanta(
-                df, molecule, verbose=verbose, dataframe_type=dataframe_type, Fast=Fast
+                df,
+                molecule,
+                verbose=verbose,
+                dataframe_type=dataframe_type,
+                fast_parsing=fast_parsing,
             )
         except ValueError as err:
             # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
@@ -775,7 +783,7 @@ def _parse_HITRAN_class5(df, verbose=True, dataframe_type="pandas"):
         return df
 
 
-def _parse_HITRAN_class6_fast(df, verbose=True, dataframe_type="pandas"):
+def _parse_HITRAN_class6_fast_parsing(df, verbose=True, dataframe_type="pandas"):
 
     _GLOBU_SLICES = {
         "v1u": (9, 11),
@@ -1027,7 +1035,7 @@ def _parse_HITRAN_class10(df, verbose=True):
 # %% HITRAN Local quanta
 
 
-def _parse_HITRAN_group1_fast(df, verbose=True, dataframe_type="pandas"):
+def _parse_HITRAN_group1_fast_parsing(df, verbose=True, dataframe_type="pandas"):
 
     _LOCU_SLICES = {
         "ju": (0, 3),
@@ -1404,7 +1412,9 @@ def _parse_HITRAN_group6(df, verbose=True):
 # %% Reading function
 
 
-def parse_local_quanta(df, mol, verbose=True, dataframe_type="pandas", Fast=False):
+def parse_local_quanta(
+    df, mol, verbose=True, dataframe_type="pandas", fast_parsing=False
+):
     r"""
     Parameters
     ----------
@@ -1416,8 +1426,8 @@ def parse_local_quanta(df, mol, verbose=True, dataframe_type="pandas", Fast=Fals
     """
 
     if mol in HITRAN_GROUP1:
-        if Fast:
-            df = _parse_HITRAN_group1_fast(
+        if fast_parsing:
+            df = _parse_HITRAN_group1_fast_parsing(
                 df, verbose=verbose, dataframe_type=dataframe_type
             )
         else:
@@ -1443,7 +1453,9 @@ def parse_local_quanta(df, mol, verbose=True, dataframe_type="pandas", Fast=Fals
     return df
 
 
-def parse_global_quanta(df, mol, verbose=True, dataframe_type="pandas", Fast=False):
+def parse_global_quanta(
+    df, mol, verbose=True, dataframe_type="pandas", fast_parsing=False
+):
     r"""
 
     Parameters
@@ -1466,8 +1478,8 @@ def parse_global_quanta(df, mol, verbose=True, dataframe_type="pandas", Fast=Fal
     elif mol in HITRAN_CLASS5:
         df = _parse_HITRAN_class5(df, verbose=verbose, dataframe_type=dataframe_type)
     elif mol in HITRAN_CLASS6:
-        if Fast:
-            df = _parse_HITRAN_class6_fast(
+        if fast_parsing:
+            df = _parse_HITRAN_class6_fast_parsing(
                 df, verbose=verbose, dataframe_type=dataframe_type
             )
         else:
