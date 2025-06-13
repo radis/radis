@@ -693,7 +693,7 @@ if __name__ == "__main__":
 
     # import radis
 
-    # s = radis.test_spectrum()
+    # s = radis.spectrum_test()
     # assert s.c["default_output_unit"] == "cm-1"
 
     # assert (s.get("abscoeff")[0] == s.get_wavenumber()).all()

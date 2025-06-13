@@ -147,7 +147,7 @@ def _build_update_graph(
     Try it ::
 
         import radis
-        s = radis.test_spectrum()
+        s = radis.spectrum_test()
         _build_update_graph(s)
 
     Outputs ::
@@ -2594,7 +2594,7 @@ if __name__ == "__main__":
 
         import radis
 
-        s = radis.test_spectrum()
+        s = radis.spectrum_test()
         s.update("all")
         assert set(s.get_vars()) == set(
             [

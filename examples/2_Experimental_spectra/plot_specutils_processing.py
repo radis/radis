@@ -17,12 +17,12 @@ noisy region, then determine the lines using :py:func:`~specutils.fitting.find_l
 import astropy.units as u
 import numpy as np
 
-from radis import test_spectrum
+from radis import spectrum_test
 
 """ We create a synthetic CO spectrum"""
 
 s = (
-    test_spectrum(molecule="CO", wavenum_min=2000, wavenum_max=2030)
+    spectrum_test(molecule="CO", wavenum_min=2000, wavenum_max=2030)
     .apply_slit(1.5, "nm")
     .take("radiance")
 )
