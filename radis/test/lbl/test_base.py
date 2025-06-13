@@ -199,8 +199,6 @@ def test_export_rovib_fractions(
     assert hasattr(s.lines, "nu_rot")
     assert hasattr(s.lines, "nl_rot")
 
-    return True
-
 
 @pytest.mark.fast
 def test_populations_CO2_hamiltonian(
@@ -272,8 +270,6 @@ def test_populations_CO2_hamiltonian(
 
     # TODO. Fix below (and move in dedicated test):
     #    s.line_survey()
-
-    return True
 
 
 # @pytest.mark.needs_connection

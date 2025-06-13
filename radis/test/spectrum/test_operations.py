@@ -64,8 +64,6 @@ def test_crop(verbose=True, *args, **kwargs):
 
     print("Crop test cases passed successfully.")
 
-    return True
-
 
 @pytest.mark.fast
 def test_cut_recombine(verbose=True, *args, **kwargs):

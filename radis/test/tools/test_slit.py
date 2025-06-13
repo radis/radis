@@ -462,8 +462,6 @@ def test_slit_energy_conservation(
 
     assert np.isclose(P, Pc, 3e-2)
 
-    return True
-
 
 # Function used to test Slit dispersion
 
