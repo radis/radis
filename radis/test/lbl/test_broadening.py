@@ -1148,8 +1148,6 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
     test_non_air_diluent(verbose=verbose, plot=plot, *args, **kwargs)
     test_diluents_molefraction(verbose=verbose, plot=plot, *args, **kwargs)
 
-    return True
-
 
 if __name__ == "__main__":
 

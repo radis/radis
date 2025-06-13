@@ -244,8 +244,6 @@ def _run_testcases(verbose=True, *args, **kwargs):
     test_calc_hitran_spectrum(*args, **kwargs)
     test_pytable_vs_vaex(verbose=verbose)
 
-    return True
-
 
 if __name__ == "__main__":
     print("test_query.py: ", _run_testcases(verbose=True))

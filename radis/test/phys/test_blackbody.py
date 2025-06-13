@@ -100,8 +100,6 @@ def test_planck_nm(verbose=True, plot=True, *args, **kwargs):
     )  # higher tolerance because of numerical error
     # during conversion Iunit_per_nm to Iunit_per_cm
 
-    return True
-
 
 def test_planck_cm(verbose=True, plot=True, *args, **kwargs):
     """Validate Planck calculation with wavenumber
@@ -172,8 +170,6 @@ def test_planck_cm(verbose=True, plot=True, *args, **kwargs):
         plt.ylabel("Radiance (mW/m2/cm-1)")
         plt.xlabel("Wavenumber (cm-1)")
 
-    return True
-
 
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     """Test procedures
@@ -191,8 +187,6 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     test_exceptions()
     test_planck_nm(verbose=verbose, plot=plot, *args, **kwargs)
     test_planck_cm(verbose=verbose, plot=plot, *args, **kwargs)
-
-    return True
 
 
 if __name__ == "__main__":
