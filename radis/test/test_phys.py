@@ -109,8 +109,6 @@ def test_convert(verbose=True, *args, **kwargs):
     assert isclose(1 / hz2cm(1e9), 30, atol=0.1)  # 1 Ghz is about 30 cm
     assert hz2cm(cm2hz(600)) == 600
 
-    return True
-
 
 @pytest.mark.fast
 def test_units(verbose=True, *args, **kwargs):
@@ -138,15 +136,11 @@ def test_units(verbose=True, *args, **kwargs):
     with pytest.raises(TypeError):
         conv2(1, "mW/cm**2/sr/nm", "mW/cm**2/nm")
 
-    return True
-
 
 def _run_testcases(*args, **kwargs):
 
     assert test_convert(*args, **kwargs)
     assert test_units(*args, **kwargs)
-
-    return True
 
 
 if __name__ == "__main__":

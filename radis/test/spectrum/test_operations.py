@@ -373,8 +373,6 @@ def _run_testcases(verbose=True, plot=False, *args, **kwargs):
     test_get_baseline(plot=plot, *args, **kwargs)
     test_resample_even()
 
-    return True
-
 
 if __name__ == "__main__":
 

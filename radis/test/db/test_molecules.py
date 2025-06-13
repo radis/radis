@@ -53,8 +53,6 @@ def test_getMolecule(verbose=True, *args, **kwargs):
     #        print('------------\n')
     #    S.get_ref('Erovib')
 
-    return True
-
 
 # Test defined in neq 0.9.24. Deactivated in the move to RADIS 1.0
 # @pytest.mark.fast       # this is a fast test. Run fast tests only with 'pytest -m fast'
@@ -122,8 +120,6 @@ def _run_testcases(verbose=True, *args, **kwargs):
     test_getMolecule(verbose=verbose, *args, **kwargs)
     test_ZPE(verbose=verbose, *args, **kwargs)
     #    test_CO_energies_Herzberg_vs_Dunham(verbose=verbose, *args, **kwargs)
-
-    return True
 
 
 if __name__ == "__main__":
