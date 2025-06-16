@@ -417,10 +417,14 @@ class DatabaseManager(object):
 
             # Download file with requests
             try:
-                # Get session from HITEMP API
-                from radis.api.hitempapi import login_to_hitran
 
-                session = login_to_hitran(verbose=verbose)
+                if "hitemp" in self.local_databases:
+                    # Get session from HITEMP API
+                    from radis.api.hitempapi import login_to_hitran
+
+                    session = login_to_hitran(verbose=verbose)
+                else:
+                    session = requests.Session()
 
                 # Set headers to indicate we want the actual file
                 headers = {
