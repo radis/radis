@@ -113,8 +113,6 @@ def test_all_slit_shapes(
     if verbose:
         print("\n>>> _test_all_slits yield correct FWHM (+- wstep) : OK\n")
 
-    return True  # nothing defined yet
-
 
 @pytest.mark.fast
 def test_slit_unit_conversions_spectrum_in_cm(
@@ -356,8 +354,6 @@ def test_against_specair_convolution(
     if verbose:
         print("\n>>>Testing spectrum slit matches Specair: OK")
 
-    return True
-
 
 @pytest.mark.fast
 def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **kwargs):
@@ -427,8 +423,6 @@ def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **
             )
         )
 
-    return True
-
 
 @pytest.mark.fast
 def test_slit_energy_conservation(
@@ -467,8 +461,6 @@ def test_slit_energy_conservation(
         plt.tight_layout()
 
     assert np.isclose(P, Pc, 3e-2)
-
-    return True
 
 
 # Function used to test Slit dispersion
@@ -574,8 +566,6 @@ def test_linear_dispersion_effect(
         plt.legend(loc="best", prop={"size": 15})
         fix_style()
 
-    return True
-
 
 @pytest.mark.fast
 def test_cut_slices(verbose=True, plot=True, close_plots=True, *args, **kwargs):
@@ -620,8 +610,6 @@ def test_cut_slices(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     assert len(slices) == 8
     slices = _cut_slices(w[::-1], w_slit, linear_dispersion, threshold)
     assert len(slices) == 8
-
-    return True
 
 
 @pytest.mark.fast
@@ -678,7 +666,6 @@ def test_auto_correct_dispersion(
     assert np.isclose(
         s.take("radiance").max() / (s2.take("radiance").max()), 1.183, atol=0.001
     )
-    return True
 
 
 @pytest.mark.fast
@@ -835,8 +822,6 @@ def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):
     test_convoluted_quantities_units(*args, **kwargs)
 
     test_resampling(plot=plot, verbose=verbose, *args, **kwargs)
-
-    return True
 
 
 if __name__ == "__main__":

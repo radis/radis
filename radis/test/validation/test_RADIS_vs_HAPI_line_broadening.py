@@ -205,7 +205,7 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
             )
         )
 
-    return b
+    assert b
 
 
 if __name__ == "__main__":

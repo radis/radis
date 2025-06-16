@@ -167,11 +167,11 @@ def test_calc_hitran_spectrum(verbose=True, plot=False, *args, **kwargs):
     Test full range & partial loading of CO spectrum
     """
 
-    from radis import test_spectrum
+    from radis import spectrum_test
 
     # The main thing here is to make sure the two function calls work :
-    s = test_spectrum(databank=("hitran", "full"), name="full range", verbose=verbose)
-    s2 = test_spectrum(
+    s = spectrum_test(databank=("hitran", "full"), name="full range", verbose=verbose)
+    s2 = spectrum_test(
         databank=("hitran", "range"), name="partial range", verbose=verbose
     )
 
@@ -243,8 +243,6 @@ def _run_testcases(verbose=True, *args, **kwargs):
     test_fetch_hitran(*args, **kwargs)
     test_calc_hitran_spectrum(*args, **kwargs)
     test_pytable_vs_vaex(verbose=verbose)
-
-    return True
 
 
 if __name__ == "__main__":

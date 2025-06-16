@@ -204,8 +204,7 @@ def test_validation_vs_specair(rtol=1e-2, verbose=True, plot=False, *args, **kwa
         if article_version:
             plt.savefig("out/test_validation_vs_specair_noneqCO_Tvib300_Trot2000.png")
             plt.savefig("out/test_validation_vs_specair_noneqCO_Tvib300_Trot2000.pdf")
-
-    return bool(b1 * b2)
+    assert not bool(b1 * b2)
 
 
 if __name__ == "__main__":

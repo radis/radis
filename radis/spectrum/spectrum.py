@@ -1755,7 +1755,7 @@ class Spectrum(object):
 
             # preparing a test spectrum :
             import radis
-            s = radis.test_spectrum()
+            s = radis.spectrum_test()
 
             # rescaling :
             import astropy.units as u
@@ -2722,7 +2722,7 @@ class Spectrum(object):
             #%% CO2 example
             # For instance, plot populations of a given vibrational level, v1,v2,v3=(0,1,0)
             import radis
-            s = radis.test_spectrum(molecule="CO2", Tvib=3000, Trot=1000,
+            s = radis.spectrum_test(molecule="CO2", Tvib=3000, Trot=1000,
                                     export_lines=True,
                                     export_populations="rovib",
                                     isotope=1)
@@ -3529,7 +3529,7 @@ class Spectrum(object):
         --------
         ::
 
-            s = radis.test_spectrum()
+            s = radis.spectrum_test()
             s.apply_slit((0.4, 0.6), "nm")  # add trapezoidal slit function
             s.plot_slit()   # plot the slit function that was applied
 
@@ -3829,13 +3829,13 @@ class Spectrum(object):
         --------
         Get pressure (as float, non dimensioned) in Pascal::
 
-            s = radis.test_spectrum()
+            s = radis.spectrum_test()
             pressure_Pa, _ = s.get_condition("pressure", "Pa", return_unit=True)
 
         Get pressure and convert it to a dimensioned value::
 
             from radis.phys.units import Unit as u
-            s = radis.test_spectrum()
+            s = radis.spectrum_test()
             pressure_value, pressure_unit = s.get_condition("pressure", return_unit=True)
             pressure = pressure_value * u(pressure_unit)
 
@@ -3891,12 +3891,12 @@ class Spectrum(object):
         --------
         ::
 
-            s = radis.test_spectrum()
+            s = radis.spectrum_test()
             s.print_conditions()
 
         You can also simply print the Spectrum object directly::
 
-            s = radis.test_spectrum()
+            s = radis.spectrum_test()
             print(s)
 
         Both syntaxes above will return (in radis==0.15)::
@@ -4578,14 +4578,14 @@ class Spectrum(object):
         ::
 
             from astropy.modeling import models
-            s = radis.test_spectrum().crop(2201.7, 2205.1)
+            s = radis.spectrum_test().crop(2201.7, 2205.1)
             g_fit, y_err = s.fit_model(models.Lorentz1D(), plot=True)
 
         Example with 6 Voigt lines:
         ::
 
             from astropy.modeling import models
-            s = radis.test_spectrum().crop(2201.7, 2225.1)
+            s = radis.spectrum_test().crop(2201.7, 2225.1)
             g_fit_list, y_err = s.fit_model([models.Voigt1D() for _ in range(6)], plot=True)
 
         Other Examples
@@ -5549,7 +5549,7 @@ class Spectrum(object):
         --------------
         Get max position ``wmax`` ::
 
-            s = radis.test_spectrum()
+            s = radis.spectrum_test()
             max, wmax = s.max(return_wmax=True)
 
         Note that the later can also be achieved with :py:meth:`~radis.spectrum.spectrum.Spectrum.argmax` ::
@@ -5625,7 +5625,7 @@ class Spectrum(object):
         --------------
         Get min position ``wmin`` ::
 
-            s = radis.test_spectrum()
+            s = radis.spectrum_test()
             min, wmin = s.min(return_wmin=True)
 
         Note that the later can also be achieved with :py:meth:`~radis.spectrum.spectrum.Spectrum.argmin` ::

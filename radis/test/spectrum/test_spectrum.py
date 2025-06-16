@@ -282,8 +282,6 @@ def test_store_functions(verbose=True, *args, **kwargs):
     # TODO: add test that ensures we can load a binary file without binary=True
     # (and the warning should be captured)
 
-    return True
-
 
 @pytest.mark.fast
 def test_intensity_conversion(verbose=True, *args, **kwargs):
@@ -689,15 +687,13 @@ def _run_testcases(
     # Test spectrum fitting
     test_fitting_lineshape(plot=plot, *args, **kwargs)
 
-    return True
-
 
 if __name__ == "__main__":
     print(("Test spectrum: ", _run_testcases(debug=False, close_plots=False)))
 
     # import radis
 
-    # s = radis.test_spectrum()
+    # s = radis.spectrum_test()
     # assert s.c["default_output_unit"] == "cm-1"
 
     # assert (s.get("abscoeff")[0] == s.get_wavenumber()).all()

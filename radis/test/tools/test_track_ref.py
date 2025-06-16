@@ -48,7 +48,7 @@ def test_citations_in_eq_spectrum(verbose=False, *args, **kwargs):
         mole_fraction=0.1,
         path_length=1,  # cm
         databank="hitran",
-    )  # TODO: replace with `s = radis.test_spectrum()`
+    )  # TODO: replace with `s = radis.spectrum_test()`
 
     if verbose:
         s.cite()
@@ -107,7 +107,7 @@ def test_citations_serialized(verbose=False, *args, **kwargs):
         mole_fraction=0.1,
         path_length=1,  # cm
         databank="hitran",
-    )  # TODO: replace with `s = radis.test_spectrum()`
+    )  # TODO: replace with `s = radis.spectrum_test()`
     s.store("test_refs.spec", if_exists_then="replace")
     from radis import load_spec
 
@@ -137,7 +137,7 @@ def test_citations_multislabs(*args, **kwargs):
         mole_fraction=0.1,
         path_length=1,  # cm
         databank="hitran",
-    )  # TODO: replace with `s = radis.test_spectrum()`
+    )  # TODO: replace with `s = radis.spectrum_test()`
     s2 = s > s
     assert s2.references == s.references
 

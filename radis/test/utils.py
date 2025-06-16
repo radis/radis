@@ -151,11 +151,11 @@ getValidationCase.__annotations__["file"] = os.listdir(
 # %% Convenience function
 
 
-def test_spectrum(**kwargs):
+def spectrum_test(**kwargs):
     """Generate the :ref:`first example spectrum <label_first_example>` with ::
 
         import radis
-        s = radis.test_spectrum()
+        s = radis.spectrum_test()
         s.plot()
 
     Other Parameters

@@ -100,8 +100,6 @@ def test_populations(verbose=True, *args, **kwargs):
     assert not (s2.get_rovib_levels() == s.get_rovib_levels()).all().all()
     assert not (s2.get_rovib_levels() is s.get_rovib_levels())
 
-    return True  # if no AssertionError
-
 
 @pytest.mark.fast
 def test_rescaling_path_length(
@@ -302,8 +300,6 @@ def _run_testcases(
     test_medium(
         plot=plot, verbose=verbose, debug=debug, warnings=warnings, *args, **kwargs
     )
-
-    return True
 
 
 if __name__ == "__main__":

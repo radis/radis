@@ -166,8 +166,6 @@ def test_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
     if verbose:
         printm("Tested CDSD Q_calc vs Q_tab give same output: OK")
 
-    return True
-
 
 @pytest.mark.needs_config_file
 @pytest.mark.fast
@@ -264,8 +262,6 @@ def test_calculatedQ_match_HAPI_CO(
     if verbose:
         printm("Tested Q_CO ab_initio (Dunham) matches HAPI for 300 - 3000 K: OK")
 
-    return True
-
 
 # @pytest.mark.fast #not fast, Nicolas Minesi 08/04/2024
 def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
@@ -322,8 +318,6 @@ def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
 
     if verbose:
         printm("Tested Q ab_initio (Dunham) matches HAPI: OK")
-
-    return True
 
 
 @pytest.mark.needs_config_file
@@ -530,8 +524,6 @@ def test_recompute_Q_from_QvibQrot_Dunham_Evib3_Evib12Erot(
     if verbose:
         printm("Tested Q vs recomputed from (Qvib, Qrot) are the same: OK")
 
-    return True
-
 
 # @pytest.mark.fast   # (very fast only once the cached database has been generated, else decently fast)
 def test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(
@@ -579,8 +571,6 @@ def test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(
 
     if verbose:
         printm("Tested Q vs recomputed from (Qvib, Qrot) are the same: OK")
-
-    return True
 
 
 # @pytest.mark.needs_config_file
@@ -634,7 +624,7 @@ def test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(
 #        if verbose:
 #            printm('Tested Q vs recomputed from (Qvib, Qrot) are the same: OK')
 #
-#        return True
+#
 #
 #    except DatabankNotFound as err:
 #        assert IgnoreMissingDatabase(err, __file__, warnings)
@@ -691,8 +681,6 @@ def test_recompute_Q_from_QvibQrot_CDSD_PC(
     if verbose:
         printm("Tested Q vs recomputed from (Qvib, Qrot) are the same: OK")
 
-    return True
-
 
 # @pytest.mark.fast            # (fast only once the cached database has been generated)
 
@@ -730,8 +718,6 @@ def test_Q_1Tvib_vs_Q_3Tvib(T=1500, verbose=True, warnings=True, *args, **kwargs
     assert np.isclose(Q, Q3T)
     if verbose:
         printm("Tested Q in 1-Tvib vs Q in 3-Tvib modes (T={0:.0f}K): OK".format(T))
-
-    return True
 
 
 @pytest.mark.fast
@@ -1143,8 +1129,6 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
 
     # # Test 10:
     # test_partfuncbarklem()
-
-    return True
 
 
 if __name__ == "__main__":

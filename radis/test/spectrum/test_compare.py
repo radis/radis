@@ -182,7 +182,6 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     test_compare_methods(verbose=verbose, plot=plot, *args, **kwargs)
     test_plot_compare_with_nan(verbose=verbose, plot=True, *args, **kwargs)
     test_get_residual()
-    return True
 
 
 if __name__ == "__main__":

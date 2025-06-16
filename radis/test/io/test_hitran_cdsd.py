@@ -90,7 +90,6 @@ def test_hitran_names_match(verbose=True, warnings=True, *args, **kwargs):
                 )[1]
             )
         )
-    return
 
 
 @pytest.mark.fast
@@ -109,8 +108,6 @@ def test_local_hitran_co(verbose=True, warnings=True, **kwargs):
     assert df.dtypes["vu"] == np.int64
     assert df.dtypes["vl"] == np.int64
 
-    return True
-
 
 def test_local_hitran_co2(verbose=True, warnings=True, **kwargs):
 
@@ -127,8 +124,6 @@ def test_local_hitran_co2(verbose=True, warnings=True, **kwargs):
     ) == [4, 0, 0, 0, 0, 0, 0, 1]
     assert df.dtypes["v1l"] == np.int64
     assert df.dtypes["v3u"] == np.int64
-
-    return True
 
 
 def test_local_hitran_h2o(verbose=True, warnings=True, **kwargs):
@@ -163,8 +158,6 @@ def test_local_hitran_h2o(verbose=True, warnings=True, **kwargs):
     assert df.dtypes["Kal"] == np.int64
     assert df.dtypes["Kcl"] == np.int64
 
-    return True
-
 
 def test_local_hitemp_file(verbose=True, warnings=True, **kwargs):
     """Analyse some default files to make sure everything still works."""
@@ -182,8 +175,6 @@ def test_local_hitemp_file(verbose=True, warnings=True, **kwargs):
     assert "branch" in df
     assert df["branch"].iloc[0] == 0  # Q
     assert df["branch"].iloc[1] == 1  # R
-
-    return True
 
 
 def test_irrelevant_file_loading(*args, **kwargs):
@@ -315,7 +306,6 @@ def _run_testcases(verbose=True, *args, **kwargs):
     test_irrelevant_file_loading()
     test_cache_regeneration(verbose=verbose, *args, **kwargs)
     test_hitran_cross_sections(*args, **kwargs)
-    return True
 
 
 if __name__ == "__main__":
