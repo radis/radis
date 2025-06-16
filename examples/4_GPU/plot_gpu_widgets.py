@@ -14,7 +14,8 @@ Example using GPU sliders and GPU calculation with :py:meth:`~radis.lbl.Spectrum
     by running python in interactive mode as follows: ``python -i plot_gpu_widgets.py``.
 
     Systems with a dedicated GPU often have multiple devices available, because they also have an integrated GPU in the
-    main processor. This can be selected by chosing a different device_id.
+    main processor. This can be selected by chosing a different device_id (e.g. 'nvidia' or 'intel').
+    The device id could be a string or an integer. The integer is the device number, starting from 0.
     Look at the device overview printed when running the GPU spectrum to see what options are available.
 
     s.gpu_exit() does not have to be called explicitly because it is called when the interactive window is closed.

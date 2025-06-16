@@ -688,9 +688,9 @@ def make_j2b(
 
     # Determine the array size based on jlower_max
     if jlower_max is None:
-        Nblower = np.max(jlower_arr) + 1
+        Nblower = np.nanmax(jlower_arr) + 1
     else:
-        Nblower = np.max([jlower_max, np.max(jlower_arr)]) + 1
+        Nblower = np.nanmax([jlower_max, np.max(jlower_arr)]) + 1
 
     if output == "vaex":
         # Initialize arrays with default alpha_ref and n_Texp
@@ -711,8 +711,8 @@ def make_j2b(
         j2n_Texp = df_defaults["n_Texp"].values
     else:
         # Initialize arrays with default alpha_ref and n_Texp
-        j2alpha_ref = np.full(Nblower, alpha_ref_default)
-        j2n_Texp = np.full(Nblower, n_Texp_default)
+        j2alpha_ref = np.full(int(Nblower), alpha_ref_default)
+        j2n_Texp = np.full(int(Nblower), n_Texp_default)
 
         # Populate the mapping arrays using known broadening coefficients
         j2alpha_ref[jlower_arr] = alpha_ref_arr
@@ -1514,8 +1514,8 @@ class MdbExomol(DatabaseManager):
                     jlower_max=df["jlower"].max(),
                     output=output,
                 )
-                self.alpha_ref = j2alpha_ref[df["jlower"].values]
-                self.n_Texp = j2n_Texp[df["jlower"].values]
+                self.alpha_ref = j2alpha_ref[df["jlower"].values.astype(int)]
+                self.n_Texp = j2n_Texp[df["jlower"].values.astype(int)]
             elif codelv == "a1":
                 j2alpha_ref, j2n_Texp = make_j2b(
                     bdat,
@@ -1532,14 +1532,28 @@ class MdbExomol(DatabaseManager):
                     output=output,
                 )
                 self.alpha_ref = (
-                    np.array(jj2alpha_ref[df["jlower"].values, df["jupper"].values])
+                    np.array(
+                        jj2alpha_ref[
+                            df["jlower"].values.astype(int),
+                            df["jupper"].values.astype(int),
+                        ]
+                    )
                     if self.engine != "vaex"
-                    else jj2alpha_ref[df["jlower"], df["jupper"]]
+                    else jj2alpha_ref[
+                        df["jlower"].values.astype(int), df["jupper"].values.astype(int)
+                    ]
                 )
                 self.n_Texp = (
-                    np.array(jj2n_Texp[df["jlower"].values, df["jupper"].values])
+                    np.array(
+                        jj2n_Texp[
+                            df["jlower"].values.astype(int),
+                            df["jupper"].values.astype(int),
+                        ]
+                    )
                     if self.engine != "vaex"
-                    else jj2n_Texp[df["jlower"], df["jupper"]]
+                    else jj2n_Texp[
+                        df["jlower"].values.astype(int), df["jupper"].values.astype(int)
+                    ]
                 )
             elif codelv == "m0":
 

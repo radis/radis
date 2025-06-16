@@ -188,9 +188,9 @@ Use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_hdf5`  ::
 Calculate a test spectrum
 -------------------------
 
-You need a spectrum immediatly, to run some tests ? Use :py:func:`~radis.test.utils.test_spectrum` ::
+You need a spectrum immediatly, to run some tests ? Use :py:func:`~radis.test.utils.spectrum_test` ::
 
-    s = radis.test_spectrum()
+    s = radis.spectrum_test()
     s.apply_slit(0.5, 'nm')
     s.plot('radiance')
 
@@ -483,7 +483,7 @@ Know if a spectrum has nan
 :py:meth:`~radis.spectrum.spectrum.Spectrum.has_nan` looks over all spectral
 quantities. ``print(s)`` will also show the number of nans per quantity ::
 
-    s = radis.test_spectrum()
+    s = radis.spectrum_test()
     s.has_nan()
 
 

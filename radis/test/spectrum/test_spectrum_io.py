@@ -5,7 +5,7 @@ Test spectrum creation / export
 
 import pytest
 
-from radis import Spectrum, get_residual, test_spectrum
+from radis import Spectrum, get_residual, spectrum_test
 
 
 @pytest.mark.fast
@@ -15,7 +15,7 @@ def test_specutils_io(verbose=True, plot=False, *args, **kwargs):
     see https://github.com/radis/radis/pull/499
     """
 
-    s = test_spectrum().take("transmittance_noslit")
+    s = spectrum_test().take("transmittance_noslit")
 
     processed_spec = Spectrum.from_array(
         *s.get("transmittance_noslit", wunit="nm"),

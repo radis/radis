@@ -487,47 +487,6 @@ class VkFFTApp:
     ):
         """
         Init function for the VkFFT application.
-
-        :param shape: the shape of the array to be transformed. The number
-            of dimensions of the array can be larger than the FFT dimensions.
-        :param dtype: the numpy dtype of the source array (can be complex64 or complex128)
-        :param ndim: the number of dimensions to use for the FFT. By default,
-            uses the array dimensions. Can be smaller, e.g. ndim=2 for a 3D
-            array to perform a batched 3D FFT on all the layers. The FFT
-            is always performed along the last axes if the array's number
-            of dimension is larger than ndim, i.e. on the x-axis for ndim=1,
-            on the x and y axes for ndim=2, etc.. Unless axes are given.
-        :param inplace: if True (the default), performs an inplace transform and
-            the destination array should not be given in fft() and ifft().
-        :param norm: if 0 (unnormalised), every transform multiplies the L2
-            norm of the array by its size (or the size of the transformed
-            array if ndim<d.ndim).
-            if 1 (the default) or "backward", the inverse transform divides
-            the L2 norm by the array size, so FFT+iFFT will keep the array norm.
-            if "ortho", each transform will keep the L2 norm, but that will
-            involve an extra read & write operation.
-        :param r2c: if True, will perform a real->complex transform, where the
-            complex destination is a half-hermitian array.
-            For an inplace transform, if the input data shape is (...,nx), the input
-            float array should have a shape of (..., nx+2), the last two columns
-            being ignored in the input data, and the resulting
-            complex array (using pycuda's GPUArray.view(dtype=np.complex64) to
-            reinterpret the type) will have a shape (..., nx//2 + 1).
-            For an out-of-place transform, if the input (real) shape is (..., nx),
-            the output (complex) shape should be (..., nx//2+1).
-            Note 1: the above shape changes are true for C-contiguous arrays;
-            generally the axis which is halved by the R2C transform always is
-            the fast axis -with a stride of 1 element. For F-contiguous arrays
-            this will be the first dimension instead of the last.
-            Note 2:for C2R transforms with ndim>=2, the source (complex) array
-            is modified.
-        :param dct: used to perform a Direct Cosine Transform (DCT) aka a R2R transform.
-            An integer can be given to specify the type of DCT (1, 2, 3 or 4).
-            if dct=True, the DCT type 2 will be performed, following scipy's convention.
-        :param axes: a list or tuple of axes along which the transform should be made.
-            if None, the transform is done along the ndim fastest axes, or all
-            axes if ndim is None. Not allowed for R2C transforms
-        :param strides: the array strides - needed if not C-ordered.
         :raises RuntimeError:  if the transform dimensions are not allowed by VkFFT.
         """
         self.app = None
@@ -633,56 +592,6 @@ class VkFFTApp:
         else:
             self.registerBoost4Step = -1
 
-        # # uint64_t maxComputeWorkGroupCount[3] - how many workgroups can be launched
-        # # at one dispatch. Automatically derived from the driver, can be artificially
-        # # lowered. Then VkFFT will perform a logical split and extension of the
-        # # number of workgroups to cover the required range.
-        # if "maxComputeWorkGroupCount" in kwargs:
-        #     self.maxComputeWorkGroupCount = kwargs["maxComputeWorkGroupCount"]
-        # else:
-        #     self.maxComputeWorkGroupCount = (-1, -1, -1)
-        #
-        # # uint64_t maxComputeWorkGroupSize[3] - max dimensions of the workgroup.
-        # # Automatically derived from the driver. Can be modified if there are
-        # # some issues with the driver (as there were with ROCm 4.0, when it returned
-        # # 1024 for maxComputeWorkGroupSize and actually supported only up to 256 threads).
-        # if "maxComputeWorkGroupSize" in kwargs:
-        #     self.maxComputeWorkGroupSize = kwargs["maxComputeWorkGroupSize"]
-        # else:
-        #     self.maxComputeWorkGroupSize = (-1, -1, -1)
-        #
-        # # uint64_t maxThreadsNum - max number of threads per block. Similar to maxCompute
-        # # - WorkGroupSize, but aggregated. Automatically derived from the driver.
-        # if "maxThreadsNum" in kwargs:
-        #     self.maxThreadsNum = kwargs["maxThreadsNum"]
-        # else:
-        #     self.maxThreadsNum = -1
-        #
-        # # uint64_t sharedMemorySizeStatic - available for static allocation shared
-        # # memory size, in bytes. Automatically derived from the driver.
-        # if "sharedMemorySizeStatic" in kwargs:
-        #     self.sharedMemorySizeStatic = kwargs["sharedMemorySizeStatic"]
-        # else:
-        #     self.sharedMemorySizeStatic = -1
-        #
-        # # uint64_t sharedMemorySize - available for allocation shared memory size,
-        # # in bytes. VkFFT uses dynamic shared memory in CUDA/HIP as it allows for
-        # # bigger allocations.
-        # if "sharedMemorySize" in kwargs:
-        #     self.sharedMemorySize = kwargs["sharedMemorySize"]
-        # else:
-        #     self.sharedMemorySize = -1
-        #
-        # # uint64_t sharedMemorySizePow2 - the power of 2 which is less or equal to
-        # # sharedMemorySize, in bytes.
-        # if "sharedMemorySizePow2" in kwargs:
-        #     self.sharedMemorySizePow2 = kwargs["sharedMemorySizePow2"]
-        # else:
-        #     self.sharedMemorySizePow2 = -1
-
-        # uint64_t warpSize - number of threads per warp/wavefront. Automatically derived
-        # from the driver, but can be modified (can increase performance, though
-        # unpredictable as defaults have good values). Must be a power of two.
         if "warpSize" in kwargs:
             self.warpSize = kwargs["warpSize"]
         else:

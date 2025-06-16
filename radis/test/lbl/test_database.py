@@ -81,8 +81,6 @@ def test_load_spectrum(plot=False, verbose=True, warnings=True, *args, **kwargs)
         if exists(temp_file_name):
             os.remove(temp_file_name)
 
-    return True
-
 
 def test_load_lines_pops(plot=False, verbose=True, warnings=True, *args, **kwargs):
     """Test load / save
@@ -138,16 +136,12 @@ def test_load_lines_pops(plot=False, verbose=True, warnings=True, *args, **kwarg
         if exists(temp_file_name):
             os.remove(temp_file_name)
 
-    return True
-
 
 def _run_testcases(plot=False, verbose=True, warnings=True, *args, **kwargs):
 
     test_load_spectrum(plot=plot, verbose=verbose, warnings=warnings, *args, **kwargs)
 
     test_load_lines_pops(plot=plot, verbose=verbose, warnings=warnings, *args, **kwargs)
-
-    return True
 
 
 if __name__ == "__main__":

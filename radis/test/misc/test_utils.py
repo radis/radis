@@ -84,7 +84,6 @@ def test_files_from_regex_2(*args, **kwargs):
 def _run_testcases(verbose=True, *args, **kwargs):
     test_files_from_regex_1()
     test_files_from_regex_2()
-    return True
 
 
 if __name__ == "__main__":

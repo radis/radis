@@ -252,7 +252,11 @@ class NISTPFManager(DatabaseManager):
         writer = self.get_datafile_manager()
         from io import StringIO
 
-        file = StringIO(opener.text)
+        # Use the opener's open method which should be available in all implementations
+        with opener.open() as file:
+            file_content = file.read().decode("utf-8")
+        file = StringIO(file_content)
+
         df = read_NIST_pfs(file)
         writer.write(local_file, df, append=False)
 

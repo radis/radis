@@ -151,8 +151,6 @@ def test_direct_overpopulation_vs_recombined_bands(
             s_recombined.get_radiance_noslit(), sref.get_radiance_noslit(), rtol=rtol
         )
 
-    return True
-
 
 def test_3Tvib_vs_1Tvib(verbose=True, plot=False, warnings=True, *args, **kwargs):
     """Compare 3-vibrational Temperature algorithm with 1 vibrational temperature
@@ -223,15 +221,11 @@ def test_3Tvib_vs_1Tvib(verbose=True, plot=False, warnings=True, *args, **kwargs
     if verbose:
         printm("Tested Spectra 3Tvib(T1=T2=T3=T) and 1Tvib(T) are the same: OK")
 
-    return True
-
 
 def run_testcases(verbose=True, plot=False, warnings=True, *args, **kwargs):
 
     test_direct_overpopulation_vs_recombined_bands(plot=plot)
     test_3Tvib_vs_1Tvib(plot=plot)
-
-    return True
 
 
 if __name__ == "__main__":

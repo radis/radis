@@ -82,8 +82,6 @@ def test_merge_slabs(
             )
         assert np.isclose(s2.get_power(), s1N.get_power(), 1.5e-2)
 
-    return True
-
 
 @pytest.mark.fast
 def test_equilibrium_condition():
@@ -160,8 +158,6 @@ def test_serial_slabs_transmittance(
     if verbose:
         print("Tested Serialslabs transmittance decreases s1>s2: OK")
 
-    return True
-
 
 @pytest.mark.fast
 def test_serial_slabs_radiance(
@@ -205,8 +201,6 @@ def test_serial_slabs_radiance(
     s_serial = s > s
     assert s_serial == s_los
 
-    return True
-
 
 def _run_testcases(
     verbose=True,
@@ -235,8 +229,6 @@ def _run_testcases(
     )
 
     test_equilibrium_condition()
-
-    return True
 
 
 if __name__ == "__main__":

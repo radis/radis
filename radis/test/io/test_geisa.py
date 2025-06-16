@@ -52,8 +52,6 @@ def test_local_geisa_co(verbose=True, warnings=True, **kwargs):
 
     print("GEISA parsing process of molecule CO works normally.\n")
 
-    return True
-
 
 @pytest.mark.fast
 def test_local_geisa_h2o(verbose=True, warnings=True, **kwargs):
@@ -83,8 +81,6 @@ def test_local_geisa_h2o(verbose=True, warnings=True, **kwargs):
 
     print("GEISA parsing process of molecule H2O works normally.\n")
 
-    return True
-
 
 @pytest.mark.fast
 def test_local_geisa_co2(verbose=True, warnings=True, **kwargs):
@@ -113,8 +109,6 @@ def test_local_geisa_co2(verbose=True, warnings=True, **kwargs):
     ]
 
     print("GEISA parsing process of molecule CO2 works normally.\n")
-
-    return True
 
 
 @pytest.mark.needs_connection
@@ -172,8 +166,6 @@ def _run_testcases(verbose=True, *args, **kwargs):
     test_local_geisa_co2(verbose=verbose, *args, **kwargs)
     test_calc_geisa_spectrum(*args, **kwargs)
     # test_debugging_doc(plot=True)
-
-    return True
 
 
 if __name__ == "__main__":

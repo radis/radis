@@ -784,6 +784,7 @@ def _calc_spectrum_one_molecule(
         )
         or compare(databank, "exomol")
         or compare(databank, "hitran")
+        or compare(databank, "hitemp")
     ):  # mode to get databank without relying on  Line databases
         # Line database :
         if compare(databank, ["fetch", "hitran"]):
@@ -824,6 +825,12 @@ def _calc_spectrum_one_molecule(
                 "source": "exomol",
                 "database": databank[1],
                 "parfuncfmt": "exomol",  # download & use Exo partition functions for equilibrium}
+            }
+        elif compare(databank, "hitemp"):
+            conditions = {
+                "source": "hitemp",
+                "database": databank[1],
+                "parfuncfmt": "hapi",
             }
         # Partition functions :
         conditions.update(

@@ -6,15 +6,10 @@ Scripts used to generate some test files for RADIS
 -------------------------------------------------------------------------------
 
 """
-
-
-from radis.test.utils import setup_test_line_databases
-
 if __name__ == "__main__":
-
     # %% Generate carbon monoxide files
-
     from radis import SpectrumFactory
+    from radis.test.utils import setup_test_line_databases
 
     setup_test_line_databases()  # add HITRAN-CO-TEST in ~/radis.json if not there
 

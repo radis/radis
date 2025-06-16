@@ -16,7 +16,7 @@ from radis import Spectrum
 from radis.phys.units import Unit as u
 
 ### In this example:
-# The cross-section "CH3COCH3_233.4_375.2_700.0-1780.0_13.xsc" was manually downloaded by RADIS developper
+# The cross-section "CH3COCH3_233.4_375.2_700.0-1780.0_13.xsc" was manually downloaded by RADIS developer
 # For another cross-section: 1/perform manual download from HITRAN and 2/ adapt `path_to_datafile`
 from radis.test.utils import getTestFile
 

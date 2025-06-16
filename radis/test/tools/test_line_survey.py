@@ -42,8 +42,6 @@ def test_line_survey(verbose=True, plot=False, warnings=True, *args, **kwargs):
         # clean after use
         os.remove(_temp_file)
 
-    return True
-
 
 @pytest.mark.fast
 def test_line_survey_CO2(verbose=True, plot=True, warnings=True, *args, **kwargs):
@@ -71,7 +69,6 @@ def test_line_survey_CO2(verbose=True, plot=True, warnings=True, *args, **kwargs
 
     if verbose:
         printm("no boolean defined for test_line_survey")
-    return True  # test not defined (just testing methods work)
 
 
 def _run_testcases(plot=True, verbose=True, *args, **kwargs):
@@ -79,8 +76,6 @@ def _run_testcases(plot=True, verbose=True, *args, **kwargs):
     # Show media line_shift
     test_line_survey(plot=plot, verbose=verbose, *args, **kwargs)
     test_line_survey_CO2(plot=plot, verbose=verbose, *args, **kwargs)
-
-    return True
 
 
 if __name__ == "__main__":

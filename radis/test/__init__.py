@@ -5,4 +5,4 @@ Erwan Pannier EM2C, CentraleSupélec, 2015 CNRS UPR 288
 """
 
 
-from .utils import setup_test_line_databases, test_spectrum
+from .utils import setup_test_line_databases, spectrum_test

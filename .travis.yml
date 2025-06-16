@@ -66,6 +66,8 @@ after_success:
 
 
 stages: #This sequence defines the order of the stages
+  - name: deploy
+    if: branch = master
   - name: Py39
     if: branch = master
   - name: Py311
@@ -78,8 +80,6 @@ stages: #This sequence defines the order of the stages
   #   if: branch = master
   - name: lint
     if: branch = master OR branch = develop
-  - name: deploy
-    if: branch = master
 
 jobs:
   include:
@@ -135,26 +135,31 @@ jobs:
       services:
         - xvfb
       install:
-        - sudo apt-get update
+        # - sudo apt-get update
         #Next is to test after deploy
         - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/1.5.8 | tar -xvj bin/micromamba
         - ./bin/micromamba shell init -s bash -p ~/micromamba
         - source ~/.bashrc
         - micromamba activate base
-      before_script: skip #do NOT run the before_script of "tests" stage
+      before_script:
+        - pip install build twine
       script:
-        - echo "Deploying to PyPI"
+        - echo "Building distribution packages"
+        - python -m build --sdist --wheel
+        - ls -la dist/
       before_deploy:
         - sudo apt-get install pandoc
         - pandoc README.rst -o README.md
       deploy:
         provider: pypi
+        # server: https://testpypi.python.org/pypi # Remove for deployment to official PyPi repo
         user: "__token__"
         password:
-          secure: dxZOpuKL1ezk3MM5FgY89zJYNL484x0jUZ+c3IB5q2GjpWl6qmCogoWG37iGZIcmldeIdVzga3pj5CC32eht4B0hJQX5QLVjCq9wwpfLs7Tkj4ODiAzvOchSLhfBOSLOIX33iW/+wxDjZ3fG61TzPI1z3ksdNh7+imdVYiV+G4FmOcxJKjFEgGm7CAwfbxso47ab9jbgm6FHbCC7HfpSiSrMpyIDSorJFk5XR11+Hoe6JjbKr11eeWuoO8EXKvSQeeJpsu0minqFyAy8nf9af/aU3NJU1LOlFM1DuoYlpQKwnbop5lBodU28zt4Asa1h8lp8Zu+wZSIaZSOeEoC6U/H/5zAE03W8SytWyWgNEtwuYLSiWacbOzeZOclVRoNu4P6Fz9hFdZuSANQlSQN7cBYFJiA8cbJDU4nb3srFoKlBLxCH9ZC3/K7rnZpjPmy7A35plNf+1dAEpB6adiWwsGy/VwCywHyJsBq7N3z6lN9wZ2SUPekl4y/sLobYPqg8y48u4bMqfd05Ub1QDUB3MSNALMa+OcczJvxNHZj+Bk4ooai/t/GOMOWNyy78VES7S/J77cWUheq+mW80ywCS8gcyF6ARR4EJxJGwp4q2RHwGdVvxbzc/uaKgi6I1bmLRw4cjJvOXx5ulLdANUftfMg4ATW/VAFqYLrdS/LpGX5A=
+         secure: dxZOpuKL1ezk3MM5FgY89zJYNL484x0jUZ+c3IB5q2GjpWl6qmCogoWG37iGZIcmldeIdVzga3pj5CC32eht4B0hJQX5QLVjCq9wwpfLs7Tkj4ODiAzvOchSLhfBOSLOIX33iW/+wxDjZ3fG61TzPI1z3ksdNh7+imdVYiV+G4FmOcxJKjFEgGm7CAwfbxso47ab9jbgm6FHbCC7HfpSiSrMpyIDSorJFk5XR11+Hoe6JjbKr11eeWuoO8EXKvSQeeJpsu0minqFyAy8nf9af/aU3NJU1LOlFM1DuoYlpQKwnbop5lBodU28zt4Asa1h8lp8Zu+wZSIaZSOeEoC6U/H/5zAE03W8SytWyWgNEtwuYLSiWacbOzeZOclVRoNu4P6Fz9hFdZuSANQlSQN7cBYFJiA8cbJDU4nb3srFoKlBLxCH9ZC3/K7rnZpjPmy7A35plNf+1dAEpB6adiWwsGy/VwCywHyJsBq7N3z6lN9wZ2SUPekl4y/sLobYPqg8y48u4bMqfd05Ub1QDUB3MSNALMa+OcczJvxNHZj+Bk4ooai/t/GOMOWNyy78VES7S/J77cWUheq+mW80ywCS8gcyF6ARR4EJxJGwp4q2RHwGdVvxbzc/uaKgi6I1bmLRw4cjJvOXx5ulLdANUftfMg4ATW/VAFqYLrdS/LpGX5A= #real
+        # password: pypi-AgENdGVzdC5weXBpLm9yZwIkNTc0YzM3MmYtZWE2My00OTI1LWJlNzctYjU2NmU2Y2M4ZmM3AAINWzEsWyJyYWRpcyJdXQACLFsyLFsiNTBkMzc5MGUtZDVmMC00NDEzLThjNGEtZGVmMzI4MjVhYjAxIl1dAAAGIN3R86sRd9GJ2vHFeUziKdyOeFvtF9D_CjX89HkfVlZe #test-pypi
+
         skip_existing: true
-        skip_cleanup: true    # to keep wheels (in the ./dist folder?)
-        distributions: "sdist bdist_wheel"
+        distributions: "skip"  # Important: skip default sdist build
       after_deploy:
       - VERSION_RADIS=$(cat radis/__version__.txt)
       - pip install radis==$VERSION_RADIS

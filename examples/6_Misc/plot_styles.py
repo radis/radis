@@ -33,7 +33,7 @@ import matplotlib.pyplot as plt
 import radis
 
 plt.close("all")
-s = radis.test_spectrum()
+s = radis.spectrum_test()
 
 for plotlib, context, style in [
     ("matplotlib", "", "default"),

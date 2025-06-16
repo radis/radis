@@ -49,8 +49,6 @@ def test_compression(verbose=True, warnings=True, *args, **kwargs):
         "xsection": True,
     }
 
-    return True
-
 
 @pytest.mark.fast
 def test_update_transmittance(verbose=True, warnings=True, *args, **kwargs):
@@ -93,8 +91,6 @@ def test_update_transmittance(verbose=True, warnings=True, *args, **kwargs):
     assert np.allclose(T1, T2)
     assert np.allclose(T1, T3)
     assert np.allclose(T1, T4)
-
-    return True
 
 
 def test_get_recompute(verbose=True, *args, **kwargs):
@@ -573,7 +569,6 @@ def _run_all_tests(verbose=True, warnings=True, *args, **kwargs):
     test_rescale_all_quantities(verbose=verbose, *args, **kwargs)
     test_xsections(*args, **kwargs)
     test_astropy_units(verbose=True, warnings=True, *args, **kwargs)
-    return True
 
 
 if __name__ == "__main__":

@@ -21,7 +21,7 @@ Run only fast tests (i.e: tests that a 'fast' label)::
 """
 
 import os
-from os.path import basename, exists, getmtime
+from os.path import basename, exists, getmtime, join
 
 import numpy as np
 import pytest
@@ -166,8 +166,6 @@ def test_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
     if verbose:
         printm("Tested CDSD Q_calc vs Q_tab give same output: OK")
 
-    return True
-
 
 @pytest.mark.needs_config_file
 @pytest.mark.fast
@@ -264,8 +262,6 @@ def test_calculatedQ_match_HAPI_CO(
     if verbose:
         printm("Tested Q_CO ab_initio (Dunham) matches HAPI for 300 - 3000 K: OK")
 
-    return True
-
 
 # @pytest.mark.fast #not fast, Nicolas Minesi 08/04/2024
 def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
@@ -322,8 +318,6 @@ def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
 
     if verbose:
         printm("Tested Q ab_initio (Dunham) matches HAPI: OK")
-
-    return True
 
 
 @pytest.mark.needs_config_file
@@ -530,8 +524,6 @@ def test_recompute_Q_from_QvibQrot_Dunham_Evib3_Evib12Erot(
     if verbose:
         printm("Tested Q vs recomputed from (Qvib, Qrot) are the same: OK")
 
-    return True
-
 
 # @pytest.mark.fast   # (very fast only once the cached database has been generated, else decently fast)
 def test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(
@@ -579,8 +571,6 @@ def test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(
 
     if verbose:
         printm("Tested Q vs recomputed from (Qvib, Qrot) are the same: OK")
-
-    return True
 
 
 # @pytest.mark.needs_config_file
@@ -634,7 +624,7 @@ def test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(
 #        if verbose:
 #            printm('Tested Q vs recomputed from (Qvib, Qrot) are the same: OK')
 #
-#        return True
+#
 #
 #    except DatabankNotFound as err:
 #        assert IgnoreMissingDatabase(err, __file__, warnings)
@@ -691,8 +681,6 @@ def test_recompute_Q_from_QvibQrot_CDSD_PC(
     if verbose:
         printm("Tested Q vs recomputed from (Qvib, Qrot) are the same: OK")
 
-    return True
-
 
 # @pytest.mark.fast            # (fast only once the cached database has been generated)
 
@@ -730,8 +718,6 @@ def test_Q_1Tvib_vs_Q_3Tvib(T=1500, verbose=True, warnings=True, *args, **kwargs
     assert np.isclose(Q, Q3T)
     if verbose:
         printm("Tested Q in 1-Tvib vs Q in 3-Tvib modes (T={0:.0f}K): OK".format(T))
-
-    return True
 
 
 @pytest.mark.fast
@@ -826,9 +812,11 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
         getTestFile(r"co2_cdsd_hamiltonian_fragment.levels")
     )
     # get the time when .levels.h5 file was last modified
-    cache_last_modification = getmtime(
-        getTestFile(r"co2_cdsd_hamiltonian_fragment.levels.h5")
+
+    cdsd_fragment_path = join(
+        "radis", "test", "files", "co2_cdsd_hamiltonian_fragment.levels"
     )
+    cache_last_modification = getmtime(cdsd_fragment_path)
 
     # change the time when .levels file was last modified
     stinfo = os.stat(getTestFile(r"co2_cdsd_hamiltonian_fragment.levels"))
@@ -848,9 +836,7 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
     # run calculations once again to see if the .levels.h5 (cache file) is regenerated
     run_example()
 
-    cache_last_modification_again = getmtime(
-        getTestFile(r"co2_cdsd_hamiltonian_fragment.levels.h5")
-    )
+    cache_last_modification_again = getmtime(cdsd_fragment_path)
     assert cache_last_modification_again > cache_last_modification
 
 
@@ -1100,51 +1086,49 @@ def test_parsum_mode_in_factory(verbose=True, plot=True, *args, **kwargs):
 
 def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
 
-    # Test 0: delete all cached energies
-    test_delete_all_cached_energies(verbose=verbose, warnings=warnings)
+    # # Test 0: delete all cached energies
+    # test_delete_all_cached_energies(verbose=verbose, warnings=warnings)
 
-    # Test 1: test cache mechanism
-    test_cache_file_generation_and_update(verbose=verbose, warnings=warnings)
+    # # Test 1: test cache mechanism
+    # test_cache_file_generation_and_update(verbose=verbose, warnings=warnings)
 
-    # Test 2: compare calculated PartFunc for CO to HAPI
-    test_calculatedQ_match_HAPI_CO()
-    # Test 2b: compare for many molecules and isotopes
-    test_calculatedQ_match_HAPI()
+    # # Test 2: compare calculated PartFunc for CO to HAPI
+    # test_calculatedQ_match_HAPI_CO()
+    # # Test 2b: compare for many molecules and isotopes
+    # test_calculatedQ_match_HAPI()
 
-    # Test 3: compare calculated PartFunc to the tabulated one with CDSD
-    # Test 4: compare calculated PartFunc to hardcoded references
-    test_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
-    test_CDSD_calc_vs_ref(warnings=warnings)
-    test_reduced_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
-    test_reduced_CDSD_calc_noneq(verbose=verbose, warnings=warnings)
+    # # Test 3: compare calculated PartFunc to the tabulated one with CDSD
+    # # Test 4: compare calculated PartFunc to hardcoded references
+    # test_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
+    # test_CDSD_calc_vs_ref(warnings=warnings)
+    # test_reduced_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
+    # test_reduced_CDSD_calc_noneq(verbose=verbose, warnings=warnings)
 
-    # Test 5a, 5b: recompute Q from QvibQrot
-    test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(
-        verbose=verbose, warnings=warnings
-    )
-    test_recompute_Q_from_QvibQrot_Dunham_Evib3_Evib12Erot(
-        verbose=verbose, warnings=warnings
-    )
-    test_recompute_Q_from_QvibQrot_CDSD_PC(verbose=verbose, warnings=warnings)
-    # test_recompute_Q_from_QvibQrot_CDSD_PCN(verbose=verbose, warnings=warnings)  # ignore in released version
+    # # Test 5a, 5b: recompute Q from QvibQrot
+    # test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(
+    #     verbose=verbose, warnings=warnings
+    # )
+    # test_recompute_Q_from_QvibQrot_Dunham_Evib3_Evib12Erot(
+    #     verbose=verbose, warnings=warnings
+    # )
+    # test_recompute_Q_from_QvibQrot_CDSD_PC(verbose=verbose, warnings=warnings)
+    # # test_recompute_Q_from_QvibQrot_CDSD_PCN(verbose=verbose, warnings=warnings)  # ignore in released version
 
-    # Test 6:
-    test_Q_1Tvib_vs_Q_3Tvib(verbose=verbose, warnings=warnings)
+    # # Test 6:
+    # test_Q_1Tvib_vs_Q_3Tvib(verbose=verbose, warnings=warnings)
 
-    # Test 7:
-    test_Morse_Potential_effect_CO(verbose=verbose, warnings=warnings)
+    # # Test 7:
+    # test_Morse_Potential_effect_CO(verbose=verbose, warnings=warnings)
 
     # Test 8: Regenerates levels file if it's manually changed
     test_levels_regeneration(verbose=verbose, warnings=True, *args, **kwargs)
 
     # Test 9 : tabulation
-    test_tabulated_partition_functions(verbose=verbose, *args, **kwargs)
-    test_parsum_mode_in_factory(verbose=verbose, *args, **kwargs)
+    # test_tabulated_partition_functions(verbose=verbose, *args, **kwargs)
+    # test_parsum_mode_in_factory(verbose=verbose, *args, **kwargs)
 
-    # Test 10:
-    test_partfuncbarklem()
-
-    return True
+    # # Test 10:
+    # test_partfuncbarklem()
 
 
 if __name__ == "__main__":

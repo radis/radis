@@ -199,8 +199,6 @@ def test_export_rovib_fractions(
     assert hasattr(s.lines, "nu_rot")
     assert hasattr(s.lines, "nl_rot")
 
-    return True
-
 
 @pytest.mark.fast
 def test_populations_CO2_hamiltonian(
@@ -272,8 +270,6 @@ def test_populations_CO2_hamiltonian(
 
     # TODO. Fix below (and move in dedicated test):
     #    s.line_survey()
-
-    return True
 
 
 # @pytest.mark.needs_connection
@@ -761,9 +757,9 @@ def test_input_wunit(plot=True, *args, **kwargs):
 
     import matplotlib.pyplot as plt
 
-    from radis import test_spectrum
+    from radis import spectrum_test
 
-    s_from_wavenumber = test_spectrum()
+    s_from_wavenumber = spectrum_test()
     s_from_wavenumber.plot()
 
     assert s_from_wavenumber.c["waveunit"] == "cm-1"
@@ -780,7 +776,7 @@ def test_input_wunit(plot=True, *args, **kwargs):
 
     import astropy.units as u
 
-    s_fromwl = test_spectrum(wmin=wmin * u.nm, wmax=wmax * u.nm)
+    s_fromwl = spectrum_test(wmin=wmin * u.nm, wmax=wmax * u.nm)
     s_fromwl.plot()
 
     import matplotlib.pyplot as plt
