@@ -229,6 +229,12 @@ def hit2df(
 
     :func:`~radis.api.cdsdapi.cdsd2df`
     """
+    if output == "vaex" and fast_parsing:
+        raise ValueError(
+            "The 'fast_parsing' option only supports output='pandas' (pandas-based operations). "
+            "Please either set output='pandas' or disable fast_parsing."
+        )
+
     metadata = {}
     # Last modification time of the original file :
     metadata["last_modification"] = time.ctime(getmtime(fname))
@@ -394,6 +400,12 @@ def post_process_hitran_data(
 
     # assert one molecule per database only. Else the groupbase data reading
     # above doesnt make sense
+    if dataframe_type == "vaex" and fast_parsing:
+        raise ValueError(
+            "The 'fast_parsing' option only supports dataframe_type='pandas' (pandas-based operations). "
+            "Please either set dataframe_type='pandas' or disable fast_parsing."
+        )
+
     nmol = len(df["id"].unique())
     if nmol == 0:
         raise ValueError("Databank looks empty")
@@ -1499,6 +1511,11 @@ def parse_local_quanta(
     mol: str
         molecule name
     """
+    if dataframe_type == "vaex" and fast_parsing:
+        raise ValueError(
+            "The 'fast_parsing' option only supports dataframe_type='pandas' (pandas-based operations). "
+            "Please either set dataframe_type='pandas' or disable fast_parsing."
+        )
 
     if mol in HITRAN_GROUP1:
         if fast_parsing:
@@ -1541,6 +1558,11 @@ def parse_global_quanta(
     mol: str
         molecule name
     """
+    if dataframe_type == "vaex" and fast_parsing:
+        raise ValueError(
+            "The 'fast_parsing' option only supports dataframe_type='pandas' (pandas-based operations). "
+            "Please either set dataframe_type='pandas' or disable fast_parsing."
+        )
 
     if mol in HITRAN_CLASS1:
         df = _parse_HITRAN_class1(df, verbose=verbose, dataframe_type=dataframe_type)
