@@ -26,6 +26,7 @@ import sys
 
 # from radis.test.utils import getTestFile
 import time
+import warnings
 from collections import OrderedDict
 from os.path import abspath, exists, expanduser, getmtime, join, split
 
@@ -230,9 +231,11 @@ def hit2df(
     :func:`~radis.api.cdsdapi.cdsd2df`
     """
     if output == "vaex" and fast_parsing:
-        raise ValueError(
+        fast_parsing = False
+        warnings.warn(
             "The 'fast_parsing' option only supports output='pandas' (pandas-based operations). "
-            "Please either set output='pandas' or disable fast_parsing."
+            "Therefore, 'fast_parsing' is set to False.",
+            UserWarning,
         )
 
     metadata = {}
@@ -401,9 +404,11 @@ def post_process_hitran_data(
     # assert one molecule per database only. Else the groupbase data reading
     # above doesnt make sense
     if dataframe_type == "vaex" and fast_parsing:
-        raise ValueError(
+        fast_parsing = False
+        warnings.warn(
             "The 'fast_parsing' option only supports dataframe_type='pandas' (pandas-based operations). "
-            "Please either set dataframe_type='pandas' or disable fast_parsing."
+            "Therefore, 'fast_parsing' is set to False.",
+            UserWarning,
         )
 
     nmol = len(df["id"].unique())
@@ -1512,9 +1517,11 @@ def parse_local_quanta(
         molecule name
     """
     if dataframe_type == "vaex" and fast_parsing:
-        raise ValueError(
+        fast_parsing = False
+        warnings.warn(
             "The 'fast_parsing' option only supports dataframe_type='pandas' (pandas-based operations). "
-            "Please either set dataframe_type='pandas' or disable fast_parsing."
+            "Therefore, 'fast_parsing' is set to False.",
+            UserWarning,
         )
 
     if mol in HITRAN_GROUP1:
@@ -1559,9 +1566,11 @@ def parse_global_quanta(
         molecule name
     """
     if dataframe_type == "vaex" and fast_parsing:
-        raise ValueError(
+        fast_parsing = False
+        warnings.warn(
             "The 'fast_parsing' option only supports dataframe_type='pandas' (pandas-based operations). "
-            "Please either set dataframe_type='pandas' or disable fast_parsing."
+            "Therefore, 'fast_parsing' is set to False.",
+            UserWarning,
         )
 
     if mol in HITRAN_CLASS1:
