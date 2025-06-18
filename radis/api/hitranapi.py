@@ -237,6 +237,15 @@ def hit2df(
             "Therefore, 'fast_parsing' is set to False.",
             UserWarning,
         )
+    
+    if engine == "pytables" and output == "vaex":
+        raise ValueError(
+            "Incompatible options: engine='pytables' cannot be used with output='vaex'. "
+            "Please choose either:\n"
+            "- engine='pytables' with output='pandas', or\n"
+            "- engine='vaex' with output='pandas', or\n"
+            "- engine='vaex' with output='vaex' (slower)."
+        )
 
     metadata = {}
     # Last modification time of the original file :
