@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-.. _example_download_hitemp:
+.. _example_download_hitran:
 
 ============================
 Download the HITRAN database
@@ -8,13 +8,9 @@ Download the HITRAN database
 
 Database will be downloaded automatically and can be edited locally.
 
-To compute a spectrum with the HITEMP database, see the
-:ref:`Calculate a HITEMP spectrum example <example_calculate_hitemp>`
-
 By default the database is returned as a Pandas DataFrame.
 To explore huge databases (like CO2, CH4 or H2O) that do not fit in RAM,
-RADIS allows you to use a Vaex DataFrame instead (out-of-RAM).
-See the :ref:`Explore Database with Vaex example <example_explore_database_vaex>`
+RADIS allows you to use a Vaex DataFrame instead (out-of-RAM), see the :ref:`Explore Database with Vaex example <example_explore_database_vaex>`
 """
 
 from radis.io.hitran import fetch_hitran
