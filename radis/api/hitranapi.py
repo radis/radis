@@ -26,6 +26,7 @@ import sys
 
 # from radis.test.utils import getTestFile
 import time
+import warnings
 from collections import OrderedDict
 from os.path import abspath, exists, expanduser, getmtime, join, split
 
@@ -229,6 +230,12 @@ def hit2df(
 
     :func:`~radis.api.cdsdapi.cdsd2df`
     """
+    if not fast_parsing:
+        warnings.warn(
+            "`fast_parsing=False` will be deprecated in future versions. "
+            "Please use fast_parsing=True for better performance and compatibility.",
+            FutureWarning,
+        )
 
     if engine == "pytables" and output == "vaex":
         raise ValueError(
