@@ -26,7 +26,6 @@ import sys
 
 # from radis.test.utils import getTestFile
 import time
-import warnings
 from collections import OrderedDict
 from os.path import abspath, exists, expanduser, getmtime, join, split
 
@@ -230,14 +229,7 @@ def hit2df(
 
     :func:`~radis.api.cdsdapi.cdsd2df`
     """
-    if output == "vaex" and fast_parsing:
-        fast_parsing = False
-        warnings.warn(
-            "The 'fast_parsing' option only supports output='pandas' (pandas-based operations). "
-            "Therefore, 'fast_parsing' is set to False.",
-            UserWarning,
-        )
-    
+
     if engine == "pytables" and output == "vaex":
         raise ValueError(
             "Incompatible options: engine='pytables' cannot be used with output='vaex'. "
@@ -407,19 +399,6 @@ def post_process_hitran_data(
 
     :func:`~radis.io.cdsd.cdsd2df`
     """
-
-    # %% Post processing
-
-    # assert one molecule per database only. Else the groupbase data reading
-    # above doesnt make sense
-    if dataframe_type == "vaex" and fast_parsing:
-        fast_parsing = False
-        warnings.warn(
-            "The 'fast_parsing' option only supports dataframe_type='pandas' (pandas-based operations). "
-            "Therefore, 'fast_parsing' is set to False.",
-            UserWarning,
-        )
-
     nmol = len(df["id"].unique())
     if nmol == 0:
         raise ValueError("Databank looks empty")
@@ -492,7 +471,8 @@ def post_process_hitran_data(
             replace_PQR_with_m101(df)
         if ("ierr" in df) and add_HITRAN_uncertainty_code:
             df["ierr"] = df["ierr"].astype(int64)
-        df = drop_object_format_columns(df, verbose=verbose)
+        if dataframe_type != "vaex":
+            df = drop_object_format_columns(df, verbose=verbose)
 
     return df
 
@@ -864,16 +844,22 @@ def _parse_HITRAN_class6_fast_parsing(df, verbose=True, dataframe_type="pandas")
         "v2l": (11, 13),
         "v3l": (13, 15),
     }
-
-    for name, (i0, i1) in _GLOBU_SLICES.items():
-        series = df["globu"].str.slice(i0, i1).str.strip().replace("", "0")
-        df[name] = series.astype("int64")
-
-    for name, (i0, i1) in _GLOBL_SLICES.items():
-        series = df["globl"].str.slice(i0, i1).str.strip().replace("", "0")
-        df[name] = series.astype("int64")
-
-    df.drop(columns=["globu", "globl"], inplace=True)
+    if dataframe_type == "vaex":
+        # Vaex string slicing and assignment
+        for name, (i0, i1) in _GLOBU_SLICES.items():
+            df[name] = df["globu"].str.slice(i0, i1).str.strip().astype("int64")
+        for name, (i0, i1) in _GLOBL_SLICES.items():
+            df[name] = df["globl"].str.slice(i0, i1).str.strip().astype("int64")
+        df.drop("globu", inplace=True)
+        df.drop("globl", inplace=True)
+    else:
+        for name, (i0, i1) in _GLOBU_SLICES.items():
+            series = df["globu"].str.slice(i0, i1).str.strip().replace("", "0")
+            df[name] = series.astype("int64")
+        for name, (i0, i1) in _GLOBL_SLICES.items():
+            series = df["globl"].str.slice(i0, i1).str.strip().replace("", "0")
+            df[name] = series.astype("int64")
+        df.drop(columns=["globu", "globl"], inplace=True)
 
     return df
 
@@ -1152,22 +1138,39 @@ def _parse_HITRAN_group1_fast_parsing(df, verbose=True, dataframe_type="pandas")
         "Fl": (9, 14),
         "syml": (14, 15),
     }
-    # str.slice + astype in one go
-    for name, (i0, i1) in _LOCU_SLICES.items():
-        series = df["locu"].str.slice(i0, i1).str.strip().replace("", "0")
-        if name in ("ju", "Kau", "Kcu"):
-            df[name] = series.astype("int64")
-        else:
-            df[name] = series
+    if dataframe_type == "vaex":
+        # Use vaex string slicing and assignment
+        for name, (i0, i1) in _LOCU_SLICES.items():
 
-    for name, (i0, i1) in _LOCL_SLICES.items():
-        series = df["locl"].str.slice(i0, i1).str.strip().replace("", "0")
-        if name in ("jl", "Kal", "Kcl"):
-            df[name] = series.astype("int64")
-        else:
-            df[name] = series
+            if name in ("ju", "Kau", "Kcu"):
+                df[name] = df["locu"].str.slice(i0, i1).str.strip().astype("int64")
+            else:
+                df[name] = df["locu"].str.slice(i0, i1).str.strip()
+        for name, (i0, i1) in _LOCL_SLICES.items():
+            # series = df["locl"].str.slice(i0, i1).str.strip().str.replace("", "0")
+            if name in ("jl", "Kal", "Kcl"):
+                df[name] = df["locl"].str.slice(i0, i1).str.strip().astype("int64")
+            else:
+                df[name] = df["locu"].str.slice(i0, i1).str.strip()
+        df.drop("locu", inplace=True)
+        df.drop("locl", inplace=True)
+    else:
+        # str.slice + astype in one go
+        for name, (i0, i1) in _LOCU_SLICES.items():
+            series = df["locu"].str.slice(i0, i1).str.strip().replace("", "0")
+            if name in ("ju", "Kau", "Kcu"):
+                df[name] = series.astype("int64")
+            else:
+                df[name] = series
 
-    df.drop(columns=["locu", "locl"], inplace=True)
+        for name, (i0, i1) in _LOCL_SLICES.items():
+            series = df["locl"].str.slice(i0, i1).str.strip().replace("", "0")
+            if name in ("jl", "Kal", "Kcl"):
+                df[name] = series.astype("int64")
+            else:
+                df[name] = series
+
+        df.drop(columns=["locu", "locl"], inplace=True)
 
     return df
 
@@ -1525,13 +1528,6 @@ def parse_local_quanta(
     mol: str
         molecule name
     """
-    if dataframe_type == "vaex" and fast_parsing:
-        fast_parsing = False
-        warnings.warn(
-            "The 'fast_parsing' option only supports dataframe_type='pandas' (pandas-based operations). "
-            "Therefore, 'fast_parsing' is set to False.",
-            UserWarning,
-        )
 
     if mol in HITRAN_GROUP1:
         if fast_parsing:
@@ -1574,14 +1570,6 @@ def parse_global_quanta(
     mol: str
         molecule name
     """
-    if dataframe_type == "vaex" and fast_parsing:
-        fast_parsing = False
-        warnings.warn(
-            "The 'fast_parsing' option only supports dataframe_type='pandas' (pandas-based operations). "
-            "Therefore, 'fast_parsing' is set to False.",
-            UserWarning,
-        )
-
     if mol in HITRAN_CLASS1:
         df = _parse_HITRAN_class1(df, verbose=verbose, dataframe_type=dataframe_type)
     elif mol in HITRAN_CLASS2:
