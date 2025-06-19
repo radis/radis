@@ -859,7 +859,8 @@ def _parse_HITRAN_class6_fast_parsing(df, verbose=True, dataframe_type="pandas")
             df[name] = df["globl"].str.slice(i0, i1).str.strip().astype("int64")
         df.drop("globu", inplace=True)
         df.drop("globl", inplace=True)
-    else:
+        return df
+    elif dataframe_type == "pandas":
         for name, (i0, i1) in _GLOBU_SLICES.items():
             series = df["globu"].str.slice(i0, i1).str.strip().replace("", "0")
             df[name] = series.astype("int64")
@@ -867,8 +868,9 @@ def _parse_HITRAN_class6_fast_parsing(df, verbose=True, dataframe_type="pandas")
             series = df["globl"].str.slice(i0, i1).str.strip().replace("", "0")
             df[name] = series.astype("int64")
         df.drop(columns=["globu", "globl"], inplace=True)
-
-    return df
+        return df
+    else:
+        raise NotImplementedError(dataframe_type)
 
 
 def _parse_HITRAN_class6(df, verbose=True, dataframe_type="pandas"):
@@ -1161,7 +1163,8 @@ def _parse_HITRAN_group1_fast_parsing(df, verbose=True, dataframe_type="pandas")
                 df[name] = df["locu"].str.slice(i0, i1).str.strip()
         df.drop("locu", inplace=True)
         df.drop("locl", inplace=True)
-    else:
+        return df
+    elif dataframe_type == "pandas":
         # str.slice + astype in one go
         for name, (i0, i1) in _LOCU_SLICES.items():
             series = df["locu"].str.slice(i0, i1).str.strip().replace("", "0")
@@ -1178,8 +1181,9 @@ def _parse_HITRAN_group1_fast_parsing(df, verbose=True, dataframe_type="pandas")
                 df[name] = series
 
         df.drop(columns=["locu", "locl"], inplace=True)
-
-    return df
+        return df
+    else:
+        raise NotImplementedError(dataframe_type)
 
 
 def _parse_HITRAN_group1(df, verbose=True, dataframe_type="pandas"):
@@ -1352,7 +1356,7 @@ def _parse_HITRAN_group2_fast_parsing(df, verbose=True, dataframe_type="pandas")
         df.drop("locu", inplace=True)
         df.drop("locl", inplace=True)
         return df
-    else:
+    elif dataframe_type == "pandas":
         # pandas: str.slice + replace + astype
         for name, (i0, i1) in _LOCU_SLICES.items():
             series = df["locu"].str.slice(i0, i1).str.strip().replace("", "0")
@@ -1367,7 +1371,8 @@ def _parse_HITRAN_group2_fast_parsing(df, verbose=True, dataframe_type="pandas")
 
         df.drop(columns=["locu", "locl"], inplace=True)
         return df
-
+    else:
+        raise NotImplementedError(dataframe_type)
 
 def _parse_HITRAN_group2(df, verbose=True, dataframe_type="pandas"):
     r"""Parse diatomic and linear molecules (:py:attr:`~radis.db.classes.HITRAN_GROUP2` ):
