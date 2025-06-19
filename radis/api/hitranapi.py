@@ -628,6 +628,89 @@ def _parse_HITRAN_class3(df, verbose=True):
     return df
 
 
+def _parse_HITRAN_class4_fast_parsing(df, verbose=True, dataframe_type="pandas"):
+    r"""Fast parse linear triatomic class in HITRAN [1]_: N2O, OCS, HCN
+
+    Parameters
+    ----------
+
+    df: pandas DataFrame
+        lines read from a HITRAN-like database
+    dataframe_type : str
+        pandas or vaex
+
+    Returns
+    -------
+    pandas DataFrame or Vaex DataFrame
+
+    Notes
+    -----
+
+    This function slices fixed-width fields instead of using regex, matching
+    the original behavior exactly. Non-numeric slices are coerced to 0.
+
+    HITRAN syntax:
+
+    >>>     v1 v2 l2 v3
+    >>>  7x I2 I2 I2 I2
+
+    Note: I2 in regexp: [\d ]{2}
+
+    References
+    ----------
+
+    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
+
+    """
+    # Define slice indices based on fixed-format positions
+    _GLOBU_SLICES = {
+        "v1u": (7, 9),
+        "v2u": (9, 11),
+        "l2u": (11, 13),
+        "v3u": (13, 15),
+    }
+    _GLOBL_SLICES = {
+        "v1l": (7, 9),
+        "v2l": (9, 11),
+        "l2l": (11, 13),
+        "v3l": (13, 15),
+    }
+
+    # Helper to coerce non-numeric to zero
+    def _coerce_int(series):
+        return pd.to_numeric(series, errors="coerce").fillna(0).astype("int64")
+
+    if dataframe_type == "vaex":
+        for name, (i0, i1) in _GLOBU_SLICES.items():
+            sliced = df["globu"].str.slice(i0, i1).str.strip()
+            # Replace all non-digit characters with '0'
+            cleaned = sliced.str.replace(pat=r"[^0-9]", repl="0", regex=True)
+            df[name] = cleaned.astype("int64")
+
+        for name, (i0, i1) in _GLOBL_SLICES.items():
+            sliced = df["globl"].str.slice(i0, i1).str.strip()
+            # Replace all non-digit characters with '0'
+            cleaned = sliced.str.replace(pat=r"[^0-9]", repl="0", regex=True)
+            df[name] = cleaned.astype("int64")
+
+        df.drop("globu", inplace=True)
+        df.drop("globl", inplace=True)
+        return df
+
+    elif dataframe_type == "pandas":
+        for name, (i0, i1) in _GLOBU_SLICES.items():
+            series = df["globu"].str.slice(i0, i1).str.strip().replace("", "0")
+            df[name] = _coerce_int(series)
+        for name, (i0, i1) in _GLOBL_SLICES.items():
+            series = df["globl"].str.slice(i0, i1).str.strip().replace("", "0")
+            df[name] = _coerce_int(series)
+        df.drop(columns=["globu", "globl"], inplace=True)
+        return df
+
+    else:
+        raise NotImplementedError(f"Unknown dataframe_type: {dataframe_type}")
+
+
 def _parse_HITRAN_class4(df, verbose=True, dataframe_type="pandas"):
     r"""Parse linear triatomic class in HITRAN [1]_: N2O, OCS, HCN
 
@@ -1584,7 +1667,14 @@ def parse_global_quanta(
     elif mol in HITRAN_CLASS3:
         df = _parse_HITRAN_class3(df, verbose=verbose)
     elif mol in HITRAN_CLASS4:
-        df = _parse_HITRAN_class4(df, verbose=verbose, dataframe_type=dataframe_type)
+        if fast_parsing:
+            df = _parse_HITRAN_class4_fast_parsing(
+                df, verbose=verbose, dataframe_type=dataframe_type
+            )
+        else:
+            df = _parse_HITRAN_class4(
+                df, verbose=verbose, dataframe_type=dataframe_type
+            )
     elif mol in HITRAN_CLASS5:
         df = _parse_HITRAN_class5(df, verbose=verbose, dataframe_type=dataframe_type)
     elif mol in HITRAN_CLASS6:
