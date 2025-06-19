@@ -1307,7 +1307,8 @@ def _parse_HITRAN_group2_fast_parsing(df, verbose=True, dataframe_type="pandas")
 
     Returns
     -------
-    pandas Dataframe or Vaex Dataframe
+        pandas Dataframe or Vaex Dataframe
+
 
     Notes
     -----
@@ -1316,9 +1317,10 @@ def _parse_HITRAN_group2_fast_parsing(df, verbose=True, dataframe_type="pandas")
     This makes it faster but less flexible. Currently, it behaves the same as the
     equivalent regex version.
 
-    Added in PR #826.
+    Added in PR #836.
 
-    HITRAN syntax: [1]_
+    HITRAN syntax: [1]
+
 
     References
     ----------
