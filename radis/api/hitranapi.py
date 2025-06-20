@@ -485,6 +485,76 @@ def post_process_hitran_data(
 
 
 # %% Hitran global quanta classes
+def _parse_HITRAN_class1_fast_parsing(df, verbose=True, dataframe_type="pandas"):
+    r"""Diatomic molecules: CO, HF, HCl, HBr, HI, N2, NO+
+
+
+    Parameters
+    ----------
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+    dataframe_type : str
+        pandas or vaex
+
+    Returns
+    -------
+        pandas Dataframe or Vaex Dataframe
+
+    Notes
+    -----
+    Uses fixed-width slicing based on HITRAN columns for speed.
+
+    HITRAN syntax [1]_ :
+
+    >>>       v
+    >>>  13x I2
+
+    References
+    ----------
+
+    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
+
+
+    """
+    # Define slice positions for upper and lower vib states
+    _GLOBU_SLICES = {
+        "vu": (13, 15),
+    }
+    _GLOBL_SLICES = {
+        "vl": (13, 15),
+    }
+
+    if dataframe_type == "vaex":
+        # Ensure string type
+        df["globu"] = df["globu"].astype(str)
+        df["globl"] = df["globl"].astype(str)
+
+        # Slice and convert in-place
+        for name, (i0, i1) in _GLOBU_SLICES.items():
+            df[name] = df["globu"].str.slice(i0, i1).str.strip().astype("int64")
+        for name, (i0, i1) in _GLOBL_SLICES.items():
+            df[name] = df["globl"].str.slice(i0, i1).str.strip().astype("int64")
+
+        # Drop originals
+        df.drop(["globu", "globl"], inplace=True)
+        return df
+
+    else:
+        # pandas path: cast to str first
+        for name, (i0, i1) in _GLOBU_SLICES.items():
+            series = (
+                df["globu"].astype(str).str.slice(i0, i1).str.strip().replace("", "0")
+            )
+            df[name] = series.astype("int64")
+        for name, (i0, i1) in _GLOBL_SLICES.items():
+            series = (
+                df["globl"].astype(str).str.slice(i0, i1).str.strip().replace("", "0")
+            )
+            df[name] = series.astype("int64")
+
+        # Drop originals
+        df.drop(columns=["globu", "globl"], inplace=True)
+        return df
 
 
 def _parse_HITRAN_class1(df, verbose=True, dataframe_type="pandas"):
@@ -1578,7 +1648,14 @@ def parse_global_quanta(
         molecule name
     """
     if mol in HITRAN_CLASS1:
-        df = _parse_HITRAN_class1(df, verbose=verbose, dataframe_type=dataframe_type)
+        if fast_parsing:
+            df = _parse_HITRAN_class1_fast_parsing(
+                df, verbose=verbose, dataframe_type=dataframe_type
+            )
+        else:
+            df = _parse_HITRAN_class1(
+                df, verbose=verbose, dataframe_type=dataframe_type
+            )
     elif mol in HITRAN_CLASS2:
         df = _parse_HITRAN_class2(df, verbose=verbose)
     elif mol in HITRAN_CLASS3:
