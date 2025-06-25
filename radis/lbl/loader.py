@@ -1018,6 +1018,7 @@ class DatabankLoader(object):
         load_columns="equilibrium",
         parallel=True,
         extra_params=None,
+        **kwargs,
     ):
         """
         Fetch the latest files from [HITRAN-2020]_, [HITEMP-2010]_ (or newer),
@@ -1388,6 +1389,7 @@ class DatabankLoader(object):
                     return_partition_function=True,
                     engine=memory_mapping_engine,
                     output=output,
+                    **kwargs,
                 )
                 # @dev refactor : have a DatabaseClass from which we load lines and partition functions
                 if len(df) > 0:
