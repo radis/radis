@@ -8,14 +8,125 @@ Created on Sun May 22 18:11:23 2022
 import pathlib
 
 import numpy as np
+import pandas as pd
 
 from radis.api.exomolapi import (
     MdbExomol,
     get_exomol_database_list,
     get_exomol_full_isotope_name,
+    read_states,
 )
 from radis.db.classes import get_molecule_identifier
 
+# ExoMol state/transition processing and degeneracy calculation logic
+def _map_states_to_transitions(df, states_df):
+    """Map electronic state information from energy levels to transitions."""
+    if 'Es' in states_df.columns:
+        state_map = dict(zip(states_df['i'], states_df['Es']))
+    elif 'state' in states_df.columns:
+        state_map = dict(zip(states_df['i'], states_df['state']))
+    else:
+        print("Warning: No electronic state column found in states DataFrame")
+        return df
+    df['state_lower'] = df['i_lower'].map(state_map)
+    df['state_upper'] = df['i_upper'].map(state_map)
+    return df
+
+def _get_electronic_state_energy(state_label):
+    """Get electronic state energy from ExoMol state label."""
+    if state_label is None:
+        return 0.0
+    OH_STATE_ENERGIES = {
+        'X2Pi': 0.0,
+        'A2Sigma+': 32600.0,
+        'B2Sigma+': 50000.0,
+        'C2Sigma+': 75000.0,
+    }
+    base_state = state_label.split()[0].split('-')[0]
+    if base_state in OH_STATE_ENERGIES:
+        return OH_STATE_ENERGIES[base_state]
+    else:
+        raise ValueError(f"Unknown electronic state: {base_state}. Known states: {list(OH_STATE_ENERGIES.keys())}")
+
+def _convert_branch_format(branch_str):
+    """Convert ExoMol branch format to RADIS numeric format."""
+    if pd.isna(branch_str):
+        return 0
+    try:
+        num = int(branch_str.split('/')[0])
+        if num == 1:
+            return 1
+        elif num == 3:
+            return -1
+        else:
+            return 0
+    except (ValueError, IndexError):
+        return 0
+
+def _calculate_rotational_energy(J, B=18.911, D=0.00019):
+    """Calculate rotational energy for OH using proper formula."""
+    return B * J * (J + 1) - D * J**2 * (J + 1)**2
+
+def _process_electronic_states(df, states_df=None):
+    """Process electronic state information from ExoMol format to RADIS format."""
+    if states_df is not None and ('state' in states_df.columns or 'Es' in states_df.columns):
+        df = _map_states_to_transitions(df, states_df)
+    if 'ge' not in df.columns:
+        if 'g' in df.columns:
+            df['ge'] = df['g']
+        elif 'gup' in df.columns:
+            df['ge'] = df['gup']
+        elif 'g_l' in df.columns:
+            df['ge'] = df['g_l']
+        else:
+            raise KeyError("No 'ge', 'g', 'gup', or 'g_l' column found in DataFrame for electronic degeneracy. Columns present: {}".format(df.columns))
+    if "state_lower" in df.columns and "state_upper" in df.columns:
+        df["Eel_lower"] = df["state_lower"].apply(_get_electronic_state_energy)
+        df["Eel_upper"] = df["state_upper"].apply(_get_electronic_state_energy)
+        df["Evibl"] = (df["elower"] - df["Eel_lower"]).astype(float)
+        df["Evibu"] = (df["eupper"] - df["Eel_upper"]).astype(float)
+        if "jl" in df.columns:
+            df["Erotl"] = df["jl"].apply(_calculate_rotational_energy)
+        if "ju" in df.columns:
+            df["Erotu"] = df["ju"].apply(_calculate_rotational_energy)
+        df["vl"] = df["state_lower"].str.extract(r"v=(\d+)").astype(float)
+        df["vu"] = df["state_upper"].str.extract(r"v=(\d+)").astype(float)
+        branch_str = df["state_lower"].str.extract(r"(\d+/\d+)")
+        df["branch"] = branch_str.apply(_convert_branch_format)
+        if "J" in df.columns:
+            df["jl"] = df["J"].astype(float)
+            df["ju"] = df["J"].astype(float)
+    else:
+        df["Evibl"] = np.nan
+        df["Evibu"] = np.nan
+        df["Erotl"] = np.nan
+        df["Erotu"] = np.nan
+        df["vl"] = np.nan
+        df["vu"] = np.nan
+        df["jl"] = np.nan
+        df["ju"] = np.nan
+    return df
+
+def _calc_degeneracies_exomol(df):
+    """Calculate degeneracies for ExoMol data."""
+    df["gvibl"] = 1.0
+    df["gvibu"] = 1.0
+    if "jl" in df.columns:
+        df["grotl"] = 2 * df["jl"] + 1
+    if "ju" in df.columns:
+        df["grotu"] = 2 * df["ju"] + 1
+    if "state_lower" in df.columns:
+        df["gel"] = df["state_lower"].apply(lambda x: 2.0 if "2Pi" in x or "2Sigma+" in x else 1.0)
+    if "state_upper" in df.columns:
+        df["geu"] = df["state_upper"].apply(lambda x: 2.0 if "2Pi" in x or "2Sigma+" in x else 1.0)
+    if "gel" not in df.columns:
+        df["gel"] = 1.0
+    if "geu" not in df.columns:
+        df["geu"] = 1.0
+    df["gl"] = df["gvibl"] * df["grotl"] * df["gel"]
+    df["gu"] = df["gvibu"] * df["grotu"] * df["geu"]
+    return df
+#End calculation logic 
 
 def fetch_exomol(
     molecule,
@@ -316,6 +427,43 @@ def fetch_exomol(
         elif output == "pandas":
             for k, v in attrs.items():
                 df.attrs[k] = v
+
+    # Ensure 'branch' column exists for non-LTE calculations
+    if 'branch' not in df.columns:
+        if 'PQR' in df.columns:
+            df['branch'] = df['PQR']
+        else:
+            # Fallback: set all to Q branch (0)
+            df['branch'] = 0
+
+    # Ensure 'vl' and 'vu' columns exist for non-LTE calculations
+    # Try common ExoMol vibrational quantum number columns
+    if 'vl' not in df.columns:
+        if 'v_l' in df.columns:
+            df['vl'] = df['v_l']
+        elif 'v' in df.columns:
+            df['vl'] = df['v']
+        else:
+            df['vl'] = 0
+    if 'vu' not in df.columns:
+        if 'v_u' in df.columns:
+            df['vu'] = df['v_u']
+        elif 'v' in df.columns:
+            df['vu'] = df['v']
+        else:
+            df['vu'] = 0
+
+    # Ensure vibrational degeneracy exists for non-LTE calculations
+    # For diatomics (like OH), gvib = 1 is physically correct
+    if 'gvib' not in df.columns:
+        df['gvib'] = 1
+
+    # Calculate all degeneracies (vibrational, rotational, electronic, and total)
+    df = _calc_degeneracies_exomol(df)
+
+    # Set dbformat to hdf5-radisdb for compatibility
+    df.attrs["dbformat"] = "hdf5-radisdb"
+
     # Return:
     out = df
     if return_local_path or return_partition_function:

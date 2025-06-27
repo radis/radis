@@ -730,6 +730,8 @@ class ElectronicState(Isotope):
     Ediss: cm-1
         dissociation energy. Required for partition function calculation
         if neither vmax nor Jmax are given
+    Te: cm-1
+        electronic energy. Default ``None`` if not given
     kwargs: **dict
         forwarded to parent class
 
@@ -771,9 +773,14 @@ class ElectronicState(Isotope):
         vmax_morse=None,
         Jmax=None,
         Ediss=None,
+        Te=None,  # Accept Te directly
         **kwargs,
     ):
-
+        # Remove Te from kwargs if present, and store as attribute
+        if 'Te' in kwargs:
+            Te = kwargs.pop('Te')
+        self.Te = Te if Te is not None else 0.0
+        # Now call parent constructor with only expected arguments
         super(ElectronicState, self).__init__(
             molecule_name=molecule_name, isotope=isotope, **kwargs
         )  # initialize Isotope

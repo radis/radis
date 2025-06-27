@@ -83,6 +83,7 @@ from radis.levels.partfunc import (
     PartFuncTIPS,
     RovibParFuncCalculator,
     RovibParFuncTabulator,
+    PartFuncExoMol,
 )
 from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDcalc, PartFuncCO2_CDSDtab
 from radis.misc.arrays import count_nans
@@ -1128,8 +1129,10 @@ class DatabankLoader(object):
 
         elif compare_source == "exomol":
             dbformat = (
-                "exomol-radisdb"  # downloaded in RADIS local databases ~/.radisdb
+                "hdf5-radisdb"  # Use hdf5-radisdb for ExoMol data
             )
+            if self.verbose:
+                print("DEBUG: Entering ExoMol fetch section")
         elif compare_source == "geisa":
             dbformat = "geisa"
             if database == "default":
@@ -2330,6 +2333,15 @@ class DatabankLoader(object):
                 )
                 self.parsum_calc[molecule][iso][state] = ParsumCalc
 
+        # Use ExoMol partition function for ExoMol molecules
+        elif levelsfmt == "exomol":
+            # For non-equilibrium, explicit energy levels are required. If not provided, raise an error.
+            raise ValueError("Explicit energy levels are required for non-equilibrium ExoMol calculations. Please provide levels for each isotope.")
+
+        else:
+            raise ValueError("Unknown format for energy levels : {0}".format(levelsfmt))
+            # other formats ?
+
     def _check_line_databank(self):
         """Make sure database is loaded, loads if it isnt and we have all the
         information needed.
@@ -3113,6 +3125,11 @@ class DatabankLoader(object):
             )
             # note: use 'levels' (useless here) to specify calculations options
             # for the abinitio calculation ? Like Jmax, etc.
+
+        # Use ExoMol partition function for ExoMol molecules
+        elif levelsfmt == "exomol":
+            # For non-equilibrium, explicit energy levels are required. If not provided, raise an error.
+            raise ValueError("Explicit energy levels are required for non-equilibrium ExoMol calculations. Please provide levels for each isotope.")
 
         else:
             raise ValueError("Unknown format for energy levels : {0}".format(levelsfmt))

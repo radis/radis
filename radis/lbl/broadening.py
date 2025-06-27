@@ -1818,11 +1818,12 @@ class BroadenFactory(BaseFactory):
         # ------------------------------------
 
         def _init_w_axis(w_dat, log_p):
+            """Initialize w axis for LDM"""
             w_min = w_dat.min()
-            if w_min.min() < 0:
+            if w_min < 0:
                 self.warn(
                     "Some line(s) had a calculated broadening < 0 cm-1. Check the database. At least this line is faulty: \n\n"
-                    + "{}".format(self.df1.iloc[(w_min <= 0).argmax()])
+                    + "{}".format(self.df1.iloc[(w_dat <= 0).argmax()])
                     + "\n\nIf you want to ignore, use `warnings['ZeroBroadeningWarning'] = 'ignore'`",
                     category="ZeroBroadeningWarning",
                 )
@@ -1831,6 +1832,7 @@ class BroadenFactory(BaseFactory):
                 w_dat.max() + 1e-4
             )  # Add small number to prevent w_max falling outside of the grid
             N = np.ceil((np.log(w_max) - np.log(w_min)) / log_p) + 1
+            
             return w_min * np.exp(log_p * np.arange(N))
 
         log_pL = self.params.dxL  # LDM user params
@@ -1842,6 +1844,19 @@ class BroadenFactory(BaseFactory):
         elif self.dataframe_type == "vaex":
             wL_dat = df.hwhm_lorentz * 2.000  # FWHM
             wG_dat = df.hwhm_gauss * 2.000  # FWHM
+
+        # assign default if all-NaN or any NaN
+        if np.isnan(wL_dat).all() or np.isnan(wG_dat).all():
+            print("[WARNING] All broadening parameters are NaN. Assigning default value 0.05 cm-1.")
+            wL_dat = np.full_like(wL_dat, 0.05)
+            wG_dat = np.full_like(wG_dat, 0.05)
+        else:
+            if np.isnan(wL_dat).any():
+                print("[WARNING] Some Lorentzian broadening values are NaN. Assigning default value 0.05 cm-1 to NaNs.")
+                wL_dat = np.where(np.isnan(wL_dat), 0.05, wL_dat)
+            if np.isnan(wG_dat).any():
+                print("[WARNING] Some Gaussian broadening values are NaN. Assigning default value 0.05 cm-1 to NaNs.")
+                wG_dat = np.where(np.isnan(wG_dat), 0.05, wG_dat)
 
         wL = _init_w_axis(wL_dat, log_pL)  # FWHM
         self.NwL = len(wL)

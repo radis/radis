@@ -144,7 +144,7 @@ def read_def(deff):
         quantum_labels = ["v"]
         # See https://github.com/HajimeKawahara/exojax/issues/330
     if deff.stem == "16O-1H__MoLLIST":
-        quantum_labels = ["e/f", "v", "F1/F2", "Es"]
+        quantum_labels = ["e/f", "v", "F1/F2", "Es", "state"]
 
     if deff.stem == "1H-2H-16O__VTT":
         numinf = wavenumber_range_HDO_VTT()
@@ -325,7 +325,7 @@ def read_trans(transf, engine="vaex"):
 
 
 def read_states(
-    statesf, dic_def, engine="vaex", skip_optional_data=True, print_states=False
+    statesf, dic_def, engine="vaex", skip_optional_data=False, print_states=False
 ):
     """Exomol IO for a state file
 
@@ -383,20 +383,54 @@ def read_states(
     .. [2] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Clark, V. H. J., Chubb, K. L., Conway, E. K., … Yurchenko, O. P. (2020). The 2020 release of the ExoMol database: Molecular line lists for exoplanet and other hot atmospheres. Journal of Quantitative Spectroscopy and Radiative Transfer, 255, 107228. https://doi.org/10.1016/j.jqsrt.2020.107228
 
     """
-    # we read first 4 columns for ("i", "E", "g", "J"),
-    # skip lifetime, skip Landé g-factor,
-    # read quantum numbers
+    # Special handling for OH MoLLIST: override column names to match actual file
+    import pathlib
+    statesf_path = pathlib.Path(statesf)
+    is_oh_mollist = (
+        "16O-1H__MoLLIST-OH" in str(statesf_path)
+        or (hasattr(statesf_path, 'stem') and statesf_path.stem.startswith("16O-1H__MoLLIST-OH"))
+        or (hasattr(statesf_path, 'name') and statesf_path.name.startswith("16O-1H__MoLLIST-OH"))
+    )
+    if is_oh_mollist:
+        # Use the correct columns for OH MoLLIST 
+        oh_mollist_columns = ["n", "E", "g", "J", "e/f", "v", "F1/F2", "State"]
+        # Read the file (no header)
+        import bz2
+        import pandas as pd
+        with bz2.open(statesf, "rt") as f:
+            lines = [line for line in f if line.strip() and not line.startswith("#")]
+        # Split each line by whitespace
+        data = [re.split(r"\s+", line.strip()) for line in lines]
+        # Check column count
+        for i, row in enumerate(data):
+            if len(row) != len(oh_mollist_columns):
+                raise ValueError(f"Row {i} in {statesf} has {len(row)} columns, expected {len(oh_mollist_columns)}. Row: {row}")
+        dat = pd.DataFrame(data, columns=oh_mollist_columns)
+        # Rename columns for RADIS compatibility
+        dat = dat.rename(columns={"n": "i", "State": "state"})
+        # Convert numeric columns
+        for col in ["i", "E", "g", "J", "v", "F1/F2"]:
+            dat[col] = pd.to_numeric(dat[col], errors="coerce")
+        if print_states:
+            print(dat)
+        import vaex
+        dat = vaex.from_pandas(dat)
+        return dat
+    # --- Default logic for all other molecules ---
     N_otherfields = np.size(dic_def["quantum_labels"])
     quantum_labels = dic_def["quantum_labels"]
-
+    # Always set the last quantum label as 'state' for ExoMol parsing
+    if len(quantum_labels) > 0:
+        quantum_labels = list(quantum_labels)
+        quantum_labels[-1] = "state"
     mandatory_fields = ("i", "E", "g", "J")
     N_mandatory_fields = len(mandatory_fields)
     mandatory_usecol = np.arange(N_mandatory_fields)
     if skip_optional_data:
-        usecol = mandatory_usecol
-        names = mandatory_fields
+        usecol = np.arange(0, N_mandatory_fields + N_otherfields)
+        names = mandatory_fields + tuple(quantum_labels)
     else:
-        label = np.array(["unc", "lifetime", "Lande"])
+        label = np.array(["unc", "lifetime", "Landé"])
         mask = np.array([dic_def["unc"], dic_def["Landé"], dic_def["lifetime"]])
         N_except = np.sum(mask)
         usecol = np.arange(0, N_mandatory_fields + N_except + N_otherfields)
@@ -412,8 +446,7 @@ def read_states(
             f.close()
         if len(splitline) != len(names):
             warnings.warn(
-                "There appear to be further additional columns in .state file,"
-                + "which are not defined in .def file. We skip them."
+                "There appear to be further additional columns in .state file," + "which are not defined in .def file. We skip them."
             )
 
     if engine == "vaex":
@@ -514,7 +547,7 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
 
             # WIP. First implementation with join(). Use Map() will probably be faster.
             trans.join(
-                states[states_key, col],
+                states[[states_key, col]],
                 left_on=trans_key,
                 right_on=states_key,
                 inplace=True,
@@ -524,27 +557,18 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
         return trans
 
     trans = map_add(trans, "g", "gup", "i_upper")
-    trans = map_add(trans, "J", "jlower", "i_lower")
-    trans = map_add(trans, "J", "jupper", "i_upper")
+    trans = map_add(trans, "g", "glow", "i_lower")
+    trans = map_add(trans, "E", "eupper", "i_upper")
     trans = map_add(trans, "E", "elower", "i_lower")
-
-    def has_nan(column):
-        try:  # Vaex
-            return column.countnan() > 0
-        except AttributeError:  # Pandas
-            return column.hasnans
-
-    if not "nu_lines" in trans or has_nan(trans["nu_lines"]):
-        trans = map_add(trans, "E", "eupper", "i_upper")
-        trans["nu_lines"] = trans["eupper"] - trans["elower"]
-
-    ### Step 2. Extra quantum numbers (e/f parity, vib and rot numbers)
-    # -----------------------------------------------------------------
-    if not skip_optional_data:
-        for q in dic_def["quantum_labels"]:
-            trans = map_add(trans, q, f"{q}_l", "i_lower")
-            trans = map_add(trans, q, f"{q}_u", "i_upper")
-
+    trans = map_add(trans, "J", "jupper", "i_upper")
+    trans = map_add(trans, "J", "jlower", "i_lower")
+    # Add electronic state and parity if present
+    if "state" in states.columns:
+        trans = map_add(trans, "state", "state_up", "i_upper")
+        trans = map_add(trans, "state", "state_low", "i_lower")
+    if "parity" in states.columns:
+        trans = map_add(trans, "parity", "parity_up", "i_upper")
+        trans = map_add(trans, "parity", "parity_low", "i_lower")
     return trans
 
 
