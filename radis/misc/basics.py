@@ -186,7 +186,7 @@ def compare_dict(
 
     try:
 
-        print("{0:15}{1:17}\t{2}".format("Key", df1_str, df2_str))
+        print(f"{'Key':15}{df1_str:17}\t{df2_str}")
         print("-" * 40)
         all_keys = set(list(d1.keys()) + list(d2.keys()))
         all_keys = [k for k in all_keys if k not in ignore_keys]
@@ -196,25 +196,25 @@ def compare_dict(
                 # Deal with path case
                 if k in compare_as_paths:
                     if not compare_paths(d1[k], d2[k]):
-                        print("{0:15}{1}\t{2}".format(k, d1[k], d2[k]))
+                        print(f"{k:15}{d1[k]}\t{d2[k]}")
                     else:
                         s += 1
                 # Deal with is close case
                 elif k in compare_as_close:
                     if not np.isclose(d1[k], d2[k]):
-                        print("{0:15}{1}\t{2}".format(k, d1[k], d2[k]))
+                        print(f"{k:15}{d1[k]}\t{d2[k]}")
                     else:
                         s += 1
                 # Other cases
                 else:
                     if d1[k] != d2[k]:
-                        print("{0:15}{1}\t{2}".format(k, d1[k], d2[k]))
+                        print(f"{k:15}{d1[k]}\t{d2[k]}")
                     else:
                         s += 1
             elif k in d1:
-                print("{0:15}{1}\tN/A".format(k, d1[k]))
+                print(f"{k:15}{d1[k]}\tN/A")
             else:
-                print("{0:15}N/A\t{1}".format(k, d2[k]))
+                print(f"{k:15}N/A\t{d2[k]}")
         print("-" * 40)
 
         if len(all_keys) == 0:
@@ -279,7 +279,7 @@ def compare_lists(
 
     try:
         tab = "        " if print_index else ""
-        print(tab + "{0:20}\t\t{1}".format(l1_str, tab + l2_str))
+        print(tab + f"{l1_str:20}\t\t{tab + l2_str}")
         print(tab + "-" * (44 + len(tab)))
         all_keys = set(list(l1) + list(l2))
         s = 0  # counter of all matching keys
@@ -288,15 +288,14 @@ def compare_lists(
                 s += 1
             elif k in l1:
                 l1_index_str = f"|#{l1.index(k):3}|  " if print_index else ""
-                print(
-                    "{0:20}\t\t{1}".format(
-                        l1_index_str + "{0} ({1})".format(k, type(k)), tab + "N/A"
-                    )
-                )
+                left = f"{l1_index_str}{k} ({type(k)})"
+                right = f"{tab}N/A"
+                print(f"{left:20}\t\t{right}")
+
             else:
                 l2_index_str = f"|#{l2.index(k):3}|  " if print_index else ""
                 print(
-                    "{0:20}\t\t{1} ({2})".format(tab + "N/A", l2_index_str + k, type(k))
+                    f"{tab + 'N/A':20}\t\t{l2_index_str + k} ({type(k)})"
                 )
         print(tab + "-" * (44 + len(tab)))
 
@@ -446,7 +445,7 @@ def expand_metadata(df, metadata):
         if __debug__ and k not in df.attrs:
             from radis.misc.debug import printdbg
 
-            printdbg("WARNING. {0} not in metadata: {1}".format(k, df.attrs))
+            printdbg(f"WARNING. {k} not in metadata: {df.attrs}")
         df[k] = getattr(df, k)
 
 

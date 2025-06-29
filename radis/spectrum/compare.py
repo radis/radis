@@ -540,8 +540,8 @@ def get_default_units(
             s1.units[var]
         except KeyError:  # unit not defined in dictionary
             raise KeyError(
-                "Iunit not defined in spectrum for variable {0}. ".format(var)
-                + "Cant use default unit. Specify unit in s.units['{0}'].".format(var)
+                f"Iunit not defined in spectrum for variable {var}. "
+                + f"Cant use default unit. Specify unit in s.units['{var}']."
             )
         # get default (note that default "Iunit" may depend on waveunit used. Let s.get() handle this)
         _, _, _, Iunit = s1.get(
@@ -594,7 +594,7 @@ def _get_wdiff_Idiff(
 
     for method in methods:
         if diff_window != 0 and method != "diff":
-            raise NotImplementedError("diff_window with method {0}".format(method))
+            raise NotImplementedError(f"diff_window with method {method}")
 
     # Get data
     # ----
@@ -633,13 +633,13 @@ def _get_wdiff_Idiff(
                     s1, s2, var=var, wunit=wunit, Iunit=Iunit, resample=resample
                 )
             else:
-                raise ValueError("Unknown comparison method: {0}".format(method))
+                raise ValueError(f"Unknown comparison method: {method}")
             wdiffs.append(wdiff)
             Idiffs.append(Idiff)
         else:
             if method == "distance":
                 raise NotImplementedError(
-                    "{0} was not implemented yet for normalized spectra".format(method)
+                    f"{method} was not implemented yet for normalized spectra"
                 )
             elif method == "diff":
                 if not resample:
@@ -650,7 +650,7 @@ def _get_wdiff_Idiff(
                     s1, s2, var=var, wunit=wunit, Iunit=Iunit, resample=resample
                 )
             else:
-                raise ValueError("Unknown comparison method: {0}".format(method))
+                raise ValueError(f"Unknown comparison method: {method}")
             wdiffs.append(wdiff)
             Idiffs.append(Idiff)
     return s1, s2, wdiffs, Idiffs, methods
@@ -921,7 +921,7 @@ def plot_diff(
         fig.text(
             0.02,
             0.5,
-            ("{0} (norm.)".format(make_up(var))),
+            (f"{make_up(var)} (norm.)"),
             va="center",
             rotation="vertical",
         )
@@ -929,7 +929,7 @@ def plot_diff(
         fig.text(
             0.02,
             0.5,
-            ("{0} ({1})".format(make_up(var), Iunit)),
+            (f"{make_up(var)} ({Iunit})"),
             va="center",
             rotation="vertical",
         )
@@ -1003,11 +1003,7 @@ def plot_diff(
 
         # Show residualget_residual
         if show_residual:
-            difftext += " (residual={0:.2g})".format(
-                get_residual(
-                    s1, s2, var=var, norm="L2", ignore_nan=True, diff_window=diff_window
-                )
-            )
+            difftext += f" (residual={get_residual(s1, s2, var=var, norm="L2", ignore_nan=True, diff_window=diff_window):.2g})"
         pos = ax1[i].get_position()
         fig.text(0.09, pos.ymax + 0.02, difftext)
 
@@ -1161,31 +1157,27 @@ def compare_spectra(
         raise ValueError("ignore_outliers should be < 1, or False")
     if not isinstance(other, Spectrum):
         raise TypeError(
-            "2nd object is not a Spectrum: got class {0}".format(other.__class__)
+            f"2nd object is not a Spectrum: got class {other.__class__}"
         )
     if isinstance(spectra_only, str):  # case where we compare all quantities
         if not spectra_only in first.get_vars():
             raise ValueError(
-                "{0} is not a spectral quantity in our Spectrum ({1})".format(
-                    spectra_only, first.get_vars()
-                )
+                f"{spectra_only} is not a spectral quantity in our Spectrum ({first.get_vars()})"
             )
         if not spectra_only in other.get_vars():
             raise ValueError(
-                "{0} is not a spectral quantity in the other Spectrum ({1})".format(
-                    spectra_only, other.get_vars()
-                )
+                f"{spectra_only} is not a spectral quantity in the other Spectrum ({other.get_vars()})"
             )
     if verbose:  # print conditions
         what = spectra_only if isinstance(spectra_only, str) else "all quantities"
-        msg = "compare {0} with rtol={1}".format(what, rtol)
+        msg = f"compare {what} with rtol={rtol}"
         if ignore_nan:
             msg += ", ignore_nan"
         if ignore_outliers:
-            msg += ", ignore_outliers={0}".format(ignore_outliers)
+            msg += f", ignore_outliers={ignore_outliers}"
         print(msg)
     if not plot and len(kwargs) > 0:
-        raise ValueError("Unexpected argument: {0}".format(kwargs))
+        raise ValueError(f"Unexpected argument: {kwargs}")
 
     if wunit == "default":
         wunit = first.get_waveunit()
@@ -1249,8 +1241,8 @@ def compare_spectra(
         print(
             "...",
             k,
-            "don't match (up to {0:.3}% diff.,".format(error * 100)
-            + " average {0:.3f}%)".format(avgerr * 100),
+            f"don't match (up to {error * 100:.3}% diff.,"
+            + f" average {avgerr * 100:.3f}%)",
         )
 
     b = True
@@ -1260,9 +1252,7 @@ def compare_spectra(
         b = set(first.get_vars()) == set(other.get_vars())
         if not b and verbose:
             print(
-                "... list of quantities dont match: {0} vs {1}".format(
-                    first.get_vars(), other.get_vars()
-                )
+                f"... list of quantities dont match: {first.get_vars()} vs {other.get_vars()}"
             )
         vars = [k for k in first.get_vars() if k in other.get_vars()]
 
@@ -1274,9 +1264,7 @@ def compare_spectra(
             w0, q0 = other.get(k, wunit=wunit, Iunit=first.units[k])
             if len(w) != len(w0):
                 print(
-                    "Wavespaces have different length (for {0}: {1} vs {2})".format(
-                        k, len(w), len(w0)
-                    )
+                    f"Wavespaces have different length (for {k}: {len(w)} vs {len(w0)})"
                 )
                 print("We interpolate one spectrum on the other one")
 
@@ -1315,7 +1303,7 @@ def compare_spectra(
                         **kwargs
                     )
                 except:
-                    print("... couldn't plot {0}".format(k))
+                    print(f"... couldn't plot {k}")
 
     else:
         # Compare spectral variables
@@ -1325,9 +1313,7 @@ def compare_spectra(
             w0, q0 = other.get(k, wunit=wunit, Iunit=first.units[k])
             if len(w) != len(w0):
                 print(
-                    "Wavespaces have different length (for {0}: {1} vs {2})".format(
-                        k, len(w), len(w0)
-                    )
+                    f"Wavespaces have different length (for {k}: {len(w)} vs {len(w0)})"
                 )
                 b1 = False
             else:
@@ -1339,8 +1325,8 @@ def compare_spectra(
                     print(
                         "...",
                         k,
-                        "don't match (up to {0:.3}% diff.,".format(error * 100)
-                        + " average {0:.3f}%)".format(avgerr * 100),
+                        f"don't match (up to {error * 100:.3}% diff.,"
+                        + f" average {avgerr * 100:.3f}%)",
                     )
             b *= b1
 
@@ -1356,7 +1342,7 @@ def compare_spectra(
                         **kwargs
                     )
                 except:
-                    print("... there was an error while plotting {0}".format(k))
+                    print(f"... there was an error while plotting {k}")
 
         # Compare conditions and units
         # -----------
@@ -1440,9 +1426,7 @@ def compare_spectra(
                                                 other.populations[molecule][isotope][
                                                     state
                                                 ][k],
-                                                "populations of {0}({1})(iso{2})".format(
-                                                    molecule, state, isotope
-                                                ),
+                                                f"populations of {molecule}({state})(iso{isotope})",
                                             )
                                         else:
                                             b5 *= (
@@ -1455,17 +1439,13 @@ def compare_spectra(
                                 b5 = False
                                 if verbose:
                                     print(
-                                        "{0}(iso{1}) states are different (see above)".format(
-                                            molecule, isotope
-                                        )
+                                        f"{molecule}(iso{isotope}) states are different (see above)"
                                     )
                     else:
                         b5 = False
                         if verbose:
                             print(
-                                "{0} isotopes are different (see above)".format(
-                                    molecule
-                                )
+                                f"{molecule} isotopes are different (see above)"
                             )
             else:
                 b5 = False
