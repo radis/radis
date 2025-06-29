@@ -95,7 +95,7 @@ class LevelsList(object):
             if not isinstance(s, Spectrum):
                 raise ValueError(
                     "`bands` must be a list of Spectrum objects. "
-                    + "Got {0}".format(type(s))
+                    + f"Got {type(s)}"
                 )
             if s.lines is None:
                 raise ValueError(
@@ -114,9 +114,7 @@ class LevelsList(object):
                 if s.conditions[k] != cond_ref[k]:
                     raise ValueError(
                         "Input conditions must be the same for all bands"
-                        + ". Got a difference for entry {0}: {1} vs {2}".format(
-                            k, s.conditions[k], cond_ref[k]
-                        )
+                        + f". Got a difference for entry {k}: {s.conditions[k]} vs {cond_ref[k]}"
                     )
 
         if "Tvib" in cond_ref:
@@ -255,7 +253,7 @@ class LevelsList(object):
 
         t0 = time()
         vib_levels = vib_levels.apply(add_viblvl, axis=1)
-        print("Added viblvl in {0:.2f}s".format(time() - t0))
+        print(f"Added viblvl in {time() - t0:.2f}s")
 
         # vib_levels = vib_levels.set_index(['p', 'c', 'N'])
         vib_levels = vib_levels.set_index(["viblvl"])
@@ -345,7 +343,7 @@ class LevelsList(object):
                 nvibQvib = g * exp(-hc_k * E_vib / Tvib)
             else:
                 raise NotImplementedError(
-                    "vib_distribution: {0}".format(vib_distribution)
+                    f"vib_distribution: {vib_distribution}"
                 )
 
         else:
@@ -366,7 +364,7 @@ class LevelsList(object):
                 )
             else:
                 raise NotImplementedError(
-                    "vib_distribution: {0}".format(vib_distribution)
+                    f"vib_distribution: {vib_distribution}"
                 )
 
         # Add overpopulation
@@ -505,9 +503,7 @@ class LevelsList(object):
             Tvib = self.Tvib_ref
         if Trot != self.Trot_ref:
             raise ValueError(
-                "Trot {0} doesnt match the reference Trot: {1}".format(
-                    Trot, self.Trot_ref
-                )
+                f"Trot {Trot} doesnt match the reference Trot: {self.Trot_ref}"
             )
         if mole_fraction is None:
             mole_fraction = self.mole_fraction_ref
@@ -576,7 +572,7 @@ class LevelsList(object):
                 corfactor_l = nl_vib / nl_vib_old * Qref / Q * Qvib / Qvib_ref
             else:
                 raise NotImplementedError(
-                    "vib_distribution: {0}".format(vib_distribution)
+                    f"vib_distribution: {vib_distribution}"
                 )
 
             rescale_updown_levels(band, corfactor_u, 1, corfactor_l, 1)
@@ -719,8 +715,8 @@ def rescale_updown_levels(
         qties = spec.get_vars()
         if q in qties and qns not in qties and not force:
             raise KeyError(
-                "Cant rescale {0} if {1} not stored".format(q, qns)
-                + " Use force=True to rescale anyway. {0}".format(q)
+                f"Cant rescale {q} if {qns} not stored"
+                + f" Use force=True to rescale anyway. {q}"
                 + " will be deleted"
             )
 

@@ -106,14 +106,12 @@ def get_convention(coefficients):
     )
     for k in non_herzberg_coeffs:
         if not k.startswith("Y"):
-            raise ValueError("Unexpected Spectroscopic coefficient: {0}".format(k))
+            raise ValueError(f"Unexpected Spectroscopic coefficient: {k}")
     dunham_coeffs = non_herzberg_coeffs
 
     if len(dunham_coeffs) > 0 and len(herzberg_coeffs) > 0:
         raise ValueError(
-            "Both Dunham ({0}) and Herzberg ({1}) conventions used".format(
-                dunham_coeffs, herzberg_coeffs
-            )
+            f"Both Dunham ({dunham_coeffs}) and Herzberg ({herzberg_coeffs}) conventions used"
             + ". Choose one only"
         )
 

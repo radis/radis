@@ -506,9 +506,7 @@ class SpectrumFactory(BandFactory):
 
         if kwargs0 != {}:
             raise TypeError(
-                "__init__() got an unexpected keyword argument '{0}'".format(
-                    list(kwargs0)[0]
-                )
+                f"__init__() got an unexpected keyword argument '{list(kwargs0)[0]}'"
             )
 
         if not 0 <= pseudo_continuum_threshold < 1:
@@ -518,7 +516,7 @@ class SpectrumFactory(BandFactory):
         ):
             raise ValueError(
                 "export_populations must be one of 'vib', 'rovib', "
-                + "or 'False'. Got '{0}'".format(export_populations)
+                + f"or 'False'. Got '{export_populations}'"
             )
 
         # calculate waveranges
@@ -568,13 +566,9 @@ class SpectrumFactory(BandFactory):
                     not in MOLECULES_LIST_EQUILIBRIUM + MOLECULES_LIST_NONEQUILIBRIUM
                 ):
                     raise ValueError(
-                        "Unsupported molecule: {0}.\n".format(molecule)
-                        + "Supported molecules are:\n - under equilibrium: {0}".format(
-                            MOLECULES_LIST_EQUILIBRIUM
-                        )
-                        + "\n- under nonequilibrium: {0}".format(
-                            MOLECULES_LIST_NONEQUILIBRIUM
-                        )
+                        f"Unsupported molecule: {molecule}.\n"
+                        + f"Supported molecules are:\n - under equilibrium: {MOLECULES_LIST_EQUILIBRIUM}"
+                        + f"\n- under nonequilibrium: {MOLECULES_LIST_NONEQUILIBRIUM}"
                         + "\n\nNote that RADIS now has ExoMol support, but not all ExoMol molecules are referenced in RADIS. If a molecule is available in ExoMol but does not appear in RADIS yet, please contact the RADIS team or write on https://github.com/radis/radis/issues/319"
                     )
                 self.input.isatom = False
@@ -596,9 +590,7 @@ class SpectrumFactory(BandFactory):
             isinstance(diluent, dict) and molecule in diluent.keys()
         ):
             raise KeyError(
-                "{0} is being called as molecule and diluent, please remove it from diluent.".format(
-                    molecule
-                )
+                f"{molecule} is being called as molecule and diluent, please remove it from diluent."
             )
 
         # Initialize input conditions
@@ -725,7 +717,7 @@ class SpectrumFactory(BandFactory):
         elif warnings in [False, "ignore"]:
             self.warnings["default"] = "ignore"
         else:
-            raise ValueError("Unexpected value for warnings: {0}".format(warnings))
+            raise ValueError(f"Unexpected value for warnings: {warnings}")
         # Set default values for warnings thresholds
         self.misc.warning_linestrength_cutoff = 1e-2
         self.misc.warning_broadening_threshold = 1e-2
@@ -835,7 +827,7 @@ class SpectrumFactory(BandFactory):
             self.input.pressure = pressure
         if not is_float(Tgas):
             raise ValueError(
-                "Tgas should be float or Astropy unit. Got {0}".format(Tgas)
+                f"Tgas should be float or Astropy unit. Got {Tgas}"
             )
         self.input.Tgas = Tgas
 
@@ -1664,7 +1656,7 @@ class SpectrumFactory(BandFactory):
                 Tvib = tuple([convert_and_strip_units(T, u.K) for T in Tvib])
             elif not is_float(Tvib):
                 raise TypeError(
-                    "Tvib should be float, or tuple (got {0})".format(type(Tvib))
+                    f"Tvib should be float, or tuple (got {type(Tvib)})"
                 )
             singleTvibmode = is_float(Tvib)
             if not is_float(Trot):
@@ -2039,9 +2031,7 @@ class SpectrumFactory(BandFactory):
             isinstance(diluent, dict) and molecule in diluent.keys()
         ):
             raise KeyError(
-                "{0} is being called as molecule and diluent, please remove it from diluent.".format(
-                    molecule
-                )
+                f"{molecule} is being called as molecule and diluent, please remove it from diluent."
             )
 
         # Using Spectrum Factory values of diluents
@@ -2061,13 +2051,9 @@ class SpectrumFactory(BandFactory):
         total_mole_fraction = mole_fraction + sum(list(diluents.values()))
         if not np.isclose(total_mole_fraction, 1):
             if total_mole_fraction > 1:
-                message = "Total molefraction = {0} of molecule and diluents greater than 1. Please set appropriate molefraction value of molecule and diluents.".format(
-                    total_mole_fraction
-                )
+                message = f"Total molefraction = {total_mole_fraction} of molecule and diluents greater than 1. Please set appropriate molefraction value of molecule and diluents."
             else:
-                message = "Total molefraction = {0} of molecule and diluents less than 1. Please set appropriate molefraction value of molecule and diluents".format(
-                    total_mole_fraction
-                )
+                message = f"Total molefraction = {total_mole_fraction} of molecule and diluents less than 1. Please set appropriate molefraction value of molecule and diluents"
             raise MoleFractionError(message)
         self._diluent = diluents
 

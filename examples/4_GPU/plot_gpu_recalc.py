@@ -49,15 +49,13 @@ s = sf.eq_spectrum_gpu(
     # device_id='nvidia',
 )
 s.apply_slit(0.5, unit="cm-1")  # cm-1
-print("Plot0 finished in {:6.1f} ms".format(s.conditions["calculation_time"] * 1e3))
+print(f"Plot0 finished in {s.conditions['calculation_time'] * 1e3:6.1f} ms")
 s.plot("radiance", wunit="nm", show=False)
 
 for i, T in enumerate(T_list[1:]):
     s.recalc_gpu(Tgas=T)
     print(
-        "Plot{:d} finished in {:6.1f} ms".format(
-            i + 1, s.conditions["calculation_time"] * 1e3
-        )
+        f"Plot{i + 1:d} finished in {s.conditions['calculation_time'] * 1e3:6.1f} ms"
     )
     show = True if T == T_list[-1] else False
     s.plot("radiance", wunit="nm", show=show, nfig="same")

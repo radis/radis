@@ -298,7 +298,7 @@ class BaseFactory(DatabankLoader):
         plt.hist(np.round(withoutnan))
         if axvline is not None:
             plt.axvline(axvline, color="r")
-        plt.xlabel("log10({0})".format(what))
+        plt.xlabel(f"log10({what})")
         plt.ylabel("Count")
         plt.show()
 
@@ -340,10 +340,9 @@ class BaseFactory(DatabankLoader):
                         "where 'sf' is SpectrumFactory object"
                     )
                 raise AssertionError(
-                    "{0}=NaN in line database at index {1}".format(column, index)
-                    + " corresponding to Line:\n {0}".format(
-                        get_print_full(df.loc[index]) + fix_idea
-                    )
+                    f"{column}=NaN in line database at index {index}"
+                    + f" corresponding to Line:\n {get_print_full(df.loc[index]) + fix_idea}"
+
                 ) from err
             elif self.dataframe_type == "vaex":
                 if self.input.species == "CO2":
@@ -426,13 +425,13 @@ class BaseFactory(DatabankLoader):
                     return self._add_Evib123Erot_RADIS_cls5(df)
             else:
                 raise NotImplementedError(
-                    "Molecules not implemented: {0}".format(molecule.name)
+                    f"Molecules not implemented: {molecule.name}"
                 )  # TODO
 
         else:
             raise NotImplementedError(
                 "Impossible to calculate Evib Erot with given energy "
-                + "format: {0}".format(self.params.levelsfmt)
+                + f"format: {self.params.levelsfmt}"
             )
 
     def _add_Evib123Erot(self, df, calc_Evib_harmonic_anharmonic=False):
@@ -474,7 +473,7 @@ class BaseFactory(DatabankLoader):
         else:
             raise NotImplementedError(
                 "Impossible to calculate Evib Erot with given energy "
-                + "format: {0}".format(self.params.levelsfmt)
+                + f"format: {self.params.levelsfmt}"
             )
 
     def _add_EvibErot_CDSD_pc(self, df, calc_Evib_harmonic_anharmonic=False):
@@ -513,12 +512,10 @@ class BaseFactory(DatabankLoader):
         for iso in self._get_isotope_list(molecule):
             if not iso in self.get_partition_function_molecule(molecule):
                 raise AttributeError(
-                    "No Partition function calculator defined for isotope {0}".format(
-                        iso
-                    )
+                    f"No Partition function calculator defined for isotope {iso}"
                     + ". You need energies to calculate a non-equilibrium spectrum!"
                     + " Fill the levels parameter in your database definition, "
-                    + " with energies of known format: {0}".format(KNOWN_LVLFORMAT)
+                    + f" with energies of known format: {KNOWN_LVLFORMAT}"
                     + ". See SpectrumFactory.load_databank() help for more details"
                 )
 
@@ -670,9 +667,7 @@ class BaseFactory(DatabankLoader):
         """
         if __debug__:
             printdbg(
-                "called _add_EvibErot_CDSD(calc_Evib_harmonic_anharmonic={0})".format(
-                    calc_Evib_harmonic_anharmonic
-                )
+                f"called _add_EvibErot_CDSD(calc_Evib_harmonic_anharmonic={calc_Evib_harmonic_anharmonic})"
             )
 
         if calc_Evib_harmonic_anharmonic:
@@ -689,12 +684,10 @@ class BaseFactory(DatabankLoader):
         for iso in self._get_isotope_list():
             if not iso in self.get_partition_function_molecule(molecule):
                 raise AttributeError(
-                    "No Partition function calculator defined for isotope {0}".format(
-                        iso
-                    )
+                    f"No Partition function calculator defined for isotope {iso}"
                     + ". You need energies to calculate a non-equilibrium spectrum!"
                     + " Fill the levels parameter in your database definition, "
-                    + " with energies of known format: {0}".format(KNOWN_LVLFORMAT)
+                    + f" with energies of known format: {KNOWN_LVLFORMAT}"
                     + ". See SpectrumFactory.load_databank() help for more details"
                 )
 
@@ -797,9 +790,7 @@ class BaseFactory(DatabankLoader):
         """
         if __debug__:
             printdbg(
-                "called _add_EvibErot_CDSD_pcJN(calc_Evib_harmonic_anharmonic={0})".format(
-                    calc_Evib_harmonic_anharmonic
-                )
+                f"called _add_EvibErot_CDSD_pcJN(calc_Evib_harmonic_anharmonic={calc_Evib_harmonic_anharmonic})"
             )
 
         if calc_Evib_harmonic_anharmonic:
@@ -816,12 +807,10 @@ class BaseFactory(DatabankLoader):
         for iso in self._get_isotope_list(molecule):
             if not iso in self.get_partition_function_molecule(molecule):
                 raise AttributeError(
-                    "No Partition function calculator defined for isotope {0}".format(
-                        iso
-                    )
+                    f"No Partition function calculator defined for isotope {iso}"
                     + ". You need energies to calculate a non-equilibrium spectrum!"
                     + " Fill the levels parameter in your database definition, "
-                    + " with energies of known format: {0}".format(KNOWN_LVLFORMAT)
+                    + f" with energies of known format: {KNOWN_LVLFORMAT}"
                     + ". See SpectrumFactory.load_databank() help for more details"
                 )
 
@@ -940,9 +929,7 @@ class BaseFactory(DatabankLoader):
         """
         if __debug__:
             printdbg(
-                "called _add_Evib123Erot_CDSD_pc(calc_Evib_harmonic_anharmonic={0})".format(
-                    calc_Evib_harmonic_anharmonic
-                )
+                f"called _add_Evib123Erot_CDSD_pc(calc_Evib_harmonic_anharmonic={calc_Evib_harmonic_anharmonic})"
             )
 
         if calc_Evib_harmonic_anharmonic:
@@ -956,9 +943,7 @@ class BaseFactory(DatabankLoader):
         self.profiler.start(
             "fetch_energy_4",
             2,
-            "... Fetching vib123 / rot energies for all {0} transitions".format(
-                len(df)
-            ),
+            f"... Fetching vib123 / rot energies for all {len(df)} transitions",
         )
 
         # Get Energy database
@@ -967,7 +952,7 @@ class BaseFactory(DatabankLoader):
                 "No Partition function calculator defined in this database"
                 + ". You need energies to calculate a non-equilibrium spectrum!"
                 + " Fill the levels parameter in your database definition, "
-                + " with energies of known format: {0}".format(KNOWN_LVLFORMAT)
+                + f" with energies of known format: {KNOWN_LVLFORMAT}"
                 + ". See SpectrumFactory.load_databank() help for more details"
             )
 
@@ -1136,9 +1121,7 @@ class BaseFactory(DatabankLoader):
         """
         if __debug__:
             printdbg(
-                "called _add_EvibErot_RADIS_cls1(calc_Evib_harmonic_anharmonic={0})".format(
-                    calc_Evib_harmonic_anharmonic
-                )
+                f"called _add_EvibErot_RADIS_cls1(calc_Evib_harmonic_anharmonic={calc_Evib_harmonic_anharmonic})"
             )
 
         if calc_Evib_harmonic_anharmonic:
@@ -1154,12 +1137,10 @@ class BaseFactory(DatabankLoader):
         for iso in self._get_isotope_list():
             if not iso in self.get_partition_function_molecule(molecule):
                 raise AttributeError(
-                    "No Partition function calculator defined for isotope {0}".format(
-                        iso
-                    )
+                    f"No Partition function calculator defined for isotope {iso}"
                     + ". You need energies to calculate a non-equilibrium spectrum!"
                     + " Fill the levels parameter in your database definition, "
-                    + " with energies of known format: {0}".format(KNOWN_LVLFORMAT)
+                    + f" with energies of known format: {KNOWN_LVLFORMAT}"
                     + ". See SpectrumFactory.load_databank() help for more details"
                 )
 
@@ -1261,7 +1242,7 @@ class BaseFactory(DatabankLoader):
             assert df.Evibl.isna().sum() == 0
 
         self.profiler.stop(
-            "fetch_energy_5", "Fetched energies for all {0} transitions".format(len(df))
+            "fetch_energy_5", f"Fetched energies for all {len(df)} transitions"
         )
 
         return  # None: Dataframe updated
@@ -1295,12 +1276,10 @@ class BaseFactory(DatabankLoader):
         for iso in self._get_isotope_list(molecule):
             if not iso in self.get_partition_function_molecule(molecule):
                 raise AttributeError(
-                    "No Partition function calculator defined for isotope {0}".format(
-                        iso
-                    )
+                    f"No Partition function calculator defined for isotope {iso}"
                     + ". You need energies to calculate a non-equilibrium spectrum!"
                     + " Fill the levels parameter in your database definition, "
-                    + " with energies of known format: {0}".format(KNOWN_LVLFORMAT)
+                    + f" with energies of known format: {KNOWN_LVLFORMAT}"
                     + ". See SpectrumFactory.load_databank() help for more details"
                 )
 
@@ -1446,7 +1425,7 @@ class BaseFactory(DatabankLoader):
             self.assert_no_nan(df, "Evib3l")
 
         self.profiler.stop(
-            "fetch_energy_6", "Fetched energies for all {0} transitions".format(len(df))
+            "fetch_energy_6", f"Fetched energies for all {len(df)} transitions"
         )
 
         return  # None: Dataframe updated
@@ -1473,12 +1452,10 @@ class BaseFactory(DatabankLoader):
         for iso in self._get_isotope_list(molecule):
             if not iso in self.get_partition_function_molecule(molecule):
                 raise AttributeError(
-                    "No Partition function calculator defined for isotope {0}".format(
-                        iso
-                    )
+                    f"No Partition function calculator defined for isotope {iso}"
                     + ". You need energies to calculate a non-equilibrium spectrum!"
                     + " Fill the levels parameter in your database definition, "
-                    + " with energies of known format: {0}".format(KNOWN_LVLFORMAT)
+                    + f" with energies of known format: {KNOWN_LVLFORMAT}"
                     + ". See SpectrumFactory.load_databank() help for more details"
                 )
 
@@ -1685,7 +1662,7 @@ class BaseFactory(DatabankLoader):
             self.assert_no_nan(df, "Evib3l")
 
         self.profiler.stop(
-            "fetch_energy_7", "Fetched energies for all {0} transitions".format(len(df))
+            "fetch_energy_7", f"Fetched energies for all {len(df)} transitions"
         )
 
         return df
@@ -2001,7 +1978,7 @@ class BaseFactory(DatabankLoader):
                 df["gvibl"] = vaex.vconstant(1, length=df.length_unfiltered())
         else:
             raise NotImplementedError(
-                "vibrational degeneracy assignation for dbformat={0}".format(dbformat)
+                f"vibrational degeneracy assignation for dbformat={dbformat}"
             )
 
         # Total
@@ -2399,7 +2376,7 @@ class BaseFactory(DatabankLoader):
             else:
                 self.warn(
                     "Error with tabulated partition function"
-                    + "({0}). Using calculated one instead".format(err.args[0]),
+                    + f"({err.args[0]}). Using calculated one instead",
                     "OutOfBoundWarning",
                 )
             Q = parsum.at(T)
@@ -3090,7 +3067,7 @@ class BaseFactory(DatabankLoader):
                     raise NotImplementedError("TO DO!")  #!!!TODO
                 else:
                     raise ValueError(
-                        "Unknown vibrational distribution: {0}".format(vib_distribution)
+                        f"Unknown vibrational distribution: {vib_distribution}"
                     )
 
                 # ... Rotational distributions
@@ -3099,7 +3076,7 @@ class BaseFactory(DatabankLoader):
                     df["nl_rot_x_Qrot"] = df.grotl * exp(-df.Erotl * hc_k / Trot)
                 else:
                     raise ValueError(
-                        "Unknown rotational distribution: {0}".format(rot_distribution)
+                        f"Unknown rotational distribution: {rot_distribution}"
                     )
 
                 # ... Partition functions
@@ -3145,7 +3122,7 @@ class BaseFactory(DatabankLoader):
                     )
                 else:
                     raise ValueError(
-                        "Unknown vibrational distribution: {0}".format(vib_distribution)
+                        f"Unknown vibrational distribution: {vib_distribution}"
                     )
 
                 # ... Add vibrational-specific overpopulation factors
@@ -3161,7 +3138,7 @@ class BaseFactory(DatabankLoader):
                     df["nl_rot"] = df.grotl / df.Qrotl * exp(-df.Erotl * hc_k / Trot)
                 else:
                     raise ValueError(
-                        "Unknown rotational distribution: {0}".format(rot_distribution)
+                        f"Unknown rotational distribution: {rot_distribution}"
                     )
 
                 # ... Total
@@ -3270,7 +3247,7 @@ class BaseFactory(DatabankLoader):
             # fmt: on
         else:
             raise ValueError(
-                "Unknown vibrational distribution: {0}".format(vib_distribution)
+                f"Unknown vibrational distribution: {vib_distribution}"
             )
 
         if overpopulation != {}:
@@ -3323,7 +3300,7 @@ class BaseFactory(DatabankLoader):
 
         else:
             raise ValueError(
-                "Unknown rotational distribution: {0}".format(rot_distribution)
+                f"Unknown rotational distribution: {rot_distribution}"
             )
 
         assert "nu" in self.df1
@@ -3382,9 +3359,7 @@ class BaseFactory(DatabankLoader):
             EXPECTED = ["vib", "rovib"]
             if l not in EXPECTED:
                 raise ValueError(
-                    "Unexpect type of levels to return {0}. Expected one of {1}".format(
-                        l, EXPECTED
-                    )
+                    f"Unexpect type of levels to return {l}. Expected one of {EXPECTED}"
                 )
 
         # To get isotopic abundance
@@ -3430,7 +3405,7 @@ class BaseFactory(DatabankLoader):
 
                         else:
                             raise ValueError(
-                                "Unknown level type: {0}".format(level_type)
+                                f"Unknown level type: {level_type}"
                             )
 
                         # Store
@@ -3680,16 +3655,12 @@ class BaseFactory(DatabankLoader):
 
             if verbose >= 2:
                 print(
-                    "Discarded {0:.2f}% of lines (linestrength<{1}cm-1/(#.cm-2))".format(
-                        Nlines_cutoff / len(df) * 100, cutoff
-                    )
-                    + " Estimated error: {0:.2f}%".format(error_cutoff)
+                    f"Discarded {Nlines_cutoff / len(df) * 100:.2f}% of lines (linestrength<{cutoff}cm-1/(#.cm-2))"
+                    + f" Estimated error: {error_cutoff:.2f}%"
                 )
             if error_cutoff > self.misc.warning_linestrength_cutoff:
                 self.warn(
-                    "Estimated error after discarding lines is large: {0:.2f}%".format(
-                        error_cutoff
-                    )
+                    f"Estimated error after discarding lines is large: {error_cutoff:.2f}%"
                     + ". Consider reducing cutoff",
                     "LinestrengthCutoffWarning",
                 )
@@ -3703,9 +3674,7 @@ class BaseFactory(DatabankLoader):
             self.plot_linestrength_hist(cutoff=cutoff)
             raise AssertionError(
                 f"All lines discarded! Please increase cutoff (currently : {cutoff:.1e}). "
-                + "In your case: (min,max,mean)=({0:.2e},{1:.2e},{2:.2e}".format(
-                    df.S.min(), df.S.max(), df.S.mean()
-                )
+                + f"In your case: (min,max,mean)=({df.S.min():.2e},{df.S.max():.2e},{df.S.mean():.2e}"
                 + "cm-1/(#.cm-2)). See histogram"
             ) from err
 
@@ -3818,7 +3787,7 @@ class BaseFactory(DatabankLoader):
 
                     if df_size > limit:
                         self.warn(
-                            "Line database is large: {0:.0f} Mb".format(df_size * 1e-6)
+                            f"Line database is large: {df_size * 1e-6:.0f} Mb"
                             + ". Consider using save_memory "
                             + "option, if you don't need to reuse this factory to calculate new spectra",
                             "MemoryUsageWarning",
@@ -3848,7 +3817,7 @@ class BaseFactory(DatabankLoader):
                 # be needed (ex: only equilibrium calculations). Continue
                 if __debug__:
                     printdbg(
-                        "parsum[{0}][{1}][{2}]".format(molecule, isotope, state)
+                        f"parsum[{molecule}][{isotope}][{state}]"
                         + " not defined."
                     )
             else:
@@ -3966,7 +3935,7 @@ class BaseFactory(DatabankLoader):
             else:
                 raise ValueError(
                     "either g, or gvib+grot must be defined to "
-                    + "calculate total degeneracy. Got: {0}".format(list(levels.keys()))
+                    + f"calculate total degeneracy. Got: {list(levels.keys())}"
                 )
 
         # Plot
@@ -4036,9 +4005,7 @@ def get_wavenumber_range(
             else ""
         )
         raise ValueError(
-            "Please pass exactly one range for wavenumber/wavelength input. {}".format(
-                _msg
-            )
+            f"Please pass exactly one range for wavenumber/wavelength input. {_msg}"
             + "\nChoose either `wmin=..., wmax=...` (with astropy.units), "
             "`wavenum_min=..., wavenum_max=...` (in cm-1), "
             "or `wavelength_min=..., wavelength_max=...` (in nm)"
@@ -4124,9 +4091,7 @@ def get_wavenumber_range(
     elif wavelength_min is not None or wavelength_max is not None:
         if not medium in ["air", "vacuum"]:
             raise NotImplementedError(
-                "Unknown propagating medium: {0}. Choose `'air'` or `'vacuum'` to get the correct wavelengths".format(
-                    medium
-                )
+                f"Unknown propagating medium: {medium}. Choose `'air'` or `'vacuum'` to get the correct wavelengths"
             )
         wavelength_min = convert_and_strip_units(wavelength_min, u.nm)
         wavelength_max = convert_and_strip_units(wavelength_max, u.nm)

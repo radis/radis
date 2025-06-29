@@ -97,9 +97,7 @@ def _get_linereturnformat(data, columns, fname=""):
         linereturnformat = "a1"
     else:
         raise ValueError(
-            "Unknown Line return format: {0}. Check that your file {1} has the HITRAN format. First line : {2}".format(
-                linereturn, fname, data[0]
-            )
+            f"Unknown Line return format: {linereturn}. Check that your file {fname} has the HITRAN format. First line : {data[0]}"
         )
 
     return linereturnformat
@@ -251,9 +249,7 @@ def drop_object_format_columns(df, verbose=True):
     if verbose >= 2 and len(objects) > 0:
         print(
             (
-                "The following columns had the `object` format and were removed: {0}".format(
-                    objects
-                )
+                f"The following columns had the `object` format and were removed: {objects}"
             )
         )
     return df

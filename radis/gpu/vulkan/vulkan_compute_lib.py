@@ -276,7 +276,7 @@ class GPUApplication(object):
 
     @staticmethod
     def debugReportCallbackFn(*args):
-        print("Debug Report: {} {}".format(args[5], args[6]))
+        print(f"Debug Report: {args[5]} {args[6]}")
         return 0
 
     def createInstance(self):
@@ -331,18 +331,15 @@ class GPUApplication(object):
 
         if verbose:
             print("Vulkan version: ", vk.__version__)
-            print("Selected device (device_id = {:d}):".format(self._deviceID))
+            print(f"Selected device (device_id = {self._deviceID:d}):")
             for i, device in enumerate(devices):
                 props = vk.vkGetPhysicalDeviceProperties(device)
                 devname = vk.ffi.string(props.obj.deviceName).decode()
                 if i == self._deviceID:
                     self._timestampPeriod = props.limits.timestampPeriod
 
-                print(
-                    "[{:s}] {:d}: {:s}".format(
-                        "X" if i == self._deviceID else " ", i, devname
-                    )
-                )
+                print(f"[{'X' if i == self._deviceID else ' '}] {i}: {devname}")
+
             print("")
 
     # Returns the index of a queue family that supports compute operations.
@@ -976,7 +973,7 @@ class GPUApplication(object):
         def func(self, label=None):
             query = len(self._timestampLabels)
             if label is None:
-                label = "timestamp_{:d}".format(query)
+                label = f"timestamp_{query:d}"
             # TODO: deal with duplicates
             self._timestampLabels.append(label)
 
@@ -1009,7 +1006,7 @@ class GPUApplication(object):
         dtype = "unsigned int"
         dsize = vk.ffi.sizeof(dtype)
         length = len(self._timestampLabels)
-        queryResult = vk.ffi.new(dtype + "[{:d}]".format(length))
+        queryResult = vk.ffi.new(dtype + f"[{length:d}]")
         pData = vk.ffi.cast("void*", queryResult)
 
         vk.vkGetQueryPoolResults(

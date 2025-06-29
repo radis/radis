@@ -288,9 +288,7 @@ class DatabaseManager(object):
                 else:  # delete file to regenerate it in the end of the script
                     if verbose:
                         printr(
-                            "File {0} deprecated:\n{1}\nDeleting it!".format(
-                                local_file, str(err)
-                            )
+                            f"File {local_file} deprecated:\n{str(err)}\nDeleting it!"
                         )
                     os.remove(local_file)
 

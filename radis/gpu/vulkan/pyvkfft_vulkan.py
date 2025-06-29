@@ -287,9 +287,7 @@ class VkFFTApp(VkFFTAppBase):
 
         if self.app is None:
             raise RuntimeError(
-                "Error {:d}  creating VkFFTApplication. Was the Vulkan driver initialised ?".format(
-                    res.value
-                )
+                f"Error {res.value:d}  creating VkFFTApplication. Was the Vulkan driver initialised ?"
             )
 
     def __del__(self):

@@ -250,8 +250,8 @@ def hit2df(
     # Last modification time of the original file :
     metadata["last_modification"] = time.ctime(getmtime(fname))
     if verbose >= 2:
-        print("Opening file {0} (cache={1})".format(fname, cache))
-        print("Last modification time: {0}".format(metadata["last_modification"]))
+        print(f"Opening file {fname} (cache={cache})")
+        print(f"Last modification time: {metadata['last_modification']}")
     if load_wavenum_min and load_wavenum_max:
         assert load_wavenum_min < load_wavenum_max
 
@@ -290,8 +290,7 @@ def hit2df(
             mol = get_molecule(int(f.read(2)))
     except UnicodeDecodeError as err:
         raise ValueError(
-            "You're trying to read a binary file {0} ".format(fname)
-            + "instead of an HITRAN file"
+            f"You're trying to read a binary file {fname} instead of an HITRAN file"
         ) from err
 
     df = parse_hitran_file(fname, columns, output=output)
@@ -312,9 +311,7 @@ def hit2df(
         }
         if verbose:
             print(
-                "Generating cache file {0} with metadata :\n{1}".format(
-                    fcache, new_metadata
-                )
+                f"Generating cache file {fcache} with metadata :\n{new_metadata}"
             )
         from radis import __version__
 
@@ -421,14 +418,12 @@ def post_process_hitran_data(
         except IndexError:
             secondline = ""
         raise ValueError(
-            "Multiple molecules in database ({0} : {1}). Current ".format(
-                nmol, [get_molecule(idi) for idi in df["id"].unique()]
-            )
+            f"Multiple molecules in database ({nmol} : {[get_molecule(idi) for idi in df['id'].unique()]}). Current "
             + "spectral code only computes 1 species at the time. Use MergeSlabs. "
             + "Verify the parsing was correct by looking at the first row below: "
-            + "\n{0}".format(df.iloc[0])
+            + f"\n{df.iloc[0]}"
             + "\n----------------\nand the second row "
-            + "below: \n{0}".format(secondline)
+            + f"below: \n{secondline}"
         )
 
     if parse_quanta:
@@ -1558,7 +1553,7 @@ def parse_local_quanta(
         df = _parse_HITRAN_group6(df, verbose=verbose)
     else:
         raise ValueError(
-            "Unknown group for molecule {0}. Cant parse local quanta".format(mol)
+            f"Unknown group for molecule {mol}. Cant parse local quanta"
         )
 
     return df
@@ -1606,7 +1601,7 @@ def parse_global_quanta(
         df = _parse_HITRAN_class10(df, verbose=verbose)
     else:
         raise ValueError(
-            "Unknown class for molecule {0}. Cant parse global quanta".format(mol)
+            f"Unknown class for molecule {mol}. Cant parse global quanta"
         )
 
     return df
@@ -1720,9 +1715,7 @@ class HITRANDatabaseManager(DatabaseManager):
                         from radis.misc.printer import printr
 
                         printr(
-                            "File already exist: {0}. Deleting it.`".format(
-                                join(directory, file + ".data")
-                            )
+                            f"File already exist: {join(directory, file + '.data')}. Deleting it.`"
                         )
                         os.remove(join(directory, file + ".data"))
                 try:
@@ -1754,7 +1747,7 @@ class HITRANDatabaseManager(DatabaseManager):
                         # Isotope not defined, go to next isotope
                         continue
                     else:
-                        raise KeyError("Error: {0}".format(str(err)))
+                        raise KeyError(f"Error: {str(err)}")
                 else:
                     isotope_list.append(iso)
                     data_file_list.append(file + ".data")

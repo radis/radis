@@ -242,18 +242,16 @@ def cdsd2df(
 
     if verbose >= 2:
         print(
-            "Opening file {0} (format=CDSD {1}, cache={2})".format(
-                fname, version, cache
-            )
+            f"Opening file {fname} (format=CDSD {version}, cache={cache})"
         )
-        print("Last Modification time: {0}".format(metadata["last_modification"]))
+        print(f"Last Modification time: {metadata['last_modification']}")
 
     if version == "hitemp":
         columns = columns_cdsdhitemp
     elif version == "4000":
         columns = columns_4000
     else:
-        raise ValueError("Unknown CDSD version: {0}".format(version))
+        raise ValueError(f"Unknown CDSD version: {version}")
 
     # Use cache file if possible
     fcache = str(DataFileManager(engine).cache_file(fname))
@@ -298,9 +296,7 @@ def cdsd2df(
         }
         if verbose:
             print(
-                "Generating cache file {0} with metadata :\n{1}".format(
-                    fcache, new_metadata
-                )
+                f"Generating cache file {fcache} with metadata :\n{new_metadata}"
             )
         try:
             save_to_hdf(
