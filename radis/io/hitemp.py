@@ -177,7 +177,7 @@ def fetch_hitemp(
                 'Changes are required to the local database, and hence updating the registered entry, but "ALLOW_OVERWRITE" is False. Set `radis.config["ALLOW_OVERWRITE"]=True` to allow the changes to be made and config file to be automatically updated accordingly.'
             )
 
-    # Delete files if needed:
+    # Delete files if needed: For H2O, we keep only the relevant files for a given wavenumber range.
     relevant_files = ldb.keep_only_relevant(
         local_files, load_wavenum_min, load_wavenum_max, verbose=(verbose > 1)
     )
@@ -221,15 +221,17 @@ def fetch_hitemp(
     # Download files
     if downloaded:
         if len(urlnames) == 0:
-            urlnames = ldb.fetch_urlnames()
+            urlnames = (
+                ldb.fetch_urlnames()
+            )  # Note: It downloads the files as well (except for H2O)
         filesmap = dict(zip(local_files, urlnames))
         download_urls = [filesmap[k] for k in download_files]
         ldb.download_and_parse(download_urls, download_files)
 
         # Done: add final checks
-        if molecule not in ["CO2", "H2O"]:
+        if molecule not in ["CO2", "H2O"]:  # CO2 because it is partially downloaded
             # check on the created file that all lines are there
-            # ... (for CO2, H2O, database is split in many files so it's not possible)
+            # ... (for H2O, database is split in many files so it's not possible)
             nrows = ldb.get_nrows(local_files[0])
             # assert nrows == Nlines
             _, Ntotal_lines_expected, _, _ = ldb.fetch_url_Nlines_wmin_wmax()

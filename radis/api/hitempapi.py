@@ -650,7 +650,7 @@ class HITEMPDatabaseManager(DatabaseManager):
     def keep_only_relevant(
         self, inputfiles, wavenum_min=None, wavenum_max=None, verbose=True
     ) -> list:
-        r"""For CO2 and H2O, return only relevant files for given wavenumber range.
+        r"""For H2O, return only relevant files for given wavenumber range.
 
         If other molecule, return the file anyway.
         see :py:func:`radis.api.hitempapi.keep_only_relevant`"""
