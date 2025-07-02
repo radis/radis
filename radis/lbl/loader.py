@@ -1977,7 +1977,7 @@ class DatabankLoader(object):
                 raise ValueError(
                     "No database name. Please give a path and a dbformat"
                     + ", or use one of the predefined databases in your"
-                    + f" ~/radis.json: {",".join(dblist)}"
+                    + f" ~/radis.json: {','.join(dblist)}"
                 )
 
         # Check database format
