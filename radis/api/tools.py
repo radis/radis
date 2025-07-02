@@ -21,7 +21,7 @@ except ImportError:
 from ..misc.warning import PerformanceWarning
 
 
-def parse_hitran_file(fname, columns, count=-1, output="pandas"):
+def parse_hitran_file(fname, columns, count=-1, output="pandas", molecule=None):
     """Parse a file under HITRAN ``par`` format. Parsing is done in binary
     format with :py:func:`numpy.fromfile` so it's as fast as possible.
 
@@ -66,7 +66,7 @@ def parse_hitran_file(fname, columns, count=-1, output="pandas"):
     data = _read_hitran_file(fname, columns, count, linereturnformat)
 
     # Return a Pandas dataframe
-    df = _ndarray2df(data, columns, linereturnformat)
+    df = _ndarray2df(data, columns, linereturnformat, molecule=molecule)
 
     if output == "vaex":
         df = vaex.from_pandas(df)
@@ -116,11 +116,13 @@ def _ndarray2df(data, columns, linereturnformat, molecule=None):
     dtype = list(zip(list(columns.keys()), newtype)) + [
         ("_linereturn", linereturnformat)
     ]
+
+    # Override iso type if CO2
     if molecule == "CO2":
         dtype[1] = (
             "iso",
             "<U1",
-        )  # in HITEMP2024, isotopologue 10, 11, 12 are a, b, c. Converted later
+        )  # in HITEMP2024, isotopologue 10, 11, 12 are 0, A, B. Converted later
     data = _cast_to_dtype(data, dtype)
 
     # %% Create dataframe
@@ -133,6 +135,10 @@ def _ndarray2df(data, columns, linereturnformat, molecule=None):
     for k, c in columns.items():
         if c[1] == str:
             df[k] = df[k].str.decode("utf-8")
+
+    # Replace CO2 isotopologue labels with numeric codes
+    if molecule == "CO2":
+        df["iso"] = df["iso"].replace({"0": 10, "A": 11, "B": 12}).astype(int)
 
     # Strip whitespaces around PQR columns (due to 2 columns jumped)
     if "branch" in df:  # (only in CDSD)
