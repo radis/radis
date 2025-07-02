@@ -75,7 +75,9 @@ def getTestFile(file, force=False):
 
     if not exists(path) and not force:
         raise FileNotFoundError(
-            f"Test file `{file}` does not exist. Choose one of: \n- {'\n- '.join(os.listdir(join(TEST_FOLDER_PATH, 'files')))} or use force=True"
+            f"Test file `{file}` does not exist. Choose one of: \n- " +
+            "\n- ".join(os.listdir(join(TEST_FOLDER_PATH, 'files'))) +
+            " or use force=True"
         )
 
     return path
