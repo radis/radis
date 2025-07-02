@@ -1003,7 +1003,7 @@ def plot_diff(
 
         # Show residualget_residual
         if show_residual:
-            difftext += f" (residual={get_residual(s1, s2, var=var, norm="L2", ignore_nan=True, diff_window=diff_window):.2g})"
+            difftext += f" (residual={get_residual(s1, s2, var=var, norm='L2', ignore_nan=True, diff_window=diff_window):.2g})"
         pos = ax1[i].get_position()
         fig.text(0.09, pos.ymax + 0.02, difftext)
 
