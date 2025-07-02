@@ -538,7 +538,7 @@ def _warn_if_object_columns(df, fname):
     objects = [k for k, v in df.dtypes.items() if v == object]
     if len(objects) > 0:
         warn(
-            "Dataframe in {fname} contains `object` format columns: {objects}. "
+            f"Dataframe in {fname} contains `object` format columns: {objects}. "
             + "Operations will be slower. Try to convert them to numeric."
         )
 
