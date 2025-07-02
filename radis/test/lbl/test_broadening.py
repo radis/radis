@@ -110,7 +110,7 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
             s,
             s_hapi,
             var="abscoeff",
-            title="{0} bar, {1} K (residual {2:.2g}%)".format(p, T, res * 100),
+            title=f"{p} bar, {T} K (residual {res * 100:.2g}%)",
             show_points=False,
         )
         plt.xlim((wmin, wmax))
@@ -197,9 +197,7 @@ def test_broadening_methods_different_conditions(
 
         if verbose:
             print(
-                "{0} K, {1} bar: FWHM lorentz = {2:.3f} cm-1, FWHM gauss = {3:.3f} cm-1".format(
-                    T, p, 2 * float(sf.df1.hwhm_lorentz), 2 * float(sf.df1.hwhm_gauss)
-                )
+                f"{T} K, {p} bar: FWHM lorentz = {2 * float(sf.df1.hwhm_lorentz):.3f} cm-1, FWHM gauss = {2 * float(sf.df1.hwhm_gauss):.3f} cm-1"
             )
 
         if plot:
@@ -207,8 +205,9 @@ def test_broadening_methods_different_conditions(
                 s_voigt,
                 s_convolve,
                 "abscoeff",
-                title=r"T {0} K, p {1} bar: w$_\mathrm{{L}}$ {2:.3f}, w$_\mathrm{{G}}$ {3:.3f} cm$^{{-1}}$".format(
-                    T, p, 2 * float(sf.df1.hwhm_lorentz), float(sf.df1.hwhm_gauss)
+                title = (
+                    fr"T {T} K, p {p} bar: w$_\mathrm{{L}}$ {2 * float(sf.df1.hwhm_lorentz):.3f}, "
+                    fr"w$_\mathrm{{G}}$ {float(sf.df1.hwhm_gauss):.3f} cm$^{{-1}}$"
                 ),
             )
 
@@ -281,7 +280,7 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
                 s_convolve,
                 "abscoeff",
                 nfig="test_voigt_broadening_methods" + str(i),
-                title="P {0} bar, T {1} K, wstep {2} cm-1".format(p, T, wstep),
+                title=f"P {p} bar, T {T} K, wstep {wstep} cm-1",
             )
 
         assert res < 2e-4
@@ -335,19 +334,17 @@ def test_broadening_LDM(verbose=True, plot=False, *args, **kwargs):
     # Reference: calculate without LDM
     assert sf.params["optimization"] is None
     s_ref = sf.eq_spectrum(Tgas=T)
-    s_ref.name = "Reference ({0:.2f}s)".format(s_ref.conditions["calculation_time"])
+    s_ref.name = f"Reference ({s_ref.conditions['calculation_time']:.2f}s)"
 
     # LDM:
     sf.params["optimization"] = "simple"
     sf.params.broadening_method = "convolve"
     s_ldm = sf.eq_spectrum(Tgas=T)
-    s_ldm.name = "LDM ({0:.2f}s)".format(s_ldm.conditions["calculation_time"])
+    s_ldm.name = f"LDM ({s_ldm.conditions['calculation_time']:.2f}s)"
     # LDM Voigt with Whiting approximation:
     sf.params.broadening_method = "voigt"
     s_ldm_voigt = sf.eq_spectrum(Tgas=T)
-    s_ldm_voigt.name = "LDM Whiting ({0:.2f}s)".format(
-        s_ldm_voigt.conditions["calculation_time"]
-    )
+    s_ldm_voigt.name = f"LDM Whiting ({s_ldm_voigt.conditions['calculation_time']:.2f}s)"
 
     # Compare
     res = get_residual(s_ref, s_ldm, "abscoeff")
@@ -416,16 +413,14 @@ def test_broadening_LDM_FT(verbose=True, plot=False, *args, **kwargs):
         print("\nConvolve version \n")
     sf.params.broadening_method = "convolve"
     s_ldm = sf.eq_spectrum(Tgas=T)
-    s_ldm.name = "LDM ({0:.2f}s)".format(s_ldm.conditions["calculation_time"])
+    s_ldm.name = f"LDM ({s_ldm.conditions['calculation_time']:.2f}s)"
 
     # LDM , with Fourier
     if verbose:
         print("\nFFT version \n")
     sf.params.broadening_method = "fft"
     s_ldm_fft = sf.eq_spectrum(Tgas=T)
-    s_ldm_fft.name = "LDM FFT ({0:.2f}s)".format(
-        s_ldm_fft.conditions["calculation_time"]
-    )
+    s_ldm_fft.name = f"LDM FFT ({s_ldm_fft.conditions['calculation_time']:.2f}s)"
 
     # Compare
     res = get_residual(s_ldm, s_ldm_fft, "abscoeff")
@@ -487,12 +482,10 @@ def test_broadening_LDM_noneq(verbose=True, plot=False, *args, **kwargs):
     # LDM:
     sf.params["optimization"] = "simple"
     s_ldm_eq = sf.eq_spectrum(Tgas=3000)
-    s_ldm_eq.name = "LDM eq ({0:.2f}s)".format(s_ldm_eq.conditions["calculation_time"])
+    s_ldm_eq.name = f"LDM eq ({s_ldm_eq.conditions['calculation_time']:.2f}s)"
 
     s_ldm_noneq = sf.non_eq_spectrum(Tvib=3000, Trot=3000)
-    s_ldm_noneq.name = "LDM noneq ({0:.2f}s)".format(
-        s_ldm_noneq.conditions["calculation_time"]
-    )
+    s_ldm_noneq.name = f"LDM noneq ({s_ldm_noneq.conditions['calculation_time']:.2f}s)"
 
     # Compare
     res = get_residual(s_ldm_eq, s_ldm_noneq, "radiance_noslit", Iunit="mW/cm2/sr/nm")
@@ -789,17 +782,13 @@ def test_abscoeff_continuum(
     # Calculate one without pseudo-continuum
     sf.params.pseudo_continuum_threshold = 0
     s1 = sf.eq_spectrum(Tgas=2000)
-    s1.name = "All lines resolved ({0}) ({1:.1f}s)".format(
-        s1.conditions["lines_calculated"], s1.conditions["calculation_time"]
-    )
+    s1.name = f"All lines resolved ({s1.conditions['lines_calculated']}) ({s1.conditions['calculation_time']:.1f}s)"
     assert s1.conditions["pseudo_continuum_threshold"] == 0
 
     # Calculate one with pseudo-continuum
     sf.params.pseudo_continuum_threshold = threshold
     s2 = sf.eq_spectrum(Tgas=2000)
-    s2.name = "Semi-continuum + {0} lines ({1:.1f}s)".format(
-        s2.conditions["lines_calculated"], s2.conditions["calculation_time"]
-    )
+    s2.name = f"Semi-continuum + {s2.conditions['lines_calculated']} lines ({s2.conditions['calculation_time']:.1f}s)"
     assert s2.conditions["pseudo_continuum_threshold"] == threshold
     assert "abscoeff_continuum" in s2.get_vars()
 
@@ -822,9 +811,7 @@ def test_abscoeff_continuum(
         s2.plot(
             "abscoeff_continuum",
             nfig="same",
-            label="Pseudo-continuum ({0} lines in continuum))".format(
-                s2.conditions["lines_in_continuum"]
-            ),
+            label=f"Pseudo-continuum ({s2.conditions['lines_in_continuum']} lines in continuum))",
             force=True,
         )
         plt.legend()
@@ -894,17 +881,13 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
     # Calculate one without pseudo-continuum
     sf.params.pseudo_continuum_threshold = 0
     s1 = sf.non_eq_spectrum(Tvib=2000, Trot=1000)
-    s1.name = "All lines resolved ({0}) ({1:.1f}s)".format(
-        s1.conditions["lines_calculated"], s1.conditions["calculation_time"]
-    )
+    s1.name = f"All lines resolved ({s1.conditions['lines_calculated']}) ({s1.conditions['calculation_time']:.1f}s)"
     assert s1.conditions["pseudo_continuum_threshold"] == 0
 
     # Calculate one with pseudo-continuum
     sf.params.pseudo_continuum_threshold = 0.05
     s2 = sf.non_eq_spectrum(Tvib=2000, Trot=1000)
-    s2.name = "Semi-continuum + {0} lines ({1:.1f}s)".format(
-        s2.conditions["lines_calculated"], s2.conditions["calculation_time"]
-    )
+    s2.name = f"Semi-continuum + {s2.conditions['lines_calculated']} lines ({s2.conditions['calculation_time']:.1f}s)"
     assert s2.conditions["pseudo_continuum_threshold"] == 0.05
     assert "abscoeff_continuum" in s2.get_vars()
     assert "emisscoeff_continuum" in s2.get_vars()
@@ -926,9 +909,7 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
         s2.plot(
             "emisscoeff_continuum",
             nfig="same",
-            label="Pseudo-continuum (aggreg. {0:g} lines)".format(
-                s2.conditions["lines_in_continuum"]
-            ),
+            label=f"Pseudo-continuum (aggreg. {s2.conditions['lines_in_continuum']:g} lines)",
             force=True,
         )
 
@@ -995,9 +976,7 @@ def test_broadening_chunksize_eq(verbose=True, plot=False, *args, **kwargs):
         res = get_residual(s_no_chunk, s_chunk, "abscoeff")
         assert res < 1e-6
         print(
-            "Res for chunksize = {0}, optimization = {1} : {2}".format(
-                sf.misc.chunksize, optimization, res
-            )
+            f"Res for chunksize = {sf.misc.chunksize}, optimization = {optimization} : {res}"
         )
         if plot:
             plot_diff(

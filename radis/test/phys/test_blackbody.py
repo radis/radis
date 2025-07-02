@@ -76,7 +76,7 @@ def test_planck_nm(verbose=True, plot=True, *args, **kwargs):
     w_nm_max = w_nm[I_nm.argmax()]
     assert np.isclose(2898 / T * 1e3, w_nm_max, rtol=1e-4)
     if verbose:
-        print("Maximum emission at T={0}K: {1:.2f}nm".format(T, w_nm_max))
+        print(f"Maximum emission at T={T}K: {w_nm_max:.2f}nm")
         print(".. test_planck_nm.py: Wien's law: OK")
 
     # Check Stefan's law
@@ -85,8 +85,8 @@ def test_planck_nm(verbose=True, plot=True, *args, **kwargs):
     P_calc = pi * s.get_power("W/m2/sr")  # Lambert's cosine law
     assert np.isclose(P_theory, P_calc, rtol=1e-1)
     if verbose:
-        print("Blackbody radiant intensity (Stefan law): {0:.2f} W/m2".format(P_theory))
-        print("Blackbody radiant intensity (calculated): {0:.2f} W/m2".format(P_calc))
+        print(f"Blackbody radiant intensity (Stefan law): {P_theory:.2f} W/m2")
+        print(f"Blackbody radiant intensity (calculated): {P_calc:.2f} W/m2")
         print(".. test_planck_nm.py: Stefan's law: OK")
 
     # Check that max is correct
@@ -142,7 +142,7 @@ def test_planck_cm(verbose=True, plot=True, *args, **kwargs):
     w_nm_max = w_nm[I_nm.argmax()]
     assert np.isclose(2898 / T * 1e3, w_nm_max, rtol=1e-3)
     if verbose:
-        print("Maximum emission at T={0}K: {1:.2f}nm".format(T, w_nm_max))
+        print(f"Maximum emission at T={T}K: {w_nm_max:.2f}nm")
         print(".. test_planck_cm.py: Wien's law: OK")
 
     # Check Stefan's law
@@ -152,21 +152,17 @@ def test_planck_cm(verbose=True, plot=True, *args, **kwargs):
     assert np.isclose(P_theory, P_calc, rtol=1e-3)
     if verbose:
         print(
-            "Earth blackbody radiant intensity (Stefan law): {0:.2f} W/m2".format(
-                P_theory
-            )
+            f"Earth blackbody radiant intensity (Stefan law): {P_theory:.2f} W/m2"
         )
         print(
-            "Earth blackbody radiant intensity (calculated): {0:.2f} W/m2".format(
-                P_calc
-            )
+            f"Earth blackbody radiant intensity (calculated): {P_calc:.2f} W/m2"
         )
         print(".. test_planck_cm.py: Stefan's law: OK")
 
     if plot:
         plt.figure("test_blackbody.py: test_planck_cm")
         plt.plot(w_cm, I_cm)
-        plt.title("Earth blackbody ({0} K, eps={1})".format(T, eps))
+        plt.title(f"Earth blackbody ({T} K, eps={eps})")
         plt.ylabel("Radiance (mW/m2/cm-1)")
         plt.xlabel("Wavenumber (cm-1)")
 

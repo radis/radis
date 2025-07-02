@@ -391,10 +391,7 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
 
             if verbose:
                 printm(
-                    "Residual between opt. thick CO2 spectrum ({0}) and Planck: {1:.2g}".format(
-                        s.name,
-                        get_residual(s, s_plck, "radiance_noslit", ignore_nan=True),
-                    )
+                    f"Residual between opt. thick CO2 spectrum ({s.name}) and Planck: {get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True):.2g}"
                 )
 
             #            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 1e-3
@@ -498,7 +495,7 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
 
             if plot:
 
-                nfig = "test_opt_thick_limit_2iso {0}".format(s.name)
+                nfig = f"test_opt_thick_limit_2iso {s.name}"
                 plt.figure(nfig).clear()
                 s.plot(wunit="nm", Iunit="mW/cm2/sr/nm", nfig=nfig, lw=4)
                 s_plck.plot(wunit="nm", nfig=nfig, Iunit="mW/cm2/sr/nm", lw=2)
@@ -506,10 +503,7 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
 
             if verbose:
                 printm(
-                    "Residual between opt. thick CO2 spectrum ({0}) and Planck: {1:.2g}".format(
-                        s.name,
-                        get_residual(s, s_plck, "radiance_noslit", ignore_nan=True),
-                    )
+                    f"Residual between opt. thick CO2 spectrum ({s.name}) and Planck: {get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True):.2g}"
                 )
 
             #            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 1e-3

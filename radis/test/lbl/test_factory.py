@@ -187,9 +187,7 @@ def test_spec_generation(
     s = sf.eq_spectrum(Tgas=300, name="test_spec_generation")
     if verbose:
         printm(
-            ">>> _test_spec_generation: Spectrum calculated in {0:.2f}s".format(
-                time() - t0
-            )
+            f">>> _test_spec_generation: Spectrum calculated in {time() - t0:.2f}s"
         )
 
     if plot:
@@ -217,13 +215,11 @@ def test_spec_generation(
     if not match_reference:
         # give some more information before raising error
         printm(
-            "Error: {0:.2f}%".format(
-                np.mean(abs(s.get("abscoeff", wunit="nm")[1][::10] / Iref - 1)) * 100
-            )
+            f"Error: {np.mean(abs(s.get('abscoeff', wunit='nm')[1][::10] / Iref - 1)) * 100:.2f}%"
         )
         # Store the faulty spectrum
         s.store(
-            "test_factory_failed_{0}.spec".format(radis.get_version()),
+            f"test_factory_failed_{radis.get_version()}.spec",
             if_exists_then="replace",
         )
 
@@ -239,9 +235,7 @@ def test_spec_generation(
         np.savetxt(
             getTestFile("CO2abscoeff_300K_4150_4400nm.txt"),
             np.vstack((wsave[::10], Isave[::10])).T,
-            header="RADIS {0}\n\n{1}".format(
-                get_version(add_git_number=False), s_details
-            ),
+            header=f"RADIS {get_version(add_git_number=False)}\n\n{s_details}",
         )
 
     # Plot comparison
@@ -258,7 +252,7 @@ def test_spec_generation(
         # idea of the resolution
         plt.plot(wref, Iref, "or", ms=3, label="version RADIS 0.9.26 (13/12/20)")
         plt.legend()
-        plt.title("All close: {0}".format(match_reference))
+        plt.title(f"All close: {match_reference}")
         plt.tight_layout()
 
     # Another example, at higher temperature.
@@ -269,11 +263,9 @@ def test_spec_generation(
 
     if verbose:
         printm(
-            "Spectrum calculation (no database loading) took {0:.1f}s\n".format(
-                s.conditions["calculation_time"]
-            )
+            f"Spectrum calculation (no database loading) took {s.conditions['calculation_time']:.1f}s\n"
         )
-        printm("_test_spec_generation finished in {0:.1f}s\n".format(time() - t0))
+        printm(f"_test_spec_generation finished in {time() - t0:.1f}s\n")
 
     assert match_reference
 
@@ -344,10 +336,10 @@ def test_power_integral(verbose=True, warnings=True, *args, **kwargs):
     # Compare
     err = abs(Peq - s.get_power(unit=unit)) / Peq
     if verbose:
-        printm("Emission integral:\t{0:.4g}".format(Peq), unit)
-        printm("Emission (noneq code):\t{0:.4g}".format(Pneq), unit)
-        printm("Integrated spectrum:\t{0:.4g}".format(s.get_power(unit=unit)), unit)
-        printm("Error: {0:.2f}%".format(err * 100))
+        printm(f"Emission integral:\t{Peq:.4g}", unit)
+        printm(f"Emission (noneq code):\t{Pneq:.4g}", unit)
+        printm(f"Integrated spectrum:\t{s.get_power(unit=unit):.4g}", unit)
+        printm(f"Error: {err * 100:.2f}%")
 
     assert err < 0.005
 

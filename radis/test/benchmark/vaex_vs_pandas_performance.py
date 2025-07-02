@@ -101,18 +101,15 @@ def compare_pandas_vs_vaex_memory():
         tracemalloc.stop()
 
         # Some raw outputs
-        print("\n******** Engine = {} ***********".format(engine))
-        print(
-            "Peak, current = {:.1e}, {:.1e} for {:} lines calculated".format(
-                *memory, s.conditions["lines_calculated"]
-            )
-        )
+        print(f"\n******** Engine = {engine} ***********")
+        peak, current = memory
+        print(f"Peak, current = {peak:.1e}, {current:.1e} for {s.conditions['lines_calculated']} lines calculated")
 
         # More sophisticated
         print("*** List of biggest objects ***")
         top_stats = snapshot.statistics("lineno")
         for rank, stat in enumerate(top_stats[:3]):
-            print("#{}".format(rank + 1))
+            print(f"#{rank + 1}")
             print(stat)
 
         # Clear for next engine in the loop

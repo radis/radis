@@ -52,12 +52,7 @@ class ParamRange:
         self.update_callback(val)
 
     def __repr__(self):
-        return "ParamRange({:s} .. {:s} [{:s}] @ {:s})".format(
-            self.valmin.__repr__(),
-            self.valmax.__repr__(),
-            self.valinit.__repr__(),
-            self.val.__repr__(),
-        )
+        return f"ParamRange({self.valmin.__repr__():s} .. {self.valmax.__repr__():s} [{self.valinit.__repr__():s}] @ {self.val.__repr__():s})"
 
 
 def add_ruler(fig, wunit="", Iunit="", ax=None):
@@ -536,9 +531,7 @@ def add_ruler(fig, wunit="", Iunit="", ax=None):
                 self.canvas.draw_idle()
 
         def _update_text(self):
-            detail_string = "{:0.4f} {}; {:0.3f} {}".format(
-                self.ruler_dx, self.wunit, self.ruler_dy, self.Iunit
-            )
+            detail_string = f"{self.ruler_dx:0.4f} {self.wunit}; {self.ruler_dy:0.3f} {self.Iunit}"
 
             self._axes_text.set_text(detail_string)
             if self._print_text is True:

@@ -75,9 +75,7 @@ def getTestFile(file, force=False):
 
     if not exists(path) and not force:
         raise FileNotFoundError(
-            "Test file `{0}` does not exist. Choose one of: \n- {1} or use force=True".format(
-                file, "\n- ".join(os.listdir(join(TEST_FOLDER_PATH, "files")))
-            )
+            f"Test file `{file}` does not exist. Choose one of: \n- {'\n- '.join(os.listdir(join(TEST_FOLDER_PATH, 'files')))} or use force=True"
         )
 
     return path
@@ -133,9 +131,7 @@ def getValidationCase(file, force=False):
 
     if not exists(path) and not force:
         raise FileNotFoundError(
-            "Validation case `{0}` does not exist. Choose one of: \n- {1} or use force=True".format(
-                file, "\n- ".join(os.listdir(join(TEST_FOLDER_PATH, "validation")))
-            )
+            f"Validation case `{file}` does not exist. Choose one of: \n- {'\n- '.join(os.listdir(join(TEST_FOLDER_PATH, 'validation')))} or use force=True"
         )
 
     return path
@@ -320,14 +316,12 @@ def setup_test_line_databases(verbose=True):
             )
             if diff is not None:
                 raise ValueError(
-                    "{0}".format(diff)
-                    + "\nIn ~/radis.json\n----------\n{0}".format(
-                        getDatabankEntries(dbname)
-                    )
-                    + "\n\nExpected\n---------\n{0}\n\n".format(dbentries)
-                    + "Test Database {0} doesnt match expected ".format(dbname)
-                    + "entries for key `{0}`. See comparison above. ".format(diff)
-                    + "To regenerate test databases just delete the {0} ".format(dbname)
+                    f"{diff}"
+                    + f"\nIn ~/radis.json\n----------\n{getDatabankEntries(dbname)}"
+                    + f"\n\nExpected\n---------\n{dbentries}\n\n"
+                    + f"Test Database {dbname} doesnt match expected "
+                    + f"entries for key `{diff}`. See comparison above. "
+                    + f"To regenerate test databases just delete the {dbname} "
                     + "entry in your ~/radis.json"
                 )
 
@@ -432,7 +426,7 @@ def _failsafe_if_no_db(testcase, *args, **kwargs):
         print((sys.exc_info()))
         print(
             (
-                "Testing {0}: Database not defined. \n".format(testcase.__name__)
+                f"Testing {testcase.__name__}: Database not defined. \n"
                 + "Ignoring the test"
             )
         )

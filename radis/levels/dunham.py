@@ -281,8 +281,7 @@ def Fv(
 #    for ykl_name, Ykl in Ykl_dict.items():
 #        match = reg.search(ykl_name)
 #        if match is None:
-#            raise ValueError('Key {0} does not have the expected format {1}'.format(
-#                    ykl_name, Ykl_format))
+#            raise ValueError(f'Key {ykl_name} does not have the expected format {Ykl_format}')
 #        res = match.groupdict()
 #        k = int(res['k'])
 #        l = int(res['l'])

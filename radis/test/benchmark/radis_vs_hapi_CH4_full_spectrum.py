@@ -62,10 +62,10 @@ if __name__ == "__main__":
     sf.fetch_databank("hitran")
 
     s = sf.eq_spectrum(Tgas=T, pressure=pressure_bar)
-    s.name = "RADIS ({0:.1f}s)".format(s.conditions["calculation_time"])
+    s.name = f"RADIS ({s.conditions['calculation_time']:.1f}s)"
 
     # Print our HWHM for comparison (a posteriori)
-    print(("HWHM max {0:.2f} cm-1".format(sf.df1.hwhm_voigt.max())))
+    print((f"HWHM max {sf.df1.hwhm_voigt.max():.2f} cm-1"))
     print(
         (
             "WavenumberWingHW/HWHM",
@@ -103,15 +103,15 @@ if __name__ == "__main__":
     t0 = time()
     nu, coef = calc_hapi()
     t0 = time() - t0
-    print(("Calculated with HAPI in {0:.2f}s".format(t0)))
+    print(f"Calculated with HAPI in {t0:.2f}s")
 
     s_hapi = Spectrum.from_array(nu, coef, "abscoeff", wunit="cm-1", unit="cm-1")
-    s_hapi.name = "HAPI ({0:.1f}s)".format(t0)
+    s_hapi.name = f"HAPI ({t0:.1f}s)"
 
     plot_diff(s_hapi, s, "abscoeff")
 
     print(
-        ("Calculated with RADIS in {0:.2f}s".format(s.conditions["calculation_time"]))
+        (f"Calculated with RADIS in {s.conditions['calculation_time']:.2f}s")
     )
     print(("Number of lines in RADIS:", len(sf.df0)))
 

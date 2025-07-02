@@ -74,7 +74,7 @@ def test_hitran_names_match(verbose=True, warnings=True, *args, **kwargs):
     for m in all_hitran:
         if not m in HITRAN_MOLECULES:
             raise ValueError(
-                "{0} is defined in HITRAN groups but has no HITRAN id".format(m)
+                f"{m} is defined in HITRAN groups but has no HITRAN id"
             )
 
     # Species in 'HITRAN_MOLECULES' should be classified in groups, else nonequilibrium
@@ -84,11 +84,7 @@ def test_hitran_names_match(verbose=True, warnings=True, *args, **kwargs):
             "Difference between HITRAN groups (left) and HITRAN id "
             + "dictionary (right). Some HITRAN species are not classified in "
             + "groups. Nonequilibrium calculations wont be possible for these!:\n"
-            + "{0}".format(
-                compare_lists(
-                    all_hitran, HITRAN_MOLECULES, verbose=False, return_string=True
-                )[1]
-            )
+            + f"{compare_lists(all_hitran, HITRAN_MOLECULES, verbose=False, return_string=True)[1]}"
         )
 
 

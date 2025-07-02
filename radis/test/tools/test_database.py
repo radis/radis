@@ -54,7 +54,7 @@ def test_database_functions(
     # Database visualisation methods
     if verbose:
         print(
-            "{0} items in test database: {1}".format(len(db), db.see(["Tvib", "Trot"]))
+            f"{len(db)} items in test database: {db.see(['Tvib', 'Trot'])}"
         )
     if plot:
         db.plot_cond("Tvib", "Trot")

@@ -149,9 +149,7 @@ def test_rescaling_path_length(
     if verbose:
         printm("Test rescaling:")
         printm(
-            "... Difference: {0:.2f}%".format(
-                abs(s1.get_power() / s2.get_power() - 1) * 100
-            )
+            f"... Difference: {abs(s1.get_power() / s2.get_power() - 1) * 100:.2f}%"
         )
 
     assert np.isclose(s2.get_power(), s1.get_power(), 2e-3)

@@ -404,23 +404,17 @@ def test_resampling_function(
     s.compare_with(
         s2,
         plot=plot,
-        title="Residual: {0:.2g}".format(
-            get_residual_integral(s, s2, "abscoeff", ignore_nan=True)
-        ),
+        title=f"Residual: {get_residual_integral(s, s2, 'abscoeff', ignore_nan=True):.2g}",
     )
     s.compare_with(
         s2b,
         plot=plot,
-        title="Residual: {0:.2g}".format(
-            get_residual_integral(s, s2b, "abscoeff", ignore_nan=True)
-        ),
+        title=f"Residual: {get_residual_integral(s, s2b, 'abscoeff', ignore_nan=True):.2g}",
     )
     s.compare_with(
         s3,
         plot=plot,
-        title="Residual: {0:.2g}".format(
-            get_residual_integral(s, s3, "abscoeff", ignore_nan=True)
-        ),
+        title=f"Residual: {get_residual_integral(s, s3, 'abscoeff', ignore_nan=True):.2g}",
     )
 
     assert get_residual_integral(s, s2, "abscoeff", ignore_nan=True) < 1e-3

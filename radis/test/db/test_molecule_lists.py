@@ -281,15 +281,11 @@ def generate_molparam_for_non_HITRAN_species():
             raise
         estimate = estimate_terrestrial_abundance(r.isotope_name_exomol)
         print(
-            "... Estim: {0:.3e}".format(
-                estimate_terrestrial_abundance(r.isotope_name_exomol)
-            )
+            f"... Estim: {estimate_terrestrial_abundance(r.isotope_name_exomol):.3e}"
         )
         print(
-            "... Real:  {0:.3e}".format(r.abundance),
-            "         ({0:.2%}% error)".format(
-                abs(estimate - r.abundance) / r.abundance
-            ),
+            f"... Real:  {r.abundance:.3e}",
+            f"         ({abs(estimate - r.abundance) / r.abundance:.2%}% error)",
         )
 
     # %% Generate dictionary of terrestrial abundances for all molecules not in HITRAN
@@ -328,9 +324,7 @@ def generate_molparam_for_non_HITRAN_species():
                     "\t",
                     "ok"
                     if sorted_equally
-                    else "⚠️ DIFFERENT ({0})".format(
-                        molpar.get(M, i + 1, key="isotope_name_exomol")
-                    ),
+                    else f"⚠️ DIFFERENT ({molpar.get(M, i + 1, key='isotope_name_exomol')})",
                 )
             except (KeyError, NotImplementedError):
                 print("... ", isotope_fullname, "not in HITRAN")

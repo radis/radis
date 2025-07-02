@@ -167,7 +167,7 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
     if plot or save:
         from radis import plot_diff
 
-        #        title = '{0} bar, {1} K, {2} cm'.format(p, T, L)  if save else None
+        #        title = f'{p} bar, {T} K, {L} cm' if save else None
         fig, [ax0, ax1] = plot_diff(
             s, s_hapi, var="transmittance_noslit", method="ratio", show=plot
         )
@@ -200,9 +200,7 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
 
     if verbose:
         printm(
-            "Integral difference ({0:.2f}%) < {1:.2f}%: {2}".format(
-                diff * 100, rtol * 100, b
-            )
+            f"Integral difference ({diff * 100:.2f}%) < {rtol * 100:.2f}%: {b}"
         )
 
     assert b
