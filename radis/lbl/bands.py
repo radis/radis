@@ -1192,7 +1192,7 @@ def add_bands(df, dbformat, lvlformat, dataframe_type="pandas", verbose=True):
                 "hitemp-radisdb",
             ]:
                 raise NotImplementedError(
-                    f"lvlformat {lvlformat0} not supported with dbformat {dbformat1}"
+                    f"lvlformat {lvlformat} not supported with dbformat {dbformat}"
                 )
 
             # Use vibrational nomenclature of CDSD (p,c,j,n) or HITRAN (v1v2l2v3J)
