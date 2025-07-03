@@ -132,7 +132,9 @@ def getValidationCase(file, force=False):
 
     if not exists(path) and not force:
         raise FileNotFoundError(
-            f"Validation case `{file}` does not exist. Choose one of: \n- {'\n- '.join(os.listdir(join(TEST_FOLDER_PATH, 'validation')))} or use force=True"
+            "Validation case `{}` does not exist. Choose one of: \n- {}".format(
+                file, "\n- ".join(os.listdir(join(TEST_FOLDER_PATH, "validation")))
+            ) + " or use force=True"
         )
 
     return path
@@ -316,9 +318,10 @@ def setup_test_line_databases(verbose=True):
                 getDatabankEntries(dbname), dbentries, verbose=False
             )
             if diff is not None:
+                entries = getDatabankEntries(dbname)
                 raise ValueError(
                     f"{diff}"
-                    + f"\nIn ~/radis.json\n----------\n{getDatabankEntries(dbname)}"
+                    + "\nIn ~/radis.json\n----------\n" + entries
                     + f"\n\nExpected\n---------\n{dbentries}\n\n"
                     + f"Test Database {dbname} doesnt match expected "
                     + f"entries for key `{diff}`. See comparison above. "
