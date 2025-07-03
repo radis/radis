@@ -223,9 +223,7 @@ def save(
             json_tricks.dump(sjson, f, indent=4)  # takes more space but more readable
 
     if verbose:
-        print(
-            f"Spectrum stored in {fout} ({getsize(fout) / 1024 * 1e-3:.1f}Mb)"
-        )
+        print(f"Spectrum stored in {fout} ({getsize(fout) / 1024 * 1e-3:.1f}Mb)")
 
     return fout  # return final name
 
@@ -262,9 +260,7 @@ def _format_to_jsondict(s: Spectrum, discard, compress, verbose=True):
         v = sjson["conditions"][k]
         if not is_jsonable(v):
             if verbose:
-                printr(
-                    f"Discarded {k} from conditions as not jsonable ({type(v)})"
-                )
+                printr(f"Discarded {k} from conditions as not jsonable ({type(v)})")
             del sjson["conditions"][k]
 
     # if compress>=2, remove unnecessary spectral quantities (that can be recomputed
@@ -455,9 +451,7 @@ def load_spec(file, binary=True) -> Spectrum:  # , return_binary_status=False):
         binary = not binary
         sload = _load(binary)
         # if it works:
-        print(
-            f"Worked! Use binary={binary} directly in load_spec for faster loading"
-        )
+        print(f"Worked! Use binary={binary} directly in load_spec for faster loading")
 
     # Test format / correct deprecated format:
     sload, fixed = _fix_format(file, sload)
@@ -939,7 +933,7 @@ def query(df, conditions="", **kwconditions):
         dg = df.query(conditions)
     else:  # ... first write input conditions query
         query = []
-        for (k, v) in kwconditions.items():
+        for k, v in kwconditions.items():
             if isinstance(v, str):
                 query.append(f"{k} == r'{v}'")
             elif v is None:
@@ -1222,7 +1216,7 @@ class SpecList(object):
         scale_if_possible = kwconditions.pop("scale_if_possible", False)
 
         # Test inputs
-        for (k, _) in kwconditions.items():
+        for k, _ in kwconditions.items():
             if not k in self.df.columns:
                 raise ValueError(
                     f"{k} not a correct condition name. Use one of: {self.df.columns}"
@@ -1375,7 +1369,7 @@ class SpecList(object):
         #        split_columns = kwconditions.pop('split_columns', [])     #: type: bool
 
         # Check all conditions exist
-        for (k, _) in kwconditions.items():
+        for k, _ in kwconditions.items():
             if not k in self.df.columns:
                 raise ValueError(
                     f"{k} not a correct condition name. Use one of: {self.df.columns}"
@@ -1479,16 +1473,13 @@ class SpecList(object):
 
         if verbose > 1:
             print(
-                f"{self.df.molecule[0]:^7} \t" + "\t".join([f"{k}" for k in kwconditions.keys()])
+                f"{self.df.molecule[0]:^7} \t"
+                + "\t".join([f"{k}" for k in kwconditions.keys()])
             )
+            print("Look up \t" + "\t".join([f"{v:.3g}" for v in kwconditions.values()]))
             print(
-                "Look up \t" + "\t".join([f"{v:.3g}" for v in kwconditions.values()])
-            )
-            print(
-                "Got     \t" +
-                "\t".join(
-                    [f"{sout.conditions[k]:.3g}" for k in kwconditions.keys()]
-                )
+                "Got     \t"
+                + "\t".join([f"{sout.conditions[k]:.3g}" for k in kwconditions.keys()])
             )
 
         return sout
@@ -1909,9 +1900,7 @@ class SpecDatabase(SpecList):
             # create it
             os.mkdir(path)
             if verbose:
-                print(
-                    f"Database {self.name} initialised in {dirname(path)}"
-                )
+                print(f"Database {self.name} initialised in {dirname(path)}")
         else:
             if verbose:
                 print(f"Loading database {self.name}")
@@ -2084,16 +2073,12 @@ class SpecDatabase(SpecList):
             try:
                 self.see().to_csv(file)
             except PermissionError:
-                warn(
-                    f"Database index could not be updated: {sys.exc_info()[1]}"
-                )
+                warn(f"Database index could not be updated: {sys.exc_info()[1]}")
         else:
             try:
                 os.remove(file)  # if database existed but files were deleted
             except PermissionError:
-                warn(
-                    f"Database index could not be updated: {sys.exc_info()[1]}"
-                )
+                warn(f"Database index could not be updated: {sys.exc_info()[1]}")
             except FileNotFoundError:
                 pass
 
@@ -2128,9 +2113,7 @@ class SpecDatabase(SpecList):
             columns = "all"
 
         if self.verbose:
-            print(
-                f"{dg.sum()} duplicate(s) found based on columns: {columns}"
-            )
+            print(f"{dg.sum()} duplicate(s) found based on columns: {columns}")
 
         onlyDuplicatedFiles = dg[dg == True]
         return onlyDuplicatedFiles
@@ -2354,9 +2337,9 @@ class SpecDatabase(SpecList):
         # case, use s_left.take(var)   with 'var' given in parameters of interpolate()
         # Or tell user to generate a subdatabase with only one spectral array
 
-        s_interp.conditions[
-            "interpolated_from"
-        ] = f"{spectra[index]}, {spectra[index+1]}"
+        s_interp.conditions["interpolated_from"] = (
+            f"{spectra[index]}, {spectra[index+1]}"
+        )
 
         return s_interp
 

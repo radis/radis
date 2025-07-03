@@ -54,9 +54,7 @@ s.plot("radiance", wunit="nm", show=False)
 
 for i, T in enumerate(T_list[1:]):
     s.recalc_gpu(Tgas=T)
-    print(
-        f"Plot{i + 1:d} finished in {s.conditions['calculation_time'] * 1e3:6.1f} ms"
-    )
+    print(f"Plot{i + 1:d} finished in {s.conditions['calculation_time'] * 1e3:6.1f} ms")
     show = True if T == T_list[-1] else False
     s.plot("radiance", wunit="nm", show=show, nfig="same")
 

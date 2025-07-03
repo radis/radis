@@ -87,6 +87,5 @@ def gs(M, I):
         return _gs[M][I]
     except KeyError:
         raise NotImplementedError(
-            "undefined state-dependant degeneracy for "
-            + f"molecule[isotope]: {M}[{I}]"
+            "undefined state-dependant degeneracy for " + f"molecule[isotope]: {M}[{I}]"
         )

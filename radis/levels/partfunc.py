@@ -1319,9 +1319,7 @@ class PartFuncTIPS(RovibParFuncTabulator):
         if type(M) is not int:
             raise TypeError(f"Molecule id must be int: got {M} ({type(M)})")
         if type(I) not in [int, np.int64]:
-            raise TypeError(
-                f"Isotope number must be int: got {I} ({type(I)})"
-            )
+            raise TypeError(f"Isotope number must be int: got {I} ({type(I)})")
 
         self.partitionSum = partitionSum
         self.M = M
@@ -1408,7 +1406,9 @@ def _get_cachefile_name(ElecState):
     isotope = ElecState.iso
     state = ElecState.state
     jsonfile = ElecState.jsonfile
-    filename = f"{jsonfile.replace('.json', '')}_{molecule}_iso{isotope}_{state}_levels.h5"
+    filename = (
+        f"{jsonfile.replace('.json', '')}_{molecule}_iso{isotope}_{state}_levels.h5"
+    )
     return filename
 
 
@@ -1773,9 +1773,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
                 delta_E = delta_E_last - (v + 1 - vmax) * v_inc
                 Evib = Evib + delta_E
                 if Evib > Ediss:
-                    warn(
-                        f"Energy above dissociation threshold: {Evib}>{Ediss}"
-                    )
+                    warn(f"Energy above dissociation threshold: {Evib}>{Ediss}")
                 if __debug__:
                     printdbg(
                         "Calculating Evib for "

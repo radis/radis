@@ -48,6 +48,7 @@ except ImportError:
 
 # %% Test
 
+
 # never add @pytest.mark.fast so we don't delete cached files for 'fast' tests
 def test_delete_all_cached_energies(verbose=True, warnings=True, *args, **kwargs):
     """Doesnt really test anything, but cleans all cached energy levels"""
@@ -60,11 +61,7 @@ def test_delete_all_cached_energies(verbose=True, warnings=True, *args, **kwargs
                 cachefile = energies.cachefile
                 if exists(cachefile):
                     os.remove(cachefile)
-                    print(
-                        (
-                            f"Cleaned cached energies for {ElecState.get_fullname()}"
-                        )
-                    )
+                    print((f"Cleaned cached energies for {ElecState.get_fullname()}"))
 
 
 @pytest.mark.fast
@@ -249,8 +246,7 @@ def test_calculatedQ_match_HAPI_CO(
         plt.xlabel("Temperature (K)")
         plt.ylabel("Partition function")
         plt.title(
-            "Ab-initio partition function calculations\n"
-            + f"(vmax:{vmax},jmax:{jmax})"
+            "Ab-initio partition function calculations\n" + f"(vmax:{vmax},jmax:{jmax})"
         )
         plt.tight_layout()
 

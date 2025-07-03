@@ -94,8 +94,7 @@ class LevelsList(object):
         for br, s in bands.items():
             if not isinstance(s, Spectrum):
                 raise ValueError(
-                    "`bands` must be a list of Spectrum objects. "
-                    + f"Got {type(s)}"
+                    "`bands` must be a list of Spectrum objects. " + f"Got {type(s)}"
                 )
             if s.lines is None:
                 raise ValueError(
@@ -342,9 +341,7 @@ class LevelsList(object):
             if vib_distribution == "boltzmann":
                 nvibQvib = g * exp(-hc_k * E_vib / Tvib)
             else:
-                raise NotImplementedError(
-                    f"vib_distribution: {vib_distribution}"
-                )
+                raise NotImplementedError(f"vib_distribution: {vib_distribution}")
 
         else:
             Tvib1, Tvib2, Tvib3 = Tvib
@@ -363,9 +360,7 @@ class LevelsList(object):
                     * exp(-hc_k * E_vib3 / Tvib3)
                 )
             else:
-                raise NotImplementedError(
-                    f"vib_distribution: {vib_distribution}"
-                )
+                raise NotImplementedError(f"vib_distribution: {vib_distribution}")
 
         # Add overpopulation
         if overpopulation != {}:
@@ -571,9 +566,7 @@ class LevelsList(object):
                 corfactor_u = nu_vib / nu_vib_old * Qref / Q * Qvib / Qvib_ref
                 corfactor_l = nl_vib / nl_vib_old * Qref / Q * Qvib / Qvib_ref
             else:
-                raise NotImplementedError(
-                    f"vib_distribution: {vib_distribution}"
-                )
+                raise NotImplementedError(f"vib_distribution: {vib_distribution}")
 
             rescale_updown_levels(band, corfactor_u, 1, corfactor_l, 1)
 

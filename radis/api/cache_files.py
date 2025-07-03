@@ -150,9 +150,7 @@ def load_h5_cache_file(
             raise err
         else:
             if verbose:
-                printr(
-                    f"File {cachefile} deprecated:\n{str(err)}\nDeleting it!"
-                )
+                printr(f"File {cachefile} deprecated:\n{str(err)}\nDeleting it!")
             os.remove(cachefile)
             return None
 
@@ -317,9 +315,7 @@ def check_cache_file(
                 raise
             else:  # delete file to regenerate it in the end of the script
                 if verbose:
-                    printr(
-                        f"File {fcache} deprecated:\n{str(err)}\nDeleting it!"
-                    )
+                    printr(f"File {fcache} deprecated:\n{str(err)}\nDeleting it!")
                 os.remove(fcache)
 
     return

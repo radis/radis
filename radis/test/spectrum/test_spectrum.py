@@ -557,7 +557,7 @@ def test_sort(*args, **kwargs):
     assert is_sorted(s_exp.sort().get("radiance")[0])
 
 
-#%%
+# %%
 @pytest.mark.fast
 def test_argmax_argmin(*args, **kwargs):
     """Test :py:meth:`~radis.spectrum.spectrum.Spectrum.argmax`
@@ -620,7 +620,7 @@ def _run_testcases(
     debug=False,
     warnings=True,
     *args,
-    **kwargs
+    **kwargs,
 ):
     """Test procedures
 
@@ -641,7 +641,7 @@ def _run_testcases(
         plot=plot,
         close_plots=close_plots,
         *args,
-        **kwargs
+        **kwargs,
     )
     test_copy(verbose=verbose, *args, **kwargs)
     test_trimming(*args, **kwargs)

@@ -79,7 +79,7 @@ if verbose:
 gfit.sort(key=lambda x: x.x_0)
 
 print("-----***********-----\nTemperature fitting:")
-#%% Get temperature from line ratio - neglecting stimulated emission
+# %% Get temperature from line ratio - neglecting stimulated emission
 from math import log
 
 E = np.array([17475.8605, 8518.1915, 3378.9537])

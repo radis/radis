@@ -282,8 +282,8 @@ def fit_legacy(
     def print_fit_values(fit_values):
         return ",".join(
             [
-            f"{fit_params[i]}={np.round(fit_values[i], 0)}{fit_units[i]}"
-            for i in range(len(fit_params))
+                f"{fit_params[i]}={np.round(fit_values[i], 0)}{fit_units[i]}"
+                for i in range(len(fit_params))
             ]
         )
 
@@ -500,9 +500,7 @@ def fit_legacy(
     s_best = generate_spectrum(best.x)
 
     if verbose and best.success:
-        print(
-            f"Init {fit_params} = {(fit_values_max + fit_values_min) / 2}{fit_units}"
-        )
+        print(f"Init {fit_params} = {(fit_values_max + fit_values_min) / 2}{fit_units}")
         print(f"Final {fit_params} = {np.round(best.x)}{fit_units}")
 
     if verbose >= 2:

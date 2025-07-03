@@ -423,7 +423,7 @@ class VkFFTApp(VkFFTAppBase):
                     ax = "xyz"[wg.id]
                     setattr(wg, ax, N)
                     # print(wg.id)
-                except (IndexError):
+                except IndexError:
                     # the wg.id is set by VkFFT to either 0, 1, or 2,
                     # to specify which axis contains the batch number.
                     # this exception is to catch issues with the wg.id being any other number.

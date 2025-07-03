@@ -54,7 +54,7 @@ def test_spec_generation(
     warnings=True,
     update_reference_spectrum=False,
     *args,
-    **kwargs
+    **kwargs,
 ):
     """Test spectrum generation
     Can be used as a base to generate spectra in your codes
@@ -186,9 +186,7 @@ def test_spec_generation(
     sf.load_databank("HITEMP-CO2-DUNHAM")
     s = sf.eq_spectrum(Tgas=300, name="test_spec_generation")
     if verbose:
-        printm(
-            f">>> _test_spec_generation: Spectrum calculated in {time() - t0:.2f}s"
-        )
+        printm(f">>> _test_spec_generation: Spectrum calculated in {time() - t0:.2f}s")
 
     if plot:
         plt.figure(fig_prefix + "Reference spectrum CDSD-HITEMP (radiance)")
@@ -698,7 +696,7 @@ def test_vaex_and_pandas_spectrum():
             factory_s_vaex.df1[column].to_numpy() == factory_s_pandas.df1[column]
         )
 
-    #%% Additional test with other options (cutoff, ...)
+    # %% Additional test with other options (cutoff, ...)
     from radis import SpectrumFactory
 
     config["DATAFRAME_ENGINE"] = "vaex"
@@ -726,7 +724,7 @@ def test_vaex_and_pandas_spectrum():
     assert np.allclose(s_vaex.get("absorbance"), s_pd.get("absorbance"), equal_nan=True)
 
 
-#%%
+# %%
 @pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
 def test_vaex_and_pandas_spectrum_noneq():
     """Compares the Spectrum calculated under non-equilibrium conditions .

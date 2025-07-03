@@ -168,7 +168,7 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
             *slabs,
             resample=resample_wavespace,
             out=out_of_bounds,
-            modify_inputs=modify_inputs
+            modify_inputs=modify_inputs,
         )
 
         # Now calculate sn and s in Serial
@@ -329,9 +329,7 @@ def _check_valid(s):
     """
 
     if not isinstance(s, Spectrum):
-        raise TypeError(
-            f"All inputs must be Spectrum objects (got: {type(s)})"
-        )
+        raise TypeError(f"All inputs must be Spectrum objects (got: {type(s)})")
     for k, v in s._q.items():
         if (
             k in ["transmittance_noslit", "radiance_noslit", "abscoeff", "emisscoeff"]
@@ -359,7 +357,7 @@ def resample_slabs(
     out_of_bounds="nan",
     modify_inputs=False,
     copy_lines=False,
-    *slabs
+    *slabs,
 ):
     # type: (str, str, str, *Spectrum) -> *Spectrum
     """Resample slabs on the same wavespace: if the range are different,
@@ -666,7 +664,7 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
             out_of_bounds,
             modify_inputs,
             export_lines,
-            *slabs
+            *slabs,
         )
         w_noconv = slabs[0]._get_wavespace()
 

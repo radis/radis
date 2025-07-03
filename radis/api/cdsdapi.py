@@ -241,9 +241,7 @@ def cdsd2df(
         assert load_wavenum_min < load_wavenum_max
 
     if verbose >= 2:
-        print(
-            f"Opening file {fname} (format=CDSD {version}, cache={cache})"
-        )
+        print(f"Opening file {fname} (format=CDSD {version}, cache={cache})")
         print(f"Last Modification time: {metadata['last_modification']}")
 
     if version == "hitemp":
@@ -295,9 +293,7 @@ def cdsd2df(
             "wavenum_max": df.wav.max(),
         }
         if verbose:
-            print(
-                f"Generating cache file {fcache} with metadata :\n{new_metadata}"
-            )
+            print(f"Generating cache file {fcache} with metadata :\n{new_metadata}")
         try:
             save_to_hdf(
                 df,

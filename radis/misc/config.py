@@ -629,9 +629,7 @@ def addDatabankEntries_configformat(dbname, dict_entries, verbose=True):
 
     # Check database doesnt exist
     if dbname in dbnames:
-        raise DatabaseAlreadyExists(
-            f"Database already exists: {dbname}. Cant add it"
-        )
+        raise DatabaseAlreadyExists(f"Database already exists: {dbname}. Cant add it")
 
     # Add entries to parser
     config = configparser.ConfigParser()

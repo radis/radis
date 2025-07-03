@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-
-"""
+""" """
 import os
 import shutil
 from os.path import abspath, dirname, exists, expanduser, join, split, splitext

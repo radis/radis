@@ -134,7 +134,8 @@ def getValidationCase(file, force=False):
         raise FileNotFoundError(
             "Validation case `{}` does not exist. Choose one of: \n- {}".format(
                 file, "\n- ".join(os.listdir(join(TEST_FOLDER_PATH, "validation")))
-            ) + " or use force=True"
+            )
+            + " or use force=True"
         )
 
     return path
@@ -321,7 +322,8 @@ def setup_test_line_databases(verbose=True):
                 entries = getDatabankEntries(dbname)
                 raise ValueError(
                     f"{diff}"
-                    + "\nIn ~/radis.json\n----------\n" + entries
+                    + "\nIn ~/radis.json\n----------\n"
+                    + entries
                     + f"\n\nExpected\n---------\n{dbentries}\n\n"
                     + f"Test Database {dbname} doesnt match expected "
                     + f"entries for key `{diff}`. See comparison above. "
@@ -437,7 +439,7 @@ def _failsafe_if_no_db(testcase, *args, **kwargs):
         return True
 
 
-#%%
+# %%
 class EmulateMatlab:
     def __init__(self):
         r"""Creates a class that allows to use Matlab syntax in Radis,
@@ -479,7 +481,7 @@ class EmulateMatlab:
         return self.radis.__dir__()
 
 
-#%%
+# %%
 if __name__ == "__main__":
     #    run_tests()
     setup_test_line_databases()

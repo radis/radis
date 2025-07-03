@@ -145,7 +145,7 @@ def test_broadening_methods_different_conditions(
     wmax = 2151.4  # cm-1
     truncation = 1  # cm-1
 
-    for (T, p, fwhm_lorentz, fwhm_gauss) in [
+    for T, p, fwhm_lorentz, fwhm_gauss in [
         # K, bar, expected FWHM for Lorentz, gauss (cm-1)
         (3000, 1, 0.02849411, 0.01594728),
         (300, 1, 0.16023415, 0.00504297),
@@ -205,9 +205,9 @@ def test_broadening_methods_different_conditions(
                 s_voigt,
                 s_convolve,
                 "abscoeff",
-                title = (
-                    fr"T {T} K, p {p} bar: w$_\mathrm{{L}}$ {2 * float(sf.df1.hwhm_lorentz):.3f}, "
-                    fr"w$_\mathrm{{G}}$ {float(sf.df1.hwhm_gauss):.3f} cm$^{{-1}}$"
+                title=(
+                    rf"T {T} K, p {p} bar: w$_\mathrm{{L}}$ {2 * float(sf.df1.hwhm_lorentz):.3f}, "
+                    rf"w$_\mathrm{{G}}$ {float(sf.df1.hwhm_gauss):.3f} cm$^{{-1}}$"
                 ),
             )
 
@@ -344,7 +344,9 @@ def test_broadening_LDM(verbose=True, plot=False, *args, **kwargs):
     # LDM Voigt with Whiting approximation:
     sf.params.broadening_method = "voigt"
     s_ldm_voigt = sf.eq_spectrum(Tgas=T)
-    s_ldm_voigt.name = f"LDM Whiting ({s_ldm_voigt.conditions['calculation_time']:.2f}s)"
+    s_ldm_voigt.name = (
+        f"LDM Whiting ({s_ldm_voigt.conditions['calculation_time']:.2f}s)"
+    )
 
     # Compare
     res = get_residual(s_ref, s_ldm, "abscoeff")
@@ -508,7 +510,7 @@ def test_truncations_and_neighbour_lines(*args, **kwargs):
     """
     # TODO  . Check on databases with one line that truncation is achieved, etc.
 
-    #%% Test truncation > lines
+    # %% Test truncation > lines
 
     conditions = {
         "wavenum_min": 2100,
@@ -533,7 +535,7 @@ def test_truncations_and_neighbour_lines(*args, **kwargs):
     )
     assert s_lbl_voigt_trunc10.conditions["truncation"] == 10
 
-    #%% Test no truncation
+    # %% Test no truncation
 
     from radis import calc_spectrum
 
@@ -568,7 +570,7 @@ def test_truncations_and_neighbour_lines(*args, **kwargs):
         )
     assert "Lines cannot be truncated with `broadening_method='fft'`" in str(err.value)
 
-    #%% same with optimization=simple (DIT)
+    # %% same with optimization=simple (DIT)
     with pytest.raises(NotImplementedError) as err:
         calc_spectrum(
             **conditions,
@@ -592,7 +594,7 @@ def test_truncations_and_neighbour_lines(*args, **kwargs):
         in str(err.value)
     )
 
-    #%% same with optimization=simple (DIT)
+    # %% same with optimization=simple (DIT)
     with pytest.raises(ValueError) as err:
 
         calc_spectrum(
@@ -620,7 +622,7 @@ def test_truncations_and_neighbour_lines(*args, **kwargs):
         in str(err.value)
     )
 
-    #%% same with optimization=None but for 'fft' broadening method
+    # %% same with optimization=None but for 'fft' broadening method
     with pytest.raises(NotImplementedError) as err:
 
         calc_spectrum(
@@ -634,7 +636,7 @@ def test_truncations_and_neighbour_lines(*args, **kwargs):
         in str(err.value)
     )
 
-    #%% Test there is DeprecationError raised
+    # %% Test there is DeprecationError raised
     with pytest.raises(DeprecationWarning) as err:
         calc_spectrum(
             **conditions,
@@ -645,7 +647,7 @@ def test_truncations_and_neighbour_lines(*args, **kwargs):
         in str(err.value)
     )
 
-    #%% Truncation, no neighbour lines : should be ~ same result that without DIT Optimization
+    # %% Truncation, no neighbour lines : should be ~ same result that without DIT Optimization
     s_dit_voigt_trunc10 = calc_spectrum(
         **conditions,
         optimization="simple",

@@ -21,6 +21,7 @@ HOST_PROPS = (
     vk.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | vk.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
 )
 
+
 # TODO: split this up in a purely vulkan class and a radis class
 class GPUApplication(object):
     def __init__(self, deviceID=0, path="./", verbose=True):

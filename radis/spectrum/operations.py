@@ -381,9 +381,7 @@ def crop(s: Spectrum, wmin=None, wmax=None, wunit=None, inplace=False) -> Spectr
     # assert wunit in ["nm", "cm-1"]
 
     if (wmin is not None and wmax is not None) and wmin >= wmax:
-        raise ValueError(
-            f"wmin should be < wmax (Got: {wmin:.2f}, {wmax:.2f})"
-        )
+        raise ValueError(f"wmin should be < wmax (Got: {wmin:.2f}, {wmax:.2f})")
 
     if not inplace:
         s = s.copy()

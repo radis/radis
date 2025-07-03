@@ -103,7 +103,9 @@ def compare_pandas_vs_vaex_memory():
         # Some raw outputs
         print(f"\n******** Engine = {engine} ***********")
         peak, current = memory
-        print(f"Peak, current = {peak:.1e}, {current:.1e} for {s.conditions['lines_calculated']} lines calculated")
+        print(
+            f"Peak, current = {peak:.1e}, {current:.1e} for {s.conditions['lines_calculated']} lines calculated"
+        )
 
         # More sophisticated
         print("*** List of biggest objects ***")

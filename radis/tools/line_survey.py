@@ -685,8 +685,8 @@ def LineSurvey(
 
         layout["yaxis2"] = dict(
             title={
-            "text": f"{over_name.capitalize()} ({over_units})",
-            "font": {"color": "#ff7f0e"},
+                "text": f"{over_name.capitalize()} ({over_units})",
+                "font": {"color": "#ff7f0e"},
             },
             # note: LaTeX doesnt seem to
             # work in Offline mode yet.

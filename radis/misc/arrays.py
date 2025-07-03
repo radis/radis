@@ -449,9 +449,7 @@ def bining(I, ymin=None, ymax=None, axis=1):
     if ymin < 0:
         print(f"Warning in bining. ymin ({ymin}) < 0")
     if ymax > I.shape[axis]:
-        print(
-            f"Warning in bining. ymax ({ymax}) > yaxis length ({I.shape[axis]})"
-        )
+        print(f"Warning in bining. ymax ({ymax}) > yaxis length ({I.shape[axis]})")
     return np.nanmean(I[:, ymin:ymax], axis=axis)
 
 

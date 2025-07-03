@@ -798,7 +798,7 @@ def rescale_abscoeff(
             f"Can't rescale abscoeff if not all of the following are given : \n(1) (transmittance_noslit ({'transmittance_noslit' in initial}) "
             + f"OR absorbance ({'absorbance' in initial})) "
             + f"AND true_path_length ({true_path_length}). "
-            + f"\n(2) xsection ({'xsection' in initial}) AND Tgas ({'Tgas' in spec.conditions}) AND pressure" 
+            + f"\n(2) xsection ({'xsection' in initial}) AND Tgas ({'Tgas' in spec.conditions}) AND pressure"
             + f"({'pressure' in spec.conditions}) AND mole_fraction ({'mole_fraction' in spec.conditions})"
         )
 

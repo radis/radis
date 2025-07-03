@@ -116,7 +116,7 @@ def test_load_lines_pops(plot=False, verbose=True, warnings=True, *args, **kwarg
                 # :line CO2 ... here CO is fine
                 # (by default lines and populations
                 # are discarded)
-                compress=True  # only removes some spectral
+                compress=True,  # only removes some spectral
                 # quantities, cant change population
                 # or lines size
             ),

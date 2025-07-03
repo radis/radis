@@ -151,12 +151,8 @@ def test_planck_cm(verbose=True, plot=True, *args, **kwargs):
     P_calc = pi * s.get_power("W/m2/sr")  # Lambert's cosine law
     assert np.isclose(P_theory, P_calc, rtol=1e-3)
     if verbose:
-        print(
-            f"Earth blackbody radiant intensity (Stefan law): {P_theory:.2f} W/m2"
-        )
-        print(
-            f"Earth blackbody radiant intensity (calculated): {P_calc:.2f} W/m2"
-        )
+        print(f"Earth blackbody radiant intensity (Stefan law): {P_theory:.2f} W/m2")
+        print(f"Earth blackbody radiant intensity (calculated): {P_calc:.2f} W/m2")
         print(".. test_planck_cm.py: Stefan's law: OK")
 
     if plot:

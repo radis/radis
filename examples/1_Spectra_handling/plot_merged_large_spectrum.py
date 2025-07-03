@@ -20,7 +20,7 @@ See the :ref:`HITRAN full-range example <example_hitran_full_range>`
 from radis import MergeSlabs, calc_spectrum
 
 spectra = []
-for (wmin, wmax) in [(50, 3000), (3000, 7000), (7000, 10000)]:
+for wmin, wmax in [(50, 3000), (3000, 7000), (7000, 10000)]:
 
     spectra.append(
         calc_spectrum(

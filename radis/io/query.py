@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-""" Wrapper to fetch line database from HITRAN with Astroquery [1]_
+"""Wrapper to fetch line database from HITRAN with Astroquery [1]_
 (based on [HAPI]_)
 
 .. note::
@@ -169,7 +169,7 @@ def fetch_astroquery(
             empty_range = True
             if verbose:
                 print(
-                        f"No lines for {molecule} (id={mol_id}), iso={isotope} in range {wmin:.2f}-{wmax:.2f}cm-1. "
+                    f"No lines for {molecule} (id={mol_id}), iso={isotope} in range {wmin:.2f}-{wmax:.2f}cm-1. "
                 )
         else:
             raise ValueError(
@@ -256,9 +256,7 @@ def fetch_astroquery(
             "wmax": wmax,
         }
         if verbose:
-            print(
-                f"Generating cache file {fcache} with metadata :\n{new_metadata}"
-            )
+            print(f"Generating cache file {fcache} with metadata :\n{new_metadata}")
         from radis import __version__
 
         try:

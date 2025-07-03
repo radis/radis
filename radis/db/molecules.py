@@ -204,9 +204,7 @@ def getMolecule(
     # isotope
     if isotope is None:
         if len(list(mol.keys())) != 1:
-            raise ValueError(
-                f"Please precise which isotope among: {list(mol.keys())}"
-            )
+            raise ValueError(f"Please precise which isotope among: {list(mol.keys())}")
         isotope = list(mol.keys())[0]
     try:
         iso = mol[isotope]

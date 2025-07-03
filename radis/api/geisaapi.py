@@ -288,9 +288,7 @@ def gei2df(
             "wavenum_max": df.wav.max(),
         }
         if verbose:
-            print(
-                f"Generating cache file {fcache} with metadata :\n{new_metadata}"
-            )
+            print(f"Generating cache file {fcache} with metadata :\n{new_metadata}")
         try:
             save_to_hdf(
                 df,
@@ -312,7 +310,7 @@ def gei2df(
     return df
 
 
-#%%
+# %%
 def get_last(b):
     """Get non-empty lines of a chunk b, parsing the bytes."""
     element_length = np.vectorize(lambda x: len(x.__str__()))(b)
@@ -479,7 +477,7 @@ class GEISADatabaseManager(DatabaseManager):
             ) from e
 
 
-#%%
+# %%
 
 if __name__ == "__main__":
 

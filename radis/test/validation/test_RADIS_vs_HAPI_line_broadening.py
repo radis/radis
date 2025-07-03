@@ -199,9 +199,7 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
     b = diff < rtol
 
     if verbose:
-        printm(
-            f"Integral difference ({diff * 100:.2f}%) < {rtol * 100:.2f}%: {b}"
-        )
+        printm(f"Integral difference ({diff * 100:.2f}%) < {rtol * 100:.2f}%: {b}")
 
     assert b
 

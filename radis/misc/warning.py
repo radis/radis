@@ -439,7 +439,7 @@ def warn(message, category="default", status={}):
         raise ValueError(f"Unexpected action for warning: {action}")
 
 
-#%% Tests (on module load)
+# %% Tests (on module load)
 
 
 # ... test warnings are well defined

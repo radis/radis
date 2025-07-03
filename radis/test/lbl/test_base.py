@@ -52,7 +52,7 @@ def test_linestrength_calculations(*args, **kwargs):
     S = linestrength_from_Einstein(df.A, df.gp, df.El, Ia_arr, df.wav, Q_arr, 296)
     assert np.allclose(df.int, S, rtol=1e-3, atol=0)
 
-    #%% Now, at 1000 K
+    # %% Now, at 1000 K
     Q_arr = df.iso.map({iso: PartFuncTIPS(M, iso).at(1000) for iso in df.iso.unique()})
     S_1000 = linestrength_from_Einstein(df.A, df.gp, df.El, Ia_arr, df.wav, Q_arr, 1000)
 
@@ -74,7 +74,7 @@ def test_linestrength_calculations(*args, **kwargs):
     # match the one from the SpectrumFactory within 0.1%
     assert np.allclose(sf.df1.S, S_1000, rtol=1e-3, atol=0)
 
-    #%% Using non-eq calculations
+    # %% Using non-eq calculations
     S_eq = sf.df1.S.copy()
 
     sf.non_eq_spectrum(1000, 1000)
@@ -762,7 +762,7 @@ def test_input_wunit(plot=True, *args, **kwargs):
 
     assert s_from_wavenumber.units["radiance_noslit"] == "mW/cm2/sr/cm-1"
 
-    #%%
+    # %%
     # Compute the same spectrum, but with wavelength input (and compare that
     # areas are the same at the end)
     wmin = s_from_wavenumber.get_wavelength().min()
@@ -786,7 +786,7 @@ def test_input_wunit(plot=True, *args, **kwargs):
     # ... Check we're not sharing the same object:
     assert s_from_wavenumber.units is not s_fromwl.units  # Python problems
 
-    #%%
+    # %%
     import numpy as np
 
     print(s_from_wavenumber.get_power())

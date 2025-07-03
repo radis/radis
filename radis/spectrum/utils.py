@@ -411,7 +411,8 @@ def split_and_plot_by_parts(w, I, *args, **kwargs):
 
 # %% Profiler
 
-#%%
+
+# %%
 def dict_to_tree(pro, name):
     """
     Parameters
@@ -452,7 +453,7 @@ def dict_to_tree(pro, name):
         return {"value": pro, "name": name}
 
 
-#%%
+# %%
 
 
 def print_perf_profile(
@@ -542,7 +543,7 @@ def print_perf_profile(
             print(
                 text,
                 fill_spaces,
-                "" + number_format.format(prof['value']) + 's',
+                "" + number_format.format(prof["value"]) + "s",
                 scale(prof["value"]),
             )
         max_name_length = max(len(k) for k in prof.keys() if k != "value")

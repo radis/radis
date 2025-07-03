@@ -73,9 +73,7 @@ def test_hitran_names_match(verbose=True, warnings=True, *args, **kwargs):
     # All species in HITRAN groups should be valid HITRAN_MOLECULES names
     for m in all_hitran:
         if not m in HITRAN_MOLECULES:
-            raise ValueError(
-                f"{m} is defined in HITRAN groups but has no HITRAN id"
-            )
+            raise ValueError(f"{m} is defined in HITRAN groups but has no HITRAN id")
 
     # Species in 'HITRAN_MOLECULES' should be classified in groups, else nonequilibrium
     # calculations are not possible.

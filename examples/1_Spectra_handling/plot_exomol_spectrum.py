@@ -25,7 +25,7 @@ s.apply_slit(1, "cm-1")  # simulate an experimental slit
 s.plot("radiance")
 
 
-#%%
+# %%
 
 """ExoMol lines can be downloaded and accessed separately using
 :py:func:`~radis.io.exomol.fetch_exomol`
@@ -38,7 +38,7 @@ df = fetch_exomol("SiO", database="EBJT", isotope="1", load_wavenum_max=5000)
 print(df)
 
 
-#%%
+# %%
 # See the list of recommended databases for the 1st isotope of SiO :
 from radis.io.exomol import get_exomol_database_list, get_exomol_full_isotope_name
 

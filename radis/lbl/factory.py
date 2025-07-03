@@ -826,9 +826,7 @@ class SpectrumFactory(BandFactory):
         if pressure is not None:
             self.input.pressure = pressure
         if not is_float(Tgas):
-            raise ValueError(
-                f"Tgas should be float or Astropy unit. Got {Tgas}"
-            )
+            raise ValueError(f"Tgas should be float or Astropy unit. Got {Tgas}")
         self.input.Tgas = Tgas
 
         # Init variables
@@ -1655,9 +1653,7 @@ class SpectrumFactory(BandFactory):
             if isinstance(Tvib, tuple):
                 Tvib = tuple([convert_and_strip_units(T, u.K) for T in Tvib])
             elif not is_float(Tvib):
-                raise TypeError(
-                    f"Tvib should be float, or tuple (got {type(Tvib)})"
-                )
+                raise TypeError(f"Tvib should be float, or tuple (got {type(Tvib)})")
             singleTvibmode = is_float(Tvib)
             if not is_float(Trot):
                 raise ValueError("Trot should be float")

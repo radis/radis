@@ -32,6 +32,7 @@ try:
 except ImportError:
     vaex = NotInstalled(*not_installed_vaex_args)
 
+
 # %% Test routines
 # @pytest.mark.fast #Removed from "fast" tag because it seems this test needs to be performed after other ones (minouHub)
 def test_populations(verbose=True, *args, **kwargs):
@@ -148,9 +149,7 @@ def test_rescaling_path_length(
 
     if verbose:
         printm("Test rescaling:")
-        printm(
-            f"... Difference: {abs(s1.get_power() / s2.get_power() - 1) * 100:.2f}%"
-        )
+        printm(f"... Difference: {abs(s1.get_power() / s2.get_power() - 1) * 100:.2f}%")
 
     assert np.isclose(s2.get_power(), s1.get_power(), 2e-3)
 

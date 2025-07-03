@@ -158,7 +158,7 @@ def get_recent_hitemp_database_year(molecule):
     return recent_database
 
 
-#%%
+# %%
 def get_last(b):
     """Get non-empty lines of a chunk b, parsing the bytes."""
     element_length = np.vectorize(lambda x: len(x.__str__()))(b)
@@ -431,9 +431,12 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
             )
             warnings.warn(warning_msg, UserWarning)
 
-        with open(output_filename, "wb") as f, tqdm(
-            total=total_size, unit="B", unit_scale=True, desc=output_filename
-        ) as pbar:
+        with (
+            open(output_filename, "wb") as f,
+            tqdm(
+                total=total_size, unit="B", unit_scale=True, desc=output_filename
+            ) as pbar,
+        ):
             for chunk in file_response.iter_content(chunk_size=8192):
                 if chunk:
                     f.write(chunk)
@@ -882,7 +885,7 @@ class HITEMPDatabaseManager(DatabaseManager):
             ) from e
 
 
-#%%
+# %%
 
 if __name__ == "__main__":
 

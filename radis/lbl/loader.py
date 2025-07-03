@@ -373,6 +373,7 @@ class ConditionDict(dict):
 # - MiscParams: other, purely descriptive parameters, stored in Spectra, but not used
 #               when comparing Spectra to precomputed one in SpecDatabases
 
+
 # class Input(object):
 class Input(ConditionDict):
     """Holds Spectrum calculation input conditions, under the attribute
@@ -2273,11 +2274,9 @@ class DatabankLoader(object):
                 f"`pfsource` {pfsource} is not available for the species {species}. Try running `set_atomic_partition_functions` again with a different `pfsource`."
             )
         else:
-            self.params.parfuncpath = (
-                self.params.parfuncfmt
-            ) = (
-                self.params.levelsfmt
-            ) = self.levelspath = None  # all these parameters are irrelevant for atoms
+            self.params.parfuncpath = self.params.parfuncfmt = self.params.levelsfmt = (
+                self.levelspath
+            ) = None  # all these parameters are irrelevant for atoms
 
     def _init_rovibrational_energies(self, levels, levelsfmt):
         """Initializes non equilibrium partition (which contain rovibrational
@@ -2412,7 +2411,6 @@ class DatabankLoader(object):
         include_neighbouring_lines=True,
         output="pandas",
     ):
-
         """Loads all available database files and keep the relevant one.
         Returns a Pandas dataframe.
 
@@ -2610,9 +2608,11 @@ class DatabankLoader(object):
                             # cache=db_use_cached,
                             verbose=verbose,
                             # drop_non_numeric=True,
-                            isotope=self.input.isotope
-                            if self.input.isotope != "all"
-                            else None,
+                            isotope=(
+                                self.input.isotope
+                                if self.input.isotope != "all"
+                                else None
+                            ),
                             load_wavenum_min=wavenum_min,
                             load_wavenum_max=wavenum_max,
                             engine=engine,
@@ -2653,9 +2653,7 @@ class DatabankLoader(object):
 
                 if __debug__:
                     if len(df) == 0:
-                        printdbg(
-                            f"File {filename} loaded for nothing (out of range)"
-                        )
+                        printdbg(f"File {filename} loaded for nothing (out of range)")
 
                 # Select correct isotope(s)
                 if self.input.isotope != "all":
@@ -2701,9 +2699,12 @@ class DatabankLoader(object):
 
         if len(df) == 0:
             msg = (
-                "Reference databank "
-                + f"has 0 lines in range {wavenum_min:.2f}-{wavenum_max:.2f}cm-1"
-            ) + f" ({cm2nm(wavenum_min):.2f}-{cm2nm(wavenum_max):.2f}nm) Check your range !"
+                (
+                    "Reference databank "
+                    + f"has 0 lines in range {wavenum_min:.2f}-{wavenum_max:.2f}cm-1"
+                )
+                + f" ({cm2nm(wavenum_min):.2f}-{cm2nm(wavenum_max):.2f}nm) Check your range !"
+            )
             raise EmptyDatabaseError(msg)
 
         maxwavdb = df.wav.max()
@@ -2791,9 +2792,7 @@ class DatabankLoader(object):
                 )
 
         if self.verbose >= 2:
-            printg(
-                f"Loaded databank in {time() - t0:.1f}s ({len(df):,d} lines)"
-            )
+            printg(f"Loaded databank in {time() - t0:.1f}s ({len(df):,d} lines)")
 
         self._remove_unecessary_columns(df, output)
 
@@ -3011,9 +3010,7 @@ class DatabankLoader(object):
             assert len(predefined_partition_functions) > 0
             parsum = predefined_partition_functions[molecule][isotope]
         else:
-            raise ValueError(
-                f"Unknown format for partition function: {parfuncfmt}"
-            )
+            raise ValueError(f"Unknown format for partition function: {parfuncfmt}")
             # other formats ?
 
         return parsum

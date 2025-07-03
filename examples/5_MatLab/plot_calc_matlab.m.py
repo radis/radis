@@ -14,13 +14,13 @@ See https://github.com/radis/radis/pull/547 for more details and screenshots
 of Radis running in Matlab directly
 """
 
-#%% Section not needed in Matlab
+# %% Section not needed in Matlab
 
 from radis.test.utils import EmulateMatlab  # this line is not needed in Matlab
 
 py = EmulateMatlab()  # this line is not needed in Matlab
 
-#%% Matlab example
+# %% Matlab example
 # All lines below can be copied in Matlab directly :
 
 s = py.radis.calc_spectrum(

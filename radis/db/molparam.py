@@ -161,7 +161,7 @@ isotope_name_dict = {
 # even if HITRAN eventually changes the conventions and labels.
 
 
-#%%
+# %%
 # Read Extra parameters taken from molparams_extra.json
 # TODO : Refactor : have either .json either .txt, but not both
 
@@ -197,7 +197,7 @@ def get_extra_molparams(path=MOLPARAMS_EXTRA_PATH):
     return molparams_dict
 
 
-#%%
+# %%
 
 
 class MolParams(object):

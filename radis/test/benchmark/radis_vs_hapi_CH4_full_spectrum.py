@@ -110,9 +110,7 @@ if __name__ == "__main__":
 
     plot_diff(s_hapi, s, "abscoeff")
 
-    print(
-        (f"Calculated with RADIS in {s.conditions['calculation_time']:.2f}s")
-    )
+    print((f"Calculated with RADIS in {s.conditions['calculation_time']:.2f}s"))
     print(("Number of lines in RADIS:", len(sf.df0)))
 
 #    plt.savefig('radis_vs_hapi_test_large_ch4.pdf')

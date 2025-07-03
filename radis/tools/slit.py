@@ -390,9 +390,7 @@ def get_slit_function(
         elif norm_by is None:
             Iunit = None
         else:
-            raise ValueError(
-                f"Unknown normalization type: `norm_by` = {norm_by}"
-            )
+            raise ValueError(f"Unknown normalization type: `norm_by` = {norm_by}")
 
         # ... check it looks correct
         unq, counts = np.unique(wslit, return_counts=True)
@@ -446,18 +444,14 @@ def get_slit_function(
             elif norm_by is None:
                 Iunit = None
             else:
-                raise ValueError(
-                    f"Unknown normalization type: `norm_by` = {norm_by}"
-                )
+                raise ValueError(f"Unknown normalization type: `norm_by` = {norm_by}")
 
         if plot:  # (plot after resampling / renormalizing)
             # Plot slit
             plot_slit(wslit, Islit, wunit=return_unit, Iunit=Iunit)
 
     else:
-        raise TypeError(
-            f"Unexpected type for slit function: {type(slit_function)}"
-        )
+        raise TypeError(f"Unexpected type for slit function: {type(slit_function)}")
 
     # Final shape
     if len(wslit) < 5:

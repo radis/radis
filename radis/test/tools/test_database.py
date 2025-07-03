@@ -53,9 +53,7 @@ def test_database_functions(
 
     # Database visualisation methods
     if verbose:
-        print(
-            f"{len(db)} items in test database: {db.see(['Tvib', 'Trot'])}"
-        )
+        print(f"{len(db)} items in test database: {db.see(['Tvib', 'Trot'])}")
     if plot:
         db.plot_cond("Tvib", "Trot")
 
@@ -179,7 +177,7 @@ def test_lazy_loading(verbose=True, *args, **kwargs):
     DBNAME = "test_CO_OH_database"
     db = SpecDatabase(DBNAME, lazy_loading=False)  # create the database
 
-    #%% Simulate a fake database
+    # %% Simulate a fake database
 
     # Compute spectra of CO and OH and add them to the database
     T_db = np.linspace(300, 1200, 5)  # Temperature array
@@ -213,7 +211,7 @@ def test_lazy_loading(verbose=True, *args, **kwargs):
         )
         db.add(s2, store_name=f"OH_{T}K.spec", if_exists_then="ignore")
 
-    #%% Access the spectra in the database via the get functions.
+    # %% Access the spectra in the database via the get functions.
     # Check what species are in the database at a given temperature (300)
     s300 = db.get(Tgas=300)  # simple use of get
     if verbose:
@@ -227,11 +225,11 @@ def test_lazy_loading(verbose=True, *args, **kwargs):
     if verbose:
         print("Number of spectra found for the given conditions: ", len(sdb))
 
-    #%% Do the same in lazy-loading mode, and compare :
+    # %% Do the same in lazy-loading mode, and compare :
 
     db2 = SpecDatabase(DBNAME, lazy_loading=True)  # create the database
 
-    #%% Access the spectra in the database via the get functions.
+    # %% Access the spectra in the database via the get functions.
     # Check what species are in the database at a given temperature (300)
     s300_2 = db2.get(Tgas=300)  # simple use of get
     print([s.conditions["species"] for s in s300_2])

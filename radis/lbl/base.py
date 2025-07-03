@@ -342,7 +342,6 @@ class BaseFactory(DatabankLoader):
                 raise AssertionError(
                     f"{column}=NaN in line database at index {index}"
                     + f" corresponding to Line:\n {get_print_full(df.loc[index]) + fix_idea}"
-
                 ) from err
             elif self.dataframe_type == "vaex":
                 if self.input.species == "CO2":
@@ -3246,9 +3245,7 @@ class BaseFactory(DatabankLoader):
             nl_vib3Qvib3 = df.gvibl * exp(-hc_k * (df.Evib3l_h / Tvib3 + df.Evib3l_a / Trot))
             # fmt: on
         else:
-            raise ValueError(
-                f"Unknown vibrational distribution: {vib_distribution}"
-            )
+            raise ValueError(f"Unknown vibrational distribution: {vib_distribution}")
 
         if overpopulation != {}:
             raise NotImplementedError(overpopulation)
@@ -3299,9 +3296,7 @@ class BaseFactory(DatabankLoader):
             )
 
         else:
-            raise ValueError(
-                f"Unknown rotational distribution: {rot_distribution}"
-            )
+            raise ValueError(f"Unknown rotational distribution: {rot_distribution}")
 
         assert "nu" in self.df1
         assert "nl" in self.df1
@@ -3404,9 +3399,7 @@ class BaseFactory(DatabankLoader):
                             pop = energies.copy()  # is a copy
 
                         else:
-                            raise ValueError(
-                                f"Unknown level type: {level_type}"
-                            )
+                            raise ValueError(f"Unknown level type: {level_type}")
 
                         # Store
                         pops[molecule][isotope][electronic_state][level_type] = pop
@@ -3817,8 +3810,7 @@ class BaseFactory(DatabankLoader):
                 # be needed (ex: only equilibrium calculations). Continue
                 if __debug__:
                     printdbg(
-                        f"parsum[{molecule}][{isotope}][{state}]"
-                        + " not defined."
+                        f"parsum[{molecule}][{isotope}][{state}]" + " not defined."
                     )
             else:
                 # ... Reset it

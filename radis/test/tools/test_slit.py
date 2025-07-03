@@ -167,7 +167,7 @@ def test_slit_unit_conversions_spectrum_in_cm(
             rtol=1e-3,
             verbose=verbose,
             plot=plot,
-            **plotargs
+            **plotargs,
         )
 
 
@@ -236,7 +236,7 @@ def test_slit_unit_conversions_spectrum_in_nm(
             rtol=1e-3,
             verbose=verbose,
             plot=plot,
-            **plotargs
+            **plotargs,
         )
 
     # %%
@@ -410,9 +410,7 @@ def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **
     assert is_homogeneous(s.units["radiance"], "mW/cm2/sr")
     if verbose:
         print(
-            (
-                f"radiance unit ({s.units['radiance']}) is homogeneous to 'mW/cm2/sr': OK"
-            )
+            (f"radiance unit ({s.units['radiance']}) is homogeneous to 'mW/cm2/sr': OK")
         )
 
 
@@ -434,7 +432,7 @@ def test_slit_energy_conservation(
     s = calculated_spectrum(
         *np.loadtxt(getTestFile("calc_N2C_spectrum_Trot1200_Tvib3000_slit0.1.txt")).T,
         wunit="nm",
-        Iunit="mW/cm2/sr/nm"
+        Iunit="mW/cm2/sr/nm",
     )  # arbitrary)
 
     P = s.get_power(unit="mW/cm2/sr")
@@ -628,9 +626,7 @@ def test_auto_correct_dispersion(
             getTestFile("slitfunction.txt")
         )
         w_full_range = np.linspace(w.min(), w_slit_632.max())
-        plt.figure(
-            f"Spectrometer Dispersion (f={750}mm, phi={-0.6}°, gr={2400}"
-        )
+        plt.figure(f"Spectrometer Dispersion (f={750}mm, phi={-0.6}°, gr={2400}")
         plt.plot(w_full_range, slit_dispersion(w_full_range))
         plt.xlabel("Wavelength (nm)")
         plt.ylabel("Reciprocal Linear Dispersion")

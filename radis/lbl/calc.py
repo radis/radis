@@ -880,9 +880,7 @@ def _calc_spectrum_one_molecule(
                 conditions["lvl_use_cached"] = use_cached
         elif databank.endswith(".h5") or databank.endswith(".hdf5"):
             if verbose:
-                print(
-                    f"Inferred {databank} is a HDF5 file with RADISDB columns format"
-                )
+                print(f"Inferred {databank} is a HDF5 file with RADISDB columns format")
             conditions["format"] = "hdf5-radisdb"
             if not _equilibrium:
                 conditions["levelsfmt"] = "radis"

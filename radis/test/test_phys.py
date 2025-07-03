@@ -91,11 +91,7 @@ def test_convert(verbose=True, *args, **kwargs):
     lbd_0 = 632.8
     fwhm_hz = dnm2dhz(fwhm, lbd_0)  # ~ 1.5 GHz
     if verbose:
-        print(
-            (
-                f"{fwhm:.2g} nm broadening at {lbd_0} nm = {fwhm_hz * 1e-9:.2g} Ghz"
-            )
-        )
+        print((f"{fwhm:.2g} nm broadening at {lbd_0} nm = {fwhm_hz * 1e-9:.2g} Ghz"))
     assert isclose(fwhm_hz * 1e-9, 1.4973307983125002)
     assert isclose(dhz2dnm(fwhm_hz, nm2hz(lbd_0)), fwhm)
 

@@ -1580,7 +1580,7 @@ class Spectrum(object):
             name = f"{basename(self.file)}"
         else:
             name_params = []
-            for (key, unit) in [("species", ""), ("dbformat", ""), ("Tgas", "K")]:
+            for key, unit in [("species", ""), ("dbformat", ""), ("Tgas", "K")]:
                 if key in self.conditions:
                     name_params.append(f"{self.conditions[key]}{unit}")
 
@@ -2491,7 +2491,6 @@ class Spectrum(object):
         plotting_library="default",
         **kwargs,
     ):
-
         r"""Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
         .. note::
@@ -3548,9 +3547,7 @@ class Spectrum(object):
         elif norm_by is None:
             Iunit = None
         else:
-            raise ValueError(
-                f"Unknown normalization type: `norm_by` = {norm_by}"
-            )
+            raise ValueError(f"Unknown normalization type: `norm_by` = {norm_by}")
 
         # Plot in correct unit  (plot_slit deals with the conversion if needed)
         fig, ax = plot_slit(
@@ -4422,9 +4419,7 @@ class Spectrum(object):
             elif out_of_bounds == "error":
                 fill_with = "error"
             else:
-                raise ValueError(
-                    f"Unexpected value for out_of_bound: {out_of_bounds}"
-                )
+                raise ValueError(f"Unexpected value for out_of_bound: {out_of_bounds}")
             return fill_with
 
         # There are different cases depending on the unit of w_new
@@ -4433,7 +4428,7 @@ class Spectrum(object):
         # ... air2vacuum conversion in particular is quite slow, but has been
         # ... done once for all with get_wavelength() above )
 
-        for (k, I) in s._q.items():
+        for k, I in s._q.items():
             if k == "wavespace":
                 continue
             fill_with = get_filling(k)
@@ -4497,7 +4492,7 @@ class Spectrum(object):
             s = self.copy()
 
         w = s._q["wavespace"]  # wavelength or wavenumber range
-        for (k, I) in s._q.items():
+        for k, I in s._q.items():
             if k == "wavespace":
                 continue
             w_new, Inew = resample_even(
@@ -4510,7 +4505,7 @@ class Spectrum(object):
 
         return s
 
-    #%% Fonctions to fit a lineshape model
+    # %% Fonctions to fit a lineshape model
     #
 
     def fit_model(
@@ -4723,9 +4718,11 @@ class Spectrum(object):
 
             # Add units
             y_err = [
-                mod.__getattribute__(param).unit * y_err[i]
-                if mod.__getattribute__(param).unit
-                else y_err[i]
+                (
+                    mod.__getattribute__(param).unit * y_err[i]
+                    if mod.__getattribute__(param).unit
+                    else y_err[i]
+                )
                 for mod in model
                 for i, param in enumerate(mod.param_names)
             ]  # TODO refactor there is probably a better way to write it
@@ -4828,9 +4825,7 @@ class Spectrum(object):
                 print(tb_info[-1][-1])
                 # @dev: see https://stackoverflow.com/a/11587247/5622825
         except KeyError as err:
-            warn(
-                f"Condition missing to know if spectrum is at equilibrium: {err}"
-            )
+            warn(f"Condition missing to know if spectrum is at equilibrium: {err}")
             guess = not equilibrium
         else:
             guess = True
@@ -5377,7 +5372,11 @@ class Spectrum(object):
             if k == "wavespace":
                 continue
             # print number of points with a comma separator
-            unit_str = f"\t[{self.units[k]}]" if (k in self.units and self.units[k] != "") else ""
+            unit_str = (
+                f"\t[{self.units[k]}]"
+                if (k in self.units and self.units[k] != "")
+                else ""
+            )
             nan_str = f", {count_nans(v)} nans" if anynan(v) else ""
             print(f"  {k}{unit_str}\t({len(v):,d} points{nan_str})")
 
@@ -5443,9 +5442,7 @@ class Spectrum(object):
                 f", etc. to apply `{operation_name}()` to the one spectral array you want."
             )
         elif len(quantities) == 0:
-            raise ValueError(
-                f"No spectral array defined in Spectrum {self.get_name()}"
-            )
+            raise ValueError(f"No spectral array defined in Spectrum {self.get_name()}")
         else:
             var = quantities[0]
         return var
@@ -5709,9 +5706,7 @@ class Spectrum(object):
                     "defined."
                 )
             else:
-                raise ValueError(
-                    f"Unexpected `normalize_how`: {normalize_how}"
-                )
+                raise ValueError(f"Unexpected `normalize_how`: {normalize_how}")
 
             out = multiply(s, 1 / (norm * Unit(norm_unit)), inplace=inplace)
 
@@ -5732,9 +5727,7 @@ class Spectrum(object):
                 norm = nantrapz(I, w)
                 norm_unit = Unit(s.units[var]) * Unit(wunit)
             else:
-                raise ValueError(
-                    f"Unexpected `normalize_how`: {normalize_how}"
-                )
+                raise ValueError(f"Unexpected `normalize_how`: {normalize_how}")
             # Ensure we use the same unit system!
             out = multiply(s, 1 / (norm * Unit(norm_unit)), inplace=inplace)
 
@@ -5755,9 +5748,7 @@ class Spectrum(object):
                 norm = np.abs(nantrapz(I[b], w[b]))
                 norm_unit = Unit(s.units[var]) * Unit(wunit)
             else:
-                raise ValueError(
-                    f"Unexpected `normalize_how`: {normalize_how}"
-                )
+                raise ValueError(f"Unexpected `normalize_how`: {normalize_how}")
 
             out = multiply(s, 1 / (norm * Unit(norm_unit)), inplace=inplace)
 
@@ -6355,7 +6346,7 @@ class Spectrum(object):
             if self.gpu_app is None:
                 raise KeyError
 
-        except (KeyError):
+        except KeyError:
             warn(
                 "GPU not initialized, spectrum.recalc_gpu() can only be called on spectrum objects produced by sf.eq_spectrum_gpu()!",
                 GPUInitWarning,

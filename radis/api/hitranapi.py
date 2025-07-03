@@ -310,9 +310,7 @@ def hit2df(
             "wavenum_max": df.wav.max(),
         }
         if verbose:
-            print(
-                f"Generating cache file {fcache} with metadata :\n{new_metadata}"
-            )
+            print(f"Generating cache file {fcache} with metadata :\n{new_metadata}")
         from radis import __version__
 
         try:
@@ -1552,9 +1550,7 @@ def parse_local_quanta(
     elif mol in HITRAN_GROUP6:
         df = _parse_HITRAN_group6(df, verbose=verbose)
     else:
-        raise ValueError(
-            f"Unknown group for molecule {mol}. Cant parse local quanta"
-        )
+        raise ValueError(f"Unknown group for molecule {mol}. Cant parse local quanta")
 
     return df
 
@@ -1600,14 +1596,12 @@ def parse_global_quanta(
     elif mol in HITRAN_CLASS10:
         df = _parse_HITRAN_class10(df, verbose=verbose)
     else:
-        raise ValueError(
-            f"Unknown class for molecule {mol}. Cant parse global quanta"
-        )
+        raise ValueError(f"Unknown class for molecule {mol}. Cant parse global quanta")
 
     return df
 
 
-#%%
+# %%
 
 
 class HITRANDatabaseManager(DatabaseManager):
@@ -1902,7 +1896,7 @@ class HITRANDatabaseManager(DatabaseManager):
             ) from e
 
 
-#%%
+# %%
 def hitranxsc(hitranXSC):
     """Parse Hitran Cross-section files manually downloaded from https://hitran.org/xsc/
     Returns a dictionary

@@ -294,9 +294,7 @@ def compare_lists(
 
             else:
                 l2_index_str = f"|#{l2.index(k):3}|  " if print_index else ""
-                print(
-                    f"{tab + 'N/A':20}\t\t{l2_index_str + k} ({type(k)})"
-                )
+                print(f"{tab + 'N/A':20}\t\t{l2_index_str + k} ({type(k)})")
         print(tab + "-" * (44 + len(tab)))
 
         if len(all_keys) == 0:

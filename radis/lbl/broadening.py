@@ -524,12 +524,7 @@ def gamma_vald3(
 
     if "e-" in diluent:
         gamma_stark = (
-            (10**gamSta)
-            * P
-            * 1e6
-            * diluent["e-"]
-            / (k_b_CGS * T)
-            / (4 * np.pi * c_CGS)
+            (10**gamSta) * P * 1e6 * diluent["e-"] / (k_b_CGS * T) / (4 * np.pi * c_CGS)
         )  # see e.g. Gray p244 for temperature scaling
         if is_neutral:
             gamma_stark *= (T / 10000) ** (1.0 / 6.0)  # see e.g. Gray 2005 p244
@@ -1492,7 +1487,9 @@ class BroadenFactory(BaseFactory):
                 gamma_lb = gamma_lb.values.reshape((1, -1))
             elif self.dataframe_type == "vaex":
                 gamma_lb = gamma_lb.to_numpy().reshape((1, -1))
-        except AttributeError:  # probably not a dataframe: assert there is one line only.
+        except (
+            AttributeError
+        ):  # probably not a dataframe: assert there is one line only.
             assert type(gamma_lb) is np.float64
 
         # Calculate broadening for all lines
@@ -1557,7 +1554,9 @@ class BroadenFactory(BaseFactory):
                 gamma_db = gamma_db.values.reshape((1, -1))
             elif self.dataframe_type == "vaex":
                 gamma_db = gamma_db.to_numpy().reshape((1, -1))
-        except AttributeError:  # probably not a dataframe: assert there is one line only.
+        except (
+            AttributeError
+        ):  # probably not a dataframe: assert there is one line only.
             assert type(gamma_db) is np.float64
 
         # Calculate broadening for all lines
@@ -1643,7 +1642,9 @@ class BroadenFactory(BaseFactory):
             elif self.dataframe_type == "vaex":
                 hwhm_lorentz = hwhm_lorentz.to_numpy().reshape((1, -1))
                 hwhm_voigt = hwhm_voigt.to_numpy().reshape((1, -1))
-        except AttributeError:  # probably not a dataframe: assert there is one line only.
+        except (
+            AttributeError
+        ):  # probably not a dataframe: assert there is one line only.
             if self.dataframe_type == "pandas":
                 assert type(hwhm_lorentz) is np.float64
                 assert type(hwhm_voigt) is np.float64
@@ -2743,9 +2744,7 @@ class BroadenFactory(BaseFactory):
                     )
 
             else:
-                raise ValueError(
-                    f"Unexpected value for chunksize: {chunksize}"
-                )
+                raise ValueError(f"Unexpected value for chunksize: {chunksize}")
 
         except MemoryError as err:
             raise MemoryError(
@@ -2874,14 +2873,10 @@ class BroadenFactory(BaseFactory):
                     pb.done()
 
                 else:
-                    raise ValueError(
-                        f"Unexpected value for chunksize: {chunksize}"
-                    )
+                    raise ValueError(f"Unexpected value for chunksize: {chunksize}")
 
             else:
-                raise ValueError(
-                    f"Unexpected value for optimization: {optimization}"
-                )
+                raise ValueError(f"Unexpected value for optimization: {optimization}")
 
         except MemoryError as err:
             raise MemoryError(
@@ -3323,9 +3318,9 @@ def project_lines_on_grid(df, wavenumber, wstep, dataframe_type="pandas"):
     imin_broadened_wav_offset_left[imin_broadened_wav_offset_left < 0] = -1
     imin_broadened_wav_offset_right[imin_broadened_wav_offset_right < 0] = -1
     imax_broadened_wav_offset_left[imax_broadened_wav_offset_left > len_grid] = len_grid
-    imax_broadened_wav_offset_right[
-        imax_broadened_wav_offset_right > len_grid
-    ] = len_grid
+    imax_broadened_wav_offset_right[imax_broadened_wav_offset_right > len_grid] = (
+        len_grid
+    )
     imin_broadened_wav_offset_left += 1
     imax_broadened_wav_offset_left += 1
     imin_broadened_wav_offset_right += 1
@@ -3481,9 +3476,9 @@ def project_lines_on_grid_noneq(df, wavenumber, wstep, dataframe_type="pandas"):
     imin_broadened_wav_offset_left[imin_broadened_wav_offset_left < 0] = -1
     imin_broadened_wav_offset_right[imin_broadened_wav_offset_right < 0] = -1
     imax_broadened_wav_offset_left[imax_broadened_wav_offset_left > len_grid] = len_grid
-    imax_broadened_wav_offset_right[
-        imax_broadened_wav_offset_right > len_grid
-    ] = len_grid
+    imax_broadened_wav_offset_right[imax_broadened_wav_offset_right > len_grid] = (
+        len_grid
+    )
     imin_broadened_wav_offset_left += 1
     imax_broadened_wav_offset_left += 1
     imin_broadened_wav_offset_right += 1

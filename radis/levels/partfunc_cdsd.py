@@ -226,9 +226,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         # after cache name is given)
         assert use_cached in [True, False, "regen", "force", "return"]
         if isotope not in [1, 2]:
-            raise ValueError(
-                f"CDSD Energies not defined for isotope: {isotope}"
-            )
+            raise ValueError(f"CDSD Energies not defined for isotope: {isotope}")
         if use_json is not None:
             warn(
                 DeprecationWarning(

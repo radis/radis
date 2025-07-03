@@ -477,9 +477,7 @@ class BandFactory(BroadenFactory):
         if isinstance(Tvib, tuple):
             Tvib = tuple([convert_and_strip_units(T, u.K) for T in Tvib])
         elif not is_float(Tvib):
-            raise TypeError(
-                f"Tvib should be float, or tuple (got {type(Tvib)})"
-            )
+            raise TypeError(f"Tvib should be float, or tuple (got {type(Tvib)})")
         singleTvibmode = is_float(Tvib)
         if not is_float(Trot):
             raise ValueError("Trot should be float.")
@@ -1151,13 +1149,9 @@ def add_bands(df, dbformat, lvlformat, dataframe_type="pandas", verbose=True):
 
     # Check inputs
     if not dbformat in KNOWN_DBFORMAT:
-        raise ValueError(
-            f"dbformat ({dbformat}) should be one of: {KNOWN_DBFORMAT}"
-        )
+        raise ValueError(f"dbformat ({dbformat}) should be one of: {KNOWN_DBFORMAT}")
     if not lvlformat in KNOWN_LVLFORMAT:
-        raise ValueError(
-            f"lvlformat ({lvlformat}) should be one of: {KNOWN_LVLFORMAT}"
-        )
+        raise ValueError(f"lvlformat ({lvlformat}) should be one of: {KNOWN_LVLFORMAT}")
 
     if verbose:
         t0 = time()
