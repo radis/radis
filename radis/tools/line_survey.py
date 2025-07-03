@@ -359,7 +359,16 @@ def LineSurvey(
                     iso = "?"
 
                 label = (
-                    f"{molecule}[iso{iso}] [{_fix_branch_format[row['branch']]}{row['jl']:.0f}]({row['vl']:.0f})->({row['vu']:.0f})"
+                    "{molec}[iso{iso}] [{branch}{jl:.0f}]({vl:.0f})->({vu:.0f})".format(
+                        **dict(
+                            [(k, row[k]) for k in add]
+                            + [
+                                ("iso", iso),
+                                ("molec", molecule),
+                                ("branch", _fix_branch_format[row["branch"]]),
+                            ]
+                        )
+                    )
                 )
             elif molecule in HITRAN_CLASS4:  #  ["N2O", "OCS", "HCN"]
 
@@ -382,14 +391,15 @@ def LineSurvey(
                 else:
                     iso = "?"
 
-                label = (
-                    f"{molecule} ["
-                    f"{_fix_branch_format[row['branch']]}{row['jl']:.0f}"
-                    f"]("
-                    f"{row['v1l']:.0f}{row['v2l']:.0f}`{row['l2l']:.0f}`{row['v3l']:.0f}"
-                    f")->("
-                    f"{row['v1u']:.0f}{row['v2u']:.0f}`{row['l2u']:.0f}`{row['v3u']:.0f}"
-                    f")"
+                label = "{molec} [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})".format(
+                    **dict(
+                        [(k, row[k]) for k in add]
+                        + [
+                            ("iso", iso),
+                            ("molec", molecule),
+                            ("branch", _fix_branch_format[row["branch"]]),
+                        ]
+                    )
                 )
             elif molecule in HITRAN_CLASS5:  # ["CO2"]
 
@@ -415,15 +425,34 @@ def LineSurvey(
                     iso = "?"
 
                 label = "{molec} [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}{l2l}{v3l:.0f} r={rl})->({v1u:.0f}{v2u:.0f}{l2u}{v3u:.0f} r={ru})"
-                label = (
-                    f"{molecule} [{_fix_branch_format[row['branch']]}{row['jl']:.0f}]"
-                    f"({row['v1l']:.0f}{row['v2l']:.0f}"
-                    f"{superscript_map.get(str(int(row['l2l'])), f'`{row['l2l']:.0f}`') if 'l2l' in row else '?'}"
-                    f"{row['v3l']:.0f} r={f'{row['rl']:.0f}' if 'rl' in row else '?'})->"
-                    f"({row['v1u']:.0f}{row['v2u']:.0f}"
-                    f"{superscript_map.get(str(int(row['l2u'])), f'`{row['l2u']:.0f}`') if 'l2u' in row else '?'}"
-                    f"{row['v3u']:.0f} r={f'{row['ru']:.0f}' if 'ru' in row else '?'}"
-                    f")"
+                label = label.format(
+                    **dict(
+                        [
+                            (k, row[k])
+                            for k in add
+                            if k not in ["l2l", "l2u", "ru", "rl"]
+                        ]
+                        +
+                        # Try to get l number as UTF-8 superscript (works if in superscript_map)
+                        [
+                            (
+                                k,
+                                superscript_map.get(
+                                    str(int(row[k])), f"`{row[k]:.0f}`"
+                                ),
+                            )
+                            for k in add
+                            if k in ["l2l", "l2u"]
+                        ]  # ignore missing params (like rl, ru ? )
+                        + [
+                            ("iso", iso),
+                            ("molec", molecule),
+                            ("branch", _fix_branch_format[row["branch"]]),
+                            # 'ru', 'rl' may be missing if not all columns loaded
+                            ("ru", f"{row['ru']:.0f}" if "ru" in row else "?"),
+                            ("rl", f"{row['rl']:.0f}" if "rl" in row else "?"),
+                        ]
+                    )
                 )
 
             else:
@@ -470,10 +499,11 @@ def LineSurvey(
         else:
             iso = "?"
 
-        label = (
-            f"CO2 [{_fix_branch_format[row['branch']]}{row['jl']:.0f}]"
-            f"(p{row['polyl']:.0f}c{row['wangl']:.0f}n{row['rankl']:.0f})"
-            f"->(p{row['polyu']:.0f}c{row['wangu']:.0f}n{row['ranku']:.0f})"
+        label = "CO2 [{branch}{jl:.0f}](p{polyl:.0f}c{wangl:.0f}n{rankl:.0f})->(p{polyu:.0f}c{wangu:.0f}n{ranku:.0f})".format(
+            **dict(
+                [(k, row[k]) for k in add]
+                + [("iso", iso), ("branch", _fix_branch_format[row["branch"]])]
+            )
         )
 
         label += add_details(row, details)
@@ -488,10 +518,24 @@ def LineSurvey(
         else:
             iso = "?"
 
-        label = (
-            f"CO2 [{_fix_branch_format[row['branch']]}{row['jl']:.0f}]"
-            f"({row['v1l']:.0f}{row['v2l']:.0f}`{row['l2l']:.0f}`{row['v3l']:.0f})"
-            f"->({row['v1u']:.0f}{row['v2u']:.0f}`{row['l2u']:.0f}`{row['v3u']:.0f})"
+        label = "CO2 [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})".format(
+            **dict(
+                [
+                    (k, row[k])
+                    for k in [
+                        "v1u",
+                        "v2u",
+                        "l2u",
+                        "v3u",
+                        "v1l",
+                        "v2l",
+                        "l2l",
+                        "v3l",
+                        "jl",
+                    ]
+                ]
+                + [("iso", iso), ("branch", _fix_branch_format[row["branch"]])]
+            )
         )
 
         label += add_details(row, details)
@@ -501,12 +545,20 @@ def LineSurvey(
         return label
 
     def get_label_nist(row, attrs):
-        label = (
-            f"{attrs['molecule']} ["
-            f"{row['Lower level']}"
-            f"] ({row['El']:.2f} eV) -> ["
-            f"{row['Upper level']}"
-            f"] ({row['Eu']:.2f} eV)"
+        label = attrs[
+            "molecule"
+        ] + " [{Lower level}] ({El:.2f} eV) -> [{Upper level}] ({Eu:.2f} eV)".format(
+            **dict(
+                [
+                    (k, row[k])
+                    for k in [
+                        "Lower level",  # TODO: have nicer Term Symbol appear
+                        "Upper level",  # TODO: have nicer Term Symbol appear
+                        "El",
+                        "Eu",
+                    ]
+                ]
+            )
         )
 
         return label
@@ -594,7 +646,9 @@ def LineSurvey(
     layout = go.Layout(
         title="Line Survey",
         # TODO : re-add some parameters in the title (if they exist)
-        # f"({T}K, {P:.3f}bar, Mfrac={Xi:.3f})"
+        # ({T}K, {P:.3f}bar, Mfrac={Xi:.3f})".format(
+        #    **{"T": T, "P": P, "Xi": Xi}
+        # ),
         hovermode="closest",
         xaxis=dict(
             title=xlabel,
