@@ -74,10 +74,9 @@ def getTestFile(file, force=False):
     path = join(TEST_FOLDER_PATH, "files", file)
 
     if not exists(path) and not force:
+        choices = "\n- ".join(os.listdir(join(TEST_FOLDER_PATH, "validation")))
         raise FileNotFoundError(
-            f"Test file `{file}` does not exist. Choose one of: \n- " +
-            "\n- ".join(os.listdir(join(TEST_FOLDER_PATH, 'files'))) +
-            " or use force=True"
+            f"Validation case `{file}` does not exist. Choose one of: \n- {choices} or use force=True"
         )
 
     return path
