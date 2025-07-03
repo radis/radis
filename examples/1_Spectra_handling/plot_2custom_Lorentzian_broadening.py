@@ -97,9 +97,9 @@ plot_diff(s2, s_default, label1="s2", label2="s_default")
 
 def lbfunc3(df, Tgas, pressure_atm, diluent, isneutral, **kwargs):
     # only for Pandas dataframes:
-    df.loc[df["orig_wavelen"] == 777.5388, "gamvdW"] = (
-        -7
-    )  # should also result in a different shift
+    df.loc[
+        df["orig_wavelen"] == 777.5388, "gamvdW"
+    ] = -7  # should also result in a different shift
     df.loc[df["orig_wavelen"] == 777.1944, "gamSta"] = -5
     # copied from default code in RADIS:
     gammma_rad, gamma_stark, gamma_vdw = gamma_vald3(

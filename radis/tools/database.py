@@ -2337,9 +2337,9 @@ class SpecDatabase(SpecList):
         # case, use s_left.take(var)   with 'var' given in parameters of interpolate()
         # Or tell user to generate a subdatabase with only one spectral array
 
-        s_interp.conditions["interpolated_from"] = (
-            f"{spectra[index]}, {spectra[index+1]}"
-        )
+        s_interp.conditions[
+            "interpolated_from"
+        ] = f"{spectra[index]}, {spectra[index+1]}"
 
         return s_interp
 

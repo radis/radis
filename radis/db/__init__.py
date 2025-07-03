@@ -26,9 +26,9 @@ def _get_supported_molecules_nonequilibrium():
     return list(Molecules.keys())
 
 
-MOLECULES_LIST_EQUILIBRIUM = __supported_molecules_equilibrium__ = (
-    _get_supported_molecules_equilibrium()
-)
+MOLECULES_LIST_EQUILIBRIUM = (
+    __supported_molecules_equilibrium__
+) = _get_supported_molecules_equilibrium()
 """ list: molecules that can be calculated in RADIS at equilibrium.
 All [HITRAN-2020]_ and [ExoMol-2020]_ species are available.
 
@@ -95,9 +95,9 @@ See Also
 
 """
 
-MOLECULES_LIST_NONEQUILIBRIUM = __supported_molecules_nonequilibrium__ = (
-    _get_supported_molecules_nonequilibrium()
-)
+MOLECULES_LIST_NONEQUILIBRIUM = (
+    __supported_molecules_nonequilibrium__
+) = _get_supported_molecules_nonequilibrium()
 """ list: molecules that can be calculated in RADIS at nonequilibrium.
 Spectroscopic constants to calculate energy levels are needed.
 

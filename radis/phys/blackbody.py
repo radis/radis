@@ -102,7 +102,9 @@ def planck_wn(wavenum, T, eps=1, unit="mW/cm2/sr/cm-1"):
     c = c_CGS
 
     iplanck = (
-        eps * (2 * h * c**2 * wavenum**3) * (1 / (exp(h * c * wavenum / (k * T)) - 1))
+        eps
+        * (2 * h * c**2 * wavenum**3)
+        * (1 / (exp(h * c * wavenum / (k * T)) - 1))
     )
     # iplanck in erg/s/sr/cm2/cm-1
     iplanck *= 1e-4  # erg/s/sr/cm2/cm-1 > mW/sr/cm^2/cm-1
