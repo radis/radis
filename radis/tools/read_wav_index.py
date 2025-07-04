@@ -1,9 +1,6 @@
 import bisect
 import json
 import os
-import pickle
-
-import indexed_bzip2 as ibz2
 
 from radis.misc.utils import getProjectRoot
 
@@ -90,63 +87,3 @@ def offset_difference_from_lower_wavno(larger_wavno, lower_wavno):
         return None
 
     return abs(int(offset_upper) - int(offset_lower))
-
-
-def read_and_write_chunked_for_CO2(
-    bz2_file_path,
-    index_file_path,
-    start_offset,
-    bytes_to_read,
-    chunk_size=500 * 1024 * 1024,
-    output_prefix="CO2_HITEMP",
-):
-    """
-    Read `bytes_to_read` bytes from a bzip2 file starting at `start_offset`, in chunks, and
-    write each chunk to its own file named:
-        {output_prefix}_{start_mb}mb.par
-    where `start_mb` is the starting offset of that chunk in megabytes.
-
-    """
-    # Load block offsets
-    with open(index_file_path, "rb") as f:
-        block_offsets = pickle.load(f)
-
-    # Open and prepare the bzip2 file
-    f = ibz2.open(bz2_file_path, parallelization=os.cpu_count())
-    f.set_block_offsets(block_offsets)
-    f.seek(start_offset)
-
-    total_read = 0
-    # Read in chunks and write separate files
-    while total_read < bytes_to_read:
-        to_read = min(chunk_size, bytes_to_read - total_read)
-        data = f.read(to_read)
-        if not data:
-            break  # end of file
-
-        # Compute current offset for naming
-        current_offset = start_offset + total_read
-        start_mb = current_offset // (1024 * 1024)
-        out_name = f"{output_prefix}_{start_mb}mb.par"
-
-        # Write this chunk
-        with open(out_name, "wb") as out_file:
-            out_file.write(data)
-
-        total_read += len(data)
-        print(
-            f"Wrote chunk {start_mb}MiB → {len(data)} bytes to {out_name} ({total_read}/{bytes_to_read})"
-        )
-
-    f.close()
-    print(
-        f"Finished: wrote {total_read} bytes split into { (total_read + chunk_size - 1) // chunk_size } file(s). "
-    )
-
-
-read_and_write_chunked_for_CO2(
-    "02_HITEMP2024.par.bz2",
-    "CO2_indexed_offsets.dat",
-    500 * 1024 * 1024,
-    2000 * 1024 * 1024,
-)

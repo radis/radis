@@ -11,12 +11,15 @@ https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 """
 import json
 import os
+import pickle
 import re
 import urllib.request
 import warnings
+from datetime import date
 from os.path import basename, commonpath, join
 from typing import Union
 
+import indexed_bzip2 as ibz2
 import numpy as np
 import requests
 from bs4 import BeautifulSoup
@@ -24,7 +27,9 @@ from cryptography.fernet import Fernet
 from tqdm import tqdm
 
 from radis.misc.config import CONFIG_PATH_JSON, getDatabankEntries
+from radis.misc.utils import getProjectRoot
 from radis.misc.warning import DatabaseAlreadyExists
+from radis.tools import get_wavno_lower_offset, offset_difference_from_lower_wavno
 
 try:
     from .dbmanager import DatabaseManager
@@ -56,6 +61,23 @@ from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
 from radis.misc.progress_bar import ProgressBar
 
 HITEMP_MOLECULES = ["H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"]
+
+
+def read_config():
+    """
+    Load the RADIS configuration from the JSON file.
+
+    Returns
+    -------
+    dict
+        The configuration dictionary loaded from CONFIG_PATH_JSON,
+        or an empty dictionary if the file does not exist.
+    """
+    if os.path.exists(CONFIG_PATH_JSON):
+        with open(CONFIG_PATH_JSON, "r") as f:
+            config = json.load(f)
+    else:
+        config = {}
 
 
 def keep_only_relevant(
@@ -243,11 +265,7 @@ def setup_credentials():
 def get_encryption_key():
     """Get or create encryption key for HITRAN credentials"""
     # Read existing radis.json
-    if os.path.exists(CONFIG_PATH_JSON):
-        with open(CONFIG_PATH_JSON, "r") as f:
-            config = json.load(f)
-    else:
-        config = {}
+    config = read_config()
 
     # Check if encryption key exists
     if "credentials" in config and "ENCRYPTION_KEY" in config["credentials"]:
@@ -294,11 +312,7 @@ def store_credentials(email, password):
     encrypted_password = encrypt_password(password)
 
     # Read existing radis.json
-    if os.path.exists(CONFIG_PATH_JSON):
-        with open(CONFIG_PATH_JSON, "r") as f:
-            config = json.load(f)
-    else:
-        config = {}
+    config = read_config()
 
     # Add credentials section if it doesn't exist
     if "credentials" not in config:
@@ -355,10 +369,8 @@ def login_to_hitran(verbose=False):
         return response.status_code == 302 or "Logout" in response.text
 
     # Check if credentials exist in radis.json
-    if os.path.exists(CONFIG_PATH_JSON):
-        with open(CONFIG_PATH_JSON, "r") as f:
-            config = json.load(f)
-
+    config = read_config()
+    if config:
         # compatiplty with old versions
         if "credentials" in config:
             if config["credentials"].get("HITRAN_USERNAME"):
@@ -456,6 +468,107 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
             "CO2_line_list",
         )
         print(f"{file_url} ==> {temp_folder} \n")
+
+
+def download_and_parse_HITEMP_CO2(
+    load_wavenum_min, load_wavenum_max, local_databases=None
+):
+
+    if local_databases is None:
+        config = read_config()
+        download_path_hitemp_CO2 = join(
+            config["DEFAULT_DOWNLOAD_PATH"], "hitemp", "CO2", "02_HITEMP2024.par.bz2"
+        )
+    else:
+        download_path_hitemp_CO2 = local_databases
+
+    if not os.path.exists(download_path_hitemp_CO2):
+        print(
+            "Downloading HITEMP2024 CO2 database. This may take a while (around 6 GB)."
+        )
+        session = login_to_hitran()
+        url = "https://hitran.org/files/HITEMP/bzip2format/02_HITEMP2024.par.bz2"
+
+        os.makedirs(os.path.dirname(download_path_hitemp_CO2), exist_ok=True)
+
+        response = session.get(url, stream=True)
+        with open(download_path_hitemp_CO2, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+
+        config["hitemp_CO2_compressed"] = {
+            "path": download_path_hitemp_CO2,
+            "format": "bz2_compressed",
+            "download_url": url,
+            "download_date": date.today().strftime("%Y-%m-%d"),
+        }
+        print(f"Downloaded to {download_path_hitemp_CO2}")
+    else:
+        print(f"File already exists at {download_path_hitemp_CO2}")
+
+    index_file_path = os.path.join(getProjectRoot(), "db", "CO2_indexed_offsets.dat")
+
+    start_offset = get_wavno_lower_offset(load_wavenum_min)
+    bytes_to_read = offset_difference_from_lower_wavno(
+        load_wavenum_max, load_wavenum_min
+    )
+
+    read_and_write_chunked_for_CO2(
+        download_path_hitemp_CO2, index_file_path, start_offset, bytes_to_read
+    )
+
+
+def read_and_write_chunked_for_CO2(
+    bz2_file_path,
+    index_file_path,
+    start_offset,
+    bytes_to_read,
+    chunk_size=500 * 1024 * 1024,
+    output_prefix="CO2_HITEMP",
+):
+    """
+    Read `bytes_to_read` bytes from a bzip2 file starting at `start_offset`, in chunks, and
+    write each chunk to its own file named:
+        {output_prefix}_{start_mb}mb.par
+    where `start_mb` is the starting offset of that chunk in megabytes.
+
+    """
+    # Load block offsets
+    with open(index_file_path, "rb") as f:
+        block_offsets = pickle.load(f)
+
+    # Open and prepare the bzip2 file
+    f = ibz2.open(bz2_file_path, parallelization=os.cpu_count())
+    f.set_block_offsets(block_offsets)
+    f.seek(start_offset)
+
+    total_read = 0
+    # Read in chunks and write separate files
+    while total_read < bytes_to_read:
+        to_read = min(chunk_size, bytes_to_read - total_read)
+        data = f.read(to_read)
+        if not data:
+            break  # end of file
+
+        # Compute current offset for naming
+        current_offset = start_offset + total_read
+        start_mb = current_offset // (1024 * 1024)
+        out_name = f"{output_prefix}_{start_mb}mb.par"
+
+        # Write this chunk
+        with open(out_name, "wb") as out_file:
+            out_file.write(data)
+
+        total_read += len(data)
+        print(
+            f"Wrote chunk {start_mb}MiB → {len(data)} bytes to {out_name} ({total_read}/{bytes_to_read})"
+        )
+
+    f.close()
+    print(
+        f"Finished: wrote {total_read} bytes split into { (total_read + chunk_size - 1) // chunk_size } file(s). "
+    )
 
 
 class HITEMPDatabaseManager(DatabaseManager):

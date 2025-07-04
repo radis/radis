@@ -5,6 +5,7 @@
 
 from .database import SpecDatabase, load_spec, plot_spec, save
 from .gascomp import get_eq_mole_fraction
+from .read_wav_index import get_wavno_lower_offset, offset_difference_from_lower_wavno
 from .slit import (
     convolve_with_slit,
     crop_slit,
@@ -20,7 +21,8 @@ __all__ = [
     "plot_spec",
     "save",
     "get_eq_mole_fraction",
-    "plot_slit",
+    "offset_difference_from_lower_wavno",
+    "get_wavno_lower_offset" "plot_slit",
     "get_effective_FWHM",
     "get_FWHM",
 ]
