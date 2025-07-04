@@ -168,6 +168,7 @@ def hit2df(
     engine="pytables",
     output="pandas",
     parse_quanta=True,
+    cache_directory_path=None,
 ):
     """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe
 
@@ -200,6 +201,8 @@ def hit2df(
         for non-LTE calculations ; but sometimes lines are not labelled.)
     output : str
         output format of data as pandas Dataformat or vaex Dataformat
+    cache_directory_path : str or None, optional
+        Directory to store/read cache files. If None, use the directory of `fname`.
 
     Returns
     -------
@@ -237,7 +240,15 @@ def hit2df(
     columns = columns_2004
 
     # Use cache file if possible
-    fcache = DataFileManager(engine).cache_file(fname)
+    if cache_directory_path:
+        base_filename = os.path.basename(fname)
+        possible_cache_file = os.path.join(cache_directory_path, base_filename)
+        fcache = DataFileManager(engine).cache_file(possible_cache_file)
+    else:
+        fcache = DataFileManager(engine).cache_file(
+            fname
+        )  # Use default cache directory
+
     if cache and exists(fcache):
         relevant_if_metadata_above = (
             {"wavenum_max": load_wavenum_min} if load_wavenum_min else {}
