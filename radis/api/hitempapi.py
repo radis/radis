@@ -437,72 +437,44 @@ def login_to_hitran(verbose=False):
         )
 
 
-def download_hitemp_file(
-    session,
-    file_url,
-    output_path,
-    warn_size_key="WARN_LARGE_DOWNLOAD_ABOVE_X_GB",
-    verbose=False,
-):
-    """
-    Download a file from HITEMP (or HITRAN) with progress bar and size warning.
+def download_hitemp_file(session, file_url, output_filename, verbose=False):
+    print(f"Starting download from {file_url} to {output_filename}")
+    file_response = session.get(file_url, stream=True)
+    if file_response.status_code == 200:
+        total_size = int(file_response.headers.get("content-length", 0))
+        print(f"Total size to download: {total_size} bytes")
+        file_size_in_GB = total_size / (1024**3)
+        from radis import config
 
-    Parameters
-    ----------
-    session : requests.Session
-        Authenticated session for downloading.
-    file_url : str
-        URL to download.
-    output_path : str
-        Local file path to save.
-    warn_size_key : str, optional
-        Config key in radis.config for issuing large download warnings.
-    verbose : bool, optional
-        If True, prints detailed status messages.
+        MAX_SIZE_GB = config["WARN_LARGE_DOWNLOAD_ABOVE_X_GB"]
 
-    Raises
-    ------
-    Warning
-        If download fails or user-provided config limits exceeded.
-    """
-    if verbose:
-        print(f"Starting download from {file_url} to {output_path}")
+        if file_size_in_GB > MAX_SIZE_GB:
+            warning_msg = (
+                f"The total download size is {file_size_in_GB:.2f} GB, which will take time and potential a significant portion of your disk memory."
+                "To prevent this warning, you increase the limit using `radis.config['WARN_LARGE_DOWNLOAD_ABOVE_X_GB'] =  1`."
+            )
+            warnings.warn(warning_msg, UserWarning)
 
-    response = session.get(file_url, stream=True)
-    if response.status_code != 200:
-        raise Warning(f"Failed to download {file_url}, status {response.status_code}")
+        with (
+            open(output_filename, "wb") as f,
+            tqdm(
+                total=total_size, unit="B", unit_scale=True, desc=output_filename
+            ) as pbar,
+        ):
+            for chunk in file_response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+                    pbar.update(len(chunk))
 
-    total_size = int(response.headers.get("content-length", 0))
-    file_size_gb = total_size / (1024**3)
-    from radis import config
-
-    MAX_SIZE_GB = config["WARN_LARGE_DOWNLOAD_ABOVE_X_GB"]
-    if file_size_gb > MAX_SIZE_GB:
-        warnings.warn(
-            f"Download size {file_size_gb:.2f} GB exceeds warning threshold {MAX_SIZE_GB} GB. "
-            f"Adjust radis.config['{warn_size_key}'] to suppress this warning.",
-            UserWarning,
-        )
-
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    with open(output_path, "wb") as f, tqdm(
-        total=total_size, unit="B", unit_scale=True, desc=os.path.basename(output_path)
-    ) as pbar:
-        for chunk in response.iter_content(chunk_size=8192):
-            if chunk:
-                f.write(chunk)
-                pbar.update(len(chunk))
-
-    if verbose:
-        print(f"Download complete: {output_path}")
+        print("\nDownload complete!")
     else:
-        print(f"Download failed: {response.status_code}")
-        print("Response:", response.text[:500])
+        print(f"Download failed: {file_response.status_code}")
+        print("Response:", file_response.text[:500])
         raise Warning(
             f"Failed to download {file_url}. Please download manually and place it in the following location:"
         )
         temp_folder = os.path.join(
-            os.path.dirname(output_path),
+            os.path.dirname(output_filename),
             "downloads__can_be_deleted",
             "hitran.org",
             "files",
@@ -644,7 +616,7 @@ def download_HITEMP_CO2(local_path=None, verbose=False):
     session = login_to_hitran()
     url = "https://hitran.org/files/HITEMP/bzip2format/02_HITEMP2024.par.bz2"
     downloaded_path = download_hitemp_file(
-        session=session, file_url=url, output_path=output_path, verbose=verbose
+        session=session, file_url=url, output_filename=output_path, verbose=verbose
     )
 
     # Record metadata in config
@@ -706,7 +678,7 @@ def read_and_write_chunked_for_CO2(
         # Compute current offset for naming
         current_offset = start_offset + total_read
         start_mb = current_offset // (1024 * 1024)
-        out_name = f"{output_prefix}_{start_mb}mb.par"
+        out_name = f"{output_prefix}_{start_mb}MB.par"
 
         # Write this chunk
         with open(out_name, "wb") as out_file:
