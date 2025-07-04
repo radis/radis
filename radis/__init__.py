@@ -233,7 +233,6 @@ from .levels import *  # rovibrational energies and partition functions
 from .los import *  # line-of-sight module
 from .phys import *  # conversion functions, blackbody objects
 from .spectrum import *  # Spectrum object
-from .test import *  # test
 from .tools import *  # slit, database, line survey, etc.
 
 __all__.extend(api.__all__)

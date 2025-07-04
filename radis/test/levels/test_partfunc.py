@@ -27,14 +27,19 @@ import numpy as np
 import pytest
 from numpy import exp
 
-from radis import SpectrumFactory, setup_test_line_databases
+from radis import SpectrumFactory
 from radis.db.molecules import Molecules
 from radis.levels.partfunc import PartFunc_Dunham, PartFuncBarklem, PartFuncTIPS
 from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDcalc, PartFuncCO2_CDSDtab
 from radis.misc.printer import printm
 from radis.misc.warning import DeprecatedFileWarning
 from radis.phys.constants import hc_k
-from radis.test.utils import getTestFile
+from radis.test.utils import (
+    define_Evib_as_sum_of_Evibi,
+    discard_lines_with_na_levels,
+    getTestFile,
+    setup_test_line_databases,
+)
 
 fig_prefix = basename(__file__) + ": "
 
@@ -168,7 +173,6 @@ def test_reduced_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
     """Test 1: compare calculated PartFunc to the tabulated one
 
     Version where we use the reduced set of CO2 levels (< 3000 cm-1)"""
-    from radis import setup_test_line_databases
     from radis.misc.config import getDatabankEntries
 
     setup_test_line_databases()  # needed for "HITEMP-CO2-HAMIL-TEST"
@@ -756,11 +760,6 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
     # from warnings import catch_warnings, filterwarnings
     def run_example():
 
-        from radis.test.utils import (
-            define_Evib_as_sum_of_Evibi,
-            discard_lines_with_na_levels,
-        )
-
         setup_test_line_databases(
             verbose=True
         )  # add HITEMP-CO2-HAMIL-TEST in ~/radis.json if not there
@@ -1018,8 +1017,6 @@ def test_parsum_mode_in_factory(verbose=True, plot=True, *args, **kwargs):
     is 2x faster.
 
     """
-    from radis import SpectrumFactory
-
     wmin, wmax = 2284, 2285
     sf = SpectrumFactory(
         wavenum_min=wmin,
