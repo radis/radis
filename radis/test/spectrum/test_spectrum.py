@@ -331,8 +331,6 @@ def test_emisscoeff_conversion(verbose=True, *args, **kwargs):
     w_cm, I_cm = s.get("emisscoeff", Iunit="mW/sr/cm3/cm-1", wunit="cm-1")
     # I_cm = convert_emi2nm(I, 'mW/sr/cm3/cm-1', 'mW/sr/m3/µm')
 
-    import numpy as np
-
     # compare. Integral should be the same
     assert (I_nm != I_cm).all()
     assert abs(trapezoid(I_nm, w_nm) / trapezoid(I_cm, -w_cm) - 1) < 0.001
