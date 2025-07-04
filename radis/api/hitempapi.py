@@ -531,9 +531,9 @@ def parse_one_CO2_block(
             fname
         )  # Use default cache directory
 
+    columns = columns_2004
     if cache and os.path.exists(fcache):
         # Start reading the cache file
-        columns = columns_2004
         manager = DataFileManager(engine)
         df = manager.read(fcache, columns=columns, key="df")
 
@@ -556,14 +556,14 @@ def parse_one_CO2_block(
         if verbose:
             print(f"Generating cache file {fcache}")
         try:
-            assert str(fname).endswith(".h5") or str(fname).endswith(".hdf5")
+            # assert str(fname).endswith(".h5") or str(fname).endswith(".hdf5")
 
-            if os.path.exists(fname):
-                raise ValueError("File exist: {0}".format(fname))
+            # if os.path.exists(fname):
+            #     raise ValueError("File exist: {0}".format(fname))
 
             # exporting dataframe
             manager = DataFileManager(engine)
-            manager.write(fname, df, append=False)
+            manager.write(fcache, df, append=False)
 
         except PermissionError:
             if verbose:
