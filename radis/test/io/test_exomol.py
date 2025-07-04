@@ -52,22 +52,29 @@ def test_calc_exomol_spectrum(verbose=True, plot=True, *args, **kwargs):
 
     https://github.com/radis/radis/pull/320#issuecomment-884508206
     """
-    from radis import calc_spectrum
+    from radis import SpectrumFactory
 
-    s = calc_spectrum(
-        1080,
-        1320,  # cm-1
-        molecule="SiO",
+    sf = SpectrumFactory(
+        wavenum_min=1900,
+        wavenum_max=2300,
+        molecule="CO",
+        verbose=0,
+        pressure=1.01325,
+        wstep="auto",
         isotope="1",
-        pressure=1.01325,  # bar
-        Tgas=1000,  # K
-        mole_fraction=0.1,
         path_length=1,  # cm
-        broadening_method="fft",
-        databank=("exomol", "EBJT"),
-        verbose=verbose,
+        mole_fraction=0.1,
     )
-    s.apply_slit(1, "cm-1")  # simulate an experimental slit
+
+    sf.fetch_databank(
+        source="exomol",
+        broadf=False,
+        broadf_download=False,  # accelerates the test!
+    )
+
+    # Generating a Spectrum
+    s = sf.eq_spectrum(Tgas=300, path_length=1)
+
     if plot:
         s.plot("radiance")
 
@@ -81,31 +88,34 @@ def test_calc_exomol_vs_hitemp(verbose=True, plot=True, *args, **kwargs):
     """
     import astropy.units as u
 
-    from radis import calc_spectrum
-
     conditions = {
         "wmin": 2002 / u.cm,
         "wmax": 2300 / u.cm,
         "molecule": "CO",
-        "isotope": "2",
+        "isotope": "1",
         "pressure": 1.01325,  # bar
-        "Tgas": 1000,  # K
         "mole_fraction": 0.1,
         "path_length": 1,  # cm
         "broadening_method": "fft",
         "verbose": True,
     }
+    from radis import SpectrumFactory
 
-    s_exomol = calc_spectrum(
-        **conditions,
-        databank="exomol",
-        name="EXOMOL (default broadening)",  # June 2017, default ref is Li2015
+    sf = SpectrumFactory(**conditions)
+
+    # ExoMol
+    sf.fetch_databank(
+        source="exomol",
+        broadf=False,
+        broadf_download=False,  # accelerates the test!
     )
-    s_hitemp = calc_spectrum(
-        **conditions,
-        databank="hitemp",
-        name="HITEMP (Air broadened)",
+    s_exomol = sf.eq_spectrum(Tgas=1000, path_length=1)
+
+    sf.fetch_databank(
+        source="hitemp",
     )
+    s_hitemp = sf.eq_spectrum(Tgas=1000, path_length=1, name="HITEMP (Air broadened)")
+
     if plot:
         s_exomol.plot(
             lw=3,
@@ -125,5 +135,5 @@ def test_calc_exomol_vs_hitemp(verbose=True, plot=True, *args, **kwargs):
 
 if __name__ == "__main__":
     test_exomol_parsing_functions()
-    test_calc_exomol_spectrum()
+    # test_calc_exomol_spectrum()
     test_calc_exomol_vs_hitemp()
