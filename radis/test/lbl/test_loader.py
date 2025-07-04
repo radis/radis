@@ -23,9 +23,9 @@ try:
 except ImportError:
     vaex = NotInstalled(*not_installed_vaex_args)
 
-pytestmark = pytest.mark.random_order(
-    disabled=True
-)  # to make sure HITEMP-CO2-TEST is downloaded in 1st test and used after
+# pytestmark = pytest.mark.random_order(
+#     disabled=True
+# )  # to make sure HITEMP-CO2-TEST is downloaded in 1st test and used after
 
 
 @pytest.mark.needs_connection

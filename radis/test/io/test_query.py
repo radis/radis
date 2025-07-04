@@ -18,7 +18,7 @@ try:
 except ImportError:
     vaex = NotInstalled(*not_installed_vaex_args)
 
-pytestmark = pytest.mark.random_order(disabled=True)
+# pytestmark = pytest.mark.random_order(disabled=True)
 
 # ignored by pytest with argument -m "not needs_connection"
 @pytest.mark.needs_connection

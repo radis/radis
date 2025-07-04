@@ -110,7 +110,7 @@ from radis.spectrum.spectrum import Spectrum
 
 
 class SpectrumFactory(BandFactory):
-    """A class to put together all functions related to loading CDSD / HITRAN
+    """A class to put together all functions related to loading CDSD and HITRAN
     databases, calculating the broadenings, and summing over all the lines.
 
     Parameters
