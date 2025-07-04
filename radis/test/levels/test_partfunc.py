@@ -27,14 +27,14 @@ import numpy as np
 import pytest
 from numpy import exp
 
-from radis import SpectrumFactory
+from radis import SpectrumFactory, setup_test_line_databases
 from radis.db.molecules import Molecules
 from radis.levels.partfunc import PartFunc_Dunham, PartFuncBarklem, PartFuncTIPS
 from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDcalc, PartFuncCO2_CDSDtab
 from radis.misc.printer import printm
 from radis.misc.warning import DeprecatedFileWarning
 from radis.phys.constants import hc_k
-from radis.test.utils import getTestFile, setup_test_line_databases
+from radis.test.utils import getTestFile
 
 fig_prefix = basename(__file__) + ": "
 
@@ -1101,7 +1101,7 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
     # # Test 4: compare calculated PartFunc to hardcoded references
     # test_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
     # test_CDSD_calc_vs_ref(warnings=warnings)
-    # test_reduced_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
+    test_reduced_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
     # test_reduced_CDSD_calc_noneq(verbose=verbose, warnings=warnings)
 
     # # Test 5a, 5b: recompute Q from QvibQrot
@@ -1121,7 +1121,7 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
     # test_Morse_Potential_effect_CO(verbose=verbose, warnings=warnings)
 
     # Test 8: Regenerates levels file if it's manually changed
-    test_levels_regeneration(verbose=verbose, warnings=True, *args, **kwargs)
+    # test_levels_regeneration(verbose=verbose, warnings=True, *args, **kwargs)
 
     # Test 9 : tabulation
     # test_tabulated_partition_functions(verbose=verbose, *args, **kwargs)
