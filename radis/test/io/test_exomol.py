@@ -76,7 +76,7 @@ def test_calc_exomol_spectrum(verbose=True, plot=True, *args, **kwargs):
     s = sf.eq_spectrum(Tgas=300, path_length=1)
 
     if plot:
-        s.plot("radiance")
+        s.plot()
 
 
 @pytest.mark.needs_connection
