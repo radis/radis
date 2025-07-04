@@ -1210,9 +1210,7 @@ class BroadenFactory(BaseFactory):
             )
         elif broadening_method not in ["convolve", "fft"]:
             raise ValueError(
-                "Unexpected lineshape broadening algorithm : broadening_method={0}".format(
-                    broadening_method
-                )
+                f"Unexpected lineshape broadening algorithm : broadening_method={broadening_method}"
             )
 
         self.profiler.stop("calc_hwhm", "Calculate broadening HWHM")
@@ -1494,7 +1492,9 @@ class BroadenFactory(BaseFactory):
                 gamma_lb = gamma_lb.values.reshape((1, -1))
             elif self.dataframe_type == "vaex":
                 gamma_lb = gamma_lb.to_numpy().reshape((1, -1))
-        except AttributeError:  # probably not a dataframe: assert there is one line only.
+        except (
+            AttributeError
+        ):  # probably not a dataframe: assert there is one line only.
             assert type(gamma_lb) is np.float64
 
         # Calculate broadening for all lines
@@ -1512,7 +1512,7 @@ class BroadenFactory(BaseFactory):
         if self.warnings and self.warnings["CollisionalBroadeningWarning"] != "ignore":
             if (err > self.misc.warning_broadening_threshold).any():
                 self.warn(
-                    "Large error ({0:.1f}%) ".format(err.max() * 100)
+                    f"Large error ({err.max() * 100:.1f}%) "
                     + "in pressure broadening. Increase broadening width / reduce wstep. "
                     + "Use .plot_broadening() to visualize each line broadening",
                     "CollisionalBroadeningWarning",
@@ -1559,7 +1559,9 @@ class BroadenFactory(BaseFactory):
                 gamma_db = gamma_db.values.reshape((1, -1))
             elif self.dataframe_type == "vaex":
                 gamma_db = gamma_db.to_numpy().reshape((1, -1))
-        except AttributeError:  # probably not a dataframe: assert there is one line only.
+        except (
+            AttributeError
+        ):  # probably not a dataframe: assert there is one line only.
             assert type(gamma_db) is np.float64
 
         # Calculate broadening for all lines
@@ -1577,7 +1579,7 @@ class BroadenFactory(BaseFactory):
             # In a "performance" mode (vs "safe" mode), these warnings would be disabled
             if (err > self.misc.warning_broadening_threshold).any():
                 self.warn(
-                    "Large error ({0:.1f}%) ".format(err.max() * 100)
+                    f"Large error ({err.max() * 100:.1f}%) "
                     + "in Doppler broadening. Increase broadening width / reduce wstep. "
                     + "Use .plot_broadening() to visualize each line broadening",
                     "GaussianBroadeningWarning",
@@ -1645,7 +1647,9 @@ class BroadenFactory(BaseFactory):
             elif self.dataframe_type == "vaex":
                 hwhm_lorentz = hwhm_lorentz.to_numpy().reshape((1, -1))
                 hwhm_voigt = hwhm_voigt.to_numpy().reshape((1, -1))
-        except AttributeError:  # probably not a dataframe: assert there is one line only.
+        except (
+            AttributeError
+        ):  # probably not a dataframe: assert there is one line only.
             if self.dataframe_type == "pandas":
                 assert type(hwhm_lorentz) is np.float64
                 assert type(hwhm_voigt) is np.float64
@@ -1774,9 +1778,7 @@ class BroadenFactory(BaseFactory):
             )
         else:
             raise ValueError(
-                "Unexpected lineshape broadening algorithm: broadening_method={0}".format(
-                    broadening_method
-                )
+                f"Unexpected lineshape broadening algorithm: broadening_method={broadening_method}"
             )
 
         return line_profile
@@ -1822,7 +1824,7 @@ class BroadenFactory(BaseFactory):
             if w_min.min() < 0:
                 self.warn(
                     "Some line(s) had a calculated broadening < 0 cm-1. Check the database. At least this line is faulty: \n\n"
-                    + "{}".format(self.df1.iloc[(w_min <= 0).argmax()])
+                    + f"{self.df1.iloc[(w_min <= 0).argmax()]}"
                     + "\n\nIf you want to ignore, use `warnings['ZeroBroadeningWarning'] = 'ignore'`",
                     category="ZeroBroadeningWarning",
                 )
@@ -1922,7 +1924,7 @@ class BroadenFactory(BaseFactory):
 
         else:
             raise NotImplementedError(
-                "Broadening method with LDM: {0}".format(broadening_method)
+                f"Broadening method with LDM: {broadening_method}"
             )
 
         self.profiler.stop(
@@ -1993,7 +1995,7 @@ class BroadenFactory(BaseFactory):
             plt.plot(wbroad, voigt_profile, label="Voigt (approximation)")
         plt.xlabel("Wavenumber (cm-1)")
         plt.ylabel("Broadening coefficient")
-        plt.title("Line {0}, T={1:.1f}K, P={2:.2f}atm".format(i, Tgas, pressure_atm))
+        plt.title(f"Line {i}, T={Tgas:.1f}K, P={pressure_atm:.2f}atm")
         plt.legend()
         fix_style()
 
@@ -2618,9 +2620,7 @@ class BroadenFactory(BaseFactory):
                     if self.verbose >= 2:
                         estimated_time = self.predict_time()
                         print(
-                            "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
-                                estimated_time
-                            )
+                            f"Estimated time for calculating broadening: {estimated_time:.2f}s on 1 CPU"
                         )
 
                     line_profile = self._calc_lineshape(df)  # usually the bottleneck
@@ -2641,9 +2641,7 @@ class BroadenFactory(BaseFactory):
                     if self.verbose >= 2:
                         estimated_time = self.predict_time()
                         print(
-                            "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
-                                estimated_time
-                            )
+                            f"Estimated time for calculating broadening: {estimated_time:.2f}s on 1 CPU"
                         )
 
                     (wavenumber, abscoeff) = self._apply_lineshape_LDM(
@@ -2658,7 +2656,7 @@ class BroadenFactory(BaseFactory):
                     )
                 else:
                     raise ValueError(
-                        "Unexpected value for optimization: {0}".format(optimization)
+                        f"Unexpected value for optimization: {optimization}"
                     )
 
             elif is_float(chunksize):
@@ -2672,11 +2670,9 @@ class BroadenFactory(BaseFactory):
                 if N >= len(df):
                     self.warn(
                         "We suggest increasing chunksize to"
-                        + " {0:.1e} - {1:.1e}".format(
-                            10000 * len(wavenumber), 100000 * len(wavenumber)
-                        )
+                        + f" {10000 * len(wavenumber):.1e} - {100000 * len(wavenumber):.1e}"
                         + " to speed up calculations. Currently, there are more chunks"
-                        + " ({0:.3e}) than lines ({1:.3e}).".format(N, len(df))
+                        + f" ({N:.3e}) than lines ({len(df):.3e})."
                         + " Hence, calculation times will be extremely slow, since broadening will be"
                         + " calculated using only one line per iteration. Ideally, 10,000 - 100,000"
                         + " lines per chunk are recommended.",
@@ -2692,9 +2688,7 @@ class BroadenFactory(BaseFactory):
                     if self.verbose >= 2:
                         estimated_time = self.predict_time()
                         print(
-                            "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
-                                estimated_time
-                            )
+                            f"Estimated time for calculating broadening: {estimated_time:.2f}s on 1 CPU"
                         )
 
                     # Cut lines in smaller bits for better memory handling
@@ -2751,25 +2745,17 @@ class BroadenFactory(BaseFactory):
                     pb.done()
                 else:
                     raise ValueError(
-                        "Unexpected value for optimization: {0}".format(optimization)
+                        f"Unexpected value for optimization: {optimization}"
                     )
 
             else:
-                raise ValueError(
-                    "Unexpected value for chunksize: {0}".format(chunksize)
-                )
+                raise ValueError(f"Unexpected value for chunksize: {chunksize}")
 
         except MemoryError as err:
             raise MemoryError(
-                "Too many lines*wavepoints (see details above). Try to use or reduce the "
-                + "chunksize parameter (current={0}{1})".format(
-                    chunksize,
-                    " so chunksize={0:.3e} lines*wavepoints was used. ".format(
-                        len(df) * len(wavenumber)
-                    )
-                    if chunksize is None
-                    else "",
-                )
+                f"Too many lines*wavepoints (see details above). Try to use or reduce the "
+                f"chunksize parameter (current={chunksize}"
+                f"{f' so chunksize={len(df) * len(wavenumber):.3e} lines*wavepoints was used. ' if chunksize is None else ''})"
             ) from err
 
         return wavenumber, abscoeff
@@ -2809,9 +2795,7 @@ class BroadenFactory(BaseFactory):
                 if self.verbose >= 2:
                     estimated_time = self.predict_time()
                     print(
-                        "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
-                            estimated_time
-                        )
+                        f"Estimated time for calculating broadening: {estimated_time:.2f}s on 1 CPU"
                     )
                 (wavenumber, abscoeff) = self._apply_lineshape_LDM(
                     df.S.values,
@@ -2856,9 +2840,7 @@ class BroadenFactory(BaseFactory):
                 if self.verbose >= 2:
                     estimated_time = self.predict_time()
                     print(
-                        "Estimated time for calculating broadening: {0:.2f}s on 1 CPU".format(
-                            estimated_time
-                        )
+                        f"Estimated time for calculating broadening: {estimated_time:.2f}s on 1 CPU"
                     )
                 if chunksize is None:
                     # Deal with all lines directly (usually faster)
@@ -2896,26 +2878,16 @@ class BroadenFactory(BaseFactory):
                     pb.done()
 
                 else:
-                    raise ValueError(
-                        "Unexpected value for chunksize: {0}".format(chunksize)
-                    )
+                    raise ValueError(f"Unexpected value for chunksize: {chunksize}")
 
             else:
-                raise ValueError(
-                    "Unexpected value for optimization: {0}".format(optimization)
-                )
+                raise ValueError(f"Unexpected value for optimization: {optimization}")
 
         except MemoryError as err:
             raise MemoryError(
-                "Too many lines*wavepoints (see details above). Try to use or reduce the "
-                + "chunksize parameter (current={0}{1})".format(
-                    chunksize,
-                    " so {0:.3e} lines*wavepoints was used".format(
-                        len(df) * len(wavenumber)
-                    )
-                    if chunksize is None
-                    else "",
-                )
+                f"Too many lines*wavepoints (see details above). Try to use or reduce the "
+                f"chunksize parameter (current={chunksize}"
+                f"{f' so {len(df) * len(wavenumber):.3e} lines*wavepoints was used' if chunksize is None else ''})"
             ) from err
 
         return wavenumber, abscoeff, emisscoeff
@@ -2950,9 +2922,7 @@ class BroadenFactory(BaseFactory):
         self.profiler.start(
             "calc_line_broadening",
             2,
-            "... Calculating line broadening ({0} lines)".format(
-                len(df),
-            ),
+            f"... Calculating line broadening ({len(df)} lines)",
         )
 
         # Just some tests
@@ -3000,9 +2970,7 @@ class BroadenFactory(BaseFactory):
         self.profiler.start(
             "calc_line_broadening",
             2,
-            "... Calculating line broadening ({0} lines)".format(
-                len(df),
-            ),
+            f"... Calculating line broadening ({len(df)} lines)",
         )
 
         # Just some tests
@@ -3088,9 +3056,7 @@ class BroadenFactory(BaseFactory):
 
         self.profiler.stop(
             "weak_lines",
-            "{0:,d} lines classified as weak lines ({1:.2f}%)".format(
-                line_is_weak.sum(), line_is_weak.sum() / len(line_is_weak) * 100
-            ),
+            f"{line_is_weak.sum():,d} lines classified as weak lines ({line_is_weak.sum() / len(line_is_weak) * 100:.2f}%)",
         )
 
         return
@@ -3182,20 +3148,12 @@ class BroadenFactory(BaseFactory):
 
                 if __debug__:
                     printdbg(
-                        "Intensity of k continuum: {0}\n".format(
-                            np.trapz(k_continuum, wavenumber_calc)
-                        )
-                        + "Intensity of lines removed: {0}".format(
-                            df_weak_lines.S.sum()
-                        )
+                        f"Intensity of k continuum: {np.trapz(k_continuum, wavenumber_calc)}\n"
+                        + f"Intensity of lines removed: {df_weak_lines.S.sum()}"
                     )
                     printdbg(
-                        "Intensity of j continuum: {0}\n".format(
-                            np.trapz(j_continuum, wavenumber_calc)
-                        )
-                        + "Intensity of lines removed: {0}".format(
-                            df_weak_lines.Ei.sum()
-                        )
+                        f"Intensity of j continuum: {np.trapz(j_continuum, wavenumber_calc)}\n"
+                        + f"Intensity of lines removed: {df_weak_lines.Ei.sum()}"
                     )
 
             else:
@@ -3205,12 +3163,8 @@ class BroadenFactory(BaseFactory):
 
                 if __debug__:
                     printdbg(
-                        "Intensity of continuum: {0}\n".format(
-                            np.trapz(k_continuum, wavenumber_calc)
-                        )
-                        + "Intensity of lines removed: {0}".format(
-                            df_weak_lines.S.sum()
-                        )
+                        f"Intensity of continuum: {np.trapz(k_continuum, wavenumber_calc)}\n"
+                        + f"Intensity of lines removed: {df_weak_lines.S.sum()}"
                     )
 
             # Get valid range (discard wings)
@@ -3243,9 +3197,7 @@ class BroadenFactory(BaseFactory):
 
             if self.verbose >= 2:
                 print(
-                    "... expected time saved: {0:.1f}s".format(
-                        expected_broadening_time_gain
-                    ),
+                    f"... expected time saved: {expected_broadening_time_gain:.1f}s",
                 )
 
             time_spent = self.profiler.final[list(self.profiler.final)[-1]][
@@ -3256,9 +3208,7 @@ class BroadenFactory(BaseFactory):
                 self.warn(
                     "Pseudo-continuum may not be adapted to this kind "
                     + "of spectrum. Time spent on continuum calculation "
-                    + "({0:.1f}s) is much longer than expected gain ({1:.1f}s). ".format(
-                        time_spent, expected_broadening_time_gain
-                    )
+                    + f"({time_spent:.1f}s) is much longer than expected gain ({expected_broadening_time_gain:.1f}s). "
                     + "If the calculation takes a lot of time, consider "
                     + "setting pseudo_continuum_threshold=0. If it is fast "
                     + "enough already, you can decrease the linestrength cutoff= "

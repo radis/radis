@@ -20,6 +20,7 @@ except ImportError:
 
 pytestmark = pytest.mark.random_order(disabled=True)
 
+
 # ignored by pytest with argument -m "not needs_connection"
 @pytest.mark.needs_connection
 def test_fetch_astroquery(verbose=True, *args, **kwargs):

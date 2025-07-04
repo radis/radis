@@ -39,7 +39,7 @@ sf = SpectrumFactory(
 sf.fetch_databank("kurucz")
 s1 = sf.eq_spectrum(4000)
 
-#%%
+# %%
 # Now compare the result with that of the default handling of broadening in RADIS by removing the `lbfunc` parameter, recalculating the spectrum without it, and plotting the diff between the results:
 #
 sf.params.lbfunc = None
@@ -49,7 +49,7 @@ from radis import plot_diff
 
 plot_diff(s1, s_default, label1="s1", label2="s_default")
 
-#%%
+# %%
 # Here's another example adding self broadening, calculated using eq(16) of [Minesi-et-al-2020]_, to the 3 broadening types already handled by RADIS, and keeping the default handling of the line shift:
 #
 
@@ -90,7 +90,7 @@ s2 = sf.eq_spectrum(4000)
 
 plot_diff(s2, s_default, label1="s2", label2="s_default")
 
-#%%
+# %%
 # We can even modify broadening parameters of individual lines:
 #
 
@@ -124,7 +124,7 @@ s3 = sf.eq_spectrum(4000)
 
 plot_diff(s3, s_default, label1="s3", label2="s_default")
 
-#%%
+# %%
 # References
 # ----------
 # .. [Minesi-et-al-2020] `"Fully ionized nanosecond discharges in air: the thermal spark" <https://ui.adsabs.harvard.edu/abs/2020PSST...29h5003M>`_

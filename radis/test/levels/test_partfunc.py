@@ -48,6 +48,7 @@ except ImportError:
 
 # %% Test
 
+
 # never add @pytest.mark.fast so we don't delete cached files for 'fast' tests
 def test_delete_all_cached_energies(verbose=True, warnings=True, *args, **kwargs):
     """Doesnt really test anything, but cleans all cached energy levels"""
@@ -60,13 +61,7 @@ def test_delete_all_cached_energies(verbose=True, warnings=True, *args, **kwargs
                 cachefile = energies.cachefile
                 if exists(cachefile):
                     os.remove(cachefile)
-                    print(
-                        (
-                            "Cleaned cached energies for {0}".format(
-                                ElecState.get_fullname()
-                            )
-                        )
-                    )
+                    print((f"Cleaned cached energies for {ElecState.get_fullname()}"))
 
 
 @pytest.mark.fast
@@ -251,8 +246,7 @@ def test_calculatedQ_match_HAPI_CO(
         plt.xlabel("Temperature (K)")
         plt.ylabel("Partition function")
         plt.title(
-            "Ab-initio partition function calculations\n"
-            + "(vmax:{0},jmax:{1})".format(vmax, jmax)
+            "Ab-initio partition function calculations\n" + f"(vmax:{vmax},jmax:{jmax})"
         )
         plt.tight_layout()
 
@@ -301,9 +295,7 @@ def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
 
         if verbose:
             print(
-                "Q({0},iso={1},{2}K)\tRADIS: {3:.2f}\tHAPI={4:.2f}".format(
-                    molecule, iso, T, Q_radis, Q_hapi
-                )
+                f"Q({molecule},iso={iso},{T}K)\tRADIS: {Q_radis:.2f}\tHAPI={Q_hapi:.2f}"
             )
 
         try:
@@ -311,9 +303,9 @@ def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
             assert np.isclose(Q_radis, Q_hapi, atol=atol)
         except AssertionError:
             raise AssertionError(
-                "Partition function for {0}, iso={1} ".format(molecule, iso)
-                + "at {0}K doesnt match in RADIS ".format(T)
-                + "({0:.4f}) and HAPI ({1:.4f})".format(Q_radis, Q_hapi)
+                f"Partition function for {molecule}, iso={iso} "
+                + f"at {T}K doesnt match in RADIS "
+                + f"({Q_radis:.4f}) and HAPI ({Q_hapi:.4f})"
             )
 
     if verbose:
@@ -717,7 +709,7 @@ def test_Q_1Tvib_vs_Q_3Tvib(T=1500, verbose=True, warnings=True, *args, **kwargs
 
     assert np.isclose(Q, Q3T)
     if verbose:
-        printm("Tested Q in 1-Tvib vs Q in 3-Tvib modes (T={0:.0f}K): OK".format(T))
+        printm(f"Tested Q in 1-Tvib vs Q in 3-Tvib modes (T={T:.0f}K): OK")
 
 
 @pytest.mark.fast
@@ -746,10 +738,10 @@ def test_Morse_Potential_effect_CO(
     Q_morse = db.at(T)
 
     if verbose:
-        printm("Morse vs no Morse potential (T={0}K)".format(T))
-        printm("Q_morse: {0:.3f}".format(Q_morse))
-        printm("Q_nomorse: {0:.3f}".format(Q_nomorse))
-        printm("Difference: {0:.4f}%".format(abs(Q_nomorse - Q_morse) / Q_morse * 100))
+        printm(f"Morse vs no Morse potential (T={T}K)")
+        printm(f"Q_morse: {Q_morse:.3f}")
+        printm(f"Q_nomorse: {Q_nomorse:.3f}")
+        printm(f"Difference: {abs(Q_nomorse - Q_morse) / Q_morse * 100:.4f}%")
 
     assert abs(Q_nomorse - Q_morse) / Q_morse < rtol
 
@@ -873,9 +865,7 @@ def test_tabulated_partition_functions(
         # accuracy_dict[
         if verbose:
             print(
-                "full-sum & TIPS tabulated partition function of CO2 at {0}K close within {1:.2%}".format(
-                    T, accuracy
-                )
+                f"full-sum & TIPS tabulated partition function of CO2 at {T}K close within {accuracy:.2%}"
             )
         assert (
             accuracy < 4 * rtol
@@ -890,9 +880,7 @@ def test_tabulated_partition_functions(
         if verbose:
             accuracy = max(z1, z2) / min(z1, z2) - 1
             print(
-                "full-sum & jit-tabulated partition function of CO2 at {0}K close within {1:.2%}".format(
-                    T, accuracy
-                )
+                f"full-sum & jit-tabulated partition function of CO2 at {T}K close within {accuracy:.2%}"
             )
         assert np.isclose(z1, z2, rtol=rtol)
 
@@ -1132,5 +1120,5 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    # printm("Testing parfunc: {0}".format(_run_testcases()))
+    # printm(f"Testing parfunc: {_run_testcases()}")
     printm("Testing partfunc.py:", pytest.main(["test_partfunc.py", "--pdb"]))

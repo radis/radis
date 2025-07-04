@@ -270,7 +270,7 @@ def test_rescale_vs_direct_computation(verbose=True, *args, **kwargs):
                             f"Checked {var} recomputed from {vars_needed} is the same"
                         )
 
-    #%%
+    # %%
     # Nonequilibrium spectrum, computed in wavenumber
     # -----------------------------------------------
 
@@ -346,7 +346,7 @@ def test_rescale_vs_direct_computation(verbose=True, *args, **kwargs):
     if verbose >= 2:
         radis.config["DEBUG_MODE"] = DEBUG_MODE
 
-    #%%
+    # %%
 
 
 def test_recompute_equilibrium(verbose=True, warnings=True, plot=True, *args, **kwargs):
@@ -431,18 +431,13 @@ def test_rescale_all_quantities(verbose=True, warnings=True, *args, **kwargs):
         all_paths = update_paths[quantity]
         if verbose:
             printm(
-                "{0} can be recomputed from {1}".format(
-                    quantity,
-                    " or ".join(["&".join(combinations) for combinations in all_paths]),
-                )
+                f"{quantity} can be recomputed from {' or '.join(['&'.join(combinations) for combinations in all_paths])}"
             )
 
         # Now let's test all paths
         for combinations in all_paths:
             if verbose:
-                printm(
-                    "> computing {0} from {1}".format(quantity, "&".join(combinations))
-                )
+                printm(f"> computing {quantity} from {'&'.join(combinations)}")
             s = s0.copy()
             # Delete all other quantities
             for k in s.get_vars():

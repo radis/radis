@@ -198,9 +198,7 @@ def LineSurvey(
 
     if not plot in list(sp.keys()):
         raise KeyError(
-            "Key {0} is not in line database: {1}. Change `plot=` parameter of line_survey".format(
-                plot, list(sp.keys())
-            )
+            f"Key {plot} is not in line database: {list(sp.keys())}. Change `plot=` parameter of line_survey"
         )
 
     def hitran2splot(S, T):
@@ -245,13 +243,13 @@ def LineSurvey(
                 sp = sp[(sp.S > cutoff)]
             Iunit_str = "cm-1/atm"
         else:
-            raise ValueError("Unknown Iunit: {0}".format(Iunit))
-        ylabel = "Linestrength ({0})".format(Iunit_str)
+            raise ValueError(f"Unknown Iunit: {Iunit}")
+        ylabel = f"Linestrength ({Iunit_str})"
     else:
         cutoff = 0
         try:  # to find units and real name (if columndescriptor is known exists in initial databank)
             _, _, name, unit = columndescriptor[plot]
-            ylabel = "{0} - {1} [{2}]".format(name, plot, unit)
+            ylabel = f"{name} - {plot} [{unit}]"
         except KeyError:
             ylabel = plot
 
@@ -277,9 +275,9 @@ def LineSurvey(
             elif medium == "vacuum":
                 pass
             else:
-                raise ValueError("Unknown medium: {0}".format(medium))
+                raise ValueError(f"Unknown medium: {medium}")
         else:
-            raise ValueError("Unknown wunit: {0}".format(wunit))
+            raise ValueError(f"Unknown wunit: {wunit}")
         return x
 
     # Parse databank to get relevant information on each line
@@ -459,7 +457,7 @@ def LineSurvey(
 
             else:
                 raise NotImplementedError(
-                    "No customized label for {0}. Please add it!".format(molecule)
+                    f"No customized label for {molecule}. Please add it!"
                 )
 
             # Add details about some line properties
@@ -582,16 +580,14 @@ def LineSurvey(
         for k in lineinfo:
             if not k in sp.columns:
                 raise KeyError(
-                    "{0} not a {1} databank entry ({2} format)".format(
-                        k, columndescriptor, dbformat.upper()
-                    )
+                    f"{k} not a {columndescriptor} databank entry ({dbformat.upper()} format)"
                 )
             try:  # to find units and real name (if exists in initial databank)
                 _, ktype, name, unit = columndescriptor[k]
             except KeyError:
                 details[k] = ("", None, "")  # keep short name
             else:
-                details[k] = (name, ktype, " [{0}]".format(unit))
+                details[k] = (name, ktype, f" [{unit}]")
 
     # Get label
     if dbformat in ["hitran", "hitemp", "hitemp-radisdb", "radisdb-hitemp", "geisa"]:
@@ -612,13 +608,13 @@ def LineSurvey(
     # from plotly.graph_objs import Scatter, Figure, Layout
 
     if wunit == "nm":
-        xlabel = "Wavelength (nm) [{0}]".format(medium)
+        xlabel = f"Wavelength (nm) [{medium}]"
         x_range = spec.get_wavelength()
     elif wunit == "cm-1":
         xlabel = "Wavenumber (cm-1)"
         x_range = spec.get_wavenumber()
     else:
-        raise ValueError("unknown wunit: {0}".format(wunit))
+        raise ValueError(f"unknown wunit: {wunit}")
 
     # TODO : implement barwidth -->  if ``hwhm_voigt``, bars are one half-width at half-maximum (in cm-1)
     if isinstance(barwidth, str):
@@ -689,7 +685,7 @@ def LineSurvey(
 
         layout["yaxis2"] = dict(
             title={
-                "text": "{0} ({1})".format(over_name.capitalize(), over_units),
+                "text": f"{over_name.capitalize()} ({over_units})",
                 "font": {"color": "#ff7f0e"},
             },
             # note: LaTeX doesnt seem to

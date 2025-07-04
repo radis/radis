@@ -200,7 +200,7 @@ def get_version(verbose=False, add_git_number=True):
             label = subprocess.check_output("git describe", stderr=subprocess.DEVNULL)
         except:
             if verbose:
-                print("couldnt get git version: {0}".format(sys.exc_info()[1]))
+                print(f"couldnt get git version: {sys.exc_info()[1]}")
             # probably not a git session. drop
         else:
             commit = label.decode().strip().split("-")[-1]

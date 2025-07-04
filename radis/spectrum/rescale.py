@@ -497,9 +497,7 @@ def get_recompute(spec, wanted, no_change=False, true_path_length=None):
                 if not can_recompute_key:
                     if __debug__:
                         printdbg(
-                            "... get_recompute: Can't recompute {0} with current keys: {1}. Finding something else".format(
-                                key, [k for k in from_keys if recompute[k]]
-                            )
+                            f"... get_recompute: Can't recompute {key} with current keys: {[k for k in from_keys if recompute[k]]}. Finding something else"
                         )
                     # cant recompute this quantity. Let's force recomputation
                     # of a given path. We'll arbitrary use the one will the fewer
@@ -632,13 +630,13 @@ def update(
     new_q = [k for k in spec.get_vars() if k not in initial]
     if verbose:
         if len(new_q) > 0:
-            print(("{0} new quantities added: {1}".format(spec.get_name(), new_q)))
+            print(f"{spec.get_name()} new quantities added: {new_q}")
 
     # Final checks
     for k in new_q:
         # make sure units exist
         if not k in spec.units:
-            raise ValueError("{0} added but unit is unknown".format(k))
+            raise ValueError(f"{k} added but unit is unknown")
 
     return spec
 
@@ -797,17 +795,11 @@ def rescale_abscoeff(
         )
     else:
         raise ValueError(
-            "Can't rescale abscoeff if not all of the following are given : \n(1) (transmittance_noslit ({0}) ".format(
-                "transmittance_noslit" in initial
-            )
-            + "OR absorbance ({0})) ".format("absorbance" in initial)
-            + "AND true_path_length ({0}). ".format(true_path_length)
-            + "\n(2) xsection ({0}) AND Tgas ({1}) AND pressure ({2}) AND mole_fraction ({3})".format(
-                "xsection" in initial,
-                "Tgas" in spec.conditions,
-                "pressure" in spec.conditions,
-                "mole_fraction" in spec.conditions,
-            )
+            f"Can't rescale abscoeff if not all of the following are given : \n(1) (transmittance_noslit ({'transmittance_noslit' in initial}) "
+            + f"OR absorbance ({'absorbance' in initial})) "
+            + f"AND true_path_length ({true_path_length}). "
+            + f"\n(2) xsection ({'xsection' in initial}) AND Tgas ({'Tgas' in spec.conditions}) AND pressure"
+            + f"({'pressure' in spec.conditions}) AND mole_fraction ({'mole_fraction' in spec.conditions})"
         )
 
     # Then export rescaled value
@@ -1117,10 +1109,9 @@ def rescale_emisscoeff(
 
     else:
         if optically_thin:
-            msg = "Can't calculate emisscoeff if path_length ({0})".format(
-                true_path_length
-            ) + "and initial radiance_noslit ({0}) are not all given".format(
-                "radiance_noslit" in initial
+            msg = (
+                f"Can't calculate emisscoeff if path_length ({true_path_length})"
+                + f"and initial radiance_noslit ({'radiance_noslit' in initial}) are not all given"
             )
             if "emisscoeff" in extra:  # cant calculate this one but let it go
                 emisscoeff_init = None
@@ -1131,10 +1122,9 @@ def rescale_emisscoeff(
         else:
             msg = (
                 "Trying to get the emission coefficient (emisscoeff) for a non-optically "
-                + "thin column. Among the following required quantities, not all of them are given : path_length ({0}), radiance_noslit ({1}) ".format(
-                    true_path_length, "radiance_noslit" in initial
-                )
-                + "and abscoeff ({0}). ".format("abscoeff" in initial)
+                + "thin column. Among the following required quantities, not all of them are given : "
+                + f"path_length ({true_path_length}), radiance_noslit ({'radiance_noslit' in initial}) "
+                + f"and abscoeff ({'abscoeff' in initial}). "
                 + "See known Spectrum conditions with "
                 + "print(Spectrum)"
             )
@@ -1275,9 +1265,7 @@ def rescale_absorbance(
     else:
         msg = (
             "Cant recalculate absorbance if scaled abscoeff "
-            + "({0}) and true path_length ({1}) are not given".format(
-                "abscoeff" in rescaled, true_path_length
-            )
+            + f"({'abscoeff' in rescaled}) and true path_length ({true_path_length}) are not given"
         )
         if "absorbance" in extra:  # cant calculate this one but let it go
             absorbance = None
@@ -1421,9 +1409,7 @@ def rescale_transmittance_noslit(
         _transmittance_noslitm1 = expm1(-absorbance)
         unit = get_transmittance_unit()
     else:
-        msg = "Missing data to rescale transmittance. Expected scaled absorbance ({0})".format(
-            "absorbance" in rescaled
-        )
+        msg = f"Missing data to rescale transmittance. Expected scaled absorbance ({'absorbance' in rescaled})"
         #        +' or scaled abscoeff ({0}) and true_path_length ({1})'.format(
         #                'abscoeff' in rescaled, true_path_length)
         if "transmittance_noslit" in extra:  # cant calculate this one but let it go
@@ -1650,10 +1636,8 @@ def rescale_radiance_noslit(
             msg = (
                 "Missing data to rescale radiance_noslit in "
                 + "optically thin mode. You need at least initial "
-                + "radiance_noslit ({0}), or scaled emission coefficient ({1}) ".format(
-                    "radiance_noslit" in initial, "emisscoeff" in rescaled
-                )
-                + "and true path length ({0}).".format(true_path_length)
+                + f"radiance_noslit ({'radiance_noslit' in initial}), or scaled emission coefficient ({'emisscoeff' in rescaled}) "
+                + f"and true path length ({true_path_length})."
             )
             if "radiance_noslit" in extra:  # cant calculate this one but let it go
                 radiance_noslit = None
@@ -1664,12 +1648,8 @@ def rescale_radiance_noslit(
         else:
             msg = (
                 "Missing data to recalculate radiance_noslit for a non-optically thin column. You need at least "
-                + "scaled emisscoeff ({0}), scaled transmittance_noslit ({1}), ".format(
-                    "emisscoeff" in rescaled, "transmittance_noslit" in rescaled
-                )
-                + "scaled abscoeff ({0}) and true_path_length ({1}). ".format(
-                    "abscoeff" in rescaled, true_path_length
-                )
+                + f"scaled emisscoeff ({'emisscoeff' in rescaled}), scaled transmittance_noslit ({'transmittance_noslit' in rescaled}), "
+                + f"scaled abscoeff ({'abscoeff' in rescaled}) and true_path_length ({true_path_length}). "
             )
             if "radiance_noslit" in extra:
                 radiance_noslit = None
@@ -1890,11 +1870,7 @@ def rescale_xsection(
     else:
         msg = (
             "Cant recalculate xsection if not all these quantities are given : "
-            + "scaled abscoeff ({0}), Tgas ({1}), pressure ({2})".format(
-                "abscoeff" in rescaled,
-                "Tgas" in spec.conditions,
-                "pressure" in spec.conditions,
-            )
+            + f"scaled abscoeff ({'abscoeff' in rescaled}), Tgas ({'Tgas' in spec.conditions}), pressure ({'pressure' in spec.conditions})"
         )
         if "xsection" in extra:  # cant calculate this one but let it go
             xsection = None
@@ -1961,8 +1937,8 @@ def _recalculate(
     optically_thin = spec.is_optically_thin()
     initial = spec.get_vars()  # quantities initially in spectrum
     if __debug__:
-        printdbg("... rescale: optically_thin: {0}".format(optically_thin))
-        printdbg("... rescale: initial quantities: {0}".format(initial))
+        printdbg(f"... rescale: optically_thin: {optically_thin}")
+        printdbg(f"... rescale: initial quantities: {initial}")
 
     # Check that inputs are valid names
     _check_quantity = quantity
@@ -1985,7 +1961,7 @@ def _recalculate(
     if any_in(initial, non_rescalable_keys):
         raise NotImplementedError(
             "Trying to rescale a Spectrum that has non scalable "
-            + "quantities: {0}".format([k for k in initial if k in non_rescalable_keys])
+            + f"quantities: {[k for k in initial if k in non_rescalable_keys]}"
             + "Remove them manually, or implement the scaling method."
         )
 
@@ -2008,7 +1984,7 @@ def _recalculate(
     else:
         raise ValueError(
             "unexpected type for quantity: expected str, got "
-            + "{0} ({1})".format(quantity, type(quantity))
+            + f"{quantity} ({type(quantity)})"
         )
     rescaled = {}  # quantities rescaled
 
@@ -2047,16 +2023,10 @@ def _recalculate(
 
         print(sys.exc_info())
         raise KeyError(
-            "Error in get_recompute (see above). Quantity `{0}` cannot be recomputed ".format(
-                err.args[0]
-            )
-            + "from available quantities in Spectrum ({0}) with ".format(
-                spec.get_vars()
-            )
-            + " conditions: optically thin ({0}), true_path_length ({1}), thermal equilibrium ({2})".format(
-                optically_thin, true_path_length, assume_equilibrium
-            )
-            + ". Check how your equivalence tree is built: see rescale._build_update_graph()"
+            f"Error in get_recompute (see above). Quantity `{err.args[0]}` cannot be recomputed "
+            + f"from available quantities in Spectrum ({spec.get_vars()}) with "
+            + f" conditions: optically thin ({optically_thin}), true_path_length ({true_path_length}), thermal equilibrium ({assume_equilibrium})"
+            + f". Check how your equivalence tree is built: see rescale._build_update_graph()"
         )
     if assume_equilibrium == True:
         recompute.append("abscoeff")
@@ -2107,10 +2077,7 @@ def _recalculate(
         assert "abscoeff" in rescaled
         if not spec.is_at_equilibrium():
             warn(
-                "Rescaling with equilibrium assumption but Spectrum {0} does ".format(
-                    spec.get_name()
-                    + "not look at equilibrium. Check spectrum conditions"
-                )
+                f"Rescaling with equilibrium assumption but Spectrum {spec.get_name() + 'not look at equilibrium. Check spectrum conditions'} does "
             )
         wavenumber = spec.get_wavenumber()
         Tgas = spec.conditions["Tgas"]
@@ -2273,13 +2240,9 @@ def _recalculate(
             #                pass
             #            else:
             raise KeyError(
-                "Slit is needed to recompute some quantities ({0}) ".format(wanted)
+                f"Slit is needed to recompute some quantities ({wanted}) "
                 + "but not all conditions are given among slit_function "
-                + "({0}), slit_unit ({1}) and norm_by ({2})".format(
-                    "slit_function" in spec.conditions,
-                    "slit_unit" in spec.conditions,
-                    "norm_by" in spec.conditions,
-                )
+                + f"({'slit_function' in spec.conditions}), slit_unit ({'slit_unit' in spec.conditions}) and norm_by ({'norm_by' in spec.conditions})"
             )
         else:
             slit_function = spec.conditions["slit_function"]
@@ -2317,24 +2280,24 @@ def _recalculate(
     for q in wanted:
         if not q in rescaled_list:
             raise AssertionError(
-                "'{0}' could not be rescaled as wanted. ".format(q)
-                + "The following properties were rescaled: {0}".format(rescaled_list)
+                f"'{q}' could not be rescaled as wanted. "
+                + f"The following properties were rescaled: {rescaled_list}"
             )
     # ... everyone was added in the Spectrum properly
     final_list = spec.get_vars()
     for q in wanted:
         if not q in final_list:
             raise AssertionError(
-                "'{0}' is not in the final Spectrum. ".format(q)
-                + "Rescaled spectrum contains: {0}".format(final_list)
+                f"'{q}' is not in the final Spectrum. "
+                + f"Rescaled spectrum contains: {final_list}"
             )
     # ... "everyone was rescaled": check we didnt scale only part of the spectrum
     for q in initial:
         if not q in rescaled_list:
             raise AssertionError(
-                "'{0}' was initially in the Spectrum but was not ".format(q)
+                f"'{q}' was initially in the Spectrum but was not "
                 + "rescaled. This can lead to error. Rescaled spectrum "
-                + "contains: {0}".format(rescaled_list)
+                + f"contains: {rescaled_list}"
             )
     # ... all values have units
     for k in spec.get_vars():
@@ -2393,9 +2356,7 @@ def rescale_path_length(
         try:
             if spec.conditions["path_length"] != old_path_length:
                 warn(
-                    "path_length ({0}) doesnt match value given in conditions ({1})".format(
-                        old_path_length, spec.conditions["path_length"]
-                    )
+                    f"path_length ({old_path_length}) doesnt match value given in conditions ({spec.conditions['path_length']})"
                 )
         except KeyError:  # path_length not defined
             pass
@@ -2423,8 +2384,8 @@ def rescale_path_length(
         qties = spec.get_vars()
         if q in qties and qns not in qties and not force:
             raise KeyError(
-                "Cant rescale {0} if {1} not stored. ".format(q, qns)
-                + " Use force=True to rescale anyway. {0}".format(q)
+                f"Cant rescale {q} if {qns} not stored. "
+                + f" Use force=True to rescale anyway. {q}"
                 + " will be deleted"
             )
 
@@ -2508,9 +2469,7 @@ def rescale_mole_fraction(
                 and not ignore_warnings
             ):
                 warn(
-                    "mole_fraction ({0}) doesnt match value given in conditions ({1})".format(
-                        old_mole_fraction, spec.conditions["mole_fraction"]
-                    )
+                    f"mole_fraction ({old_mole_fraction}) doesnt match value given in conditions ({spec.conditions['mole_fraction']})"
                 )
         except KeyError:  # mole fraction not defined
             pass
@@ -2527,9 +2486,7 @@ def rescale_mole_fraction(
     # Add warning is large mole fraction rescale
     if np.abs(new_mole_fraction - old_mole_fraction) > 0.3:
         warn(
-            "Large rescaling from {0} to {1}. ".format(
-                old_mole_fraction, new_mole_fraction
-            )
+            f"Large rescaling from {old_mole_fraction} to {new_mole_fraction}. "
             + "There may be significant changes in pressure broadening coefficients."
             + "You should calculate a new spectrum instead."
         )
@@ -2541,16 +2498,16 @@ def rescale_mole_fraction(
             "Rescaling to 0 will loose information. Choose force " "= True"
         )
     if new_mole_fraction > 1 and not force:
-        warn("rescaling to mole fraction > 1: {0}".format(new_mole_fraction))
+        warn(f"rescaling to mole fraction > 1: {new_mole_fraction}")
 
     for q in ["transmittance", "radiance"]:
         qns = q + "_noslit"
         qties = spec.get_vars()
         if q in qties and qns not in qties and not force:
             raise KeyError(
-                "Cant rescale {0} if {1} not stored.".format(q, qns)
+                f"Cant rescale {q} if {qns} not stored."
                 + "(you need to rescale before applying the slit again) "
-                + " Use force=True to rescale anyway, but {0}".format(q)
+                + f" Use force=True to rescale anyway, but {q}"
                 + " will be deleted"
             )
 

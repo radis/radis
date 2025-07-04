@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Core of the line-by-line calculations
-"""
+"""Core of the line-by-line calculations"""
 
 # prevent cyclic imports:
 from . import bands, base, broadening, calc, factory, labels, loader, overp

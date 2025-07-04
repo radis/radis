@@ -31,7 +31,7 @@ def test_local_geisa_co(verbose=True, warnings=True, **kwargs):
     fileName = files["CO"]
     df = gei2df(getTestFile(fileName), cache="regen")
     if verbose:
-        print("Read {0}".format(fileName))
+        print(f"Read {fileName}")
         print("-------------------------------------")
         print(df)
 
@@ -60,7 +60,7 @@ def test_local_geisa_h2o(verbose=True, warnings=True, **kwargs):
     fileName = files["H2O"]
     df = gei2df(getTestFile(fileName), cache="regen")
     if verbose:
-        print("Read {0}".format(fileName))
+        print(f"Read {fileName}")
         print("-------------------------------------")
         print(df)
 
@@ -89,7 +89,7 @@ def test_local_geisa_co2(verbose=True, warnings=True, **kwargs):
     fileName = files["CO2"]
     df = gei2df(getTestFile(fileName), cache="regen")
     if verbose:
-        print("Read {0}".format(fileName))
+        print(f"Read {fileName}")
         print("-------------------------------------")
         print(df)
 

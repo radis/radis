@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Physical constants and conversion.
-"""
+"""Physical constants and conversion."""
 
 from .blackbody import planck, planck_wn, sPlanck
 from .convert import (

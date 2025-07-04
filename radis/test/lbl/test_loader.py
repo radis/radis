@@ -198,7 +198,7 @@ def test_custom_abundance(verbose=True, plot=False, *args, **kwargs):
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.load_databank("HITEMP-CO2-TEST", load_columns="all")
 
-    #%% Compute a spectrum ; set the terrestrial abundance to False to
+    # %% Compute a spectrum ; set the terrestrial abundance to False to
     # force computation of linestrength from Einstein coefficients instead
     # of rescaling parameters
     s = sf.eq_spectrum(2000)
@@ -215,7 +215,7 @@ def test_custom_abundance(verbose=True, plot=False, *args, **kwargs):
 
         plot_diff(s, s2)
 
-    #%% Now restart by changing the abundance itself ; as a user would do
+    # %% Now restart by changing the abundance itself ; as a user would do
 
     # ... check abundance get/set functions work well
     abundance12_0 = sf.get_abundance("CO2", [1, 2])

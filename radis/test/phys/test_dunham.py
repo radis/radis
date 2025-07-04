@@ -41,14 +41,12 @@ def test_dunham_co(verbose=True, *args, **kwargs):
         print(("Energies for CO(X) v, J=", v, J))
 
         # ... calculate with Molecular Data from JSON (new format)
-        print(("... from JSON: {0:.5f} cm-1".format(EvJ(v, J, **dunham_coeffs))))
+        print(f"... from JSON: {EvJ(v, J, **dunham_coeffs):.5f} cm-1")
 
         # ... calculate with hardcoded Dunham expansion (legacy)
         print(
             (
-                "... from hardcoded Herzberg constants {0:.5f} cm-1".format(
-                    CO_X.Erovib(v, J, remove_ZPE=False)
-                )
+                f"... from hardcoded Herzberg constants {CO_X.Erovib(v, J, remove_ZPE=False):.5f} cm-1"
             )
         )
 

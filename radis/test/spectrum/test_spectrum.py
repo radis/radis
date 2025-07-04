@@ -404,23 +404,17 @@ def test_resampling_function(
     s.compare_with(
         s2,
         plot=plot,
-        title="Residual: {0:.2g}".format(
-            get_residual_integral(s, s2, "abscoeff", ignore_nan=True)
-        ),
+        title=f"Residual: {get_residual_integral(s, s2, 'abscoeff', ignore_nan=True):.2g}",
     )
     s.compare_with(
         s2b,
         plot=plot,
-        title="Residual: {0:.2g}".format(
-            get_residual_integral(s, s2b, "abscoeff", ignore_nan=True)
-        ),
+        title=f"Residual: {get_residual_integral(s, s2b, 'abscoeff', ignore_nan=True):.2g}",
     )
     s.compare_with(
         s3,
         plot=plot,
-        title="Residual: {0:.2g}".format(
-            get_residual_integral(s, s3, "abscoeff", ignore_nan=True)
-        ),
+        title=f"Residual: {get_residual_integral(s, s3, 'abscoeff', ignore_nan=True):.2g}",
     )
 
     assert get_residual_integral(s, s2, "abscoeff", ignore_nan=True) < 1e-3
@@ -563,7 +557,7 @@ def test_sort(*args, **kwargs):
     assert is_sorted(s_exp.sort().get("radiance")[0])
 
 
-#%%
+# %%
 @pytest.mark.fast
 def test_argmax_argmin(*args, **kwargs):
     """Test :py:meth:`~radis.spectrum.spectrum.Spectrum.argmax`
@@ -626,7 +620,7 @@ def _run_testcases(
     debug=False,
     warnings=True,
     *args,
-    **kwargs
+    **kwargs,
 ):
     """Test procedures
 
@@ -647,7 +641,7 @@ def _run_testcases(
         plot=plot,
         close_plots=close_plots,
         *args,
-        **kwargs
+        **kwargs,
     )
     test_copy(verbose=verbose, *args, **kwargs)
     test_trimming(*args, **kwargs)
