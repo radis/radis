@@ -89,6 +89,7 @@ def read_config():
             config = json.load(f)
     else:
         config = {}
+    return config
 
 
 def keep_only_relevant(
@@ -501,7 +502,7 @@ def download_hitemp_file(
             f"Failed to download {file_url}. Please download manually and place it in the following location:"
         )
         temp_folder = os.path.join(
-            os.path.dirname(output_filename),
+            os.path.dirname(output_path),
             "downloads__can_be_deleted",
             "hitran.org",
             "files",
@@ -658,16 +659,6 @@ def download_HITEMP_CO2(local_path=None, verbose=False):
 
     return downloaded_path
 
-    # index_file_path = os.path.join(getProjectRoot(), "db", "CO2_indexed_offsets.dat")
-
-    # start_offset = get_wavno_lower_offset(load_wavenum_min)
-    # bytes_to_read = offset_difference_from_lower_wavno(
-    #     load_wavenum_max, load_wavenum_min
-    # )
-    # read_and_write_chunked_for_CO2(
-    #     download_path_hitemp_CO2, index_file_path, start_offset, bytes_to_read
-    # )
-
 
 def read_and_write_chunked_for_CO2(
     bz2_file_path,
@@ -676,7 +667,6 @@ def read_and_write_chunked_for_CO2(
     bytes_to_read,
     chunk_size=500 * 1024 * 1024,
     output_prefix="CO2_HITEMP",
-    cache_directory_path=None,
 ):
     """
     Read `bytes_to_read` bytes from a bzip2 file starting at `start_offset`, in chunks, and
@@ -724,12 +714,17 @@ def read_and_write_chunked_for_CO2(
 
         # Determine decompression cache path
         config = read_config()
-        if not cache_directory_path and config:
+
+        default_download_path = config["DEFAULT_DOWNLOAD_PATH"]
+        if default_download_path in bz2_file_path:
             hitemp_CO2_download_path = join(
-                config["DEFAULT_DOWNLOAD_PATH"], "hitemp", "CO2", "Decompressed"
+                default_download_path, "hitemp", "CO2", "Decompressed"
             )
         else:
-            hitemp_CO2_download_path = cache_directory_path
+            bz2_dir = os.path.dirname(bz2_file_path)
+            decompressed_dir = os.path.join(bz2_dir, "Decompressed")
+            os.makedirs(decompressed_dir, exist_ok=True)
+            hitemp_CO2_download_path = decompressed_dir
 
         # Parse this chunk into a DataFrame
         df = parse_one_CO2_block(
@@ -758,6 +753,30 @@ def read_and_write_chunked_for_CO2(
         combined_df = pd.DataFrame()
 
     return combined_df
+
+
+def download_and_decompress_CO2_into_df(
+    local_databases=None,
+    load_wavenum_min=None,
+    load_wavenum_max=None,
+    verbose=True,
+    engine="pytables",
+    output="pandas",
+):
+    # print(f"File size: {os.path.getsize(bz2_file_path)}")
+    downloaded_HITEMP_CO2_path = download_HITEMP_CO2(local_path=local_databases)
+    print(f"Downloaded HITEMP CO2 database to {downloaded_HITEMP_CO2_path}")
+    index_file_path = os.path.join(getProjectRoot(), "db", "CO2_indexed_offsets.dat")
+    start_offset = get_wavno_lower_offset(load_wavenum_min)
+    bytes_to_read = offset_difference_from_lower_wavno(
+        load_wavenum_max, load_wavenum_min
+    )
+
+    print(f"start_offset: {start_offset}")
+    print(f"bytes_to_read: {bytes_to_read}")
+    return read_and_write_chunked_for_CO2(
+        downloaded_HITEMP_CO2_path, index_file_path, start_offset, bytes_to_read
+    )
 
 
 class HITEMPDatabaseManager(DatabaseManager):

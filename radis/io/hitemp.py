@@ -139,6 +139,18 @@ def fetch_hitemp(
             f"The database '{database}' is not recognized as an available HITEMP database for '{molecule}'. Please choose from the following available years: {available_years}."
         )
 
+    if molecule == "CO2":
+        from radis.api.hitempapi import download_and_decompress_CO2_into_df
+
+        return download_and_decompress_CO2_into_df(
+            local_databases=None,
+            load_wavenum_min=load_wavenum_min,
+            load_wavenum_max=load_wavenum_max,
+            verbose=verbose,
+            engine=engine,
+            output=output,
+        )
+
     if r"{molecule}" in databank_name:
         databank_name = databank_name.format(**{"molecule": molecule})
         databank_name += "-2010" if database == "2010" else ""
