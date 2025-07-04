@@ -34,6 +34,8 @@ from radis.misc.printer import printm
 from radis.phys.convert import dcm2dnm, dnm2dcm
 from radis.phys.units import is_homogeneous
 
+from scipy.integrate import trapezoid
+
 # from radis.lbl import SpectrumFactory
 from radis.spectrum.models import calculated_spectrum, transmittance_spectrum
 from radis.spectrum.spectrum import _cut_slices
@@ -438,7 +440,7 @@ def test_slit_energy_conservation(
     P = s.get_power(unit="mW/cm2/sr")
     s.apply_slit(0.5, norm_by="area")
     w, I = s.get("radiance", wunit="nm", Iunit="mW/cm2/sr/nm")
-    Pc = abs(np.trapz(I[~np.isnan(I)], x=w[~np.isnan(I)]))  # mW/cm2/sr
+    Pc = abs(trapezoid(I[~np.isnan(I)], x=w[~np.isnan(I)]))  # mW/cm2/sr
 
     b = np.isclose(P, Pc, 3e-2)
 

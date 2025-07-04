@@ -43,6 +43,7 @@ import numpy as np
 from numba import bool_, float64, int32, int64
 from numpy import hstack
 from scipy.interpolate import interp1d
+from scipy.integrate import trapezoid
 
 # Normalize
 
@@ -134,9 +135,9 @@ def array_allclose(a, b, rtol=1e-5, atol=1e-8, equal_nan=True):
 
 
 def nantrapz(I, w, dx=1.0, axis=-1):
-    """Returns :py:func:`~numpy.trapz` (I, w) discarding nan."""
+    """Returns :py:func:`~numpy.trapezoid` (I, w) discarding nan."""
     b = ~np.isnan(I)
-    return np.trapz(I[b], w[b], dx=dx, axis=axis)
+    return trapezoid(I[b], w[b], dx=dx, axis=axis)
 
 
 # %%

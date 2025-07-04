@@ -18,9 +18,10 @@ import math
 
 import numpy as np
 import scipy.linalg as LA
-from numpy import abs, isnan, linspace, nan, trapz, zeros_like
+from numpy import abs, isnan, linspace, nan, zeros_like
 from scipy.interpolate import splev, splrep
 from scipy.linalg import solveh_banded
+from scipy.integrate import trapezoid
 
 from radis.misc.arrays import (
     anynan,
@@ -194,8 +195,8 @@ def resample(
     # Check energy conservation:
 
     # ... calculate energy
-    energy0 = abs(trapz(vector[b], x=xspace[b]))
-    energy_new = abs(trapz(vector_new[b_new], x=xspace_new[b_new]))
+    energy0 = abs(trapezoid(vector[b], x=xspace[b]))
+    energy_new = abs(trapezoid(vector_new[b_new], x=xspace_new[b_new]))
     if energy_new == 0:  # deal with particular case of energy = 0
         if energy0 == 0:
             energy_ratio = 1

@@ -24,6 +24,7 @@ import numpy as np
 import pytest
 from numpy import allclose, linspace
 
+from scipy.integrate import trapezoid
 from radis.phys.convert import nm2cm
 from radis.spectrum import Spectrum, calculated_spectrum
 
@@ -334,7 +335,7 @@ def test_emisscoeff_conversion(verbose=True, *args, **kwargs):
 
     # compare. Integral should be the same
     assert (I_nm != I_cm).all()
-    assert abs(np.trapz(I_nm, w_nm) / np.trapz(I_cm, -w_cm) - 1) < 0.001
+    assert abs(trapezoid(I_nm, w_nm) / trapezoid(I_cm, -w_cm) - 1) < 0.001
 
 
 def test_rescaling_function(verbose=True, *args, **kwargs):

@@ -14,6 +14,7 @@ from radis.spectrum.compare import get_diff, plot_diff
 from radis.spectrum.operations import add_constant, crop, multiply, offset, sub_baseline
 from radis.test.utils import getTestFile
 from radis.tools.database import load_spec
+from scipy.integrate import trapezoid
 
 
 @pytest.mark.fast
@@ -171,7 +172,7 @@ def test_multiplyAndAddition(verbose=True, plot=False, *args, **kwargs):
     s_ter = multiply(multiply(s, 50), 1 / 50)
     #    plot_diff(s_ter, s_5)
     diff = get_diff(s_ter, s, "radiance")
-    ratio = abs(np.trapz(diff[1], x=diff[0]) / s.get_integral("radiance"))
+    ratio = abs(trapezoid(diff[1], x=diff[0]) / s.get_integral("radiance"))
     assert ratio < 1e-10
 
 
