@@ -22,7 +22,8 @@ __all__ = [
     "save",
     "get_eq_mole_fraction",
     "offset_difference_from_lower_wavno",
-    "get_wavno_lower_offset" "plot_slit",
+    "get_wavno_lower_offset",
+    "plot_slit",
     "get_effective_FWHM",
     "get_FWHM",
 ]

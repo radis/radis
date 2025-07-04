@@ -611,16 +611,15 @@ def download_HITEMP_CO2(load_wavenum_min, load_wavenum_max, local_databases=None
     else:
         print(f"File already exists at {download_path_hitemp_CO2}")
 
-    index_file_path = os.path.join(getProjectRoot(), "db", "CO2_indexed_offsets.dat")
+    # index_file_path = os.path.join(getProjectRoot(), "db", "CO2_indexed_offsets.dat")
 
-    start_offset = get_wavno_lower_offset(load_wavenum_min)
-    bytes_to_read = offset_difference_from_lower_wavno(
-        load_wavenum_max, load_wavenum_min
-    )
-
-    read_and_write_chunked_for_CO2(
-        download_path_hitemp_CO2, index_file_path, start_offset, bytes_to_read
-    )
+    # start_offset = get_wavno_lower_offset(load_wavenum_min)
+    # bytes_to_read = offset_difference_from_lower_wavno(
+    #     load_wavenum_max, load_wavenum_min
+    # )
+    # read_and_write_chunked_for_CO2(
+    #     download_path_hitemp_CO2, index_file_path, start_offset, bytes_to_read
+    # )
 
 
 def read_and_write_chunked_for_CO2(
@@ -630,6 +629,7 @@ def read_and_write_chunked_for_CO2(
     bytes_to_read,
     chunk_size=500 * 1024 * 1024,
     output_prefix="CO2_HITEMP",
+    cache_directory_path=None,
 ):
     """
     Read `bytes_to_read` bytes from a bzip2 file starting at `start_offset`, in chunks, and
@@ -648,12 +648,13 @@ def read_and_write_chunked_for_CO2(
     f.seek(start_offset)
 
     total_read = 0
-    # Read in chunks and write separate files
+    dataframes = []  # TODO : use a more efficient way to merge dataframes
+
     while total_read < bytes_to_read:
         to_read = min(chunk_size, bytes_to_read - total_read)
         data = f.read(to_read)
         if not data:
-            break  # end of file
+            break  # End of file
 
         # Compute current offset for naming
         current_offset = start_offset + total_read
@@ -664,15 +665,41 @@ def read_and_write_chunked_for_CO2(
         with open(out_name, "wb") as out_file:
             out_file.write(data)
 
-        total_read += len(data)
+        # Determine decompression cache path
+        if not cache_directory_path:
+            config = read_config()
+            hitemp_CO2_download_path = join(
+                config["DEFAULT_DOWNLOAD_PATH"], "hitemp", "CO2", "Decompressed"
+            )
+        else:
+            hitemp_CO2_download_path = cache_directory_path
+
+        # Parse this chunk into a DataFrame
+        df = parse_one_CO2_block(
+            out_name, cache_directory_path=hitemp_CO2_download_path
+        )
+        dataframes.append(df)
+
         print(
             f"Wrote chunk {start_mb}MiB → {len(data)} bytes to {out_name} ({total_read}/{bytes_to_read})"
         )
 
+        total_read += len(data)
     f.close()
     print(
-        f"Finished: wrote {total_read} bytes split into { (total_read + chunk_size - 1) // chunk_size } file(s). "
+        f"Finished: wrote {total_read} bytes split into { (total_read + chunk_size - 1) // chunk_size } file(s)."
     )
+    # TODO Support for Vaex DataFrame
+    # Combine all DataFrames into one
+    if dataframes:
+        combined_df = pd.concat(dataframes, ignore_index=True)
+        print(
+            f"Combined {len(dataframes)} DataFrames into one with {len(combined_df)} rows."
+        )
+    else:
+        combined_df = pd.DataFrame()  # empty DataFrame
+
+    return combined_df
 
 
 class HITEMPDatabaseManager(DatabaseManager):
