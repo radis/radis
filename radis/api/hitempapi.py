@@ -13,6 +13,7 @@ import json
 import os
 import pickle
 import re
+import sys
 import urllib.request
 import warnings
 from datetime import date
@@ -21,6 +22,7 @@ from typing import Union
 
 import indexed_bzip2 as ibz2
 import numpy as np
+import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from cryptography.fernet import Fernet
@@ -33,7 +35,15 @@ from radis.tools import get_wavno_lower_offset, offset_difference_from_lower_wav
 
 try:
     from .dbmanager import DatabaseManager
-    from .hitranapi import columns_2004, parse_global_quanta, parse_local_quanta
+    from .hdf5 import DataFileManager
+    from .hitranapi import (
+        columns_2004,
+        get_molecule,
+        parse_global_quanta,
+        parse_hitran_file,
+        parse_local_quanta,
+        post_process_hitran_data,
+    )
     from .tools import (
         _create_dtype,
         _get_linereturnformat,
@@ -43,6 +53,7 @@ try:
 except ImportError:  # ran from here
     if __name__ == "__main__":  # running from this file, as a script
         from radis.api.dbmanager import DatabaseManager
+        from radis.api.hdf5 import DataFileManager
         from radis.api.hitranapi import (
             columns_2004,
             parse_global_quanta,
@@ -470,9 +481,102 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
         print(f"{file_url} ==> {temp_folder} \n")
 
 
-def download_and_parse_HITEMP_CO2(
-    load_wavenum_min, load_wavenum_max, local_databases=None
+def parse_one_CO2_block(
+    fname,
+    cache=True,
+    verbose=True,
+    engine="pytables",
+    output="pandas",
+    parse_quanta=True,
+    cache_directory_path=None,
 ):
+    """
+    Parses a single CO2 `.par` file block into a DataFrame, with optional caching.
+
+    If a cached version of the parsed file exists, it is loaded directly. Otherwise, the file is parsed and saved in HDF5 format for future use.
+
+    Parameters
+    ----------
+    fname : str
+        Path to the `.par` file to be parsed.
+    cache : bool, optional
+        Whether to use and save a cached version of the parsed file (default is True).
+    verbose : bool, optional
+        If True, prints progress and status messages (default is True).
+    engine: 'pytables', 'vaex'
+        format for Hdf5 cache file. Default `pytables`
+    output : str
+        output format of data as pandas Dataformat or vaex Dataformat
+    parse_quanta: bool
+        if ``True``, parse local & global quanta (required to identify lines
+        for non-LTE calculations ; but sometimes lines are not labelled.)
+    cache_directory_path : str or None, optional
+        Directory to store/read cache files. If None, use the directory of `fname`.
+
+    Returns
+    -------
+    DataFrame or other specified output
+        The parsed data from the `.par` file, in the format specified by `output`.
+
+    Notes
+    -----
+    - The function is optimized for repeated parsing of large CO2 HITRAN/HITEMP `.par` files.
+    """
+    if cache_directory_path:
+        base_filename = os.path.basename(fname)
+        possible_cache_file = os.path.join(cache_directory_path, base_filename)
+        fcache = DataFileManager(engine).cache_file(possible_cache_file)
+    else:
+        fcache = DataFileManager(engine).cache_file(
+            fname
+        )  # Use default cache directory
+
+    if cache and os.path.exists(fcache):
+        # Start reading the cache file
+        columns = columns_2004
+        manager = DataFileManager(engine)
+        df = manager.read(fcache, columns=columns, key="df")
+
+        if df is not None:
+            return df
+
+    # Detect the molecule by reading the start of the file
+    with open(fname) as f:
+        mol = get_molecule(int(f.read(2)))
+
+    df = parse_hitran_file(fname, columns, output=output, molecule=mol)
+    df = post_process_hitran_data(
+        df,
+        molecule=mol,
+        dataframe_type=output,
+        parse_quanta=parse_quanta,
+    )
+    # cached file mode but cached file doesn't exist yet (else we had returned)
+    if cache:
+        if verbose:
+            print(f"Generating cache file {fcache}")
+        try:
+            assert str(fname).endswith(".h5") or str(fname).endswith(".hdf5")
+
+            if os.path.exists(fname):
+                raise ValueError("File exist: {0}".format(fname))
+
+            # exporting dataframe
+            manager = DataFileManager(engine)
+            manager.write(fname, df, append=False)
+
+        except PermissionError:
+            if verbose:
+                print(sys.exc_info())
+                print(
+                    "An error occurred in cache file generation. Lookup access rights"
+                )
+            pass
+
+    return df
+
+
+def download_HITEMP_CO2(load_wavenum_min, load_wavenum_max, local_databases=None):
 
     if local_databases is None:
         config = read_config()
