@@ -7,7 +7,9 @@
 """
 
 import warnings
-from scipy.integrate import trapezoid
+
+# from scipy.integrate import trapezoid
+
 
 def Unit(st, *args, **kwargs):
     """Radis evaluation of an unit, using :py:class:`~astropy.units.Unit`

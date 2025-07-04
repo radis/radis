@@ -8,13 +8,13 @@ Created on Sun Aug  5 14:26:44 2018
 import astropy.units as u
 import numpy as np
 import pytest
+from scipy.integrate import trapezoid
 
 from radis.los import MergeSlabs, SerialSlabs
 from radis.spectrum.compare import get_diff, plot_diff
 from radis.spectrum.operations import add_constant, crop, multiply, offset, sub_baseline
 from radis.test.utils import getTestFile
 from radis.tools.database import load_spec
-from scipy.integrate import trapezoid
 
 
 @pytest.mark.fast

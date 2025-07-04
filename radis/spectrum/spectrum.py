@@ -58,6 +58,7 @@ import pandas as pd
 import plotly.express as px
 from numpy import abs, diff
 from scipy.integrate import trapezoid
+
 from radis.db.references import doi
 
 # from radis.lbl.base import print_conditions

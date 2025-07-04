@@ -42,8 +42,8 @@ import numba
 import numpy as np
 from numba import bool_, float64, int32, int64
 from numpy import hstack
-from scipy.interpolate import interp1d
 from scipy.integrate import trapezoid
+from scipy.interpolate import interp1d
 
 # Normalize
 

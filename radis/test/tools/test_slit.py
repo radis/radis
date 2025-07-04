@@ -26,6 +26,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from numpy import abs, cos, linspace, pi, sqrt, tan
+from scipy.integrate import trapezoid
 
 from radis.lbl.factory import SpectrumFactory
 from radis.misc.arrays import nantrapz
@@ -33,8 +34,6 @@ from radis.misc.plot import fix_style, set_style
 from radis.misc.printer import printm
 from radis.phys.convert import dcm2dnm, dnm2dcm
 from radis.phys.units import is_homogeneous
-
-from scipy.integrate import trapezoid
 
 # from radis.lbl import SpectrumFactory
 from radis.spectrum.models import calculated_spectrum, transmittance_spectrum

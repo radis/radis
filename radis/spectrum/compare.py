@@ -27,13 +27,13 @@ Routine Listings
 from warnings import warn
 
 import numpy as np
+from scipy.integrate import trapezoid
 
 from radis.misc.arrays import array_allclose
 from radis.misc.basics import compare_dict, compare_lists
 from radis.misc.curve import curve_distance, curve_divide, curve_substract
 from radis.spectrum.spectrum import Spectrum
 from radis.spectrum.utils import cast_waveunit, format_xlabel, make_up, make_up_unit
-from scipy.integrate import trapezoid
 
 # %% ======================================================================
 # External functions

@@ -23,8 +23,8 @@ from os.path import basename, exists
 import numpy as np
 import pytest
 from numpy import allclose, linspace
-
 from scipy.integrate import trapezoid
+
 from radis.phys.convert import nm2cm
 from radis.spectrum import Spectrum, calculated_spectrum
 

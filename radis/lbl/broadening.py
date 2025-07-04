@@ -1765,7 +1765,9 @@ class BroadenFactory(BaseFactory):
             line_profile = np.empty_like(pressure_profile)  # size (B, N)
             for i, (x, y) in enumerate(zip(pressure_profile.T, gaussian_profile.T)):
                 line_profile[:, i] = np.convolve(x, y, "same")
-            line_profile = line_profile / trapezoid(line_profile.T, x=wbroad.T)  # normalize
+            line_profile = line_profile / trapezoid(
+                line_profile.T, x=wbroad.T
+            )  # normalize
             self.profiler.stop("convolve_l_g", "Convolved both profiles")
             # ... Note that normalization should not be needed as broadening profiles
             # ... are created normalized already. However, we do normalize to reduce

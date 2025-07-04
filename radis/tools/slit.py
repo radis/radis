@@ -47,9 +47,9 @@ import numpy as np
 from numpy import exp
 from numpy import log as ln
 from numpy import sqrt
+from scipy.integrate import trapezoid
 from scipy.interpolate import splev, splrep
 from scipy.signal import oaconvolve
-from scipy.integrate import trapezoid
 
 from radis.misc.arrays import anynan, evenly_distributed, evenly_distributed_fast
 from radis.misc.basics import is_float
@@ -411,7 +411,9 @@ def get_slit_function(
                 energy_threshold=energy_threshold,
                 print_conservation=True,
             )
-            scale_slit = trapezoid(Iold, wold) / trapezoid(Islit, wslit)  # [unit/return_unit]
+            scale_slit = trapezoid(Iold, wold) / trapezoid(
+                Islit, wslit
+            )  # [unit/return_unit]
             renormalize = True
         elif return_unit == "nm" and unit == "cm-1":  # wavenumber > wavelength
             wold, Iold = wslit, Islit
@@ -422,7 +424,9 @@ def get_slit_function(
                 energy_threshold=energy_threshold,
                 print_conservation=True,
             )
-            scale_slit = trapezoid(Iold, wold) / trapezoid(Islit, wslit)  # [unit/return_unit]
+            scale_slit = trapezoid(Iold, wold) / trapezoid(
+                Islit, wslit
+            )  # [unit/return_unit]
             renormalize = True
         else:  # return_unit == unit
             renormalize = False

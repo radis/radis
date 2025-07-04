@@ -19,9 +19,9 @@ import math
 import numpy as np
 import scipy.linalg as LA
 from numpy import abs, isnan, linspace, nan, zeros_like
+from scipy.integrate import trapezoid
 from scipy.interpolate import splev, splrep
 from scipy.linalg import solveh_banded
-from scipy.integrate import trapezoid
 
 from radis.misc.arrays import (
     anynan,
