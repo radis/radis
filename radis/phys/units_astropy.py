@@ -57,9 +57,7 @@ def convert_and_strip_units(quantity, output_unit=None, digit=10):
             quantity = quantity.to_value(output_unit, equivalencies=u.spectral())
         else:
             raise TypeError(
-                "'output_unit' parameter is not a valid astropy unit: {0}".format(
-                    output_unit
-                )
+                f"'output_unit' parameter is not a valid astropy unit: {output_unit}"
             )
 
         if digit:

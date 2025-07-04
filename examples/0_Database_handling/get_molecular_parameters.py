@@ -12,7 +12,7 @@ See also how to use custom (non-terrestrial) abundances in
 
 """
 
-#%% Access the parameters:
+# %% Access the parameters:
 from radis.db.molparam import MolParams
 
 molpar = MolParams()
@@ -32,6 +32,6 @@ print(molpar.get("CO", 1, "Q_296K"))  # 1 for isotopologue number
 print(molpar.get("CO", 2, "Q_296K"))  # 1 for isotopologue number
 
 
-#%% All parameters are stored in a DataFrame:
+# %% All parameters are stored in a DataFrame:
 print("All parameters: ", list(molpar.df.columns))
 print(molpar.df)

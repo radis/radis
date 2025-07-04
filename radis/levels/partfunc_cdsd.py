@@ -78,16 +78,14 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
         # Check input
         if not isotope in Itable:
             raise KeyError(
-                "Isotope {0} not defined in CDSD tabulated ".format(isotope)
-                + "partition functions. Only the following are: {0}".format(
-                    list(Itable.keys())
-                )
+                f"Isotope {isotope} not defined in CDSD tabulated "
+                + f"partition functions. Only the following are: {list(Itable.keys())}"
             )
 
         # Read partition function tabulated data
         parsum = pd.read_csv(database, comment="#", sep=r"\s+")
         if not "T(K)" in list(parsum.keys()):
-            raise KeyError("Missing columns ({0}) in {1}".format("T(K)", database))
+            raise KeyError(f"Missing columns ({'T(K)'}) in {database}")
 
         # Define spline interpolation
         isoname = Itable[isotope]
@@ -111,9 +109,7 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
         """
         if not self._inrange(T):
             raise OutOfBoundError(
-                "Temperature: {0} is out of bounds {1}-{2}".format(
-                    T, self.Tmin, self.Tmax
-                )
+                f"Temperature: {T} is out of bounds {self.Tmin}-{self.Tmax}"
             )
 
         return splev(T, self.tck)
@@ -230,9 +226,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         # after cache name is given)
         assert use_cached in [True, False, "regen", "force", "return"]
         if isotope not in [1, 2]:
-            raise ValueError(
-                "CDSD Energies not defined for isotope: {0}".format(isotope)
-            )
+            raise ValueError(f"CDSD Energies not defined for isotope: {isotope}")
         if use_json is not None:
             warn(
                 DeprecationWarning(
@@ -258,7 +252,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
             viblvl_label = None
         else:
             raise ValueError(
-                "Unknown Energy database format: levelsfmt = `{0}`".format(levelsfmt)
+                f"Unknown Energy database format: levelsfmt = `{levelsfmt}`"
                 + ". Use one of: `cdsd-p`, `cdsd-pc`, `cdsd-pcN`,`cdsd-hamil`"
             )
 
@@ -272,7 +266,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         )
         self.last_modification = time.ctime(getmtime(cdsd_fragment_path))
         if verbose >= 2:
-            print("Last modification time: {0}".format(self.last_modification))
+            print(f"Last modification time: {self.last_modification}")
 
         # Get variables to store in metadata  (after default values have been set)
         molecule = "CO2"  # will be stored in cache file metadata
@@ -389,7 +383,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
             # calculate Partition functions independently from a Spectrum calculation
             pass
         else:
-            raise ValueError("Unexpected viblvl_label value: {0}".format(viblvl_label))
+            raise ValueError(f"Unexpected viblvl_label value: {viblvl_label}")
 
         return df
 
@@ -411,4 +405,4 @@ if __name__ == "__main__":
 
     from radis.test.levels.test_partfunc import _run_testcases
 
-    print("Testing parfunc: {0}".format(_run_testcases()))
+    print(f"Testing parfunc: {_run_testcases()}")

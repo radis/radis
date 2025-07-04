@@ -57,9 +57,7 @@ def test_compare_methods(verbose=True, plot=True, close_plots=True, *args, **kwa
     # Compare
     # should be added in an example with experimental fit of bandhead
     get_distance(s, s_noabsorption, "radiance_noslit")
-    title = "CO x={0:.2f}, L={1:.2f}cm".format(
-        s.conditions["mole_fraction"], s.conditions["path_length"]
-    )
+    title = f"CO x={s.conditions['mole_fraction']:.2f}, L={s.conditions['path_length']:.2f}cm"
     if plot:
         plot_diff(s, s_noabsorption, method="diff", diff_window=1, title=title)
         plot_diff(s, s_noabsorption, method="ratio", normalize=True, title=title)
@@ -151,7 +149,7 @@ def test_get_residual():
             normalize=True,
             normalize_how=bool_how,
         )
-        # print('residu2 ={}'.format(residual2))
+        # print(f'residu2 ={residual2}')
         assert residual2_bis < 1e-3
 
     # Fake experimental spectrum with a nan
@@ -170,7 +168,7 @@ def test_get_residual():
             normalize=True,
             normalize_how=bool_how,
         )
-        # print('residu3 ={}'.format(residual3))
+        # print(f'residu3 ={residual3}')
         assert residual3 < criterion[index]
 
 

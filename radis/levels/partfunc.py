@@ -154,9 +154,7 @@ class RovibParFuncTabulator(RovibPartitionFunction):
         update_populations = kwargs.pop("update_populations", False)
         if kwargs != {}:
             raise TypeError(
-                "RovibParFuncTabulator.at() got an unexpected keyword: {0}".format(
-                    kwargs.keys()
-                )
+                f"RovibParFuncTabulator.at() got an unexpected keyword: {kwargs.keys()}"
             )
         if update_populations != False:
             raise ValueError(
@@ -207,9 +205,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             ElecState.Erovib
         except AttributeError:
             raise AttributeError(
-                "{0} has no energy function defined in RADIS".format(
-                    ElecState.get_fullname()
-                )
+                f"{ElecState.get_fullname()} has no energy function defined in RADIS"
             )
 
         # Store
@@ -279,8 +275,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         """
         if __debug__:
             printdbg(
-                "called RovibPartitionFunction.at(T={0}K, ".format(T)
-                + "update_populations={0})".format(update_populations)
+                f"called RovibPartitionFunction.at(T={T}K, "
+                + f"update_populations={update_populations})"
                 + f". mode = {self.mode}"
             )
 
@@ -363,7 +359,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         else:
             raise ValueError(
                 "either g, or gvib+grot must be defined to "
-                + "calculate total degeneracy. Got: {0}".format(list(df.keys()))
+                + f"calculate total degeneracy. Got: {list(df.keys())}"
             )
 
         # Calculate
@@ -434,8 +430,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         if __debug__:
             printdbg(
                 "called RovibPartitionFunction.atnoneq"
-                + "(Tvib={0}K, Trot={1}K, ... )".format(Tvib, Trot)
-                + "update_populations={0})".format(update_populations)
+                + f"(Tvib={Tvib}K, Trot={Trot}K, ... )"
+                + f"update_populations={update_populations})"
                 + f". mode = {self.mode}"
             )
 
@@ -638,7 +634,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 for viblvl in overpopulation.keys():
                     if not viblvl in levels:
                         raise ValueError(
-                            "Level {0} not in energy levels database".format(viblvl)
+                            f"Level {viblvl} not in energy levels database"
                         )
                         # could be a simple warning too
                 # Add overpopulations (so they are taken into account in the partition function)
@@ -698,11 +694,9 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 Qrovib = (dfQrot.nvib * Qvib * dfQrot.Qrot).sum()
                 if not np.isclose(Q, Qrovib):
                     raise ValueError(
-                        "Rovibrational partition function ({0:.2f}) doesnt ".format(Q)
+                        f"Rovibrational partition function ({Q:.2f}) doesnt "
                         + "match value recomputed from vibrational and rotational "
-                        + "partition functions ({0:.2f}). Check how Evib and Erot ".format(
-                            Qrovib
-                        )
+                        + f"partition functions ({Qrovib:.2f}). Check how Evib and Erot "
                         + "are defined in your Energy Database"
                     )
 
@@ -783,8 +777,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         if __debug__:
             printdbg(
                 "called RovibPartitionFunction.at_noneq_3Tvib"
-                + "(Tvib={0}K, Trot={1}K)".format(Tvib, Trot)
-                + "update_populations={0})".format(update_populations)
+                + f"(Tvib={Tvib}K, Trot={Trot}K)"
+                + f"update_populations={update_populations})"
                 + f". mode = {self.mode}"
             )
         #                               'overpopulation={0}, vib_distribution={1}'.format(overpopulation, vib_distribution)+\
@@ -803,9 +797,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             if not all_in(["Evib1", "Evib2", "Evib3"], list(self.df.keys())):
                 raise ValueError(
                     "Evib1, Evib2, Evib3 must be defined to calculate non-equilibrium "
-                    + "partition functions with Tvib1, Tvib2, Tvib3. Got {0}".format(
-                        list(self.df.keys())
-                    )
+                    + f"partition functions with Tvib1, Tvib2, Tvib3. Got {list(self.df.keys())}"
                 )
         elif vib_distribution == "treanor":
             if not all_in(
@@ -1325,11 +1317,9 @@ class PartFuncTIPS(RovibParFuncTabulator):
         if isinstance(M, str):
             M = get_molecule_identifier(M)
         if type(M) is not int:
-            raise TypeError("Molecule id must be int: got {0} ({1})".format(M, type(M)))
+            raise TypeError(f"Molecule id must be int: got {M} ({type(M)})")
         if type(I) not in [int, np.int64]:
-            raise TypeError(
-                "Isotope number must be int: got {0} ({1})".format(I, type(I))
-            )
+            raise TypeError(f"Isotope number must be int: got {I} ({type(I)})")
 
         self.partitionSum = partitionSum
         self.M = M
@@ -1416,8 +1406,8 @@ def _get_cachefile_name(ElecState):
     isotope = ElecState.iso
     state = ElecState.state
     jsonfile = ElecState.jsonfile
-    filename = "{0}_{1}_iso{2}_{3}_levels.h5".format(
-        jsonfile.replace(".json", ""), molecule, isotope, state
+    filename = (
+        f"{jsonfile.replace('.json', '')}_{molecule}_iso{isotope}_{state}_levels.h5"
     )
     return filename
 
@@ -1630,9 +1620,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             # Build energy levels
             if verbose:
                 print(
-                    "Calculating energy levels with Dunham expansion for {0}".format(
-                        ElecState.get_fullname()
-                    )
+                    f"Calculating energy levels with Dunham expansion for {ElecState.get_fullname()}"
                 )
                 if not use_cached:
                     print(
@@ -1702,7 +1690,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
 
                 else:
                     raise NotImplementedError(
-                        "group_energy_modes_in_2T_model: {0}".format(group_energy_modes)
+                        f"group_energy_modes_in_2T_model: {group_energy_modes}"
                     )
 
     def build_energy_levels_class1(self):  # , ZPE=0):
@@ -1755,7 +1743,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             if __debug__:
                 printdbg(
                     "Calculating Evib for "
-                    + "v={0}: {1:.2f}cm-1 (Dunham expansion)".format(v, Evib)
+                    + f"v={v}: {Evib:.2f}cm-1 (Dunham expansion)"
                 )
             # ... Rotational loop
             E = Evib
@@ -1785,15 +1773,11 @@ class PartFunc_Dunham(RovibParFuncCalculator):
                 delta_E = delta_E_last - (v + 1 - vmax) * v_inc
                 Evib = Evib + delta_E
                 if Evib > Ediss:
-                    warn(
-                        "Energy above dissociation threshold: {0}>{1}".format(
-                            Evib, Ediss
-                        )
-                    )
+                    warn(f"Energy above dissociation threshold: {Evib}>{Ediss}")
                 if __debug__:
                     printdbg(
                         "Calculating Evib for "
-                        + "v={0}: {1:.2f}cm-1 (Morse Potential)".format(v, Evib)
+                        + f"v={v}: {Evib:.2f}cm-1 (Morse Potential)"
                     )
                 # ... Rotational loop
                 J = 0
@@ -1822,9 +1806,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         if isinstance(gs, tuple):
             raise NotImplementedError(
                 "Different degeneracies (symmetric/antisymmetric)"
-                + " not implemented for molecule {0} isotope {1}".format(
-                    ElecState.id, ElecState.iso
-                )
+                + f" not implemented for molecule {ElecState.id} isotope {ElecState.iso}"
             )
             # (for devs: to implement that efficiently see CO2 (_class5))
 
@@ -1833,7 +1815,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         df["Erot"] = df.E - df.Evib
 
         if self.verbose:
-            print("Database generated up to v={0}, J={1}".format(v, Jmaxcalc))
+            print(f"Database generated up to v={v}, J={Jmaxcalc}")
 
         self.df = df
 
@@ -2141,9 +2123,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
 
         else:
             raise NotImplementedError(
-                "group_energy_modes_in_2T_model: {0}".format(
-                    group_energy_modes_in_2T_model
-                )
+                f"group_energy_modes_in_2T_model: {group_energy_modes_in_2T_model}"
             )
         #         # same as above but harder to read
         #        Evib_columns, Erot_columns = group_energy_modes_in_2T_model
@@ -2267,9 +2247,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
 
         if self.verbose:
             print(
-                "Database generated up to v1={0}, v2={1}, v3={2}, J={3}".format(
-                    v1max, v2max, v3max, Jmax_calc
-                )
+                f"Database generated up to v1={v1max}, v2={v2max}, v3={v3max}, J={Jmax_calc}"
             )
 
         self.df = df
@@ -2313,4 +2291,4 @@ if __name__ == "__main__":
 
     from radis.test.levels.test_partfunc import _run_testcases
 
-    print("Testing parfunc: {0}".format(_run_testcases()))
+    print(f"Testing parfunc: {_run_testcases()}")

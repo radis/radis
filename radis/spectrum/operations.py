@@ -298,7 +298,7 @@ def PerfectAbsorber(s: Spectrum) -> Spectrum:
     # Deactivate equilibrium conditions (so Kirchoff's law cannot be used anymore)
     s_tr.conditions["thermal_equilibrium"] = False
 
-    s_tr.name = "PureAbsorber({0})".format(s.get_name())
+    s_tr.name = f"PureAbsorber({s.get_name()})"
 
     return s_tr
 
@@ -381,9 +381,7 @@ def crop(s: Spectrum, wmin=None, wmax=None, wunit=None, inplace=False) -> Spectr
     # assert wunit in ["nm", "cm-1"]
 
     if (wmin is not None and wmax is not None) and wmin >= wmax:
-        raise ValueError(
-            "wmin should be < wmax (Got: {0:.2f}, {1:.2f})".format(wmin, wmax)
-        )
+        raise ValueError(f"wmin should be < wmax (Got: {wmin:.2f}, {wmax:.2f})")
 
     if not inplace:
         s = s.copy()
@@ -470,7 +468,7 @@ def _get_unique_var(s, var, inplace):
     if inplace and len(s.get_vars()) > 1:
         raise ValueError(
             "Cant modify inplace one spectral quantity of a Spectrum "
-            + "that contains several ({0}). Use 'inplace=False'".format(s.get_vars())
+            + f"that contains several ({s.get_vars()}). Use 'inplace=False'"
         )
     return var
 
@@ -508,9 +506,7 @@ def multiply(s, coef, unit=None, var=None, inplace=False):
     if isinstance(coef, u.quantity.Quantity):
         if unit is not None:
             raise ValueError(
-                "Cannot use unit= when giving a dimensioned array ({0})".format(
-                    coef.unit
-                )
+                f"Cannot use unit= when giving a dimensioned array ({coef.unit})"
             )
         unit = coef.unit
         coef = coef.value
@@ -641,7 +637,7 @@ def add_array(s, a, unit=None, var=None, inplace=False):
     if isinstance(a, u.quantity.Quantity):
         if unit is not None:
             raise ValueError(
-                "Cannot use unit= when giving a dimensioned array ({0})".format(a.unit)
+                f"Cannot use unit= when giving a dimensioned array ({a.unit})"
             )
         unit = a.unit
         a = a.value
@@ -712,9 +708,7 @@ def sub_baseline(s, left, right, unit=None, var=None, inplace=False):
     if isinstance(left, u.quantity.Quantity) or isinstance(right, u.quantity.Quantity):
         if unit is not None:
             raise ValueError(
-                "Cannot use unit= when giving a dimensioned array ({0})".format(
-                    left.unit
-                )
+                f"Cannot use unit= when giving a dimensioned array ({left.unit})"
             )
         if not isinstance(left, u.quantity.Quantity) or not isinstance(
             right, u.quantity.Quantity
@@ -798,9 +792,9 @@ def add_spectra(s1, s2, var=None, force=False):
             # if it fails, let it fail
     # Make sure it is in both Spectra
     if var not in s1.get_vars():
-        raise KeyError("Variable {0} not in Spectrum {1}".format(var, s1.get_name()))
+        raise KeyError(f"Variable {var} not in Spectrum {s1.get_name()}")
     if var not in s2.get_vars():
-        raise KeyError("Variable {0} not in Spectrum {1}".format(var, s1.get_name()))
+        raise KeyError(f"Variable {var} not in Spectrum { s1.get_name()}")
 
     if var in ["transmittance_noslit", "transmittance"] and not force:
         raise ValueError(
@@ -869,9 +863,9 @@ def substract_spectra(s1, s2, var=None):
             # if it fails, let it fail
     # Make sure it is in both Spectra
     if var not in s1.get_vars():
-        raise KeyError("Variable {0} not in Spectrum {1}".format(var, s1.get_name()))
+        raise KeyError(f"Variable {var} not in Spectrum {s1.get_name()}")
     if var not in s2.get_vars():
-        raise KeyError("Variable {0} not in Spectrum {1}".format(var, s1.get_name()))
+        raise KeyError(f"Variable {var} not in Spectrum {s1.get_name()}")
 
     # Use same units
     Iunit1 = s1.units[var]
@@ -945,9 +939,9 @@ def concat_spectra(s1, s2, var=None):
             # if it fails, let it fail
     # Make sure it is in both Spectra
     if var not in s1.get_vars():
-        raise KeyError("Variable {0} not in Spectrum {1}".format(var, s1.get_name()))
+        raise KeyError(f"Variable {var} not in Spectrum {s1.get_name()}")
     if var not in s2.get_vars():
-        raise KeyError("Variable {0} not in Spectrum {1}".format(var, s1.get_name()))
+        raise KeyError(f"Variable {var} not in Spectrum {s1.get_name()}")
 
     if var in ["transmittance_noslit", "transmittance"]:
         warn(
@@ -968,9 +962,7 @@ def concat_spectra(s1, s2, var=None):
     if not (w1.max() < w2.min() or w2.max() > w1.min()):
         raise ValueError(
             "You cannot use concat_spectra for overlapping spectral ranges. "
-            + "Got: {0:.2f}-{1:.2f} and {2:.2f}-{3:.2f} {4}. ".format(
-                w1.min(), w1.max(), w2.min(), w2.max(), wunit1
-            )
+            + f"Got: {w1.min():.2f}-{w1.max():.2f} and {w2.min():.2f}-{w2.max():.2f} {wunit1}. "
             + "Use MergeSlabs instead, with the correct `out=` parameter "
             + "for your case"
         )

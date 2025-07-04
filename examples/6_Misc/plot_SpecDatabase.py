@@ -48,7 +48,7 @@ sf.fetch_databank("hitran")
 # Generating a Spectrum
 s1 = sf.eq_spectrum(Tgas=300, path_length=1)
 
-#%%
+# %%
 # Creating SpecDatabase
 # This is simply a local folder on your computer.
 from radis.test.utils import getTestFile
@@ -56,13 +56,13 @@ from radis.test.utils import getTestFile
 my_folder = Path(getTestFile(".")) / "SpecDatabase_Test"
 db = SpecDatabase(my_folder)
 
-#%%
+# %%
 # There are many ways to add spectra to the database :
 # Method 1: Creating .spec file and adding manually to SpecDatabase
 
 db.add(s1)
 
-#%%
+# %%
 # Method 2: Using init_database()
 # SpecDatabase is connected to the SpectrumFactory ``sf`` above
 # Generated Spectrum are added to SpecDatabase automatically :

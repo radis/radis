@@ -10,7 +10,9 @@ In this example, the NIST and Kurucz databases are used to compute an atomic spe
 The same partition function is employed. The Lorentzian broadening is assumed equal for all lines.
 
 """
-#%%
+
+
+# %%
 def broad_arbitrary(**kwargs):
     """An arbitrary broadening formula for the Lorentzian component"""
     HWHM = kwargs["pressure_atm"] * (296 / kwargs["Tgas"]) ** 0.7

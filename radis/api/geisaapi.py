@@ -234,8 +234,8 @@ def gei2df(
         assert load_wavenum_min < load_wavenum_max
     # Verbose
     if verbose >= 2:
-        print("Opening file {0}, cache={1})".format(fname, cache))
-        print("Last Modification time: {0}".format(metadata["last_modification"]))
+        print(f"Opening file {fname}, cache={cache})")
+        print(f"Last Modification time: {metadata['last_modification']}")
 
     # Attempt to use cache file
     fcache = DataFileManager(engine).cache_file(fname)
@@ -288,11 +288,7 @@ def gei2df(
             "wavenum_max": df.wav.max(),
         }
         if verbose:
-            print(
-                "Generating cache file {0} with metadata :\n{1}".format(
-                    fcache, new_metadata
-                )
-            )
+            print(f"Generating cache file {fcache} with metadata :\n{new_metadata}")
         try:
             save_to_hdf(
                 df,
@@ -314,7 +310,7 @@ def gei2df(
     return df
 
 
-#%%
+# %%
 def get_last(b):
     """Get non-empty lines of a chunk b, parsing the bytes."""
     element_length = np.vectorize(lambda x: len(x.__str__()))(b)
@@ -481,7 +477,7 @@ class GEISADatabaseManager(DatabaseManager):
             ) from e
 
 
-#%%
+# %%
 
 if __name__ == "__main__":
 

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tools : database of spectra, line survey, interface with Cantera.
-"""
+"""Tools : database of spectra, line survey, interface with Cantera."""
 
 
 from .database import SpecDatabase, load_spec, plot_spec, save

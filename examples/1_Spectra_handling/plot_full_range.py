@@ -35,7 +35,7 @@ spectrum. See the :ref:`Calculate a large spectrum by part <example_large_range_
 """
 
 
-#%%
+# %%
 import astropy.units as u
 
 from radis import calc_spectrum, config
@@ -57,7 +57,7 @@ s = calc_spectrum(
 )
 
 
-#%%
+# %%
 # Plot low and high resolution spectra on the same graph :
 #
 s.apply_slit(10, "nm")
@@ -68,7 +68,7 @@ s.plot("transmittance_noslit", wunit="nm", color="k", alpha=0.1, nfig="same")
 s.plot("transmittance", wunit="nm", color="k", nfig="same")
 
 
-#%%
+# %%
 # Print some details about the computed spectrum :
 # We could also simply use `print(s)`
 

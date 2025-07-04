@@ -483,7 +483,7 @@ class VkFFTApp:
         dct=False,
         axes=None,
         strides=None,
-        **kwargs
+        **kwargs,
     ):
         """
         Init function for the VkFFT application.
