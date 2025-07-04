@@ -229,7 +229,7 @@ class SpectrumFactory(BandFactory):
         if ``True``, removes databases calculated by intermediate functions (for
         instance, delete the full database once the linestrength cutoff criteria
         was applied). This saves some memory but requires to reload the database
-        & recalculate the linestrength for each new parameter. Default ``False``.
+        and recalculate the linestrength for each new parameter. Default ``False``.
     export_populations: ``'vib'``, ``'rovib'``, ``None``
         if not None, store populations in Spectrum. Either store vibrational
         populations ('vib') or rovibrational populations ('rovib'). Default ``None``
@@ -1021,7 +1021,7 @@ class SpectrumFactory(BandFactory):
             # generated with eq_spectrum are consistent with names
             # in one generated with non_eq_spectrum
 
-        # Get generation & total calculation time
+        # Get generation and total calculation time
         self.profiler.stop("generate_spectrum_obj", "Generated Spectrum object")
 
         #  In the less verbose case, we print the total calculation+generation time:
@@ -1159,7 +1159,7 @@ class SpectrumFactory(BandFactory):
             if s is not None:
                 return s  # exit function
 
-        ### GET ISOTOPE ABUNDANCE & MOLECULAR MASS ###
+        ### GET ISOTOPE ABUNDANCE and MOLECULAR MASS ###
 
         molpar = self.molparam
 
@@ -1380,7 +1380,7 @@ class SpectrumFactory(BandFactory):
             # generated with eq_spectrum are consistent with names
             # in one generated with non_eq_spectrum
 
-        # Get generation & total calculation time
+        # Get generation and total calculation time
         self.profiler.stop("generate_spectrum_obj", "Generated Spectrum object")
 
         #  In the less verbose case, we print the total calculation+generation time:
@@ -1607,7 +1607,7 @@ class SpectrumFactory(BandFactory):
             s2 = sf.non_eq_spectrum(Tvib=2000, Trot=600, path_length=1, pressure=0.1)
 
         Multi-vibrational temperature. Below we compare non-LTE spectra of CO2 where all
-        vibrational temperatures are equal, or where the bending & symmetric modes are in
+        vibrational temperatures are equal, or where the bending and symmetric modes are in
         equilibrium with rotation ::
 
             from radis import SpectrumFactory
@@ -1929,7 +1929,7 @@ class SpectrumFactory(BandFactory):
                 if_exists_then="increment",
             )
 
-        # Get generation & total calculation time
+        # Get generation and total calculation time
         self.profiler.stop("generate_spectrum_obj", "Generated Spectrum object")
 
         #  In the less verbose case, we print the total calculation+generation time:
