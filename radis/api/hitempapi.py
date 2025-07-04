@@ -684,6 +684,7 @@ def read_and_write_chunked_for_CO2(
         {output_prefix}_{start_mb}mb.par
     where `start_mb` is the starting offset of that chunk in megabytes.
 
+    Ensures each chunk starts and ends with a newline to prevent partial-line artifacts.
     """
     # Load block offsets
     with open(index_file_path, "rb") as f:
@@ -695,13 +696,22 @@ def read_and_write_chunked_for_CO2(
     f.seek(start_offset)
 
     total_read = 0
-    dataframes = []  # TODO : use a more efficient way to merge dataframes
+    dataframes = []
 
     while total_read < bytes_to_read:
         to_read = min(chunk_size, bytes_to_read - total_read)
-        data = f.read(to_read)
-        if not data:
-            break  # End of file
+        raw = f.read(to_read)
+        if not raw:
+            break  # EOF
+
+        # Drop partial first and last line
+        first_nl = raw.find(b"\n")
+        last_nl = raw.rfind(b"\n")
+        if first_nl != -1 and last_nl != -1 and first_nl < last_nl:
+            data = raw[first_nl + 1 : last_nl]  # keep only complete lines
+        else:
+            total_read += to_read  # if no full line in here skip entirely
+            continue
 
         # Compute current offset for naming
         current_offset = start_offset + total_read
@@ -713,8 +723,8 @@ def read_and_write_chunked_for_CO2(
             out_file.write(data)
 
         # Determine decompression cache path
-        if not cache_directory_path:
-            config = read_config()
+        config = read_config()
+        if not cache_directory_path and config:
             hitemp_CO2_download_path = join(
                 config["DEFAULT_DOWNLOAD_PATH"], "hitemp", "CO2", "Decompressed"
             )
@@ -731,12 +741,13 @@ def read_and_write_chunked_for_CO2(
             f"Wrote chunk {start_mb}MiB → {len(data)} bytes to {out_name} ({total_read}/{bytes_to_read})"
         )
 
-        total_read += len(data)
+        total_read += to_read
+
     f.close()
     print(
         f"Finished: wrote {total_read} bytes split into { (total_read + chunk_size - 1) // chunk_size } file(s)."
     )
-    # TODO Support for Vaex DataFrame
+
     # Combine all DataFrames into one
     if dataframes:
         combined_df = pd.concat(dataframes, ignore_index=True)
@@ -744,7 +755,7 @@ def read_and_write_chunked_for_CO2(
             f"Combined {len(dataframes)} DataFrames into one with {len(combined_df)} rows."
         )
     else:
-        combined_df = pd.DataFrame()  # empty DataFrame
+        combined_df = pd.DataFrame()
 
     return combined_df
 
