@@ -467,6 +467,7 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
                     pbar.update(len(chunk))
 
         print("\nDownload complete!")
+        return output_filename
     else:
         print(f"Download failed: {file_response.status_code}")
         print("Response:", file_response.text[:500])
@@ -601,10 +602,10 @@ def download_HITEMP_CO2(local_path=None, verbose=False):
         output_path = local_path
     else:
         config = read_config()
+        default_download_path = os.path.expanduser(config["DEFAULT_DOWNLOAD_PATH"])
         output_path = join(
-            config["DEFAULT_DOWNLOAD_PATH"], "hitemp", "CO2", "02_HITEMP2024.par.bz2"
+            default_download_path, "hitemp", "CO2", "02_HITEMP2024.par.bz2"
         )
-
     # Skip download if already present
     if os.path.exists(output_path):
         if verbose:
@@ -687,7 +688,7 @@ def read_and_write_chunked_for_CO2(
         # Determine decompression cache path
         config = read_config()
 
-        default_download_path = config["DEFAULT_DOWNLOAD_PATH"]
+        default_download_path = os.path.expanduser(config["DEFAULT_DOWNLOAD_PATH"])
         if default_download_path in bz2_file_path:
             hitemp_CO2_download_path = join(
                 default_download_path, "hitemp", "CO2", "Decompressed"
