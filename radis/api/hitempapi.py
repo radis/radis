@@ -529,8 +529,8 @@ def parse_one_CO2_block(
     """
     if cache_directory_path:
         base_filename = os.path.basename(fname)
-        possible_cache_file = os.path.join(cache_directory_path, base_filename)
-        fcache = DataFileManager(engine).cache_file(possible_cache_file)
+        possible_cache_files = os.path.join(cache_directory_path, base_filename)
+        fcache = DataFileManager(engine).cache_file(possible_cache_files)
     else:
         fcache = DataFileManager(engine).cache_file(
             fname
@@ -649,6 +649,23 @@ def read_and_write_chunked_for_CO2(
 
     Ensures each chunk starts and ends with a newline to prevent partial-line artifacts.
     """
+
+    # Determine cache path
+    config = read_config()
+    default_download_path = os.path.expanduser(config["DEFAULT_DOWNLOAD_PATH"])
+
+    if default_download_path in bz2_file_path:
+        hitemp_CO2_download_path = join(
+            default_download_path, "hitemp", "CO2", "Decompressed"
+        )
+    else:
+        bz2_dir = os.path.dirname(bz2_file_path)
+        hitemp_CO2_download_path = os.path.join(bz2_dir, "Decompressed")
+    os.makedirs(hitemp_CO2_download_path, exist_ok=True)
+
+    total_read = 0
+    dataframes = []
+
     # Load block offsets
     with open(index_file_path, "rb") as f:
         block_offsets = pickle.load(f)
@@ -657,9 +674,6 @@ def read_and_write_chunked_for_CO2(
     f = ibz2.open(bz2_file_path, parallelization=os.cpu_count())
     f.set_block_offsets(block_offsets)
     f.seek(start_offset)
-
-    total_read = 0
-    dataframes = []
 
     while total_read < bytes_to_read:
         to_read = min(chunk_size, bytes_to_read - total_read)
@@ -679,35 +693,20 @@ def read_and_write_chunked_for_CO2(
         # Compute current offset for naming
         current_offset = start_offset + total_read
         start_mb = current_offset // (1024 * 1024)
-        out_name = f"{output_prefix}_{start_mb}MB.par"
+        end_mb = start_mb + 500
+        fname = f"{output_prefix}_{start_mb}_{end_mb}MB.par"  # TODO: logic for end_mb for last file
+        out_decompressed_file = join(hitemp_CO2_download_path, fname)
 
         # Write this chunk
-        with open(out_name, "wb") as out_file:
+        with open(out_decompressed_file, "wb") as out_file:
             out_file.write(data)
-
-        # Determine decompression cache path
-        config = read_config()
-
-        default_download_path = os.path.expanduser(config["DEFAULT_DOWNLOAD_PATH"])
-        if default_download_path in bz2_file_path:
-            hitemp_CO2_download_path = join(
-                default_download_path, "hitemp", "CO2", "Decompressed"
-            )
-        else:
-            bz2_dir = os.path.dirname(bz2_file_path)
-            decompressed_dir = os.path.join(bz2_dir, "Decompressed")
-            os.makedirs(decompressed_dir, exist_ok=True)
-            hitemp_CO2_download_path = decompressed_dir
 
         # Parse this chunk into a DataFrame
         df = parse_one_CO2_block(
-            out_name, cache_directory_path=hitemp_CO2_download_path
+            out_decompressed_file, cache_directory_path=hitemp_CO2_download_path
         )
+        os.remove(out_decompressed_file)  # remove the `par` file after parsing
         dataframes.append(df)
-
-        print(
-            f"Wrote chunk {start_mb}MiB → {len(data)} bytes to {out_name} ({total_read}/{bytes_to_read})"
-        )
 
         total_read += to_read
 
