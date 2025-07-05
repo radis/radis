@@ -561,15 +561,8 @@ def parse_one_CO2_block(
         if verbose:
             print(f"Generating cache file {fcache}")
         try:
-            # assert str(fname).endswith(".h5") or str(fname).endswith(".hdf5")
-
-            # if os.path.exists(fname):
-            #     raise ValueError("File exist: {0}".format(fname))
-
-            # exporting dataframe
             manager = DataFileManager(engine)
             manager.write(fcache, df, append=False)
-
         except PermissionError:
             if verbose:
                 print(sys.exc_info())
@@ -606,6 +599,8 @@ def download_HITEMP_CO2(local_path=None, verbose=False):
         output_path = join(
             default_download_path, "hitemp", "CO2", "02_HITEMP2024.par.bz2"
         )
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
     # Skip download if already present
     if os.path.exists(output_path):
         if verbose:
@@ -620,13 +615,17 @@ def download_HITEMP_CO2(local_path=None, verbose=False):
         session=session, file_url=url, output_filename=output_path, verbose=verbose
     )
 
-    # Record metadata in config
+    # Record metadata and persist
     config["hitemp_CO2_compressed"] = {
         "path": downloaded_path,
         "format": "bz2_compressed",
         "download_url": url,
         "download_date": date.today().isoformat(),
     }
+    if os.path.exists(CONFIG_PATH_JSON):
+        with open(CONFIG_PATH_JSON, "w") as f:
+            json.dump(config, f, indent=4)
+
     if verbose:
         print("Recorded metadata for CO2 database in config.")
 
@@ -642,12 +641,30 @@ def read_and_write_chunked_for_CO2(
     output_prefix="CO2_HITEMP",
 ):
     """
-    Read `bytes_to_read` bytes from a bzip2 file starting at `start_offset`, in chunks, and
-    write each chunk to its own file named:
-        {output_prefix}_{start_mb}mb.par
-    where `start_mb` is the starting offset of that chunk in megabytes.
-
-    Ensures each chunk starts and ends with a newline to prevent partial-line artifacts.
+    Reads a specified number of bytes from a bzip2-compressed CO2 HITEMP file, starting at a given offset, in large chunks.
+    Each chunk is written to a temporary file, parsed into a DataFrame, and then deleted.
+    All resulting DataFrames are concatenated and returned as a single DataFrame.
+    Parameters
+    ----------
+    bz2_file_path : str
+        Path to the bzip2-compressed CO2 HITEMP file.
+    index_file_path : str
+        Path to the pickle file containing block offsets for efficient seeking.
+    start_offset : int
+        Byte offset in the compressed file to start reading from.
+    bytes_to_read : int
+        Total number of bytes to read from the start_offset.
+    chunk_size : int, optional
+        Number of bytes to read per chunk (default is 500 MB).
+    output_prefix : str, optional
+        Prefix for naming temporary output files (default is "CO2_HITEMP").
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame containing all parsed data from the read chunks. If no data is read, returns an empty DataFrame.
+    Notes
+    -----
+    - Ensures that each chunk starts and ends with a newline to avoid partial-line artifacts.
     """
 
     # Determine cache path
@@ -670,47 +687,50 @@ def read_and_write_chunked_for_CO2(
     with open(index_file_path, "rb") as f:
         block_offsets = pickle.load(f)
 
-    # Open and prepare the bzip2 file
-    f = ibz2.open(bz2_file_path, parallelization=os.cpu_count())
-    f.set_block_offsets(block_offsets)
-    f.seek(start_offset)
+    f = None
+    total_read = 0
+    try:
+        f = ibz2.open(bz2_file_path, parallelization=os.cpu_count())
+        f.set_block_offsets(block_offsets)
+        f.seek(start_offset)
 
-    while total_read < bytes_to_read:
-        to_read = min(chunk_size, bytes_to_read - total_read)
-        raw = f.read(to_read)
-        if not raw:
-            break  # EOF
+        while total_read < bytes_to_read:
+            to_read = min(chunk_size, bytes_to_read - total_read)
+            raw = f.read(to_read)
+            if not raw:
+                break  # EOF
 
-        # Drop partial first and last line
-        first_nl = raw.find(b"\n")
-        last_nl = raw.rfind(b"\n")
-        if first_nl != -1 and last_nl != -1 and first_nl < last_nl:
-            data = raw[first_nl + 1 : last_nl]  # keep only complete lines
-        else:
-            total_read += to_read  # if no full line in here skip entirely
-            continue
+            # Drop partial first and last line
+            first_nl = raw.find(b"\n")
+            last_nl = raw.rfind(b"\n")
+            if first_nl != -1 and last_nl != -1 and first_nl < last_nl:
+                data = raw[first_nl + 1 : last_nl]  # keep only complete lines
+            else:
+                total_read += to_read  # if no full line in here skip entirely
+                continue
 
-        # Compute current offset for naming
-        current_offset = start_offset + total_read
-        start_mb = current_offset // (1024 * 1024)
-        end_mb = start_mb + 500
-        fname = f"{output_prefix}_{start_mb}_{end_mb}MB.par"  # TODO: logic for end_mb for last file
-        out_decompressed_file = join(hitemp_CO2_download_path, fname)
+            # Compute current offset for naming
+            current_offset = start_offset + total_read
+            start_mb = current_offset // (1024 * 1024)
+            end_mb = start_mb + 500
+            fname = f"{output_prefix}_{start_mb}_{end_mb}MB.par"  # TODO: logic for end_mb for last file
+            out_decompressed_file = join(hitemp_CO2_download_path, fname)
 
-        # Write this chunk
-        with open(out_decompressed_file, "wb") as out_file:
-            out_file.write(data)
+            # Write this chunk
+            with open(out_decompressed_file, "wb") as out_file:
+                out_file.write(data)
 
-        # Parse this chunk into a DataFrame
-        df = parse_one_CO2_block(
-            out_decompressed_file, cache_directory_path=hitemp_CO2_download_path
-        )
-        os.remove(out_decompressed_file)  # remove the `par` file after parsing
-        dataframes.append(df)
+            # Parse this chunk into a DataFrame
+            df = parse_one_CO2_block(
+                out_decompressed_file, cache_directory_path=hitemp_CO2_download_path
+            )
+            os.remove(out_decompressed_file)  # remove the `par` file after parsing
+            dataframes.append(df)
+            total_read += to_read
+    finally:
+        if f:
+            f.close()
 
-        total_read += to_read
-
-    f.close()
     print(
         f"Finished: wrote {total_read} bytes split into { (total_read + chunk_size - 1) // chunk_size } file(s)."
     )
@@ -735,6 +755,36 @@ def download_and_decompress_CO2_into_df(
     engine="pytables",
     output="pandas",
 ):
+    """
+    Downloads the HITEMP CO2 database, decompresses it, and loads a specified wavenumber range into a DataFrame.
+
+    This function handles downloading the HITEMP CO2 database file, locating the appropriate data chunk based on the provided wavenumber range, saving 500MB chucks in h5 format and reading the relevant data into a pandas DataFrame.
+
+    Parameters
+    ----------
+    local_databases : str or None, optional
+        Local path to store or look for the HITEMP CO2 database. If None, a default location is used.
+    load_wavenum_min : float or None, optional
+        Minimum wavenumber to load from the database. If None, loads from the beginning.
+    load_wavenum_max : float or None, optional
+        Maximum wavenumber to load from the database. If None, loads to the end.
+    verbose : bool, default True
+        If True, prints progress and status messages.
+    engine : str, default "pytables"
+        Engine to use for reading and writing data. Options may include "pytables".
+    output : str, default "pandas"
+        Output format for the data. Default is "pandas" DataFrame.
+
+    Returns
+    -------
+    DataFrame or object
+        The loaded data in the specified output format (default: pandas DataFrame).
+
+    Notes
+    -----
+    - Requires the HITEMP CO2 database to be accessible or downloadable.
+    """
+
     # print(f"File size: {os.path.getsize(bz2_file_path)}")
     downloaded_HITEMP_CO2_path = download_HITEMP_CO2(local_path=local_databases)
     print(f"Downloaded HITEMP CO2 database to {downloaded_HITEMP_CO2_path}")
@@ -744,8 +794,6 @@ def download_and_decompress_CO2_into_df(
         load_wavenum_max, load_wavenum_min
     )
 
-    print(f"start_offset: {start_offset}")
-    print(f"bytes_to_read: {bytes_to_read}")
     return read_and_write_chunked_for_CO2(
         downloaded_HITEMP_CO2_path, index_file_path, start_offset, bytes_to_read
     )
