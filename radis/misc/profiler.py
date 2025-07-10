@@ -127,10 +127,10 @@ class Profiler(object):
     def _print(self, verbose_level, details, time_calculated):
 
         if verbose_level == 1:
-            print("{0:.2f}s -".format(time_calculated), details)
+            print(f"{time_calculated:.2f}s -", details)
         elif verbose_level >= 2:
             printg(
                 "..." * (verbose_level - 1),
-                "{0:.2f}s -".format(time_calculated),
+                f"{time_calculated:.2f}s -",
                 details,
             )

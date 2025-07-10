@@ -734,9 +734,9 @@ def fit_spectrum(
 
     fit_kws.update(
         {
-            "max_nfev": pipeline["max_loop"]
-            if "max_loop" in pipeline
-            else 200,  # Default max number of loops: 200
+            "max_nfev": (
+                pipeline["max_loop"] if "max_loop" in pipeline else 200
+            ),  # Default max number of loops: 200
         }
     )
 

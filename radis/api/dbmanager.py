@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-
-"""
+""" """
 import os
 import shutil
 from os.path import abspath, dirname, exists, expanduser, join, split, splitext
@@ -33,6 +31,7 @@ try:
 except ImportError:
     vaex = NotInstalled(*not_installed_vaex_args)
 
+import re
 from datetime import date
 
 import pandas as pd
@@ -287,9 +286,7 @@ class DatabaseManager(object):
                 else:  # delete file to regenerate it in the end of the script
                     if verbose:
                         printr(
-                            "File {0} deprecated:\n{1}\nDeleting it!".format(
-                                local_file, str(err)
-                            )
+                            f"File {local_file} deprecated:\n{str(err)}\nDeleting it!"
                         )
                     os.remove(local_file)
 
@@ -416,31 +413,35 @@ class DatabaseManager(object):
                 )
 
             # Download file with requests
-            try:
+            if "hitemp" in self.local_databases:
                 # Get session from HITEMP API
                 from radis.api.hitempapi import login_to_hitran
 
                 session = login_to_hitran(verbose=verbose)
+            else:
+                session = requests.Session()
 
-                # Set headers to indicate we want the actual file
-                headers = {
-                    "Accept": "application/zip, application/octet-stream",
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-                }
+            # Set headers to indicate we want the actual file
+            headers = {
+                "Accept": "application/zip, application/octet-stream",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            }
 
-                # First check if we can access the file
-                head_response = session.head(
-                    urlname, headers=headers, allow_redirects=True
+            # First check if we can access the file
+            head_response = session.head(urlname, headers=headers, allow_redirects=True)
+            if head_response.status_code != 200:
+                raise requests.HTTPError(
+                    f"Unable to access the resource. Received HTTP status code {head_response.status_code} for URL: {urlname}. "
+                    "Please verify the URL and your network access permissions."
                 )
-                if head_response.status_code != 200:
-                    raise OSError(f"Failed to access file: {head_response.status_code}")
 
-                # Check if we got redirected to login page
-                if "text/html" in head_response.headers.get("content-type", "").lower():
-                    raise OSError(
-                        "Got HTML response instead of file. Please ensure you're logged in and have access to the file."
-                    )
+            # Check if we got redirected to login page
+            if "text/html" in head_response.headers.get("content-type", "").lower():
+                raise requests.HTTPError(
+                    "Received an HTML response instead of the expected file content. This may indicate authentication is required or access to the resource is restricted. Please verify your credentials and permissions for the requested URL: ({urlname})."
+                )
 
+            try:
                 # Now download the file
                 response = session.get(
                     urlname, headers=headers, stream=True, allow_redirects=True
@@ -448,8 +449,12 @@ class DatabaseManager(object):
                 response.raise_for_status()  # Raise an error if request fails
 
                 # Create a temporary file to store the downloaded content
-                temp_file_path = join(self.tempdir, urlname.split("/")[-1])
-                with open(temp_file_path, "wb") as f:
+                temp_file_path = urlname.split("/")[-1]
+                temp_file_path = re.sub(
+                    r'[<>:"/\\|?*&=]', "_", temp_file_path
+                )  # Sanitize the filename to remove invalid characters for Windows
+
+                with open(f"{temp_file_path}", "wb") as f:
                     for chunk in response.iter_content(chunk_size=8192):
                         if chunk:  # filter out keep-alive new chunks
                             f.write(chunk)
@@ -468,14 +473,15 @@ class DatabaseManager(object):
                     pbar_Nlines_already=Nlines_total,
                     pbar_last=(Ndownload == Ntotal_downloads),
                 )
+
             except requests.RequestException as err:
-                raise OSError(
+                raise type(err)(
                     f"Problem downloading: {urlname}. Error: {str(err)}"
-                ) from err
+                ).with_traceback(err.__traceback__)
             except Exception as err:
-                raise IOError(
-                    f"Problem parsing downloaded file from {urlname}. Check the error above. It may arise if the file wasn't properly downloaded. Try to delete it."
-                ) from err
+                raise type(err)(
+                    f"Problem parsing downloaded file from {urlname}. Check the error above. It may arise if the file wasn't properly downloaded. Try to delete it.\n\nError: {str(err)}"
+                ).with_traceback(err.__traceback__)
 
             return Nlines
 

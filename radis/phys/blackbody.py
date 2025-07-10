@@ -247,7 +247,7 @@ def sPlanck(
         units={"radiance_noslit": Iunit, "transmittance_noslit": "", "absorbance": ""},
         cond_units={"wstep": waveunit},
         wunit=waveunit,
-        name="Planck {0}K, eps={1:.2g}".format(T, eps),
+        name=f"Planck {T}K, eps={eps:.2g}",
     )
 
 

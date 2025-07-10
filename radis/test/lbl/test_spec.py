@@ -32,6 +32,7 @@ try:
 except ImportError:
     vaex = NotInstalled(*not_installed_vaex_args)
 
+
 # %% Test routines
 # @pytest.mark.fast #Removed from "fast" tag because it seems this test needs to be performed after other ones (minouHub)
 def test_populations(verbose=True, *args, **kwargs):
@@ -100,8 +101,6 @@ def test_populations(verbose=True, *args, **kwargs):
     assert not (s2.get_rovib_levels() == s.get_rovib_levels()).all().all()
     assert not (s2.get_rovib_levels() is s.get_rovib_levels())
 
-    return True  # if no AssertionError
-
 
 @pytest.mark.fast
 def test_rescaling_path_length(
@@ -150,11 +149,7 @@ def test_rescaling_path_length(
 
     if verbose:
         printm("Test rescaling:")
-        printm(
-            "... Difference: {0:.2f}%".format(
-                abs(s1.get_power() / s2.get_power() - 1) * 100
-            )
-        )
+        printm(f"... Difference: {abs(s1.get_power() / s2.get_power() - 1) * 100:.2f}%")
 
     assert np.isclose(s2.get_power(), s1.get_power(), 2e-3)
 
@@ -302,8 +297,6 @@ def _run_testcases(
     test_medium(
         plot=plot, verbose=verbose, debug=debug, warnings=warnings, *args, **kwargs
     )
-
-    return True
 
 
 if __name__ == "__main__":

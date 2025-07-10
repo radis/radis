@@ -373,6 +373,7 @@ class ConditionDict(dict):
 # - MiscParams: other, purely descriptive parameters, stored in Spectra, but not used
 #               when comparing Spectra to precomputed one in SpecDatabases
 
+
 # class Input(object):
 class Input(ConditionDict):
     """Holds Spectrum calculation input conditions, under the attribute
@@ -1018,6 +1019,7 @@ class DatabankLoader(object):
         load_columns="equilibrium",
         parallel=True,
         extra_params=None,
+        **kwargs,
     ):
         """
         Fetch the latest files from [HITRAN-2020]_, [HITEMP-2010]_ (or newer),
@@ -1105,7 +1107,7 @@ class DatabankLoader(object):
             "kurucz",
             "nist",
         ]:
-            raise NotImplementedError("source: {0}".format(source))
+            raise NotImplementedError(f"source: {source}")
         if compare_source == "hitran":
             dbformat = "hitran"
             if database == "default":
@@ -1269,7 +1271,7 @@ class DatabankLoader(object):
                         frames.append(df)
                     else:
                         self.warn(
-                            "No line for isotope n°{}".format(iso),
+                            f"No line for isotope n°{iso}",
                             "EmptyDatabaseWarning",
                             level=2,
                         )
@@ -1278,7 +1280,7 @@ class DatabankLoader(object):
                 if frames == []:
                     raise EmptyDatabaseError(
                         f"{molecule} has no lines on range "
-                        + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
+                        + f"{wavenum_min:.2f}-{wavenum_max:.2f} cm-1"
                     )
                 if len(frames) > 1:
                     # Note @dev : may be faster/less memory hungry to keep lines separated for each isotope. TODO : test both versions
@@ -1366,7 +1368,7 @@ class DatabankLoader(object):
 
             # Check the specific ExoMol database and print ONCE the list of databases available
             if self.verbose and (database is None or database == "default"):
-                print("Using the recommended ExoMol databases for {}".format(molecule))
+                print(f"Using the recommended ExoMol databases for {molecule}")
 
             local_paths = []
             frames = []  # lines for all isotopes
@@ -1388,6 +1390,7 @@ class DatabankLoader(object):
                     return_partition_function=True,
                     engine=memory_mapping_engine,
                     output=output,
+                    **kwargs,
                 )
                 # @dev refactor : have a DatabaseClass from which we load lines and partition functions
                 if len(df) > 0:
@@ -1399,7 +1402,7 @@ class DatabankLoader(object):
             if frames == []:
                 raise EmptyDatabaseError(
                     f"{molecule} has no lines on range "
-                    + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
+                    + f"{wavenum_min:.2f}-{wavenum_max:.2f} cm-1"
                 )
             if len(frames) > 1:
                 # Note @dev : may be faster/less memory hungry to keep lines separated for each isotope. TODO : test both versions
@@ -1579,12 +1582,12 @@ class DatabankLoader(object):
                     [str(k) for k in self._get_isotope_list(df=df)]
                 )
         else:
-            raise NotImplementedError("source: {0}".format(source))
+            raise NotImplementedError(f"source: {source}")
 
         if len(df) == 0:
             raise EmptyDatabaseError(
                 f"{molecule} has no lines on range "
-                + "{0:.2f}-{1:.2f} cm-1".format(wavenum_min, wavenum_max)
+                + f"{wavenum_min:.2f}-{wavenum_max:.2f} cm-1"
             )
 
         # Always sort line database by wavenumber (required to SPARSE_WAVERANGE mode)
@@ -1663,9 +1666,7 @@ class DatabankLoader(object):
                 print(err)
                 raise KeyError(
                     "Error while fetching rovibrational energies for "
-                    + "{0}, iso={1} in RADIS built-in spectroscopic ".format(
-                        molecule, isotope
-                    )
+                    + f"{molecule}, iso={isotope} in RADIS built-in spectroscopic "
                     + "constants (see details above). If you only need "
                     + "equilibrium spectra, try using 'load_energies=False' "
                     + "in fetch_databank"
@@ -1949,11 +1950,11 @@ class DatabankLoader(object):
             try:
                 entries = getDatabankEntries(name)
             except IOError:
-                print("There was a problem looking for database name: {0}".format(name))
+                print(f"There was a problem looking for database name: {name}")
                 raise
 
             if self.verbose:
-                print("Using database: {0}".format(name))
+                print(f"Using database: {name}")
                 printDatabankEntries(name)
                 print("\n")
             path = entries["path"]
@@ -1977,27 +1978,21 @@ class DatabankLoader(object):
                 raise ValueError(
                     "No database name. Please give a path and a dbformat"
                     + ", or use one of the predefined databases in your"
-                    + " ~/radis.json: {0}".format(",".join(dblist))
+                    + f" ~/radis.json: {','.join(dblist)}"
                 )
 
         # Check database format
         if dbformat not in KNOWN_DBFORMAT:
             raise ValueError(
-                "Database format ({0}) not in known list: {1}".format(
-                    dbformat, KNOWN_DBFORMAT
-                )
+                f"Database format ({dbformat}) not in known list: {KNOWN_DBFORMAT}"
             )
         if levels is not None and levelsfmt not in KNOWN_LVLFORMAT:
             raise ValueError(
-                "Energy level format ({0}) not in known list: {1}".format(
-                    levelsfmt, KNOWN_LVLFORMAT
-                )
+                f"Energy level format ({levelsfmt}) not in known list: {KNOWN_LVLFORMAT}"
             )
         if parfuncfmt not in [None] + KNOWN_PARFUNCFORMAT:
             raise ValueError(
-                "Partition function format ({0}) not in known list: {1}".format(
-                    parfuncfmt, KNOWN_PARFUNCFORMAT
-                )
+                f"Partition function format ({parfuncfmt}) not in known list: {KNOWN_PARFUNCFORMAT}"
             )
 
         # Line database path
@@ -2048,16 +2043,16 @@ class DatabankLoader(object):
         # ... test paths
         for p in path:
             if not exists(p):
-                raise FileNotFoundError("databank lines file: `{0}`".format(p))
+                raise FileNotFoundError(f"databank lines file: `{p}`")
 
         # Energy levels and partition functions
         if levels is not None:
             for iso, lvl in levels.items():  # one file per isotope
                 if not exists(lvl):
-                    raise FileNotFoundError("levels = `{0}`".format(lvl))
+                    raise FileNotFoundError(f"levels = `{lvl}`")
         if parfunc is not None:  # all isotopes in same file?
             if not exists(parfunc):
-                raise FileNotFoundError("parfunc = `{0}`".format(parfunc))
+                raise FileNotFoundError(f"parfunc = `{parfunc}`")
 
         # Get cache
         if db_use_cached is None:
@@ -2401,9 +2396,7 @@ class DatabankLoader(object):
                 and count_nans(self.df0[k]) == 0
             ):
                 self.warn(
-                    "Format of column {0} was {1} instead of int. Changed to int".format(
-                        k, self.df0.dtypes[k]
-                    )
+                    f"Format of column {k} was {self.df0.dtypes[k]} instead of int. Changed to int"
                 )
                 self.df0[k] = self.df0[k].astype(np.int64)
 
@@ -2420,7 +2413,6 @@ class DatabankLoader(object):
         include_neighbouring_lines=True,
         output="pandas",
     ):
-
         """Loads all available database files and keep the relevant one.
         Returns a Pandas dataframe.
 
@@ -2536,7 +2528,7 @@ class DatabankLoader(object):
             for i, filename in enumerate(files):
 
                 if __debug__:
-                    printdbg("Loading {0}/{1}".format(i + 1, len(files)))
+                    printdbg(f"Loading {i + 1}/{len(files)}")
 
                 # Read all the lines
                 # ... this is where the cache files are read/generated.
@@ -2618,9 +2610,11 @@ class DatabankLoader(object):
                             # cache=db_use_cached,
                             verbose=verbose,
                             # drop_non_numeric=True,
-                            isotope=self.input.isotope
-                            if self.input.isotope != "all"
-                            else None,
+                            isotope=(
+                                self.input.isotope
+                                if self.input.isotope != "all"
+                                else None
+                            ),
                             load_wavenum_min=wavenum_min,
                             load_wavenum_max=wavenum_max,
                             engine=engine,
@@ -2630,7 +2624,7 @@ class DatabankLoader(object):
                         # self.reftracker.add("10.1016/j.jqsrt.2020.107228", "line database")  # [ExoMol-2020]
                         raise NotImplementedError("use fetch_databank('exomol')")
                     else:
-                        raise ValueError("Unknown dbformat: {0}".format(dbformat))
+                        raise ValueError(f"Unknown dbformat: {dbformat}")
                 except IrrelevantFileWarning as err:
                     if db_use_cached == "force":
                         raise
@@ -2653,7 +2647,7 @@ class DatabankLoader(object):
                             df.drop(col, inplace=True)
                 if verbose >= 2 and len(dropped) > 0:
 
-                    print("Dropped columns: {0}".format(dropped))
+                    print(f"Dropped columns: {dropped}")
 
                 # Crop to the wavenumber of interest
                 # TODO : is it still needed since we use load_only_wavenum_above ?
@@ -2661,11 +2655,7 @@ class DatabankLoader(object):
 
                 if __debug__:
                     if len(df) == 0:
-                        printdbg(
-                            "File {0} loaded for nothing (out of range)".format(
-                                filename
-                            )
-                        )
+                        printdbg(f"File {filename} loaded for nothing (out of range)")
 
                 # Select correct isotope(s)
                 if self.input.isotope != "all":
@@ -2711,12 +2701,11 @@ class DatabankLoader(object):
 
         if len(df) == 0:
             msg = (
-                "Reference databank "
-                + "has 0 lines in range {0:.2f}-{1:.2f}cm-1".format(
-                    wavenum_min, wavenum_max
+                (
+                    "Reference databank "
+                    + f"has 0 lines in range {wavenum_min:.2f}-{wavenum_max:.2f}cm-1"
                 )
-            ) + " ({0:.2f}-{1:.2f}nm) Check your range !".format(
-                cm2nm(wavenum_min), cm2nm(wavenum_max)
+                + f" ({cm2nm(wavenum_min):.2f}-{cm2nm(wavenum_max):.2f}nm) Check your range !"
             )
             raise EmptyDatabaseError(msg)
 
@@ -2739,7 +2728,7 @@ class DatabankLoader(object):
                 if len(id_set) > 1:
                     raise NotImplementedError(
                         "RADIS expects one molecule per run for the "
-                        + "moment. Got {0}. Use different runs ".format(id_set)
+                        + f"moment. Got {id_set}. Use different runs "
                         + "and use MergeSlabs(out='transparent' afterwards"
                     )
                 self.input.species = get_molecule(id_set[0])
@@ -2777,15 +2766,9 @@ class DatabankLoader(object):
                     iso_count = (df.iso == k).sum()
                 if not (iso_count > 0):
                     msg = (
-                        "Reference databank ({0:.2f}-{1:.2f}cm-1)".format(
-                            minwavdb, maxwavdb
-                        )
-                        + " has 0 lines in range ({0:.2f}-{1:.2f}cm-1)".format(
-                            wavenum_min, wavenum_max
-                        )
-                    ) + " for isotope {0}. Change your range or isotope options".format(
-                        k
-                    )
+                        f"Reference databank ({minwavdb:.2f}-{maxwavdb:.2f}cm-1)"
+                        + f" has 0 lines in range ({wavenum_min:.2f}-{wavenum_max:.2f}cm-1)"
+                    ) + f" for isotope {k}. Change your range or isotope options"
                     printwarn(msg, verbose, warnings_default)
 
         # ... check the database range looks correct
@@ -2796,9 +2779,7 @@ class DatabankLoader(object):
             if neighbour_lines > 0 and minwavdb > wavenum_min + neighbour_lines:
                 # no lines on left side
                 self.warn(
-                    "There are no lines in database in range {0:.5f}-{1:.5f}cm-1 ".format(
-                        wavenum_min, wavenum_min + neighbour_lines
-                    )
+                    f"There are no lines in database in range {wavenum_min:.5f}-{wavenum_min + neighbour_lines:.5f}cm-1 "
                     + "to calculate the effect "
                     + "of neighboring lines. Did you add all lines in the database?",
                     "OutOfRangeLinesWarning",
@@ -2806,20 +2787,14 @@ class DatabankLoader(object):
             if neighbour_lines > 0 and maxwavdb < wavenum_max - neighbour_lines:
                 # no lines on right side
                 self.warn(
-                    "There are no lines in database in range {0:.5f}-{1:.5f}cm-1 ".format(
-                        maxwavdb - neighbour_lines, maxwavdb
-                    )
+                    f"There are no lines in database in range { maxwavdb - neighbour_lines:.5f}-{maxwavdb:.5f}cm-1 "
                     + "to calculate the effect "
                     + "of neighboring lines. Did you add all lines in the database?",
                     "OutOfRangeLinesWarning",
                 )
 
         if self.verbose >= 2:
-            printg(
-                "Loaded databank in {0:.1f}s ({1:,d} lines)".format(
-                    time() - t0, len(df)
-                )
-            )
+            printg(f"Loaded databank in {time() - t0:.1f}s ({len(df):,d} lines)")
 
         self._remove_unecessary_columns(df, output)
 
@@ -2888,9 +2863,7 @@ class DatabankLoader(object):
 
         if molecule is not None and self.input.species != molecule:
             raise ValueError(
-                "Expected molecule is {0} according to the inputs, but got {1} ".format(
-                    self.input.species, molecule
-                )
+                f"Expected molecule is {self.input.species} according to the inputs, but got {molecule} "
                 + "in line database. Check your `molecule=` parameter, or your "
                 + "line database."
             )
@@ -3010,7 +2983,7 @@ class DatabankLoader(object):
         if __debug__:
             printdbg(
                 "called _build_partition_function_interpolator"
-                + "(parfuncfmt={0}, isotope={1})".format(parfuncfmt, isotope)
+                + f"(parfuncfmt={parfuncfmt}, isotope={isotope})"
             )
 
         isotope = int(isotope)
@@ -3039,9 +3012,7 @@ class DatabankLoader(object):
             assert len(predefined_partition_functions) > 0
             parsum = predefined_partition_functions[molecule][isotope]
         else:
-            raise ValueError(
-                "Unknown format for partition function: {0}".format(parfuncfmt)
-            )
+            raise ValueError(f"Unknown format for partition function: {parfuncfmt}")
             # other formats ?
 
         return parsum
@@ -3078,7 +3049,7 @@ class DatabankLoader(object):
         if __debug__:
             printdbg(
                 "called _build_partition_function_calculator"
-                + "(levelsfmt={0}, isotope={1})".format(levelsfmt, isotope)
+                + f"(levelsfmt={levelsfmt}, isotope={isotope})"
             )
 
         isotope = int(isotope)
@@ -3115,7 +3086,7 @@ class DatabankLoader(object):
             # for the abinitio calculation ? Like Jmax, etc.
 
         else:
-            raise ValueError("Unknown format for energy levels : {0}".format(levelsfmt))
+            raise ValueError(f"Unknown format for energy levels : {levelsfmt}")
             # other formats ?
 
         return parsum

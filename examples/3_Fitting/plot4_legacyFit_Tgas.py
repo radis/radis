@@ -23,7 +23,7 @@ how to obtain real-time interactive spectra.
 
 from radis import SpectrumFactory, load_spec
 
-#%% Get Fitted Data
+# %% Get Fitted Data
 # Here we get an experimental spectrum from RADIS test cases. Use your own instead.
 from radis.test.utils import getTestFile, setup_test_line_databases
 
@@ -41,7 +41,7 @@ s_exp = (
     .offset(-0.2, "nm")
 )
 
-#%%
+# %%
 # Customize the :py:func:`~radis.tools.fitting.LTEModel` for our case: we add a slit
 # (non fittable parameter) and normalize it
 
@@ -72,7 +72,7 @@ def LTEModel_withslitnorm(factory, fit_parameters, fixed_parameters):
     return s.take("radiance").normalize()
 
 
-#%% Calculate
+# %% Calculate
 # using :py:meth:`~radis.lbl.factory.SpectrumFactory.fit_legacy`
 
 import astropy.units as u

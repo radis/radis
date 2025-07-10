@@ -24,11 +24,11 @@ def init_L_params(na, gamma_arr, verbose=False):
 
         # Only keep extremes
         test_dict = {}
-        for (na_i, gamma_i) in unique_lines:
+        for na_i, gamma_i in unique_lines:
             try:
                 test_dict[na_i] = minmax((gamma_i, test_dict[na_i]))
 
-            except (KeyError):
+            except KeyError:
                 test_dict[na_i] = gamma_i
 
         # Check which ones are really at the top:

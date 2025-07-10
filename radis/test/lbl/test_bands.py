@@ -68,7 +68,7 @@ def test_plot_all_CO2_bandheads(verbose=True, plot=False, *args, **kwargs):
     s_bands = sf.non_eq_bands(Tvib=Tgas, Trot=Tgas)
 
     if verbose:
-        printm("{0} bands in spectrum".format(len(s_bands)))
+        printm(f"{len(s_bands)} bands in spectrum")
 
     assert len(s_bands) == 3
 
@@ -99,14 +99,10 @@ def test_plot_all_CO2_bandheads(verbose=True, plot=False, *args, **kwargs):
 
     assert get_residual(s_tot, s_merged_eq, "radiance_noslit") < 1.5e-5
 
-    return True
-
 
 def run_testcases(verbose=True, plot=False, warnings=True, *args, **kwargs):
 
     test_plot_all_CO2_bandheads(plot=plot)
-
-    return True
 
 
 if __name__ == "__main__":

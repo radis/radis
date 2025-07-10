@@ -158,7 +158,7 @@ def get_recent_hitemp_database_year(molecule):
     return recent_database
 
 
-#%%
+# %%
 def get_last(b):
     """Get non-empty lines of a chunk b, parsing the bytes."""
     element_length = np.vectorize(lambda x: len(x.__str__()))(b)
@@ -222,20 +222,20 @@ def setup_credentials():
     is_rtd = os.environ.get("READTHEDOCS", "").lower() == "true"
     is_travis = os.environ.get("TRAVIS", "").lower() == "true"
 
-    if is_rtd or is_travis:
-        # In CI/CD environments, only use environment variables
+    # compatibly with old versions
+    email = os.environ.get("HITRAN_USERNAME")
+    password = os.environ.get("HITRAN_PASSWORD")
 
-        # compatibly with old versions
-        email = os.environ.get("HITRAN_USERNAME")
-        password = os.environ.get("HITRAN_PASSWORD")
-        if not email or not password:
+    if not email or not password:
+        if is_rtd or is_travis:
+            # In CI/CD environments, only use environment variables
             print(
                 "Warning: HITRAN_EMAIL or HITRAN_PASSWORD not set in environment variables"
             )
-    else:
-        # In normal usage, try environment variables first, then prompt
-        email = input("Enter HITRAN email: ")
-        password = _prompt_password(email)
+        else:
+            # In normal usage, fall back to prompt if environment variables not set
+            email = input("Enter HITRAN email: ")
+            password = _prompt_password(email)
 
     return email, password
 
@@ -431,9 +431,12 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
             )
             warnings.warn(warning_msg, UserWarning)
 
-        with open(output_filename, "wb") as f, tqdm(
-            total=total_size, unit="B", unit_scale=True, desc=output_filename
-        ) as pbar:
+        with (
+            open(output_filename, "wb") as f,
+            tqdm(
+                total=total_size, unit="B", unit_scale=True, desc=output_filename
+            ) as pbar,
+        ):
             for chunk in file_response.iter_content(chunk_size=8192):
                 if chunk:
                     f.write(chunk)
@@ -764,11 +767,10 @@ class HITEMPDatabaseManager(DatabaseManager):
 
                 df = _ndarray2df(b, columns, linereturnformat, molecule=self.molecule)
 
-                # 19722
                 if molecule == "CO2":
                     df["iso"] = (
-                        df["iso"].replace({"A": 10, "B": 11, "C": 12}).astype(int)
-                    )  # in HITEMP2024, isotopologue 10, 11, 12 are A, B, C.
+                        df["iso"].replace({"0": 10, "A": 11, "B": 12}).astype(int)
+                    )  # in HITEMP2024, isotopologue 10, 11, 12 are 0, A, B. See Table 4 of Hargreaves et al. (2024)
 
                 # Post-processing :
                 # ... Add local quanta attributes, based on the HITRAN group
@@ -883,7 +885,7 @@ class HITEMPDatabaseManager(DatabaseManager):
             ) from e
 
 
-#%%
+# %%
 
 if __name__ == "__main__":
 

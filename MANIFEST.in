@@ -9,7 +9,11 @@ include radis/phys/units.txt
 include radis/db/molparam.txt
 include radis/db/molparams_extra.json
 include radis/default_radis.json
+
+# Include hardcoded informations for databases
 recursive-include radis/db *.json
+include radis/db/H2O/*.htm
+include radis/db/*.txt #Kurucz and NIST
 
 # Exclude test files and directories
 global-exclude */test/*
