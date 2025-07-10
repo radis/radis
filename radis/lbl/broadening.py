@@ -67,7 +67,8 @@ import numpy as np
 from numba import float64, jit
 from numpy import arange, exp
 from numpy import log as ln
-from numpy import pi, sin, sqrt, trapz, zeros, zeros_like
+from numpy import pi, sin, sqrt, zeros, zeros_like
+from scipy.integrate import trapezoid
 from scipy.signal import oaconvolve
 
 import radis
@@ -815,12 +816,12 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
     # Normalization
     #    integral = wv*(1.065+0.447*(wl/wv)+0.058*(wl/wv)**2)
     # ... approximation used by Whiting, equation (7)
-    # ... performance: ~ 6µs vs ~84µs for np.trapz(lineshape, w_centered) ):
+    # ... performance: ~ 6µs vs ~84µs for trapezoid(lineshape, w_centered) ):
     # ... But not used because:
     # ... - it may yield wrong results when the broadening range is not refined enough
     # ... - it is defined for wavelengths only. Here we may have wavenumbers as well
 
-    integral = np.trapz(lineshape, w_centered, axis=0)
+    integral = trapezoid(lineshape, w_centered, axis=0)
 
     # Normalize
     lineshape /= integral
@@ -1507,7 +1508,7 @@ class BroadenFactory(BaseFactory):
         # ... Normalization should not be needed as Lorentzian is normalized already
         # ... but that's only with a good enough wavestep
         # ... Here we compute the integral to check the error that is made
-        area = trapz(lineshape.T, x=wbroad_centered.T)
+        area = trapezoid(lineshape.T, x=wbroad_centered.T)
         err = abs((area - 1))
         if self.warnings and self.warnings["CollisionalBroadeningWarning"] != "ignore":
             if (err > self.misc.warning_broadening_threshold).any():
@@ -1573,7 +1574,7 @@ class BroadenFactory(BaseFactory):
         # ... normalisation not really needed as the analytical function is normalized
         # ... but that's only with a good enough wavestep
         # ... Here we compute the integral to check the error that is made
-        area = trapz(lineshape.T, x=wbroad_centered.T)
+        area = trapezoid(lineshape.T, x=wbroad_centered.T)
         err = abs((area - 1))
         if self.warnings and self.warnings["GaussianBroadeningWarning"] != "ignore":
             # In a "performance" mode (vs "safe" mode), these warnings would be disabled
@@ -1764,7 +1765,9 @@ class BroadenFactory(BaseFactory):
             line_profile = np.empty_like(pressure_profile)  # size (B, N)
             for i, (x, y) in enumerate(zip(pressure_profile.T, gaussian_profile.T)):
                 line_profile[:, i] = np.convolve(x, y, "same")
-            line_profile = line_profile / trapz(line_profile.T, x=wbroad.T)  # normalize
+            line_profile = line_profile / trapezoid(
+                line_profile.T, x=wbroad.T
+            )  # normalize
             self.profiler.stop("convolve_l_g", "Convolved both profiles")
             # ... Note that normalization should not be needed as broadening profiles
             # ... are created normalized already. However, we do normalize to reduce
@@ -1886,7 +1889,7 @@ class BroadenFactory(BaseFactory):
                 line_profile_LDM[l] = {}
                 for m in range(len(wL)):
                     lineshape = np.convolve(IL[m], IG[l], mode="same")
-                    lineshape /= np.trapz(lineshape, x=wbroad_centered)
+                    lineshape /= trapezoid(lineshape, x=wbroad_centered)
                     line_profile_LDM[l][m] = lineshape
 
         elif broadening_method == "fft":
@@ -1983,7 +1986,7 @@ class BroadenFactory(BaseFactory):
         pressure_profile = self._collisional_lineshape(dg, wbroad_centered)
         gaussian_profile = self._gaussian_lineshape(dg, wbroad_centered)
         line_profile = np.convolve(pressure_profile, gaussian_profile, "same")
-        line_profile /= trapz(line_profile.T, x=wbroad.T)  # normalize
+        line_profile /= trapezoid(line_profile.T, x=wbroad.T)  # normalize
 
         # Plot!
         set_style()
@@ -3148,11 +3151,11 @@ class BroadenFactory(BaseFactory):
 
                 if __debug__:
                     printdbg(
-                        f"Intensity of k continuum: {np.trapz(k_continuum, wavenumber_calc)}\n"
+                        f"Intensity of k continuum: {trapezoid(k_continuum, wavenumber_calc)}\n"
                         + f"Intensity of lines removed: {df_weak_lines.S.sum()}"
                     )
                     printdbg(
-                        f"Intensity of j continuum: {np.trapz(j_continuum, wavenumber_calc)}\n"
+                        f"Intensity of j continuum: {trapezoid(j_continuum, wavenumber_calc)}\n"
                         + f"Intensity of lines removed: {df_weak_lines.Ei.sum()}"
                     )
 
@@ -3163,7 +3166,7 @@ class BroadenFactory(BaseFactory):
 
                 if __debug__:
                     printdbg(
-                        f"Intensity of continuum: {np.trapz(k_continuum, wavenumber_calc)}\n"
+                        f"Intensity of continuum: {trapezoid(k_continuum, wavenumber_calc)}\n"
                         + f"Intensity of lines removed: {df_weak_lines.S.sum()}"
                     )
 

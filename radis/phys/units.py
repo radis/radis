@@ -8,6 +8,8 @@
 
 import warnings
 
+# from scipy.integrate import trapezoid
+
 
 def Unit(st, *args, **kwargs):
     """Radis evaluation of an unit, using :py:class:`~astropy.units.Unit`
@@ -153,8 +155,8 @@ def convert_emi2cm(j_nm, wavenum, Iunit0, Iunit):
 
         w_nm, j_nm = s.get('emisscoeff', 'nm', 'mW/cm2/sr/nm')
         w_cm, j_cm = s.get('emisscoeff', 'cm', 'mW/cm2/sr/cm-1')
-        print(trapz(y_nm, x_nm))
-        print(trapz(y_cm, x_cm))
+        print(trapezoid(y_nm, x_nm))
+        print(trapezoid(y_cm, x_cm))
 
     Both integrals are to be the same
     """
@@ -164,8 +166,8 @@ def convert_emi2cm(j_nm, wavenum, Iunit0, Iunit):
     # Convert ''mW/cm3/sr/nm' to 'mW/cm3/sr/cm-1'
     j_cm = j_nm * 1e7 / wavenum**2
     # note that we discard the - sign.
-    # This means that one of the integrals `trapz(j_nm, wavelen)` or
-    # `trapz(j_cm, wavenum)` will be < 0 as they are sorted in opposite order.
+    # This means that one of the integrals `trapezoid(j_nm, wavelen)` or
+    # `trapezoid(j_cm, wavenum)` will be < 0 as they are sorted in opposite order.
     # But both plots look alright
 
     # Convert to whatever was wanted
@@ -208,8 +210,8 @@ def convert_emi2nm(j_cm, wavenum, Iunit0, Iunit):
     # Convert 'mW/cm3/sr/cm-1' to 'mW/cm3/sr/nm'
     j_nm = j_cm * 1e-7 * wavenum**2
     # note that we discard the - sign.
-    # This means that one of the integrals `trapz(L_nm, wavelen)` or
-    # `trapz(L_cm, wavenum)` will be < 0 as they are sorted in opposite order.
+    # This means that one of the integrals `trapezoid(L_nm, wavelen)` or
+    # `trapezoid(L_cm, wavenum)` will be < 0 as they are sorted in opposite order.
     # But both plots look alright
 
     # Convert to whatever was wanted
@@ -262,8 +264,8 @@ def convert_rad2cm(
 
         x_nm, y_nm = s.get('radiance_noslit', 'nm', 'mW/cm2/sr/nm')
         x_cm, y_cm = s.get('radiance_noslit', 'cm', 'mW/cm2/sr/cm-1')
-        print(trapz(y_nm, x_nm))
-        print(trapz(y_cm, x_cm))
+        print(trapezoid(y_nm, x_nm))
+        print(trapezoid(y_cm, x_cm))
 
     Both integrals are to be the same
     """
@@ -273,8 +275,8 @@ def convert_rad2cm(
     # Convert ''mW/cm2/sr/nm' to 'mW/cm2/sr/cm-1'
     l_cm = l_nm * 1e7 / wavenum**2
     # note that we discard the - sign.
-    # This means that one of the integrals `trapz(L_nm, wavelen)` or
-    # `trapz(L_cm, wavenum)` will be < 0 as they are sorted in opposite order.
+    # This means that one of the integrals `trapezoid(L_nm, wavelen)` or
+    # `trapezoid(L_cm, wavenum)` will be < 0 as they are sorted in opposite order.
     # But both plots look alright
 
     # Convert to whatever was wanted
@@ -323,8 +325,8 @@ def convert_rad2nm(
     # Convert 'mW/cm2/sr/cm-1' to 'mW/cm2/sr/nm'
     l_nm = l_cm * 1e-7 * wavenum**2
     # note that we discard the - sign.
-    # This means that one of the integrals `trapz(L_nm, wavelen)` or
-    # `trapz(L_cm, wavenum)` will be < 0 as they are sorted in opposite order.
+    # This means that one of the integrals `trapezoid(L_nm, wavelen)` or
+    # `trapezoid(L_cm, wavenum)` will be < 0 as they are sorted in opposite order.
     # But both plots look alright
 
     # Convert to whatever was wanted
