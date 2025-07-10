@@ -1374,6 +1374,7 @@ def _parse_HITRAN_group2_fast_parsing(df, verbose=True, dataframe_type="pandas")
     else:
         raise NotImplementedError(dataframe_type)
 
+
 def _parse_HITRAN_group2(df, verbose=True, dataframe_type="pandas"):
     r"""Parse diatomic and linear molecules (:py:attr:`~radis.db.classes.HITRAN_GROUP2` ):
     CO2, N2O, CO, HF, HCl, HBr, HI, OCS, N2, HCN, C2H2, NO+
