@@ -27,6 +27,7 @@ Routine Listings
 from warnings import warn
 
 import numpy as np
+from scipy.integrate import trapezoid
 
 from radis.misc.arrays import array_allclose
 from radis.misc.basics import compare_dict, compare_lists
@@ -412,14 +413,14 @@ def get_residual_integral(
 
     ::
 
-        res = trapz(I2-I1, w1) / trapz(I1, w1)
+        res = trapezoid(I2-I1, w1) / trapezoid(I1, w1)
 
     Note: when the considered variable is ``transmittance`` or ``transmittance_noslit``,
     the *upper* integral is used (up to 1) to normalize the integral difference
 
     ::
 
-        res = trapz(I2-I1, w1) / trapz(1-I1, w1)
+        res = trapezoid(I2-I1, w1) / trapezoid(1-I1, w1)
 
     Parameters
     ----------
@@ -445,7 +446,7 @@ def get_residual_integral(
     For I1, I2, the values of 'var' in s1 and s2, respectively, residual
     is calculated as::
 
-        res = trapz(I2-I1, w1) / trapz(I1, w1)
+        res = trapezoid(I2-I1, w1) / trapezoid(I1, w1)
 
     0 values for I1 yield nans except if I2 = I1 = 0
 
@@ -477,11 +478,11 @@ def get_residual_integral(
         w1, I1 = w1[~b], I1[~b]
 
     if var in ["transmittance", "transmittance_noslit"]:
-        norm = 1 - np.trapz(I1, w1)
+        norm = 1 - trapezoid(I1, w1)
     else:
-        norm = np.trapz(I1, w1)
+        norm = trapezoid(I1, w1)
 
-    return np.abs(np.trapz(dI, wdiff)) / norm
+    return np.abs(trapezoid(dI, wdiff)) / norm
 
 
 def get_default_units(

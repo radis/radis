@@ -26,6 +26,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from numpy import abs, cos, linspace, pi, sqrt, tan
+from scipy.integrate import trapezoid
 
 from radis.lbl.factory import SpectrumFactory
 from radis.misc.arrays import nantrapz
@@ -438,7 +439,7 @@ def test_slit_energy_conservation(
     P = s.get_power(unit="mW/cm2/sr")
     s.apply_slit(0.5, norm_by="area")
     w, I = s.get("radiance", wunit="nm", Iunit="mW/cm2/sr/nm")
-    Pc = abs(np.trapz(I[~np.isnan(I)], x=w[~np.isnan(I)]))  # mW/cm2/sr
+    Pc = abs(trapezoid(I[~np.isnan(I)], x=w[~np.isnan(I)]))  # mW/cm2/sr
 
     b = np.isclose(P, Pc, 3e-2)
 

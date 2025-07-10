@@ -46,7 +46,8 @@ from warnings import warn
 import numpy as np
 from numpy import exp
 from numpy import log as ln
-from numpy import sqrt, trapz
+from numpy import sqrt
+from scipy.integrate import trapezoid
 from scipy.interpolate import splev, splrep
 from scipy.signal import oaconvolve
 
@@ -383,7 +384,7 @@ def get_slit_function(
         # ... get unit
         # Normalize
         if norm_by == "area":  # normalize by the area
-            #        I_slit /= np.trapz(I_slit, x=w_slit)
+            #        I_slit /= trapezoid(I_slit, x=w_slit)
             Iunit = f"1/{unit}"
         elif norm_by == "max":  # set maximum to 1
             Iunit = ""
@@ -410,7 +411,9 @@ def get_slit_function(
                 energy_threshold=energy_threshold,
                 print_conservation=True,
             )
-            scale_slit = trapz(Iold, wold) / trapz(Islit, wslit)  # [unit/return_unit]
+            scale_slit = trapezoid(Iold, wold) / trapezoid(
+                Islit, wslit
+            )  # [unit/return_unit]
             renormalize = True
         elif return_unit == "nm" and unit == "cm-1":  # wavenumber > wavelength
             wold, Iold = wslit, Islit
@@ -421,7 +424,9 @@ def get_slit_function(
                 energy_threshold=energy_threshold,
                 print_conservation=True,
             )
-            scale_slit = trapz(Iold, wold) / trapz(Islit, wslit)  # [unit/return_unit]
+            scale_slit = trapezoid(Iold, wold) / trapezoid(
+                Islit, wslit
+            )  # [unit/return_unit]
             renormalize = True
         else:  # return_unit == unit
             renormalize = False
@@ -433,7 +438,7 @@ def get_slit_function(
             if __debug__:
                 printdbg("get_slit_function: renormalize")
             if norm_by == "area":  # normalize by the area
-                Islit /= abs(np.trapz(Islit, x=wslit))
+                Islit /= abs(trapezoid(Islit, x=wslit))
                 Iunit = f"1/{return_unit}"
             elif norm_by == "max":  # set maximum to 1
                 Islit /= abs(np.max(Islit))
@@ -837,7 +842,7 @@ def get_effective_FWHM(w, I):
 
     Imax = I.max()
 
-    area = abs(np.trapz(I, w))
+    area = abs(trapezoid(I, w))
 
     return area / Imax
 
@@ -980,7 +985,7 @@ def normalize_slit(w_slit, I_slit, norm_by="area"):
     # ---------
 
     if norm_by == "area":  # normalize by the area
-        I_slit = I_slit / abs(np.trapz(I_slit, x=w_slit))
+        I_slit = I_slit / abs(trapezoid(I_slit, x=w_slit))
     elif norm_by == "max":  # set maximum to 1
         I_slit = I_slit / abs(np.max(I_slit))
     elif norm_by is None:
@@ -1210,7 +1215,7 @@ def plot_slit(
         label=(
             f"FWHM: {FWHM:.3f} {plot_unit}\n"
             f"Eff. FWHM: {FWHM_eff:.3f} {plot_unit}\n"
-            f"Area: {abs(np.trapz(I, x=w)):.3f}"
+            f"Area: {abs(trapezoid(I, x=w)):.3f}"
         ),
     )
 
@@ -1456,8 +1461,8 @@ def import_experimental_slit(
 
     # Normalize
     if norm_by == "area":  # normalize by the area
-        #        I_slit /= np.trapz(I_slit, x=w_slit)
-        I_slit /= abs(np.trapz(I_slit, x=w_slit))
+        #        I_slit /= trapezoid(I_slit, x=w_slit)
+        I_slit /= abs(trapezoid(I_slit, x=w_slit))
         Iunit = f"1/{wunit}"
     elif norm_by == "max":  # set maximum to 1
         I_slit /= abs(np.max(I_slit))
@@ -1581,7 +1586,7 @@ def triangular_slit(
 
     # Normalize
     if norm_by == "area":  # normalize by the area
-        I /= np.trapz(I, x=w)
+        I /= trapezoid(I, x=w)
         Iunit = f"1/{wunit}"
     elif norm_by == "max":  # set maximum to 1
         I /= np.max(I)
@@ -1717,7 +1722,7 @@ def trapezoidal_slit(
 
     # Normalize
     if norm_by == "area":  # normalize by the area
-        I /= np.trapz(I, x=w)
+        I /= trapezoid(I, x=w)
         Iunit = f"1/{wunit}"
     elif norm_by == "max":  # set maximum to 1
         I /= np.max(I)
@@ -1831,7 +1836,7 @@ def gaussian_slit(
 
     # Normalize
     if norm_by == "area":  # normalize by the area
-        I /= np.trapz(I, x=w)
+        I /= trapezoid(I, x=w)
         Iunit = f"1/{wunit}"
     elif norm_by == "max":  # set maximum to 1
         I /= np.max(I)

@@ -57,6 +57,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 from numpy import abs, diff
+from scipy.integrate import trapezoid
 
 from radis.db.references import doi
 
@@ -4734,7 +4735,7 @@ class Spectrum(object):
 
         for index, line in enumerate(g_fit_list):
             if isinstance(line, models.Voigt1D):
-                area = np.abs(np.trapz(y_fit_list[index], w_fit))  # slow, but accurate
+                area = np.abs(trapezoid(y_fit_list[index], w_fit))  # slow, but accurate
             elif isinstance(line, models.Gaussian1D):
                 area = line.amplitude * line.stddev * np.sqrt(2 * np.pi)
             elif isinstance(line, models.Lorentz1D):
