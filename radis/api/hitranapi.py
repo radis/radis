@@ -292,8 +292,7 @@ def hit2df(
         raise ValueError(
             f"You're trying to read a binary file {fname} instead of an HITRAN file"
         ) from err
-
-    df = parse_hitran_file(fname, columns, output=output)
+    df = parse_hitran_file(fname, columns, output=output, molecule=mol)
     df = post_process_hitran_data(
         df,
         molecule=mol,
