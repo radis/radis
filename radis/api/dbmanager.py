@@ -413,7 +413,7 @@ class DatabaseManager(object):
                 )
 
             # Download file with requests
-            if "hitemp" in self.local_databases:
+            if "hitemp" in urlname.lower():
                 # Get session from HITEMP API
                 from radis.api.hitempapi import login_to_hitran
 
