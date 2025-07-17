@@ -27,12 +27,10 @@ def test_fetch_astroquery(verbose=True, *args, **kwargs):
     """Test astroquery"""
     from radis.io.query import fetch_astroquery
 
-    df = fetch_astroquery("CO2", 1, 2200, 2400, verbose=verbose, cache=False)
+    df = fetch_astroquery("CO", 1, 2200, 2400, verbose=verbose, cache=False)
 
-    assert df.iloc[0].id == 2
+    assert df.iloc[0].id == 5
     assert df.iloc[0].iso == 1
-
-    return
 
 
 # ignored by pytest with argument -m "not needs_connection"
@@ -46,8 +44,6 @@ def test_fetch_astroquery_empty(verbose=True, *args, **kwargs):
     )  # 200-400 nm
 
     assert len(df) == 0
-
-    return
 
 
 # ignored by pytest with argument -m "not needs_connection"
@@ -64,7 +60,7 @@ def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
     from radis.io.query import CACHE_FILE_NAME, fetch_astroquery
 
     df = fetch_astroquery(
-        "CO2",
+        "CO",
         1,
         2200,
         2400,
@@ -77,7 +73,7 @@ def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
         join(
             Hitran.cache_location,
             CACHE_FILE_NAME.format(
-                **{"molecule": "CO2", "isotope": 1, "wmin": 2200, "wmax": 2400}
+                **{"molecule": "CO", "isotope": 1, "wmin": 2200, "wmax": 2400}
             ),
         )
     )
@@ -85,7 +81,7 @@ def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
     # Try to load with different metadata: expect a DeprecatedFileError
     with pytest.raises(DeprecatedFileWarning):
         df2 = fetch_astroquery(
-            "CO2",
+            "CO",
             1,
             2200,
             2400,
@@ -95,7 +91,7 @@ def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
         )
     # Try to load with correct metadata. Expect to work and return the dataframe
     df2 = fetch_astroquery(
-        "CO2",
+        "CO",
         1,
         2200,
         2400,
@@ -103,8 +99,6 @@ def test_fetch_astroquery_cache(verbose=True, *args, **kwargs):
         cache="force",  # force load of cache file
     )
     assert (df == df2).all().all()
-
-    return
 
 
 # ignored by pytest with argument -m "not needs_connection"
@@ -237,13 +231,13 @@ def test_pytable_vs_vaex(verbose=True):
 def _run_testcases(verbose=True, *args, **kwargs):
 
     test_fetch_astroquery(verbose=verbose, *args, **kwargs)
-    test_fetch_astroquery_empty(verbose=verbose, *args, **kwargs)
-    test_fetch_astroquery_cache(verbose=verbose, *args, **kwargs)
-    test_fetch_hitran_CO_pytables(*args, **kwargs)
-    test_fetch_hitran_CO_vaex(*args, **kwargs)
-    test_fetch_hitran(*args, **kwargs)
-    test_calc_hitran_spectrum(*args, **kwargs)
-    test_pytable_vs_vaex(verbose=verbose)
+    # test_fetch_astroquery_empty(verbose=verbose, *args, **kwargs)
+    # test_fetch_astroquery_cache(verbose=verbose, *args, **kwargs)
+    # test_fetch_hitran_CO_pytables(*args, **kwargs)
+    # test_fetch_hitran_CO_vaex(*args, **kwargs)
+    # test_fetch_hitran(*args, **kwargs)
+    # test_calc_hitran_spectrum(*args, **kwargs)
+    # test_pytable_vs_vaex(verbose=verbose)
 
 
 if __name__ == "__main__":

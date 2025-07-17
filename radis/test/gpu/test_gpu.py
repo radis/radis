@@ -162,9 +162,9 @@ def test_broadening(plot=False):
     from radis import SpectrumFactory, plot_diff
 
     sf = SpectrumFactory(
-        2305,
-        2307,  # cm-1
-        molecule="CO2",
+        1900,
+        2050,  # cm-1
+        molecule="CO",
         isotope="1",
         wstep=0.002,
     )
@@ -204,6 +204,6 @@ if __name__ == "__main__":
     # test_eq_spectrum_gpu(plot=True, verbose=2)
     # test_eq_spectrum_gpu_nvidia(plot=True)
     # test_multiple_gpu_calls(plot=True, hard_test=True)
-    # test_broadening(plot=True)
+    test_broadening(plot=True)
 
     printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))
