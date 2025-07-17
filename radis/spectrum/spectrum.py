@@ -3023,6 +3023,104 @@ class Spectrum(object):
 
     # %% ------------------ Instrumental Slit Function ---------------------
 
+    def _apply_slit_nm_on_cm1(
+        self,
+        varlist,
+        slit_function,
+        norm_by,
+        shape,
+        center_wavespace,
+        mode,
+        plot_slit,
+        store,
+        auto_recenter_crop,
+        assert_evenly_spaced,
+        verbose,
+        *args,
+        **kwargs,
+    ):
+        from scipy.interpolate import interp1d
+
+        from radis.tools.slit import convolve_with_slit, get_slit_function
+
+        w_cm = self._q["wavespace"]
+        w_nm = cm2nm(w_cm[::-1])  # increasing order
+        w_uniform = np.linspace(w_nm.min(), w_nm.max(), len(w_nm))
+
+        I_conv_slices = {}
+
+        for qns in varlist:
+            q = qns[:-7]
+            I = self._q[qns][::-1]
+
+            interp_to_nm = interp1d(w_nm, I, kind="linear", fill_value="extrapolate")
+            I_interp = interp_to_nm(w_uniform)
+
+            wslit_nm, Islit_nm = get_slit_function(
+                slit_function,
+                unit="nm",
+                norm_by=norm_by,
+                shape=shape,
+                center_wavespace=center_wavespace,
+                return_unit="nm",
+                wstep=np.diff(w_uniform).min(),
+                auto_recenter_crop=auto_recenter_crop,
+                verbose=verbose,
+                plot=plot_slit,
+                *args,
+                **kwargs,
+            )
+
+            _, I_conv_nm = convolve_with_slit(
+                w_uniform,
+                I_interp,
+                wslit_nm,
+                Islit_nm,
+                mode=mode,
+                wunit="nm",
+                verbose=verbose,
+                assert_evenly_spaced=assert_evenly_spaced,
+            )
+
+            interp_back = interp1d(
+                w_uniform, I_conv_nm, kind="linear", fill_value="extrapolate"
+            )
+            I_final = interp_back(w_nm)[::-1]
+
+            I_conv_slices[q] = [I_final]
+
+        new_units = {}
+        for q in I_conv_slices.keys():
+            qns = q + "_noslit"
+            if norm_by == "area":
+                new_units[q] = self.units[qns]
+            elif norm_by == "max":
+                new_units[q] = (Unit("nm") * Unit(self.units[qns])).to_string()
+            else:
+                raise ValueError(f"Unknown normalization type: {norm_by}")
+
+        for q in I_conv_slices.keys():
+            I_conv = np.hstack(I_conv_slices[q])
+            self._q[q] = I_conv
+            self.units[q] = new_units[q]
+
+        if store:
+            self._slit["wavespace"] = wslit_nm
+            self._slit["intensity"] = Islit_nm
+
+        self.conditions.update(
+            {
+                "slit_function": slit_function,
+                "slit_unit": "nm",
+                "slit_dispersion": None,
+                "slit_dispersion_threshold": None,
+                "slit_shape": shape,
+                "norm_by": norm_by,
+            }
+        )
+
+        return self
+
     def apply_slit(
         self,
         slit_function,
@@ -3325,8 +3423,28 @@ class Spectrum(object):
             w_conv_slices = []
             I_conv_slices[q] = []
 
+        if unit == "nm" and waveunit == "cm-1":
+            # special handling for wavelength-space convolution
+            # for constant nm slit
+            return self._apply_slit_nm_on_cm1(
+                varlist,
+                slit_function,
+                norm_by,
+                shape,
+                center_wavespace,
+                mode,
+                plot_slit,
+                store,
+                auto_recenter_crop,
+                assert_evenly_spaced,
+                verbose,
+                *args,
+                **kwargs,
+            )
+
         # Loop over all waverange slices (needed if slit changes over the spectral range)
         for islice, slice_window in enumerate(slice_windows):
+            print("Slice {0}/{1}".format(islice + 1, len(slice_windows)))
 
             # Scale slit
             if slit_dispersion is not None:
