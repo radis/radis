@@ -689,9 +689,13 @@ def read_and_write_chunked_for_CO2(
     total_read = 0
     dataframes = []
 
+    def _load_block_offsets():
+        """Load block offsets from the index file."""
+        with open(index_file_path, "rb") as f:
+            return pickle.load(f)
+
     # Load block offsets
-    with open(index_file_path, "rb") as f:
-        block_offsets = pickle.load(f)
+    block_offsets = _load_block_offsets()
 
     total_size = getsize(bz2_file_path)
     assert total_size >= 6 * 1024 * 1024
@@ -702,8 +706,20 @@ def read_and_write_chunked_for_CO2(
     nth_block = 1
     try:
         f = ibz2.open(bz2_file_path, parallelization=os.cpu_count())
-        f.set_block_offsets(block_offsets)
-        f.seek(start_offset)
+        try:
+            f.set_block_offsets(block_offsets)
+            f.seek(start_offset)
+        except Exception:
+            warnings.warn(
+                "Failed to set block offsets or seek. Generating a new indexed bzip2 file. This may take 4–6 minutes.",
+                UserWarning,
+            )
+            create_bz2_indexed_file(bz2_file_path)
+            f.close()
+            f = ibz2.open(bz2_file_path, parallelization=os.cpu_count())
+            block_offsets = _load_block_offsets()
+            f.set_block_offsets(block_offsets)
+            f.seek(start_offset)  # seek again after fixing
 
         while total_read < bytes_to_read:
             to_read = min(chunk_size, bytes_to_read - total_read)
@@ -711,10 +727,16 @@ def read_and_write_chunked_for_CO2(
                 raw = f.read(to_read)
             except Exception:
                 warnings.warn(
-                    "Generating a new indexed bzip2 file. I will take around 4-6 minutes.",
+                    "Read error. Regenerating the indexed bzip2 file. This may take 4–6 minutes.",
                     UserWarning,
                 )
                 create_bz2_indexed_file(bz2_file_path)
+                f.close()
+                f = ibz2.open(bz2_file_path, parallelization=os.cpu_count())
+                block_offsets = _load_block_offsets()
+                f.set_block_offsets(block_offsets)
+                f.seek(start_offset)
+                raw = f.read(to_read)  # try reading again after fixing
 
             if not raw:
                 break  # EOF
