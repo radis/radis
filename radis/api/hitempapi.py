@@ -641,6 +641,8 @@ def read_and_write_chunked_for_CO2(
     index_file_path,
     start_offset,
     bytes_to_read,
+    load_wavenum_max,
+    load_wavenum_min,
     chunk_size=500 * 1024 * 1024,
     output_prefix="CO2_HITEMP",
 ):
@@ -696,6 +698,8 @@ def read_and_write_chunked_for_CO2(
 
     f = None
     total_read = 0
+    number_of_blocks = bytes_to_read // chunk_size + 1
+    nth_block = 1
     try:
         f = ibz2.open(bz2_file_path, parallelization=os.cpu_count())
         f.set_block_offsets(block_offsets)
@@ -740,8 +744,15 @@ def read_and_write_chunked_for_CO2(
                 out_decompressed_file, cache_directory_path=hitemp_CO2_download_path
             )
             os.remove(out_decompressed_file)  # remove the `par` file after parsing
+
+            if nth_block == 1 or nth_block == number_of_blocks:
+                df = df[
+                    (df["wav"] >= load_wavenum_min) & (df["wav"] <= load_wavenum_max)
+                ]
+
             dataframes.append(df)
             total_read += to_read
+            nth_block += 1
     finally:
         if f:
             f.close()
@@ -810,7 +821,12 @@ def download_and_decompress_CO2_into_df(
     )
 
     return read_and_write_chunked_for_CO2(
-        downloaded_HITEMP_CO2_path, index_file_path, start_offset, bytes_to_read
+        downloaded_HITEMP_CO2_path,
+        index_file_path,
+        start_offset,
+        bytes_to_read,
+        load_wavenum_max,
+        load_wavenum_min,
     )
 
 
