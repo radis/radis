@@ -17,7 +17,7 @@ import sys
 import urllib.request
 import warnings
 from datetime import date
-from os.path import basename, commonpath, join
+from os.path import basename, commonpath, getsize, join
 from typing import Union
 
 import indexed_bzip2 as ibz2
@@ -690,6 +690,9 @@ def read_and_write_chunked_for_CO2(
     # Load block offsets
     with open(index_file_path, "rb") as f:
         block_offsets = pickle.load(f)
+
+    total_size = getsize(bz2_file_path)
+    assert total_size >= 6 * 1024 * 1024
 
     f = None
     total_read = 0
