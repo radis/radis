@@ -48,6 +48,7 @@ try:
         _create_dtype,
         _get_linereturnformat,
         _ndarray2df,
+        create_bz2_indexed_file,
         replace_PQR_with_m101,
     )
 except ImportError:  # ran from here
@@ -629,6 +630,9 @@ def download_HITEMP_CO2(local_path=None, verbose=False):
     if verbose:
         print("Recorded metadata for CO2 database in config.")
 
+    # Create an indexed bzip2 file for efficient reading
+    create_bz2_indexed_file(downloaded_path)
+
     return downloaded_path
 
 
@@ -696,7 +700,15 @@ def read_and_write_chunked_for_CO2(
 
         while total_read < bytes_to_read:
             to_read = min(chunk_size, bytes_to_read - total_read)
-            raw = f.read(to_read)
+            try:
+                raw = f.read(to_read)
+            except Exception:
+                warnings.warn(
+                    "Generating a new indexed bzip2 file. I will take around 4-6 minutes.",
+                    UserWarning,
+                )
+                create_bz2_indexed_file(bz2_file_path)
+
             if not raw:
                 break  # EOF
 

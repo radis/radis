@@ -319,3 +319,26 @@ def replace_PQR_with_m101(df):
             ),
             category=PerformanceWarning,
         )
+
+
+def create_bz2_indexed_file(file_path):
+    """
+    Creates an index file containing block offsets for a HITEMP CO2 file using indexed_bzip2.
+
+    Args:
+        file_path (str): Path to the BZ2 file to be indexed.
+    """
+    import os
+    import pickle
+
+    import indexed_bzip2 as ibz2
+
+    from radis.misc.utils import getProjectRoot
+
+    index_file_path = os.path.join(getProjectRoot(), "db", "CO2_indexed_offsets.dat")
+
+    with ibz2.open(file_path, parallelization=os.cpu_count()) as file:
+        block_offsets = file.block_offsets()
+
+    with open(index_file_path, "wb") as offsets_file:
+        pickle.dump(block_offsets, offsets_file)
