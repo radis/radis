@@ -672,7 +672,7 @@ def read_and_write_chunked_for_CO2(
     -----
     - Ensures that each chunk starts and ends with a newline to avoid partial-line artifacts.
     """
-
+    create_bz2_indexed_file(bz2_file_path)
     # Determine cache path
     config = read_config()
     default_download_path = os.path.expanduser(config["DEFAULT_DOWNLOAD_PATH"])
@@ -735,8 +735,9 @@ def read_and_write_chunked_for_CO2(
                 f = ibz2.open(bz2_file_path, parallelization=os.cpu_count())
                 block_offsets = _load_block_offsets()
                 f.set_block_offsets(block_offsets)
-                f.seek(start_offset)
-                raw = f.read(to_read)  # try reading again after fixing
+                resume_offset = start_offset + total_read  # resume where we left off:
+                f.seek(resume_offset)
+                raw = f.read(to_read)
 
             if not raw:
                 break  # EOF
