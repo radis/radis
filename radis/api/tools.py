@@ -328,7 +328,6 @@ def create_bz2_indexed_file(file_path):
     Args:
         file_path (str): Path to the BZ2 file to be indexed.
     """
-    print("1")
     import os
     import pickle
 
@@ -337,15 +336,12 @@ def create_bz2_indexed_file(file_path):
     from radis.misc.utils import getProjectRoot
 
     index_file_path = os.path.join(getProjectRoot(), "db", "CO2_indexed_offsets.dat")
-    print("2 before returning")
-    if os.path.exists(index_file_path):
-        return
 
-    print("3 creating offsets")
+    if os.path.exists(index_file_path):
+        os.remove(index_file_path)
+
     file = ibz2.open(file_path, parallelization=os.cpu_count())
     block_offsets = file.block_offsets()
 
     with open(index_file_path, "wb") as offsets_file:
         pickle.dump(block_offsets, offsets_file)
-
-    print("4 done")
