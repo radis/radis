@@ -16,20 +16,24 @@ wavno_key_map = {float(k): k for k in wav_index.keys()}
 
 def find_nearest_lower_wavno_index(wavno):
     """
-    Find the index of largest wav_no ≤ given wavno using binary search.
-    Returns None if no such wavno exists.
+    Find the index of the largest wav_no ≤ given wavno.
+    If wavno is smaller than all, return index 0.
     """
     idx = bisect.bisect_right(wavno_keys, float(wavno))
-    return idx - 1 if idx > 0 else None
+    if idx == 0:
+        return 0  # wavno smaller than any key, return smallest
+    return idx - 1
 
 
 def find_nearest_upper_wavno_index(wavno):
     """
-    Find the index of smallest wav_no ≥ given wavno using binary search.
-    Returns None if no such wavno exists.
+    Find the index of the smallest wav_no ≥ given wavno.
+    If wavno is larger than all, return last index.
     """
     idx = bisect.bisect_left(wavno_keys, float(wavno))
-    return idx if idx < len(wavno_keys) else None
+    if idx == len(wavno_keys):
+        return len(wavno_keys) - 1  # wavno larger than any key, return largest
+    return idx
 
 
 def get_wavno_lower_offset(wavno):
