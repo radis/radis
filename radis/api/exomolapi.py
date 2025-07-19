@@ -144,7 +144,7 @@ def read_def(deff):
         quantum_labels = ["v"]
         # See https://github.com/HajimeKawahara/exojax/issues/330
     if deff.stem == "16O-1H__MoLLIST":
-        quantum_labels = ["e/f", "v", "F1/F2", "Es"]
+        quantum_labels = ["e/f", "v", "F1/F2", "Es", "state"]
 
     if deff.stem == "1H-2H-16O__VTT":
         numinf = wavenumber_range_HDO_VTT()
@@ -325,7 +325,7 @@ def read_trans(transf, engine="vaex"):
 
 
 def read_states(
-    statesf, dic_def, engine="vaex", skip_optional_data=True, print_states=False
+    statesf, dic_def, engine="vaex", skip_optional_data=False, print_states=False
 ):
     """Exomol IO for a state file
 
@@ -383,77 +383,57 @@ def read_states(
     .. [2] Tennyson, J., Yurchenko, S. N., Al-Refaie, A. F., Clark, V. H. J., Chubb, K. L., Conway, E. K., … Yurchenko, O. P. (2020). The 2020 release of the ExoMol database: Molecular line lists for exoplanet and other hot atmospheres. Journal of Quantitative Spectroscopy and Radiative Transfer, 255, 107228. https://doi.org/10.1016/j.jqsrt.2020.107228
 
     """
-    # we read first 4 columns for ("i", "E", "g", "J"),
-    # skip lifetime, skip Landé g-factor,
-    # read quantum numbers
-    N_otherfields = np.size(dic_def["quantum_labels"])
-    quantum_labels = dic_def["quantum_labels"]
-
-    mandatory_fields = ("i", "E", "g", "J")
-    N_mandatory_fields = len(mandatory_fields)
-    mandatory_usecol = np.arange(N_mandatory_fields)
-    if skip_optional_data:
-        usecol = mandatory_usecol
-        names = mandatory_fields
+    import bz2
+    import pandas as pd
+    import re
+    
+    # Read the file and split by whitespace
+    with bz2.open(statesf, "rt") as f:
+        lines = [line for line in f if line.strip() and not line.startswith("#")]
+    
+    # Split each line by whitespace
+    data = [re.split(r"\s+", line.strip()) for line in lines]
+    
+    # Get number of columns from first row
+    n_columns = len(data[0])
+    
+    # Always extract i, E, g, J (first 4 columns), v (third-to-last), state (last)
+    indices = [0, 1, 2, 3]
+    if n_columns > 5:
+        v_idx = n_columns - 3
+        state_idx = n_columns - 1
+        indices += [v_idx, state_idx]
+        column_names = ["i", "E", "g", "J", "v", "state"]
+    elif n_columns == 5:
+        state_idx = n_columns - 1
+        indices += [state_idx]
+        column_names = ["i", "E", "g", "J", "state"]
     else:
-        label = np.array(["unc", "lifetime", "Lande"])
-        mask = np.array([dic_def["unc"], dic_def["Landé"], dic_def["lifetime"]])
-        N_except = np.sum(mask)
-        usecol = np.arange(0, N_mandatory_fields + N_except + N_otherfields)
-        names = mandatory_fields + tuple(label[mask]) + tuple(quantum_labels)
-        # The definitions file (*.def) specifies which fields are available
-        # in the states fiel (*.states). Check the number of available fields
-        # (see *.def) match the numbers of columns in the states file (*.states).
-        # Otherwise, both files are inconsistent.
-        with bz2.open(statesf, "rb") as f:
-            firstline = f.readline().decode("utf-8")  # read 1dt line
-            splitline = [x for x in re.split(r"\s+", firstline) if x != ""]
-            # splitline = re.split(r"\s+", firstline)
-            f.close()
-        if len(splitline) != len(names):
-            warnings.warn(
-                "There appear to be further additional columns in .state file,"
-                + "which are not defined in .def file. We skip them."
-            )
+        state_idx = n_columns - 1
+        indices += [state_idx]
+        column_names = ["i", "E", "g", "J", "state"]
+
+    # Extract only the required columns from each row
+    filtered_data = [[row[i] for i in indices] for row in data]
+
+    # Create DataFrame
+    dat = pd.DataFrame(filtered_data, columns=column_names)
+
+    # Convert numeric columns
+    for col in ["i", "E", "g", "J", "v"]:
+        if col in dat.columns:
+            dat[col] = pd.to_numeric(dat[col], errors="coerce") # TODO: check if this is correct
+
+    if print_states:
+        print(f"Loaded {len(dat)} states from {statesf}")
+        print(f"Columns: {list(dat.columns)}")
+        print("First few rows:")
+        print(dat.head())
 
     if engine == "vaex":
         import vaex
+        dat = vaex.from_pandas(dat)
 
-        # TODO Refactor: move in DataFileManager
-        try:
-            dat = vaex.from_csv(
-                statesf,
-                compression="bz2",
-                sep=r"\s+",
-                usecols=usecol,
-                names=names,
-                convert=False,  # written in MolDB
-            )
-        except:
-            try:
-                dat = vaex.read_csv(
-                    statesf,
-                    sep=r"\s+",
-                    usecols=usecol,
-                    names=names,
-                    convert=False,  # written in MolDB
-                )
-
-            except Exception as err:
-                raise Exception(
-                    f"Error reading {statesf}. Either the file does not exist on exomol.com, or was corrupted? You can try to delete it."
-                ) from err
-    elif engine == "csv":
-        try:
-            dat = pd.read_csv(
-                statesf, compression="bz2", sep=r"\s+", usecols=usecol, names=names
-            )
-        except:  #!!!TODO What was the expected error?
-            dat = pd.read_csv(statesf, sep=r"\s+", usecols=usecol, names=names)
-    else:
-        raise NotImplementedError(engine)
-    if print_states:
-        print(dat)
     return dat
 
 
@@ -514,7 +494,7 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
 
             # WIP. First implementation with join(). Use Map() will probably be faster.
             trans.join(
-                states[states_key, col],
+                states[[states_key, col]],
                 left_on=trans_key,
                 right_on=states_key,
                 inplace=True,
@@ -524,27 +504,18 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
         return trans
 
     trans = map_add(trans, "g", "gup", "i_upper")
-    trans = map_add(trans, "J", "jlower", "i_lower")
-    trans = map_add(trans, "J", "jupper", "i_upper")
+    trans = map_add(trans, "g", "glow", "i_lower")
+    trans = map_add(trans, "E", "eupper", "i_upper")
     trans = map_add(trans, "E", "elower", "i_lower")
-
-    def has_nan(column):
-        try:  # Vaex
-            return column.countnan() > 0
-        except AttributeError:  # Pandas
-            return column.hasnans
-
-    if not "nu_lines" in trans or has_nan(trans["nu_lines"]):
-        trans = map_add(trans, "E", "eupper", "i_upper")
-        trans["nu_lines"] = trans["eupper"] - trans["elower"]
-
-    ### Step 2. Extra quantum numbers (e/f parity, vib and rot numbers)
-    # -----------------------------------------------------------------
-    if not skip_optional_data:
-        for q in dic_def["quantum_labels"]:
-            trans = map_add(trans, q, f"{q}_l", "i_lower")
-            trans = map_add(trans, q, f"{q}_u", "i_upper")
-
+    trans = map_add(trans, "J", "jupper", "i_upper")
+    trans = map_add(trans, "J", "jlower", "i_lower")
+    # Add electronic state and parity if present
+    if "state" in states.columns:
+        trans = map_add(trans, "state", "state_up", "i_upper")
+        trans = map_add(trans, "state", "state_low", "i_lower")
+    if "parity" in states.columns:
+        trans = map_add(trans, "parity", "parity_up", "i_upper")
+        trans = map_add(trans, "parity", "parity_low", "i_lower")
     return trans
 
 

@@ -83,6 +83,7 @@ from radis.levels.partfunc import (
     PartFuncTIPS,
     RovibParFuncCalculator,
     RovibParFuncTabulator,
+    PartFuncExoMol,
 )
 from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDcalc, PartFuncCO2_CDSDtab
 from radis.misc.arrays import count_nans
@@ -701,6 +702,7 @@ class DatabankLoader(object):
         "profiler",
         "reftracker",
         "save_memory",
+        "states_df",
         "truncation",
         "units",
         "verbose",
@@ -803,6 +805,11 @@ class DatabankLoader(object):
         See Also
         --------
         :py:attr:`~self.radis.lbl.loader.DatabankLoader.df0`
+        """
+        self.states_df = None  # type : pd.DataFrame
+        """pd.DataFrame : states database for electronic spectra calculations (ExoMol format)
+        Contains quantum states with columns ['i', 'E', 'g', 'J', 'state'] where 'state' is the electronic state label.
+        Used for building electronic states and calculating electronic populations in non-equilibrium spectra.
         """
 
         # Temp variable to store databanks information
@@ -1128,8 +1135,10 @@ class DatabankLoader(object):
 
         elif compare_source == "exomol":
             dbformat = (
-                "exomol-radisdb"  # downloaded in RADIS local databases ~/.radisdb
+                "hdf5-radisdb"  # Use hdf5-radisdb for ExoMol data
             )
+            if self.verbose:
+                print("DEBUG: Entering ExoMol fetch section")
         elif compare_source == "geisa":
             dbformat = "geisa"
             if database == "default":
@@ -1621,6 +1630,27 @@ class DatabankLoader(object):
                 replace_PQR_with_m101(df)
             df = drop_object_format_columns(df, verbose=self.verbose)
 
+        # If ExoMol, also load and assign the states DataFrame
+        if hasattr(self, 'params') and getattr(self.params, 'dbformat', None) == 'hdf5-radisdb':
+            from radis.api.exomolapi import read_states
+            import os
+            # Find the states file path (assume standard ExoMol structure)
+            dbpath = getattr(self.params, 'dbpath', None)
+            if dbpath is not None:
+                for f in os.listdir(dbpath):
+                    if f.endswith('.states.bz2'):
+                        states_path = os.path.join(dbpath, f)
+                        break
+                else:
+                    states_path = None
+                if states_path is not None:
+                    # Read states file and assign to self.states_df
+                    states_df = read_states(states_path, {}, print_states=False)
+                    self.states_df = states_df
+                    # States DataFrame loaded successfully
+                # No states file found
+            # No dbpath found
+        # Not ExoMol format
         self.df0 = df  # type : pd.DataFrame
         self.misc.total_lines = len(df)  # will be stored in Spectrum metadata
 
@@ -2329,6 +2359,15 @@ class DatabankLoader(object):
                     parsum_mode=self.params.parsum_mode,
                 )
                 self.parsum_calc[molecule][iso][state] = ParsumCalc
+
+        # Use ExoMol partition function for ExoMol molecules
+        elif levelsfmt == "exomol":
+            # For non-equilibrium, explicit energy levels are required. If not provided, raise an error.
+            raise ValueError("Explicit energy levels are required for non-equilibrium ExoMol calculations. Please provide levels for each isotope.")
+
+        else:
+            raise ValueError("Unknown format for energy levels : {0}".format(levelsfmt))
+            # other formats ?
 
     def _check_line_databank(self):
         """Make sure database is loaded, loads if it isnt and we have all the
@@ -3113,6 +3152,11 @@ class DatabankLoader(object):
             )
             # note: use 'levels' (useless here) to specify calculations options
             # for the abinitio calculation ? Like Jmax, etc.
+
+        # Use ExoMol partition function for ExoMol molecules
+        elif levelsfmt == "exomol":
+            # For non-equilibrium, explicit energy levels are required. If not provided, raise an error.
+            raise ValueError("Explicit energy levels are required for non-equilibrium ExoMol calculations. Please provide levels for each isotope.")
 
         else:
             raise ValueError("Unknown format for energy levels : {0}".format(levelsfmt))

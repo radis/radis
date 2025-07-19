@@ -383,10 +383,12 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         self,
         Tvib,
         Trot,
+        Telec=None,
         overpopulation=None,
         vib_distribution="boltzmann",
         rot_distribution="boltzmann",
         returnQvibQrot=False,
+        intensity_factor=1.0,
         update_populations=False,
     ):
         r"""Calculate Partition Function under non equilibrium (Tvib, Trot),
@@ -434,12 +436,10 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         if __debug__:
             printdbg(
                 "called RovibPartitionFunction.atnoneq"
-                + "(Tvib={0}K, Trot={1}K, ... )".format(Tvib, Trot)
-                + "update_populations={0})".format(update_populations)
+                + f"(Tvib={Tvib}K, Trot={Trot}K, Telec={Telec}K, ...)"
                 + f". mode = {self.mode}"
             )
 
-        # Check inputs, initialize
         if overpopulation is None:
             overpopulation = {}
         if overpopulation != {}:
@@ -469,8 +469,60 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                     + "partition functions"
                 )
 
+        # non-equilibrium logic 
+        if Telec is not None:
+            # 1. Get electronic populations
+            from .partfunc import ElectronicPartitionFunction
+            elec_states = getattr(self, "electronic_states", None)
+            if elec_states is None:
+                raise ValueError("No electronic_states attribute found for hierarchical non-eq partition function.")
+            elec_pf = ElectronicPartitionFunction(elec_states)
+            pop_elec = elec_pf.populations(Telec, overpopulation)
+            # 2. For each electronic state, calculate rovib partition function and populations
+            total_Q = 0.0
+            total_pop = None
+            for state in elec_states.values() if isinstance(elec_states, dict) else elec_states:
+                label = getattr(state, 'label', getattr(state, 'name', None))
+                frac = pop_elec[label]
+                # Create a RovibParFuncCalculator for this state
+                # Use PartFunc_Dunham to ensure energy levels are properly built
+                from .partfunc import PartFunc_Dunham
+                rovib_calc = PartFunc_Dunham(state, mode=self.mode, verbose=self.verbose)
+                # Calculate populations for this state
+                Q = rovib_calc.at_noneq(
+                    Tvib,
+                    Trot,
+                    overpopulation=overpopulation,
+                    vib_distribution=vib_distribution,
+                    rot_distribution=rot_distribution,
+                    returnQvibQrot=returnQvibQrot,
+                    update_populations=update_populations,
+                )
+                # Multiply populations by electronic fraction
+                if isinstance(Q, tuple):
+                    # (Q, Qvib, dfQrot) or similar
+                    Qval = Q[0] * frac
+                else:
+                    Qval = Q * frac
+                total_Q += Qval
+                # Optionally, sum populations (if update_populations=True)
+                if update_populations and hasattr(rovib_calc, 'df'):
+                    df = rovib_calc.df.copy()
+                    if 'n' in df:
+                        df['n'] *= frac
+                    if total_pop is None:
+                        total_pop = df
+                    else:
+                        # Only sum the 'n' column, keep other columns from total_pop
+                        total_pop['n'] = total_pop['n'].add(df['n'], fill_value=0)
+            if update_populations and total_pop is not None:
+                self.df = total_pop
+            return total_Q
+
+        # Default: single-state rovib logic
+        result = None
         if self.mode == "full summation":
-            return self._noneq_full_summation(
+            result = self._noneq_full_summation(
                 Tvib=Tvib,
                 Trot=Trot,
                 overpopulation=overpopulation,
@@ -484,14 +536,15 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 raise ValueError(
                     "Cannot update populations of individual levels with `tabulation` mode. Choose `update_populations=False` or `mode='full summation'`"
                 )
-            return self._noneq_tabulation_eval(
+            result = self._noneq_tabulation_eval(
                 Tvib=Tvib,
                 Trot=Trot,
                 overpopulation=overpopulation,
                 vib_distribution=vib_distribution,
                 rot_distribution=rot_distribution,
-                returnQvibQrot=returnQvibQrot,
+                returnQvibQrot=returnQvibQvrot,
             )
+        return result
 
     def _noneq_tabulation_setup(self, N_bins, vib_distribution, rot_distribution):
         r"""Bins all levels into an Evib and Erot grid
@@ -1737,7 +1790,10 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         # First get max vib level  (to be calculated with Dunham expansion)
         if vmax is None:
             vmax = 0
-            while ElecState.Erovib(vmax, J=0, remove_ZPE=True) < Ediss:
+            while True:
+                energy = ElecState.Erovib(vmax, J=0, remove_ZPE=True)
+                if energy >= Ediss:
+                    break
                 vmax += 1
         if Jmax is None:
             Jmax = np.nan  # no limit
@@ -2314,3 +2370,71 @@ if __name__ == "__main__":
     from radis.test.levels.test_partfunc import _run_testcases
 
     print("Testing parfunc: {0}".format(_run_testcases()))
+
+
+class ElectronicPartitionFunction:
+    """
+    Class to compute the electronic partition function and state populations.
+    Compatible with both ExoMol and built-in molecule definitions.
+    
+    Parameters
+    ----------
+    electronic_states : dict or list
+        Dictionary or list of electronic state objects or dicts, each with at least:
+        - 'g_e': electronic degeneracy
+        - 'Te': term energy (in cm-1)
+        - 'label' or 'name': state label
+    """
+    def __init__(self, electronic_states):
+        # Accept dict (label: state) or list of state objects/dicts
+        if isinstance(electronic_states, dict):
+            self.states = list(electronic_states.values())
+        else:
+            self.states = list(electronic_states)
+
+    def partition_function(self, Telec, overpopulation=None):
+        """
+        Compute total electronic partition function and state-specific partition functions.
+        Parameters
+        ----------
+        Telec : float
+            Electronic temperature (K)
+        overpopulation : dict, optional
+            {state_label: factor} to manually tweak populations
+        Returns
+        -------
+        Q_elec : float
+            Total electronic partition function
+        Q_by_state : dict
+            Partition function contribution for each state
+        """
+        from math import exp
+        hc_k = 1.438776877  # cm-1/K
+        Q_elec = 0.0
+        Q_by_state = {}
+        for state in self.states:
+            label = getattr(state, 'label', getattr(state, 'name', None))
+            if isinstance(state, dict):
+                g_e = state.get('g_e')
+                Te = state.get('Te', 0.0)
+            else:
+                g_e = getattr(state, 'g_e', None)
+                Te = getattr(state, 'Te', 0.0)
+            factor = g_e * exp(-Te / hc_k / Telec)
+            if overpopulation and label in overpopulation:
+                factor *= overpopulation[label]
+            Q_by_state[label] = factor
+            Q_elec += factor
+        return Q_elec, Q_by_state
+
+    def populations(self, Telec, overpopulation=None):
+        """
+        Compute normalized population for each state at given Telec.
+        Returns
+        -------
+        pop_by_state : dict
+            {state_label: population fraction}
+        """
+        Q_elec, Q_by_state = self.partition_function(Telec, overpopulation)
+        pop_by_state = {label: Qs / Q_elec for label, Qs in Q_by_state.items()}
+        return pop_by_state

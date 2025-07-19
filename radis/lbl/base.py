@@ -409,6 +409,33 @@ class BaseFactory(DatabankLoader):
         # the radis.db database
         elif self.params.levelsfmt == "radis":
             molecule = self.input.species
+            dbformat = getattr(self.params, 'dbformat', None)
+            if dbformat in ["exomol", "hdf5-radisdb"] and molecule == "OH":
+                # Use ExoMol/OH constants
+                self.profiler.start("fetch_energy_exomol_oh", 2)
+                we = 3737.76  # vibrational constant in cm^-1
+                wexe = 84.88   # anharmonicity constant in cm^-1
+                B = 18.87      # rotational constant in cm^-1
+                if self.dataframe_type == "pandas":
+                    df['Evibl'] = we * (df['vl'] + 0.5) - wexe * (df['vl'] + 0.5)**2
+                    df['Evibu'] = we * (df['vu'] + 0.5) - wexe * (df['vu'] + 0.5)**2
+                    df['Erotl'] = B * df['jl'] * (df['jl'] + 1)
+                    df['Erotu'] = B * df['ju'] * (df['ju'] + 1)
+                    df['gvibl'] = 1
+                    df['gvibu'] = 1
+                    df['grotl'] = 2 * df['jl'] + 1
+                    df['grotu'] = 2 * df['ju'] + 1
+                elif self.dataframe_type == "vaex":
+                    df['Evibl'] = we * (df['vl'] + 0.5) - wexe * (df['vl'] + 0.5)**2
+                    df['Evibu'] = we * (df['vu'] + 0.5) - wexe * (df['vu'] + 0.5)**2
+                    df['Erotl'] = B * df['jl'] * (df['jl'] + 1)
+                    df['Erotu'] = B * df['ju'] * (df['ju'] + 1)
+                    df['gvibl'] = 1
+                    df['gvibu'] = 1
+                    df['grotl'] = 2 * df['jl'] + 1
+                    df['grotu'] = 2 * df['ju'] + 1
+                self.profiler.stop("fetch_energy_exomol_oh", "Fetched Evib & Erot (ExoMol/OH)")
+                return df
             if molecule in HITRAN_CLASS1:  # class 1
                 return self._add_EvibErot_RADIS_cls1(
                     df, calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic
@@ -426,7 +453,7 @@ class BaseFactory(DatabankLoader):
                     return self._add_Evib123Erot_RADIS_cls5(df)
             else:
                 raise NotImplementedError(
-                    "Molecules not implemented: {0}".format(molecule.name)
+                    "Molecules not implemented: {0}".format(molecule)
                 )  # TODO
 
         else:
@@ -1986,6 +2013,7 @@ class BaseFactory(DatabankLoader):
             "hitemp-radisdb",
             "cdsd-hitemp",
             "cdsd-4000",
+            "hdf5-radisdb",
         ]:
             # In HITRAN, AFAIK all molecules have a complete assignment of rovibrational
             # levels hence gvib=1 for all vibrational levels.
@@ -2728,6 +2756,7 @@ class BaseFactory(DatabankLoader):
                     Q_dict[iso] = parsum.at_noneq(
                         Tvib,
                         Trot,
+                        Telec=self.input.Telec, 
                         vib_distribution=vib_distribution,
                         rot_distribution=rot_distribution,
                         overpopulation=overpopulation,
@@ -2751,6 +2780,7 @@ class BaseFactory(DatabankLoader):
                 Q = parsum.at_noneq(
                     Tvib,
                     Trot,
+                    Telec=self.input.Telec,  
                     vib_distribution=vib_distribution,
                     rot_distribution=rot_distribution,
                     overpopulation=overpopulation,
@@ -3061,7 +3091,7 @@ class BaseFactory(DatabankLoader):
             df["nl"] = df.gl * exp(-df.El * hc_k / Telec) / self.Qgas(df, Telec)
         else:
             # Get vibrational levels for both upper and lower states
-            if not ("viblvl_u" in df and not "viblvl_l" in df):
+            if not ("viblvl_u" in df and "viblvl_l" in df):
                 from radis.lbl.bands import add_bands
 
                 add_bands(
@@ -3078,7 +3108,8 @@ class BaseFactory(DatabankLoader):
 
             #  Derive populations
             if not self.misc.export_rovib_fraction:
-                if overpopulation != {}:
+                # Only disallow overpopulation if multi-Tvib is actually used
+                if overpopulation and (isinstance(Tvib, dict) or isinstance(Tvib, (list, tuple))):
                     raise NotImplementedError(
                         "Overpopulation not implemented in multi-Tvib mode"
                     )
