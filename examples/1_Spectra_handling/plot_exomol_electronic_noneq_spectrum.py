@@ -29,12 +29,12 @@ sf.fetch_databank("exomol", "MoLLIST-OH")
 sf.misc.export_rovib_fraction = True
 
 s = sf.non_eq_spectrum(
-    Tvib=Tvib,
-    Trot=Trot,
-    Telec=Telec,
-    mole_fraction=mole_fraction,
-    path_length=path_length,
-    pressure=pressure
+    Tvib=400,
+    Trot=400,
+    Telec=10000,
+    mole_fraction=1e-3,
+    path_length=1,
+    pressure=1,
     # band_scaling={"A": 2.0, "X": 1.0}
 )
 s.apply_slit(0.1)
