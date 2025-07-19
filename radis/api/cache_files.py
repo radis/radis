@@ -123,13 +123,13 @@ def load_h5_cache_file(
     elif use_cached == "regen" and exists(cachefile):
         os.remove(cachefile)
         if verbose:
-            printm("Deleted h5 cache file : {0}".format(cachefile))
+            printm(f"Deleted h5 cache file : {cachefile}")
         return None
 
     # 2. check the file is here
     if not exists(cachefile):
         if use_cached == "force":
-            raise ValueError("Cache file {0} doesnt exist".format(cachefile))
+            raise ValueError(f"Cache file {cachefile} doesnt exist")
         else:
             return None  # File doesn't exist. It's okay.
 
@@ -150,11 +150,7 @@ def load_h5_cache_file(
             raise err
         else:
             if verbose:
-                printr(
-                    "File {0} deprecated:\n{1}\nDeleting it!".format(
-                        cachefile, str(err)
-                    )
-                )
+                printr(f"File {cachefile} deprecated:\n{str(err)}\nDeleting it!")
             os.remove(cachefile)
             return None
 
@@ -173,13 +169,13 @@ def load_h5_cache_file(
             if verbose >= 2:
                 from radis.misc.printer import printg
 
-                printg("Database file {0} irrelevant and not loaded".format(cachefile))
+                printg(f"Database file {cachefile} irrelevant and not loaded")
             raise err
 
     # 5. File is relevant: read the content.
     df = None
     if verbose >= 2:
-        printm("Reading cache file ({0})".format(cachefile))
+        printm(f"Reading cache file ({cachefile})")
     try:
         # Load file :
         manager = DataFileManager(engine)
@@ -193,9 +189,7 @@ def load_h5_cache_file(
         else:
             if verbose:
                 printr(
-                    "An error happened during cache file reading "
-                    + "{0}:\n{1}\n".format(cachefile, str(err))
-                    + "Deleting cache file to regenerate it"
+                    f"An error happened during cache file reading {cachefile}:\n{str(err)}\nDeleting cache file to regenerate it"
                 )
             os.remove(cachefile)
             df = None
@@ -295,10 +289,10 @@ def check_cache_file(
         if exists(fcache):
             os.remove(fcache)
             if verbose:
-                print(("Deleted h5 cache file : {0}".format(fcache)))
+                print(f"Deleted h5 cache file : {fcache}")
     elif use_cached == "force":
         if not exists(fcache):
-            raise ValueError("Cache file {0} doesnt exist".format(fcache))
+            raise ValueError(f"Cache file {fcache} doesnt exist")
     else:  # use_cached == True
         pass  # just use the file as is
 
@@ -306,7 +300,7 @@ def check_cache_file(
     # (we just read the attributes, the file is never fully read)
     if exists(fcache):
         if verbose:
-            print(("Using cache file: {0}".format(fcache)))
+            print(f"Using cache file: {fcache}")
         try:
             check_not_deprecated(
                 fcache,
@@ -321,11 +315,7 @@ def check_cache_file(
                 raise
             else:  # delete file to regenerate it in the end of the script
                 if verbose:
-                    printr(
-                        "File {0} deprecated:\n{1}\nDeleting it!".format(
-                            fcache, str(err)
-                        )
-                    )
+                    printr(f"File {fcache} deprecated:\n{str(err)}\nDeleting it!")
                 os.remove(fcache)
 
     return
@@ -381,8 +371,7 @@ def check_not_deprecated(
     except AttributeError as err:
         if "Attribute 'metadata' does not exist" in str(err):
             raise DeprecatedFileWarning(
-                "File {0} is deprecated : ".format(file)
-                + "Metadata is missing. Delete it to regenerate it on next run"
+                f"File {file} is deprecated : Metadata is missing. Delete it to regenerate it on next run"
             )
         raise
 
@@ -391,8 +380,7 @@ def check_not_deprecated(
         file_version = file_metadata.pop("version")
     except KeyError:
         raise DeprecatedFileWarning(
-            "File {0} is deprecated : ".format(file)
-            + "RADIS version missing in metadata. Delete it to regenerate it on next run"
+            f"File {file} is deprecated : RADIS version missing in metadata. Delete it to regenerate it on next run"
         )
 
     # Get current version
@@ -404,21 +392,17 @@ def check_not_deprecated(
     # ... (example: a key name was changed)
     if parse(file_version) < parse(last_compatible_version):
         raise DeprecatedFileWarning(
-            "File {0} has been generated in a deprecated ".format(file)
-            + "version ({0}). Oldest compatible version is {1}. ".format(
-                file_version, last_compatible_version
-            )
-            + "Delete the file to regenerate it on next run"
+            f"File {file} has been generated in a deprecated "
+            f"version ({file_version}). Oldest compatible version is {last_compatible_version}. "
+            "Delete the file to regenerate it on next run."
         )
 
     # If file version is outdated: Warning, but no error
     if parse(current_version) > parse(file_version):
         warn(
             DeprecationWarning(
-                "File {0} has been generated in ".format(file)
-                + "a deprecated version ({0}) compared to current ({1})".format(
-                    file_version, current_version
-                )
+                f"File {file} has been generated in "
+                + f"a deprecated version ({file_version}) compared to current ({current_version})"
                 + ". Delete it to regenerate it on next run"
             )
         )
@@ -427,9 +411,7 @@ def check_not_deprecated(
         out = True
     else:
         raise ValueError(
-            "Cache file ({0}) generated with a future version ({1} > {2})? ".format(
-                file, file_version, current_version
-            )
+            f"Cache file ({file}) generated with a future version ({file_version} > {current_version})? "
             + "Do you own a DeLorean? Delete the file manually if you understand what happened"
         )
 
@@ -437,9 +419,7 @@ def check_not_deprecated(
     for k in metadata_keys_contain:
         if k not in file_metadata:
             raise DeprecatedFileWarning(
-                "Metadata in file {0} doesn't contain the expected key `{1}`. ".format(
-                    file, k
-                )
+                f"Metadata in file {file} doesn't contain the expected key `{k}`. "
             )
 
     # Compare metadata values
@@ -457,9 +437,9 @@ def check_not_deprecated(
     )
     if out != 1:
         raise DeprecatedFileWarning(
-            "Metadata in file {0} dont match ".format(file)
+            f"Metadata in file {file} dont match "
             + "expected values. See comparison below:"
-            + "\n\tExpected\tFile\n{0}".format(compare_string)
+            + f"\n\tExpected\tFile\n{compare_string}"
         )
 
     return out
@@ -539,17 +519,13 @@ def check_relevancy(
         # Note : check_not_deprecated already tested the existence of each key so we are safe
         if float(file_metadata[k]) < v:
             raise IrrelevantFileWarning(
-                "Database file {0} irrelevant: {1}={2} [file metadata] < {3} [expected], not loaded".format(
-                    file, k, file_metadata[k], v
-                )
+                f"Database file {file} irrelevant: {k}={file_metadata[k]} [file metadata] < {v} [expected], not loaded"
             )
     for k, v in relevant_if_metadata_below.items():
         # Note : check_not_deprecated already tested the existence of each key so we are safe
         if float(file_metadata[k]) > v:
             raise IrrelevantFileWarning(
-                "Database file {0} irrelevant ({1}={2} [file metadata] > {3} [expected]), not loaded".format(
-                    file, k, file_metadata[k], v
-                )
+                f"Database file {file} irrelevant ({k}={file_metadata[k]} [file metadata] > {v} [expected]), not loaded"
             )
 
 
@@ -558,9 +534,7 @@ def _warn_if_object_columns(df, fname):
     objects = [k for k, v in df.dtypes.items() if v == object]
     if len(objects) > 0:
         warn(
-            "Dataframe in {0} contains `object` format columns: {1}. ".format(
-                fname, objects
-            )
+            f"Dataframe in {fname} contains `object` format columns: {objects}. "
             + "Operations will be slower. Try to convert them to numeric."
         )
 
@@ -621,7 +595,7 @@ def save_to_hdf(
 
     # Overwrite file
     if exists(fname) and not overwrite:
-        raise ValueError("File exist: {0}".format(fname))
+        raise ValueError(f"File exist: {fname}")
 
     # start by exporting dataframe
     manager = DataFileManager(engine)
@@ -637,7 +611,7 @@ def save_to_hdf(
     manager.add_metadata(fname, metadata, key=key)
 
     if verbose >= 3:
-        print("... saved {0} with metadata: {1}".format(fname, metadata))
+        print(f"... saved {fname} with metadata: {metadata}")
 
 
 def filter_metadata(arguments, discard_variables=["self", "verbose"]):

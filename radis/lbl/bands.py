@@ -285,7 +285,7 @@ class BandFactory(BroadenFactory):
                 abscoeff_others += abscoeff
             abscoeff_v_bands["others"] = abscoeff_others
             if verbose:
-                print("{0} bands grouped under `others`".format(len(merge_bands)))
+                print(f"{len(merge_bands)} bands grouped under `others`")
 
         # ----------------------------------------------------------------------
         # Generate spectra
@@ -293,7 +293,7 @@ class BandFactory(BroadenFactory):
         # Progress bar for spectra generation
         Nbands = len(abscoeff_v_bands)
         if self.verbose:
-            print("Generating bands ({0})".format(Nbands))
+            print(f"Generating bands ({Nbands})")
         pb = ProgressBar(Nbands, active=self.verbose)
         if Nbands < 100:
             pb.set_active(False)  # hide for low line number
@@ -480,9 +480,7 @@ class BandFactory(BroadenFactory):
         if isinstance(Tvib, tuple):
             Tvib = tuple([convert_and_strip_units(T, u.K) for T in Tvib])
         elif not is_float(Tvib):
-            raise TypeError(
-                "Tvib should be float, or tuple (got {0})".format(type(Tvib))
-            )
+            raise TypeError(f"Tvib should be float, or tuple (got {type(Tvib)})")
         singleTvibmode = is_float(Tvib)
         if not is_float(Trot):
             raise ValueError("Trot should be float.")
@@ -627,7 +625,7 @@ class BandFactory(BroadenFactory):
             abscoeff_v_bands["others"] = abscoeff_others
             emisscoeff_v_bands["others"] = emisscoeff_others
             if verbose:
-                print("{0} bands grouped under `others`".format(len(merge_bands)))
+                print(f"{len(merge_bands)} bands grouped under `others`")
 
         # ----------------------------------------------------------------------
         # Apply scaling
@@ -644,7 +642,7 @@ class BandFactory(BroadenFactory):
         # Progress bar for spectra generation
         Nbands = len(abscoeff_v_bands)
         if self.verbose:
-            print("Generating bands ({0})".format(Nbands))
+            print(f"Generating bands ({Nbands})")
         pb = ProgressBar(Nbands, active=self.verbose)
         if Nbands < 100:
             pb.set_active(False)  # hide for low line number
@@ -1025,7 +1023,7 @@ class BandFactory(BroadenFactory):
         df = self.df1
 
         if self.verbose:
-            print(("Now processing lines ({0})".format(len(df))))
+            print(f"Now processing lines ({len(df)})")
 
         self.profiler.start("calc_broadening_eq_bands", 2)
         # Just some tests
@@ -1073,7 +1071,7 @@ class BandFactory(BroadenFactory):
         df = self.df1
 
         if self.verbose:
-            print(("Now processing lines ({0})".format(len(df))))
+            print(f"Now processing lines ({len(df)})")
 
         self.profiler.start("calc_broadening_noneq_bands", 2)
         # Just some tests
@@ -1163,13 +1161,9 @@ def add_bands(df, dbformat, lvlformat, dataframe_type="pandas", verbose=True):
 
     # Check inputs
     if not dbformat in KNOWN_DBFORMAT:
-        raise ValueError(
-            "dbformat ({0}) should be one of: {1}".format(dbformat, KNOWN_DBFORMAT)
-        )
+        raise ValueError(f"dbformat ({dbformat}) should be one of: {KNOWN_DBFORMAT}")
     if not lvlformat in KNOWN_LVLFORMAT:
-        raise ValueError(
-            "lvlformat ({0}) should be one of: {1}".format(lvlformat, KNOWN_LVLFORMAT)
-        )
+        raise ValueError(f"lvlformat ({lvlformat}) should be one of: {KNOWN_LVLFORMAT}")
 
     if verbose:
         t0 = time()
@@ -1204,9 +1198,7 @@ def add_bands(df, dbformat, lvlformat, dataframe_type="pandas", verbose=True):
                 "hitemp-radisdb",
             ]:
                 raise NotImplementedError(
-                    "lvlformat {0} not supported with dbformat {1}".format(
-                        lvlformat, dbformat
-                    )
+                    f"lvlformat {lvlformat} not supported with dbformat {dbformat}"
                 )
 
             # Use vibrational nomenclature of CDSD (p,c,j,n) or HITRAN (v1v2l2v3J)
@@ -1233,7 +1225,7 @@ def add_bands(df, dbformat, lvlformat, dataframe_type="pandas", verbose=True):
                     df.polyu, df.wangu, df.ju, df.ranku
                 )
             else:
-                raise ValueError("Unexpected level format: {0}".format(lvlformat))
+                raise ValueError(f"Unexpected level format: {lvlformat}")
 
             band_cdsd = viblvl_l_cdsd + "->" + viblvl_u_cdsd
 
@@ -1262,9 +1254,7 @@ def add_bands(df, dbformat, lvlformat, dataframe_type="pandas", verbose=True):
                 "hitemp-radisdb",
             ]:
                 raise NotImplementedError(
-                    "lvlformat `{0}` not supported with dbformat `{1}`".format(
-                        lvlformat, dbformat
-                    )
+                    f"lvlformat `{lvlformat}` not supported with dbformat `{dbformat}`"
                 )
 
             # Calculate bands with HITRAN convention
@@ -1278,7 +1268,7 @@ def add_bands(df, dbformat, lvlformat, dataframe_type="pandas", verbose=True):
 
         else:
             raise NotImplementedError(
-                "Cant deal with lvlformat={0} for {1}".format(lvlformat, molecule)
+                f"Cant deal with lvlformat={lvlformat} for {molecule}"
             )
 
     elif molecule in HITRAN_CLASS1:  # includes 'CO'
@@ -1290,9 +1280,7 @@ def add_bands(df, dbformat, lvlformat, dataframe_type="pandas", verbose=True):
             # ensures that vib_lvl_name functions wont crash
             if dbformat not in ["hitran", "hitemp", "hitemp-radisdb", "hdf5-radisdb"]:
                 raise NotImplementedError(
-                    "lvlformat {0} not supported with dbformat {1}".format(
-                        lvlformat, dbformat
-                    )
+                    f"lvlformat {lvlformat} not supported with dbformat {dbformat}"
                 )
 
             vib_lvl_name = vib_lvl_name_hitran_class1
@@ -1308,7 +1296,7 @@ def add_bands(df, dbformat, lvlformat, dataframe_type="pandas", verbose=True):
 
         else:
             raise NotImplementedError(
-                "Lvlformat not defined for {0}: {1}".format(molecule, lvlformat)
+                f"Lvlformat not defined for {molecule}: {lvlformat}"
             )
 
     elif molecule in ["OH"]:  # includes 'OH'
@@ -1354,12 +1342,12 @@ def add_bands(df, dbformat, lvlformat, dataframe_type="pandas", verbose=True):
     else:
         raise NotImplementedError(
             "Vibrational bands not yet defined for molecule: "
-            + "{0} with database format: {1}. ".format(molecule, dbformat)
+            + f"{molecule} with database format: {dbformat}. "
             + "Update add_bands()"
         )
 
     if verbose:
-        print(("... lines sorted in {0:.1f}s".format(time() - t0)))
+        print(f"... lines sorted in {time() - t0:.1f}s")
 
     return
 

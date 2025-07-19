@@ -614,9 +614,7 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **k
 
     if verbose:
         printm(
-            "Tested eq vs non-eq (<{0:.1f}% error) with isotopes: {1}".format(
-                rtol * 100, bool(match_eq_vs_non_eq)
-            )
+            f"Tested eq vs non-eq (<{rtol * 100:.1f}% error) with isotopes: {bool(match_eq_vs_non_eq)}"
         )
 
     assert match_eq_vs_non_eq

@@ -105,10 +105,10 @@ def EvJ_uncoupled_vibrating_rotor(
             coeffs_vib[vib_mode][k[:-1]] = v
         elif k in herzberg_coefficients_rovib:
             raise NotImplementedError(
-                "Mixed term {0} not implemented for uncoupled rovib model".format(k)
+                f"Mixed term {k} not implemented for uncoupled rovib model"
             )
         else:
-            raise KeyError("Unexpected coefficient: {0}".format(k))
+            raise KeyError(f"Unexpected coefficient: {k}")
 
     coeffs_vib1 = coeffs_vib["1"]
     coeffs_vib2 = coeffs_vib["2"]
@@ -199,9 +199,7 @@ def EvJah_uncoupled_vibrating_rotor(v1, v2, l2, v3, J, coeff_dict, remove_ZPE=Tr
     if len(coeff_dict) > 0:
         raise NotImplementedError(
             "Harmonic/anharmonic energy split not defined "
-            + "with the following spectroscopic constants: {0}".format(
-                list(coeff_dict.keys())
-            )
+            + f"with the following spectroscopic constants: {list(coeff_dict.keys())}"
         )
 
     # Vibrational energy

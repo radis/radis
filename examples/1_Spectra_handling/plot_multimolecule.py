@@ -62,8 +62,8 @@ combined_spectrum = s_h2o_selected.rescale_mole_fraction(
 time_precomputed = time.perf_counter() - start_time_precomputed
 
 print("Single Iteration Performance Results:")
-print("Direct Calculation time: {:.4f} seconds".format(time_direct))
-print("Precomputed then Combined time: {:.4f} seconds".format(time_precomputed))
+print(f"Direct Calculation time: {time_direct:.4f} seconds")
+print(f"Precomputed then Combined time: {time_precomputed:.4f} seconds")
 
 # Convert combined_spectrum from wavenumber to wavelength in nm
 combined_spectrum_nm = combined_spectrum.resample(

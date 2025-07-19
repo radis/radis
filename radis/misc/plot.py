@@ -29,9 +29,7 @@ def _get_defaults(plotlib, context, style):
             plotlib = radis.config["plot"]["plotlib"]
         except KeyError:
             raise ValueError(
-                "Missing key in your ~/radis.json user config file. Expected format :\n\n {0}".format(
-                    expected_format
-                )
+                f"Missing key in your ~/radis.json user config file. Expected format :\n\n {expected_format}"
             )
 
     if context == "config-default":
@@ -39,9 +37,7 @@ def _get_defaults(plotlib, context, style):
             context = radis.config["plot"]["context"]
         except KeyError:
             raise ValueError(
-                "Missing key `context` in your ~/radis.json user config file. Expected format :\n\n {0}".format(
-                    expected_format
-                )
+                f"Missing key `context` in your ~/radis.json user config file. Expected format :\n\n {expected_format}"
             )
 
     if style == "config-default":
@@ -49,9 +45,7 @@ def _get_defaults(plotlib, context, style):
             style = radis.config["plot"]["style"]
         except KeyError:
             raise ValueError(
-                "Missing key `style` in your ~/radis.json user config file. Expected format :\n\n {0}".format(
-                    expected_format
-                )
+                f"Missing key `style` in your ~/radis.json user config file. Expected format :\n\n {expected_format}"
             )
 
     if context and context not in KNOWN_CONTEXT:

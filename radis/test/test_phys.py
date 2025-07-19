@@ -71,7 +71,7 @@ def test_convert(verbose=True, *args, **kwargs):
     assert J2cm(cm2J(E)) == E
     assert K2cm(cm2K(E)) == E
     if verbose:
-        print("K -> cm: ~ {0:.2f} K/cm".format(cm2K(1)))
+        print(f"K -> cm: ~ {cm2K(1):.2f} K/cm")
 
     E = 1  # eV
     assert eV2cm(E) == J2cm(eV2J(1))
@@ -91,13 +91,7 @@ def test_convert(verbose=True, *args, **kwargs):
     lbd_0 = 632.8
     fwhm_hz = dnm2dhz(fwhm, lbd_0)  # ~ 1.5 GHz
     if verbose:
-        print(
-            (
-                "{0:.2g} nm broadening at {1} nm = {2:.2g} Ghz".format(
-                    fwhm, lbd_0, fwhm_hz * 1e-9
-                )
-            )
-        )
+        print((f"{fwhm:.2g} nm broadening at {lbd_0} nm = {fwhm_hz * 1e-9:.2g} Ghz"))
     assert isclose(fwhm_hz * 1e-9, 1.4973307983125002)
     assert isclose(dhz2dnm(fwhm_hz, nm2hz(lbd_0)), fwhm)
 
@@ -126,7 +120,7 @@ def test_units(verbose=True, *args, **kwargs):
     for a, f, r, t in convtable:
         cr = conv2(a, f, t)
         if verbose:
-            print(("{0} {1} = {2} {3}".format(a, f, cr, t)))
+            print(f"{a} {f} = {cr} {t}")
         assert isclose(cr, r)
 
     # Ensures that an error is raised if units with angles are converted

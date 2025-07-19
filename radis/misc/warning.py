@@ -436,10 +436,10 @@ def warn(message, category="default", status={}):
     elif action == "error":
         raise WarningType(message)
     else:
-        raise ValueError("Unexpected action for warning: {0}".format(action))
+        raise ValueError(f"Unexpected action for warning: {action}")
 
 
-#%% Tests (on module load)
+# %% Tests (on module load)
 
 
 # ... test warnings are well defined

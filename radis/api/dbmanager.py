@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-
-"""
+""" """
 import os
 import shutil
 from os.path import abspath, dirname, exists, expanduser, join, split, splitext
@@ -288,9 +286,7 @@ class DatabaseManager(object):
                 else:  # delete file to regenerate it in the end of the script
                     if verbose:
                         printr(
-                            "File {0} deprecated:\n{1}\nDeleting it!".format(
-                                local_file, str(err)
-                            )
+                            f"File {local_file} deprecated:\n{str(err)}\nDeleting it!"
                         )
                     os.remove(local_file)
 
@@ -417,7 +413,7 @@ class DatabaseManager(object):
                 )
 
             # Download file with requests
-            if "hitemp" in self.local_databases:
+            if "hitemp" in urlname.lower():
                 # Get session from HITEMP API
                 from radis.api.hitempapi import login_to_hitran
 

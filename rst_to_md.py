@@ -15,6 +15,7 @@ to register it on Pypi see register.py::
 
     python register.py
 """
+
 import io
 import re
 import sys
@@ -25,6 +26,7 @@ from os.path import abspath, dirname, exists, join
 
 # Build description from README (PyPi compatible)
 # -----------------------------------------------
+
 
 # Utils to format RST
 def yield_sphinx_only_markup(lines):
@@ -83,7 +85,7 @@ def yield_sphinx_only_markup(lines):
 
     def clean_line(line):
         try:
-            for (regex, sub) in regex_subs:
+            for regex, sub in regex_subs:
                 line = regex.sub(sub, line)
         except Exception as ex:
             print(("ERROR: %s, (line(%s)" % (regex, sub)))

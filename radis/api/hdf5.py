@@ -276,9 +276,7 @@ class DataFileManager(object):
             from radis.misc.printer import printr
 
             printr(
-                "Warning : {0} files were written but not combined. Deleting them.\n\n{1}".format(
-                    len(self._temp_batch_files), self._temp_batch_files
-                )
+                f"Warning : {len(self._temp_batch_files)} files were written but not combined. Deleting them.\n\n{self._temp_batch_files}"
             )
             self._close_temp_batch_files()
 

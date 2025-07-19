@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Definition of molecules and list of spectroscopic constants
-"""
+"""Definition of molecules and list of spectroscopic constants"""
 
 from .molecules import Molecules, getMolecule
 

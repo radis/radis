@@ -181,7 +181,7 @@ def zero2nan(x):
     try:
         x[x == 0] = np.nan
         return x
-    except (TypeError):
+    except TypeError:
         return x if x else np.nan
 
 

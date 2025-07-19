@@ -54,9 +54,7 @@ def check_molecule_data_structure(fname, verbose=True):
             db = json.load(f)  # , object_pairs_hook=OrderedDict)
         except json.JSONDecodeError as err:
             raise json.JSONDecodeError(
-                "Error reading '{0}' (line {2} col {3}): \n{1}".format(
-                    fname, err.msg, err.lineno, err.colno
-                ),
+                f"Error reading '{fname}' (line {err.lineno} col {err.colno}): \n{err.msg}",
                 err.doc,
                 err.pos,
             ) from err
@@ -67,10 +65,8 @@ def check_molecule_data_structure(fname, verbose=True):
         isotopes = db_molec["isotopes"]
         if len(isotopes) != len(isotope_names):
             raise ValueError(
-                "In molecule {0}: isotope names ".format(molecule)
-                + "({0}) dont match the number of isotopes ({1})".format(
-                    isotope_names, list(isotopes.keys())
-                )
+                f"In molecule {molecule}: isotope names "
+                + f"({isotope_names}) dont match the number of isotopes ({list(isotopes.keys())})"
             )
 
         # ... Check number of electronic states is correct
@@ -79,12 +75,8 @@ def check_molecule_data_structure(fname, verbose=True):
             elec_states = db_iso["electronic_level"]
             if len(elec_states_names) != len(elec_states):
                 raise ValueError(
-                    "In molecule {0}, isotope {1}: electronic ".format(
-                        molecule, isotope
-                    )
-                    + "levels names ({0}) dont match the number of levels ({1})".format(
-                        elec_states_names, list(elec_states.keys())
-                    )
+                    f"In molecule {molecule}, isotope {isotope}: electronic "
+                    + f"levels names ({elec_states_names}) dont match the number of levels ({list(elec_states.keys())})"
                 )
 
             # ... Check they are properly ordered
@@ -92,19 +84,12 @@ def check_molecule_data_structure(fname, verbose=True):
                 if elec_states_names.index(db_state["name"]) + 1 != db_state["index"]:
                     # ... + 1 because Python index start at 0 and FORTRAN at 1 unless allocated with 0:N
                     raise ValueError(
-                        "In molecule {0}, isotope {1}: index of electronic ".format(
-                            molecule, isotope
-                        )
-                        + "state {0} ({1}): {2} does not match the list of states: {3}. ".format(
-                            state,
-                            db_state["name"],
-                            db_state["index"],
-                            elec_states_names,
-                        )
+                        f"In molecule {molecule}, isotope {isotope}: index of electronic "
+                        + f"state {state} ({db_state['name']}): {db_state['index']} does not match the list of states: {elec_states_names}. "
                     )
 
     if verbose:
-        print("Structure of {0} looks correct".format(fname))
+        print(f"Structure of {fname} looks correct")
 
 
 def parse_doi(rovib_coeffs):
@@ -163,9 +148,7 @@ def _get_rovib_coefficients(
             db = json.load(f, object_pairs_hook=OrderedDict)
         except json.JSONDecodeError as err:
             raise json.JSONDecodeError(
-                "Error reading '{0}' (line {2} col {3}): \n{1}".format(
-                    jsonfile, err.msg, err.lineno, err.colno
-                ),
+                f"Error reading '{jsonfile}' (line {err.lineno} col {err.colno}): \n{err.msg}",
                 err.doc,
                 err.pos,
             ) from err
@@ -177,12 +160,10 @@ def _get_rovib_coefficients(
         elec_state_index = elec_state_names.index(electronic_state)
     except ValueError:
         raise ValueError(
-            "{0} not in the electronic state list for {1}(iso={2}): {3}".format(
-                electronic_state, molecule, isotope, elec_state_names
-            )
+            f"{electronic_state} not in the electronic state list for {molecule}(iso={isotope}): {elec_state_names}"
         )
     else:
-        elec_state_index = "{:03d}".format(elec_state_index + 1)  # 1 based index
+        elec_state_index = f"{elec_state_index + 1:03d}"  # 1 based index
 
     rovib_coeffs = db[molecule]["isotopes"][str(isotope)]["electronic_level"][
         elec_state_index
@@ -217,7 +198,7 @@ def get_default_jsonfile(molecule):
 
     name = config["spectroscopic_constants"][molecule]
 
-    return abspath(getFile("{0}/{1}".format(molecule, name)))
+    return abspath(getFile(f"{molecule}/{name}"))
 
 
 def get_dunham_coefficients(
@@ -271,10 +252,8 @@ def get_dunham_coefficients(
 
     if len(dunham_coeffs) == 0:
         raise ValueError(
-            "No Dunham coefficients (Yij) found for {0} {2}(iso={1}) in {3}".format(
-                molecule, isotope, electronic_state, jsonfile
-            )
-            + "\n\nGot: {0}".format(rovib_coeffs.keys())
+            f"No Dunham coefficients (Yij) found for {molecule} {electronic_state}(iso={isotope}) in {jsonfile}"
+            + f"\n\nGot: {rovib_coeffs.keys()}"
         )
 
     if return_doi:
@@ -347,10 +326,8 @@ def get_herzberg_coefficients(
 
     if len(herzberg_coeffs) == 0:
         raise ValueError(
-            "No Herzberg spectroscopic coefficients (we, Be, etc.) found for {0} {2}(iso={1}) in {3}".format(
-                molecule, isotope, electronic_state, jsonfile
-            )
-            + "\n\nGot: {0}".format(rovib_coeffs.keys())
+            f"No Herzberg spectroscopic coefficients (we, Be, etc.) found for {molecule} {electronic_state}(iso={isotope}) in {jsonfile}"
+            + f"\n\nGot: {rovib_coeffs.keys()}"
         )
 
     if return_doi:
