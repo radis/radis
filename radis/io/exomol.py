@@ -165,6 +165,7 @@ def fetch_exomol(
     engine="default",
     output="pandas",
     skip_optional_data=True,
+    **kwargs,
 ):
     """Stream ExoMol file from EXOMOL website. Unzip and build a HDF5 file directly.
 
@@ -350,6 +351,7 @@ def fetch_exomol(
         cache=cache,
         skip_optional_data=skip_optional_data,
         verbose=verbose,
+        **kwargs,
     )
 
     # Get local files

@@ -57,6 +57,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 from numpy import abs, diff
+from scipy.integrate import trapezoid
 
 from radis.db.references import doi
 
@@ -408,7 +409,7 @@ class Spectrum(object):
             wunit = kwargs.pop("waveunit")
         waveunit = wunit  # (but not renamed within the code or conditions yet)
         if len(kwargs) > 0:
-            raise ValueError("Unexpected input: {0}".format(list(kwargs.keys())))
+            raise ValueError(f"Unexpected input: {list(kwargs.keys())}")
 
         # Deal with deprecated inputs
         # ... wavespace renamed waveunit
@@ -446,9 +447,7 @@ class Spectrum(object):
         if "waveunit" in conditions:
             if waveunit is not None and conditions["waveunit"] != waveunit:
                 raise ValueError(
-                    "waveunit defined in conditions ({0}) and directly ({1}) dont match".format(
-                        conditions["waveunit"], waveunit
-                    )
+                    f"waveunit defined in conditions ({conditions['waveunit']}) and directly ({waveunit}) dont match"
                 )
         elif waveunit is not None:  # ... or define them in dictionary
             conditions["waveunit"] = waveunit
@@ -492,7 +491,7 @@ class Spectrum(object):
             if tuple_format and len(v) != 2:
                 raise AssertionError(
                     "Input arrays should have format `{'quantity':(wavespace, array)} or {'wavelength/wavenumber':wavespace, 'quantity':array}` but not both. Got :"
-                    + "{0}".format(quantities),
+                    + f"{quantities}",
                 )
 
         if tuple_format:
@@ -1095,9 +1094,7 @@ class Spectrum(object):
                 data_key = guessed_key[0]
             else:
                 raise ValueError(
-                    "data_key not given and could not be guessed. Available keys : {0}. Choose one and set `data_key=`".format(
-                        guessed_key
-                    )
+                    f"data_key not given and could not be guessed. Available keys : {guessed_key}. Choose one and set `data_key=`"
                 )
 
         data_array = data[data_key]
@@ -1105,9 +1102,7 @@ class Spectrum(object):
             w = data_array[w_name]
         except KeyError:
             raise KeyError(
-                "Could not find key {0} to parse waverange in data. Available keys : [{1}]".format(
-                    w_name, data_array.keys()
-                )
+                f"Could not find key {w_name} to parse waverange in data. Available keys : [{data_array.keys()}]"
             )
         if I_name is None:
             guessed_I_name = [k for k in data_array.keys() if k != w_name]
@@ -1115,17 +1110,13 @@ class Spectrum(object):
                 I_name = guessed_I_name[0]
             else:
                 raise ValueError(
-                    "I_name not given and could not be guessed. Available keys : {0}. Choose one and set `I_name=`".format(
-                        guessed_I_name
-                    )
+                    f"I_name not given and could not be guessed. Available keys : {guessed_I_name}. Choose one and set `I_name=`"
                 )
         try:
             I = data_array[I_name]
         except KeyError:
             raise KeyError(
-                "Could not find key {0} to parse quantity in data. Available keys : [{1}]".format(
-                    I_name, data_array.keys()
-                )
+                f"Could not find key {I_name} to parse quantity in data. Available keys : [{data_array.keys()}]"
             )
 
         if index is not None:
@@ -1278,7 +1269,7 @@ class Spectrum(object):
         if not var in self.get_vars():
             if var + "_noslit" in self.get_vars():
                 raise KeyError(
-                    ("`{0}` doesnt exist but `{1}` does".format(var, var + "_noslit"))
+                    (f"`{var}` doesnt exist but `{var + '_noslit'}` does")
                     + ". Have you used .apply_slit()?"
                 )
             else:
@@ -1458,7 +1449,7 @@ class Spectrum(object):
 
         # Check input
         if not medium in ["air", "vacuum"]:
-            raise NotImplementedError("Unknown propagating medium: {0}".format(medium))
+            raise NotImplementedError(f"Unknown propagating medium: {medium}")
 
         # Now convert stored wavespace to the output unit
         w = self._get_wavespace(copy=copy)
@@ -1587,10 +1578,10 @@ class Spectrum(object):
         if self.name is not None:
             name = self.name
         elif self.file is not None:
-            name = "{0}".format(basename(self.file))
+            name = f"{basename(self.file)}"
         else:
             name_params = []
-            for (key, unit) in [("species", ""), ("dbformat", ""), ("Tgas", "K")]:
+            for key, unit in [("species", ""), ("dbformat", ""), ("Tgas", "K")]:
                 if key in self.conditions:
                     name_params.append(f"{self.conditions[key]}{unit}")
 
@@ -1653,7 +1644,7 @@ class Spectrum(object):
         else:
             yunit = Iunit
 
-        header = "{0}\t{1} ({2})".format(xlabel, var, yunit)
+        header = f"{xlabel}\t{var} ({yunit})"
 
         np.savetxt(
             filename,
@@ -2259,7 +2250,7 @@ class Spectrum(object):
         xlabel = format_xlabel(wunit, show_medium)
 
         # cosmetic changes
-        ylabel = "{0} ({1})".format(make_up(var), make_up_unit(Iunit, var))
+        ylabel = f"{make_up(var)} ({make_up_unit(Iunit, var)})"
         # Plot
         # -------
         if normalize:
@@ -2292,20 +2283,16 @@ class Spectrum(object):
 
         if not force and (fig.gca().get_xlabel().lower() not in ["", xlabel.lower()]):
             raise ValueError(
-                "Error while plotting {0}. Cannot plot ".format(var)
-                + "on a same figure with different xlabel: Current: {0}, New: {1}".format(
-                    clean_error_msg(fig.gca().get_xlabel()), clean_error_msg(xlabel)
-                )
+                f"Error while plotting {var}. Cannot plot "
+                + f"on a same figure with different xlabel: Current: {clean_error_msg(fig.gca().get_xlabel())}, New: {clean_error_msg(xlabel)}"
                 + ". If it's a unit problem, change unit with `s.plot(..., wunit=...)`. Use force=True if you really want to plot as is."
             )
         label1 = clean_error_msg(fig.gca().get_ylabel().lower())
         label2 = clean_error_msg(ylabel.lower())
         if not force and (label1 not in ["", label2]):
             raise ValueError(
-                "Error while plotting {0}. Cannot plot ".format(var)
-                + "on a same figure with different ylabel: \nCurrent: {0}\nNew: {1}".format(
-                    clean_error_msg(fig.gca().get_ylabel()), clean_error_msg(ylabel)
-                )
+                f"Error while plotting {var}. Cannot plot "
+                + f"on a same figure with different ylabel: \nCurrent: {clean_error_msg(fig.gca().get_ylabel())}\nNew: {clean_error_msg(ylabel)}"
                 + "\nIf it's a unit problem, you can change the unit with `s.plot(..., Iunit=)`. Use `force=True` if you really want to plot with these units."
             )
 
@@ -2478,7 +2465,7 @@ class Spectrum(object):
 
         # Get labels
         xlabel = format_xlabel(wunit, show_medium)
-        ylabel = "{0} ({1})".format(make_up(var), make_up_unit(Iunit, var))
+        ylabel = f"{make_up(var)} ({make_up_unit(Iunit, var)})"
 
         fig = px.line(x=x, y=y, template=template)
         fig.update_layout(
@@ -2505,7 +2492,6 @@ class Spectrum(object):
         plotting_library="default",
         **kwargs,
     ):
-
         r"""Plot a :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
         .. note::
@@ -2766,33 +2752,25 @@ class Spectrum(object):
         if molecule is None:
             if len(list(populations.keys())) != 1:
                 raise ValueError(
-                    "Please choose which molecule among: {0}".format(
-                        list(populations.keys())
-                    )
+                    f"Please choose which molecule among: {list(populations.keys())}"
                 )
             molecule = list(populations.keys())[0]
         if isotope is None:
             if len(list(populations[molecule].keys())) != 1:
                 raise ValueError(
-                    "Please choose which isotope among: {0}".format(
-                        list(populations[molecule].keys())
-                    )
+                    f"Please choose which isotope among: {list(populations[molecule].keys())}"
                 )
             isotope = list(populations[molecule].keys())[0]
         if electronic_state is None:
             if len(list(populations[molecule][isotope].keys())) != 1:
                 raise ValueError(
-                    "Please choose which electronic state among: {0}".format(
-                        list(populations[molecule][isotope].keys())
-                    )
+                    f"Please choose which electronic state among: {list(populations[molecule][isotope].keys())}"
                 )
             electronic_state = list(populations[molecule][isotope].keys())[0]
 
         if __debug__:
             printdbg(
-                "get vib populations for {0}({1})[iso{2}]".format(
-                    molecule, electronic_state, isotope
-                )
+                f"get vib populations for {molecule}({electronic_state})[iso{isotope}]"
             )
 
         # Return
@@ -2981,7 +2959,7 @@ class Spectrum(object):
             elif nunit == "":
                 unitlabel = " [fraction]"
             else:
-                raise ValueError("Unknown unit: {0}".format(nunit))
+                raise ValueError(f"Unknown unit: {nunit}")
 
             # Plot
             if fig is None:
@@ -3006,9 +2984,7 @@ class Spectrum(object):
         for molecule, isotopes in pops.items():
             for isotope, elec_states in isotopes.items():
                 for elec_state, content in elec_states.items():
-                    state_name = "{0}({1})(iso{2})".format(
-                        molecule, elec_state, isotope
-                    )
+                    state_name = f"{molecule}({elec_state})(iso{isotope})"
 
                     Ia = None
                     if correct_for_abundance:
@@ -3296,9 +3272,7 @@ class Spectrum(object):
 
         if __debug__:
             printdbg(
-                "apply_slit: {0} in {1}, center `{2}`{1}, applied in waveunit {3}".format(
-                    slit_function, unit, center_wavespace, waveunit
-                )
+                f"apply_slit: {slit_function} in {unit}, center `{center_wavespace}`{unit}, applied in waveunit {waveunit}"
             )
 
         if center_wavespace is None:
@@ -3420,7 +3394,7 @@ class Spectrum(object):
             # unit was multiplied by [unit] not [return_unit]
             # Removed for simplification. You should stay with norm_by='area' anyway
             else:
-                raise ValueError("Unknown normalization type: {0}".format(norm_by))
+                raise ValueError(f"Unknown normalization type: {norm_by}")
 
         # Merge and store all variables
         # ---------
@@ -3492,7 +3466,7 @@ class Spectrum(object):
 
         if not wunit in ["same", self.get_waveunit()]:
             raise NotImplementedError(
-                "Unit must be Spectrum waveunit: {0}".format(self.get_waveunit())
+                f"Unit must be Spectrum waveunit: {self.get_waveunit()}"
             )
 
         # Make sure that slit is stored already
@@ -3568,15 +3542,13 @@ class Spectrum(object):
         norm_by = self.conditions["norm_by"]
         waveunit = self.get_waveunit()
         if norm_by == "area":
-            Iunit = "1/{0}".format(waveunit)
+            Iunit = f"1/{waveunit}"
         elif norm_by == "max":  # set maximum to 1
             Iunit = ""
         elif norm_by is None:
             Iunit = None
         else:
-            raise ValueError(
-                "Unknown normalization type: `norm_by` = {0}".format(norm_by)
-            )
+            raise ValueError(f"Unknown normalization type: `norm_by` = {norm_by}")
 
         # Plot in correct unit  (plot_slit deals with the conversion if needed)
         fig, ax = plot_slit(
@@ -3635,9 +3607,7 @@ class Spectrum(object):
                         plot_unit=wunit,
                         Iunit=Iunit,
                         ls="--",
-                        title="Slit used on range {0:.2f}-{1:.2f} nm".format(
-                            w_min, w_max
-                        ),
+                        title=f"Slit used on range {w_min:.2f}-{w_max:.2f} nm",
                     )
 
         return fig, ax
@@ -4416,9 +4386,7 @@ class Spectrum(object):
                     "UnevenWaverangeWarning",
                     status=default_warning_status,
                 )
-                wstep_new = "Unequal spacing, average <wstep>={:.2f}".format(
-                    np.mean(diff)
-                )
+                wstep_new = f"Unequal spacing, average <wstep>={np.mean(diff):.2f}"
             else:
                 wstep_new = diff[0]
 
@@ -4430,7 +4398,7 @@ class Spectrum(object):
         elif unit == "cm-1":
             w = s.get_wavenumber()
         else:
-            raise ValueError("Unknown unit: {0}".format(unit))
+            raise ValueError(f"Unknown unit: {unit}")
 
         # Update stored_waveunit to new unit
         if unit != stored_waveunit:
@@ -4452,9 +4420,7 @@ class Spectrum(object):
             elif out_of_bounds == "error":
                 fill_with = "error"
             else:
-                raise ValueError(
-                    "Unexpected value for out_of_bound: {0}".format(out_of_bounds)
-                )
+                raise ValueError(f"Unexpected value for out_of_bound: {out_of_bounds}")
             return fill_with
 
         # There are different cases depending on the unit of w_new
@@ -4463,7 +4429,7 @@ class Spectrum(object):
         # ... air2vacuum conversion in particular is quite slow, but has been
         # ... done once for all with get_wavelength() above )
 
-        for (k, I) in s._q.items():
+        for k, I in s._q.items():
             if k == "wavespace":
                 continue
             fill_with = get_filling(k)
@@ -4527,7 +4493,7 @@ class Spectrum(object):
             s = self.copy()
 
         w = s._q["wavespace"]  # wavelength or wavenumber range
-        for (k, I) in s._q.items():
+        for k, I in s._q.items():
             if k == "wavespace":
                 continue
             w_new, Inew = resample_even(
@@ -4540,7 +4506,7 @@ class Spectrum(object):
 
         return s
 
-    #%% Fonctions to fit a lineshape model
+    # %% Fonctions to fit a lineshape model
     #
 
     def fit_model(
@@ -4753,9 +4719,11 @@ class Spectrum(object):
 
             # Add units
             y_err = [
-                mod.__getattribute__(param).unit * y_err[i]
-                if mod.__getattribute__(param).unit
-                else y_err[i]
+                (
+                    mod.__getattribute__(param).unit * y_err[i]
+                    if mod.__getattribute__(param).unit
+                    else y_err[i]
+                )
                 for mod in model
                 for i, param in enumerate(mod.param_names)
             ]  # TODO refactor there is probably a better way to write it
@@ -4767,16 +4735,14 @@ class Spectrum(object):
 
         for index, line in enumerate(g_fit_list):
             if isinstance(line, models.Voigt1D):
-                area = np.abs(np.trapz(y_fit_list[index], w_fit))  # slow, but accurate
+                area = np.abs(trapezoid(y_fit_list[index], w_fit))  # slow, but accurate
             elif isinstance(line, models.Gaussian1D):
                 area = line.amplitude * line.stddev * np.sqrt(2 * np.pi)
             elif isinstance(line, models.Lorentz1D):
                 area = line.amplitude * np.pi * line.fwhm / 2
             else:
                 raise ValueError(
-                    "Unexpected model type: {0}. \nExpected `models.Voigt1D` or `Gaussian1D` or `Lorentz1D`".format(
-                        type(line).__name__
-                    )
+                    f"Unexpected model type: {type(line).__name__}. \nExpected `models.Voigt1D` or `Gaussian1D` or `Lorentz1D`"
                 )
             # return area
             g_fit_list[index].area = area
@@ -4860,20 +4826,14 @@ class Spectrum(object):
                 print(tb_info[-1][-1])
                 # @dev: see https://stackoverflow.com/a/11587247/5622825
         except KeyError as err:
-            warn(
-                "Condition missing to know if spectrum is at equilibrium: {0}".format(
-                    err
-                )
-            )
+            warn(f"Condition missing to know if spectrum is at equilibrium: {err}")
             guess = not equilibrium
         else:
             guess = True
 
         if equilibrium != guess:
             msg = (
-                "Declared value of equilibrium ({0}) does not match the inferred one ({1})".format(
-                    equilibrium, guess
-                )
+                f"Declared value of equilibrium ({equilibrium}) does not match the inferred one ({guess})"
                 + ". Update your Spectrum conditions"
             )
             if check == "warn":
@@ -5341,9 +5301,7 @@ class Spectrum(object):
                 # Check new wavespace match the existing one
                 if not np.allclose(w, self._q["wavespace"]):
                     raise ValueError(
-                        "wavespace for {0} doesnt correspond to existing wavespace".format(
-                            name
-                        )
+                        f"wavespace for {name} doesnt correspond to existing wavespace"
                         + " for non convoluted quantities"
                     )
             else:
@@ -5358,9 +5316,7 @@ class Spectrum(object):
                 if check_wavespace:
                     if not evenly_distributed(w, atolerance=1e-5):
                         warn(
-                            "Wavespace is not evenly spaced ({0:.3f}%) for {1}.".format(
-                                np.abs(np.diff(w)).max() / w.mean() * 100, name
-                            )
+                            f"Wavespace is not evenly spaced ({np.abs(np.diff(w)).max() / w.mean() * 100:.3f}%) for {name}."
                             + " This may create problems if later convolving with slit function (`s.apply_slit()`). You can use `s.resample_even()`"
                         )
                 self._q["wavespace"] = np.array(w)  # copy
@@ -5417,17 +5373,13 @@ class Spectrum(object):
             if k == "wavespace":
                 continue
             # print number of points with a comma separator
-            print(
-                " " * 2,
-                k,
+            unit_str = (
                 f"\t[{self.units[k]}]"
                 if (k in self.units and self.units[k] != "")
-                else "",
-                "\t({0:,d} points{1})".format(
-                    len(v),
-                    ", {0} nans".format(count_nans(v)) if anynan(v) else "",
-                ),
+                else ""
             )
+            nan_str = f", {count_nans(v)} nans" if anynan(v) else ""
+            print(f"  {k}{unit_str}\t({len(v):,d} points{nan_str})")
 
         # Print populations
         if self.populations:
@@ -5485,19 +5437,13 @@ class Spectrum(object):
         quantities = self.get_vars()
         if len(quantities) > 1:
             raise ValueError(
-                "There is an ambiguity with the Spectrum `{0}()` operation. ".format(
-                    operation_name
-                )
-                + "There are currently multiple spectral arrays in the Spectrum {0} ({1})\n\n".format(
-                    self.get_name(), ", ".join(self.get_vars())
-                )
+                f"There is an ambiguity with the Spectrum `{operation_name}()` operation. "
+                + f"There are currently multiple spectral arrays in the Spectrum {self.get_name()} ({ ', '.join(self.get_vars())})\n\n"
                 + f"Use `s.take('transmittance').{operation_name}()` or `s.take('radiance').{operation_name}()`"
                 f", etc. to apply `{operation_name}()` to the one spectral array you want."
             )
         elif len(quantities) == 0:
-            raise ValueError(
-                "No spectral array defined in Spectrum {0}".format(self.get_name())
-            )
+            raise ValueError(f"No spectral array defined in Spectrum {self.get_name()}")
         else:
             var = quantities[0]
         return var
@@ -5736,7 +5682,7 @@ class Spectrum(object):
 
         if var in ["transmittance", "transmittance_noslit"] and not force:
             raise ValueError(
-                "Cannot normalize {0}. Use force=True if you really want.".format(var)
+                f"Cannot normalize {var}. Use force=True if you really want."
             )
 
         s = self
@@ -5756,14 +5702,12 @@ class Spectrum(object):
                 norm_unit = s.units[var]
             elif normalize_how == "mean" or normalize_how == "area":
                 raise ValueError(
-                    "Unexpected `normalize_how`: {0}. "
+                    f"Unexpected `normalize_how`: {normalize_how}. "
                     "For a single value wrange only `normalize_how='max'` is "
-                    "defined.".format(normalize_how)
+                    "defined."
                 )
             else:
-                raise ValueError(
-                    "Unexpected `normalize_how`: {0}".format(normalize_how)
-                )
+                raise ValueError(f"Unexpected `normalize_how`: {normalize_how}")
 
             out = multiply(s, 1 / (norm * Unit(norm_unit)), inplace=inplace)
 
@@ -5784,9 +5728,7 @@ class Spectrum(object):
                 norm = nantrapz(I, w)
                 norm_unit = Unit(s.units[var]) * Unit(wunit)
             else:
-                raise ValueError(
-                    "Unexpected `normalize_how`: {0}".format(normalize_how)
-                )
+                raise ValueError(f"Unexpected `normalize_how`: {normalize_how}")
             # Ensure we use the same unit system!
             out = multiply(s, 1 / (norm * Unit(norm_unit)), inplace=inplace)
 
@@ -5807,17 +5749,15 @@ class Spectrum(object):
                 norm = np.abs(nantrapz(I[b], w[b]))
                 norm_unit = Unit(s.units[var]) * Unit(wunit)
             else:
-                raise ValueError(
-                    "Unexpected `normalize_how`: {0}".format(normalize_how)
-                )
+                raise ValueError(f"Unexpected `normalize_how`: {normalize_how}")
 
             out = multiply(s, 1 / (norm * Unit(norm_unit)), inplace=inplace)
 
         else:
-            raise ValueError("Unexpected `wrange`: {0}".format(wrange))
+            raise ValueError(f"Unexpected `wrange`: {wrange}")
 
         if verbose:
-            print("Normalization factor : {0}".format(norm))
+            print(f"Normalization factor : {norm}")
         if return_norm:
             return out, norm * Unit(norm_unit)
         return out
@@ -6015,7 +5955,7 @@ class Spectrum(object):
         else:
             #            warn("You shouldn't use the '+'. See '//' or '>' for more details", Warning)
             raise NotImplementedError(
-                "+ not implemented for a Spectrum and a {0} object".format(type(other))
+                f"+ not implemented for a Spectrum and a {type(other)} object"
             )
 
     def __radd__(self, other):
@@ -6039,7 +5979,7 @@ class Spectrum(object):
         else:
             warn("You shouldn't use the '+'. See '//' or '>' for more details", Warning)
             raise NotImplementedError(
-                "+ not implemented for a Spectrum and a {0} object".format(type(other))
+                f"+ not implemented for a Spectrum and a {type(other)} object"
             )
 
     # Minus
@@ -6064,7 +6004,7 @@ class Spectrum(object):
             return substract_spectra(self, other)
         else:
             raise NotImplementedError(
-                "- not implemented for a Spectrum and a {0} object".format(type(other))
+                f"- not implemented for a Spectrum and a {type(other)} object"
             )
 
     def __rsub__(self, other):
@@ -6093,7 +6033,7 @@ class Spectrum(object):
             return substract_spectra(self, other)
         else:
             raise NotImplementedError(
-                "-= not implemented for a Spectrum and a {0} object".format(type(other))
+                f"-= not implemented for a Spectrum and a {type(other)} object"
             )
 
     # Times
@@ -6120,13 +6060,11 @@ class Spectrum(object):
             )
         elif isinstance(other, np.array):
             raise NotImplementedError(
-                "* not implemented for a Spectrum and a {0} object. Use a dimensioned (with units) array".format(
-                    type(other)
-                )
+                f"* not implemented for a Spectrum and a {type(other)} object. Use a dimensioned (with units) array"
             )
         else:
             raise NotImplementedError(
-                "* not implemented for a Spectrum and a {0} object".format(type(other))
+                f"* not implemented for a Spectrum and a {type(other)} object"
             )
 
     def __rmul__(self, other):
@@ -6146,15 +6084,11 @@ class Spectrum(object):
             )
         elif isinstance(other, np.array):
             raise NotImplementedError(
-                "right side * not implemented for a Spectrum and a {0} object. Use a dimensioned (with units) array".format(
-                    type(other)
-                )
+                f"right side * not implemented for a Spectrum and a {type(other)} object. Use a dimensioned (with units) array"
             )
         else:
             raise NotImplementedError(
-                "right side * not implemented for a Spectrum and a {0} object".format(
-                    type(other)
-                )
+                f"right side * not implemented for a Spectrum and a {type(other)} object"
             )
 
     def __imul__(self, other):
@@ -6176,13 +6110,11 @@ class Spectrum(object):
             raise NotImplementedError("* not implemented for 2 Spectrum objects. Use >")
         elif isinstance(other, np.array):
             raise NotImplementedError(
-                "*= not implemented for a Spectrum and a {0} object. Use a dimensioned (with units) array".format(
-                    type(other)
-                )
+                f"*= not implemented for a Spectrum and a {type(other)} object. Use a dimensioned (with units) array"
             )
         else:
             raise NotImplementedError(
-                "*= not implemented for a Spectrum and a {0} object".format(type(other))
+                f"*= not implemented for a Spectrum and a {type(other)} object"
             )
 
     # Divide
@@ -6204,22 +6136,18 @@ class Spectrum(object):
 
         elif isinstance(other, np.array):
             raise NotImplementedError(
-                "/ not implemented for a Spectrum and a {0} object. Use a dimensioned (with units) array".format(
-                    type(other)
-                )
+                f"/ not implemented for a Spectrum and a {type(other)} object. Use a dimensioned (with units) array"
             )
         else:
             raise NotImplementedError(
-                "/ not implemented for a Spectrum and a {0} object".format(type(other))
+                f"/ not implemented for a Spectrum and a {type(other)} object"
             )
 
     def __rtruediv__(self, other):
         r"""Right side division."""
 
         raise NotImplementedError(
-            "right side / not implemented for a Spectrum and a {0} object".format(
-                type(other)
-            )
+            f"right side / not implemented for a Spectrum and a {type(other)} object"
         )
 
     def __itruediv__(self, other):
@@ -6240,7 +6168,7 @@ class Spectrum(object):
 
         else:
             raise NotImplementedError(
-                "/= not implemented for a Spectrum and a {0} object".format(type(other))
+                f"/= not implemented for a Spectrum and a {type(other)} object"
             )
 
     # Line of sight operations
@@ -6280,7 +6208,7 @@ class Spectrum(object):
             return SerialSlabs(self, other)
         else:
             raise NotImplementedError(
-                "> not implemented for a Spectrum and a {0} object".format(type(other))
+                f"> not implemented for a Spectrum and a {type(other)} object"
             )
 
     #    def __rgt__(self, other):
@@ -6319,7 +6247,7 @@ class Spectrum(object):
             return MergeSlabs(self, other)
         else:
             raise NotImplementedError(
-                "// not implemented for a Spectrum and a {0} object".format(type(other))
+                f"// not implemented for a Spectrum and a {type(other)} object"
             )
 
     # the following is so that json_tricks.dumps and .loads can be used directly,
@@ -6419,7 +6347,7 @@ class Spectrum(object):
             if self.gpu_app is None:
                 raise KeyError
 
-        except (KeyError):
+        except KeyError:
             warn(
                 "GPU not initialized, spectrum.recalc_gpu() can only be called on spectrum objects produced by sf.eq_spectrum_gpu()!",
                 GPUInitWarning,

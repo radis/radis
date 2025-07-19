@@ -108,7 +108,7 @@ plt.plot(w_fit, y_fit, label="Fit result")
 plt.grid(True)
 plt.legend()
 
-#%%
+# %%
 # We can also mesure the area under the line :
 import numpy as np
 
@@ -119,13 +119,13 @@ print(
 #
 
 
-#%%
+# %%
 # Finally note that the fitting routine can be achieved directly
 # using the :py:meth:`~radis.spectrum.spectrum.Spectrum.fit_model` function:
 from astropy.modeling import models
 
 s.fit_model(models.Lorentz1D(), plot=True)
-#%%
+# %%
 # We see that fitting a Voigt profile yields substantially better results
 from astropy.modeling import models
 

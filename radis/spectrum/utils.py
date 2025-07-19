@@ -154,9 +154,7 @@ def cast_waveunit(unit, force_match=True):
         return "cm-1"
     elif force_match:
         raise ValueError(
-            "Unknown wavespace unit: {0}. Should be one of {1}".format(
-                unit, WAVELEN_UNITS + WAVELENVAC_UNITS + WAVENUM_UNITS
-            )
+            f"Unknown wavespace unit: {unit}. Should be one of {WAVELEN_UNITS + WAVELENVAC_UNITS + WAVENUM_UNITS}"
         )
     else:
         return unit  # dont convert
@@ -327,16 +325,16 @@ def print_conditions(
                 "wavenum_max",
                 "wavenum_min",
             ]:
-                v_k_str = "{0:.4f}".format(v_k)
+                v_k_str = f"{v_k:.4f}"
             elif k in ["lines_calculated", "lines_in_continuum", "lines_cutoff"]:
                 # Add comma separator for thousands
-                v_k_str = "{0:,d}".format(v_k)
+                v_k_str = f"{v_k:,d}"
             else:
                 # Default to printing str
-                v_k_str = "{0}".format(v_k)
+                v_k_str = f"{v_k}"
         except ValueError:
             # Default to printing str
-            v_k_str = "{0}".format(v_k)
+            v_k_str = f"{v_k}"
 
         # Crop
         if len(v_k_str) > 102:  # cut if too long
@@ -413,7 +411,8 @@ def split_and_plot_by_parts(w, I, *args, **kwargs):
 
 # %% Profiler
 
-#%%
+
+# %%
 def dict_to_tree(pro, name):
     """
     Parameters
@@ -454,7 +453,7 @@ def dict_to_tree(pro, name):
         return {"value": pro, "name": name}
 
 
-#%%
+# %%
 
 
 def print_perf_profile(

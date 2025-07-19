@@ -18,7 +18,8 @@ import math
 
 import numpy as np
 import scipy.linalg as LA
-from numpy import abs, isnan, linspace, nan, trapz, zeros_like
+from numpy import abs, isnan, linspace, nan, zeros_like
+from scipy.integrate import trapezoid
 from scipy.interpolate import splev, splrep
 from scipy.linalg import solveh_banded
 
@@ -103,7 +104,7 @@ def resample(
     if len(xspace) != len(vector):
         raise ValueError(
             "vector and xspace should have the same length. "
-            + "Got {0}, {1}".format(len(vector), len(xspace))
+            + f"Got {len(vector)}, {len(xspace)}"
         )
     if energy_threshold == "default":
         import radis
@@ -133,7 +134,7 @@ def resample(
     elif ext == "error":
         ext_fitpack = 2  # splev raises ValueError
     else:
-        raise ValueError("Unexpected value for `ext`: {0}".format(ext))
+        raise ValueError(f"Unexpected value for `ext`: {ext}")
 
     # Handle nans in vector :
     # FITPACK will fail if there are nans in the vector being interpolated.
@@ -150,9 +151,7 @@ def resample(
         vector = vector[nanmask]
     if anynan(vector):
         raise ValueError(
-            "Vector being resample has {0} nans. Interpolation will fail".format(
-                isnan(vector).sum()
-            )
+            f"Vector being resample has {isnan(vector).sum()} nans. Interpolation will fail"
         )
 
     # Resample the slit function on the spectrum grid
@@ -184,24 +183,20 @@ def resample(
         vector_new[~b_new] = 1
         if __debug__:
             printdbg(
-                "Filling with 1 on w<{0}, w>{1} ({2} points)".format(
-                    xspace.min(), xspace.max(), (1 - b_new).sum()
-                )
+                f"Filling with 1 on w<{xspace.min()}, w>{xspace.max()} ({(1 - b_new).sum()} points)"
             )
     elif ext in [nan, "nan"]:
         vector_new[~b_new] = nan
         if __debug__:
             printdbg(
-                "Filling with nans on w<{0}, w>{1} ({2} points)".format(
-                    xspace.min(), xspace.max(), (1 - b_new).sum()
-                )
+                f"Filling with nans on w<{xspace.min()}, w>{xspace.max()} ({(1 - b_new).sum()} points)"
             )
 
     # Check energy conservation:
 
     # ... calculate energy
-    energy0 = abs(trapz(vector[b], x=xspace[b]))
-    energy_new = abs(trapz(vector_new[b_new], x=xspace_new[b_new]))
+    energy0 = abs(trapezoid(vector[b], x=xspace[b]))
+    energy_new = abs(trapezoid(vector_new[b_new], x=xspace_new[b_new]))
     if energy_new == 0:  # deal with particular case of energy = 0
         if energy0 == 0:
             energy_ratio = 1
@@ -221,14 +216,12 @@ def resample(
             plt.legend()
             raise ValueError(
                 "Error in resampling: "
-                + "difference in areas (i.e. energy conservation ) ({0:.5g}%) is above the tolerance level ({1:.5g}%)".format(
-                    (1 - energy_ratio) * 100, energy_threshold * 100
-                )
+                + f"difference in areas (i.e. energy conservation ) ({(1 - energy_ratio) * 100:.5g}%) is above the tolerance level ({energy_threshold * 100:.5g}%)"
                 + ". Check graph 101. If resampling a low resolution spectrum on a high resolution spectrum, try the other way around. "
                 + "Increasing the tolerance threshold is possible but may result in accuracy errors. To increase the tolerance, set `resample(..., energy_threshold=...)`, or change the default global value in `radis.config['RESAMPLING_TOLERANCE_THRESHOLD']`"
             )
     if print_conservation:
-        print("Resampling - Energy conservation: {0:.5g}%".format(energy_ratio * 100))
+        print(f"Resampling - Energy conservation: {energy_ratio * 100:.5g}%")
 
     # Reverse again
     if reverse:

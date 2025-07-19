@@ -230,8 +230,8 @@ def wavenumber_tag(numinf):
         return ""
     numtag = []
     for i in range(len(numinf) - 1):
-        imin = "{:05}".format(int(numinf[i]))
-        imax = "{:05}".format(int(numinf[i + 1]))
+        imin = f"{int(numinf[i]):05}"
+        imax = f"{int(numinf[i + 1]):05}"
         numtag.append(imin + "-" + imax)
     return numtag
 
@@ -697,9 +697,7 @@ def make_j2b(
 
         warnings.warn(
             AccuracyWarning(
-                "The default broadening parameter (alpha = {2} cm^-1 and n = {3}) are used for J'' > {1} up to J'' = {0}".format(
-                    Nblower, np.max(jlower_arr), alpha_ref_default, n_Texp_default
-                )
+                f"The default broadening parameter (alpha = {alpha_ref_default} cm^-1 and n = {n_Texp_default}) are used for J'' > {np.max(jlower_arr)} up to J'' = {Nblower}"
             )
         )
 
@@ -806,9 +804,7 @@ def make_j2b_m0(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=Non
 
         warnings.warn(
             AccuracyWarning(
-                "The default broadening parameter (alpha = {2} cm^-1 and n = {3}) are used for J'' > {1} up to J'' = {0}".format(
-                    Nblower, np.max(jlower_arr), alpha_ref_default, n_Texp_default
-                )
+                f"The default broadening parameter (alpha = {alpha_ref_default} cm^-1 and n = {n_Texp_default}) are used for J'' > {np.max(jlower_arr)} up to J'' = {Nblower}"
             )
         )
 
@@ -1375,9 +1371,7 @@ class MdbExomol(DatabaseManager):
         for trans_file, num_tag in zip(self.trans_file, self.num_tag):
             if self.verbose:
                 print(
-                    "\t => File {}".format(
-                        os.path.splitext(os.path.basename((trans_file)))[0]
-                    )
+                    f"\t => File {os.path.splitext(os.path.basename((trans_file)))[0]}"
                 )
 
             if cache == "regen" and mgr.cache_file(trans_file).exists():
@@ -1471,7 +1465,7 @@ class MdbExomol(DatabaseManager):
             bdat = read_broad(file, output)
 
             if self.verbose > 1:
-                print("The file `{}` is used.".format(os.path.basename(file)))
+                print(f"The file `{os.path.basename(file)}` is used.")
 
             codelv = check_code_level(bdat, output=output)
             if self.verbose:
@@ -1601,9 +1595,7 @@ class MdbExomol(DatabaseManager):
         else:
             if not os.path.exists(file):
                 warnings.warn(
-                    "Could not load `{}`. The default broadening parameters are used.\n".format(
-                        os.path.basename(file)
-                    )
+                    f"Could not load `{os.path.basename(file)}`. The default broadening parameters are used.\n"
                 )
             print("The default broadening parameters are used.")
 
@@ -1768,7 +1760,7 @@ class MdbExomol(DatabaseManager):
                 os.makedirs(str(self.path), exist_ok=True)
                 if self.verbose:
                     print(
-                        "\t\t => Downloading from {}".format(pfpath)
+                        f"\t\t => Downloading from {pfpath}"
                     )  # modify indent accordingly print in __init__
                 try:
                     urllib.request.urlretrieve(pfpath, str(self.path / pfname))

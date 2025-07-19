@@ -8,6 +8,7 @@ Created on Sun Aug  5 14:26:44 2018
 import astropy.units as u
 import numpy as np
 import pytest
+from scipy.integrate import trapezoid
 
 from radis.los import MergeSlabs, SerialSlabs
 from radis.spectrum.compare import get_diff, plot_diff
@@ -171,7 +172,7 @@ def test_multiplyAndAddition(verbose=True, plot=False, *args, **kwargs):
     s_ter = multiply(multiply(s, 50), 1 / 50)
     #    plot_diff(s_ter, s_5)
     diff = get_diff(s_ter, s, "radiance")
-    ratio = abs(np.trapz(diff[1], x=diff[0]) / s.get_integral("radiance"))
+    ratio = abs(trapezoid(diff[1], x=diff[0]) / s.get_integral("radiance"))
     assert ratio < 1e-10
 
 

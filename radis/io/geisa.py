@@ -231,7 +231,7 @@ def fetch_geisa(
     return (df, local_files) if return_local_path else df
 
 
-#%%
+# %%
 
 if __name__ == "__main__":
 

@@ -19,7 +19,7 @@ df = fetch_hitran("OH")
 print(df.columns)
 
 
-#%%
+# %%
 # Returns:
 # ::
 #    Index(['id', 'iso', 'wav', 'int', 'A', 'airbrd', 'selbrd', 'El', 'Tdpair',

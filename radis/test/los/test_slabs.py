@@ -65,20 +65,16 @@ def test_merge_slabs(
                 s2.plot(k, lw=3, label="1x[CO=0.5]")
                 s1N.plot(k, nfig="same", label="50x[CO=0.01]")
                 plt.legend()
-                plt.title("Optically thin: {0}".format(optically_thin))
+                plt.title(f"Optically thin: {optically_thin}")
                 plt.tight_layout()
 
         if verbose:
             print("test_merge_slabs")
             print(
-                "... Compare 50x[CO=0.01] vs 1x[CON=0.5] (optically thin: {0})".format(
-                    optically_thin
-                )
+                f"... Compare 50x[CO=0.01] vs 1x[CON=0.5] (optically thin: {optically_thin})"
             )
             print(
-                "... Difference: {0:.2f}%".format(
-                    abs(s1N.get_power() / s2.get_power() - 1) * 100
-                )
+                f"... Difference: {abs(s1N.get_power() / s2.get_power() - 1) * 100:.2f}%"
             )
         assert np.isclose(s2.get_power(), s1N.get_power(), 1.5e-2)
 

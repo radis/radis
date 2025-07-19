@@ -46,7 +46,8 @@ from warnings import warn
 import numpy as np
 from numpy import exp
 from numpy import log as ln
-from numpy import sqrt, trapz
+from numpy import sqrt
+from scipy.integrate import trapezoid
 from scipy.interpolate import splev, splrep
 from scipy.signal import oaconvolve
 
@@ -263,9 +264,7 @@ def get_slit_function(
         # ... now, build it (in our wavespace)
         if __debug__:
             printdbg(
-                "get_slit_function: {0} FWHM {1:.2f}{2}, center {3:.2f}{2}, norm_by {4}".format(
-                    shape, FWHM, return_unit, center_wavespace, norm_by
-                )
+                f"get_slit_function: {shape} FWHM {FWHM:.2f}{return_unit}, center {center_wavespace:.2f}{return_unit}, norm_by {norm_by}"
             )
 
         if shape == "triangular":
@@ -302,9 +301,7 @@ def get_slit_function(
 
         else:
             raise TypeError(
-                "Slit function ({0}) not in known slit shapes: {1}".format(
-                    shape, SLIT_SHAPES
-                )
+                f"Slit function ({shape}) not in known slit shapes: {SLIT_SHAPES}"
             )
 
     elif isinstance(slit_function, tuple):
@@ -314,7 +311,7 @@ def get_slit_function(
         try:
             top, base = slit_function
         except:
-            raise TypeError("Wrong format for slit function: {0}".format(slit_function))
+            raise TypeError(f"Wrong format for slit function: {slit_function}")
         if shape == "trapezoidal":
             pass
         elif shape == "triangular":  # it's the default
@@ -346,9 +343,7 @@ def get_slit_function(
         # ... now, build it (in our wavespace)
         if __debug__:
             printdbg(
-                "get_slit_function: {0}, FWHM {1:.2f}{2}, center {3:.2f}{2}, norm_by {4}".format(
-                    shape, FWHM, return_unit, center_wavespace, norm_by
-                )
+                f"get_slit_function: {shape}, FWHM {FWHM:.2f}{return_unit}, center {center_wavespace:.2f}{return_unit}, norm_by {norm_by}"
             )
 
         wslit, Islit = trapezoidal_slit(
@@ -371,9 +366,7 @@ def get_slit_function(
     ):  # import it
         if __debug__:
             printdbg(
-                "get_slit_function: {0} in {1}, norm_by {2}, return in {3}".format(
-                    slit_function, unit, norm_by, return_unit
-                )
+                f"get_slit_function: {slit_function} in {unit}, norm_by {norm_by}, return in {return_unit}"
             )
 
         wslit, Islit = import_experimental_slit(
@@ -391,24 +384,21 @@ def get_slit_function(
         # ... get unit
         # Normalize
         if norm_by == "area":  # normalize by the area
-            #        I_slit /= np.trapz(I_slit, x=w_slit)
-            Iunit = "1/{0}".format(unit)
+            #        I_slit /= trapezoid(I_slit, x=w_slit)
+            Iunit = f"1/{unit}"
         elif norm_by == "max":  # set maximum to 1
             Iunit = ""
         elif norm_by is None:
             Iunit = None
         else:
-            raise ValueError(
-                "Unknown normalization type: `norm_by` = {0}".format(norm_by)
-            )
+            raise ValueError(f"Unknown normalization type: `norm_by` = {norm_by}")
 
         # ... check it looks correct
         unq, counts = np.unique(wslit, return_counts=True)
         dup = counts > 1
         if dup.sum() > 0:
             raise ValueError(
-                "Not all wavespace points are unique: slit function "
-                + "format may be wrong. Duplicates for w={0}".format(unq[dup])
+                f"Not all wavespace points are unique: slit function format may be wrong. Duplicates for w={unq[dup]}"
             )
 
         # ... resample if needed
@@ -421,7 +411,9 @@ def get_slit_function(
                 energy_threshold=energy_threshold,
                 print_conservation=True,
             )
-            scale_slit = trapz(Iold, wold) / trapz(Islit, wslit)  # [unit/return_unit]
+            scale_slit = trapezoid(Iold, wold) / trapezoid(
+                Islit, wslit
+            )  # [unit/return_unit]
             renormalize = True
         elif return_unit == "nm" and unit == "cm-1":  # wavenumber > wavelength
             wold, Iold = wslit, Islit
@@ -432,7 +424,9 @@ def get_slit_function(
                 energy_threshold=energy_threshold,
                 print_conservation=True,
             )
-            scale_slit = trapz(Iold, wold) / trapz(Islit, wslit)  # [unit/return_unit]
+            scale_slit = trapezoid(Iold, wold) / trapezoid(
+                Islit, wslit
+            )  # [unit/return_unit]
             renormalize = True
         else:  # return_unit == unit
             renormalize = False
@@ -444,35 +438,30 @@ def get_slit_function(
             if __debug__:
                 printdbg("get_slit_function: renormalize")
             if norm_by == "area":  # normalize by the area
-                Islit /= abs(np.trapz(Islit, x=wslit))
-                Iunit = "1/{0}".format(return_unit)
+                Islit /= abs(trapezoid(Islit, x=wslit))
+                Iunit = f"1/{return_unit}"
             elif norm_by == "max":  # set maximum to 1
                 Islit /= abs(np.max(Islit))
                 Islit *= scale_slit
                 Iunit = ""
                 if scale_slit != 1:
-                    Iunit += "x{0}".format(scale_slit)
+                    Iunit += f"x{scale_slit}"
             elif norm_by is None:
                 Iunit = None
             else:
-                raise ValueError(
-                    "Unknown normalization type: `norm_by` = {0}".format(norm_by)
-                )
+                raise ValueError(f"Unknown normalization type: `norm_by` = {norm_by}")
 
         if plot:  # (plot after resampling / renormalizing)
             # Plot slit
             plot_slit(wslit, Islit, wunit=return_unit, Iunit=Iunit)
 
     else:
-        raise TypeError(
-            "Unexpected type for slit function: {0}".format(type(slit_function))
-        )
+        raise TypeError(f"Unexpected type for slit function: {type(slit_function)}")
 
     # Final shape
     if len(wslit) < 5:
         raise ValueError(
-            "Slit should have at least 5 points. Got {0} only. ".format(len(wslit))
-            + "Reduce `wstep=`?"
+            f"Slit should have at least 5 points. Got {len(wslit)} only. Reduce `wstep=`?"
         )
 
     return wslit, Islit
@@ -853,7 +842,7 @@ def get_effective_FWHM(w, I):
 
     Imax = I.max()
 
-    area = abs(np.trapz(I, w))
+    area = abs(trapezoid(I, w))
 
     return area / Imax
 
@@ -934,12 +923,7 @@ def offset_dilate_slit_function(
             <= 1 + threshold
         ):
             warn(
-                "Slit dispersion changes slightly ({2:.2f}%) between {0:.3f} and {1:.3f}nm".format(
-                    w_nm.min(),
-                    w_nm.max(),
-                    abs(slit_dispersion(w_nm.max()) / slit_dispersion(w_nm.min()) - 1)
-                    * 100,
-                )
+                f"Slit dispersion changes slightly ({abs(slit_dispersion(w_nm.max()) / slit_dispersion(w_nm.min()) - 1) * 100:.2f}%) between {w_nm.min():.3f} and {w_nm.max():.3f}nm"
                 + ". Consider splitting your spectrum",
                 SlitDispersionWarning,
             )
@@ -951,12 +935,7 @@ def offset_dilate_slit_function(
 
     if verbose > 2:
         print(
-            "{0:.2f} to {1:.2f}nm: slit function FWHM changed from {2:.2f} to {3:.2f}".format(
-                wslit0,
-                w0,
-                get_effective_FWHM(w_slit_init, I_slit),
-                get_effective_FWHM(w_slit_nm, I_slit),
-            )
+            f"{wslit0:.2f} to {w0:.2f}nm: slit function FWHM changed from {get_effective_FWHM(w_slit_init, I_slit):.2f} to {get_effective_FWHM(w_slit_nm, I_slit):.2f}"
         )
 
     return w_slit_nm, I_slit
@@ -1006,13 +985,13 @@ def normalize_slit(w_slit, I_slit, norm_by="area"):
     # ---------
 
     if norm_by == "area":  # normalize by the area
-        I_slit = I_slit / abs(np.trapz(I_slit, x=w_slit))
+        I_slit = I_slit / abs(trapezoid(I_slit, x=w_slit))
     elif norm_by == "max":  # set maximum to 1
         I_slit = I_slit / abs(np.max(I_slit))
     elif norm_by is None:
         pass
     else:
-        raise ValueError("Unknown normalization type: `norm_by` = {0}".format(norm_by))
+        raise ValueError(f"Unknown normalization type: `norm_by` = {norm_by}")
 
     return w_slit, I_slit
 
@@ -1100,7 +1079,7 @@ def remove_boundary(
         I_conv[:crop_left] = np.nan
         I_conv[_crop_right:] = np.nan
     else:
-        raise ValueError("Unexpected mode: {0}".format(mode))
+        raise ValueError(f"Unexpected mode: {mode}")
 
     return w_conv, I_conv
 
@@ -1207,7 +1186,7 @@ def plot_slit(
     elif plot_unit == "":  # ???
         pass
     else:
-        raise ValueError("Unknown plot unit: {0}".format(plot_unit))
+        raise ValueError(f"Unknown plot unit: {plot_unit}")
 
     # Recalculate FWHM
     FWHM, xmin, xmax = get_FWHM(w, I, return_index=True)
@@ -1221,10 +1200,10 @@ def plot_slit(
     elif plot_unit == "":
         xlabel = "Wavespace"
     else:
-        raise ValueError("Unknown unit for plot_unit: {0}".format(plot_unit))
+        raise ValueError(f"Unknown unit for plot_unit: {plot_unit}")
     ylabel = "Slit function"
     if Iunit is not None:
-        ylabel += " ({0})".format(Iunit)
+        ylabel += f" ({Iunit})"
 
     fig, ax = plt.subplots()
     ax.plot(w, I, "o", color="lightgrey")
@@ -1233,9 +1212,11 @@ def plot_slit(
         I,
         "k",
         ls=ls,
-        label="FWHM: {0:.3f} {1}".format(FWHM, plot_unit)
-        + "\nEff. FWHM: {0:.3f} {1}".format(FWHM_eff, plot_unit)
-        + "\nArea: {0:.3f}".format(abs(np.trapz(I, x=w))),
+        label=(
+            f"FWHM: {FWHM:.3f} {plot_unit}\n"
+            f"Eff. FWHM: {FWHM_eff:.3f} {plot_unit}\n"
+            f"Area: {abs(trapezoid(I, x=w)):.3f}"
+        ),
     )
 
     # Vertical lines on center, and FWHM
@@ -1262,10 +1243,7 @@ def plot_slit(
     if warnings:
         if w[(xmin + xmax) // 2] != w[len(w) // 2]:
             warn(
-                "Slit function doesnt seem centered: center measured with FWHM"
-                + " is not the array center (shift: {0:.3f}{1}): This can induce offsets!".format(
-                    abs(w[(xmin + xmax) // 2] - w[len(w) // 2]), wunit
-                )
+                f"Slit function doesnt seem centered: center measured with FWHM is not the array center (shift: {abs(w[(xmin + xmax) // 2] - w[len(w) // 2]):.3f}{wunit}): This can induce offsets!"
             )
 
         if I[0] != 0 or I[-1] != 0:
@@ -1351,7 +1329,7 @@ def crop_slit(w_slit, I_slit, verbose=True):
         w_slit = w_slit[remove:-remove]
         I_slit = I_slit[remove:-remove]
         if verbose:
-            print("... removed {0} zeros to the slit on each side".format(remove))
+            print(f"... removed {remove} zeros to the slit on each side")
 
     return w_slit, I_slit
 
@@ -1459,7 +1437,7 @@ def import_experimental_slit(
         else:
             raise ValueError("Wrong format of slit_function. Should be 2 x n")
     else:
-        raise TypeError("Unexpected type for slit function: {0}".format(type(slit)))
+        raise TypeError(f"Unexpected type for slit function: {type(slit)}")
 
     assert np.shape(w_slit) == np.shape(I_slit)
 
@@ -1483,21 +1461,21 @@ def import_experimental_slit(
 
     # Normalize
     if norm_by == "area":  # normalize by the area
-        #        I_slit /= np.trapz(I_slit, x=w_slit)
-        I_slit /= abs(np.trapz(I_slit, x=w_slit))
-        Iunit = "1/{0}".format(waveunit)
+        #        I_slit /= trapezoid(I_slit, x=w_slit)
+        I_slit /= abs(trapezoid(I_slit, x=w_slit))
+        Iunit = f"1/{wunit}"
     elif norm_by == "max":  # set maximum to 1
         I_slit /= abs(np.max(I_slit))
         Iunit = ""
     elif norm_by is None:
         Iunit = None
     else:
-        raise ValueError("Unknown normalization type: `norm_by` = {0}".format(norm_by))
+        raise ValueError(f"Unknown normalization type: `norm_by` = {norm_by}")
 
     # scale
     I_slit *= scale
     #    if Iunit is not None and scale != 1:
-    #        Iunit += 'x{0:.2f}'.format(scale)
+    #        Iunit += f'x{scale:.2f}'
 
     # Plot slit
     if bplot:
@@ -1608,20 +1586,20 @@ def triangular_slit(
 
     # Normalize
     if norm_by == "area":  # normalize by the area
-        I /= np.trapz(I, x=w)
-        Iunit = "1/{0}".format(wunit)
+        I /= trapezoid(I, x=w)
+        Iunit = f"1/{wunit}"
     elif norm_by == "max":  # set maximum to 1
         I /= np.max(I)
         Iunit = ""
     elif norm_by is None:
         Iunit = None
     else:
-        raise ValueError("Unknown normalization type: `norm_by` = {0}".format(norm_by))
+        raise ValueError(f"Unknown normalization type: `norm_by` = {norm_by}")
 
     # Scale
     I *= scale
     #    if Iunit is not None and scale != 1:
-    #        Iunit += 'x{0:.2f}'.format(scale)
+    #        Iunit += f'x{scale:.2f}'
 
     # Plot slit
     if bplot:
@@ -1744,20 +1722,20 @@ def trapezoidal_slit(
 
     # Normalize
     if norm_by == "area":  # normalize by the area
-        I /= np.trapz(I, x=w)
-        Iunit = "1/{0}".format(wunit)
+        I /= trapezoid(I, x=w)
+        Iunit = f"1/{wunit}"
     elif norm_by == "max":  # set maximum to 1
         I /= np.max(I)
         Iunit = ""
     elif norm_by is None:
         Iunit = None
     else:
-        raise ValueError("Unknown normalization type: `norm_by` = {0}".format(norm_by))
+        raise ValueError(f"Unknown normalization type: `norm_by` = {norm_by}")
 
     # scale
     I *= scale
     #    if Iunit is not None and scale != 1:
-    #        Iunit += 'x{0:.2f}'.format(scale)
+    #        Iunit += f'x{scale:.2f}'
 
     # Plot slit
     if bplot:
@@ -1858,20 +1836,20 @@ def gaussian_slit(
 
     # Normalize
     if norm_by == "area":  # normalize by the area
-        I /= np.trapz(I, x=w)
-        Iunit = "1/{0}".format(wunit)
+        I /= trapezoid(I, x=w)
+        Iunit = f"1/{wunit}"
     elif norm_by == "max":  # set maximum to 1
         I /= np.max(I)
         Iunit = ""
     elif norm_by is None:
         Iunit = None
     else:
-        raise ValueError("Unknown normalization type: `norm_by` = {0}".format(norm_by))
+        raise ValueError(f"Unknown normalization type: `norm_by` = {norm_by}")
 
     # scale
     I *= scale
     #    if Iunit is not None and scale != 1:
-    #        Iunit += 'x{0:.2f}'.format(scale)
+    #        Iunit += f'x{scale:.2f}'
 
     # Plot slit
     if bplot:

@@ -228,49 +228,39 @@ def getMolecule(
         mol = Molecules[molecule]
     except KeyError as err:
         raise KeyError(
-            "{0} is not defined in molecules with built-in ".format(molecule)
-            + "spectroscopic constants. Choose one of: {0}".format(
-                list(Molecules.keys())
-            )
+            f"{molecule} is not defined in molecules with built-in "
+            + f"spectroscopic constants. Choose one of: {list(Molecules.keys())}"
         ) from err
 
     # isotope
     if isotope is None:
         if len(list(mol.keys())) != 1:
-            raise ValueError(
-                "Please precise which isotope among: {0}".format(list(mol.keys()))
-            )
+            raise ValueError(f"Please precise which isotope among: {list(mol.keys())}")
         isotope = list(mol.keys())[0]
     try:
         iso = mol[isotope]
     except KeyError as err:
         raise KeyError(
-            "Isotope {0} is not defined for molecule {1}. Choose one of: {2}".format(
-                isotope, molecule, list(mol.keys())
-            )
+            f"Isotope {isotope} is not defined for molecule {molecule}. Choose one of: {list(mol.keys())}"
         ) from err
 
     # electronic state
     if electronic_state is None:
         if len(list(iso.keys())) != 1:
             raise ValueError(
-                "Please choose which electronic state among: {0}".format(
-                    list(iso.keys())
-                )
+                f"Please choose which electronic state among: {list(iso.keys())}"
             )
         electronic_state = list(iso.keys())[0]
     try:
         state = iso[electronic_state]
     except KeyError as err:
         raise KeyError(
-            "{0} is not defined for molecule {1}(iso={2}). Choose one of: {3}".format(
-                electronic_state, molecule, isotope, list(mol.keys())
-            )
+            f"{electronic_state} is not defined for molecule {molecule}(iso={isotope}). Choose one of: {list(mol.keys())}"
         ) from err
 
     # print name
     if verbose >= 2:
-        print(r"Found {0} in RADIS database".format(state.get_fullname()))
+        print(f"Found {state.get_fullname()} in RADIS database")
 
     # Return
     return state

@@ -68,7 +68,7 @@ def test_plot_all_CO2_bandheads(verbose=True, plot=False, *args, **kwargs):
     s_bands = sf.non_eq_bands(Tvib=Tgas, Trot=Tgas)
 
     if verbose:
-        printm("{0} bands in spectrum".format(len(s_bands)))
+        printm(f"{len(s_bands)} bands in spectrum")
 
     assert len(s_bands) == 3
 
