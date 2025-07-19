@@ -39,3 +39,4 @@ s = sf.non_eq_spectrum(
 )
 s.apply_slit(0.1)
 s.plot('radiance')
+ 
