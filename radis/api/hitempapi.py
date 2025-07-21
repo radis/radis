@@ -630,9 +630,6 @@ def download_HITEMP_CO2(local_path=None, verbose=False):
     if verbose:
         print("Recorded metadata for CO2 database in config.")
 
-    # Create an indexed bzip2 file for efficient reading
-    create_bz2_indexed_file(downloaded_path)
-
     return downloaded_path
 
 
@@ -673,13 +670,9 @@ def read_and_write_chunked_for_CO2(
     - Ensures that each chunk starts and ends with a newline to avoid partial-line artifacts.
     """
 
-    print(
-        f"index file path: {index_file_path}"
-    )  # on windows this is a radis\lib\site-packages\radis\db\CO2_indexed_offsets.dat
-
     if not os.path.exists(index_file_path):
         print(
-            "Index file does not exist. Creating a new indexed bzip2 file. This will take 4–6 minutes."
+            "Index file does not exist. Creating a new indexed bzip2 file. This will take 4 to 6 minutes."
         )
         create_bz2_indexed_file(bz2_file_path)
     else:
@@ -721,9 +714,9 @@ def read_and_write_chunked_for_CO2(
         try:
             f.set_block_offsets(block_offsets)
             f.seek(start_offset)
-        except Exception:
+        except IndexError:
             warnings.warn(
-                "Failed to set block offsets or seek. Generating a new indexed bzip2 file. This may take 4–6 minutes.",
+                "Failed to set block offsets or seek. Generating a new indexed bzip2 file. This may take 4 to 6 minutes.",
                 UserWarning,
             )
             create_bz2_indexed_file(bz2_file_path)
@@ -737,7 +730,7 @@ def read_and_write_chunked_for_CO2(
             to_read = min(chunk_size, bytes_to_read - total_read)
             try:
                 raw = f.read(to_read)
-            except Exception:
+            except IndexError:
                 warnings.warn(
                     "Read error. Regenerating the indexed bzip2 file. This may take 4 to 6 minutes.",
                     UserWarning,
