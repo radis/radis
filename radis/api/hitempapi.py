@@ -672,8 +672,18 @@ def read_and_write_chunked_for_CO2(
     -----
     - Ensures that each chunk starts and ends with a newline to avoid partial-line artifacts.
     """
+
+    print(
+        f"index file path: {index_file_path}"
+    )  # on windows this is a radis\lib\site-packages\radis\db\CO2_indexed_offsets.dat
+
     if not os.path.exists(index_file_path):
+        print(
+            "Index file does not exist. Creating a new indexed bzip2 file. This will take 4–6 minutes."
+        )
         create_bz2_indexed_file(bz2_file_path)
+    else:
+        print(f"Index file exists at {index_file_path}. Using it for reading.")
 
     # Determine cache path
     config = read_config()
