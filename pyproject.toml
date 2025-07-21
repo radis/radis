@@ -90,7 +90,7 @@ dependencies = [
     'vaex-hdf5; python_version < "3.11"',  # HDF5 support for vaex
     'vaex-viz; python_version < "3.11"',  # visualization for vaex
     'vulkan',
-    'indexed_bzip2',
+    "indexed_bzip2>=1.7.0",
 ]
 
 [project.optional-dependencies]

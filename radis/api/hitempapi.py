@@ -20,7 +20,6 @@ from datetime import date
 from os.path import basename, commonpath, getsize, join
 from typing import Union
 
-import indexed_bzip2 as ibz2
 import numpy as np
 import pandas as pd
 import requests
@@ -32,6 +31,19 @@ from radis.misc.config import CONFIG_PATH_JSON, getDatabankEntries
 from radis.misc.utils import getProjectRoot
 from radis.misc.warning import DatabaseAlreadyExists
 from radis.tools import get_wavno_lower_offset, offset_difference_from_lower_wavno
+
+try:
+    import indexed_bzip2 as ibz2
+
+    version_str = getattr(ibz2, "__version__", "0.0.0")
+    version_tuple = tuple(map(int, version_str.split(".")))
+    if version_tuple < (1, 7, 0):
+        warnings.warn(
+            "indexed_bzip2>=1.7.0 is required. Please upgrade: pip install -U indexed_bzip2",
+            ImportWarning,
+        )
+except (ImportError, ValueError):
+    warnings.warn("pip install indexed_bzip2>=1.7.0", ImportWarning)
 
 try:
     from .dbmanager import DatabaseManager

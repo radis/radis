@@ -330,8 +330,26 @@ def create_bz2_indexed_file(file_path):
     """
     import os
     import pickle
+    import warnings
 
-    import indexed_bzip2 as ibz2
+    try:
+        import indexed_bzip2 as ibz2
+    except ImportError:
+        warnings.warn("pip install indexed_bzip2>=1.7.0", ImportWarning)
+        import indexed_bzip2 as ibz2
+
+    version_str = getattr(ibz2, "__version__", "0.0.0")
+    try:
+        version_tuple = tuple(map(int, version_str.split(".")))
+        if version_tuple < (1, 7, 0):
+            warnings.warn(
+                "indexed_bzip2>=1.7.0 is required. Please upgrade: pip install -U indexed_bzip2",
+                ImportWarning,
+            )
+    except ValueError:
+        warnings.warn(
+            f"Could not parse indexed_bzip2 version: {version_str}", ImportWarning
+        )
 
     from radis.misc.utils import getProjectRoot
 
@@ -345,3 +363,4 @@ def create_bz2_indexed_file(file_path):
 
     with open(index_file_path, "wb") as offsets_file:
         pickle.dump(block_offsets, offsets_file)
+    file.close()
