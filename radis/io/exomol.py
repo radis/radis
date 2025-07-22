@@ -26,7 +26,7 @@ def _map_states_to_transitions(df, states_df):
     elif 'state' in states_df.columns:
         state_map = dict(zip(states_df['i'], states_df['state']))
     else:
-        print("Warning: No electronic state column found in states DataFrame")
+        warnings.warn("Warning: No electronic state column found in states DataFrame")
         return df
     df['state_lower'] = df['i_lower'].map(state_map)
     df['state_upper'] = df['i_upper'].map(state_map)

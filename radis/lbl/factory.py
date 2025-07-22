@@ -1526,7 +1526,7 @@ class SpectrumFactory(BandFactory):
         rot_distribution="boltzmann",
         overpopulation=None,
         name=None,
-        band_scaling=None,  # NEW: user-facing band scaling
+        band_scaling=None,  # user-facing band scaling
     ) -> Spectrum:
         """Calculate emission spectrum in non-equilibrium case. Calculates
         absorption with broadened linestrength and emission with broadened

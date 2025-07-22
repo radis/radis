@@ -82,7 +82,11 @@ def gs(M, I):
             3: 1,
             4: 1,
         },  # CO  # 26  # 36
-        13: {1: 1},  # OH main isotope
+        13: {
+            1: 1,
+            2: 1,
+            3: 1,
+        },  # OH main isotope
     }
 
     try:
