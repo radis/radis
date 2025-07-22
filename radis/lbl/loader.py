@@ -1589,7 +1589,6 @@ class DatabankLoader(object):
                 f"{molecule} has no lines on range "
                 + f"{wavenum_min:.2f}-{wavenum_max:.2f} cm-1"
             )
-
         # Always sort line database by wavenumber (required to SPARSE_WAVERANGE mode)
         if output == "pandas":
             df.sort_values("wav", kind="mergesort", ignore_index=True, inplace=True)
@@ -3198,7 +3197,8 @@ class DatabankLoader(object):
         isotope: int
         elec_state: str
         """
-
+        if molecule == "CO2":
+            isotope = 1
         parsum = self.parsum_tab[molecule][isotope][elec_state]
 
         # helps IDE find methods

@@ -718,6 +718,7 @@ def read_and_write_chunked_for_CO2(
     assert total_size >= 6 * 1024 * 1024
 
     f = None
+    local_paths = []  # to store local paths of relevant decompressed files
     total_read = 0
     number_of_blocks = bytes_to_read // chunk_size + 1
     nth_block = 1
@@ -779,6 +780,7 @@ def read_and_write_chunked_for_CO2(
             with open(out_decompressed_file, "wb") as out_file:
                 out_file.write(data)
 
+            local_paths.append(out_decompressed_file)
             # Parse this chunk into a DataFrame
             df = parse_one_CO2_block(
                 out_decompressed_file, cache_directory_path=hitemp_CO2_download_path
@@ -810,7 +812,7 @@ def read_and_write_chunked_for_CO2(
     else:
         combined_df = pd.DataFrame()
 
-    return combined_df
+    return combined_df, local_paths
 
 
 def download_and_decompress_CO2_into_df(

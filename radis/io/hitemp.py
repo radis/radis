@@ -142,7 +142,7 @@ def fetch_hitemp(
     if molecule == "CO2":
         from radis.api.hitempapi import download_and_decompress_CO2_into_df
 
-        return download_and_decompress_CO2_into_df(
+        df, local_paths = download_and_decompress_CO2_into_df(
             local_databases=None,
             load_wavenum_min=load_wavenum_min,
             load_wavenum_max=load_wavenum_max,
@@ -150,6 +150,10 @@ def fetch_hitemp(
             engine=engine,
             output=output,
         )
+
+        if return_local_path:
+            return df, local_paths
+        return df
 
     if r"{molecule}" in databank_name:
         databank_name = databank_name.format(**{"molecule": molecule})
