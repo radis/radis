@@ -22,7 +22,7 @@ sf = SpectrumFactory(
     mole_fraction=1e-3,
     wstep=0.001,
     verbose=True,
-    self_absorption=True
+    self_absorption=True,
 )
 
 sf.fetch_databank("exomol", "MoLLIST-OH")
@@ -38,5 +38,4 @@ s = sf.non_eq_spectrum(
     # band_scaling={"A": 2.0, "X": 1.0}
 )
 s.apply_slit(0.1)
-s.plot('radiance')
- 
+s.plot("radiance")

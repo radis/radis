@@ -102,32 +102,30 @@ CO2_X_627 = ElectronicState(
 )
 """CO2 4th isotope (:math:`^{16}O^{12}C^{17}O`), electronic ground state"""
 
-# OH 
+# OH
 # --
 OH_X_iso1 = ElectronicState(
     "OH",
-    isotope=1, 
+    isotope=1,
     state="X",
     term_symbol="2PI",  # Ground state
-    g_e=4,    # Electronic degeneracy 2(2S+1) = 2(2*1/2+1) = 4
+    g_e=4,  # Electronic degeneracy 2(2S+1) = 2(2*1/2+1) = 4
     spectroscopic_constants="default",
-    spectroscopic_constants_type="dunham", 
-    vmax=10,  # max vibrational level
-    vmax_morse=20,  # max level for Morse potential
-    Ediss=35593  # Dissociation energy in cm-1
+    spectroscopic_constants_type="dunham",
+    Ediss=35593,  # Dissociation energy in cm-1
 )
 """OH first isotope (16O-1H), electronic ground state X²Π"""
 
 OH_A_iso1 = ElectronicState(
-    "OH", 
+    "OH",
     isotope=1,
     state="A",
     term_symbol="2SIGMA+",  # First excited state
-    g_e=2,    # Electronic degeneracy 2(2S+1) = 2(2*1/2+1) = 2
+    g_e=2,  # Electronic degeneracy 2(2S+1) = 2(2*1/2+1) = 2
     spectroscopic_constants="default",
     spectroscopic_constants_type="dunham",
     Te=32402.38,  # Term energy in cm-1 (from ExoMol MoLLIST)
-    Ediss=35593,  # Same dissociation energy as ground state
+    Ediss=2906,  # Same dissociation energy as ground state
 )
 """OH first isotope (16O-1H), first excited state A²Σ⁺"""
 

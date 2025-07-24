@@ -432,9 +432,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         if __debug__:
             printdbg(
                 "called RovibPartitionFunction.atnoneq"
-
                 + f"(Tvib={Tvib}K, Trot={Trot}K, Telec={Telec}K, ...)"
-
                 + f". mode = {self.mode}"
             )
 
@@ -467,25 +465,33 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                     + "partition functions"
                 )
 
-        # non-equilibrium logic 
+        # non-equilibrium logic
         if Telec is not None:
             # 1. Get electronic populations
             from .partfunc import ElectronicPartitionFunction
+
             elec_states = getattr(self, "electronic_states", None)
             if elec_states is None:
-                raise ValueError("No electronic_states attribute found for hierarchical non-eq partition function.")
+                raise ValueError(
+                    "No electronic_states attribute found for hierarchical non-eq partition function."
+                )
             elec_pf = ElectronicPartitionFunction(elec_states)
             pop_elec = elec_pf.populations(Telec, overpopulation)
             # 2. For each electronic state, calculate rovib partition function and populations
             total_Q = 0.0
             total_pop = None
-            for state in elec_states.values() if isinstance(elec_states, dict) else elec_states:
-                label = getattr(state, 'label', getattr(state, 'name', None))
+            for state in (
+                elec_states.values() if isinstance(elec_states, dict) else elec_states
+            ):
+                label = getattr(state, "label", getattr(state, "name", None))
                 frac = pop_elec[label]
                 # Create a RovibParFuncCalculator for this state
                 # Use PartFunc_Dunham to ensure energy levels are properly built
                 from .partfunc import PartFunc_Dunham
-                rovib_calc = PartFunc_Dunham(state, mode=self.mode, verbose=self.verbose)
+
+                rovib_calc = PartFunc_Dunham(
+                    state, mode=self.mode, verbose=self.verbose
+                )
                 # Calculate populations for this state
                 Q = rovib_calc.at_noneq(
                     Tvib,
@@ -504,15 +510,15 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                     Qval = Q * frac
                 total_Q += Qval
                 # Optionally, sum populations (if update_populations=True)
-                if update_populations and hasattr(rovib_calc, 'df'):
+                if update_populations and hasattr(rovib_calc, "df"):
                     df = rovib_calc.df.copy()
-                    if 'n' in df:
-                        df['n'] *= frac
+                    if "n" in df:
+                        df["n"] *= frac
                     if total_pop is None:
                         total_pop = df
                     else:
                         # Only sum the 'n' column, keep other columns from total_pop
-                        total_pop['n'] = total_pop['n'].add(df['n'], fill_value=0)
+                        total_pop["n"] = total_pop["n"].add(df["n"], fill_value=0)
             if update_populations and total_pop is not None:
                 self.df = total_pop
             return total_Q
@@ -540,7 +546,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 overpopulation=overpopulation,
                 vib_distribution=vib_distribution,
                 rot_distribution=rot_distribution,
-                returnQvibQrot=returnQvibQvrot,
+                returnQvibQrot=returnQvibQrot,
             )
         return result
 
@@ -1780,10 +1786,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         # First get max vib level  (to be calculated with Dunham expansion)
         if vmax is None:
             vmax = 0
-            while True:
-                energy = ElecState.Erovib(vmax, J=0, remove_ZPE=True)
-                if energy >= Ediss:
-                    break
+            while ElecState.Erovib(vmax, J=0, remove_ZPE=True) < Ediss:
                 vmax += 1
         if Jmax is None:
             Jmax = np.nan  # no limit
@@ -2344,15 +2347,11 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         return gi(M, I)
 
 
-
-    print("Testing parfunc: {0}".format(_run_testcases()))
-
-
 class ElectronicPartitionFunction:
     """
     Class to compute the electronic partition function and state populations.
     Compatible with both ExoMol and built-in molecule definitions.
-    
+
     Parameters
     ----------
     electronic_states : dict or list
@@ -2361,6 +2360,7 @@ class ElectronicPartitionFunction:
         - 'Te': term energy (in cm-1)
         - 'label' or 'name': state label
     """
+
     def __init__(self, electronic_states):
         # Accept dict (label: state) or list of state objects/dicts
         if isinstance(electronic_states, dict):
@@ -2385,17 +2385,18 @@ class ElectronicPartitionFunction:
             Partition function contribution for each state
         """
         from math import exp
+
         hc_k = 1.438776877  # cm-1/K
         Q_elec = 0.0
         Q_by_state = {}
         for state in self.states:
-            label = getattr(state, 'label', getattr(state, 'name', None))
+            label = getattr(state, "label", getattr(state, "name", None))
             if isinstance(state, dict):
-                g_e = state.get('g_e')
-                Te = state.get('Te', 0.0)
+                g_e = state.get("g_e")
+                Te = state.get("Te", 0.0)
             else:
-                g_e = getattr(state, 'g_e', None)
-                Te = getattr(state, 'Te', 0.0)
+                g_e = getattr(state, "g_e", None)
+                Te = getattr(state, "Te", 0.0)
             factor = g_e * exp(-Te / hc_k / Telec)
             if overpopulation and label in overpopulation:
                 factor *= overpopulation[label]
@@ -2415,10 +2416,10 @@ class ElectronicPartitionFunction:
         pop_by_state = {label: Qs / Q_elec for label, Qs in Q_by_state.items()}
         return pop_by_state
 
+
 # %% Test
 if __name__ == "__main__":
 
     from radis.test.levels.test_partfunc import _run_testcases
 
     print(f"Testing parfunc: {_run_testcases()}")
-

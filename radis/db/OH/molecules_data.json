@@ -1,5 +1,5 @@
 {
-    "OH": {    
+    "OH": {
         "isotopes": {
             "1": {
                 "electronic_level": {
@@ -8,36 +8,25 @@
                         "index": 1,
                         "name": "X2PI",
                         "Y10_cm-1": 3737.761,
-                        "Y20_cm-1": -84.881,
-                        "Y30_cm-1": 0.540,
-                        "Y40_cm-1": -0.028,
-                        "Y01_cm-1": 18.910,
-                        "Y11_cm-1": -0.7242,
-                        "Y21_cm-1": 0.0171,
-                        "Y31_cm-1": -0.0008,
-                        "Y02_cm-1": -0.0019,
-                        "Y12_cm-1": 0.0001,
-                        "Y03_cm-1": 0.0,
+                        "Y20_cm-1": 84.8813,
+                        "Y01_cm-1": 18.9108,
+                        "Y11_cm-1": 0.7242,
+                        "Y02_cm-1": 19.38E-4,
                         "Te": 0.0,
-                        "Ediss": 35593
+                        "source": "https://webbook.nist.gov/cgi/cbook.cgi?ID=C3352576&Mask=1000#Diatomic"
                     },
                     "002": {
                         "g_e": 2.0,
                         "index": 2,
-                        "name": "A2SIGMA+", 
-                        "Y10_cm-1": 3178.8,
-                        "Y20_cm-1": -92.91,
-                        "Y30_cm-1": 0.54,
-                        "Y40_cm-1": -0.028,
+                        "name": "A2SIGMA+",
+                        "Y10_cm-1": 3178.86,
+                        "Y20_cm-1": 92.917,
                         "Y01_cm-1": 17.358,
-                        "Y11_cm-1": -0.725,
-                        "Y21_cm-1": 0.017,
-                        "Y31_cm-1": -0.0008,
-                        "Y02_cm-1": -0.0019,
-                        "Y12_cm-1": 0.0001,
-                        "Y03_cm-1": 0.0,
-                        "Te": 32402.38,
-                        "Ediss": 35593
+                        "Y11_cm-1": 0.7868,
+                        "Y02_cm-1": 20.39E-4,
+                        "gamma_e": -0.016,
+                        "Te": 32684.1,
+                        "source": "https://webbook.nist.gov/cgi/cbook.cgi?ID=C3352576&Mask=1000#Diatomic"
                     }
                 },
                 "electronic_levels_names": ["X2PI", "A2SIGMA+"]
@@ -45,4 +34,4 @@
         },
         "isotopes_names": ["1"]
     }
-} 
+}

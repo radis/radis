@@ -1828,9 +1828,7 @@ class BroadenFactory(BaseFactory):
             if w_min < 0:
                 self.warn(
                     "Some line(s) had a calculated broadening < 0 cm-1. Check the database. At least this line is faulty: \n\n"
-
                     + "{}".format(self.df1.iloc[(w_dat <= 0).argmax()])
-
                     + "\n\nIf you want to ignore, use `warnings['ZeroBroadeningWarning'] = 'ignore'`",
                     category="ZeroBroadeningWarning",
                 )
@@ -1839,7 +1837,7 @@ class BroadenFactory(BaseFactory):
                 w_dat.max() + 1e-4
             )  # Add small number to prevent w_max falling outside of the grid
             N = np.ceil((np.log(w_max) - np.log(w_min)) / log_p) + 1
-            
+
             return w_min * np.exp(log_p * np.arange(N))
 
         log_pL = self.params.dxL  # LDM user params
@@ -1853,17 +1851,29 @@ class BroadenFactory(BaseFactory):
             wG_dat = df.hwhm_gauss * 2.000  # FWHM
 
         if np.isnan(wL_dat).all() or np.isnan(wG_dat).all():
-            raise ValueError("All Lorentzian or Gaussian broadening parameters are NaN. Please check your input database for missing broadening coefficients.")
+            raise ValueError(
+                "All Lorentzian or Gaussian broadening parameters are NaN. Please check your input database for missing broadening coefficients."
+            )
         else:
             if np.isnan(wL_dat).any():
                 nan_indices = np.where(np.isnan(wL_dat))[0]
-                print("[ERROR] Some Lorentzian broadening values are NaN. Please check your .broad file or database. Indices:", nan_indices)
+                print(
+                    "[ERROR] Some Lorentzian broadening values are NaN. Please check your .broad file or database. Indices:",
+                    nan_indices,
+                )
                 # Optionally, print more debug info here
-                raise ValueError("Some Lorentzian broadening values are NaN. No default value assigned. Fix the input data.")
+                raise ValueError(
+                    "Some Lorentzian broadening values are NaN. No default value assigned. Fix the input data."
+                )
             if np.isnan(wG_dat).any():
                 nan_indices = np.where(np.isnan(wG_dat))[0]
-                print("[ERROR] Some Gaussian broadening values are NaN. Please check your .broad file or database. Indices:", nan_indices)
-                raise ValueError("Some Gaussian broadening values are NaN. No default value assigned. Fix the input data.")
+                print(
+                    "[ERROR] Some Gaussian broadening values are NaN. Please check your .broad file or database. Indices:",
+                    nan_indices,
+                )
+                raise ValueError(
+                    "Some Gaussian broadening values are NaN. No default value assigned. Fix the input data."
+                )
 
         wL = _init_w_axis(wL_dat, log_pL)  # FWHM
         self.NwL = len(wL)

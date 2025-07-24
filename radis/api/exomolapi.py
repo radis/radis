@@ -19,7 +19,6 @@ from radis.db.classes import EXOMOL_MOLECULES, EXOMOL_ONLY_ISOTOPES_NAMES
 
 EXOMOL_URL = "https://www.exomol.com/db/"
 
-import bz2
 import re
 from urllib.request import HTTPError, urlopen
 
@@ -384,19 +383,24 @@ def read_states(
 
     """
     import bz2
-    import pandas as pd
     import re
-    
+
+    import pandas as pd
+
     # Read the file and split by whitespace
     with bz2.open(statesf, "rt") as f:
         lines = [line for line in f if line.strip() and not line.startswith("#")]
-    
+
     # Split each line by whitespace
     data = [re.split(r"\s+", line.strip()) for line in lines]
-    
+
     # Get number of columns from first row
     n_columns = len(data[0])
-    
+
+    # Get all column labels from def file
+    quantum_labels = dic_def.get("quantum_labels", [])
+    all_columns = ["i", "E", "g", "J"] + quantum_labels + ["state"]
+
     # Always extract i, E, g, J (first 4 columns), v (third-to-last), state (last)
     indices = [0, 1, 2, 3]
     if n_columns > 5:
@@ -422,7 +426,16 @@ def read_states(
     # Convert numeric columns
     for col in ["i", "E", "g", "J", "v"]:
         if col in dat.columns:
-            dat[col] = pd.to_numeric(dat[col], errors="coerce") # TODO: check if this is correct
+            dat[col] = pd.to_numeric(
+                dat[col], errors="coerce"
+            )  # TODO: check if this is correct
+
+    # Identify ignored columns
+    loaded_columns = set(column_names)
+    ignored_columns = [col for col in all_columns if col not in loaded_columns]
+    if ignored_columns:
+        ignored_cols_str = '", "'.join(ignored_columns)
+        print(f'The following columns were not loaded: "{ignored_cols_str}"')
 
     if print_states:
         print(f"Loaded {len(dat)} states from {statesf}")
@@ -432,6 +445,7 @@ def read_states(
 
     if engine == "vaex":
         import vaex
+
         dat = vaex.from_pandas(dat)
 
     return dat
@@ -494,7 +508,7 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
 
             # WIP. First implementation with join(). Use Map() will probably be faster.
             trans.join(
-                states[[states_key, col]],
+                states[states_key, col],
                 left_on=trans_key,
                 right_on=states_key,
                 inplace=True,
