@@ -146,6 +146,7 @@ def fetch_hitemp(
             local_databases=None,
             load_wavenum_min=load_wavenum_min,
             load_wavenum_max=load_wavenum_max,
+            columns=columns,
             verbose=verbose,
             engine=engine,
             output=output,

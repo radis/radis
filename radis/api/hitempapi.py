@@ -503,6 +503,7 @@ def parse_one_CO2_block(
     fname,
     cache=True,
     verbose=True,
+    columns=None,
     engine="pytables",
     output="pandas",
     parse_quanta=True,
@@ -549,7 +550,6 @@ def parse_one_CO2_block(
             fname
         )  # Use default cache directory
 
-    columns = columns_2004
     if cache and os.path.exists(fcache):
         # Start reading the cache file
         manager = DataFileManager(engine)
@@ -652,6 +652,7 @@ def read_and_write_chunked_for_CO2(
     bytes_to_read,
     load_wavenum_max,
     load_wavenum_min,
+    columns=None,
     chunk_size=500 * 1024 * 1024,
     output_prefix="CO2_HITEMP",
 ):
@@ -783,7 +784,9 @@ def read_and_write_chunked_for_CO2(
             local_paths.append(out_decompressed_file)
             # Parse this chunk into a DataFrame
             df = parse_one_CO2_block(
-                out_decompressed_file, cache_directory_path=hitemp_CO2_download_path
+                out_decompressed_file,
+                cache_directory_path=hitemp_CO2_download_path,
+                columns=columns,
             )
             os.remove(out_decompressed_file)  # remove the `par` file after parsing
 
@@ -820,6 +823,7 @@ def download_and_decompress_CO2_into_df(
     load_wavenum_min=None,
     load_wavenum_max=None,
     verbose=True,
+    columns=None,
     engine="pytables",
     output="pandas",
 ):
@@ -869,6 +873,7 @@ def download_and_decompress_CO2_into_df(
         bytes_to_read,
         load_wavenum_max,
         load_wavenum_min,
+        columns=columns,
     )
 
 
