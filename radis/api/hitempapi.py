@@ -766,7 +766,6 @@ def read_and_write_chunked_for_CO2(
             )
             os.remove(out_decompressed_file)  # remove the `par` file after parsing
 
-            print(isotope)
             if isotope is not None:
                 df = df[df["iso"].isin(isotope)]
 
