@@ -2803,7 +2803,8 @@ class DatabankLoader(object):
         """Remove unecessary columns and add values as attributes
 
         Returns
-        -------
+        -------if molecule == "CO2":
+            isotope = 1
         None: DataFrame updated inplace
         """
 
@@ -3197,8 +3198,6 @@ class DatabankLoader(object):
         isotope: int
         elec_state: str
         """
-        if molecule == "CO2":
-            isotope = 1
         parsum = self.parsum_tab[molecule][isotope][elec_state]
 
         # helps IDE find methods
