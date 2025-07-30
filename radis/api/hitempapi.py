@@ -498,6 +498,37 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
         print(f"{file_url} ==> {temp_folder} \n")
 
 
+def _fcache_file_name(fname, engine, cache_directory_path=None):
+    if cache_directory_path:
+        base_filename = os.path.basename(fname)
+        possible_cache_files = os.path.join(cache_directory_path, base_filename)
+        fcache = DataFileManager(engine).cache_file(possible_cache_files)
+    else:
+        fcache = DataFileManager(engine).cache_file(
+            fname
+        )  # Use default cache directory
+
+    return fcache
+
+
+def _load_cache_file(fcache, engine="pytables", columns=None):
+    """Load cache file if it exists and is valid."""
+    try:
+        # Check if cache file exists
+        if not os.path.exists(fcache):
+            return None
+            
+        # Start reading the cache file
+        manager = DataFileManager(engine)
+        df = manager.read(fcache, columns=columns, key="df")
+        
+        return df
+    except Exception:
+        # Return None if any error occurs during cache loading
+        # This allows fallback to normal processing
+        return None
+
+
 def parse_one_CO2_block(
     fname,
     cache=True,
@@ -540,21 +571,14 @@ def parse_one_CO2_block(
     -----
     - The function is optimized for repeated parsing of large CO2 HITRAN/HITEMP `.par` files.
     """
-    if cache_directory_path:
-        base_filename = os.path.basename(fname)
-        possible_cache_files = os.path.join(cache_directory_path, base_filename)
-        fcache = DataFileManager(engine).cache_file(possible_cache_files)
-    else:
-        fcache = DataFileManager(engine).cache_file(
-            fname
-        )  # Use default cache directory
+    fcache = _fcache_file_name(fname, engine, cache_directory_path=cache_directory_path)
 
     if cache and os.path.exists(fcache):
         # Start reading the cache file
-        manager = DataFileManager(engine)
-        df = manager.read(fcache, columns=columns, key="df")
-
+        df = _load_cache_file(fcache, engine=engine, columns=columns)
         if df is not None:
+            if verbose:
+                print(f"Loaded cached file {fcache}")
             return df
 
     # Detect the molecule by reading the start of the file
@@ -653,6 +677,7 @@ def read_and_write_chunked_for_CO2(
     load_wavenum_min,
     columns=None,
     isotope=None,
+    engine="pytables",
     chunk_size=500 * 1024 * 1024,
     output_prefix="CO2_HITEMP",
 ):
@@ -715,6 +740,25 @@ def read_and_write_chunked_for_CO2(
     total_read = 0
     number_of_blocks = bytes_to_read // chunk_size + 1
     nth_block = 1
+
+    def _append_filtered_dataframe(df_to_append, bytes_processed):
+        nonlocal nth_block, total_read
+        if nth_block == 1 or nth_block == number_of_blocks:
+            df_filtered = df_to_append[
+                (df_to_append["wav"] >= load_wavenum_min) & (df_to_append["wav"] <= load_wavenum_max)
+            ]
+        else:
+            df_filtered = df_to_append
+
+        # Apply isotope filtering if specified
+        if isotope is not None:
+            df_filtered = df_filtered[df_filtered["iso"].isin(isotope)]
+
+        dataframes.append(df_filtered)
+        total_read += bytes_processed
+        nth_block += 1
+        return total_read
+
     try:
         f = ibz2.open(bz2_file_path, parallelization=os.cpu_count())
         try:
@@ -753,6 +797,17 @@ def read_and_write_chunked_for_CO2(
             fname = f"{output_prefix}_{start_mb}_{end_mb}MB.par"  # TODO: logic for end_mb for last file
             out_decompressed_file = join(hitemp_CO2_download_path, fname)
 
+            # Check if cached version exists first
+            fcache = _fcache_file_name(
+                fname, engine, cache_directory_path=hitemp_CO2_download_path
+            )
+            
+            cached_df = _load_cache_file(fcache, engine=engine, columns=columns)
+            if cached_df is not None:
+                total_read = _append_filtered_dataframe(cached_df, to_read)
+                continue  # skip decompression and parsing
+
+            # Cache miss - proceed with decompression and parsing
             # Write this chunk
             with open(out_decompressed_file, "wb") as out_file:
                 out_file.write(data)
@@ -766,17 +821,7 @@ def read_and_write_chunked_for_CO2(
             )
             os.remove(out_decompressed_file)  # remove the `par` file after parsing
 
-            if isotope is not None:
-                df = df[df["iso"].isin(isotope)]
-
-            if nth_block == 1 or nth_block == number_of_blocks:
-                df = df[
-                    (df["wav"] >= load_wavenum_min) & (df["wav"] <= load_wavenum_max)
-                ]
-
-            dataframes.append(df)
-            total_read += to_read
-            nth_block += 1
+            total_read = _append_filtered_dataframe(df, to_read)
     finally:
         if f:
             f.close()
