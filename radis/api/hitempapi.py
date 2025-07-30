@@ -517,11 +517,11 @@ def _load_cache_file(fcache, engine="pytables", columns=None):
         # Check if cache file exists
         if not os.path.exists(fcache):
             return None
-            
+
         # Start reading the cache file
         manager = DataFileManager(engine)
         df = manager.read(fcache, columns=columns, key="df")
-        
+
         return df
     except Exception:
         # Return None if any error occurs during cache loading
@@ -584,6 +584,10 @@ def parse_one_CO2_block(
     # Detect the molecule by reading the start of the file
     with open(fname) as f:
         mol = get_molecule(int(f.read(2)))
+
+    # Set default columns if None provided
+    if columns is None:
+        columns = columns_2004
 
     df = parse_hitran_file(fname, columns, output=output, molecule=mol)
     df = post_process_hitran_data(
@@ -745,7 +749,8 @@ def read_and_write_chunked_for_CO2(
         nonlocal nth_block, total_read
         if nth_block == 1 or nth_block == number_of_blocks:
             df_filtered = df_to_append[
-                (df_to_append["wav"] >= load_wavenum_min) & (df_to_append["wav"] <= load_wavenum_max)
+                (df_to_append["wav"] >= load_wavenum_min)
+                & (df_to_append["wav"] <= load_wavenum_max)
             ]
         else:
             df_filtered = df_to_append
@@ -801,7 +806,7 @@ def read_and_write_chunked_for_CO2(
             fcache = _fcache_file_name(
                 fname, engine, cache_directory_path=hitemp_CO2_download_path
             )
-            
+
             cached_df = _load_cache_file(fcache, engine=engine, columns=columns)
             if cached_df is not None:
                 total_read = _append_filtered_dataframe(cached_df, to_read)
