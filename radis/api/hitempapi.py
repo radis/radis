@@ -653,6 +653,7 @@ def read_and_write_chunked_for_CO2(
     load_wavenum_max,
     load_wavenum_min,
     columns=None,
+    isotope=None,
     chunk_size=500 * 1024 * 1024,
     output_prefix="CO2_HITEMP",
 ):
@@ -790,6 +791,10 @@ def read_and_write_chunked_for_CO2(
             )
             os.remove(out_decompressed_file)  # remove the `par` file after parsing
 
+            print(isotope)
+            if isotope is not None:
+                df = df[df["iso"].isin(isotope)]
+
             if nth_block == 1 or nth_block == number_of_blocks:
                 df = df[
                     (df["wav"] >= load_wavenum_min) & (df["wav"] <= load_wavenum_max)
@@ -822,6 +827,7 @@ def download_and_decompress_CO2_into_df(
     local_databases=None,
     load_wavenum_min=None,
     load_wavenum_max=None,
+    isotope=None,
     verbose=True,
     columns=None,
     engine="pytables",
@@ -866,6 +872,9 @@ def download_and_decompress_CO2_into_df(
         load_wavenum_max, load_wavenum_min
     )
 
+    if isotope is not None:
+        isotope = [int(i) for i in isotope.split(",")]
+
     return read_and_write_chunked_for_CO2(
         downloaded_HITEMP_CO2_path,
         index_file_path,
@@ -874,6 +883,7 @@ def download_and_decompress_CO2_into_df(
         load_wavenum_max,
         load_wavenum_min,
         columns=columns,
+        isotope=isotope,
     )
 
 

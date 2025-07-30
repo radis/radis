@@ -139,6 +139,9 @@ def fetch_hitemp(
             f"The database '{database}' is not recognized as an available HITEMP database for '{molecule}'. Please choose from the following available years: {available_years}."
         )
 
+    if isotope and type(isotope) == int:
+        isotope = str(isotope)
+
     if molecule == "CO2":
         from radis.api.hitempapi import download_and_decompress_CO2_into_df
 
@@ -147,6 +150,7 @@ def fetch_hitemp(
             load_wavenum_min=load_wavenum_min,
             load_wavenum_max=load_wavenum_max,
             columns=columns,
+            isotope=isotope,
             verbose=verbose,
             engine=engine,
             output=output,
@@ -271,9 +275,6 @@ def fetch_hitemp(
     files_loaded = ldb.keep_only_relevant(
         local_files, load_wavenum_min, load_wavenum_max, verbose=verbose
     )
-
-    if isotope and type(isotope) == int:
-        isotope = str(isotope)
 
     df = ldb.load(
         files_loaded,  # filter other files,
