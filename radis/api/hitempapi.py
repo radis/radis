@@ -11,24 +11,51 @@ https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 """
 import json
 import os
+import pickle
 import re
+import sys
 import urllib.request
 import warnings
-from os.path import basename, commonpath, join
+from datetime import date
+from os.path import basename, commonpath, getsize, join
 from typing import Union
 
 import numpy as np
+import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from cryptography.fernet import Fernet
 from tqdm import tqdm
 
 from radis.misc.config import CONFIG_PATH_JSON, getDatabankEntries
+from radis.misc.utils import getProjectRoot
 from radis.misc.warning import DatabaseAlreadyExists
+from radis.tools import get_wavno_lower_offset, offset_difference_from_lower_wavno
+
+try:
+    import indexed_bzip2 as ibz2
+
+    version_str = getattr(ibz2, "__version__", "0.0.0")
+    version_tuple = tuple(map(int, version_str.split(".")))
+    if version_tuple < (1, 7, 0):
+        warnings.warn(
+            "indexed_bzip2>=1.7.0 is required. Please upgrade: pip install -U indexed_bzip2",
+            ImportWarning,
+        )
+except (ImportError, ValueError):
+    warnings.warn("pip install indexed_bzip2>=1.7.0", ImportWarning)
 
 try:
     from .dbmanager import DatabaseManager
-    from .hitranapi import columns_2004, parse_global_quanta, parse_local_quanta
+    from .hdf5 import DataFileManager
+    from .hitranapi import (
+        columns_2004,
+        get_molecule,
+        parse_global_quanta,
+        parse_hitran_file,
+        parse_local_quanta,
+        post_process_hitran_data,
+    )
     from .tools import (
         _create_dtype,
         _get_linereturnformat,
@@ -38,6 +65,7 @@ try:
 except ImportError:  # ran from here
     if __name__ == "__main__":  # running from this file, as a script
         from radis.api.dbmanager import DatabaseManager
+        from radis.api.hdf5 import DataFileManager
         from radis.api.hitranapi import (
             columns_2004,
             parse_global_quanta,
@@ -56,6 +84,24 @@ from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
 from radis.misc.progress_bar import ProgressBar
 
 HITEMP_MOLECULES = ["H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"]
+
+
+def read_config():
+    """
+    Load the RADIS configuration from the JSON file.
+
+    Returns
+    -------
+    dict
+        The configuration dictionary loaded from CONFIG_PATH_JSON,
+        or an empty dictionary if the file does not exist.
+    """
+    if os.path.exists(CONFIG_PATH_JSON):
+        with open(CONFIG_PATH_JSON, "r") as f:
+            config = json.load(f)
+    else:
+        config = {}
+    return config
 
 
 def keep_only_relevant(
@@ -243,11 +289,7 @@ def setup_credentials():
 def get_encryption_key():
     """Get or create encryption key for HITRAN credentials"""
     # Read existing radis.json
-    if os.path.exists(CONFIG_PATH_JSON):
-        with open(CONFIG_PATH_JSON, "r") as f:
-            config = json.load(f)
-    else:
-        config = {}
+    config = read_config()
 
     # Check if encryption key exists
     if "credentials" in config and "ENCRYPTION_KEY" in config["credentials"]:
@@ -294,11 +336,7 @@ def store_credentials(email, password):
     encrypted_password = encrypt_password(password)
 
     # Read existing radis.json
-    if os.path.exists(CONFIG_PATH_JSON):
-        with open(CONFIG_PATH_JSON, "r") as f:
-            config = json.load(f)
-    else:
-        config = {}
+    config = read_config()
 
     # Add credentials section if it doesn't exist
     if "credentials" not in config:
@@ -355,10 +393,8 @@ def login_to_hitran(verbose=False):
         return response.status_code == 302 or "Logout" in response.text
 
     # Check if credentials exist in radis.json
-    if os.path.exists(CONFIG_PATH_JSON):
-        with open(CONFIG_PATH_JSON, "r") as f:
-            config = json.load(f)
-
+    config = read_config()
+    if config:
         # compatiplty with old versions
         if "credentials" in config:
             if config["credentials"].get("HITRAN_USERNAME"):
@@ -443,6 +479,7 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
                     pbar.update(len(chunk))
 
         print("\nDownload complete!")
+        return output_filename
     else:
         print(f"Download failed: {file_response.status_code}")
         print("Response:", file_response.text[:500])
@@ -459,6 +496,419 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
             "CO2_line_list",
         )
         print(f"{file_url} ==> {temp_folder} \n")
+
+
+def _fcache_file_name(fname, engine, cache_directory_path=None):
+    if cache_directory_path:
+        base_filename = os.path.basename(fname)
+        possible_cache_files = os.path.join(cache_directory_path, base_filename)
+        fcache = DataFileManager(engine).cache_file(possible_cache_files)
+    else:
+        fcache = DataFileManager(engine).cache_file(
+            fname
+        )  # Use default cache directory
+
+    return fcache
+
+
+def _load_cache_file(fcache, engine="pytables", columns=None):
+    """Load cache file if it exists and is valid."""
+    try:
+        # Check if cache file exists
+        if not os.path.exists(fcache):
+            return None
+
+        # Start reading the cache file
+        manager = DataFileManager(engine)
+        df = manager.read(fcache, columns=columns, key="df")
+
+        return df
+    except Exception:
+        # Return None if any error occurs during cache loading
+        # This allows fallback to normal processing
+        return None
+
+
+def parse_one_CO2_block(
+    fname,
+    cache=True,
+    verbose=True,
+    columns=None,
+    engine="pytables",
+    output="pandas",
+    parse_quanta=True,
+    cache_directory_path=None,
+):
+    """
+    Parses a single CO2 `.par` file block into a DataFrame, with optional caching.
+
+    If a cached version of the parsed file exists, it is loaded directly. Otherwise, the file is parsed and saved in HDF5 format for future use.
+
+    Parameters
+    ----------
+    fname : str
+        Path to the `.par` file to be parsed.
+    cache : bool, optional
+        Whether to use and save a cached version of the parsed file (default is True).
+    verbose : bool, optional
+        If True, prints progress and status messages (default is True).
+    engine: 'pytables', 'vaex'
+        format for Hdf5 cache file. Default `pytables`
+    output : str
+        output format of data as pandas Dataformat or vaex Dataformat
+    parse_quanta: bool
+        if ``True``, parse local & global quanta (required to identify lines
+        for non-LTE calculations ; but sometimes lines are not labelled.)
+    cache_directory_path : str or None, optional
+        Directory to store/read cache files. If None, use the directory of `fname`.
+
+    Returns
+    -------
+    DataFrame or other specified output
+        The parsed data from the `.par` file, in the format specified by `output`.
+
+    Notes
+    -----
+    - The function is optimized for repeated parsing of large CO2 HITRAN/HITEMP `.par` files.
+    """
+    fcache = _fcache_file_name(fname, engine, cache_directory_path=cache_directory_path)
+
+    if cache and os.path.exists(fcache):
+        # Start reading the cache file
+        df = _load_cache_file(fcache, engine=engine, columns=columns)
+        if df is not None:
+            if verbose:
+                print(f"Loaded cached file {fcache}")
+            return df
+
+    # Detect the molecule by reading the start of the file
+    with open(fname) as f:
+        mol = get_molecule(int(f.read(2)))
+
+    # Set default columns if None provided
+    if columns is None:
+        columns = columns_2004
+
+    df = parse_hitran_file(fname, columns, output=output, molecule=mol)
+    df = post_process_hitran_data(
+        df,
+        molecule=mol,
+        dataframe_type=output,
+        parse_quanta=parse_quanta,
+    )
+    # cached file mode but cached file doesn't exist yet (else we had returned)
+    if cache:
+        if verbose:
+            print(f"Generating cache file {fcache}")
+        try:
+            manager = DataFileManager(engine)
+            manager.write(fcache, df, append=False)
+        except PermissionError:
+            if verbose:
+                print(sys.exc_info())
+                print(
+                    "An error occurred in cache file generation. Lookup access rights"
+                )
+            pass
+
+    return df
+
+
+def download_HITEMP_CO2(local_path=None, verbose=False):
+    """
+    Download the HITEMP2024 CO2 database using the generic downloader.
+
+    Parameters
+    ----------
+    local_path : str, optional
+        Custom path for saving the database file. Defaults to DEFAULT_DOWNLOAD_PATH/hitemp/CO2/...
+    verbose : bool, optional
+        If True, prints status messages.
+
+    Returns
+    -------
+    str
+        Path to the downloaded (or existing) CO2 database file.
+    """
+    # Determine output file path
+    if local_path:
+        output_path = local_path
+    else:
+        config = read_config()
+        default_download_path = os.path.expanduser(config["DEFAULT_DOWNLOAD_PATH"])
+        output_path = join(
+            default_download_path, "hitemp", "CO2", "02_HITEMP2024.par.bz2"
+        )
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    # Skip download if already present
+    if os.path.exists(output_path):
+        if verbose:
+            print(f"CO2 database already exists at {output_path}")
+        return output_path
+
+    if verbose:
+        print("Downloading HITEMP2024 CO2 database (~6 GB)...")
+    session = login_to_hitran()
+    url = "https://hitran.org/files/HITEMP/bzip2format/02_HITEMP2024.par.bz2"
+    downloaded_path = download_hitemp_file(
+        session=session, file_url=url, output_filename=output_path, verbose=verbose
+    )
+
+    # Record metadata and persist
+    config["hitemp_CO2_compressed"] = {
+        "path": downloaded_path,
+        "format": "bz2_compressed",
+        "download_url": url,
+        "download_date": date.today().isoformat(),
+    }
+    if os.path.exists(CONFIG_PATH_JSON):
+        with open(CONFIG_PATH_JSON, "w") as f:
+            json.dump(config, f, indent=4)
+
+    if verbose:
+        print("Recorded metadata for CO2 database in config.")
+
+    return downloaded_path
+
+
+def read_and_write_chunked_for_CO2(
+    bz2_file_path,
+    index_file_path,
+    start_offset,
+    bytes_to_read,
+    load_wavenum_max,
+    load_wavenum_min,
+    columns=None,
+    isotope=None,
+    engine="pytables",
+    chunk_size=500 * 1024 * 1024,
+    output_prefix="CO2_HITEMP",
+):
+    """
+    Reads a specified number of bytes from a bzip2-compressed CO2 HITEMP file, starting at a given offset, in large chunks.
+    Each chunk is written to a temporary file, parsed into a DataFrame, and then deleted.
+    All resulting DataFrames are concatenated and returned as a single DataFrame.
+    Parameters
+    ----------
+    bz2_file_path : str
+        Path to the bzip2-compressed CO2 HITEMP file.
+    index_file_path : str
+        Path to the pickle file containing block offsets for efficient seeking.
+    start_offset : int
+        Byte offset in the compressed file to start reading from.
+    bytes_to_read : int
+        Total number of bytes to read from the start_offset.
+    chunk_size : int, optional
+        Number of bytes to read per chunk (default is 500 MB).
+    output_prefix : str, optional
+        Prefix for naming temporary output files (default is "CO2_HITEMP").
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame containing all parsed data from the read chunks. If no data is read, returns an empty DataFrame.
+    Notes
+    -----
+    - Ensures that each chunk starts and ends with a newline to avoid partial-line artifacts.
+    """
+
+    # Determine cache path
+    config = read_config()
+    default_download_path = os.path.expanduser(config["DEFAULT_DOWNLOAD_PATH"])
+
+    if default_download_path in bz2_file_path:
+        hitemp_CO2_download_path = join(
+            default_download_path, "hitemp", "CO2", "Decompressed"
+        )
+    else:
+        bz2_dir = os.path.dirname(bz2_file_path)
+        hitemp_CO2_download_path = os.path.join(bz2_dir, "Decompressed")
+    os.makedirs(hitemp_CO2_download_path, exist_ok=True)
+
+    total_read = 0
+    dataframes = []
+
+    def _load_block_offsets():
+        """Load block offsets from the index file."""
+        with open(index_file_path, "rb") as f:
+            return pickle.load(f)
+
+    # Load block offsets
+    block_offsets = _load_block_offsets()
+
+    total_size = getsize(bz2_file_path)
+    assert total_size >= 6 * 1024 * 1024
+
+    f = None
+    local_paths = []  # to store local paths of relevant decompressed files
+    total_read = 0
+    number_of_blocks = bytes_to_read // chunk_size + 1
+    nth_block = 1
+
+    def _append_filtered_dataframe(df_to_append, bytes_processed):
+        nonlocal nth_block, total_read
+        if nth_block == 1 or nth_block == number_of_blocks:
+            df_filtered = df_to_append[
+                (df_to_append["wav"] >= load_wavenum_min)
+                & (df_to_append["wav"] <= load_wavenum_max)
+            ]
+        else:
+            df_filtered = df_to_append
+
+        # Apply isotope filtering if specified
+        if isotope is not None:
+            df_filtered = df_filtered[df_filtered["iso"].isin(isotope)]
+
+        dataframes.append(df_filtered)
+        total_read += bytes_processed
+        nth_block += 1
+        return total_read
+
+    try:
+        f = ibz2.open(bz2_file_path, parallelization=os.cpu_count())
+        try:
+            f.set_block_offsets(block_offsets)
+            f.seek(start_offset)
+        except Exception:
+            raise ValueError(
+                "Failed to seek and read likely due to change in HITEMP CO2 dataset please contact radis developers"
+            )
+
+        while total_read < bytes_to_read:
+            to_read = min(chunk_size, bytes_to_read - total_read)
+            try:
+                raw = f.read(to_read)
+            except Exception:
+                raise ValueError(
+                    "Failed to seek and read likely due to change in HITEMP CO2 dataset please contact radis developers"
+                )
+
+            if not raw:
+                break  # EOF
+
+            # Drop partial first and last line
+            first_nl = raw.find(b"\n")
+            last_nl = raw.rfind(b"\n")
+            if first_nl != -1 and last_nl != -1 and first_nl < last_nl:
+                data = raw[first_nl + 1 : last_nl]  # keep only complete lines
+            else:
+                total_read += to_read  # if no full line in here skip entirely
+                continue
+
+            # Compute current offset for naming
+            current_offset = start_offset + total_read
+            start_mb = current_offset // (1024 * 1024)
+            end_mb = start_mb + 500
+            fname = f"{output_prefix}_{start_mb}_{end_mb}MB.par"  # TODO: logic for end_mb for last file
+            out_decompressed_file = join(hitemp_CO2_download_path, fname)
+
+            # Check if cached version exists first
+            fcache = _fcache_file_name(
+                fname, engine, cache_directory_path=hitemp_CO2_download_path
+            )
+
+            cached_df = _load_cache_file(fcache, engine=engine, columns=columns)
+            if cached_df is not None:
+                total_read = _append_filtered_dataframe(cached_df, to_read)
+                continue  # skip decompression and parsing
+
+            # Cache miss - proceed with decompression and parsing
+            # Write this chunk
+            with open(out_decompressed_file, "wb") as out_file:
+                out_file.write(data)
+
+            local_paths.append(out_decompressed_file)
+            # Parse this chunk into a DataFrame
+            df = parse_one_CO2_block(
+                out_decompressed_file,
+                cache_directory_path=hitemp_CO2_download_path,
+                columns=columns,
+            )
+            os.remove(out_decompressed_file)  # remove the `par` file after parsing
+
+            total_read = _append_filtered_dataframe(df, to_read)
+    finally:
+        if f:
+            f.close()
+
+    print(
+        f"Finished: wrote {total_read} bytes split into { (total_read + chunk_size - 1) // chunk_size } file(s)."
+    )
+
+    # Combine all DataFrames into one
+    if dataframes:
+        combined_df = pd.concat(dataframes, ignore_index=True)
+        print(
+            f"Combined {len(dataframes)} DataFrames into one with {len(combined_df)} rows."
+        )
+    else:
+        combined_df = pd.DataFrame()
+
+    return combined_df, local_paths
+
+
+def download_and_decompress_CO2_into_df(
+    local_databases=None,
+    load_wavenum_min=None,
+    load_wavenum_max=None,
+    isotope=None,
+    verbose=True,
+    columns=None,
+    engine="pytables",
+    output="pandas",
+):
+    """
+    Downloads the HITEMP CO2 database, decompresses it, and loads a specified wavenumber range into a DataFrame.
+
+    This function handles downloading the HITEMP CO2 database file, locating the appropriate data chunk based on the provided wavenumber range, saving 500MB chucks in h5 format and reading the relevant data into a pandas DataFrame.
+
+    Parameters
+    ----------
+    local_databases : str or None, optional
+        Local path to store or look for the HITEMP CO2 database. If None, a default location is used.
+    load_wavenum_min : float or None, optional
+        Minimum wavenumber to load from the database. If None, loads from the beginning.
+    load_wavenum_max : float or None, optional
+        Maximum wavenumber to load from the database. If None, loads to the end.
+    verbose : bool, default True
+        If True, prints progress and status messages.
+    engine : str, default "pytables"
+        Engine to use for reading and writing data. Options may include "pytables".
+    output : str, default "pandas"
+        Output format for the data. Default is "pandas" DataFrame.
+
+    Returns
+    -------
+    DataFrame or object
+        The loaded data in the specified output format (default: pandas DataFrame).
+
+    Notes
+    -----
+    - Requires the HITEMP CO2 database to be accessible or downloadable.
+    """
+
+    # print(f"File size: {os.path.getsize(bz2_file_path)}")
+    downloaded_HITEMP_CO2_path = download_HITEMP_CO2(local_path=local_databases)
+    print(f"Downloaded HITEMP CO2 database to {downloaded_HITEMP_CO2_path}")
+    index_file_path = os.path.join(getProjectRoot(), "db", "CO2_indexed_offsets.dat")
+    start_offset = get_wavno_lower_offset(load_wavenum_min)
+    bytes_to_read = offset_difference_from_lower_wavno(
+        load_wavenum_max, load_wavenum_min
+    )
+
+    if isotope is not None:
+        isotope = [int(i) for i in isotope.split(",")]
+
+    return read_and_write_chunked_for_CO2(
+        downloaded_HITEMP_CO2_path,
+        index_file_path,
+        start_offset,
+        bytes_to_read,
+        load_wavenum_max,
+        load_wavenum_min,
+        columns=columns,
+        isotope=isotope,
+    )
 
 
 class HITEMPDatabaseManager(DatabaseManager):
@@ -653,7 +1103,7 @@ class HITEMPDatabaseManager(DatabaseManager):
     def keep_only_relevant(
         self, inputfiles, wavenum_min=None, wavenum_max=None, verbose=True
     ) -> list:
-        r"""For CO2 and H2O, return only relevant files for given wavenumber range.
+        r"""For H2O, return only relevant files for given wavenumber range.
 
         If other molecule, return the file anyway.
         see :py:func:`radis.api.hitempapi.keep_only_relevant`"""
