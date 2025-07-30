@@ -60,7 +60,6 @@ try:
         _create_dtype,
         _get_linereturnformat,
         _ndarray2df,
-        create_bz2_indexed_file,
         replace_PQR_with_m101,
     )
 except ImportError:  # ran from here
@@ -684,14 +683,6 @@ def read_and_write_chunked_for_CO2(
     - Ensures that each chunk starts and ends with a newline to avoid partial-line artifacts.
     """
 
-    if not os.path.exists(index_file_path):
-        print(
-            "Index file does not exist. Creating a new indexed bzip2 file. This will take 4 to 6 minutes."
-        )
-        create_bz2_indexed_file(bz2_file_path)
-    else:
-        print(f"Index file exists at {index_file_path}. Using it for reading.")
-
     # Determine cache path
     config = read_config()
     default_download_path = os.path.expanduser(config["DEFAULT_DOWNLOAD_PATH"])
@@ -729,35 +720,19 @@ def read_and_write_chunked_for_CO2(
         try:
             f.set_block_offsets(block_offsets)
             f.seek(start_offset)
-        except IndexError:
-            warnings.warn(
-                "Failed to set block offsets or seek. Generating a new indexed bzip2 file. This may take 4 to 6 minutes.",
-                UserWarning,
+        except Exception:
+            raise ValueError(
+                "Failed to seek and read likely due to change in HITEMP CO2 dataset please contact radis developers"
             )
-            create_bz2_indexed_file(bz2_file_path)
-            f.close()
-            f = ibz2.open(bz2_file_path, parallelization=os.cpu_count())
-            block_offsets = _load_block_offsets()
-            f.set_block_offsets(block_offsets)
-            f.seek(start_offset)  # seek again after fixing
 
         while total_read < bytes_to_read:
             to_read = min(chunk_size, bytes_to_read - total_read)
             try:
                 raw = f.read(to_read)
-            except IndexError:
-                warnings.warn(
-                    "Read error. Regenerating the indexed bzip2 file. This may take 4 to 6 minutes.",
-                    UserWarning,
+            except Exception:
+                raise ValueError(
+                    "Failed to seek and read likely due to change in HITEMP CO2 dataset please contact radis developers"
                 )
-                create_bz2_indexed_file(bz2_file_path)
-                f.close()
-                f = ibz2.open(bz2_file_path, parallelization=os.cpu_count())
-                block_offsets = _load_block_offsets()
-                f.set_block_offsets(block_offsets)
-                resume_offset = start_offset + total_read  # resume where we left off:
-                f.seek(resume_offset)
-                raw = f.read(to_read)
 
             if not raw:
                 break  # EOF
