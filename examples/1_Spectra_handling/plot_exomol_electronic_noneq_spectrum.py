@@ -35,7 +35,11 @@ s = sf.non_eq_spectrum(
     mole_fraction=1e-3,
     path_length=1,
     pressure=1,
-    # band_scaling={"A": 2.0, "X": 1.0}
+    # band_scaling={
+    #     "(0)->(0)": 2.0,  # Scale the (0)->(0) vibrational band by 2.0
+    #     "(1)->(1)": 1.5,  # Scale the (1)->(1) vibrational band by 1.5
+    #     "(2)->(2)": 1.0,  # Scale the (2)->(2) vibrational band by 1.0
+    # }
 )
 s.apply_slit(0.1)
 s.plot("radiance")
