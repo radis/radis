@@ -1929,115 +1929,119 @@ class SpectrumFactory(BandFactory):
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
 
         # Electronic + Rovib population calculations
-        # 1. Get electronic states for this molecule/isotope
-        from radis.db.molecules import Molecules
-        from radis.levels.partfunc import ElectronicPartitionFunction
+        # Only execute electronic state handling for atoms
+        if self.input.isatom:
+            # 1. Get electronic states for this molecule/isotope
+            from radis.db.molecules import Molecules
+            from radis.levels.partfunc import ElectronicPartitionFunction
 
-        molecule = self.input.species
-        isotope = int(self.input.isotope)
-        # If ExoMol, build elec_states from ExoMol states DataFrame and Te mapping
-        if (
-            hasattr(self, "params")
-            and getattr(self.params, "dbformat", None) == "hdf5-radisdb"
-        ):
-            # Use self.states_df for electronic state construction
-
-            from radis.io.exomol import get_electronic_state_Te_mapping
-
+            molecule = self.input.species
+            isotope = int(self.input.isotope)
+            # If ExoMol, build elec_states from ExoMol states DataFrame and Te mapping
             if (
-                hasattr(self, "states_df")
-                and self.states_df is not None
-                and "state" in self.states_df.columns
+                hasattr(self, "params")
+                and getattr(self.params, "dbformat", None) == "hdf5-radisdb"
             ):
-                states_df = self.states_df
-                te_map = get_electronic_state_Te_mapping(states_df)
-                elec_states = {}
-                for state_label, Te in te_map.items():
-                    clean_state_label = state_label.replace("(", "").replace(")", "")
-                    # Use g_e from the first matching row for this state
-                    if "g" in states_df.columns:
-                        if hasattr(states_df, "loc"):  # pandas DataFrame
-                            g_e = states_df.loc[
-                                states_df["state"] == state_label, "g"
-                            ].iloc[0]
-                        else:  # vaex DataFrame
-                            # Filter by state and get first g value
-                            filtered = states_df[states_df["state"] == state_label]
-                            if len(filtered) > 0:
-                                g_e = filtered["g"].values[0]
-                            else:
-                                raise ValueError(
-                                    f"No rows found for state '{state_label}' in states DataFrame"
-                                )
-                    else:
-                        raise ValueError(
-                            f"'g' column not found in states DataFrame. Available columns: {list(states_df.columns)}"
+                # Use self.states_df for electronic state construction
+
+                from radis.io.exomol import get_electronic_state_Te_mapping
+
+                if (
+                    hasattr(self, "states_df")
+                    and self.states_df is not None
+                    and "state" in self.states_df.columns
+                ):
+                    states_df = self.states_df
+                    te_map = get_electronic_state_Te_mapping(states_df)
+                    elec_states = {}
+                    for state_label, Te in te_map.items():
+                        clean_state_label = state_label.replace("(", "").replace(
+                            ")", ""
                         )
-                    from radis.db.classes import ElectronicState
+                        # Use g_e from the first matching row for this state
+                        if "g" in states_df.columns:
+                            if hasattr(states_df, "loc"):  # pandas DataFrame
+                                g_e = states_df.loc[
+                                    states_df["state"] == state_label, "g"
+                                ].iloc[0]
+                            else:  # vaex DataFrame
+                                # Filter by state and get first g value
+                                filtered = states_df[states_df["state"] == state_label]
+                                if len(filtered) > 0:
+                                    g_e = filtered["g"].values[0]
+                                else:
+                                    raise ValueError(
+                                        f"No rows found for state '{state_label}' in states DataFrame"
+                                    )
+                        else:
+                            raise ValueError(
+                                f"'g' column not found in states DataFrame. Available columns: {list(states_df.columns)}"
+                            )
+                        from radis.db.classes import ElectronicState
 
-                    # For ExoMol states, use the cleaned state label to match RADIS format
-                    # Use Dunham coefficients since that's what's available for OH
-                    # Set dissociation energy for OH (same for all states)
-                    Ediss = Molecules["OH"][1]["X"].Ediss  # cm-1 for OH
-                    elec_state = ElectronicState(
-                        molecule,
-                        isotope,
-                        clean_state_label,
-                        term_symbol="",
-                        g_e=g_e,
-                        Te=Te,
-                        spectroscopic_constants_type="dunham",
-                        Ediss=Ediss,
-                    )
-                    elec_state.label = clean_state_label
-                    elec_states[clean_state_label] = elec_state
+                        # For ExoMol states, use the cleaned state label to match RADIS format
+                        # Use Dunham coefficients since that's what's available for OH
+                        # Set dissociation energy for OH (same for all states)
+                        Ediss = Molecules["OH"][1]["X"].Ediss  # cm-1 for OH
+                        elec_state = ElectronicState(
+                            molecule,
+                            isotope,
+                            clean_state_label,
+                            term_symbol="",
+                            g_e=g_e,
+                            Te=Te,
+                            spectroscopic_constants_type="dunham",
+                            Ediss=Ediss,
+                        )
+                        elec_state.label = clean_state_label
+                        elec_states[clean_state_label] = elec_state
+                else:
+                    elec_states = {}
             else:
-                elec_states = {}
-        else:
-            elec_states = Molecules[molecule][isotope]
-        # 2. Compute electronic populations at Telec
-        elec_pf = ElectronicPartitionFunction(elec_states)
-        elec_pf.populations(Telec)
-        # 3. For each state, compute rovib populations at Trot
-        rovib_pops = {}
-        from radis.levels.partfunc import PartFunc_Dunham
+                elec_states = Molecules[molecule][isotope]
+            # 2. Compute electronic populations at Telec
+            elec_pf = ElectronicPartitionFunction(elec_states)
+            elec_pf.populations(Telec)
+            # 3. For each state, compute rovib populations at Trot
+            rovib_pops = {}
+            from radis.levels.partfunc import PartFunc_Dunham
 
-        for state_label, elec_state in elec_states.items():
+            for state_label, elec_state in elec_states.items():
 
-            rovib_calc = PartFunc_Dunham(
-                elec_state, mode=self.params.parsum_mode, verbose=self.verbose
+                rovib_calc = PartFunc_Dunham(
+                    elec_state, mode=self.params.parsum_mode, verbose=self.verbose
+                )
+                # Set all electronic states
+                rovib_calc.electronic_states = elec_states
+                rovib_pops[state_label] = rovib_calc.at_noneq(
+                    Tvib, Trot, Telec=Telec, update_populations=True
+                )
+
+            # When calling non_eq_bands, pass band_scaling
+            self.non_eq_bands(
+                Tvib,
+                Trot,
+                Ttrans=Ttrans,
+                mole_fraction=mole_fraction,
+                diluent=diluent,
+                path_length=path_length,
+                pressure=pressure,
+                vib_distribution=vib_distribution,
+                rot_distribution=rot_distribution,
+                levels="all",
+                band_scaling=band_scaling,  # NEW
             )
-            # Set all electronic states
-            rovib_calc.electronic_states = elec_states
-            rovib_pops[state_label] = rovib_calc.at_noneq(
-                Tvib, Trot, Telec=Telec, update_populations=True
-            )
 
-        # When calling non_eq_bands, pass band_scaling
-        self.non_eq_bands(
-            Tvib,
-            Trot,
-            Ttrans=Ttrans,
-            mole_fraction=mole_fraction,
-            diluent=diluent,
-            path_length=path_length,
-            pressure=pressure,
-            vib_distribution=vib_distribution,
-            rot_distribution=rot_distribution,
-            levels="all",
-            band_scaling=band_scaling,  # NEW
-        )
-
-        # Build populations dict: {molecule: {isotope: {electronic_state: {'rovib': df, 'Ia': abundance}}}}
-        populations = {}
-        molecule = self.input.species
-        isotope = int(self.input.isotope)
-        populations[molecule] = {}
-        populations[molecule][isotope] = {}
-        for state_label, elec_state in elec_states.items():
-            rovib_calc = PartFunc_Dunham(
-                elec_state, mode=self.params.parsum_mode, verbose=self.verbose
-            )
+            # Build populations dict: {molecule: {isotope: {electronic_state: {'rovib': df, 'Ia': abundance}}}}
+            populations = {}
+            molecule = self.input.species
+            isotope = int(self.input.isotope)
+            populations[molecule] = {}
+            populations[molecule][isotope] = {}
+            for state_label, elec_state in elec_states.items():
+                rovib_calc = PartFunc_Dunham(
+                    elec_state, mode=self.params.parsum_mode, verbose=self.verbose
+                )
             rovib_df = getattr(rovib_calc, "df", None)
             if rovib_df is not None:
                 populations[molecule][isotope][state_label] = {"rovib": rovib_df.copy()}
@@ -2375,6 +2379,7 @@ class SpectrumFactory(BandFactory):
         self.input.Tgas = Tgas
         self.input.Tvib = Tvib
         self.input.Trot = Trot
+        self.input.Telec = None  # Set Telec to None for molecules (not used)
 
         # Init variables
         path_length = self.input.path_length
