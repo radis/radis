@@ -1671,6 +1671,7 @@ class SpectrumFactory(BandFactory):
             self.input.vib_distribution = vib_distribution
             self.input.Tvib = Tvib
             self.input.Trot = Trot
+            self.input.Telec = None  # Set Telec to None for molecules 
             # Get translational temperature
         Tgas = Ttrans
         if Tgas is None:
@@ -2045,9 +2046,10 @@ class SpectrumFactory(BandFactory):
             rovib_df = getattr(rovib_calc, "df", None)
             if rovib_df is not None:
                 populations[molecule][isotope][state_label] = {"rovib": rovib_df.copy()}
-        # Add isotopic abundance if available (placeholder: 1.0)
-        for state_label in populations[molecule][isotope]:
-            populations[molecule][isotope][state_label]["Ia"] = 1.0
+
+            # Add isotopic abundance if available (placeholder: 1.0)
+            for state_label in populations[molecule][isotope]:
+                populations[molecule][isotope][state_label]["Ia"] = 1.0
 
         return s
 
