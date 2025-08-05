@@ -1671,7 +1671,7 @@ class SpectrumFactory(BandFactory):
             self.input.vib_distribution = vib_distribution
             self.input.Tvib = Tvib
             self.input.Trot = Trot
-            self.input.Telec = None  # Set Telec to None for molecules 
+            self.input.Telec = None  # Set Telec to None for molecules
             # Get translational temperature
         Tgas = Ttrans
         if Tgas is None:

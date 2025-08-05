@@ -444,9 +444,12 @@ def read_states(
         print(dat.head())
 
     if engine == "vaex":
-        import vaex
+        try:
+            import vaex
 
-        dat = vaex.from_pandas(dat)
+            dat = vaex.from_pandas(dat)
+        except ImportError:
+            warnings.warn("vaex not available, falling back to pandas", ImportWarning)
 
     return dat
 
