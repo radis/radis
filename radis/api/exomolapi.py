@@ -1307,7 +1307,7 @@ class MdbExomol(DatabaseManager):
                 print("Removing existing file ", mgr.cache_file(self.states_file))
             os.remove(mgr.cache_file(self.states_file))
         if mgr.cache_file(self.states_file).exists():
-            states = mgr.read(mgr.cache_file(self.states_file))
+            self.states = mgr.read(mgr.cache_file(self.states_file))
         else:
             if cache == "force":
                 raise ValueError(
@@ -1316,13 +1316,13 @@ class MdbExomol(DatabaseManager):
             print(
                 f"Note: Caching states data to the {engine} format. After the second time, it will become much faster."
             )
-            states = read_states(
+            self.states = read_states(
                 self.states_file,
                 dic_def,
                 engine="vaex" if engine == "vaex" else "csv",
                 skip_optional_data=skip_optional_data,
             )
-            mgr.write(mgr.cache_file(self.states_file), states)
+            mgr.write(mgr.cache_file(self.states_file), self.states)
 
         # load pf
         pf = read_pf(self.pf_file)
@@ -1418,7 +1418,7 @@ class MdbExomol(DatabaseManager):
                 # In particular, compute gup and elower
 
                 trans = pickup_gE(
-                    states,
+                    self.states,
                     trans,
                     dic_def,
                     skip_optional_data=skip_optional_data,

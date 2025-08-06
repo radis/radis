@@ -6,7 +6,6 @@ Created on Sun May 22 18:11:23 2022
 """
 
 import pathlib
-import warnings
 
 import numpy as np
 import pandas as pd
@@ -20,41 +19,19 @@ from radis.db.classes import get_molecule_identifier
 
 
 def _map_states_to_transitions(df, states_df):
-    """Map electronic state information from energy levels to transitions."""
-    if "Es" in states_df.columns:
-        state_map = dict(zip(states_df["i"], states_df["Es"]))
-    elif "state" in states_df.columns:
-        state_map = dict(zip(states_df["i"], states_df["state"]))
-    else:
-        warnings.warn("Warning: No electronic state column found in states DataFrame")
-        return df
-    df["state_lower"] = df["i_lower"].map(state_map)
-    df["state_upper"] = df["i_upper"].map(state_map)
-    return df
+    """Map state information from states DataFrame to transitions DataFrame."""
+    # Only map state labels - v and g values will be accessed directly from states_df
+    if "state" in states_df.columns:
+        # Handle both pandas and vaex DataFrames
+        if hasattr(states_df, "loc"):  # pandas DataFrame
+            state_map = dict(zip(states_df["i"], states_df["state"]))
+        else:  # vaex DataFrame
+            # For vaex, we need to convert to pandas for the mapping
+            states_pandas = states_df.to_pandas_df()
+            state_map = dict(zip(states_pandas["i"], states_pandas["state"]))
 
-
-def _calc_degeneracies_exomol(df):
-    """Calculate degeneracies for ExoMol data."""
-    df["gvibl"] = 1.0
-    df["gvibu"] = 1.0
-    if "jl" in df.columns:
-        df["grotl"] = 2 * df["jl"] + 1
-    if "ju" in df.columns:
-        df["grotu"] = 2 * df["ju"] + 1
-    if "state_lower" in df.columns:
-        df["gel"] = df["state_lower"].apply(
-            lambda x: 2.0 if "2Pi" in x or "2Sigma+" in x else 1.0
-        )
-    if "state_upper" in df.columns:
-        df["geu"] = df["state_upper"].apply(
-            lambda x: 2.0 if "2Pi" in x or "2Sigma+" in x else 1.0
-        )
-    if "gel" not in df.columns:
-        df["gel"] = 1.0
-    if "geu" not in df.columns:
-        df["geu"] = 1.0
-    df["gl"] = df["gvibl"] * df["grotl"] * df["gel"]
-    df["gu"] = df["gvibu"] * df["grotu"] * df["geu"]
+        df["state_lower"] = df["i_lower"].map(state_map)
+        df["state_upper"] = df["i_upper"].map(state_map)
     return df
 
 
@@ -301,6 +278,8 @@ def fetch_exomol(
         "jl": "jlower",
         "gp": "gupper",
         "gpp": "glower",
+        "vl": "vl",
+        "vu": "vu",
         ### old, now we directly set "airbrd" and "Tdpair"
         # "airbrd": "alpha_ref",
         # "Tdpair": "n_Texp",
@@ -311,6 +290,8 @@ def fetch_exomol(
             "Sij0",
             "jlower",
             "jupper",
+            "vl",
+            "vu",
         ]  # needed for broadening
     else:
         columns_exomol = None
@@ -389,26 +370,6 @@ def fetch_exomol(
         else:
             # Fallback: set all to Q branch (0)
             df["branch"] = 0
-
-    # Ensure 'vl' and 'vu' columns exist for non-LTE calculations
-    # Try common ExoMol vibrational quantum number columns
-    if "vl" not in df.columns:
-        if "v_l" in df.columns:
-            df["vl"] = df["v_l"]
-        elif "v" in df.columns:
-            df["vl"] = df["v"]
-        else:
-            df["vl"] = 0
-    if "vu" not in df.columns:
-        if "v_u" in df.columns:
-            df["vu"] = df["v_u"]
-        elif "v" in df.columns:
-            df["vu"] = df["v"]
-        else:
-            df["vu"] = 0
-
-    # Calculate all degeneracies (vibrational, rotational, electronic, and total)
-    df = _calc_degeneracies_exomol(df)
 
     # Set dbformat to hdf5-radisdb for compatibility
     df.attrs["dbformat"] = "hdf5-radisdb"

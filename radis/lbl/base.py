@@ -324,6 +324,8 @@ class BaseFactory(DatabankLoader):
         Crash with a nice explanation if one is found"""
         from radis.misc.printer import get_print_full
 
+        fix_idea = ""
+
         try:
             if self.dataframe_type == "pandas":
                 assert not anynan(df[column])
@@ -411,29 +413,16 @@ class BaseFactory(DatabankLoader):
             molecule = self.input.species
             dbformat = getattr(self.params, "dbformat", None)
             if dbformat in ["exomol", "hdf5-radisdb"] and molecule == "OH":
-                # Use ExoMol/OH constants
-                self.profiler.start("fetch_energy_exomol_oh", 2)
+                # Use ExoMol diatomic constants
                 import warnings
 
                 warnings.warn(
-                    "Using hardcoded OH constants - this is a temporary implementation.",
+                    "Using hardcoded molecular constants - this is a temporary implementation.",
                     UserWarning,
                 )
-                we = 3737.76  # vibrational constant in cm^-1
-                wexe = 84.88  # anharmonicity constant in cm^-1
-                B = 18.87  # rotational constant in cm^-1
-                df["Evibl"] = we * (df["vl"] + 0.5) - wexe * (df["vl"] + 0.5) ** 2
-                df["Evibu"] = we * (df["vu"] + 0.5) - wexe * (df["vu"] + 0.5) ** 2
-                df["Erotl"] = B * df["jl"] * (df["jl"] + 1)
-                df["Erotu"] = B * df["ju"] * (df["ju"] + 1)
-                df["gvibl"] = 1
-                df["gvibu"] = 1
-                df["grotl"] = 2 * df["jl"] + 1
-                df["grotu"] = 2 * df["ju"] + 1
-                self.profiler.stop(
-                    "fetch_energy_exomol_oh", "Fetched Evib & Erot (ExoMol/OH)"
+                return self._add_EvibErot_ExoMol_diatomic(
+                    df, calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic
                 )
-                return df
             if molecule in HITRAN_CLASS1:  # class 1
                 return self._add_EvibErot_RADIS_cls1(
                     df, calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic
@@ -1290,6 +1279,79 @@ class BaseFactory(DatabankLoader):
         )
 
         return  # None: Dataframe updated
+
+    def _add_EvibErot_ExoMol_diatomic(self, df, calc_Evib_harmonic_anharmonic=False):
+        """Calculate Evib & Erot in dataframe for ExoMol diatomic molecules.
+
+        Parameters
+        ----------
+        df: DataFrame
+            list of transitions
+
+        Other Parameters
+        ----------------
+        calc_Evib_harmonic_anharmonic: boolean
+            if ``True``, calculate harmonic and anharmonic components of
+            vibrational energies (for Treanor distributions)
+        """
+        if __debug__:
+            printdbg(
+                "called _add_EvibErot_ExoMol_diatomic(calc_Evib_harmonic_anharmonic={0})".format(
+                    calc_Evib_harmonic_anharmonic
+                )
+            )
+
+        if calc_Evib_harmonic_anharmonic:
+            raise NotImplementedError
+
+        molecule = self.input.species
+        self.profiler.start("fetch_energy_exomol_diatomic", 2)
+
+        # Get molecular constants from database using getMolecule
+        from radis.db.molecules import getMolecule
+
+        try:
+            # Get the electronic state object which contains spectroscopic constants
+            state_obj = getMolecule(
+                molecule, isotope=1, electronic_state=self.input.state, verbose=False
+            )
+
+            # Extract Dunham coefficients from the rovib_constants dictionary
+            # These are the same constants used by _add_EvibErot_RADIS_cls1
+            rovib_constants = state_obj.rovib_constants
+            we = rovib_constants["Y10"]  # vibrational constant in cm^-1
+            wexe = rovib_constants["Y20"]  # anharmonicity constant in cm^-1
+            B = rovib_constants["Y01"]  # rotational constant in cm^-1
+
+        except (KeyError, AttributeError) as err:
+            raise NotImplementedError(
+                f"Molecular constants not found for {molecule} in state {self.input.state}. "
+                f"Error: {err}. "
+                "Please ensure the molecule is defined in the database with proper spectroscopic constants."
+            )
+
+        # Calculate vibrational energies using Morse oscillator formula
+        # Evib = we * (v + 0.5) - wexe * (v + 0.5)^2
+        df["Evibl"] = we * (df["vl"] + 0.5) - wexe * (df["vl"] + 0.5) ** 2
+        df["Evibu"] = we * (df["vu"] + 0.5) - wexe * (df["vu"] + 0.5) ** 2
+
+        # Calculate rotational energies using rigid rotor formula
+        # Erot = B * J * (J + 1)
+        df["Erotl"] = B * df["jl"] * (df["jl"] + 1)
+        df["Erotu"] = B * df["ju"] * (df["ju"] + 1)
+
+        # Calculate degeneracies
+        # Vibrational degeneracy is 1 for diatomic molecules
+        df["gvibl"] = 1
+        df["gvibu"] = 1
+        # Rotational degeneracy is 2J + 1
+        df["grotl"] = 2 * df["jl"] + 1
+        df["grotu"] = 2 * df["ju"] + 1
+
+        self.profiler.stop(
+            "fetch_energy_exomol_diatomic", f"Fetched Evib & Erot (ExoMol/{molecule})"
+        )
+        return df
 
     def _add_Evib123Erot_RADIS_cls5(self, df):
         """Fetch Evib & Erot in dataframe for HITRAN class 5 (linear triatomic

@@ -167,6 +167,11 @@ CO2:
 - :py:data:`~radis.db.molecules.CO2_X_628`
 - :py:data:`~radis.db.molecules.CO2_X_627`
 
+OH:
+
+- :py:data:`~radis.db.molecules.OH_X_iso1`
+- :py:data:`~radis.db.molecules.OH_A_iso1`
+
 See Also
 --------
 

@@ -1671,7 +1671,7 @@ class SpectrumFactory(BandFactory):
             self.input.vib_distribution = vib_distribution
             self.input.Tvib = Tvib
             self.input.Trot = Trot
-            self.input.Telec = None  # Set Telec to None for molecules
+            self.input.Telec = Telec  # Set Telec for molecules too
             # Get translational temperature
         Tgas = Ttrans
         if Tgas is None:
@@ -2039,14 +2039,19 @@ class SpectrumFactory(BandFactory):
             isotope = int(self.input.isotope)
             populations[molecule] = {}
             populations[molecule][isotope] = {}
+            from radis.levels.partfunc import PartFunc_Dunham
+
             for state_label, elec_state in elec_states.items():
+                # Get rovib DataFrame from PartFunc_Dunham
+
                 rovib_calc = PartFunc_Dunham(
                     elec_state, mode=self.params.parsum_mode, verbose=self.verbose
                 )
-            rovib_df = getattr(rovib_calc, "df", None)
-            if rovib_df is not None:
-                populations[molecule][isotope][state_label] = {"rovib": rovib_df.copy()}
-
+                rovib_df = getattr(rovib_calc, "df", None)
+                if rovib_df is not None:
+                    populations[molecule][isotope][state_label] = {
+                        "rovib": rovib_df.copy()
+                    }
             # Add isotopic abundance if available (placeholder: 1.0)
             for state_label in populations[molecule][isotope]:
                 populations[molecule][isotope][state_label]["Ia"] = 1.0
@@ -2381,7 +2386,7 @@ class SpectrumFactory(BandFactory):
         self.input.Tgas = Tgas
         self.input.Tvib = Tvib
         self.input.Trot = Trot
-        self.input.Telec = None  # Set Telec to None for molecules (not used)
+        self.input.Telec = None
 
         # Init variables
         path_length = self.input.path_length
