@@ -119,7 +119,7 @@ HITRAN_GROUP6 = ["NO", "OH", "ClO"]
 
 # Classes (define global quanta)
 
-HITRAN_CLASS1 = ["CO", "HF", "HCl", "HBr", "HI", "N2", "NO+"]
+HITRAN_CLASS1 = ["CO", "HF", "HCl", "HBr", "HI", "N2", "NO+", "OH"]
 """str: Diatomic molecules with ? """
 
 HITRAN_CLASS2 = ["O2"]
@@ -726,6 +726,8 @@ class ElectronicState(Isotope):
     Ediss: cm-1
         dissociation energy. Required for partition function calculation
         if neither vmax nor Jmax are given
+    Te: cm-1
+        electronic energy. Default ``None`` if not given
     kwargs: **dict
         forwarded to parent class
 
@@ -767,9 +769,11 @@ class ElectronicState(Isotope):
         vmax_morse=None,
         Jmax=None,
         Ediss=None,
+        Te=None,
         **kwargs,
     ):
-
+        self.Te = Te if Te is not None else 0.0
+        # Now call parent constructor with only expected arguments
         super(ElectronicState, self).__init__(
             molecule_name=molecule_name, isotope=isotope, **kwargs
         )  # initialize Isotope
@@ -891,7 +895,13 @@ class ElectronicState(Isotope):
         }
 
         # Get specific keys
-        self.Te = rovib_constants.pop("Te", None)  # default None
+        # Preserve Te if it was already set in constructor, otherwise get from rovib_constants
+        if not hasattr(self, "Te") or self.Te is None:
+            self.Te = rovib_constants.pop("Te", None)  # default None
+        else:
+            rovib_constants.pop(
+                "Te", None
+            )  # remove from dict but don't overwrite self.Te
         self.re = rovib_constants.pop("re", None)
 
         # Store

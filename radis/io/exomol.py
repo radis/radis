@@ -8,6 +8,7 @@ Created on Sun May 22 18:11:23 2022
 import pathlib
 
 import numpy as np
+import pandas as pd
 
 from radis.api.exomolapi import (
     MdbExomol,
@@ -15,6 +16,45 @@ from radis.api.exomolapi import (
     get_exomol_full_isotope_name,
 )
 from radis.db.classes import get_molecule_identifier
+
+
+def _map_states_to_transitions(df, states_df):
+    """Map state information from states DataFrame to transitions DataFrame."""
+    # Only map state labels - v and g values will be accessed directly from states_df
+    if "state" in states_df.columns:
+        # Handle both pandas and vaex DataFrames
+        if hasattr(states_df, "loc"):  # pandas DataFrame
+            state_map = dict(zip(states_df["i"], states_df["state"]))
+        else:  # vaex DataFrame
+            # For vaex, we need to convert to pandas for the mapping
+            states_pandas = states_df.to_pandas_df()
+            state_map = dict(zip(states_pandas["i"], states_pandas["state"]))
+
+        df["state_lower"] = df["i_lower"].map(state_map)
+        df["state_upper"] = df["i_upper"].map(state_map)
+    return df
+
+
+def get_electronic_state_Te_mapping(states_df):
+    """Return a dict mapping each unique state label to its minimum E (Te)."""
+    te_map = {}
+    if "state" in states_df.columns and "E" in states_df.columns:
+        # Handle both pandas and vaex DataFrames
+        if hasattr(states_df, "loc"):  # pandas DataFrame
+            for state_label in states_df["state"].unique():
+                if pd.isnull(state_label):
+                    continue
+                min_E = states_df.loc[states_df["state"] == state_label, "E"].min()
+                te_map[state_label] = min_E
+        else:  # vaex DataFrame
+            for state_label in states_df["state"].unique():
+                if pd.isnull(state_label):
+                    continue
+                # Use vaex filtering syntax
+                filtered_df = states_df[states_df["state"] == state_label]
+                min_E = filtered_df["E"].min()
+                te_map[state_label] = min_E
+    return te_map
 
 
 def fetch_exomol(
@@ -238,6 +278,8 @@ def fetch_exomol(
         "jl": "jlower",
         "gp": "gupper",
         "gpp": "glower",
+        "vl": "vl",
+        "vu": "vu",
         ### old, now we directly set "airbrd" and "Tdpair"
         # "airbrd": "alpha_ref",
         # "Tdpair": "n_Texp",
@@ -248,6 +290,8 @@ def fetch_exomol(
             "Sij0",
             "jlower",
             "jupper",
+            "vl",
+            "vu",
         ]  # needed for broadening
     else:
         columns_exomol = None
@@ -318,6 +362,21 @@ def fetch_exomol(
         elif output == "pandas":
             for k, v in attrs.items():
                 df.attrs[k] = v
+
+    # Ensure 'branch' column exists for non-LTE calculations
+    if "branch" not in df.columns:
+        if "PQR" in df.columns:
+            df["branch"] = df["PQR"]
+        else:
+            # Fallback: set all to Q branch (0)
+            df["branch"] = 0
+
+    # Set dbformat to hdf5-radisdb for compatibility
+    df.attrs["dbformat"] = "hdf5-radisdb"
+
+    # After loading states DataFrame, build Te mapping
+    get_electronic_state_Te_mapping(df)
+
     # Return:
     out = df
     if return_local_path or return_partition_function:

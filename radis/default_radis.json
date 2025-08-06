@@ -4,7 +4,8 @@
     "database": {}                          # list of registered databases on this computer. See expected format in https://radis.readthedocs.io/en/latest/lbl/lbl.html#label-lbl-config-file
     "spectroscopic_constants": {             # path to spectroscopic constants for non-LTE calculations. By default look for them in radis/db/[MOLECULE],/*
         "CO2": "molecules_data.json",
-        "CO": "molecules_data.json"
+        "CO": "molecules_data.json",
+        "OH": "molecules_data.json"
     },
     "plot": {
         "plotlib": "publib"                 # library for plot style. "publib", "seaborn".
