@@ -110,7 +110,7 @@ docs = [
     "sphinx-gallery",  # for documentation examples gallery
     "lmfit",  # for documentation examples
     "pytest",  # Sphinx autodoc also parses test suite
-    "specutils,  # spectroscopic data handling
+    "specutils",  # spectroscopic data handling
 ]
 
 [tool.setuptools]
