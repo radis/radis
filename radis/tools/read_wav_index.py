@@ -43,7 +43,6 @@ def get_wavno_lower_offset(wavno: float) -> int | None:
     """
     index = find_nearest_lower_wavno_index(wavno)
     key = wavno_keys[index]
-    print(f"Found lower wavno: {key} at index {index}")
     return wav_index.get(key)
 
 
@@ -54,7 +53,6 @@ def get_wavno_upper_offset(wavno: float) -> int | None:
     """
     index = find_nearest_upper_wavno_index(wavno)
     key = wavno_keys[index]
-    print(f"Found upper wavno: {key} at index {index}")
     return wav_index.get(key)
 
 
@@ -72,10 +70,8 @@ def offset_difference_from_lower_wavno(
     lower = get_wavno_lower_offset(lower_wavno)
 
     if upper is None:
-        print(f"No upper offset found for wavno: {larger_wavno}")
         return None
     if lower is None:
-        print(f"No lower offset found for wavno: {lower_wavno}")
         return None
 
     return abs(upper - lower)

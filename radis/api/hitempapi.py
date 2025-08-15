@@ -13,7 +13,6 @@ import json
 import os
 import pickle
 import re
-import sys
 import urllib.request
 import warnings
 from datetime import date
@@ -403,7 +402,6 @@ def login_to_hitran(verbose=False):
                 # Save
                 with open(CONFIG_PATH_JSON, "w") as f:
                     json.dump(config, f, indent=4)
-                print("tosss ", config["credentials"])
             else:
                 encrypted_email = config["credentials"].get("HITRAN_EMAIL")
             encrypted_password = config["credentials"].get("HITRAN_PASSWORD")
@@ -450,11 +448,11 @@ def login_to_hitran(verbose=False):
 
 
 def download_hitemp_file(session, file_url, output_filename, verbose=False):
-    print(f"Starting download from {file_url} to {output_filename}")
+    if verbose:
+        print(f"Starting download from {file_url}")
     file_response = session.get(file_url, stream=True)
     if file_response.status_code == 200:
         total_size = int(file_response.headers.get("content-length", 0))
-        print(f"Total size to download: {total_size} bytes")
         file_size_in_GB = total_size / (1024**3)
         from radis import config
 
@@ -462,8 +460,8 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
 
         if file_size_in_GB > MAX_SIZE_GB:
             warning_msg = (
-                f"The total download size is {file_size_in_GB:.2f} GB, which will take time and potential a significant portion of your disk memory."
-                "To prevent this warning, you increase the limit using `radis.config['WARN_LARGE_DOWNLOAD_ABOVE_X_GB'] =  1`."
+                f"The total download size is {file_size_in_GB:.2f} GB, which will take time and potential a significant portion of your disk memory.\n"
+                "To prevent this warning, you can increase the limit using `radis.config['WARN_LARGE_DOWNLOAD_ABOVE_X_GB'] =  1`."
             )
             warnings.warn(warning_msg, UserWarning)
 
@@ -478,24 +476,15 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
                     f.write(chunk)
                     pbar.update(len(chunk))
 
-        print("\nDownload complete!")
+        if verbose:
+            print("Download complete")
         return output_filename
     else:
-        print(f"Download failed: {file_response.status_code}")
-        print("Response:", file_response.text[:500])
+        if verbose:
+            print(f"Download failed: {file_response.status_code}")
         raise Warning(
             f"Failed to download {file_url}. Please download manually and place it in the following location:"
         )
-        temp_folder = os.path.join(
-            os.path.dirname(output_filename),
-            "downloads__can_be_deleted",
-            "hitran.org",
-            "files",
-            "HITEMP",
-            "HITEMP-2024",
-            "CO2_line_list",
-        )
-        print(f"{file_url} ==> {temp_folder} \n")
 
 
 def _fcache_file_name(fname, engine, cache_directory_path=None):
@@ -605,10 +594,7 @@ def parse_one_CO2_block(
             manager.write(fcache, df, append=False)
         except PermissionError:
             if verbose:
-                print(sys.exc_info())
-                print(
-                    "An error occurred in cache file generation. Lookup access rights"
-                )
+                print("An error occurred in cache file generation. Check access rights")
             pass
 
     return df
@@ -838,16 +824,10 @@ def read_and_write_chunked_for_CO2(
         if f:
             f.close()
 
-    print(
-        f"Finished: wrote {total_read} bytes split into { (total_read + chunk_size - 1) // chunk_size } file(s)."
-    )
-
     # Combine all DataFrames into one
     if dataframes:
+        print("Combining parsed data from all chunks...")
         combined_df = pd.concat(dataframes, ignore_index=True)
-        print(
-            f"Combined {len(dataframes)} DataFrames into one with {len(combined_df)} rows."
-        )
     else:
         combined_df = pd.DataFrame()
 
@@ -894,9 +874,9 @@ def download_and_decompress_CO2_into_df(
     - Requires the HITEMP CO2 database to be accessible or downloadable.
     """
 
-    # print(f"File size: {os.path.getsize(bz2_file_path)}")
     downloaded_HITEMP_CO2_path = download_HITEMP_CO2(local_path=local_databases)
-    print(f"Downloaded HITEMP CO2 database to {downloaded_HITEMP_CO2_path}")
+    if verbose:
+        print(f"Using HITEMP CO2 database: {downloaded_HITEMP_CO2_path}")
     index_file_path = os.path.join(getProjectRoot(), "db", "CO2_indexed_offsets.dat")
     start_offset = get_wavno_lower_offset(load_wavenum_min)
     bytes_to_read = offset_difference_from_lower_wavno(
