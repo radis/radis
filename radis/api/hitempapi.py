@@ -774,59 +774,66 @@ def read_and_write_chunked_for_CO2(
                 "Failed to seek and read likely due to change in HITEMP CO2 dataset please contact radis developers"
             )
 
-        while total_read < bytes_to_read:
-            to_read = min(chunk_size, bytes_to_read - total_read)
-            try:
-                raw = f.read(to_read)
-            except Exception:
-                raise ValueError(
-                    "Failed to seek and read likely due to change in HITEMP CO2 dataset please contact radis developers"
+        # Initialize progress bar
+        with tqdm(
+            total=bytes_to_read, unit="B", unit_scale=True, desc="Processing chunks"
+        ) as pbar:
+            while total_read < bytes_to_read:
+                to_read = min(chunk_size, bytes_to_read - total_read)
+                try:
+                    raw = f.read(to_read)
+                except Exception:
+                    raise ValueError(
+                        "Failed to seek and read likely due to change in HITEMP CO2 dataset please contact radis developers"
+                    )
+
+                if not raw:
+                    break  # EOF
+
+                # Drop partial first and last line
+                first_nl = raw.find(b"\n")
+                last_nl = raw.rfind(b"\n")
+                if first_nl != -1 and last_nl != -1 and first_nl < last_nl:
+                    data = raw[first_nl + 1 : last_nl]  # keep only complete lines
+                else:
+                    total_read += to_read  # if no full line in here skip entirely
+                    pbar.update(to_read)
+                    continue
+
+                # Compute current offset for naming
+                current_offset = start_offset + total_read
+                start_mb = current_offset // (1024 * 1024)
+                end_mb = start_mb + 500
+                fname = f"{output_prefix}_{start_mb}_{end_mb}MB.par"  # TODO: logic for end_mb for last file
+                out_decompressed_file = join(hitemp_CO2_download_path, fname)
+
+                # Check if cached version exists first
+                fcache = _fcache_file_name(
+                    fname, engine, cache_directory_path=hitemp_CO2_download_path
                 )
 
-            if not raw:
-                break  # EOF
+                cached_df = _load_cache_file(fcache, engine=engine, columns=columns)
+                if cached_df is not None:
+                    total_read = _append_filtered_dataframe(cached_df, to_read)
+                    pbar.update(to_read)
+                    continue  # skip decompression and parsing
 
-            # Drop partial first and last line
-            first_nl = raw.find(b"\n")
-            last_nl = raw.rfind(b"\n")
-            if first_nl != -1 and last_nl != -1 and first_nl < last_nl:
-                data = raw[first_nl + 1 : last_nl]  # keep only complete lines
-            else:
-                total_read += to_read  # if no full line in here skip entirely
-                continue
+                # Cache miss - proceed with decompression and parsing
+                # Write this chunk
+                with open(out_decompressed_file, "wb") as out_file:
+                    out_file.write(data)
 
-            # Compute current offset for naming
-            current_offset = start_offset + total_read
-            start_mb = current_offset // (1024 * 1024)
-            end_mb = start_mb + 500
-            fname = f"{output_prefix}_{start_mb}_{end_mb}MB.par"  # TODO: logic for end_mb for last file
-            out_decompressed_file = join(hitemp_CO2_download_path, fname)
+                local_paths.append(out_decompressed_file)
+                # Parse this chunk into a DataFrame
+                df = parse_one_CO2_block(
+                    out_decompressed_file,
+                    cache_directory_path=hitemp_CO2_download_path,
+                    columns=columns,
+                )
+                os.remove(out_decompressed_file)  # remove the `par` file after parsing
 
-            # Check if cached version exists first
-            fcache = _fcache_file_name(
-                fname, engine, cache_directory_path=hitemp_CO2_download_path
-            )
-
-            cached_df = _load_cache_file(fcache, engine=engine, columns=columns)
-            if cached_df is not None:
-                total_read = _append_filtered_dataframe(cached_df, to_read)
-                continue  # skip decompression and parsing
-
-            # Cache miss - proceed with decompression and parsing
-            # Write this chunk
-            with open(out_decompressed_file, "wb") as out_file:
-                out_file.write(data)
-
-            local_paths.append(out_decompressed_file)
-            # Parse this chunk into a DataFrame
-            df = parse_one_CO2_block(
-                out_decompressed_file,
-                cache_directory_path=hitemp_CO2_download_path,
-                columns=columns,
-            )
-            os.remove(out_decompressed_file)  # remove the `par` file after parsing
-
-            total_read = _append_filtered_dataframe(df, to_read)
+                total_read = _append_filtered_dataframe(df, to_read)
+                pbar.update(to_read)
     finally:
         if f:
             f.close()
