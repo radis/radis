@@ -668,6 +668,7 @@ def read_and_write_chunked_for_CO2(
     columns=None,
     isotope=None,
     engine="pytables",
+    output="pandas",
     chunk_size=500 * 1024 * 1024,
     output_prefix="CO2_HITEMP",
 ):
@@ -815,6 +816,8 @@ def read_and_write_chunked_for_CO2(
                     out_decompressed_file,
                     cache_directory_path=hitemp_CO2_download_path,
                     columns=columns,
+                    engine=engine,
+                    output=output,
                 )
                 os.remove(out_decompressed_file)  # remove the `par` file after parsing
 
@@ -827,7 +830,12 @@ def read_and_write_chunked_for_CO2(
     # Combine all DataFrames into one
     if dataframes:
         print("Combining parsed data from all chunks...")
-        combined_df = pd.concat(dataframes, ignore_index=True)
+        if output == "vaex":
+            import vaex
+
+            combined_df = vaex.concat(dataframes)
+        else:
+            combined_df = pd.concat(dataframes, ignore_index=True)
     else:
         combined_df = pd.DataFrame()
 
@@ -873,6 +881,8 @@ def download_and_decompress_CO2_into_df(
     -----
     - Requires the HITEMP CO2 database to be accessible or downloadable.
     """
+    if engine == "default":
+        engine = "pytables"
 
     downloaded_HITEMP_CO2_path = download_HITEMP_CO2(local_path=local_databases)
     if verbose:
@@ -895,6 +905,8 @@ def download_and_decompress_CO2_into_df(
         load_wavenum_min,
         columns=columns,
         isotope=isotope,
+        engine=engine,
+        output=output,
     )
 
 
