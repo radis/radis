@@ -1,6 +1,6 @@
 {
   "_comment":
-  "This JSON file maps wavenumbers to byte offsets for HITEMP CO2 data.\nLeft column: Wavenumber values in cm⁻¹ (wave numbers for CO2 spectral lines).\nRight column: Byte offset positions in the decompressed data stream where each wavenumber section begins.",
+  "This JSON file maps wavenumbers to byte offsets for HITEMP CO2 data.\nLeft column: Wavenumber values in cm-1 (wavenumbers for CO2 spectral lines).\nRight column: Byte offset positions in the decompressed data stream where each wavenumber section begins.",
 
   "data": {
     "0.0000011": 0,
