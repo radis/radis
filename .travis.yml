@@ -46,22 +46,16 @@ before_script:
   - python --version #to check and be sure of the python version
   - echo ">>> Run fast tests first"
   # use XVFB to have headless display port, and still run the Matplotlib tests.
-  - xvfb-run -a pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10
+  - xvfb-run -a pytest -m "fast and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10 --cov --cov-branch --cov-report=xml
 
 script:
   # Your test script goes here
   # >> If script returns a non-zero exit code, the build is failed, but continues to run before being
   # >> marked as failed.  (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
   - echo ">>> Run long tests now"
-  - xvfb-run -a pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" and not deprecated --durations=10
+  - xvfb-run -a pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" and not deprecated --durations=10 --cov --cov-branch --cov-report=xml
   # --durations=N to print the slowest N tests
   # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
-
-after_success:
-  # codecoverage
-  - pip install codecov
-  - codecov
-
 
 stages: #This sequence defines the order of the stages
   - name: deploy
@@ -70,7 +64,7 @@ stages: #This sequence defines the order of the stages
     if: branch = master
   - name: Py311
     if: branch = master OR branch = develop
-  - name: Py310 #we also test the linting in the stage "before_install" here
+  - name: Py310 #we also test the linting in the stage "before_install" but only for this specific Python version
     if: branch = master OR branch = develop
   - name: Py312
     if: branch = master
@@ -116,6 +110,21 @@ jobs:
         - pip install pre-commit
         - pre-commit install
         - pre-commit run --all-files #if this fails, you should run "pre-commit run --all-files" on your machine and commit
+        - echo ">>> Success of linting"
+      after_success:
+        #based on https://app.codecov.io/github/minouHub/radis/new/other-ci
+        - curl https://keybase.io/codecovsecurity/pgp_keys.asc | gpg --no-default-keyring --keyring trustedkeys.gpg --import # One-time step
+        - curl -Os https://cli.codecov.io/latest/linux/codecov
+        - curl -Os https://cli.codecov.io/latest/linux/codecov.SHA256SUM
+        - curl -Os https://cli.codecov.io/latest/linux/codecov.SHA256SUM.sig
+        - gpg --verify codecov.SHA256SUM.sig codecov.SHA256SUM
+
+        - shasum -a 256 -c codecov.SHA256SUM
+        - sudo chmod +x codecov
+        - ./codecov --help
+
+        - ./codecov upload-process
+        - echo ">>> Success of codecov upload-process"
     - stage: Py312
       name: "Python 3.12"
       python: 3.12
