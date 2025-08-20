@@ -11,7 +11,7 @@ os: linux
 dist: focal # this gives us Ubuntu 20.04, needed for GPU tests #needed for python 3.10 (xenial is default for Travis-CI, but does not support python 3.10)
 
 name: Test and Coverage
-before_install:
+install:
   # Install Micromamba
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
@@ -21,7 +21,6 @@ before_install:
   - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/1.5.8 | tar -xvj bin/micromamba
   - ./bin/micromamba shell init -s bash -p ~/micromamba
   - source ~/.bashrc
-install:
   - micromamba activate base
   # Update python version in environment
   - sed -i -E 's/^- python$/- python='$TRAVIS_PYTHON_VERSION'/' ./environment.yml
@@ -54,7 +53,7 @@ script:
   # >> If script returns a non-zero exit code, the build is failed, but continues to run before being
   # >> marked as failed.  (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
   - echo ">>> Run long tests now"
-  - xvfb-run -a pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" and not depecrated --durations=10
+  - xvfb-run -a pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" and not deprecated --durations=10
   # --durations=N to print the slowest N tests
   # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
 
@@ -71,14 +70,14 @@ stages: #This sequence defines the order of the stages
     if: branch = master
   - name: Py311
     if: branch = master OR branch = develop
-  - name: Py310
+  - name: Py310 #we also test the linting in the stage "before_install" here
     if: branch = master OR branch = develop
   - name: Py312
     if: branch = master
   # - name: MacOS_py310
   #   if: branch = master
-  - name: lint
-    if: branch = master OR branch = develop
+  # - name: lint
+  #   if: branch = master OR branch = develop
 
 jobs:
   include:
@@ -113,21 +112,26 @@ jobs:
     - stage: Py310
       name: "Python 3.10"
       python: 3.10
+      before_install: #used for linting
+        - pip install pre-commit
+        - pre-commit install
+        - pre-commit run --all-files #if this fails, you should run "pre-commit run --all-files" on your machine and commit
     - stage: Py312
       name: "Python 3.12"
       python: 3.12
   ### Extra Python versions - end
-    - stage: lint
-      name: Code Quality Checks
-      python: 3.10
-      install:
-        - pip install pre-commit
-        - pre-commit install
-      before_script: skip #do NOT run the before_script of "tests" stage
-      script:
-        - pre-commit run --all-files
-      after_failure: #better for checking the origin of a bug
-        - cat /home/travis/.cache/pre-commit/pre-commit.log
+    # - stage: lint
+    #   name: Code Quality Checks
+    #   python: 3.10
+    #   install:
+    #     - pip install pre-commit
+    #     - pre-commit install
+    #   before_script: skip #do NOT run the before_script of "tests" stage
+    #   script:
+    #     - pre-commit run --all-files
+    #   after_failure: #better for checking the origin of a bug
+    #     - cat /home/travis/.cache/pre-commit/pre-commit.log
+    #   after_success: skip #do NOT run for linting
 
     - stage: deploy
       name: Deploy to PyPI
