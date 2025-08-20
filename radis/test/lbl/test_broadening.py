@@ -735,6 +735,7 @@ def test_broadening_warnings(*args, **kwargs):
 # @pytest.mark.needs_config_file
 # @pytest.mark.needs_db_HITEMP_CO2_DUNHAM
 @pytest.mark.needs_connection
+@pytest.mark.deprecated
 def test_abscoeff_continuum(
     plot=False, verbose=2, warnings=True, threshold=0.1, *args, **kwargs
 ):

@@ -3142,7 +3142,7 @@ class BroadenFactory(BaseFactory):
         if self.params.pseudo_continuum_threshold > 0:
 
             warn(
-                "Pseudo_continuum not needed anymore as RADIS is getting so fast🔥🔥🔥. This feature will be removed in future versions.",
+                "Pseudo_continuum not needed anymore as RADIS is getting so fast🔥🔥🔥. This feature will be removed in future versions. This feature is not tested since 0.16.4.",
                 DeprecationWarning,
             )
 
