@@ -73,14 +73,14 @@ stages: #This sequence defines the order of the stages
     if: branch = master
   - name: Py311
     if: branch = master OR branch = develop
-  - name: Py310
+  - name: Py310 #we also test the linting in the stage "before_install" here
     if: branch = master OR branch = develop
   - name: Py312
     if: branch = master
   # - name: MacOS_py310
   #   if: branch = master
-  - name: lint
-    if: branch = master OR branch = develop
+  # - name: lint
+  #   if: branch = master OR branch = develop
 
 jobs:
   include:
@@ -115,21 +115,26 @@ jobs:
     - stage: Py310
       name: "Python 3.10"
       python: 3.10
+      before_install: #used for linting
+        - pip install pre-commit
+        - pre-commit install
+        - pre-commit run --all-files #if this fails, you should run "pre-commit run --all-files" on your machine and commit
     - stage: Py312
       name: "Python 3.12"
       python: 3.12
   ### Extra Python versions - end
-    - stage: lint
-      name: Code Quality Checks
-      python: 3.10
-      install:
-        - pip install pre-commit
-        - pre-commit install
-      before_script: skip #do NOT run the before_script of "tests" stage
-      script:
-        - pre-commit run --all-files
-      after_failure: #better for checking the origin of a bug
-        - cat /home/travis/.cache/pre-commit/pre-commit.log
+    # - stage: lint
+    #   name: Code Quality Checks
+    #   python: 3.10
+    #   install:
+    #     - pip install pre-commit
+    #     - pre-commit install
+    #   before_script: skip #do NOT run the before_script of "tests" stage
+    #   script:
+    #     - pre-commit run --all-files
+    #   after_failure: #better for checking the origin of a bug
+    #     - cat /home/travis/.cache/pre-commit/pre-commit.log
+    #   after_success: skip #do NOT run for linting
 
     - stage: deploy
       name: Deploy to PyPI
