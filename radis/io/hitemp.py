@@ -145,6 +145,10 @@ def fetch_hitemp(
     if molecule == "CO2":
         from radis.api.hitempapi import download_and_decompress_CO2_into_df
 
+        # Use pytables engine for CO2 to ensure consistent caching behavior
+        if engine == "default":
+            engine = "pytables"
+
         df, local_paths = download_and_decompress_CO2_into_df(
             local_databases=None,
             load_wavenum_min=load_wavenum_min,

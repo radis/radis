@@ -500,7 +500,7 @@ def _load_cache_file(fcache, engine="pytables", columns=None):
 
     # Start reading the cache file
     manager = DataFileManager(engine)
-    df = manager.read(fcache, columns=columns, key="df")
+    df = manager.read(fcache, columns=columns)
 
     return df
 
@@ -816,12 +816,31 @@ def read_and_write_chunked_for_CO2(
     # Combine all DataFrames into one
     if dataframes:
         print("Combining parsed data from all chunks...")
+
         if output == "vaex":
             import vaex
 
-            combined_df = vaex.concat(dataframes)
+            # Convert any pandas dataframes to vaex before concatenating
+            vaex_dataframes = []
+            for df in dataframes:
+                if hasattr(df, "to_pandas_df"):
+                    # Already a Vaex DataFrame
+                    vaex_dataframes.append(df)
+                else:
+                    # Convert pandas to Vaex
+                    vaex_dataframes.append(vaex.from_pandas(df))
+            combined_df = vaex.concat(vaex_dataframes)
         else:
-            combined_df = pd.concat(dataframes, ignore_index=True)
+            # Convert any vaex dataframes to pandas before concatenating
+            pandas_dataframes = []
+            for df in dataframes:
+                if hasattr(df, "to_pandas_df"):
+                    # Convert Vaex to pandas
+                    pandas_dataframes.append(df.to_pandas_df())
+                else:
+                    # Already a pandas DataFrame
+                    pandas_dataframes.append(df)
+            combined_df = pd.concat(pandas_dataframes, ignore_index=True)
     else:
         combined_df = pd.DataFrame()
 
@@ -878,6 +897,10 @@ def download_and_decompress_CO2_into_df(
     start_offset_in_bytes = get_wavno_lower_offset(load_wavenum_min)
     end_offset_in_bytes = get_wavno_upper_offset(load_wavenum_max)
     bytes_to_read = abs(end_offset_in_bytes - start_offset_in_bytes)
+
+    # Convert "default" engine to "pytables" for consistent caching
+    if engine == "default":
+        engine = "pytables"
 
     if isotope is not None:
         isotope = [int(i) for i in isotope.split(",")]
