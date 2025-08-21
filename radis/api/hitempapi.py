@@ -562,8 +562,7 @@ def parse_one_CO2_block(
         mol = get_molecule(int(f.read(2)))
 
     # Set default columns if None provided
-    if columns is None:
-        columns = columns_2004
+    columns = columns_2004
 
     df = parse_hitran_file(fname, columns, output=output, molecule=mol)
     df = post_process_hitran_data(
@@ -776,7 +775,7 @@ def read_and_write_chunked_for_CO2(
                 )
 
                 # Create filename based on wavenumber range
-                fname = f"02_{int(start_wavno)}-{int(end_wavno)}_HITEMP2024.par"
+                fname = f"02_{int(start_wavno):05d}-{int(end_wavno):05d}_HITEMP2024.par"
                 out_decompressed_file = join(hitemp_CO2_download_path, fname)
 
                 # Check if cached version exists first
