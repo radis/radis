@@ -56,22 +56,22 @@ def get_wavno_upper_offset(wavno: float) -> int | None:
     return wav_index.get(key)
 
 
-def offset_difference_from_lower_wavno(
-    larger_wavno: float, lower_wavno: float
-) -> int | None:
+def get_wavno_for_byte_range(start_byte: int, end_byte: int) -> tuple[float, float]:
     """
-    Calculate the difference between two offsets:
-    offset for smallest wavno ≥ larger_wavno and
-    offset for largest wavno ≤ lower_wavno.
-
-    Returns the absolute difference, or None if either offset is not found.
+    Return (start_wavno, end_wavno) for the given byte range.
+    Requires: wavno_keys (sorted list of float keys) and wav_index (dict mapping key->offset).
     """
-    upper = get_wavno_upper_offset(larger_wavno)
-    lower = get_wavno_lower_offset(lower_wavno)
+    if start_byte > end_byte:
+        start_byte, end_byte = end_byte, start_byte
 
-    if upper is None:
-        return None
-    if lower is None:
-        return None
+    wav_offsets = [wav_index[k] for k in wavno_keys]
 
-    return abs(upper - lower)
+    # largest offset <= start_byte
+    i = bisect.bisect_right(wav_offsets, start_byte)
+    start_idx = 0 if i == 0 else i - 1
+
+    # smallest offset >= end_byte
+    j = bisect.bisect_left(wav_offsets, end_byte)
+    end_idx = len(wav_offsets) - 1 if j == len(wav_offsets) else j
+
+    return wavno_keys[start_idx], wavno_keys[end_idx]

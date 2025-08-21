@@ -2803,8 +2803,7 @@ class DatabankLoader(object):
         """Remove unecessary columns and add values as attributes
 
         Returns
-        -------if molecule == "CO2":
-            isotope = 1
+
         None: DataFrame updated inplace
         """
 

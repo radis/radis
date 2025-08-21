@@ -19,6 +19,7 @@ from datetime import date
 from os.path import basename, commonpath, getsize, join
 from typing import Union
 
+import indexed_bzip2 as ibz2
 import numpy as np
 import pandas as pd
 import requests
@@ -29,20 +30,11 @@ from tqdm import tqdm
 from radis.misc.config import CONFIG_PATH_JSON, getDatabankEntries
 from radis.misc.utils import getProjectRoot
 from radis.misc.warning import DatabaseAlreadyExists
-from radis.tools import get_wavno_lower_offset, offset_difference_from_lower_wavno
-
-try:
-    import indexed_bzip2 as ibz2
-
-    version_str = getattr(ibz2, "__version__", "0.0.0")
-    version_tuple = tuple(map(int, version_str.split(".")))
-    if version_tuple < (1, 7, 0):
-        warnings.warn(
-            "indexed_bzip2>=1.7.0 is required. Please upgrade: pip install -U indexed_bzip2",
-            ImportWarning,
-        )
-except (ImportError, ValueError):
-    warnings.warn("pip install indexed_bzip2>=1.7.0", ImportWarning)
+from radis.tools.read_wav_index import (
+    get_wavno_for_byte_range,
+    get_wavno_lower_offset,
+    get_wavno_upper_offset,
+)
 
 try:
     from .dbmanager import DatabaseManager
@@ -502,20 +494,15 @@ def _fcache_file_name(fname, engine, cache_directory_path=None):
 
 def _load_cache_file(fcache, engine="pytables", columns=None):
     """Load cache file if it exists and is valid."""
-    try:
-        # Check if cache file exists
-        if not os.path.exists(fcache):
-            return None
-
-        # Start reading the cache file
-        manager = DataFileManager(engine)
-        df = manager.read(fcache, columns=columns, key="df")
-
-        return df
-    except Exception:
-        # Return None if any error occurs during cache loading
-        # This allows fallback to normal processing
+    # Check if cache file exists
+    if not os.path.exists(fcache):
         return None
+
+    # Start reading the cache file
+    manager = DataFileManager(engine)
+    df = manager.read(fcache, columns=columns, key="df")
+
+    return df
 
 
 def parse_one_CO2_block(
@@ -670,7 +657,6 @@ def read_and_write_chunked_for_CO2(
     engine="pytables",
     output="pandas",
     chunk_size=500 * 1024 * 1024,
-    output_prefix="CO2_HITEMP",
 ):
     """
     Reads a specified number of bytes from a bzip2-compressed CO2 HITEMP file, starting at a given offset, in large chunks.
@@ -688,8 +674,6 @@ def read_and_write_chunked_for_CO2(
         Total number of bytes to read from the start_offset.
     chunk_size : int, optional
         Number of bytes to read per chunk (default is 500 MB).
-    output_prefix : str, optional
-        Prefix for naming temporary output files (default is "CO2_HITEMP").
     Returns
     -------
     pandas.DataFrame
@@ -720,6 +704,20 @@ def read_and_write_chunked_for_CO2(
         with open(index_file_path, "rb") as f:
             return pickle.load(f)
 
+    def _filter_and_append_dataframe(df_to_append):
+        """Filter dataframe to requested range and append to results."""
+        # Always filter to the requested wavenumber range
+        filtered_df = df_to_append[
+            (df_to_append["wav"] >= load_wavenum_min)
+            & (df_to_append["wav"] <= load_wavenum_max)
+        ]
+
+        # Apply isotope filtering if specified
+        if isotope is not None:
+            filtered_df = filtered_df[filtered_df["iso"].isin(isotope)]
+
+        dataframes.append(filtered_df)
+
     # Load block offsets
     block_offsets = _load_block_offsets()
 
@@ -729,27 +727,6 @@ def read_and_write_chunked_for_CO2(
     f = None
     local_paths = []  # to store local paths of relevant decompressed files
     total_read = 0
-    number_of_blocks = bytes_to_read // chunk_size + 1
-    nth_block = 1
-
-    def _append_filtered_dataframe(df_to_append, bytes_processed):
-        nonlocal nth_block, total_read
-        if nth_block == 1 or nth_block == number_of_blocks:
-            df_filtered = df_to_append[
-                (df_to_append["wav"] >= load_wavenum_min)
-                & (df_to_append["wav"] <= load_wavenum_max)
-            ]
-        else:
-            df_filtered = df_to_append
-
-        # Apply isotope filtering if specified
-        if isotope is not None:
-            df_filtered = df_filtered[df_filtered["iso"].isin(isotope)]
-
-        dataframes.append(df_filtered)
-        total_read += bytes_processed
-        nth_block += 1
-        return total_read
 
     try:
         f = ibz2.open(bz2_file_path, parallelization=os.cpu_count())
@@ -787,11 +764,19 @@ def read_and_write_chunked_for_CO2(
                     pbar.update(to_read)
                     continue
 
-                # Compute current offset for naming
-                current_offset = start_offset + total_read
-                start_mb = current_offset // (1024 * 1024)
-                end_mb = start_mb + 500
-                fname = f"{output_prefix}_{start_mb}_{end_mb}MB.par"  # TODO: logic for end_mb for last file
+                # Compute absolute position in the decompressed file for wavenumber lookup
+                # start_offset is the absolute byte position where we started reading
+                # total_read is how many bytes we've read so far in this query
+                absolute_start_pos = start_offset + total_read
+                absolute_end_pos = absolute_start_pos + to_read
+
+                # Get wavenumbers for this specific chunk using absolute positions
+                start_wavno, end_wavno = get_wavno_for_byte_range(
+                    absolute_start_pos, absolute_end_pos
+                )
+
+                # Create filename based on wavenumber range
+                fname = f"02_{int(start_wavno)}-{int(end_wavno)}_HITEMP2024.par"
                 out_decompressed_file = join(hitemp_CO2_download_path, fname)
 
                 # Check if cached version exists first
@@ -801,7 +786,8 @@ def read_and_write_chunked_for_CO2(
 
                 cached_df = _load_cache_file(fcache, engine=engine, columns=columns)
                 if cached_df is not None:
-                    total_read = _append_filtered_dataframe(cached_df, to_read)
+                    _filter_and_append_dataframe(cached_df)
+                    total_read += to_read
                     pbar.update(to_read)
                     continue  # skip decompression and parsing
 
@@ -821,7 +807,8 @@ def read_and_write_chunked_for_CO2(
                 )
                 os.remove(out_decompressed_file)  # remove the `par` file after parsing
 
-                total_read = _append_filtered_dataframe(df, to_read)
+                _filter_and_append_dataframe(df)
+                total_read += to_read
                 pbar.update(to_read)
     finally:
         if f:
@@ -887,11 +874,11 @@ def download_and_decompress_CO2_into_df(
     downloaded_HITEMP_CO2_path = download_HITEMP_CO2(local_path=local_databases)
     if verbose:
         print(f"Using HITEMP CO2 database: {downloaded_HITEMP_CO2_path}")
+
     index_file_path = os.path.join(getProjectRoot(), "db", "CO2_indexed_offsets.dat")
-    start_offset = get_wavno_lower_offset(load_wavenum_min)
-    bytes_to_read = offset_difference_from_lower_wavno(
-        load_wavenum_max, load_wavenum_min
-    )
+    start_offset_in_bytes = get_wavno_lower_offset(load_wavenum_min)
+    end_offset_in_bytes = get_wavno_upper_offset(load_wavenum_max)
+    bytes_to_read = abs(end_offset_in_bytes - start_offset_in_bytes)
 
     if isotope is not None:
         isotope = [int(i) for i in isotope.split(",")]
@@ -899,7 +886,7 @@ def download_and_decompress_CO2_into_df(
     return read_and_write_chunked_for_CO2(
         downloaded_HITEMP_CO2_path,
         index_file_path,
-        start_offset,
+        start_offset_in_bytes,
         bytes_to_read,
         load_wavenum_max,
         load_wavenum_min,
