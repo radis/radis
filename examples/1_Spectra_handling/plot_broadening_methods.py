@@ -10,51 +10,78 @@ from radis import SpectrumFactory, plot_diff
 conditions = {
     # 'wavenum_min': 500,
     # 'wavenum_max': 10000,
-    "wavenum_min": 2007,
-    "wavenum_max": 2009.5,
+    # "wavenum_min": 2007,
+    # "wavenum_max": 2009.5,
+    # "molecule": "CO",
+    "wavenum_min": 2000,
+    "wavenum_max": 2400,
+    "molecule": "CO2",
     "path_length": 0.1,
-    "molecule": "CO",
     "mole_fraction": 0.2,
     "isotope": 1,  # or "1,2" or "all"
     "pressure": 1e-5,
     "wstep": 0.002,
     # also measure interpolation time
     "save_memory": False,
-    "truncation": 50,  # cm-1; Default value is 50 cm-1
+    "truncation": 0.1,  # cm-1; Default value is 50 cm-1
 }
 Tgas = 700
-
+databank = "hitemp"
+database = "2010"  # "default"
 #%% ############## No optimization used ##############
-# %% Using a convolution of a Gaussian and Lorentzian, no optimization
-sf = SpectrumFactory(
-    **conditions,
-    broadening_method="convolve",  # Voigt = numpy.convolve("Gaussian", "Lorentzian")
-    optimization=None,
-)
-sf.fetch_databank("hitran")
+conditions["optimization"] = None
+# # Using a convolution of a Gaussian and Lorentzian, no optimization
+conditions[
+    "broadening_method"
+] = "convolve"  # Voigt = numpy.convolve("Gaussian", "Lorentzian")
+sf = SpectrumFactory(**conditions)
+sf.fetch_databank(databank)
 s_conv = sf.eq_spectrum(Tgas=Tgas)
 
-
-# %% Using a polynomial approximation, no optimization
-sf = SpectrumFactory(
-    **conditions,
-    broadening_method="voigt",  # Voigt = polynomial approximation derived from Whithing
-    optimization=None,
-)
-sf.fetch_databank("hitran")
+# Using a polynomial approximation, no optimization
+conditions[
+    "broadening_method"
+] = "voigt"  # Voigt = polynomial approximation derived from Whithing
+sf = SpectrumFactory(**conditions)
+sf.fetch_databank(databank, database=database)
 s_poly = sf.eq_spectrum(Tgas=Tgas)
+s_poly.name = f"Poly. : {s_poly.c['calculation_time']:.1f}s"
 
-# Compare the spectra
+# # Compare the spectra
 s_conv.name = f"Convolution : {s_conv.c['calculation_time']:.1f}s"
-s_poly.name = f"Polynomial : {s_poly.c['calculation_time']:.1f}s"
 plot_diff(s_conv, s_poly, "absorbance", yscale="log")
 
 #%% ############## Using LDM optimization (linear/simple) ##############
-# # %% Using FFT to compute Voigt
-# sf = SpectrumFactory(
-#     **conditions,
-#     broadening_method = "fft", #Voigt = polynomial approximation derived from Whithing
-#     optimization = "simple",
-#     )
-# sf.fetch_databank("hitran")
-# s_fft = sf.eq_spectrum(Tgas=Tgas)
+conditions["optimization"] = "simple"
+
+conditions[
+    "broadening_method"
+] = "convolve"  # Voigt = numpy.convolve("Gaussian", "Lorentzian")
+sf = SpectrumFactory(**conditions)
+sf.fetch_databank(databank)
+s_conv_optim = sf.eq_spectrum(Tgas=Tgas)
+s_conv_optim.name = f"Convolution : {s_conv_optim.c['calculation_time']:.1f}s"
+
+
+conditions[
+    "broadening_method"
+] = "voigt"  # Voigt = polynomial approximation derived from Whithing
+sf = SpectrumFactory(**conditions)
+sf.fetch_databank(databank)
+s_poly_optim = sf.eq_spectrum(Tgas=Tgas)
+s_poly_optim.name = f"Polynomial : {s_poly_optim.c['calculation_time']:.1f}s"
+
+
+conditions["broadening_method"] = "fft"  # FFT(Voigt) = FFT(Gaussian) * FFT(Lorentzian)
+conditions["truncation"] = None
+sf = SpectrumFactory(**conditions)
+sf.fetch_databank(databank, database=database)
+s_fft_optim = sf.eq_spectrum(Tgas=Tgas)
+s_fft_optim.name = f"FFT - linear optim.: {s_fft_optim.c['calculation_time']:.1f}s"
+
+
+# Compare the spectra
+plot_diff(s_conv_optim, s_poly_optim, "absorbance", yscale="log")
+plot_diff(s_conv_optim, s_fft_optim, "absorbance", yscale="log")
+plot_diff(s_poly, s_fft_optim, "absorbance", yscale="linear")
+plot_diff(s_poly_optim, s_fft_optim, "absorbance", yscale="linear")
