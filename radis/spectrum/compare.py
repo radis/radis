@@ -908,13 +908,22 @@ def plot_diff(
         ax0.legend(**legendargs)
 
     # Start to 0
-    if var in ["radiance_noslit", "radiance", "abscoeff", "absorbance"]:
+    if (
+        var in ["radiance_noslit", "radiance", "abscoeff", "absorbance"]
+        and yscale != "log"
+    ):
         ax0.set_ylim(bottom=0)
 
     # plot difference (sorted)
     for ax1i, wdiff, Idiff in zip(ax1, wdiffs, Idiffs):
         b = np.argsort(wdiff)
-        ax1i.plot(wdiff[b], Idiff[b], style, color="k", lw=1 * lw_multiplier)
+
+        if yscale != "log":
+            ax1i.plot(wdiff[b], Idiff[b], style, color="k", lw=1 * lw_multiplier)
+        else:
+            ax1i.plot(
+                wdiff[b], np.abs(Idiff[b]), style, color="k", lw=1 * lw_multiplier
+            )
 
     # Write labels
     ax1[-1].set_xlabel(make_up(xlabel))
@@ -941,15 +950,25 @@ def plot_diff(
             # symmetrize error scale:
             # auto-zoom on min, max, but discard first and last centile (case of spikes / divergences)
             Idiff = Idiffs[i]
-            if discard_centile:
+            if discard_centile and yscale != "log":
                 Idiff_sorted = np.sort(Idiff[~np.isnan(Idiff)])
                 ymax = max(
                     abs(Idiff_sorted[-int(discard_centile * len(Idiff_sorted) // 100)]),
                     abs(Idiff_sorted[int(discard_centile * len(Idiff_sorted) // 100)]),
                 )
+            elif yscale == "log":
+                abs_Idiff = np.abs(Idiff[b])
+                min_val = abs_Idiff.min()
+                max_val = abs_Idiff.max()
+                bottom = 10 ** np.floor(np.log10(min_val))  # round to lower power of 10
+                top = 10 ** np.ceil(np.log10(max_val))  # round to higher power of 10
+
+                ax1i.set_ylim(bottom=bottom, top=top)
             else:
                 ymax = np.nanmax(abs(Idiff))
-            ax1[i].set_ylim(-ymax * diff_scale_multiplier, ymax * diff_scale_multiplier)
+                ax1[i].set_ylim(
+                    -ymax * diff_scale_multiplier, ymax * diff_scale_multiplier
+                )
         elif method == "distance":
             if discard_centile:
                 raise NotImplementedError(
