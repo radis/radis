@@ -150,7 +150,6 @@ def fetch_hitemp(
             engine = "pytables"
 
         df, local_paths = download_and_decompress_CO2_into_df(
-            local_databases=None,
             load_wavenum_min=load_wavenum_min,
             load_wavenum_max=load_wavenum_max,
             columns=columns,

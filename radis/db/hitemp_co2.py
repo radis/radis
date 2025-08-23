@@ -1,0 +1,113 @@
+import bz2
+import io
+import os
+
+import numpy as np
+from tqdm import tqdm
+
+from radis.misc.utils import getProjectRoot
+
+# Use absolute path to avoid issues
+project_root = getProjectRoot()
+offset_path = os.path.join(project_root, "db", "offset_arr.npy")
+
+offsets, pads = np.load(offset_path)
+sizes = offsets[1:] - offsets[:-1]
+
+
+pad_bufs = {
+    65: b"BZh91AY&SY Q\xb2\x1c\x00\x00\x03Z\x00\x00\x10\x0c\x00@\x00\x00\n \x000\xc0\x084\xf2 b\xfd",
+    130: b"BZh91AY&SY\x89\xbf\xa3\xf5\x00\x00\x03Z\x00\x00\x10\x0e\x00 \x00\x00\n \x001\x0c\x01\x06\x99\xa1?\x19\n",
+    5: b"BZh91AY&SYY\x9e\xb7A\x00\x00\x03Z\x00\x00\x10\x0c\x00\x10\x00\x00\n \x000\xc0\x08a\xa1gPx",
+    10: b"BZh91AY&SY\x13\xc2\x98\xc5\x00\x00\x03Z\x00\x00\x10\x0c\x00\x08\x00\x00\n \x000\xc0\x08a\xa1e@\xf1",
+    21: b'BZh91AY&SY\xe7%cn\x00\x00\x03\xda\x00@\x10\x08\x00\x04\x00\x00\n \x00"\x18h0\x06/\xa0c',
+    43: b"BZh91AY&SYm\x96(6\x00\x00\x03Z\x00\x00\x10\x0e\x00\x02\x00\x00\n \x001\x0c\x01\x01\xb2\x89\xc6#\xe6",
+    86: b'BZh91AY&SY|\x80\xf4\xd9\x00\x00\x03Z\x00\x00\x10\x0c\x00\x01\x00\x00\n \x00"\x18h0\x02\xcf)\x8c',
+    172: b"BZh91AY&SY\xc9\xec\x1b[\x00\x00\x03Z\x00\x00\x10\x0e\x00\x00\x80\x00\n \x001\x0c\x01\r1\xa8Y0\xa7\x98",
+}
+
+
+def get_bz2(session, file_url, offset=None, size=None):
+
+    if offset is not None and size is not None:
+        range_headers = {"Range": f"bytes={offset}-{offset + size - 1}"}
+    else:
+        range_headers = {}
+
+    # Download the file chunk using the authenticated session
+    with session.get(file_url, headers=range_headers, stream=True) as r:
+        total = int(r.headers.get("content-length", 0))
+
+        buf = io.BytesIO()
+        with tqdm(
+            desc="Downloading",
+            total=total,
+            unit="B",
+            unit_scale=True,
+            unit_divisor=1024,
+        ) as bar:
+            for chunk in r.iter_content(chunk_size=8192):
+                buf.write(chunk)
+                bar.update(len(chunk))
+
+    print("\nDownload complete!")
+
+    return buf.getvalue()
+
+
+def partial_download_co2_chunk(target_wn_min, target_wn_max, session, output_file_path):
+    """
+    Decompresses a partial block of a remote bz2 file for a given wavenumber range.
+    """
+    print(f"Target wavenumber range: {target_wn_min} to {target_wn_max} cm⁻¹")
+
+    # Load the wavenumber array that maps to compressed blocks
+    wavenumber_path = os.path.join(os.path.dirname(__file__), "wavenumber_arr.npy")
+    wavenumbers = np.load(wavenumber_path)
+
+    # Find blocks covering your wavenumber range using the wavenumber array
+    i_min = np.searchsorted(wavenumbers, target_wn_min, side="left")
+    i_max = np.searchsorted(wavenumbers, target_wn_max, side="right")
+
+    # Ensure we stay within bounds
+    i_min = max(0, min(i_min - 1, len(offsets) - 1))  # Include one block before
+    i_max = min(i_max + 1, len(offsets) - 1)  # Include one block after
+
+    print(f"Found target in compressed blocks: {i_min} to {i_max}")
+    print(
+        f"Wavenumber range: {wavenumbers[i_min]:.6f} to {wavenumbers[i_max]:.6f} cm⁻¹"
+    )
+
+    # Ensure the output directory exists
+    os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
+
+    print(offsets)
+
+    offset = offsets[i_min]
+    size = offsets[i_max + 1] - offsets[i_min]
+
+    file_url = r"https://hitran.org/files/HITEMP/bzip2format/02_HITEMP2024.par.bz2"
+    buf = get_bz2(session, file_url, offset=offset, size=size)
+
+    # Decompress blocks:
+    pad_index_to_key = [65, 130, 5, 10, 21, 43, 86, 172]  # Index 0->65, 1->130, etc.
+
+    decomp = bz2.BZ2Decompressor()
+    pad_key = pad_index_to_key[pads[i_min]]  # Get the correct pad_bufs key
+    decomp.decompress(pad_bufs[pad_key])  # Use the correct padding for the first block
+    raw = decomp.decompress(buf)
+    decomp = None
+    buf = None
+
+    # Drop partial first and last line
+    first_nl = raw.find(b"\n")
+    last_nl = raw.rfind(b"\n")
+    if first_nl != -1 and last_nl != -1 and first_nl < last_nl:
+        data = raw[first_nl + 1 : last_nl]  # Trim partial lines
+    else:
+        data = raw  # Fallback if no newlines found
+
+    # Write data:
+    with open(output_file_path, "wb") as fw:
+        fw.write(data)
+    print(f"Written decompressed data to {output_file_path}")
