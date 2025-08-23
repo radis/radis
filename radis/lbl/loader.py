@@ -2803,7 +2803,7 @@ class DatabankLoader(object):
         """Remove unecessary columns and add values as attributes
 
         Returns
-
+        -------
         None: DataFrame updated inplace
         """
 

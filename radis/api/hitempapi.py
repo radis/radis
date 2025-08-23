@@ -500,39 +500,29 @@ def parse_one_CO2_block(
     engine="pytables",
     output="pandas",
     parse_quanta=True,
-    cache_directory_path=None,
 ):
     """
-    Parses a single CO2 `.par` file block into a DataFrame, with optional caching.
-
-    If a cached version of the parsed file exists, it is loaded directly. Otherwise, the file is parsed and saved in HDF5 format for future use.
+    Parse a CO2 .par file block into a DataFrame with caching support.
 
     Parameters
     ----------
     fname : str
-        Path to the `.par` file to be parsed.
-    cache : bool, optional
-        Whether to use and save a cached version of the parsed file (default is True).
-    verbose : bool, optional
-        If True, prints progress and status messages (default is True).
-    engine: 'pytables', 'vaex'
-        format for Hdf5 cache file. Default `pytables`
+        Path to the .par file
+    cache : bool
+        Whether to use/save cached version (default True)
+    verbose : bool
+        Print progress messages (default True)
+    engine : str
+        Cache format: 'pytables' or 'vaex' (default 'pytables')
     output : str
-        output format of data as pandas Dataformat or vaex Dataformat
-    parse_quanta: bool
-        if ``True``, parse local & global quanta (required to identify lines
-        for non-LTE calculations ; but sometimes lines are not labelled.)
-    cache_directory_path : str or None, optional
-        Directory to store/read cache files. If None, use the directory of `fname`.
+        Output format: 'pandas' or 'vaex' (default 'pandas')
+    parse_quanta : bool
+        Parse quantum numbers for non-LTE calculations (default True)
 
     Returns
     -------
-    DataFrame or other specified output
-        The parsed data from the `.par` file, in the format specified by `output`.
-
-    Notes
-    -----
-    - The function is optimized for repeated parsing of large CO2 HITRAN/HITEMP `.par` files.
+    DataFrame
+        Parsed spectroscopic data
     """
     # Detect the molecule by reading the start of the file
     with open(fname) as f:
@@ -572,39 +562,48 @@ def read_and_write_chunked_for_CO2(
     engine="pytables",
     output="pandas",
     verbose=True,
+    local_databases=None,
 ):
     """
-    Reads a specified number of bytes from a bzip2-compressed CO2 HITEMP file, starting at a given offset, in large chunks.
+    Find the upper and lower bound of the load_wavenum_max,
+    load_wavenum_min, then locate the corresponding data chunks in 500mb chuck of deocmpress data cahceh them if they not exist otherwise download and combine.
     Each chunk is written to a temporary file, parsed into a DataFrame, and then deleted.
     All resulting DataFrames are concatenated and returned as a single DataFrame.
     Parameters
     ----------
-    bz2_file_path : str
-        Path to the bzip2-compressed CO2 HITEMP file.
-    index_file_path : str
-        Path to the pickle file containing block offsets for efficient seeking.
-    start_offset : int
-        Byte offset in the compressed file to start reading from.
-    bytes_to_read : int
-        Total number of bytes to read from the start_offset.
-    chunk_size : int, optional
-        Number of bytes to read per chunk (default is 500 MB).
+    load_wavenum_max : float
+        The maximum wavenumber to load.
+    load_wavenum_min : float
+        The minimum wavenumber to load.
+    columns : list of str, optional
+        List of columns to include in the output DataFrame.
+    isotope : str or None, optional
+        The isotope to load (e.g., "1", "2", "1,2"). If None, load all isotopes.
+    engine : str, optional
+        The HDF5 engine to use (default is "pytables").
+    output : str, optional
+        The output format (default is "pandas").
+    verbose : bool, optional
+        If True, print progress messages (default is True).
+    local_databases : str or None, optional
+        Directory to store/read local database files. If None, uses the default directory.
+
     Returns
     -------
     pandas.DataFrame
-        A DataFrame containing all parsed data from the read chunks. If no data is read, returns an empty DataFrame.
-    Notes
-    -----
-    - Ensures that each chunk starts and ends with a newline to avoid partial-line artifacts.
+        A DataFrame containing all parsed data from the read chunks. If no data is read, returns an empty DataFrame
     """
 
     # Determine cache path
     config = read_config()
     default_download_path = os.path.expanduser(config["DEFAULT_DOWNLOAD_PATH"])
 
-    hitemp_CO2_download_path = join(
-        default_download_path, "hitemp", "co2", "decompressed"
-    )
+    if local_databases:
+        hitemp_CO2_download_path = local_databases
+    else:
+        hitemp_CO2_download_path = join(
+            default_download_path, "hitemp", "co2", "decompressed"
+        )
 
     def _filter_and_append_dataframe(df_to_append):
         """Filter dataframe to requested range and append to results."""
@@ -623,7 +622,6 @@ def read_and_write_chunked_for_CO2(
     # Load block offsets
 
     local_paths = []  # to store local paths of relevant decompressed files
-
     dataframes = []
 
     wav_pairs = key_pairs(load_wavenum_min, load_wavenum_max)
@@ -660,7 +658,6 @@ def read_and_write_chunked_for_CO2(
 
         df = parse_one_CO2_block(
             file,
-            cache_directory_path=hitemp_CO2_download_path,
             columns=columns,
             engine=engine,
             output=output,
@@ -703,6 +700,7 @@ def read_and_write_chunked_for_CO2(
 
 
 def download_and_decompress_CO2_into_df(
+    local_databases=None,
     load_wavenum_min=None,
     load_wavenum_max=None,
     isotope=None,
@@ -712,9 +710,7 @@ def download_and_decompress_CO2_into_df(
     output="pandas",
 ):
     """
-    Downloads the HITEMP CO2 database, decompresses it, and loads a specified wavenumber range into a DataFrame.
-
-    This function handles downloading the HITEMP CO2 database file, locating the appropriate data chunk based on the provided wavenumber range, saving 500MB chucks in h5 format and reading the relevant data into a pandas DataFrame.
+    This function handles downloading the HITEMP CO2 database file, locating the appropriate data chunk based on the provided wavenumber range, saving 50-70mb of compressed data( 500MB decompressed  chunks in h5 format )and reading the relevant data into a DataFrame.
 
     Parameters
     ----------
@@ -728,7 +724,8 @@ def download_and_decompress_CO2_into_df(
         Engine to use for reading and writing data. Options may include "pytables".
     output : str, default "pandas"
         Output format for the data. Default is "pandas" DataFrame.
-
+    local_databases : str or None, optional
+        Directory to store/read local database files. If None, uses the default directory.
     Returns
     -------
     DataFrame or object
@@ -754,6 +751,7 @@ def download_and_decompress_CO2_into_df(
         engine=engine,
         output=output,
         verbose=verbose,
+        local_databases=local_databases,
     )
 
 
