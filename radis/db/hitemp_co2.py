@@ -96,7 +96,7 @@ def partial_download_co2_chunk(target_wn_min, target_wn_max, session, output_fil
     """
     print(f"Target wavenumber range: {target_wn_min} to {target_wn_max} cm⁻¹")
 
-    wavenumber_path = os.path.join(getProjectRoot(), "db", "wavenumber_arr.npy")
+    wavenumber_path = os.path.join(project_root, "db", "wavenumber_arr.npy")
     wavenumbers = np.load(wavenumber_path)
     i_min = np.searchsorted(wavenumbers, target_wn_min, side="left")
     i_max = np.searchsorted(wavenumbers, target_wn_max, side="right")

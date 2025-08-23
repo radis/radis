@@ -1589,6 +1589,7 @@ class DatabankLoader(object):
                 f"{molecule} has no lines on range "
                 + f"{wavenum_min:.2f}-{wavenum_max:.2f} cm-1"
             )
+
         # Always sort line database by wavenumber (required to SPARSE_WAVERANGE mode)
         if output == "pandas":
             df.sort_values("wav", kind="mergesort", ignore_index=True, inplace=True)

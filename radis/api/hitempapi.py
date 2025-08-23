@@ -565,36 +565,31 @@ def read_and_write_chunked_for_CO2(
     local_databases=None,
 ):
     """
-    Find the upper and lower bound of the load_wavenum_max,
-    load_wavenum_min, then locate the corresponding data chunks in 500mb chuck of deocmpress data cahceh them if they not exist otherwise download and combine.
-    Each chunk is written to a temporary file, parsed into a DataFrame, and then deleted.
-    All resulting DataFrames are concatenated and returned as a single DataFrame.
+    Download, Parse and Cache CO2 data chunks for specified wavenumber range.
+
     Parameters
     ----------
-    load_wavenum_max : float
-        The maximum wavenumber to load.
-    load_wavenum_min : float
-        The minimum wavenumber to load.
-    columns : list of str, optional
-        List of columns to include in the output DataFrame.
-    isotope : str or None, optional
-        The isotope to load (e.g., "1", "2", "1,2"). If None, load all isotopes.
-    engine : str, optional
-        The HDF5 engine to use (default is "pytables").
-    output : str, optional
-        The output format (default is "pandas").
-    verbose : bool, optional
-        If True, print progress messages (default is True).
-    local_databases : str or None, optional
-        Directory to store/read local database files. If None, uses the default directory.
+    load_wavenum_min, load_wavenum_max : float
+        Wavenumber range to load (cm⁻¹)
+    columns : list, optional
+        Columns to include in output
+    isotope : str, optional
+        Isotope filter (e.g., "1", "2", "1,2")
+    engine : str
+        Cache format: 'pytables' or 'vaex' (default 'pytables')
+    output : str
+        Output format: 'pandas' or 'vaex' (default 'pandas')
+    verbose : bool
+        Print progress messages (default True)
+    local_databases : str, optional
+        Custom cache directory
 
     Returns
     -------
-    pandas.DataFrame
-        A DataFrame containing all parsed data from the read chunks. If no data is read, returns an empty DataFrame
+    tuple
+        (DataFrame, list of local file paths)
     """
 
-    # Determine cache path
     config = read_config()
     default_download_path = os.path.expanduser(config["DEFAULT_DOWNLOAD_PATH"])
 
@@ -607,19 +602,15 @@ def read_and_write_chunked_for_CO2(
 
     def _filter_and_append_dataframe(df_to_append):
         """Filter dataframe to requested range and append to results."""
-        # Always filter to the requested wavenumber range
         filtered_df = df_to_append[
             (df_to_append["wav"] >= load_wavenum_min)
             & (df_to_append["wav"] <= load_wavenum_max)
         ]
 
-        # Apply isotope filtering if specified
         if isotope is not None:
             filtered_df = filtered_df[filtered_df["iso"].isin(isotope)]
 
         dataframes.append(filtered_df)
-
-    # Load block offsets
 
     local_paths = []  # to store local paths of relevant decompressed files
     dataframes = []
@@ -627,70 +618,73 @@ def read_and_write_chunked_for_CO2(
     wav_pairs = key_pairs(load_wavenum_min, load_wavenum_max)
     session = login_to_hitran()
 
-    # Download and decompress All chunks one by one
-    with tqdm(unit="B", unit_scale=True, desc="Downloading chunks"):
-        for start_wavno, end_wavno in wav_pairs:
-
-            fname = f"02_{int(start_wavno):05d}-{int(end_wavno):05d}_HITEMP2024.par"
-            out_decompressed_file = join(
-                hitemp_CO2_download_path, fname
-            )  # in par format
-
-            fcache = _fcache_file_name(out_decompressed_file, engine)  # in h5 or hdf5
-
-            local_paths.append(out_decompressed_file)  # store local path
-
-            # Skip download if either the raw file or cached file exists
-            if os.path.exists(fcache) or os.path.exists(out_decompressed_file):
-                continue
-
-            partial_download_co2_chunk(
-                start_wavno, end_wavno, session, out_decompressed_file
-            )
-
-    for file in local_paths:
-        file_name = _fcache_file_name(file, engine)
-        cached_df = _load_cache_file(file_name, engine=engine, columns=columns)
-
-        if cached_df is not None:
-            _filter_and_append_dataframe(cached_df)
-            continue  # skip decompression and parsing
-
-        df = parse_one_CO2_block(
-            file,
-            columns=columns,
-            engine=engine,
-            output=output,
+    # Download and decompress chunks
+    if verbose:
+        print(
+            f"Processing {len(wav_pairs)} chunks for range {load_wavenum_min}-{load_wavenum_max} cm⁻¹"
         )
-        _filter_and_append_dataframe(df)
-        os.remove(file)
 
-    # Combine all DataFrames into one
+    with tqdm(
+        total=len(wav_pairs), desc="Downloading chunks", disable=not verbose
+    ) as pbar:
+        for start_wavno, end_wavno in wav_pairs:
+            fname = f"02_{int(start_wavno):05d}-{int(end_wavno):05d}_HITEMP2024.par"
+            out_decompressed_file = join(hitemp_CO2_download_path, fname)
+            fcache = _fcache_file_name(out_decompressed_file, engine)
+            local_paths.append(out_decompressed_file)
+
+            if os.path.exists(fcache) or os.path.exists(out_decompressed_file):
+                pbar.set_postfix_str("cached")
+            else:
+                pbar.set_postfix_str("downloading")
+                partial_download_co2_chunk(
+                    start_wavno, end_wavno, session, out_decompressed_file
+                )
+
+            pbar.update(1)
+
+    # Parse or cache the chunks
+    with tqdm(
+        total=len(local_paths), desc="Processing chunks", disable=not verbose
+    ) as pbar:
+        for file in local_paths:
+            file_name = _fcache_file_name(file, engine)
+            cached_df = _load_cache_file(file_name, engine=engine, columns=columns)
+
+            if cached_df is not None:
+                _filter_and_append_dataframe(cached_df)
+                pbar.set_postfix_str("from cache")
+            else:
+                pbar.set_postfix_str("parsing")
+                df = parse_one_CO2_block(
+                    file, columns=columns, engine=engine, output=output
+                )
+                _filter_and_append_dataframe(df)
+                os.remove(file)
+
+            pbar.update(1)
+
+    # Combine DataFrames
     if dataframes:
-        print("Combining parsed data from all chunks...")
+        if verbose:
+            print("Combining parsed data from all chunks...")
 
         if output == "vaex":
             import vaex
 
-            # Convert any pandas dataframes to vaex before concatenating
             vaex_dataframes = []
             for df in dataframes:
                 if hasattr(df, "to_pandas_df"):
-                    # Already a Vaex DataFrame
                     vaex_dataframes.append(df)
                 else:
-                    # Convert pandas to Vaex
                     vaex_dataframes.append(vaex.from_pandas(df))
             combined_df = vaex.concat(vaex_dataframes)
         else:
-            # Convert any vaex dataframes to pandas before concatenating
             pandas_dataframes = []
             for df in dataframes:
                 if hasattr(df, "to_pandas_df"):
-                    # Convert Vaex to pandas
                     pandas_dataframes.append(df.to_pandas_df())
                 else:
-                    # Already a pandas DataFrame
                     pandas_dataframes.append(df)
             combined_df = pd.concat(pandas_dataframes, ignore_index=True)
     else:
