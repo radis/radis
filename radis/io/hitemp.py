@@ -59,7 +59,8 @@ def fetch_hitemp(
         if ``True``, use existing HDF5 file. If ``False`` or ``'regen'``, rebuild it.
         If ``'force'``, raise an error if cache file cannot be used (useful for debugging).
         Default ``True``.
-    verbose: bool
+    verbose: bool or int
+        If False, will not output any information about progress.
     chunksize: int
         number of lines to process at a same time. Higher is usually faster
         but can create Memory problems and keep the user uninformed of the progress.

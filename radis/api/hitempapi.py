@@ -728,14 +728,14 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         writer = self.get_datafile_manager()
 
-        if molecule == "CO2":
-            session = login_to_hitran()
-            download_hitemp_file(
-                session,
-                "https://hitran.org/files/HITEMP/bzip2format/02_HITEMP2024.par.bz2",
-                "02_HITEMP2024.par.bz2",
-            )
-            urlname = "02_HITEMP2024.par.bz2"
+        # if molecule == "CO2":
+        #     session = login_to_hitran()
+        #     download_hitemp_file(
+        #         session,
+        #         "https://hitran.org/files/HITEMP/bzip2format/02_HITEMP2024.par.bz2",
+        #         "02_HITEMP2024.par.bz2",
+        #     )
+        #     urlname = "02_HITEMP2024.par.bz2"
 
         with opener.open(urlname) as gfile:  # locally downloaded file
 
@@ -750,7 +750,7 @@ class HITEMPDatabaseManager(DatabaseManager):
                 from warnings import warn
 
                 warn(
-                    "Parsing will take approximately 1 hour for HITEMP CO2 (compressed = 6 GB",
+                    "Parsing the entire file will take approximately 1 hour for HITEMP CO2 (compressed = 6 GB)",
                     UserWarning,
                 )
 
