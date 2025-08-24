@@ -701,8 +701,8 @@ def download_and_decompress_CO2_into_df(
     load_wavenum_min=None,
     load_wavenum_max=None,
     isotope=None,
-    verbose=True,
     columns=None,
+    verbose=True,
     engine="pytables",
     output="pandas",
 ):
@@ -719,6 +719,8 @@ def download_and_decompress_CO2_into_df(
         If True, prints progress and status messages.
     isotope: str, int or None
         load only certain isotopes : ``'2'``, ``'1,2'``, etc. If ``None``, loads everything. Default ``None``.
+    columns: list of str or None
+        List of columns to load from the database. If None, loads all columns. Default ``None``.
     engine : str, default "pytables"
         Engine to use for reading and writing data. Options may include "pytables".
     output : str, default "pandas"
@@ -742,7 +744,11 @@ def download_and_decompress_CO2_into_df(
     if isotope is not None:
         isotope = [int(i) for i in isotope.split(",")]
 
-    return read_and_write_chunked_for_CO2(
+    original_columns = columns
+    if columns is not None and "iso" not in columns:
+        columns = columns + ["iso"]
+
+    combined_df, local_files = read_and_write_chunked_for_CO2(
         load_wavenum_max,
         load_wavenum_min,
         columns=columns,
@@ -752,6 +758,11 @@ def download_and_decompress_CO2_into_df(
         verbose=verbose,
         local_databases=local_databases,
     )
+
+    if original_columns is not None and "iso" not in original_columns:
+        combined_df = combined_df.drop(columns=["iso"])
+
+    return combined_df, local_files
 
 
 class HITEMPDatabaseManager(DatabaseManager):
