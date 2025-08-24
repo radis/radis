@@ -500,6 +500,7 @@ def parse_one_CO2_block(
     engine="pytables",
     output="pandas",
     parse_quanta=True,
+    wav_range=None,
 ):
     """
     Parse a CO2 .par file block into a DataFrame with caching support.
@@ -538,6 +539,10 @@ def parse_one_CO2_block(
         dataframe_type=output,
         parse_quanta=parse_quanta,
     )
+    if wav_range:
+        wav_min, wav_max = wav_range
+        df = df[(df["wav"] >= wav_min) & (df["wav"] <= wav_max)]
+
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:
         fcache = _fcache_file_name(fname, engine)
@@ -600,17 +605,11 @@ def read_and_write_chunked_for_CO2(
             default_download_path, "hitemp", "co2", "decompressed"
         )
 
-    def _filter_and_append_dataframe(df_to_append):
-        """Filter dataframe to requested range and append to results."""
-        filtered_df = df_to_append[
-            (df_to_append["wav"] >= load_wavenum_min)
-            & (df_to_append["wav"] <= load_wavenum_max)
-        ]
-
+    def _append_dataframe(df_to_append):
+        """Filter isotopes and append dataframe to results."""
         if isotope is not None:
-            filtered_df = filtered_df[filtered_df["iso"].isin(isotope)]
-
-        dataframes.append(filtered_df)
+            df_to_append = df_to_append[df_to_append["iso"].isin(isotope)]
+        dataframes.append(df_to_append)
 
     local_paths = []  # to store local paths of relevant decompressed files
     dataframes = []
@@ -647,19 +646,23 @@ def read_and_write_chunked_for_CO2(
     with tqdm(
         total=len(local_paths), desc="Processing chunks", disable=not verbose
     ) as pbar:
-        for file in local_paths:
+        for i, file in enumerate(local_paths):
             file_name = _fcache_file_name(file, engine)
             cached_df = _load_cache_file(file_name, engine=engine, columns=columns)
 
             if cached_df is not None:
-                _filter_and_append_dataframe(cached_df)
+                _append_dataframe(cached_df)
                 pbar.set_postfix_str("from cache")
             else:
                 pbar.set_postfix_str("parsing")
                 df = parse_one_CO2_block(
-                    file, columns=columns, engine=engine, output=output
+                    file,
+                    columns=columns,
+                    engine=engine,
+                    output=output,
+                    wav_range=wav_pairs[i],
                 )
-                _filter_and_append_dataframe(df)
+                _append_dataframe(df)
                 os.remove(file)
 
             pbar.update(1)
@@ -714,6 +717,8 @@ def download_and_decompress_CO2_into_df(
         Maximum wavenumber to load from the database. If None, loads to the end.
     verbose : bool, default True
         If True, prints progress and status messages.
+    isotope: str, int or None
+        load only certain isotopes : ``'2'``, ``'1,2'``, etc. If ``None``, loads everything. Default ``None``.
     engine : str, default "pytables"
         Engine to use for reading and writing data. Options may include "pytables".
     output : str, default "pandas"
