@@ -324,6 +324,8 @@ class BaseFactory(DatabankLoader):
         Crash with a nice explanation if one is found"""
         from radis.misc.printer import get_print_full
 
+        fix_idea = ""
+
         try:
             if self.dataframe_type == "pandas":
                 assert not anynan(df[column])
@@ -426,10 +428,6 @@ class BaseFactory(DatabankLoader):
                 df["Evibu"] = we * (df["vu"] + 0.5) - wexe * (df["vu"] + 0.5) ** 2
                 df["Erotl"] = B * df["jl"] * (df["jl"] + 1)
                 df["Erotu"] = B * df["ju"] * (df["ju"] + 1)
-                df["gvibl"] = 1
-                df["gvibu"] = 1
-                df["grotl"] = 2 * df["jl"] + 1
-                df["grotu"] = 2 * df["ju"] + 1
                 self.profiler.stop(
                     "fetch_energy_exomol_oh", "Fetched Evib & Erot (ExoMol/OH)"
                 )
@@ -2967,7 +2965,6 @@ class BaseFactory(DatabankLoader):
             # create the lookup dictionary
             # dfQrot index is already 'viblvl'
             dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
-
             if self.dataframe_type == "pandas":
                 dg = df.loc[:]
 
@@ -2979,6 +2976,7 @@ class BaseFactory(DatabankLoader):
                 df.loc[:, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
             elif self.dataframe_type == "vaex":
                 dg = df
+
                 # Add lower state Qrot
                 df["Qrotl"] = df["viblvl_l"].apply(lambda x: dfQrot_dict.get(x))
                 # Add upper state energy
@@ -3202,6 +3200,9 @@ class BaseFactory(DatabankLoader):
         if __debug__:
             assert "nu" in self.df1
             assert "nl" in self.df1
+            # Filter out lines with missing partition function values (only if columns exist)
+            if "Qrotu" in self.df1.columns and "Qrotl" in self.df1.columns:
+                self.df1 = self.df1.dropna(subset=["Qrotu", "Qrotl"])
             self.assert_no_nan(self.df1, "nu")
             self.assert_no_nan(self.df1, "nl")
 

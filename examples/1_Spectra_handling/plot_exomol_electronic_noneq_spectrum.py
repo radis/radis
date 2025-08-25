@@ -26,6 +26,7 @@ sf = SpectrumFactory(
 )
 
 sf.fetch_databank("exomol", "MoLLIST-OH")
+sf.params.parfuncfmt = "exomol"
 sf.misc.export_rovib_fraction = True
 
 s = sf.non_eq_spectrum(

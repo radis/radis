@@ -2393,10 +2393,10 @@ class ElectronicPartitionFunction:
             label = getattr(state, "label", getattr(state, "name", None))
             if isinstance(state, dict):
                 g_e = state.get("g_e")
-                Te = state.get("Te", 0.0)
+                Te = state.get("Te")
             else:
                 g_e = getattr(state, "g_e", None)
-                Te = getattr(state, "Te", 0.0)
+                Te = getattr(state, "Te")
             factor = g_e * exp(-Te / hc_k / Telec)
             if overpopulation and label in overpopulation:
                 factor *= overpopulation[label]

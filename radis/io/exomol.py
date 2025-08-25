@@ -6,7 +6,6 @@ Created on Sun May 22 18:11:23 2022
 """
 
 import pathlib
-import warnings
 
 import numpy as np
 import pandas as pd
@@ -17,45 +16,6 @@ from radis.api.exomolapi import (
     get_exomol_full_isotope_name,
 )
 from radis.db.classes import get_molecule_identifier
-
-
-def _map_states_to_transitions(df, states_df):
-    """Map electronic state information from energy levels to transitions."""
-    if "Es" in states_df.columns:
-        state_map = dict(zip(states_df["i"], states_df["Es"]))
-    elif "state" in states_df.columns:
-        state_map = dict(zip(states_df["i"], states_df["state"]))
-    else:
-        warnings.warn("Warning: No electronic state column found in states DataFrame")
-        return df
-    df["state_lower"] = df["i_lower"].map(state_map)
-    df["state_upper"] = df["i_upper"].map(state_map)
-    return df
-
-
-def _calc_degeneracies_exomol(df):
-    """Calculate degeneracies for ExoMol data."""
-    df["gvibl"] = 1.0
-    df["gvibu"] = 1.0
-    if "jl" in df.columns:
-        df["grotl"] = 2 * df["jl"] + 1
-    if "ju" in df.columns:
-        df["grotu"] = 2 * df["ju"] + 1
-    if "state_lower" in df.columns:
-        df["gel"] = df["state_lower"].apply(
-            lambda x: 2.0 if "2Pi" in x or "2Sigma+" in x else 1.0
-        )
-    if "state_upper" in df.columns:
-        df["geu"] = df["state_upper"].apply(
-            lambda x: 2.0 if "2Pi" in x or "2Sigma+" in x else 1.0
-        )
-    if "gel" not in df.columns:
-        df["gel"] = 1.0
-    if "geu" not in df.columns:
-        df["geu"] = 1.0
-    df["gl"] = df["gvibl"] * df["grotl"] * df["gel"]
-    df["gu"] = df["gvibu"] * df["grotu"] * df["geu"]
-    return df
 
 
 def get_electronic_state_Te_mapping(states_df):
@@ -96,7 +56,7 @@ def fetch_exomol(
     return_partition_function=False,
     engine="default",
     output="pandas",
-    skip_optional_data=True,
+    skip_optional_data=False,
     **kwargs,
 ):
     """Stream ExoMol file from EXOMOL website. Unzip and build a HDF5 file directly.
@@ -301,6 +261,9 @@ def fetch_exomol(
         "jl": "jlower",
         "gp": "gupper",
         "gpp": "glower",
+        "vl": "vl",  # Preserve vibrational quantum numbers
+        "vu": "vu",  # Preserve vibrational quantum numbers
+        "branch": "PQR",  # Map PQR to branch for non-LTE calculations
         ### old, now we directly set "airbrd" and "Tdpair"
         # "airbrd": "alpha_ref",
         # "Tdpair": "n_Texp",
@@ -311,6 +274,8 @@ def fetch_exomol(
             "Sij0",
             "jlower",
             "jupper",
+            "vl",  # Required for non-equilibrium calculations
+            "vu",  # Required for non-equilibrium calculations
         ]  # needed for broadening
     else:
         columns_exomol = None
@@ -382,33 +347,8 @@ def fetch_exomol(
             for k, v in attrs.items():
                 df.attrs[k] = v
 
-    # Ensure 'branch' column exists for non-LTE calculations
-    if "branch" not in df.columns:
-        if "PQR" in df.columns:
-            df["branch"] = df["PQR"]
-        else:
-            # Fallback: set all to Q branch (0)
-            df["branch"] = 0
-
-    # Ensure 'vl' and 'vu' columns exist for non-LTE calculations
-    # Try common ExoMol vibrational quantum number columns
-    if "vl" not in df.columns:
-        if "v_l" in df.columns:
-            df["vl"] = df["v_l"]
-        elif "v" in df.columns:
-            df["vl"] = df["v"]
-        else:
-            df["vl"] = 0
-    if "vu" not in df.columns:
-        if "v_u" in df.columns:
-            df["vu"] = df["v_u"]
-        elif "v" in df.columns:
-            df["vu"] = df["v"]
-        else:
-            df["vu"] = 0
-
-    # Calculate all degeneracies (vibrational, rotational, electronic, and total)
-    df = _calc_degeneracies_exomol(df)
+    if not hasattr(mdb, "states") or mdb.states is None:
+        raise ValueError("States DataFrame not found")
 
     # Set dbformat to hdf5-radisdb for compatibility
     df.attrs["dbformat"] = "hdf5-radisdb"

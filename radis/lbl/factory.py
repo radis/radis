@@ -1671,7 +1671,7 @@ class SpectrumFactory(BandFactory):
             self.input.vib_distribution = vib_distribution
             self.input.Tvib = Tvib
             self.input.Trot = Trot
-            self.input.Telec = None  # Set Telec to None for molecules
+            self.input.Telec = Telec  # Set Telec for molecules too
             # Get translational temperature
         Tgas = Ttrans
         if Tgas is None:
@@ -1938,7 +1938,7 @@ class SpectrumFactory(BandFactory):
 
             molecule = self.input.species
             isotope = int(self.input.isotope)
-            # If ExoMol, build elec_states from ExoMol states DataFrame and Te mapping
+            # Patch: If ExoMol, build elec_states from ExoMol states DataFrame and Te mapping
             if (
                 hasattr(self, "params")
                 and getattr(self.params, "dbformat", None) == "hdf5-radisdb"
@@ -1996,6 +1996,7 @@ class SpectrumFactory(BandFactory):
                         )
                         elec_state.label = clean_state_label
                         elec_states[clean_state_label] = elec_state
+
                 else:
                     elec_states = {}
             else:
@@ -2005,9 +2006,8 @@ class SpectrumFactory(BandFactory):
             elec_pf.populations(Telec)
             # 3. For each state, compute rovib populations at Trot
             rovib_pops = {}
-            from radis.levels.partfunc import PartFunc_Dunham
-
             for state_label, elec_state in elec_states.items():
+                from radis.levels.partfunc import PartFunc_Dunham
 
                 rovib_calc = PartFunc_Dunham(
                     elec_state, mode=self.params.parsum_mode, verbose=self.verbose
@@ -2017,7 +2017,6 @@ class SpectrumFactory(BandFactory):
                 rovib_pops[state_label] = rovib_calc.at_noneq(
                     Tvib, Trot, Telec=Telec, update_populations=True
                 )
-
             # When calling non_eq_bands, pass band_scaling
             self.non_eq_bands(
                 Tvib,
@@ -2032,24 +2031,6 @@ class SpectrumFactory(BandFactory):
                 levels="all",
                 band_scaling=band_scaling,  # NEW
             )
-
-            # Build populations dict: {molecule: {isotope: {electronic_state: {'rovib': df, 'Ia': abundance}}}}
-            populations = {}
-            molecule = self.input.species
-            isotope = int(self.input.isotope)
-            populations[molecule] = {}
-            populations[molecule][isotope] = {}
-            for state_label, elec_state in elec_states.items():
-                rovib_calc = PartFunc_Dunham(
-                    elec_state, mode=self.params.parsum_mode, verbose=self.verbose
-                )
-            rovib_df = getattr(rovib_calc, "df", None)
-            if rovib_df is not None:
-                populations[molecule][isotope][state_label] = {"rovib": rovib_df.copy()}
-
-            # Add isotopic abundance if available (placeholder: 1.0)
-            for state_label in populations[molecule][isotope]:
-                populations[molecule][isotope][state_label]["Ia"] = 1.0
 
         return s
 
@@ -2381,7 +2362,7 @@ class SpectrumFactory(BandFactory):
         self.input.Tgas = Tgas
         self.input.Tvib = Tvib
         self.input.Trot = Trot
-        self.input.Telec = None  # Set Telec to None for molecules (not used)
+        self.input.Telec = None
 
         # Init variables
         path_length = self.input.path_length
