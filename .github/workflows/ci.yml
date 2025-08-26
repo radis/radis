@@ -40,7 +40,7 @@ jobs:
     - name: Setup Micromamba
       uses: mamba-org/setup-micromamba@v1
       with:
-        micromamba-version: '1.5.8'
+        micromamba-version: '1.5.8-0'  # Fixed version format
         environment-name: radis-env
         init-shell: >-
           bash
@@ -59,7 +59,7 @@ jobs:
 
     - name: Install xtensor (Linux/macOS)
       if: runner.os != 'Windows'
-      shell: bash -l {0}
+      shell: bash -el {0}  # Use -el for proper conda activation
       run: |
         micromamba install xtensor -c conda-forge -y
 
@@ -70,12 +70,12 @@ jobs:
         cp requirements.txt /tmp/requirements.txt
 
     - name: Create conda environment
-      shell: bash -l {0}
+      shell: bash -el {0}
       run: |
         micromamba create -f ./environment.yml -y
 
     - name: Activate environment and install test dependencies
-      shell: bash -l {0}
+      shell: bash -el {0}
       run: |
         micromamba activate radis-env
         micromamba list
@@ -89,43 +89,44 @@ jobs:
         sudo apt-get install -y xvfb
 
     - name: Set matplotlib backend
-      shell: bash -l {0}
+      shell: bash -el {0}
       run: |
-        export MPLBACKEND=Agg
         echo "MPLBACKEND=Agg" >> $GITHUB_ENV
 
-    - name: Check Python version
-      shell: bash -l {0}
+    - name: Check Python version and environment
+      shell: bash -el {0}
       run: |
         micromamba activate radis-env
         python --version
+        which python
+        pip list | grep radis
 
     - name: Run fast tests
-      shell: bash -l {0}
+      shell: bash -el {0}
       run: |
         micromamba activate radis-env
         if [[ "$RUNNER_OS" == "Linux" ]]; then
-          xvfb-run -a pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10 --random-order
+          xvfb-run -a pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10 --random-order --tb=short
         else
-          pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10 --random-order
+          pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10 --random-order --tb=short
         fi
 
     - name: Run long tests
-      shell: bash -l {0}
+      shell: bash -el {0}
       run: |
         micromamba activate radis-env
         if [[ "$RUNNER_OS" == "Linux" ]]; then
-          xvfb-run -a pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
+          xvfb-run -a pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10 --tb=short
         elif [[ "$RUNNER_OS" == "macOS" ]]; then
           # Skip long tests on macOS for now (as per Travis config)
           echo "Skipping long tests on macOS"
         else
-          pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
+          pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10 --tb=short
         fi
 
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-20.04' && matrix.python-version == '3.10'
-      shell: bash -l {0}
+      shell: bash -el {0}
       run: |
         micromamba activate radis-env
         pip install codecov

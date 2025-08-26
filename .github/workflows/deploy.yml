@@ -17,7 +17,7 @@ jobs:
     - name: Setup Micromamba
       uses: mamba-org/setup-micromamba@v1
       with:
-        micromamba-version: '1.5.8'
+        micromamba-version: '1.5.8-0'  # Fixed version format
         environment-name: radis-env
         init-shell: bash
         cache-environment: true
@@ -28,8 +28,13 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y pandoc xvfb
 
+    - name: Update Python version in environment.yml
+      shell: bash
+      run: |
+        sed -i.bak -E 's/^- python$/- python=3.10/' ./environment.yml
+
     - name: Install xtensor
-      shell: bash -l {0}
+      shell: bash -el {0}
       run: |
         micromamba install xtensor -c conda-forge -y
 
@@ -39,12 +44,12 @@ jobs:
         cp requirements.txt /tmp/requirements.txt
 
     - name: Create conda environment
-      shell: bash -l {0}
+      shell: bash -el {0}
       run: |
         micromamba create -f ./environment.yml -y
 
     - name: Activate environment and install dependencies
-      shell: bash -l {0}
+      shell: bash -el {0}
       run: |
         micromamba activate radis-env
         pip install pytest
@@ -55,14 +60,14 @@ jobs:
         pandoc README.rst -o README.md
 
     - name: Build package
-      shell: bash -l {0}
+      shell: bash -el {0}
       run: |
         micromamba activate radis-env
         pip install build twine
         python -m build
 
     - name: Publish to PyPI
-      shell: bash -l {0}
+      shell: bash -el {0}
       run: |
         micromamba activate radis-env
         python -m twine upload dist/* --skip-existing
@@ -71,7 +76,7 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
 
     - name: Test installation from PyPI
-      shell: bash -l {0}
+      shell: bash -el {0}
       run: |
         # Get version from __version__.txt
         VERSION_RADIS=$(cat radis/__version__.txt)
@@ -92,4 +97,4 @@ jobs:
         export MPLBACKEND=Agg
 
         # Run fast tests to verify the installation works
-        xvfb-run -a pytest -m "fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
+        xvfb-run -a pytest -m "fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10 --tb=short
