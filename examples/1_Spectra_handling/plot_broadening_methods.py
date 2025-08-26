@@ -21,7 +21,7 @@ def save_if_better(s, path):
         save_new = True
         for c in new_cdt.keys():
             if c == "truncation":
-                if loaded_cdt[c] >= loaded_cdt[c]:
+                if loaded_cdt[c] >= new_cdt[c]:
                     save_new = False
                     print(
                         f"Loaded truncation is better '{c}': {loaded_cdt[c]} >= {new_cdt[c]}"
@@ -37,7 +37,7 @@ def save_if_better(s, path):
 
 from radis import SpectrumFactory  # , plot_diff
 
-trunc_ref = 5
+trunc_ref = 10
 conditions = {
     # 'wavenum_min': 500,
     # 'wavenum_max': 10000,
@@ -63,29 +63,36 @@ Tgas = 400
 databank = "hitemp"
 database = "2010"  # "default"
 #%% ############## No optimization used ##############
-# conditions["optimization"] = None
+conditions["optimization"] = None
 
-# ## Using a convolution of a Gaussian and Lorentzian, no optimization
-# conditions["broadening_method"] = "convolve"  # Voigt = numpy.convolve("Gaussian", "Lorentzian")
-# sf = SpectrumFactory(**conditions)
-# sf.fetch_databank(databank)
-# s_conv0 = sf.eq_spectrum(Tgas=Tgas)
+## Using a convolution of a Gaussian and Lorentzian, no optimization
+conditions[
+    "broadening_method"
+] = "convolve"  # Voigt = numpy.convolve("Gaussian", "Lorentzian")
+sf = SpectrumFactory(**conditions)
+sf.fetch_databank(databank)
+s_conv0 = sf.eq_spectrum(Tgas=Tgas)
 
-# s_conv0.name = f"Convolution : {s_conv0.c['calculation_time']:.1f}s"
-# save_if_better(s_conv0, "H20_fundamental\\ref_spectrum.spec")
+s_conv0.name = f"Convolution : {s_conv0.c['calculation_time']:.1f}s"
+save_if_better(s_conv0, "H20_fundamental\\ref_spectrum.spec")
 
-# # Using a polynomial approximation, no optimization
-# conditions["broadening_method"] = "voigt"  # Voigt = polynomial approximation derived from Whithing
-# sf = SpectrumFactory(**conditions)
-# sf.fetch_databank(databank, database=database)
-# s_poly = sf.eq_spectrum(Tgas=Tgas)
-# s_poly.name = f"Poly. : {s_poly.c['calculation_time']:.1f}s"
+# Using a polynomial approximation, no optimization
+conditions[
+    "broadening_method"
+] = "voigt"  # Voigt = polynomial approximation derived from Whithing
+sf = SpectrumFactory(**conditions)
+sf.fetch_databank(databank, database=database)
+s_poly = sf.eq_spectrum(Tgas=Tgas)
+s_poly.name = f"Poly. : {s_poly.c['calculation_time']:.1f}s"
 
-# # # # Compare the spectra
-# plot_diff(s_conv0, s_poly, "absorbance",
-#           yscale="log",
-#           # yscale="linear",
-#           )
+# # # Compare the spectra
+plot_diff(
+    s_conv0,
+    s_poly,
+    "absorbance",
+    yscale="log",
+    # yscale="linear",
+)
 
 #%% ############## Using LDM optimization ##############
 """
@@ -121,41 +128,29 @@ for method in ["convolve", "voigt", "fft"]:
         plot_diff(s_conv, s, "absorbance", yscale="log")
 
 #%% Compute reference spectrum
+"""
+The spectrum computation can be accelerated by truncation the lineshape. The
+impact of the truncation on the performance is demonstrated here for several
+LDM optizations and broadening methods. For all methods and optimizations,
+the computation time increases linearly with truncation width. The residual
+between the truncation spectrum and the reference one decreases exponentially.
+A decent residual of 1e-6 can be achieved with both LDM methods in X seconds
+
+Problem 1: The fft method takes longer than any method and the residual is
+not better.
+Problem 2: Residual increases for truncation > 5 ???
+"""
 s_ref = load_spec("H20_fundamental\\ref_spectrum.spec")
 
 from radis import get_residual
 
 # Prepare the parameter grid for progress bar
 # cutoff_values = [1e-27, 1e-28, 1e-29, 1e-35]
-trunc_values0 = [0.05, 0.1, 0.5, 1, 5]
+trunc_values0 = [0.05, 0.1, 0.5, 1, 4, 5, 7, 10]
 LDM_values = ["simple", "min-RMS"]
 # LDM_values = [None, "simple", "min-RMS"]
 # method_values = ["convolve", "voigt", "fft"]
 method_values = ["convolve", "voigt"]
-
-# Calculate reference
-# conditions["optimization"] = None
-# conditions["broadening_method"] = "convolve"
-# conditions["cutoff"] = min(cutoff_values)
-
-
-# s_load = load_spec("ref_spectrum.spec")
-# if s_load.conditions["truncation"] >= max(trunc_values0) and False:
-#     print("*** loading reference ***")
-#     s_ref = s_load
-# else:
-#     print(f"*** calculating reference with truncation = {max(trunc_values0)} ***")
-#     assert conditions["broadening_method"] == "convolve"
-#     assert conditions["optimization"] == None
-
-#     conditions["verbose"] = True
-#     conditions["truncation"] = max(trunc_values0)
-
-#     sf = SpectrumFactory(**conditions)
-#     sf.fetch_databank(databank)
-#     s_ref = sf.eq_spectrum(Tgas=Tgas)
-#     s_ref.store("ref_spectrum.spec", if_exists_then="replace")
-
 
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -193,26 +188,7 @@ for LDM in LDM_values:
         }
 progress.close()
 
-# for LDM in LDM_values:
-#     res_list, time_list = [], []
-#     for trunc in trunc_values:
-#         conditions["truncation"] = trunc
-#         sf = SpectrumFactory(**conditions)
-#         sf.fetch_databank(databank)
-#         s = sf.eq_spectrum(Tgas=Tgas)
-#         res_list.append(get_residual(s_ref, s, var='abscoeff'))
-#         time_list.append(s.c['calculation_time'])
-#         progress.update(1)
-
-#     label = f"{LDM} - {conditions['broadening_method']}"
-#     plt.figure("Residual")
-#     plt.plot(trunc_values, res_list, label=label)
-#     plt.figure("Time")
-#     plt.plot(trunc_values, time_list, label=label)
-
-# progress.close()
-
-## Add fft method
+## Add fft method (no truncation)
 for LDM in LDM_values:
     conditions["truncation"] = None
     conditions["optimization"] = LDM
@@ -241,12 +217,11 @@ for LDM in LDM_values:
             # fmt='o',
         )
     tag = f"{LDM} - fft"
-    plt.hlines(
+    plt.plot(
+        max(trunc_values0) * 1.01,
         results[tag]["time"],
-        label="fft",
-        linestyle=linestyles[LDM],
-        xmin=min(trunc_values0),
-        xmax=max(trunc_values0),
+        "*",
+        label=tag,
     )
 plt.xlabel("Truncation")
 plt.ylabel("Computation time (s)")
@@ -262,11 +237,12 @@ for LDM in LDM_values:
             label=tag,
             linestyle=linestyles[LDM],
         )
-    plt.hlines(
-        get_residual(s_fft, s, var="abscoeff"),
-        label="fft",
-        xmin=min(trunc_values0),
-        xmax=max(trunc_values0),
+    tag = f"{LDM} - fft"
+    plt.plot(
+        max(trunc_values0) * 1.01,
+        results[tag]["residual"],
+        "*",
+        label=tag,
     )
 plt.xlabel("Truncation")
 plt.ylabel("Residual (abscoeff)")
