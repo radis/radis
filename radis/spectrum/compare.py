@@ -957,10 +957,14 @@ def plot_diff(
                     abs(Idiff_sorted[int(discard_centile * len(Idiff_sorted) // 100)]),
                 )
             elif yscale == "log":
-                abs_Idiff = np.abs(Idiff[b])
+                abs_Idiff = np.abs(
+                    Idiff[b * Idiff != 0]
+                )  # Idiff != 0 to avoid 0 in log10
+
                 min_val = abs_Idiff.min()
-                max_val = abs_Idiff.max()
                 bottom = 10 ** np.floor(np.log10(min_val))  # round to lower power of 10
+
+                max_val = abs_Idiff.max()
                 top = 10 ** np.ceil(np.log10(max_val))  # round to higher power of 10
 
                 ax1i.set_ylim(bottom=bottom, top=top)
