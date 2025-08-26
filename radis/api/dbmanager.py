@@ -49,11 +49,8 @@ def get_auto_MEMORY_MAPPING_ENGINE():
 
     Use Vaex by default if it exists (only Python <= 3.11 as of June 2024) ,
     else use PyTables"""
-    try:
-        import vaex
-
-        vaex
-    except ImportError:
+    # Check if vaex is available
+    if isinstance(vaex, NotInstalled):
         return "pytables"
     else:
         return "vaex"
@@ -629,6 +626,10 @@ class DatabaseManager(object):
 
         elif engine == "vaex":
             # by default vaex does not load everything
+            if isinstance(vaex, NotInstalled):
+                raise ImportError(
+                    "Vaex is not available. Please install vaex or use a different engine."
+                )
             df = vaex.open(local_file)
             nrows = len(df)
             df.close()
@@ -648,7 +649,9 @@ class DatabaseManager(object):
         from radis.misc.basics import is_number
 
         if is_number(self.alpha_ref):
-            if isinstance(df, vaex.dataframe.DataFrameLocal):
+            if not isinstance(vaex, NotInstalled) and isinstance(
+                df, vaex.dataframe.DataFrameLocal
+            ):
                 # see https://github.com/vaexio/vaex/pull/1570
                 df[key] = vaex.vconstant(float(value), length=df.length_unfiltered())
             else:

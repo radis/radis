@@ -69,6 +69,10 @@ def parse_hitran_file(fname, columns, count=-1, output="pandas", molecule=None):
     df = _ndarray2df(data, columns, linereturnformat, molecule=molecule)
 
     if output == "vaex":
+        if isinstance(vaex, NotInstalled):
+            raise ImportError(
+                "Vaex is not available. Please install vaex or use a different engine."
+            )
         df = vaex.from_pandas(df)
     return df
 
