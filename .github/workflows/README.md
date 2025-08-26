@@ -1,6 +1,7 @@
 # GitHub Actions Workflows
 
-This directory contains GitHub Actions workflows that replace the Travis CI configuration. The workflows are designed to provide the same functionality as the original `.travis.yml` file.
+This directory contains GitHub Actions workflows that replace the Travis CI configuration.
+The workflows are designed to provide the same functionality as the original `.travis.yml` file.
 
 ## Workflows Overview
 
