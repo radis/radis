@@ -1961,7 +1961,7 @@ class SpectrumFactory(BandFactory):
         ----------------
         check: bool
             check == False is used to bypass some stuff that isn't known at this point for GPU calculations
-        
+
         """
 
         import radis
@@ -2791,7 +2791,7 @@ def _generate_wavenumber_range_sparse(
     assert len(line_positions) > 0
 
     # Get index of blocks of lines that will overlap:
-    # i_ranges = get_overlapping_ranges(line_positions.values, lineshape_half_width)
+    i_ranges = get_overlapping_ranges(line_positions.values, lineshape_half_width)
 
     wavenumber_list = []
     wavenumber_calc_list = []
