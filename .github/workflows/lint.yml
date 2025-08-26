@@ -1,0 +1,35 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master, develop ]
+
+jobs:
+  lint:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
+    - name: Install pre-commit
+      run: |
+        pip install pre-commit
+        pre-commit install
+
+    - name: Run pre-commit on all files
+      run: pre-commit run --all-files
+
+    - name: Show pre-commit log on failure
+      if: failure()
+      run: |
+        if [ -f ~/.cache/pre-commit/pre-commit.log ]; then
+          cat ~/.cache/pre-commit/pre-commit.log
+        fi

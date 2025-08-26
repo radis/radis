@@ -1,0 +1,95 @@
+name: Deploy to PyPI
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  deploy:
+    name: Deploy to PyPI
+    runs-on: ubuntu-20.04
+    environment: deployment  # Use GitHub environment for protection
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Micromamba
+      uses: mamba-org/setup-micromamba@v1
+      with:
+        micromamba-version: '1.5.8'
+        environment-name: radis-env
+        init-shell: bash
+        cache-environment: true
+        post-cleanup: 'all'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pandoc xvfb
+
+    - name: Install xtensor
+      shell: bash -l {0}
+      run: |
+        micromamba install xtensor -c conda-forge -y
+
+    - name: Copy requirements.txt to temp folder
+      run: |
+        mkdir -p /tmp
+        cp requirements.txt /tmp/requirements.txt
+
+    - name: Create conda environment
+      shell: bash -l {0}
+      run: |
+        micromamba create -f ./environment.yml -y
+
+    - name: Activate environment and install dependencies
+      shell: bash -l {0}
+      run: |
+        micromamba activate radis-env
+        pip install pytest
+        pip install -e . -v
+
+    - name: Convert README for PyPI
+      run: |
+        pandoc README.rst -o README.md
+
+    - name: Build package
+      shell: bash -l {0}
+      run: |
+        micromamba activate radis-env
+        pip install build twine
+        python -m build
+
+    - name: Publish to PyPI
+      shell: bash -l {0}
+      run: |
+        micromamba activate radis-env
+        python -m twine upload dist/* --skip-existing
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+
+    - name: Test installation from PyPI
+      shell: bash -l {0}
+      run: |
+        # Get version from __version__.txt
+        VERSION_RADIS=$(cat radis/__version__.txt)
+        echo "Testing RADIS version: $VERSION_RADIS"
+
+        # Create a fresh environment to test the PyPI installation
+        micromamba create -n test-env python=3.10 -y
+        micromamba activate test-env
+
+        # Wait a bit for PyPI to propagate the new package
+        sleep 30
+
+        # Install from PyPI and test
+        pip install radis==$VERSION_RADIS
+        pip install pytest
+
+        # Set matplotlib backend for headless testing
+        export MPLBACKEND=Agg
+
+        # Run fast tests to verify the installation works
+        xvfb-run -a pytest -m "fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
