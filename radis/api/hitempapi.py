@@ -24,6 +24,7 @@ from bs4 import BeautifulSoup
 from cryptography.fernet import Fernet
 from tqdm import tqdm
 
+from radis.api.hdf5 import update_pytables_to_vaex
 from radis.db.hitemp_co2 import partial_download_co2_chunk
 from radis.misc.config import CONFIG_PATH_JSON, getDatabankEntries
 from radis.misc.warning import DatabaseAlreadyExists
@@ -487,7 +488,7 @@ def _load_cache_file(fcache, engine="pytables", columns=None):
 
     # Start reading the cache file
     manager = DataFileManager(engine)
-    df = manager.read(fcache, columns=columns)
+    df = manager.read(fcache, columns=columns, key="default")
 
     return df
 
@@ -550,7 +551,7 @@ def parse_one_CO2_block(
             print(f"Generating cache file {fcache}")
         try:
             manager = DataFileManager(engine)
-            manager.write(fcache, df, append=False)
+            manager.write(fcache, df, key="default", append=False)
         except PermissionError:
             if verbose:
                 print("An error occurred in cache file generation. Check access rights")
@@ -630,6 +631,14 @@ def read_and_write_chunked_for_CO2(
             fname = f"CO2_02_{int(start_wavno):05d}-{int(end_wavno):05d}_HITEMP2024.par"
             out_decompressed_file = join(hitemp_CO2_download_path, fname)
             fcache = _fcache_file_name(out_decompressed_file, engine)
+            print(f"printing fcache name {fcache}")
+
+            if engine == "vaex":
+                # Convert Path object to string before string operations
+                fcache_str = str(fcache)
+                if os.path.exists(fcache_str.replace(".hdf5", ".h5")):
+                    update_pytables_to_vaex(fcache_str.replace(".hdf5", ".h5"))
+
             local_paths.append(out_decompressed_file)
 
             if os.path.exists(fcache) or os.path.exists(out_decompressed_file):
