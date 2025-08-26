@@ -510,11 +510,11 @@ def parse_one_CO2_block(
     fname : str
         Path to the .par file
     cache : bool
-        Whether to use/save cached version (default True)
+        Whether to use/save cached version. Setting `cache = True` will convert and save the .par file to a .h5 or .hdf5 cache file (default True).
     verbose : bool
         Print progress messages (default True)
     engine : str
-        Cache format: 'pytables' or 'vaex' (default 'pytables')
+        Cache format: 'pytables' (.h5) or 'vaex' (.hdf5) (default 'pytables')
     output : str
         Output format: 'pandas' or 'vaex' (default 'pandas')
     parse_quanta : bool
@@ -627,7 +627,7 @@ def read_and_write_chunked_for_CO2(
         total=len(wav_pairs), desc="Downloading chunks", disable=not verbose
     ) as pbar:
         for start_wavno, end_wavno in wav_pairs:
-            fname = f"02_{int(start_wavno):05d}-{int(end_wavno):05d}_HITEMP2024.par"
+            fname = f"CO2_02_{int(start_wavno):05d}-{int(end_wavno):05d}_HITEMP2024.par"
             out_decompressed_file = join(hitemp_CO2_download_path, fname)
             fcache = _fcache_file_name(out_decompressed_file, engine)
             local_paths.append(out_decompressed_file)
@@ -707,7 +707,7 @@ def download_and_decompress_CO2_into_df(
     output="pandas",
 ):
     """
-    This function handles downloading the HITEMP CO2 database file, locating the appropriate data chunk based on the provided wavenumber range, saving 50-70mb of compressed data( 500MB decompressed  chunks in h5 format )and reading the relevant data into a DataFrame.
+    This function handles downloading the HITEMP CO2 database. The full 2024 database is downloaded in smaller files of approximately 50-70 MB (500 MB decompressed chunks in h5 format), locating the appropriate data chunk based on the provided wavenumber range and reading the relevant data into a DataFrame.
 
     Parameters
     ----------
