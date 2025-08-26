@@ -821,7 +821,7 @@ def voigt_lineshape(
 
     # Normalization
     if exact_normalize:
-        integral = np.trapz(lineshape, w_centered, axis=0)
+        integral = trapezoid(lineshape, w_centered, axis=0)
     else:
         integral = wv * (1.065 + 0.447 * (wl / wv) + 0.058 * (wl / wv) ** 2)
     # ... approximation used by Whiting, equation (7)
@@ -829,8 +829,6 @@ def voigt_lineshape(
     # ... But not used because:
     # ... - it may yield wrong results when the broadening range is not refined enough
     # ... - it is defined for wavelengths only. Here we may have wavenumbers as well
-
-    integral = trapezoid(lineshape, w_centered, axis=0)
 
     # Normalize
     lineshape /= integral
@@ -1678,7 +1676,7 @@ class BroadenFactory(BaseFactory):
 
     # %% Function to calculate lineshapes from HWHM
 
-    def _calc_lineshape(self, dg, wavenumber_group=None, wavenumber_group):
+    def _calc_lineshape(self, dg, wavenumber_group=None):
         """Sum over each line (trying to use vectorize operations to be faster)
 
         Parameters
@@ -2065,7 +2063,7 @@ class BroadenFactory(BaseFactory):
                 )
                 gaussian_profile = self._gaussian_lineshape(dg, wbroad_centered[gridnb])
                 line_profile = np.convolve(pressure_profile, gaussian_profile, "same")
-                line_profile /= trapz(line_profile.T, x=wbroad.T)  # normalize
+                line_profile /= trapezoid(line_profile.T, x=wbroad.T)  # normalize
 
                 plt.plot(wbroad[gridnb], pressure_profile, label="Pressure")
                 plt.plot(wbroad[gridnb], gaussian_profile, label="Doppler")
