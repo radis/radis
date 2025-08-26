@@ -14,15 +14,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup Micromamba
-      uses: mamba-org/setup-micromamba@v1
-      with:
-        micromamba-version: '1.5.8-0'  # Fixed version format
-        environment-name: radis-env
-        init-shell: bash
-        cache-environment: true
-        post-cleanup: 'all'
-
     - name: Install system dependencies
       run: |
         sudo apt-get update
@@ -33,25 +24,21 @@ jobs:
       run: |
         sed -i.bak -E 's/^- python$/- python=3.10/' ./environment.yml
 
-    - name: Install xtensor
-      shell: bash -el {0}
-      run: |
-        micromamba install xtensor -c conda-forge -y
+    - name: Setup Micromamba with environment
+      uses: mamba-org/setup-micromamba@v1
+      with:
+        micromamba-version: '1.5.8-0'  # Fixed version format
+        environment-file: environment.yml
+        environment-name: radis-env
+        init-shell: bash
+        cache-environment: true
+        post-cleanup: 'all'
 
-    - name: Copy requirements.txt to temp folder
-      run: |
-        mkdir -p /tmp
-        cp requirements.txt /tmp/requirements.txt
-
-    - name: Create conda environment
-      shell: bash -el {0}
-      run: |
-        micromamba create -f ./environment.yml -y
-
-    - name: Activate environment and install dependencies
+    - name: Install additional dependencies
       shell: bash -el {0}
       run: |
         micromamba activate radis-env
+        micromamba install xtensor -c conda-forge -y
         pip install pytest
         pip install -e . -v
 
