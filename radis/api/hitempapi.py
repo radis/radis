@@ -227,12 +227,6 @@ def setup_credentials():
     email = os.environ.get("HITRAN_EMAIL")
     password = os.environ.get("HITRAN_PASSWORD")
 
-    TEST_VARIABLE = os.environ.get("TEST_VARIABLE")
-    warnings.warn(
-        f"HELLOOOOOOOOOOO - the test variable is {TEST_VARIABLE}",
-        UserWarning,
-    )
-
     if (is_rtd or is_travis or is_github_action) and not email:
         # In CI/CD environments, only use environment variables
         warnings.warn(
