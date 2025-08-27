@@ -230,8 +230,10 @@ def setup_credentials():
     if not email or not password:
         if is_rtd or is_travis or is_github_action:
             # In CI/CD environments, only use environment variables
-            print(
-                "Warning: HITRAN_EMAIL or HITRAN_PASSWORD not set in environment variables"
+
+            warnings.warn(
+                "Warning: HITRAN_EMAIL or HITRAN_PASSWORD not set in environment variables",
+                UserWarning,
             )
         else:
             # In normal usage, fall back to prompt if environment variables not set
