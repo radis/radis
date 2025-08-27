@@ -33,6 +33,7 @@ install:
   # # Activate and install test-only dependencies
   # - micromamba activate radis-env
   # - micromamba list
+  - mamba install -c conda-forge xtensor
   - pip install pytest-cov
   - pip install -e . -v
 
