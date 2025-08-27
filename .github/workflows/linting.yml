@@ -19,6 +19,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install pre-commit
         pre-commit install
-    - name: Analysing the code with pylint
+    - name: Analysing the code with pre-commit
       run: |
         pre-commit run --all-files
