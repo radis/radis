@@ -17,6 +17,7 @@ from radis.misc.printer import printm
 from radis.test.utils import getTestFile
 
 
+@pytest.mark.needs_gpu
 @pytest.mark.fast
 def test_eq_spectrum_gpu(device_id=0, verbose=False, plot=False, *args, **kwargs):
     """Compare Spectrum calculated in the GPU code
@@ -94,6 +95,7 @@ def test_eq_spectrum_gpu(device_id=0, verbose=False, plot=False, *args, **kwargs
 # test_eq_spectrum_gpu(device_id="nvidia", plot=plot, *args, **kwargs)
 
 
+@pytest.mark.needs_gpu
 @pytest.mark.fast
 def test_multiple_gpu_calls(plot=False, hard_test=True):
     from radis import SpectrumFactory
@@ -156,6 +158,7 @@ def test_multiple_gpu_calls(plot=False, hard_test=True):
         plt.show()
 
 
+@pytest.mark.needs_gpu
 def test_broadening(plot=False):
     """Compare broadening to ensure it is the same in cpu and gpu"""
 

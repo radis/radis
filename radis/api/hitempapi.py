@@ -221,13 +221,14 @@ def setup_credentials():
     # Check if running on ReadTheDocs or Travis CI environment
     is_rtd = os.environ.get("READTHEDOCS", "").lower() == "true"
     is_travis = os.environ.get("TRAVIS", "").lower() == "true"
+    is_github_action = os.environ.get("GITHUB_ACTIONS", "").lower() == "true"
 
     # compatibly with old versions
-    email = os.environ.get("HITRAN_USERNAME")
+    email = os.environ.get("HITRAN_EMAIL")
     password = os.environ.get("HITRAN_PASSWORD")
 
     if not email or not password:
-        if is_rtd or is_travis:
+        if is_rtd or is_travis or is_github_action:
             # In CI/CD environments, only use environment variables
             print(
                 "Warning: HITRAN_EMAIL or HITRAN_PASSWORD not set in environment variables"
@@ -361,8 +362,8 @@ def login_to_hitran(verbose=False):
 
         # compatiplty with old versions
         if "credentials" in config:
-            if config["credentials"].get("HITRAN_USERNAME"):
-                encrypted_email = config["credentials"].get("HITRAN_USERNAME")
+            if config["credentials"].get("HITRAN_EMAIL"):
+                encrypted_email = config["credentials"].get("HITRAN_EMAIL")
                 config["credentials"]["HITRAN_EMAIL"] = encrypted_email
                 # Save
                 with open(CONFIG_PATH_JSON, "w") as f:
