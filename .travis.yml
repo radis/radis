@@ -17,22 +17,22 @@ before_install:
   # version is the same.
   # For now use http instead of https according to this comment:
   # https://github.com/mamba-org/mamba/issues/1675#issuecomment-1127160021
-  - sudo apt-get -y install mesa-vulkan-drivers libvulkan1
-  - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/1.5.8 | tar -xvj bin/micromamba
-  - ./bin/micromamba shell init -s bash -p ~/micromamba
-  - source ~/.bashrc
+  # - sudo apt-get -y install mesa-vulkan-drivers libvulkan1
+  # - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/1.5.8 | tar -xvj bin/micromamba
+  # - ./bin/micromamba shell init -s bash -p ~/micromamba
+  # - source ~/.bashrc
 install:
-  - micromamba activate base
+  # - micromamba activate base
   # Update python version in environment
-  - sed -i -E 's/^- python$/- python='$TRAVIS_PYTHON_VERSION'/' ./environment.yml
-  # Create conda environment
-  - micromamba install xtensor -c conda-forge -y
-  - pwd
-  # Create the environment:
-  - micromamba create -f ./environment.yml -y
-  # Activate and install test-only dependencies
-  - micromamba activate radis-env
-  - micromamba list
+  # - sed -i -E 's/^- python$/- python='$TRAVIS_PYTHON_VERSION'/' ./environment.yml
+  # # Create conda environment
+  # - micromamba install xtensor -c conda-forge -y
+  # - pwd
+  # # Create the environment:
+  # - micromamba create -f ./environment.yml -y
+  # # Activate and install test-only dependencies
+  # - micromamba activate radis-env
+  # - micromamba list
   - pip install pytest-cov
   - pip install -e . -v
 
