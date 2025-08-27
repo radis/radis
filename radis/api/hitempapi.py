@@ -224,7 +224,7 @@ def setup_credentials():
     is_github_action = os.environ.get("GITHUB_ACTIONS", "").lower() == "true"
 
     # compatibly with old versions
-    email = os.environ.get("HITRAN_USERNAME")
+    email = os.environ.get("HITRAN_EMAIL")
     password = os.environ.get("HITRAN_PASSWORD")
 
     if not email or not password:
@@ -362,8 +362,8 @@ def login_to_hitran(verbose=False):
 
         # compatiplty with old versions
         if "credentials" in config:
-            if config["credentials"].get("HITRAN_USERNAME"):
-                encrypted_email = config["credentials"].get("HITRAN_USERNAME")
+            if config["credentials"].get("HITRAN_EMAIL"):
+                encrypted_email = config["credentials"].get("HITRAN_EMAIL")
                 config["credentials"]["HITRAN_EMAIL"] = encrypted_email
                 # Save
                 with open(CONFIG_PATH_JSON, "w") as f:
