@@ -643,13 +643,7 @@ def _parse_HITRAN_class4_fast_parsing(df, verbose=True, dataframe_type="pandas")
     -------
     pandas DataFrame or Vaex DataFrame
 
-    Notes
-    -----
 
-    This function slices fixed-width fields instead of using regex, matching
-    the original behavior exactly. Non-numeric slices are coerced to 0.
-
-    HITRAN syntax:
 
     >>>     v1 v2 l2 v3
     >>>  7x I2 I2 I2 I2
@@ -669,6 +663,7 @@ def _parse_HITRAN_class4_fast_parsing(df, verbose=True, dataframe_type="pandas")
         "l2u": (11, 13),
         "v3u": (13, 15),
     }
+
     _GLOBL_SLICES = {
         "v1l": (7, 9),
         "v2l": (9, 11),
@@ -676,37 +671,40 @@ def _parse_HITRAN_class4_fast_parsing(df, verbose=True, dataframe_type="pandas")
         "v3l": (13, 15),
     }
 
-    # Helper to coerce non-numeric to zero
-    def _coerce_int(series):
-        return pd.to_numeric(series, errors="coerce").fillna(0).astype("int64")
-
     if dataframe_type == "vaex":
+        # Vaex string slicing and assignment
         for name, (i0, i1) in _GLOBU_SLICES.items():
             sliced = df["globu"].str.slice(i0, i1).str.strip()
-            # Replace all non-digit characters with '0'
-            cleaned = sliced.str.replace(pat=r"[^0-9]", repl="0", regex=True)
+            # Replace non-numeric values with "0"
+            cleaned = sliced.str.replace(r"[^0-9]", "0", regex=True)
             df[name] = cleaned.astype("int64")
-
         for name, (i0, i1) in _GLOBL_SLICES.items():
             sliced = df["globl"].str.slice(i0, i1).str.strip()
-            # Replace all non-digit characters with '0'
-            cleaned = sliced.str.replace(pat=r"[^0-9]", repl="0", regex=True)
+            # Replace non-numeric values with "0"
+            cleaned = sliced.str.replace(r"[^0-9]", "0", regex=True)
             df[name] = cleaned.astype("int64")
-
         df.drop("globu", inplace=True)
         df.drop("globl", inplace=True)
         return df
-
     elif dataframe_type == "pandas":
-        for name, (i0, i1) in _GLOBU_SLICES.items():
-            series = df["globu"].str.slice(i0, i1).str.strip().replace("", "0")
-            df[name] = _coerce_int(series)
-        for name, (i0, i1) in _GLOBL_SLICES.items():
-            series = df["globl"].str.slice(i0, i1).str.strip().replace("", "0")
-            df[name] = _coerce_int(series)
-        df.drop(columns=["globu", "globl"], inplace=True)
-        return df
+        # For pandas, check format efficiently and parse
+        # Check if lines have the basic format (start with 7+ spaces)
+        globu_ok = df["globu"].str.slice(0, 7).eq("       ")  # exactly 7 spaces
+        globl_ok = df["globl"].str.slice(0, 7).eq("       ")  # exactly 7 spaces
 
+        for name, (i0, i1) in _GLOBU_SLICES.items():
+            sliced = df["globu"].str.slice(i0, i1).str.strip()
+            numeric = pd.to_numeric(sliced, errors="coerce").fillna(-1).astype("int64")
+            df[name] = numeric.where(globu_ok, -1)
+
+        for name, (i0, i1) in _GLOBL_SLICES.items():
+            sliced = df["globl"].str.slice(i0, i1).str.strip()
+            numeric = pd.to_numeric(sliced, errors="coerce").fillna(-1).astype("int64")
+            df[name] = numeric.where(globl_ok, -1)
+
+        df.drop(columns=["globu", "globl"], inplace=True)
+
+        return df
     else:
         raise NotImplementedError(f"Unknown dataframe_type: {dataframe_type}")
 
