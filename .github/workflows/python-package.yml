@@ -36,5 +36,8 @@ jobs:
       run: |
         pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC and not needs_gpu and not needs_specutils" --durations=10
     - name: Long tests with pytest
+      env: # Or as an environment variable
+        HITRAN_EMAIL: ${{ secrets.HITRAN_EMAIL }}
+        HITRAN_PASSWORD: ${{ secrets.HITRAN_PASSWORD }}
       run: |
         pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM and not needs_gpu and not needs_specutils" --durations=10
