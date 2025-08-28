@@ -5,7 +5,7 @@ name: Python package
 
 on:
   push:
-    branches: [ "develop" ]
+    branches: [ "develop", "master" ]
   pull_request:
     branches: [ "develop" ]
 
@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"] #end of life Python 3.9, October 2025, https://devguide.python.org/versions/.
 
     steps:
     - uses: actions/checkout@v4

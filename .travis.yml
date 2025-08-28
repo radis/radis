@@ -11,7 +11,8 @@ before_install:
 install:
   # Install Vulkan (needed for the vulkan package)
   - sudo apt-get -y install mesa-vulkan-drivers libvulkan1
-  # Install Micromamba. This is needed to get the vulkan package.
+  # Install Micromamba. https://docs.conda.io/projects/conda/en/4.11.x/user-guide/tasks/use-conda-with-travis-ci.html
+  # This is needed to get xtensor, which is needed for the vulkan package.
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
       wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
     else
@@ -29,7 +30,7 @@ install:
   - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION xtensor -c conda-forge -y
   - conda activate test-environment
   - pip install pytest-cov
-  - pip install . -v
+  - pip install -e . -v
 
 services:
   - xvfb
