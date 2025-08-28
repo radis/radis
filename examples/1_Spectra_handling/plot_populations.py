@@ -18,7 +18,7 @@ levels of absorbing/emitting lines in the spectrum.
 
 from astropy import units as u
 
-#%%
+# %%
 # We first compute a noneq CO spectrum.
 # Notice the keys `export_lines=True` and `export_populations=True`
 from radis import calc_spectrum
@@ -38,13 +38,13 @@ s = calc_spectrum(
     export_populations="rovib",
 )
 
-#%%
+# %%
 # Below we plot the populations
 # We could also have used :py:meth:`~radis.spectrum.spectrum.Spectrum.plot_populations` directly
 
 pops = s.get_populations("CO")["rovib"]
 
-#%%
+# %%
 # Plot populations :
 # Here we plot population fraction vs rotational number of the 2nd vibrational level ``v==2``,
 # for all levels as well as for levels of lines visible in the spectrum
@@ -70,14 +70,14 @@ plt.xlim((0, 80))
 plt.legend()
 
 
-#%%
+# %%
 # Print all levels information
 print(f"{len(pops)} levels ")
 print(pops)
 print(pops.columns)
 
 
-#%%
+# %%
 # Print visible lines information :
 print(f"{len(s.lines)} visible lines in the spectrum")
 print(s.lines)
@@ -93,7 +93,7 @@ print(
 )
 
 
-#%%
+# %%
 #
 # :py:meth:`~radis.spectrum.spectrum.Spectrum.line_survey` is also a convenient way to explore populations and other line
 # parameters, for instance ::

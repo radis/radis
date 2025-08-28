@@ -32,7 +32,7 @@ def test_Kurucz_vs_NISTandSpectraplot(plot=True, verbose=True):
         """An arbitrary broadening formula in SpectraPlot (https://spectraplot.com/)"""
         return 1 * (296 / kwargs["Tgas"]) ** 0.8, None
 
-    #%% Experimental spectrum
+    # %% Experimental spectrum
     L = 1  # cm - Input in SpectraPlot software
     raw_data = np.loadtxt(
         getValidationCase("spectraplot_O_10000K.txt"), delimiter=",", skiprows=1
@@ -55,7 +55,7 @@ def test_Kurucz_vs_NISTandSpectraplot(plot=True, verbose=True):
             pfsource = "nist"
         else:
             pfsource = "barklem"
-        #%% Employ the same inputs than in example file 'spectraplot_O_10000K.txt'
+        # %% Employ the same inputs than in example file 'spectraplot_O_10000K.txt'
         sf = SpectrumFactory(
             wavelength_min=777,
             wavelength_max=778,

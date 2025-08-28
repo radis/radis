@@ -23,6 +23,7 @@ from os.path import basename, exists
 import numpy as np
 import pytest
 from numpy import allclose, linspace
+from scipy.integrate import trapezoid
 
 from radis.phys.convert import nm2cm
 from radis.spectrum import Spectrum, calculated_spectrum
@@ -330,11 +331,9 @@ def test_emisscoeff_conversion(verbose=True, *args, **kwargs):
     w_cm, I_cm = s.get("emisscoeff", Iunit="mW/sr/cm3/cm-1", wunit="cm-1")
     # I_cm = convert_emi2nm(I, 'mW/sr/cm3/cm-1', 'mW/sr/m3/µm')
 
-    import numpy as np
-
     # compare. Integral should be the same
     assert (I_nm != I_cm).all()
-    assert abs(np.trapz(I_nm, w_nm) / np.trapz(I_cm, -w_cm) - 1) < 0.001
+    assert abs(trapezoid(I_nm, w_nm) / trapezoid(I_cm, -w_cm) - 1) < 0.001
 
 
 def test_rescaling_function(verbose=True, *args, **kwargs):
@@ -404,23 +403,17 @@ def test_resampling_function(
     s.compare_with(
         s2,
         plot=plot,
-        title="Residual: {0:.2g}".format(
-            get_residual_integral(s, s2, "abscoeff", ignore_nan=True)
-        ),
+        title=f"Residual: {get_residual_integral(s, s2, 'abscoeff', ignore_nan=True):.2g}",
     )
     s.compare_with(
         s2b,
         plot=plot,
-        title="Residual: {0:.2g}".format(
-            get_residual_integral(s, s2b, "abscoeff", ignore_nan=True)
-        ),
+        title=f"Residual: {get_residual_integral(s, s2b, 'abscoeff', ignore_nan=True):.2g}",
     )
     s.compare_with(
         s3,
         plot=plot,
-        title="Residual: {0:.2g}".format(
-            get_residual_integral(s, s3, "abscoeff", ignore_nan=True)
-        ),
+        title=f"Residual: {get_residual_integral(s, s3, 'abscoeff', ignore_nan=True):.2g}",
     )
 
     assert get_residual_integral(s, s2, "abscoeff", ignore_nan=True) < 1e-3
@@ -563,7 +556,7 @@ def test_sort(*args, **kwargs):
     assert is_sorted(s_exp.sort().get("radiance")[0])
 
 
-#%%
+# %%
 @pytest.mark.fast
 def test_argmax_argmin(*args, **kwargs):
     """Test :py:meth:`~radis.spectrum.spectrum.Spectrum.argmax`
@@ -578,6 +571,7 @@ def test_argmax_argmin(*args, **kwargs):
     assert np.isclose(s.take("abscoeff").argmin(value_only=True), 2144.215391118094)
 
 
+@pytest.mark.needs_specutils
 def test_fitting_lineshape(verbose=False, plot=False, *args, **kwargs):
     """Test :py:meth:`~radis.spectrum.spectrum.Spectrum.fit_model``"""
 
@@ -626,7 +620,7 @@ def _run_testcases(
     debug=False,
     warnings=True,
     *args,
-    **kwargs
+    **kwargs,
 ):
     """Test procedures
 
@@ -647,7 +641,7 @@ def _run_testcases(
         plot=plot,
         close_plots=close_plots,
         *args,
-        **kwargs
+        **kwargs,
     )
     test_copy(verbose=verbose, *args, **kwargs)
     test_trimming(*args, **kwargs)

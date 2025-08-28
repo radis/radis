@@ -52,7 +52,6 @@ class gpuApp(GPUApplication):
         verbose=0,
         device_id=0,
     ):
-
         """
         Initialize gpuApp object required for GPU calculations
 

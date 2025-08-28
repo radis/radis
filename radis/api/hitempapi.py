@@ -158,7 +158,7 @@ def get_recent_hitemp_database_year(molecule):
     return recent_database
 
 
-#%%
+# %%
 def get_last(b):
     """Get non-empty lines of a chunk b, parsing the bytes."""
     element_length = np.vectorize(lambda x: len(x.__str__()))(b)
@@ -221,19 +221,27 @@ def setup_credentials():
     # Check if running on ReadTheDocs or Travis CI environment
     is_rtd = os.environ.get("READTHEDOCS", "").lower() == "true"
     is_travis = os.environ.get("TRAVIS", "").lower() == "true"
+    is_github_action = os.environ.get("GITHUB_ACTIONS", "").lower() == "true"
 
-    if is_rtd or is_travis:
+    # compatibly with old versions
+    email = os.environ.get("HITRAN_EMAIL")
+    password = os.environ.get("HITRAN_PASSWORD")
+
+    if (is_rtd or is_travis or is_github_action) and not email:
         # In CI/CD environments, only use environment variables
+        warnings.warn(
+            "Warning: HITRAN_EMAIL not set in environment variables",
+            UserWarning,
+        )
+    if (is_rtd or is_travis or is_github_action) and not password:
+        # In CI/CD environments, only use environment variables
+        warnings.warn(
+            "Warning: HITRAN_PASSWORD not set in environment variables",
+            UserWarning,
+        )
 
-        # compatibly with old versions
-        email = os.environ.get("HITRAN_USERNAME")
-        password = os.environ.get("HITRAN_PASSWORD")
-        if not email or not password:
-            print(
-                "Warning: HITRAN_EMAIL or HITRAN_PASSWORD not set in environment variables"
-            )
-    else:
-        # In normal usage, try environment variables first, then prompt
+    if (not email or not password) and not (is_rtd or is_travis or is_github_action):
+        # In normal usage, fall back to prompt if environment variables not set
         email = input("Enter HITRAN email: ")
         password = _prompt_password(email)
 
@@ -361,8 +369,8 @@ def login_to_hitran(verbose=False):
 
         # compatiplty with old versions
         if "credentials" in config:
-            if config["credentials"].get("HITRAN_USERNAME"):
-                encrypted_email = config["credentials"].get("HITRAN_USERNAME")
+            if config["credentials"].get("HITRAN_EMAIL"):
+                encrypted_email = config["credentials"].get("HITRAN_EMAIL")
                 config["credentials"]["HITRAN_EMAIL"] = encrypted_email
                 # Save
                 with open(CONFIG_PATH_JSON, "w") as f:
@@ -431,9 +439,12 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
             )
             warnings.warn(warning_msg, UserWarning)
 
-        with open(output_filename, "wb") as f, tqdm(
-            total=total_size, unit="B", unit_scale=True, desc=output_filename
-        ) as pbar:
+        with (
+            open(output_filename, "wb") as f,
+            tqdm(
+                total=total_size, unit="B", unit_scale=True, desc=output_filename
+            ) as pbar,
+        ):
             for chunk in file_response.iter_content(chunk_size=8192):
                 if chunk:
                     f.write(chunk)
@@ -882,7 +893,7 @@ class HITEMPDatabaseManager(DatabaseManager):
             ) from e
 
 
-#%%
+# %%
 
 if __name__ == "__main__":
 

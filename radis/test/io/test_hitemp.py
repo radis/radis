@@ -22,7 +22,7 @@ try:
 except ImportError:
     vaex = NotInstalled(*not_installed_vaex_args)
 
-pytestmark = pytest.mark.random_order(disabled=True)
+# pytestmark = pytest.mark.random_order(disabled=True)
 
 
 @pytest.mark.needs_connection
@@ -540,7 +540,7 @@ if __name__ == "__main__":
     #     HITEMPDatabaseManager,
     #     )
     # from radis.misc.config import getDatabankList
-    # test_partial_loading()
+    test_partial_loading()
     # test_partial_loading_vaex()
 
     # test_fetch_hitemp_OH_pytables()
@@ -558,4 +558,4 @@ if __name__ == "__main__":
     # test_calc_hitemp_CO_noneq()
     # test_calc_hitemp_spectrum()
 
-    test_relevant_files_filter()
+    # test_relevant_files_filter()

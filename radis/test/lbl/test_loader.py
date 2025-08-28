@@ -23,9 +23,9 @@ try:
 except ImportError:
     vaex = NotInstalled(*not_installed_vaex_args)
 
-pytestmark = pytest.mark.random_order(
-    disabled=True
-)  # to make sure HITEMP-CO2-TEST is downloaded in 1st test and used after
+# pytestmark = pytest.mark.random_order(
+#     disabled=True
+# )  # to make sure HITEMP-CO2-TEST is downloaded in 1st test and used after
 
 
 @pytest.mark.needs_connection
@@ -198,7 +198,7 @@ def test_custom_abundance(verbose=True, plot=False, *args, **kwargs):
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.load_databank("HITEMP-CO2-TEST", load_columns="all")
 
-    #%% Compute a spectrum ; set the terrestrial abundance to False to
+    # %% Compute a spectrum ; set the terrestrial abundance to False to
     # force computation of linestrength from Einstein coefficients instead
     # of rescaling parameters
     s = sf.eq_spectrum(2000)
@@ -215,7 +215,7 @@ def test_custom_abundance(verbose=True, plot=False, *args, **kwargs):
 
         plot_diff(s, s2)
 
-    #%% Now restart by changing the abundance itself ; as a user would do
+    # %% Now restart by changing the abundance itself ; as a user would do
 
     # ... check abundance get/set functions work well
     abundance12_0 = sf.get_abundance("CO2", [1, 2])
@@ -441,7 +441,11 @@ def test_vaex_and_pandas_dataframe_load_databank():
 
 def _run_testcases(verbose=True, plot=False):
 
+    from time import time
+
+    t0 = time()
     test_retrieve_from_database(plot=plot, verbose=verbose)
+    print(time() - t0)
     # test_ignore_cached_files()
     # test_ignore_irrelevant_files(verbose=verbose)
     # test_custom_abundance()

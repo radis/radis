@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Misc. and support functions
-"""
+"""Misc. and support functions"""
 
 
 from .arrays import (

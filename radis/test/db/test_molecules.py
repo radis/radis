@@ -105,9 +105,7 @@ def test_ZPE(verbose=True, *args, **kwargs):
                     assert ElecState.Erovib(*params, remove_ZPE=False) == coeffs["ZPE"]
                     if verbose:
                         print(
-                            "ZPE calculated for {0} matches value in database ({1:.2f} cm-1)".format(
-                                ElecState.get_fullname(), coeffs["ZPE"]
-                            )
+                            f"ZPE calculated for {ElecState.get_fullname()} matches value in database ({coeffs['ZPE']:.2f} cm-1)"
                         )
                 else:
                     if verbose:

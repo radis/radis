@@ -1,168 +1,179 @@
 # Runs Test scripts; Linting; Deployment on Travis-CI
 language: python
-python:
-  #- "2.7"    # not tested anymore starting from 0.9.19
-
-  #- "3.8"    # not tested anymore starting from 0.16
-
-  - "3.10"
-  #- "3.11"
+python: #we test on 3.10, compatible with vaex, and 3.11, which is not compatible with vaex (as of September 2025)
+  - "3.10" #compatible with vaex
+  - "3.11" #not compatible with vaex
 os: linux
 dist: focal # this gives us Ubuntu 20.04, needed for GPU tests #needed for python 3.10 (xenial is default for Travis-CI, but does not support python 3.10)
 
 name: Test and Coverage
 before_install:
-  # Install Micromamba
-  # We do this conditionally because it saves us some downloading if the
-  # version is the same.
-  # For now use http instead of https according to this comment:
-  # https://github.com/mamba-org/mamba/issues/1675#issuecomment-1127160021
-  - sudo apt-get -y install mesa-vulkan-drivers libvulkan1
-  - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/1.5.8 | tar -xvj bin/micromamba
-  - ./bin/micromamba shell init -s bash -p ~/micromamba
-  - source ~/.bashrc
 install:
-  - micromamba activate base
-  # Update python version in environment
-  - sed -i -E 's/^- python$/- python='$TRAVIS_PYTHON_VERSION'/' ./environment.yml
-  # Create conda environment
-  - micromamba install xtensor -c conda-forge -y
-  - pwd
-  # Create the environment:
-  - micromamba create -f ./environment.yml -y
-  # Activate and install test-only dependencies
-  - micromamba activate radis-env
-  - micromamba list
+  # Install Vulkan (needed for the vulkan package)
+  - sudo apt-get -y install mesa-vulkan-drivers libvulkan1
+  # Install Micromamba. https://docs.conda.io/projects/conda/en/4.11.x/user-guide/tasks/use-conda-with-travis-ci.html
+  # This is needed to get xtensor, which is needed for the vulkan package.
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+    else
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    fi
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - source "$HOME/miniconda/etc/profile.d/conda.sh"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  # Useful for debugging any issues with conda
+  - conda info -a
+
+  # Create environment and install dependencies
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION xtensor -c conda-forge -y
+  - conda activate test-environment
   - pip install pytest-cov
   - pip install -e . -v
-  - pip install pytest-random-order #to avoid being rejected by the servers when downloading the same databases by tests in parallel
 
 services:
   - xvfb
 
-before_script:
-# pipeline does not continue if anything fails
-# >> If before_install, install or before_script returns a non-zero exit code, the build is errored and
-# >> stops immediately. (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
-  - export MPLBACKEND=Agg
-  - python --version #to check and be sure of the python version
-  - echo ">>> Run fast tests first"
-  # use XVFB to have headless display port, and still run the Matplotlib tests.
-  - xvfb-run -a pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10 --random-order
+# before_script:
+# # pipeline does not continue if anything fails
+# # >> If before_install, install or before_script returns a non-zero exit code, the build is errored and
+# # >> stops immediately. (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
+#   - export MPLBACKEND=Agg
+#   - python --version #to check and be sure of the python version
+#   - echo ">>> Run fast tests first"
+#   # use XVFB to have headless display port, and still run the Matplotlib tests.
+#   - xvfb-run -a pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10
 
 script:
   # Your test script goes here
   # >> If script returns a non-zero exit code, the build is failed, but continues to run before being
   # >> marked as failed.  (https://docs.travis-ci.com/user/job-lifecycle/#breaking-the-build)
-  - echo ">>> Run long tests now"
-  - xvfb-run -a pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
+  # - echo ">>> Run long tests now"
+  # - xvfb-run -a pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
   # --durations=N to print the slowest N tests
   # lookup 'addopts' in setup.cfg>[tools:pytest] for default tests
+  - echo ">>> Run GPU tests only"
+  - xvfb-run -a pytest -m "needs_gpu" --durations=10
 
-after_success:
-  # codecoverage
-  - pip install codecov
-  - codecov
+# stages: #This sequence defines the order of the stages
+#   - name: deploy
+#     if: branch = master
+#   - name: Py39
+#     if: branch = master
+#   - name: Py311
+#     if: branch = master OR branch = develop
+#   - name: Py310 #we also test the linting in the stage "before_install" but only for this specific Python version
+#     if: branch = master OR branch = develop
+#   - name: Py312
+#     if: branch = master
+#   # - name: MacOS_py310
+#   #   if: branch = master
+#   # - name: lint
+#   #   if: branch = master OR branch = develop
 
+# jobs:
+#   include:
+#     # - stage: MacOS_py310
+#     #   name: Python 3.10 on macOS
+#     #   python: "3.10"
+#     #   os: osx
+#     #   osx_image: xcode11.2
+#     #   language: shell
+#     #   before_install: #https://gist.github.com/wolfv/fe1ea521979973ab1d016d95a589dcde#os-x
+#     #       - curl -Ls https://micromamba.snakepit.net/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
+#     #       - mkdir -p ~/micromamba/bin
+#     #       - mv bin/micromamba ~/micromamba/bin/
+#     #       - export PATH=$HOME/micromamba/bin:$PATH
+#     #       - MAMBA_ROOT_PREFIX=~/micromamba
+#     #       - micromamba shell init -s zsh
+#     #       - eval "$(micromamba shell hook --shell bash)"
+#     #   before_script: #same as the other but without xvfb-run
+#     #     - echo ">>> Run fast tests first"
+#     #     - pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10
+#     #   script: skip #there is a problem with test_exomol.py, but let's skip the long tests for the moment
+#     #     # - echo ">>> Run long tests now"
+#     #     # - pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
 
-stages: #This sequence defines the order of the stages
-  - name: deploy
-    if: branch = master
-  - name: Py39
-    if: branch = master
-  - name: Py311
-    if: branch = master OR branch = develop
-  - name: Py310
-    if: branch = master OR branch = develop
-  - name: Py312
-    if: branch = master
-  # - name: MacOS_py310
-  #   if: branch = master
-  - name: lint
-    if: branch = master OR branch = develop
+#   ### Extra Python versions - start
+#     - stage: Py39 #DEV MESSAGE: end of life, October 2025, https://devguide.python.org/versions/.
+#       name: "Python 3.9" #DEV MESSAGE: as long as we can pass the tests with Python 3.9, we will keep it. If a problem comes up, we will announce that RADIS is not compatible with Python 3.9 anymore.
+#       python: 3.9
+#     - stage: Py311
+#       name: "Python 3.11"
+#       python: 3.11
+#     - stage: Py310
+#       name: "Python 3.10"
+#       python: 3.10
+#       before_install: #used for linting
+#         - pip install pre-commit
+#         - pre-commit install
+#         - pre-commit run --all-files #if this fails, you should run "pre-commit run --all-files" on your machine and commit
+#         - echo ">>> Success of linting"
+#       after_success:
+#         #based on https://app.codecov.io/github/minouHub/radis/new/other-ci
+#         - curl https://keybase.io/codecovsecurity/pgp_keys.asc | gpg --no-default-keyring --keyring trustedkeys.gpg --import # One-time step
+#         - curl -Os https://cli.codecov.io/latest/linux/codecov
+#         - curl -Os https://cli.codecov.io/latest/linux/codecov.SHA256SUM
+#         - curl -Os https://cli.codecov.io/latest/linux/codecov.SHA256SUM.sig
+#         - gpg --verify codecov.SHA256SUM.sig codecov.SHA256SUM
 
-jobs:
-  include:
-    # - stage: MacOS_py310
-    #   name: Python 3.10 on macOS
-    #   python: "3.10"
-    #   os: osx
-    #   osx_image: xcode11.2
-    #   language: shell
-    #   before_install: #https://gist.github.com/wolfv/fe1ea521979973ab1d016d95a589dcde#os-x
-    #       - curl -Ls https://micromamba.snakepit.net/api/micromamba/osx-64/latest | tar -xvj bin/micromamba
-    #       - mkdir -p ~/micromamba/bin
-    #       - mv bin/micromamba ~/micromamba/bin/
-    #       - export PATH=$HOME/micromamba/bin:$PATH
-    #       - MAMBA_ROOT_PREFIX=~/micromamba
-    #       - micromamba shell init -s zsh
-    #       - eval "$(micromamba shell hook --shell bash)"
-    #   before_script: #same as the other but without xvfb-run
-    #     - echo ">>> Run fast tests first"
-    #     - pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC" --durations=10
-    #   script: skip #there is a problem with test_exomol.py, but let's skip the long tests for the moment
-    #     # - echo ">>> Run long tests now"
-    #     # - pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
+#         - shasum -a 256 -c codecov.SHA256SUM
+#         - sudo chmod +x codecov
+#         - ./codecov --help
 
-  ### Extra Python versions - start
-    - stage: Py39 #DEV MESSAGE: end of life, October 2025, https://devguide.python.org/versions/.
-      name: "Python 3.9" #DEV MESSAGE: as long as we can pass the tests with Python 3.9, we will keep it. If a problem comes up, we will announce that RADIS is not compatible with Python 3.9 anymore.
-      python: 3.9
-    - stage: Py311
-      name: "Python 3.11"
-      python: 3.11
-    - stage: Py310
-      name: "Python 3.10"
-      python: 3.10
-    - stage: Py312
-      name: "Python 3.12"
-      python: 3.12
-  ### Extra Python versions - end
-    - stage: lint
-      name: Code Quality Checks
-      python: 3.10
-      install:
-        - pip install pre-commit
-        - pre-commit install
-      before_script: skip #do NOT run the before_script of "tests" stage
-      script:
-        - pre-commit run --all-files
-      after_failure: #better for checking the origin of a bug
-        - cat /home/travis/.cache/pre-commit/pre-commit.log
+#         - ./codecov upload-process
+#         - echo ">>> Success of codecov upload-process"
+#     - stage: Py312
+#       name: "Python 3.12"
+#       python: 3.12
+#   ### Extra Python versions - end
+#     # - stage: lint
+#     #   name: Code Quality Checks
+#     #   python: 3.10
+#     #   install:
+#     #     - pip install pre-commit
+#     #     - pre-commit install
+#     #   before_script: skip #do NOT run the before_script of "tests" stage
+#     #   script:
+#     #     - pre-commit run --all-files
+#     #   after_failure: #better for checking the origin of a bug
+#     #     - cat /home/travis/.cache/pre-commit/pre-commit.log
+#     #   after_success: skip #do NOT run for linting
 
-    - stage: deploy
-      name: Deploy to PyPI
-      services:
-        - xvfb
-      install:
-        # - sudo apt-get update
-        #Next is to test after deploy
-        - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/1.5.8 | tar -xvj bin/micromamba
-        - ./bin/micromamba shell init -s bash -p ~/micromamba
-        - source ~/.bashrc
-        - micromamba activate base
-      before_script:
-        - pip install build twine
-      script:
-        - echo "Building distribution packages"
-        - python -m build --sdist --wheel
-        - ls -la dist/
-      before_deploy:
-        - sudo apt-get install pandoc
-        - pandoc README.rst -o README.md
-      deploy:
-        provider: pypi
-        # server: https://testpypi.python.org/pypi # Remove for deployment to official PyPi repo
-        user: "__token__"
-        password:
-         secure: dxZOpuKL1ezk3MM5FgY89zJYNL484x0jUZ+c3IB5q2GjpWl6qmCogoWG37iGZIcmldeIdVzga3pj5CC32eht4B0hJQX5QLVjCq9wwpfLs7Tkj4ODiAzvOchSLhfBOSLOIX33iW/+wxDjZ3fG61TzPI1z3ksdNh7+imdVYiV+G4FmOcxJKjFEgGm7CAwfbxso47ab9jbgm6FHbCC7HfpSiSrMpyIDSorJFk5XR11+Hoe6JjbKr11eeWuoO8EXKvSQeeJpsu0minqFyAy8nf9af/aU3NJU1LOlFM1DuoYlpQKwnbop5lBodU28zt4Asa1h8lp8Zu+wZSIaZSOeEoC6U/H/5zAE03W8SytWyWgNEtwuYLSiWacbOzeZOclVRoNu4P6Fz9hFdZuSANQlSQN7cBYFJiA8cbJDU4nb3srFoKlBLxCH9ZC3/K7rnZpjPmy7A35plNf+1dAEpB6adiWwsGy/VwCywHyJsBq7N3z6lN9wZ2SUPekl4y/sLobYPqg8y48u4bMqfd05Ub1QDUB3MSNALMa+OcczJvxNHZj+Bk4ooai/t/GOMOWNyy78VES7S/J77cWUheq+mW80ywCS8gcyF6ARR4EJxJGwp4q2RHwGdVvxbzc/uaKgi6I1bmLRw4cjJvOXx5ulLdANUftfMg4ATW/VAFqYLrdS/LpGX5A= #real
-        # password: pypi-AgENdGVzdC5weXBpLm9yZwIkNTc0YzM3MmYtZWE2My00OTI1LWJlNzctYjU2NmU2Y2M4ZmM3AAINWzEsWyJyYWRpcyJdXQACLFsyLFsiNTBkMzc5MGUtZDVmMC00NDEzLThjNGEtZGVmMzI4MjVhYjAxIl1dAAAGIN3R86sRd9GJ2vHFeUziKdyOeFvtF9D_CjX89HkfVlZe #test-pypi
+#     - stage: deploy
+#       name: Deploy to PyPI
+#       services:
+#         - xvfb
+#       install:
+#         # - sudo apt-get update
+#         #Next is to test after deploy
+#         - wget -qO- https://micro.mamba.pm/api/micromamba/linux-64/1.5.8 | tar -xvj bin/micromamba
+#         - ./bin/micromamba shell init -s bash -p ~/micromamba
+#         - source ~/.bashrc
+#         - micromamba activate base
+#       before_script:
+#         - pip install build twine
+#       script:
+#         - echo "Building distribution packages"
+#         - python -m build --sdist --wheel
+#         - ls -la dist/
+#       before_deploy:
+#         - sudo apt-get install pandoc
+#         - pandoc README.rst -o README.md
+#       deploy:
+#         provider: pypi
+#         # server: https://testpypi.python.org/pypi # Remove for deployment to official PyPi repo
+#         user: "__token__"
+#         password:
+#          secure: dxZOpuKL1ezk3MM5FgY89zJYNL484x0jUZ+c3IB5q2GjpWl6qmCogoWG37iGZIcmldeIdVzga3pj5CC32eht4B0hJQX5QLVjCq9wwpfLs7Tkj4ODiAzvOchSLhfBOSLOIX33iW/+wxDjZ3fG61TzPI1z3ksdNh7+imdVYiV+G4FmOcxJKjFEgGm7CAwfbxso47ab9jbgm6FHbCC7HfpSiSrMpyIDSorJFk5XR11+Hoe6JjbKr11eeWuoO8EXKvSQeeJpsu0minqFyAy8nf9af/aU3NJU1LOlFM1DuoYlpQKwnbop5lBodU28zt4Asa1h8lp8Zu+wZSIaZSOeEoC6U/H/5zAE03W8SytWyWgNEtwuYLSiWacbOzeZOclVRoNu4P6Fz9hFdZuSANQlSQN7cBYFJiA8cbJDU4nb3srFoKlBLxCH9ZC3/K7rnZpjPmy7A35plNf+1dAEpB6adiWwsGy/VwCywHyJsBq7N3z6lN9wZ2SUPekl4y/sLobYPqg8y48u4bMqfd05Ub1QDUB3MSNALMa+OcczJvxNHZj+Bk4ooai/t/GOMOWNyy78VES7S/J77cWUheq+mW80ywCS8gcyF6ARR4EJxJGwp4q2RHwGdVvxbzc/uaKgi6I1bmLRw4cjJvOXx5ulLdANUftfMg4ATW/VAFqYLrdS/LpGX5A= #real
+#         # password: pypi-AgENdGVzdC5weXBpLm9yZwIkNTc0YzM3MmYtZWE2My00OTI1LWJlNzctYjU2NmU2Y2M4ZmM3AAINWzEsWyJyYWRpcyJdXQACLFsyLFsiNTBkMzc5MGUtZDVmMC00NDEzLThjNGEtZGVmMzI4MjVhYjAxIl1dAAAGIN3R86sRd9GJ2vHFeUziKdyOeFvtF9D_CjX89HkfVlZe #test-pypi
 
-        skip_existing: true
-        distributions: "skip"  # Important: skip default sdist build
-      after_deploy:
-      - VERSION_RADIS=$(cat radis/__version__.txt)
-      - pip install radis==$VERSION_RADIS
-      - pip install pytest
-      - xvfb-run -a pytest -m "fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
+#         skip_existing: true
+#         distributions: "skip"  # Important: skip default sdist build
+#       after_deploy:
+#       - VERSION_RADIS=$(cat radis/__version__.txt)
+#       - pip install radis==$VERSION_RADIS
+#       - pip install pytest
+#       - xvfb-run -a pytest -m "fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM" --durations=10
 

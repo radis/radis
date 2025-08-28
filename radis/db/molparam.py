@@ -161,7 +161,7 @@ isotope_name_dict = {
 # even if HITRAN eventually changes the conventions and labels.
 
 
-#%%
+# %%
 # Read Extra parameters taken from molparams_extra.json
 # TODO : Refactor : have either .json either .txt, but not both
 
@@ -189,9 +189,7 @@ def get_extra_molparams(path=MOLPARAMS_EXTRA_PATH):
             # read with Hjson to allow comments in MOLPARAMS_EXTRA_PATH
         except JSONDecodeError as err:
             raise JSONDecodeError(
-                "Error reading '{0}' (line {2} col {3}): \n{1}".format(
-                    path, err.msg, err.lineno, err.colno
-                ),
+                f"Error reading '{path}' (line {err.lineno} col {err.colno}): \n{err.msg}",
                 err.doc,
                 err.pos,
             ) from err
@@ -199,7 +197,7 @@ def get_extra_molparams(path=MOLPARAMS_EXTRA_PATH):
     return molparams_dict
 
 
-#%%
+# %%
 
 
 class MolParams(object):
@@ -337,19 +335,15 @@ class MolParams(object):
 
                     raise NotImplementedError(
                         f"{key} for isotope `{str(isotope)}` for molecule {M} not supported"
-                        + "\nChoose one of{0}".format(
-                            list(self.extra_molparams[key][M].keys())
-                        )
+                        + f"\nChoose one of{list(self.extra_molparams[key][M].keys())}"
                         + f"\nYou can manually add it in the {MOLPARAMS_EXTRA_PATH} file"
                         + "{'molparams':{'molar_mass':{'molecule':{'ISOTOPE':...}}}}; or in the `SpectrumFactory.molpar.extra_molparams[key][molecule][isotope]` dictionary. Please also report on GitHub so we can update !"
                     )
             else:
                 raise NotImplementedError(
                     f"{key} for molecule '{M}' not supported"
-                    + "\nChoose one of{0}".format(self._get_molecule_list())
-                    + "\nor `\n{0}".format(
-                        list(self.extra_molparams.get(key, {}).keys())
-                    )
+                    + f"\nChoose one of{self._get_molecule_list()}"
+                    + f"\nor `\n{list(self.extra_molparams.get(key, {}).keys())}"
                     + f"\nYou can manually add it in the {MOLPARAMS_EXTRA_PATH} file"
                     + "{'molparams':{'molar_mass':{'molecule':{'ISOTOPE':...}}}}; or in the `SpectrumFactory.molpar.extra_molparams[key][molecule][isotope]` dictionary. Please also report on GitHub so we can update !"
                 )
@@ -393,3 +387,5 @@ if __name__ == "__main__":
     from radis.test.db.test_molparams import test_molparams
 
     test_molparams()
+
+# %%

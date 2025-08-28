@@ -16,7 +16,7 @@ The default `pfsource` is 'nist'. It can be changed on the fly using the :meth:`
 
 Allowable values for `potential_lowering` are usually (in cm-1/Zeff**2): -500, -1000, -2000, -4000, -8000, -16000, -32000.
 """
-#%%
+# %%
 import traceback
 
 from radis import calc_spectrum
@@ -36,12 +36,12 @@ s, sf = calc_spectrum(
 
 s.plot("radiance_noslit", wunit="cm-1")
 
-#%%
+# %%
 # We can change the `pfsource` to 'kurucz':
 #
 sf.set_atomic_partition_functions("kurucz")
 
-#%%
+# %%
 # but if we run anything that attempts to calculate a partition function, we get an error:
 #
 
@@ -50,7 +50,7 @@ try:
 except Exception:
     print(traceback.format_exc())
 
-#%%
+# %%
 # until we specify the potential lowering:
 #
 
@@ -60,7 +60,7 @@ sf.input.potential_lowering = (
 s2 = sf.eq_spectrum(T_high)
 s2.plot("radiance_noslit", wunit="cm-1")
 
-#%%
+# %%
 # In this case, 50 000 K is beyond the maximal temperature in 'barklem'.
 #
 sf.set_atomic_partition_functions("barklem")
@@ -69,14 +69,14 @@ try:
     sf.eq_spectrum(T_high)
 except ValueError:
     print(traceback.format_exc())
-#%%
+# %%
 # In this case, 99 K is within the temperature range of 'barklem':
 #
 T_low = 99  # K
 s2 = sf.eq_spectrum(Tgas=T_low)
 s2.plot("radiance_noslit", wunit="cm-1")
 
-#%%
+# %%
 # However, 99 K is *not* within the temperature range of 'kurucz':
 #
 sf.set_atomic_partition_functions(
@@ -88,7 +88,7 @@ try:
 except ValueError:
     print(traceback.format_exc())
 
-#%%
+# %%
 # Specifying a value for the potential lowering that isn't present in the tables just returns a KeyError when attempting to calculate:
 #
 
@@ -98,7 +98,7 @@ try:
 except KeyError:
     print(traceback.format_exc())
 
-#%%
+# %%
 # Partition functions could also be available for a species from one source but not another, e.g. available from 'barklem':
 #
 
@@ -115,7 +115,7 @@ s, sf = calc_spectrum(
 
 s.plot("radiance_noslit", wunit="cm-1")
 
-#%%
+# %%
 # but not from 'kurucz', resulting in a warning when you try to set it as the `pfsource`:
 #
 
@@ -123,7 +123,7 @@ sf.set_atomic_partition_functions(
     "kurucz"
 )  # setting `potential_lowering` is irrelevant as the tables aren't even available
 
-#%%
+# %%
 # and an error if we attempt to calculate:
 #
 
@@ -132,7 +132,7 @@ try:
 except Exception:
     print(traceback.format_exc())
 
-#%%
+# %%
 # An example of the opposite, where 'kurucz' does include the species "Y_V":
 #
 
@@ -159,7 +159,7 @@ s, sf = calc_spectrum(
 
 s.plot("radiance_noslit", wunit="cm-1")
 
-#%%
+# %%
 # but 'barklem' doesn't:
 #
 sf.set_atomic_partition_functions("barklem")
@@ -169,7 +169,7 @@ try:
 except Exception:
     print(traceback.format_exc())
 
-#%%
+# %%
 # References
 # ----------
 # .. [Barklem-&-Collet-2016] `"Partition functions and equilibrium constants for diatomic molecules and atoms of astrophysical interest" <https://ui.adsabs.harvard.edu/abs/2016A%2526A...588A..96B>`_

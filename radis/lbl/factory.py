@@ -110,7 +110,7 @@ from radis.spectrum.spectrum import Spectrum
 
 
 class SpectrumFactory(BandFactory):
-    """A class to put together all functions related to loading CDSD / HITRAN
+    """A class to put together all functions related to loading CDSD and HITRAN
     databases, calculating the broadenings, and summing over all the lines.
 
     Parameters
@@ -229,7 +229,7 @@ class SpectrumFactory(BandFactory):
         if ``True``, removes databases calculated by intermediate functions (for
         instance, delete the full database once the linestrength cutoff criteria
         was applied). This saves some memory but requires to reload the database
-        & recalculate the linestrength for each new parameter. Default ``False``.
+        and recalculate the linestrength for each new parameter. Default ``False``.
     export_populations: ``'vib'``, ``'rovib'``, ``None``
         if not None, store populations in Spectrum. Either store vibrational
         populations ('vib') or rovibrational populations ('rovib'). Default ``None``
@@ -506,9 +506,7 @@ class SpectrumFactory(BandFactory):
 
         if kwargs0 != {}:
             raise TypeError(
-                "__init__() got an unexpected keyword argument '{0}'".format(
-                    list(kwargs0)[0]
-                )
+                f"__init__() got an unexpected keyword argument '{list(kwargs0)[0]}'"
             )
 
         if not 0 <= pseudo_continuum_threshold < 1:
@@ -518,7 +516,7 @@ class SpectrumFactory(BandFactory):
         ):
             raise ValueError(
                 "export_populations must be one of 'vib', 'rovib', "
-                + "or 'False'. Got '{0}'".format(export_populations)
+                + f"or 'False'. Got '{export_populations}'"
             )
 
         # calculate waveranges
@@ -568,13 +566,9 @@ class SpectrumFactory(BandFactory):
                     not in MOLECULES_LIST_EQUILIBRIUM + MOLECULES_LIST_NONEQUILIBRIUM
                 ):
                     raise ValueError(
-                        "Unsupported molecule: {0}.\n".format(molecule)
-                        + "Supported molecules are:\n - under equilibrium: {0}".format(
-                            MOLECULES_LIST_EQUILIBRIUM
-                        )
-                        + "\n- under nonequilibrium: {0}".format(
-                            MOLECULES_LIST_NONEQUILIBRIUM
-                        )
+                        f"Unsupported molecule: {molecule}.\n"
+                        + f"Supported molecules are:\n - under equilibrium: {MOLECULES_LIST_EQUILIBRIUM}"
+                        + f"\n- under nonequilibrium: {MOLECULES_LIST_NONEQUILIBRIUM}"
                         + "\n\nNote that RADIS now has ExoMol support, but not all ExoMol molecules are referenced in RADIS. If a molecule is available in ExoMol but does not appear in RADIS yet, please contact the RADIS team or write on https://github.com/radis/radis/issues/319"
                     )
                 self.input.isatom = False
@@ -596,9 +590,7 @@ class SpectrumFactory(BandFactory):
             isinstance(diluent, dict) and molecule in diluent.keys()
         ):
             raise KeyError(
-                "{0} is being called as molecule and diluent, please remove it from diluent.".format(
-                    molecule
-                )
+                f"{molecule} is being called as molecule and diluent, please remove it from diluent."
             )
 
         # Initialize input conditions
@@ -725,7 +717,7 @@ class SpectrumFactory(BandFactory):
         elif warnings in [False, "ignore"]:
             self.warnings["default"] = "ignore"
         else:
-            raise ValueError("Unexpected value for warnings: {0}".format(warnings))
+            raise ValueError(f"Unexpected value for warnings: {warnings}")
         # Set default values for warnings thresholds
         self.misc.warning_linestrength_cutoff = 1e-2
         self.misc.warning_broadening_threshold = 1e-2
@@ -834,9 +826,7 @@ class SpectrumFactory(BandFactory):
         if pressure is not None:
             self.input.pressure = pressure
         if not is_float(Tgas):
-            raise ValueError(
-                "Tgas should be float or Astropy unit. Got {0}".format(Tgas)
-            )
+            raise ValueError(f"Tgas should be float or Astropy unit. Got {Tgas}")
         self.input.Tgas = Tgas
 
         # Init variables
@@ -1021,7 +1011,7 @@ class SpectrumFactory(BandFactory):
             # generated with eq_spectrum are consistent with names
             # in one generated with non_eq_spectrum
 
-        # Get generation & total calculation time
+        # Get generation and total calculation time
         self.profiler.stop("generate_spectrum_obj", "Generated Spectrum object")
 
         #  In the less verbose case, we print the total calculation+generation time:
@@ -1159,7 +1149,7 @@ class SpectrumFactory(BandFactory):
             if s is not None:
                 return s  # exit function
 
-        ### GET ISOTOPE ABUNDANCE & MOLECULAR MASS ###
+        ### GET ISOTOPE ABUNDANCE and MOLECULAR MASS ###
 
         molpar = self.molparam
 
@@ -1380,7 +1370,7 @@ class SpectrumFactory(BandFactory):
             # generated with eq_spectrum are consistent with names
             # in one generated with non_eq_spectrum
 
-        # Get generation & total calculation time
+        # Get generation and total calculation time
         self.profiler.stop("generate_spectrum_obj", "Generated Spectrum object")
 
         #  In the less verbose case, we print the total calculation+generation time:
@@ -1607,7 +1597,7 @@ class SpectrumFactory(BandFactory):
             s2 = sf.non_eq_spectrum(Tvib=2000, Trot=600, path_length=1, pressure=0.1)
 
         Multi-vibrational temperature. Below we compare non-LTE spectra of CO2 where all
-        vibrational temperatures are equal, or where the bending & symmetric modes are in
+        vibrational temperatures are equal, or where the bending and symmetric modes are in
         equilibrium with rotation ::
 
             from radis import SpectrumFactory
@@ -1663,9 +1653,7 @@ class SpectrumFactory(BandFactory):
             if isinstance(Tvib, tuple):
                 Tvib = tuple([convert_and_strip_units(T, u.K) for T in Tvib])
             elif not is_float(Tvib):
-                raise TypeError(
-                    "Tvib should be float, or tuple (got {0})".format(type(Tvib))
-                )
+                raise TypeError(f"Tvib should be float, or tuple (got {type(Tvib)})")
             singleTvibmode = is_float(Tvib)
             if not is_float(Trot):
                 raise ValueError("Trot should be float")
@@ -1929,7 +1917,7 @@ class SpectrumFactory(BandFactory):
                 if_exists_then="increment",
             )
 
-        # Get generation & total calculation time
+        # Get generation and total calculation time
         self.profiler.stop("generate_spectrum_obj", "Generated Spectrum object")
 
         #  In the less verbose case, we print the total calculation+generation time:
@@ -2039,9 +2027,7 @@ class SpectrumFactory(BandFactory):
             isinstance(diluent, dict) and molecule in diluent.keys()
         ):
             raise KeyError(
-                "{0} is being called as molecule and diluent, please remove it from diluent.".format(
-                    molecule
-                )
+                f"{molecule} is being called as molecule and diluent, please remove it from diluent."
             )
 
         # Using Spectrum Factory values of diluents
@@ -2061,13 +2047,9 @@ class SpectrumFactory(BandFactory):
         total_mole_fraction = mole_fraction + sum(list(diluents.values()))
         if not np.isclose(total_mole_fraction, 1):
             if total_mole_fraction > 1:
-                message = "Total molefraction = {0} of molecule and diluents greater than 1. Please set appropriate molefraction value of molecule and diluents.".format(
-                    total_mole_fraction
-                )
+                message = f"Total molefraction = {total_mole_fraction} of molecule and diluents greater than 1. Please set appropriate molefraction value of molecule and diluents."
             else:
-                message = "Total molefraction = {0} of molecule and diluents less than 1. Please set appropriate molefraction value of molecule and diluents".format(
-                    total_mole_fraction
-                )
+                message = f"Total molefraction = {total_mole_fraction} of molecule and diluents less than 1. Please set appropriate molefraction value of molecule and diluents"
             raise MoleFractionError(message)
         self._diluent = diluents
 

@@ -479,12 +479,7 @@ def calc_spectrum(
                 return set(new_argument.keys()), new_argument_name
             elif set(new_argument.keys()) != set(molecule_reference_set):
                 raise ValueError(
-                    "Keys of molecules in the {0} dictionary must be the same as given in `{1}=`, i.e: {2}. Instead, we got {3}".format(
-                        new_argument_name,
-                        reference_name,
-                        molecule_reference_set,
-                        set(new_argument.keys()),
-                    )
+                    f"Keys of molecules in the {new_argument_name} dictionary must be the same as given in `{reference_name}=`, i.e: {molecule_reference_set}. Instead, we got {set(new_argument.keys())}",
                 )
             else:
                 return (
@@ -506,9 +501,7 @@ def calc_spectrum(
     if molecule_reference_set is None:
 
         raise ValueError(
-            "Please enter the molecule(s) to calculate in the `molecule=` argument or as a dictionary in the following: {0}".format(
-                list(DICT_INPUT_ARGUMENTS.keys())
-            )
+            f"Please enter the molecule(s) to calculate in the `molecule=` argument or as a dictionary in the following: {list(DICT_INPUT_ARGUMENTS.keys())}"
         )
 
     # Stage 2. Now we have the list of molecules. Let's get the input arguments for each of them.
@@ -641,6 +634,44 @@ def calc_spectrum(
         return s, factory_dict
     else:
         return s
+
+
+# %% Convenience function
+def spectrum_test(**kwargs):
+    """Generate the :ref:`first example spectrum <label_first_example>` with ::
+
+        import radis
+        s = radis.spectrum_test()
+        s.plot()
+
+    Other Parameters
+    ----------------
+    kwargs: sent to :py:func:`~radis.lbl.calc.calc_spectrum`
+
+
+    """
+    from radis import calc_spectrum
+
+    conditions = {
+        "wavenum_min": 1900,
+        "wavenum_max": 2300,
+        "molecule": "CO",
+        "isotope": "1,2,3",
+        "pressure": 1.01325,  # bar
+        "Tgas": 700,  # K
+        "mole_fraction": 0.1,
+        "path_length": 1,  # cm
+        "databank": "hitran",
+    }
+
+    conditions.update(kwargs)
+
+    if "wmin" in kwargs and "wmax" in kwargs:
+        conditions.pop("wavenum_min")
+        conditions.pop("wavenum_max")
+
+    s = calc_spectrum(**conditions)
+    return s
 
 
 def _calc_spectrum_one_molecule(
@@ -877,7 +908,7 @@ def _calc_spectrum_one_molecule(
         # Guess format
         if databank.endswith(".par"):
             if verbose:
-                print("Inferred {0} is a HITRAN-format file.".format(databank))
+                print(f"Inferred {databank} is a HITRAN-format file.")
             conditions["format"] = "hitran"
             # If non-equilibrium we'll also need to load the energy levels.
             if not _equilibrium:
@@ -887,19 +918,13 @@ def _calc_spectrum_one_molecule(
                 conditions["lvl_use_cached"] = use_cached
         elif databank.endswith(".h5") or databank.endswith(".hdf5"):
             if verbose:
-                print(
-                    "Inferred {0} is a HDF5 file with RADISDB columns format".format(
-                        databank
-                    )
-                )
+                print(f"Inferred {databank} is a HDF5 file with RADISDB columns format")
             conditions["format"] = "hdf5-radisdb"
             if not _equilibrium:
                 conditions["levelsfmt"] = "radis"
         else:
             raise ValueError(
-                "Couldnt infer the format of the line database file: {0}. ".format(
-                    databank
-                )
+                f"Couldnt infer the format of the line database file: {databank}. "
                 + "Create a user-defined database in your ~/radis.json file "
                 + "and define the format there. More information on "
                 + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
