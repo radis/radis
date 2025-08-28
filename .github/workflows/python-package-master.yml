@@ -1,30 +1,40 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+# This file is a copy of .github/workflows/python-package.yml but applies for the master branch only
+# In a few words, we perform the same actions as the develop branch but with many more versions of Python
 
 name: Python package
 
 on:
   push:
-    branches: [ "develop" ] #see python-package-master.yml for tests on master
+    branches: [ "master" ]
   pull_request:
-    branches: [ "develop" ]
+    branches: [ "master" ]
 
 jobs:
   build:
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 3
       matrix:
         include:
+          - os: ubuntu-latest
+            python-version: "3.9"
           - os: ubuntu-latest
             python-version: "3.10"
           - os: ubuntu-latest
             python-version: "3.11"
+          - os: ubuntu-latest
+            python-version: "3.12"
           #Issue with Windows and Mac OS, see https://github.com/radis/radis/issues/864
-          # - os: windows-latest
-          #   python-version: "3.10"
-          # - os: macos-latest
-          #   python-version: "3.10"
+          - os: windows-latest
+            python-version: "3.9"
+          - os: windows-latest
+            python-version: "3.10"
+        #   - os: windows-latest
+        #     python-version: "3.11"
+        #   - os: windows-latest
+        #     python-version: "3.12"
+          - os: macos-latest
+            python-version: "3.10"
     runs-on: ${{ matrix.os }}
 
     steps:
