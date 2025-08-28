@@ -30,6 +30,7 @@ def fetch_hitemp(
     output="pandas",
     parallel=True,
     database="most_recent",
+    simd_parser_co2=True,
 ):
     """Stream HITEMP file from HITRAN website. Unzip and build a HDF5 file directly.
 
@@ -85,6 +86,11 @@ def fetch_hitemp(
         - A four-digit year (e.g., `"2010"`): Selects a specific version, such as the 2010 or 2019 database for CO.
 
         If not provided, the default is `"most_recent"`.
+    simd_parser_co2: bool
+        if ``True``, uses the high-performance SIMD-accelerated parser for CO2 molecules.
+        This provides 10-100x speedup for large HITEMP CO2 databases but requires
+        AVX2/SSE4.2 CPU support. If ``False``, uses the standard Python parser.
+        Default ``True``.
     Returns
     -------
     df: pd.DataFrame
@@ -139,6 +145,32 @@ def fetch_hitemp(
             f"The database '{database}' is not recognized as an available HITEMP database for '{molecule}'. Please choose from the following available years: {available_years}."
         )
 
+    if isotope and type(isotope) == int:
+        isotope = str(isotope)
+
+    if molecule == "CO2":
+        from radis.api.hitempapi import download_and_decompress_CO2_into_df
+
+        # Use pytables engine for CO2 to ensure consistent caching behavior
+        if engine == "default":
+            engine = "pytables"
+
+        df, local_paths = download_and_decompress_CO2_into_df(
+            local_databases=local_databases,
+            load_wavenum_min=load_wavenum_min,
+            load_wavenum_max=load_wavenum_max,
+            columns=columns,
+            isotope=isotope,
+            verbose=verbose,
+            engine=engine,
+            output=output,
+            simd_parser_co2=simd_parser_co2,
+        )
+
+        if return_local_path:
+            return df, local_paths
+        return df
+
     if r"{molecule}" in databank_name:
         databank_name = databank_name.format(**{"molecule": molecule})
         databank_name += "-2010" if database == "2010" else ""
@@ -177,7 +209,7 @@ def fetch_hitemp(
                 'Changes are required to the local database, and hence updating the registered entry, but "ALLOW_OVERWRITE" is False. Set `radis.config["ALLOW_OVERWRITE"]=True` to allow the changes to be made and config file to be automatically updated accordingly.'
             )
 
-    # Delete files if needed:
+    # Delete files if needed: For H2O, we keep only the relevant files for a given wavenumber range.
     relevant_files = ldb.keep_only_relevant(
         local_files, load_wavenum_min, load_wavenum_max, verbose=(verbose > 1)
     )
@@ -221,15 +253,17 @@ def fetch_hitemp(
     # Download files
     if downloaded:
         if len(urlnames) == 0:
-            urlnames = ldb.fetch_urlnames()
+            urlnames = (
+                ldb.fetch_urlnames()
+            )  # Note: It downloads the files as well (except for H2O)
         filesmap = dict(zip(local_files, urlnames))
         download_urls = [filesmap[k] for k in download_files]
         ldb.download_and_parse(download_urls, download_files)
 
         # Done: add final checks
-        if molecule not in ["CO2", "H2O"]:
+        if molecule not in ["CO2", "H2O"]:  # CO2 because it is partially downloaded
             # check on the created file that all lines are there
-            # ... (for CO2, H2O, database is split in many files so it's not possible)
+            # ... (for H2O, database is split in many files so it's not possible)
             nrows = ldb.get_nrows(local_files[0])
             # assert nrows == Nlines
             _, Ntotal_lines_expected, _, _ = ldb.fetch_url_Nlines_wmin_wmax()
@@ -252,9 +286,6 @@ def fetch_hitemp(
     files_loaded = ldb.keep_only_relevant(
         local_files, load_wavenum_min, load_wavenum_max, verbose=verbose
     )
-
-    if isotope and type(isotope) == int:
-        isotope = str(isotope)
 
     df = ldb.load(
         files_loaded,  # filter other files,

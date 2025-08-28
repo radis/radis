@@ -3198,7 +3198,6 @@ class DatabankLoader(object):
         isotope: int
         elec_state: str
         """
-
         parsum = self.parsum_tab[molecule][isotope][elec_state]
 
         # helps IDE find methods

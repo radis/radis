@@ -18,26 +18,51 @@ from os.path import basename, commonpath, join
 from typing import Union
 
 import numpy as np
+import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from cryptography.fernet import Fernet
 from tqdm import tqdm
 
+from radis.api.hdf5 import update_pytables_to_vaex
+from radis.db.hitemp_co2 import partial_download_co2_chunk
 from radis.misc.config import CONFIG_PATH_JSON, getDatabankEntries
 from radis.misc.warning import DatabaseAlreadyExists
+from radis.tools.read_wav_index import key_pairs
 
 try:
     from .dbmanager import DatabaseManager
-    from .hitranapi import columns_2004, parse_global_quanta, parse_local_quanta
+    from .hdf5 import DataFileManager
+    from .hitranapi import (
+        columns_2004,
+        get_molecule,
+        parse_global_quanta,
+        parse_hitran_file,
+        parse_local_quanta,
+        post_process_hitran_data,
+    )
     from .tools import (
         _create_dtype,
         _get_linereturnformat,
         _ndarray2df,
         replace_PQR_with_m101,
     )
+
+    # Import SIMD parser if available
+    try:
+        from ..gpu.vulkan.bin.simd_parser import (
+            compile_simd_parser_if_needed,
+            is_simd_parser_available,
+            parse_hitran_simd,
+        )
+
+        SIMD_PARSER_AVAILABLE = True
+    except ImportError:
+        SIMD_PARSER_AVAILABLE = False
 except ImportError:  # ran from here
     if __name__ == "__main__":  # running from this file, as a script
         from radis.api.dbmanager import DatabaseManager
+        from radis.api.hdf5 import DataFileManager
         from radis.api.hitranapi import (
             columns_2004,
             parse_global_quanta,
@@ -56,6 +81,24 @@ from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
 from radis.misc.progress_bar import ProgressBar
 
 HITEMP_MOLECULES = ["H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"]
+
+
+def read_config():
+    """
+    Load the RADIS configuration from the JSON file.
+
+    Returns
+    -------
+    dict
+        The configuration dictionary loaded from CONFIG_PATH_JSON,
+        or an empty dictionary if the file does not exist.
+    """
+    if os.path.exists(CONFIG_PATH_JSON):
+        with open(CONFIG_PATH_JSON, "r") as f:
+            config = json.load(f)
+    else:
+        config = {}
+    return config
 
 
 def keep_only_relevant(
@@ -251,11 +294,7 @@ def setup_credentials():
 def get_encryption_key():
     """Get or create encryption key for HITRAN credentials"""
     # Read existing radis.json
-    if os.path.exists(CONFIG_PATH_JSON):
-        with open(CONFIG_PATH_JSON, "r") as f:
-            config = json.load(f)
-    else:
-        config = {}
+    config = read_config()
 
     # Check if encryption key exists
     if "credentials" in config and "ENCRYPTION_KEY" in config["credentials"]:
@@ -302,11 +341,7 @@ def store_credentials(email, password):
     encrypted_password = encrypt_password(password)
 
     # Read existing radis.json
-    if os.path.exists(CONFIG_PATH_JSON):
-        with open(CONFIG_PATH_JSON, "r") as f:
-            config = json.load(f)
-    else:
-        config = {}
+    config = read_config()
 
     # Add credentials section if it doesn't exist
     if "credentials" not in config:
@@ -363,10 +398,8 @@ def login_to_hitran(verbose=False):
         return response.status_code == 302 or "Logout" in response.text
 
     # Check if credentials exist in radis.json
-    if os.path.exists(CONFIG_PATH_JSON):
-        with open(CONFIG_PATH_JSON, "r") as f:
-            config = json.load(f)
-
+    config = read_config()
+    if config:
         # compatiplty with old versions
         if "credentials" in config:
             if config["credentials"].get("HITRAN_EMAIL"):
@@ -375,7 +408,6 @@ def login_to_hitran(verbose=False):
                 # Save
                 with open(CONFIG_PATH_JSON, "w") as f:
                     json.dump(config, f, indent=4)
-                print("tosss ", config["credentials"])
             else:
                 encrypted_email = config["credentials"].get("HITRAN_EMAIL")
             encrypted_password = config["credentials"].get("HITRAN_PASSWORD")
@@ -422,11 +454,11 @@ def login_to_hitran(verbose=False):
 
 
 def download_hitemp_file(session, file_url, output_filename, verbose=False):
-    print(f"Starting download from {file_url} to {output_filename}")
+    if verbose:
+        print(f"Starting download from {file_url}")
     file_response = session.get(file_url, stream=True)
     if file_response.status_code == 200:
         total_size = int(file_response.headers.get("content-length", 0))
-        print(f"Total size to download: {total_size} bytes")
         file_size_in_GB = total_size / (1024**3)
         from radis import config
 
@@ -435,38 +467,354 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
         if file_size_in_GB > MAX_SIZE_GB:
             warning_msg = (
                 f"The total download size is {file_size_in_GB:.2f} GB, which will take time and potential a significant portion of your disk memory."
-                "To prevent this warning, you increase the limit using `radis.config['WARN_LARGE_DOWNLOAD_ABOVE_X_GB'] =  1`."
+                "To prevent this warning, you can increase the limit using `radis.config['WARN_LARGE_DOWNLOAD_ABOVE_X_GB'] =  1`."
             )
             warnings.warn(warning_msg, UserWarning)
 
-        with (
-            open(output_filename, "wb") as f,
-            tqdm(
-                total=total_size, unit="B", unit_scale=True, desc=output_filename
-            ) as pbar,
-        ):
-            for chunk in file_response.iter_content(chunk_size=8192):
-                if chunk:
+        with open(output_filename, "wb") as f:
+            with tqdm(
+                total=total_size,
+                unit="B",
+                unit_scale=True,
+                unit_divisor=1024,
+                desc="Downloading",
+            ) as pbar:
+                for chunk in file_response.iter_content(chunk_size=8192):
                     f.write(chunk)
                     pbar.update(len(chunk))
 
-        print("\nDownload complete!")
+        if verbose:
+            print("Download complete")
+        return output_filename
     else:
-        print(f"Download failed: {file_response.status_code}")
-        print("Response:", file_response.text[:500])
+        if verbose:
+            print(f"Download failed: {file_response.status_code}")
         raise Warning(
             f"Failed to download {file_url}. Please download manually and place it in the following location:"
         )
-        temp_folder = os.path.join(
-            os.path.dirname(output_filename),
-            "downloads__can_be_deleted",
-            "hitran.org",
-            "files",
-            "HITEMP",
-            "HITEMP-2024",
-            "CO2_line_list",
+
+
+def _fcache_file_name(fname, engine):
+
+    fcache = DataFileManager(engine).cache_file(fname)
+
+    return fcache
+
+
+def _load_cache_file(fcache, engine="pytables", columns=None):
+    """Load cache file if it exists and is valid."""
+    # Check if cache file exists
+    if not os.path.exists(fcache):
+        return None
+
+    # Start reading the cache file
+    manager = DataFileManager(engine)
+    df = manager.read(fcache, columns=columns, key="default")
+
+    return df
+
+
+def parse_one_CO2_block(
+    fname,
+    cache=True,
+    verbose=True,
+    columns=None,
+    engine="pytables",
+    output="pandas",
+    parse_quanta=True,
+    wav_range=None,
+    use_simd=None,
+):
+    """
+    Parse a CO2 .par file block into a DataFrame with caching support.
+
+    Parameters
+    ----------
+    fname : str
+        Path to the .par file
+    cache : bool
+        Whether to use/save cached version. Setting `cache = True` will convert and save the .par file to a .h5 or .hdf5 cache file (default True).
+    verbose : bool
+        Print progress messages (default True)
+    engine : str
+        Cache format: 'pytables' (.h5) or 'vaex' (.hdf5) (default 'pytables')
+    output : str
+        Output format: 'pandas' or 'vaex' (default 'pandas')
+    parse_quanta : bool
+        Parse quantum numbers for non-LTE calculations (default True)
+    use_simd : bool or None, optional
+        Whether to use the SIMD-accelerated parser for improved performance.
+        If None (default), automatically detects and uses SIMD parser if available.
+        If True, forces SIMD parser (raises error if not available).
+        If False, uses standard Python parser.
+
+    Returns
+    -------
+    DataFrame or other specified output
+        The parsed data from the `.par` file, in the format specified by `output`.
+    """
+    fcache = _fcache_file_name(fname, engine)
+
+    if cache and os.path.exists(fcache):
+        # Start reading the cache file
+        df = _load_cache_file(fcache, engine=engine, columns=columns)
+        if df is not None:
+            if verbose:
+                print(f"Loaded cached file {fcache}")
+            return df
+
+    # Detect the molecule by reading the start of the file
+    with open(fname) as f:
+        mol = get_molecule(int(f.read(2)))
+
+    # Set default columns if None provided
+    columns = columns_2004
+
+    df = parse_hitran_file(fname, columns, output=output, molecule=mol)
+    df = post_process_hitran_data(
+        df,
+        molecule=mol,
+        dataframe_type=output,
+        parse_quanta=parse_quanta,
+    )
+    if wav_range:
+        wav_min, wav_max = wav_range
+        df = df[(df["wav"] >= wav_min) & (df["wav"] <= wav_max)]
+
+    # cached file mode but cached file doesn't exist yet (else we had returned)
+    if cache:
+        fcache = _fcache_file_name(fname, engine)
+        if verbose:
+            print(f"Generating cache file {fcache}")
+        try:
+            manager = DataFileManager(engine)
+            manager.write(fcache, df, key="default", append=False)
+        except PermissionError:
+            if verbose:
+                print("An error occurred in cache file generation. Check access rights")
+            pass
+
+            return df
+
+
+def read_and_write_chunked_for_CO2(
+    load_wavenum_max,
+    load_wavenum_min,
+    columns=None,
+    isotope=None,
+    engine="pytables",
+    output="pandas",
+    verbose=True,
+    local_databases=None,
+):
+    """
+    Download, Parse and Cache CO2 data chunks for specified wavenumber range.
+
+    Parameters
+    ----------
+    load_wavenum_min, load_wavenum_max : float
+        Wavenumber range to load (cm⁻¹)
+    columns : list, optional
+        Columns to include in output
+    isotope : str, optional
+        Isotope filter (e.g., "1", "2", "1,2")
+    engine : str
+        Cache format: 'pytables' or 'vaex' (default 'pytables')
+    output : str
+        Output format: 'pandas' or 'vaex' (default 'pandas')
+    verbose : bool
+        Print progress messages (default True)
+    local_databases : str, optional
+        Custom cache directory
+
+    Returns
+    -------
+    tuple
+        (DataFrame, list of local file paths)
+    """
+
+    config = read_config()
+    default_download_path = os.path.expanduser(config["DEFAULT_DOWNLOAD_PATH"])
+
+    if local_databases:
+        hitemp_CO2_download_path = local_databases
+    else:
+        hitemp_CO2_download_path = join(default_download_path, "hitemp", "co2")
+
+    def _append_dataframe(df_to_append):
+        """Filter isotopes and append dataframe to results."""
+        if isotope is not None:
+            df_to_append = df_to_append[df_to_append["iso"].isin(isotope)]
+        dataframes.append(df_to_append)
+
+    local_paths = []  # to store local paths of relevant decompressed files
+    dataframes = []
+
+    wav_pairs = key_pairs(load_wavenum_min, load_wavenum_max)
+    session = login_to_hitran()
+
+    # Download and decompress chunks
+    if verbose:
+        print(
+            f"Processing {len(wav_pairs)} chunks for range {load_wavenum_min}-{load_wavenum_max} cm⁻¹"
         )
-        print(f"{file_url} ==> {temp_folder} \n")
+
+    with tqdm(
+        total=len(wav_pairs), desc="Downloading chunks", disable=not verbose
+    ) as pbar:
+        for start_wavno, end_wavno in wav_pairs:
+            fname = f"CO2_02_{int(start_wavno):05d}-{int(end_wavno):05d}_HITEMP2024.par"
+            out_decompressed_file = join(hitemp_CO2_download_path, fname)
+            fcache = _fcache_file_name(out_decompressed_file, engine)
+
+            if engine == "vaex":
+                # Convert Path object to string before string operations
+                fcache_str = str(fcache)
+                if os.path.exists(fcache_str.replace(".hdf5", ".h5")):
+                    update_pytables_to_vaex(fcache_str.replace(".hdf5", ".h5"))
+
+            local_paths.append(out_decompressed_file)
+
+            if os.path.exists(fcache) or os.path.exists(out_decompressed_file):
+                pbar.set_postfix_str("cached")
+            else:
+                pbar.set_postfix_str("downloading")
+                partial_download_co2_chunk(
+                    start_wavno,
+                    end_wavno,
+                    session,
+                    out_decompressed_file,
+                    verbose=verbose,
+                )
+
+            pbar.update(1)
+
+    # Parse or cache the chunks
+    with tqdm(
+        total=len(local_paths), desc="Processing chunks", disable=not verbose
+    ) as pbar:
+        for i, file in enumerate(local_paths):
+            file_name = _fcache_file_name(file, engine)
+            cached_df = _load_cache_file(file_name, engine=engine, columns=columns)
+
+            if cached_df is not None:
+                _append_dataframe(cached_df)
+                pbar.set_postfix_str("from cache")
+            else:
+                pbar.set_postfix_str("parsing")
+                df = parse_one_CO2_block(
+                    file,
+                    columns=columns,
+                    engine=engine,
+                    output=output,
+                    wav_range=wav_pairs[i],
+                )
+                _append_dataframe(df)
+                os.remove(file)
+
+            pbar.update(1)
+
+    # Combine DataFrames
+    if dataframes:
+        if verbose:
+            print("Combining parsed data from all chunks...")
+
+        if output == "vaex":
+            import vaex
+
+            vaex_dataframes = []
+            for df in dataframes:
+                if hasattr(df, "to_pandas_df"):
+                    vaex_dataframes.append(df)
+                else:
+                    vaex_dataframes.append(vaex.from_pandas(df))
+            combined_df = vaex.concat(vaex_dataframes)
+        else:
+            pandas_dataframes = []
+            for df in dataframes:
+                if hasattr(df, "to_pandas_df"):
+                    pandas_dataframes.append(df.to_pandas_df())
+                else:
+                    pandas_dataframes.append(df)
+            combined_df = pd.concat(pandas_dataframes, ignore_index=True)
+    else:
+        combined_df = pd.DataFrame()
+
+    return combined_df, local_paths
+
+
+def download_and_decompress_CO2_into_df(
+    local_databases=None,
+    load_wavenum_min=None,
+    load_wavenum_max=None,
+    isotope=None,
+    columns=None,
+    verbose=True,
+    engine="pytables",
+    output="pandas",
+    simd_parser_co2=True,
+):
+    """
+    This function handles downloading the HITEMP CO2 database. The full 2024 database is downloaded in smaller files of approximately 50-70 MB (500 MB decompressed chunks in h5 format), locating the appropriate data chunk based on the provided wavenumber range and reading the relevant data into a DataFrame.
+
+    Parameters
+    ----------
+    load_wavenum_min : float or None, optional
+        Minimum wavenumber to load from the database. If None, loads from the beginning.
+    load_wavenum_max : float or None, optional
+        Maximum wavenumber to load from the database. If None, loads to the end.
+    verbose : bool, default True
+        If True, prints progress and status messages.
+    isotope: str, int or None
+        load only certain isotopes : ``'2'``, ``'1,2'``, etc. If ``None``, loads everything. Default ``None``.
+    columns: list of str or None
+        List of columns to load from the database. If None, loads all columns. Default ``None``.
+    engine : str, default "pytables"
+        Engine to use for reading and writing data. Options may include "pytables".
+    output : str, default "pandas"
+        Output format for the data. Default is "pandas" DataFrame.
+    local_databases : str or None, optional
+        Directory to store/read local database files. If None, uses the default directory.
+    Returns
+    -------
+    DataFrame or object
+        The loaded data in the specified output format (default: pandas DataFrame).
+
+    Notes
+    -----
+    - Requires the HITEMP CO2 database to be accessible or downloadable.
+    """
+
+    # Convert "default" engine to "pytables" for consistent caching
+    if engine == "default":
+        engine = "pytables"
+
+    if isotope is not None:
+        isotope = [int(i) for i in isotope.split(",")]
+
+    original_columns = columns
+    if columns is not None and "iso" not in columns:
+        columns = columns + ["iso"]
+
+    combined_df, local_files = read_and_write_chunked_for_CO2(
+        load_wavenum_max,
+        load_wavenum_min,
+        columns=columns,
+        isotope=isotope,
+        engine=engine,
+        output=output,
+        verbose=verbose,
+        local_databases=local_databases,
+    )
+    combined_df = combined_df[
+        (combined_df["wav"] >= load_wavenum_min)
+        & (combined_df["wav"] <= load_wavenum_max)
+    ]
+
+    if original_columns is not None and "iso" not in original_columns:
+        combined_df = combined_df.drop(columns=["iso"])
+
+    return combined_df, local_files
 
 
 class HITEMPDatabaseManager(DatabaseManager):
@@ -661,7 +1009,7 @@ class HITEMPDatabaseManager(DatabaseManager):
     def keep_only_relevant(
         self, inputfiles, wavenum_min=None, wavenum_max=None, verbose=True
     ) -> list:
-        r"""For CO2 and H2O, return only relevant files for given wavenumber range.
+        r"""For H2O, return only relevant files for given wavenumber range.
 
         If other molecule, return the file anyway.
         see :py:func:`radis.api.hitempapi.keep_only_relevant`"""
