@@ -454,19 +454,20 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
 
         if file_size_in_GB > MAX_SIZE_GB:
             warning_msg = (
-                f"The total download size is {file_size_in_GB:.2f} GB, which will take time and potential a significant portion of your disk memory.\n"
+                f"The total download size is {file_size_in_GB:.2f} GB, which will take time and potential a significant portion of your disk memory."
                 "To prevent this warning, you can increase the limit using `radis.config['WARN_LARGE_DOWNLOAD_ABOVE_X_GB'] =  1`."
             )
             warnings.warn(warning_msg, UserWarning)
 
-        with (
-            open(output_filename, "wb") as f,
-            tqdm(
-                total=total_size, unit="B", unit_scale=True, desc=output_filename
-            ) as pbar,
-        ):
-            for chunk in file_response.iter_content(chunk_size=8192):
-                if chunk:
+        with open(output_filename, "wb") as f:
+            with tqdm(
+                total=total_size,
+                unit="B",
+                unit_scale=True,
+                unit_divisor=1024,
+                desc="Downloading",
+            ) as pbar:
+                for chunk in file_response.iter_content(chunk_size=8192):
                     f.write(chunk)
                     pbar.update(len(chunk))
 
@@ -639,7 +640,6 @@ def read_and_write_chunked_for_CO2(
             fname = f"CO2_02_{int(start_wavno):05d}-{int(end_wavno):05d}_HITEMP2024.par"
             out_decompressed_file = join(hitemp_CO2_download_path, fname)
             fcache = _fcache_file_name(out_decompressed_file, engine)
-            print(f"printing fcache name {fcache}")
 
             if engine == "vaex":
                 # Convert Path object to string before string operations
@@ -654,7 +654,11 @@ def read_and_write_chunked_for_CO2(
             else:
                 pbar.set_postfix_str("downloading")
                 partial_download_co2_chunk(
-                    start_wavno, end_wavno, session, out_decompressed_file
+                    start_wavno,
+                    end_wavno,
+                    session,
+                    out_decompressed_file,
+                    verbose=verbose,
                 )
 
             pbar.update(1)

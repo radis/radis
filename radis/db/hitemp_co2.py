@@ -36,7 +36,7 @@ pad_bufs = {
 }
 
 
-def get_bz2(session, file_url, offset=None, size=None):
+def get_bz2(session, file_url, offset=None, size=None, verbose=True):
     """
     Download a byte range from a remote bzip2 file using HTTP range requests.
 
@@ -48,6 +48,8 @@ def get_bz2(session, file_url, offset=None, size=None):
         URL of the remote file
     offset, size : int, optional
         Byte range to download. If None, downloads entire file.
+    verbose : bool, default True
+        If True, prints progress and status messages
 
     Returns
     -------
@@ -70,16 +72,20 @@ def get_bz2(session, file_url, offset=None, size=None):
             unit="B",
             unit_scale=True,
             unit_divisor=1024,
+            disable=not verbose,
         ) as bar:
             for chunk in r.iter_content(chunk_size=8192):
                 buf.write(chunk)
                 bar.update(len(chunk))
 
-    print("Chunk Download complete!")
+    if verbose:
+        print("Chunk Download complete")
     return buf.getvalue()
 
 
-def partial_download_co2_chunk(target_wn_min, target_wn_max, session, output_file_path):
+def partial_download_co2_chunk(
+    target_wn_min, target_wn_max, session, output_file_path, verbose=True
+):
     """
     Download and decompress a specific wavenumber range from HITEMP CO2 database.
 
@@ -93,8 +99,11 @@ def partial_download_co2_chunk(target_wn_min, target_wn_max, session, output_fil
         Authenticated HITRAN session
     output_file_path : str
         Where to save the decompressed data
+    verbose : bool, default True
+        If True, prints progress and status messages
     """
-    print(f"Target wavenumber range: {target_wn_min} to {target_wn_max} cm⁻¹")
+    if verbose:
+        print(f"Target wavenumber range: {target_wn_min} to {target_wn_max} cm⁻¹")
 
     wavenumber_path = os.path.join(project_root, "db", "wavenumber_arr.npy")
     wavenumbers = np.load(wavenumber_path)
@@ -105,10 +114,11 @@ def partial_download_co2_chunk(target_wn_min, target_wn_max, session, output_fil
     i_min = max(0, min(i_min - 1, len(offsets) - 1))
     i_max = min(i_max + 1, len(offsets) - 1)
 
-    print(f"Found target in compressed blocks: {i_min} to {i_max}")
-    print(
-        f"Wavenumber range: {wavenumbers[i_min]:.6f} to {wavenumbers[i_max]:.6f} cm⁻¹"
-    )
+    if verbose:
+        print(f"Found target in compressed blocks: {i_min} to {i_max}")
+        print(
+            f"Wavenumber range: {wavenumbers[i_min]:.6f} to {wavenumbers[i_max]:.6f} cm⁻¹"
+        )
 
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
 
@@ -116,7 +126,7 @@ def partial_download_co2_chunk(target_wn_min, target_wn_max, session, output_fil
     size = offsets[i_max + 1] - offsets[i_min]
 
     file_url = "https://hitran.org/files/HITEMP/bzip2format/02_HITEMP2024.par.bz2"
-    buf = get_bz2(session, file_url, offset=offset, size=size)
+    buf = get_bz2(session, file_url, offset=offset, size=size, verbose=verbose)
 
     # Perform block-aligned bzip2 decompression
     pad_index_to_key = [65, 130, 5, 10, 21, 43, 86, 172]
@@ -138,4 +148,5 @@ def partial_download_co2_chunk(target_wn_min, target_wn_max, session, output_fil
 
     with open(output_file_path, "wb") as fw:
         fw.write(data)
-    print(f"Written decompressed data to {output_file_path}")
+    if verbose:
+        print(f"Written decompressed data to {output_file_path}")
