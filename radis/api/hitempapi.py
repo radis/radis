@@ -611,9 +611,7 @@ def read_and_write_chunked_for_CO2(
     if local_databases:
         hitemp_CO2_download_path = local_databases
     else:
-        hitemp_CO2_download_path = join(
-            default_download_path, "hitemp", "co2", "decompressed"
-        )
+        hitemp_CO2_download_path = join(default_download_path, "hitemp", "co2")
 
     def _append_dataframe(df_to_append):
         """Filter isotopes and append dataframe to results."""
