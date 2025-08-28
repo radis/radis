@@ -52,7 +52,6 @@ try:
     try:
         from ..gpu.vulkan.bin.simd_parser import (
             compile_simd_parser_if_needed,
-            is_simd_parser_available,
             parse_hitran_simd,
         )
 
@@ -570,7 +569,25 @@ def parse_one_CO2_block(
     # Set default columns if None provided
     columns = columns_2004
 
-    df = parse_hitran_file(fname, columns, output=output, molecule=mol)
+    use_simd_for_file = use_simd
+    if use_simd_for_file is None:
+        use_simd_for_file = SIMD_PARSER_AVAILABLE
+
+    if use_simd_for_file:
+        if not SIMD_PARSER_AVAILABLE:
+            if use_simd is True:  # User explicitly requested SIMD
+                raise RuntimeError("SIMD parser requested but not available")
+            use_simd_for_file = False
+
+    if use_simd_for_file and verbose:
+        print(f"Using SIMD-accelerated parser for {fname}")
+
+    if use_simd_for_file:
+        compile_simd_parser_if_needed()
+        df = parse_hitran_simd(fname, verbose=verbose)
+    else:
+        df = parse_hitran_file(fname, columns, output=output, molecule=mol)
+
     df = post_process_hitran_data(
         df,
         molecule=mol,
@@ -594,7 +611,7 @@ def parse_one_CO2_block(
                 print("An error occurred in cache file generation. Check access rights")
             pass
 
-            return df
+    return df
 
 
 def read_and_write_chunked_for_CO2(
@@ -606,6 +623,7 @@ def read_and_write_chunked_for_CO2(
     output="pandas",
     verbose=True,
     local_databases=None,
+    use_simd=True,
 ):
     """
     Download, Parse and Cache CO2 data chunks for specified wavenumber range.
@@ -626,6 +644,10 @@ def read_and_write_chunked_for_CO2(
         Print progress messages (default True)
     local_databases : str, optional
         Custom cache directory
+    use_simd : bool
+        Whether to use the SIMD-accelerated C++ parser (default True)
+    keep_par_files : bool
+        Whether to keep the downloaded .par files after parsing (default False)
 
     Returns
     -------
@@ -702,13 +724,21 @@ def read_and_write_chunked_for_CO2(
                 pbar.set_postfix_str("from cache")
             else:
                 pbar.set_postfix_str("parsing")
+                import time
+
+                t = time.time()
                 df = parse_one_CO2_block(
                     file,
                     columns=columns,
                     engine=engine,
                     output=output,
                     wav_range=wav_pairs[i],
+                    use_simd=use_simd,  # Use the parameter passed to this function
                 )
+                if verbose:
+                    print(
+                        f"Time taken to parse chunk {i}: {time.time() - t:.2f} seconds"
+                    )
                 _append_dataframe(df)
                 os.remove(file)
 
@@ -752,7 +782,7 @@ def download_and_decompress_CO2_into_df(
     verbose=True,
     engine="pytables",
     output="pandas",
-    simd_parser_co2=True,
+    use_simd=True,
 ):
     """
     This function handles downloading the HITEMP CO2 database. The full 2024 database is downloaded in smaller files of approximately 50-70 MB (500 MB decompressed chunks in h5 format), locating the appropriate data chunk based on the provided wavenumber range and reading the relevant data into a DataFrame.
@@ -775,6 +805,8 @@ def download_and_decompress_CO2_into_df(
         Output format for the data. Default is "pandas" DataFrame.
     local_databases : str or None, optional
         Directory to store/read local database files. If None, uses the default directory.
+    use_simd : bool, default True
+        Whether to use the SIMD-accelerated C++ parser for improved performance.
     Returns
     -------
     DataFrame or object
@@ -805,6 +837,7 @@ def download_and_decompress_CO2_into_df(
         output=output,
         verbose=verbose,
         local_databases=local_databases,
+        use_simd=use_simd,
     )
     combined_df = combined_df[
         (combined_df["wav"] >= load_wavenum_min)
