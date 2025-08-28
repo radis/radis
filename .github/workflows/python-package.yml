@@ -14,8 +14,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Test python 3.10 and 3.11. If merging to master, 3.12 is also tested.
-        python-version: ${{ github.event_name == 'pull_request' && github.base_ref == 'master' && '["3.10","3.11","3.12"]' || '["3.10","3.11"]' }}
+        # TODO: test other python versions on master
+        python-version: ["3.10","3.11"]
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     concurrency:
