@@ -1,5 +1,5 @@
 import os.path
-from warnings import warn
+from ctypes import sizeof
 
 import numpy as np
 from scipy.constants import N_A, c, k
@@ -13,387 +13,368 @@ from radis.gpu.params import (
     set_L_params,
     set_pTQ,
 )
-from radis.gpu.structs import initData_t, iterData_t
+from radis.gpu.structs import initData_t, iterData_t, workGroupSizeArray_t
 from radis.misc.utils import getProjectRoot
-from radis.misc.warning import NoGPUWarning
 
-gpu_mod = None
-init_h = initData_t()
-iter_h = iterData_t()
+shader_path = os.path.join(getProjectRoot(), "gpu", "vulkan", "shaders")
 
 
-def gpu_init(
-    vmin,
-    Nv,
-    dv,
-    dxG,
-    dxL,
-    v0,
-    da,
-    na,
-    S0,
-    El,
-    gamma_arr,
-    iso,
-    Mm_arr,
-    Q_intp_list,
-    verbose=0,
-    backend="gpu-cuda",
-):
-    """
-    Initialize GPU-based calculation for emission and absorption spectra in spectroscopy.
+def next_fast_len_even(n):
+    # Find an FFT length that can be processed quickly.
+    # The length needs to be divisible by 2 because of the
+    # length doubling for prevention of circular convolution.
+    n = next_fast_len(n)
+    while n & 1:
+        n = next_fast_len(n + 1)
+    return n
 
-    Parameters
-    ----------
-    vmin : float
-        Minimum value frequency/wavenumber axis
-    Nv : int
-        Total number of frequency/wavenumber points.
-    dv : float
-        Stepsize of frequency/wavenumber axis (called wstep elsewhere in RADIS).
-    dxG : float
-        Relative grid spacing for Gaussian lineshapes.
-    dxL : float
-        Relative grid spacing for Lorentzian lineshapes.
-    v0 : numpy.ndarray[np.float32]
-        Array of line center frequencies (in cm-1).
-    da : numpy.ndarray[np.float32]
-        Pressure shift  (in cm-1.atm-1).
-    na : numpy.ndarray[np.float32]
-        Temperature dependency of Lorentzian widths
-    S0 : numpy.ndarray[np.float32]
-        Line intensity scaling factors.
-    El : numpy.ndarray[np.float32]
-        Lower level energy levels.
-    gamma_arr : numpy.ndarray[np.float32]
-        (m,n) shaped array with Lorentzian width parameters, with n the number of lines in the database
-        and m the number of collision partners included. This is usually at least two,
-        with the first (m=0) always self broadening and the last (m=-1) always air broadening.
-    iso : numpy.ndarray[np.uint8]
-        Index of isotopologue.
-    Mm_arr : numpy.ndarray
-        Molecular masses for all isotopologues in the database (Mm_arr[0] is always 0).
-    Q_intp_list : list
-        List of Q branch interpolators.
-    verbose : bool, optional
-        Print verbosity level. Default is 0.
-    backend :  ``'gpu-cuda'``, ``'cpu-cuda'``, optional
-        Which backend to use; currently only CUDA backends (Nvidia) are supported. ``'cpu-cuda'`` runs the kernel on CPU. Default is ``'gpu-cuda'``.
 
-    Returns
-    -------
-    init_h : radis.gpu.structs.initData_t
-        structue with parameters used for GPU computation that are constant
-        during iterations.
-    """
+from radis.gpu.vulkan.vulkan_compute_lib import GPUApplication, GPUBuffer
 
-    global gpu_mod
-    if gpu_mod is not None:
-        warn("Only a single GPU context allowed; please call gpu_exit() first.")
-        return
 
-    ## First a GPU context is created, then the .ptx file is read
-    ## and made available as the GPUModule object gpu_mod
-    ## If this fails, None is returned and calculations are
-    ## defaulted to CPU emulation
+class gpuApp(GPUApplication):
+    def __init__(
+        self,
+        vmin,
+        Nv,
+        dv,
+        dxG,
+        dxL,
+        v0,
+        da,
+        na,
+        S0,
+        El,
+        gamma_arr,
+        iso,
+        Mm_arr,
+        Q_intp_list,
+        verbose=0,
+        device_id=0,
+    ):
+        """
+        Initialize gpuApp object required for GPU calculations
 
-    if backend == "cpu-cuda":
-        from radis.gpu.cuda.emulate import CuContext as GPUContext
+        Parameters
+        ----------
+        vmin : float
+            Minimum value frequency/wavenumber axis
+        Nv : int
+            Total number of frequency/wavenumber points.
+        dv : float
+            Stepsize of frequency/wavenumber axis (called wstep elsewhere in RADIS).
+        dxG : float
+            Relative grid spacing for Gaussian lineshapes.
+        dxL : float
+            Relative grid spacing for Lorentzian lineshapes.
+        v0 : numpy.ndarray[np.float32]
+            Array of line center frequencies (in cm-1).
+        da : numpy.ndarray[np.float32]
+            Pressure shift  (in cm-1.atm-1).
+        na : numpy.ndarray[np.float32]
+            Temperature dependency of Lorentzian widths
+        S0 : numpy.ndarray[np.float32]
+            Line intensity scaling factors.
+        El : numpy.ndarray[np.float32]
+            Lower level energy levels.
+        gamma_arr : numpy.ndarray[np.float32]
+            (m,n) shaped array with Lorentzian width parameters, with n the number of lines in the database
+            and m the number of collision partners included. This is usually at least two,
+            with the first (m=0) always self broadening and the last (m=-1) always air broadening.
+        iso : numpy.ndarray[np.uint32]
+            Index of isotopologue.
+        Mm_arr : numpy.ndarray
+            Molecular masses for all isotopologues in the database (Mm_arr[0] is always 0).
+        Q_intp_list : list
+            List of Q branch interpolators.
+        verbose : bool, optional
+            Print verbosity level. Default is 0.
+        device_id: int, str
+            Select the GPU device. If ``int``, specifies the device index, which is printed for convenience during GPU initialization with backend='vulkan' (default).
+            If ``str``, return the first device that includes the specified string (case in-sesitive). If not found, return the device at index 0.
+            default = 0
 
-        ctx = GPUContext.Open(verbose=verbose)
-        import radis.gpu.cuda.emulate as backend_module
+        """
 
-    else:
-        # Try to load GPU
-        from radis.gpu.cuda.driver import CuContext as GPUContext
+        self.backend = "vulkan"
 
-        ctx = GPUContext.Open(verbose=verbose)  # Set verbose to >=2 for comments
-        if ctx is None:
-            warn(
-                NoGPUWarning(
-                    "Failed to load CUDA context, this happened either because"
-                    + "CUDA is not installed properly, or you have no NVIDIA GPU. "
-                    + "Continuing with emulated GPU on CPU..."
-                    + "This means *NO* GPU acceleration!"
-                )
+        # Initialize the vulkan GPUApplication:
+        super().__init__(deviceID=device_id, path=shader_path, verbose=verbose)
+
+        ## Next, the GPU is made aware of a number of parameters.
+        ## Parameters that don't change during iteration are stored
+        ## in init_h.
+
+        ## When using the GPU, we distinguish objects for host (=CPU side) use (_h)
+        ## and device (=GPU side) use (_d).
+
+        ## The init_d/init_h pair is created by first making a GPUBuffer object
+        ## init_d. Then that object makes the init_h object, which guarantees
+        ## that data written to init_h can be transferred to init_d.
+
+        ## init_d is a Uniform buffer, which means that the contents don't change
+        ## during execution of the shader (=GPU code). This means that iter_d
+        ## is also a Uniform buffer, because it only changes before/after execution
+        ## of the shader.
+
+        ## Radis configures Uniform buffers as using memory that is visible to both
+        ## host (CPU) and device (GPU). For this reason, no explicit transfers between
+        ## host and device memory are required.
+
+        if verbose >= 2:
+            print("Copying initialization parameters to device memory...")
+
+        self.init_d = GPUBuffer(
+            sizeof(initData_t), usage="uniform", binding=0
+        )  # host_visible, device_local, (host_cached)
+
+        self.init_h = self.init_d.getHostStructPtr(initData_t)
+
+        self.init_h.v_min = vmin
+        self.init_h.dv = dv
+        self.init_h.N_v = Nv
+        self.init_h.N_v_FT = next_fast_len_even(2 * self.init_h.N_v)
+        self.init_h.N_x_FT = self.init_h.N_v_FT // 2 + 1
+        self.init_h.dxG = dxG
+        self.init_h.dxL = dxL
+        self.init_h.N_lines = int(len(v0))
+        self.init_h.N_coll = gamma_arr.shape[0]
+
+        log_c2Mm_arr = np.array(
+            [0]
+            + [
+                0.5 * np.log(8 * k * np.log(2) / (c**2 * Mm * 1e-3 / N_A))
+                for Mm in Mm_arr[1:]
+            ]
+        )
+        for i in range(len(log_c2Mm_arr)):
+            self.init_h.log_c2Mm[i] = log_c2Mm_arr[i]
+
+        init_Q(Q_intp_list)
+        log_2vMm = np.log(v0) + log_c2Mm_arr.take(iso)
+
+        init_G_params(log_2vMm.astype(np.float32), verbose)
+        init_L_params(na, gamma_arr, verbose)  # TODO: do this on GPU?
+
+        # Parameters that *do* change are stored in iter_h.
+        # We only assign values to them in the iterate() method,
+        # but already allocate the buffers here.
+
+        self.iter_d = GPUBuffer(
+            sizeof(iterData_t), usage="uniform", binding=1
+        )  # host_visible, device_local, (host_cached)
+        self.iter_h = self.iter_d.getHostStructPtr(iterData_t)
+
+        if verbose >= 2:
+            print("done!")
+
+        if verbose >= 2:
+            print("Allocating device memory and copying data...")
+
+        ## Next the database memory is initialized. The database is potentially the largest buffer,
+        ## Which could take up gigabytes of device memory. Radis tells the Vulkan API to allocate
+        ## this buffer as 'storage' buffer. In dedicated GPU's, this is the largest memory heap,
+        ## but usually not directly visible to the host. In order to copy memory from device to the host,
+        ## internally a staging buffer is created. the staging buffer is small host memory where data is temporarily copied to,
+        ## which can be used to transfer data from host to device. This transfer thus consists of two separate transfers:
+        ## 1. transfer data from RAM to staging buffer, 2. transfer data from staging buffer to device memory.
+        ## The staging buffer is typically smaller than the data to-be-transferred, so this process repeats until all data is copied.
+        ## The staging buffer size is given by the chunksize keyword, which is only used the first time when the buffer is initialized, and ignored
+        ## during consecutive calls.
+        ## In the code below we copy multiple arrays to the device, so for each array the staging buffer transfers are repeated internally until each array is fully copied.
+
+        ## By using database_d.copyToBuffer(), the transfer from staging buffer to device buffer happens immediately.
+        ## Alternatively, one could split up the transfer by first using .fromArray() to copy data to the staging buffer, and then
+        ## call .transferStagingBuffer() separately. We will use this later for buffers that are copied every iteration.
+
+        database_arrays = [iso, v0, da, S0, El, na, gamma_arr]
+        N_db = np.sum(
+            [
+                np.sum(arr.shape[:-1]) if len(arr.shape) > 1 else 1
+                for arr in database_arrays
+            ]
+        )
+        self.database_d = GPUBuffer(N_db * v0.nbytes, usage="storage", binding=2)
+
+        byte_offset = 0
+        for arr in database_arrays:
+            byte_offset += self.database_d.copyToBuffer(
+                arr, device_offset=byte_offset, chunksize=32 * 1024 * 1024
             )
 
-            # failed to init CUDA context, continue with CPU:
-            from radis.gpu.cuda.emulate import CuContext as GPUContext
+        ## The S_klm_d buffer is purely a device buffer, which stores the result of the lineshape-distribution algorithm
+        ## before the FT is applied. Due to changing N_G and N_L per iteration, this buffer may also need to change size.
+        ## Because allocating new buffers is costly and may result in fragmentation of device memory, we only change the buffer size
+        ## if it needs to be increased. When we do, we increase it by some margin (default is 50% extra), so as to not have to re-allocate everytime
+        ## the N_G*N_L size increases. Increasing the buffer size will happen during the iteration step,
+        ## but to allow for dynamic resizing we specify it as a FFT buffer by using fftSize. fftSize specifies the size of the FT, which may be
+        ## smaller than the actual buffer size. In fact, in order to use in-place transforms with VkFFT, the length of the buffer is that of the reverse FT,
+        ## i.e. N_v_FT//2+1 of type complex64 (8 byte), instead of N_v_FT of type float32 (4 byte). This means that the buffer size is 2 elements larger per
+        ## nu-axis.
 
-            ctx = GPUContext.Open(verbose=verbose)
-            import radis.gpu.cuda.emulate as backend_module
+        ## The S_klm_d buffer is (implicitly) created with batchSize = 1. During iteration the batchSize will be set to N_G * N_L.
 
-        else:
-            # successfully initialized CUDA context, continue with GPU:
-            import radis.gpu.cuda.driver as backend_module
+        self.S_klm_d = GPUBuffer(
+            fftSize=self.init_h.N_v_FT, usage="storage", binding=3
+        )  # req: large, device_local
 
-    GPUContext, GPUModule, GPUArray, GPUFFT, GPUTimer = backend_module.getClasses()
+        ## The spectrum_d buffer receives the resulting spectrum. This is a storage buffer like S_klm_d, but does not have to change size dynamically.
+        ## It *does* have to transfer data from device buffers to host buffers, and since it's contents change during shader execution, we cannot use Uniform for this.
+        ## To make this transfer as efficient as possible, the device-to-host (staging buffe) transfer is recorded in the command buffer (see ahead),
+        ## while the staging buffer to RAM is done in python code after the comman buffer is done executing.
 
-    if verbose:
-        print("Number of lines loaded: {0}".format(len(v0)))
-        print()
+        self.spectrum_d = GPUBuffer(
+            fftSize=self.init_h.N_v_FT, usage="storage", binding=4
+        )  # req: device_local, host_visible, host_cached, (large)
 
-    ptx_path = os.path.join(getProjectRoot(), "gpu", "cuda", "build", "kernels.ptx")
-    if not os.path.exists(ptx_path):
-        raise FileNotFoundError(ptx_path)
-    gpu_mod = GPUModule(ctx, ptx_path)  # gpu
-    if verbose:
-        print("mode:", gpu_mod.getMode())
+        ## The indirect_d buffer is a special buffer that is used to specify the number of workgroups (i.e number of instances of a shader thread)
+        ## dynamically. This is needed because the forward FFT will change size as N_G or N_L change. To address this, the FFT plan is created with
+        ## the batchSize number of the highest N_G*N_L*margin(=1.5), but less threads are launched depending on the current value of N_G*N_L.
+        ## We tell the gpuApp specifically that this is our indirect buffer, so that VkFFT can fill it with the workgroup sizes it would need for the batchSize
+        ## it was created for. We then every iteration set the workgroup sizes to the right number, so that we don't perform superfluous FFT's.
 
-    ## Next, the GPU is made aware of a number of parameters.
-    ## Parameters that don't change during iteration are stored
-    ## in init_h. They are copied to the GPU through gpu_mod.setConstant()
+        self.indirect_d = GPUBuffer(
+            sizeof(workGroupSizeArray_t), usage="indirect", binding=10
+        )  # host_visible, device_local, (host_cached)
+        self.setIndirectBuffer(self.indirect_d, workGroupSizeArray_t)
 
-    if verbose >= 2:
-        print("Copying initialization parameters to device memory...")
+        # Write command buffer:
+        N_tpb = 128  # threads per block
+        threads = (N_tpb, 1, 1)
 
-    init_h.v_min = vmin
-    init_h.dv = dv
-    init_h.N_v = Nv
-    init_h.N_v_FT = next_fast_len(2 * init_h.N_v)
-    init_h.N_x_FT = init_h.N_v_FT // 2 + 1
-    init_h.dxG = dxG
-    init_h.dxL = dxL
-    init_h.N_lines = int(len(v0))
-    init_h.N_collision_partners = gamma_arr.shape[0]
+        # Finally it is time to write the command buffer. The command buffer is a list of commands that the GPU needs to execute.
+        # Timestamp labels can be added as desired, to help with benchmarking GPU performance. The command buffer is written at this step,
+        # but will not be ran until the iterate() stage.
 
-    log_c2Mm_arr = np.array(
-        [0]
-        + [
-            0.5 * np.log(8 * k * np.log(2) / (c**2 * Mm * 1e-3 / N_A))
-            for Mm in Mm_arr[1:]
-        ]
-    )
-    for i in range(len(log_c2Mm_arr)):
-        init_h.log_c2Mm[i] = log_c2Mm_arr[i]
+        # The command buffer starts with copying the new iter_d and indirect_d data from the staging buffer to the device.
+        # This is however not needed explicitly, because we took care to use memory that is already device_local.
+        # Then the S_klm_d and spectrum_d buffers are zeroed. The "cmdFillLDM.spv" shader is executed, which is a separate file in the shader folder.
+        # This shader populates the S_klm_d array. Next the forward FFT is performed, followed by cmdApplyLineshapes.spv (another user defined shader),
+        # and finally the contents of spectrum_d are transferred to the staging buffer on the host side again.
 
-    init_Q(Q_intp_list)
-    log_2vMm = np.log(v0) + log_c2Mm_arr.take(iso)
+        self.appendCommands(
+            [
+                # self.cmdAddTimestamp("Transfer staging buffers"),
+                # self.indirect_d.cmdTransferStagingBuffer("H2D"),
+                # self.iter_d.cmdTransferStagingBuffer("H2D"),
+                self.cmdAddTimestamp("Zeroing buffers"),
+                self.S_klm_d.cmdClearBuffer(),
+                self.spectrum_d.cmdClearBuffer(),
+                self.cmdAddTimestamp("Line addition"),
+                self.cmdScheduleShader(
+                    "cmdFillLDM.spv", (self.init_h.N_lines // N_tpb + 1, 1, 1), threads
+                ),
+                self.cmdAddTimestamp("FFT fwd"),
+                self.cmdFFT(self.S_klm_d, name="FFTa"),
+                self.cmdAddTimestamp("selfly conv."),
+                self.cmdScheduleShader(
+                    "cmdApplyLineshapes.spv",
+                    (self.init_h.N_x_FT // N_tpb + 1, 1, 1),
+                    threads,
+                ),
+                # self.cmdScheduleShader('cmdTestApplyLineshapesP.spv', (self.init_h.N_x_FT // N_tpb + 1, N_G*N_L, 1), threads),
+                self.cmdAddTimestamp("FFT inv"),
+                self.cmdIFFT(self.spectrum_d, name="FFTb"),
+                self.cmdAddTimestamp("Tranfer staging buffer (result)"),
+                self.spectrum_d.cmdTransferStagingBuffer("D2H"),
+                self.cmdAddTimestamp("End"),
+            ]
+        )
 
-    gpu_mod.setConstant("init_d", init_h)
+        self.writeCommandBuffer()
 
-    init_G_params(log_2vMm.astype(np.float32), verbose)
-    init_L_params(na, gamma_arr, verbose)
+        ## During iteration, we only run .setBatchSize() to update the Vulkan buffers.
+        ## Here we specify what needs to happen when .setBatchSize() is called.
+        ## that is two things: the size of S_klm_d needs to be updated, and the workgroup size (indirect_d buffer contents)
+        ## must be updated.
 
-    if verbose >= 2:
-        print("done!")
+        ## If S_klm_d.setBatchSize() needs to increase the buffer size, the internal forward FFT plan (stored in ._fftAppFwd)
+        ## will be removed such that it will be rewritten with the new maximum sizes. Note that this happens much less often
+        ## than a change in N_G*N_L, because of the 50% extra margin. When it does happen, the performance of that particular iteration
+        ## will drop, but this is only once every so often.
 
-    ## Next the block- and thread size of the GPU kernels are set.
-    ## This determines how the GPU internally divides up the work.
+        self.registerBatchSizeUpdateFunction(self.S_klm_d.setBatchSize)
+        self.registerBatchSizeUpdateFunction(self.setFwdFFTWorkGroupSize)
 
-    if verbose >= 2:
-        print("Allocating device memory and copying data...")
+        if verbose >= 2:
+            print("done!")
 
-    NvFT = init_h.N_v_FT
-    NxFT = NvFT // 2 + 1
-    Ntpb = ctx.getMaxThreadsPerBlock()
-    Nli = init_h.N_lines
-    threads = (Ntpb, 1, 1)
+    def iterate(
+        self,
+        p,
+        T,
+        mole_fraction,
+        verbose=0,
+        # TODO: for GPU instrument functions (not currently supported):
+        l=1.0,
+        slit_FWHM=0.0,
+    ):
+        """
+        Parameters
+        ----------
+        p : float
+            pressure [bar]
+        T : float
+            temperature [K]
+        mole_fraction : float
 
-    gpu_mod.fillLDM.setGrid((Nli // Ntpb + 1, 1, 1), threads)
-    gpu_mod.applyLineshapes.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
-    gpu_mod.calcTransmittanceNoslit.setGrid((NvFT // Ntpb + 1, 1, 1), threads)
-    gpu_mod.applyGaussianSlit.setGrid((NxFT // Ntpb + 1, 1, 1), threads)
-
-    ## Next the variables are initialized on the GPU. Constant variables
-    ## that don't change (i.e. pertaining to the database) are immediately
-    ## copied to the GPU through GPUArray.fromArray().
-    ## Other variables are only allocated. S_klm_d and S_klm_FT_d are
-    ## special cases because their shape changes during iteration.
-    ## They are not allocated, only given a device pointer by which
-    ## they can be referenced later.
-
-    S_klm_d = GPUArray(0, dtype=np.float32, grow_only=True)
-    S_klm_FT_d = GPUArray(0, dtype=np.complex64, grow_only=True)
-
-    spectrum_in_d = GPUArray(NxFT, dtype=np.complex64)
-    spectrum_out_d = GPUArray(NvFT, dtype=np.float32)
-
-    transmittance_noslit_d = GPUArray(NvFT, dtype=np.float32)
-    transmittance_noslit_FT_d = GPUArray(NxFT, dtype=np.complex64)
-
-    transmittance_FT_d = GPUArray(NxFT, dtype=np.complex64)
-    transmittance_d = GPUArray(NvFT, dtype=np.float32)
-
-    gpu_mod.fillLDM.setArgs(
-        GPUArray.fromArray(iso),
-        GPUArray.fromArray(v0),
-        GPUArray.fromArray(da),
-        GPUArray.fromArray(S0),
-        GPUArray.fromArray(El),
-        GPUArray.fromArray(gamma_arr),
-        GPUArray.fromArray(na),
-        S_klm_d,
-    )
-    gpu_mod.applyLineshapes.setArgs(S_klm_FT_d, spectrum_in_d)
-    gpu_mod.calcTransmittanceNoslit.setArgs(spectrum_out_d, transmittance_noslit_d)
-    gpu_mod.applyGaussianSlit.setArgs(transmittance_noslit_FT_d, transmittance_FT_d)
-
-    ## FFT's are performed through the GPUFFT object. The required functions are internally
-    ## loaded from the cufft library, not through the user kernels (.ptx files).
-    ## The FFT's need some memory as "work area". Because the different FFT's can
-    ## reuse the work area, we make a GPUArray at this scope that is passed to the
-    ## GPUFFT objects. The work area will be scaled according to needs by the GPUFFT objects,
-    ## so it can be initialized with a small value.
-
-    workarea_d = GPUArray(0, dtype=np.byte, grow_only=True)
-    gpu_mod.fft_fwd = GPUFFT(S_klm_d, S_klm_FT_d, workarea=workarea_d, direction="fwd")
-    gpu_mod.fft_rev = GPUFFT(
-        spectrum_in_d, spectrum_out_d, workarea=workarea_d, direction="rev"
-    )
-    gpu_mod.fft_fwd2 = GPUFFT(
-        transmittance_noslit_d,
-        transmittance_noslit_FT_d,
-        workarea=workarea_d,
-        direction="fwd",
-    )
-    gpu_mod.fft_rev2 = GPUFFT(
-        transmittance_FT_d, transmittance_d, workarea=workarea_d, direction="rev"
-    )
-
-    gpu_mod.timer = GPUTimer()
-
-    if verbose >= 2:
-        print("done!")
-
-    return init_h
+        Other Parameters
+        ----------------
+        verbose : int, optional
+            The default is 0.
 
 
-def gpu_iterate(
-    p,
-    T,
-    mole_fraction,
-    verbose=0,
-    # for GPU instrument functions (not currently supported):
-    l=1.0,
-    slit_FWHM=0.0,
-):
-    """
-    Parameters
-    ----------
-    p : float
-        pressure [bar]
-    T : float
-        temperature [K]
-    mole_fraction : float
+        Returns
+        -------
+        abscoeff_h : numpy.ndarray[np.float32]
+            array with absorbtion coefficients in (cm.-1)
+        iter_h : radis.gpu.structs.iterData_t
+            structue with parameters used for computation of abscoeff_h.
+        times : dict
+            dictionary with computation cumulative computation times for
+            different stages of the GPU computation. The ``'total'`` key
+            gives the total time.
+        """
 
-    Other Parameters
-    ----------------
-    verbose : int, optional
-        The default is 0.
+        if verbose >= 2:
+            print("Copying iteration parameters to device...")
 
+        ## Update the contents of iter_h, which as a device_local buffer also
+        ## immediately updates the GPU side buffer
 
-    Returns
-    -------
-    abscoeff_h : numpy.ndarray[np.float32]
-        array with absorbtion coefficients in (cm.-1)
-    iter_h : radis.gpu.structs.iterData_t
-        structue with parameters used for computation of abscoeff_h.
-    times : dict
-        dictionary with computation cumulative computation times for
-        different stages of the GPU computation. The ``'total'`` key
-        gives the total time.
-    """
+        set_pTQ(p, T, mole_fraction, self.iter_h, l=l, slit_FWHM=slit_FWHM)
+        set_G_params(self.init_h, self.iter_h)
+        set_L_params(self.init_h, self.iter_h)
 
-    if gpu_mod is None:
-        warn("Must have an open GPU context; please call gpu_init() first.")
-        return
+        if verbose >= 2:
+            print("Running compute pipelines...")
 
-    if verbose >= 2:
-        print("Copying iteration parameters to device...")
+        ## Update the batch size, which internally re-allocates buffers and re-plan the FFT if required,
+        ## as well as update the workgroup size in the indirect_d buffer
+        self.setBatchSize(self.iter_h.N_G * self.iter_h.N_L)
 
-    ## First a number of parameters that change during iteration
-    ## are computed and copied to the GPU.
+        ## RUN THE COMMAND BUFFER
+        self.run()
 
-    gpu_mod.timer.reset()
+        ## get the timestamp values
+        gpu_times = self.get_timestamps()
 
-    set_pTQ(p, T, mole_fraction, iter_h, l=l, slit_FWHM=slit_FWHM)
-    set_G_params(init_h, iter_h)
-    set_L_params(init_h, iter_h)
-    gpu_mod.setConstant("iter_d", iter_h)
-    gpu_mod.timer.lap("iter_params")
+        ## Copy the results into a numpy array. Remember that the device-to-host transfer is recorded in the command buffer,
+        ## here we only have to copy the contents of the staging buffer to a numpy array using spectrum_d.toArray().
+        abscoeff_h = np.zeros(self.init_h.N_v, dtype=np.float32)
+        self.spectrum_d.toArray(abscoeff_h)
 
-    ## Next the S_klm_d variable is reshaped to the correct shape,
-    ## and filled with spectral data.
+        if verbose == 1:
+            print("Finished calculating spectrum!")
 
-    if verbose >= 2:
-        print("done!")
-        print("Filling LDM...")
+        return abscoeff_h, gpu_times
 
-    S_klm_shape = (init_h.N_v_FT, iter_h.N_G, iter_h.N_L)
+    def get_griddims(self):
+        # use separate getter so as not to increase the app.iter_h reference count
+        return self.iter_h.N_L, self.iter_h.N_G
 
-    gpu_mod.fillLDM.args[-1].resize(S_klm_shape, init="zeros")
-    gpu_mod.fillLDM()
-    gpu_mod.timer.lap("fillLDM")
-
-    ## Next the S_klm_FT_d is also reshaped, and the lineshapes are
-    ## applied. This consists of an FT of the LDM, a product by the
-    ## lineshape FTs & summing all G and L axes, and an inverse FT
-    ## on the accumulated spectra.
-
-    if verbose >= 2:
-        print("done!")
-        print("Applying lineshapes...")
-
-    S_klm_FT_shape = (init_h.N_x_FT, iter_h.N_G, iter_h.N_L)
-    gpu_mod.fft_fwd.arr_out.resize(S_klm_FT_shape)
-    gpu_mod.fft_fwd()
-    gpu_mod.timer.lap("fft_fwd")
-
-    gpu_mod.applyLineshapes()
-    gpu_mod.timer.lap("applyLineshapes")
-
-    gpu_mod.fft_rev()
-    gpu_mod.timer.lap("fft_rev")
-
-    if verbose >= 2:
-        print("Done!")
-        print("Calculating transmittance...")
-
-    abscoeff_h = gpu_mod.fft_rev.arr_out.getArray()[: init_h.N_v]
-
-    ## To apply a slit function, first the transmittance is calculated.
-    ## Then the convolution is applied by an FT, product with the
-    ## instrument function's FT, followed by an inverse FT.
-
-    if verbose >= 2:
-        print("Done!")
-
-    ##    ##The code below is to process slits on the GPU, which is currently unsupported.
-    ##
-    ##        print("Applying slit function...")
-    ##
-    ##    gpu_mod.calcTransmittanceNoslit()
-    ##    gpu_mod.timer.lap("calcTransmittanceNoslit")
-    ##
-    ##    gpu_mod.fft_fwd2()
-    ##    gpu_mod.timer.lap("fft_fwd2")
-    ##
-    ##    gpu_mod.applyGaussianSlit()
-    ##    gpu_mod.timer.lap("applyGaussianSlit")
-    ##
-    ##    gpu_mod.fft_rev2()
-    ##    gpu_mod.timer.lap("fft_rev2")
-    ##
-    ##    transmittance_h = gpu_mod.fft_rev2.arr_out.getArray()[: init_h.N_v]
-    ##
-    ##    if verbose >= 2:
-    ##        print("done!")
-
-    if verbose == 1:
-        print("Finished calculating spectrum!")
-
-    gpu_mod.timer.lap("total")
-    times = gpu_mod.timer.getTimes()
-
-    ##    diffs = gpu_mod.timer.getDiffs()
-    ##    print(diffs['fillLDM'], diffs['fft_fwd'])
-
-    return abscoeff_h, iter_h, times
-
-
-def gpu_exit(event=None):
-    global gpu_mod
-    gpu_mod.context.destroy()
-    gpu_mod = None
+    def __del__(self):
+        # print('>>> Deleting gpuApp...')
+        self.init_h = None
+        self.iter_h = None
+        self.free()

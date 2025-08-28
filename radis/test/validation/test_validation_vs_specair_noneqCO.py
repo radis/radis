@@ -127,33 +127,15 @@ def test_validation_vs_specair(rtol=1e-2, verbose=True, plot=False, *args, **kwa
 
     if verbose:
         printm(
-            ">>> comparing RADIS vs SPECAIR on CO: integrals of abscoeff is are close"
-            + " to within {0:.1f}%: {1} ({2:.1f}%, {3:.1f}%, {4:.1f}%)".format(
-                rtol * 100,
-                bool(b1),
-                abs(
-                    specair_300_300.get_integral("abscoeff")
-                    / s_300_300.get_integral("abscoeff")
-                    - 1
-                )
-                * 100,
-                abs(
-                    specair_2000_300.get_integral("abscoeff")
-                    / s_2000_300.get_integral("abscoeff")
-                    - 1
-                )
-                * 100,
-                abs(
-                    specair_300_2000.get_integral("abscoeff")
-                    / s_300_2000.get_integral("abscoeff")
-                    - 1
-                )
-                * 100,
-            )
+            f">>> comparing RADIS vs SPECAIR on CO: integrals of abscoeff is are close"
+            f" to within {rtol * 100:.1f}%: {bool(b1)} ("
+            f"{abs(specair_300_300.get_integral('abscoeff') / s_300_300.get_integral('abscoeff') - 1) * 100:.1f}%, "
+            f"{abs(specair_2000_300.get_integral('abscoeff') / s_2000_300.get_integral('abscoeff') - 1) * 100:.1f}%, "
+            f"{abs(specair_300_2000.get_integral('abscoeff') / s_300_2000.get_integral('abscoeff') - 1) * 100:.1f}%)"
         )
         printm(
             ">>> comparing RADIS vs SPECAIR on CO: partition functions "
-            + "are equal to round error: {0}".format(bool(b2))
+            + f"are equal to round error: {bool(b2)}"
         )
 
     if plot:
@@ -204,8 +186,7 @@ def test_validation_vs_specair(rtol=1e-2, verbose=True, plot=False, *args, **kwa
         if article_version:
             plt.savefig("out/test_validation_vs_specair_noneqCO_Tvib300_Trot2000.png")
             plt.savefig("out/test_validation_vs_specair_noneqCO_Tvib300_Trot2000.pdf")
-
-    return bool(b1 * b2)
+    assert not bool(b1 * b2)
 
 
 if __name__ == "__main__":

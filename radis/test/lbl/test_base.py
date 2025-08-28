@@ -52,7 +52,7 @@ def test_linestrength_calculations(*args, **kwargs):
     S = linestrength_from_Einstein(df.A, df.gp, df.El, Ia_arr, df.wav, Q_arr, 296)
     assert np.allclose(df.int, S, rtol=1e-3, atol=0)
 
-    #%% Now, at 1000 K
+    # %% Now, at 1000 K
     Q_arr = df.iso.map({iso: PartFuncTIPS(M, iso).at(1000) for iso in df.iso.unique()})
     S_1000 = linestrength_from_Einstein(df.A, df.gp, df.El, Ia_arr, df.wav, Q_arr, 1000)
 
@@ -74,7 +74,7 @@ def test_linestrength_calculations(*args, **kwargs):
     # match the one from the SpectrumFactory within 0.1%
     assert np.allclose(sf.df1.S, S_1000, rtol=1e-3, atol=0)
 
-    #%% Using non-eq calculations
+    # %% Using non-eq calculations
     S_eq = sf.df1.S.copy()
 
     sf.non_eq_spectrum(1000, 1000)
@@ -199,8 +199,6 @@ def test_export_rovib_fractions(
     assert hasattr(s.lines, "nu_rot")
     assert hasattr(s.lines, "nl_rot")
 
-    return True
-
 
 @pytest.mark.fast
 def test_populations_CO2_hamiltonian(
@@ -272,8 +270,6 @@ def test_populations_CO2_hamiltonian(
 
     # TODO. Fix below (and move in dedicated test):
     #    s.line_survey()
-
-    return True
 
 
 # @pytest.mark.needs_connection
@@ -395,10 +391,7 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
 
             if verbose:
                 printm(
-                    "Residual between opt. thick CO2 spectrum ({0}) and Planck: {1:.2g}".format(
-                        s.name,
-                        get_residual(s, s_plck, "radiance_noslit", ignore_nan=True),
-                    )
+                    f"Residual between opt. thick CO2 spectrum ({s.name}) and Planck: {get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True):.2g}"
                 )
 
             #            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 1e-3
@@ -502,7 +495,7 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
 
             if plot:
 
-                nfig = "test_opt_thick_limit_2iso {0}".format(s.name)
+                nfig = f"test_opt_thick_limit_2iso {s.name}"
                 plt.figure(nfig).clear()
                 s.plot(wunit="nm", Iunit="mW/cm2/sr/nm", nfig=nfig, lw=4)
                 s_plck.plot(wunit="nm", nfig=nfig, Iunit="mW/cm2/sr/nm", lw=2)
@@ -510,10 +503,7 @@ def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
 
             if verbose:
                 printm(
-                    "Residual between opt. thick CO2 spectrum ({0}) and Planck: {1:.2g}".format(
-                        s.name,
-                        get_residual(s, s_plck, "radiance_noslit", ignore_nan=True),
-                    )
+                    f"Residual between opt. thick CO2 spectrum ({s.name}) and Planck: {get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True):.2g}"
                 )
 
             #            assert get_residual(s, s_plck, 'radiance_noslit', ignore_nan=True) < 1e-3
@@ -761,9 +751,9 @@ def test_input_wunit(plot=True, *args, **kwargs):
 
     import matplotlib.pyplot as plt
 
-    from radis import test_spectrum
+    from radis import spectrum_test
 
-    s_from_wavenumber = test_spectrum()
+    s_from_wavenumber = spectrum_test()
     s_from_wavenumber.plot()
 
     assert s_from_wavenumber.c["waveunit"] == "cm-1"
@@ -772,7 +762,7 @@ def test_input_wunit(plot=True, *args, **kwargs):
 
     assert s_from_wavenumber.units["radiance_noslit"] == "mW/cm2/sr/cm-1"
 
-    #%%
+    # %%
     # Compute the same spectrum, but with wavelength input (and compare that
     # areas are the same at the end)
     wmin = s_from_wavenumber.get_wavelength().min()
@@ -780,7 +770,7 @@ def test_input_wunit(plot=True, *args, **kwargs):
 
     import astropy.units as u
 
-    s_fromwl = test_spectrum(wmin=wmin * u.nm, wmax=wmax * u.nm)
+    s_fromwl = spectrum_test(wmin=wmin * u.nm, wmax=wmax * u.nm)
     s_fromwl.plot()
 
     import matplotlib.pyplot as plt
@@ -796,7 +786,7 @@ def test_input_wunit(plot=True, *args, **kwargs):
     # ... Check we're not sharing the same object:
     assert s_from_wavenumber.units is not s_fromwl.units  # Python problems
 
-    #%%
+    # %%
     import numpy as np
 
     print(s_from_wavenumber.get_power())

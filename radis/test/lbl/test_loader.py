@@ -9,6 +9,7 @@ from os.path import exists
 from shutil import rmtree
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 
 from radis import config
@@ -22,9 +23,9 @@ try:
 except ImportError:
     vaex = NotInstalled(*not_installed_vaex_args)
 
-pytestmark = pytest.mark.random_order(
-    disabled=True
-)  # to make sure HITEMP-CO2-TEST is downloaded in 1st test and used after
+# pytestmark = pytest.mark.random_order(
+#     disabled=True
+# )  # to make sure HITEMP-CO2-TEST is downloaded in 1st test and used after
 
 
 @pytest.mark.needs_connection
@@ -88,14 +89,15 @@ def test_retrieve_from_database(
         # the spectrum is retrieved. Else, an error will be raised
         sf.autoretrievedatabase = "force"
 
+        import radis
+
+        radis.debug = True
         # Calculate spectrum under the same conditions
         s2 = sf.non_eq_spectrum(2000, 1000)
 
         # Note that s1 == s2 won't work because populations are not stored
         # by default in the database
         assert s1.compare_with(s2, spectra_only=True, plot=plot)
-
-        return True
 
     finally:
         rmtree(temp_database_name)
@@ -196,7 +198,7 @@ def test_custom_abundance(verbose=True, plot=False, *args, **kwargs):
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.load_databank("HITEMP-CO2-TEST", load_columns="all")
 
-    #%% Compute a spectrum ; set the terrestrial abundance to False to
+    # %% Compute a spectrum ; set the terrestrial abundance to False to
     # force computation of linestrength from Einstein coefficients instead
     # of rescaling parameters
     s = sf.eq_spectrum(2000)
@@ -213,7 +215,7 @@ def test_custom_abundance(verbose=True, plot=False, *args, **kwargs):
 
         plot_diff(s, s2)
 
-    #%% Now restart by changing the abundance itself ; as a user would do
+    # %% Now restart by changing the abundance itself ; as a user would do
 
     # ... check abundance get/set functions work well
     abundance12_0 = sf.get_abundance("CO2", [1, 2])
@@ -248,7 +250,6 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
     - Ensure dataframes are same across all the databanks available in RADIS
     Added in https://github.com/radis/radis/pull/580
     """
-    import numpy as np
     import pandas
     import vaex
 
@@ -351,23 +352,20 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
         species="C_I",
         pressure=1.01325,  # bar
         path_length=1,  # cm
+        pfsource="barklem",
     )
 
     config["ALLOW_OVERWRITE"] = True
 
     # Fetching in vaex dataframe format
     config["DATAFRAME_ENGINE"] = "vaex"
-    sf.fetch_databank(
-        "kurucz", memory_mapping_engine="vaex", load_columns="all", parfuncfmt="kurucz"
-    )
+    sf.fetch_databank("kurucz", memory_mapping_engine="vaex", load_columns="all")
     df1 = sf.df0
     assert isinstance(df1, vaex.dataframe.DataFrameLocal)
 
     # Fetching in Pandas dataframe format
     config["DATAFRAME_ENGINE"] = "pandas"
-    sf.fetch_databank(
-        "kurucz", memory_mapping_engine="vaex", load_columns="all", parfuncfmt="kurucz"
-    )
+    sf.fetch_databank("kurucz", memory_mapping_engine="vaex", load_columns="all")
     df2 = sf.df0
     assert isinstance(df1, vaex.dataframe.DataFrameLocal)
 
@@ -383,7 +381,6 @@ def test_vaex_and_pandas_dataframe_load_databank():
     of dataframe in pandas format .
     Added in https://github.com/radis/radis/pull/580
     """
-    import numpy as np
 
     from radis import SpectrumFactory
 
@@ -444,11 +441,15 @@ def test_vaex_and_pandas_dataframe_load_databank():
 
 def _run_testcases(verbose=True, plot=False):
 
-    # test_retrieve_from_database(plot=plot, verbose=verbose)
+    from time import time
+
+    t0 = time()
+    test_retrieve_from_database(plot=plot, verbose=verbose)
+    print(time() - t0)
     # test_ignore_cached_files()
     # test_ignore_irrelevant_files(verbose=verbose)
     # test_custom_abundance()
-    test_vaex_and_pandas_dataframe_fetch_databank()
+    # test_vaex_and_pandas_dataframe_fetch_databank()
     # test_vaex_and_pandas_dataframe_load_databank()
 
 

@@ -104,8 +104,6 @@ def test_klarenaar_validation_case(
 
     assert get_residual(s, s_exp, "transmittance_noslit", ignore_nan=True) < 0.003
 
-    return True
-
 
 if __name__ == "__main__":
     printm(

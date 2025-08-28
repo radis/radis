@@ -233,8 +233,6 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
     assert np.allclose(w[71:-71][::100], w_ref, atol=1e-6)
     assert np.allclose(I[71:-71][::100], I_ref, rtol=1e-3)
 
-    return True
-
 
 # @pytest.mark.needs_db_CDSD_HITEMP_PCN
 @pytest.mark.needs_connection
@@ -390,8 +388,6 @@ def test_calc_spectrum_overpopulations(
     if verbose:
         printm("Test overpopulations: OK")
 
-    return True
-
 
 # @pytest.mark.needs_config_file
 # @pytest.mark.needs_db_CDSD_HITEMP_PC
@@ -460,7 +456,7 @@ def test_calc_spectrum_overpopulations(
 #    if verbose:
 #        printm("Test all methods comparison: OK")
 #
-#    return True
+#
 
 
 def test_all_calc_methods_CO2pcN(
@@ -570,8 +566,6 @@ def test_all_calc_methods_CO2pcN(
     #    assert np.isclose(s_bd.get_power(), s_eq.get_power(), rtol=rtol)
     #    assert np.isclose(s_nq.get_power(), s_eq.get_power(), rtol=rtol)
 
-    return True
-
 
 @pytest.mark.needs_connection
 def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **kwargs):
@@ -620,9 +614,7 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **k
 
     if verbose:
         printm(
-            "Tested eq vs non-eq (<{0:.1f}% error) with isotopes: {1}".format(
-                rtol * 100, bool(match_eq_vs_non_eq)
-            )
+            f"Tested eq vs non-eq (<{rtol * 100:.1f}% error) with isotopes: {bool(match_eq_vs_non_eq)}"
         )
 
     assert match_eq_vs_non_eq
@@ -677,8 +669,6 @@ def test_calc_spectrum_multiple_molecules(
 
     assert s_both.compare_with(MergeSlabs(s_co, s_co2), plot=False)
 
-    return True
-
 
 @pytest.mark.needs_connection
 def test_calc_spectrum_multiple_molecules_otherinputs(
@@ -730,7 +720,6 @@ def test_calc_spectrum_multiple_molecules_otherinputs(
     assert set(s.conditions["species"]) == set(["CO2", "CO"])
 
     config["MISSING_BROAD_COEF"] = prev_conf
-    return True
 
 
 # @pytest.mark.needs_config_file
@@ -769,8 +758,6 @@ def test_calc_spectrum_multiple_molecules_inputerror(
             isotope={"CO2": "1,2"},  # unclear for CO
             verbose=verbose,
         )
-
-    return True
 
 
 # @pytest.mark.fast #this is not fastfor Travis because it requires a download
@@ -861,8 +848,6 @@ def test_check_wavelength_range(verbose=True, warnings=True, *args, **kwargs):
     assert np.isclose(w.min(), 4348, atol=wstep)
     assert np.isclose(w.max(), 5000, atol=wstep)
 
-    return True
-
 
 def test_non_air_diluent_calc(verbose=True, plot=False, warnings=True, *args, **kwargs):
     from radis import plot_diff
@@ -923,8 +908,6 @@ def test_non_air_diluent_calc(verbose=True, plot=False, warnings=True, *args, **
             label2="Diluent air",
             title="Diluent CO2:0.2, H2O:0.1, air:0.5",
         )
-
-    return True
 
 
 def test_diluent_invalid(verbose=True, plot=False, *args, **kwargs):
@@ -1001,8 +984,6 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     test_check_wavelength_range()
     test_non_air_diluent_calc()
     test_diluents_for_molecule()
-
-    return True
 
 
 # --------------------------

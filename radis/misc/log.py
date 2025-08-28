@@ -19,7 +19,7 @@ def printlog(msg, logfile="log.txt", stdout=True):
     Also print it to screen if stdout is True
     """
     with open(logfile, "a+") as f:
-        f.write("{0} {1}\n".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), msg))
+        f.write(f"{strftime('%Y-%m-%d %H:%M:%S', gmtime())} {msg}\n")
     if stdout:
         print(msg)
     return
@@ -31,9 +31,7 @@ def warnlog(msg, logfile="log.txt", stdout=True):
     Also print it to screen if stdout is True
     """
     with open(logfile, "a+") as f:
-        f.write(
-            "{0} WARNING. {1}\n".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), msg)
-        )
+        f.write(f"{strftime('%Y-%m-%d %H:%M:%S', gmtime())} WARNING. {msg}\n")
     if stdout:
         warn(msg)
     return

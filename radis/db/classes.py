@@ -228,9 +228,7 @@ def is_atom(species):
     """
     determine whether the input species is atomic
     """
-    return species.split("_")[0] in [
-        i.symbol for i in list(periodictable.elements)[1:]
-    ]  # first element is neutron, symbol 'n'
+    return species.split("_")[0] in map(str, periodictable.elements)
 
 
 def is_neutral(species):
@@ -393,9 +391,7 @@ def get_molecule_identifier(molecule_name):
         return int(trans2[molecule_name])
     except KeyError:
         raise NotImplementedError(
-            "Molecule '{0}' not supported. Choose one of {1}".format(
-                molecule_name, sorted(list(trans2.keys()))
-            )
+            f"Molecule '{molecule_name}' not supported. Choose one of {sorted(list(trans2.keys()))}"
         )
 
 
@@ -417,13 +413,13 @@ def get_molecule(molecule_id):
     """
 
     # assert str
-    id = "{:d}".format(int(molecule_id))
+    id = f"{int(molecule_id):d}"
 
     try:
         return trans[id]
     except KeyError:
         raise NotImplementedError(
-            "Molecule ID '{0}' unknown. Choose one of {1}".format(molecule_id, trans)
+            f"Molecule ID '{molecule_id}' unknown. Choose one of {trans}"
         )
 
 
@@ -529,6 +525,7 @@ EXOMOL_MOLECULES = [
     "PN",
     "PO",
     "PS",
+    "ScO",  # added: 12/2024
     "SH",
     "SO",  # new
     "SO2",
@@ -642,9 +639,7 @@ class Isotope(Molecule):
         # Check input
         if not isinstance(isotope, int):
             raise TypeError(
-                "Wrong format for isotope {0}: expected int, got {1}".format(
-                    isotope, type(isotope)
-                )
+                f"Wrong format for isotope {isotope}: expected int, got {type(isotope)}"
             )
 
         # Store
@@ -884,9 +879,7 @@ class ElectronicState(Isotope):
                 )
             else:
                 raise ValueError(
-                    "Unexpected spectroscopic constant type: {0}".format(
-                        spectroscopic_constants_type
-                    )
+                    f"Unexpected spectroscopic constant type: {spectroscopic_constants_type}"
                 )
 
         # Clean keys
@@ -940,9 +933,7 @@ class ElectronicState(Isotope):
             self.Ehaj = Ehaj
             if self.verbose >= 2:
                 print(
-                    "{0}: overriding Energy calculation with {1}".format(
-                        self.get_fullname(), Erovib
-                    )
+                    f"{self.get_fullname()}: overriding Energy calculation with {Erovib}"
                 )
         else:
             # Autofind which energy model to use for the given molecule
@@ -950,7 +941,7 @@ class ElectronicState(Isotope):
             if len(c) == 0:
                 pass  # keep the default function, that will raise an error on first call.
                 if self.verbose >= 2:
-                    print("{0}: No rovibconstants found".format(self.get_fullname()))
+                    print(f"{self.get_fullname()}: No rovibconstants found")
             else:
                 convention = get_convention(c)  # Herzberg or Dunham
 
@@ -960,18 +951,14 @@ class ElectronicState(Isotope):
                         self.Ehaj = None  # NotImplemented
                         if self.verbose >= 2:
                             print(
-                                "{0}: using Herzberg coefficients for Energy calculation".format(
-                                    self.get_fullname()
-                                )
+                                f"{self.get_fullname()}: using Herzberg coefficients for Energy calculation"
                             )
                     else:
                         self.Erovib = self._E_Dunham
                         self.Ehaj = None  # NotImplemented
                         if self.verbose >= 2:
                             print(
-                                "{0}: using Dunham coefficients for Energy calculation".format(
-                                    self.get_fullname()
-                                )
+                                f"{self.get_fullname()}: using Dunham coefficients for Energy calculation"
                             )
                         # TODO: reformat these methods as external functions, but keep docstrings
                 elif self.name in HITRAN_CLASS5:
@@ -987,7 +974,7 @@ class ElectronicState(Isotope):
                     else:
                         raise NotImplementedError(
                             "Only Herzberg convention spectroscopic "
-                            + "constants defined for {0}. ".format(self.name)
+                            + f"constants defined for {self.name}. "
                             + "You still define your own Erovib function "
                             + "and overwrite the ElectronicState class one."
                         )
@@ -1039,7 +1026,7 @@ class ElectronicState(Isotope):
         """
 
         raise NotImplementedError(
-            "Rovibrational energy not implemented for {0}".format(self.get_fullname)
+            f"Rovibrational energy not implemented for {self.get_fullname}"
         )  # @dev: see radis.db.classes.ElectronicState._assign_E
 
     def _Erovib_default_coeffs(self, *args, **kwargs):
@@ -1203,8 +1190,8 @@ class ElectronicState(Isotope):
 
         except KeyError as err:
             raise KeyError(
-                "Mandatory spectroscopic constant `{0}` ".format(err.args[0])
-                + "not defined for electronic state {0}".format(self.get_fullname())
+                f"Mandatory spectroscopic constant `{err.args[0]}` "
+                + f"not defined for electronic state {self.get_fullname()}"
                 + ". Check your ElectronicState definition"
             )
 
@@ -1261,9 +1248,9 @@ class ElectronicState(Isotope):
             if we is None:
                 raise KeyError(
                     "Mandatory spectroscopic constant `we` "
-                    + "not defined for electronic state {0}".format(self.get_fullname())
+                    + f"not defined for electronic state {self.get_fullname()}"
                     + ". Check your ElectronicState definition. Given "
-                    + "constants: {0}".format(list(c.keys()))
+                    + f"constants: {list(c.keys())}"
                 )
 
         else:
@@ -1278,10 +1265,10 @@ class ElectronicState(Isotope):
 
             except KeyError as err:
                 raise KeyError(
-                    "Mandatory spectroscopic constant `{0}` ".format(err.args[0])
-                    + "not defined for electronic state {0}".format(self.get_fullname())
+                    f"Mandatory spectroscopic constant `{err.args[0]}` "
+                    + f"not defined for electronic state {self.get_fullname()}"
                     + ". Check your ElectronicState definition. Given "
-                    + "constants: {0}".format(list(c.keys()))
+                    + f"constants: {list(c.keys())}"
                 )
 
         return morse_increment(
@@ -1296,9 +1283,7 @@ class ElectronicState(Isotope):
         )
 
     def get_fullname(self):
-        return r"{0}({1}{2})(iso{3})".format(
-            self.name, self.state, _print_term_symbol(self.term_symbol), self.iso
-        )
+        return f"{self.name}({self.state}{_print_term_symbol(self.term_symbol)})(iso{self.iso})"
 
     def get_statename_utf(self):
         r"""Returns Electronic state name in UTF format, used in the standard
@@ -1323,3 +1308,13 @@ if __name__ == "__main__":
     from radis.test.db.test_molecules import _run_testcases
 
     print(("Testing molecules.py", _run_testcases()))
+
+
+def get_element_symbol(species):
+    """
+    Extracts the element symbol from the species given in spectroscopic notation
+    """
+
+    atomic_symbol = species.split("_")[0]
+    el = getattr(periodictable, atomic_symbol)
+    return el

@@ -73,9 +73,7 @@ def test_hitran_names_match(verbose=True, warnings=True, *args, **kwargs):
     # All species in HITRAN groups should be valid HITRAN_MOLECULES names
     for m in all_hitran:
         if not m in HITRAN_MOLECULES:
-            raise ValueError(
-                "{0} is defined in HITRAN groups but has no HITRAN id".format(m)
-            )
+            raise ValueError(f"{m} is defined in HITRAN groups but has no HITRAN id")
 
     # Species in 'HITRAN_MOLECULES' should be classified in groups, else nonequilibrium
     # calculations are not possible.
@@ -84,13 +82,8 @@ def test_hitran_names_match(verbose=True, warnings=True, *args, **kwargs):
             "Difference between HITRAN groups (left) and HITRAN id "
             + "dictionary (right). Some HITRAN species are not classified in "
             + "groups. Nonequilibrium calculations wont be possible for these!:\n"
-            + "{0}".format(
-                compare_lists(
-                    all_hitran, HITRAN_MOLECULES, verbose=False, return_string=True
-                )[1]
-            )
+            + f"{compare_lists(all_hitran, HITRAN_MOLECULES, verbose=False, return_string=True)[1]}"
         )
-    return
 
 
 @pytest.mark.fast
@@ -109,8 +102,6 @@ def test_local_hitran_co(verbose=True, warnings=True, **kwargs):
     assert df.dtypes["vu"] == np.int64
     assert df.dtypes["vl"] == np.int64
 
-    return True
-
 
 def test_local_hitran_co2(verbose=True, warnings=True, **kwargs):
 
@@ -127,8 +118,6 @@ def test_local_hitran_co2(verbose=True, warnings=True, **kwargs):
     ) == [4, 0, 0, 0, 0, 0, 0, 1]
     assert df.dtypes["v1l"] == np.int64
     assert df.dtypes["v3u"] == np.int64
-
-    return True
 
 
 def test_local_hitran_h2o(verbose=True, warnings=True, **kwargs):
@@ -163,8 +152,6 @@ def test_local_hitran_h2o(verbose=True, warnings=True, **kwargs):
     assert df.dtypes["Kal"] == np.int64
     assert df.dtypes["Kcl"] == np.int64
 
-    return True
-
 
 def test_local_hitemp_file(verbose=True, warnings=True, **kwargs):
     """Analyse some default files to make sure everything still works."""
@@ -182,8 +169,6 @@ def test_local_hitemp_file(verbose=True, warnings=True, **kwargs):
     assert "branch" in df
     assert df["branch"].iloc[0] == 0  # Q
     assert df["branch"].iloc[1] == 1  # R
-
-    return True
 
 
 def test_irrelevant_file_loading(*args, **kwargs):
@@ -290,6 +275,21 @@ def test_cache_regeneration(verbose=True, warnings=True, **kwargs):
     assert cache_last_modification_again > cache_last_modification
 
 
+def test_hitran_cross_sections(*args, **kwargs):
+
+    datafile = "CH3COCH3_233.4_375.2_700.0-1780.0_13.xsc"
+
+    from radis.api.hitranapi import hitranxsc
+
+    data = hitranxsc(getTestFile(datafile))
+
+    assert data["T"] == 233.4  # K
+    assert data["P"] == 375.2  # Pa
+    assert data["name"] == "Acetone"
+    assert data["wavenumber"].min() == 700.004
+    assert data["wavenumber"].max() == 1780.0066
+
+
 def _run_testcases(verbose=True, *args, **kwargs):
 
     test_hitran_names_match(verbose=verbose, *args, **kwargs)
@@ -299,7 +299,7 @@ def _run_testcases(verbose=True, *args, **kwargs):
     test_local_hitemp_file(verbose=verbose, *args, **kwargs)
     test_irrelevant_file_loading()
     test_cache_regeneration(verbose=verbose, *args, **kwargs)
-    return True
+    test_hitran_cross_sections(*args, **kwargs)
 
 
 if __name__ == "__main__":

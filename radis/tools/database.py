@@ -223,11 +223,7 @@ def save(
             json_tricks.dump(sjson, f, indent=4)  # takes more space but more readable
 
     if verbose:
-        print(
-            "Spectrum stored in {0} ({1:.1f}Mb)".format(
-                fout, getsize(fout) / 1024 * 1e-3
-            )
-        )
+        print(f"Spectrum stored in {fout} ({getsize(fout) / 1024 * 1e-3:.1f}Mb)")
 
     return fout  # return final name
 
@@ -264,11 +260,7 @@ def _format_to_jsondict(s: Spectrum, discard, compress, verbose=True):
         v = sjson["conditions"][k]
         if not is_jsonable(v):
             if verbose:
-                printr(
-                    "Discarded {0} from conditions as not jsonable ({1})".format(
-                        k, type(v)
-                    )
-                )
+                printr(f"Discarded {k} from conditions as not jsonable ({type(v)})")
             del sjson["conditions"][k]
 
     # if compress>=2, remove unnecessary spectral quantities (that can be recomputed
@@ -311,26 +303,26 @@ def _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose):
                 if k in ["Tvib"] and is_float(v):
                     # (dev): it can happen in multi-Tvib mode that Tvib is
                     # a str ('Tvib1,Tvib2,Tvib3') and not a float
-                    vs = "{0:.0f}".format(v)
+                    vs = f"{v:.0f}"
                 elif k in ["Telec", "Tgas", "Trot"]:
-                    vs = "{0:.0f}".format(v)
+                    vs = f"{v:.0f}"
                 # ... general case
                 elif is_float(v):
-                    vs = "{0:.3g}".format(v)
+                    vs = f"{v:.3g}"
                 else:
-                    vs = "{0}".format(v)
+                    vs = f"{v}"
 
                 try:
                     un = sjson["cond_units"][k]
                 except KeyError:  # units not defined, or no units for this condition
                     un = ""
-                info.append("{0}{1}{2}".format(k, vs, un))
+                info.append(f"{k}{vs}{un}")
                 # Note: should test for filename validity here.
                 # See https://stackoverflow.com/questions/9532499/check-whether-a-path-is-valid-in-python-without-creating-a-file-at-the-paths-ta
                 # but it looks long. Best is probably to just test write a file
             else:
                 if verbose:
-                    print(("Warning. {0} not a valid condition".format(k)))
+                    print(f"Warning. {k} not a valid condition")
         info = "_".join([_f for _f in info if _f])
     else:
         info = ""
@@ -360,15 +352,15 @@ def _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose):
                 fout = join(fold, name)
         elif if_exists_then == "replace":
             if verbose:
-                print(("File exists and will be replaced: {0}".format(name)))
+                print(f"File exists and will be replaced: {name}")
         elif if_exists_then == "ignore":
             if verbose:
-                print(("File already exists : {0}. Ignoring".format(name)))
+                print(f"File already exists : {name}. Ignoring")
             # main function will return after this function returns.
         else:
             raise ValueError(
-                "File already exists {0}. Choose another filename".format(fout)
-                + ", or set the `if_exists_then` option to `replace` or ìncrement`"
+                f"File already exists {fout}. Choose another filename"
+                + ", or set the `if_exists_then` option to `replace` or `increment`"
             )
 
     return fout
@@ -400,12 +392,7 @@ def _compress(s: Spectrum, sjson):
 
     if len(discarded) > 0:
         print(
-            (
-                "Redundant quantities removed: {0}. Use s.update() after ".format(
-                    discarded
-                )
-                + "loading to regenerate them"
-            )
+            f"Redundant quantities removed: {discarded}. Use s.update() after loading to regenerate them"
         )
 
     return sjson
@@ -458,21 +445,13 @@ def load_spec(file, binary=True) -> Spectrum:  # , return_binary_status=False):
     # if it fails, retry with different format
     except (TypeError, Exception):
         print(
-            (
-                "Could not open file {0} with binary={1}. ".format(
-                    basename(file), binary
-                )
-                + "Trying with binary={0}".format(not binary)
-            )
+            f"Could not open file {basename(file)} with binary={binary}. "
+            f"Trying with binary={not binary}"
         )
         binary = not binary
         sload = _load(binary)
         # if it works:
-        print(
-            "Worked! Use binary={0} directly in load_spec for faster loading".format(
-                binary
-            )
-        )
+        print(f"Worked! Use binary={binary} directly in load_spec for faster loading")
 
     # Test format / correct deprecated format:
     sload, fixed = _fix_format(file, sload)
@@ -513,10 +492,7 @@ def _json_to_spec(sload, file="") -> Spectrum:
             k: (np.array(v[0]), array(v[1])) for (k, v) in sload["quantities"].items()
         }
         warn(
-            "File {0}".format(basename(file))
-            + " has a deprecated structure ("
-            + "quantities are stored with shared wavespace: uses less space). "
-            + "Regenerate database ASAP.",
+            f"File {basename(file)} has a deprecated structure (quantities are stored with shared wavespace: uses less space). Regenerate database ASAP.",
             DeprecationWarning,
         )
     else:
@@ -613,10 +589,7 @@ def _fix_format(file, sload):
 
     if "q" in sload:
         printr(
-            "File {0}".format(basename(file))
-            + " has a deprecated structure (key "
-            + "q replaced with _q). Fixed this time, but regenerate "
-            + "database ASAP."
+            f"File {basename(file)} has a deprecated structure (key q replaced with _q). Fixed this time, but regenerate database ASAP."
         )  # , DeprecationWarning)
         sload["_q"] = sload.pop("q")
         sload["_q_conv"] = sload.pop("q_conv")
@@ -628,10 +601,7 @@ def _fix_format(file, sload):
             del sload["_q_conv"]
         else:
             printr(
-                "File {0}".format(basename(file))
-                + " has a deprecated structure (key "
-                + "_q_conv removed in 0.9.30). Fixed this time, but regenerate "
-                + "database for faster loading."
+                f"File {basename(file)} has a deprecated structure (key _q_conv removed in 0.9.30). Fixed this time, but regenerate database for faster loading."
             )
             if not "_q" in sload or len(sload["_q"]) == 0:
                 # only convolved quantities; just replace the dict
@@ -657,18 +627,14 @@ def _fix_format(file, sload):
 
         else:
             raise KeyError(
-                "Spectrum 'conditions' dict should at least have a "
-                + "'waveunit' key. Got: {0}".format(list(sload["conditions"].keys()))
+                f"Spectrum 'conditions' dict should at least have a 'waveunit' key. Got: {list(sload['conditions'].keys())}"
             ) from err
 
     # propagation medium removed in 0.9.22, replaced with 'nm' and 'nm_vac' in
     # waveunit directly
     if "medium" in sload["conditions"]:
         printr(
-            "File {0}".format(basename(file))
-            + " has a deprecated structure (key "
-            + "medium removed in 0.9.22). Fixing this time, but regenerate "
-            + "database ASAP."
+            f"File {basename(file)} has a deprecated structure (key medium removed in 0.9.22). Fixing this time, but regenerate database ASAP."
         )  # , DeprecationWarning)
         # Fix: rewrite waveunit
         assert "waveunit" in sload["conditions"]
@@ -688,29 +654,24 @@ def _fix_format(file, sload):
 
     if "isotope_identifier" in sload["conditions"]:
         printr(
-            "File {0}".format(basename(file))
-            + " has a deprecated structure (key "
-            + "isotope_identifier replaced with isotope). Fixed this time, but regenerate "
-            + "database ASAP."
+            f"File {basename(file)} has a deprecated structure (key isotope_identifier replaced with isotope). Fixed this time, but regenerate database ASAP."
         )  # , DeprecationWarning)
         sload["conditions"]["isotope"] = sload["conditions"].pop("isotope_identifier")
         fixed = True
 
     if "pressure_mbar" in sload["conditions"]:
         printr(
-            "File {0}".format(basename(file))
-            + " has a deprecated structure (key "
-            + "pressure_mbar replaced with pressure). Fixed this time, but regenerate "
-            + "database ASAP."
+            f"File {basename(file)} has a deprecated structure (key pressure_mbar replaced with pressure). Fixed this time, but regenerate database ASAP."
         )  # , DeprecationWarning)
         sload["conditions"]["pressure"] = (
             sload["conditions"].pop("pressure_mbar") * 1e-3
         )
+        sload["cond_units"]["pressure"] = "bar"
         fixed = True
 
     if "air_pressure_mbar" in sload["conditions"]:
         printr(
-            "File {0}".format(basename(file))
+            f"File {basename(file)}"
             + " has a deprecated structure (key "
             + "air_pressure_mbar replaced with pressure). Fixed this time, but regenerate "
             + "database ASAP."
@@ -718,16 +679,14 @@ def _fix_format(file, sload):
         sload["conditions"]["pressure"] = (
             sload["conditions"].pop("air_pressure_mbar") * 1e-3
         )
+        sload["conditions"]["air_pressure"] = "bar"
         fixed = True
 
     if "isotope" in sload["conditions"]:
         isotope = sload["conditions"]["isotope"]
         if not isinstance(isotope, str):
             printr(
-                "File {0}".format(basename(file))
-                + " has a deprecated structure (key "
-                + "isotope is now a string). Fixed this time, but regenerate "
-                + "database ASAP."
+                f"File {basename(file)} has a deprecated structure (key isotope is now a string). Fixed this time, but regenerate database ASAP."
             )  # , DeprecationWarning)
             # Fix it:
             sload["conditions"]["isotope"] = ",".join(
@@ -739,7 +698,7 @@ def _fix_format(file, sload):
         dbpath = sload["conditions"]["dbpath"]
         if not isinstance(dbpath, str):
             printr(
-                "File {0}".format(basename(file))
+                f"File {basename(file)}"
                 + " has a deprecated structure (key "
                 + "dbpath is now a string). Fixed this time, but regenerate "
                 + "database ASAP."
@@ -771,12 +730,7 @@ def _fix_format(file, sload):
             path = sload["conditions"][key]
             if path is not None and not isinstance(path, str):
                 printr(
-                    "File {0}".format(basename(file))
-                    + " has a deprecated structure (key "
-                    + "{0} is now a string). Fixed this time, but regenerate ".format(
-                        key
-                    )
-                    + "database ASAP."
+                    f"File {basename(file)} has a deprecated structure (key {key} is now a string). Fixed this time, but regenerate database ASAP."
                 )  # , DeprecationWarning)
                 # Fix it:
                 sload["conditions"][key] = path.replace("\\", "/")
@@ -823,10 +777,7 @@ def _fix_format(file, sload):
                 except KeyError:
                     # Not all keys necessary to decide. Assume False
                     warn(
-                        "Missing keys to tell if Spectrum {0} is at equilibrium".format(
-                            file
-                        )
-                        + ". Update spectrum manually"
+                        f"Missing keys to tell if Spectrum {file} is at equilibrium. Update spectrum manually"
                     )
                     return None
 
@@ -836,12 +787,8 @@ def _fix_format(file, sload):
                 sload["conditions"]["thermal_equilibrium"] = equilibrium
                 fixed = True
                 printr(
-                    "File {0}".format(basename(file))
-                    + " has a deprecated structure ("
-                    + "thermal_equilibrium not defined). Fixed it this time (guessed {0})".format(
-                        equilibrium
-                    )
-                    + ", but regenerate file ASAP."
+                    f"File {basename(file)} has a deprecated structure (thermal_equilibrium not defined)."
+                    + f"Fixed it this time (guessed {equilibrium}), but regenerate file ASAP."
                 )  # , DeprecationWarning)
 
     # Fix lines format HITRAN_CLASS_1 molecules
@@ -851,7 +798,7 @@ def _fix_format(file, sload):
 
         if "v1u" in lines and get_molecule(lines.id.iloc[0]) in HITRAN_CLASS1:
             printr(
-                "File {0}".format(basename(file))
+                f"File {basename(file)}"
                 + " has a deprecated structure "
                 + "(v1u in lines is now called vu). Fixed this time, but regenerate "
                 + "database ASAP."
@@ -867,18 +814,14 @@ def _fix_format(file, sload):
         for var, unit in sload["units"].items():
             if unit in ["I/I0", "-ln(I/I0)", "eps"]:
                 printr(
-                    "File {0}".format(basename(file))
-                    + " has a deprecated structure "
-                    + "(adimensioned units are now stored as ''). Fixed this time, but regenerate "
-                    + "database ASAP."
+                    f"File {basename(file)} has a deprecated structure "
+                    f"(adimensioned units are now stored as ''). Fixed this time, but regenerate "
+                    f"database ASAP."
                 )
                 sload["units"][var] = ""
             if "cm_1" in unit:
                 printr(
-                    "File {0}".format(basename(file))
-                    + " has a deprecated structure "
-                    + "(cm_1 is now written cm-1''). Fixed this time, but regenerate "
-                    + "database ASAP."
+                    f"File {basename(file)} has a deprecated structure (cm_1 is now written cm-1''). Fixed this time, but regenerate database ASAP."
                 )
                 sload["units"][var] = sload["units"][var].replace("cm_1", "cm-1")
 
@@ -917,7 +860,7 @@ def _update_to_latest_format(s, file, binary):
 
         s.store(file, compress=binary, if_exists_then="replace", discard=[])
 
-        printr("File {0} auto-updated to latest RADIS format".format(file))
+        printr(f"File {file} auto-updated to latest RADIS format")
 
         return
 
@@ -956,8 +899,7 @@ def plot_spec(file, what="radiance", title=True, **kwargs):
         s = file
     else:
         raise ValueError(
-            "file should be a string, or a Spectrum object directly. "
-            + "Got {0}".format(type(file))
+            f"file should be a string, or a Spectrum object directly. Got {type(file)}"
         )
 
     try:
@@ -966,12 +908,12 @@ def plot_spec(file, what="radiance", title=True, **kwargs):
         try:
             print((sys.exc_info()[0], sys.exc_info()[1]))
             s.plot(what + "_noslit", **kwargs)  # who knows maybe it will work :)
-            print(("Printing {0} instead".format(what + "_noslit")))
+            print(f"Printing {what + '_noslit'} instead")
         except:
             print((sys.exc_info()[0], sys.exc_info()[1]))
             # Plot something
             s.plot(s.get_vars()[0], **kwargs)
-            print(("Printing {0} instead".format(s.get_vars()[0])))
+            print(f"Printing {s.get_vars()[0]} instead")
 
     if title and s.file:
         plt.title(basename(s.file))
@@ -991,28 +933,24 @@ def query(df, conditions="", **kwconditions):
         dg = df.query(conditions)
     else:  # ... first write input conditions query
         query = []
-        for (k, v) in kwconditions.items():
+        for k, v in kwconditions.items():
             if isinstance(v, str):
-                query.append("{0} == r'{1}'".format(k, v))
+                query.append(f"{k} == r'{v}'")
             elif v is None:
                 # query "k == None" doesn't work. We use a workaround,
                 # checking if the column is different from itself (i.e. : is None):
                 # https://stackoverflow.com/a/32207819/5622825
                 query.append(f"{k} != {k}")
             else:
-                #                    query.append('{0} == {1}'.format(k,v))
-                query.append("{0} == {1}".format(k, v.__repr__()))
-                # ... for some reason {1}.format() would remove some digit
-                # ... to floats in Python2. Calling .__repr__() keeps
-                # ... the correct format, and has no other consequences as far
-                # ... as I can tell
-
+                #                    query.append(f"{k} == {v}")
+                query.append(f"{k} == {v}")
+            print(query)
         # There is a limitation in numpy: a max of 32 arguments is required.
         # Below we write a workaround when the Spectrum has more than 32 conditions
         if len(query) < 32:
             query = " & ".join(query)
             if __debug__:
-                printdbg("Database query: {0}".format(query))
+                printdbg(f"Database query: {query}")
             dg = df.query(query)
         else:
             # cut in <32-long parts
@@ -1022,7 +960,7 @@ def query(df, conditions="", **kwconditions):
             for i in range(1, N + 1):
                 querypart = " & ".join(query[i::N])
                 if __debug__:
-                    printdbg("Database query: {0}".format(querypart))
+                    printdbg(f"Database query: {querypart}")
                 dg = dg.query(querypart)
 
     return dg
@@ -1116,9 +1054,7 @@ class SpecList(object):
         for c in columns:
             if not c in self.df.columns:
                 raise ValueError(
-                    "`{0}` is not a column name. Use one of {1}".format(
-                        c, self.df.columns
-                    )
+                    f"`{c}` is not a column name. Use one of {self.df.columns}"
                 )
 
         return dg.reindex(columns=columns)
@@ -1193,10 +1129,7 @@ class SpecList(object):
             batch_size = self.batch_size
             if self.verbose:
                 print(
-                    "*** Loading the database with {0} ".format(
-                        nJobs if nJobs > 0 else f"all minus {abs(nJobs+1)}"
-                    )
-                    + "processor(s) ({0} files)***".format(len(files))
+                    f"*** Loading the database with {nJobs if nJobs > 0 else f'all minus {abs(nJobs+1)}'} processor(s) ({len(files)} files)***"
                 )
 
             def funLoad(f):
@@ -1204,9 +1137,7 @@ class SpecList(object):
                 indx = self.df.index[self.df.index[self.df["file"] == f]].to_list()
                 if len(indx) > 1:
                     raise ValueError(
-                        "Multiple files found for the name {} of indexes {}. Update the database manually".format(
-                            f, indx
-                        )
+                        f"Multiple files found for the name {f} of indexes {indx}. Update the database manually"
                     )
                 # self.df.loc[indx[0],"Spectrum"] = spectrum
                 return indx[0], spectrum
@@ -1221,9 +1152,7 @@ class SpecList(object):
                 idx = self.df.index[self.df.index[self.df["file"] == f]].to_list()
                 if len(idx) > 1:
                     raise ValueError(
-                        "Multiple files found for the name {} of indexes {}. Update the database manually".format(
-                            f, idx
-                        )
+                        f"Multiple files found for the name {f} of indexes {idx}. Update the database manually"
                     )
                 spectrum = load_spec(join(self.path, f), binary=self.binary)
                 self.df.loc[idx[0], "Spectrum"] = spectrum
@@ -1287,12 +1216,10 @@ class SpecList(object):
         scale_if_possible = kwconditions.pop("scale_if_possible", False)
 
         # Test inputs
-        for (k, _) in kwconditions.items():
+        for k, _ in kwconditions.items():
             if not k in self.df.columns:
                 raise ValueError(
-                    "{0} not a correct condition name. Use one of: {1}".format(
-                        k, self.df.columns
-                    )
+                    f"{k} not a correct condition name. Use one of: {self.df.columns}"
                 )
         if len(self.df) == 0:
             warn("Empty database")
@@ -1339,7 +1266,7 @@ class SpecList(object):
                     elif k == "mole_fraction":
                         s.rescale_mole_fraction(v)
                     else:
-                        raise KeyError("cant rescale this: {0}".format(k))
+                        raise KeyError(f"can't rescale this: {k}")
 
         return out
 
@@ -1382,7 +1309,7 @@ class SpecList(object):
                 )
         elif len(out) > 1:
             raise ValueError(
-                "Spectrum is not unique ({0} match found)".format(len(out))
+                f"Spectrum is not unique ({len(out)} match found)"
                 + ' Think about using "db.find_duplicates()"'
             )
         else:
@@ -1442,12 +1369,10 @@ class SpecList(object):
         #        split_columns = kwconditions.pop('split_columns', [])     #: type: bool
 
         # Check all conditions exist
-        for (k, _) in kwconditions.items():
+        for k, _ in kwconditions.items():
             if not k in self.df.columns:
                 raise ValueError(
-                    "{0} not a correct condition name. Use one of: {1}".format(
-                        k, self.df.columns
-                    )
+                    f"{k} not a correct condition name. Use one of: {self.df.columns}"
                 )
 
         numeric_columns = self.df.select_dtypes(include=np.number).columns.tolist()
@@ -1548,27 +1473,13 @@ class SpecList(object):
 
         if verbose > 1:
             print(
-                (
-                    "{:^7} \t".format(self.df.molecule[0])
-                    + "\t".join(["{0}".format(k) for k in kwconditions.keys()])
-                )
+                f"{self.df.molecule[0]:^7} \t"
+                + "\t".join([f"{k}" for k in kwconditions.keys()])
             )
+            print("Look up \t" + "\t".join([f"{v:.3g}" for v in kwconditions.values()]))
             print(
-                (
-                    "Look up \t"
-                    + "\t".join(["{0:.3g}".format(v) for v in kwconditions.values()])
-                )
-            )
-            print(
-                (
-                    "Got     \t"
-                    + "\t".join(
-                        [
-                            "{0:.3g}".format(sout.conditions[k])
-                            for k in kwconditions.keys()
-                        ]
-                    )
-                )
+                "Got     \t"
+                + "\t".join([f"{sout.conditions[k]:.3g}" for k in kwconditions.keys()])
             )
 
         return sout
@@ -1604,9 +1515,7 @@ class SpecList(object):
 
         if not self.df[condition].is_unique:
             raise ValueError(
-                "Values in {0} must be unique to use get_items(). Got {1}".format(
-                    condition, self.see(condition)[self.see(condition).duplicated()]
-                )
+                f"Values in {condition} must be unique to use get_items(). Got {self.see(condition)[self.see(condition).duplicated()]}"
             )
 
         return dict(zip(self.df[condition], self.df.Spectrum))
@@ -1982,7 +1891,7 @@ class SpecDatabase(SpecList):
         name, ext = splitext(str(path))
 
         if ext != "":
-            raise ValueError("Database should be a directory: {0}".format(path))
+            raise ValueError(f"Database should be a directory: {path}")
 
         self.name = basename(abspath(name))
         self.path = path
@@ -1991,12 +1900,10 @@ class SpecDatabase(SpecList):
             # create it
             os.mkdir(path)
             if verbose:
-                print(
-                    ("Database {0} initialised in {1}".format(self.name, dirname(path)))
-                )
+                print(f"Database {self.name} initialised in {dirname(path)}")
         else:
             if verbose:
-                print(("Loading database {0}".format(self.name)))
+                print(f"Loading database {self.name}")
 
         #        self.df = None               # created in SpecList.__init__()
         #        self.verbose = verbose       # created in SpecList.__init__()
@@ -2031,10 +1938,7 @@ class SpecDatabase(SpecList):
                 return self.update(force_reload=True, filt=filt)
             if len(csv_file) > 1:
                 raise ValueError(
-                    "Only 1 csv file should be in the database directory but {0} found : {1}".format(
-                        len(csv_file), csv_file
-                    )
-                    + ". Clean the files then initialize the database with lazy_loading=False"
+                    f"Only 1 csv file should be in the database directory but {len(csv_file)} found: {csv_file}. Clean the files then initialize the database with lazy_loading=False"
                 )
             spec_files = [f for f in os.listdir(self.path) if f.endswith(".spec")]
             # Initialize database without loading the spectra
@@ -2044,17 +1948,13 @@ class SpecDatabase(SpecList):
 
             if len(self.df["file"]) != len(spec_files):
                 raise ValueError(
-                    "Number of files stored in {0} ({1}) doesn't match the number of files found in the database folder ({2}). Update the csv first by setting lazy_loading=False".format(
-                        csv_file[0], len(self.df["file"]), len(spec_files)
-                    )
+                    f"Number of files stored in {csv_file[0]} ({len(self.df['file'])}) doesn't match the number of files found in the database folder ({len(spec_files)}). Update the csv first by setting lazy_loading=False"
                 )
             # Check file was not modified since it was registered in the .csv
             for f in spec_files:
                 if not f in self.df["file"].values:
                     raise ValueError(
-                        "{} not found in the csv registry.  Update the csv first with `SpecDatabase(..., lazy_loading=False)`".format(
-                            f
-                        )
+                        f"{f} not found in the csv registry. Update the csv first with `SpecDatabase(..., lazy_loading=False)`"
                     )
                 else:
                     if "last_modified" in self.df:
@@ -2067,9 +1967,7 @@ class SpecDatabase(SpecList):
                             os.path.getmtime(join(self.path, f)), 2
                         ):  # take rounded numbers to prevent errors
                             raise ValueError(
-                                "Spectrum {} last modification don't match the date stored in the csv. Update the database first with `SpecDatabase(..., lazy_loading=False)`".format(
-                                    f
-                                )
+                                f"Spectrum {f} last modification doesn't match the date stored in the csv. Update the database first with `SpecDatabase(..., lazy_loading=False)`"
                             )
                     else:
                         raise ValueError(
@@ -2165,7 +2063,7 @@ class SpecDatabase(SpecList):
             )
 
         if self.verbose:
-            print("Database compressed to {0}".format(new_folder))
+            print(f"Database compressed to {new_folder}")
 
     def print_index(self, file=None):
         if file is None:
@@ -2175,16 +2073,12 @@ class SpecDatabase(SpecList):
             try:
                 self.see().to_csv(file)
             except PermissionError:
-                warn(
-                    "Database index could not be updated: {0}".format(sys.exc_info()[1])
-                )
+                warn(f"Database index could not be updated: {sys.exc_info()[1]}")
         else:
             try:
                 os.remove(file)  # if database existed but files were deleted
             except PermissionError:
-                warn(
-                    "Database index could not be updated: {0}".format(sys.exc_info()[1])
-                )
+                warn(f"Database index could not be updated: {sys.exc_info()[1]}")
             except FileNotFoundError:
                 pass
 
@@ -2219,12 +2113,7 @@ class SpecDatabase(SpecList):
             columns = "all"
 
         if self.verbose:
-            print(
-                (
-                    "{0} duplicate(s) found".format(dg.sum())
-                    + " based on columns: {0}".format(columns)
-                )
-            )
+            print(f"{dg.sum()} duplicate(s) found based on columns: {columns}")
 
         onlyDuplicatedFiles = dg[dg == True]
         return onlyDuplicatedFiles
@@ -2320,7 +2209,7 @@ class SpecDatabase(SpecList):
         store_path = join(self.path, str(store_name))
         if exists(store_path) and if_exists_then == "ignore":
             if self.verbose:
-                print(("File already exists : {0}. Ignoring".format(store_name)))
+                print(f"File already exists : {store_name}. Ignoring")
             return
 
         # First, store the spectrum in a file
@@ -2349,24 +2238,21 @@ class SpecDatabase(SpecList):
         # ... input is a file name. Copy it in database and load it
         elif isinstance(spectrum, str):
             if not exists(spectrum):
-                raise FileNotFoundError("File doesnt exist: {0}".format(spectrum))
+                raise FileNotFoundError(f"File doesn't exist: {spectrum}")
 
             fd, name = split(spectrum)
 
             # Assert a similar case name is not in database already
             if spectrum in list(self.df["file"]):
                 raise ValueError(
-                    "File already in database: {0}. Database filenames should be unique".format(
-                        spectrum
-                    )
+                    f"File already in database: {spectrum}. Database filenames should be unique"
                 )
 
             if abspath(fd) != abspath(self.path):
                 # Assert file doesnt exist in database already
                 if name in os.listdir(self.path):
                     raise ValueError(
-                        "File already in database folder: {0}".format(name)
-                        + ". Use db.update() if you added it there manually"
+                        f"File already in database folder: {name}. Use db.update() if you added it there manually"
                     )
                 # Ok. Copy it.
                 file = join(self.path, name)
@@ -2379,7 +2265,7 @@ class SpecDatabase(SpecList):
                 file = spectrum
 
         else:
-            raise ValueError("Unvalid Spectrum type: {0}".format(type(spectrum)))
+            raise ValueError(f"Invalid Spectrum type: {type(spectrum)}")
 
         # Now register the spectrum in the database :
         spectrum_conditions = self._load_new_file(file, binary=compress)
@@ -2587,8 +2473,7 @@ class SpecDatabase(SpecList):
         if nJobs == 1 or len(files) < minimum_nfiles:
             if self.verbose:
                 print(
-                    "*** Loading the database with 1 processor "
-                    + "({0} files)***".format(len(files))
+                    f"*** Loading the database with 1 processor ({len(files)} files)***"
                 )
             for f in files:
                 db.append(funLoad(f))
@@ -2596,8 +2481,7 @@ class SpecDatabase(SpecList):
         else:
             if self.verbose:
                 print(
-                    "*** Loading the database with {0} ".format(nJobs)
-                    + "processor(s) ({0} files)***".format(len(files))
+                    f"*** Loading the database with {nJobs} processor(s) ({len(files)} files)***"
                 )
 
             db = Parallel(
@@ -2623,7 +2507,7 @@ class SpecDatabase(SpecList):
 
         s = load_spec(file, binary=binary)
         if self.verbose:
-            print(("loaded {0}".format(basename(file))))
+            print(f"loaded {basename(file)}")
 
         out = s.get_conditions().copy()
 

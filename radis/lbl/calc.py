@@ -30,6 +30,7 @@ except ImportError:  # if ran from here
     from radis.lbl.base import get_wavenumber_range
 
 from radis import config
+from radis.db.utils import compare
 from radis.misc.basics import all_in
 from radis.misc.utils import Default
 from radis.spectrum.spectrum import Spectrum
@@ -178,6 +179,7 @@ def calc_spectrum(
         - ``'hitemp'``, to fetch the latest HITEMP version
           through :py:func:`~radis.io.hitemp.fetch_hitemp`. Downloads all lines
           and all isotopes.
+
         - ``'exomol'``, to fetch the latest ExoMol database
           through :py:func:`~radis.io.exomol.fetch_exomol`. To download a specific
           database use (more info in fetch_exomol) ::
@@ -187,13 +189,16 @@ def calc_spectrum(
         - ``'geisa'``, to fetch the GEISA 2020 database
           through :py:func:`~radis.io.geisa.fetch_geisa`. Downloads all lines
           and all isotopes.
-        - the name of a a valid database file, in which case the format is inferred.
+
+        - the name of a valid database file, in which case the format is inferred.
           For instance, ``'.par'`` is recognized as ``hitran/hitemp`` format.
           Accepts wildcards ``'*'`` to select multiple files ::
 
             databank='PATH/TO/co_*.par'
 
         - ``'kurucz'`` to fetch the Kurucz linelists for atoms through :py:func:`~radis.io.kurucz.fetch_kurucz`. Downloads al lines and all isotopes.
+
+        - ``'NIST'`` to fetch the linelists for atoms through :py:func:`~radis.io.nist.fetch_nist`. Downloads al lines and all isotopes.
 
         - the name of a spectral database registered in your ``~/radis.json``
           :ref:`configuration file <label_lbl_config_file>` ::
@@ -293,22 +298,20 @@ def calc_spectrum(
         If ``False``, stays quiet. If ``True``, tells what is going on.
         If ``>=2``, gives more detailed messages (for instance, details of
         calculation times). Default ``True``.​
-    mode: ``'cpu'``, ``'gpu'``, ``'emulated_gpu'``
+    mode: ``'cpu'``, ``'gpu'``
         if set to ``'cpu'``, computes the spectra purely on the CPU. if set to ``'gpu'``,
         offloads the calculations of lineshape and broadening steps to the GPU
-        making use of parallel computations to speed up the process. Default ``'cpu'``.
-        Note that ``mode='gpu'`` requires CUDA compatible hardware to execute.
-        For more information on how to setup your system to run GPU-accelerated
-        methods using CUDA and Cython, check `GPU Spectrum Calculation on RADIS <https://radis.readthedocs.io/en/latest/lbl/gpu.html>`__
-        To try the GPU code without an actual GPU, you can use ``mode='emulated_gpu'``.
-        This will run the GPU equivalent code on the CPU.
+        making use of parallel computations to speed up the process. GPU computations
+        initiated in this way will use the Vulkan backend; use :py:class:`~radis.lbl.factory.SpectrumFactory` for more flexibility.
+        GPU spectra will be returned with exit_gpu=False, so the user should call Spectrum.gpu_exit() when they're done with GPU computations.
         Only ``'cpu'`` is available for atoms.
+        Default ``'cpu'``.
     return_factory: bool
         if ``True``, return the :py:class:`~radis.lbl.factory.SpectrumFactory` that
         computes the spectrum. Useful to access computational parameters, the line database,
         or to start batch-computations from a first spectrum calculation. Ex::
 
-                s, sf = calc_spectrum(..., return_factory=True)
+                s, sf = calc_spectrum(..., return_factory=True, save_memory=False)
                 sf.df1  # see the lines calculated
                 sf.eq_spectrum(...)  #  new calculation without reloading the database
     **kwargs: other inputs forwarded to SpectrumFactory
@@ -362,21 +365,30 @@ def calc_spectrum(
 
     Calculate a CO2 spectrum from the CDSD-4000 database::
 
+        T_list = [1000.0, 1500.0, 2000.0]
         s = calc_spectrum(2200, 2400,   # cm-1
                           molecule='CO2',
                           isotope='1',
                           databank='/path/to/cdsd/databank/in/npy/format/',
                           pressure=0.1,  # bar
-                          Tgas=1000,
+                          Tgas=T_list[0],
                           mole_fraction=0.1,
-                          mode='gpu'
+                          mode='gpu',
                           )
+        s.plot('absorbance', show=False)
 
-        s.plot('absorbance')
+        for T in T_list[1:]:
+            s.recalc_gpu(Tgas=T)
+            show = (True if T == T_list[-1] else False)
+            s.plot("absorbance", show=show, nfig="same")
+
+        s.exit_gpu()
 
     This example uses the :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu` method to calculate
     the spectrum on the GPU. The databank points to the CDSD-4000 databank that has been
     pre-processed and stored in ``numpy.npy`` format.
+    Consecutive spectra are calulated using the s.recalc_gpu() method, which uses the GPU to rapidly speed up calculations.
+    Without using consecutive s.recalc_gpu() calls, GPU computations do not provide significant advantage to CPU mode.
     ​
     Refer to the online :ref:`Examples <label_examples>` for more cases, and to
     the :ref:`Spectrum page <label_spectrum>` for details on post-processing methods.
@@ -467,12 +479,7 @@ def calc_spectrum(
                 return set(new_argument.keys()), new_argument_name
             elif set(new_argument.keys()) != set(molecule_reference_set):
                 raise ValueError(
-                    "Keys of molecules in the {0} dictionary must be the same as given in `{1}=`, i.e: {2}. Instead, we got {3}".format(
-                        new_argument_name,
-                        reference_name,
-                        molecule_reference_set,
-                        set(new_argument.keys()),
-                    )
+                    f"Keys of molecules in the {new_argument_name} dictionary must be the same as given in `{reference_name}=`, i.e: {molecule_reference_set}. Instead, we got {set(new_argument.keys())}",
                 )
             else:
                 return (
@@ -494,9 +501,7 @@ def calc_spectrum(
     if molecule_reference_set is None:
 
         raise ValueError(
-            "Please enter the molecule(s) to calculate in the `molecule=` argument or as a dictionary in the following: {0}".format(
-                list(DICT_INPUT_ARGUMENTS.keys())
-            )
+            f"Please enter the molecule(s) to calculate in the `molecule=` argument or as a dictionary in the following: {list(DICT_INPUT_ARGUMENTS.keys())}"
         )
 
     # Stage 2. Now we have the list of molecules. Let's get the input arguments for each of them.
@@ -564,11 +569,7 @@ def calc_spectrum(
         kwargs_molecule.update(**dict_arguments)
 
         # getting diluents for this molecule
-        if len(list(molecule_dict.keys())) > 1:
-            diluent_for_this_molecule = diluents_for_molecule(
-                mole_fraction, diluent, molecule
-            )
-        elif isinstance(diluent, Default):
+        if isinstance(diluent, Default):
             diluent_for_this_molecule = diluent
         else:
             diluent_for_this_molecule = diluents_for_molecule(
@@ -633,6 +634,44 @@ def calc_spectrum(
         return s, factory_dict
     else:
         return s
+
+
+# %% Convenience function
+def spectrum_test(**kwargs):
+    """Generate the :ref:`first example spectrum <label_first_example>` with ::
+
+        import radis
+        s = radis.spectrum_test()
+        s.plot()
+
+    Other Parameters
+    ----------------
+    kwargs: sent to :py:func:`~radis.lbl.calc.calc_spectrum`
+
+
+    """
+    from radis import calc_spectrum
+
+    conditions = {
+        "wavenum_min": 1900,
+        "wavenum_max": 2300,
+        "molecule": "CO",
+        "isotope": "1,2,3",
+        "pressure": 1.01325,  # bar
+        "Tgas": 700,  # K
+        "mole_fraction": 0.1,
+        "path_length": 1,  # cm
+        "databank": "hitran",
+    }
+
+    conditions.update(kwargs)
+
+    if "wmin" in kwargs and "wmax" in kwargs:
+        conditions.pop("wavenum_min")
+        conditions.pop("wavenum_max")
+
+    s = calc_spectrum(**conditions)
+    return s
 
 
 def _calc_spectrum_one_molecule(
@@ -760,7 +799,7 @@ def _calc_spectrum_one_molecule(
         # diluent_other_than_air = len(diluent) > 1 or (
         #     len(diluent) == 1 and "air" not in diluent
         # )
-    if diluent_other_than_air and databank == "exomol":
+    if diluent_other_than_air and compare(databank, "exomol"):
         raise NotImplementedError(
             "Only air broadening is implemented in RADIS with ExoMol. Please reach out on https://github.com/radis/radis/issues"
         )
@@ -771,25 +810,20 @@ def _calc_spectrum_one_molecule(
 
     # Get databank
     if (
-        databank
-        in [
-            "fetch",
-            "hitran",
-            "hitemp",
-            "exomol",
-            "geisa",
-            "kurucz",
-        ]
-        or (isinstance(databank, tuple) and databank[0] == "exomol")
-        or (isinstance(databank, tuple) and databank[0] == "hitran")
+        compare(
+            databank, ["fetch", "hitran", "hitemp", "exomol", "geisa", "kurucz", "nist"]
+        )
+        or compare(databank, "exomol")
+        or compare(databank, "hitran")
+        or compare(databank, "hitemp")
     ):  # mode to get databank without relying on  Line databases
         # Line database :
-        if databank in ["fetch", "hitran"]:
+        if compare(databank, ["fetch", "hitran"]):
             conditions = {
                 "source": "hitran",
                 "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
             }
-        elif isinstance(databank, tuple) and databank[0] == "hitran":
+        elif compare(databank, "hitran"):
             conditions = {
                 "source": "hitran",
                 "database": databank[
@@ -797,30 +831,37 @@ def _calc_spectrum_one_molecule(
                 ],  # 'full' or 'partial', cf LoaderFactory.fetch_databank()
                 "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
             }
-        elif databank in ["hitemp"]:
+        elif compare(databank, ["hitemp"]):
             conditions = {
                 "source": "hitemp",
                 "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium}
             }
-        elif databank in ["exomol"]:
+        elif compare(databank, ["exomol"]):
             conditions = {
                 "source": "exomol",
                 "parfuncfmt": "exomol",  # download & use Exo partition functions for equilibrium}
             }
-        elif databank in ["geisa"]:
+        elif compare(databank, ["geisa"]):
             conditions = {
                 "source": "geisa",
                 "parfuncfmt": "hapi",
                 # TODO: replace with GEISA partition function someday.............
             }
-        elif databank in ["kurucz"]:
-            conditions = {"source": "kurucz", "parfuncfmt": "kurucz"}
-
-        elif isinstance(databank, tuple) and databank[0] == "exomol":
+        elif compare(databank, ["kurucz"]):
+            conditions = {"source": "kurucz"}
+        elif compare(databank, ["nist"]):
+            conditions = {"source": "nist"}
+        elif compare(databank, "exomol"):
             conditions = {
                 "source": "exomol",
                 "database": databank[1],
                 "parfuncfmt": "exomol",  # download & use Exo partition functions for equilibrium}
+            }
+        elif compare(databank, "hitemp"):
+            conditions = {
+                "source": "hitemp",
+                "database": databank[1],
+                "parfuncfmt": "hapi",
             }
         # Partition functions :
         conditions.update(
@@ -867,7 +908,7 @@ def _calc_spectrum_one_molecule(
         # Guess format
         if databank.endswith(".par"):
             if verbose:
-                print("Inferred {0} is a HITRAN-format file.".format(databank))
+                print(f"Inferred {databank} is a HITRAN-format file.")
             conditions["format"] = "hitran"
             # If non-equilibrium we'll also need to load the energy levels.
             if not _equilibrium:
@@ -877,19 +918,13 @@ def _calc_spectrum_one_molecule(
                 conditions["lvl_use_cached"] = use_cached
         elif databank.endswith(".h5") or databank.endswith(".hdf5"):
             if verbose:
-                print(
-                    "Inferred {0} is a HDF5 file with RADISDB columns format".format(
-                        databank
-                    )
-                )
+                print(f"Inferred {databank} is a HDF5 file with RADISDB columns format")
             conditions["format"] = "hdf5-radisdb"
             if not _equilibrium:
                 conditions["levelsfmt"] = "radis"
         else:
             raise ValueError(
-                "Couldnt infer the format of the line database file: {0}. ".format(
-                    databank
-                )
+                f"Couldnt infer the format of the line database file: {databank}. "
                 + "Create a user-defined database in your ~/radis.json file "
                 + "and define the format there. More information on "
                 + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
@@ -947,28 +982,21 @@ def _calc_spectrum_one_molecule(
     # ------------------
     # Use the standard eq_spectrum / non_eq_spectrum functions
     if _equilibrium:
-        if mode == "cpu":
-            s = sf.eq_spectrum(
-                Tgas=Tgas,
-                mole_fraction=mole_fraction,
-                path_length=path_length,
-                name=name,
-            )
 
-        elif mode in ("gpu", "emulated_gpu"):
-            s = sf.eq_spectrum_gpu(
-                Tgas=Tgas,
-                mole_fraction=mole_fraction,
-                pressure=pressure,
-                path_length=path_length,
-                name=name,
-                backend=("cpu-cuda" if mode == "emulated_gpu" else "gpu-cuda")
-                # emulate=(True if mode == "emulated_gpu" else False),
-            )
-        else:
-            raise ValueError(
-                f"mode= should be one of 'cpu', 'gpu', 'emulated_gpu' (GPU code running on CPU). Got {mode}"
-            )
+        if mode not in ["cpu", "gpu"]:
+            raise ValueError(f"mode= should be 'cpu' or 'gpu'; got {mode}")
+            return
+
+        eq_spectrum_mode = sf.eq_spectrum if mode == "cpu" else sf.eq_spectrum_gpu
+
+        s = eq_spectrum_mode(
+            Tgas=Tgas,
+            pressure=pressure,
+            mole_fraction=mole_fraction,
+            path_length=path_length,
+            name=name,
+        )
+
     else:
         if mode != "cpu":
             raise NotImplementedError(mode)
@@ -977,6 +1005,7 @@ def _calc_spectrum_one_molecule(
             Trot=Trot,
             Ttrans=Tgas,
             Telec=Telec,
+            pressure=pressure,
             overpopulation=overpopulation,
             mole_fraction=mole_fraction,
             path_length=path_length,
@@ -992,8 +1021,6 @@ def _calc_spectrum_one_molecule(
 # Function to get diluent(s) for a molecule
 def diluents_for_molecule(mole_fraction, diluent, molecule):
     diluent_for_this_molecule = {}
-    if isinstance(diluent, Default):
-        diluent = "air"
     if isinstance(diluent, dict):
         diluent_for_this_molecule = diluent.copy()
     else:
@@ -1001,7 +1028,6 @@ def diluents_for_molecule(mole_fraction, diluent, molecule):
             diluent_for_this_molecule[diluent] = 1 - sum(list(mole_fraction.values()))
         else:
             diluent_for_this_molecule[diluent] = 1 - mole_fraction
-        # Note: will be rounded later, e.g. 1-0.7 = 0.30000000000000004 - see https://docs.python.org/3.10/tutorial/floatingpoint.html
 
     # Adding the other molecules from the gas mixture as diluent for the calculation of this particular molecule
     if isinstance(mole_fraction, dict):
@@ -1012,14 +1038,7 @@ def diluents_for_molecule(mole_fraction, diluent, molecule):
                 else:
                     diluent_for_this_molecule[other_molecule] = other_fraction
 
-    # finaly, remove mole fraction of diluent equal to 0 (weird input or air when molecules add up to 1)
-    diluent_for_this_molecule = {
-        k: v for k, v in diluent_for_this_molecule.items() if v != 0
-    }
-    if diluent_for_this_molecule == {}:
-        return Default(None)
-    else:
-        return diluent_for_this_molecule
+    return diluent_for_this_molecule
 
 
 # --------------------------

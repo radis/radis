@@ -127,7 +127,7 @@ def sPlanck(
     eps=1,
     wstep=0.01,
     medium="air",
-    **kwargs
+    **kwargs,
 ):
     r"""Return a RADIS :py:class:`~radis.spectrum.spectrum.Spectrum` object with blackbody radiation.
 
@@ -180,6 +180,10 @@ def sPlanck(
     .. math::
         \epsilon 2h c^2 {\nu}^3 \frac{1}{\operatorname{exp}\left(\frac{h c \nu}{k T}\right)-1}
 
+    Additional Reference:
+    - ["Blackbody Radiation and Planck's Law," Optics Express]
+    (https://opg.optica.org/oe/fulltext.cfm?uri=oe-14-18-8121&id=97928).
+
     See Also
     --------
     :py:func:`~radis.phys.blackbody.planck`, :py:func:`~radis.phys.blackbody.planck_wn`
@@ -203,8 +207,9 @@ def sPlanck(
         elif medium == "vacuum":
             waveunit = "nm_vac"
         else:
-            raise ValueError(medium)
-
+            raise NotImplementedError(
+                f"The medium = {medium} was not implemented for a black body."
+            )
     if T is None:
         raise ValueError("T must be defined")
 
@@ -242,7 +247,7 @@ def sPlanck(
         units={"radiance_noslit": Iunit, "transmittance_noslit": "", "absorbance": ""},
         cond_units={"wstep": waveunit},
         wunit=waveunit,
-        name="Planck {0}K, eps={1:.2g}".format(T, eps),
+        name=f"Planck {T}K, eps={eps:.2g}",
     )
 
 

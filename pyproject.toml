@@ -1,0 +1,141 @@
+[build-system]
+requires = ["setuptools>=64.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# Installation Instructions:
+# Install (normal, use-only):
+#     pip install radis
+#
+# For developers (create an alias, so you can still edit):
+#     pip install -e .
+#
+# When creating a new version, just update the __version__.txt file
+
+[project]
+name = "radis"
+dynamic = ["version"]  # Version is read from radis/__version__.txt
+description = "A fast line-by-line code for high-resolution infrared molecular spectra"
+readme = "README.md"
+authors = [
+    {name = "Erwan Pannier"},
+]
+license = {text = "GNU Lesser General Public License v3 (LGPLv3)"}
+keywords = [
+    "spectrum",
+    "infrared",
+    "spectra",
+    "radiation",
+    "nonequilibrium",
+    "spectroscopy",
+    "molecules",
+    "HITRAN",
+    "hitemp",
+    "exomol",
+    "GEISA",
+    "NIST",
+    "Kurucz",
+    "line-by-line",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+    "Topic :: Scientific/Engineering",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.9",    #DEV MESSAGE: end of life, October 2025, https://devguide.python.org/versions/.
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.9"
+dependencies = [
+    # This is a duplicate of environment.yml; but it is NECESSARY to tell pip what are the dependencies.
+    # Dependencies in environment.yml and here should be kept consistent.
+    # This is tested automatically https://github.com/radis/radis/pull/734
+    "astropy>=4.3.1",  # Unit aware calculations
+    "astroquery>=0.4.6",  # to fetch HITRAN databases
+    "beautifulsoup4>=4.10.0",  # parse ExoMol website and HITRAN responses
+    "configparser",  # for configuration file handling
+    "cryptography",  # for encryption and security features
+    "getpass4",  # for handling password input securely
+    "habanero>=1.2.0",  # CrossRef API to retrieve data from doi
+    "h5py>=3.2.1",  # load HDF5
+    "hjson",  # Json with comments (for default_radis.json)
+    "hitran-api",  # HAPI, used to access TIPS partition functions
+    "joblib",  # for parallel loading of SpecDatabase
+    "json-tricks>=3.15.0",  # to deal with non jsonable formats
+    "lmfit",  # for new fitting modules
+    "lxml",  # parser used for ExoMol website
+    "matplotlib",  # for plotting
+    "mpldatacursor",  # interactive data cursors for matplotlib
+    "numba",  # just-in-time compiler
+    "numpy",  # numerical computations
+    "pandas",  # data manipulation and analysis
+    "peakutils",  # peak detection and fitting
+    "periodictable",  # periodic table data
+    "plotly>=2.5.1",  # for line survey HTML output
+    "psutil",  # to get user RAM
+    "publib",  # Plotting styles for Matplotlib.
+    "python-dotenv",  # for managing environment variables
+    "requests",  # for making HTTP requests to HITRAN database
+    "ruamel.yaml",  # YAML parsing and writing
+    "scipy>=1.4.0",  # scientific computing
+    "seaborn",  # other matplotlib themes
+    "tables",  # for pandas to HDF5 export - WARNING named "pytables" in conda
+    "termcolor",  # terminal colors
+    "toml",
+    "tqdm",  # for progress bars
+    'vaex-core; python_version < "3.11"',  # out-of-core dataframes
+    'vaex-hdf5; python_version < "3.11"',  # HDF5 support for vaex
+    'vaex-viz; python_version < "3.11"',  # visualization for vaex
+    'vulkan',
+]
+
+[project.optional-dependencies]
+dev = [
+    "numpydoc",  # for Jedi (autocompletion) to recognize
+    "black>=20.8b1",  # for code-linting in accordance to PEP8
+    "isort",  # for sorting imports
+    "pre-commit",  # to enforce Black before each commit
+    "pytest",  # to run test suite
+    "ipython>=7.0.0",  # useful for fast debugging
+]
+docs = [
+    "sphinx-autodoc-annotation",  # for sphinx documentation annotations
+    "sphinx_autodoc_defaultargs>=0.1.2",  # for handling default arguments in sphinx
+    "sphinx>=1.7.0",  # documentation generator
+    "astroquery>=0.3.9",  # for documentation examples
+    "sphinxcontrib-apidoc",  # for API documentation generation
+    "sphinx-gallery",  # for documentation examples gallery
+    "lmfit",  # for documentation examples
+    "pytest",  # Sphinx autodoc also parses test suite
+    "specutils<2.0",  # spectroscopic data handling, <2.0 see #834
+]
+
+[tool.setuptools]
+# Note: Previously used Cython extensions were removed in v0.15
+# If re-adding Cython support in the future, add build requirements in build-system.requires
+include-package-data = true     # add non .py data files in MANIFEST.in
+zip-safe = false  # impossible as long as we have external files read with __file__ syntax
+platforms = ["any"]
+
+[tool.setuptools.packages.find]
+include = ["radis*"]
+exclude = ["radis.test*", "docs*", "examples*", "test*"]
+
+# Previously in setup.py:
+# **get_ext_modules(with_binary)  # see Main install routine for radis<0.15
+# package_data={'radis': ['radis/phys/units.txt']}  # now handled through MANIFEST.in
+
+[tool.setuptools.dynamic]
+version = {file = "radis/__version__.txt"}
+
+# Note: The following RST cleanup functionality was previously used when README was in RST format
+# It's preserved here for reference in case it's needed in the future:
+#
+# RST cleanup for PyPI compatibility included:
+# - Removing Sphinx-only roles (:abbr:, :ref:, :term:, :dfn:, etc.)
+# - Converting Sphinx directives (.. doctest, .. plot::, etc.)
+# - Handling special cases for RADIS documentation
+# For full details see the original yield_sphinx_only_markup function in setup.py

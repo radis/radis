@@ -98,7 +98,7 @@ def test_compare_torch_CO2(
             "test_compare_torch_CO2_data/test_compare_torch_CO2_conditions_JTHT2003.dat"
         ),
         comment="#",
-        sep="\s+",
+        sep=r"\s+",
     )
     slab_width = 0.05  # cm,  WARNING. Hardcoded (look up the table)
 
@@ -253,7 +253,7 @@ def test_compare_torch_CO2(
             "test_compare_torch_CO2_data/test_compare_torch_CO2_spectrum_JTHT2003.dat"
         ),
         skiprows=5,
-        sep="\s+",
+        sep=r"\s+",
     )
     exp.w /= 10  # Angstrom to nm
     exp = exp[(exp.w > wlmin) & (exp.w < wlmax)]
@@ -317,7 +317,7 @@ def test_compare_torch_CO2(
     assert get_residual(stot_corr, sexp, "radiance") < 0.02
 
     if verbose:
-        print(("Finished test_compare_torch_CO2 in {0:.0f}s".format(time() - t0)))
+        print(f"Finished test_compare_torch_CO2 in {time() - t0:.0f}s")
 
 
 if __name__ == "__main__":

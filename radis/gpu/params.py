@@ -24,11 +24,11 @@ def init_L_params(na, gamma_arr, verbose=False):
 
         # Only keep extremes
         test_dict = {}
-        for (na_i, gamma_i) in unique_lines:
+        for na_i, gamma_i in unique_lines:
             try:
                 test_dict[na_i] = minmax((gamma_i, test_dict[na_i]))
 
-            except (KeyError):
+            except KeyError:
                 test_dict[na_i] = gamma_i
 
         # Check which ones are really at the top:
@@ -47,6 +47,9 @@ def init_L_params(na, gamma_arr, verbose=False):
                             break
                     else:
                         break
+
+            while X[i] == xi:
+                i -= 1
 
             A = A[: i + 1] + [key]
             B = B[: i + 1] + [np.log(test_dict[key])]
@@ -144,12 +147,12 @@ def set_pTQ(p, T, mole_fraction, iter_h, l=1.0, slit_FWHM=0.0):
     iter_h.log_2p = np.log(2 * p)
     iter_h.hlog_T = 0.5 * np.log(T)
     iter_h.log_rT = np.log(296.0 / T)
-    iter_h.c2T = -c2 / T
+    iter_h.c2T = c2 / T
     iter_h.N = p * 1e5 / (1e6 * k * T)  # cm-3
     iter_h.x[0] = mole_fraction  # self
     iter_h.x[1] = 1 - mole_fraction  # air
-    iter_h.l = l
-    iter_h.slit_FWHM = slit_FWHM
+    # iter_h.l = l //TODO: GPU calculation of absorbance not currently implemented
+    # iter_h.slit_FWHM = slit_FWHM //TODO: GPU application of ILS not currently implemented
 
     for i in range(len(_Q_intp_list)):
         iter_h.Q[i] = _Q_intp_list[i](T)

@@ -34,6 +34,7 @@ def fetch_exomol(
     engine="default",
     output="pandas",
     skip_optional_data=True,
+    **kwargs,
 ):
     """Stream ExoMol file from EXOMOL website. Unzip and build a HDF5 file directly.
 
@@ -219,6 +220,7 @@ def fetch_exomol(
         cache=cache,
         skip_optional_data=skip_optional_data,
         verbose=verbose,
+        **kwargs,
     )
 
     # Get local files
@@ -231,13 +233,14 @@ def fetch_exomol(
     # Specific for RADIS : rename columns
     radis2exomol_columns = {
         "wav": "nu_lines",
-        "airbrd": "alpha_ref",
         "El": "elower",
         "ju": "jupper",
         "jl": "jlower",
         "gp": "gupper",
         "gpp": "glower",
-        "Tdpair": "n_Texp",
+        ### old, now we directly set "airbrd" and "Tdpair"
+        # "airbrd": "alpha_ref",
+        # "Tdpair": "n_Texp",
     }
     # get column name converting to exomol/exojax format if possible, else use the same
     if columns is not None:
@@ -264,7 +267,10 @@ def fetch_exomol(
         )
 
     # Add broadening
-    mdb.set_broadening_coef(df, output=output)
+    mdb.set_broadening_coef(df, output=output, species="air")
+
+    # Add self broadening if available
+    mdb.set_broadening_coef(df, output=output, species="self")
 
     # Specific for RADIS :
     # ... Get RADIS column names:

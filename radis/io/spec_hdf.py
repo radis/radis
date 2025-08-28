@@ -2,8 +2,7 @@
 """
 Functions to read/write Spectrum objects under HDF5 format
 """
-
-from radis.io.hdf5 import DataFileManager
+from radis.api.hdf5 import DataFileManager
 
 # Convert
 

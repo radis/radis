@@ -140,12 +140,10 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
     out_of_bounds = kwargs.pop("out", "nan")  # default 'nan'
     modify_inputs = kwargs.pop("modify_inputs", False)  # type: bool
     if len(kwargs) > 0:
-        raise ValueError("Unexpected input: {0}".format(list(kwargs.keys())))
+        raise ValueError(f"Unexpected input: {list(kwargs.keys())}")
     if resample_wavespace not in ["never", "intersect", "full"]:
         raise ValueError(
-            "resample should be one of: {0}".format(
-                ", ".join(["never", "intersect", "full"])
-            )
+            f"resample should be one of: {', '.join(['never', 'intersect', 'full'])}"
         )
 
     if len(slabs) == 0:
@@ -155,7 +153,7 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
         if not isinstance(slabs[0], Spectrum):
             raise TypeError(
                 "SerialSlabs takes an unfolded list of Spectrum as "
-                + "argument: *list (got {0})".format(type(slabs[0]))
+                + f"argument: *list (got {type(slabs[0])})"
             )
         return slabs[0]
 
@@ -170,7 +168,7 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
             *slabs,
             resample=resample_wavespace,
             out=out_of_bounds,
-            modify_inputs=modify_inputs
+            modify_inputs=modify_inputs,
         )
 
         # Now calculate sn and s in Serial
@@ -199,7 +197,7 @@ def SerialSlabs(*slabs, **kwargs) -> Spectrum:
         except KeyError:
             raise KeyError(
                 "Cannot calculate the RTE if non convoluted quantities "
-                + "are not defined. Got: {0}".format(s.get_vars())
+                + f"are not defined. Got: {s.get_vars()}"
             )
 
         # Get all data
@@ -311,10 +309,10 @@ def _serial_slab_names(s, sn):
     name_s = s.get_name()
     name_sn = sn.get_name()
     if "//" in name_s and not ">>" in name_s:
-        name_s = "({0})".format(name_s)
+        name_s = f"({name_s})"
     if "//" in name_sn:
-        name_sn = "({0})".format(name_sn)
-    return "{0}>>{1}".format(name_s, name_sn)
+        name_sn = f"({name_sn})"
+    return f"{name_s}>>{name_sn}"
 
 
 def _check_valid(s):
@@ -331,9 +329,7 @@ def _check_valid(s):
     """
 
     if not isinstance(s, Spectrum):
-        raise TypeError(
-            "All inputs must be Spectrum objects (got: {0})".format(type(s))
-        )
+        raise TypeError(f"All inputs must be Spectrum objects (got: {type(s)})")
     for k, v in s._q.items():
         if (
             k in ["transmittance_noslit", "radiance_noslit", "abscoeff", "emisscoeff"]
@@ -361,7 +357,7 @@ def resample_slabs(
     out_of_bounds="nan",
     modify_inputs=False,
     copy_lines=False,
-    *slabs
+    *slabs,
 ):
     # type: (str, str, str, *Spectrum) -> *Spectrum
     """Resample slabs on the same wavespace: if the range are different,
@@ -613,14 +609,12 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
     verbose = kwargs.pop("verbose", False)  # type: bool
     modify_inputs = kwargs.pop("modify_inputs", False)  # type: bool
     if len(kwargs) > 0:
-        raise ValueError("Unexpected input: {0}".format(list(kwargs.keys())))
+        raise ValueError(f"Unexpected input: {list(kwargs.keys())}")
 
     # Check inputs
     if resample_wavespace not in ["never", "intersect", "full"]:
         raise ValueError(
-            "'resample' should be one of: {0}".format(
-                ", ".join(["never", "intersect", "full"])
-            )
+            f"'resample' should be one of: {', '.join(['never', 'intersect', 'full'])}"
         )
 
     if len(slabs) == 0:
@@ -630,7 +624,7 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
         if not isinstance(slabs[0], Spectrum):
             raise TypeError(
                 "MergeSlabs takes an unfolded list of Spectrum as "
-                + "argument: (got {0})".format(type(slabs[0]))
+                + f"argument: (got {type(slabs[0])})"
             )
         return slabs[0]
 
@@ -653,7 +647,7 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
         if not all([L == path_lengths[0] for L in path_lengths[1:]]):
             raise ValueError(
                 "path_length must be equal for all MergeSlabs inputs"
-                + "  (got {0})".format(path_lengths)
+                + f"  (got {path_lengths})"
             )
 
         # Save lines if lines are given in all input spectra
@@ -670,7 +664,7 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
             out_of_bounds,
             modify_inputs,
             export_lines,
-            *slabs
+            *slabs,
         )
         w_noconv = slabs[0]._get_wavespace()
 
@@ -757,6 +751,8 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
         if "abscoeff" in recompute and "path_length" in conditions:
             recompute.append("absorbance")
             recompute.append("transmittance_noslit")
+        if "xsection" in requested and "abscoeff" not in recompute:
+            recompute.append("abscoeff")
 
         # %% Calculate total emisscoeff and abscoeff
         # To make it easier, we start from abscoeff and emisscoeff of all slabs

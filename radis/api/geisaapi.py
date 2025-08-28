@@ -32,6 +32,8 @@ except ImportError:
 # from typing import Union
 from radis.api.dbmanager import DatabaseManager
 from radis.api.hdf5 import DataFileManager
+from radis.misc.config import getDatabankEntries
+from radis.misc.warning import DatabaseAlreadyExists
 
 # %% Parsing functions
 
@@ -232,8 +234,8 @@ def gei2df(
         assert load_wavenum_min < load_wavenum_max
     # Verbose
     if verbose >= 2:
-        print("Opening file {0}, cache={1})".format(fname, cache))
-        print("Last Modification time: {0}".format(metadata["last_modification"]))
+        print(f"Opening file {fname}, cache={cache})")
+        print(f"Last Modification time: {metadata['last_modification']}")
 
     # Attempt to use cache file
     fcache = DataFileManager(engine).cache_file(fname)
@@ -286,11 +288,7 @@ def gei2df(
             "wavenum_max": df.wav.max(),
         }
         if verbose:
-            print(
-                "Generating cache file {0} with metadata :\n{1}".format(
-                    fcache, new_metadata
-                )
-            )
+            print(f"Generating cache file {fcache} with metadata :\n{new_metadata}")
         try:
             save_to_hdf(
                 df,
@@ -312,7 +310,7 @@ def gei2df(
     return df
 
 
-#%%
+# %%
 def get_last(b):
     """Get non-empty lines of a chunk b, parsing the bytes."""
     element_length = np.vectorize(lambda x: len(x.__str__()))(b)
@@ -349,6 +347,9 @@ class GEISADatabaseManager(DatabaseManager):
         self.wmin = None
         self.wmax = None
         self.urlnames = None
+
+        self.actual_file = None
+        self.actual_url = None
 
     def fetch_urlnames(self):
         r"""requires connexion"""
@@ -431,27 +432,52 @@ class GEISADatabaseManager(DatabaseManager):
 
         return Nlines
 
-    def register(self):
+    def register(self, download_files):
         r"""register in ~/radis.json"""
 
-        local_files, urlnames = self.get_filenames()
-        info = f"GEISA {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1)"
+        if self.is_registered():
+            dict_entries = getDatabankEntries(
+                self.name
+            )  # just update previous register details
+        else:
+            dict_entries = {}
 
-        dict_entries = {
-            "info": info,
-            "path": local_files,
-            "format": "geisa-radisdb",
-            "parfuncfmt": "hapi",
-            "wavenumber_min": self.wmin,
-            "wavenumber_max": self.wmax,
-            "download_date": self.get_today(),
-            "download_url": urlnames,
-        }
+        if download_files:
+            files = [self.actual_file]
+            urls = [self.actual_url]
+            dict_entries.update(
+                {
+                    "path": files,
+                    "format": "geisa-radisdb",
+                    "download_date": self.get_today(),
+                    "download_url": urls,
+                }
+            )
+            if self.wmin and self.wmin:
+                info = f"GEISA {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1)."
+                dict_entries.update(
+                    {
+                        "info": info,
+                        "wavenumber_min": self.wmin,
+                        "wavenumber_max": self.wmax,
+                    }
+                )
 
-        super().register(dict_entries)
+        dict_entries.update(
+            {
+                "parfuncfmt": "hapi",
+            }
+        )
+
+        try:
+            super().register(dict_entries)
+        except DatabaseAlreadyExists as e:
+            raise Exception(
+                'If you want RADIS to overwrite the existing entry for a registered databank, set the config option "ALLOW_OVERWRITE" to True.'
+            ) from e
 
 
-#%%
+# %%
 
 if __name__ == "__main__":
 

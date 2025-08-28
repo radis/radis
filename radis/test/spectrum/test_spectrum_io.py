@@ -5,17 +5,18 @@ Test spectrum creation / export
 
 import pytest
 
-from radis import Spectrum, get_residual, test_spectrum
+from radis import Spectrum, get_residual, spectrum_test
 
 
 @pytest.mark.fast
+@pytest.mark.needs_specutils
 def test_specutils_io(verbose=True, plot=False, *args, **kwargs):
     """Test Radis/specutils  interface in particular when dealing with wavelengths
 
     see https://github.com/radis/radis/pull/499
     """
 
-    s = test_spectrum().take("transmittance_noslit")
+    s = spectrum_test().take("transmittance_noslit")
 
     processed_spec = Spectrum.from_array(
         *s.get("transmittance_noslit", wunit="nm"),
@@ -81,6 +82,24 @@ def test_reading_from_Matlab(verbose=True, plot=False, *args, **kwargs):
     assert np.isclose(s.get("absorbance")[1][100], 0.005560075444710532)
 
 
+def test_xsc_io(plot=False, *args, **kwargs):
+    """Test Spectrum created from manually downloaded hitran cross section"""
+
+    from radis.phys.units import Unit as u
+    from radis.test.utils import getTestFile
+
+    datafile = "CH3COCH3_233.4_375.2_700.0-1780.0_13.xsc"
+
+    s = Spectrum.from_xsc(getTestFile(datafile))
+
+    assert s.c["Tgas"] == 233.4 * u("K")
+    assert s.c["pressure"] == 375.2 * u("Torr")
+
+    if plot:
+        s.plot()
+
+
 if __name__ == "__main__":
     test_specutils_io(plot=True)
-    test_reading_from_Matlab()
+    test_reading_from_Matlab(plot=True)
+    test_xsc_io(plot=True)

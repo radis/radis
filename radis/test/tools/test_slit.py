@@ -26,6 +26,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from numpy import abs, cos, linspace, pi, sqrt, tan
+from scipy.integrate import trapezoid
 
 from radis.lbl.factory import SpectrumFactory
 from radis.misc.arrays import nantrapz
@@ -113,8 +114,6 @@ def test_all_slit_shapes(
     if verbose:
         print("\n>>> _test_all_slits yield correct FWHM (+- wstep) : OK\n")
 
-    return True  # nothing defined yet
-
 
 @pytest.mark.fast
 def test_slit_unit_conversions_spectrum_in_cm(
@@ -146,7 +145,7 @@ def test_slit_unit_conversions_spectrum_in_cm(
 
         # Apply slit in cm-1
         slit_cm = 2
-        s_cm.name = "Spec in cm-1, slit {0:.2f} cm-1".format(slit_cm)
+        s_cm.name = f"Spec in cm-1, slit {slit_cm:.2f} cm-1"
         s_cm.apply_slit(slit_cm, unit="cm-1", shape=shape, mode="same")
         # ... mode=same to keep same output length. It helps compare both Spectra afterwards
         # in cm-1 as that's s.get_waveunit()
@@ -157,21 +156,19 @@ def test_slit_unit_conversions_spectrum_in_cm(
         s_nm = s_cm.copy()
         w_cm = s_nm.get_wavenumber()
         slit_nm = dcm2dnm(slit_cm, w_cm[len(w_cm) // 2])
-        s_nm.name = "Spec in cm-1, slit {0:.2f} nm".format(slit_nm)
+        s_nm.name = f"Spec in cm-1, slit {slit_nm:.2f} nm"
         s_nm.apply_slit(slit_nm, unit="nm", shape=shape, mode="same")
 
         plotargs = {}
         if plot:
-            plotargs["title"] = "test_slit_unit_conversions: {0} ({1} cm-1)".format(
-                shape, slit_cm
-            )
+            plotargs["title"] = f"test_slit_unit_conversions: {shape} ({slit_cm} cm-1)"
         s_cm.compare_with(
             s_nm,
             spectra_only="radiance",
             rtol=1e-3,
             verbose=verbose,
             plot=plot,
-            **plotargs
+            **plotargs,
         )
 
 
@@ -217,7 +214,7 @@ def test_slit_unit_conversions_spectrum_in_nm(
 
         # Apply slit in nm
         slit_nm = 0.5
-        s_nm.name = "Spec in nm, slit {0:.2f} nm".format(slit_nm)
+        s_nm.name = f"Spec in nm, slit {slit_nm:.2f} nm"
         s_nm.apply_slit(slit_nm, unit="nm", shape=shape, mode="same")
         # ... mode=same to keep same output length. It helps compare both Spectra afterwards
         # in cm-1 as that's s.get_waveunit()
@@ -228,21 +225,19 @@ def test_slit_unit_conversions_spectrum_in_nm(
         s_cm = s_nm.copy()
         w_nm = s_nm.get_wavelength()
         slit_cm = dnm2dcm(slit_nm, w_nm[len(w_nm) // 2])
-        s_cm.name = "Spec in nm, slit {0:.2f} cm-1".format(slit_cm)
+        s_cm.name = f"Spec in nm, slit {slit_cm:.2f} cm-1"
         s_cm.apply_slit(slit_cm, unit="cm-1", shape=shape, mode="same")
 
         plotargs = {}
         if plot:
-            plotargs["title"] = "test_slit_unit_conversions: {0} ({1} nm)".format(
-                shape, slit_nm
-            )
+            plotargs["title"] = f"test_slit_unit_conversions: {shape} ({slit_nm} nm)"
         s_nm.compare_with(
             s_cm,
             spectra_only="radiance",
             rtol=1e-3,
             verbose=verbose,
             plot=plot,
-            **plotargs
+            **plotargs,
         )
 
     # %%
@@ -297,7 +292,7 @@ def test_against_specair_convolution(
         s.plot(
             "radiance",
             nfig=fig.number,
-            label="slit {0}nm".format(slit_nm),
+            label=f"slit {slit_nm}nm",
             color="r",
             lw=2,
         )
@@ -311,7 +306,7 @@ def test_against_specair_convolution(
         s.plot(
             "radiance",
             nfig=fig.number,
-            label="slit {0}nm, norm with max".format(slit_nm),
+            label=f"slit {slit_nm}nm, norm with max",
             color="r",
             lw=2,
             Iunit="mW/cm2/sr",
@@ -331,9 +326,7 @@ def test_against_specair_convolution(
     if verbose:
         print(
             (
-                "Integrals should match: {0:.2f} vs {1:.2f} ({2:.2f}% error)".format(
-                    As, Au, 100 * abs(As - Au) / As
-                )
+                f"Integrals should match: {As:.2f} vs {Au:.2f} ({100 * abs(As - Au) / As:.2f}% error)"
             )
         )
     assert np.isclose(As, Au, rtol=1e-2)
@@ -355,8 +348,6 @@ def test_against_specair_convolution(
 
     if verbose:
         print("\n>>>Testing spectrum slit matches Specair: OK")
-
-    return True
 
 
 @pytest.mark.fast
@@ -420,14 +411,8 @@ def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **
     assert is_homogeneous(s.units["radiance"], "mW/cm2/sr")
     if verbose:
         print(
-            (
-                "radiance unit ({0}) is homogeneous to 'mW/cm2/sr': OK".format(
-                    s.units["radiance"]
-                )
-            )
+            (f"radiance unit ({s.units['radiance']}) is homogeneous to 'mW/cm2/sr': OK")
         )
-
-    return True
 
 
 @pytest.mark.fast
@@ -448,27 +433,25 @@ def test_slit_energy_conservation(
     s = calculated_spectrum(
         *np.loadtxt(getTestFile("calc_N2C_spectrum_Trot1200_Tvib3000_slit0.1.txt")).T,
         wunit="nm",
-        Iunit="mW/cm2/sr/nm"
+        Iunit="mW/cm2/sr/nm",
     )  # arbitrary)
 
     P = s.get_power(unit="mW/cm2/sr")
     s.apply_slit(0.5, norm_by="area")
     w, I = s.get("radiance", wunit="nm", Iunit="mW/cm2/sr/nm")
-    Pc = abs(np.trapz(I[~np.isnan(I)], x=w[~np.isnan(I)]))  # mW/cm2/sr
+    Pc = abs(trapezoid(I[~np.isnan(I)], x=w[~np.isnan(I)]))  # mW/cm2/sr
 
     b = np.isclose(P, Pc, 3e-2)
 
     if plot:
         fig = plt.figure(fig_prefix + "energy conservation during resampling")
-        s.plot(nfig=fig.number, label="{0:.1f} mW/cm2/sr".format(P))
-        s.plot("radiance_noslit", nfig=fig.number, label="{0:.1f} mW/cm2/sr".format(Pc))
-        plt.title("Energy conservation: {0}".format(b))
+        s.plot(nfig=fig.number, label=f"{P:.1f} mW/cm2/sr")
+        s.plot("radiance_noslit", nfig=fig.number, label=f"{Pc:.1f} mW/cm2/sr")
+        plt.title(f"Energy conservation: {b}")
         plt.legend()
         plt.tight_layout()
 
     assert np.isclose(P, Pc, 3e-2)
-
-    return True
 
 
 # Function used to test Slit dispersion
@@ -535,9 +518,7 @@ def test_linear_dispersion_effect(
             w_slit,
             I_slit,
             "--k",
-            label="Exp: FWHM @{0}nm: {1:.3f} nm".format(
-                632.6, get_effective_FWHM(w_slit, I_slit)
-            ),
+            label=f"Exp: FWHM @{632.6}nm: {get_effective_FWHM(w_slit, I_slit):.3f} nm",
         )
 
     from radis.misc.warning import SlitDispersionWarning
@@ -563,9 +544,7 @@ def test_linear_dispersion_effect(
                 plt.plot(
                     wc,
                     Ic,
-                    label="FWHM @{0:.2f} nm: {1:.3f} nm".format(
-                        w0, get_effective_FWHM(wc, Ic)
-                    ),
+                    label=f"FWHM @{w0:.2f} nm: {get_effective_FWHM(wc, Ic):.3f} nm",
                 )
 
     if plot:
@@ -573,8 +552,6 @@ def test_linear_dispersion_effect(
         plt.ylabel("Dirac $x$ slit function")
         plt.legend(loc="best", prop={"size": 15})
         fix_style()
-
-    return True
 
 
 @pytest.mark.fast
@@ -605,14 +582,10 @@ def test_cut_slices(verbose=True, plot=True, close_plots=True, *args, **kwargs):
             plt.plot(
                 w,
                 sl,
-                label="Slice {0:.2f}-{1:.2f} nm , slit dispersion ratio: {2:.3f}".format(
-                    w[sl][0],
-                    w[sl][-1],
-                    linear_dispersion(w[sl][-1]) / linear_dispersion(w[sl][0]),
-                ),
+                label=f"Slice {w[sl][0]:.2f}-{w[sl][-1]:.2f} nm , slit dispersion ratio: {linear_dispersion(w[sl][-1]) / linear_dispersion(w[sl][0]):.3f}",
             )
     if plot:
-        plt.title("Cut slices, threshold (boundaries removed) = {0}".format(threshold))
+        plt.title(f"Cut slices, threshold (boundaries removed) = {threshold}")
         plt.xlabel("Wavelength (nm)")
         plt.ylabel("Slices (Boolean)")
         plt.legend(loc="best", prop={"size": 15})
@@ -620,8 +593,6 @@ def test_cut_slices(verbose=True, plot=True, close_plots=True, *args, **kwargs):
     assert len(slices) == 8
     slices = _cut_slices(w[::-1], w_slit, linear_dispersion, threshold)
     assert len(slices) == 8
-
-    return True
 
 
 @pytest.mark.fast
@@ -656,9 +627,7 @@ def test_auto_correct_dispersion(
             getTestFile("slitfunction.txt")
         )
         w_full_range = np.linspace(w.min(), w_slit_632.max())
-        plt.figure(
-            "Spectrometer Dispersion (f={0}mm, phi={1}°, gr={2}".format(750, -0.6, 2400)
-        )
+        plt.figure(f"Spectrometer Dispersion (f={750}mm, phi={-0.6}°, gr={2400}")
         plt.plot(w_full_range, slit_dispersion(w_full_range))
         plt.xlabel("Wavelength (nm)")
         plt.ylabel("Reciprocal Linear Dispersion")
@@ -678,7 +647,6 @@ def test_auto_correct_dispersion(
     assert np.isclose(
         s.take("radiance").max() / (s2.take("radiance").max()), 1.183, atol=0.001
     )
-    return True
 
 
 @pytest.mark.fast
@@ -759,7 +727,7 @@ def test_resampling(rtol=1e-2, verbose=True, plot=True, warnings=True, *args, **
             ms=10,
             label="(stored in cm-1)",
         )
-        plt.title("Slit function: {0} {1}".format(slit_function, slit_unit))
+        plt.title(f"Slit function: {slit_function} {slit_unit}")
         sCO_nm.plot(
             "transmittance",
             wunit="cm-1",
@@ -785,9 +753,7 @@ def test_resampling(rtol=1e-2, verbose=True, plot=True, warnings=True, *args, **
         printm("\n>>> _test_resampling\n")
     if verbose:
         printm(
-            "Error between 2 spectra ({0:.2f}%) < {1:.2f}%: {2}".format(
-                error * 100, rtol * 100, bool(error < rtol)
-            )
+            f"Error between 2 spectra ({error * 100:.2f}%) < {rtol * 100:.2f}%: {bool(error < rtol)}"
         )
     assert bool(error < rtol)
 
@@ -835,8 +801,6 @@ def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):
     test_convoluted_quantities_units(*args, **kwargs)
 
     test_resampling(plot=plot, verbose=verbose, *args, **kwargs)
-
-    return True
 
 
 if __name__ == "__main__":

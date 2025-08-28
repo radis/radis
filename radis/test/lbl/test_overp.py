@@ -101,9 +101,7 @@ def test_direct_overpopulation_vs_recombined_bands(
 
     if verbose:
         printm(
-            "Testing x_CO2 = 1e-3: ab initio ~ recombined bands (<{0:.1f}%):\t".format(
-                rtol * 100
-            )
+            f"Testing x_CO2 = 1e-3: ab initio ~ recombined bands (<{rtol * 100:.1f}%):\t"
         )
 
     if plot:
@@ -136,22 +134,13 @@ def test_direct_overpopulation_vs_recombined_bands(
 
     if verbose:
         printm(
-            "Testing x_CO2 = 1: ab initio ~ recombined bands (<{0:.1f}%):\t{1}".format(
-                rtol * 100,
-                np.allclose(
-                    s_recombined.get_radiance_noslit(),
-                    sref.get_radiance_noslit(),
-                    rtol=rtol,
-                ),
-            )
+            f"Testing x_CO2 = 1: ab initio ~ recombined bands (<{rtol * 100:.1f}%):\t{np.allclose(s_recombined.get_radiance_noslit(),sref.get_radiance_noslit(),rtol=rtol,)}"
         )
 
     with pytest.raises(AssertionError):
         assert np.allclose(
             s_recombined.get_radiance_noslit(), sref.get_radiance_noslit(), rtol=rtol
         )
-
-    return True
 
 
 def test_3Tvib_vs_1Tvib(verbose=True, plot=False, warnings=True, *args, **kwargs):
@@ -198,8 +187,8 @@ def test_3Tvib_vs_1Tvib(verbose=True, plot=False, warnings=True, *args, **kwargs
 
     s3 = sf.non_eq_spectrum((T, T, T), T)
     s1 = sf.non_eq_spectrum(T, T)
-    s3.name = "Tvib=({0},{0},{0}) K, Trot={0} K".format(T)
-    s1.name = "Tvib={0} K, Trot={0} K".format(T)
+    s3.name = f"Tvib=({T},{T},{T}) K, Trot={T} K"
+    s1.name = f"Tvib={T} K, Trot={T} K"
 
     if plot:
         s1.plot(
@@ -207,7 +196,7 @@ def test_3Tvib_vs_1Tvib(verbose=True, plot=False, warnings=True, *args, **kwargs
             wunit="cm-1",
             color="k",
             lw=3,
-            label="Tvib = {0}K".format(T),
+            label=f"Tvib = {T}K",
         )
 
         s3.plot(
@@ -216,22 +205,18 @@ def test_3Tvib_vs_1Tvib(verbose=True, plot=False, warnings=True, *args, **kwargs
             color="r",
             lw=3,
             nfig="same",
-            label="Tvib1 = Tvib2 = Tvib3 = {0}K".format(T),
+            label=f"Tvib1 = Tvib2 = Tvib3 = {T}K",
         )
 
     assert s1.compare_with(s3, spectra_only=True, verbose=verbose, plot=plot)
     if verbose:
         printm("Tested Spectra 3Tvib(T1=T2=T3=T) and 1Tvib(T) are the same: OK")
 
-    return True
-
 
 def run_testcases(verbose=True, plot=False, warnings=True, *args, **kwargs):
 
     test_direct_overpopulation_vs_recombined_bands(plot=plot)
     test_3Tvib_vs_1Tvib(plot=plot)
-
-    return True
 
 
 if __name__ == "__main__":

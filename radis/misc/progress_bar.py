@@ -88,11 +88,9 @@ class ProgressBar:
         t0 = self.t0
         if i % modulo == 0:
             if t0 is None:
-                msg = "{0:.1f}%\t{1}".format(i / N * 100, message)
+                msg = f"{i / N * 100:.1f}%\t{message}"
             else:
-                msg = "({0:.0f}s)\t{1:.1f}%\t{2}".format(
-                    time() - t0, i / N * 100, message
-                )
+                msg = f"({time() - t0:.0f}s)\t{i / N * 100:.1f}%\t{message}"
 
             if sys.stdout is not None:
                 sys.stdout.write("\r" + msg)

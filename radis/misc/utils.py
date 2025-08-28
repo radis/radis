@@ -92,7 +92,7 @@ class Default:
     """
 
     def __repr__(self):
-        return "{}".format(self.value)
+        return f"{self.value}"
 
     def __init__(self, value):
         self.value = value
@@ -123,9 +123,9 @@ def get_default_arg(func, arg):
     signature = inspect.signature(func)
     items = dict(signature.parameters.items())
     if not arg in items:
-        raise ValueError("Function {0} has no argument `{1}`".format(func, arg))
+        raise ValueError(f"Function {func} has no argument `{arg}`")
     elif items[arg].default is inspect.Parameter.empty:
-        raise ValueError("No default value for argument `{0}` in {1}".format(arg, func))
+        raise ValueError(f"No default value for argument `{arg}` in {func}")
     else:
         return items[arg].default
 
@@ -146,7 +146,7 @@ class DatabankNotFound(FileNotFoundError):
 
 
 class NotInstalled(object):
-    """A class to deal with optional packages Will raise an error only if the
+    """A class to deal with optional packages. Will raise an error only if the
     package is used (but not if imported only)
 
     Examples
@@ -166,14 +166,14 @@ class NotInstalled(object):
 
     def __getattr__(self, item):
         raise ImportError(
-            "The {0} package is required to use this "
-            "feature. {1}".format(self.__name, self.__info)
+            f"The {self.__name} package is required to use this "
+            f"feature. {self.__info}"
         )
 
     def __call__(self, *args, **kwargs):
         raise ImportError(
-            "The {0} package is required to use this "
-            "feature. {1}".format(self.__name, self.__info)
+            f"The {self.__name} package is required to use this "
+            f"feature. {self.__info}"
         )
 
 
@@ -183,6 +183,12 @@ not_installed_vaex_args = (
     + "memory-mapped DataFrame library. However is not always available on latest Python versions. "
     + "Use Pytables (slower) as an alternative in your Radis.json config file. To use Pytables, set "
     + '"MEMORY_MAPPING_ENGINE": "pytables" and "DATAFRAME_ENGINE": "pandas"',
+)
+not_installed_nvidia_args = (
+    "nvidia-cufft",
+    "Nvidia was not installed on your computer. `nvidia-cufft` is"
+    + "not available on Mac OS. ALternative solutions are being developped "
+    + "with Vulkan, see https://github.com/radis/radis/pull/624. (latest update Oct. 2024). ",
 )
 
 

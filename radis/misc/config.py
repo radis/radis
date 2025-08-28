@@ -76,12 +76,14 @@ def get_config(configpath=CONFIG_PATH_JSON):
             # two-way JSON editor with comments. See https://github.com/radis/radis/issues/328
         except JSONDecodeError as err:
             raise JSONDecodeError(
-                "Error reading '{0}' (line {2} col {3}): \n{1}".format(
-                    jsonfile, err.msg, err.lineno, err.colno
-                ),
+                f"Error reading '{jsonfile}' (line {err.lineno} col {err.colno}): \n{err.msg}",
                 err.doc,
                 err.pos,
             ) from err
+
+    # Add default for plotting_library if missing
+    if "plotting_library" not in config:
+        config["plotting_library"] = "auto"
 
     user_config = get_user_config(configpath)
 
@@ -293,10 +295,8 @@ def get_user_config_configformat():
     if not exists(configpath):
 
         raise FileNotFoundError(
-            "Create a `.radis` file in {0} to store links to ".format(
-                dirname(configpath)
-            )
-            + "your local databanks. Format must be:\n {0}".format(DBFORMAT)
+            f"Create a `.radis` file in {dirname(configpath)} to store links to "
+            + f"your local databanks. Format must be:\n {DBFORMAT}"
         )
     config.read(configpath)
 
@@ -408,9 +408,7 @@ def init_radis_json(config_path_json, config_path_old=CONFIG_PATH_OLD):
                 # two-way JSON editor with comments. See https://github.com/radis/radis/issues/328
             except JSONDecodeError as err:
                 raise JSONDecodeError(
-                    "Error reading '{0}' (line {2} col {3}): \n{1}".format(
-                        CONFIG_PATH_DEFAULT, err.msg, err.lineno, err.colno
-                    ),
+                    f"Error reading '{CONFIG_PATH_DEFAULT}' (line {err.lineno} col {err.colno}): \n{err.msg}",
                     err.doc,
                     err.pos,
                 ) from err
@@ -436,10 +434,8 @@ def init_radis_json(config_path_json, config_path_old=CONFIG_PATH_OLD):
     # Check it user file exists
     if not exists(config_path_json):
         raise FileNotFoundError(
-            "Create a `radis.json file in {0} to store links to ".format(
-                dirname(config_path_json)
-            )
-            + "your local databanks. Format must be:\n {0}".format(DBFORMATJSON)
+            f"Create a `radis.json file in {dirname(config_path_json)} to store links to "
+            + f"your local databanks. Format must be:\n {DBFORMATJSON}"
             + "\n(it can be empty too)"
         )
 
@@ -462,9 +458,7 @@ def get_user_config(configpath=CONFIG_PATH_JSON):
             config = json.load(f)
         except JSONDecodeError as err:
             raise JSONDecodeError(
-                "Error reading '{0}' (line {2} col {3}): \n{1}".format(
-                    configpath, err.msg, err.lineno, err.colno
-                ),
+                f"Error reading '{configpath}' (line {err.lineno} col {err.colno}): \n{err.msg}",
                 err.doc,
                 err.pos,
             ) from err
@@ -483,7 +477,7 @@ def createConfigFile(config_path, verbose=True):
     # generate ~/radis.json:
     open(config_path, "w").close()
     if verbose:
-        print("Created ~/radis.json in {0}".format(dirname(config_path)))
+        print(f"Created ~/radis.json in {dirname(config_path)}")
 
 
 def getDatabankEntries_configformat(dbname, get_extra_keys=[]):
@@ -548,9 +542,9 @@ def getDatabankEntries_configformat(dbname, get_extra_keys=[]):
         config.get(dbname, "format")
     except configparser.NoSectionError:
         msg = (
-            "{1}\nDBFORMAT\n{0}\n".format(DBFORMAT, dbname)
-            + "No databank named {0} in `{1}`. ".format(dbname, CONFIG_PATH_OLD)
-            + "Available databanks: {0}. ".format(getDatabankList_configformat())
+            f"{dbname}\nDBFORMAT\n{DBFORMAT}\n"
+            + f"No databank named {dbname} in `{CONFIG_PATH_OLD}`. "
+            + f"Available databanks: {getDatabankList_configformat()}. "
             + "See databank format above. More information in "
             + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
         )
@@ -572,7 +566,7 @@ def getDatabankEntries_configformat(dbname, get_extra_keys=[]):
     else:
         if "levels" in entries:
             raise SyntaxError(
-                "in {0}: `levels` replaced with ".format(CONFIG_PATH_OLD)
+                f"in {CONFIG_PATH_OLD}: `levels` replaced with "
                 + "`levels_iso#` where # is the isotope number"
             )
 
@@ -631,13 +625,11 @@ def addDatabankEntries_configformat(dbname, dict_entries, verbose=True):
         dbnames = []
         open(CONFIG_PATH_OLD, "a").close()
         if verbose:
-            print("Created ~/.radis in {0}".format(dirname(CONFIG_PATH_OLD)))
+            print(f"Created ~/.radis in {dirname(CONFIG_PATH_OLD)}")
 
     # Check database doesnt exist
     if dbname in dbnames:
-        raise DatabaseAlreadyExists(
-            "Database already exists: {0}".format(dbname) + ". Cant add it"
-        )
+        raise DatabaseAlreadyExists(f"Database already exists: {dbname}. Cant add it")
 
     # Add entries to parser
     config = configparser.ConfigParser()
@@ -663,7 +655,7 @@ def addDatabankEntries_configformat(dbname, dict_entries, verbose=True):
     # ... Split all isotopes in separate keys
     levels_dict = dict_entries.pop("levels", {})
     for iso, levels_iso in levels_dict.items():
-        config[dbname]["levels_iso{0}".format(iso)] = levels_iso
+        config[dbname][f"levels_iso{iso}"] = levels_iso
 
     if "levelsfmt" in dict_entries:
         config[dbname]["levelsfmt"] = dict_entries.pop("levelsfmt")
@@ -676,7 +668,7 @@ def addDatabankEntries_configformat(dbname, dict_entries, verbose=True):
 
     # Check nothing is left
     if dict_entries != {}:
-        raise ValueError("Unexpected keys: {0}".format(list(dict_entries.keys())))
+        raise ValueError(f"Unexpected keys: {list(dict_entries.keys())}")
 
     # Write to ~/.radis
     # ... Note: what if there is a PermissionError here? Try/except pass?
@@ -684,7 +676,7 @@ def addDatabankEntries_configformat(dbname, dict_entries, verbose=True):
         configfile.write("\n")
         config.write(configfile)
     if verbose:
-        print("Added {0} database in {1}".format(dbname, CONFIG_PATH_OLD))
+        print(f"Added {dbname} database in {CONFIG_PATH_OLD}")
 
     return
 
@@ -762,7 +754,7 @@ def printDatabankEntries_configformat(dbname, crop=200):
         args = []
         if k == "levelszpe":
             args.append("cm-1")
-        v = "{0}".format(v)
+        v = f"{v}"
         if len(v) > crop and crop > 0:
             v = v[:crop] + "..."
         # Print item
@@ -774,14 +766,14 @@ def printDatabankList_configformat():
     warnings.warn(DeprecationWarning("config format changed to JSON in radis 0.9.29"))
     try:
         print(
-            "Databanks in {0}: ".format(CONFIG_PATH_OLD),
+            f"Databanks in {CONFIG_PATH_OLD}: ",
             ",".join(getDatabankList_configformat()),
         )
         for dbname in getDatabankList_configformat():
             print("\n")
             printDatabankEntries_configformat(dbname)
     except FileNotFoundError:
-        print("No config file {0}".format(CONFIG_PATH_OLD))
+        print(f"No config file {CONFIG_PATH_OLD}")
         # it's okay
 
 
@@ -852,11 +844,9 @@ def getDatabankEntries(dbname, get_extra_keys=[], configpath=CONFIG_PATH_JSON):
         config[dbname]["format"]
     except KeyError:
         msg = (
-            "{1}\nDBFORMAT\n{0}\n".format(DBFORMAT, dbname)
-            + "No databank named {0} in `{1}`. ".format(dbname, configpath)
-            + "Available databanks: {0}. ".format(
-                getDatabankList(configpath=configpath)
-            )
+            f"{dbname}\nDBFORMAT\n{DBFORMAT}\n"
+            + f"No databank named {dbname} in `{configpath}`. "
+            + f"Available databanks: {getDatabankList(configpath=configpath)}. "
             + "See databank format above. More information in "
             + "https://radis.readthedocs.io/en/latest/lbl/lbl.html#configuration-file"
         )
@@ -881,7 +871,7 @@ def getDatabankEntries(dbname, get_extra_keys=[], configpath=CONFIG_PATH_JSON):
     else:
         if "levels" in entries:
             raise SyntaxError(
-                "in {0}: `levels` replaced with ".format(configpath)
+                f"in {configpath}: `levels` replaced with "
                 + "`levels_iso#` where # is the isotope number"
             )
 
@@ -969,17 +959,18 @@ def addDatabankEntries(dbname, dict_entries, verbose=True, configpath=CONFIG_PAT
             config[dbname]["path"] = dict_entries.pop("path")
 
     config[dbname]["format"] = dict_entries.pop("format")
-    config[dbname]["parfuncfmt"] = dict_entries.pop("parfuncfmt")
 
     # Optional:
     # ... partition functions:
+    if "parfuncfmt" in dict_entries:
+        config[dbname]["parfuncfmt"] = dict_entries.pop("parfuncfmt")
     if "parfunc" in dict_entries:
         config[dbname]["parfunc"] = dict_entries.pop("parfunc")
 
     # ... Split all isotopes in separate keys
     levels_dict = dict_entries.pop("levels", {})
     for iso, levels_iso in levels_dict.items():
-        config[dbname]["levels_iso{0}".format(iso)] = levels_iso
+        config[dbname][f"levels_iso{iso}"] = levels_iso
 
     if "levelsfmt" in dict_entries:
         config[dbname]["levelsfmt"] = dict_entries.pop("levelsfmt")
@@ -992,7 +983,7 @@ def addDatabankEntries(dbname, dict_entries, verbose=True, configpath=CONFIG_PAT
 
     # Check nothing is left
     if dict_entries != {}:
-        raise ValueError("Unexpected keys: {0}".format(list(dict_entries.keys())))
+        raise ValueError(f"Unexpected keys: {list(dict_entries.keys())}")
 
     # Write to `~/radis.json`
     with open(configpath, "w") as configfile:
@@ -1000,7 +991,7 @@ def addDatabankEntries(dbname, dict_entries, verbose=True, configpath=CONFIG_PAT
         configfile.close()
 
     if verbose:
-        print("Added {0} database in {1}".format(dbname, configpath))
+        print(f"Added {dbname} database in {configpath}")
 
     return
 
@@ -1016,7 +1007,7 @@ def printDatabankEntries(dbname, crop=200, configpath=CONFIG_PATH_JSON):
         if > 0, cutoff entries larger than that
     """
     entries = getDatabankEntries(dbname, configpath=configpath)
-    print("'{0}':".format(dbname))
+    print(f"'{dbname}':")
     print(entries, "\n")
 
 
@@ -1024,14 +1015,14 @@ def printDatabankList(configpath=CONFIG_PATH_JSON):
     """Print all databanks available in ~/radis.json"""
     try:
         print(
-            "Databanks in {0}: ".format(configpath),
+            f"Databanks in {configpath}: ",
             ",".join(getDatabankList(configpath=configpath)),
         )
         for dbname in getDatabankList(configpath=configpath):
             print("\n")
             printDatabankEntries(dbname, configpath=configpath)
     except FileNotFoundError:
-        print("No config file {0}".format(configpath))
+        print(f"No config file {configpath}")
         # it's okay
 
 

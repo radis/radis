@@ -282,9 +282,7 @@ def fit_legacy(
     def print_fit_values(fit_values):
         return ",".join(
             [
-                "{0}={1}{2}".format(
-                    fit_params[i], np.round(fit_values[i], 0), fit_units[i]
-                )
+                f"{fit_params[i]}={np.round(fit_values[i], 0)}{fit_units[i]}"
                 for i in range(len(fit_params))
             ]
         )
@@ -467,11 +465,7 @@ def fit_legacy(
 
         if verbose:
             print(
-                "{0}, Residual: {1:.4f} {2}".format(
-                    print_fit_values(fit_values),
-                    res,
-                    " 🏆" if res == min(history_res) else "",
-                ),
+                f"{print_fit_values(fit_values)}, Residual: {res:.4f}{' 🏆' if res == min(history_res) else ''}",
                 flush=True,
             )
 
@@ -506,12 +500,8 @@ def fit_legacy(
     s_best = generate_spectrum(best.x)
 
     if verbose and best.success:
-        print(
-            "Init {0} = {1}{2}".format(
-                fit_params, (fit_values_max + fit_values_min) / 2, fit_units
-            )
-        )
-        print("Final {0} = {1}{2}".format(fit_params, np.round(best.x), fit_units))
+        print(f"Init {fit_params} = {(fit_values_max + fit_values_min) / 2}{fit_units}")
+        print(f"Final {fit_params} = {np.round(best.x)}{fit_units}")
 
     if verbose >= 2:
         print(best)
@@ -521,13 +511,7 @@ def fit_legacy(
     # ... what does history say:
     if verbose:
         print(
-            "Best {0} = {1}{2} reached at iteration {3}/{4}".format(
-                fit_params,
-                history_x[np.argmin(history_res)],
-                fit_units,
-                np.argmin(history_res),
-                best.nfev,
-            )
+            f"Best {fit_params} = {history_x[np.argmin(history_res)]}{fit_units} reached at iteration {np.argmin(history_res)}/{best.nfev}"
         )
 
     # ... note that there are more function evaluations (best.nfev) that actual solver

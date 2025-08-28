@@ -9,13 +9,22 @@ https://stackoverflow.com/questions/55610891/numpy-load-from-io-bytesio-stream
 https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 
 """
-
+import json
+import os
 import re
 import urllib.request
+import warnings
 from os.path import basename, commonpath, join
 from typing import Union
 
 import numpy as np
+import requests
+from bs4 import BeautifulSoup
+from cryptography.fernet import Fernet
+from tqdm import tqdm
+
+from radis.misc.config import CONFIG_PATH_JSON, getDatabankEntries
+from radis.misc.warning import DatabaseAlreadyExists
 
 try:
     from .dbmanager import DatabaseManager
@@ -102,7 +111,54 @@ def keep_only_relevant(
     return relevantfiles, files_wmin, files_wmax
 
 
-#%%
+def get_recent_hitemp_database_year(molecule):
+    """Retrieve the most recent available database year from the hitran website.
+
+    Parameters
+    ----------
+    molecule: str
+
+    Returns
+    -------
+    str
+        The year of the latest available database.
+
+    Examples
+    --------
+    Get the latest database year for CO2 from HITEMP :
+    ::
+
+        year = get_recent_hitemp_database_year("CO2")
+        >>> "2024"
+    """
+
+    response = urllib.request.urlopen("https://hitran.org/hitemp/")
+
+    text = response.read().decode()
+    text = text[
+        text.find(
+            '<table id="hitemp-molecules-table" class="selectable-table list-table">'
+        ) : text.find("</table>")
+    ]
+    text = re.sub(r"<!--.+?-->\s*\n", "", text)
+    html_molecule = re.sub(r"(\d{1})", r"(<sub>\1</sub>)", molecule)
+    text = text[
+        re.search(
+            "<td>(?:<strong>)?" + html_molecule + "(?:</strong>)?</td>", text
+        ).start() :
+    ]
+    lines = text.splitlines()
+
+    recent_database = str(
+        re.findall(r"<td[^>]*>\s*(?:<strong>)?(\d{4})(?:</strong>)?\s*</td>", lines[6])[
+            0
+        ]
+    )
+
+    return recent_database
+
+
+# %%
 def get_last(b):
     """Get non-empty lines of a chunk b, parsing the bytes."""
     element_length = np.vectorize(lambda x: len(x.__str__()))(b)
@@ -111,6 +167,306 @@ def get_last(b):
     assert (non_zero[: threshold + 1] == 1).all()
     assert (non_zero[threshold + 1 :] == 0).all()
     return b[non_zero]
+
+
+def running_in_spyder():
+    """Check if the console is running within Spyder."""
+    return "SPYDER_ARGS" in os.environ
+
+
+def _prompt_password(user):
+    """
+    Prompts the user for a password securely and handels input if spyder is used.
+
+    Parameters
+    ----------
+    user : str
+        Email.
+
+    Returns
+    -------
+    text : str
+        User input password.
+    """
+    if running_in_spyder():
+        try:
+            from PyQt5.QtCore import QCoreApplication
+            from PyQt5.QtWidgets import QApplication, QInputDialog, QLineEdit
+
+            app = QCoreApplication.instance()
+            if app is None:
+                app = QApplication([])
+
+            text, ok = QInputDialog.getText(
+                None, "Credential", f"User {user}:", QLineEdit.Password
+            )
+            if ok and text:
+                return text
+            raise ValueError(
+                "The dialog window was probably closed or left empty. Please enter a valid password."
+            )
+        except ModuleNotFoundError:
+            raise ImportError(
+                "You are using Spyder; please install PyQt5 with `pip install PyQt5` to use the password prompt."
+            )
+    else:
+        # If not using spyder use getpass
+        from getpass4 import getpass
+
+        return getpass(f"Enter password for {user}: ")
+
+
+def setup_credentials():
+    """Set up HITRAN credentials and store them in .env file."""
+    # Check if running on ReadTheDocs or Travis CI environment
+    is_rtd = os.environ.get("READTHEDOCS", "").lower() == "true"
+    is_travis = os.environ.get("TRAVIS", "").lower() == "true"
+    is_github_action = os.environ.get("GITHUB_ACTIONS", "").lower() == "true"
+
+    # compatibly with old versions
+    email = os.environ.get("HITRAN_EMAIL")
+    password = os.environ.get("HITRAN_PASSWORD")
+
+    if (is_rtd or is_travis or is_github_action) and not email:
+        # In CI/CD environments, only use environment variables
+        warnings.warn(
+            "Warning: HITRAN_EMAIL not set in environment variables",
+            UserWarning,
+        )
+    if (is_rtd or is_travis or is_github_action) and not password:
+        # In CI/CD environments, only use environment variables
+        warnings.warn(
+            "Warning: HITRAN_PASSWORD not set in environment variables",
+            UserWarning,
+        )
+
+    if (not email or not password) and not (is_rtd or is_travis or is_github_action):
+        # In normal usage, fall back to prompt if environment variables not set
+        email = input("Enter HITRAN email: ")
+        password = _prompt_password(email)
+
+    return email, password
+
+
+def get_encryption_key():
+    """Get or create encryption key for HITRAN credentials"""
+    # Read existing radis.json
+    if os.path.exists(CONFIG_PATH_JSON):
+        with open(CONFIG_PATH_JSON, "r") as f:
+            config = json.load(f)
+    else:
+        config = {}
+
+    # Check if encryption key exists
+    if "credentials" in config and "ENCRYPTION_KEY" in config["credentials"]:
+        return config["credentials"]["ENCRYPTION_KEY"].encode()
+    else:
+        # Generate a new key
+        key = Fernet.generate_key()
+
+        # Add credentials section if it doesn't exist
+        if "credentials" not in config:
+            config["credentials"] = {}
+
+        # Store the key
+        config["credentials"]["ENCRYPTION_KEY"] = key.decode()
+
+        # Write back to radis.json
+        with open(CONFIG_PATH_JSON, "w") as f:
+            json.dump(config, f, indent=4)
+
+        # Set restrictive permissions
+        os.chmod(CONFIG_PATH_JSON, 0o600)
+
+        return key
+
+
+def encrypt_password(password):
+    """Encrypt password using Fernet symmetric encryption"""
+    key = get_encryption_key()
+    f = Fernet(key)
+    return f.encrypt(password.encode()).decode()
+
+
+def decrypt_password(encrypted_password):
+    """Decrypt password using Fernet symmetric encryption"""
+    key = get_encryption_key()
+    f = Fernet(key)
+    return f.decrypt(encrypted_password.encode()).decode()
+
+
+def store_credentials(email, password):
+    """Store HITRAN credentials in radis.json file with encrypted email and password"""
+    # Encrypt both email and password before storing
+    encrypted_email = encrypt_password(email)  # reuse same encryption function
+    encrypted_password = encrypt_password(password)
+
+    # Read existing radis.json
+    if os.path.exists(CONFIG_PATH_JSON):
+        with open(CONFIG_PATH_JSON, "r") as f:
+            config = json.load(f)
+    else:
+        config = {}
+
+    # Add credentials section if it doesn't exist
+    if "credentials" not in config:
+        config["credentials"] = {}
+
+    # Store encrypted credentials
+    config["credentials"]["HITRAN_EMAIL"] = encrypted_email
+    config["credentials"]["HITRAN_PASSWORD"] = encrypted_password
+
+    print(
+        f"Your HITRAN credentials will be saved securely in {CONFIG_PATH_JSON}. You can delete the credentials section if you wish but you will have to prompt your credentials at next download."
+    )
+
+    # Write back to radis.json
+    with open(CONFIG_PATH_JSON, "w") as f:
+        json.dump(config, f, indent=4)
+
+    # Set restrictive permissions
+    os.chmod(CONFIG_PATH_JSON, 0o600)
+
+
+def login_to_hitran(verbose=False):
+    """Login to HITRAN using stored credentials from radis.json or prompt if not available"""
+    login_url = "https://hitran.org/login/"
+    session = requests.Session()
+
+    def attempt_login(email, password):
+        """Attempt to login with provided credentials"""
+        # Get CSRF token
+        response = session.get(login_url)
+        soup = BeautifulSoup(response.text, "html.parser")
+        csrf = soup.find("input", {"name": "csrfmiddlewaretoken"})["value"]
+
+        login_data = {
+            "csrfmiddlewaretoken": csrf,
+            "email": email,
+            "password": password,
+        }
+
+        headers = {
+            "Referer": login_url,
+            "Origin": "https://hitran.org",
+            "Cookie": f"csrftoken={csrf}",
+        }
+
+        login_response = session.post(
+            login_url, data=login_data, headers=headers, allow_redirects=False
+        )
+
+        return login_response, session
+
+    def is_login_successful(response):
+        """Check if login was successful by looking for specific elements"""
+        return response.status_code == 302 or "Logout" in response.text
+
+    # Check if credentials exist in radis.json
+    if os.path.exists(CONFIG_PATH_JSON):
+        with open(CONFIG_PATH_JSON, "r") as f:
+            config = json.load(f)
+
+        # compatiplty with old versions
+        if "credentials" in config:
+            if config["credentials"].get("HITRAN_EMAIL"):
+                encrypted_email = config["credentials"].get("HITRAN_EMAIL")
+                config["credentials"]["HITRAN_EMAIL"] = encrypted_email
+                # Save
+                with open(CONFIG_PATH_JSON, "w") as f:
+                    json.dump(config, f, indent=4)
+                print("tosss ", config["credentials"])
+            else:
+                encrypted_email = config["credentials"].get("HITRAN_EMAIL")
+            encrypted_password = config["credentials"].get("HITRAN_PASSWORD")
+
+            if encrypted_email and encrypted_password:
+                try:
+                    # Decrypt both email and password
+                    email = decrypt_password(encrypted_email)
+                    password = decrypt_password(encrypted_password)
+
+                    login_response, session = attempt_login(email, password)
+                    if is_login_successful(login_response):
+                        if verbose:
+                            print("Login successful.")
+                        return session
+                except Exception as e:
+                    if verbose:
+                        print(f"Error decrypting credentials: {str(e)}")
+                    # Remove invalid credentials from radis.json
+                    if "credentials" in config:
+                        del config["credentials"]
+                        with open(CONFIG_PATH_JSON, "w") as f:
+                            json.dump(config, f, indent=4)
+                    print(
+                        "Invalid stored credentials. Please enter your HITRAN credentials again."
+                    )
+                    # Continue to new user flow
+
+    # First time use or no stored credentials
+    email, password = setup_credentials()
+    login_response, session = attempt_login(email, password)
+
+    if is_login_successful(login_response):
+        if verbose:
+            print("Login successful.")
+        store_credentials(email, password)
+        return session
+    else:
+        if verbose:
+            print(f"Login failed: {login_response.status_code}")
+        raise OSError(
+            "HITRAN login failed. Please ensure you entered correct credentials from https://hitran.org/login/"
+        )
+
+
+def download_hitemp_file(session, file_url, output_filename, verbose=False):
+    print(f"Starting download from {file_url} to {output_filename}")
+    file_response = session.get(file_url, stream=True)
+    if file_response.status_code == 200:
+        total_size = int(file_response.headers.get("content-length", 0))
+        print(f"Total size to download: {total_size} bytes")
+        file_size_in_GB = total_size / (1024**3)
+        from radis import config
+
+        MAX_SIZE_GB = config["WARN_LARGE_DOWNLOAD_ABOVE_X_GB"]
+
+        if file_size_in_GB > MAX_SIZE_GB:
+            warning_msg = (
+                f"The total download size is {file_size_in_GB:.2f} GB, which will take time and potential a significant portion of your disk memory."
+                "To prevent this warning, you increase the limit using `radis.config['WARN_LARGE_DOWNLOAD_ABOVE_X_GB'] =  1`."
+            )
+            warnings.warn(warning_msg, UserWarning)
+
+        with (
+            open(output_filename, "wb") as f,
+            tqdm(
+                total=total_size, unit="B", unit_scale=True, desc=output_filename
+            ) as pbar,
+        ):
+            for chunk in file_response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+                    pbar.update(len(chunk))
+
+        print("\nDownload complete!")
+    else:
+        print(f"Download failed: {file_response.status_code}")
+        print("Response:", file_response.text[:500])
+        raise Warning(
+            f"Failed to download {file_url}. Please download manually and place it in the following location:"
+        )
+        temp_folder = os.path.join(
+            os.path.dirname(output_filename),
+            "downloads__can_be_deleted",
+            "hitran.org",
+            "files",
+            "HITEMP",
+            "HITEMP-2024",
+            "CO2_line_list",
+        )
+        print(f"{file_url} ==> {temp_folder} \n")
 
 
 class HITEMPDatabaseManager(DatabaseManager):
@@ -123,6 +479,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         verbose=True,
         chunksize=100000,
         parallel=True,
+        database="most_recent",
     ):
         r"""
         See Also
@@ -145,8 +502,9 @@ class HITEMPDatabaseManager(DatabaseManager):
         self.wmin = None  # available on HITEMP website. See HITEMPDatabaseManager.fetch_url_Nlines_wmin_wmax
         self.wmax = None  # available on HITEMP website. See HITEMPDatabaseManager.fetch_url_Nlines_wmin_wmax
         self.urlnames = None
+        self.database = database
 
-    def fetch_url_Nlines_wmin_wmax(self, hitemp_url="https://hitran.org/hitemp/"):
+    def fetch_url_Nlines_wmin_wmax(self, session=None, hitemp_url="https://hitran.org"):
         r"""requires connexion"""
 
         molecule = self.molecule
@@ -158,10 +516,39 @@ class HITEMPDatabaseManager(DatabaseManager):
             and self.wmax is not None
         ):
             return self.base_url, self.Nlines, self.wmin, self.wmax
+        elif self.database == "2010":
+            if session is None:
+                return self.base_url, 0, self.wmin, self.wmax
+            base_url = (
+                hitemp_url
+                + "/files/HITEMP/HITEMP-2010/"
+                + self.molecule
+                + "_line_list/"
+            )
+            file_response = session.get(base_url)
+            text = file_response.text
 
+            # Parse the HTML then Extract valid file URLs
+            soup = BeautifulSoup(text, "html.parser")
+            table = soup.find("table")
+            links = table.find_all("a", href=True)
+            zip_urls = [
+                hitemp_url + link["href"]
+                for link in links
+                if link["href"].endswith(".zip")
+            ]
+
+            # Since wmin and wmax for the 2010 version are not available on the website, we will retrieve them from the file itself.
+            self.base_url, self.Nlines, self.wmin, self.wmax = (
+                zip_urls[0],
+                None,
+                None,
+                None,
+            )
+            return zip_urls[0], None, None, None
         else:
 
-            response = urllib.request.urlopen(hitemp_url)
+            response = urllib.request.urlopen(hitemp_url + "/hitemp/")
 
             # Alternative to return a Pandas Dataframe :
             # ... Doesnt work because missing <tr> in HITEMP website table for N2O
@@ -232,18 +619,36 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         molecule = self.molecule
 
-        if molecule in ["H2O", "CO2"]:
+        if molecule in ["H2O"]:  # CO2 is a single file since 01/2025
 
             base_url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
-            response = urllib.request.urlopen(base_url)
-            response_string = response.read().decode()
-            inputfiles = re.findall('href="(\S+.zip)"', response_string)
 
-            urlnames = [join(base_url, f) for f in inputfiles]
+            # response = urllib.request.urlopen(base_url)
+            # response_string = response.read().decode()
+            # inputfiles = re.findall(r'href="(\S+.zip)"', response_string)
+            # urlnames = [join(base_url, f) for f in inputfiles]
+
+            from radis.misc.utils import getProjectRoot
+
+            with open(
+                join(getProjectRoot(), "db", "H2O", "HITRANpage_january2025.htm")
+            ) as file:
+                response_string = file.read()
+
+            inputfiles = re.findall(r'href="(\S+.zip)"', response_string)
+            base_url = "https://hitran.org"
+            urlnames = [f"{base_url}{f}" for f in inputfiles]
 
         elif molecule in HITEMP_MOLECULES:
-            url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
-            urlnames = [url]
+            session = login_to_hitran(verbose=self.verbose)
+            if session:
+                url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax(
+                    session
+                )
+                download_hitemp_file(session, url, basename(url))
+                urlnames = [url]
+            else:
+                return []  # Exit if login failed
         else:
             raise KeyError(
                 f"Please choose one of HITEMP molecules : {HITEMP_MOLECULES}. Got '{molecule}'"
@@ -260,7 +665,7 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         If other molecule, return the file anyway.
         see :py:func:`radis.api.hitempapi.keep_only_relevant`"""
-        if self.molecule in ["CO2", "H2O"]:
+        if self.molecule in ["H2O"]:  # CO2 is a single file since 01/2025
             inputfiles, _, _ = keep_only_relevant(
                 inputfiles, wavenum_min, wavenum_max, verbose
             )
@@ -331,12 +736,31 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         writer = self.get_datafile_manager()
 
+        if molecule == "CO2":
+            session = login_to_hitran()
+            download_hitemp_file(
+                session,
+                "https://hitran.org/files/HITEMP/bzip2format/02_HITEMP2024.par.bz2",
+                "02_HITEMP2024.par.bz2",
+            )
+            urlname = "02_HITEMP2024.par.bz2"
+
         with opener.open(urlname) as gfile:  # locally downloaded file
 
             dt = _create_dtype(columns, linereturnformat)
 
             if verbose:
                 print(f"Download complete. Parsing {molecule} database to {local_file}")
+                print(
+                    "This step is executed only ONCE and will considerably accelerate the computation of spectra. It will also dramatically reduce the memory usage. The parsing/conversion can be very fast (e.g. HITEMP OH takes a few seconds) or extremely long (e.g. HITEMP CO2 takes approximately 1 hour)."
+                )
+            if molecule == "CO2":
+                from warnings import warn
+
+                warn(
+                    "Parsing will take approximately 1 hour for HITEMP CO2 (compressed = 6 GB",
+                    UserWarning,
+                )
 
             # assert not(exists(local_file))
 
@@ -349,7 +773,12 @@ class HITEMPDatabaseManager(DatabaseManager):
                     # with End of file flag) so nbytes != 0
                     b = get_last(b)
 
-                df = _ndarray2df(b, columns, linereturnformat)
+                df = _ndarray2df(b, columns, linereturnformat, molecule=self.molecule)
+
+                if molecule == "CO2":
+                    df["iso"] = (
+                        df["iso"].replace({"0": 10, "A": 11, "B": 12}).astype(int)
+                    )  # in HITEMP2024, isotopologue 10, 11, 12 are 0, A, B. See Table 4 of Hargreaves et al. (2024)
 
                 # Post-processing :
                 # ... Add local quanta attributes, based on the HITRAN group
@@ -366,6 +795,11 @@ class HITEMPDatabaseManager(DatabaseManager):
 
                 wmin = np.min((wmin, df.wav.min()))
                 wmax = np.max((wmax, df.wav.max()))
+
+                # Cause wmin and wmax for 2010 version is not avalible on website
+                if self.wmin is None or self.wmax is None:
+                    self.wmin = wmin
+                    self.wmax = wmax
 
                 Nlines += len(df)
                 Nlines_tot += len(df)
@@ -412,37 +846,54 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         return Nlines
 
-    def register(self):
+    def register(self, download):
         r"""register in ~/radis.json"""
+        if self.is_registered():
+            dict_entries = getDatabankEntries(
+                self.name
+            )  # just update previous register details
+        else:
+            dict_entries = {}
 
-        local_files, urlnames = self.get_filenames()
-        info = f"HITEMP {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1) with TIPS-2017 (through HAPI) for partition functions"
+        # The "not registered" condition is included here because hitemp avoids re-downloading files if they already exist in a different format.
+        if download or not self.is_registered():
+            local_files, urlnames = self.get_filenames()
+            info = f"HITEMP {self.molecule} lines ({self.wmin:.1f}-{self.wmax:.1f} cm-1) with TIPS-2017 (through HAPI) for partition functions"
 
-        if self.molecule in ["CO2", "H2O"]:
-            info = "(registered files will be downloaded only when required) " + info
+            if self.molecule in ["CO2", "H2O"]:
+                info = (
+                    "(registered files will be downloaded only when required) " + info
+                )
 
-        dict_entries = {
-            "info": info,
-            "path": local_files,
-            "format": "hitemp-radisdb",
-            "parfuncfmt": "hapi",
-            "wavenumber_min": self.wmin,
-            "wavenumber_max": self.wmax,
-            "download_date": self.get_today(),
-            "download_url": urlnames,
-        }
+            dict_entries.update(
+                {
+                    "info": info,
+                    "path": local_files,
+                    "format": "hitemp-radisdb",
+                    "parfuncfmt": "hapi",
+                    "wavenumber_min": self.wmin,
+                    "wavenumber_max": self.wmax,
+                    "download_date": self.get_today(),
+                    "download_url": urlnames,
+                }
+            )
 
-        # Add energy level calculation
-        if self.molecule in MOLECULES_LIST_NONEQUILIBRIUM:
-            dict_entries[
-                "info"
-            ] += " and RADIS spectroscopic constants for rovibrational energies (nonequilibrium)"
-            dict_entries["levelsfmt"] = "radis"
+            # Add energy level calculation
+            if self.molecule in MOLECULES_LIST_NONEQUILIBRIUM:
+                dict_entries[
+                    "info"
+                ] += " and RADIS spectroscopic constants for rovibrational energies (nonequilibrium)"
+                dict_entries["levelsfmt"] = "radis"
 
-        super().register(dict_entries)
+        try:
+            super().register(dict_entries)
+        except DatabaseAlreadyExists as e:
+            raise Exception(
+                'If you want RADIS to overwrite the existing entry for a registered databank, set the config option "ALLOW_OVERWRITE" to True.'
+            ) from e
 
 
-#%%
+# %%
 
 if __name__ == "__main__":
 

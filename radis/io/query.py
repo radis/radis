@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-""" Wrapper to fetch line database from HITRAN with Astroquery [1]_
+"""Wrapper to fetch line database from HITRAN with Astroquery [1]_
 (based on [HAPI]_)
 
 .. note::
@@ -136,9 +136,7 @@ def fetch_astroquery(
                 except Exception as err:
                     if verbose:
                         printr(
-                            "Problem reading cache file {0}:\n{1}\nDeleting it!".format(
-                                fcache, str(err)
-                            )
+                            f"Problem reading cache file {fcache}:\n{str(err)}\nDeleting it!"
                         )
                     os.remove(fcache)
 
@@ -154,7 +152,7 @@ def fetch_astroquery(
         raise KeyError(
             str(err)
             + " <<w this error occurred in Astroquery. Maybe these molecule "
-            + "({0}) and isotope ({1}) are not supported".format(molecule, isotope)
+            + f"({molecule}) and isotope ({isotope}) are not supported"
         ) from err
 
     # Deal with usual errors
@@ -171,26 +169,20 @@ def fetch_astroquery(
             empty_range = True
             if verbose:
                 print(
-                    (
-                        "No lines for {0} (id={1}), iso={2} in range {3:.2f}-{4:.2f}cm-1. ".format(
-                            molecule, mol_id, isotope, wmin, wmax
-                        )
-                    )
+                    f"No lines for {molecule} (id={mol_id}), iso={isotope} in range {wmin:.2f}-{wmax:.2f}cm-1. "
                 )
         else:
             raise ValueError(
                 "An error occurred during the download of HITRAN files "
-                + "for {0} (id={1}), iso={2} between {3:.2f}-{4:.2f}cm-1. ".format(
-                    molecule, mol_id, isotope, wmin, wmax
-                )
+                + f"for {molecule} (id={mol_id}), iso={isotope} between {wmin:.2f}-{wmax:.2f}cm-1. "
                 + "Are you online?\n"
-                + "See details of the error below:\n\n {0}".format(response.reason)
+                + f"See details of the error below:\n\n {response.reason}"
             )
     elif response.status_code == 500:
 
         raise ValueError(
-            "{0} while querying the HITRAN server: ".format(response.status_code)
-            + "\n\n{0}".format(response.text)
+            f"{response.status_code} while querying the HITRAN server: "
+            + f"\n\n{response.text}"
         )
 
     # Process response
@@ -222,7 +214,7 @@ def fetch_astroquery(
             tbl = Hitran._parse_result(response)
         except ValueError as err:
             raise ValueError(
-                "Error while parsing HITRAN output : {}".format(response.text)
+                f"Error while parsing HITRAN output : {response.text}"
             ) from err
         if output == "pandas":
             df = tbl.to_pandas()
@@ -264,11 +256,7 @@ def fetch_astroquery(
             "wmax": wmax,
         }
         if verbose:
-            print(
-                "Generating cache file {0} with metadata :\n{1}".format(
-                    fcache, new_metadata
-                )
-            )
+            print(f"Generating cache file {fcache} with metadata :\n{new_metadata}")
         from radis import __version__
 
         try:
@@ -306,7 +294,7 @@ def _fix_astroquery_file_format(filename):
     """
 
     if not isfile(filename):
-        raise "{} does not exist "
+        raise FileNotFoundError(f"{filename} does not exist")
     with open(filename) as filehandle:
         lines = filehandle.readlines()
         non_empty_lines = [

@@ -15,7 +15,9 @@ Defines :py:func:`~radis.io.fetch_geisa` based on :py:class:`~radis.api.geisaapi
 
 from os.path import abspath, expanduser, join
 
+from radis import config
 from radis.api.geisaapi import GEISADatabaseManager
+from radis.misc.config import getDatabankEntries
 
 
 def fetch_geisa(
@@ -111,6 +113,10 @@ def fetch_geisa(
     the expected wavenumber range & isotopes are returned. The .HFD5 parsing uses
     :py:func:`~radis.api.hdf5.hdf2df`
 
+    if a registered entry already exists and `radis.config["ALLOW_OVERWRITE"]` is `True`:
+    - if any situation arises where the databank needs to be re-downloaded, the possible urls are attempted in their usual order of preference, as if the databank hadn't been registered, rather than directly re-downloading from the same url that was previously registered, in case e.g. a new linelist has been uploaded since the databank was previously registered
+    - If no partition function file is registered, e.g because one wasn't available server-side when the databank was last registered, an attempt is still made again to download it, to account for e.g. the case where one has since been uploaded
+
     See Also
     --------
     :py:func:`~radis.io.hitran.fetch_hitran`, :py:func:`~radis.io.exomol.fetch_exomol`
@@ -124,9 +130,8 @@ def fetch_geisa(
         databank_name = databank_name.format(**{"molecule": molecule})
 
     if local_databases is None:
-        import radis
 
-        local_databases = join(radis.config["DEFAULT_DOWNLOAD_PATH"], "geisa")
+        local_databases = join(config["DEFAULT_DOWNLOAD_PATH"], "geisa")
     local_databases = abspath(expanduser(local_databases))
 
     ldb = GEISADatabaseManager(
@@ -139,11 +144,25 @@ def fetch_geisa(
         engine=engine,
     )
 
-    # Get list of all expected local files for this database:
-    local_files, urlnames = ldb.get_filenames()
+    # Check if the database is registered in radis.json
+    local_files, urlnames = [], []
+    if ldb.is_registered():
+        entries = getDatabankEntries(ldb.name)
+        local_files, urlnames = entries["path"], entries["download_url"]
+
+    if ldb.is_registered() and not config["ALLOW_OVERWRITE"]:
+        error = False
+        if cache == "regen" or not local_files:
+            error = True
+        files_to_check = local_files
+        if ldb.get_missing_files(files_to_check):
+            error = True
+        if error:
+            raise Exception(
+                'Changes are required to the local database, and hence updating the registered entry, but "ALLOW_OVERWRITE" is False. Set `radis.config["ALLOW_OVERWRITE"]=True` to allow the changes to be made and config file to be automatically updated accordingly.'
+            )
 
     # Delete files if needed:
-
     if cache == "regen":
         ldb.remove_local_files(local_files)
     ldb.check_deprecated_files(
@@ -151,22 +170,48 @@ def fetch_geisa(
         auto_remove=True if cache != "force" else False,
     )
 
-    # Get missing files
-    download_files = ldb.get_missing_files(local_files)
+    if len(local_files) > 1 or len(urlnames) > 1:
+        raise Exception(
+            f"Found the following files {local_files} but only 1 is expected"
+            if len(local_files) > 1
+            else f"Found the following urls {urlnames} but only 1 is expected"
+        )
+
+    # Check if local files are available so we don't have to download
+    download_files = True
+    if local_files and not ldb.get_missing_files(local_files):
+        download_files = False
+        ldb.actual_file = local_files[0]  # for ldb.load below
 
     # Download files
-    if len(download_files) > 0:
-        if urlnames is None:
-            urlnames = ldb.fetch_urlnames()
-        filesmap = dict(zip(local_files, urlnames))
-        download_urls = [filesmap[k] for k in download_files]
-        ldb.download_and_parse(download_urls, download_files)
+    if download_files:
+        main_files, main_urls = ldb.get_filenames(return_reg_urls=True)
+        for i in range(len(main_urls)):
+            url = main_urls[i]
+            file = main_files[i]
+            print(f"Attempting to download {url}")
+            try:
+                ldb.download_and_parse([url], [file], 1)
+            except OSError as err:
+                if i == len(main_urls) - 1:  # all possible urls exhausted
+                    print(f"Error downloading {url}: {err}")
+                    print(f"No source found for {ldb.molecule}")
+                    raise
+                else:
+                    print(f"Error downloading {url}: {err}")
+                    continue
+            else:
+                if verbose:
+                    print(f"Successfully downloaded {url}")
+                ldb.actual_file = file
+                ldb.actual_url = url
+                break  # no need to search any further
 
     # Register
-    if not ldb.is_registered():
-        ldb.register()
+    if download_files or not ldb.is_registered():
+        ldb.register(download_files)
 
-    if len(download_files) > 0 and clean_cache_files:
+    if download_files and clean_cache_files:
         ldb.clean_download_files()
 
     if isotope and type(isotope) == int:
@@ -174,7 +219,7 @@ def fetch_geisa(
 
     # Load and return
     df = ldb.load(
-        local_files,  # filter other files,
+        [ldb.actual_file],  # filter other files,
         columns=columns,
         within=[("iso", isotope)] if isotope is not None else [],
         # for relevant files, get only the right range :
@@ -186,7 +231,7 @@ def fetch_geisa(
     return (df, local_files) if return_local_path else df
 
 
-#%%
+# %%
 
 if __name__ == "__main__":
 

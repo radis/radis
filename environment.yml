@@ -1,15 +1,21 @@
-# See https://github.com/binder-examples/conda
+# Create a new environment from this file with :
+#   conda create -n radis-env python=3.12 -y
+#
+# Or update an existing environment OTHER-ENV from this file with :
+#   conda activate OTHER-ENV
+#   conda env update --file environment.yml
+#
+# Dependencies in environment.yml and pyproject.toml should be kept consistent.
+# This is tested automatically https://github.com/radis/radis/pull/734
 name: radis-env
 channels:
 - conda-forge
-- astropy
-- plotly
+- nodefaults  # no defaults packages (only conda-forge)
 dependencies:
 - python
 - astropy>=4.3.1  # Unit aware calculations
 - astroquery>=0.4.6  # to fetch HITRAN databases
 - beautifulsoup4>=4.10.0 # parse ExoMol website
-- cantera>=2.5.1   # for chemical equilibrium computations
 - configparser
 #- cython          # Not needed, see #647
 - habanero>=1.2.0  # CrossRef API to retrieve data from doi
@@ -17,20 +23,35 @@ dependencies:
 - joblib  # for parallel loading of SpecDatabase
 - lmfit  # for new fitting modules
 - matplotlib
-- numpy<2.0
+- numpy
 - numba  # just-in-time compiler
 - pandas
 - plotly>=2.5.1  # for line survey HTML output
-#- progressbar2    # used in vaex
 - psutil # to get user RAM
 - pytables # for pandas to HDF5 export
 - scipy>=1.4.0
 - seaborn   # other matplotlib themes
 - termcolor  # terminal colors
-- specutils
-#- vaex-core>=4.17.0   # load HDF5 files  (version needed to fix https://github.com/radis/radis/issues/598)
-#- vaex-hdf5
-#- vaex-viz
+- specutils<2 #Incompatibility with specutils 2.0.0, readthedocs not passing the tests, notably plot_specutils_processing.py, see #834
 - pip
 - pip:
-  - -r requirements.txt              # add all packages directly in requirements.txt
+  - cryptography
+  - getpass4
+  - hitran-api     # HAPI, used to access TIPS partition functions
+  - hjson          # Json with comments (for default_radis.json)
+  - json-tricks>=3.15.0  # to deal with non jsonable formats
+  - lxml           # parser used for ExoMol website
+  - mpldatacursor
+  - periodictable
+  - peakutils
+  - publib         # Plotting styles for Matplotlib.
+  - python-dotenv
+  - requests
+  - ruamel.yaml
+  - toml
+  - tqdm
+  - vaex-core ; python_version < '3.11'
+  - vaex-hdf5 ; python_version < '3.11'
+  - vaex-viz ; python_version < '3.11'
+  - vulkan
+

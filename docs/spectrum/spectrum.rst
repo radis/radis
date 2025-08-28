@@ -188,9 +188,9 @@ Use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_hdf5`  ::
 Calculate a test spectrum
 -------------------------
 
-You need a spectrum immediatly, to run some tests ? Use :py:func:`~radis.test.utils.test_spectrum` ::
+You need a spectrum immediatly, to run some tests ? Use :py:func:`~radis.test.utils.spectrum_test` ::
 
-    s = radis.test_spectrum()
+    s = radis.spectrum_test()
     s.apply_slit(0.5, 'nm')
     s.plot('radiance')
 
@@ -364,7 +364,7 @@ Just print it::
 
     print(s)
 
-(that shows all spectral arrays stored in the object, all keys and
+(it shows all spectral arrays stored in the object, all keys and
 values in the :attr:`~radis.spectrum.spectrum.Spectrum.conditions` dictionary,
 and all atoms/molecules stored in the :attr:`~radis.spectrum.spectrum.Spectrum.populations`
 dictionary)
@@ -373,6 +373,15 @@ You can also show the conditions only with
 :py:meth:`~radis.spectrum.spectrum.Spectrum.print_conditions`::
 
 	s.print_conditions()
+
+
+Get condition
+-------------
+
+To get a calculation or input condition, use :py:meth`~radis.spectrum.spectrum.Spectrum.get_condition`
+which can return condition in arbitrary units::
+
+    pressure_Pa, _ = s.get_condition("pressure", "Pa", return_unit=True)
 
 
 .. _label_spectrum_plot:
@@ -474,7 +483,7 @@ Know if a spectrum has nan
 :py:meth:`~radis.spectrum.spectrum.Spectrum.has_nan` looks over all spectral
 quantities. ``print(s)`` will also show the number of nans per quantity ::
 
-    s = radis.test_spectrum()
+    s = radis.spectrum_test()
     s.has_nan()
 
 

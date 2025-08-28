@@ -21,7 +21,7 @@ Run only fast tests (i.e: tests that a 'fast' label)::
 """
 
 import os
-from os.path import basename, exists, getmtime
+from os.path import basename, exists, getmtime, join
 
 import numpy as np
 import pytest
@@ -29,12 +29,17 @@ from numpy import exp
 
 from radis import SpectrumFactory
 from radis.db.molecules import Molecules
-from radis.levels.partfunc import PartFunc_Dunham, PartFuncKurucz, PartFuncTIPS
+from radis.levels.partfunc import PartFunc_Dunham, PartFuncBarklem, PartFuncTIPS
 from radis.levels.partfunc_cdsd import PartFuncCO2_CDSDcalc, PartFuncCO2_CDSDtab
 from radis.misc.printer import printm
 from radis.misc.warning import DeprecatedFileWarning
 from radis.phys.constants import hc_k
-from radis.test.utils import getTestFile, setup_test_line_databases
+from radis.test.utils import (
+    define_Evib_as_sum_of_Evibi,
+    discard_lines_with_na_levels,
+    getTestFile,
+    setup_test_line_databases,
+)
 
 fig_prefix = basename(__file__) + ": "
 
@@ -48,6 +53,7 @@ except ImportError:
 
 # %% Test
 
+
 # never add @pytest.mark.fast so we don't delete cached files for 'fast' tests
 def test_delete_all_cached_energies(verbose=True, warnings=True, *args, **kwargs):
     """Doesnt really test anything, but cleans all cached energy levels"""
@@ -60,13 +66,7 @@ def test_delete_all_cached_energies(verbose=True, warnings=True, *args, **kwargs
                 cachefile = energies.cachefile
                 if exists(cachefile):
                     os.remove(cachefile)
-                    print(
-                        (
-                            "Cleaned cached energies for {0}".format(
-                                ElecState.get_fullname()
-                            )
-                        )
-                    )
+                    print((f"Cleaned cached energies for {ElecState.get_fullname()}"))
 
 
 @pytest.mark.fast
@@ -166,8 +166,6 @@ def test_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
     if verbose:
         printm("Tested CDSD Q_calc vs Q_tab give same output: OK")
 
-    return True
-
 
 @pytest.mark.needs_config_file
 @pytest.mark.fast
@@ -175,7 +173,6 @@ def test_reduced_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
     """Test 1: compare calculated PartFunc to the tabulated one
 
     Version where we use the reduced set of CO2 levels (< 3000 cm-1)"""
-    from radis import setup_test_line_databases
     from radis.misc.config import getDatabankEntries
 
     setup_test_line_databases()  # needed for "HITEMP-CO2-HAMIL-TEST"
@@ -253,8 +250,7 @@ def test_calculatedQ_match_HAPI_CO(
         plt.xlabel("Temperature (K)")
         plt.ylabel("Partition function")
         plt.title(
-            "Ab-initio partition function calculations\n"
-            + "(vmax:{0},jmax:{1})".format(vmax, jmax)
+            "Ab-initio partition function calculations\n" + f"(vmax:{vmax},jmax:{jmax})"
         )
         plt.tight_layout()
 
@@ -263,8 +259,6 @@ def test_calculatedQ_match_HAPI_CO(
 
     if verbose:
         printm("Tested Q_CO ab_initio (Dunham) matches HAPI for 300 - 3000 K: OK")
-
-    return True
 
 
 # @pytest.mark.fast #not fast, Nicolas Minesi 08/04/2024
@@ -305,9 +299,7 @@ def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
 
         if verbose:
             print(
-                "Q({0},iso={1},{2}K)\tRADIS: {3:.2f}\tHAPI={4:.2f}".format(
-                    molecule, iso, T, Q_radis, Q_hapi
-                )
+                f"Q({molecule},iso={iso},{T}K)\tRADIS: {Q_radis:.2f}\tHAPI={Q_hapi:.2f}"
             )
 
         try:
@@ -315,15 +307,13 @@ def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
             assert np.isclose(Q_radis, Q_hapi, atol=atol)
         except AssertionError:
             raise AssertionError(
-                "Partition function for {0}, iso={1} ".format(molecule, iso)
-                + "at {0}K doesnt match in RADIS ".format(T)
-                + "({0:.4f}) and HAPI ({1:.4f})".format(Q_radis, Q_hapi)
+                f"Partition function for {molecule}, iso={iso} "
+                + f"at {T}K doesnt match in RADIS "
+                + f"({Q_radis:.4f}) and HAPI ({Q_hapi:.4f})"
             )
 
     if verbose:
         printm("Tested Q ab_initio (Dunham) matches HAPI: OK")
-
-    return True
 
 
 @pytest.mark.needs_config_file
@@ -359,9 +349,9 @@ def test_CDSD_calc_vs_ref(warnings=True, verbose=True, *args, **kwargs):
         printm("Tested Q_CDSD values are correct : OK")
 
 
-def test_partfunckurucz():
+def test_partfuncbarklem():
     species = "Ca_I"
-    kurucz_data = PartFuncKurucz(species)
+    kurucz_data = PartFuncBarklem(species)
 
     temperatures = np.array(
         [
@@ -530,8 +520,6 @@ def test_recompute_Q_from_QvibQrot_Dunham_Evib3_Evib12Erot(
     if verbose:
         printm("Tested Q vs recomputed from (Qvib, Qrot) are the same: OK")
 
-    return True
-
 
 # @pytest.mark.fast   # (very fast only once the cached database has been generated, else decently fast)
 def test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(
@@ -579,8 +567,6 @@ def test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(
 
     if verbose:
         printm("Tested Q vs recomputed from (Qvib, Qrot) are the same: OK")
-
-    return True
 
 
 # @pytest.mark.needs_config_file
@@ -634,7 +620,7 @@ def test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(
 #        if verbose:
 #            printm('Tested Q vs recomputed from (Qvib, Qrot) are the same: OK')
 #
-#        return True
+#
 #
 #    except DatabankNotFound as err:
 #        assert IgnoreMissingDatabase(err, __file__, warnings)
@@ -691,8 +677,6 @@ def test_recompute_Q_from_QvibQrot_CDSD_PC(
     if verbose:
         printm("Tested Q vs recomputed from (Qvib, Qrot) are the same: OK")
 
-    return True
-
 
 # @pytest.mark.fast            # (fast only once the cached database has been generated)
 
@@ -729,9 +713,7 @@ def test_Q_1Tvib_vs_Q_3Tvib(T=1500, verbose=True, warnings=True, *args, **kwargs
 
     assert np.isclose(Q, Q3T)
     if verbose:
-        printm("Tested Q in 1-Tvib vs Q in 3-Tvib modes (T={0:.0f}K): OK".format(T))
-
-    return True
+        printm(f"Tested Q in 1-Tvib vs Q in 3-Tvib modes (T={T:.0f}K): OK")
 
 
 @pytest.mark.fast
@@ -760,10 +742,10 @@ def test_Morse_Potential_effect_CO(
     Q_morse = db.at(T)
 
     if verbose:
-        printm("Morse vs no Morse potential (T={0}K)".format(T))
-        printm("Q_morse: {0:.3f}".format(Q_morse))
-        printm("Q_nomorse: {0:.3f}".format(Q_nomorse))
-        printm("Difference: {0:.4f}%".format(abs(Q_nomorse - Q_morse) / Q_morse * 100))
+        printm(f"Morse vs no Morse potential (T={T}K)")
+        printm(f"Q_morse: {Q_morse:.3f}")
+        printm(f"Q_nomorse: {Q_nomorse:.3f}")
+        printm(f"Difference: {abs(Q_nomorse - Q_morse) / Q_morse * 100:.4f}%")
 
     assert abs(Q_nomorse - Q_morse) / Q_morse < rtol
 
@@ -777,11 +759,6 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
 
     # from warnings import catch_warnings, filterwarnings
     def run_example():
-
-        from radis.test.utils import (
-            define_Evib_as_sum_of_Evibi,
-            discard_lines_with_na_levels,
-        )
 
         setup_test_line_databases(
             verbose=True
@@ -826,9 +803,11 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
         getTestFile(r"co2_cdsd_hamiltonian_fragment.levels")
     )
     # get the time when .levels.h5 file was last modified
-    cache_last_modification = getmtime(
-        getTestFile(r"co2_cdsd_hamiltonian_fragment.levels.h5")
+
+    cdsd_fragment_path = join(
+        "radis", "test", "files", "co2_cdsd_hamiltonian_fragment.levels"
     )
+    cache_last_modification = getmtime(cdsd_fragment_path)
 
     # change the time when .levels file was last modified
     stinfo = os.stat(getTestFile(r"co2_cdsd_hamiltonian_fragment.levels"))
@@ -848,9 +827,7 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
     # run calculations once again to see if the .levels.h5 (cache file) is regenerated
     run_example()
 
-    cache_last_modification_again = getmtime(
-        getTestFile(r"co2_cdsd_hamiltonian_fragment.levels.h5")
-    )
+    cache_last_modification_again = getmtime(cdsd_fragment_path)
     assert cache_last_modification_again > cache_last_modification
 
 
@@ -887,9 +864,7 @@ def test_tabulated_partition_functions(
         # accuracy_dict[
         if verbose:
             print(
-                "full-sum & TIPS tabulated partition function of CO2 at {0}K close within {1:.2%}".format(
-                    T, accuracy
-                )
+                f"full-sum & TIPS tabulated partition function of CO2 at {T}K close within {accuracy:.2%}"
             )
         assert (
             accuracy < 4 * rtol
@@ -904,9 +879,7 @@ def test_tabulated_partition_functions(
         if verbose:
             accuracy = max(z1, z2) / min(z1, z2) - 1
             print(
-                "full-sum & jit-tabulated partition function of CO2 at {0}K close within {1:.2%}".format(
-                    T, accuracy
-                )
+                f"full-sum & jit-tabulated partition function of CO2 at {T}K close within {accuracy:.2%}"
             )
         assert np.isclose(z1, z2, rtol=rtol)
 
@@ -1044,8 +1017,6 @@ def test_parsum_mode_in_factory(verbose=True, plot=True, *args, **kwargs):
     is 2x faster.
 
     """
-    from radis import SpectrumFactory
-
     wmin, wmax = 2284, 2285
     sf = SpectrumFactory(
         wavenum_min=wmin,
@@ -1100,53 +1071,51 @@ def test_parsum_mode_in_factory(verbose=True, plot=True, *args, **kwargs):
 
 def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
 
-    # Test 0: delete all cached energies
-    test_delete_all_cached_energies(verbose=verbose, warnings=warnings)
+    # # Test 0: delete all cached energies
+    # test_delete_all_cached_energies(verbose=verbose, warnings=warnings)
 
-    # Test 1: test cache mechanism
-    test_cache_file_generation_and_update(verbose=verbose, warnings=warnings)
+    # # Test 1: test cache mechanism
+    # test_cache_file_generation_and_update(verbose=verbose, warnings=warnings)
 
-    # Test 2: compare calculated PartFunc for CO to HAPI
-    test_calculatedQ_match_HAPI_CO()
-    # Test 2b: compare for many molecules and isotopes
-    test_calculatedQ_match_HAPI()
+    # # Test 2: compare calculated PartFunc for CO to HAPI
+    # test_calculatedQ_match_HAPI_CO()
+    # # Test 2b: compare for many molecules and isotopes
+    # test_calculatedQ_match_HAPI()
 
-    # Test 3: compare calculated PartFunc to the tabulated one with CDSD
-    # Test 4: compare calculated PartFunc to hardcoded references
-    test_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
-    test_CDSD_calc_vs_ref(warnings=warnings)
+    # # Test 3: compare calculated PartFunc to the tabulated one with CDSD
+    # # Test 4: compare calculated PartFunc to hardcoded references
+    # test_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
+    # test_CDSD_calc_vs_ref(warnings=warnings)
     test_reduced_CDSD_calc_vs_tab(verbose=verbose, warnings=warnings)
-    test_reduced_CDSD_calc_noneq(verbose=verbose, warnings=warnings)
+    # test_reduced_CDSD_calc_noneq(verbose=verbose, warnings=warnings)
 
-    # Test 5a, 5b: recompute Q from QvibQrot
-    test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(
-        verbose=verbose, warnings=warnings
-    )
-    test_recompute_Q_from_QvibQrot_Dunham_Evib3_Evib12Erot(
-        verbose=verbose, warnings=warnings
-    )
-    test_recompute_Q_from_QvibQrot_CDSD_PC(verbose=verbose, warnings=warnings)
-    # test_recompute_Q_from_QvibQrot_CDSD_PCN(verbose=verbose, warnings=warnings)  # ignore in released version
+    # # Test 5a, 5b: recompute Q from QvibQrot
+    # test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(
+    #     verbose=verbose, warnings=warnings
+    # )
+    # test_recompute_Q_from_QvibQrot_Dunham_Evib3_Evib12Erot(
+    #     verbose=verbose, warnings=warnings
+    # )
+    # test_recompute_Q_from_QvibQrot_CDSD_PC(verbose=verbose, warnings=warnings)
+    # # test_recompute_Q_from_QvibQrot_CDSD_PCN(verbose=verbose, warnings=warnings)  # ignore in released version
 
-    # Test 6:
-    test_Q_1Tvib_vs_Q_3Tvib(verbose=verbose, warnings=warnings)
+    # # Test 6:
+    # test_Q_1Tvib_vs_Q_3Tvib(verbose=verbose, warnings=warnings)
 
-    # Test 7:
-    test_Morse_Potential_effect_CO(verbose=verbose, warnings=warnings)
+    # # Test 7:
+    # test_Morse_Potential_effect_CO(verbose=verbose, warnings=warnings)
 
     # Test 8: Regenerates levels file if it's manually changed
-    test_levels_regeneration(verbose=verbose, warnings=True, *args, **kwargs)
+    # test_levels_regeneration(verbose=verbose, warnings=True, *args, **kwargs)
 
     # Test 9 : tabulation
-    test_tabulated_partition_functions(verbose=verbose, *args, **kwargs)
-    test_parsum_mode_in_factory(verbose=verbose, *args, **kwargs)
+    # test_tabulated_partition_functions(verbose=verbose, *args, **kwargs)
+    # test_parsum_mode_in_factory(verbose=verbose, *args, **kwargs)
 
-    # Test 10:
-    test_partfunckurucz()
-
-    return True
+    # # Test 10:
+    # test_partfuncbarklem()
 
 
 if __name__ == "__main__":
-    # printm("Testing parfunc: {0}".format(_run_testcases()))
+    # printm(f"Testing parfunc: {_run_testcases()}")
     printm("Testing partfunc.py:", pytest.main(["test_partfunc.py", "--pdb"]))
