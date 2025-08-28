@@ -63,8 +63,12 @@ import pandas as pd
 from numpy import exp
 
 import radis
+from radis.api.atomic_pf_api import (
+    fetch_kurucz_pfs,
+    fetch_NIST_pfs,
+    load_pf_Barklem2016,
+)
 from radis.api.cache_files import load_h5_cache_file, save_to_hdf
-from radis.api.kuruczapi import load_pf_Barklem2016
 from radis.db.classes import (
     HITRAN_CLASS1,
     HITRAN_CLASS2,
@@ -123,7 +127,7 @@ class RovibParFuncTabulator(RovibPartitionFunction):
     def __init__(self):
         super(RovibParFuncTabulator, self).__init__()
 
-    def at(self, T, potential_lowering=None, **kwargs):
+    def at(self, T, **kwargs):
         r"""Get partition function at temperature T under equilibrium
         conditions, from tabulated data.
 
@@ -131,8 +135,6 @@ class RovibParFuncTabulator(RovibPartitionFunction):
         ----------
         T: float
             equilibrium temperature
-        potential_lowering: float
-            The potential lowering in cm-1/Zeff**2, only relevant for Kurucz linelists which the partition function tables may have a dependence on this
 
         Returns
         -------
@@ -152,9 +154,7 @@ class RovibParFuncTabulator(RovibPartitionFunction):
         update_populations = kwargs.pop("update_populations", False)
         if kwargs != {}:
             raise TypeError(
-                "RovibParFuncTabulator.at() got an unexpected keyword: {0}".format(
-                    kwargs.keys()
-                )
+                f"RovibParFuncTabulator.at() got an unexpected keyword: {kwargs.keys()}"
             )
         if update_populations != False:
             raise ValueError(
@@ -163,10 +163,7 @@ class RovibParFuncTabulator(RovibPartitionFunction):
             )
 
         # defined individually for each class Variants (one per database)
-        if potential_lowering is not None:
-            return self._at(T, potential_lowering)
-        else:
-            return self._at(T)
+        return self._at(T)
 
     def at_noneq(self, *args, **kwargs):
         raise ValueError(
@@ -208,9 +205,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             ElecState.Erovib
         except AttributeError:
             raise AttributeError(
-                "{0} has no energy function defined in RADIS".format(
-                    ElecState.get_fullname()
-                )
+                f"{ElecState.get_fullname()} has no energy function defined in RADIS"
             )
 
         # Store
@@ -280,8 +275,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         """
         if __debug__:
             printdbg(
-                "called RovibPartitionFunction.at(T={0}K, ".format(T)
-                + "update_populations={0})".format(update_populations)
+                f"called RovibPartitionFunction.at(T={T}K, "
+                + f"update_populations={update_populations})"
                 + f". mode = {self.mode}"
             )
 
@@ -364,7 +359,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         else:
             raise ValueError(
                 "either g, or gvib+grot must be defined to "
-                + "calculate total degeneracy. Got: {0}".format(list(df.keys()))
+                + f"calculate total degeneracy. Got: {list(df.keys())}"
             )
 
         # Calculate
@@ -435,8 +430,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         if __debug__:
             printdbg(
                 "called RovibPartitionFunction.atnoneq"
-                + "(Tvib={0}K, Trot={1}K, ... )".format(Tvib, Trot)
-                + "update_populations={0})".format(update_populations)
+                + f"(Tvib={Tvib}K, Trot={Trot}K, ... )"
+                + f"update_populations={update_populations})"
                 + f". mode = {self.mode}"
             )
 
@@ -639,7 +634,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 for viblvl in overpopulation.keys():
                     if not viblvl in levels:
                         raise ValueError(
-                            "Level {0} not in energy levels database".format(viblvl)
+                            f"Level {viblvl} not in energy levels database"
                         )
                         # could be a simple warning too
                 # Add overpopulations (so they are taken into account in the partition function)
@@ -699,11 +694,9 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 Qrovib = (dfQrot.nvib * Qvib * dfQrot.Qrot).sum()
                 if not np.isclose(Q, Qrovib):
                     raise ValueError(
-                        "Rovibrational partition function ({0:.2f}) doesnt ".format(Q)
+                        f"Rovibrational partition function ({Q:.2f}) doesnt "
                         + "match value recomputed from vibrational and rotational "
-                        + "partition functions ({0:.2f}). Check how Evib and Erot ".format(
-                            Qrovib
-                        )
+                        + f"partition functions ({Qrovib:.2f}). Check how Evib and Erot "
                         + "are defined in your Energy Database"
                     )
 
@@ -784,8 +777,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         if __debug__:
             printdbg(
                 "called RovibPartitionFunction.at_noneq_3Tvib"
-                + "(Tvib={0}K, Trot={1}K)".format(Tvib, Trot)
-                + "update_populations={0})".format(update_populations)
+                + f"(Tvib={Tvib}K, Trot={Trot}K)"
+                + f"update_populations={update_populations})"
                 + f". mode = {self.mode}"
             )
         #                               'overpopulation={0}, vib_distribution={1}'.format(overpopulation, vib_distribution)+\
@@ -804,9 +797,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             if not all_in(["Evib1", "Evib2", "Evib3"], list(self.df.keys())):
                 raise ValueError(
                     "Evib1, Evib2, Evib3 must be defined to calculate non-equilibrium "
-                    + "partition functions with Tvib1, Tvib2, Tvib3. Got {0}".format(
-                        list(self.df.keys())
-                    )
+                    + f"partition functions with Tvib1, Tvib2, Tvib3. Got {list(self.df.keys())}"
                 )
         elif vib_distribution == "treanor":
             if not all_in(
@@ -1152,11 +1143,69 @@ class PartFuncExoMol(RovibParFuncTabulator):
         return np.interp(T, self.T_range, self.Q_range)
 
 
-class PartFuncKurucz(RovibParFuncTabulator):
-    """Return partition function using interpolation of tabulated values of local file kuruczpartfn.txt"""
+class PartFuncKurucz:
+    """Return partition function using interpolation of tabulated values of local files provided with kurucz linelists
 
-    def __init__(self, species, pfpath=None):
-        super(PartFuncKurucz, self).__init__()
+    Parameters
+    ----------
+    species: string
+        The atomic species in spectroscopic notation
+    """
+
+    def __init__(self, species):
+        self.partfn, self.parfuncpath = fetch_kurucz_pfs(species)
+
+    def at(self, T, potential_lowering=None):
+        """
+        Parameters
+        ----------
+        T: float
+            equilibrium temperature
+        potential_lowering: float
+            The potential lowering in cm-1/Zeff**2
+
+        Returns
+        -------
+        Q: float
+            partition function interpolated  at temperature T
+        """
+        # Interpolate to find the partition function at the desired temperature
+        if self.partfn is None:
+            raise Exception(
+                "Kurucz partition functions are unavailable for this species."
+            )
+        if potential_lowering is None:
+            raise Exception("Please specify the potential lowering.")
+        else:
+            Temp = self.partfn["T"]
+            try:
+                Qvals = self.partfn[f"{potential_lowering}"]
+            except KeyError:
+                print("Available values of potential lowering:")
+                print(
+                    *self.partfn.columns.difference(["T"], sort=False).to_list(),
+                    sep=", ",
+                )
+                raise
+
+        if T < Temp.min() or T > Temp.max():
+            raise OutOfBoundError(
+                f"The temperature {T} K is outside the tabulated range of the partition functions [{Temp.min()}, {Temp.max()}] K for Kurucz"
+            )
+        return np.interp(T, Temp, Qvals)
+
+
+class PartFuncBarklem(RovibParFuncTabulator):
+    """Return partition function using interpolation of tabulated values of the included file from Barklem & Collet (2016)
+
+    Parameters
+    ----------
+    species: string
+        The atomic species in spectroscopic notation
+    """
+
+    def __init__(self, species):
+        super(PartFuncBarklem, self).__init__()
         # Load data in constructor
         self.species = species
         self.pfTdat, self.pfdat = load_pf_Barklem2016()
@@ -1174,51 +1223,36 @@ class PartFuncKurucz(RovibParFuncTabulator):
             )  # namespace["pfT_values"]
             self.pf_values = pf_atom.values.astype(float)
 
-        if pfpath:
-            self.partfn = pd.read_hdf(pfpath)
-        else:
-            self.partfn = None
-
-    def _at(self, T, potential_lowering=None):
+    def _at(self, T):
         # Interpolate to find the partition function at the desired temperature
-        if potential_lowering is not None and self.partfn is not None:
-            Temp = self.partfn["T"]
-            try:
-                Qvals = self.partfn[f"{potential_lowering}"]
-            except KeyError:
-                print("Available values of potential lowering:")
-                print(
-                    *self.partfn.columns.difference(["T"], sort=False).to_list(),
-                    sep=", ",
-                )
-                raise
-            addmsg = "the Kurucz partition function. You can try the Barklem & Collet (2016) partition function by setting `potential_lowering=None`."
-        else:
-            if self.partfn is None:
-                if potential_lowering is not None:
-                    warn(
-                        "Table of partition functions by potential lowering not available for this species - using Barklem & Collet (2016) instead with just the temperature"
-                    )
-                addmsg = "Barklem & Collet (2016)."
-                addmsg2 = ", nor are any dedicated tables available for this species."
-            else:
-                addmsg = "Barklem & Collet (2016). You can try the Kurucz partition function by setting a potential lowering (e.g. `potential_lowering=-500`)."
-                addmsg2 = ". Please specify the potential lowering."
-            if self.pf_values is None:
-                raise Exception(
-                    "The partition functions from Barklem & Collet (2016) don't include this species"
-                    + addmsg2
-                )
+        if self.pf_values is None:
+            raise Exception(
+                "The partition functions from Barklem & Collet (2016) don't include this species"
+            )
 
-            Temp = self.pfT_values
-            Qvals = self.pf_values
+        Temp = self.pfT_values
+        Qvals = self.pf_values
 
         if T < Temp.min() or T > Temp.max():
-            raise ValueError(
-                f"The temperature {T} K is outside the tabulated range of the partition functions [{Temp.min()}, {Temp.max()}] K for "
-                + addmsg
+            raise OutOfBoundError(
+                f"The temperature {T} K is outside the tabulated range of the partition functions [{Temp.min()}, {Temp.max()}] K for Barklem & Collet (2016)"
             )
         return np.interp(T, Temp, Qvals)
+
+
+class PartFuncNIST(RovibParFuncCalculator):
+    # inherit from RovibParFuncCalculator for the convenience of its `at` method
+    """Return partition function using calculation based on tabulated energy levels from NIST
+
+    Parameters
+    ----------
+    species: string
+        The atomic species in spectroscopic notation
+    """
+
+    def __init__(self, species):
+        self.mode = "full summation"
+        self.df, self.levelspath = fetch_NIST_pfs(species)
 
 
 class PartFuncTIPS(RovibParFuncTabulator):
@@ -1283,16 +1317,21 @@ class PartFuncTIPS(RovibParFuncTabulator):
         if isinstance(M, str):
             M = get_molecule_identifier(M)
         if type(M) is not int:
-            raise TypeError("Molecule id must be int: got {0} ({1})".format(M, type(M)))
+            raise TypeError(f"Molecule id must be int: got {M} ({type(M)})")
         if type(I) not in [int, np.int64]:
-            raise TypeError(
-                "Isotope number must be int: got {0} ({1})".format(I, type(I))
-            )
+            raise TypeError(f"Isotope number must be int: got {I} ({type(I)})")
 
         self.partitionSum = partitionSum
         self.M = M
         self.molecule = get_molecule(M)
         self.I = I
+
+        # Get min and maximum of partition functions in TIPS
+        from hapi import TIPS_2021_ISOT_HASH
+
+        TT = TIPS_2021_ISOT_HASH[(M, I)]
+        self.Tmin = min(TT)
+        self.Tmax = max(TT)
 
     def import_from_file(self, path):
         r"""Import hapi.py from a given file (in case user wants to specify a
@@ -1367,8 +1406,8 @@ def _get_cachefile_name(ElecState):
     isotope = ElecState.iso
     state = ElecState.state
     jsonfile = ElecState.jsonfile
-    filename = "{0}_{1}_iso{2}_{3}_levels.h5".format(
-        jsonfile.replace(".json", ""), molecule, isotope, state
+    filename = (
+        f"{jsonfile.replace('.json', '')}_{molecule}_iso{isotope}_{state}_levels.h5"
     )
     return filename
 
@@ -1581,9 +1620,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             # Build energy levels
             if verbose:
                 print(
-                    "Calculating energy levels with Dunham expansion for {0}".format(
-                        ElecState.get_fullname()
-                    )
+                    f"Calculating energy levels with Dunham expansion for {ElecState.get_fullname()}"
                 )
                 if not use_cached:
                     print(
@@ -1653,7 +1690,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
 
                 else:
                     raise NotImplementedError(
-                        "group_energy_modes_in_2T_model: {0}".format(group_energy_modes)
+                        f"group_energy_modes_in_2T_model: {group_energy_modes}"
                     )
 
     def build_energy_levels_class1(self):  # , ZPE=0):
@@ -1706,7 +1743,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             if __debug__:
                 printdbg(
                     "Calculating Evib for "
-                    + "v={0}: {1:.2f}cm-1 (Dunham expansion)".format(v, Evib)
+                    + f"v={v}: {Evib:.2f}cm-1 (Dunham expansion)"
                 )
             # ... Rotational loop
             E = Evib
@@ -1736,15 +1773,11 @@ class PartFunc_Dunham(RovibParFuncCalculator):
                 delta_E = delta_E_last - (v + 1 - vmax) * v_inc
                 Evib = Evib + delta_E
                 if Evib > Ediss:
-                    warn(
-                        "Energy above dissociation threshold: {0}>{1}".format(
-                            Evib, Ediss
-                        )
-                    )
+                    warn(f"Energy above dissociation threshold: {Evib}>{Ediss}")
                 if __debug__:
                     printdbg(
                         "Calculating Evib for "
-                        + "v={0}: {1:.2f}cm-1 (Morse Potential)".format(v, Evib)
+                        + f"v={v}: {Evib:.2f}cm-1 (Morse Potential)"
                     )
                 # ... Rotational loop
                 J = 0
@@ -1773,9 +1806,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         if isinstance(gs, tuple):
             raise NotImplementedError(
                 "Different degeneracies (symmetric/antisymmetric)"
-                + " not implemented for molecule {0} isotope {1}".format(
-                    ElecState.id, ElecState.iso
-                )
+                + f" not implemented for molecule {ElecState.id} isotope {ElecState.iso}"
             )
             # (for devs: to implement that efficiently see CO2 (_class5))
 
@@ -1784,7 +1815,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         df["Erot"] = df.E - df.Evib
 
         if self.verbose:
-            print("Database generated up to v={0}, J={1}".format(v, Jmaxcalc))
+            print(f"Database generated up to v={v}, J={Jmaxcalc}")
 
         self.df = df
 
@@ -2092,9 +2123,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
 
         else:
             raise NotImplementedError(
-                "group_energy_modes_in_2T_model: {0}".format(
-                    group_energy_modes_in_2T_model
-                )
+                f"group_energy_modes_in_2T_model: {group_energy_modes_in_2T_model}"
             )
         #         # same as above but harder to read
         #        Evib_columns, Erot_columns = group_energy_modes_in_2T_model
@@ -2218,9 +2247,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
 
         if self.verbose:
             print(
-                "Database generated up to v1={0}, v2={1}, v3={2}, J={3}".format(
-                    v1max, v2max, v3max, Jmax_calc
-                )
+                f"Database generated up to v1={v1max}, v2={v2max}, v3={v3max}, J={Jmax_calc}"
             )
 
         self.df = df
@@ -2264,4 +2291,4 @@ if __name__ == "__main__":
 
     from radis.test.levels.test_partfunc import _run_testcases
 
-    print("Testing parfunc: {0}".format(_run_testcases()))
+    print(f"Testing parfunc: {_run_testcases()}")
