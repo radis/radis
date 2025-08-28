@@ -5,9 +5,22 @@ Created on Mon Jul 19 22:44:39 2021
 @author: erwan
 """
 
+import astropy.units as u
 import pytest
 
 from radis.io.exomol import get_exomol_database_list, get_exomol_full_isotope_name
+
+conditions = {
+    "wmin": 2002 / u.cm,
+    "wmax": 2300 / u.cm,
+    "molecule": "CO",
+    "isotope": "1",
+    "pressure": 1.01325,  # bar
+    "mole_fraction": 0.1,
+    "path_length": 1,  # cm
+    "broadening_method": "fft",
+    "verbose": True,
+}
 
 
 @pytest.mark.fast
@@ -46,25 +59,16 @@ def test_exomol_parsing_functions(verbose=True, *args, **kwargs):
                 assert dat in known_databases
 
 
+@pytest.mark.fast
 @pytest.mark.needs_connection
 def test_calc_exomol_spectrum(verbose=True, plot=True, *args, **kwargs):
-    """Auto-fetch and calculate a SiO spectrum from the ExoMol database
+    """Auto-fetch and calculate a CO spectrum from the ExoMol database
 
     https://github.com/radis/radis/pull/320#issuecomment-884508206
     """
     from radis import SpectrumFactory
 
-    sf = SpectrumFactory(
-        wavenum_min=1900,
-        wavenum_max=2300,
-        molecule="CO",
-        verbose=0,
-        pressure=1.01325,
-        wstep="auto",
-        isotope="1",
-        path_length=1,  # cm
-        mole_fraction=0.1,
-    )
+    sf = SpectrumFactory(**conditions)
 
     sf.fetch_databank(
         source="exomol",
@@ -86,19 +90,7 @@ def test_calc_exomol_vs_hitemp(verbose=True, plot=True, *args, **kwargs):
 
     https://github.com/radis/radis/pull/320#issuecomment-884508206
     """
-    import astropy.units as u
 
-    conditions = {
-        "wmin": 2002 / u.cm,
-        "wmax": 2300 / u.cm,
-        "molecule": "CO",
-        "isotope": "1",
-        "pressure": 1.01325,  # bar
-        "mole_fraction": 0.1,
-        "path_length": 1,  # cm
-        "broadening_method": "fft",
-        "verbose": True,
-    }
     from radis import SpectrumFactory
 
     sf = SpectrumFactory(**conditions)
@@ -135,5 +127,5 @@ def test_calc_exomol_vs_hitemp(verbose=True, plot=True, *args, **kwargs):
 
 if __name__ == "__main__":
     test_exomol_parsing_functions()
-    # test_calc_exomol_spectrum()
+    test_calc_exomol_spectrum()
     test_calc_exomol_vs_hitemp()
