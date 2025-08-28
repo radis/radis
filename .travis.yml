@@ -23,17 +23,33 @@ before_install:
   # - source ~/.bashrc
 install:
   # - micromamba activate base
-  # Update python version in environment
+  # # Update python version in environment
   # - sed -i -E 's/^- python$/- python='$TRAVIS_PYTHON_VERSION'/' ./environment.yml
-  # # Create conda environment
+  # # # Create conda environment
   # - micromamba install xtensor -c conda-forge -y
   # - pwd
-  # # Create the environment:
+  #  # Create the environment:
   # - micromamba create -f ./environment.yml -y
-  # # Activate and install test-only dependencies
+  # # # Activate and install test-only dependencies
   # - micromamba activate radis-env
   # - micromamba list
-  - mamba install -c conda-forge xtensor
+
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+    else
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    fi
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - source "$HOME/miniconda/etc/profile.d/conda.sh"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  # Useful for debugging any issues with conda
+  - conda info -a
+
+  # Replace dep1 dep2 ... with your dependencies
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION xtensor -c conda-forge -y
+  - conda activate test-environment
   - pip install pytest-cov
   - pip install -e . -v
 
