@@ -483,6 +483,7 @@ def test_calc_hitemp_spectrum_2010_version(*args, **kwargs):
     )
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 def test_calc_hitemp_CO_noneq(verbose=True, *args, **kwargs):
     """Test proper download of HITEMP CO database.
