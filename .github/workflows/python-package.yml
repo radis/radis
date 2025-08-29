@@ -8,8 +8,6 @@ on:
     branches: [ "develop" ] #see python-package-master.yml for tests on master
   pull_request:
     branches: [ "develop" ]
-  pull_request_target: #Dangerous but no idea how to change this, https://github.com/orgs/community/discussions/50161
-    branches: [ "develop" ]
 
 jobs:
   build:
@@ -41,14 +39,16 @@ jobs:
           python -m pip install pytest
           pip install -e .
       - name: Fast tests with pytest
-        env:
-          HITRAN_EMAIL: ${{ secrets.HITRAN_EMAIL }}
-          HITRAN_PASSWORD: ${{ secrets.HITRAN_PASSWORD }}
         run: |
-          pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC and not needs_gpu and not needs_specutils" --durations=10
+          pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC and not needs_gpu and not needs_specutils and not needs_HITRAN_credentials" --durations=10
       - name: Long tests with pytest
+        run: |
+          pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM and not needs_gpu and not needs_specutils and not needs_HITRAN_credentials" --durations=10
+      - name: Test with HITRAN/HITEMP credentials (write access only)
         env:
           HITRAN_EMAIL: ${{ secrets.HITRAN_EMAIL }}
           HITRAN_PASSWORD: ${{ secrets.HITRAN_PASSWORD }}
         run: |
-          pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM and not needs_gpu and not needs_specutils" --durations=10
+          pytest -m "needs_HITRAN_credentials" --durations=10
+
+
