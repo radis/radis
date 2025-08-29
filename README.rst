@@ -1,4 +1,4 @@
-This is a test
+This is a test.
 
 
  | |badge_pypi|  |badge_pypistats| |badge_article1| |badge_article2| |badge_docs| |badge_binder|
