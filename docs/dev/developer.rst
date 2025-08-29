@@ -17,7 +17,7 @@ Installation for developers
 
 Things to know about our GitHub repository
 =======
-.. include:: _github_actions.rst
+.. include:: _github.rst
 
 
 Dependency Management
