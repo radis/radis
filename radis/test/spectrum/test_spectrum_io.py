@@ -9,6 +9,7 @@ from radis import Spectrum, get_residual, spectrum_test
 
 
 @pytest.mark.fast
+@pytest.mark.needs_specutils
 def test_specutils_io(verbose=True, plot=False, *args, **kwargs):
     """Test Radis/specutils  interface in particular when dealing with wavelengths
 

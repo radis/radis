@@ -7,6 +7,7 @@ Test that line survey works
 """
 
 import os
+import sys
 from os.path import exists
 
 import pytest
@@ -30,8 +31,12 @@ def test_line_survey(verbose=True, plot=False, warnings=True, *args, **kwargs):
 
     assert exists(_temp_file)
 
-    with open(_temp_file) as f:
-        d = f.read()
+    if sys.platform.startswith("win"):
+        with open(_temp_file, encoding="utf-8", errors="replace") as f:
+            d = f.read()
+    else:
+        with open(_temp_file) as f:
+            d = f.read()
     assert "Linestrength" in d
     assert "Wavenumber" in d
 
