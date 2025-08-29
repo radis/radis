@@ -1,6 +1,4 @@
 .. _label_install:
-Install
--------
 
 This is the installation procedure for developpers.
 For the user documentation, see the :ref:`use-only install <label_install_useonly>`.

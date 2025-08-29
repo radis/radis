@@ -15,7 +15,7 @@ Installation for developers
 .. include:: _install.rst
 
 
-Things to know about our GitHub repository
+GitHub repository
 =======
 .. include:: _github.rst
 

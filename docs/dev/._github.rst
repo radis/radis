@@ -72,11 +72,15 @@ If you prefer to work in your fork:
    - ``HITRAN_PASSWORD`` → your HITRAN account password
 
 3. Workflows in your fork will then use *your* credentials when fetching HITEMP databases.
+4. Once your changes are ready, open a Pull Request (PR) against the main repository. A manual review will be required to allow all the tests to be ran on `radis/radis` repository.
 
 .. note::
 
    You must have a valid HITRAN registration before adding these.
 
+.. note::
+
+   Only the GitHub actions on your fork will have access to your secrets. This way, you do the tests on your side before asking for changes to be merged on `radis/radis` repository.
 
 Option 2: Work on a branch inside the main ``radis/radis`` repository. Applies to regular contributors.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

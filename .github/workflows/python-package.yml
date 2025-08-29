@@ -8,6 +8,8 @@ on:
     branches: [ "develop" ] #see python-package-master.yml for tests on master
   pull_request:
     branches: [ "develop" ]
+  pull_request_target: #Dangerous but no idea how to change this, https://github.com/orgs/community/discussions/50161
+    branches: [ "develop" ]
 
 jobs:
   build:
