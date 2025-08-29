@@ -32,7 +32,7 @@ dependencies:
 - scipy>=1.4.0
 - seaborn   # other matplotlib themes
 - termcolor  # terminal colors
-- specutils<2 #Incompatibility with specutils 2.0.0, readthedocs not passing the tests, notably plot_specutils_processing.py, see #834
+- specutils  # spectroscopic data handling
 - pip
 - pip:
   - cryptography
