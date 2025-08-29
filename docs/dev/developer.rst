@@ -69,8 +69,6 @@ On each commit, format will be fixed if it was incorrect. All you need to do is 
 
 Note that pre-commit will always require you to commit again after a test was failed, because `it's safer <https://github.com/pre-commit/pre-commit/issues/532>`__. If for any reason you want to skip formatting you can commit with the ``--no-verify`` `argument <https://git-scm.com/docs/git-commit>`__.
 
-
-
 Keeping Your Fork Updated
 ----------------------
 
@@ -92,6 +90,11 @@ If you're a regular contributor, keep your fork in sync with the main repository
 4. Push to your fork::
 
     git push -u origin [NEW-BRANCH]
+
+Contributing Securely: HITRAN Credentials
+========================================
+
+.. include:: _github_actions.rst
 
 Sources
 =======

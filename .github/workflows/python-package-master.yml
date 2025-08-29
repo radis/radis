@@ -1,7 +1,7 @@
 # This file is a copy of .github/workflows/python-package.yml but applies for the master branch only
 # In a few words, we perform the same actions as the develop branch but with many more versions of Python
 
-name: Python package
+name: Tests on master (Python 3.9, 3.10, 3.11, and 3.12)
 
 on:
   push:
