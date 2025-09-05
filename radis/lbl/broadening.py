@@ -1940,16 +1940,29 @@ class BroadenFactory(BaseFactory):
         elif broadening_method == "fft":
             # Unlike real space methods ('convolve', 'voigt'), here we calculate
             # the lineshape on the full spectral range.
-            if wavenumber_group is not None:
-                w = self.wavenumber_calc[wavenumber_group]
-                wstep = self.params.wstep
-            else:
-                gridnb = wavenumber_group[0]
-                w = self.wavenumber_calc[gridnb]
-                wstep = self._wstep_multigrid[gridnb]
+
+            ### ============> Initial sparse by @erwan
+            # if wavenumber_group is not None:
+            #     w = self.wavenumber_calc[wavenumber_group]
+            #     wstep = self.params.wstep
+            # else:
+            #     gridnb = wavenumber_group[0]
+            #     w = self.wavenumber_calc[gridnb]
+            #     wstep = self._wstep_multigrid[gridnb]
+            #     raise NotImplementedError(
+            #         "broadening_method == 'fft'. Only broadening_method='voigt' is implemented with Multigrids"
+            #     )
+            ### ============> Initial sparse by @erwan
+
+            ### ============> Replacement by Nicolas
+            if wavenumber_group is not None:  # i.e. if sparse
                 raise NotImplementedError(
                     "broadening_method == 'fft'. Only broadening_method='voigt' is implemented with Multigrids"
                 )
+            else:  # normal, like before
+                w = self.wavenumber_calc
+                wstep = self.params.wstep
+            ### ============> Replacement by Nicolas
 
             w_lineshape_ft = np.fft.rfftfreq(
                 2 * len(w), wstep
