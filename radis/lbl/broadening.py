@@ -3843,7 +3843,8 @@ class BroadenFactory(BaseFactory):
             assert len(self._ix_ranges) > 0
             for wavenumber_group_i, lines_range_i in enumerate(self._ix_ranges):
                 (wavenumber_i, abscoeff_i, emisscoeff_i) = self._broaden_lines_noneq(
-                    df.iloc[lines_range_i[0] : lines_range_i[-1]], wavenumber_group_i
+                    df=df.iloc[lines_range_i[0] : lines_range_i[-1]],
+                    wavenumber_group=wavenumber_group_i,
                 )
                 wavenumber.append(wavenumber_i)
                 abscoeff.append(abscoeff_i)
@@ -3855,7 +3856,7 @@ class BroadenFactory(BaseFactory):
             )
         else:
             (wavenumber, abscoeff, emisscoeff) = self._broaden_lines_noneq(
-                df, wavenumber_group_i
+                df, wavenumber_group=None
             )
 
         self.profiler.stop("calc_line_broadening", "Calculated line broadening")
