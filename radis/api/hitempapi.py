@@ -561,9 +561,11 @@ def parse_one_CO2_block(
         try:
             manager = DataFileManager(engine)
             manager.write(fcache, df, key="default", append=False)
-        except PermissionError:
-            if verbose:
-                print("An error occurred in cache file generation. Check access rights")
+        except PermissionError as e:
+            warnings.warn(
+                f"Insufficient access rights to write to cache file: {e}. Please check file permissions. Continuing without saving to {fcache}.",
+                UserWarning,
+            )
             pass
 
     return df
@@ -580,12 +582,11 @@ def read_and_write_chunked_for_CO2(
     local_databases=None,
 ):
     """
-    Download, Parse and Cache CO2 data chunks for specified wavenumber range.
-
+    Download, parse and cache CO2 data chunks for specified wavenumber range.
     Parameters
     ----------
     load_wavenum_min, load_wavenum_max : float
-        Wavenumber range to load (cm⁻¹)
+        Wavenumber range to load (cm-1)
     columns : list, optional
         Columns to include in output
     isotope : str, optional

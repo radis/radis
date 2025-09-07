@@ -626,10 +626,6 @@ class DatabaseManager(object):
 
         elif engine == "vaex":
             # by default vaex does not load everything
-            if isinstance(vaex, NotInstalled):
-                raise ImportError(
-                    "Vaex is not available. Please install vaex or use a different engine."
-                )
             df = vaex.open(local_file)
             nrows = len(df)
             df.close()

@@ -102,8 +102,6 @@ def partial_download_co2_chunk(
     verbose : bool, default True
         If True, prints progress and status messages
     """
-    if verbose:
-        print(f"Target wavenumber range: {target_wn_min} to {target_wn_max} cm⁻¹")
 
     wavenumber_path = os.path.join(project_root, "db", "wavenumber_arr.npy")
     wavenumbers = np.load(wavenumber_path)
@@ -117,7 +115,7 @@ def partial_download_co2_chunk(
     if verbose:
         print(f"Found target in compressed blocks: {i_min} to {i_max}")
         print(
-            f"Wavenumber range: {wavenumbers[i_min]:.6f} to {wavenumbers[i_max]:.6f} cm⁻¹"
+            f"Wavenumber range: {wavenumbers[i_min]:.6f} to {wavenumbers[i_max]:.6f} cm-1"
         )
 
     os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
