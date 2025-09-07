@@ -157,6 +157,7 @@ def test_fetch_hitran(*args, **kwargs):
 
 
 @pytest.mark.needs_connection
+@pytest.mark.needs_HITRAN_credentials
 def test_calc_hitran_spectrum(verbose=True, plot=False, *args, **kwargs):
     """
     Test full range & partial loading of CO spectrum
