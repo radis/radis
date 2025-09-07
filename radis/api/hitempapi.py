@@ -35,7 +35,6 @@ try:
     from .hdf5 import DataFileManager
     from .hitranapi import (
         columns_2004,
-        get_molecule,
         parse_global_quanta,
         parse_hitran_file,
         parse_local_quanta,
@@ -535,17 +534,18 @@ def parse_one_CO2_block(
     DataFrame
         Parsed spectroscopic data
     """
-    # Detect the molecule by reading the start of the file
-    with open(fname) as f:
-        mol = get_molecule(int(f.read(2)))
-
     # Set default columns if None provided
     columns = columns_2004
 
-    df = parse_hitran_file(fname, columns, output=output, molecule=mol)
+    df = parse_hitran_file(fname, columns, output=output, molecule="CO2")
+
+    df["iso"] = (
+        df["iso"].replace({"0": 10, "A": 11, "B": 12}).astype(int)
+    )  # in HITEMP2024, isotopologue 10, 11, 12 are 0, A, B. See Table 4 of Hargreaves et al. (2024)
+
     df = post_process_hitran_data(
         df,
-        molecule=mol,
+        molecule="CO2",
         dataframe_type=output,
         parse_quanta=parse_quanta,
     )
@@ -1056,15 +1056,6 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         writer = self.get_datafile_manager()
 
-        if molecule == "CO2":
-            session = login_to_hitran()
-            download_hitemp_file(
-                session,
-                "https://hitran.org/files/HITEMP/bzip2format/02_HITEMP2024.par.bz2",
-                "02_HITEMP2024.par.bz2",
-            )
-            urlname = "02_HITEMP2024.par.bz2"
-
         with opener.open(urlname) as gfile:  # locally downloaded file
 
             dt = _create_dtype(columns, linereturnformat)
@@ -1094,11 +1085,6 @@ class HITEMPDatabaseManager(DatabaseManager):
                     b = get_last(b)
 
                 df = _ndarray2df(b, columns, linereturnformat, molecule=self.molecule)
-
-                if molecule == "CO2":
-                    df["iso"] = (
-                        df["iso"].replace({"0": 10, "A": 11, "B": 12}).astype(int)
-                    )  # in HITEMP2024, isotopologue 10, 11, 12 are 0, A, B. See Table 4 of Hargreaves et al. (2024)
 
                 # Post-processing :
                 # ... Add local quanta attributes, based on the HITRAN group
