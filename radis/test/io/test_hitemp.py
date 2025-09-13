@@ -255,7 +255,7 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
 
 def test_read_wav_index():
     """Test reading the read_wav_index.json file"""
-    all_pairs = get_key_pairs(240, 600, key_pos=0, wrap=False)
+    all_pairs = get_key_pairs(240, 600)
     print(all_pairs)
     expected_pairs = [
         (1.1e-06, 261.1800004),
