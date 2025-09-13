@@ -441,7 +441,11 @@ def test_vaex_and_pandas_dataframe_load_databank():
 
 def _run_testcases(verbose=True, plot=False):
 
+    from time import time
+
+    t0 = time()
     test_retrieve_from_database(plot=plot, verbose=verbose)
+    print(time() - t0)
     # test_ignore_cached_files()
     # test_ignore_irrelevant_files(verbose=verbose)
     # test_custom_abundance()

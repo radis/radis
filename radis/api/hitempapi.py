@@ -221,21 +221,29 @@ def setup_credentials():
     # Check if running on ReadTheDocs or Travis CI environment
     is_rtd = os.environ.get("READTHEDOCS", "").lower() == "true"
     is_travis = os.environ.get("TRAVIS", "").lower() == "true"
+    is_github_action = os.environ.get("GITHUB_ACTIONS", "").lower() == "true"
 
     # compatibly with old versions
-    email = os.environ.get("HITRAN_USERNAME")
+    email = os.environ.get("HITRAN_EMAIL")
     password = os.environ.get("HITRAN_PASSWORD")
 
-    if not email or not password:
-        if is_rtd or is_travis:
-            # In CI/CD environments, only use environment variables
-            print(
-                "Warning: HITRAN_EMAIL or HITRAN_PASSWORD not set in environment variables"
-            )
-        else:
-            # In normal usage, fall back to prompt if environment variables not set
-            email = input("Enter HITRAN email: ")
-            password = _prompt_password(email)
+    if (is_rtd or is_travis or is_github_action) and not email:
+        # In CI/CD environments, only use environment variables
+        warnings.warn(
+            "Warning: HITRAN_EMAIL not set in environment variables",
+            UserWarning,
+        )
+    if (is_rtd or is_travis or is_github_action) and not password:
+        # In CI/CD environments, only use environment variables
+        warnings.warn(
+            "Warning: HITRAN_PASSWORD not set in environment variables",
+            UserWarning,
+        )
+
+    if (not email or not password) and not (is_rtd or is_travis or is_github_action):
+        # In normal usage, fall back to prompt if environment variables not set
+        email = input("Enter HITRAN email: ")
+        password = _prompt_password(email)
 
     return email, password
 
@@ -361,8 +369,8 @@ def login_to_hitran(verbose=False):
 
         # compatiplty with old versions
         if "credentials" in config:
-            if config["credentials"].get("HITRAN_USERNAME"):
-                encrypted_email = config["credentials"].get("HITRAN_USERNAME")
+            if config["credentials"].get("HITRAN_EMAIL"):
+                encrypted_email = config["credentials"].get("HITRAN_EMAIL")
                 config["credentials"]["HITRAN_EMAIL"] = encrypted_email
                 # Save
                 with open(CONFIG_PATH_JSON, "w") as f:

@@ -571,6 +571,7 @@ def test_argmax_argmin(*args, **kwargs):
     assert np.isclose(s.take("abscoeff").argmin(value_only=True), 2144.215391118094)
 
 
+@pytest.mark.fast
 def test_fitting_lineshape(verbose=False, plot=False, *args, **kwargs):
     """Test :py:meth:`~radis.spectrum.spectrum.Spectrum.fit_model``"""
 
