@@ -1,49 +1,44 @@
 import json
 import os
 from bisect import bisect_left, bisect_right
+from typing import List, Tuple
 
 from radis.misc.utils import getProjectRoot
 
 
-def key_pairs(load_min, load_max, key_pos=0, wrap=False):
-    # extract numeric keys
+def get_key_pairs(
+    min_wavenumber: float, max_wavenumber: float
+) -> List[Tuple[float, float]]:
+    """
+    Read db/wav_index.json and return consecutive (wavenumber_i, wavenumber_{i+1}) pairs
+    whose intervals overlap the range [min_wavenumber, max_wavenumber].
+    """
     wav_index_path = os.path.join(getProjectRoot(), "db", "wav_index.json")
+    if not os.path.exists(wav_index_path):
+        raise FileNotFoundError(f"{wav_index_path} not found")
+
     with open(wav_index_path, "r") as f:
         raw = json.load(f)
 
-    # raw["data"] maps string keys to numeric offsets
-    wav_index = {float(k): int(v) for k, v in raw["data"].items()}
+    data_dict = raw["data"]
 
-    if isinstance(wav_index, dict):
-        keys = [float(k) for k in wav_index.keys()]
-    else:
-        if not wav_index:
-            return []
-        first = wav_index[0]
-        if isinstance(first, (list, tuple)):
-            keys = [item[key_pos] for item in wav_index]
-            # convert string keys to float if necessary
-            keys = [float(k) if isinstance(k, str) else k for k in keys]
-        else:
-            keys = [float(k) if isinstance(k, str) else k for k in wav_index]
+    wavenumbers = sorted(float(k) for k in data_dict.keys())
 
-    keys = sorted(keys)
-    if not keys:
+    if not wavenumbers:
         return []
 
-    s = bisect_right(keys, load_min) - 1
-    if s < 0:
-        s = 0
-    e = bisect_left(keys, load_max)
-    if e >= len(keys):
-        e = len(keys) - 1
+    # Find index range that overlaps [min_wavenumber, max_wavenumber]
+    start_idx = bisect_right(wavenumbers, min_wavenumber) - 1
+    if start_idx < 0:
+        start_idx = 0
 
-    pairs = []
-    if s < e:
-        for i in range(s, e):
-            pairs.append((keys[i], keys[i + 1]))
+    end_idx = bisect_left(wavenumbers, max_wavenumber)
+    if end_idx >= len(wavenumbers):
+        end_idx = len(wavenumbers) - 1
 
-    if wrap and keys:
-        pairs.append((keys[e], keys[s]))
+    pairs: List[Tuple[float, float]] = []
+    if start_idx < end_idx:
+        for i in range(start_idx, end_idx):
+            pairs.append((wavenumbers[i], wavenumbers[i + 1]))
 
     return pairs

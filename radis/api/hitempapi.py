@@ -28,7 +28,7 @@ from radis.api.hdf5 import update_pytables_to_vaex
 from radis.db.hitemp_co2 import partial_download_co2_chunk
 from radis.misc.config import CONFIG_PATH_JSON, getDatabankEntries
 from radis.misc.warning import DatabaseAlreadyExists
-from radis.tools.read_wav_index import key_pairs
+from radis.tools.read_wav_index import get_key_pairs
 
 try:
     from .dbmanager import DatabaseManager
@@ -623,7 +623,7 @@ def read_and_write_chunked_for_CO2(
     local_paths = []  # to store local paths of relevant decompressed files
     dataframes = []
 
-    wav_pairs = key_pairs(load_wavenum_min, load_wavenum_max)
+    wav_pairs = get_key_pairs(load_wavenum_min, load_wavenum_max)
     session = login_to_hitran()
 
     # Download and decompress chunks

@@ -16,7 +16,7 @@ from radis.api.hitempapi import (
 from radis.io.hitemp import fetch_hitemp
 from radis.misc.config import getDatabankList
 from radis.misc.utils import NotInstalled, not_installed_vaex_args
-from radis.tools.read_wav_index import key_pairs
+from radis.tools.read_wav_index import get_key_pairs
 
 try:
     import vaex
@@ -255,7 +255,7 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
 
 def test_read_wav_index():
     """Test reading the read_wav_index.json file"""
-    all_pairs = key_pairs(240, 600, key_pos=0, wrap=False)
+    all_pairs = get_key_pairs(240, 600, key_pos=0, wrap=False)
     print(all_pairs)
     expected_pairs = [
         (1.1e-06, 261.1800004),
