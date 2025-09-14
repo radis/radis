@@ -8,6 +8,7 @@ Created on Sun May 22 18:11:23 2022
 import pathlib
 
 import numpy as np
+import pandas as pd
 
 from radis.api.exomolapi import (
     MdbExomol,
@@ -15,6 +16,28 @@ from radis.api.exomolapi import (
     get_exomol_full_isotope_name,
 )
 from radis.db.classes import get_molecule_identifier
+
+
+def get_electronic_state_Te_mapping(states_df):
+    """Return a dict mapping each unique state label to its minimum E (Te)."""
+    te_map = {}
+    if "state" in states_df.columns and "E" in states_df.columns:
+        # Handle both pandas and vaex DataFrames
+        if hasattr(states_df, "loc"):  # pandas DataFrame
+            for state_label in states_df["state"].unique():
+                if pd.isnull(state_label):
+                    continue
+                min_E = states_df.loc[states_df["state"] == state_label, "E"].min()
+                te_map[state_label] = min_E
+        else:  # vaex DataFrame
+            for state_label in states_df["state"].unique():
+                if pd.isnull(state_label):
+                    continue
+                # Use vaex filtering syntax
+                filtered_df = states_df[states_df["state"] == state_label]
+                min_E = filtered_df["E"].min()
+                te_map[state_label] = min_E
+    return te_map
 
 
 def fetch_exomol(
@@ -33,7 +56,7 @@ def fetch_exomol(
     return_partition_function=False,
     engine="default",
     output="pandas",
-    skip_optional_data=True,
+    skip_optional_data=False,
     **kwargs,
 ):
     """Stream ExoMol file from EXOMOL website. Unzip and build a HDF5 file directly.
@@ -238,6 +261,13 @@ def fetch_exomol(
         "jl": "jlower",
         "gp": "gupper",
         "gpp": "glower",
+        "vl": "vl",  # Preserve vibrational quantum numbers
+        "vu": "vu",  # Preserve vibrational quantum numbers
+        "states_lower": "states_lower",
+        "states_upper": "states_upper",
+        "branch": "PQR",  # Map PQR to branch for non-LTE calculations
+        "geu": "geu",  # Preserve electronic degeneracies
+        "gel": "gel",  # Preserve electronic degeneracies
         ### old, now we directly set "airbrd" and "Tdpair"
         # "airbrd": "alpha_ref",
         # "Tdpair": "n_Texp",
@@ -248,6 +278,12 @@ def fetch_exomol(
             "Sij0",
             "jlower",
             "jupper",
+            "vl",  # Required for non-equilibrium calculations
+            "vu",  # Required for non-equilibrium calculations
+            "states_lower",
+            "states_upper",
+            "geu",  # Required for electronic degeneracy
+            "gel",  # Required for electronic degeneracy
         ]  # needed for broadening
     else:
         columns_exomol = None
@@ -318,6 +354,17 @@ def fetch_exomol(
         elif output == "pandas":
             for k, v in attrs.items():
                 df.attrs[k] = v
+
+    if hasattr(mdb, "states") and mdb.states is not None:
+        states_df = mdb.states
+    else:
+        raise ValueError("States DataFrame not found")
+
+    # Set dbformat to hdf5-radisdb for compatibility
+    df.attrs["dbformat"] = "hdf5-radisdb"
+
+    # After loading states DataFrame, build Te mapping
+    get_electronic_state_Te_mapping(states_df)
     # Return:
     out = df
     if return_local_path or return_partition_function:

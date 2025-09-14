@@ -726,6 +726,8 @@ class ElectronicState(Isotope):
     Ediss: cm-1
         dissociation energy. Required for partition function calculation
         if neither vmax nor Jmax are given
+    Te: cm-1
+        electronic energy. Default ``None`` if not given
     kwargs: **dict
         forwarded to parent class
 
@@ -767,6 +769,7 @@ class ElectronicState(Isotope):
         vmax_morse=None,
         Jmax=None,
         Ediss=None,
+        Te=None,
         **kwargs,
     ):
 
@@ -778,6 +781,7 @@ class ElectronicState(Isotope):
         self.state = state
         self.term_symbol = term_symbol
         self.g_e = g_e
+        self.Te = Te
 
         self.doi = (
             None  #: str: stores DOI of spectroscopic constants if given in database
@@ -890,8 +894,6 @@ class ElectronicState(Isotope):
             re.sub("_cm-1$", "", k): v for (k, v) in rovib_constants.items()
         }
 
-        # Get specific keys
-        self.Te = rovib_constants.pop("Te", None)  # default None
         self.re = rovib_constants.pop("re", None)
 
         # Store

@@ -143,7 +143,7 @@ def read_def(deff):
     if deff.stem == "1H-35Cl__HITRAN-HCl":
         quantum_labels = ["v"]
         # See https://github.com/HajimeKawahara/exojax/issues/330
-    if deff.stem == "16O-1H__MoLLIST":
+    if deff.stem == "16O-1H__MoLLIST-OH":
         quantum_labels = ["e/f", "v", "F1/F2", "Es"]
 
     if deff.stem == "1H-2H-16O__VTT":
@@ -325,7 +325,7 @@ def read_trans(transf, engine="vaex"):
 
 
 def read_states(
-    statesf, dic_def, engine="vaex", skip_optional_data=True, print_states=False
+    statesf, dic_def, engine="vaex", skip_optional_data=False, print_states=True
 ):
     """Exomol IO for a state file
 
@@ -457,7 +457,7 @@ def read_states(
     return dat
 
 
-def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
+def pickup_gE(states, trans, dic_def, skip_optional_data=False, engine="vaex"):
     """extract g_upper (gup), E_lower (elower), and J_lower and J_upper from states
     DataFrame and insert them into the transition DataFrame.
 
@@ -521,12 +521,17 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
             )
             trans.drop(states_key, inplace=True)
             trans.rename(col, new_col)
+
         return trans
 
     trans = map_add(trans, "g", "gup", "i_upper")
     trans = map_add(trans, "J", "jlower", "i_lower")
     trans = map_add(trans, "J", "jupper", "i_upper")
     trans = map_add(trans, "E", "elower", "i_lower")
+
+    # Add electronic degeneracies, to be used to build gl, gu for electronic transitions
+    trans = map_add(trans, "g", "geu", "i_upper")
+    trans = map_add(trans, "g", "gel", "i_lower")
 
     def has_nan(column):
         try:  # Vaex
@@ -540,11 +545,17 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
 
     ### Step 2. Extra quantum numbers (e/f parity, vib and rot numbers)
     # -----------------------------------------------------------------
+    if "Es" in states.columns:
+        trans = map_add(trans, "Es", "states_upper", "i_upper")
+        trans = map_add(trans, "Es", "states_lower", "i_lower")
     if not skip_optional_data:
         for q in dic_def["quantum_labels"]:
-            trans = map_add(trans, q, f"{q}_l", "i_lower")
-            trans = map_add(trans, q, f"{q}_u", "i_upper")
-
+            if q.lower() == "v":
+                trans = map_add(trans, q, "vl", "i_lower")
+                trans = map_add(trans, q, "vu", "i_upper")
+            else:
+                trans = map_add(trans, q, f"{q}_l", "i_lower")
+                trans = map_add(trans, q, f"{q}_u", "i_upper")
     return trans
 
 
@@ -1201,7 +1212,7 @@ class MdbExomol(DatabaseManager):
         engine="vaex",
         verbose=True,
         cache=True,
-        skip_optional_data=True,
+        skip_optional_data=False,
     ):
         super().__init__(
             name,
@@ -1319,7 +1330,7 @@ class MdbExomol(DatabaseManager):
                 print("Removing existing file ", mgr.cache_file(self.states_file))
             os.remove(mgr.cache_file(self.states_file))
         if mgr.cache_file(self.states_file).exists():
-            states = mgr.read(mgr.cache_file(self.states_file))
+            self.states = mgr.read(mgr.cache_file(self.states_file))
         else:
             if cache == "force":
                 raise ValueError(
@@ -1328,13 +1339,13 @@ class MdbExomol(DatabaseManager):
             print(
                 f"Note: Caching states data to the {engine} format. After the second time, it will become much faster."
             )
-            states = read_states(
+            self.states = read_states(
                 self.states_file,
                 dic_def,
                 engine="vaex" if engine == "vaex" else "csv",
                 skip_optional_data=skip_optional_data,
             )
-            mgr.write(mgr.cache_file(self.states_file), states)
+            mgr.write(mgr.cache_file(self.states_file), self.states)
 
         # load pf
         pf = read_pf(self.pf_file)
@@ -1430,7 +1441,7 @@ class MdbExomol(DatabaseManager):
                 # In particular, compute gup and elower
 
                 trans = pickup_gE(
-                    states,
+                    self.states,
                     trans,
                     dic_def,
                     skip_optional_data=skip_optional_data,

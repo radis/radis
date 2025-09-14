@@ -412,6 +412,7 @@ class BandFactory(BroadenFactory):
         rot_distribution="boltzmann",
         levels="all",
         return_lines=None,
+        band_scaling=None,
     ):
         """Calculate vibrational bands in non-equilibrium case. Calculates
         absorption with broadened linestrength and emission with broadened
@@ -448,6 +449,8 @@ class BandFactory(BroadenFactory):
             if ``True`` returns each band with its line database. Can produce big
             spectra! Default ``True``
             DEPRECATED. Now use export_lines attribute in Factory
+        band_scaling: dict or None
+            Optional. Dictionary of scaling factors for each band label, e.g. {"A->X": 2.0, "X->X": 1.0}. If None, no scaling is applied.
 
         Returns
         -------
@@ -623,6 +626,30 @@ class BandFactory(BroadenFactory):
             emisscoeff_v_bands["others"] = emisscoeff_others
             if verbose:
                 print(f"{len(merge_bands)} bands grouped under `others`")
+
+        # ----------------------------------------------------------------------
+        # Apply scaling
+        if band_scaling is not None:
+            # Store before values for comparison
+            before_values = {}
+            for band in abscoeff_v_bands.keys():
+                if band in abscoeff_v_bands:
+                    before_values[band] = {
+                        "abscoeff_max": abscoeff_v_bands[band].max(),
+                        "abscoeff_mean": abscoeff_v_bands[band].mean(),
+                        "emisscoeff_max": emisscoeff_v_bands[band].max()
+                        if band in emisscoeff_v_bands
+                        else 0,
+                        "emisscoeff_mean": emisscoeff_v_bands[band].mean()
+                        if band in emisscoeff_v_bands
+                        else 0,
+                    }
+
+            for band, scale in band_scaling.items():
+                if band in abscoeff_v_bands:
+                    abscoeff_v_bands[band] *= scale
+                if band in emisscoeff_v_bands:
+                    emisscoeff_v_bands[band] *= scale
 
         # ----------------------------------------------------------------------
         # Generate spectra
@@ -1266,7 +1293,7 @@ def add_bands(df, dbformat, lvlformat, dataframe_type="pandas", verbose=True):
         if lvlformat in ["radis"]:
 
             # ensures that vib_lvl_name functions wont crash
-            if dbformat not in ["hitran", "hitemp", "hitemp-radisdb"]:
+            if dbformat not in ["hitran", "hitemp", "hitemp-radisdb", "hdf5-radisdb"]:
                 raise NotImplementedError(
                     f"lvlformat {lvlformat} not supported with dbformat {dbformat}"
                 )
@@ -1285,6 +1312,73 @@ def add_bands(df, dbformat, lvlformat, dataframe_type="pandas", verbose=True):
         else:
             raise NotImplementedError(
                 f"Lvlformat not defined for {molecule}: {lvlformat}"
+            )
+
+    elif molecule in ["OH"]:  # includes 'OH'
+        if lvlformat == "radis":
+            # For HITRAN class 1 molecules with HITRAN format
+            if dbformat in ["hitran", "hitemp", "hitemp-radisdb", "hdf5-radisdb"]:
+                vib_lvl_name = vib_lvl_name_hitran_class1
+                if dataframe_type == "pandas":
+                    df.loc[:, "viblvl_l"] = vib_lvl_name(df["vl"])
+                    df.loc[:, "viblvl_u"] = vib_lvl_name(df["vu"])
+                    df.loc[:, "band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
+                elif dataframe_type == "vaex":
+                    df["viblvl_l"] = df.vl.apply(vib_lvl_name)
+                    df["viblvl_u"] = df.vu.apply(vib_lvl_name)
+                    df["band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
+            # For ExoMol format
+            elif dbformat == "exomol":
+                vib_lvl_name = vib_lvl_name_hitran_class1
+                if dataframe_type == "pandas":
+                    if {"vl", "vu"}.issubset(df.columns):
+                        # Preferred: use vl/vu directly -> matches dfQrot index "(v)"
+                        df.loc[:, "viblvl_l"] = vib_lvl_name(df["vl"])
+                        df.loc[:, "viblvl_u"] = vib_lvl_name(df["vu"])
+                    elif {"states_lower", "states_upper"}.issubset(df.columns):
+                        # Fallback: extract v from electronic state labels
+                        vl = df["states_lower"].str.extract(r"v=(\d+)")
+                        vu = df["states_upper"].str.extract(r"v=(\d+)")
+                        df.loc[:, "viblvl_l"] = vib_lvl_name(vl)
+                        df.loc[:, "viblvl_u"] = vib_lvl_name(vu)
+                    else:
+                        raise ValueError(
+                            "ExoMol OH requires either vl/vu columns or state_lower/state_upper with 'v=' fields to build viblvl"
+                        )
+                    df.loc[:, "band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
+                elif dataframe_type == "vaex":
+                    # Vaex path: prefer vl/vu; limited regex support otherwise
+                    if "vl" in df.columns and "vu" in df.columns:
+                        df["viblvl_l"] = df.vl.apply(vib_lvl_name)
+                        df["viblvl_u"] = df.vu.apply(vib_lvl_name)
+                        df["band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
+                    elif "states_lower" in df.columns and "states_upper" in df.columns:
+                        import re
+
+                        def _v_from_state(s):
+                            m = re.search(r"v=(\d+)", s) if s is not None else None
+                            return m.group(1) if m else None
+
+                        df["viblvl_l"] = df.states_lower.apply(
+                            lambda s: vib_lvl_name(_v_from_state(s))
+                        )
+                        df["viblvl_u"] = df.states_upper.apply(
+                            lambda s: vib_lvl_name(_v_from_state(s))
+                        )
+                        df["band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
+                    else:
+                        raise ValueError(
+                            "ExoMol OH requires either vl/vu columns or state_lower/state_upper with 'v=' fields to build viblvl (vaex)"
+                        )
+            else:
+                raise NotImplementedError(
+                    "lvlformat {0} not supported with dbformat {1}".format(
+                        lvlformat, dbformat
+                    )
+                )
+        else:
+            raise NotImplementedError(
+                "Lvlformat not defined for {0}: {1}".format(molecule, lvlformat)
             )
 
     else:

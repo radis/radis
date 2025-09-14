@@ -102,6 +102,33 @@ CO2_X_627 = ElectronicState(
 )
 """CO2 4th isotope (:math:`^{16}O^{12}C^{17}O`), electronic ground state"""
 
+# OH
+# --
+OH_X_iso1 = ElectronicState(
+    "OH",
+    isotope=1,
+    state="X",
+    term_symbol="2PI",  # Ground state
+    g_e=4,  # Electronic degeneracy 2(2S+1) = 2(2*1/2+1) = 4
+    Te=0.0,  # Term energy in cm-1
+    spectroscopic_constants="default",
+    spectroscopic_constants_type="dunham",
+    Ediss=35593,  # Dissociation energy in cm-1
+)
+"""OH first isotope (16O-1H), electronic ground state X²Π"""
+
+OH_A_iso1 = ElectronicState(
+    "OH",
+    isotope=1,
+    state="A",
+    term_symbol="2SIGMA+",  # First excited state
+    g_e=2,  # Electronic degeneracy 2(2S+1) = 2(2*1/2+1) = 2
+    spectroscopic_constants="default",
+    spectroscopic_constants_type="dunham",
+    Te=32402.38,  # Term energy in cm-1 (from ExoMol MoLLIST)
+    Ediss=2906,  # Same dissociation energy as ground state
+)
+"""OH first isotope (16O-1H), first excited state A²Σ⁺"""
 
 # %% Dictionary of predefined molecules
 # -----------
@@ -120,6 +147,9 @@ Molecules = {
         3: {"X": CO2_X_628},
         4: {"X": CO2_X_627},
     },
+    "OH": {
+        1: {"X": OH_X_iso1, "A": OH_A_iso1},
+    },
 }
 """dict: list of Electronic states whose energy levels can be calculated with RADIS
 built-in :ref:`spectroscopic constants <label_db_spectroscopic_constants>`.
@@ -137,6 +167,11 @@ CO2:
 - :py:data:`~radis.db.molecules.CO2_X_636`
 - :py:data:`~radis.db.molecules.CO2_X_628`
 - :py:data:`~radis.db.molecules.CO2_X_627`
+
+OH:
+
+- :py:data:`~radis.db.molecules.OH_X_iso1`
+- :py:data:`~radis.db.molecules.OH_A_iso1`
 
 See Also
 --------

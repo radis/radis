@@ -324,6 +324,8 @@ class BaseFactory(DatabankLoader):
         Crash with a nice explanation if one is found"""
         from radis.misc.printer import get_print_full
 
+        fix_idea = ""
+
         try:
             if self.dataframe_type == "pandas":
                 assert not anynan(df[column])
@@ -407,6 +409,50 @@ class BaseFactory(DatabankLoader):
         # the radis.db database
         elif self.params.levelsfmt == "radis":
             molecule = self.input.species
+            iso = self.input.isotope
+            dbformat = getattr(self.params, "dbformat", None)
+            if dbformat in ["exomol", "hdf5-radisdb"] and molecule == "OH":
+                # Use ExoMol/OH Dunham coefficients
+                self.profiler.start("fetch_energy_exomol_oh", 2)
+                from radis.db.utils import get_dunham_coefficients
+                from radis.levels.dunham import EvJ
+
+                # Get Dunham coefficients for lower and upper electronic states
+                states_lower = (
+                    df["states_lower"].iloc[0].replace("(", "").replace(")", "")
+                )
+                states_upper = (
+                    df["states_upper"].iloc[0].replace("(", "").replace(")", "")
+                )
+
+                dunham_coeffs_l = get_dunham_coefficients(molecule, iso, states_lower)
+                dunham_coeffs_u = get_dunham_coefficients(molecule, iso, states_upper)
+
+                # Calculate vibrational energies at J=0, then rotational energies by difference
+                if self.dataframe_type == "pandas":
+                    df["Evibl"] = df.apply(
+                        lambda row: EvJ(row["vl"], 0, **dunham_coeffs_l), axis=1
+                    )
+                    df["Evibu"] = df.apply(
+                        lambda row: EvJ(row["vu"], 0, **dunham_coeffs_u), axis=1
+                    )
+                    df["Erotu"] = df["Eu"] - df["Evibu"]
+                    df["Erotl"] = df["El"] - df["Evibl"]
+                else:  # vaex DataFrame
+                    df["Evibl"] = df.apply(
+                        lambda vl: EvJ(vl, 0, **dunham_coeffs_l), arguments=[df.vl]
+                    )
+                    df["Evibu"] = df.apply(
+                        lambda vu: EvJ(vu, 0, **dunham_coeffs_u), arguments=[df.vu]
+                    )
+                    df["Erotu"] = df["Eu"] - df["Evibu"]
+                    df["Erotl"] = df["El"] - df["Evibl"]
+
+                self.profiler.stop(
+                    "fetch_energy_exomol_oh",
+                    "Fetched Evib & Erot using Dunham coefficients (ExoMol/OH)",
+                )
+                return df
             if molecule in HITRAN_CLASS1:  # class 1
                 return self._add_EvibErot_RADIS_cls1(
                     df, calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic
@@ -1962,6 +2008,7 @@ class BaseFactory(DatabankLoader):
             "hitemp-radisdb",
             "cdsd-hitemp",
             "cdsd-4000",
+            "hdf5-radisdb",
         ]:
             # In HITRAN, AFAIK all molecules have a complete assignment of rovibrational
             # levels hence gvib=1 for all vibrational levels.
@@ -1981,8 +2028,13 @@ class BaseFactory(DatabankLoader):
             )
 
         # Total
-        df["gu"] = df.gvibu * df.grotu
-        df["gl"] = df.gvibl * df.grotl
+        # For electronic transitions (ExoMol), include electronic degeneracy from states
+        if "geu" in df.columns and "gel" in df.columns:
+            df["gu"] = df.geu
+            df["gl"] = df.gel
+        else:
+            df["gu"] = df.gvibu * df.grotu
+            df["gl"] = df.gvibl * df.grotl
 
         # Check consistency if "gp" already existed
         # https://github.com/radis/radis/pull/514#issuecomment-1229463074
@@ -2704,6 +2756,7 @@ class BaseFactory(DatabankLoader):
                     Q_dict[iso] = parsum.at_noneq(
                         Tvib,
                         Trot,
+                        Telec=self.input.Telec,
                         vib_distribution=vib_distribution,
                         rot_distribution=rot_distribution,
                         overpopulation=overpopulation,
@@ -2727,6 +2780,7 @@ class BaseFactory(DatabankLoader):
                 Q = parsum.at_noneq(
                     Tvib,
                     Trot,
+                    Telec=self.input.Telec,
                     vib_distribution=vib_distribution,
                     rot_distribution=rot_distribution,
                     overpopulation=overpopulation,
@@ -2807,21 +2861,21 @@ class BaseFactory(DatabankLoader):
                     df.loc[idx, "Q"] = Q
 
                     # reindexing to get a direct access to Qrot database
-                    # create the lookup dictionary
-                    # dfQrot index is already 'viblvl'
-                    dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
+            # create the lookup dictionary
+            # dfQrot index is already 'viblvl'
+            dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
 
-                    dg = df.loc[idx]
+            dg = df.loc[idx]
 
-                    # Add lower state Qrot
-                    dg_sorted = dg.set_index(["viblvl_l"], inplace=False)
-                    df.loc[idx, "Qrotl"] = dg_sorted.index.map(dfQrot_dict.get).values
-                    # Add upper state energy
-                    dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
-                    df.loc[idx, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
+            # Add lower state Qrot
+            dg_sorted = dg.set_index(["viblvl_l"], inplace=False)
+            df.loc[idx, "Qrotl"] = dg_sorted.index.map(dfQrot_dict.get).values
+            # Add upper state energy
+            dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
+            df.loc[idx, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
 
-                    if radis.config["DEBUG_MODE"]:
-                        assert (df.loc[idx, "iso"] == iso).all()
+            if radis.config["DEBUG_MODE"]:
+                assert (df.loc[idx, "iso"] == iso).all()
             elif self.dataframe_type == "vaex":
                 df["Qvib"] = vaex.vconstant(np.nan, df.length_unfiltered())
                 df["Q"] = vaex.vconstant(np.nan, df.length_unfiltered())
@@ -2870,11 +2924,12 @@ class BaseFactory(DatabankLoader):
                 # dg_sorted = dg.set_index(["viblvl_u"], inplace=False)
                 # df.loc[idx, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
                 def update_Qrot(viblvl, iso):
-                    return dfQrot_dict[iso].get(viblvl)
+                    result = dfQrot_dict[iso].get(viblvl)
                     # if iso_df == iso:
                     #     return dfQrot_dict.get(val)
                     # else:
                     #     return val
+                    return result
 
                 # Add lower state Qrot
                 df["Qrotl"] = df.apply(update_Qrot, arguments=[df.viblvl_l, df.iso])
@@ -2915,7 +2970,6 @@ class BaseFactory(DatabankLoader):
             # create the lookup dictionary
             # dfQrot index is already 'viblvl'
             dfQrot_dict = dict(list(zip(dfQrot.index, dfQrot.Qrot)))
-
             if self.dataframe_type == "pandas":
                 dg = df.loc[:]
 
@@ -2927,6 +2981,7 @@ class BaseFactory(DatabankLoader):
                 df.loc[:, "Qrotu"] = dg_sorted.index.map(dfQrot_dict.get).values
             elif self.dataframe_type == "vaex":
                 dg = df
+
                 # Add lower state Qrot
                 df["Qrotl"] = df["viblvl_l"].apply(lambda x: dfQrot_dict.get(x))
                 # Add upper state energy

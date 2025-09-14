@@ -219,6 +219,8 @@ drop_all_but_these = [
     "Pshft",
     "El",
     "gp",
+    "geu",  # Required for electronic degeneracy
+    "gel",  # Required for electronic degeneracy
 ]
 """ list: drop all columns but these if using ``drop_columns='all'`` in load_databank
 Note: nonequilibrium calculations wont be possible anymore and it wont be possible
@@ -235,6 +237,8 @@ required_non_eq = [
     "jl",
     "vl",
     "vu",
+    "states_upper",
+    "states_lower",
     "v1l",
     "v2l",
     "l2l",
@@ -249,6 +253,8 @@ required_non_eq = [
     "polyu",
     "wangu",
     "ranku",
+    "geu",  # Required for electronic degeneracy
+    "gel",  # Required for electronic degeneracy
 ]
 """list: column names required for non-equilibrium calculations.
 See load_column= key of fetch_databank() and load_databank() """
@@ -1129,9 +1135,7 @@ class DatabankLoader(object):
                 database = "full"
 
         elif compare_source == "exomol":
-            dbformat = (
-                "exomol-radisdb"  # downloaded in RADIS local databases ~/.radisdb
-            )
+            dbformat = "hdf5-radisdb"  # downloaded in RADIS local databases ~/.radisdb
         elif compare_source == "geisa":
             dbformat = "geisa"
             if database == "default":
@@ -1623,6 +1627,35 @@ class DatabankLoader(object):
             if "branch" in df:
                 replace_PQR_with_m101(df)
             df = drop_object_format_columns(df, verbose=self.verbose)
+
+            # Normalize dtypes: convert numeric-like object columns to numeric,
+            # and store states columns as category to save memory.
+            try:
+                if isinstance(df, pd.DataFrame):
+                    reserved_object_columns = {"states_lower", "states_upper"}
+                    for col in list(df.columns):
+                        if (
+                            df[col].dtype == object
+                            and col not in reserved_object_columns
+                        ):
+                            mask = df[col].notna()
+                            if mask.any():
+                                s_nonnull = pd.to_numeric(
+                                    df.loc[mask, col], errors="coerce"
+                                )
+                                if not s_nonnull.isna().any():
+                                    df[col] = pd.to_numeric(df[col], errors="coerce")
+                    for c in ("states_lower", "states_upper"):
+                        if c in df.columns:
+                            try:
+                                df[c] = df[c].astype("category")
+                            except Exception:
+                                pass
+            except Exception as _dtype_conv_err:
+                if self.verbose:
+                    print(
+                        f"DEBUG: dtype normalization skipped due to: {_dtype_conv_err}"
+                    )
 
         self.df0 = df  # type : pd.DataFrame
         self.misc.total_lines = len(df)  # will be stored in Spectrum metadata
@@ -2389,16 +2422,20 @@ class DatabankLoader(object):
             "wangl",
             "ranku",
             "rankl",
+            "states_upper",
+            "states_lower",
+            "geu",
+            "gel",
         ]:
-            if (
-                k in self.df0.columns
-                and self.df0.dtypes[k] != np.int64
-                and count_nans(self.df0[k]) == 0
-            ):
-                self.warn(
-                    f"Format of column {k} was {self.df0.dtypes[k]} instead of int. Changed to int"
-                )
-                self.df0[k] = self.df0[k].astype(np.int64)
+            if k in self.df0.columns:
+                # Skip non-numeric columns (e.g., object dtype) to avoid issues in count_nans/astype
+                if not pd.api.types.is_numeric_dtype(self.df0.dtypes[k]):
+                    continue
+                if self.df0.dtypes[k] != np.int64 and count_nans(self.df0[k]) == 0:
+                    self.warn(
+                        f"Format of column {k} was {self.df0.dtypes[k]} instead of int. Changed to int"
+                    )
+                    self.df0[k] = self.df0[k].astype(np.int64)
 
         self.profiler.stop("check_line_databank", "Check line databank")
 
@@ -3082,6 +3119,14 @@ class DatabankLoader(object):
                 verbose=self.verbose,
                 mode=parsum_mode,
             )
+            # Attach electronic states for hierarchical non-eq (Telec) calculations
+            try:
+                from radis.db.molecules import Molecules
+
+                elec_states = Molecules[self.input.species][isotope]
+                parsum.electronic_states = elec_states
+            except Exception:
+                pass
             # note: use 'levels' (useless here) to specify calculations options
             # for the abinitio calculation ? Like Jmax, etc.
 
