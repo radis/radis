@@ -300,7 +300,19 @@ def replace_PQR_with_m101(df):
 
     # Then do the actual mapping
     if df.dtypes["branch"] != np.float64:
-        mapping = {"P": -1, "Q": 0, "R": 1, "O": -2, "S": 2}
+        mapping = {
+            "P": -1,
+            "Q": 0,
+            "R": 1,
+            "O": -2,
+            "S": 2,
+            # Also handle string numeric values for fast_parsing
+            "0": 0,
+            "1": 1,
+            "2": 2,
+            "-1": -1,
+            "-2": -2,
+        }
         if df_type == pd.DataFrame:  # pandas
             pd.set_option("future.no_silent_downcasting", True)
             new_col = df["branch"].replace(mapping).infer_objects(copy=False)
