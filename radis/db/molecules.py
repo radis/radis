@@ -110,6 +110,7 @@ OH_X_iso1 = ElectronicState(
     state="X",
     term_symbol="2PI",  # Ground state
     g_e=4,  # Electronic degeneracy 2(2S+1) = 2(2*1/2+1) = 4
+    Te=0.0,  # Term energy in cm-1
     spectroscopic_constants="default",
     spectroscopic_constants_type="dunham",
     Ediss=35593,  # Dissociation energy in cm-1
@@ -166,6 +167,11 @@ CO2:
 - :py:data:`~radis.db.molecules.CO2_X_636`
 - :py:data:`~radis.db.molecules.CO2_X_628`
 - :py:data:`~radis.db.molecules.CO2_X_627`
+
+OH:
+
+- :py:data:`~radis.db.molecules.OH_X_iso1`
+- :py:data:`~radis.db.molecules.OH_A_iso1`
 
 See Also
 --------

@@ -119,7 +119,7 @@ HITRAN_GROUP6 = ["NO", "OH", "ClO"]
 
 # Classes (define global quanta)
 
-HITRAN_CLASS1 = ["CO", "HF", "HCl", "HBr", "HI", "N2", "NO+", "OH"]
+HITRAN_CLASS1 = ["CO", "HF", "HCl", "HBr", "HI", "N2", "NO+"]
 """str: Diatomic molecules with ? """
 
 HITRAN_CLASS2 = ["O2"]
@@ -772,8 +772,7 @@ class ElectronicState(Isotope):
         Te=None,
         **kwargs,
     ):
-        self.Te = Te if Te is not None else 0.0
-        # Now call parent constructor with only expected arguments
+
         super(ElectronicState, self).__init__(
             molecule_name=molecule_name, isotope=isotope, **kwargs
         )  # initialize Isotope
@@ -782,6 +781,7 @@ class ElectronicState(Isotope):
         self.state = state
         self.term_symbol = term_symbol
         self.g_e = g_e
+        self.Te = Te
 
         self.doi = (
             None  #: str: stores DOI of spectroscopic constants if given in database
@@ -894,14 +894,6 @@ class ElectronicState(Isotope):
             re.sub("_cm-1$", "", k): v for (k, v) in rovib_constants.items()
         }
 
-        # Get specific keys
-        # Preserve Te if it was already set in constructor, otherwise get from rovib_constants
-        if not hasattr(self, "Te") or self.Te is None:
-            self.Te = rovib_constants.pop("Te", None)  # default None
-        else:
-            rovib_constants.pop(
-                "Te", None
-            )  # remove from dict but don't overwrite self.Te
         self.re = rovib_constants.pop("re", None)
 
         # Store

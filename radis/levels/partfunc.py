@@ -465,9 +465,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                     + "partition functions"
                 )
 
-        # non-equilibrium logic
         if Telec is not None:
-            # 1. Get electronic populations
             from .partfunc import ElectronicPartitionFunction
 
             elec_states = getattr(self, "electronic_states", None)
@@ -476,51 +474,80 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                     "No electronic_states attribute found for hierarchical non-eq partition function."
                 )
             elec_pf = ElectronicPartitionFunction(elec_states)
-            pop_elec = elec_pf.populations(Telec, overpopulation)
-            # 2. For each electronic state, calculate rovib partition function and populations
+            Q_elec, Q_elec_by_state = elec_pf.partition_function(Telec, overpopulation)
             total_Q = 0.0
-            total_pop = None
+            # Accumulator for weighted populations before final normalization
+            accum_pop = None
+            # Loop over electronic states
             for state in (
                 elec_states.values() if isinstance(elec_states, dict) else elec_states
             ):
-                label = getattr(state, "label", getattr(state, "name", None))
-                frac = pop_elec[label]
+                if isinstance(state, dict):
+                    # Build a unique label combining molecule name and electronic state symbol
+                    state_sym = state.get(
+                        "state", state.get("label", state.get("name", None))
+                    )
+                    mol_name = state.get("name", None)
+                    label = (
+                        f"{mol_name}:{state_sym}"
+                        if (mol_name and state_sym)
+                        else (state_sym or mol_name)
+                    )
+                else:
+                    # Same unique labeling for ElectronicState objects
+                    state_sym = getattr(
+                        state,
+                        "state",
+                        getattr(state, "label", getattr(state, "name", None)),
+                    )
+                    mol_name = getattr(state, "name", None)
+                    label = (
+                        f"{mol_name}:{state_sym}"
+                        if (mol_name and state_sym)
+                        else (state_sym or mol_name)
+                    )
+                # Unnormalized electronic weight for this state
+                w_state = Q_elec_by_state[label]
                 # Create a RovibParFuncCalculator for this state
-                # Use PartFunc_Dunham to ensure energy levels are properly built
                 from .partfunc import PartFunc_Dunham
 
                 rovib_calc = PartFunc_Dunham(
                     state, mode=self.mode, verbose=self.verbose
                 )
-                # Calculate populations for this state
-                Q = rovib_calc.at_noneq(
+                # Calculate rovibrational partition function for this state (single-state call)
+                Q_state = rovib_calc.at_noneq(
                     Tvib,
                     Trot,
                     overpopulation=overpopulation,
                     vib_distribution=vib_distribution,
                     rot_distribution=rot_distribution,
-                    returnQvibQrot=returnQvibQrot,
+                    returnQvibQrot=False,
                     update_populations=update_populations,
                 )
-                # Multiply populations by electronic fraction
-                if isinstance(Q, tuple):
-                    # (Q, Qvib, dfQrot) or similar
-                    Qval = Q[0] * frac
-                else:
-                    Qval = Q * frac
-                total_Q += Qval
-                # Optionally, sum populations (if update_populations=True)
+                # Ensure Q_state is scalar (hierarchical path currently only aggregates total Q)
+                Q_val = Q_state[0] if isinstance(Q_state, tuple) else Q_state
+                # Aggregate with unnormalized electronic weight and multiply by Q_elec to match equilibrium behavior
+                total_Q += w_state * Q_val
+
+                # Optionally, sum populations (if update_populations=True) using proper weighting
                 if update_populations and hasattr(rovib_calc, "df"):
                     df = rovib_calc.df.copy()
                     if "n" in df:
-                        df["n"] *= frac
-                    if total_pop is None:
-                        total_pop = df
-                    else:
-                        # Only sum the 'n' column, keep other columns from total_pop
-                        total_pop["n"] = total_pop["n"].add(df["n"], fill_value=0)
-            if update_populations and total_pop is not None:
-                self.df = total_pop
+                        # accumulate weighted populations (normalize later by total_Q)
+                        df["n"] *= w_state * Q_val
+                        if accum_pop is None:
+                            accum_pop = df
+                        else:
+                            # Only sum the 'n' column, keep other columns from accum_pop
+                            accum_pop["n"] = accum_pop["n"].add(df["n"], fill_value=0)
+
+            if update_populations and accum_pop is not None:
+                # Final normalization across all electronic states
+                if total_Q == 0:
+                    accum_pop["n"] = 0.0
+                else:
+                    accum_pop["n"] = accum_pop["n"] / total_Q
+                self.df = accum_pop
             return total_Q
 
         # Default: single-state rovib logic
@@ -1681,13 +1708,17 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             # Build energy levels
             if verbose:
                 print(
-                    f"Calculating energy levels with Dunham expansion for {ElecState.get_fullname()}"
+                    "Calculating energy levels with Dunham expansion for {0}".format(
+                        ElecState.get_fullname()
+                    )
                 )
                 if not use_cached:
                     print(
                         "Tip: set ``use_cached=True`` next time not to recompute levels every time"
                     )
-            if molecule in HITRAN_CLASS1:
+            if molecule in HITRAN_CLASS3:
+                self.build_energy_levels_from_states()
+            elif molecule in HITRAN_CLASS1:
                 self.build_energy_levels_class1()
             elif molecule in HITRAN_CLASS5:  # CO2
                 self.build_energy_levels_class5(
@@ -1713,6 +1744,117 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         # Add extra columns (note that this is not saved to disk)
         self._add_extra()
 
+        return
+
+    def build_energy_levels_from_states(self):
+        """Build energy levels from pre-calculated states file (e.g., from ExoMol)
+
+        Used for molecules with complex electronic states like OH (HITRAN class 3)
+
+        Notes
+        -----
+
+        Relies on ``radis.api.exomolapi.read_states`` to load the states file.
+
+        Vibrational and rotational energies are calculated from the total energy:
+
+        - ``Evib`` is the minimum energy for a given vibrational level ``v``.
+        - ``Erot`` is the difference ``E - Evib``.
+
+        See Also
+        --------
+
+        :py:func:`~radis.api.exomolapi.read_states`
+
+        """
+        import pandas as pd
+
+        from radis.api.exomolapi import MdbExomol
+        from radis.io.exomol import fetch_exomol
+
+        # Ensure local ExoMol dataset and get its local path (let fetch_exomol pick the recommended database)
+        _lines_df, local_path = fetch_exomol(
+            self.molecule,
+            isotope=self.isotope,
+            return_local_path=True,
+            return_partition_function=False,
+            verbose=self.verbose,
+            engine="default",
+            cache=True,
+            skip_optional_data=False,
+        )
+
+        # Load/cached states via the standard ExoMol manager (handles caching and formats)
+        from pathlib import Path
+
+        database = Path(local_path).name
+        # local_path = <local_databases>/<molecule>/<full_molecule_name>/<database>
+        # So local_databases is two parents above the molecule directory
+        local_databases = str(Path(local_path).parents[2])
+
+        mdb = MdbExomol(
+            local_path,
+            molecule=self.molecule,
+            database=database,
+            name=f"EXOMOL-{self.molecule}",
+            local_databases=local_databases,
+            engine="default",
+            verbose=self.verbose,
+            cache=True,
+            skip_optional_data=False,
+        )
+
+        states = mdb.states
+
+        # Convert to pandas if needed (vaex -> pandas)
+        try:
+            import vaex  # type: ignore
+
+            if isinstance(states, vaex.dataframe.DataFrame):
+                df_states = states.to_pandas_df()
+            else:
+                df_states = states
+        except Exception:
+            df_states = states
+
+        # Basic checks
+        required_cols = {"E", "J", "v"}
+        missing = required_cols - set(df_states.columns)
+        if missing:
+            raise KeyError(
+                f"Missing columns in ExoMol states: {missing}. Cannot build energy levels from states."
+            )
+
+        # Build base dataframe with v, j, E
+        df = df_states[["v", "J", "E"]].copy()
+        df.rename(columns={"J": "j"}, inplace=True)
+
+        # Evib is minimum E at each vibrational level v
+        df_vib = df.groupby("v", as_index=False).agg(Evib=("E", "min"))
+        df = pd.merge(df, df_vib, on="v", how="left")
+
+        # Rotational energy
+        df["Erot"] = df["E"] - df["Evib"]
+
+        # Vibrational level name like class1
+        df["viblvl"] = vib_lvl_name_hitran_class1(df["v"])  # uses imported helper
+
+        # Degeneracies like class1
+        ElecState = self.ElecState
+        gs = self.gs(ElecState)
+        if isinstance(gs, tuple):
+            raise NotImplementedError(
+                "Different degeneracies (symmetric/antisymmetric) not implemented for this species in states-based builder"
+            )
+        gi = self.gi(ElecState)
+        df["gj"] = 2 * df["j"] + 1
+        df["gvib"] = 1  # energy base assumed rovibrational complete (same as class1)
+        df["grot"] = gs * gi * df["gj"]
+
+        # Keep same columns and order as build_energy_levels_class1
+        df = df[["v", "j", "E", "Evib", "viblvl", "gj", "gvib", "grot", "Erot"]]
+
+        self.df = df
         return
 
     def _add_extra(self):
@@ -2386,22 +2528,52 @@ class ElectronicPartitionFunction:
         """
         from math import exp
 
-        hc_k = 1.438776877  # cm-1/K
+        from radis.phys.constants import hc_k  # cm-1/K
+
         Q_elec = 0.0
         Q_by_state = {}
         for state in self.states:
-            label = getattr(state, "label", getattr(state, "name", None))
             if isinstance(state, dict):
+                # Build unique label combining molecule name and electronic state symbol
+                state_sym = state.get(
+                    "state", state.get("label", state.get("name", None))
+                )
+                mol_name = state.get("name", None)
+                label = (
+                    f"{mol_name}:{state_sym}"
+                    if (mol_name and state_sym)
+                    else (state_sym or mol_name)
+                )
                 g_e = state.get("g_e")
                 Te = state.get("Te")
             else:
-                g_e = getattr(state, "g_e", None)
+                # Same unique labeling for ElectronicState objects
+                state_sym = getattr(
+                    state,
+                    "state",
+                    getattr(state, "label", getattr(state, "name", None)),
+                )
+                mol_name = getattr(state, "name", None)
+                label = (
+                    f"{mol_name}:{state_sym}"
+                    if (mol_name and state_sym)
+                    else (state_sym or mol_name)
+                )
+                g_e = getattr(state, "g_e")
                 Te = getattr(state, "Te")
-            factor = g_e * exp(-Te / hc_k / Telec)
-            if overpopulation and label in overpopulation:
-                factor *= overpopulation[label]
-            Q_by_state[label] = factor
+            factor = g_e * exp(-hc_k * Te / Telec)
+            if overpopulation:
+                if label in overpopulation:
+                    factor *= overpopulation[label]
+                elif "state_sym" in locals() and state_sym in overpopulation:
+                    factor *= overpopulation[state_sym]
+            # Accumulate in case multiple entries yield the same label
+            if label in Q_by_state:
+                Q_by_state[label] += factor
+            else:
+                Q_by_state[label] = factor
             Q_elec += factor
+
         return Q_elec, Q_by_state
 
     def populations(self, Telec, overpopulation=None):

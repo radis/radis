@@ -630,6 +630,21 @@ class BandFactory(BroadenFactory):
         # ----------------------------------------------------------------------
         # Apply scaling
         if band_scaling is not None:
+            # Store before values for comparison
+            before_values = {}
+            for band in abscoeff_v_bands.keys():
+                if band in abscoeff_v_bands:
+                    before_values[band] = {
+                        "abscoeff_max": abscoeff_v_bands[band].max(),
+                        "abscoeff_mean": abscoeff_v_bands[band].mean(),
+                        "emisscoeff_max": emisscoeff_v_bands[band].max()
+                        if band in emisscoeff_v_bands
+                        else 0,
+                        "emisscoeff_mean": emisscoeff_v_bands[band].mean()
+                        if band in emisscoeff_v_bands
+                        else 0,
+                    }
+
             for band, scale in band_scaling.items():
                 if band in abscoeff_v_bands:
                     abscoeff_v_bands[band] *= scale
@@ -1314,20 +1329,47 @@ def add_bands(df, dbformat, lvlformat, dataframe_type="pandas", verbose=True):
                     df["band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
             # For ExoMol format
             elif dbformat == "exomol":
-                # For ExoMol, use electronic state labels as vibrational levels
-                if "state_lower" in df.columns and "state_upper" in df.columns:
-                    if dataframe_type == "pandas":
-                        df.loc[:, "viblvl_l"] = "(" + df["state_lower"] + ")"
-                        df.loc[:, "viblvl_u"] = "(" + df["state_upper"] + ")"
-                        df.loc[:, "band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
-                    elif dataframe_type == "vaex":
-                        df["viblvl_l"] = "(" + df["state_lower"] + ")"
-                        df["viblvl_u"] = "(" + df["state_upper"] + ")"
+                vib_lvl_name = vib_lvl_name_hitran_class1
+                if dataframe_type == "pandas":
+                    if {"vl", "vu"}.issubset(df.columns):
+                        # Preferred: use vl/vu directly -> matches dfQrot index "(v)"
+                        df.loc[:, "viblvl_l"] = vib_lvl_name(df["vl"])
+                        df.loc[:, "viblvl_u"] = vib_lvl_name(df["vu"])
+                    elif {"states_lower", "states_upper"}.issubset(df.columns):
+                        # Fallback: extract v from electronic state labels
+                        vl = df["states_lower"].str.extract(r"v=(\d+)")
+                        vu = df["states_upper"].str.extract(r"v=(\d+)")
+                        df.loc[:, "viblvl_l"] = vib_lvl_name(vl)
+                        df.loc[:, "viblvl_u"] = vib_lvl_name(vu)
+                    else:
+                        raise ValueError(
+                            "ExoMol OH requires either vl/vu columns or state_lower/state_upper with 'v=' fields to build viblvl"
+                        )
+                    df.loc[:, "band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
+                elif dataframe_type == "vaex":
+                    # Vaex path: prefer vl/vu; limited regex support otherwise
+                    if "vl" in df.columns and "vu" in df.columns:
+                        df["viblvl_l"] = df.vl.apply(vib_lvl_name)
+                        df["viblvl_u"] = df.vu.apply(vib_lvl_name)
                         df["band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
-                else:
-                    raise ValueError(
-                        "ExoMol database must have 'state_lower' and 'state_upper' columns for non-equilibrium calculations"
-                    )
+                    elif "states_lower" in df.columns and "states_upper" in df.columns:
+                        import re
+
+                        def _v_from_state(s):
+                            m = re.search(r"v=(\d+)", s) if s is not None else None
+                            return m.group(1) if m else None
+
+                        df["viblvl_l"] = df.states_lower.apply(
+                            lambda s: vib_lvl_name(_v_from_state(s))
+                        )
+                        df["viblvl_u"] = df.states_upper.apply(
+                            lambda s: vib_lvl_name(_v_from_state(s))
+                        )
+                        df["band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
+                    else:
+                        raise ValueError(
+                            "ExoMol OH requires either vl/vu columns or state_lower/state_upper with 'v=' fields to build viblvl (vaex)"
+                        )
             else:
                 raise NotImplementedError(
                     "lvlformat {0} not supported with dbformat {1}".format(

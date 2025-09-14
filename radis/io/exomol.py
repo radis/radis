@@ -263,7 +263,11 @@ def fetch_exomol(
         "gpp": "glower",
         "vl": "vl",  # Preserve vibrational quantum numbers
         "vu": "vu",  # Preserve vibrational quantum numbers
+        "states_lower": "states_lower",
+        "states_upper": "states_upper",
         "branch": "PQR",  # Map PQR to branch for non-LTE calculations
+        "geu": "geu",  # Preserve electronic degeneracies
+        "gel": "gel",  # Preserve electronic degeneracies
         ### old, now we directly set "airbrd" and "Tdpair"
         # "airbrd": "alpha_ref",
         # "Tdpair": "n_Texp",
@@ -276,6 +280,10 @@ def fetch_exomol(
             "jupper",
             "vl",  # Required for non-equilibrium calculations
             "vu",  # Required for non-equilibrium calculations
+            "states_lower",
+            "states_upper",
+            "geu",  # Required for electronic degeneracy
+            "gel",  # Required for electronic degeneracy
         ]  # needed for broadening
     else:
         columns_exomol = None
@@ -347,15 +355,16 @@ def fetch_exomol(
             for k, v in attrs.items():
                 df.attrs[k] = v
 
-    if not hasattr(mdb, "states") or mdb.states is None:
+    if hasattr(mdb, "states") and mdb.states is not None:
+        states_df = mdb.states
+    else:
         raise ValueError("States DataFrame not found")
 
     # Set dbformat to hdf5-radisdb for compatibility
     df.attrs["dbformat"] = "hdf5-radisdb"
 
     # After loading states DataFrame, build Te mapping
-    get_electronic_state_Te_mapping(df)
-
+    get_electronic_state_Te_mapping(states_df)
     # Return:
     out = df
     if return_local_path or return_partition_function:

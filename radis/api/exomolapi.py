@@ -325,7 +325,7 @@ def read_trans(transf, engine="vaex"):
 
 
 def read_states(
-    statesf, dic_def, engine="vaex", skip_optional_data=False, print_states=False
+    statesf, dic_def, engine="vaex", skip_optional_data=False, print_states=True
 ):
     """Exomol IO for a state file
 
@@ -400,7 +400,7 @@ def read_states(
         mask = np.array([dic_def["unc"], dic_def["Landé"], dic_def["lifetime"]])
         N_except = np.sum(mask)
         usecol = np.arange(0, N_mandatory_fields + N_except + N_otherfields)
-        names = mandatory_fields + tuple(quantum_labels) + tuple(label[mask])
+        names = mandatory_fields + tuple(label[mask]) + tuple(quantum_labels)
         # The definitions file (*.def) specifies which fields are available
         # in the states fiel (*.states). Check the number of available fields
         # (see *.def) match the numbers of columns in the states file (*.states).
@@ -457,7 +457,7 @@ def read_states(
     return dat
 
 
-def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
+def pickup_gE(states, trans, dic_def, skip_optional_data=False, engine="vaex"):
     """extract g_upper (gup), E_lower (elower), and J_lower and J_upper from states
     DataFrame and insert them into the transition DataFrame.
 
@@ -521,12 +521,17 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
             )
             trans.drop(states_key, inplace=True)
             trans.rename(col, new_col)
+
         return trans
 
     trans = map_add(trans, "g", "gup", "i_upper")
     trans = map_add(trans, "J", "jlower", "i_lower")
     trans = map_add(trans, "J", "jupper", "i_upper")
     trans = map_add(trans, "E", "elower", "i_lower")
+
+    # Add electronic degeneracies, to be used to build gl, gu for electronic transitions
+    trans = map_add(trans, "g", "geu", "i_upper")
+    trans = map_add(trans, "g", "gel", "i_lower")
 
     def has_nan(column):
         try:  # Vaex
@@ -540,14 +545,17 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
 
     ### Step 2. Extra quantum numbers (e/f parity, vib and rot numbers)
     # -----------------------------------------------------------------
+    if "Es" in states.columns:
+        trans = map_add(trans, "Es", "states_upper", "i_upper")
+        trans = map_add(trans, "Es", "states_lower", "i_lower")
     if not skip_optional_data:
         for q in dic_def["quantum_labels"]:
             if q.lower() == "v":
                 trans = map_add(trans, q, "vl", "i_lower")
                 trans = map_add(trans, q, "vu", "i_upper")
-            trans = map_add(trans, q, f"{q}_l", "i_lower")
-            trans = map_add(trans, q, f"{q}_u", "i_upper")
-
+            else:
+                trans = map_add(trans, q, f"{q}_l", "i_lower")
+                trans = map_add(trans, q, f"{q}_u", "i_upper")
     return trans
 
 
@@ -1204,7 +1212,7 @@ class MdbExomol(DatabaseManager):
         engine="vaex",
         verbose=True,
         cache=True,
-        skip_optional_data=True,
+        skip_optional_data=False,
     ):
         super().__init__(
             name,

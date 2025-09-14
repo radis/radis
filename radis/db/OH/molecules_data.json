@@ -4,7 +4,6 @@
             "1": {
                 "electronic_level": {
                     "001": {
-                        "g_e": 4.0,
                         "index": 1,
                         "name": "X2PI",
                         "Y10_cm-1": 3737.761,
@@ -16,7 +15,6 @@
                         "source": "https://webbook.nist.gov/cgi/cbook.cgi?ID=C3352576&Mask=1000#Diatomic"
                     },
                     "002": {
-                        "g_e": 2.0,
                         "index": 2,
                         "name": "A2SIGMA+",
                         "Y10_cm-1": 3178.86,

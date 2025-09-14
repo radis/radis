@@ -862,6 +862,7 @@ class SpectrumFactory(BandFactory):
 
         # First calculate the linestrength at given temperature
         self.calc_linestrength_eq(Tgas)  # scales S0 to S (equivalent to S0 in code)
+
         self._cutoff_linestrength()
 
         # ----------------------------------------------------------------------
@@ -891,6 +892,7 @@ class SpectrumFactory(BandFactory):
 
         # ... add semi-continuum (optional)
         abscoeff_v = self._add_pseudo_continuum(abscoeff_v, I_continuum)
+
         # Calculate output quantities
         # ----------------------------------------------------------------------
 
@@ -915,9 +917,11 @@ class SpectrumFactory(BandFactory):
         transmittance_noslit = (
             1 - emissivity_noslit
         )  # still 1 for small values of emissivity_noslit
+
         radiance_noslit = calc_radiance(
             wavenumber, emissivity_noslit, Tgas, unit=self.units["radiance_noslit"]
         )
+
         assert self.units["abscoeff"] == "cm-1"
 
         self.profiler.stop(
@@ -1365,12 +1369,10 @@ class SpectrumFactory(BandFactory):
 
         # update database if asked so
         if self.autoupdatedatabase:
-            self.SpecDatabase.add(
-                s,
-                add_info=["Tvib", "Trot"],
-                add_date="%Y%m%d",
-                if_exists_then="increment",
-            )
+            self.SpecDatabase.add(s, if_exists_then="increment")
+            # Tvib=Trot=Tgas... but this way names in a database
+            # generated with eq_spectrum are consistent with names
+            # in one generated with non_eq_spectrum
 
         # Get generation and total calculation time
         self.profiler.stop("generate_spectrum_obj", "Generated Spectrum object")
@@ -1671,7 +1673,7 @@ class SpectrumFactory(BandFactory):
             self.input.vib_distribution = vib_distribution
             self.input.Tvib = Tvib
             self.input.Trot = Trot
-            self.input.Telec = Telec  # Set Telec for molecules too
+            self.input.Telec = Telec
             # Get translational temperature
         Tgas = Ttrans
         if Tgas is None:
@@ -1903,7 +1905,7 @@ class SpectrumFactory(BandFactory):
         s = Spectrum(
             quantities=quantities,
             conditions=conditions,
-            populations=populations,  # <-- use the new populations dict
+            populations=populations,
             lines=lines,
             units=self.units,
             cond_units=self.cond_units,
@@ -1931,7 +1933,7 @@ class SpectrumFactory(BandFactory):
 
         # Electronic + Rovib population calculations
         # Only execute electronic state handling for atoms
-        if self.input.isatom:
+        if Telec is not None:
             # 1. Get electronic states for this molecule/isotope
             from radis.db.molecules import Molecules
             from radis.levels.partfunc import ElectronicPartitionFunction
@@ -1998,7 +2000,7 @@ class SpectrumFactory(BandFactory):
                         elec_states[clean_state_label] = elec_state
 
                 else:
-                    elec_states = {}
+                    elec_states = Molecules[molecule][isotope]
             else:
                 elec_states = Molecules[molecule][isotope]
             # 2. Compute electronic populations at Telec
@@ -2017,20 +2019,6 @@ class SpectrumFactory(BandFactory):
                 rovib_pops[state_label] = rovib_calc.at_noneq(
                     Tvib, Trot, Telec=Telec, update_populations=True
                 )
-            # When calling non_eq_bands, pass band_scaling
-            self.non_eq_bands(
-                Tvib,
-                Trot,
-                Ttrans=Ttrans,
-                mole_fraction=mole_fraction,
-                diluent=diluent,
-                path_length=path_length,
-                pressure=pressure,
-                vib_distribution=vib_distribution,
-                rot_distribution=rot_distribution,
-                levels="all",
-                band_scaling=band_scaling,  # NEW
-            )
 
         return s
 
