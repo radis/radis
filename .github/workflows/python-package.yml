@@ -1,11 +1,11 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 
-name: Tests on develop (Python 3.10 and 3.11)
+name: Python package (Development)
 
 on:
   push:
-    branches: [ "develop" ] #see python-package-master.yml for tests on master
+    branches-ignore: [ "master" ] # Run on all branches except master
   pull_request:
     branches: [ "develop" ]
 
@@ -38,6 +38,15 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install pytest specutils
           pip install -e .
+      - name: Debug environment variables
+        env:
+          HITRAN_EMAIL: ${{ secrets.HITRAN_EMAIL }}
+          HITRAN_PASSWORD: ${{ secrets.HITRAN_PASSWORD }}
+        run: |
+          echo "HITRAN_EMAIL is set: $([[ -n "$HITRAN_EMAIL" ]] && echo "YES" || echo "NO")"
+          echo "HITRAN_PASSWORD is set: $([[ -n "$HITRAN_PASSWORD" ]] && echo "YES" || echo "NO")"
+          echo "HITRAN_EMAIL length: ${#HITRAN_EMAIL}"
+          echo "HITRAN_PASSWORD length: ${#HITRAN_PASSWORD}"
       - name: Fast tests with pytest
         run: |
           pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC and not needs_gpu and not needs_HITRAN_credentials" --durations=10
