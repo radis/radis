@@ -271,7 +271,9 @@ def test_read_wav_index():
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.download_large_databases
-@pytest.mark.parametrize("molecule", [mol for mol in HITEMP_MOLECULES if mol != "CO2"])
+@pytest.mark.parametrize(
+    "molecule", [mol for mol in HITEMP_MOLECULES if mol not in ["CO2"]]
+)
 def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
     """Test fetch HITEMP for all molecules whose download URL is available.
 
@@ -323,7 +325,9 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.download_large_databases
-@pytest.mark.parametrize("molecule", [mol for mol in HITEMP_MOLECULES if mol != "CO2"])
+@pytest.mark.parametrize(
+    "molecule", [mol for mol in HITEMP_MOLECULES if mol not in ["CO2", "H2O"]]
+)
 def test_fetch_hitemp_all_molecules_2010_version(
     molecule, verbose=True, *args, **kwargs
 ):

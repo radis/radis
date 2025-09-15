@@ -142,7 +142,7 @@ def fetch_hitemp(
     if isotope and type(isotope) == int:
         isotope = str(isotope)
 
-    if molecule == "CO2" and database == "2024":
+    if molecule == "CO2" and database in ["2024", "most_recent"]:
         from radis.api.hitempapi import download_and_decompress_CO2_into_df
 
         # Use pytables engine for CO2 to ensure consistent caching behavior
