@@ -26,6 +26,7 @@ except ImportError:
 # pytestmark = pytest.mark.random_order(disabled=True)
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.fast
 @pytest.mark.needs_HITRAN_credentials
@@ -90,6 +91,7 @@ def test_relevant_files_filter():
     ]
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 def test_fetch_hitemp_OH_pytables(verbose=True, *args, **kwargs):
@@ -353,6 +355,7 @@ def test_fetch_hitemp_all_molecules_2010_version(
     assert f"HITEMP-{molecule}-2010" in getDatabankList()
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.fast
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
@@ -460,6 +463,7 @@ def test_partial_loading_vaex(*args, **kwargs):
     assert set(df.iso.unique()) == {2, 3}
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.fast
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
@@ -493,6 +497,7 @@ def test_calc_hitemp_spectrum(*args, **kwargs):
     return
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.fast
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
@@ -526,6 +531,7 @@ def test_calc_hitemp_spectrum_2010_version(*args, **kwargs):
     )
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 def test_calc_hitemp_CO_noneq(verbose=True, *args, **kwargs):

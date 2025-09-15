@@ -1,7 +1,10 @@
 name: Linting with pre-commit
 
-on: [push]
-
+on:
+  push:
+    branches: [ "develop", "master" ] #see python-package-master.yml for tests on master
+  pull_request:
+    branches: [ "develop" ]
 jobs:
   build:
     runs-on: ubuntu-latest
