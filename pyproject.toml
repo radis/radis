@@ -70,7 +70,7 @@ dependencies = [
     "matplotlib",  # for plotting
     "mpldatacursor",  # interactive data cursors for matplotlib
     "numba",  # just-in-time compiler
-    "numpy",  # numerical computations
+    "numpy<2",  # numerical computations
     "pandas",  # data manipulation and analysis
     "peakutils",  # peak detection and fitting
     "periodictable",  # periodic table data

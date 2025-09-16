@@ -612,7 +612,9 @@ def read_and_write_chunked_for_CO2(
     if local_databases:
         hitemp_CO2_download_path = local_databases
     else:
-        hitemp_CO2_download_path = join(default_download_path, "hitemp", "co2")
+        hitemp_CO2_download_path = join(
+            default_download_path, "hitemp", "CO2_HITEMP2024"
+        )
 
     def _append_dataframe(df_to_append):
         """Filter isotopes and append dataframe to results."""
@@ -1085,14 +1087,7 @@ class HITEMPDatabaseManager(DatabaseManager):
             if verbose:
                 print(f"Download complete. Parsing {molecule} database to {local_file}")
                 print(
-                    "This step is executed only ONCE and will considerably accelerate the computation of spectra. It will also dramatically reduce the memory usage. The parsing/conversion can be very fast (e.g. HITEMP OH takes a few seconds) or extremely long (e.g. HITEMP CO2 takes approximately 1 hour)."
-                )
-            if molecule == "CO2":
-                from warnings import warn
-
-                warn(
-                    "Parsing will take approximately 1 hour for HITEMP CO2 (compressed = 6 GB",
-                    UserWarning,
+                    "The parsing/conversion is usually very fast (e.g., HITEMP OH takes only a few seconds) but can be slightly longer in some cases (e.g., a single HITEMP 2010 CO₂ file takes about 1 minute)."
                 )
 
             # assert not(exists(local_file))
