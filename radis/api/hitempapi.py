@@ -653,26 +653,28 @@ def read_and_write_chunked_for_CO2(
                 f"- Download {len(files_to_download)} file(s) missing out of {len(wav_pairs)}."
             )
 
-        # Only show progress bar for files that actually need downloading
-        with tqdm(
-            total=len(files_to_download), desc="Downloading chunks", disable=not verbose
-        ) as pbar:
-            for start_wavno, end_wavno, out_decompressed_file in files_to_download:
-                if engine == "vaex":
-                    fcache = _fcache_file_name(out_decompressed_file, engine)
-                    fcache_str = str(fcache)
-                    if os.path.exists(fcache_str.replace(".hdf5", ".h5")):
-                        update_pytables_to_vaex(fcache_str.replace(".hdf5", ".h5"))
+        # Download each chunk with individual progress
+        for i, (start_wavno, end_wavno, out_decompressed_file) in enumerate(
+            files_to_download
+        ):
+            if engine == "vaex":
+                fcache = _fcache_file_name(out_decompressed_file, engine)
+                fcache_str = str(fcache)
+                if os.path.exists(fcache_str.replace(".hdf5", ".h5")):
+                    update_pytables_to_vaex(fcache_str.replace(".hdf5", ".h5"))
 
-                pbar.set_postfix_str("downloading")
-                partial_download_co2_chunk(
-                    start_wavno,
-                    end_wavno,
-                    session,
-                    out_decompressed_file,
-                    verbose=False,  # Suppress verbose redundant output
+            if verbose:
+                print(
+                    f"\nDownloading chunk {i+1}/{len(files_to_download)}: {start_wavno:.0f}-{end_wavno:.0f} cm⁻¹"
                 )
-                pbar.update(1)
+
+            partial_download_co2_chunk(
+                start_wavno,
+                end_wavno,
+                session,
+                out_decompressed_file,
+                verbose=verbose,  # Show internal download progress
+            )
     else:
         if verbose:
             print(
