@@ -626,43 +626,59 @@ def read_and_write_chunked_for_CO2(
     wav_pairs = get_key_pairs(load_wavenum_min, load_wavenum_max)
     session = login_to_hitran()
 
-    # Download and decompress chunks
+    # Check which files need to be downloaded
+    files_to_download = []
+    for start_wavno, end_wavno in wav_pairs:
+        fname = f"CO2_02_{int(start_wavno):05d}-{int(end_wavno):05d}_HITEMP2024.par"
+        out_decompressed_file = join(hitemp_CO2_download_path, fname)
+        fcache = _fcache_file_name(out_decompressed_file, engine)
+
+        local_paths.append(out_decompressed_file)
+
+        if not (os.path.exists(fcache) or os.path.exists(out_decompressed_file)):
+            files_to_download.append((start_wavno, end_wavno, out_decompressed_file))
+
     if verbose:
+        print("-" * 80)
         print(
-            f"Processing {len(wav_pairs)} chunks for range {load_wavenum_min}-{load_wavenum_max} cm⁻¹"
+            f"CO2 - HITEMP 2024 - Downloading and processing {len(wav_pairs)} chunks for range {load_wavenum_min}-{load_wavenum_max} cm⁻¹"
         )
+        print("-" * 80)
 
-    with tqdm(
-        total=len(wav_pairs), desc="Downloading chunks", disable=not verbose
-    ) as pbar:
-        for start_wavno, end_wavno in wav_pairs:
-            fname = f"CO2_02_{int(start_wavno):05d}-{int(end_wavno):05d}_HITEMP2024.par"
-            out_decompressed_file = join(hitemp_CO2_download_path, fname)
-            fcache = _fcache_file_name(out_decompressed_file, engine)
+    # Download section
+    if files_to_download:
+        if verbose:
+            print(f"\n\x1B[4mDownload:\x1B[0m")
+            print(
+                f"- Download {len(files_to_download)} file(s) missing out of {len(wav_pairs)}."
+            )
 
-            if engine == "vaex":
-                # Convert Path object to string before string operations
-                fcache_str = str(fcache)
-                if os.path.exists(fcache_str.replace(".hdf5", ".h5")):
-                    update_pytables_to_vaex(fcache_str.replace(".hdf5", ".h5"))
+        # Only show progress bar for files that actually need downloading
+        with tqdm(
+            total=len(files_to_download), desc="Downloading chunks", disable=not verbose
+        ) as pbar:
+            for start_wavno, end_wavno, out_decompressed_file in files_to_download:
+                if engine == "vaex":
+                    fcache = _fcache_file_name(out_decompressed_file, engine)
+                    fcache_str = str(fcache)
+                    if os.path.exists(fcache_str.replace(".hdf5", ".h5")):
+                        update_pytables_to_vaex(fcache_str.replace(".hdf5", ".h5"))
 
-            local_paths.append(out_decompressed_file)
-
-            if os.path.exists(fcache) or os.path.exists(out_decompressed_file):
-                pbar.set_postfix_str("cached")
-            else:
                 pbar.set_postfix_str("downloading")
                 partial_download_co2_chunk(
                     start_wavno,
                     end_wavno,
                     session,
                     out_decompressed_file,
-                    verbose=verbose,
+                    verbose=False,  # Suppress verbose redundant output
                 )
+                pbar.update(1)
+    else:
+        if verbose:
+            print(
+                f"\nAll files already downloaded. Loading from `.h5` or `.hdf5` files."
+            )
 
-            pbar.update(1)
-
-    # Parse or cache the chunks
     with tqdm(
         total=len(local_paths), desc="Processing chunks", disable=not verbose
     ) as pbar:
@@ -681,8 +697,12 @@ def read_and_write_chunked_for_CO2(
                     engine=engine,
                     output=output,
                     wav_range=wav_pairs[i],
+                    verbose=False,
                 )
                 _append_dataframe(df)
+
+            # Always remove .par file after processing
+            if os.path.exists(file):
                 os.remove(file)
 
             pbar.update(1)
