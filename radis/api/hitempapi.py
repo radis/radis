@@ -975,7 +975,7 @@ class HITEMPDatabaseManager(DatabaseManager):
             from radis.misc.utils import getProjectRoot
 
             with open(
-                join(getProjectRoot(), "db", "H2O", "HITRANpage_january2025.htm")
+                join(getProjectRoot(), "db", molecule, "HITRANpage_january2025.htm")
             ) as file:
                 response_string = file.read()
 
