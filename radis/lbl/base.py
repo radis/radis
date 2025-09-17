@@ -1691,8 +1691,8 @@ class BaseFactory(DatabankLoader):
                 + "You can add it with `load_columns=['branch', ...]` or simply `load_columns='noneq'` / `load_columns='all'` in fetch_databank / load_databank()"
             )
 
-        if df.dtypes["branch"] != np.int64:
-            raise DeprecationWarning(
+        if np.issubdtype(df.dtypes["branch"], np.number):  # any type, float or int
+            raise ValueError(
                 "For performance purpose, numeric (-1, 0, 1) "
                 + "format for (P, Q, R) branch is now required. "
                 + "If using cache files, regenerate them?"
