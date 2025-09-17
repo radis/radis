@@ -963,7 +963,7 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         molecule = self.molecule
 
-        if molecule in ["H2O"]:  # CO2 is a single file since 01/2025
+        if molecule == "H2O" or (molecule == "CO2" and self.database == "2010"):
 
             base_url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
 
@@ -1009,7 +1009,9 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         If other molecule, return the file anyway.
         see :py:func:`radis.api.hitempapi.keep_only_relevant`"""
-        if self.molecule in ["H2O"]:  # CO2 is a single file since 01/2025
+        if self.molecule == "H2O" or (
+            self.molecule == "CO2" and self.database == "2010"
+        ):
             inputfiles, _, _ = keep_only_relevant(
                 inputfiles, wavenum_min, wavenum_max, verbose
             )

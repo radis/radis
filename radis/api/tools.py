@@ -313,17 +313,31 @@ def replace_PQR_with_m101(df):
             "-1": -1,
             "-2": -2,
         }
+        valid_values = [-2, -1, 0, 1, 2]
+
         if df_type == pd.DataFrame:  # pandas
             pd.set_option("future.no_silent_downcasting", True)
             new_col = df["branch"].replace(mapping).infer_objects(copy=False)
             pd.set_option("future.no_silent_downcasting", False)
+
+            invalid_values = new_col[~new_col.isin(valid_values)]
         else:  # vaex
             new_col = df["branch"].map(mapping, allow_missing=True)
+            invalid_values = new_col[new_col.apply(lambda x: x not in valid_values)]
+
+        # Raise a warning if there are branch values outside valid_values
+        if not invalid_values.empty:
+            invalid_indices = invalid_values.index
+            warn(
+                f"Invalid values found in 'branch' column.\n"
+                f"The following branch values are not within [-2, -1, 0, 1, 2] (only 5 first index out {len(invalid_indices)} of are shown): \n"
+                f"{df.loc[invalid_indices[:5], :]}",
+                UserWarning,
+            )
+        new_col = new_col.astype("float")
         df["branch"] = new_col
 
-    try:
-        assert df.dtypes["branch"] == np.int64
-    except AssertionError:
+    if df.dtypes["branch"] not in (int, float):
         warn(
             message=(
                 f"Expected branch data type to be 'int64', "
