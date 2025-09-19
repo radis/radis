@@ -9,8 +9,7 @@
 name: Upload Python Package
 
 on:
-  release:
-    types: [published] #this event will be triggered only when a release is published. Not when we push on the master.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -32,7 +31,6 @@ jobs:
           python -m pip install build twine
           python -m build --sdist --wheel
 
-          # Nicolas: not sure it will work
           sudo apt-get install pandoc
           pandoc README.rst -o README.md
 
@@ -73,3 +71,4 @@ jobs:
         with:
           packages-dir: dist/
           pypi-trust: true
+          test-pypi: true
