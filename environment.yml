@@ -23,7 +23,7 @@ dependencies:
 - joblib  # for parallel loading of SpecDatabase
 - lmfit  # for new fitting modules
 - matplotlib
-- numpy<2 ; python_version < '3.11' # numpy 2.0 is not compatible with vaex-hdf5, see https://github.com/vaexio/vaex/issues/2468
+- numpy
 - numba  # just-in-time compiler
 - pandas
 - plotly>=2.5.1  # for line survey HTML output
@@ -50,6 +50,7 @@ dependencies:
   - ruamel.yaml
   - toml
   - tqdm
+  - numpy<2 ; python_version < '3.11' # numpy 2.0 is not compatible with vaex-hdf5, see https://github.com/vaexio/vaex/issues/2468
   - vaex-core ; python_version < '3.11'
   - vaex-hdf5 ; python_version < '3.11'
   - vaex-viz ; python_version < '3.11'
