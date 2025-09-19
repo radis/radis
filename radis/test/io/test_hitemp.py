@@ -547,11 +547,11 @@ if __name__ == "__main__":
     #     HITEMPDatabaseManager,
     #     )
     # from radis.misc.config import getDatabankList
-    test_partial_loading()
+    # test_partial_loading()
     # test_partial_loading_vaex()
 
     # test_fetch_hitemp_OH_pytables()
-    # test_fetch_hitemp_OH_vaex()
+    test_fetch_hitemp_OH_vaex()
 
     # test_fetch_hitemp_all_molecules("OH")
     # test_fetch_hitemp_all_molecules("CO")
