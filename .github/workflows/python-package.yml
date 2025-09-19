@@ -49,4 +49,4 @@ jobs:
           HITRAN_EMAIL: ${{ secrets.HITRAN_EMAIL }}
           HITRAN_PASSWORD: ${{ secrets.HITRAN_PASSWORD }}
         run: |
-          pytest -m "needs_HITRAN_credentials" --durations=10
+          pytest -m "needs_HITRAN_credentials and not download_large_databases" --durations=10
