@@ -414,10 +414,8 @@ def login_to_hitran(verbose=False):
         store_credentials(email, password)
         return session
     else:
-        if verbose:
-            print(f"Login failed: {login_response.status_code}")
-        raise OSError(
-            "HITRAN login failed. Please ensure you entered correct credentials from https://hitran.org/login/"
+        raise OSError(  # Status code guide: https://www.geeksforgeeks.org/computer-networks/http-status-codes-successful-responses/
+            f"HITRAN login failed.\nStatus_code of the login attempt: {login_response.status_code} \nA common mistake: please ensure you entered correct credentials from https://hitran.org/login/"
         )
 
 
