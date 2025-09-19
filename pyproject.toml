@@ -70,7 +70,6 @@ dependencies = [
     "matplotlib",  # for plotting
     "mpldatacursor",  # interactive data cursors for matplotlib
     "numba",  # just-in-time compiler
-    "numpy",  # numerical computations
     "pandas",  # data manipulation and analysis
     "peakutils",  # peak detection and fitting
     "periodictable",  # periodic table data
@@ -86,6 +85,8 @@ dependencies = [
     "termcolor",  # terminal colors
     "toml",
     "tqdm",  # for progress bars
+    'numpy;  python_version > "3.10"', # numpy 2.0 is not compatible with vaex-hdf5, see https://github.com/vaexio/vaex/issues/2468
+    'numpy<2;  python_version < "3.11"', # numpy 2.0 is not compatible with vaex-hdf5, see https://github.com/vaexio/vaex/issues/2468
     'vaex-core; python_version < "3.11"',  # out-of-core dataframes
     'vaex-hdf5; python_version < "3.11"',  # HDF5 support for vaex
     'vaex-viz; python_version < "3.11"',  # visualization for vaex
