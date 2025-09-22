@@ -8,13 +8,24 @@ Created on Fri Sep  5 17:34:58 2025
 import numpy as np
 
 import radis
+from radis import SpectrumFactory, get_residual, plot_diff
 
 radis.config["DEBUG_MODE"] = True
 
 
-def test_sparse_vs_regular():
-    from radis import SpectrumFactory
+def test_sparse_vs_regular_methods(plot=True):
+    # save original config
+    init_config = radis.config["MULTI_SPARSE_GRID"]
 
+    for optim in [None, "simple", "min-RMS"]:
+        for broadening_method in ["voigt"]:
+            residual = sparse_vs_regular(broadening_method, optim, plot=True)
+            assert np.isclose(residual, 0, atol=1e-8)
+
+    radis.config["MULTI_SPARSE_GRID"] = init_config
+
+
+def sparse_vs_regular(broadening_method, optim, plot=True):
     sf = SpectrumFactory(
         # wavenum_min=3800,
         # wavenum_max=4500,
@@ -23,47 +34,32 @@ def test_sparse_vs_regular():
         molecule="CO",
         wavenum_min=2008,
         wavenum_max=2009,
-        Tgas=300,
         path_length=0.1,
         mole_fraction=0.2,
         isotope=1,
         pressure=1e-5,
         wstep=0.004,
-        databank="hitran",  # or 'hitemp'
-        optimization=None,
-        # also measure interpolation time
-        return_factory=True,
+        optimization=optim,
+        broadening_method=broadening_method,
         save_memory=False,
+        verbose=False,
     )
-
-    #%%
-
-    # #Test:
-
-    # %%
-    # keep only few lines
-    # sf.df0= sf.df0.iloc[150:153]
-    # keep only so many lines
-    # sf.df0 = sf.df0.iloc[np.arange(len(sf.df0))[::10]]
+    sf.fetch_databank("hitran")
 
     #%%
 
     # NOW compute a Spectrum
-    import radis
-
     radis.config["MULTI_SPARSE_GRID"] = False
     s_single = sf.eq_spectrum(700)
-    s_single.plot("abscoeff", yscale="log", lw=4, nfig=10)
+    # s_single.plot("abscoeff", yscale="log", lw=4, nfig=10)
 
     # %%
 
     # NOW compute a Spectrum
-    import radis
-
     radis.config["MULTI_SPARSE_GRID"] = True
     s_multi = sf.eq_spectrum(700)
 
-    s_multi.plot("abscoeff", yscale="log", nfig=10, lw=2)
+    # s_multi.plot("abscoeff", yscale="log", nfig=10, lw=2)
 
     # %% Plot the graphs
 
@@ -113,13 +109,25 @@ def test_sparse_vs_regular():
     # s.name = f"{s.c['calculation_time']:.1f}s"
     s_single.name = f"1 grid : {s_single.c['calculation_time']:.1f}s"
 
-    from radis import get_residual, plot_diff
-
-    plot_diff(s_single, s_multi, "abscoeff", yscale="log", method="diff")
+    plot_diff(
+        s_single,
+        s_multi,
+        "abscoeff",
+        yscale="log",
+        method="diff",
+        title=f"Optimization x broad. method: {optim} x {broadening_method}",
+    )
 
     residual = get_residual(s_single, s_multi, "abscoeff")
-    assert np.isclose(residual, 0, atol=1e-8)
+    return residual
 
 
 if __name__ == "__main__":
-    test_sparse_vs_regular()
+    # save original config
+    init_config0 = radis.config["MULTI_SPARSE_GRID"]
+
+    # sparse_vs_regular(optim='simple', broadening_method='fft')
+    test_sparse_vs_regular_methods(plot=True)
+
+    # put back initial config
+    radis.config["MULTI_SPARSE_GRID"] = init_config0
