@@ -50,7 +50,7 @@ classifiers = [
 ]
 requires-python = ">=3.9"
 dependencies = [
-    # This is a duplicate of environment.yml; but it is NECESSARY to tell pip what are the dependencies.
+    # This is a duplicate of environment.yml; but it is NECESSARY to tell pip what are the dependencies in case use employ `pip install -e .` from empty environment
     # Dependencies in environment.yml and here should be kept consistent.
     # This is tested automatically https://github.com/radis/radis/pull/734
     "astropy>=4.3.1",  # Unit aware calculations
@@ -87,7 +87,7 @@ dependencies = [
     "tqdm",  # for progress bars
     "numpy>2", #Warning, numpy 2.0 is not compatible with vaex-hdf5<=0.14.1, see #869 and https://github.com/vaexio/vaex/issues/2468
     "vaex-core",
-    "vaex-hdf5",
+    "vaex-hdf5 @ git+https://github.com/vaexio/vaex.git#subdirectory=packages/vaex-hdf5",  # vaex-hdf5 latest version
     "vaex-viz",
     "vulkan",
 ]
