@@ -780,6 +780,6 @@ def test_vaex_and_pandas_spectrum_noneq():
 
 # --------------------------
 if __name__ == "__main__":
-
-    printm("Testing factory:", pytest.main(["test_factory.py", "--pdb"]))
+    test_vaex_and_pandas_spectrum_noneq()
+    # printm("Testing factory:", pytest.main(["test_factory.py", "--pdb"]))
 #    printm('Testing factory:', pytest.main(['test_factory.py', '-k', 'test_wavenumber_units_conversion']))
