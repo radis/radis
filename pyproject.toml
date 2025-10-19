@@ -85,7 +85,7 @@ dependencies = [
     "termcolor",  # terminal colors
     "toml",
     "tqdm",  # for progress bars
-    "numpy<2", # numpy 2.0 is not compatible with vaex-hdf5, see #869 and https://github.com/vaexio/vaex/issues/2468
+    "numpy>2", #Warning, numpy 2.0 is not compatible with vaex-hdf5<=0.14.1, see #869 and https://github.com/vaexio/vaex/issues/2468
     "vaex-core",
     "vaex-hdf5",
     "vaex-viz",
