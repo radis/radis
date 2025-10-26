@@ -344,12 +344,10 @@ def to_conventional_name(species):
         # and is present in the periodictable module. Otherwise treat as a
         # molecular cation and return unchanged (e.g., 'NO+' stays 'NO+').
         base = species.split("+")[0]
+        if base == "NO":  # Known exception for nitric oxide cation (HITRAN)
+
+            return species  # Not an element symbol: treat as molecule (leave unchanged)
         if re.fullmatch(r"[A-Z][a-z]?", base):
-            try:
-                getattr(periodictable, base)
-            except AttributeError:
-                # Not an element symbol: treat as molecule (leave unchanged)
-                return species
             # Count the number of positive charges and convert to roman notation
             chargeplus1 = species.count("+") + 1
             chargeplus1_in_roman = int_to_roman(chargeplus1)
