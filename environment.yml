@@ -12,8 +12,7 @@ channels:
 - conda-forge
 - nodefaults  # no defaults packages (only conda-forge)
 dependencies:
-- python=3.11
-- spyder
+- python
 - astropy>=4.3.1  # Unit aware calculations
 - astroquery>=0.4.6  # to fetch HITRAN databases
 - beautifulsoup4>=4.10.0 # parse ExoMol website
