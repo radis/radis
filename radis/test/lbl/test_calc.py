@@ -988,5 +988,5 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
 # --------------------------
 if __name__ == "__main__":
-
-    printm("Testing calc.py: ", _run_testcases(verbose=True))
+    test_non_air_diluent_calc()
+    # printm("Testing calc.py: ", _run_testcases(verbose=True))
