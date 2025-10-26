@@ -13,7 +13,7 @@ build:
     python: "3.12"
     # Use Mambaforge as the environment manager
     # (this replaces the default CPython/venv)
-    mambaforge: latest
+    mambaforge: "latest"
   apt_packages:
     - mesa-vulkan-drivers #for running GPU examples
     - libvulkan1          #for running GPU examples
