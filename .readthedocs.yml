@@ -9,7 +9,7 @@ version: 2
 build:
   os: ubuntu-22.04
   tools:
-    python: "mambaforge-23.11"
+    python: "miniforge3-23.11"
   apt_packages:
     - mesa-vulkan-drivers #for running GPU examples
     - libvulkan1          #for running GPU examples
