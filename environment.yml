@@ -12,7 +12,7 @@ channels:
 - conda-forge
 - nodefaults  # no defaults packages (only conda-forge)
 dependencies:
-- python
+- python=3.13
 - astropy>=4.3.1  # Unit aware calculations
 - astroquery>=0.4.6  # to fetch HITRAN databases
 - beautifulsoup4>=4.10.0 # parse ExoMol website
@@ -50,8 +50,8 @@ dependencies:
   - ruamel.yaml
   - toml
   - tqdm
-  - vaex-core #latest version 4.19 is not on conda-forge yet
-  - git+https://github.com/vaexio/vaex.git#subdirectory=packages/vaex-hdf5 #vaex-hdf5 latest version
-  - vaex-viz
+  - vaex-core; python_version < '3.13' #latest version 4.19 is not on conda-forge yet and install not compatible with python 3.13
+  - git+https://github.com/vaexio/vaex.git#subdirectory=packages/vaex-hdf5; python_version < '3.13' #vaex-hdf5 latest version
+  - vaex-viz; python_version < '3.13'
   - vulkan
 
