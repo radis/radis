@@ -12,6 +12,7 @@ https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 import json
 import os
 import re
+import time
 import urllib.request
 import warnings
 from os.path import basename, commonpath, join
@@ -355,10 +356,49 @@ def login_to_hitran(verbose=False):
     login_url = "https://hitran.org/login/"
     session = requests.Session()
 
+    class LoginError(Exception):
+        """Custom exception for login errors"""
+
+        pass
+
     def attempt_login(email, password):
         """Attempt to login with provided credentials"""
-        # Get CSRF token
-        response = session.get(login_url)
+        max_retries = 3
+        retry_codes = [429, 500, 502, 503, 504]  # common retryable status codes
+        retry_delay = 1  # initial retry delay in seconds
+
+        for attempt in range(max_retries):
+            try:
+                # Get CSRF token
+                response = session.get(login_url)
+                response.raise_for_status()  # Raise an exception for 4xx or 5xx status codes
+                break  # everything worked well, moving on
+            except requests.exceptions.HTTPError as exc:
+                code = exc.response.status_code
+                if code in retry_codes:
+                    # retry after a delay
+                    warning_msg = (
+                        f"HITRAN login failed due to {exc} (status code {code}). "
+                        f"Waiting {retry_delay} seconds and trying again (attempt {attempt + 1}/{max_retries})."
+                    )
+                    if attempt == max_retries - 1:
+                        warning_msg += "\nLAST ATTEMPT"
+                    print(warning_msg)
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # exponential backoff
+                else:
+                    # raise a more explicit error
+                    raise LoginError(
+                        f"HITRAN login failed due to {exc} (status code {code}). "
+                        "Please check your credentials and try again."
+                    )
+            except requests.exceptions.RequestException as exc:
+                # raise a more explicit error
+                raise LoginError(
+                    f"HITRAN login failed due to a request error: {exc}. "
+                    "Please check your network connection and try again."
+                )
+
         soup = BeautifulSoup(response.text, "html.parser")
         csrf = soup.find("input", {"name": "csrfmiddlewaretoken"})["value"]
 
@@ -377,6 +417,7 @@ def login_to_hitran(verbose=False):
         login_response = session.post(
             login_url, data=login_data, headers=headers, allow_redirects=False
         )
+        login_response.raise_for_status()  # Raise an exception for 4xx or 5xx status codes
 
         return login_response, session
 
@@ -427,16 +468,15 @@ def login_to_hitran(verbose=False):
     email, password = setup_credentials()
     login_response, session = attempt_login(email, password)
 
+    # TO-DO: the function is_login_successful is likely not needed anymore due to definition of attempt_login. Still, let's keep it to make sure to fail in case of problems.
     if is_login_successful(login_response):
         if verbose:
             print("Login successful.")
         store_credentials(email, password)
         return session
     else:
-        if verbose:
-            print(f"Login failed: {login_response.status_code}")
-        raise OSError(
-            "HITRAN login failed. Please ensure you entered correct credentials from https://hitran.org/login/"
+        raise OSError(  # Status code guide: https://www.geeksforgeeks.org/computer-networks/http-status-codes-successful-responses/
+            f"HITRAN login failed.\nStatus_code of the login attempt: {login_response.status_code} \nA common mistake: please ensure you entered correct credentials from https://hitran.org/login/"
         )
 
 

@@ -133,6 +133,7 @@ def test_fetch_hitemp_OH_pytables(verbose=True, *args, **kwargs):
     )
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
@@ -234,6 +235,7 @@ def test_fetch_hitemp_OH_vaex(verbose=True, *args, **kwargs):
 #     assert basename(local_files[0]).startswith("CO2-02_02500-03000_HITEMP2010.")
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
@@ -322,6 +324,7 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
     assert len(df) == Nlines
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.download_large_databases
@@ -412,6 +415,7 @@ def test_partial_loading(*args, **kwargs):
     assert set(df.iso.unique()) == {1, 2}
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.fast
 @pytest.mark.needs_connection
 @pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
@@ -569,6 +573,7 @@ def test_calc_hitemp_CO_noneq(verbose=True, *args, **kwargs):
     )
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.download_large_databases
@@ -590,11 +595,11 @@ if __name__ == "__main__":
     #     HITEMPDatabaseManager,
     #     )
     # from radis.misc.config import getDatabankList
-    test_partial_loading()
+    # test_partial_loading()
     # test_partial_loading_vaex()
 
     # test_fetch_hitemp_OH_pytables()
-    # test_fetch_hitemp_OH_vaex()
+    test_fetch_hitemp_OH_vaex()
 
     # test_fetch_hitemp_all_molecules("OH")
     # test_fetch_hitemp_all_molecules("CO")

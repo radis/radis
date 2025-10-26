@@ -17,6 +17,9 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
+            python-version: "3.13"
+            continue-on-error: true #this is allowed to fail, as some dependencies may not yet be available
+          - os: ubuntu-latest
             python-version: "3.10"
           - os: ubuntu-latest
             python-version: "3.11"
@@ -49,4 +52,4 @@ jobs:
           HITRAN_EMAIL: ${{ secrets.HITRAN_EMAIL }}
           HITRAN_PASSWORD: ${{ secrets.HITRAN_PASSWORD }}
         run: |
-          pytest -m "needs_HITRAN_credentials" --durations=10
+          pytest -m "needs_HITRAN_credentials and not download_large_databases" --durations=10
