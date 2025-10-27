@@ -83,8 +83,8 @@ def test_calc_exomol_spectrum(verbose=True, plot=True, *args, **kwargs):
         s.plot()
 
 
-@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
+@pytest.mark.needs_HITRAN_credentials
 def test_calc_exomol_vs_hitemp(verbose=True, plot=True, *args, **kwargs):
     """Auto-fetch and calculate a CO spectrum from the ExoMol database
     (HITEMP lineset) and compare to HITEMP (on the HITRAN server)

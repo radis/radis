@@ -818,11 +818,11 @@ def _run_testcases(verbose=True, plot=True):
 
     # test_input_wunit()
     # test_linestrength_calculations()
-    # test_export_populations(plot=plot, verbose=verbose)
+    test_export_populations(plot=plot, verbose=verbose)
     # test_export_rovib_fractions(plot=plot, verbose=verbose)
     # test_populations_CO2_hamiltonian(plot=plot, verbose=verbose)
     # test_optically_thick_limit_1iso(plot=plot, verbose=verbose)
-    test_optically_thick_limit_2iso(plot=plot, verbose=verbose)
+    # test_optically_thick_limit_2iso(plot=plot, verbose=verbose)
     # test_get_wavenumber_range()
 
 

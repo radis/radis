@@ -169,6 +169,7 @@ def hit2df(
     engine="pytables",
     output="pandas",
     parse_quanta=True,
+    cache_directory_path=None,
     fast_parsing=True,
 ):
     """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe
@@ -205,6 +206,8 @@ def hit2df(
         Default ``True``.
     output : str
         output format of data as pandas Dataformat or vaex Dataformat
+    cache_directory_path : str or None, optional
+        Directory to store/read cache files. If None, use the directory of `fname`.
 
     Returns
     -------
@@ -258,7 +261,15 @@ def hit2df(
     columns = columns_2004
 
     # Use cache file if possible
-    fcache = DataFileManager(engine).cache_file(fname)
+    if cache_directory_path:
+        base_filename = os.path.basename(fname)
+        possible_cache_file = os.path.join(cache_directory_path, base_filename)
+        fcache = DataFileManager(engine).cache_file(possible_cache_file)
+    else:
+        fcache = DataFileManager(engine).cache_file(
+            fname
+        )  # Use default cache directory
+
     if cache and exists(fcache):
         relevant_if_metadata_above = (
             {"wavenum_max": load_wavenum_min} if load_wavenum_min else {}
@@ -839,25 +850,35 @@ def _parse_HITRAN_class5(df, verbose=True, dataframe_type="pandas"):
 
         return pd.concat([df, dgu, dgl], axis=1)
     elif dataframe_type == "vaex":
-        # 1. Parse
-        extracted_values = df["globu"].str.extract_regex(
-            pattern=r"[ ]{6}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<ru>\d)"
-        )
+        # Define slices for extracting values from globu and globl
+        _GLOBU_SLICES = {
+            "v1u": (6, 8),
+            "v2u": (8, 10),
+            "l2u": (10, 12),
+            "v3u": (12, 14),
+            "ru": (14, 15),
+        }
+        _GLOBL_SLICES = {
+            "v1l": (6, 8),
+            "v2l": (8, 10),
+            "l2l": (10, 12),
+            "v3l": (12, 14),
+            "rl": (14, 15),
+        }
 
-        extract_columns(df, extracted_values, ["v1u", "v2u", "l2u", "v3u", "ru"])
+        for name, (i0, i1) in _GLOBU_SLICES.items():
+            df[name] = df["globu"].str.slice(i0, i1).str.strip()
 
-        extracted_values = df["globl"].str.extract_regex(
-            pattern=r"[ ]{6}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})(?P<rl>\d)"
-        )
+        for name, (i0, i1) in _GLOBL_SLICES.items():
+            df[name] = df["globl"].str.slice(i0, i1).str.strip()
 
-        extract_columns(df, extracted_values, ["v1l", "v2l", "l2l", "v3l", "rl"])
+        # Replace spaces with empty strings for numeric columns
+        for col in ["v1u", "v2u", "l2u", "v3u", "v1l", "v2l", "l2l", "v3l"]:
+            df[col] = df[col].str.replace(" ", "")
 
-        # # 2. Convert to numeric
-        # cast_to_int64_with_missing_values(
-        #     df,
-        #     ["v1u", "v2u", "l2u", "v3u", "ru", "v1l", "v2l", "l2l", "v3l", "rl"],
-        #     dataframe_type=dataframe_type,
-        # )
+        numeric_cols = list(_GLOBU_SLICES.keys()) + list(_GLOBL_SLICES.keys())
+        for col in numeric_cols:
+            df[col] = df[col].astype("int64")
 
         # 3. Clean
         df.drop("globu", inplace=True)
@@ -1502,25 +1523,25 @@ def _parse_HITRAN_group2(df, verbose=True, dataframe_type="pandas"):
         return pd.concat([df, dgu, dgl], axis=1)
     elif dataframe_type == "vaex":
         # 1.Parse
-        extracted_values = df["locu"].str.extract_regex(pattern=r"[ ]{10}(?P<Fu>.{5})")
-        extract_columns(df, extracted_values, ["Fu"])
+        _LOCU_SLICES = {
+            "Fu": (10, 15),
+        }
 
-        # dgu = df["locu"].astype(str).str.extract(r"[ ]{10}(?P<Fu>.{5})", expand=True)
-        # Ref [1] : locl
-        # --------------
-        #     | Br  | J'' | Sym''| F'' |
-        # 5X  | A1  | I3  | A1   | A5  |
+        _LOCL_SLICES = {
+            "branch": (5, 6),
+            "jl": (6, 9),
+            "syml": (9, 10),
+            "Fl": (10, 15),
+        }
 
-        extracted_values = df["locl"].str.extract_regex(
-            pattern=r"[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<syml>.)(?P<Fl>.{5})"
-        )
+        for name, (i0, i1) in _LOCU_SLICES.items():
+            df[name] = df["locu"].str.slice(i0, i1).str.strip()
 
-        extract_columns(df, extracted_values, ["branch", "jl", "syml", "Fl"])
+        for name, (i0, i1) in _LOCL_SLICES.items():
+            df[name] = df["locl"].str.slice(i0, i1).str.strip()
 
-        # # 2. Convert to numeric
-        # cast_to_int64_with_missing_values(
-        #     df, ["Fu", "branch", "jl", "syml", "Fl"], dataframe_type=dataframe_type
-        # )
+        df["jl"] = df["jl"].str.replace(" ", "")  # remove spaces first
+        df["jl"] = df["jl"].astype("int64")
 
         # 3. Clean
         df.drop("locu", inplace=True)

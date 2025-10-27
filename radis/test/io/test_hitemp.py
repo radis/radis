@@ -16,6 +16,7 @@ from radis.api.hitempapi import (
 from radis.io.hitemp import fetch_hitemp
 from radis.misc.config import getDatabankList
 from radis.misc.utils import NotInstalled, not_installed_vaex_args
+from radis.tools.read_wav_index import get_key_pairs
 
 try:
     import vaex
@@ -25,9 +26,9 @@ except ImportError:
 # pytestmark = pytest.mark.random_order(disabled=True)
 
 
-@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.fast
+@pytest.mark.needs_HITRAN_credentials
 def test_no_redownload(*args, **kwargs):
     """Test that modification time for 2 successive hitemp fetch is the same, i.e.,
     there is no redownload"""
@@ -134,6 +135,7 @@ def test_fetch_hitemp_OH_pytables(verbose=True, *args, **kwargs):
 
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
 def test_fetch_hitemp_OH_vaex(verbose=True, *args, **kwargs):
     """Test proper download of HITEMP OH database, with two engines.
@@ -235,8 +237,45 @@ def test_fetch_hitemp_OH_vaex(verbose=True, *args, **kwargs):
 
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
+@pytest.mark.needs_HITRAN_credentials
+def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
+    """Test partial download of HITEMP CO2 2024 database."""
+    from posixpath import basename
+
+    df, local_files = fetch_hitemp(
+        "CO2",
+        load_wavenum_min=0,  # cm-1
+        load_wavenum_max=100,
+        verbose=3,
+        return_local_path=True,
+    )
+
+    assert df.shape[1] == 24
+    assert len(local_files) == 1
+    assert basename(local_files[0]).startswith("CO2_02_00000-00261_HITEMP2024.")
+
+
+def test_read_wav_index():
+    """Test reading the read_wav_index.json file"""
+    all_pairs = get_key_pairs(240, 600)
+    print(all_pairs)
+    expected_pairs = [
+        (1.1e-06, 261.1800004),
+        (261.1800004, 437.4980801),
+        (437.4980801, 507.8915201),
+        (507.8915201, 556.4873906),
+        (556.4873906, 594.0994902),
+        (594.0994902, 622.0132301),
+    ]
+    assert all_pairs == expected_pairs
+
+
+@pytest.mark.needs_connection
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.download_large_databases
-@pytest.mark.parametrize("molecule", [mol for mol in HITEMP_MOLECULES])
+@pytest.mark.parametrize(
+    "molecule", [mol for mol in HITEMP_MOLECULES if mol not in ["CO2"]]
+)
 def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
     """Test fetch HITEMP for all molecules whose download URL is available.
 
@@ -287,8 +326,11 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
 
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.download_large_databases
-@pytest.mark.parametrize("molecule", [mol for mol in HITEMP_MOLECULES])
+@pytest.mark.parametrize(
+    "molecule", [mol for mol in HITEMP_MOLECULES if mol not in ["CO2", "H2O"]]
+)
 def test_fetch_hitemp_all_molecules_2010_version(
     molecule, verbose=True, *args, **kwargs
 ):
@@ -314,9 +356,9 @@ def test_fetch_hitemp_all_molecules_2010_version(
     assert f"HITEMP-{molecule}-2010" in getDatabankList()
 
 
-@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.fast
 @pytest.mark.needs_connection
+@pytest.mark.needs_HITRAN_credentials
 def test_partial_loading(*args, **kwargs):
     """Assert that using partial loading of the database works`"""
 
@@ -377,6 +419,7 @@ def test_partial_loading(*args, **kwargs):
 @pytest.mark.fast
 @pytest.mark.needs_connection
 @pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
+@pytest.mark.needs_HITRAN_credentials
 def test_partial_loading_vaex(*args, **kwargs):
     """Assert that using partial loading of the database works
 
@@ -421,9 +464,9 @@ def test_partial_loading_vaex(*args, **kwargs):
     assert set(df.iso.unique()) == {2, 3}
 
 
-@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.fast
 @pytest.mark.needs_connection
+@pytest.mark.needs_HITRAN_credentials
 def test_calc_hitemp_spectrum(*args, **kwargs):
     """
     Test direct loading of HDF5 files
@@ -454,9 +497,9 @@ def test_calc_hitemp_spectrum(*args, **kwargs):
     return
 
 
-@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.fast
 @pytest.mark.needs_connection
+@pytest.mark.needs_HITRAN_credentials
 def test_calc_hitemp_spectrum_2010_version(*args, **kwargs):
     """
     Test direct loading of HDF5 files 2010 version
@@ -487,8 +530,8 @@ def test_calc_hitemp_spectrum_2010_version(*args, **kwargs):
     )
 
 
-@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
+@pytest.mark.needs_HITRAN_credentials
 def test_calc_hitemp_CO_noneq(verbose=True, *args, **kwargs):
     """Test proper download of HITEMP CO database.
 
@@ -532,6 +575,7 @@ def test_calc_hitemp_CO_noneq(verbose=True, *args, **kwargs):
 
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.download_large_databases
 def test_parse_hitemp_missing_labels_issue280(*args, **kwargs):
     """Test dtype problems resulting from missing labels

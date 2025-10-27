@@ -146,7 +146,17 @@ class DataFileManager(object):
             load certain lines only. See :py:func:`~radis.api.hdf5.hdf2df`
         """
         # a bit brutal but simply removes the columns that raise the problem in #656 for CO2
-        if "CO2" in str(file):  # file can be a WindowsPath type
+        # Check if vaex is available before trying to access its classes
+        is_vaex_dataframe = False
+        if not isinstance(vaex, NotInstalled):
+            try:
+                is_vaex_dataframe = isinstance(df, vaex.dataframe.DataFrameLocal)
+            except AttributeError:
+                pass
+
+        if (
+            "CO2" in str(file) and not is_vaex_dataframe
+        ):  # file can be a WindowsPath type
             bad_columns = [
                 "Fl",
                 "Fu",

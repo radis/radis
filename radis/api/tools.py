@@ -69,6 +69,10 @@ def parse_hitran_file(fname, columns, count=-1, output="pandas", molecule=None):
     df = _ndarray2df(data, columns, linereturnformat, molecule=molecule)
 
     if output == "vaex":
+        if isinstance(vaex, NotInstalled):
+            raise ImportError(
+                "Vaex is not available. Please install vaex or use a different engine."
+            )
         df = vaex.from_pandas(df)
     return df
 
@@ -296,18 +300,53 @@ def replace_PQR_with_m101(df):
 
     # Then do the actual mapping
     if df.dtypes["branch"] != np.float64:
-        mapping = {"P": -1, "Q": 0, "R": 1, "O": -2, "S": 2}
+        mapping = {
+            "P": -1,
+            "Q": 0,
+            "R": 1,
+            "O": -2,
+            "S": 2,
+            # Also handle string numeric values for fast_parsing
+            "0": 0,
+            "1": 1,
+            "2": 2,
+            "-1": -1,
+            "-2": -2,
+        }
+        valid_values = [-2, -1, 0, 1, 2]
+
         if df_type == pd.DataFrame:  # pandas
             pd.set_option("future.no_silent_downcasting", True)
             new_col = df["branch"].replace(mapping).infer_objects(copy=False)
             pd.set_option("future.no_silent_downcasting", False)
+
+            invalid_values = new_col[~new_col.isin(valid_values)]
+            # Raise a warning if there are branch values outside valid_values
+            if not invalid_values.empty:
+                invalid_indices = invalid_values.index
+                warn(
+                    f"Invalid values found in 'branch' column.\n"
+                    f"The following branch values are not within [-2, -1, 0, 1, 2] (only 5 first index out {len(invalid_indices)} of are shown): \n"
+                    f"{df.loc[invalid_indices[:5], :]}",
+                    UserWarning,
+                )
         else:  # vaex
             new_col = df["branch"].map(mapping, allow_missing=True)
+
+            # invalid_values = df["branch"][~new_col.isin(valid_values)] #not implemented in vaex
+            is_invalid = ~new_col.isin(valid_values)
+            # Raise a warning if there are branch values outside valid_values
+            if is_invalid.unique() != [False]:
+                invalid_indices = invalid_values.index
+                warn(
+                    "Invalid values found in 'branch' column.\nValid values are branch = [-2, -1, 0, 1, 2]",
+                    UserWarning,
+                )
+
+        new_col = new_col.astype("float")
         df["branch"] = new_col
 
-    try:
-        assert df.dtypes["branch"] == np.int64
-    except AssertionError:
+    if df.dtypes["branch"] not in (int, float):
         warn(
             message=(
                 f"Expected branch data type to be 'int64', "
