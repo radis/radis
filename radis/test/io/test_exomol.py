@@ -5,9 +5,22 @@ Created on Mon Jul 19 22:44:39 2021
 @author: erwan
 """
 
+import astropy.units as u
 import pytest
 
 from radis.io.exomol import get_exomol_database_list, get_exomol_full_isotope_name
+
+conditions = {
+    "wmin": 2002 / u.cm,
+    "wmax": 2300 / u.cm,
+    "molecule": "CO",
+    "isotope": "1",
+    "pressure": 1.01325,  # bar
+    "mole_fraction": 0.1,
+    "path_length": 1,  # cm
+    "broadening_method": "fft",
+    "verbose": True,
+}
 
 
 @pytest.mark.fast
@@ -46,32 +59,31 @@ def test_exomol_parsing_functions(verbose=True, *args, **kwargs):
                 assert dat in known_databases
 
 
+@pytest.mark.fast
 @pytest.mark.needs_connection
 def test_calc_exomol_spectrum(verbose=True, plot=True, *args, **kwargs):
-    """Auto-fetch and calculate a SiO spectrum from the ExoMol database
+    """Auto-fetch and calculate a CO spectrum from the ExoMol database
 
     https://github.com/radis/radis/pull/320#issuecomment-884508206
     """
-    from radis import calc_spectrum
+    from radis import SpectrumFactory
 
-    s = calc_spectrum(
-        1080,
-        1320,  # cm-1
-        molecule="SiO",
-        isotope="1",
-        pressure=1.01325,  # bar
-        Tgas=1000,  # K
-        mole_fraction=0.1,
-        path_length=1,  # cm
-        broadening_method="fft",
-        databank=("exomol", "EBJT"),
-        verbose=verbose,
+    sf = SpectrumFactory(**conditions)
+
+    sf.fetch_databank(
+        source="exomol",
+        broadf=False,
+        broadf_download=False,  # accelerates the test!
     )
-    s.apply_slit(1, "cm-1")  # simulate an experimental slit
+
+    # Generating a Spectrum
+    s = sf.eq_spectrum(Tgas=300, path_length=1)
+
     if plot:
-        s.plot("radiance")
+        s.plot()
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 def test_calc_exomol_vs_hitemp(verbose=True, plot=True, *args, **kwargs):
     """Auto-fetch and calculate a CO spectrum from the ExoMol database
@@ -79,33 +91,24 @@ def test_calc_exomol_vs_hitemp(verbose=True, plot=True, *args, **kwargs):
 
     https://github.com/radis/radis/pull/320#issuecomment-884508206
     """
-    import astropy.units as u
 
-    from radis import calc_spectrum
+    from radis import SpectrumFactory
 
-    conditions = {
-        "wmin": 2002 / u.cm,
-        "wmax": 2300 / u.cm,
-        "molecule": "CO",
-        "isotope": "2",
-        "pressure": 1.01325,  # bar
-        "Tgas": 1000,  # K
-        "mole_fraction": 0.1,
-        "path_length": 1,  # cm
-        "broadening_method": "fft",
-        "verbose": True,
-    }
+    sf = SpectrumFactory(**conditions)
 
-    s_exomol = calc_spectrum(
-        **conditions,
-        databank="exomol",
-        name="EXOMOL (default broadening)",  # June 2017, default ref is Li2015
+    # ExoMol
+    sf.fetch_databank(
+        source="exomol",
+        broadf=False,
+        broadf_download=False,  # accelerates the test!
     )
-    s_hitemp = calc_spectrum(
-        **conditions,
-        databank="hitemp",
-        name="HITEMP (Air broadened)",
+    s_exomol = sf.eq_spectrum(Tgas=1000, path_length=1)
+
+    sf.fetch_databank(
+        source="hitemp",
     )
+    s_hitemp = sf.eq_spectrum(Tgas=1000, path_length=1, name="HITEMP (Air broadened)")
+
     if plot:
         s_exomol.plot(
             lw=3,

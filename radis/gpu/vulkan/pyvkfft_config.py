@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-""" Global configuration variables. The approach is adapted
- from Numba's config.py
+"""Global configuration variables. The approach is adapted
+from Numba's config.py
 """
 import os
 

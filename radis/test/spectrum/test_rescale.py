@@ -49,8 +49,6 @@ def test_compression(verbose=True, warnings=True, *args, **kwargs):
         "xsection": True,
     }
 
-    return True
-
 
 @pytest.mark.fast
 def test_update_transmittance(verbose=True, warnings=True, *args, **kwargs):
@@ -93,8 +91,6 @@ def test_update_transmittance(verbose=True, warnings=True, *args, **kwargs):
     assert np.allclose(T1, T2)
     assert np.allclose(T1, T3)
     assert np.allclose(T1, T4)
-
-    return True
 
 
 def test_get_recompute(verbose=True, *args, **kwargs):
@@ -274,7 +270,7 @@ def test_rescale_vs_direct_computation(verbose=True, *args, **kwargs):
                             f"Checked {var} recomputed from {vars_needed} is the same"
                         )
 
-    #%%
+    # %%
     # Nonequilibrium spectrum, computed in wavenumber
     # -----------------------------------------------
 
@@ -350,7 +346,7 @@ def test_rescale_vs_direct_computation(verbose=True, *args, **kwargs):
     if verbose >= 2:
         radis.config["DEBUG_MODE"] = DEBUG_MODE
 
-    #%%
+    # %%
 
 
 def test_recompute_equilibrium(verbose=True, warnings=True, plot=True, *args, **kwargs):
@@ -435,18 +431,13 @@ def test_rescale_all_quantities(verbose=True, warnings=True, *args, **kwargs):
         all_paths = update_paths[quantity]
         if verbose:
             printm(
-                "{0} can be recomputed from {1}".format(
-                    quantity,
-                    " or ".join(["&".join(combinations) for combinations in all_paths]),
-                )
+                f"{quantity} can be recomputed from {' or '.join(['&'.join(combinations) for combinations in all_paths])}"
             )
 
         # Now let's test all paths
         for combinations in all_paths:
             if verbose:
-                printm(
-                    "> computing {0} from {1}".format(quantity, "&".join(combinations))
-                )
+                printm(f"> computing {quantity} from {'&'.join(combinations)}")
             s = s0.copy()
             # Delete all other quantities
             for k in s.get_vars():
@@ -573,7 +564,6 @@ def _run_all_tests(verbose=True, warnings=True, *args, **kwargs):
     test_rescale_all_quantities(verbose=verbose, *args, **kwargs)
     test_xsections(*args, **kwargs)
     test_astropy_units(verbose=True, warnings=True, *args, **kwargs)
-    return True
 
 
 if __name__ == "__main__":

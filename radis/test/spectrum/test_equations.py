@@ -13,7 +13,7 @@ def test_equations(*args, **kwargs):
     import radis
     from radis.phys.blackbody import planck, planck_wn
 
-    s = radis.test_spectrum(verbose=False)
+    s = radis.spectrum_test(verbose=False)
     s.apply_slit(0.5, "nm")
 
     for k in list(s._q.keys()):  # reset all quantities

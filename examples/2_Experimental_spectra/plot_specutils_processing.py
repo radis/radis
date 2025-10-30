@@ -17,12 +17,12 @@ noisy region, then determine the lines using :py:func:`~specutils.fitting.find_l
 import astropy.units as u
 import numpy as np
 
-from radis import test_spectrum
+from radis import spectrum_test
 
 """ We create a synthetic CO spectrum"""
 
 s = (
-    test_spectrum(molecule="CO", wavenum_min=2000, wavenum_max=2030)
+    spectrum_test(molecule="CO", wavenum_min=2000, wavenum_max=2030)
     .apply_slit(1.5, "nm")
     .take("radiance")
 )
@@ -32,19 +32,29 @@ s_exp = s + noise
 
 s_exp.plot()
 
-#%%
+# %%
 # Determine the noise level by selecting a noisy region from the graph above :
 
 spectrum = s_exp.to_specutils()
 
 from specutils import SpectralRegion
 from specutils.manipulation import noise_region_uncertainty
+from specutils.spectra import Spectrum1D
 
 noise_region = SpectralRegion(2010.5 / u.cm, 2009.5 / u.cm)
 spectrum = noise_region_uncertainty(spectrum, noise_region)
+if not isinstance(spectrum, Spectrum1D):
+    spectrum = Spectrum1D(
+        flux=spectrum.flux,
+        spectral_axis=spectrum.spectral_axis,
+        uncertainty=getattr(spectrum, "uncertainty", None),
+        wcs=getattr(spectrum, "wcs", None),
+        mask=getattr(spectrum, "mask", None),
+        meta=getattr(spectrum, "meta", None),
+    )
 
 
-#%%
+# %%
 # Find lines :
 
 from specutils.fitting import find_lines_threshold
@@ -63,7 +73,7 @@ s.plot(nfig="same")
 plt.axvspan(noise_region.lower.value, noise_region.upper.value, color="b", alpha=0.1)
 
 
-#%%
+# %%
 # Note: we can also create a RADIS spectrum object from Specutils
 # :py:class:`specutils.spectra.spectrum1d.Spectrum1D` :
 

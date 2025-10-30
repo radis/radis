@@ -317,7 +317,7 @@ def test_compare_torch_CO2(
     assert get_residual(stot_corr, sexp, "radiance") < 0.02
 
     if verbose:
-        print(("Finished test_compare_torch_CO2 in {0:.0f}s".format(time() - t0)))
+        print(f"Finished test_compare_torch_CO2 in {time() - t0:.0f}s")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-
-"""
+""" """
 
 from radis.db.molparam import MOLPARAMS_EXTRA_PATH, MolParams
 

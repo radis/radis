@@ -35,7 +35,7 @@ spectrum. See the :ref:`Calculate a large spectrum by part <example_large_range_
 """
 
 
-#%%
+# %%
 import astropy.units as u
 
 from radis import calc_spectrum, config
@@ -46,7 +46,10 @@ config["MISSING_BROAD_COEF"] = "air"
 s = calc_spectrum(
     wmin=0.5 * u.um,
     wmax=15 * u.um,  # cm-1
-    mole_fraction={"CO2": 420e-6, "H2O": 0.02},
+    mole_fraction={
+        "CO2": 425.48e-6,
+        "H2O": 0.02,
+    },  # CO2 as of August 2025, see https://gml.noaa.gov/ccgg/trends/
     isotope="1,2,3",
     pressure=1.01325,  # bar
     Tgas=300,  # K
@@ -57,7 +60,7 @@ s = calc_spectrum(
 )
 
 
-#%%
+# %%
 # Plot low and high resolution spectra on the same graph :
 #
 s.apply_slit(10, "nm")
@@ -68,7 +71,7 @@ s.plot("transmittance_noslit", wunit="nm", color="k", alpha=0.1, nfig="same")
 s.plot("transmittance", wunit="nm", color="k", nfig="same")
 
 
-#%%
+# %%
 # Print some details about the computed spectrum :
 # We could also simply use `print(s)`
 

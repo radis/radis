@@ -29,8 +29,6 @@ def _run_testcases(verbose=True, *args, **kwargs):
     test_json_config_file()
     test_databanks()
 
-    return True
-
 
 if __name__ == "__main__":
     print("test config files:", _run_testcases())

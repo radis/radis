@@ -33,22 +33,13 @@ def test_reftracker(verbose=True, *args, **kwargs):
     assert dict(rt) == dict(rt2)
 
 
+@pytest.mark.fast
 @pytest.mark.needs_connection
 def test_citations_in_eq_spectrum(verbose=False, *args, **kwargs):
 
-    from radis import calc_spectrum
+    from radis import spectrum_test
 
-    s = calc_spectrum(
-        1900,
-        2300,  # cm-1
-        molecule="CO",
-        isotope="1,2,3",
-        pressure=1.01325,  # bar
-        Tgas=700,  # K
-        mole_fraction=0.1,
-        path_length=1,  # cm
-        databank="hitran",
-    )  # TODO: replace with `s = radis.test_spectrum()`
+    s = spectrum_test()
 
     if verbose:
         s.cite()
@@ -59,6 +50,7 @@ def test_citations_in_eq_spectrum(verbose=False, *args, **kwargs):
     assert doi["TIPS-2020"] in s.references
 
 
+@pytest.mark.fast
 @pytest.mark.needs_connection
 def test_citations_in_noneq_spectrum(verbose=False, *args, **kwargs):
 
@@ -94,20 +86,9 @@ def test_citations_serialized(verbose=False, *args, **kwargs):
     import os
     from os.path import exists
 
-    from radis import calc_spectrum
+    from radis import spectrum_test
 
-    s = calc_spectrum(
-        1900,
-        2300,  # cm-1
-        molecule="CO",
-        isotope="1,2,3",
-        pressure=1.01325,  # bar
-        Tvib=2000,  #
-        Trot=300,
-        mole_fraction=0.1,
-        path_length=1,  # cm
-        databank="hitran",
-    )  # TODO: replace with `s = radis.test_spectrum()`
+    s = spectrum_test()
     s.store("test_refs.spec", if_exists_then="replace")
     from radis import load_spec
 
@@ -121,23 +102,13 @@ def test_citations_serialized(verbose=False, *args, **kwargs):
         s2.cite()
 
 
+@pytest.mark.fast
 @pytest.mark.needs_connection
 def test_citations_multislabs(*args, **kwargs):
 
-    from radis import MergeSlabs, calc_spectrum
+    from radis import MergeSlabs, spectrum_test
 
-    s = calc_spectrum(
-        1900,
-        2300,  # cm-1
-        molecule="CO",
-        isotope="1,2,3",
-        pressure=1.01325,  # bar
-        Tvib=2000,  #
-        Trot=300,
-        mole_fraction=0.1,
-        path_length=1,  # cm
-        databank="hitran",
-    )  # TODO: replace with `s = radis.test_spectrum()`
+    s = spectrum_test()
     s2 = s > s
     assert s2.references == s.references
 

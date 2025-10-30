@@ -28,7 +28,7 @@ import pytest
 def test_utils(*args, **kwargs):
     from radis.misc.utils import _test
 
-    return _test(*args, **kwargs)
+    assert _test(*args, **kwargs)
 
 
 @pytest.mark.fast
@@ -53,8 +53,6 @@ def test_progress_bar(*args, **kwargs):
         sleep(rand() * 3e-3)
     pb.done()
 
-    return True  # nothing implemented
-
 
 @pytest.mark.fast
 def test_norm():
@@ -67,7 +65,10 @@ def test_norm():
 
     c = norm(a)
     d = norm(c, normby=b)
-    return norm(d, how="mean")
+
+    result = norm(d, how="mean")
+
+    assert isinstance(result, np.ndarray)
 
 
 @pytest.mark.fast
@@ -80,7 +81,10 @@ def test_normOn():
     I = np.array([10, 9, 8, 7, 6, 5, 0, 9])
     w = np.arange(8)
 
-    return norm_on(I, w, wmin=2, wmax=5)
+    expected = np.array([1.25, 1.125, 1.0, 0.875, 0.75, 0.625, 0.0, 1.125])
+    result = norm_on(I, w, wmin=2, wmax=5)
+
+    assert np.allclose(result, expected)
 
 
 @pytest.mark.fast
@@ -94,7 +98,8 @@ def test_allclose():
     b = a + 0.1
     c = b
     c[0] = float("NaN")
-    return (array_allclose(a, b), array_allclose(a, c))
+    assert not array_allclose(a, b)
+    assert not array_allclose(a, c)
 
 
 @pytest.mark.fast
@@ -106,7 +111,9 @@ def test_nantrapz():
 
     I = np.array([10, 9, 8, 7, float("NaN"), 5, 0, 9])
     w = np.arange(8)
-    return nantrapz(I, w, dx=1.0, axis=-1)
+
+    result = nantrapz(I, w, dx=1.0, axis=-1)
+    assert np.isclose(result, 44.5, rtol=1e-5)
 
 
 def _run_testcases(verbose=True, *args, **kwargs):
@@ -117,7 +124,6 @@ def _run_testcases(verbose=True, *args, **kwargs):
     test_allclose()
     test_normOn()
     test_norm()
-    return True
 
 
 if __name__ == "__main__":

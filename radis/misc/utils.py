@@ -92,7 +92,7 @@ class Default:
     """
 
     def __repr__(self):
-        return "{}".format(self.value)
+        return f"{self.value}"
 
     def __init__(self, value):
         self.value = value
@@ -123,9 +123,9 @@ def get_default_arg(func, arg):
     signature = inspect.signature(func)
     items = dict(signature.parameters.items())
     if not arg in items:
-        raise ValueError("Function {0} has no argument `{1}`".format(func, arg))
+        raise ValueError(f"Function {func} has no argument `{arg}`")
     elif items[arg].default is inspect.Parameter.empty:
-        raise ValueError("No default value for argument `{0}` in {1}".format(arg, func))
+        raise ValueError(f"No default value for argument `{arg}` in {func}")
     else:
         return items[arg].default
 
@@ -166,14 +166,14 @@ class NotInstalled(object):
 
     def __getattr__(self, item):
         raise ImportError(
-            "The {0} package is required to use this "
-            "feature. {1}".format(self.__name, self.__info)
+            f"The {self.__name} package is required to use this "
+            f"feature. {self.__info}"
         )
 
     def __call__(self, *args, **kwargs):
         raise ImportError(
-            "The {0} package is required to use this "
-            "feature. {1}".format(self.__name, self.__info)
+            f"The {self.__name} package is required to use this "
+            f"feature. {self.__info}"
         )
 
 

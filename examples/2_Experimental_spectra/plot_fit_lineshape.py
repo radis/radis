@@ -79,7 +79,7 @@ if verbose:
 gfit.sort(key=lambda x: x.x_0)
 
 print("-----***********-----\nTemperature fitting:")
-#%% Get temperature from line ratio - neglecting stimulated emission
+# %% Get temperature from line ratio - neglecting stimulated emission
 from math import log
 
 E = np.array([17475.8605, 8518.1915, 3378.9537])
@@ -98,9 +98,7 @@ for index in [0, 1]:
         log(R) + log(S0[index] / S0[i0]) + step2
     )  # see Goldenstein et al. (2016), Eq. 6
     print(
-        "Line pair: {0}/{1} \t T = {2:.0f} K, fitting error of {3:.0f}%".format(
-            name[index], name[i0], temp_ratio, temp_ratio / T_ref * 100 - 100
-        )
+        f"Line pair: {name[index]}/{name[i0]} \t T = {temp_ratio:.0f} K, fitting error of {temp_ratio / T_ref * 100 - 100:.0f}%"
     )
 
 # %% Get temperature from line ratio - accounting for stimulated emission
@@ -134,9 +132,7 @@ for index in [0, 1]:
 
     temp_interp = np.interp(R_meas, R_calc, T_K)
     print(
-        "Line pair: {0}/{1} \t T = {2:.0f} K, error of {3:.0f}%".format(
-            name[index], name[i0], temp_interp, temp_interp / T_ref * 100 - 100
-        )
+        f"Line pair: { name[index]}/{name[i0]} \t T = {temp_interp:.0f} K, error of {temp_interp / T_ref * 100 - 100:.0f}%"
     )
 
 msg = """

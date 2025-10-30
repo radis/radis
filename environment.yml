@@ -12,7 +12,7 @@ channels:
 - conda-forge
 - nodefaults  # no defaults packages (only conda-forge)
 dependencies:
-- python
+- python=3.13
 - astropy>=4.3.1  # Unit aware calculations
 - astroquery>=0.4.6  # to fetch HITRAN databases
 - beautifulsoup4>=4.10.0 # parse ExoMol website
@@ -23,7 +23,7 @@ dependencies:
 - joblib  # for parallel loading of SpecDatabase
 - lmfit  # for new fitting modules
 - matplotlib
-- numpy
+- numpy>2  # Warning: numpy 2.0 is not compatible with vaex-hdf5<=0.14.1, see #869. We directly install the latest vaex-hdf5 via pip below as a workaround.
 - numba  # just-in-time compiler
 - pandas
 - plotly>=2.5.1  # for line survey HTML output
@@ -32,7 +32,7 @@ dependencies:
 - scipy>=1.4.0
 - seaborn   # other matplotlib themes
 - termcolor  # terminal colors
-- specutils
+- specutils  # spectroscopic data handling
 - pip
 - pip:
   - cryptography
@@ -50,8 +50,8 @@ dependencies:
   - ruamel.yaml
   - toml
   - tqdm
-  - vaex-core ; python_version < '3.11'
-  - vaex-hdf5 ; python_version < '3.11'
-  - vaex-viz ; python_version < '3.11'
+  - vaex-core; python_version < '3.13' #latest version 4.19 is not on conda-forge yet and install not compatible with python 3.13
+  - git+https://github.com/vaexio/vaex.git#subdirectory=packages/vaex-hdf5; python_version < '3.13' #vaex-hdf5 latest version
+  - vaex-viz; python_version < '3.13'
   - vulkan
 

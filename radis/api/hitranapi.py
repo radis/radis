@@ -26,6 +26,7 @@ import sys
 
 # from radis.test.utils import getTestFile
 import time
+import warnings
 from collections import OrderedDict
 from os.path import abspath, exists, expanduser, getmtime, join, split
 
@@ -168,6 +169,7 @@ def hit2df(
     engine="pytables",
     output="pandas",
     parse_quanta=True,
+    fast_parsing=True,
 ):
     """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe
 
@@ -198,6 +200,9 @@ def hit2df(
     parse_quanta: bool
         if ``True``, parse local & global quanta (required to identify lines
         for non-LTE calculations ; but sometimes lines are not labelled.)
+    fast_parsing: bool
+        if ``True``, uses vectorized parsing instead of regex for global quanta.
+        Default ``True``.
     output : str
         output format of data as pandas Dataformat or vaex Dataformat
 
@@ -225,12 +230,28 @@ def hit2df(
 
     :func:`~radis.api.cdsdapi.cdsd2df`
     """
+    if not fast_parsing:
+        warnings.warn(
+            "`fast_parsing=False` will be deprecated in future versions. "
+            "Please use fast_parsing=True for better performance and compatibility.",
+            FutureWarning,
+        )
+
+    if engine == "pytables" and output == "vaex":
+        raise ValueError(
+            "Incompatible options: engine='pytables' cannot be used with output='vaex'. "
+            "Please choose either:\n"
+            "- engine='pytables' with output='pandas', or\n"
+            "- engine='vaex' with output='pandas', or\n"
+            "- engine='vaex' with output='vaex' (slower)."
+        )
+
     metadata = {}
     # Last modification time of the original file :
     metadata["last_modification"] = time.ctime(getmtime(fname))
     if verbose >= 2:
-        print("Opening file {0} (cache={1})".format(fname, cache))
-        print("Last modification time: {0}".format(metadata["last_modification"]))
+        print(f"Opening file {fname} (cache={cache})")
+        print(f"Last modification time: {metadata['last_modification']}")
     if load_wavenum_min and load_wavenum_max:
         assert load_wavenum_min < load_wavenum_max
 
@@ -269,16 +290,15 @@ def hit2df(
             mol = get_molecule(int(f.read(2)))
     except UnicodeDecodeError as err:
         raise ValueError(
-            "You're trying to read a binary file {0} ".format(fname)
-            + "instead of an HITRAN file"
+            f"You're trying to read a binary file {fname} instead of an HITRAN file"
         ) from err
-
-    df = parse_hitran_file(fname, columns, output=output)
+    df = parse_hitran_file(fname, columns, output=output, molecule=mol)
     df = post_process_hitran_data(
         df,
         molecule=mol,
         dataframe_type=output,
         parse_quanta=parse_quanta,
+        fast_parsing=fast_parsing,
     )
     # cached file mode but cached file doesn't exist yet (else we had returned)
     if cache:
@@ -289,11 +309,7 @@ def hit2df(
             "wavenum_max": df.wav.max(),
         }
         if verbose:
-            print(
-                "Generating cache file {0} with metadata :\n{1}".format(
-                    fcache, new_metadata
-                )
-            )
+            print(f"Generating cache file {fcache} with metadata :\n{new_metadata}")
         from radis import __version__
 
         try:
@@ -330,6 +346,7 @@ def post_process_hitran_data(
     parse_quanta=True,
     add_HITRAN_uncertainty_code=False,
     dataframe_type="pandas",
+    fast_parsing=True,
 ):
     """Parsing non-equilibrium parameters in HITRAN/HITEMP [1]_ file to and return final Pandas Dataframe
 
@@ -353,8 +370,11 @@ def post_process_hitran_data(
         for non-LTE calculations ; but sometimes lines are not labelled.)
     add_HITRAN_uncertainty_code: bool
         if ``True``, a column which contains HITRAN uncertainty code is converted to integer and not dropped.
-    engine: str
+    dataframe_type: str
         pandas or vaex
+    fast_parsing: bool
+        if ``True``, uses vectorized parsing instead of regex for global quanta.
+        Default ``True``.
 
     Returns
     -------
@@ -380,11 +400,6 @@ def post_process_hitran_data(
 
     :func:`~radis.io.cdsd.cdsd2df`
     """
-
-    # %% Post processing
-
-    # assert one molecule per database only. Else the groupbase data reading
-    # above doesnt make sense
     nmol = len(df["id"].unique())
     if nmol == 0:
         raise ValueError("Databank looks empty")
@@ -400,21 +415,23 @@ def post_process_hitran_data(
         except IndexError:
             secondline = ""
         raise ValueError(
-            "Multiple molecules in database ({0} : {1}). Current ".format(
-                nmol, [get_molecule(idi) for idi in df["id"].unique()]
-            )
+            f"Multiple molecules in database ({nmol} : {[get_molecule(idi) for idi in df['id'].unique()]}). Current "
             + "spectral code only computes 1 species at the time. Use MergeSlabs. "
             + "Verify the parsing was correct by looking at the first row below: "
-            + "\n{0}".format(df.iloc[0])
+            + f"\n{df.iloc[0]}"
             + "\n----------------\nand the second row "
-            + "below: \n{0}".format(secondline)
+            + f"below: \n{secondline}"
         )
 
     if parse_quanta:
         # Add local quanta attributes, based on the HITRAN group
         try:
             df = parse_local_quanta(
-                df, molecule, verbose=verbose, dataframe_type=dataframe_type
+                df,
+                molecule,
+                verbose=verbose,
+                dataframe_type=dataframe_type,
+                fast_parsing=fast_parsing,
             )
         except ValueError as err:
             # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
@@ -430,7 +447,11 @@ def post_process_hitran_data(
         # Add global quanta attributes, based on the HITRAN class
         try:
             df = parse_global_quanta(
-                df, molecule, verbose=verbose, dataframe_type=dataframe_type
+                df,
+                molecule,
+                verbose=verbose,
+                dataframe_type=dataframe_type,
+                fast_parsing=fast_parsing,
             )
         except ValueError as err:
             # Empty strings (unlabelled lines) have been reported for HITEMP2010-H2O.
@@ -449,12 +470,83 @@ def post_process_hitran_data(
             replace_PQR_with_m101(df)
         if ("ierr" in df) and add_HITRAN_uncertainty_code:
             df["ierr"] = df["ierr"].astype(int64)
-        df = drop_object_format_columns(df, verbose=verbose)
+        if dataframe_type != "vaex":
+            df = drop_object_format_columns(df, verbose=verbose)
 
     return df
 
 
 # %% Hitran global quanta classes
+def _parse_HITRAN_class1_fast_parsing(df, verbose=True, dataframe_type="pandas"):
+    r"""Diatomic molecules: CO, HF, HCl, HBr, HI, N2, NO+
+
+
+    Parameters
+    ----------
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+    dataframe_type : str
+        pandas or vaex
+
+    Returns
+    -------
+        pandas Dataframe or Vaex Dataframe
+
+    Notes
+    -----
+    Uses fixed-width slicing based on HITRAN columns for speed.
+
+    HITRAN syntax [1]_ :
+
+    >>>       v
+    >>>  13x I2
+
+    References
+    ----------
+
+    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
+
+
+    """
+    # Define slice positions for upper and lower vib states
+    _GLOBU_SLICES = {
+        "vu": (13, 15),
+    }
+    _GLOBL_SLICES = {
+        "vl": (13, 15),
+    }
+
+    if dataframe_type == "vaex":
+        # Ensure string type
+        df["globu"] = df["globu"].astype(str)
+        df["globl"] = df["globl"].astype(str)
+
+        # Slice and convert in-place
+        for name, (i0, i1) in _GLOBU_SLICES.items():
+            df[name] = df["globu"].str.slice(i0, i1).str.strip().astype("int64")
+        for name, (i0, i1) in _GLOBL_SLICES.items():
+            df[name] = df["globl"].str.slice(i0, i1).str.strip().astype("int64")
+
+        # Drop originals
+        df.drop(["globu", "globl"], inplace=True)
+        return df
+
+    else:
+        # pandas path: cast to str first
+        for name, (i0, i1) in _GLOBU_SLICES.items():
+            series = (
+                df["globu"].astype(str).str.slice(i0, i1).str.strip().replace("", "0")
+            )
+            df[name] = series.astype("int64")
+        for name, (i0, i1) in _GLOBL_SLICES.items():
+            series = (
+                df["globl"].astype(str).str.slice(i0, i1).str.strip().replace("", "0")
+            )
+            df[name] = series.astype("int64")
+
+        # Drop originals
+        df.drop(columns=["globu", "globl"], inplace=True)
+        return df
 
 
 def _parse_HITRAN_class1(df, verbose=True, dataframe_type="pandas"):
@@ -774,6 +866,75 @@ def _parse_HITRAN_class5(df, verbose=True, dataframe_type="pandas"):
         return df
 
 
+def _parse_HITRAN_class6_fast_parsing(df, verbose=True, dataframe_type="pandas"):
+    r"""Parse non-linear triatomic in HITRAN [1]_: H2O, O3, SO2, NO2, HOCl, H2S, HO2, HOBr
+
+    Parameters
+    ----------
+
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+    dataframe_type : str
+        pandas or vaex
+
+    Returns
+    -------
+        pandas Dataframe or Vaex Dataframe
+    Notes
+    -----
+
+    This function is a fast parsing version that does not use regular expressions.
+    This makes it faster but less flexible. Currently, it behaves the same as the
+    equivalent regex version.
+
+    Added in PR #826.
+
+    HITRAN syntax:
+
+    >>>     v1 v2 v3
+    >>>  9x I2 I2 I2
+
+    Note: I2 in regexp: [\d ]{2}
+
+    References
+    ----------
+
+    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
+
+    """
+    _GLOBU_SLICES = {
+        "v1u": (9, 11),
+        "v2u": (11, 13),
+        "v3u": (13, 15),
+    }
+
+    _GLOBL_SLICES = {
+        "v1l": (9, 11),
+        "v2l": (11, 13),
+        "v3l": (13, 15),
+    }
+    if dataframe_type == "vaex":
+        # Vaex string slicing and assignment
+        for name, (i0, i1) in _GLOBU_SLICES.items():
+            df[name] = df["globu"].str.slice(i0, i1).str.strip().astype("int64")
+        for name, (i0, i1) in _GLOBL_SLICES.items():
+            df[name] = df["globl"].str.slice(i0, i1).str.strip().astype("int64")
+        df.drop("globu", inplace=True)
+        df.drop("globl", inplace=True)
+        return df
+    elif dataframe_type == "pandas":
+        for name, (i0, i1) in _GLOBU_SLICES.items():
+            series = df["globu"].str.slice(i0, i1).str.strip().replace("", "0")
+            df[name] = series.astype("int64")
+        for name, (i0, i1) in _GLOBL_SLICES.items():
+            series = df["globl"].str.slice(i0, i1).str.strip().replace("", "0")
+            df[name] = series.astype("int64")
+        df.drop(columns=["globu", "globl"], inplace=True)
+        return df
+    else:
+        raise NotImplementedError(dataframe_type)
+
+
 def _parse_HITRAN_class6(df, verbose=True, dataframe_type="pandas"):
     r"""Parse non-linear triatomic in HITRAN [1]_: H2O, O3, SO2, NO2, HOCl, H2S, HO2, HOBr
 
@@ -999,6 +1160,94 @@ def _parse_HITRAN_class10(df, verbose=True):
 # %% HITRAN Local quanta
 
 
+def _parse_HITRAN_group1_fast_parsing(df, verbose=True, dataframe_type="pandas"):
+    r"""Parse asymmetric rotors (:py:attr:`~radis.db.classes.HITRAN_GROUP1` ):
+    H2O, O3, SO2, NO2, HNO3, H2CO, HOCl, H2O2, COF2, H2S, HO2, HCOOH, ClONO2, HOBr, C2H4
+
+    Parameters
+    ----------
+
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+    dataframe_type : str
+        pandas or vaex
+
+    Returns
+    -------
+        pandas Dataframe or Vaex Dataframe
+
+
+    Notes
+    -----
+
+    This function is a fast parsing version that does not use regular expressions.
+    This makes it faster but less flexible. Currently, it behaves the same as the
+    equivalent regex version.
+
+    Added in PR #826.
+
+    HITRAN syntax: [1]_
+
+    References
+    ----------
+
+    .. [1] `Table 4 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
+
+
+    """
+    _LOCU_SLICES = {
+        "ju": (0, 3),
+        "Kau": (3, 6),
+        "Kcu": (6, 9),
+        "Fu": (9, 14),
+        "symu": (14, 15),
+    }
+    _LOCL_SLICES = {
+        "jl": (0, 3),
+        "Kal": (3, 6),
+        "Kcl": (6, 9),
+        "Fl": (9, 14),
+        "syml": (14, 15),
+    }
+    if dataframe_type == "vaex":
+        # Use vaex string slicing and assignment
+        for name, (i0, i1) in _LOCU_SLICES.items():
+
+            if name in ("ju", "Kau", "Kcu"):
+                df[name] = df["locu"].str.slice(i0, i1).str.strip().astype("int64")
+            else:
+                df[name] = df["locu"].str.slice(i0, i1).str.strip()
+        for name, (i0, i1) in _LOCL_SLICES.items():
+            # series = df["locl"].str.slice(i0, i1).str.strip().str.replace("", "0")
+            if name in ("jl", "Kal", "Kcl"):
+                df[name] = df["locl"].str.slice(i0, i1).str.strip().astype("int64")
+            else:
+                df[name] = df["locu"].str.slice(i0, i1).str.strip()
+        df.drop("locu", inplace=True)
+        df.drop("locl", inplace=True)
+        return df
+    elif dataframe_type == "pandas":
+        # str.slice + astype in one go
+        for name, (i0, i1) in _LOCU_SLICES.items():
+            series = df["locu"].str.slice(i0, i1).str.strip().replace("", "0")
+            if name in ("ju", "Kau", "Kcu"):
+                df[name] = series.astype("int64")
+            else:
+                df[name] = series
+
+        for name, (i0, i1) in _LOCL_SLICES.items():
+            series = df["locl"].str.slice(i0, i1).str.strip().replace("", "0")
+            if name in ("jl", "Kal", "Kcl"):
+                df[name] = series.astype("int64")
+            else:
+                df[name] = series
+
+        df.drop(columns=["locu", "locl"], inplace=True)
+        return df
+    else:
+        raise NotImplementedError(dataframe_type)
+
+
 def _parse_HITRAN_group1(df, verbose=True, dataframe_type="pandas"):
     r"""Parse asymmetric rotors (:py:attr:`~radis.db.classes.HITRAN_GROUP1` ):
     H2O, O3, SO2, NO2, HNO3, H2CO, HOCl, H2O2, COF2, H2S, HO2, HCOOH, ClONO2, HOBr, C2H4
@@ -1106,6 +1355,84 @@ def _parse_HITRAN_group1(df, verbose=True, dataframe_type="pandas"):
         del df["locl"]
 
         return pd.concat([df, dgu, dgl], axis=1)
+    else:
+        raise NotImplementedError(dataframe_type)
+
+
+def _parse_HITRAN_group2_fast_parsing(df, verbose=True, dataframe_type="pandas"):
+    r"""Parse diatomic and linear molecules (:py:attr:`~radis.db.classes.HITRAN_GROUP2` ):
+    CO2, N2O, CO, HF, HCl, HBr, HI, OCS, N2, HCN, C2H2, NO+
+
+    Parameters
+    ----------
+
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+    dataframe_type : str
+        pandas or vaex
+
+    Returns
+    -------
+        pandas Dataframe or Vaex Dataframe
+
+
+    Notes
+    -----
+
+    This function is a fast parsing version that does not use regular expressions.
+    This makes it faster but less flexible. Currently, it behaves the same as the
+    equivalent regex version.
+
+    Added in PR #836.
+
+    HITRAN syntax: [1]
+
+
+    References
+    ----------
+
+    .. [1] `Table 4 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
+
+    """
+    # Define slicing positions
+    _LOCU_SLICES = {
+        "Fu": (10, 15),
+    }
+    _LOCL_SLICES = {
+        "branch": (5, 6),
+        "jl": (6, 9),
+        "syml": (9, 10),
+        "Fl": (10, 15),
+    }
+
+    if dataframe_type == "vaex":
+        # Use vaex string slicing and assignment
+        for name, (i0, i1) in _LOCU_SLICES.items():
+            df[name] = df["locu"].str.slice(i0, i1).str.strip()
+        for name, (i0, i1) in _LOCL_SLICES.items():
+            series = df["locl"].str.slice(i0, i1).str.strip()
+            if name == "jl":
+                df[name] = series.astype("int64")
+            else:
+                df[name] = series
+        df.drop("locu", inplace=True)
+        df.drop("locl", inplace=True)
+        return df
+    elif dataframe_type == "pandas":
+        # pandas: str.slice + replace + astype
+        for name, (i0, i1) in _LOCU_SLICES.items():
+            series = df["locu"].str.slice(i0, i1).str.strip().replace("", "0")
+            df[name] = series
+
+        for name, (i0, i1) in _LOCL_SLICES.items():
+            series = df["locl"].str.slice(i0, i1).str.strip().replace("", "0")
+            if name == "jl":
+                df[name] = series.astype("int64")
+            else:
+                df[name] = series
+
+        df.drop(columns=["locu", "locl"], inplace=True)
+        return df
     else:
         raise NotImplementedError(dataframe_type)
 
@@ -1340,7 +1667,9 @@ def _parse_HITRAN_group6(df, verbose=True):
 # %% Reading function
 
 
-def parse_local_quanta(df, mol, verbose=True, dataframe_type="pandas"):
+def parse_local_quanta(
+    df, mol, verbose=True, dataframe_type="pandas", fast_parsing=True
+):
     r"""
     Parameters
     ----------
@@ -1352,9 +1681,24 @@ def parse_local_quanta(df, mol, verbose=True, dataframe_type="pandas"):
     """
 
     if mol in HITRAN_GROUP1:
-        df = _parse_HITRAN_group1(df, verbose=verbose, dataframe_type=dataframe_type)
+        if fast_parsing:
+            df = _parse_HITRAN_group1_fast_parsing(
+                df, verbose=verbose, dataframe_type=dataframe_type
+            )
+        else:
+            df = _parse_HITRAN_group1(
+                df, verbose=verbose, dataframe_type=dataframe_type
+            )
+
     elif mol in HITRAN_GROUP2:
-        df = _parse_HITRAN_group2(df, verbose=verbose, dataframe_type=dataframe_type)
+        if fast_parsing:
+            df = _parse_HITRAN_group2_fast_parsing(
+                df, verbose=verbose, dataframe_type=dataframe_type
+            )
+        else:
+            df = _parse_HITRAN_group2(
+                df, verbose=verbose, dataframe_type=dataframe_type
+            )
     elif mol in HITRAN_GROUP3:
         df = _parse_HITRAN_group3(df, verbose=verbose)
     elif mol in HITRAN_GROUP4:
@@ -1364,14 +1708,14 @@ def parse_local_quanta(df, mol, verbose=True, dataframe_type="pandas"):
     elif mol in HITRAN_GROUP6:
         df = _parse_HITRAN_group6(df, verbose=verbose)
     else:
-        raise ValueError(
-            "Unknown group for molecule {0}. Cant parse local quanta".format(mol)
-        )
+        raise ValueError(f"Unknown group for molecule {mol}. Cant parse local quanta")
 
     return df
 
 
-def parse_global_quanta(df, mol, verbose=True, dataframe_type="pandas"):
+def parse_global_quanta(
+    df, mol, verbose=True, dataframe_type="pandas", fast_parsing=True
+):
     r"""
 
     Parameters
@@ -1382,9 +1726,15 @@ def parse_global_quanta(df, mol, verbose=True, dataframe_type="pandas"):
     mol: str
         molecule name
     """
-
     if mol in HITRAN_CLASS1:
-        df = _parse_HITRAN_class1(df, verbose=verbose, dataframe_type=dataframe_type)
+        if fast_parsing:
+            df = _parse_HITRAN_class1_fast_parsing(
+                df, verbose=verbose, dataframe_type=dataframe_type
+            )
+        else:
+            df = _parse_HITRAN_class1(
+                df, verbose=verbose, dataframe_type=dataframe_type
+            )
     elif mol in HITRAN_CLASS2:
         df = _parse_HITRAN_class2(df, verbose=verbose)
     elif mol in HITRAN_CLASS3:
@@ -1394,7 +1744,14 @@ def parse_global_quanta(df, mol, verbose=True, dataframe_type="pandas"):
     elif mol in HITRAN_CLASS5:
         df = _parse_HITRAN_class5(df, verbose=verbose, dataframe_type=dataframe_type)
     elif mol in HITRAN_CLASS6:
-        df = _parse_HITRAN_class6(df, verbose=verbose, dataframe_type=dataframe_type)
+        if fast_parsing:
+            df = _parse_HITRAN_class6_fast_parsing(
+                df, verbose=verbose, dataframe_type=dataframe_type
+            )
+        else:
+            df = _parse_HITRAN_class6(
+                df, verbose=verbose, dataframe_type=dataframe_type
+            )
     elif mol in HITRAN_CLASS7:
         df = _parse_HITRAN_class7(df, verbose=verbose)
     elif mol in HITRAN_CLASS8:
@@ -1404,14 +1761,12 @@ def parse_global_quanta(df, mol, verbose=True, dataframe_type="pandas"):
     elif mol in HITRAN_CLASS10:
         df = _parse_HITRAN_class10(df, verbose=verbose)
     else:
-        raise ValueError(
-            "Unknown class for molecule {0}. Cant parse global quanta".format(mol)
-        )
+        raise ValueError(f"Unknown class for molecule {mol}. Cant parse global quanta")
 
     return df
 
 
-#%%
+# %%
 
 
 class HITRANDatabaseManager(DatabaseManager):
@@ -1519,9 +1874,7 @@ class HITRANDatabaseManager(DatabaseManager):
                         from radis.misc.printer import printr
 
                         printr(
-                            "File already exist: {0}. Deleting it.`".format(
-                                join(directory, file + ".data")
-                            )
+                            f"File already exist: {join(directory, file + '.data')}. Deleting it.`"
                         )
                         os.remove(join(directory, file + ".data"))
                 try:
@@ -1553,7 +1906,7 @@ class HITRANDatabaseManager(DatabaseManager):
                         # Isotope not defined, go to next isotope
                         continue
                     else:
-                        raise KeyError("Error: {0}".format(str(err)))
+                        raise KeyError(f"Error: {str(err)}")
                 else:
                     isotope_list.append(iso)
                     data_file_list.append(file + ".data")
@@ -1708,7 +2061,7 @@ class HITRANDatabaseManager(DatabaseManager):
             ) from e
 
 
-#%%
+# %%
 def hitranxsc(hitranXSC):
     """Parse Hitran Cross-section files manually downloaded from https://hitran.org/xsc/
     Returns a dictionary

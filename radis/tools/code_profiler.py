@@ -49,8 +49,8 @@ class CodeProfiler:
                     func_name = module_name + frame.f_code.co_name
 
                 func_name = self.stack_level * " ." + " " + func_name
-                txt = "{: <60} # {}, {}\n".format(
-                    func_name, frame.f_code.co_filename, frame.f_lineno
+                txt = (
+                    f"{func_name: <60} # {frame.f_code.co_filename}, {frame.f_lineno}\n"
                 )
                 self.dbg_out.write(txt)
                 self.memorized.add(unique_id)

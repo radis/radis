@@ -22,9 +22,10 @@ try:
 except ImportError:
     vaex = NotInstalled(*not_installed_vaex_args)
 
-pytestmark = pytest.mark.random_order(disabled=True)
+# pytestmark = pytest.mark.random_order(disabled=True)
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.fast
 def test_no_redownload(*args, **kwargs):
@@ -88,6 +89,7 @@ def test_relevant_files_filter():
     ]
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 def test_fetch_hitemp_OH_pytables(verbose=True, *args, **kwargs):
     """Test proper download of HITEMP OH database, with two engines.
@@ -130,6 +132,7 @@ def test_fetch_hitemp_OH_pytables(verbose=True, *args, **kwargs):
     )
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
 def test_fetch_hitemp_OH_vaex(verbose=True, *args, **kwargs):
@@ -230,6 +233,7 @@ def test_fetch_hitemp_OH_vaex(verbose=True, *args, **kwargs):
 #     assert basename(local_files[0]).startswith("CO2-02_02500-03000_HITEMP2010.")
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.download_large_databases
 @pytest.mark.parametrize("molecule", [mol for mol in HITEMP_MOLECULES])
@@ -281,6 +285,7 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
     assert len(df) == Nlines
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.download_large_databases
 @pytest.mark.parametrize("molecule", [mol for mol in HITEMP_MOLECULES])
@@ -309,6 +314,7 @@ def test_fetch_hitemp_all_molecules_2010_version(
     assert f"HITEMP-{molecule}-2010" in getDatabankList()
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.fast
 @pytest.mark.needs_connection
 def test_partial_loading(*args, **kwargs):
@@ -367,6 +373,7 @@ def test_partial_loading(*args, **kwargs):
     assert set(df.iso.unique()) == {1, 2}
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.fast
 @pytest.mark.needs_connection
 @pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
@@ -414,6 +421,7 @@ def test_partial_loading_vaex(*args, **kwargs):
     assert set(df.iso.unique()) == {2, 3}
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.fast
 @pytest.mark.needs_connection
 def test_calc_hitemp_spectrum(*args, **kwargs):
@@ -446,6 +454,7 @@ def test_calc_hitemp_spectrum(*args, **kwargs):
     return
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.fast
 @pytest.mark.needs_connection
 def test_calc_hitemp_spectrum_2010_version(*args, **kwargs):
@@ -478,6 +487,7 @@ def test_calc_hitemp_spectrum_2010_version(*args, **kwargs):
     )
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 def test_calc_hitemp_CO_noneq(verbose=True, *args, **kwargs):
     """Test proper download of HITEMP CO database.
@@ -520,6 +530,7 @@ def test_calc_hitemp_CO_noneq(verbose=True, *args, **kwargs):
     )
 
 
+@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.download_large_databases
 def test_parse_hitemp_missing_labels_issue280(*args, **kwargs):
@@ -544,7 +555,7 @@ if __name__ == "__main__":
     # test_partial_loading_vaex()
 
     # test_fetch_hitemp_OH_pytables()
-    # test_fetch_hitemp_OH_vaex()
+    test_fetch_hitemp_OH_vaex()
 
     # test_fetch_hitemp_all_molecules("OH")
     # test_fetch_hitemp_all_molecules("CO")
@@ -558,4 +569,4 @@ if __name__ == "__main__":
     # test_calc_hitemp_CO_noneq()
     # test_calc_hitemp_spectrum()
 
-    test_relevant_files_filter()
+    # test_relevant_files_filter()
