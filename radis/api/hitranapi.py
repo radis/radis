@@ -1875,7 +1875,8 @@ class HITRANDatabaseManager(DatabaseManager):
 
             """
             directory = abspath(expanduser(directory))
-
+            max_fetch_retries = 3
+            retry_delay = 1
             # create temp folder :
             from radis.misc.basics import make_folders
 
@@ -1899,20 +1900,38 @@ class HITRANDatabaseManager(DatabaseManager):
                         )
                         os.remove(join(directory, file + ".data"))
                 try:
-                    if extra_params == "all":
-                        fetch(
-                            file,
-                            get_molecule_identifier(molecule),
-                            iso,
-                            wmin,
-                            wmax,
-                            ParameterGroups=[*PARAMETER_GROUPS_HITRAN],
-                        )
-                    elif extra_params is None:
-                        fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax)
-                    else:
-                        raise ValueError("extra_params can only be 'all' or None ")
-                except KeyError as err:
+                    for attempt in range(max_fetch_retries):
+                        if extra_params == "all":
+                            fetch(
+                                file,
+                                get_molecule_identifier(molecule),
+                                iso,
+                                wmin,
+                                wmax,
+                                ParameterGroups=[*PARAMETER_GROUPS_HITRAN],
+                            )
+                        elif extra_params is None:
+                            fetch(
+                                file, get_molecule_identifier(molecule), iso, wmin, wmax
+                            )
+                        else:
+                            raise ValueError("extra_params can only be 'all' or None ")
+
+                        ### We test if the download went well ###
+                        df = pd.DataFrame(LOCAL_TABLE_CACHE[file]["data"])
+                        if len(df["molec_id"]) != 0:
+                            break  # everything worked well
+                        else:
+                            warning_msg = (
+                                "HITRAN fetch failed. The database looks empty. "
+                                f"Waiting {retry_delay} seconds and trying again (attempt {attempt + 1}/{max_fetch_retries})."
+                            )
+                        if attempt == max_fetch_retries - 1:
+                            warning_msg += "\nLAST ATTEMPT"
+                        warnings.warn(warning_msg, UserWarning, stacklevel=2)
+                        time.sleep(retry_delay)
+                        retry_delay *= 2  # exponential
+                except KeyError as err:  # check for missing isotopes. If the isotope is missing, skip to next up to isotope 9
                     list_pattern = ["(", ",", ")"]
                     import re
 

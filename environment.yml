@@ -12,7 +12,7 @@ channels:
 - conda-forge
 - nodefaults  # no defaults packages (only conda-forge)
 dependencies:
-- python=3.13
+- python>3.9
 - astropy>=4.3.1  # Unit aware calculations
 - astroquery>=0.4.6  # to fetch HITRAN databases
 - beautifulsoup4>=4.10.0 # parse ExoMol website
@@ -23,7 +23,7 @@ dependencies:
 - joblib  # for parallel loading of SpecDatabase
 - lmfit  # for new fitting modules
 - matplotlib
-- numpy>2  # Warning: numpy 2.0 is not compatible with vaex-hdf5<=0.14.1, see #869. We directly install the latest vaex-hdf5 via pip below as a workaround.
+- numpy~=2.0  # Warning: numpy 2.0 is not compatible with vaex-hdf5<=0.14.1, see #869. We directly install the latest vaex-hdf5 via pip below as a workaround.
 - numba  # just-in-time compiler
 - pandas
 - plotly>=2.5.1  # for line survey HTML output
