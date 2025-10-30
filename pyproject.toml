@@ -42,13 +42,13 @@ classifiers = [
     "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Topic :: Scientific/Engineering",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.9",    #DEV MESSAGE: end of life, October 2025, https://devguide.python.org/versions/.
-    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.10",   #DEV MESSAGE: end of life, October 2026, https://devguide.python.org/versions/.
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     # This is a duplicate of environment.yml; but it is NECESSARY to tell pip what are the dependencies in case use employ `pip install -e .` from empty environment
     # Dependencies in environment.yml and here should be kept consistent.

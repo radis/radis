@@ -1,7 +1,7 @@
 # This file is a copy of .github/workflows/python-package.yml but applies for the master branch only
 # In a few words, we perform the same actions as the develop branch but with many more versions of Python
 
-name: Tests on master (Python 3.9, 3.10, 3.11, and 3.12)
+name: Tests on master
 
 on:
   push:
@@ -17,16 +17,16 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            python-version: "3.9"
-          - os: ubuntu-latest
             python-version: "3.10"
           - os: ubuntu-latest
             python-version: "3.11"
           - os: ubuntu-latest
             python-version: "3.12"
+          - os: ubuntu-latest
+            python-version: "3.13"
+          - os: ubuntu-latest
+            python-version: "3.14"
           #Issue with Windows and Mac OS, see https://github.com/radis/radis/issues/864
-          - os: windows-latest
-            python-version: "3.9"
           - os: windows-latest
             python-version: "3.10"
         #   - os: windows-latest
