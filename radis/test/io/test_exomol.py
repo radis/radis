@@ -19,22 +19,8 @@ conditions = {
     "pressure": 1.01325,  # bar
     "mole_fraction": 0.1,
     "path_length": 1,  # cm
-    # "broadening_method": "fft",
     "verbose": True,
 }
-
-# Prevent indefinite network hangs on CI (e.g., Windows) by enforcing a global socket timeout
-# import socket
-# socket.setdefaulttimeout(30)
-
-# # Ensure non-interactive matplotlib backend on CI to avoid GUI hangs
-# import os
-# if os.environ.get("CI", "false").lower() in ("1", "true"):
-#     try:
-#         import matplotlib
-#         matplotlib.use("Agg")
-#     except Exception:
-#         pass
 
 
 @pytest.mark.fast
@@ -73,32 +59,6 @@ def test_exomol_parsing_functions(verbose=True, *args, **kwargs):
                 assert dat in known_databases
 
 
-# this one is the problem on Windows
-# # @pytest.mark.fast
-# @pytest.mark.needs_connection
-# def test_calc_exomol_spectrum(verbose=True, plot=True, *args, **kwargs):
-#     """Auto-fetch and calculate a CO spectrum from the ExoMol database
-
-#     https://github.com/radis/radis/pull/320#issuecomment-884508206
-#     """
-#     from radis import SpectrumFactory
-
-#     sf = SpectrumFactory(**conditions)
-
-#     sf.fetch_databank(
-#         source="exomol",
-#         broadf=False,
-#         broadf_download=False,  # accelerates the test!
-#     )
-
-#     # Generating a Spectrum
-#     s = sf.eq_spectrum(Tgas=300, path_length=1)
-#     assert np.isclose(24.91092586279514, s.get_integral("absorbance"))
-#     # if plot:
-#     #     s.plot()
-
-
-@pytest.mark.fast
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 def test_calc_exomol_vs_hitemp(verbose=True, plot=False, *args, **kwargs):
