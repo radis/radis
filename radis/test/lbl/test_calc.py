@@ -58,7 +58,7 @@ def test_sPlanck_conversions(verbose=True, *args, **kwargs):
 # @pytest.mark.needs_config_file
 # @pytest.mark.needs_db_HITEMP_CO2_DUNHAM
 @pytest.mark.needs_connection
-def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
+def test_calc_spectrum(verbose=True, plot=False, warnings=True, *args, **kwargs):
     """Basic example, used as a non-regression test.
 
     Notes
