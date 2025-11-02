@@ -18,9 +18,15 @@ conditions = {
     "pressure": 1.01325,  # bar
     "mole_fraction": 0.1,
     "path_length": 1,  # cm
-    "broadening_method": "fft",
+    # "broadening_method": "fft",
     "verbose": True,
 }
+
+
+@pytest.mark.fast
+def test_we_are_here(verbose=True):
+    if verbose:
+        print("we test Exomol now")
 
 
 @pytest.mark.fast
@@ -59,7 +65,7 @@ def test_exomol_parsing_functions(verbose=True, *args, **kwargs):
                 assert dat in known_databases
 
 
-@pytest.mark.fast
+# @pytest.mark.fast
 @pytest.mark.needs_connection
 def test_calc_exomol_spectrum(verbose=True, plot=True, *args, **kwargs):
     """Auto-fetch and calculate a CO spectrum from the ExoMol database
