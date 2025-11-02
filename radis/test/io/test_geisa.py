@@ -123,7 +123,6 @@ def test_local_geisa_co2(verbose=True, warnings=True, **kwargs):
     print("GEISA parsing process of molecule CO2 works normally.\n")
 
 
-@pytest.mark.fast
 @pytest.mark.needs_connection
 def test_calc_geisa_spectrum(plot=False):
     """

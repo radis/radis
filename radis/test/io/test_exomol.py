@@ -23,7 +23,6 @@ conditions = {
 }
 
 
-@pytest.mark.fast
 @pytest.mark.needs_connection
 def test_exomol_parsing_functions(verbose=True, *args, **kwargs):
     """Test functions used to parse ExoMol website"""
