@@ -6,6 +6,7 @@ Created on Mon Jul 19 22:44:39 2021
 """
 
 import astropy.units as u
+import numpy as np
 import pytest
 
 from radis.io.exomol import get_exomol_database_list, get_exomol_full_isotope_name
@@ -22,11 +23,18 @@ conditions = {
     "verbose": True,
 }
 
+# Prevent indefinite network hangs on CI (e.g., Windows) by enforcing a global socket timeout
+# import socket
+# socket.setdefaulttimeout(30)
 
-@pytest.mark.fast
-def test_we_are_here(verbose=True):
-    if verbose:
-        print("we test Exomol now")
+# # Ensure non-interactive matplotlib backend on CI to avoid GUI hangs
+# import os
+# if os.environ.get("CI", "false").lower() in ("1", "true"):
+#     try:
+#         import matplotlib
+#         matplotlib.use("Agg")
+#     except Exception:
+#         pass
 
 
 @pytest.mark.fast
@@ -65,6 +73,7 @@ def test_exomol_parsing_functions(verbose=True, *args, **kwargs):
                 assert dat in known_databases
 
 
+# this one is the problem on Windows
 # @pytest.mark.fast
 @pytest.mark.needs_connection
 def test_calc_exomol_spectrum(verbose=True, plot=True, *args, **kwargs):
@@ -84,9 +93,9 @@ def test_calc_exomol_spectrum(verbose=True, plot=True, *args, **kwargs):
 
     # Generating a Spectrum
     s = sf.eq_spectrum(Tgas=300, path_length=1)
-
-    if plot:
-        s.plot()
+    assert np.isclose(24.91092586279514, s.get_integral("absorbance"))
+    # if plot:
+    #     s.plot()
 
 
 @pytest.mark.needs_connection
@@ -133,6 +142,6 @@ def test_calc_exomol_vs_hitemp(verbose=True, plot=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    test_exomol_parsing_functions()
+    # test_exomol_parsing_functions()
     test_calc_exomol_spectrum()
-    test_calc_exomol_vs_hitemp()
+    # test_calc_exomol_vs_hitemp()
