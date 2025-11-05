@@ -645,6 +645,11 @@ def read_and_write_chunked_for_CO2(
     tuple
         (DataFrame, list of local file paths)
     """
+    # Cover the entire dataset if bounds are not provided
+    if load_wavenum_min is None:
+        load_wavenum_min = 0.000001  # beginning wavenumber in cm-1
+    if load_wavenum_max is None:
+        load_wavenum_max = 9768.202001  # last wavenumber in cm-1
 
     config = read_config()
     default_download_path = os.path.expanduser(config["DEFAULT_DOWNLOAD_PATH"])
@@ -842,10 +847,13 @@ def download_and_decompress_CO2_into_df(
         verbose=verbose,
         local_databases=local_databases,
     )
-    combined_df = combined_df[
-        (combined_df["wav"] >= load_wavenum_min)
-        & (combined_df["wav"] <= load_wavenum_max)
-    ]
+
+    # Apply filtering only if bounds were specified (not None)
+    if load_wavenum_min is not None and load_wavenum_max is not None:
+        combined_df = combined_df[
+            (combined_df["wav"] >= load_wavenum_min)
+            & (combined_df["wav"] <= load_wavenum_max)
+        ]
 
     if original_columns is not None and "iso" not in original_columns:
         combined_df = combined_df.drop(columns=["iso"])
