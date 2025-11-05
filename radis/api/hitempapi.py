@@ -847,13 +847,10 @@ def download_and_decompress_CO2_into_df(
         verbose=verbose,
         local_databases=local_databases,
     )
-
-    # Apply filtering only if bounds were specified (not None)
-    if load_wavenum_min is not None and load_wavenum_max is not None:
-        combined_df = combined_df[
-            (combined_df["wav"] >= load_wavenum_min)
-            & (combined_df["wav"] <= load_wavenum_max)
-        ]
+    combined_df = combined_df[
+        (combined_df["wav"] >= load_wavenum_min)
+        & (combined_df["wav"] <= load_wavenum_max)
+    ]
 
     if original_columns is not None and "iso" not in original_columns:
         combined_df = combined_df.drop(columns=["iso"])
