@@ -50,7 +50,7 @@ try:
 
     # Import SIMD parser if available
     try:
-        from ..gpu.vulkan.bin.simd_parser import (
+        from ..simd_parser.simd_parser import (
             compile_simd_parser_if_needed,
             parse_hitran_simd,
         )
