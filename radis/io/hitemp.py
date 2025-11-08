@@ -163,6 +163,7 @@ def fetch_hitemp(
             verbose=verbose,
             engine=engine,
             output=output,
+            use_simd=use_simd,
         )
 
         if return_local_path:
