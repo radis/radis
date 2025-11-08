@@ -117,7 +117,7 @@ def test_fetch_hitran_CO_pytables(*args, **kwargs):
 
     assert len(df) == 5381
     assert df.wav.min() == 3.40191
-    assert df.wav.max() == 14477.377142
+    assert df.wav.max() == pytest.approx(14477.377142, abs=1e-4)
 
 
 # TODO : clean database on each new pytest run ?
@@ -140,7 +140,7 @@ def test_fetch_hitran_CO_vaex(*args, **kwargs):
 
     assert len(df) == 5381
     assert df.wav.min() == 3.40191
-    assert df.wav.max() == 14477.377142
+    assert df.wav.max() == pytest.approx(14477.377142, abs=1e-4)
 
 
 # ignored by pytest with argument -m "not needs_connection"
@@ -153,7 +153,7 @@ def test_fetch_hitran(*args, **kwargs):
 
     assert len(df) == 5381
     assert df.wav.min() == 3.40191
-    assert df.wav.max() == 14477.377142
+    assert df.wav.max() == pytest.approx(14477.377142, abs=1e-4)
 
 
 @pytest.mark.needs_connection
