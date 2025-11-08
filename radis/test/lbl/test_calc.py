@@ -58,7 +58,7 @@ def test_sPlanck_conversions(verbose=True, *args, **kwargs):
 # @pytest.mark.needs_config_file
 # @pytest.mark.needs_db_HITEMP_CO2_DUNHAM
 @pytest.mark.needs_connection
-def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
+def test_calc_spectrum(verbose=True, plot=False, warnings=True, *args, **kwargs):
     """Basic example, used as a non-regression test.
 
     Notes
@@ -230,8 +230,18 @@ def test_calc_spectrum(verbose=True, plot=True, warnings=True, *args, **kwargs):
 
     # [71:-71] because of the shift introduced in 0.9.30 where convolved
     # arrays are not cropped; but np.nan values are added
-    assert np.allclose(w[71:-71][::100], w_ref, atol=1e-6)
-    assert np.allclose(I[71:-71][::100], I_ref, rtol=1e-3)
+    # for constant nm slit, dont read NaNs at the beginning of the array
+
+    w_cut = w[71:-71][::100]
+    I_cut = I[71:-71][::100]
+
+    # Mask nan
+    mask = ~np.isnan(I_cut)
+
+    # Assertions only on valid values
+    assert np.allclose(w_cut[mask], w_ref[mask], atol=1e-6)
+    # Less strict assertion because of the applied constant nm slit (5% error)
+    assert np.allclose(I_cut[mask], I_ref[mask], rtol=5e-2)
 
 
 # @pytest.mark.needs_db_CDSD_HITEMP_PCN
@@ -300,7 +310,7 @@ def test_calc_spectrum_overpopulations(
     w, I = s.get("radiance", wunit="nm")
     # [71:-71] because of the shift introduced in 0.9.30 where convolved
     # arrays are not cropped; but np.nan values are added
-    w_ref = w[71:-71][::100]
+    w_ref = w[71:-71][::100][1:]
     # Compare against hardcoded results (neq 0.9.22, 28/06/18)
     #        I_ref = np.array([0.61826008, 0.65598262, 0.79760003, 0.7958013 , 0.5792486 ,
     #                          0.56727691, 0.60361258, 0.51549598, 0.51012651, 0.47133131,
@@ -352,38 +362,41 @@ def test_calc_spectrum_overpopulations(
     # Update on 14/11/21: after switching from HITRAN fetched by astroquery (partial range)
     # to HITRAN fetched by HAPI (full database) > atol=1e-6 fails, because of
     # numerical errors in how the two databases are stored. Switched to rtol=1e-3
+    #
+    # Update on 30/10/2025: after updating how the convolution is performed for a constant nm slit
+    # (see PR #763), the hardcoded reference values have been updated accordingly
 
     I_ref = np.array(
         [
-            0.61997922,
-            0.66632674,
-            0.81018912,
-            0.79343113,
-            0.56679814,
-            0.58237845,
-            0.61095028,
-            0.52119991,
-            0.51809502,
-            0.47512021,
-            0.51446247,
-            0.46056154,
-            0.39754174,
-            0.35287435,
-            0.3216403,
-            0.32924673,
-            0.13522796,
-            0.00645189,
-            0.0036676,
+            0.67486785,
+            0.81622363,
+            0.79304703,
+            0.55360112,
+            0.58994659,
+            0.61157865,
+            0.52107744,
+            0.51866847,
+            0.47210067,
+            0.51107946,
+            0.45979748,
+            0.39722396,
+            0.3493322,
+            0.32207141,
+            0.32954643,
+            0.13293136,
+            0.00640475,
+            0.00365381,
         ]
     )
     if plot:
         plt.plot(w_ref, I_ref, "or", label="ref")
         plt.legend()
         s.plot_populations()
+        plt.show()
 
     # [71:-71] because of the shift introduced in 0.9.30 where convolved
     # arrays are not cropped; but np.nan values are added
-    assert np.allclose(I[71:-71][::100], I_ref, rtol=1e-3)
+    assert np.allclose(I[71:-71][::100][1:], I_ref, rtol=1e-3)
 
     if verbose:
         printm("Test overpopulations: OK")
@@ -988,5 +1001,5 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
 # --------------------------
 if __name__ == "__main__":
-
-    printm("Testing calc.py: ", _run_testcases(verbose=True))
+    test_non_air_diluent_calc()
+    # printm("Testing calc.py: ", _run_testcases(verbose=True))

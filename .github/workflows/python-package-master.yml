@@ -1,7 +1,7 @@
 # This file is a copy of .github/workflows/python-package.yml but applies for the master branch only
 # In a few words, we perform the same actions as the develop branch but with many more versions of Python
 
-name: Python package
+name: Tests on master
 
 on:
   push:
@@ -17,24 +17,26 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            python-version: "3.9"
-          - os: ubuntu-latest
             python-version: "3.10"
           - os: ubuntu-latest
             python-version: "3.11"
           - os: ubuntu-latest
             python-version: "3.12"
+          - os: ubuntu-latest
+            python-version: "3.13"
           #Issue with Windows and Mac OS, see https://github.com/radis/radis/issues/864
           - os: windows-latest
-            python-version: "3.9"
-          - os: windows-latest
             python-version: "3.10"
-        #   - os: windows-latest
-        #     python-version: "3.11"
-        #   - os: windows-latest
-        #     python-version: "3.12"
+          - os: windows-latest
+            python-version: "3.11"
+          - os: windows-latest
+            python-version: "3.12"
           - os: macos-latest
             python-version: "3.10"
+          - os: macos-latest
+            python-version: "3.11"
+          - os: macos-latest
+            python-version: "3.12"
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -46,7 +48,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest
+          python -m pip install pytest specutils
           pip install -e .
       - name: Fast tests with pytest
         env:

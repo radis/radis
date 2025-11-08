@@ -12,6 +12,7 @@ https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 import json
 import os
 import re
+import time
 import urllib.request
 import warnings
 from os.path import basename, commonpath, join
@@ -28,14 +29,13 @@ from radis.api.hdf5 import update_pytables_to_vaex
 from radis.db.hitemp_co2 import partial_download_co2_chunk
 from radis.misc.config import CONFIG_PATH_JSON, getDatabankEntries
 from radis.misc.warning import DatabaseAlreadyExists
-from radis.tools.read_wav_index import key_pairs
+from radis.tools.read_wav_index import get_key_pairs
 
 try:
     from .dbmanager import DatabaseManager
     from .hdf5 import DataFileManager
     from .hitranapi import (
         columns_2004,
-        get_molecule,
         parse_global_quanta,
         parse_hitran_file,
         parse_local_quanta,
@@ -367,10 +367,49 @@ def login_to_hitran(verbose=False):
     login_url = "https://hitran.org/login/"
     session = requests.Session()
 
+    class LoginError(Exception):
+        """Custom exception for login errors"""
+
+        pass
+
     def attempt_login(email, password):
         """Attempt to login with provided credentials"""
-        # Get CSRF token
-        response = session.get(login_url)
+        max_retries = 3
+        retry_codes = [429, 500, 502, 503, 504]  # common retryable status codes
+        retry_delay = 1  # initial retry delay in seconds
+
+        for attempt in range(max_retries):
+            try:
+                # Get CSRF token
+                response = session.get(login_url)
+                response.raise_for_status()  # Raise an exception for 4xx or 5xx status codes
+                break  # everything worked well, moving on
+            except requests.exceptions.HTTPError as exc:
+                code = exc.response.status_code
+                if code in retry_codes:
+                    # retry after a delay
+                    warning_msg = (
+                        f"HITRAN login failed due to {exc} (status code {code}). "
+                        f"Waiting {retry_delay} seconds and trying again (attempt {attempt + 1}/{max_retries})."
+                    )
+                    if attempt == max_retries - 1:
+                        warning_msg += "\nLAST ATTEMPT"
+                    print(warning_msg)
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # exponential backoff
+                else:
+                    # raise a more explicit error
+                    raise LoginError(
+                        f"HITRAN login failed due to {exc} (status code {code}). "
+                        "Please check your credentials and try again."
+                    )
+            except requests.exceptions.RequestException as exc:
+                # raise a more explicit error
+                raise LoginError(
+                    f"HITRAN login failed due to a request error: {exc}. "
+                    "Please check your network connection and try again."
+                )
+
         soup = BeautifulSoup(response.text, "html.parser")
         csrf = soup.find("input", {"name": "csrfmiddlewaretoken"})["value"]
 
@@ -389,6 +428,7 @@ def login_to_hitran(verbose=False):
         login_response = session.post(
             login_url, data=login_data, headers=headers, allow_redirects=False
         )
+        login_response.raise_for_status()  # Raise an exception for 4xx or 5xx status codes
 
         return login_response, session
 
@@ -439,16 +479,15 @@ def login_to_hitran(verbose=False):
     email, password = setup_credentials()
     login_response, session = attempt_login(email, password)
 
+    # TO-DO: the function is_login_successful is likely not needed anymore due to definition of attempt_login. Still, let's keep it to make sure to fail in case of problems.
     if is_login_successful(login_response):
         if verbose:
             print("Login successful.")
         store_credentials(email, password)
         return session
     else:
-        if verbose:
-            print(f"Login failed: {login_response.status_code}")
-        raise OSError(
-            "HITRAN login failed. Please ensure you entered correct credentials from https://hitran.org/login/"
+        raise OSError(  # Status code guide: https://www.geeksforgeeks.org/computer-networks/http-status-codes-successful-responses/
+            f"HITRAN login failed.\nStatus_code of the login attempt: {login_response.status_code} \nA common mistake: please ensure you entered correct credentials from https://hitran.org/login/"
         )
 
 
@@ -522,7 +561,6 @@ def parse_one_CO2_block(
     output="pandas",
     parse_quanta=True,
     wav_range=None,
-    use_simd=None,
 ):
     """
     Parse a CO2 .par file block into a DataFrame with caching support.
@@ -541,56 +579,24 @@ def parse_one_CO2_block(
         Output format: 'pandas' or 'vaex' (default 'pandas')
     parse_quanta : bool
         Parse quantum numbers for non-LTE calculations (default True)
-    use_simd : bool or None, optional
-        Whether to use the SIMD-accelerated parser for improved performance.
-        If None (default), automatically detects and uses SIMD parser if available.
-        If True, forces SIMD parser (raises error if not available).
-        If False, uses standard Python parser.
 
     Returns
     -------
-    DataFrame or other specified output
-        The parsed data from the `.par` file, in the format specified by `output`.
+    DataFrame
+        Parsed spectroscopic data
     """
-    fcache = _fcache_file_name(fname, engine)
-
-    if cache and os.path.exists(fcache):
-        # Start reading the cache file
-        df = _load_cache_file(fcache, engine=engine, columns=columns)
-        if df is not None:
-            if verbose:
-                print(f"Loaded cached file {fcache}")
-            return df
-
-    # Detect the molecule by reading the start of the file
-    with open(fname) as f:
-        mol = get_molecule(int(f.read(2)))
-
     # Set default columns if None provided
     columns = columns_2004
 
-    use_simd_for_file = use_simd
-    if use_simd_for_file is None:
-        use_simd_for_file = SIMD_PARSER_AVAILABLE
+    df = parse_hitran_file(fname, columns, output=output, molecule="CO2")
 
-    if use_simd_for_file:
-        if not SIMD_PARSER_AVAILABLE:
-            if use_simd is True:  # User explicitly requested SIMD
-                raise RuntimeError("SIMD parser requested but not available")
-            use_simd_for_file = False
-
-    if use_simd_for_file and verbose:
-        print(f"Using SIMD-accelerated parser for {fname}")
-
-    if use_simd_for_file:
-        compile_simd_parser_if_needed()
-        df = parse_hitran_simd(fname, verbose=verbose)
-    else:
-        df = parse_hitran_file(fname, columns, output=output, molecule=mol)
+    df["iso"] = (
+        df["iso"].replace({"0": 10, "A": 11, "B": 12}).astype(int)
+    )  # in HITEMP2024, isotopologue 10, 11, 12 are 0, A, B. See Table 4 of Hargreaves et al. (2024)
 
     df = post_process_hitran_data(
         df,
-        molecule=mol,
+        molecule="CO2",
         dataframe_type=output,
         parse_quanta=parse_quanta,
     )
@@ -606,9 +612,11 @@ def parse_one_CO2_block(
         try:
             manager = DataFileManager(engine)
             manager.write(fcache, df, key="default", append=False)
-        except PermissionError:
-            if verbose:
-                print("An error occurred in cache file generation. Check access rights")
+        except PermissionError as e:
+            warnings.warn(
+                f"Insufficient access rights to write to cache file: {e}. Please check file permissions. Continuing without saving to {fcache}.",
+                UserWarning,
+            )
             pass
 
     return df
@@ -623,15 +631,13 @@ def read_and_write_chunked_for_CO2(
     output="pandas",
     verbose=True,
     local_databases=None,
-    use_simd=True,
 ):
     """
-    Download, Parse and Cache CO2 data chunks for specified wavenumber range.
-
+    Download, parse and cache CO2 data chunks for specified wavenumber range.
     Parameters
     ----------
     load_wavenum_min, load_wavenum_max : float
-        Wavenumber range to load (cm⁻¹)
+        Wavenumber range to load (cm-1)
     columns : list, optional
         Columns to include in output
     isotope : str, optional
@@ -644,10 +650,6 @@ def read_and_write_chunked_for_CO2(
         Print progress messages (default True)
     local_databases : str, optional
         Custom cache directory
-    use_simd : bool
-        Whether to use the SIMD-accelerated C++ parser (default True)
-    keep_par_files : bool
-        Whether to keep the downloaded .par files after parsing (default False)
 
     Returns
     -------
@@ -661,7 +663,9 @@ def read_and_write_chunked_for_CO2(
     if local_databases:
         hitemp_CO2_download_path = local_databases
     else:
-        hitemp_CO2_download_path = join(default_download_path, "hitemp", "co2")
+        hitemp_CO2_download_path = join(
+            default_download_path, "hitemp", "CO2_HITEMP2024"
+        )
 
     def _append_dataframe(df_to_append):
         """Filter isotopes and append dataframe to results."""
@@ -672,46 +676,64 @@ def read_and_write_chunked_for_CO2(
     local_paths = []  # to store local paths of relevant decompressed files
     dataframes = []
 
-    wav_pairs = key_pairs(load_wavenum_min, load_wavenum_max)
+    wav_pairs = get_key_pairs(load_wavenum_min, load_wavenum_max)
     session = login_to_hitran()
 
-    # Download and decompress chunks
+    # Check which files need to be downloaded
+    files_to_download = []
+    for start_wavno, end_wavno in wav_pairs:
+        fname = f"CO2_02_{int(start_wavno):05d}-{int(end_wavno):05d}_HITEMP2024.par"
+        out_decompressed_file = join(hitemp_CO2_download_path, fname)
+        fcache = _fcache_file_name(out_decompressed_file, engine)
+
+        local_paths.append(out_decompressed_file)
+
+        if not (os.path.exists(fcache) or os.path.exists(out_decompressed_file)):
+            files_to_download.append((start_wavno, end_wavno, out_decompressed_file))
+
     if verbose:
+        print("-" * 80)
         print(
-            f"Processing {len(wav_pairs)} chunks for range {load_wavenum_min}-{load_wavenum_max} cm⁻¹"
+            f"CO2 - HITEMP 2024 - Downloading and processing {len(wav_pairs)} chunks for range {load_wavenum_min}-{load_wavenum_max} cm⁻¹"
         )
+        print("-" * 80)
 
-    with tqdm(
-        total=len(wav_pairs), desc="Downloading chunks", disable=not verbose
-    ) as pbar:
-        for start_wavno, end_wavno in wav_pairs:
-            fname = f"CO2_02_{int(start_wavno):05d}-{int(end_wavno):05d}_HITEMP2024.par"
-            out_decompressed_file = join(hitemp_CO2_download_path, fname)
-            fcache = _fcache_file_name(out_decompressed_file, engine)
+    # Download section
+    if files_to_download:
+        if verbose:
+            print(f"\n\x1B[4mDownload:\x1B[0m")
+            print(
+                f"- Download {len(files_to_download)} file(s) missing out of {len(wav_pairs)}."
+            )
 
+        # Download each chunk with individual progress
+        for i, (start_wavno, end_wavno, out_decompressed_file) in enumerate(
+            files_to_download
+        ):
             if engine == "vaex":
-                # Convert Path object to string before string operations
+                fcache = _fcache_file_name(out_decompressed_file, engine)
                 fcache_str = str(fcache)
                 if os.path.exists(fcache_str.replace(".hdf5", ".h5")):
                     update_pytables_to_vaex(fcache_str.replace(".hdf5", ".h5"))
 
-            local_paths.append(out_decompressed_file)
-
-            if os.path.exists(fcache) or os.path.exists(out_decompressed_file):
-                pbar.set_postfix_str("cached")
-            else:
-                pbar.set_postfix_str("downloading")
-                partial_download_co2_chunk(
-                    start_wavno,
-                    end_wavno,
-                    session,
-                    out_decompressed_file,
-                    verbose=verbose,
+            if verbose:
+                print(
+                    f"\nDownloading chunk {i+1}/{len(files_to_download)}: {start_wavno:.0f}-{end_wavno:.0f} cm⁻¹"
                 )
 
-            pbar.update(1)
+            partial_download_co2_chunk(
+                start_wavno,
+                end_wavno,
+                session,
+                out_decompressed_file,
+                verbose=verbose,  # Show internal download progress
+            )
+    else:
+        if verbose:
+            print(
+                f"\nAll files already downloaded. Loading from `.h5` or `.hdf5` files."
+            )
 
-    # Parse or cache the chunks
     with tqdm(
         total=len(local_paths), desc="Processing chunks", disable=not verbose
     ) as pbar:
@@ -724,22 +746,18 @@ def read_and_write_chunked_for_CO2(
                 pbar.set_postfix_str("from cache")
             else:
                 pbar.set_postfix_str("parsing")
-                import time
-
-                t = time.time()
                 df = parse_one_CO2_block(
                     file,
                     columns=columns,
                     engine=engine,
                     output=output,
                     wav_range=wav_pairs[i],
-                    use_simd=use_simd,  # Use the parameter passed to this function
+                    verbose=False,
                 )
-                if verbose:
-                    print(
-                        f"Time taken to parse chunk {i}: {time.time() - t:.2f} seconds"
-                    )
                 _append_dataframe(df)
+
+            # Always remove .par file after processing
+            if os.path.exists(file):
                 os.remove(file)
 
             pbar.update(1)
@@ -782,7 +800,6 @@ def download_and_decompress_CO2_into_df(
     verbose=True,
     engine="pytables",
     output="pandas",
-    use_simd=True,
 ):
     """
     This function handles downloading the HITEMP CO2 database. The full 2024 database is downloaded in smaller files of approximately 50-70 MB (500 MB decompressed chunks in h5 format), locating the appropriate data chunk based on the provided wavenumber range and reading the relevant data into a DataFrame.
@@ -805,8 +822,6 @@ def download_and_decompress_CO2_into_df(
         Output format for the data. Default is "pandas" DataFrame.
     local_databases : str or None, optional
         Directory to store/read local database files. If None, uses the default directory.
-    use_simd : bool, default True
-        Whether to use the SIMD-accelerated C++ parser for improved performance.
     Returns
     -------
     DataFrame or object
@@ -837,7 +852,6 @@ def download_and_decompress_CO2_into_df(
         output=output,
         verbose=verbose,
         local_databases=local_databases,
-        use_simd=use_simd,
     )
     combined_df = combined_df[
         (combined_df["wav"] >= load_wavenum_min)
@@ -1000,7 +1014,7 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         molecule = self.molecule
 
-        if molecule in ["H2O"]:  # CO2 is a single file since 01/2025
+        if molecule == "H2O" or (molecule == "CO2" and self.database == "2010"):
 
             base_url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax()
 
@@ -1012,7 +1026,7 @@ class HITEMPDatabaseManager(DatabaseManager):
             from radis.misc.utils import getProjectRoot
 
             with open(
-                join(getProjectRoot(), "db", "H2O", "HITRANpage_january2025.htm")
+                join(getProjectRoot(), "db", molecule, "HITRANpage_january2025.htm")
             ) as file:
                 response_string = file.read()
 
@@ -1046,7 +1060,9 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         If other molecule, return the file anyway.
         see :py:func:`radis.api.hitempapi.keep_only_relevant`"""
-        if self.molecule in ["H2O"]:  # CO2 is a single file since 01/2025
+        if self.molecule == "H2O" or (
+            self.molecule == "CO2" and self.database == "2010"
+        ):
             inputfiles, _, _ = keep_only_relevant(
                 inputfiles, wavenum_min, wavenum_max, verbose
             )
@@ -1117,15 +1133,6 @@ class HITEMPDatabaseManager(DatabaseManager):
 
         writer = self.get_datafile_manager()
 
-        if molecule == "CO2":
-            session = login_to_hitran()
-            download_hitemp_file(
-                session,
-                "https://hitran.org/files/HITEMP/bzip2format/02_HITEMP2024.par.bz2",
-                "02_HITEMP2024.par.bz2",
-            )
-            urlname = "02_HITEMP2024.par.bz2"
-
         with opener.open(urlname) as gfile:  # locally downloaded file
 
             dt = _create_dtype(columns, linereturnformat)
@@ -1133,14 +1140,7 @@ class HITEMPDatabaseManager(DatabaseManager):
             if verbose:
                 print(f"Download complete. Parsing {molecule} database to {local_file}")
                 print(
-                    "This step is executed only ONCE and will considerably accelerate the computation of spectra. It will also dramatically reduce the memory usage. The parsing/conversion can be very fast (e.g. HITEMP OH takes a few seconds) or extremely long (e.g. HITEMP CO2 takes approximately 1 hour)."
-                )
-            if molecule == "CO2":
-                from warnings import warn
-
-                warn(
-                    "Parsing will take approximately 1 hour for HITEMP CO2 (compressed = 6 GB",
-                    UserWarning,
+                    "The parsing/conversion is usually very fast (e.g., HITEMP OH takes only a few seconds) but can be slightly longer in some cases (e.g., a single HITEMP 2010 CO₂ file takes about 1 minute)."
                 )
 
             # assert not(exists(local_file))
@@ -1155,11 +1155,6 @@ class HITEMPDatabaseManager(DatabaseManager):
                     b = get_last(b)
 
                 df = _ndarray2df(b, columns, linereturnformat, molecule=self.molecule)
-
-                if molecule == "CO2":
-                    df["iso"] = (
-                        df["iso"].replace({"0": 10, "A": 11, "B": 12}).astype(int)
-                    )  # in HITEMP2024, isotopologue 10, 11, 12 are 0, A, B. See Table 4 of Hargreaves et al. (2024)
 
                 # Post-processing :
                 # ... Add local quanta attributes, based on the HITRAN group

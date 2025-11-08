@@ -850,24 +850,35 @@ def _parse_HITRAN_class5(df, verbose=True, dataframe_type="pandas"):
 
         return pd.concat([df, dgu, dgl], axis=1)
     elif dataframe_type == "vaex":
+        # Define slices for extracting values from globu and globl
+        _GLOBU_SLICES = {
+            "v1u": (6, 8),
+            "v2u": (8, 10),
+            "l2u": (10, 12),
+            "v3u": (12, 14),
+            "ru": (14, 15),
+        }
+        _GLOBL_SLICES = {
+            "v1l": (6, 8),
+            "v2l": (8, 10),
+            "l2l": (10, 12),
+            "v3l": (12, 14),
+            "rl": (14, 15),
+        }
 
-        # Extract from globu: v1u(2), v2u(2), l2u(2), v3u(2), ru(1) after 6 spaces
-        df["v1u"] = df["globu"].str.slice(6, 8).str.strip()
-        df["v2u"] = df["globu"].str.slice(8, 10).str.strip()
-        df["l2u"] = df["globu"].str.slice(10, 12).str.strip()
-        df["v3u"] = df["globu"].str.slice(12, 14).str.strip()
-        df["ru"] = df["globu"].str.slice(14, 15).str.strip()
+        for name, (i0, i1) in _GLOBU_SLICES.items():
+            df[name] = df["globu"].str.slice(i0, i1).str.strip()
 
-        # Extract from globl: v1l(2), v2l(2), l2l(2), v3l(2), rl(1) after 6 spaces
-        df["v1l"] = df["globl"].str.slice(6, 8).str.strip()
-        df["v2l"] = df["globl"].str.slice(8, 10).str.strip()
-        df["l2l"] = df["globl"].str.slice(10, 12).str.strip()
-        df["v3l"] = df["globl"].str.slice(12, 14).str.strip()
-        df["rl"] = df["globl"].str.slice(14, 15).str.strip()
+        for name, (i0, i1) in _GLOBL_SLICES.items():
+            df[name] = df["globl"].str.slice(i0, i1).str.strip()
 
         # Replace spaces with empty strings for numeric columns
         for col in ["v1u", "v2u", "l2u", "v3u", "v1l", "v2l", "l2l", "v3l"]:
             df[col] = df[col].str.replace(" ", "")
+
+        numeric_cols = list(_GLOBU_SLICES.keys()) + list(_GLOBL_SLICES.keys())
+        for col in numeric_cols:
+            df[col] = df[col].astype("int64")
 
         # 3. Clean
         df.drop("globu", inplace=True)
@@ -1512,21 +1523,25 @@ def _parse_HITRAN_group2(df, verbose=True, dataframe_type="pandas"):
         return pd.concat([df, dgu, dgl], axis=1)
     elif dataframe_type == "vaex":
         # 1.Parse
+        _LOCU_SLICES = {
+            "Fu": (10, 15),
+        }
 
-        # For vaex, we need to handle regex extraction differently
-        # Use a simpler approach that works with vaex string operations
+        _LOCL_SLICES = {
+            "branch": (5, 6),
+            "jl": (6, 9),
+            "syml": (9, 10),
+            "Fl": (10, 15),
+        }
 
-        # Extract Fu from locu
-        df["Fu"] = df["locu"].str.slice(10, 15).str.strip()
+        for name, (i0, i1) in _LOCU_SLICES.items():
+            df[name] = df["locu"].str.slice(i0, i1).str.strip()
 
-        # Extract from locl: branch(1 char), jl(3 chars), syml(1 char), Fl(5 chars)
-        df["branch"] = df["locl"].str.slice(5, 6).str.strip()
-        df["jl"] = df["locl"].str.slice(6, 9).str.strip()
-        df["syml"] = df["locl"].str.slice(9, 10).str.strip()
-        df["Fl"] = df["locl"].str.slice(10, 15).str.strip()
+        for name, (i0, i1) in _LOCL_SLICES.items():
+            df[name] = df["locl"].str.slice(i0, i1).str.strip()
 
-        # For jl, convert to numeric where possible
         df["jl"] = df["jl"].str.replace(" ", "")  # remove spaces first
+        df["jl"] = df["jl"].astype("int64")
 
         # 3. Clean
         df.drop("locu", inplace=True)
@@ -1860,7 +1875,8 @@ class HITRANDatabaseManager(DatabaseManager):
 
             """
             directory = abspath(expanduser(directory))
-
+            max_fetch_retries = 3
+            retry_delay = 1
             # create temp folder :
             from radis.misc.basics import make_folders
 
@@ -1884,20 +1900,38 @@ class HITRANDatabaseManager(DatabaseManager):
                         )
                         os.remove(join(directory, file + ".data"))
                 try:
-                    if extra_params == "all":
-                        fetch(
-                            file,
-                            get_molecule_identifier(molecule),
-                            iso,
-                            wmin,
-                            wmax,
-                            ParameterGroups=[*PARAMETER_GROUPS_HITRAN],
-                        )
-                    elif extra_params is None:
-                        fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax)
-                    else:
-                        raise ValueError("extra_params can only be 'all' or None ")
-                except KeyError as err:
+                    for attempt in range(max_fetch_retries):
+                        if extra_params == "all":
+                            fetch(
+                                file,
+                                get_molecule_identifier(molecule),
+                                iso,
+                                wmin,
+                                wmax,
+                                ParameterGroups=[*PARAMETER_GROUPS_HITRAN],
+                            )
+                        elif extra_params is None:
+                            fetch(
+                                file, get_molecule_identifier(molecule), iso, wmin, wmax
+                            )
+                        else:
+                            raise ValueError("extra_params can only be 'all' or None ")
+
+                        ### We test if the download went well ###
+                        df = pd.DataFrame(LOCAL_TABLE_CACHE[file]["data"])
+                        if len(df["molec_id"]) != 0:
+                            break  # everything worked well
+                        else:
+                            warning_msg = (
+                                "HITRAN fetch failed. The database looks empty. "
+                                f"Waiting {retry_delay} seconds and trying again (attempt {attempt + 1}/{max_fetch_retries})."
+                            )
+                        if attempt == max_fetch_retries - 1:
+                            warning_msg += "\nLAST ATTEMPT"
+                        warnings.warn(warning_msg, UserWarning, stacklevel=2)
+                        time.sleep(retry_delay)
+                        retry_delay *= 2  # exponential
+                except KeyError as err:  # check for missing isotopes. If the isotope is missing, skip to next up to isotope 9
                     list_pattern = ["(", ",", ")"]
                     import re
 

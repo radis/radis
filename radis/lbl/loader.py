@@ -1320,10 +1320,16 @@ class DatabankLoader(object):
             else:
                 isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
 
+            # For CO2 2024 database, use the special CO2 handler path which includes /co2 subdirectory
+            if molecule == "CO2" and database in ["most_recent", "2024"]:
+                hitemp_local_databases = None
+            else:
+                hitemp_local_databases = join(local_databases, "hitemp")
+
             df, local_paths = fetch_hitemp(
                 molecule,
                 isotope=isotope_list,
-                local_databases=join(local_databases, "hitemp"),
+                local_databases=hitemp_local_databases,
                 load_wavenum_min=wavenum_min,
                 load_wavenum_max=wavenum_max,
                 columns=columns,
