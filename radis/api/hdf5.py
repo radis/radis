@@ -33,11 +33,6 @@ def update_pytables_to_vaex(fname, remove_initial=False, verbose=True, key="df")
     """Convert a HDF5 file generated from PyTables to a
     Vaex-friendly HDF5 format, preserving metadata"""
 
-    if isinstance(vaex, NotInstalled):
-        raise ImportError(
-            "Vaex is not available. Cannot convert to Vaex format. Please install vaex or use a different engine."
-        )
-
     if fname.endswith(".h5"):
         fname_vaex = fname.replace(".h5", ".hdf5")
     else:
@@ -113,13 +108,6 @@ class DataFileManager(object):
 
         """
         self.engine = engine
-
-        # Validate that required libraries are available
-        if engine == "vaex" and isinstance(vaex, NotInstalled):
-            raise ImportError(
-                "Vaex is not available. Please install vaex or use a different engine like 'pytables'."
-            )
-
         self._temp_batch_files = (
             []
         )  # list of batch files when writing by part in vaex mode
@@ -128,10 +116,6 @@ class DataFileManager(object):
         if self.engine == "pytables":
             return pd.HDFStore(file, mode=mode, complib="blosc", complevel=9)
         elif self.engine == "vaex":
-            if isinstance(vaex, NotInstalled):
-                raise ImportError(
-                    "Vaex is not available. Please install vaex or use a different engine."
-                )
             return vaex.open(file)
         else:
             raise NotImplementedError(self.engine)
@@ -204,10 +188,6 @@ class DataFileManager(object):
             # export dataframe
             df.to_hdf(file, key, format="fixed", mode="w", complevel=9, complib="blosc")
         elif self.engine == "vaex":
-            if isinstance(vaex, NotInstalled):
-                raise ImportError(
-                    "Vaex is not available. Please install vaex or use a different engine."
-                )
             if isinstance(df, pd.DataFrame):
                 df = vaex.from_pandas(df)
 
@@ -250,10 +230,6 @@ class DataFileManager(object):
         local_file = expanduser(local_file)
         if engine == "vaex":
             # by default vaex does not load everything
-            if isinstance(vaex, NotInstalled):
-                raise ImportError(
-                    "Vaex is not available. Please install vaex or use a different engine."
-                )
             df = vaex.open(local_file)
             columns = df.column_names
             df.close()
@@ -276,10 +252,6 @@ class DataFileManager(object):
         """
         file = expanduser(file)
         if self.engine == "vaex":
-            if isinstance(vaex, NotInstalled):
-                raise ImportError(
-                    "Vaex is not available. Please install vaex or use a different engine."
-                )
             if len(self._temp_batch_files) == 0:
                 # No temp file created. File is probably already created (append=False mode)
                 # Else, something unexpected happens --> raise error
@@ -508,10 +480,6 @@ class DataFileManager(object):
 
             # Now, open with vaex
             try:
-                if isinstance(vaex, NotInstalled):
-                    raise ImportError(
-                        "Vaex is not available. Please install vaex or use a different engine."
-                    )
                 df = vaex.open(fname_list, group=key)
             except OSError as err:
                 raise OSError(
@@ -799,10 +767,6 @@ class DataFileManager(object):
         """Convert DataFrame to numpy"""
 
         if self.engine == "vaex":
-            if isinstance(vaex, NotInstalled):
-                raise ImportError(
-                    "Vaex is not available. Please install vaex or use a different engine."
-                )
             return vaex.array_types.to_numpy(df)
         elif self.engine == "feather":
             return df.to_numpy()
@@ -845,11 +809,7 @@ class DataFileManager(object):
                     except KeyError:
                         engine = "h5py"
                     else:
-                        # Check if vaex is available before guessing vaex
-                        if isinstance(vaex, NotInstalled):
-                            engine = "h5py"  # fallback to h5py if vaex not available
-                        else:
-                            engine = "vaex"
+                        engine = "vaex"
         if verbose:
             print(f"Guessed that {file} was compatible with `{engine}` engine")
         # raise
