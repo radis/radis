@@ -1179,14 +1179,16 @@ class HITEMPDatabaseManager(DatabaseManager):
                 Nlines_raw += len(b)
 
                 if Ntotal_lines_expected is None:
-                    pbar_Ntot_message = f"Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1"
+                    progress_message = (
+                        f"  Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete."
+                    )
                 elif pbar_Ntot_estimate_factor is None:
-                    pbar_Ntot_message = f"{Ntotal_lines_expected:,} lines"
+                    progress_message = f"  Parsed {Nlines_tot:,} / {Ntotal_lines_expected:,} lines. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete."
                 else:
-                    pbar_Ntot_message = f"~{Ntotal_lines_expected:,} lines (estimate)"
+                    progress_message = f"  Parsed {Nlines_tot:,} / ~{Ntotal_lines_expected:,} lines (estimate). Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete."
                 pb.update(
                     Nlines_tot,
-                    message=f"  Parsed {Nlines_tot:,} / {pbar_Ntot_message}. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete.",
+                    message=progress_message,
                 )
                 # Reinitialize for next read
                 b = np.zeros(
@@ -1194,14 +1196,6 @@ class HITEMPDatabaseManager(DatabaseManager):
                 )  # receives the HITRAN 160-character data.
         writer.combine_temp_batch_files(local_file)  # used for vaex mode only
         if pbar_last:
-            if Ntotal_lines_expected is None:
-                final_message = f"  Parsed {Nlines_tot:,} lines total. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete."
-            else:
-                final_message = f"  Parsed {Nlines_tot:,} / {Nlines_tot:,} lines. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete."
-            pb.update(
-                Nlines_tot,
-                message=final_message,
-            )
             pb.done()
         else:
             print("")
