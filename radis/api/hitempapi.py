@@ -1121,6 +1121,9 @@ class HITEMPDatabaseManager(DatabaseManager):
             Ntotal_lines_expected = int(
                 Ntotal_lines_expected * pbar_Ntot_estimate_factor
             )
+        # Convert 0 to None for HITEMP 2010 (unknown total)
+        if Ntotal_lines_expected == 0:
+            Ntotal_lines_expected = None
         pb = ProgressBar(N=Ntotal_lines_expected, active=pbar_active, t0=pbar_t0)
         wmin = np.inf
         wmax = 0
@@ -1174,7 +1177,10 @@ class HITEMPDatabaseManager(DatabaseManager):
                 Nlines += len(df)
                 Nlines_tot += len(df)
                 Nlines_raw += len(b)
-                if pbar_Ntot_estimate_factor is None:
+
+                if Ntotal_lines_expected is None:
+                    pbar_Ntot_message = f"Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1"
+                elif pbar_Ntot_estimate_factor is None:
                     pbar_Ntot_message = f"{Ntotal_lines_expected:,} lines"
                 else:
                     pbar_Ntot_message = f"~{Ntotal_lines_expected:,} lines (estimate)"
@@ -1188,9 +1194,13 @@ class HITEMPDatabaseManager(DatabaseManager):
                 )  # receives the HITRAN 160-character data.
         writer.combine_temp_batch_files(local_file)  # used for vaex mode only
         if pbar_last:
+            if Ntotal_lines_expected is None:
+                final_message = f"  Parsed {Nlines_tot:,} lines total. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete."
+            else:
+                final_message = f"  Parsed {Nlines_tot:,} / {Nlines_tot:,} lines. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete."
             pb.update(
                 Nlines_tot,
-                message=f"  Parsed {Nlines_tot:,} / {Nlines_tot:,} lines. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete.",
+                message=final_message,
             )
             pb.done()
         else:
