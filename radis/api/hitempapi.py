@@ -15,6 +15,7 @@ import re
 import time
 import urllib.request
 import warnings
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from os.path import basename, commonpath, join
 from typing import Union
 
@@ -690,38 +691,65 @@ def read_and_write_chunked_for_CO2(
     # Download section
     if files_to_download:
         if verbose:
-            print(f"\n\x1B[4mDownload:\x1B[0m")
+            print(f"\n\x1b[4mDownload:\x1b[0m")
             print(
                 f"- Download {len(files_to_download)} file(s) missing out of {len(wav_pairs)}."
             )
 
-        # Download each chunk with individual progress
-        for i, (start_wavno, end_wavno, out_decompressed_file) in enumerate(
-            files_to_download
-        ):
-            if engine == "vaex":
-                fcache = _fcache_file_name(out_decompressed_file, engine)
-                fcache_str = str(fcache)
-                if os.path.exists(fcache_str.replace(".hdf5", ".h5")):
-                    update_pytables_to_vaex(fcache_str.replace(".hdf5", ".h5"))
+        def _download_single_chunk(start_wavno, end_wavno, out_file):
+            """Download and process a single CO2 chunk."""
+            try:
+                if engine == "vaex":
+                    fcache = _fcache_file_name(out_file, engine)
+                    fcache_str = str(fcache)
+                    if os.path.exists(fcache_str.replace(".hdf5", ".h5")):
+                        update_pytables_to_vaex(fcache_str.replace(".hdf5", ".h5"))
 
-            if verbose:
-                print(
-                    f"\nDownloading chunk {i+1}/{len(files_to_download)}: {start_wavno:.0f}-{end_wavno:.0f} cm⁻¹"
+                if verbose:
+                    print(f"→ Downloading chunk {start_wavno:.0f}-{end_wavno:.0f} cm⁻¹")
+
+                partial_download_co2_chunk(
+                    start_wavno,
+                    end_wavno,
+                    session,
+                    out_file,
+                    verbose=False,  # Suppress verbose to avoid cluttered output
                 )
 
-            partial_download_co2_chunk(
-                start_wavno,
-                end_wavno,
-                session,
-                out_decompressed_file,
-                verbose=verbose,  # Show internal download progress
-            )
+                if verbose:
+                    print(f" Completed chunk {start_wavno:.0f}-{end_wavno:.0f} cm⁻¹")
+                return True
+
+            except Exception as e:
+                if verbose:
+                    print(
+                        f" Error downloading chunk {start_wavno:.0f}-{end_wavno:.0f} cm⁻¹: {e}"
+                    )
+                raise
+
+        # Use parallel downloads for multiple chunks
+        if len(files_to_download) > 1:
+            if verbose:
+                print("Starting parallel downloads...\n")
+
+            max_threads = min(4, len(files_to_download))
+
+            with ThreadPoolExecutor(max_workers=max_threads) as executor:
+                futures = [
+                    executor.submit(_download_single_chunk, start, end, out_file)
+                    for (start, end, out_file) in files_to_download
+                ]
+
+                for future in as_completed(futures):
+                    future.result()
+        else:
+            # Single chunk download - no threading overhead
+            start_wavno, end_wavno, out_file = files_to_download[0]
+            _download_single_chunk(start_wavno, end_wavno, out_file)
+
     else:
         if verbose:
-            print(
-                f"\nAll files already downloaded. Loading from `.h5` or `.hdf5` files."
-            )
+            print(f"\nAll files already cached. Loading from `.h5` or `.hdf5` files.")
 
     with tqdm(
         total=len(local_paths), desc="Processing chunks", disable=not verbose
