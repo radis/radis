@@ -1860,7 +1860,7 @@ class HITRANDatabaseManager(DatabaseManager):
             )  # fetch_hitran stores all lines of a given molecule in one file
             local_file = local_file[0]
 
-        wmin = 1
+        wmin = 0
         wmax = 40000
 
         def download_all_hitran_isotopes(molecule, directory, extra_params):
