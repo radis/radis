@@ -151,6 +151,7 @@ def test_fetch_hitran(*args, **kwargs):
 
     df = fetch_hitran("CO")
 
+    assert set(df["iso"]) == {1, 2, 3, 4, 5, 6}
     assert len(df) == 5381
     assert df.wav.min() == 3.40191
     assert df.wav.max() == pytest.approx(14477.377142, abs=1e-4)
@@ -241,4 +242,5 @@ def _run_testcases(verbose=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    print("test_query.py: ", _run_testcases(verbose=True))
+    test_fetch_hitran()
+    # print("test_query.py: ", _run_testcases(verbose=True))

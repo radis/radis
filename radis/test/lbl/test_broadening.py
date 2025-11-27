@@ -729,7 +729,6 @@ def test_broadening_warnings(*args, **kwargs):
 
 # @pytest.mark.needs_config_file
 # @pytest.mark.needs_db_HITEMP_CO2_DUNHAM
-@pytest.mark.needs_connection
 @pytest.mark.deprecated
 def test_abscoeff_continuum(
     plot=False, verbose=2, warnings=True, threshold=0.1, *args, **kwargs
@@ -756,11 +755,13 @@ def test_abscoeff_continuum(
         printm(">>> test_abscoeff_continuum")
 
     sf = SpectrumFactory(
-        wavelength_min=4200,
-        wavelength_max=4500,
+        # wavelength_min=4200, # old test - required long download of HITRAN
+        # wavelength_max=4500, # was also prone to download error during CI and hard to reproduce
+        wavelength_min=4165,
+        wavelength_max=4200,
         cutoff=1e-23,
         molecule="CO2",
-        isotope="1,2",
+        isotope="1",
         truncation=5,
         path_length=0.1,
         mole_fraction=1e-3,
@@ -776,10 +777,12 @@ def test_abscoeff_continuum(
             "HighTemperatureWarning": "ignore",
         }
     )
-    sf.fetch_databank(
-        "hitran"
+    # sf.fetch_databank(
+    #     "hitran"
+    # )  # old test - required long download of HITRAN and was also prone to download error during CI and hard to reproduce
+    sf.load_databank(
+        "HITRAN-CO2-TEST"
     )  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
-    #        sf.load_databank('HITEMP-CO2-DUNHAM')       # to take a real advantage of abscoeff continuum, should calculate with HITEMP
     sf._export_continuum = True  # activate it
 
     # Calculate one without pseudo-continuum
@@ -831,7 +834,7 @@ def test_abscoeff_continuum(
 
 # @pytest.mark.needs_config_file
 # @pytest.mark.needs_db_HITEMP_CO2_DUNHAM
-@pytest.mark.needs_connection
+@pytest.mark.deprecated
 def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
     """
     Test calculation with pseudo-continuum under nonequilibrium
@@ -855,11 +858,11 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
         printm(">>> test_noneq_continuum")
 
     sf = SpectrumFactory(
-        wavelength_min=4200,
-        wavelength_max=4500,
+        wavelength_min=4165,
+        wavelength_max=4200,
         cutoff=1e-23,
         molecule="CO2",
-        isotope="1,2",
+        isotope="1",
         truncation=5,
         neighbour_lines=10,
         path_length=0.1,
@@ -876,8 +879,8 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
             "HighTemperatureWarning": "ignore",
         }
     )
-    sf.fetch_databank(
-        "hitran", load_columns="noneq"
+    sf.load_databank(
+        "HITRAN-CO2-TEST"
     )  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
     sf._export_continuum = True  # activate it
 

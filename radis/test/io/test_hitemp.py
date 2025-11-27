@@ -239,6 +239,7 @@ def test_fetch_hitemp_OH_vaex(verbose=True, *args, **kwargs):
 @pytest.mark.needs_HITRAN_credentials
 def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
     """Test partial download of HITEMP CO2 2024 database."""
+
     from os.path import basename  # use platform-aware basename
 
     df, local_files = fetch_hitemp(
@@ -251,7 +252,9 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
 
     assert df.shape[1] == 24
     assert len(local_files) == 1
-    assert basename(local_files[0]).startswith("CO2_02_00000-00261_HITEMP2024.")
+    local_file = local_files[0]
+    local_file = Path(local_file).as_posix()
+    assert basename(local_file).startswith("CO2_02_00000-00261_HITEMP2024.")
 
 
 def test_read_wav_index():
@@ -598,7 +601,7 @@ if __name__ == "__main__":
     # test_partial_loading_vaex()
 
     # test_fetch_hitemp_OH_pytables()
-    test_fetch_hitemp_OH_vaex()
+    # test_fetch_hitemp_OH_vaex()
 
     # test_fetch_hitemp_all_molecules("OH")
     # test_fetch_hitemp_all_molecules("CO")
@@ -606,7 +609,7 @@ if __name__ == "__main__":
     # test_fetch_hitemp_all_molecules("N2O", verbose=3)
     # test_fetch_hitemp_all_molecules("NO", verbose=3)
 
-    # test_fetch_hitemp_partial_download_CO2()
+    test_fetch_hitemp_partial_download_CO2()
 
     # test_no_redownload()
     # test_calc_hitemp_CO_noneq()
