@@ -1183,9 +1183,9 @@ class HITEMPDatabaseManager(DatabaseManager):
                         f"  Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete."
                     )
                 elif pbar_Ntot_estimate_factor is None:
-                    progress_message = f"  Parsed {Nlines_tot:,} / {Ntotal_lines_expected:,} lines. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete."
+                    progress_message = f"  Parsed {Nlines_tot:,} / {Ntotal_lines_expected:,} lines. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is completely parsed."
                 else:
-                    progress_message = f"  Parsed {Nlines_tot:,} / ~{Ntotal_lines_expected:,} lines (estimate). Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete."
+                    progress_message = f"  Parsed {Nlines_tot:,} / ~{Ntotal_lines_expected:,} lines (estimate). Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is completely parsed."
                 pb.update(
                     Nlines_tot,
                     message=progress_message,
