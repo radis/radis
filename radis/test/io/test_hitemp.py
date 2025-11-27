@@ -251,9 +251,7 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
 
     assert df.shape[1] == 24
     assert len(local_files) == 1
-    local_file = local_files[0]
-    local_file = Path(local_file).as_posix()
-    assert basename(local_file).startswith("CO2_02_00000-00261_HITEMP2024.")
+    assert basename(local_files[0]).startswith("CO2_02_00000-00261_HITEMP2024.")
 
 
 def test_read_wav_index():
