@@ -133,7 +133,6 @@ def test_fetch_hitemp_OH_pytables(verbose=True, *args, **kwargs):
     )
 
 
-@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
@@ -323,7 +322,6 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
     assert len(df) == Nlines
 
 
-@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.download_large_databases
@@ -414,7 +412,6 @@ def test_partial_loading(*args, **kwargs):
     assert set(df.iso.unique()) == {1, 2}
 
 
-@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.fast
 @pytest.mark.needs_connection
 @pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
@@ -572,7 +569,6 @@ def test_calc_hitemp_CO_noneq(verbose=True, *args, **kwargs):
     )
 
 
-@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.download_large_databases
