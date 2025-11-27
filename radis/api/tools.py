@@ -183,7 +183,9 @@ def _format_dtype(dtype):
     Crash with hopefully helping error message
     """
     try:
-        dt = np.dtype([(str(k), c) for k, c in dtype])
+        dt = np.dtype(
+            [(str(k), c) for k, c in dtype]
+        )  # DeprecationWarning: Data type alias 'a' was deprecated in NumPy 2.0. Use the 'S' alias instead.
         # Note: dtype names cannot be `unicode` in Python2. Hence the str()
     except TypeError as err:
         # Cant read database. Try to be more explicit for user before crashing
@@ -194,7 +196,7 @@ def _format_dtype(dtype):
                 print(str(k), "\t\t", c)
             print("-" * 30)
         finally:
-            raise TypeError("Couldnt read datatype. See details above.") from err
+            raise TypeError("Could not read datatype. See details above.") from err
     return dt
 
 
