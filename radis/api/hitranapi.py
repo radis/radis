@@ -1861,7 +1861,7 @@ class HITRANDatabaseManager(DatabaseManager):
             local_file = local_file[0]
 
         wmin = 0
-        wmax = 40000
+        wmax = 1e10
 
         def download_all_hitran_isotopes(molecule, directory, extra_params):
             """Blindly try to download all isotopes 1 - 9 for the given molecule
