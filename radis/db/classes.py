@@ -219,6 +219,10 @@ trans = {
     "53": "CS2",
     "54": "CH3I",
     "55": "NF3",
+    "56": "HONO",
+    "57": "COFCl",
+    "58": "S2",
+    "59": "ClNO2",
 }
 HITRAN_MOLECULES = list(trans.values())
 """ str: list of [HITRAN-2020]_ molecules. """
