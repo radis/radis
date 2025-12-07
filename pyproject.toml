@@ -104,7 +104,7 @@ dev = [
 docs = [
     "sphinx-autodoc-annotation",  # for sphinx documentation annotations
     "sphinx_autodoc_defaultargs>=0.1.2",  # for handling default arguments in sphinx
-    "sphinx<8>",  # documentation generator <8 to avoid incompatibilities with sphinx 9
+    "sphinx<8",  # documentation generator <8 to avoid incompatibilities with sphinx 9
     "docutils<0.19", # broken markup
     "astroquery>=0.3.9",  # for documentation examples
     "sphinxcontrib-apidoc",  # for API documentation generation
