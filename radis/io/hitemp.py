@@ -30,6 +30,7 @@ def fetch_hitemp(
     output="pandas",
     parallel=True,
     database="most_recent",
+    use_simd=True,
 ):
     """Stream HITEMP file from HITRAN website. Unzip and build a HDF5 file directly.
 
@@ -85,6 +86,10 @@ def fetch_hitemp(
         - A four-digit year (e.g., `"2010"`): Selects a specific version, such as the 2010 or 2019 database for CO.
 
         If not provided, the default is `"most_recent"`.
+    use_simd: bool
+        if ``True``, uses the high-performance SIMD-accelerated parser for CO2 molecules.
+        This requires AVX2/SSE4.2 CPU support. If ``False``, uses the standard Python parser.
+        Default ``True``.
     Returns
     -------
     df: pd.DataFrame
@@ -158,6 +163,7 @@ def fetch_hitemp(
             verbose=verbose,
             engine=engine,
             output=output,
+            use_simd=use_simd,
         )
 
         if return_local_path:

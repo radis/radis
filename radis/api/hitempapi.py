@@ -47,6 +47,18 @@ try:
         _ndarray2df,
         replace_PQR_with_m101,
     )
+
+    # Import SIMD parser if available
+    try:
+        from radis.simd_parser.simd_parser import (
+            compile_simd_parser_if_needed,
+            is_simd_parser_available,
+            parse_hitran_simd,
+        )
+
+        SIMD_PARSER_AVAILABLE = True
+    except ImportError:
+        SIMD_PARSER_AVAILABLE = False
 except ImportError:  # ran from here
     if __name__ == "__main__":  # running from this file, as a script
         from radis.api.dbmanager import DatabaseManager
@@ -550,6 +562,7 @@ def parse_one_CO2_block(
     output="pandas",
     parse_quanta=True,
     wav_range=None,
+    use_simd=True,
 ):
     """
     Parse a CO2 .par file block into a DataFrame with caching support.
@@ -568,6 +581,8 @@ def parse_one_CO2_block(
         Output format: 'pandas' or 'vaex' (default 'pandas')
     parse_quanta : bool
         Parse quantum numbers for non-LTE calculations (default True)
+    use_simd : bool
+        Use SIMD parser if available (default True)
 
     Returns
     -------
@@ -577,7 +592,26 @@ def parse_one_CO2_block(
     # Set default columns if None provided
     columns = columns_2004
 
-    df = parse_hitran_file(fname, columns, output=output, molecule="CO2")
+    # Try to use SIMD parser if requested and available
+    if use_simd and SIMD_PARSER_AVAILABLE:
+        try:
+            if verbose:
+                print(f"Using SIMD parser for {os.path.basename(fname)}")
+            df = parse_hitran_simd(fname, verbose=verbose, cleanup=True)
+            
+            # SIMD parser returns all columns, filter if needed
+            if columns is not None:
+                available_cols = [col for col in columns if col in df.columns]
+                df = df[available_cols]
+                
+        except Exception as e:
+            if verbose:
+                print(f"SIMD parser failed ({str(e)}), falling back to standard parser")
+            df = parse_hitran_file(fname, columns, output=output, molecule="CO2")
+    else:
+        if use_simd and not SIMD_PARSER_AVAILABLE and verbose:
+            print("SIMD parser requested but not available, using standard parser")
+        df = parse_hitran_file(fname, columns, output=output, molecule="CO2")
 
     df["iso"] = (
         df["iso"].replace({"0": 10, "A": 11, "B": 12}).astype(int)
@@ -620,6 +654,7 @@ def read_and_write_chunked_for_CO2(
     output="pandas",
     verbose=True,
     local_databases=None,
+    use_simd=True,
 ):
     """
     Download, parse and cache CO2 data chunks for specified wavenumber range.
@@ -639,6 +674,8 @@ def read_and_write_chunked_for_CO2(
         Print progress messages (default True)
     local_databases : str, optional
         Custom cache directory
+    use_simd : bool
+        Use SIMD parser if available (default True)
 
     Returns
     -------
@@ -747,6 +784,7 @@ def read_and_write_chunked_for_CO2(
                     output=output,
                     wav_range=wav_pairs[i],
                     verbose=False,
+                    use_simd=use_simd,
                 )
                 _append_dataframe(df)
 
@@ -794,6 +832,7 @@ def download_and_decompress_CO2_into_df(
     verbose=True,
     engine="pytables",
     output="pandas",
+    use_simd=True,
 ):
     """
     This function handles downloading the HITEMP CO2 database. The full 2024 database is downloaded in smaller files of approximately 50-70 MB (500 MB decompressed chunks in h5 format), locating the appropriate data chunk based on the provided wavenumber range and reading the relevant data into a DataFrame.
@@ -816,6 +855,8 @@ def download_and_decompress_CO2_into_df(
         Output format for the data. Default is "pandas" DataFrame.
     local_databases : str or None, optional
         Directory to store/read local database files. If None, uses the default directory.
+    use_simd : bool, default True
+        Use SIMD parser if available for faster parsing.
     Returns
     -------
     DataFrame or object
@@ -846,6 +887,7 @@ def download_and_decompress_CO2_into_df(
         output=output,
         verbose=verbose,
         local_databases=local_databases,
+        use_simd=use_simd,
     )
     combined_df = combined_df[
         (combined_df["wav"] >= load_wavenum_min)

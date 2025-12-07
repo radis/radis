@@ -37,6 +37,16 @@ __pycache__/
 # C extensions
 *.so
 !radis/gpu/vulkan/bin/*.so
+
+# SIMD parser executables and temporary files
+radis/simd_parser/hitran_simd_parser
+radis/simd_parser/hitran_simd_parser.exe
+radis/simd_parser/*.o
+radis/simd_parser/hitemp_output/
+radis/gpu/vulkan/bin/hitran_simd_parser
+radis/gpu/vulkan/bin/hitran_simd_parser.exe
+radis/gpu/vulkan/bin/*.o
+radis/gpu/vulkan/bin/hitemp_output/
 # Distribution / packaging
 .Python
 env/
