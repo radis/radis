@@ -55,7 +55,7 @@ from warnings import warn
 import astropy.units as u
 import numpy as np
 import pandas as pd
-import plotly.express as px
+import plotly.graph_objects as go
 from numpy import abs, diff
 from scipy.integrate import trapezoid
 
@@ -2467,11 +2467,30 @@ class Spectrum(object):
         xlabel = format_xlabel(wunit, show_medium)
         ylabel = f"{make_up(var)} ({make_up_unit(Iunit, var)})"
 
-        fig = px.line(x=x, y=y, template=template)
-        fig.update_layout(
+        # Create base layout and trace properties
+        layout_props = dict(
+            template=template,
             xaxis_title=xlabel,
             yaxis_title=ylabel,
             yaxis=dict(tickmode="linear", dtick=0.01),
+        )
+        trace_props = dict(x=x, y=y, mode="lines")
+
+        # Try kwargs as trace properties first, if they fail move them to layout
+        trace_kwargs = kwargs.copy()
+        layout_kwargs = {}
+
+        # Test each kwarg to see if it's a valid trace property
+        for k, v in list(trace_kwargs.items()):
+            try:
+                go.Scatter(**{**trace_props, k: v})
+            except ValueError:
+                # Not a valid trace property, move to layout
+                layout_kwargs[k] = trace_kwargs.pop(k)
+
+        fig = go.Figure(
+            data=go.Scatter(**{**trace_props, **trace_kwargs}),
+            layout=go.Layout(**{**layout_props, **layout_kwargs}),
         )
         fig.show()
 
