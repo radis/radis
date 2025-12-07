@@ -635,7 +635,7 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **k
 
 @pytest.mark.needs_connection
 def test_calc_spectrum_multiple_molecules(
-    verbose=True, plot=True, warnings=True, *args, **kwargs
+    verbose=True, plot=False, warnings=True, *args, **kwargs
 ):
     """Test calculations with multiple molecules
 
@@ -685,7 +685,7 @@ def test_calc_spectrum_multiple_molecules(
 
 @pytest.mark.needs_connection
 def test_calc_spectrum_multiple_molecules_otherinputs(
-    verbose=True, plot=True, warnings=True, *args, **kwargs
+    verbose=True, plot=False, warnings=True, *args, **kwargs
 ):
     """Test calculations with different kind of inputs for multiple molecules
 
@@ -739,7 +739,7 @@ def test_calc_spectrum_multiple_molecules_otherinputs(
 # @pytest.mark.needs_db_HITEMP_CO2_DUNHAM
 @pytest.mark.needs_connection
 def test_calc_spectrum_multiple_molecules_inputerror(
-    verbose=True, plot=True, warnings=True, *args, **kwargs
+    verbose=True, plot=False, warnings=True, *args, **kwargs
 ):
     """Test calculations with multiple molecules
 
@@ -776,7 +776,7 @@ def test_calc_spectrum_multiple_molecules_inputerror(
 # @pytest.mark.fast #this is not fastfor Travis because it requires a download
 @pytest.mark.needs_connection
 def test_calc_spectrum_multiple_molecules_wstep_auto(
-    verbose=True, plot=True, warnings=True, *args, **kwargs
+    verbose=True, plot=False, warnings=True, *args, **kwargs
 ):
     """Tests multiple molecules spectrum for wstep = 'auto'
     and checks that minimum wstep value is selected with

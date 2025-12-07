@@ -384,7 +384,7 @@ class SpectrumFactory(BandFactory):
     References
     ----------
 
-    .. [Barklem-\&-Collet-2016] `"Partition functions and equilibrium constants for diatomic molecules and atoms of astrophysical interest" <https://ui.adsabs.harvard.edu/abs/2016A%2526A...588A..96B>`_
+    .. [Barklem-&-Collet-2016] `"Partition functions and equilibrium constants for diatomic molecules and atoms of astrophysical interest" <https://ui.adsabs.harvard.edu/abs/2016A%2526A...588A..96B>`_
 
     See Also
     --------
