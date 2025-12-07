@@ -133,7 +133,6 @@ def test_fetch_hitemp_OH_pytables(verbose=True, *args, **kwargs):
     )
 
 
-@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
@@ -235,13 +234,12 @@ def test_fetch_hitemp_OH_vaex(verbose=True, *args, **kwargs):
 #     assert basename(local_files[0]).startswith("CO2-02_02500-03000_HITEMP2010.")
 
 
-@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
     """Test partial download of HITEMP CO2 2024 database."""
-    from pathlib import Path
-    from posixpath import basename
+
+    from os.path import basename  # use platform-aware basename
 
     df, local_files = fetch_hitemp(
         "CO2",
@@ -253,9 +251,7 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
 
     assert df.shape[1] == 24
     assert len(local_files) == 1
-    local_file = local_files[0]
-    local_file = Path(local_file).as_posix()
-    assert basename(local_file).startswith("CO2_02_00000-00261_HITEMP2024.")
+    assert basename(local_files[0]).startswith("CO2_02_00000-00261_HITEMP2024.")
 
 
 def test_read_wav_index():
@@ -327,7 +323,6 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
     assert len(df) == Nlines
 
 
-@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.download_large_databases
@@ -418,7 +413,6 @@ def test_partial_loading(*args, **kwargs):
     assert set(df.iso.unique()) == {1, 2}
 
 
-@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.fast
 @pytest.mark.needs_connection
 @pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
@@ -576,7 +570,6 @@ def test_calc_hitemp_CO_noneq(verbose=True, *args, **kwargs):
     )
 
 
-@pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.download_large_databases

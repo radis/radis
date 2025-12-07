@@ -645,6 +645,11 @@ def read_and_write_chunked_for_CO2(
     tuple
         (DataFrame, list of local file paths)
     """
+    # Cover the entire dataset if bounds are not provided
+    if load_wavenum_min is None:
+        load_wavenum_min = 0.000001  # beginning wavenumber in cm-1
+    if load_wavenum_max is None:
+        load_wavenum_max = 9768.202001  # last wavenumber in cm-1
 
     config = read_config()
     default_download_path = os.path.expanduser(config["DEFAULT_DOWNLOAD_PATH"])
@@ -1116,6 +1121,9 @@ class HITEMPDatabaseManager(DatabaseManager):
             Ntotal_lines_expected = int(
                 Ntotal_lines_expected * pbar_Ntot_estimate_factor
             )
+        # Convert 0 to None for HITEMP 2010 (unknown total)
+        if Ntotal_lines_expected == 0:
+            Ntotal_lines_expected = None
         pb = ProgressBar(N=Ntotal_lines_expected, active=pbar_active, t0=pbar_t0)
         wmin = np.inf
         wmax = 0
@@ -1169,13 +1177,18 @@ class HITEMPDatabaseManager(DatabaseManager):
                 Nlines += len(df)
                 Nlines_tot += len(df)
                 Nlines_raw += len(b)
-                if pbar_Ntot_estimate_factor is None:
-                    pbar_Ntot_message = f"{Ntotal_lines_expected:,} lines"
+
+                if Ntotal_lines_expected is None:
+                    progress_message = (
+                        f"  Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete."
+                    )
+                elif pbar_Ntot_estimate_factor is None:
+                    progress_message = f"  Parsed {Nlines_tot:,} / {Ntotal_lines_expected:,} lines. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is completely parsed."
                 else:
-                    pbar_Ntot_message = f"~{Ntotal_lines_expected:,} lines (estimate)"
+                    progress_message = f"  Parsed {Nlines_tot:,} / ~{Ntotal_lines_expected:,} lines (estimate). Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is completely parsed."
                 pb.update(
                     Nlines_tot,
-                    message=f"  Parsed {Nlines_tot:,} / {pbar_Ntot_message}. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete.",
+                    message=progress_message,
                 )
                 # Reinitialize for next read
                 b = np.zeros(
@@ -1183,10 +1196,6 @@ class HITEMPDatabaseManager(DatabaseManager):
                 )  # receives the HITRAN 160-character data.
         writer.combine_temp_batch_files(local_file)  # used for vaex mode only
         if pbar_last:
-            pb.update(
-                Nlines_tot,
-                message=f"  Parsed {Nlines_tot:,} / {Nlines_tot:,} lines. Wavenumber range {wmin:.2f}-{wmax:.2f} cm-1 is complete.",
-            )
             pb.done()
         else:
             print("")
