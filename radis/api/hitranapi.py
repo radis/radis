@@ -169,6 +169,7 @@ def hit2df(
     engine="pytables",
     output="pandas",
     parse_quanta=True,
+    cache_directory_path=None,
     fast_parsing=True,
 ):
     """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe
@@ -205,6 +206,8 @@ def hit2df(
         Default ``True``.
     output : str
         output format of data as pandas Dataformat or vaex Dataformat
+    cache_directory_path : str or None, optional
+        Directory to store/read cache files. If None, use the directory of `fname`.
 
     Returns
     -------
@@ -258,7 +261,15 @@ def hit2df(
     columns = columns_2004
 
     # Use cache file if possible
-    fcache = DataFileManager(engine).cache_file(fname)
+    if cache_directory_path:
+        base_filename = os.path.basename(fname)
+        possible_cache_file = os.path.join(cache_directory_path, base_filename)
+        fcache = DataFileManager(engine).cache_file(possible_cache_file)
+    else:
+        fcache = DataFileManager(engine).cache_file(
+            fname
+        )  # Use default cache directory
+
     if cache and exists(fcache):
         relevant_if_metadata_above = (
             {"wavenum_max": load_wavenum_min} if load_wavenum_min else {}
@@ -839,25 +850,35 @@ def _parse_HITRAN_class5(df, verbose=True, dataframe_type="pandas"):
 
         return pd.concat([df, dgu, dgl], axis=1)
     elif dataframe_type == "vaex":
-        # 1. Parse
-        extracted_values = df["globu"].str.extract_regex(
-            pattern=r"[ ]{6}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<ru>\d)"
-        )
+        # Define slices for extracting values from globu and globl
+        _GLOBU_SLICES = {
+            "v1u": (6, 8),
+            "v2u": (8, 10),
+            "l2u": (10, 12),
+            "v3u": (12, 14),
+            "ru": (14, 15),
+        }
+        _GLOBL_SLICES = {
+            "v1l": (6, 8),
+            "v2l": (8, 10),
+            "l2l": (10, 12),
+            "v3l": (12, 14),
+            "rl": (14, 15),
+        }
 
-        extract_columns(df, extracted_values, ["v1u", "v2u", "l2u", "v3u", "ru"])
+        for name, (i0, i1) in _GLOBU_SLICES.items():
+            df[name] = df["globu"].str.slice(i0, i1).str.strip()
 
-        extracted_values = df["globl"].str.extract_regex(
-            pattern=r"[ ]{6}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})(?P<rl>\d)"
-        )
+        for name, (i0, i1) in _GLOBL_SLICES.items():
+            df[name] = df["globl"].str.slice(i0, i1).str.strip()
 
-        extract_columns(df, extracted_values, ["v1l", "v2l", "l2l", "v3l", "rl"])
+        # Replace spaces with empty strings for numeric columns
+        for col in ["v1u", "v2u", "l2u", "v3u", "v1l", "v2l", "l2l", "v3l"]:
+            df[col] = df[col].str.replace(" ", "")
 
-        # # 2. Convert to numeric
-        # cast_to_int64_with_missing_values(
-        #     df,
-        #     ["v1u", "v2u", "l2u", "v3u", "ru", "v1l", "v2l", "l2l", "v3l", "rl"],
-        #     dataframe_type=dataframe_type,
-        # )
+        numeric_cols = list(_GLOBU_SLICES.keys()) + list(_GLOBL_SLICES.keys())
+        for col in numeric_cols:
+            df[col] = df[col].astype("int64")
 
         # 3. Clean
         df.drop("globu", inplace=True)
@@ -921,7 +942,8 @@ def _parse_HITRAN_class6_fast_parsing(df, verbose=True, dataframe_type="pandas")
             df[name] = df["globl"].str.slice(i0, i1).str.strip().astype("int64")
         df.drop("globu", inplace=True)
         df.drop("globl", inplace=True)
-    else:
+        return df
+    elif dataframe_type == "pandas":
         for name, (i0, i1) in _GLOBU_SLICES.items():
             series = df["globu"].str.slice(i0, i1).str.strip().replace("", "0")
             df[name] = series.astype("int64")
@@ -929,8 +951,9 @@ def _parse_HITRAN_class6_fast_parsing(df, verbose=True, dataframe_type="pandas")
             series = df["globl"].str.slice(i0, i1).str.strip().replace("", "0")
             df[name] = series.astype("int64")
         df.drop(columns=["globu", "globl"], inplace=True)
-
-    return df
+        return df
+    else:
+        raise NotImplementedError(dataframe_type)
 
 
 def _parse_HITRAN_class6(df, verbose=True, dataframe_type="pandas"):
@@ -1223,7 +1246,8 @@ def _parse_HITRAN_group1_fast_parsing(df, verbose=True, dataframe_type="pandas")
                 df[name] = df["locu"].str.slice(i0, i1).str.strip()
         df.drop("locu", inplace=True)
         df.drop("locl", inplace=True)
-    else:
+        return df
+    elif dataframe_type == "pandas":
         # str.slice + astype in one go
         for name, (i0, i1) in _LOCU_SLICES.items():
             series = df["locu"].str.slice(i0, i1).str.strip().replace("", "0")
@@ -1240,8 +1264,9 @@ def _parse_HITRAN_group1_fast_parsing(df, verbose=True, dataframe_type="pandas")
                 df[name] = series
 
         df.drop(columns=["locu", "locl"], inplace=True)
-
-    return df
+        return df
+    else:
+        raise NotImplementedError(dataframe_type)
 
 
 def _parse_HITRAN_group1(df, verbose=True, dataframe_type="pandas"):
@@ -1355,6 +1380,84 @@ def _parse_HITRAN_group1(df, verbose=True, dataframe_type="pandas"):
         raise NotImplementedError(dataframe_type)
 
 
+def _parse_HITRAN_group2_fast_parsing(df, verbose=True, dataframe_type="pandas"):
+    r"""Parse diatomic and linear molecules (:py:attr:`~radis.db.classes.HITRAN_GROUP2` ):
+    CO2, N2O, CO, HF, HCl, HBr, HI, OCS, N2, HCN, C2H2, NO+
+
+    Parameters
+    ----------
+
+    df: pandas Dataframe
+        lines read from a HITRAN-like database
+    dataframe_type : str
+        pandas or vaex
+
+    Returns
+    -------
+        pandas Dataframe or Vaex Dataframe
+
+
+    Notes
+    -----
+
+    This function is a fast parsing version that does not use regular expressions.
+    This makes it faster but less flexible. Currently, it behaves the same as the
+    equivalent regex version.
+
+    Added in PR #836.
+
+    HITRAN syntax: [1]
+
+
+    References
+    ----------
+
+    .. [1] `Table 4 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
+
+    """
+    # Define slicing positions
+    _LOCU_SLICES = {
+        "Fu": (10, 15),
+    }
+    _LOCL_SLICES = {
+        "branch": (5, 6),
+        "jl": (6, 9),
+        "syml": (9, 10),
+        "Fl": (10, 15),
+    }
+
+    if dataframe_type == "vaex":
+        # Use vaex string slicing and assignment
+        for name, (i0, i1) in _LOCU_SLICES.items():
+            df[name] = df["locu"].str.slice(i0, i1).str.strip()
+        for name, (i0, i1) in _LOCL_SLICES.items():
+            series = df["locl"].str.slice(i0, i1).str.strip()
+            if name == "jl":
+                df[name] = series.astype("int64")
+            else:
+                df[name] = series
+        df.drop("locu", inplace=True)
+        df.drop("locl", inplace=True)
+        return df
+    elif dataframe_type == "pandas":
+        # pandas: str.slice + replace + astype
+        for name, (i0, i1) in _LOCU_SLICES.items():
+            series = df["locu"].str.slice(i0, i1).str.strip().replace("", "0")
+            df[name] = series
+
+        for name, (i0, i1) in _LOCL_SLICES.items():
+            series = df["locl"].str.slice(i0, i1).str.strip().replace("", "0")
+            if name == "jl":
+                df[name] = series.astype("int64")
+            else:
+                df[name] = series
+
+        df.drop(columns=["locu", "locl"], inplace=True)
+        return df
+    else:
+        raise NotImplementedError(dataframe_type)
+
+
 def _parse_HITRAN_group2(df, verbose=True, dataframe_type="pandas"):
     r"""Parse diatomic and linear molecules (:py:attr:`~radis.db.classes.HITRAN_GROUP2` ):
     CO2, N2O, CO, HF, HCl, HBr, HI, OCS, N2, HCN, C2H2, NO+
@@ -1420,25 +1523,25 @@ def _parse_HITRAN_group2(df, verbose=True, dataframe_type="pandas"):
         return pd.concat([df, dgu, dgl], axis=1)
     elif dataframe_type == "vaex":
         # 1.Parse
-        extracted_values = df["locu"].str.extract_regex(pattern=r"[ ]{10}(?P<Fu>.{5})")
-        extract_columns(df, extracted_values, ["Fu"])
+        _LOCU_SLICES = {
+            "Fu": (10, 15),
+        }
 
-        # dgu = df["locu"].astype(str).str.extract(r"[ ]{10}(?P<Fu>.{5})", expand=True)
-        # Ref [1] : locl
-        # --------------
-        #     | Br  | J'' | Sym''| F'' |
-        # 5X  | A1  | I3  | A1   | A5  |
+        _LOCL_SLICES = {
+            "branch": (5, 6),
+            "jl": (6, 9),
+            "syml": (9, 10),
+            "Fl": (10, 15),
+        }
 
-        extracted_values = df["locl"].str.extract_regex(
-            pattern=r"[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<syml>.)(?P<Fl>.{5})"
-        )
+        for name, (i0, i1) in _LOCU_SLICES.items():
+            df[name] = df["locu"].str.slice(i0, i1).str.strip()
 
-        extract_columns(df, extracted_values, ["branch", "jl", "syml", "Fl"])
+        for name, (i0, i1) in _LOCL_SLICES.items():
+            df[name] = df["locl"].str.slice(i0, i1).str.strip()
 
-        # # 2. Convert to numeric
-        # cast_to_int64_with_missing_values(
-        #     df, ["Fu", "branch", "jl", "syml", "Fl"], dataframe_type=dataframe_type
-        # )
+        df["jl"] = df["jl"].str.replace(" ", "")  # remove spaces first
+        df["jl"] = df["jl"].astype("int64")
 
         # 3. Clean
         df.drop("locu", inplace=True)
@@ -1609,7 +1712,14 @@ def parse_local_quanta(
             )
 
     elif mol in HITRAN_GROUP2:
-        df = _parse_HITRAN_group2(df, verbose=verbose, dataframe_type=dataframe_type)
+        if fast_parsing:
+            df = _parse_HITRAN_group2_fast_parsing(
+                df, verbose=verbose, dataframe_type=dataframe_type
+            )
+        else:
+            df = _parse_HITRAN_group2(
+                df, verbose=verbose, dataframe_type=dataframe_type
+            )
     elif mol in HITRAN_GROUP3:
         df = _parse_HITRAN_group3(df, verbose=verbose)
     elif mol in HITRAN_GROUP4:
@@ -1765,7 +1875,8 @@ class HITRANDatabaseManager(DatabaseManager):
 
             """
             directory = abspath(expanduser(directory))
-
+            max_fetch_retries = 3
+            retry_delay = 1
             # create temp folder :
             from radis.misc.basics import make_folders
 
@@ -1789,20 +1900,38 @@ class HITRANDatabaseManager(DatabaseManager):
                         )
                         os.remove(join(directory, file + ".data"))
                 try:
-                    if extra_params == "all":
-                        fetch(
-                            file,
-                            get_molecule_identifier(molecule),
-                            iso,
-                            wmin,
-                            wmax,
-                            ParameterGroups=[*PARAMETER_GROUPS_HITRAN],
-                        )
-                    elif extra_params is None:
-                        fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax)
-                    else:
-                        raise ValueError("extra_params can only be 'all' or None ")
-                except KeyError as err:
+                    for attempt in range(max_fetch_retries):
+                        if extra_params == "all":
+                            fetch(
+                                file,
+                                get_molecule_identifier(molecule),
+                                iso,
+                                wmin,
+                                wmax,
+                                ParameterGroups=[*PARAMETER_GROUPS_HITRAN],
+                            )
+                        elif extra_params is None:
+                            fetch(
+                                file, get_molecule_identifier(molecule), iso, wmin, wmax
+                            )
+                        else:
+                            raise ValueError("extra_params can only be 'all' or None ")
+
+                        ### We test if the download went well ###
+                        df = pd.DataFrame(LOCAL_TABLE_CACHE[file]["data"])
+                        if len(df["molec_id"]) != 0:
+                            break  # everything worked well
+                        else:
+                            warning_msg = (
+                                "HITRAN fetch failed. The database looks empty. "
+                                f"Waiting {retry_delay} seconds and trying again (attempt {attempt + 1}/{max_fetch_retries})."
+                            )
+                        if attempt == max_fetch_retries - 1:
+                            warning_msg += "\nLAST ATTEMPT"
+                        warnings.warn(warning_msg, UserWarning, stacklevel=2)
+                        time.sleep(retry_delay)
+                        retry_delay *= 2  # exponential
+                except KeyError as err:  # check for missing isotopes. If the isotope is missing, skip to next up to isotope 9
                     list_pattern = ["(", ",", ")"]
                     import re
 

@@ -219,6 +219,10 @@ trans = {
     "53": "CS2",
     "54": "CH3I",
     "55": "NF3",
+    "56": "HONO",
+    "57": "COFCl",
+    "58": "S2",
+    "59": "ClNO2",
 }
 HITRAN_MOLECULES = list(trans.values())
 """ str: list of [HITRAN-2020]_ molecules. """
@@ -339,15 +343,19 @@ def to_conventional_name(species):
         roman = int_to_roman(charge + 1)
         return f"{symbol}_{roman}"
     if "+" in species:
-        # Count the number of positive charges
-        chargeplus1 = (
-            species.count("+") + 1
-        )  # Add one to convert to conventional notation
-        # Get the element of the species without the charge
-        element_name = species.split("+")[0]
-        # Convert the charge to roman notation
-        chargeplus1_in_roman = int_to_roman(chargeplus1)
-        return f"{element_name}_{chargeplus1_in_roman}"
+        # Only treat as an atomic species if the part before '+' looks like
+        # an atomic symbol (1-2 letters, first uppercase, optional second lowercase)
+        # and is present in the periodictable module. Otherwise treat as a
+        # molecular cation and return unchanged (e.g., 'NO+' stays 'NO+').
+        base = species.split("+")[0]
+        if base == "NO":  # Known exception for nitric oxide cation (HITRAN)
+
+            return species  # Not an element symbol: treat as molecule (leave unchanged)
+        if re.fullmatch(r"[A-Z][a-z]?", base):
+            # Count the number of positive charges and convert to roman notation
+            chargeplus1 = species.count("+") + 1
+            chargeplus1_in_roman = int_to_roman(chargeplus1)
+            return f"{base}_{chargeplus1_in_roman}"
     if " " in species.strip():
         species = species.replace(" ", "_")
     atomic_symbol = species.split("_")[0]

@@ -8,6 +8,9 @@ include radis/gpu/vulkan/bin/*.*
 include radis/phys/units.txt
 include radis/db/molparam.txt
 include radis/db/molparams_extra.json
+include radis/db/offset_arr.npy
+include radis/db/wavenumber_arr.npy
+include radis/db/wav_index.json
 include radis/default_radis.json
 
 # Include hardcoded informations for databases

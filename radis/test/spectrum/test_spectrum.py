@@ -479,7 +479,7 @@ def test_noplot_different_quantities(*args, **kwargs):
 
 
 @pytest.mark.fast
-def test_plot_by_parts(plot=True, *args, **kwargs):
+def test_plot_by_parts(plot=False, *args, **kwargs):
     """Test :py:func:`~radis.misc.plot.split_and_plot_by_parts`
     and plot_by_parts=True in :py:meth:`~radis.spectrum.spectrum.Spectrum.plot`
     """
@@ -571,6 +571,7 @@ def test_argmax_argmin(*args, **kwargs):
     assert np.isclose(s.take("abscoeff").argmin(value_only=True), 2144.215391118094)
 
 
+@pytest.mark.fast
 def test_fitting_lineshape(verbose=False, plot=False, *args, **kwargs):
     """Test :py:meth:`~radis.spectrum.spectrum.Spectrum.fit_model``"""
 

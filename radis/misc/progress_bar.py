@@ -87,10 +87,17 @@ class ProgressBar:
         N = self.N
         t0 = self.t0
         if i % modulo == 0:
-            if t0 is None:
-                msg = f"{i / N * 100:.1f}%\t{message}"
+            # Show raw counts when total unknown (N=0 or None)
+            if N is None or N == 0:
+                if t0 is None:
+                    msg = f"Parsed {i:,} lines\t{message}"
+                else:
+                    msg = f"({time() - t0:.0f}s)\tParsed {i:,} lines\t{message}"
             else:
-                msg = f"({time() - t0:.0f}s)\t{i / N * 100:.1f}%\t{message}"
+                if t0 is None:
+                    msg = f"{i / N * 100:.1f}%\t{message}"
+                else:
+                    msg = f"({time() - t0:.0f}s)\t{i / N * 100:.1f}%\t{message}"
 
             if sys.stdout is not None:
                 sys.stdout.write("\r" + msg)
@@ -101,7 +108,9 @@ class ProgressBar:
         if not self.active:
             return
 
-        self.update(self.N)
+        # Skip final update if total is unknown
+        if self.N is not None and self.N != 0:
+            self.update(self.N)
         # make new line
         if sys.stdout is not None:
             sys.stdout.write("\n")

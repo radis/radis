@@ -49,7 +49,7 @@ except ImportError:
 @pytest.mark.needs_config_file
 @pytest.mark.needs_db_CDSD_HITEMP
 def test_spec_generation(
-    plot=True,
+    plot=False,
     verbose=2,
     warnings=True,
     update_reference_spectrum=False,
@@ -780,6 +780,6 @@ def test_vaex_and_pandas_spectrum_noneq():
 
 # --------------------------
 if __name__ == "__main__":
-
-    printm("Testing factory:", pytest.main(["test_factory.py", "--pdb"]))
+    test_vaex_and_pandas_spectrum_noneq()
+    # printm("Testing factory:", pytest.main(["test_factory.py", "--pdb"]))
 #    printm('Testing factory:', pytest.main(['test_factory.py', '-k', 'test_wavenumber_units_conversion']))
