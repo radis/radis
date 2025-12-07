@@ -742,7 +742,7 @@ def test_get_wavenumber_range(*args, **kwargs):
         get_wavenumber_range(wmin=1 * u.cm, wmax=2 * u.cm, wunit="cm-1")
 
 
-def test_input_wunit(plot=False, *args, **kwargs):
+def test_input_wunit(plot=True, *args, **kwargs):
     """Test spectrum default units are properly when giving inputs in wavenumber
     or wavelength ; and test that intensity units are consistent too"""
 
