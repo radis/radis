@@ -85,7 +85,7 @@ def test_linestrength_calculations(*args, **kwargs):
 
 
 @pytest.mark.fast
-def test_export_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
+def test_export_populations(plot=False, verbose=True, warnings=True, *args, **kwargs):
     """Check populations calculated in the nonequilibrium module are exported in Spectrum.
 
     Compare with hardcoded values
@@ -149,7 +149,7 @@ def test_export_populations(plot=True, verbose=True, warnings=True, *args, **kwa
 
 @pytest.mark.fast
 def test_export_rovib_fractions(
-    plot=True, verbose=True, warnings=True, *args, **kwargs
+    plot=False, verbose=True, warnings=True, *args, **kwargs
 ):
     """Compare rovib fraction (nu_vib, nl_vib, nu_rot, nl_rot) are calculated
     in the nonequilibrium module
@@ -202,7 +202,7 @@ def test_export_rovib_fractions(
 
 @pytest.mark.fast
 def test_populations_CO2_hamiltonian(
-    plot=True, verbose=True, warnings=True, *args, **kwargs
+    plot=False, verbose=True, warnings=True, *args, **kwargs
 ):
     """Calculate nonequilibrium modes with the CO2 Hamiltonian
 
@@ -273,7 +273,7 @@ def test_populations_CO2_hamiltonian(
 
 
 # @pytest.mark.needs_connection
-def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
+def test_optically_thick_limit_1iso(verbose=True, plot=False, *args, **kwargs):
     """Test that we find Planck in the optically thick limit
 
     In particular, this test will fail if :
@@ -405,7 +405,7 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
         radis.config["DEBUG_MODE"] = DEBUG_MODE
 
 
-def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
+def test_optically_thick_limit_2iso(verbose=True, plot=False, *args, **kwargs):
     """Test that we find Planck in the optically thick limit
 
     In particular, this test will fail if :
@@ -742,7 +742,7 @@ def test_get_wavenumber_range(*args, **kwargs):
         get_wavenumber_range(wmin=1 * u.cm, wmax=2 * u.cm, wunit="cm-1")
 
 
-def test_input_wunit(plot=True, *args, **kwargs):
+def test_input_wunit(plot=False, *args, **kwargs):
     """Test spectrum default units are properly when giving inputs in wavenumber
     or wavelength ; and test that intensity units are consistent too"""
 

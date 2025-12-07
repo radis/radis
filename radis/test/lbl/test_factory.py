@@ -49,7 +49,7 @@ except ImportError:
 @pytest.mark.needs_config_file
 @pytest.mark.needs_db_CDSD_HITEMP
 def test_spec_generation(
-    plot=True,
+    plot=False,
     verbose=2,
     warnings=True,
     update_reference_spectrum=False,

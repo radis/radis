@@ -750,7 +750,7 @@ def test_Morse_Potential_effect_CO(
     assert abs(Q_nomorse - Q_morse) / Q_morse < rtol
 
 
-def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
+def test_levels_regeneration(verbose=True, warnings=True, plot=False, *args, **kwargs):
     """Test that we regenerate levels file automatically if manually changed
 
     see https://github.com/radis/radis/issues/90
@@ -794,7 +794,8 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
             sf.df0.dropna(inplace=True)
 
         s = sf.non_eq_spectrum(300, 300)
-        s.plot()
+        if plot:
+            s.plot()
 
     # run calculation (SpectrumFactory)
     run_example()
@@ -836,7 +837,7 @@ def test_levels_regeneration(verbose=True, warnings=True, *args, **kwargs):
     reason="Vaex not available, just-in-time partition functions are only implemented in Vaex as of Radis 0.15",
 )
 def test_tabulated_partition_functions(
-    verbose=True, plot=True, rtol=1e-2, *args, **kwargs
+    verbose=True, plot=False, rtol=1e-2, *args, **kwargs
 ):
     """Test just-in-time tabulated partition return the same results as
     full summation within 0.5%  (adjust value with ``rtol``)
@@ -946,7 +947,7 @@ def test_tabulated_partition_functions(
     isinstance(vaex, NotInstalled),
     reason="Vaex not available, just-in-time partition functions are only implemented in Vaex as of Radis 0.15",
 )
-def test_parsum_mode_in_factory(verbose=True, plot=True, *args, **kwargs):
+def test_parsum_mode_in_factory(verbose=True, plot=False, *args, **kwargs):
     """Test Partition function modes in SpectrumFactory
 
     using :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile`
