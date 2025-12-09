@@ -7,6 +7,8 @@ Created on Mon May  7 17:34:52 2018
 
 import astropy.units as u
 import matplotlib.pyplot as plt
+
+plt.ion()
 import numpy as np
 import pytest
 
