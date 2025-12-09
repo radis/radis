@@ -52,7 +52,9 @@ sphinx_gallery.gen_rst.EXAMPLE_HEADER = """
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath(".."))
-sys.path.insert(0, os.path.abspath("../radis")) # Attempt to fix import errors for submodules
+sys.path.insert(
+    0, os.path.abspath("../radis")
+)  # Attempt to fix import errors for submodules
 
 
 # %% ------------------------------------
@@ -86,7 +88,7 @@ extensions = [
     #'numpydoc',
     #'sphinxcontrib.napoleon',
     "sphinx.ext.napoleon",
-    #"sphinx_autodoc_defaultargs",
+    # "sphinx_autodoc_defaultargs",
     "sphinx.ext.intersphinx",
     "sphinx.ext.inheritance_diagram",
     # "sphinxcontrib.apidoc",  # not needed, we run run_apidoc() manually implemented below
