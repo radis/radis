@@ -22,7 +22,11 @@ import radis
 
 try:
     from .cache_files import load_h5_cache_file, save_to_hdf
-    from .tools import drop_object_format_columns, parse_hitran_file, replace_PQR_with_m101
+    from .tools import (
+        drop_object_format_columns,
+        parse_hitran_file,
+        replace_PQR_with_m101,
+    )
 except ImportError:
     if __name__ == "__main__":  # running from this file, as a script
         from radis.api.cache_files import load_h5_cache_file, save_to_hdf
@@ -32,12 +36,9 @@ except ImportError:
 # from typing import Union
 from radis.api.dbmanager import DatabaseManager
 from radis.api.hdf5 import DataFileManager
+from radis.db.classes import HITRAN_GROUP2
 from radis.misc.config import getDatabankEntries
 from radis.misc.warning import DatabaseAlreadyExists
-
-from radis.db.classes import (
-    HITRAN_GROUP2,
-)
 
 # %% Parsing functions
 
@@ -324,6 +325,7 @@ def get_last(b):
     assert (non_zero[threshold + 1 :] == 0).all()
     return b[non_zero]
 
+
 def add_geisa_local_quanta(df, mol=None):
     r"""Extract branch and lower-state rotational quantum number (jl) from GEISA local quanta.
 
@@ -374,12 +376,7 @@ def add_geisa_local_quanta(df, mol=None):
     #    "R  0"  -> "  0" -> "0"
     #    "R 12"  -> " 12" -> "12"
     #    "P130"  -> "130"
-    df["jl"] = (
-        locl.str[1:]
-            .str.strip()
-            .replace("", "0")
-            .astype("int64")
-    )
+    df["jl"] = locl.str[1:].str.strip().replace("", "0").astype("int64")
 
     return df
 
