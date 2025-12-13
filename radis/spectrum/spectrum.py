@@ -6504,6 +6504,11 @@ class Spectrum(object):
         self.conditions["NwL"] = iter_N_L
         self.conditions["NwG"] = iter_N_G
 
+        # Trim GPU output to match wavespace size
+        if "wavespace" in self._q:
+            n = len(self._q["wavespace"])
+            abscoeff = abscoeff[:n]
+
         # TODO : refactor this function and the update() mechanism. Ensure conditions are correct.
         for k in list(self._q.keys()):  # reset all quantities
             if k in ["wavespace", "wavelength", "wavenumber"]:
