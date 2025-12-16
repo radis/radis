@@ -25,7 +25,7 @@ except ImportError:
 
 # pytestmark = pytest.mark.random_order(disabled=True)
 
-
+@pytest.mark.fetch_test
 @pytest.mark.needs_connection
 @pytest.mark.fast
 @pytest.mark.needs_HITRAN_credentials
@@ -89,7 +89,7 @@ def test_relevant_files_filter():
         "02_00750-01000_HITEMP2010.zip",
     ]
 
-
+@pytest.mark.fetch_test
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.needs_connection
 def test_fetch_hitemp_OH_pytables(verbose=True, *args, **kwargs):
@@ -132,7 +132,7 @@ def test_fetch_hitemp_OH_pytables(verbose=True, *args, **kwargs):
         engine="pytables",
     )
 
-
+@pytest.mark.fetch_test
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
@@ -233,7 +233,7 @@ def test_fetch_hitemp_OH_vaex(verbose=True, *args, **kwargs):
 #     assert len(local_files) == 1
 #     assert basename(local_files[0]).startswith("CO2-02_02500-03000_HITEMP2010.")
 
-
+@pytest.mark.fetch_test
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
@@ -268,7 +268,7 @@ def test_read_wav_index():
     ]
     assert all_pairs == expected_pairs
 
-
+@pytest.mark.fetch_test
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.download_large_databases
@@ -322,7 +322,7 @@ def test_fetch_hitemp_all_molecules(molecule, verbose=True, *args, **kwargs):
 
     assert len(df) == Nlines
 
-
+@pytest.mark.fetch_test
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.download_large_databases
@@ -353,7 +353,7 @@ def test_fetch_hitemp_all_molecules_2010_version(
 
     assert f"HITEMP-{molecule}-2010" in getDatabankList()
 
-
+@pytest.mark.fetch_test
 @pytest.mark.fast
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
@@ -412,7 +412,7 @@ def test_partial_loading(*args, **kwargs):
     )
     assert set(df.iso.unique()) == {1, 2}
 
-
+@pytest.mark.fetch_test
 @pytest.mark.fast
 @pytest.mark.needs_connection
 @pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
@@ -460,7 +460,7 @@ def test_partial_loading_vaex(*args, **kwargs):
     assert df.wav.max() <= wmax2
     assert set(df.iso.unique()) == {2, 3}
 
-
+@pytest.mark.fetch_test
 @pytest.mark.fast
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
@@ -493,7 +493,7 @@ def test_calc_hitemp_spectrum(*args, **kwargs):
 
     return
 
-
+@pytest.mark.fetch_test
 @pytest.mark.fast
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
@@ -526,7 +526,7 @@ def test_calc_hitemp_spectrum_2010_version(*args, **kwargs):
         verbose=False,
     )
 
-
+@pytest.mark.fetch_test
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 def test_calc_hitemp_CO_noneq(verbose=True, *args, **kwargs):
@@ -569,7 +569,7 @@ def test_calc_hitemp_CO_noneq(verbose=True, *args, **kwargs):
         databank="HITEMP-CO",  # registered in ~/radis.json
     )
 
-
+@pytest.mark.fetch_test
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 @pytest.mark.download_large_databases
