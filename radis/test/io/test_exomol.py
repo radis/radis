@@ -57,7 +57,7 @@ def test_exomol_parsing_functions(verbose=True, *args, **kwargs):
             for dat in lookup_databases:
                 assert dat in known_databases
 
-
+@pytest.mark.fetch_test
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
 def test_calc_exomol_vs_hitemp(verbose=True, plot=False, *args, **kwargs):
