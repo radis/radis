@@ -355,15 +355,9 @@ def add_geisa_local_quanta(df, mol=None):
 
         - ``branch`` : str
         - ``jl`` : int
-
-    Notes
-    -----
-    This is a GEISA-specific post-processing step. It mirrors, in a simplified way,
-    the HITRAN/HITEMP treatment of local quanta for diatomic / linear molecules,
-    but uses the GEISA ``locl`` layout instead of HITRAN fixed-width slices.
     """
     # Only apply to diatomic / linear molecules (HITRAN Group 2)
-    if mol is None or mol.upper() not in HITRAN_GROUP2:
+    if mol is None or mol not in HITRAN_GROUP2:
         return df
 
     # Ensure we have a clean string representation of locl
@@ -376,7 +370,9 @@ def add_geisa_local_quanta(df, mol=None):
     #    "R  0"  -> "  0" -> "0"
     #    "R 12"  -> " 12" -> "12"
     #    "P130"  -> "130"
-    df["jl"] = locl.str[1:].str.strip().replace("", "0").astype("int64")
+    #    "R21E"  -> "21E" -> "21" // Ignore E/F Parities
+    # jl: extract numeric J value only (ignore E/F parity)
+    df["jl"] = locl.str.extract(r"(\d+)", expand=False).fillna("0").astype("int64")
 
     return df
 

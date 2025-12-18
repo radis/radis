@@ -16,7 +16,8 @@ import astropy.units as u
 import numpy as np
 import pytest
 
-from radis.api.geisaapi import gei2df
+from radis.api.geisaapi import add_geisa_local_quanta, gei2df
+from radis.api.tools import replace_PQR_with_m101
 from radis.test.utils import getTestFile
 
 files = {
@@ -41,7 +42,24 @@ def test_local_geisa_co(verbose=True, warnings=True, **kwargs):
 
     # 1. Load local file
     fileName = files["CO"]
-    df = gei2df(getTestFile(fileName), cache="regen")
+    df = gei2df(getTestFile(fileName), drop_non_numeric=False, cache="regen")
+    # Post Processing
+    df = add_geisa_local_quanta(df, mol="CO")
+    # Switch 'P', 'Q', 'R' to -1, 0, 1
+    if "branch" in df:
+        replace_PQR_with_m101(df)
+
+    # Ensure branch information exists after post-processing
+    assert "branch" in df.columns
+    assert "jl" in df.columns
+
+    # Validate that all branch values are correctly mapped:
+    # P → -1, Q → 0, R → 1
+    valid_branches = {-1, 0, 1}
+
+    # Check that no unexpected branch values are present
+    assert set(df["branch"].unique()).issubset(valid_branches)
+
     if verbose:
         print(f"Read {fileName}")
         print("-------------------------------------")
@@ -99,7 +117,23 @@ def test_local_geisa_co2(verbose=True, warnings=True, **kwargs):
 
     # 1. Load local file
     fileName = files["CO2"]
-    df = gei2df(getTestFile(fileName), cache="regen")
+    df = gei2df(getTestFile(fileName), drop_non_numeric=False, cache="regen")
+    # Post Processing
+    df = add_geisa_local_quanta(df, mol="CO2")
+    # Switch 'P', 'Q', 'R' to -1, 0, 1
+    if "branch" in df:
+        replace_PQR_with_m101(df)
+
+    # Ensure branch information exists after post-processing
+    assert "branch" in df.columns
+    assert "jl" in df.columns
+
+    # Validate that all branch values are correctly mapped:
+    # P → -1, Q → 0, R → 1
+    valid_branches = {-1, 0, 1}
+
+    # Check that no unexpected branch values are present
+    assert set(df["branch"].unique()).issubset(valid_branches)
     if verbose:
         print(f"Read {fileName}")
         print("-------------------------------------")
