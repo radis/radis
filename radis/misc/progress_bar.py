@@ -117,6 +117,52 @@ class ProgressBar:
             sys.stdout.flush()
 
 
+# %% Helper functions for database fetch progress display
+
+
+def print_database_header(
+    database, molecule, wavenum_min=None, wavenum_max=None, isotope=None, **kwargs
+):
+    """Print a standardized header for database fetch operations.
+
+    Parameters
+    ----------
+    database : str
+        Database name (e.g., 'HITRAN', 'HITEMP 2024', 'ExoMol')
+    molecule : str
+        Molecule name
+    wavenum_min, wavenum_max : float, optional
+        Wavenumber range in cm-1
+    isotope : str, optional
+        Isotope identifier
+    **kwargs : dict
+        Additional info to display (e.g., local_folder, database_version)
+    """
+    print("-" * 80)
+    header = f"{molecule} - {database}"
+    if wavenum_min is not None and wavenum_max is not None:
+        header += f" - {wavenum_min:.1f}-{wavenum_max:.1f} cm-1"
+    print(header)
+    print("-" * 80)
+
+    if isotope is not None:
+        print(f"Isotope: {isotope}")
+    for key, value in kwargs.items():
+        label = key.replace("_", " ").capitalize()
+        print(f"{label}: {value}")
+
+
+def print_database_section(section_name):
+    """Print a section header with underline formatting.
+
+    Parameters
+    ----------
+    section_name : str
+        Section name (e.g., 'Download', 'Processing', 'Parsing')
+    """
+    print(f"\n\x1b[4m{section_name}:\x1b[0m")
+
+
 # %% Now tested in radis/radis/test/test_misc.py
 # def test_progress_bar(*args, **kwargs):
 #    ''' Minimal example of a progress bar '''

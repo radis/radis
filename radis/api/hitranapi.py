@@ -303,6 +303,12 @@ def hit2df(
         raise ValueError(
             f"You're trying to read a binary file {fname} instead of an HITRAN file"
         ) from err
+    
+    if verbose:
+        from radis.misc.progress_bar import print_database_header, print_database_section
+        print_database_header("HITRAN", mol, local_file=fname)
+        print_database_section("Parsing")
+    
     df = parse_hitran_file(fname, columns, output=output, molecule=mol)
     df = post_process_hitran_data(
         df,
@@ -320,7 +326,7 @@ def hit2df(
             "wavenum_max": df.wav.max(),
         }
         if verbose:
-            print(f"Generating cache file {fcache} with metadata :\n{new_metadata}")
+            print(f"Generating cache file with metadata: {new_metadata}")
         from radis import __version__
 
         try:

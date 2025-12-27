@@ -1387,25 +1387,29 @@ class MdbExomol(DatabaseManager):
                 self.trans_file.append(trans_file)
                 self.num_tag.append(dic_def["numtag"][i])
 
-        # some verbose
+        # Print database info
         if self.verbose:
-            print("Molecule: ", molecule)
-            print("Isotopologue: ", self.isotope_fullname)
-            print("ExoMol database: ", database)
-            print("Local folder: ", self.path)
-            print("Transition files: ")
+            from radis.misc.progress_bar import print_database_header, print_database_section
+
+            print_database_header(
+                f"ExoMol - {database}" if database else "ExoMol",
+                molecule,
+                isotope=self.isotope_fullname,
+                local_folder=str(self.path),
+            )
+            print_database_section("Transition files")
 
         # Look-up missing parameters and write file
         # -----------------------------------------
         for trans_file, num_tag in zip(self.trans_file, self.num_tag):
             if self.verbose:
                 print(
-                    f"\t => File {os.path.splitext(os.path.basename((trans_file)))[0]}"
+                    f"  File {os.path.splitext(os.path.basename((trans_file)))[0]}"
                 )
 
             if cache == "regen" and mgr.cache_file(trans_file).exists():
                 if self.verbose:
-                    print("\t\t => `regen = True`. Removing the file")
+                    print("    => `regen = True`. Removing the file")
                 os.remove(mgr.cache_file(trans_file))
 
             if not mgr.cache_file(trans_file).exists():
@@ -1418,9 +1422,9 @@ class MdbExomol(DatabaseManager):
                     self.download(molec, extension=[".trans.bz2"], numtag=num_tag)
                 if self.verbose:
                     print(
-                        f"\t\t => Caching the *.trans.bz2 file to the {engine} (*.h5) format. After the second time, it will become much faster."
+                        f"    => Caching to {engine} format. This will be faster next time."
                     )
-                    print(f"\t\t => You can deleted the 'trans.bz2' file by hand.")
+                    print(f"    => You can delete the '.trans.bz2' file manually.")
                 trans = read_trans(
                     trans_file, engine="vaex" if engine == "vaex" else "csv"
                 )
@@ -1792,7 +1796,24 @@ class MdbExomol(DatabaseManager):
                         f"\t\t => Downloading from {pfpath}"
                     )  # modify indent accordingly print in __init__
                 try:
-                    urllib.request.urlretrieve(pfpath, str(self.path / pfname))
+                    from tqdm import tqdm
+                    
+                    # Download with progress bar
+                    response = urllib.request.urlopen(pfpath)
+                    total_size = int(response.headers.get('Content-Length', 0))
+                    
+                    with open(str(self.path / pfname), 'wb') as f:
+                        if total_size and self.verbose:
+                            with tqdm(total=total_size, unit='B', unit_scale=True, desc=f"Downloading {pfname}") as pbar:
+                                while True:
+                                    chunk = response.read(8192)
+                                    if not chunk:
+                                        break
+                                    f.write(chunk)
+                                    pbar.update(len(chunk))
+                        else:
+                            f.write(response.read())
+                            
                 except HTTPError:
                     if ext == ".broad":
                         partners_success[index] = False

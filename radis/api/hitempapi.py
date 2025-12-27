@@ -706,16 +706,20 @@ def read_and_write_chunked_for_CO2(
             files_to_download.append((start_wavno, end_wavno, out_decompressed_file))
 
     if verbose:
-        print("-" * 80)
-        print(
-            f"CO2 - HITEMP 2024 - Downloading and processing {len(wav_pairs)} chunks for range {load_wavenum_min}-{load_wavenum_max} cm⁻¹"
+        from radis.misc.progress_bar import print_database_header, print_database_section
+
+        print_database_header(
+            "HITEMP 2024",
+            "CO2",
+            wavenum_min=load_wavenum_min,
+            wavenum_max=load_wavenum_max,
+            chunks=f"{len(wav_pairs)} chunks",
         )
-        print("-" * 80)
 
     # Download section
     if files_to_download:
         if verbose:
-            print(f"\n\x1b[4mDownload:\x1b[0m")
+            print_database_section("Download")
             print(
                 f"- Download {len(files_to_download)} file(s) missing out of {len(wav_pairs)}."
             )
