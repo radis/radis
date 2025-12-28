@@ -6,6 +6,7 @@ from os.path import abspath, dirname, exists, expanduser, join, split, splitext
 
 try:
     from ..misc.config import addDatabankEntries, getDatabankEntries, getDatabankList
+    from ..misc.database_progress import DatabaseProgressPrinter
     from ..misc.printer import printr
     from ..misc.utils import NotInstalled, not_installed_vaex_args
     from ..misc.warning import DatabaseAlreadyExists, DeprecatedFileWarning
@@ -20,6 +21,7 @@ except ImportError:
             getDatabankEntries,
             getDatabankList,
         )
+        from radis.misc.database_progress import DatabaseProgressPrinter
         from radis.misc.printer import printr
         from radis.misc.utils import NotInstalled, not_installed_vaex_args
         from radis.misc.warning import DatabaseAlreadyExists, DeprecatedFileWarning
@@ -388,6 +390,15 @@ class DatabaseManager(object):
         molecule = self.molecule
         parallel = self.parallel
 
+        # Initialize progress printer for consistent output
+        printer = DatabaseProgressPrinter(
+            database_name=self.name.split("-")[0] if "-" in self.name else self.name,
+            molecule=molecule,
+            verbose=verbose,
+        )
+        printer.header("Downloading database")
+        printer.section("Download")
+
         from time import time
 
         t0 = time()
@@ -402,12 +413,9 @@ class DatabaseManager(object):
         Nlines_total = 0
         Ntotal_downloads = len(local_files)
 
-        def download_and_parse_one_file(urlname, local_file, Ndownload):
-            if verbose:
-                inputf = urlname.split("/")[-1]
-                print(
-                    f"Downloading {inputf} for {molecule} ({Ndownload}/{Ntotal_downloads})."
-                )
+        def download_and_parse_one_file(urlname, local_file, Ndownload, printer):
+            inputf = urlname.split("/")[-1]
+            printer.info(f"Downloading {inputf} ({Ndownload}/{Ntotal_downloads})", indent=1)
 
             # Download file with requests
             if "hitemp" in urlname.lower():
@@ -451,10 +459,24 @@ class DatabaseManager(object):
                     r'[<>:"/\\|?*&=]', "_", temp_file_path
                 )  # Sanitize the filename to remove invalid characters for Windows
 
+                # Get total file size for progress bar
+                total_size = int(response.headers.get("content-length", 0))
+                
+                # Download with progress bar
+                from tqdm import tqdm
                 with open(f"{temp_file_path}", "wb") as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        if chunk:  # filter out keep-alive new chunks
-                            f.write(chunk)
+                    with tqdm(
+                        total=total_size,
+                        unit="B",
+                        unit_scale=True,
+                        unit_divisor=1024,
+                        desc="Downloading",
+                        disable=not verbose,
+                    ) as pbar:
+                        for chunk in response.iter_content(chunk_size=8192):
+                            if chunk:  # filter out keep-alive new chunks
+                                f.write(chunk)
+                                pbar.update(len(chunk))
 
                 # Create an opener object using the global RequestsFileOpener class
                 opener = RequestsFileOpener(temp_file_path)
@@ -485,14 +507,13 @@ class DatabaseManager(object):
         if parallel and len(local_files) > self.minimum_nfiles:
             nJobs = self.nJobs
             batch_size = self.batch_size
-            if self.verbose:
-                print(
-                    f"Downloading and parsing {urlnames} to {local_files} "
-                    + f"({len(local_files)}) files), in parallel ({nJobs} jobs)"
-                )
+            printer.info(
+                f"Downloading {len(local_files)} files in parallel ({nJobs} jobs)",
+                indent=1,
+            )
             Nlines_total = sum(
                 Parallel(n_jobs=nJobs, batch_size=batch_size, verbose=self.verbose)(
-                    delayed(download_and_parse_one_file)(urlname, local_file, Ndownload)
+                    delayed(download_and_parse_one_file)(urlname, local_file, Ndownload, printer)
                     for urlname, local_file, Ndownload in zip(
                         urlnames, local_files, range(1, len(local_files) + 1)
                     )
@@ -502,7 +523,7 @@ class DatabaseManager(object):
             for urlname, local_file, Ndownload in zip(
                 urlnames, local_files, range(1, len(local_files) + 1)
             ):
-                download_and_parse_one_file(urlname, local_file, Ndownload)
+                download_and_parse_one_file(urlname, local_file, Ndownload, printer)
 
     def parse_to_local_file(
         self,

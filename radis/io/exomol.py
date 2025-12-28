@@ -15,6 +15,7 @@ from radis.api.exomolapi import (
     get_exomol_full_isotope_name,
 )
 from radis.db.classes import get_molecule_identifier
+from radis.misc.database_progress import DatabaseProgressPrinter
 
 
 def fetch_exomol(
@@ -168,7 +169,14 @@ def fetch_exomol(
         molecule, full_molecule_name
     )
     if verbose:
-        print("\n========== Loading Exomol database [start] ==========")
+        # Initialize printer for consistent output
+        _printer = DatabaseProgressPrinter(
+            database_name="ExoMol",
+            molecule=molecule,
+            verbose=verbose,
+            version=database if database else "",
+        )
+        _printer.header(f"Fetching {full_molecule_name}")
     _exomol_use_hint = "Select one of them with `fetch_exomol(DATABASE_NAME)`, `SpectrumFactory.fetch_databank('exomol', exomol_database=DATABASE_NAME')`, or `calc_spectrum(..., databank=('exomol', DATABASE_NAME))` \n"
     if database is None or database == "default":
         if len(known_exomol_databases) == 1:
@@ -329,5 +337,5 @@ def fetch_exomol(
         out.append(mdb.to_partition_function_tabulator())
 
     if verbose:
-        print("========== Loading Exomol database [end] ==========\n")
+        _printer.success("ExoMol database loading complete")
     return out

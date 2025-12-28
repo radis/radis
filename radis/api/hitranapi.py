@@ -1882,11 +1882,24 @@ class HITRANDatabaseManager(DatabaseManager):
 
             make_folders(*split(directory))
 
-            db_begin(directory)
+            # Use tqdm for isotope progress
+            from tqdm import tqdm
+            import sys
+            import io
+            
+            # Suppress HAPI's verbose output (version banner, directory messages, etc.)
+            old_stdout = sys.stdout
+            sys.stdout = io.StringIO()
+            try:
+                db_begin(directory)
+            finally:
+                sys.stdout = old_stdout
+                
             isotope_list = []
             data_file_list = []
             header_file_list = []
-            for iso in range(1, 10):
+            
+            for iso in tqdm(range(1, 10), desc="Downloading isotopes", disable=not self.verbose):
                 file = f"{molecule}_{iso}"
                 if exists(join(directory, file + ".data")):
                     if cache == "regen":
@@ -1901,21 +1914,27 @@ class HITRANDatabaseManager(DatabaseManager):
                         os.remove(join(directory, file + ".data"))
                 try:
                     for attempt in range(max_fetch_retries):
-                        if extra_params == "all":
-                            fetch(
-                                file,
-                                get_molecule_identifier(molecule),
-                                iso,
-                                wmin,
-                                wmax,
-                                ParameterGroups=[*PARAMETER_GROUPS_HITRAN],
-                            )
-                        elif extra_params is None:
-                            fetch(
-                                file, get_molecule_identifier(molecule), iso, wmin, wmax
-                            )
-                        else:
-                            raise ValueError("extra_params can only be 'all' or None ")
+                        # Suppress HAPI's verbose output (65536 bytes written...)
+                        old_stdout = sys.stdout
+                        sys.stdout = io.StringIO()
+                        try:
+                            if extra_params == "all":
+                                fetch(
+                                    file,
+                                    get_molecule_identifier(molecule),
+                                    iso,
+                                    wmin,
+                                    wmax,
+                                    ParameterGroups=[*PARAMETER_GROUPS_HITRAN],
+                                )
+                            elif extra_params is None:
+                                fetch(
+                                    file, get_molecule_identifier(molecule), iso, wmin, wmax
+                                )
+                            else:
+                                raise ValueError("extra_params can only be 'all' or None ")
+                        finally:
+                            sys.stdout = old_stdout
 
                         ### We test if the download went well ###
                         df = pd.DataFrame(LOCAL_TABLE_CACHE[file]["data"])

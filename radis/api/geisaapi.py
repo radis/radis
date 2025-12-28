@@ -33,6 +33,7 @@ except ImportError:
 from radis.api.dbmanager import DatabaseManager
 from radis.api.hdf5 import DataFileManager
 from radis.misc.config import getDatabankEntries
+from radis.misc.database_progress import DatabaseProgressPrinter
 from radis.misc.warning import DatabaseAlreadyExists
 
 # %% Parsing functions
@@ -360,7 +361,14 @@ class GEISADatabaseManager(DatabaseManager):
         molecule = self.molecule
         geisa_url = "https://aeris-geisa.ipsl.fr/geisa_files/2020/Lines/line_GEISA2020_asc_gs08_v1.0_"
 
-        print(f"Molecule: {molecule}")
+        # Initialize progress printer for consistent output
+        printer = DatabaseProgressPrinter(
+            database_name="GEISA",
+            molecule=molecule,
+            verbose=self.verbose,
+            version="2020",
+        )
+        printer.header("Fetching database")
 
         if molecule.upper() in GEISA_MOLECULES:
             url = geisa_url + molecule.lower()

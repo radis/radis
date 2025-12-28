@@ -16,6 +16,7 @@ import numpy as np
 
 from radis.api.dbmanager import DatabaseManager, get_auto_MEMORY_MAPPING_ENGINE
 from radis.db.classes import EXOMOL_MOLECULES, EXOMOL_ONLY_ISOTOPES_NAMES
+from radis.misc.database_progress import DatabaseProgressPrinter
 
 EXOMOL_URL = "https://www.exomol.com/db/"
 
@@ -1234,6 +1235,14 @@ class MdbExomol(DatabaseManager):
         self.broadf = broadf
         self.broadf_download = broadf_download
 
+        # Initialize progress printer early (before any downloads)
+        self._printer = DatabaseProgressPrinter(
+            database_name="ExoMol",
+            molecule=molecule,
+            verbose=self.verbose,
+            version=database if database else "",
+        )
+
         # Where exomol files are
         self.states_file = self.path / pathlib.Path(molec + ".states.bz2")
         self.pf_file = self.path / pathlib.Path(molec + ".pf")
@@ -1325,8 +1334,9 @@ class MdbExomol(DatabaseManager):
                 raise ValueError(
                     f"Cache file {str(mgr.cache_file(self.states_file))} does not exist"
                 )
-            print(
-                f"Note: Caching states data to the {engine} format. After the second time, it will become much faster."
+            self._printer.info(
+                f"Caching states data to {engine} format. This will be faster on subsequent runs.",
+                indent=2,
             )
             states = read_states(
                 self.states_file,
@@ -1387,25 +1397,19 @@ class MdbExomol(DatabaseManager):
                 self.trans_file.append(trans_file)
                 self.num_tag.append(dic_def["numtag"][i])
 
-        # some verbose
-        if self.verbose:
-            print("Molecule: ", molecule)
-            print("Isotopologue: ", self.isotope_fullname)
-            print("ExoMol database: ", database)
-            print("Local folder: ", self.path)
-            print("Transition files: ")
+        # Print header now that we have isotope info
+        self._printer.header(f"Loading {self.isotope_fullname}")
+        self._printer.info(f"Local folder: {self.path}", indent=1)
+        self._printer.section("Transition files")
 
         # Look-up missing parameters and write file
         # -----------------------------------------
         for trans_file, num_tag in zip(self.trans_file, self.num_tag):
-            if self.verbose:
-                print(
-                    f"\t => File {os.path.splitext(os.path.basename((trans_file)))[0]}"
-                )
+            file_basename = os.path.splitext(os.path.basename((trans_file)))[0]
+            self._printer.info(f"File {file_basename}", indent=1)
 
             if cache == "regen" and mgr.cache_file(trans_file).exists():
-                if self.verbose:
-                    print("\t\t => `regen = True`. Removing the file")
+                self._printer.info("`regen = True`. Removing the file", level=2, indent=2)
                 os.remove(mgr.cache_file(trans_file))
 
             if not mgr.cache_file(trans_file).exists():
@@ -1416,11 +1420,11 @@ class MdbExomol(DatabaseManager):
 
                 if not trans_file.exists():
                     self.download(molec, extension=[".trans.bz2"], numtag=num_tag)
-                if self.verbose:
-                    print(
-                        f"\t\t => Caching the *.trans.bz2 file to the {engine} (*.h5) format. After the second time, it will become much faster."
-                    )
-                    print(f"\t\t => You can deleted the 'trans.bz2' file by hand.")
+                self._printer.info(
+                    f"Caching the *.trans.bz2 file to the {engine} (*.h5) format. After the second time, it will become much faster.",
+                    indent=2,
+                )
+                self._printer.info("You can delete the 'trans.bz2' file by hand.", level=2, indent=2)
                 trans = read_trans(
                     trans_file, engine="vaex" if engine == "vaex" else "csv"
                 )
@@ -1698,8 +1702,9 @@ class MdbExomol(DatabaseManager):
 
                     file_size = int(file_size)
                     total_download_size_bytes += file_size
-            except Exception as e:
-                warnings.warn(f"Failed to fetch size for {pfname}: {e}", UserWarning)
+            except Exception:
+                # Silently skip files that can't be reached - not critical for download
+                pass
 
         total_download_size_gb = total_download_size_bytes / (1024**3)
 
@@ -1755,10 +1760,9 @@ class MdbExomol(DatabaseManager):
 
             total_download_size_gb += self._calculate_download_size(url, pfname_arr)
 
-        if self.verbose:
-            print(
-                f"Total download size {pfname_arr} is: {total_download_size_gb:.6f} GB"
-            )
+        self._printer.info(
+            f"Total download size: {total_download_size_gb:.6f} GB", indent=2
+        )
 
         from radis import config
 
@@ -1787,21 +1791,39 @@ class MdbExomol(DatabaseManager):
             for index, pfname in enumerate(pfname_arr):
                 pfpath = url + pfname
                 os.makedirs(str(self.path), exist_ok=True)
-                if self.verbose:
-                    print(
-                        f"\t\t => Downloading from {pfpath}"
-                    )  # modify indent accordingly print in __init__
+                self._printer.info(f"Downloading {pfname}", indent=2)
                 try:
-                    urllib.request.urlretrieve(pfpath, str(self.path / pfname))
-                except HTTPError:
+                    # Download with progress bar
+                    import requests
+                    from tqdm import tqdm
+                    
+                    response = requests.get(pfpath, stream=True)
+                    response.raise_for_status()
+                    total_size = int(response.headers.get("content-length", 0))
+                    
+                    with open(str(self.path / pfname), "wb") as f:
+                        with tqdm(
+                            total=total_size,
+                            unit="B",
+                            unit_scale=True,
+                            unit_divisor=1024,
+                            desc=f"    {pfname[:30]}",
+                            disable=not self.verbose,
+                        ) as pbar:
+                            for chunk in response.iter_content(chunk_size=8192):
+                                if chunk:
+                                    f.write(chunk)
+                                    pbar.update(len(chunk))
+                except (HTTPError, requests.HTTPError, requests.RequestException):
                     if ext == ".broad":
                         partners_success[index] = False
-                    print(f"Error: Couldn't download {ext} file at {pfpath} and save.")
+                    self._printer.warning(f"Couldn't download {ext} file")
 
-            if ext == ".broad" and self.verbose:
+            if ext == ".broad":
                 patners_arr = np.array(self.broad_partners)
-                print(
-                    f"\nSummary of broadening files downloaded:\n\tSuccess: {patners_arr[partners_success]}\n\tFail: {patners_arr[~partners_success]}\n"
+                self._printer.info(
+                    f"Broadening files: {len(patners_arr[partners_success])} succeeded, {len(patners_arr[~partners_success])} failed",
+                    indent=2,
                 )
 
     def to_partition_function_tabulator(self):

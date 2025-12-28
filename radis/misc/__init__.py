@@ -42,6 +42,7 @@ from .curve import (
     curve_substract,
 )
 from .debug import export
+from .database_progress import DatabaseProgressPrinter, get_progress_printer
 from .progress_bar import ProgressBar
 from .signal import resample, resample_even
 from .utils import DatabankNotFound, NotInstalled, getProjectRoot
