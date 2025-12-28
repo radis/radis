@@ -7,7 +7,7 @@ Addresses GitHub Issue #868: Same printing when downloading from different datab
 
 Created on 2025-12-28
 
-@author: RADIS contributors
+@author: tanishadahale
 """
 
 import sys
