@@ -1409,7 +1409,9 @@ class MdbExomol(DatabaseManager):
             self._printer.info(f"File {file_basename}", indent=1)
 
             if cache == "regen" and mgr.cache_file(trans_file).exists():
-                self._printer.info("`regen = True`. Removing the file", level=2, indent=2)
+                self._printer.info(
+                    "`regen = True`. Removing the file", level=2, indent=2
+                )
                 os.remove(mgr.cache_file(trans_file))
 
             if not mgr.cache_file(trans_file).exists():
@@ -1424,7 +1426,9 @@ class MdbExomol(DatabaseManager):
                     f"Caching the *.trans.bz2 file to the {engine} (*.h5) format. After the second time, it will become much faster.",
                     indent=2,
                 )
-                self._printer.info("You can delete the 'trans.bz2' file by hand.", level=2, indent=2)
+                self._printer.info(
+                    "You can delete the 'trans.bz2' file by hand.", level=2, indent=2
+                )
                 trans = read_trans(
                     trans_file, engine="vaex" if engine == "vaex" else "csv"
                 )
@@ -1739,7 +1743,6 @@ class MdbExomol(DatabaseManager):
 
         """
         import os
-        import urllib.request
 
         tag = molec.split("__")
         molname_simple = exact_molname_exomol_to_simple_molname(tag[0])
@@ -1796,11 +1799,11 @@ class MdbExomol(DatabaseManager):
                     # Download with progress bar
                     import requests
                     from tqdm import tqdm
-                    
+
                     response = requests.get(pfpath, stream=True)
                     response.raise_for_status()
                     total_size = int(response.headers.get("content-length", 0))
-                    
+
                     with open(str(self.path / pfname), "wb") as f:
                         with tqdm(
                             total=total_size,

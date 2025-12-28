@@ -67,8 +67,8 @@ except ImportError:  # ran from here
         raise
 
 from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
-from radis.misc.progress_bar import ProgressBar
 from radis.misc.database_progress import DatabaseProgressPrinter
+from radis.misc.progress_bar import ProgressBar
 
 HITEMP_MOLECULES = ["H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"]
 

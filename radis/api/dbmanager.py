@@ -415,7 +415,9 @@ class DatabaseManager(object):
 
         def download_and_parse_one_file(urlname, local_file, Ndownload, printer):
             inputf = urlname.split("/")[-1]
-            printer.info(f"Downloading {inputf} ({Ndownload}/{Ntotal_downloads})", indent=1)
+            printer.info(
+                f"Downloading {inputf} ({Ndownload}/{Ntotal_downloads})", indent=1
+            )
 
             # Download file with requests
             if "hitemp" in urlname.lower():
@@ -461,9 +463,10 @@ class DatabaseManager(object):
 
                 # Get total file size for progress bar
                 total_size = int(response.headers.get("content-length", 0))
-                
+
                 # Download with progress bar
                 from tqdm import tqdm
+
                 with open(f"{temp_file_path}", "wb") as f:
                     with tqdm(
                         total=total_size,
@@ -513,7 +516,9 @@ class DatabaseManager(object):
             )
             Nlines_total = sum(
                 Parallel(n_jobs=nJobs, batch_size=batch_size, verbose=self.verbose)(
-                    delayed(download_and_parse_one_file)(urlname, local_file, Ndownload, printer)
+                    delayed(download_and_parse_one_file)(
+                        urlname, local_file, Ndownload, printer
+                    )
                     for urlname, local_file, Ndownload in zip(
                         urlnames, local_files, range(1, len(local_files) + 1)
                     )

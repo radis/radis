@@ -1883,10 +1883,11 @@ class HITRANDatabaseManager(DatabaseManager):
             make_folders(*split(directory))
 
             # Use tqdm for isotope progress
-            from tqdm import tqdm
-            import sys
             import io
-            
+            import sys
+
+            from tqdm import tqdm
+
             # Suppress HAPI's verbose output (version banner, directory messages, etc.)
             old_stdout = sys.stdout
             sys.stdout = io.StringIO()
@@ -1894,12 +1895,14 @@ class HITRANDatabaseManager(DatabaseManager):
                 db_begin(directory)
             finally:
                 sys.stdout = old_stdout
-                
+
             isotope_list = []
             data_file_list = []
             header_file_list = []
-            
-            for iso in tqdm(range(1, 10), desc="Downloading isotopes", disable=not self.verbose):
+
+            for iso in tqdm(
+                range(1, 10), desc="Downloading isotopes", disable=not self.verbose
+            ):
                 file = f"{molecule}_{iso}"
                 if exists(join(directory, file + ".data")):
                     if cache == "regen":
@@ -1929,10 +1932,16 @@ class HITRANDatabaseManager(DatabaseManager):
                                 )
                             elif extra_params is None:
                                 fetch(
-                                    file, get_molecule_identifier(molecule), iso, wmin, wmax
+                                    file,
+                                    get_molecule_identifier(molecule),
+                                    iso,
+                                    wmin,
+                                    wmax,
                                 )
                             else:
-                                raise ValueError("extra_params can only be 'all' or None ")
+                                raise ValueError(
+                                    "extra_params can only be 'all' or None "
+                                )
                         finally:
                             sys.stdout = old_stdout
 

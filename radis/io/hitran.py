@@ -215,7 +215,7 @@ def fetch_hitran(
         )
         printer.header(f"Downloading database")
         printer.section("Download")
-        
+
         main_files = ldb.get_filenames()
         printer.info(f"Downloading all isotopes for {molecule}", indent=1)
         if main_files:
