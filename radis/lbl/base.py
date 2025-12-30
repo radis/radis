@@ -1959,6 +1959,7 @@ class BaseFactory(DatabankLoader):
         if dbformat in [
             "hitran",
             "hitemp",
+            "geisa",
             "hitemp-radisdb",
             "cdsd-hitemp",
             "cdsd-4000",

@@ -7,6 +7,8 @@ Created on Sun Aug 22 13:34:42 2020
 ------------------------------------------------------------------------
 
 """
+import numpy as np
+
 # %%
 import pytest
 from numpy import allclose
@@ -15,6 +17,92 @@ import radis
 from radis import SpectrumFactory, get_residual
 from radis.misc.printer import printm
 from radis.test.utils import getTestFile
+
+
+@pytest.mark.needs_gpu
+@pytest.mark.fast
+def test_geisa_cpu_gpu_equivalence():
+    """
+    Compare GEISA equilibrium spectra computed on CPU and GPU.
+
+    The GPU calculation must reproduce the CPU spectrum within
+    numerical precision.
+    """
+
+    # Parameters
+    molecule = "CO"
+    wmin = 2600.0
+    wmax = 2800.0
+    wstep = 0.01
+
+    Tgas = 300.0
+    pressure = 1.0
+
+    sf = SpectrumFactory(
+        wavenum_min=wmin,
+        wavenum_max=wmax,
+        wstep=wstep,
+        molecule=molecule,
+        isotope="1",
+        pressure=pressure,
+    )
+
+    # Load GEISA ASCII fragment (no cached .h5)
+    sf.load_databank(
+        path=getTestFile("geisa_CO_fragment.par"),
+        format="geisa",
+    )
+
+    # CPU spectrum
+    spec_cpu = sf.eq_spectrum(
+        Tgas=Tgas,
+        mole_fraction=1.0,
+        name="CPU",
+    )
+
+    # GPU spectrum
+    spec_gpu = sf.eq_spectrum_gpu(
+        Tgas=Tgas,
+        mole_fraction=1.0,
+        exit_gpu=True,
+        name="GPU",
+    )
+
+    # Extract spectra
+    w_cpu, I_cpu = spec_cpu.get("radiance_noslit")
+    w_gpu, I_gpu = spec_gpu.get("radiance_noslit")
+
+    # --- Assertions begin here ---
+
+    # Sanity: grids must not be empty
+    assert len(w_cpu) > 0, "CPU spectrum is empty"
+    assert len(w_gpu) > 0, "GPU spectrum is empty"
+
+    # Interpolate GPU spectrum onto CPU grid
+    I_gpu_interp = np.interp(w_cpu, w_gpu, I_gpu)
+
+    # Numerical comparison
+    diff = I_cpu - I_gpu_interp
+
+    max_abs_diff = np.max(np.abs(diff))
+    mean_abs_diff = np.mean(np.abs(diff))
+
+    cpu_max = np.max(I_cpu)
+    gpu_max = np.max(I_gpu_interp)
+
+    # Physical sanity checks
+    assert cpu_max > 0, "CPU spectrum has zero intensity"
+    assert gpu_max > 0, "GPU spectrum has zero intensity"
+
+    # CPU vs GPU numerical equivalence
+    # These tolerances are consistent with existing RADIS GPU tests
+    assert (
+        max_abs_diff < 1e-5
+    ), f"CPU/GPU max absolute difference too large: {max_abs_diff}"
+
+    assert (
+        mean_abs_diff < 1e-6
+    ), f"CPU/GPU mean absolute difference too large: {mean_abs_diff}"
 
 
 @pytest.mark.needs_gpu
@@ -208,5 +296,6 @@ if __name__ == "__main__":
     # test_eq_spectrum_gpu_nvidia(plot=True)
     # test_multiple_gpu_calls(plot=True, hard_test=True)
     test_broadening(plot=True)
+    test_geisa_cpu_gpu_equivalence()
 
     printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))

@@ -269,6 +269,11 @@ def gei2df(
     # If cache files are not found, commence reading of full file
     df = parse_hitran_file(fname, columns_GEISA)
 
+    # Normalize units BEFORE caching
+    if df.wav.mean() < 50:
+        # GEISA ASCII wavelength in µm → cm⁻¹
+        df["wav"] = 1e4 / df["wav"]
+
     # Commence "D to E" conversion on 2nd and 20th columns, by using
     # df.columns.str.replace() which is much faster than Python loop.
     # Finally, typecast them to float.
