@@ -29,8 +29,8 @@ assert conv2  # removes flake8 warnings
 # %% Energy units
 
 
-def J2eV(E):
-    """J to eV."""
+def J2eV(E: float) -> float:
+    """Convert energy from Joules to eV."""
     return E / eV
 
 
@@ -68,10 +68,10 @@ def eV2cm(E):
     return E * eV / (h * c) / 100
 
 
-def K2eV(E):
-    """eV to K."""
-    _assertK(E)
-    return E * k_b / eV
+def K2J(E: float) -> float:
+    """Kelvin to Joules."""
+    return E * k_b
+
 
 
 def K2J(E):
