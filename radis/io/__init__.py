@@ -8,6 +8,7 @@
 from .exomol import fetch_exomol
 from .geisa import fetch_geisa
 from .hitemp import fetch_hitemp
+from .chianti import load_chianti
 from .hitran import fetch_hitran
 from .query import fetch_astroquery
 
@@ -17,4 +18,5 @@ __all__ = [
     "fetch_exomol",
     "fetch_astroquery",
     "fetch_geisa",
+    "load_chianti",
 ]
