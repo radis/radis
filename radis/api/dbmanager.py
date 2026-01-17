@@ -396,7 +396,7 @@ class DatabaseManager(object):
             molecule=molecule,
             verbose=verbose,
         )
-        printer.header("Downloading database")
+        printer.header()  # Just show "MOLECULE - DATABASE" without action
         printer.section("Download")
 
         from time import time
