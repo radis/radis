@@ -69,6 +69,7 @@ def calc_spectrum(
     export_lines=False,
     verbose=True,
     return_factory=False,
+    broadening_species="air", 
     **kwargs,
 ) -> Spectrum:
     r"""Calculate a :py:class:`~radis.spectrum.spectrum.Spectrum`.

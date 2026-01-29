@@ -5,8 +5,10 @@ Created on Sun May 22 18:11:23 2022
 @author: erwan
 """
 
-import pathlib
 
+import os
+import pandas as pd
+from pathlib import Path
 import numpy as np
 
 from radis.api.exomolapi import (
@@ -34,6 +36,7 @@ def fetch_exomol(
     engine="default",
     output="pandas",
     skip_optional_data=True,
+    broadening_species="air",
     **kwargs,
 ):
     """Stream ExoMol file from EXOMOL website. Unzip and build a HDF5 file directly.
@@ -151,6 +154,8 @@ def fetch_exomol(
     :py:func:`~radis.api.hdf5.hdf2df`
 
     """
+    validate_broadening_species(broadening_species, verbose=verbose)
+
     # TODO: implement columns= ... to load only specific columns.
     # refactor with "self._quantumNumbers" (which serves the same purpose)
 
@@ -330,4 +335,173 @@ def fetch_exomol(
 
     if verbose:
         print("========== Loading Exomol database [end] ==========\n")
+        # ========================================================================
+    # Load Broadening Coefficients (NEW CODE - Issue #602)
+    # ========================================================================
+    
+    if broadening_species:
+        try:
+            # Get isotope formula for file path
+           try:
+               isotope_formula = get_exomol_full_isotope_name(molecule, isotope)
+           except NameError:
+    # Fallback: construct basic isotope formula
+             isotope_formula = molecule  # Simple fallback
+             isotope_formula = get_exomol_full_isotope_name(molecule, isotope)
+            
+            # Get database name if available
+             if database is None and isinstance(out, list):
+                # Try to extract from mdb
+                database = getattr(mdb, 'name', None)
+            
+             if database:
+                # Get broadening file path
+                broad_path = get_broadening_file_path(
+                    molecule, 
+                    isotope_formula, 
+                    database, 
+                    broadening_species
+                )
+                
+                if broad_path and os.path.exists(broad_path):
+                    if verbose:
+                        print(f"Loading {broadening_species} broadening coefficients...")
+                    
+                    # Load broadening data
+                    df_broad = load_broadening_coefficients(broad_path)
+                    
+                    # Merge with main dataframe
+                    # Handle both cases: out is df directly, or out is [df, ...]
+                    if isinstance(out, list):
+                        df = out[0]
+                    else:
+                        df = out
+                    
+                    if df is not None:
+                        df = df.merge(
+                            df_broad, 
+                            on=['id', 'iso'],  # Common columns
+                            how='left',
+                            suffixes=('', f'_{broadening_species}')
+                        )
+                        
+                        # Update out
+                        if isinstance(out, list):
+                            out[0] = df
+                        else:
+                            out = df
+                        
+                        if verbose >= 2:
+                            print(f"✓ Loaded {len(df_broad)} broadening coefficients for {broadening_species}")
+                else:
+                    if verbose >= 2:
+                        print(f"Warning: {broadening_species} broadening file not found")
+                        if broadening_species != 'air':
+                            print(f"Attempting fallback to 'air' broadening...")
+                            
+                            # Fallback to air
+                            broad_path_air = get_broadening_file_path(
+                                molecule, isotope_formula, database, 'air'
+                            )
+                            if broad_path_air and os.path.exists(broad_path_air):
+                                df_broad = load_broadening_coefficients(broad_path_air)
+                                
+                                if isinstance(out, list):
+                                    df = out[0]
+                                else:
+                                    df = out
+                                
+                                if df is not None:
+                                    df = df.merge(df_broad, on=['id', 'iso'], how='left')
+                                    
+                                    if isinstance(out, list):
+                                        out[0] = df
+                                    else:
+                                        out = df
+        except Exception as e:
+            if verbose >= 2:
+                print(f"Warning: Could not load broadening coefficients: {e}")
+    
     return out
+
+    # ============================================================================
+# Broadening Species Support (Issue #602)
+# ============================================================================
+
+def get_broadening_file_path(molecule, isotope_formula, database, broadening_species):
+    """Get path to ExoMol broadening coefficient file."""
+    from pathlib import Path
+    
+    exomol_root = Path.home() / ".radisdb" / "exomol"
+    broad_filename = f"{isotope_formula}__{database}.broad.{broadening_species}"
+    broad_path = exomol_root / molecule / isotope_formula / database / broad_filename
+    
+    if broad_path.exists():
+        return str(broad_path)
+    
+    if broadening_species == 'air':
+        broad_filename_alt = f"{isotope_formula}__{database}.broad"
+        broad_path_alt = exomol_root / molecule / isotope_formula / database / broad_filename_alt
+        if broad_path_alt.exists():
+            return str(broad_path_alt)
+    
+    return None
+
+
+def validate_broadening_species(broadening_species, verbose=True):
+    """Validate broadening species parameter."""
+    valid_species = ['air', 'H2', 'He', 'CO2', 'H2O', 'self']
+    
+    if broadening_species not in valid_species:
+        raise ValueError(
+            f"broadening_species must be one of {valid_species}, "
+            f"got '{broadening_species}'"
+        )
+    
+    return True
+
+    
+
+
+def load_broadening_coefficients(filepath):
+    """
+    Load broadening coefficients from ExoMol .broad file
+    
+    Parameters
+    ----------
+    filepath : str
+        Path to .broad.{species} file
+        
+    Returns
+    -------
+    DataFrame
+        Broadening coefficients with columns: id, iso, gamma_broad, n_broad
+        
+    Examples
+    --------
+    >>> df = load_broadening_coefficients('/path/to/12C-16O2__UCL-4000.broad.H2')
+    """
+    import pandas as pd
+    import os
+    
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"Broadening file not found: {filepath}")
+    
+    # Read broadening file
+    # Format: columns separated by whitespace, comments start with #
+    try:
+        df = pd.read_csv(
+            filepath,
+            delim_whitespace=True,
+            comment='#',
+            names=['id', 'iso', 'gamma_broad', 'n_broad'],
+            dtype={
+                'id': int,
+                'iso': int, 
+                'gamma_broad': float,
+                'n_broad': float
+            }
+        )
+        return df
+    except Exception as e:
+        raise ValueError(f"Error reading broadening file {filepath}: {e}")
