@@ -897,7 +897,11 @@ def _calc_spectrum_one_molecule(
 
         # Finally, LOAD :
         sf.fetch_databank(**conditions)
-    elif exists(databank):
+    elif (
+        exists(databank)
+        or isinstance(databank, list)
+        or (isinstance(databank, str) and ("*" in databank or "?" in databank))
+    ):
         conditions = {
             "path": databank,
             "drop_columns": drop_columns,
@@ -906,7 +910,15 @@ def _calc_spectrum_one_molecule(
             "db_use_cached": use_cached,
         }
         # Guess format
-        if databank.endswith(".par"):
+        databank_test = databank[0] if isinstance(databank, list) else databank
+        if isinstance(databank_test, str) and ("*" in databank_test or "?" in databank_test):
+            from radis.misc.utils import get_files_from_regex
+
+            try:
+                databank_test = get_files_from_regex(databank_test)[0]
+            except IndexError:
+                pass
+        if databank_test.endswith(".par"):
             if verbose:
                 print(f"Inferred {databank} is a HITRAN-format file.")
             conditions["format"] = "hitran"
