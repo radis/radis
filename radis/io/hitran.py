@@ -213,7 +213,7 @@ def fetch_hitran(
             molecule=molecule,
             verbose=verbose,
         )
-        printer.header(f"Downloading database")
+        printer.header("Downloading database")
         printer.section("Download")
 
         main_files = ldb.get_filenames()
