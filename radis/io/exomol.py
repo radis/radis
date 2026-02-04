@@ -103,11 +103,11 @@ def fetch_exomol(
         If False, fetch all fields which are marked as available in the ExoMol definition
         file. If True, load only the first 4 columns of the states file
         ("i", "E", "g", "J"). The structure of the columns above 5 depend on the
-        the definitions file (*.def) and the Exomol version.
+        the definitions file (``*.def``) and the Exomol version.
         If ``skip_optional_data=False``, two errors may occur:
 
-            - a field is marked as present/absent in the *.def field but is
-              absent/present in the *.states file (ie both files are inconsistent).
+            - a field is marked as present/absent in the ``*.def`` field but is
+              absent/present in the ``*.states`` file (ie both files are inconsistent).
             - in the updated version of Exomol, new fields have been added in the
               states file of some species. But it has not been done for all species,
               so both structures exist. For instance, the states file of
