@@ -161,7 +161,11 @@ def run_apidoc(_):
 
 def setup(app):
     app.connect("builder-inited", run_apidoc)
-    app.add_css_file("custom.css")  #  for scrollable sidebar
+    # Use add_css_file if available (Sphinx >= 1.6), fallback for older Sphinx
+    if hasattr(app, "add_css_file"):
+        app.add_css_file("custom.css")  # for scrollable sidebar
+    else:
+        app.add_stylesheet("custom.css")
 
 
 # %%
