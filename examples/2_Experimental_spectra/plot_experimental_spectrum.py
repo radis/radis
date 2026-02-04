@@ -16,7 +16,9 @@ See more loading and post-processing functions on the :ref:`Spectrum page <label
 from radis.test.utils import getTestFile
 from radis.tools.database import load_spec
 
-my_file = getTestFile("CO2_measured_spectrum_4-5um.spec")  # for the example here
+# RADIS provides a built-in test spectrum so this example runs without external data
+my_file = getTestFile("CO2_measured_spectrum_4-5um.spec")
+
 
 s = load_spec(my_file)
 s.plot()
