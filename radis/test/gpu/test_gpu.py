@@ -53,7 +53,6 @@ def test_eq_spectrum_gpu(device_id=0, verbose=False, plot=False, *args, **kwargs
     sf.load_databank(
         path=getTestFile("cdsd_hitemp_09_fragment.txt"),
         format="cdsd-hitemp",
-        parfuncfmt="hapi",
     )
 
     s_cpu = sf.eq_spectrum(Tgas=T, name="CPU")

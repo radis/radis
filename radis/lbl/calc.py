@@ -821,7 +821,6 @@ def _calc_spectrum_one_molecule(
         if compare(databank, ["fetch", "hitran"]):
             conditions = {
                 "source": "hitran",
-                "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
             }
         elif compare(databank, "hitran"):
             conditions = {
@@ -829,22 +828,18 @@ def _calc_spectrum_one_molecule(
                 "database": databank[
                     1
                 ],  # 'full' or 'partial', cf LoaderFactory.fetch_databank()
-                "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
             }
         elif compare(databank, ["hitemp"]):
             conditions = {
                 "source": "hitemp",
-                "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium}
             }
         elif compare(databank, ["exomol"]):
             conditions = {
                 "source": "exomol",
-                "parfuncfmt": "exomol",  # download & use Exo partition functions for equilibrium}
             }
         elif compare(databank, ["geisa"]):
             conditions = {
                 "source": "geisa",
-                "parfuncfmt": "hapi",
                 # TODO: replace with GEISA partition function someday.............
             }
         elif compare(databank, ["kurucz"]):
@@ -855,13 +850,11 @@ def _calc_spectrum_one_molecule(
             conditions = {
                 "source": "exomol",
                 "database": databank[1],
-                "parfuncfmt": "exomol",  # download & use Exo partition functions for equilibrium}
             }
         elif compare(databank, "hitemp"):
             conditions = {
                 "source": "hitemp",
                 "database": databank[1],
-                "parfuncfmt": "hapi",
             }
         # Partition functions :
         conditions.update(
@@ -901,7 +894,6 @@ def _calc_spectrum_one_molecule(
         conditions = {
             "path": databank,
             "drop_columns": drop_columns,
-            "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
             "levelsfmt": None,  # no need to load energies by default
             "db_use_cached": use_cached,
         }
