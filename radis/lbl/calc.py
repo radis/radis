@@ -903,22 +903,26 @@ def _calc_spectrum_one_molecule(
         }
         # Guess format
         if isinstance(databank, list) and not isinstance(databank[0], str):
-             # databank is likely a keyword list like ["hitemp", "2010"]
-             # This should have been caught by the previous block if compare() worked.
-             # But if it falls here, we should probably raise an error or handle it.
-             raise ValueError(f"Invalid databank format: {databank}")
+            # databank is likely a keyword list like ["hitemp", "2010"]
+            # This should have been caught by the previous block if compare() worked.
+            # But if it falls here, we should probably raise an error or handle it.
+            raise ValueError(f"Invalid databank format: {databank}")
 
         databank_test = databank[0] if isinstance(databank, list) else databank
-        if isinstance(databank_test, str) and ("*" in databank_test or "?" in databank_test):
+        if isinstance(databank_test, str) and (
+            "*" in databank_test or "?" in databank_test
+        ):
             from radis.misc.utils import get_files_from_regex
 
             try:
                 databank_test = get_files_from_regex(databank_test)[0]
             except IndexError:
                 pass
-        
+
         if not isinstance(databank_test, str):
-             raise ValueError(f"Couldnt infer the format of the line database file: {databank}")
+            raise ValueError(
+                f"Couldnt infer the format of the line database file: {databank}"
+            )
 
         if databank_test.endswith(".par") or "HITEMP" in databank_test.upper():
             if verbose:
