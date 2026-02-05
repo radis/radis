@@ -693,7 +693,6 @@ def register_database(databank_name, dict_entries, verbose):
         parameters. Also adds ::
 
             format : "hitemp-radisdb"
-            parfuncfmt : "hapi"   # TIPS-2017 for equilibrium partition functions
 
         And if the molecule is in :py:attr:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`::
 

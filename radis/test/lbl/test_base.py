@@ -64,7 +64,6 @@ def test_linestrength_calculations(*args, **kwargs):
     sf.load_databank(
         path=getTestFile("hitran_co_3iso_2000_2300cm.par"),
         format="hitran",
-        parfuncfmt="hapi",
     )
 
     # TODO : write an example of all the calculation steps in SpectrumFactory

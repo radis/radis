@@ -463,12 +463,6 @@ class GEISADatabaseManager(DatabaseManager):
                     }
                 )
 
-        dict_entries.update(
-            {
-                "parfuncfmt": "hapi",
-            }
-        )
-
         try:
             super().register(dict_entries)
         except DatabaseAlreadyExists as e:

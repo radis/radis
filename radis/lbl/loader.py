@@ -492,7 +492,6 @@ class Parameters(ConditionDict):
         "levelsfmt",
         "lvl_use_cached",
         "optimization",
-        "parfuncfmt",
         "parfuncpath",
         "parsum_mode",
         "pseudo_continuum_threshold",
@@ -525,7 +524,7 @@ class Parameters(ConditionDict):
         self.lvl_use_cached = (
             None  #: bool: use (and generate) cache files for Energy Database
         )
-        self.parfuncfmt = None  #: str: format of tabulated Partition Functions. See #: str: format of Energy Database. See :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
+
         self.parfuncpath = None  #: str: filepath to tabulated Partition Functions
         self.pseudo_continuum_threshold = 0  #: float: threshold to assign lines in pseudo continuum. Overwritten in SpectrumFactory
         self.wavenum_max_calc = None  #: float: maximum calculated wavenumber (cm-1) initialized by SpectrumFactory
@@ -874,14 +873,14 @@ class DatabankLoader(object):
         format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lblinit_databank.loader.KNOWN_DBFORMAT`
             database type. ``'hitran'`` for HITRAN/HITEMP, ``'cdsd-hitemp'``
             and ``'cdsd-4000'`` for the different CDSD versions. Default ``'hitran'``
-        parfuncfmt: ``'hapi'``, ``'cdsd'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
+
             format to read tabulated partition function file. If ``hapi``, then
             HAPI (HITRAN Python interface) [1]_ is used to retrieve them (valid if
             your database is HITRAN data). HAPI is embedded into RADIS. Check the
-            version. If partfuncfmt is None then ``hapi`` is used. Default ``hapi``.
+            version. If partfuncfmt is None then it is inferred from ``format`` (e.g. ``hapi`` for ``hitran``, ``exomol`` for ``exomol``). Default ``None``.
         parfunc: filename or None
             path to tabulated partition function to use.
-            If `parfuncfmt` is `hapi` then `parfunc` should be the link to the
+
             hapi.py file. If not given, then the hapi.py embedded in RADIS is used (check version)
         levels: dict of str or None
             path to energy levels (needed for non-eq calculations). Format:
@@ -951,7 +950,6 @@ class DatabankLoader(object):
             path,
             dbformat,
             parfunc,
-            parfuncfmt,
             levels,
             levelsfmt,
             db_use_cached,
@@ -974,7 +972,6 @@ class DatabankLoader(object):
             path=path,
             format=dbformat,
             parfunc=parfunc,
-            parfuncfmt=parfuncfmt,
             levels=levels,
             levelsfmt=levelsfmt,
             db_use_cached=db_use_cached,
@@ -1006,7 +1003,6 @@ class DatabankLoader(object):
         source="hitran",
         database="default",
         parfunc=None,
-        parfuncfmt="hapi",
         levels=None,
         levelsfmt="radis",
         load_energies=False,
@@ -1035,9 +1031,8 @@ class DatabankLoader(object):
             If fetching from HITEMP, Kurucz, or NIST, only ``'full'`` is available.
             If fetching from ExoMol, use this parameter to choose which database to use. Keep ``'default'`` to use the recommended one.
             Default is ``'full'``.
-        parfuncfmt: str
-            Format to read tabulated partition function file. Options are ``'cdsd'``, ``'hapi'``, ``'exomol'``, ``'kurucz'`` or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`.
-            Default is ``'hapi'``. This argument only affects molecules.
+
+
         parfunc: str or None
             Path to a tabulated partition function file to use. This argument only affects molecules.
         levels: dict or None
@@ -1139,12 +1134,6 @@ class DatabankLoader(object):
 
         local_databases = config["DEFAULT_DOWNLOAD_PATH"]
 
-        if [parfuncfmt, compare_source].count("exomol") == 1:
-            self.warn(
-                f"Using lines from {source} but partition functions from {parfuncfmt}"
-                + "for consistency we recommend using lines and partition functions from the same database",
-                "AccuracyWarning",
-            )
         if memory_mapping_engine == "default":
             memory_mapping_engine = self.misc.memory_mapping_engine
 
@@ -1177,7 +1166,7 @@ class DatabankLoader(object):
             self.levelspath = None
         self.params.levelsfmt = levelsfmt
         self.params.parfuncpath = format_paths(parfunc)
-        self.params.parfuncfmt = parfuncfmt
+        # self.params.parfuncfmt = parfuncfmt # Removed: inferred in _init_equilibrium_partition_functions
         self.params.db_use_cached = db_use_cached
         self.params.lvl_use_cached = lvl_use_cached
 
@@ -1639,28 +1628,21 @@ class DatabankLoader(object):
         self._remove_unecessary_columns(df, output)
 
         if self.input.isatom:
-            if parfuncfmt == "kurucz":
-                warnings.warn(
-                    DeprecationWarning(
-                        "The `parfuncfmt` attribute is no longer applicable for atoms. Use the new architecture with the `pfsource` parameter instead."
-                    )
-                )
-                if not self.input.pfsource:
-                    if self.input.potential_lowering:
-                        self.warn("Assuming `pfsource = 'kurucz'`")
-                        self.input.pfsource = "kurucz"
-                    else:
-                        self.warn("Assuming `pfsource = 'barklem'`")
-                        self.input.pfsource = "barklem"
+            if compare_source == "kurucz" and not self.input.pfsource:
+                if self.input.potential_lowering:
+                    self.warn("Assuming `pfsource = 'kurucz'`")
+                    self.input.pfsource = "kurucz"
+                else:
+                    self.warn("Assuming `pfsource = 'barklem'`")
+                    self.input.pfsource = "barklem"
             self.set_atomic_partition_functions()
-        elif parfuncfmt == "exomol":
+        elif compare_source == "exomol":
             self._init_equilibrium_partition_functions(
                 parfunc,
-                parfuncfmt,
                 predefined_partition_functions=partition_function_exomol,
             )
         else:
-            self._init_equilibrium_partition_functions(parfunc, parfuncfmt)
+            self._init_equilibrium_partition_functions(parfunc)
 
         # If energy levels are given, initialize the partition function calculator
         # (necessary for non-equilibrium). If levelsfmt == 'radis' then energies
@@ -1686,7 +1668,6 @@ class DatabankLoader(object):
         path=None,
         format=None,
         parfunc=None,
-        parfuncfmt=None,
         levels=None,
         levelsfmt=None,
         db_use_cached=True,
@@ -1725,16 +1706,11 @@ class DatabankLoader(object):
         format: ``'hitran'``, ``'cdsd-hitemp'``, ``'cdsd-4000'``, or any of :data:`~radis.lbl.loader.KNOWN_DBFORMAT`
             database type. ``'hitran'`` for HITRAN/HITEMP, ``'cdsd-hitemp'``
             and ``'cdsd-4000'`` for the different CDSD versions. Default ``'hitran'``
-        parfuncfmt: ``'hapi'``, ``'cdsd'``, or any of :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
-            format to read tabulated partition function file. If ``hapi``, then
-            HAPI (HITRAN Python interface) [1]_ is used to retrieve them (valid if
-            your database is HITRAN data). HAPI is embedded into RADIS. Check the
-            version. If partfuncfmt is None then ``hapi`` is used. Default ``hapi``.
-            This argument only affects molecules.
+
         parfunc: filename or None
             path to tabulated partition function to use.
-            If `parfuncfmt` is `hapi` then `parfunc` should be the link to the
-            hapi.py file. If not given, then the hapi.py embedded in RADIS is used (check version). This argument only affects molecules.
+
+            If not given, then the hapi.py embedded in RADIS is used (check version). This argument only affects molecules.
         levels: dict of str or None
             path to energy levels (needed for non-eq calculations). Format:
             {1:path_to_levels_iso_1, 3:path_to_levels_iso3}. Default ``None``.
@@ -1817,7 +1793,6 @@ class DatabankLoader(object):
             path,
             dbformat,
             parfunc,
-            parfuncfmt,
             levels,
             levelsfmt,
             db_use_cached,
@@ -1831,7 +1806,7 @@ class DatabankLoader(object):
             path=path,
             format=format,
             parfunc=parfunc,
-            parfuncfmt=parfuncfmt,
+            # parfuncfmt=parfuncfmt, # Removed
             levels=levels,
             levelsfmt=levelsfmt,
             db_use_cached=db_use_cached,
@@ -1848,7 +1823,7 @@ class DatabankLoader(object):
             path=path,
             format=dbformat,
             parfunc=parfunc,
-            parfuncfmt=parfuncfmt,
+            # parfuncfmt=parfuncfmt, # Removed
             levels=levels,
             levelsfmt=levelsfmt,
             db_use_cached=db_use_cached,
@@ -1896,22 +1871,16 @@ class DatabankLoader(object):
         # ----------------------------------------------------
 
         if self.input.isatom:
-            if parfuncfmt == "kurucz":
-                warnings.warn(
-                    DeprecationWarning(
-                        "The `parfuncfmt` attribute is no longer applicable for atoms. Use the new architecture with the `pfsource` parameter instead."
-                    )
-                )
-                if not self.input.pfsource:
-                    if self.input.potential_lowering:
-                        self.warn("Assuming `pfsource = 'kurucz'`")
-                        self.input.pfsource = "kurucz"
-                    else:
-                        self.warn("Assuming `pfsource = 'barklem'`")
-                        self.input.pfsource = "barklem"
+            if dbformat == "kurucz" and not self.input.pfsource:
+                if self.input.potential_lowering:
+                    self.warn("Assuming `pfsource = 'kurucz'`")
+                    self.input.pfsource = "kurucz"
+                else:
+                    self.warn("Assuming `pfsource = 'barklem'`")
+                    self.input.pfsource = "barklem"
             self.set_atomic_partition_functions()
         else:
-            self._init_equilibrium_partition_functions(parfunc, parfuncfmt)
+            self._init_equilibrium_partition_functions(parfunc)
 
         # If energy levels are given, initialize the partition function calculator
         # (necessary for non-equilibrium). If levelsfmt == 'radis' then energies
@@ -1927,7 +1896,7 @@ class DatabankLoader(object):
         path=None,
         format=None,
         parfunc=None,
-        parfuncfmt=None,
+        # parfuncfmt=None, # Removed
         levels=None,
         levelsfmt=None,
         db_use_cached=None,
@@ -1944,11 +1913,12 @@ class DatabankLoader(object):
         Returns
         -------
         tuple
-            (name, path, dbformat, parfunc, parfuncfmt, levels, levelsfmt,
+            (name, path, dbformat, parfunc, levels, levelsfmt,
              db_use_cached, load_energies, include_neighbouring_lines, drop_columns)
         """
 
         dbformat = format
+        # parfuncfmt = None # Removed
 
         # Get database format and path
         # ... either from name (~/radis.json config file)
@@ -1967,8 +1937,9 @@ class DatabankLoader(object):
             dbformat = entries["format"]
             if "parfunc" in entries:
                 parfunc = entries["parfunc"]
-            if "parfuncfmt" in entries:
-                parfuncfmt = entries["parfuncfmt"]
+            # if "parfuncfmt" in entries: # Removed
+            #     # Legacy: ignore parfuncfmt in config file
+            #     pass
             if "levels" in entries:
                 levels = entries["levels"]
             if "levelsfmt" in entries:
@@ -1996,10 +1967,12 @@ class DatabankLoader(object):
             raise ValueError(
                 f"Energy level format ({levelsfmt}) not in known list: {KNOWN_LVLFORMAT}"
             )
-        if parfuncfmt not in [None] + KNOWN_PARFUNCFORMAT:
-            raise ValueError(
-                f"Partition function format ({parfuncfmt}) not in known list: {KNOWN_PARFUNCFORMAT}"
-            )
+        # Infer parfuncfmt if irrelevant
+
+        # if parfuncfmt not in [None] + KNOWN_PARFUNCFORMAT: # Removed
+        #     raise ValueError(
+        #         f"Partition function format ({parfuncfmt}) not in known list: {KNOWN_PARFUNCFORMAT}"
+        #     )
 
         # Line database path
         if isinstance(path, str):  # make it a list
@@ -2069,7 +2042,6 @@ class DatabankLoader(object):
             path,
             dbformat,
             parfunc,
-            parfuncfmt,
             levels,
             levelsfmt,
             db_use_cached,
@@ -2086,7 +2058,7 @@ class DatabankLoader(object):
         path=None,
         format=None,
         parfunc=None,
-        parfuncfmt=None,
+        # parfuncfmt=None, # Removed
         levels=None,
         levelsfmt=None,
         db_use_cached=None,
@@ -2116,7 +2088,7 @@ class DatabankLoader(object):
             self.levelspath = None
         self.params.levelsfmt = levelsfmt
         self.params.parfuncpath = format_paths(parfunc)
-        self.params.parfuncfmt = parfuncfmt
+        # self.params.parfuncfmt = parfuncfmt # Removed
         self.params.include_neighbouring_lines = include_neighbouring_lines
         self.params.db_use_cached = db_use_cached
         self.params.lvl_use_cached = lvl_use_cached
@@ -2203,21 +2175,15 @@ class DatabankLoader(object):
     # =========================================================================
 
     def _init_equilibrium_partition_functions(
-        self, parfunc, parfuncfmt, predefined_partition_functions={}
+        self, parfunc, predefined_partition_functions={}
     ):
         """Initializes equilibrium partition functions in ``self.parsum_tab``
 
         Parameters
         ----------
-        parfuncfmt: 'cdsd', 'hapi' (see :data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`)
-            format to read tabulated partition function file. If `hapi`, then
-            HAPI (HITRAN Python interface) [1]_ is used to retrieve them (valid if
-            your database is HITRAN data). HAPI is embedded into RADIS. Check the
-            version.
         parfunc: filename or None
             path to tabulated partition function to use.
-            If ``parfuncfmt`` is ``hapi`` then ``parfunc`` should be the link to the
-            hapi.py file. If not given, then the hapi.py embedded in RADIS is used (check version)
+            If not given, then the hapi.py embedded in RADIS is used (check version)
 
         Other Parameters
         ----------------
@@ -2230,11 +2196,12 @@ class DatabankLoader(object):
         molecule = self.input.species
         state = self.input.state
         self.parsum_tab[molecule] = {}
+
+        # Infer logic based on dbformat if not explicitly set
         for iso in self._get_isotope_list():
             self.parsum_tab[molecule][iso] = {}
             ParsumTab = self._build_partition_function_interpolator(
                 parfunc,
-                parfuncfmt,
                 self.input.species,
                 isotope=iso,
                 predefined_partition_functions=predefined_partition_functions,
@@ -2281,8 +2248,6 @@ class DatabankLoader(object):
             )
         else:
             self.params.parfuncpath = (
-                self.params.parfuncfmt
-            ) = (
                 self.params.levelsfmt
             ) = self.levelspath = None  # all these parameters are irrelevant for atoms
 
@@ -2425,7 +2390,10 @@ class DatabankLoader(object):
         Parameters
         ----------
         database: list of str
-            list of database files
+            list of database files ::
+                    [PATH/TO/01_1000-1150_HITEMP2010.par,
+                     PATH/TO/01_1150-1300_HITEMP2010.par,
+                     PATH/TO/01_1300-1500_HITEMP2010.par]
         db_use_cached: boolean, or ``'regen'``
             if ``True``, a pandas-readable csv file is generated on first access,
             and later used. This saves on the datatype cast and conversion and
@@ -2626,7 +2594,9 @@ class DatabankLoader(object):
                             engine=engine,
                             output=output,
                         )
-                    elif dbformat in ["exomol"]:
+                    elif dbformat in [
+                        "exomol-radisdb"
+                    ]:  # Changed from "exomol" to "exomol-radisdb" for consistency
                         # self.reftracker.add("10.1016/j.jqsrt.2020.107228", "line database")  # [ExoMol-2020]
                         raise NotImplementedError("use fetch_databank('exomol')")
                     else:
@@ -2971,7 +2941,7 @@ class DatabankLoader(object):
                 return None
 
     def _build_partition_function_interpolator(
-        self, parfunc, parfuncfmt, molecule, isotope, predefined_partition_functions={}
+        self, parfunc, molecule, isotope, predefined_partition_functions={}
     ):
         """Returns an universal partition function object ``parsum`` with the
         following methods defined::
@@ -2986,15 +2956,22 @@ class DatabankLoader(object):
                 {molecule: {isotope: PartitionFunctionTabulator object}}
         """
 
-        if __debug__:
-            printdbg(
-                "called _build_partition_function_interpolator"
-                + f"(parfuncfmt={parfuncfmt}, isotope={isotope})"
-            )
-
         isotope = int(isotope)
 
-        if parfuncfmt in ["hapi", "tips"] or parfuncfmt is None:
+        if self.params.dbformat == "exomol-radisdb":
+            self.reftracker.add(doi["ExoMol-2020"], "partition function")
+            # Just read dictionary of predefined partition function
+            assert len(predefined_partition_functions) > 0
+            parsum = predefined_partition_functions[molecule][isotope]
+
+        elif "cdsd" in self.params.dbformat and parfunc is not None:
+            # Use tabulated CDSD partition functions
+            self.reftracker.add(doi["CDSD-4000"], "partition function")
+            assert len(predefined_partition_functions) == 0
+            assert molecule == "CO2"
+            parsum = PartFuncCO2_CDSDtab(isotope, parfunc)
+
+        else:  # "hapi", "tips" or parfuncfmt is None
             assert len(predefined_partition_functions) == 0
             self.reftracker.add(doi["TIPS-2020"], "partition function")
             self.reftracker.add(doi["HAPI"], "partition function")
@@ -3006,20 +2983,6 @@ class DatabankLoader(object):
             )
             self.parsum_tab[molecule][isotope]["Tmin"] = parsum.Tmin
             self.parsum_tab[molecule][isotope]["Tmax"] = parsum.Tmax
-
-        elif parfuncfmt == "cdsd":  # Use tabulated CDSD partition functions
-            self.reftracker.add(doi["CDSD-4000"], "partition function")
-            assert len(predefined_partition_functions) == 0
-            assert molecule == "CO2"
-            parsum = PartFuncCO2_CDSDtab(isotope, parfunc)
-        elif parfuncfmt == "exomol":
-            self.reftracker.add(doi["ExoMol-2020"], "partition function")
-            # Just read dictionary of predefined partition function
-            assert len(predefined_partition_functions) > 0
-            parsum = predefined_partition_functions[molecule][isotope]
-        else:
-            raise ValueError(f"Unknown format for partition function: {parfuncfmt}")
-            # other formats ?
 
         return parsum
 
