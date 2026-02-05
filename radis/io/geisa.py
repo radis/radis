@@ -209,8 +209,8 @@ def fetch_geisa(
             except OSError as err:
                 if i == len(main_urls) - 1:  # all possible urls exhausted
                     if verbose:
-                         printer.warning(f"Error downloading {url}: {err}")
-                         printer.warning(f"No source found for {ldb.molecule}")
+                        printer.warning(f"Error downloading {url}: {err}")
+                        printer.warning(f"No source found for {ldb.molecule}")
                     raise
                 else:
                     if verbose:
@@ -218,7 +218,7 @@ def fetch_geisa(
                     continue
             else:
                 if verbose:
-                     printer.success(f"Successfully downloaded {url}")
+                    printer.success(f"Successfully downloaded {url}")
                 ldb.actual_file = file
                 ldb.actual_url = url
                 break  # no need to search any further

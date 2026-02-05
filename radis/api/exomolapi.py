@@ -1460,7 +1460,7 @@ class MdbExomol(DatabaseManager):
 
         # Only show Download section if we're downloading transition files
         if need_trans_download:
-             self._printer.section("Download")
+            self._printer.section("Download")
 
         # Look-up missing parameters and write file
         # -----------------------------------------
