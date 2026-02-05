@@ -166,7 +166,6 @@ TEST_DATABASES = {
         + "2380-2398 cm-1 (4165-4200 nm)",
         "path": [getTestFile(r"hitran_co2_626_bandhead_4165_4200nm.par")],
         "format": "hitran",
-        "parfuncfmt": "hapi",
         "levelsfmt": "radis",
     },
     "HITRAN-CO-TEST": {
@@ -174,7 +173,6 @@ TEST_DATABASES = {
         + "2000-2300 cm-1",
         "path": [getTestFile(r"hitran_co_3iso_2000_2300cm.par")],
         "format": "hitran",
-        "parfuncfmt": "hapi",
         "levelsfmt": "radis",
     },
     "HITEMP-CO2-TEST": {
@@ -182,7 +180,6 @@ TEST_DATABASES = {
         + "2283.7-2285.1 cm-1",
         "path": [getTestFile(r"cdsd_hitemp_09_fragment.txt")],
         "format": "cdsd-hitemp",  # CDSD-HITEMP version (same lines as HITEMP-2010).
-        "parfuncfmt": "hapi",
         "levelsfmt": "radis",
     },
     "HITEMP-CO2-HAMIL-TEST": {
@@ -191,7 +188,6 @@ TEST_DATABASES = {
         "path": [getTestFile(r"cdsd_hitemp_09_fragment.txt")],
         "format": "cdsd-hitemp",  # CDSD-HITEMP version (same lines as HITEMP-2010).
         "parfunc": getFile("CO2", "partition_functions.txt"),
-        "parfuncfmt": "cdsd",
         "levels": {1: getTestFile(r"co2_cdsd_hamiltonian_fragment.levels")},
         "levelsfmt": "cdsd-hamil",
     },
@@ -250,7 +246,6 @@ def setup_test_line_databases(verbose=True):
         >>> {'info': 'HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), 2283.7-2285.1 cm-1',
         >>> 'path': ['/USER/PATH/TO\\radis\\radis\\test\\files\\cdsd_hitemp_09_fragment.txt'],
         >>> 'format': 'cdsd-hitemp'
-        >>> 'parfuncfmt': 'hapi'
         >>> 'levelsfmt': 'radis'
 
 

@@ -2080,7 +2080,6 @@ class HITRANDatabaseManager(DatabaseManager):
                 "wavenumber_min": self.wmin,
                 "wavenumber_max": self.wmax,
                 "download_date": self.get_today(),
-                "parfuncfmt": "hapi",
             }
         )
 

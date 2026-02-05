@@ -4033,7 +4033,6 @@ class Spectrum(object):
                    memory_mapping_engine  auto
                    neighbour_lines      0 cm-1
                    optimization         simple
-                   parfuncfmt           hapi
                    parsum_mode          full summation
                    profiler             {'spectrum_calculation': {'check_line_databank': ...
                    pseudo_continuum_threshold  0
