@@ -13,11 +13,13 @@ Defines :py:func:`~radis.io.fetch_geisa` based on :py:class:`~radis.api.geisaapi
 
 """
 
-from os.path import abspath, expanduser, join
+from os.path import abspath, exists, expanduser, join
 
 from radis import config
 from radis.api.geisaapi import GEISADatabaseManager
+from radis.api.hdf5 import DataFileManager
 from radis.misc.config import getDatabankEntries
+from radis.misc.database_progress import DatabaseProgressPrinter
 
 
 def fetch_geisa(
@@ -183,29 +185,53 @@ def fetch_geisa(
         download_files = False
         ldb.actual_file = local_files[0]  # for ldb.load below
 
+    # Initialize progress printer
+    if verbose:
+        printer = DatabaseProgressPrinter(
+            database_name="GEISA",
+            molecule=molecule,
+            verbose=verbose,
+            version="2020",
+        )
+        printer.header("Fetching database")
+        printer.section("Download")
+
     # Download files
     if download_files:
         main_files, main_urls = ldb.get_filenames(return_reg_urls=True)
         for i in range(len(main_urls)):
             url = main_urls[i]
             file = main_files[i]
-            print(f"Attempting to download {url}")
+            if verbose:
+                printer.info(f"Attempting to download {url}", indent=1)
             try:
                 ldb.download_and_parse([url], [file], 1)
             except OSError as err:
                 if i == len(main_urls) - 1:  # all possible urls exhausted
-                    print(f"Error downloading {url}: {err}")
-                    print(f"No source found for {ldb.molecule}")
+                    if verbose:
+                         printer.warning(f"Error downloading {url}: {err}")
+                         printer.warning(f"No source found for {ldb.molecule}")
                     raise
                 else:
-                    print(f"Error downloading {url}: {err}")
+                    if verbose:
+                        printer.warning(f"Error downloading {url}: {err}")
                     continue
             else:
                 if verbose:
-                    print(f"Successfully downloaded {url}")
+                     printer.success(f"Successfully downloaded {url}")
                 ldb.actual_file = file
                 ldb.actual_url = url
                 break  # no need to search any further
+    else:
+        if verbose:
+            printer.info("All files already downloaded.", indent=1)
+
+    if verbose:
+        printer.section("Caching to HDF5/H5 format")
+        # Check if cache exists
+        fcache = DataFileManager(engine).cache_file(ldb.actual_file)
+        if exists(fcache):
+            printer.info("All files already cached.", indent=1)
 
     # Register
     if download_files or not ldb.is_registered():

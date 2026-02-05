@@ -766,6 +766,11 @@ def read_and_write_chunked_for_CO2(
             )
 
     else:
+        printer.section("Download")
+        printer.info("All files already downloaded.", indent=1)
+
+    printer.section("Caching to HDF5/H5 format")
+    if len(local_paths) == len([f for f in local_paths if os.path.exists(_fcache_file_name(f, engine))]):
         printer.info("All files already cached.", indent=1)
 
     with tqdm(

@@ -206,16 +206,17 @@ def fetch_hitran(
         ldb.actual_file = local_files[0]
 
     # Download files
-    if download_files:
-        # Initialize progress printer for consistent output
-        printer = DatabaseProgressPrinter(
-            database_name="HITRAN",
-            molecule=molecule,
-            verbose=verbose,
-        )
-        printer.header("Downloading database")
-        printer.section("Download")
+    # Download files
+    # Initialize progress printer for consistent output
+    printer = DatabaseProgressPrinter(
+        database_name="HITRAN",
+        molecule=molecule,
+        verbose=verbose,
+    )
+    printer.header("Downloading database")
 
+    if download_files:
+        printer.section("Download")
         main_files = ldb.get_filenames()
         printer.info(f"Downloading all isotopes for {molecule}", indent=1)
         if main_files:
@@ -229,6 +230,11 @@ def fetch_hitran(
             else:
                 printer.success("HITRAN database download complete")
                 ldb.actual_file = main_files[0]
+    else:
+        printer.section("Download")
+        printer.info("All files already downloaded.", indent=1)
+        printer.section("Caching to HDF5/H5 format")
+        printer.info("All files already cached.", indent=1)
 
     # Register
     if download_files or not ldb.is_registered():
