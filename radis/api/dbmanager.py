@@ -396,7 +396,7 @@ class DatabaseManager(object):
             molecule=molecule,
             verbose=verbose,
         )
-        printer.header()  # Just show "MOLECULE - DATABASE" without action
+        # Note: header is printed by the calling function (e.g., fetch_geisa, fetch_hitran)
         printer.section("Download")
 
         from time import time
