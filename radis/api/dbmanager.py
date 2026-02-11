@@ -396,8 +396,6 @@ class DatabaseManager(object):
             molecule=molecule,
             verbose=verbose,
         )
-        # Note: header is printed by the calling function (e.g., fetch_geisa, fetch_hitran)
-        printer.section("Download")
 
         from time import time
 
