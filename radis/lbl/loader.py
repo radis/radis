@@ -2617,11 +2617,11 @@ class DatabankLoader(object):
                         # Switch 'P', 'Q', 'R' to -1, 0, 1
                         if "branch" in df:
                             replace_PQR_with_m101(df)
-                            
+
                     elif dbformat in [
                         "exomol-radisdb"
                     ]:  # Changed from "exomol" to "exomol-radisdb" for consistency
-                      
+
                         # self.reftracker.add("10.1016/j.jqsrt.2020.107228", "line database")  # [ExoMol-2020]
                         raise NotImplementedError("use fetch_databank('exomol')")
                     else:
