@@ -347,7 +347,11 @@ def ignore_trailing_number(coef):
 
 def compare(databank, compare_with):
     """Simply to make databank case-insensitive!"""
-    if (isinstance(databank, str) or isinstance(databank, tuple) or isinstance(databank, list)) and isinstance(compare_with, str):
+    if (
+        isinstance(databank, str)
+        or isinstance(databank, tuple)
+        or isinstance(databank, list)
+    ) and isinstance(compare_with, str):
         if isinstance(databank, str):
             databank_str = databank
         else:
