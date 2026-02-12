@@ -61,6 +61,7 @@ import pandas as pd
 from radis import config
 from radis.api.cdsdapi import cdsd2df
 from radis.api.dbmanager import get_auto_MEMORY_MAPPING_ENGINE
+from radis.api.geisaapi import add_geisa_local_quanta, gei2df
 from radis.api.hdf5 import hdf2df
 from radis.api.hitranapi import hit2df, parse_global_quanta, parse_local_quanta
 from radis.api.tools import drop_object_format_columns, replace_PQR_with_m101
@@ -1466,6 +1467,8 @@ class DatabankLoader(object):
             else:
                 isotope_list = ",".join([str(k) for k in self._get_isotope_list()])
 
+            # For Geisa we need branch, jl.
+            columns = list(set(columns) | {"branch", "jl"})
             df, local_paths = fetch_geisa(
                 molecule,
                 isotope=isotope_list,
@@ -2594,9 +2597,31 @@ class DatabankLoader(object):
                             engine=engine,
                             output=output,
                         )
+                    elif dbformat in ["geisa"]:
+                        if self.dataframe_type == "pandas":
+                            engine = "pytables"
+                        elif self.dataframe_type == "vaex":
+                            engine = "vaex"
+
+                        df = gei2df(
+                            filename,
+                            load_columns=columns,
+                            drop_non_numeric=False,
+                            load_wavenum_min=wavenum_min,
+                            load_wavenum_max=wavenum_max,
+                            engine=engine,
+                            cache=False,
+                        )
+
+                        df = add_geisa_local_quanta(df, mol=self.input.species)
+                        # Switch 'P', 'Q', 'R' to -1, 0, 1
+                        if "branch" in df:
+                            replace_PQR_with_m101(df)
+
                     elif dbformat in [
                         "exomol-radisdb"
                     ]:  # Changed from "exomol" to "exomol-radisdb" for consistency
+
                         # self.reftracker.add("10.1016/j.jqsrt.2020.107228", "line database")  # [ExoMol-2020]
                         raise NotImplementedError("use fetch_databank('exomol')")
                     else:
