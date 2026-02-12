@@ -636,10 +636,10 @@ def convolve_with_slit(
 
     if w_slit_range > 10 * slit_FWHM:
         warn(
-            f"FWHM >> spectral range!\n"
+            "FWHM >> spectral range!\n"
             + f"Slit Function is provided with a spectral range {w_slit_range:.1f} nm that is much "
             + f"wider than its estimated FWHM {slit_FWHM:.1f}. We recommend truncating the input "
-            + f"slit function. See radis documentation about convolve_with_slit for more information."
+            + "slit function. See radis documentation about convolve_with_slit for more information."
         )
 
     if w_range < w_slit_range:
@@ -647,16 +647,16 @@ def convolve_with_slit(
             raise AssertionError(
                 f"Slit function is provided with a spectral range ({w_slit_range:.1f} {waveunit}) larger than "
                 + f"the spectral range of the spectrum ({w_range:.1f} {waveunit}) : the output spectrum will therefore be empty "
-                + f"as boundary effects of the convolution are automatically discarded. If you still want to apply the slit "
-                + f"despite potential boundary effects, set `mode='same'`. However, we recommend truncating the input slit function if possible, or compute the spectrum on a larger spectral range. "
-                + f"See radis documentation about convolve_with_slit for more information."
+                + "as boundary effects of the convolution are automatically discarded. If you still want to apply the slit "
+                + "despite potential boundary effects, set `mode='same'`. However, we recommend truncating the input slit function if possible, or compute the spectrum on a larger spectral range. "
+                + "See radis documentation about convolve_with_slit for more information."
             )
         else:
             warn(
-                f"Slit spectral range > Spectrum spectral range!\n"
+                "Slit spectral range > Spectrum spectral range!\n"
                 + f"Slit function is provided with a spectral range ({w_slit_range:.1f} nm) larger than "
                 + f"the spectral range of the spectrum ({w_range:.1f} nm). We recommend truncating the input "
-                + f"slit function. See radis documentation about convolve_with_slit for more information."
+                + "slit function. See radis documentation about convolve_with_slit for more information."
             )
 
     # 2. Interpolate the slit function on the spectrum grid, resample it if not
