@@ -7,9 +7,6 @@ Created on Sun Aug 22 13:34:42 2020
 ------------------------------------------------------------------------
 
 """
-import numpy as np
-
-# %%
 import pytest
 from numpy import allclose
 
@@ -44,6 +41,7 @@ def test_geisa_cpu_gpu_equivalence():
         path=getTestFile("geisa_CO_fragment.par"),
         format="geisa",
     )
+    # sf.fetch_databank('geisa') # to download from geisa - not for CI
 
     # --- Compute spectra ---
     s_cpu = sf.eq_spectrum(Tgas=Tgas, mole_fraction=1.0, name="CPU")
@@ -248,7 +246,7 @@ if __name__ == "__main__":
     # test_eq_spectrum_gpu(plot=True, verbose=2)
     # test_eq_spectrum_gpu_nvidia(plot=True)
     # test_multiple_gpu_calls(plot=True, hard_test=True)
-    test_broadening(plot=True)
+    # test_broadening(plot=True)
     test_geisa_cpu_gpu_equivalence()
 
     printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))
