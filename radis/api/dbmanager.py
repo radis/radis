@@ -424,18 +424,15 @@ class DatabaseManager(object):
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
             }
 
-            # First check if we can access the file
+            # First check if we can access the file.
+            # Some providers (notably HITEMP/HITRAN endpoints) may return HTML
+            # or generic redirect content on HEAD while GET returns the actual
+            # binary payload. Keep HEAD as a fast availability check only.
             head_response = session.head(urlname, headers=headers, allow_redirects=True)
-            if head_response.status_code != 200:
+            if head_response.status_code >= 400:
                 raise requests.HTTPError(
                     f"Unable to access the resource. Received HTTP status code {head_response.status_code} for URL: {urlname}. "
                     "Please verify the URL and your network access permissions."
-                )
-
-            # Check if we got redirected to login page
-            if "text/html" in head_response.headers.get("content-type", "").lower():
-                raise requests.HTTPError(
-                    "Received an HTML response instead of the expected file content. This may indicate authentication is required or access to the resource is restricted. Please verify your credentials and permissions for the requested URL: ({urlname})."
                 )
 
             try:
@@ -451,10 +448,31 @@ class DatabaseManager(object):
                     r'[<>:"/\\|?*&=]', "_", temp_file_path
                 )  # Sanitize the filename to remove invalid characters for Windows
 
+                first_chunk = b""
                 with open(f"{temp_file_path}", "wb") as f:
                     for chunk in response.iter_content(chunk_size=8192):
                         if chunk:  # filter out keep-alive new chunks
+                            if not first_chunk:
+                                first_chunk = chunk[:4096]
                             f.write(chunk)
+
+                # Detect actual HTML/login pages from GET response.
+                # We only fail when both headers and payload indicate HTML to
+                # avoid false positives from inaccurate content-type metadata.
+                content_type = response.headers.get("content-type", "").lower()
+                if "text/html" in content_type:
+                    first_chunk_text = first_chunk.lstrip().lower()
+                    if (
+                        first_chunk_text.startswith(b"<!doctype html")
+                        or first_chunk_text.startswith(b"<html")
+                        or b"<head" in first_chunk_text
+                        or b"<body" in first_chunk_text
+                    ):
+                        raise requests.HTTPError(
+                            "Received an HTML page instead of the expected file content. "
+                            "This may indicate authentication is required or access to the resource is restricted. "
+                            f"Please verify your credentials and permissions for the requested URL: ({urlname})."
+                        )
 
                 # Create an opener object using the global RequestsFileOpener class
                 opener = RequestsFileOpener(temp_file_path)
