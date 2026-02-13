@@ -1306,6 +1306,15 @@ class SpectrumFactory(BandFactory):
 
         # Get lines (intensities + populations)
         conditions = self.get_conditions(add_config=True)
+
+        # Add warning for GEISA database format
+        if conditions.get("dbformat") == "geisa":
+            warn(
+                "GPU spectra were validated for CO and not for other molecules. "
+                "Please check https://github.com/radis/radis/pull/890/",
+                UserWarning,
+                stacklevel=2,
+            )
         conditions.update(
             {
                 "calculation_time": self.profiler.final[list(self.profiler.final)[-1]][
