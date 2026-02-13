@@ -33,11 +33,9 @@ for T in [1000, 1500, 2000]:
 # 3. Fit an experimental spectrum and plot residuals automatically
 s_exp = sf.eq_spectrum(Tgas=1500, mole_fraction=0.1)
 
-# Add noise to mimic an experimental spectrum
-noise_level = 0.02  # 2% noise
-radiance = s_exp.get("radiance_noslit")[1]
-noise = np.random.normal(0, noise_level * np.max(radiance), len(radiance))
-s_exp.apply_offset(noise, var="radiance_noslit")
+# Add noise to mimic an experimental spectrum (2% of max radiance)
+noise = np.random.normal(0, 0.02 * s_exp.max().value, len(s_exp))
+s_exp = s_exp + noise
 
 # Toggle plot=True/False to see the difference!
 # This will find Tgas and mole_fraction as varying conditions and plot them.
