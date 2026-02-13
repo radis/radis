@@ -30,7 +30,7 @@ def load_chianti(
     ----------
     datapath : str, optional
         Root CHIANTI database directory (containing 'fe' folder with 'fe_12', etc.)
-        If None, uses: '/Users/jaiswaljaishankar05/Downloads/radis/radis/db/chianti'
+        If None, uses: '~/chianti_data'
     ion : str
         Ion identifier (e.g., 'fe_12' for Fe XII)
     wmin, wmax : float
@@ -46,11 +46,7 @@ def load_chianti(
     DatabankNotFound
         If CHIANTI files not found
     
-    Examples
-    --------
-    >>> df = load_chianti(ion='fe_12', wmin=193.0, wmax=197.0)
-    >>> print(df.head())
-    
+   
     Notes
     -----
     CHIANTI format: https://www.chiantidatabase.org/
@@ -58,7 +54,7 @@ def load_chianti(
     
     # Default CHIANTI path (update this to your actual path!)
     if datapath is None:
-         datapath = '/Users/adityapandey/Downloads/CHIANTI_11.0.2_database'
+        datapath = os.path.join(os.path.expanduser('~'), 'chianti_data')
     
     # Construct file paths
     ion_lower = ion.lower()
