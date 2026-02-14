@@ -369,7 +369,7 @@ def crop(s: Spectrum, wmin=None, wmax=None, wunit=None, inplace=False) -> Spectr
 
     if wunit is None:
         raise ValueError("Please precise unit for wmin and wmax with `unit=`")
-    elif wunit not in ["nm", "cm-1"]:
+    elif wunit not in ["nm", "cm-1", "nm_air", "nm_vac"]:
         if wunit in wlunit_list:
             wmin = convert_and_strip_units(wmin * wlunit_list[wunit], u.nm)
             wmax = convert_and_strip_units(wmax * wlunit_list[wunit], u.nm)
@@ -378,7 +378,7 @@ def crop(s: Spectrum, wmin=None, wmax=None, wunit=None, inplace=False) -> Spectr
             raise ValueError(
                 f"Unsupported wunit, should be cm-1, nm or {wlunit_list.keys}"
             )
-    # assert wunit in ["nm", "cm-1"]
+    # assert wunit in ["nm", "cm-1", "nm_air", "nm_vac"]
 
     if (wmin is not None and wmax is not None) and wmin >= wmax:
         raise ValueError(f"wmin should be < wmax (Got: {wmin:.2f}, {wmax:.2f})")
@@ -386,60 +386,66 @@ def crop(s: Spectrum, wmin=None, wmax=None, wunit=None, inplace=False) -> Spectr
     if not inplace:
         s = s.copy()
 
-    # Convert wmin, wmax to Spectrum wavespace  (stored_waveunit)
+    # Convert wmin, wmax to Spectrum wavespace (stored_waveunit)
     # (deal with cases where wavelength are given in 'air' or 'vacuum')
-    # TODO @dev: rewrite with wunit='cm-1', 'nm_air', 'nm_vac'
-    wmin0, wmax0 = wmin, wmax
+
+    # Define conversion logic relative to stored_waveunit
+    # ... if stored as cm-1
     if stored_waveunit == "cm-1":
-        # convert wmin, wmax to wavenumber
-        if wunit == "nm":
-            if wmax0:
-                wmin = nm_air2cm(wmax0)  # note: min/max inverted
-            if wmin0:
-                wmax = nm_air2cm(wmin0)  # note: min/max inverted
+        if wunit == "nm" or wunit == "nm_air":
+            conv = nm_air2cm
+            inv = True  # min/max inverted (cm-1 ~ 1/nm)
         elif wunit == "nm_vac":
-            if wmax0:
-                wmin = nm2cm(wmax0)  # note: min/max inverted
-            if wmin0:
-                wmax = nm2cm(wmin0)  # note: min/max inverted
+            conv = nm2cm
+            inv = True
         elif wunit == "cm-1":
-            pass
+            conv = lambda x: x
+            inv = False
         else:
-            raise ValueError(wunit)
+            raise ValueError(f"Unsupported wunit: {wunit}")
+
+    # ... if stored as nm (air)
     elif stored_waveunit == "nm":
-        # convert wmin, wmax to wavelength air
-        if wunit == "nm":
-            pass
+        if wunit == "nm" or wunit == "nm_air":
+            conv = lambda x: x
+            inv = False
         elif wunit == "nm_vac":
-            if wmin0:
-                wmin = vacuum2air(wmin0)
-            if wmax0:
-                wmax = vacuum2air(wmax0)
+            conv = vacuum2air
+            inv = False
         elif wunit == "cm-1":
-            if wmax0:
-                wmin = cm2nm_air(wmax0)  # note: min/max inverted
-            if wmin0:
-                wmax = cm2nm_air(wmin0)  # note: min/max inverted
+            conv = cm2nm_air
+            inv = True
         else:
-            raise ValueError(wunit)
+            raise ValueError(f"Unsupported wunit: {wunit}")
+
+    # ... if stored as nm (vacuum)
     elif stored_waveunit == "nm_vac":
-        # convert wmin, wmax to wavelength vacuum
-        if wunit == "nm":
-            if wmin0:
-                wmin = air2vacuum(wmin0)
-            if wmax0:
-                wmax = air2vacuum(wmax0)
+        if wunit == "nm" or wunit == "nm_air":
+            conv = air2vacuum
+            inv = False
         elif wunit == "nm_vac":
-            pass
+            conv = lambda x: x
+            inv = False
         elif wunit == "cm-1":
-            if wmax0:
-                wmin = cm2nm(wmax0)  # note: min/max inverted
-            if wmin0:
-                wmax = cm2nm(wmin0)  # note: min/max inverted
+            conv = cm2nm
+            inv = True
         else:
-            raise ValueError(wunit)
+            raise ValueError(f"Unsupported wunit: {wunit}")
     else:
-        raise ValueError(stored_waveunit)
+        raise ValueError(f"Unexpected stored_waveunit: {stored_waveunit}")
+
+    # Apply conversion
+    wmin0, wmax0 = wmin, wmax
+    if inv:
+        if wmax0 is not None:
+            wmin = conv(wmax0)
+        if wmin0 is not None:
+            wmax = conv(wmin0)
+    else:
+        if wmin0 is not None:
+            wmin = conv(wmin0)
+        if wmax0 is not None:
+            wmax = conv(wmax0)
 
     # Crop
     if len(s._q) > 0:
