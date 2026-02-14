@@ -1327,7 +1327,11 @@ class PartFuncTIPS(RovibParFuncTabulator):
         self.I = I
 
         # Get min and maximum of partition functions in TIPS
-        from hapi import TIPS_2021_ISOT_HASH
+        # Suppress HAPI import output
+        from contextlib import redirect_stdout
+
+        with redirect_stdout(None):
+            from hapi import TIPS_2021_ISOT_HASH
 
         TT = TIPS_2021_ISOT_HASH[(M, I)]
         self.Tmin = min(TT)
