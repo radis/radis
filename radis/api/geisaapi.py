@@ -22,7 +22,11 @@ import radis
 
 try:
     from .cache_files import load_h5_cache_file, save_to_hdf
-    from .tools import drop_object_format_columns, parse_hitran_file
+    from .tools import (
+        drop_object_format_columns,
+        parse_hitran_file,
+        replace_PQR_with_m101,
+    )
 except ImportError:
     if __name__ == "__main__":  # running from this file, as a script
         from radis.api.cache_files import load_h5_cache_file, save_to_hdf
@@ -32,7 +36,9 @@ except ImportError:
 # from typing import Union
 from radis.api.dbmanager import DatabaseManager
 from radis.api.hdf5 import DataFileManager
+from radis.db.classes import HITRAN_GROUP2
 from radis.misc.config import getDatabankEntries
+from radis.misc.database_progress import DatabaseProgressPrinter
 from radis.misc.warning import DatabaseAlreadyExists
 
 # %% Parsing functions
@@ -321,6 +327,57 @@ def get_last(b):
     return b[non_zero]
 
 
+def add_geisa_local_quanta(df, mol=None):
+    r"""Extract branch and lower-state rotational quantum number (jl) from GEISA local quanta.
+
+    This helper is meant for GEISA diatomic / linear molecules (e.g. CO), where the
+    local lower-state quantum string ``locl`` encodes the branch and J in a compact
+    form such as::
+
+        "R  0", "R 12", "P 59", "P130", ...
+
+    The function parses:
+
+    - ``branch`` as the first non-space character (``"P"``, ``"Q"``, ``"R"``, ...),
+    - ``jl`` as the integer formed by the remaining characters.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame returned by :func:`gei2df`, containing at least a ``locl`` column.
+    mol : str, optional
+        Molecule name. If not in HITRAN_GROUP2 (diatomic / linear), the DataFrame
+        is returned unchanged.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The same DataFrame with two additional columns:
+
+        - ``branch`` : str
+        - ``jl`` : int
+    """
+    # Only apply to diatomic / linear molecules (HITRAN Group 2)
+    if mol is None or mol not in HITRAN_GROUP2:
+        return df
+
+    # Ensure we have a clean string representation of locl
+    locl = df["locl"].astype(str).str.strip()
+
+    # 1) Branch: first character of locl (e.g. 'R' in "R 12")
+    df["branch"] = locl.str[0]
+
+    # 2) jl (lower-state J): numeric part after the branch letter
+    #    "R  0"  -> "  0" -> "0"
+    #    "R 12"  -> " 12" -> "12"
+    #    "P130"  -> "130"
+    #    "R21E"  -> "21E" -> "21" // Ignore E/F Parities
+    # jl: extract numeric J value only (ignore E/F parity)
+    df["jl"] = locl.str.extract(r"(\d+)", expand=False).fillna("0").astype("int64")
+
+    return df
+
+
 class GEISADatabaseManager(DatabaseManager):
     def __init__(
         self,
@@ -360,7 +417,14 @@ class GEISADatabaseManager(DatabaseManager):
         molecule = self.molecule
         geisa_url = "https://aeris-geisa.ipsl.fr/geisa_files/2020/Lines/line_GEISA2020_asc_gs08_v1.0_"
 
-        print(f"Molecule: {molecule}")
+        # Initialize progress printer for consistent output
+        printer = DatabaseProgressPrinter(
+            database_name="GEISA",
+            molecule=molecule,
+            verbose=self.verbose,
+            version="2020",
+        )
+        printer.header("Fetching database")
 
         if molecule.upper() in GEISA_MOLECULES:
             url = geisa_url + molecule.lower()
@@ -402,6 +466,10 @@ class GEISADatabaseManager(DatabaseManager):
 
             gfile  #  so the linter doesn't annoy us. We're not using this file anyway, just unzipping the cache file directly :
             df = gei2df(opener.abspath(urlname), drop_non_numeric=False, cache=False)
+            df = add_geisa_local_quanta(df, mol=self.molecule)
+            # Switch 'P', 'Q', 'R' to -1, 0, 1
+            if "branch" in df:
+                replace_PQR_with_m101(df)
 
             writer.write(local_file, df, append=False)
 
