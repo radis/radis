@@ -2499,8 +2499,8 @@ class SpecDatabase(SpecList):
             else:
                 warn(
                     f"Too many varying conditions ({len(varying_cols)}: {varying_cols}) "
-                    + "to plot residuals. Try to restrain the search using `conditions` "
-                    + "or `**kwconditions`."
+                    + "to plot residuals. At most 1 or 2 conditions can vary. "
+                    + "Try to restrain the search using `conditions` or `**kwconditions`."
                 )
 
         return spectra[i].copy()  # dont forget to copy the Spectrum we return
