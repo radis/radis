@@ -6,11 +6,12 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: Upload Python Package
+name: Upload Python Package to PyPI
 
 on:
-  workflow_dispatch:
-
+  release:
+    types: [published] #this event will be triggered only when a release is published. Not when we push on the master.
+    #WARNING: make sure you finished a merge to master before creating the release
 permissions:
   contents: read
 
@@ -27,12 +28,13 @@ jobs:
 
       - name: Build release distributions
         run: |
+          # Convert README FIRST, before building
+          sudo apt-get install pandoc
+          pandoc README.rst -o README.md
+
           # NOTE: put your own distribution build steps here.
           python -m pip install build twine
           python -m build --sdist --wheel
-
-          sudo apt-get install pandoc
-          pandoc README.rst -o README.md
 
       - name: Upload distributions
         uses: actions/upload-artifact@v4
@@ -69,6 +71,7 @@ jobs:
       - name: Publish release distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: dist/
-          pypi-trust: true
-          test-pypi: true
+            packages-dir: dist/
+            skip-existing: true #skip the process if the version already exists on PyPI
+            verbose: true #nice to catch error messages
+            repository-url: https://upload.pypi.org/legacy/ # add this line if you want to specify the repository URL

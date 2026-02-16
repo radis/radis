@@ -241,17 +241,25 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
 
     from os.path import basename  # use platform-aware basename
 
+    # This range triggers 2 chunks and parallel download
     df, local_files = fetch_hitemp(
         "CO2",
-        load_wavenum_min=0,  # cm-1
-        load_wavenum_max=100,
+        load_wavenum_min=2300,  # cm-1
+        load_wavenum_max=2500,
         verbose=3,
         return_local_path=True,
     )
 
     assert df.shape[1] == 24
-    assert len(local_files) == 1
-    assert basename(local_files[0]).startswith("CO2_02_00000-00261_HITEMP2024.")
+    assert len(local_files) == 2, f"Expected 2 files, got {len(local_files)}"
+    expected_files = [
+        "CO2_02_02273-02446_HITEMP2024.par",
+        "CO2_02_02446-02659_HITEMP2024.par",
+    ]
+    actual_files = [basename(f) for f in local_files]
+    assert (
+        actual_files == expected_files
+    ), f"Expected files {expected_files}, got {actual_files}"
 
 
 def test_read_wav_index():

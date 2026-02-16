@@ -16,6 +16,7 @@ import numpy as np
 
 from radis.api.dbmanager import DatabaseManager, get_auto_MEMORY_MAPPING_ENGINE
 from radis.db.classes import EXOMOL_MOLECULES, EXOMOL_ONLY_ISOTOPES_NAMES
+from radis.misc.database_progress import DatabaseProgressPrinter
 
 EXOMOL_URL = "https://www.exomol.com/db/"
 
@@ -1202,6 +1203,7 @@ class MdbExomol(DatabaseManager):
         verbose=True,
         cache=True,
         skip_optional_data=True,
+        is_default_database=False,  # New parameter to track if using default/recommended database
     ):
         super().__init__(
             name,
@@ -1234,6 +1236,18 @@ class MdbExomol(DatabaseManager):
         self.broadf = broadf
         self.broadf_download = broadf_download
 
+        # Initialize progress printer early (before any downloads)
+        # Store database info for later header construction
+        self._database_name = database if database else ""
+        self._is_default_database = is_default_database
+        self._printer = DatabaseProgressPrinter(
+            database_name="ExoMol",
+            molecule=molecule,
+            verbose=self.verbose,
+            version="",  # We'll construct the version string manually in the header
+        )
+        self._any_downloads = False  # Track if we're actually downloading anything
+
         # Where exomol files are
         self.states_file = self.path / pathlib.Path(molec + ".states.bz2")
         self.pf_file = self.path / pathlib.Path(molec + ".pf")
@@ -1263,27 +1277,57 @@ class MdbExomol(DatabaseManager):
         }
 
         mgr = self.get_datafile_manager()
-        if not self.def_file.exists():
-            self.download(molec, extension=[".def"])
-        if not self.pf_file.exists():
-            self.download(molec, extension=[".pf"])
-        if (
+
+        # Check what needs to be downloaded
+        need_def = not self.def_file.exists()
+        need_pf = not self.pf_file.exists()
+        need_states = (
             not self.states_file.exists()
             and not mgr.cache_file(self.states_file).exists()
-        ):
-            self.download(molec, extension=[".states.bz2"])
-        # will attempt a download as long as "air" is not present in the database
-        if (
+        )
+        need_broad = (
             (not self.broad_files["air"].exists())
             and self.broadf
             and self.broadf_download
-        ):
-            self.download(molec, extension=[".broad"])
+        )
 
         # Add molecule name
         tag = molec.split("__")
         self.isotope_fullname = tag[0]
         self.molecule = exact_molname_exomol_to_simple_molname(tag[0])
+        # self.isotope = 1  # Placeholder. TODO : implement parsing of other isotopes.
+
+        # Only download if needed
+        if need_def or need_pf or need_states or need_broad:
+            self._any_downloads = True
+
+        # Only print header if we're actually doing work (downloads or processing)
+        if self._any_downloads:
+            # Construct header with database name
+            # Format: "OH - EXOMOL MYTHOS (default)" or "OH - EXOMOL MYTHOS"
+            if self._database_name:
+                if self._is_default_database:
+                    header_action = f"Fetching {self.isotope_fullname} - {self._database_name} (default)"
+                else:
+                    header_action = (
+                        f"Fetching {self.isotope_fullname} - {self._database_name}"
+                    )
+            else:
+                header_action = f"Fetching {self.isotope_fullname}"
+
+            self._printer.header(header_action)
+            self._printer.info(f"Local folder: {self.path}", indent=1)
+            self._printer.section("Download")
+            self._header_printed = True
+
+        if need_def:
+            self.download(molec, extension=[".def"])
+        if need_pf:
+            self.download(molec, extension=[".pf"])
+        if need_states:
+            self.download(molec, extension=[".states.bz2"])
+        if need_broad:
+            self.download(molec, extension=[".broad"])
         # self.isotope = 1  # Placeholder. TODO : implement parsing of other isotopes.
 
         # load def
@@ -1325,8 +1369,9 @@ class MdbExomol(DatabaseManager):
                 raise ValueError(
                     f"Cache file {str(mgr.cache_file(self.states_file))} does not exist"
                 )
-            print(
-                f"Note: Caching states data to the {engine} format. After the second time, it will become much faster."
+            self._printer.info(
+                f"Caching states data to {engine} format. This will be faster on subsequent runs.",
+                indent=2,
             )
             states = read_states(
                 self.states_file,
@@ -1387,25 +1432,51 @@ class MdbExomol(DatabaseManager):
                 self.trans_file.append(trans_file)
                 self.num_tag.append(dic_def["numtag"][i])
 
-        # some verbose
-        if self.verbose:
-            print("Molecule: ", molecule)
-            print("Isotopologue: ", self.isotope_fullname)
-            print("ExoMol database: ", database)
-            print("Local folder: ", self.path)
-            print("Transition files: ")
+        # Check if we need to download any transition files
+        need_trans_download = False
+        for trans_file in self.trans_file:
+            if not mgr.cache_file(trans_file).exists() and not trans_file.exists():
+                need_trans_download = True
+                self._any_downloads = True
+                break
+
+        # Only print header if we're actually doing work (downloads or processing)
+        if self._any_downloads and not getattr(self, "_header_printed", False):
+            # Construct header with database name
+            # Format: "OH - EXOMOL MYTHOS (default)" or "OH - EXOMOL MYTHOS"
+            if self._database_name:
+                if self._is_default_database:
+                    header_action = f"Fetching {self.isotope_fullname} - {self._database_name} (default)"
+                else:
+                    header_action = (
+                        f"Fetching {self.isotope_fullname} - {self._database_name}"
+                    )
+            else:
+                header_action = f"Fetching {self.isotope_fullname}"
+
+            self._printer.header(header_action)
+            self._printer.info(f"Local folder: {self.path}", indent=1)
+            self._header_printed = True
+
+        # Only show Download section if we're downloading transition files
+        if need_trans_download:
+            self._printer.section("Download")
 
         # Look-up missing parameters and write file
         # -----------------------------------------
         for trans_file, num_tag in zip(self.trans_file, self.num_tag):
-            if self.verbose:
-                print(
-                    f"\t => File {os.path.splitext(os.path.basename((trans_file)))[0]}"
-                )
+            file_basename = os.path.splitext(os.path.basename((trans_file)))[0]
+
+            # Only print file info if we're downloading it
+            if not mgr.cache_file(trans_file).exists():
+                if self._any_downloads:
+                    self._printer.info(f"File {file_basename}", indent=1)
 
             if cache == "regen" and mgr.cache_file(trans_file).exists():
                 if self.verbose:
-                    print("\t\t => `regen = True`. Removing the file")
+                    self._printer.info(
+                        "`regen = True`. Removing the file", level=2, indent=2
+                    )
                 os.remove(mgr.cache_file(trans_file))
 
             if not mgr.cache_file(trans_file).exists():
@@ -1416,11 +1487,13 @@ class MdbExomol(DatabaseManager):
 
                 if not trans_file.exists():
                     self.download(molec, extension=[".trans.bz2"], numtag=num_tag)
-                if self.verbose:
-                    print(
-                        f"\t\t => Caching the *.trans.bz2 file to the {engine} (*.h5) format. After the second time, it will become much faster."
-                    )
-                    print(f"\t\t => You can deleted the 'trans.bz2' file by hand.")
+                self._printer.info(
+                    f"Caching the *.trans.bz2 file to the {engine} (*.h5) format. After the second time, it will become much faster.",
+                    indent=2,
+                )
+                self._printer.info(
+                    "You can delete the 'trans.bz2' file by hand.", level=2, indent=2
+                )
                 trans = read_trans(
                     trans_file, engine="vaex" if engine == "vaex" else "csv"
                 )
@@ -1698,8 +1771,9 @@ class MdbExomol(DatabaseManager):
 
                     file_size = int(file_size)
                     total_download_size_bytes += file_size
-            except Exception as e:
-                warnings.warn(f"Failed to fetch size for {pfname}: {e}", UserWarning)
+            except Exception:
+                # Silently skip files that can't be reached - not critical for download
+                pass
 
         total_download_size_gb = total_download_size_bytes / (1024**3)
 
@@ -1734,7 +1808,6 @@ class MdbExomol(DatabaseManager):
 
         """
         import os
-        import urllib.request
 
         tag = molec.split("__")
         molname_simple = exact_molname_exomol_to_simple_molname(tag[0])
@@ -1755,10 +1828,9 @@ class MdbExomol(DatabaseManager):
 
             total_download_size_gb += self._calculate_download_size(url, pfname_arr)
 
-        if self.verbose:
-            print(
-                f"Total download size {pfname_arr} is: {total_download_size_gb:.6f} GB"
-            )
+        self._printer.info(
+            f"Total download size: {total_download_size_gb:.6f} GB", indent=2
+        )
 
         from radis import config
 
@@ -1779,6 +1851,10 @@ class MdbExomol(DatabaseManager):
                 pfname_arr, url, partners_success = self._construct_filenames_and_url(
                     ext, molname_simple, tag, molec, numtag
                 )
+
+                # Add Broadening subsection only if we're downloading broadening files
+                if self.verbose:
+                    self._printer.section("Broadening")
             else:
                 pfname_arr, url = self._construct_filenames_and_url(
                     ext, molname_simple, tag, molec, numtag
@@ -1787,22 +1863,53 @@ class MdbExomol(DatabaseManager):
             for index, pfname in enumerate(pfname_arr):
                 pfpath = url + pfname
                 os.makedirs(str(self.path), exist_ok=True)
-                if self.verbose:
-                    print(
-                        f"\t\t => Downloading from {pfpath}"
-                    )  # modify indent accordingly print in __init__
+                self._printer.info(f"Downloading {pfname}", indent=2)
                 try:
-                    urllib.request.urlretrieve(pfpath, str(self.path / pfname))
-                except HTTPError:
+                    # Download with progress bar
+                    import requests
+                    from tqdm import tqdm
+
+                    response = requests.get(pfpath, stream=True)
+                    response.raise_for_status()
+                    total_size = int(response.headers.get("content-length", 0))
+
+                    with open(str(self.path / pfname), "wb") as f:
+                        with tqdm(
+                            total=total_size,
+                            unit="B",
+                            unit_scale=True,
+                            unit_divisor=1024,
+                            desc=f"    {pfname[:30]}",
+                            disable=not self.verbose,
+                        ) as pbar:
+                            for chunk in response.iter_content(chunk_size=8192):
+                                if chunk:
+                                    f.write(chunk)
+                                    pbar.update(len(chunk))
+                except (HTTPError, requests.HTTPError, requests.RequestException):
                     if ext == ".broad":
                         partners_success[index] = False
-                    print(f"Error: Couldn't download {ext} file at {pfpath} and save.")
+                    self._printer.warning(f"Couldn't download {ext} file")
 
-            if ext == ".broad" and self.verbose:
+            # Print broadening summary after attempting all downloads
+            if ext == ".broad":
                 patners_arr = np.array(self.broad_partners)
-                print(
-                    f"\nSummary of broadening files downloaded:\n\tSuccess: {patners_arr[partners_success]}\n\tFail: {patners_arr[~partners_success]}\n"
-                )
+                succeeded_count = len(patners_arr[partners_success])
+                failed_count = len(patners_arr[~partners_success])
+
+                if succeeded_count > 0:
+                    # List the successful ones
+                    successful_partners = patners_arr[partners_success]
+                    self._printer.info(
+                        f"Downloaded {succeeded_count} broadening file(s): {', '.join(successful_partners)}",
+                        indent=2,
+                    )
+
+                if failed_count > 0:
+                    self._printer.info(
+                        f"{failed_count} broadening file(s) not available (using default parameters)",
+                        indent=2,
+                    )
 
     def to_partition_function_tabulator(self):
         """Generate a :py:class:`~radis.levels.partfunc.PartFuncExoMol` object"""

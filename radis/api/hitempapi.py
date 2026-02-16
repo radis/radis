@@ -15,6 +15,7 @@ import re
 import time
 import urllib.request
 import warnings
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from os.path import basename, commonpath, join
 from typing import Union
 
@@ -66,6 +67,7 @@ except ImportError:  # ran from here
         raise
 
 from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
+from radis.misc.database_progress import DatabaseProgressPrinter
 from radis.misc.progress_bar import ProgressBar
 
 HITEMP_MOLECULES = ["H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"]
@@ -253,6 +255,7 @@ def setup_credentials():
     is_rtd = os.environ.get("READTHEDOCS", "").lower() == "true"
     is_travis = os.environ.get("TRAVIS", "").lower() == "true"
     is_github_action = os.environ.get("GITHUB_ACTIONS", "").lower() == "true"
+    is_pytest = os.environ.get("PYTEST_CURRENT_TEST")
 
     # compatibly with old versions
     email = os.environ.get("HITRAN_EMAIL")
@@ -273,8 +276,16 @@ def setup_credentials():
 
     if (not email or not password) and not (is_rtd or is_travis or is_github_action):
         # In normal usage, fall back to prompt if environment variables not set
-        email = input("Enter HITRAN email: ")
-        password = _prompt_password(email)
+        import sys
+
+        if is_pytest and (not email or not password):
+            raise OSError(
+                "HITRAN_EMAIL and/or HITRAN_PASSWORD environment variables are not set, and the script is running in a non-interactive environment (e.g. captured stdin in pytest). Please set the environment variables or run with 'pytest -s' to allow interactive input."
+            )
+
+        if sys.stdin.isatty():
+            email = input("Enter HITRAN email: ")
+            password = _prompt_password(email)
 
     return email, password
 
@@ -611,6 +622,25 @@ def parse_one_CO2_block(
     return df
 
 
+def _download_single_chunk(
+    start_wavno, end_wavno, out_file, session, engine, verbose=True
+):
+    """Download a single CO2 chunk."""
+    if engine == "vaex":
+        fcache = _fcache_file_name(out_file, engine)
+        fcache_str = str(fcache)
+        if os.path.exists(fcache_str.replace(".hdf5", ".h5")):
+            update_pytables_to_vaex(fcache_str.replace(".hdf5", ".h5"))
+
+    partial_download_co2_chunk(
+        start_wavno,
+        end_wavno,
+        session,
+        out_file,
+        verbose=verbose,
+    )
+
+
 def read_and_write_chunked_for_CO2(
     load_wavenum_max,
     load_wavenum_min,
@@ -685,48 +715,65 @@ def read_and_write_chunked_for_CO2(
         if not (os.path.exists(fcache) or os.path.exists(out_decompressed_file)):
             files_to_download.append((start_wavno, end_wavno, out_decompressed_file))
 
-    if verbose:
-        print("-" * 80)
-        print(
-            f"CO2 - HITEMP 2024 - Downloading and processing {len(wav_pairs)} chunks for range {load_wavenum_min}-{load_wavenum_max} cm⁻¹"
-        )
-        print("-" * 80)
+    # Initialize progress printer
+    printer = DatabaseProgressPrinter(
+        database_name="HITEMP",
+        molecule="CO2",
+        verbose=verbose,
+        version="2024",
+    )
+    printer.header(
+        f"Downloading and processing {len(wav_pairs)} chunks for range {load_wavenum_min}-{load_wavenum_max} cm⁻¹"
+    )
 
     # Download section
     if files_to_download:
-        if verbose:
-            print(f"\n\x1B[4mDownload:\x1B[0m")
-            print(
-                f"- Download {len(files_to_download)} file(s) missing out of {len(wav_pairs)}."
+        printer.section("Download")
+        files_cached = len(wav_pairs) - len(files_to_download)
+        printer.download_summary(
+            files_needed=len(files_to_download),
+            files_total=len(wav_pairs),
+            files_cached=files_cached,
+        )
+
+        # Use parallel downloads for multiple chunks
+        if len(files_to_download) > 1:
+            printer.info("Starting parallel downloads...", level=1, indent=1)
+
+            cpu_threads = os.cpu_count() or 1
+            max_threads = min(max(cpu_threads - 1, 1), len(files_to_download), 4)
+
+            with ThreadPoolExecutor(max_workers=max_threads) as executor:
+                futures = [
+                    executor.submit(
+                        _download_single_chunk,
+                        start,
+                        end,
+                        out_file,
+                        session,
+                        engine,
+                        verbose,
+                    )
+                    for (start, end, out_file) in files_to_download
+                ]
+                for future in as_completed(futures):
+                    future.result()
+        else:
+            # Single chunk download - no threading overhead
+            start_wavno, end_wavno, out_file = files_to_download[0]
+            _download_single_chunk(
+                start_wavno, end_wavno, out_file, session, engine, verbose
             )
 
-        # Download each chunk with individual progress
-        for i, (start_wavno, end_wavno, out_decompressed_file) in enumerate(
-            files_to_download
-        ):
-            if engine == "vaex":
-                fcache = _fcache_file_name(out_decompressed_file, engine)
-                fcache_str = str(fcache)
-                if os.path.exists(fcache_str.replace(".hdf5", ".h5")):
-                    update_pytables_to_vaex(fcache_str.replace(".hdf5", ".h5"))
-
-            if verbose:
-                print(
-                    f"\nDownloading chunk {i+1}/{len(files_to_download)}: {start_wavno:.0f}-{end_wavno:.0f} cm⁻¹"
-                )
-
-            partial_download_co2_chunk(
-                start_wavno,
-                end_wavno,
-                session,
-                out_decompressed_file,
-                verbose=verbose,  # Show internal download progress
-            )
     else:
-        if verbose:
-            print(
-                f"\nAll files already downloaded. Loading from `.h5` or `.hdf5` files."
-            )
+        printer.section("Download")
+        printer.info("All files already downloaded.", indent=1)
+
+    printer.section("Caching to HDF5/H5 format")
+    if len(local_paths) == len(
+        [f for f in local_paths if os.path.exists(_fcache_file_name(f, engine))]
+    ):
+        printer.info("All files already cached.", indent=1)
 
     with tqdm(
         total=len(local_paths), desc="Processing chunks", disable=not verbose
@@ -758,8 +805,7 @@ def read_and_write_chunked_for_CO2(
 
     # Combine DataFrames
     if dataframes:
-        if verbose:
-            print("Combining parsed data from all chunks...")
+        printer.info("Combining parsed data from all chunks...", indent=1)
 
         if output == "vaex":
             import vaex
@@ -1244,7 +1290,6 @@ class HITEMPDatabaseManager(DatabaseManager):
                     "info": info,
                     "path": local_files,
                     "format": "hitemp-radisdb",
-                    "parfuncfmt": "hapi",
                     "wavenumber_min": self.wmin,
                     "wavenumber_max": self.wmax,
                     "download_date": self.get_today(),

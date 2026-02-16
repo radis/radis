@@ -40,7 +40,7 @@ from math import ceil
 
 import numba
 import numpy as np
-from numba import bool_, float64, int32, int64
+from numba import bool_
 from numpy import hstack
 from scipy.integrate import trapezoid
 from scipy.interpolate import interp1d
@@ -542,10 +542,7 @@ def numpy_add_at(LDM, k, l, m, I):
 #     return b[n:len(a)+n]
 
 
-@numba.njit(
-    bool_[:](float64[:], int64),
-    cache=True,
-)
+@numba.njit(cache=True)
 def non_zero_values_around(a, n):
     """return a boolean array of same size as ``a`` where each position ``i``
     is ``True`` if there are non-zero points less than ``n`` index position
@@ -649,10 +646,7 @@ def non_zero_values_around(a, n):
 #     return b
 
 
-@numba.njit(
-    (int64[:, :])(bool_[:]),
-    cache=True,
-)
+@numba.njit(cache=True)
 def non_zero_ranges_in_array(b):
     """return a list of coordinates corresponding to non-zero values
     in boolean array ``b``
@@ -692,10 +686,7 @@ def non_zero_ranges_in_array(b):
     return np.array(L)
 
 
-@numba.njit(
-    (bool_[:])(int64[:, :], int64),
-    cache=True,
-)
+@numba.njit(cache=True)
 def boolean_array_from_ranges(ranges, n):
     """return a boolean array of length ``n`` where (``L[i][0]``, ``L[i][1]``)
     give the ranges set to ``True``
@@ -717,12 +708,7 @@ def boolean_array_from_ranges(ranges, n):
     return b
 
 
-@numba.njit(
-    numba.types.Tuple((int64[:, :], float64[:]))(
-        int32[:], float64[:], float64[:], float64[:], int64, int64
-    ),
-    cache=True,
-)
+@numba.njit(cache=True)
 def sparse_add_at(ki0, Iv0, Iv1, weight, max_range, truncation_pts):
     """Returns (start, stop) of non-zero ranges, and intensity ``I`` (length
     ``truncation_pts``) for all line intensities ``Iv0`` and ``Iv1`` at position ``ki0``

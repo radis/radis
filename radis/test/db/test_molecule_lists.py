@@ -119,7 +119,6 @@ def test_HITRAN_molecules_list(verbose=True, *args, **kwargs):
     """Test that HITRAN molecule list in RADIS remains up to date"""
 
     from radis.db.classes import HITRAN_MOLECULES
-    from radis.misc.basics import compare_lists
 
     molecules = fetch_HITRAN_molecules()
 
@@ -129,16 +128,16 @@ def test_HITRAN_molecules_list(verbose=True, *args, **kwargs):
 
         print("Comparing Radis hardcoded HITRAN molecules list to the HITRAN website:")
 
-    assert (
-        compare_lists(
-            HITRAN_MOLECULES,
-            molecules,
-            l1_str="Radis molecules",
-            l2_str="Fetched from HITRAN website",
-            print_index=True,
-        )
-        == 1
-    )
+    result = 1 if sorted(HITRAN_MOLECULES) == sorted(molecules) else 0
+
+    if result != 1:
+        radis_only = set(HITRAN_MOLECULES) - set(molecules)
+        fetched_only = set(molecules) - set(HITRAN_MOLECULES)
+        if radis_only:
+            print(f"In Radis but not in HITRAN website: {radis_only}")
+        if fetched_only:
+            print(f"In HITRAN website but not in Radis: {fetched_only}")
+        raise AssertionError("HITRAN molecule lists do not match")
     print("----")
 
 
@@ -353,5 +352,5 @@ def generate_molparam_for_non_HITRAN_species():
 # %%
 
 if __name__ == "__main__":
-    test_ExoMol_molecules_list()
-    # test_HITRAN_molecules_list()
+    # test_ExoMol_molecules_list()
+    test_HITRAN_molecules_list()
