@@ -34,9 +34,9 @@ for T in [1000, 1500, 2000]:
 s_exp = sf.eq_spectrum(Tgas=1500, mole_fraction=0.1)
 
 # Add noise to mimic an experimental spectrum (2% of max radiance)
-w, I = s_exp.get("radiance_noslit")
-noise = np.random.normal(0, 0.02 * I.max(), len(I))
-s_exp = Spectrum.from_array(w, I + noise, "radiance_noslit", wunit="nm", unit="mW/cm2/sr/nm")
+s_exp = s_exp.take("radiance_noslit")
+noise = np.random.normal(0, 0.02 * s_exp.max().value, len(s_exp))
+s_exp = s_exp + noise
 
 # Toggle plot=True/False to see the difference!
 # This will find Tgas and mole_fraction as varying conditions and plot them.
