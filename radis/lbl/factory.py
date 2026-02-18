@@ -632,7 +632,28 @@ class SpectrumFactory(BandFactory):
         # Time Based variables
         self.verbose = verbose
 
-        if truncation == 0:
+        # ── NEW: resolve string-based HWHM truncation ──────────────────
+        if isinstance(truncation, str):
+            if truncation == "auto":
+                truncation = "auto"  # resolved later in calc_hwhm
+            else:
+                val = (
+                    truncation.lower()
+                    .replace("hwhm", "")
+                    .replace("x", "")
+                    .strip()
+                )
+                try:
+                    float(val)
+                    truncation = truncation  # valid, resolved later
+                except ValueError:
+                    raise ValueError(
+                        f"truncation='{truncation}' not understood. "
+                        "Use a float (cm-1), None, 'auto', or 'NxHWHM' "
+                        "(e.g. '100xHWHM')."
+                    )
+        # ── END NEW ──────────────────────────────────────────────────────
+        elif truncation == 0:
             raise ValueError(
                 "Lineshape truncation must be > 0. If you want no truncation (compute lineshape on the full spectral range), use `truncation=None`. \nNote (advanced) : no truncation is not physically more accurate. Most molecules exhibit a sub-lorentzian behavior far from the line centers. A truncation at around 40-50 cm-1 is a good choice"
             )
@@ -1971,7 +1992,7 @@ class SpectrumFactory(BandFactory):
         truncation = self.params.truncation
         neighbour_lines = self.params.neighbour_lines
 
-        if truncation and neighbour_lines > truncation:
+        if truncation and not isinstance(truncation, str) and neighbour_lines > truncation:
             self.warn(
                 f"Neighbour lines resolved up to {neighbour_lines} cm-1 away from the spectrum. "
                 + f"But lines are anyway truncated at {truncation:.2f} cm-1. "
@@ -1992,7 +2013,11 @@ class SpectrumFactory(BandFactory):
             # (note that this means 3x wavenumber_calc will be required when applying lineshapes)
             truncation = wavenumber_calc[-1] - wavenumber_calc[0]
 
-        wbroad_centered = _generate_broadening_range(self.params.wstep, truncation)
+        # Resolve string truncation to float before broadening range
+        _trunc = truncation
+        if isinstance(_trunc, str):
+            _trunc = 50.0  # fallback, actual resolve happens in broadening.py
+        wbroad_centered = _generate_broadening_range(self.params.wstep, _trunc)
         self.truncation = truncation
         # store value for use in lineshape broadening.
         # Note : may be different from self.params.truncation if None was given.
