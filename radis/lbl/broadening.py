@@ -2058,7 +2058,33 @@ class BroadenFactory(BaseFactory):
         # index of truncation half width
         iwbroad_half = len(wbroad_centered) // 2
         ineighbour = arange_len(0, self.params.neighbour_lines, self.params.wstep)
-        itruncation = arange_len(0, self.truncation, self.params.wstep)
+
+        # ── NEW: resolve HWHM-based truncation (only below 1 atm) ───────
+        _truncation = self.truncation
+        if isinstance(_truncation, str):
+            pressure_atm = self.input.pressure / 1.01325
+            if pressure_atm >= 1.0:
+                _truncation = 50.0
+            else:
+                if _truncation == "auto":
+                    n_hwhm = 100.0
+                else:
+                    val = (
+                        _truncation.lower()
+                        .replace("hwhm", "")
+                        .replace("x", "")
+                        .strip()
+                    )
+                    n_hwhm = float(val)
+                hwhm_max = self.df1["hwhm_voigt"].max()
+                _truncation = float(n_hwhm * hwhm_max)
+                if self.verbose >= 2:
+                    print(
+                        f"Auto-truncation: {n_hwhm:.0f} x HWHM_max "
+                        f"({hwhm_max:.5f} cm-1) = {_truncation:.4f} cm-1"
+                    )
+        # ── END NEW ──────────────────────────────────────────────────────
+        itruncation = arange_len(0, _truncation, self.params.wstep)
 
         # Calculate matrix of broadened parameter (for all lines)
         # ... Note @dev : this is the memory bottleneck !
@@ -2391,7 +2417,8 @@ class BroadenFactory(BaseFactory):
                 LDM_ranges = {}
                 LDM_reduced = {}
                 for groupby_param, group in dgb:
-                    truncation_pts = int(self.params.truncation // self.params.wstep)
+                    _trunc = self.params.truncation if not isinstance(self.params.truncation, str) else 50.0
+                    truncation_pts = int(_trunc // self.params.wstep)
                     # note: truncation can be unique for each point of the LDM basis
                     # (allow to have line-dependant truncation, at least as all
                     # lines with same truncation are grouped together in the LDM basis)
