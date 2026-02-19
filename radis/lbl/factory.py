@@ -434,6 +434,7 @@ class SpectrumFactory(BandFactory):
         zero_padding=-1,
         broadening_method="voigt",
         cutoff=0,
+    cutoff_error=None,
         parsum_mode="full summation",
         verbose=True,
         warnings=True,
@@ -627,6 +628,7 @@ class SpectrumFactory(BandFactory):
             # If None, use no cutoff : https://github.com/radis/radis/pull/259
             cutoff = 0
         self.params.cutoff = cutoff
+        self.params.cutoff_error = cutoff_error
         self.params.parsum_mode = parsum_mode
 
         # Time Based variables
@@ -744,6 +746,7 @@ class SpectrumFactory(BandFactory):
         diluent=None,
         pressure=None,
         name=None,
+        cutoff_error=None,
     ) -> Spectrum:
         """Generate a spectrum at equilibrium.
 
@@ -1533,6 +1536,7 @@ class SpectrumFactory(BandFactory):
         rot_distribution="boltzmann",
         overpopulation=None,
         name=None,
+        cutoff_error=None,
     ) -> Spectrum:
         """Calculate emission spectrum in non-equilibrium case. Calculates
         absorption with broadened linestrength and emission with broadened

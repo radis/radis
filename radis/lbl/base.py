@@ -3625,6 +3625,51 @@ class BaseFactory(DatabankLoader):
             self._Nlines_cutoff = 0
             return  # dont update self.df1
 
+        # Auto-adjust cutoff based on cutoff_error if provided
+        cutoff_error = getattr(self.params, 'cutoff_error', None)
+        if cutoff_error is not None and cutoff_error != 0:
+            if self.params.cutoff != 0 and self.params.cutoff != 1e-27:
+                import warnings
+                warnings.warn(
+                    f"Both 'cutoff' ({self.params.cutoff:.2e}) and 'cutoff_error' ({cutoff_error}%) are provided. "
+                    "'cutoff_error' will be used to automatically determine cutoff.",
+                    UserWarning,
+                )
+        if cutoff_error is not None:
+            if cutoff_error <= 0 or cutoff_error >= 100:
+                raise ValueError(f'cutoff_error must be between 0 and 100 (percentage), got {cutoff_error}')
+            import numpy as np
+            df = self.df1
+            if self.dataframe_type == 'pandas':
+                S_sorted = df['S'].sort_values()
+                cumsum = S_sorted.cumsum()
+                total = S_sorted.sum()
+                threshold = cumsum / total * 100
+                cutoff = float(S_sorted[threshold >= cutoff_error].iloc[0]) if (threshold >= cutoff_error).any() else cutoff
+                if self.verbose >= 2:
+                    print(f'cutoff_error={cutoff_error}%: auto cutoff set to {cutoff:.2e}')
+            elif self.dataframe_type == 'vaex':
+                import numpy as np
+                S_min = float(df['S'].min())
+                S_max = float(df['S'].max())
+                n_bins = 1000
+                bin_edges = np.logspace(np.log10(max(S_min, 1e-300)), np.log10(S_max), n_bins + 1)
+                bin_S_sum = []
+                for i in range(n_bins):
+                    lo, hi = float(bin_edges[i]), float(bin_edges[i+1])
+                    mask = (df['S'] >= lo) & (df['S'] < hi)
+                    s = df[mask]['S'].sum()
+                    bin_S_sum.append(float(s) if s is not None else 0.0)
+                import pandas as pd
+                bin_df = pd.DataFrame({'S_sum': bin_S_sum, 'bin_lo': bin_edges[:-1]})
+                total = bin_df['S_sum'].sum()
+                bin_df['cumfrac'] = bin_df['S_sum'].cumsum() / total * 100
+                candidates = bin_df[bin_df['cumfrac'] >= cutoff_error]
+                cutoff = float(candidates.iloc[0]['bin_lo']) if len(candidates) > 0 else cutoff
+                if self.verbose >= 2:
+                    print(f'cutoff_error={cutoff_error}% (vaex binning): auto cutoff set to {cutoff:.2e}')
+            self.params.cutoff = cutoff
+
         self.profiler.start("applied_linestrength_cutoff", 2)
 
         # Cutoff:
@@ -3674,6 +3719,7 @@ class BaseFactory(DatabankLoader):
 
         # update df1:
         if self.dataframe_type == "pandas":
+            import pandas as pd
             self.df1 = pd.DataFrame(df[~b])
         elif self.dataframe_type == "vaex":
             self.df1 = df[~b]
