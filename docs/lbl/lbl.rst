@@ -345,7 +345,6 @@ str: Typical expected format of a ~/radis.json entry::
             "format": "hitran",                         # 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
                                                         # databank text file format. More info in
                                                         # SpectrumFactory.load_databank function.
-            "parfuncfmt": "hapi"                        # calculate partition functions
           }
       }
     }
@@ -360,7 +359,6 @@ Following is an example where the path variable uses a wildcard ``*`` to find al
             "format": "hitran",                         # 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
                                                         # databank text file format. More info in
                                                         # SpectrumFactory.load_databank function.
-            "parfuncfmt": "hapi"                        # calculate partition functions
           }
       }
     }
@@ -382,18 +380,9 @@ partition functions, for instance::
             "format": "hitran",                           # 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
                                                           # databank text file format. More info in
                                                           # SpectrumFactory.load_databank function.
-            "parfuncfmt": "cdsd",                         # 'cdsd', 'hapi', etc.
-                                                          # format to read tabulated partition function
-                                                          # file. If `hapi`, then HAPI (HITRAN Python
-                                                          # interface) is used to retrieve them (valid if
-                                                          # your databank is HITRAN data). HAPI is embedded
-                                                          # into RADIS. Check the version. If not specified then 'hapi'
-                                                          # is used as default
             "parfunc": "PATH/TO/cdsd_partition_functions.txt"
                                                           # path to tabulated partition function to use.
-                                                          # If `parfuncfmt` is `hapi` then `parfunc`
-                                                          # should be the link to the hapi.py file. If
-                                                          # not given, then the hapi.py embedded in RADIS
+                                                          # If not given, then the hapi.py embedded in RADIS
                                                           # is used (check version)
           }
       }
@@ -437,13 +426,8 @@ The full description of a `~/radis.json` entry is given in :py:data:`~radis.misc
   ``'cdsd-hitemp'`` and ``'cdsd-4000'`` for the different CDSD versions (for CO2 only). See full list in
   :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT`.
 
-- ``parfuncfmt``: ``cdsd``, ``hapi`` is the format of the tabulated partition functions used.
-  If ``'hapi'``, then [HAPI]_ is used to retrieve them (valid if your databank is HITRAN data).
-  See full list in :py:data:`~radis.lbl.loader.KNOWN_PARFUNCFORMAT`
-
 - ``parfunc`` is the path to the tabulated partition function to use in in equilibrium calculations
-  (:py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`). If ``parfuncfmt`` is ``'hapi'`` then `parfunc` should be
-  the link to the hapi.py file. If not given, then the :py:mod:`~radis.io.hitran.hapi` embedded in RADIS
+  (:py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum`). If not given, then the :py:mod:`~radis.io.hitran.hapi` embedded in RADIS
   is used (check version)
 
 - ``levels_iso#`` are the path to the energy levels to use for each isotope, which are needed for
@@ -470,21 +454,18 @@ which will create a ``~/radis.json`` file with the following content ::
             "info": "HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)",
             "path": "PATH_TO\\radis\\radis\\test\\files\\hitran_co2_626_bandhead_4165_4200nm.par",
             "format": "hitran",
-            "parfuncfmt": "hapi",
             "levelsfmt": "radis"
           },
           "HITRAN-CO-TEST": {
             "info": "HITRAN 2016 database, CO, 3 main isotopes (CO-26, 36, 28), 2000-2300 cm-1",
             "path": "PATH_TO\\radis\\radis\\test\\files\\hitran_co_3iso_2000_2300cm.par",
             "format": "hitran",
-            "parfuncfmt": "hapi",
             "levelsfmt": "radis"
           },
           "HITEMP-CO2-TEST": {
             "info": "HITEMP-2010, CO2, 3 main isotope (CO2-626, 636, 628), 2283.7-2285.1 cm-1",
             "path": "PATH_TO\\radis\\radis\\test\\files\\cdsd_hitemp_09_fragment.txt",
             "format": "cdsd-hitemp",
-            "parfuncfmt": "hapi",
             "levelsfmt": "radis"
           }
       }

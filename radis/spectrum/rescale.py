@@ -2026,7 +2026,7 @@ def _recalculate(
             f"Error in get_recompute (see above). Quantity `{err.args[0]}` cannot be recomputed "
             + f"from available quantities in Spectrum ({spec.get_vars()}) with "
             + f" conditions: optically thin ({optically_thin}), true_path_length ({true_path_length}), thermal equilibrium ({assume_equilibrium})"
-            + f". Check how your equivalence tree is built: see rescale._build_update_graph()"
+            + ". Check how your equivalence tree is built: see rescale._build_update_graph()"
         )
     if assume_equilibrium == True:
         recompute.append("abscoeff")

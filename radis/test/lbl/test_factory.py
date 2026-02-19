@@ -94,7 +94,6 @@ def test_spec_generation(
            levelsfmt            cdsd
            levelspath           # USER-DEPENDANT: CDSD-4000
            medium               vacuum
-           parfuncfmt           cdsd
            parfuncpath          # USER-DEPENDANT: CDSD-4000
            rot_distribution     boltzmann
            self_absorption      True

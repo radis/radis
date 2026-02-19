@@ -38,7 +38,7 @@ def test_exceptions(verbose=True, *args, **kwargs):
         sPlanck(wavelength_min=300, wavelength_max=2000, T=300, eps=10)
 
 
-def test_planck_nm(verbose=True, plot=True, *args, **kwargs):
+def test_planck_nm(verbose=True, plot=False, *args, **kwargs):
     """Test blackbody with Wien's law, Stefan's law and tabulated data
     of maximum
 
@@ -101,7 +101,7 @@ def test_planck_nm(verbose=True, plot=True, *args, **kwargs):
     # during conversion Iunit_per_nm to Iunit_per_cm
 
 
-def test_planck_cm(verbose=True, plot=True, *args, **kwargs):
+def test_planck_cm(verbose=True, plot=False, *args, **kwargs):
     """Validate Planck calculation with wavenumber
 
     Notes

@@ -21,8 +21,10 @@ jobs:
           #   continue-on-error: true #this is allowed to fail, as some dependencies may not yet be available
           - os: ubuntu-latest
             python-version: "3.10"
-          # - os: ubuntu-latest
-          #   python-version: "3.11"
+          - os: ubuntu-latest
+            python-version: "3.11"
+          - os: ubuntu-latest
+            python-version: "3.12"
           #Issue with Windows and Mac OS, see https://github.com/radis/radis/issues/864
           - os: windows-latest
             python-version: "3.10"
@@ -53,3 +55,4 @@ jobs:
           HITRAN_PASSWORD: ${{ secrets.HITRAN_PASSWORD }}
         run: |
           pytest -m "needs_HITRAN_credentials and not download_large_databases" --durations=10
+        continue-on-error: true #see the file ".travis.yml" where these tests are actually tested.

@@ -23,6 +23,8 @@ from os.path import basename
 from warnings import catch_warnings, filterwarnings
 
 import matplotlib.pyplot as plt
+
+plt.ion()
 import numpy as np
 import pytest
 from numpy import abs, cos, linspace, pi, sqrt, tan
@@ -64,7 +66,7 @@ def _clean(plot, close_plots):
 
 @pytest.mark.fast
 def test_all_slit_shapes(
-    FWHM=0.4, verbose=True, plot=True, close_plots=True, *args, **kwargs
+    FWHM=0.4, verbose=True, plot=False, close_plots=True, *args, **kwargs
 ):
     """Test all slit generation functions and make sure we get the expected FWHM"""
 
@@ -117,7 +119,7 @@ def test_all_slit_shapes(
 
 @pytest.mark.fast
 def test_slit_unit_conversions_spectrum_in_cm(
-    verbose=True, plot=True, close_plots=True, *args, **kwargs
+    verbose=True, plot=False, close_plots=True, *args, **kwargs
 ):
     """Test that slit is consistently applied for different units
 
@@ -174,7 +176,7 @@ def test_slit_unit_conversions_spectrum_in_cm(
 
 @pytest.mark.fast
 def test_slit_unit_conversions_spectrum_in_nm(
-    verbose=True, plot=True, close_plots=True, *args, **kwargs
+    verbose=True, plot=False, close_plots=True, *args, **kwargs
 ):
     """Test that slit is consistently applied for different units
 
@@ -268,7 +270,7 @@ def test_convoluted_quantities_units(*args, **kwargs):
 
 @pytest.mark.fast
 def test_against_specair_convolution(
-    plot=True, close_plots=True, verbose=True, debug=False, *args, **kwargs
+    plot=False, close_plots=True, verbose=True, debug=False, *args, **kwargs
 ):
 
     _clean(plot, close_plots)
@@ -351,7 +353,9 @@ def test_against_specair_convolution(
 
 
 @pytest.mark.fast
-def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **kwargs):
+def test_normalisation_mode(
+    plot=False, close_plots=True, verbose=True, *args, **kwargs
+):
     """Test norm_by = 'area' vs norm_by = 'max'"""
 
     from radis.test.utils import getTestFile
@@ -417,7 +421,7 @@ def test_normalisation_mode(plot=True, close_plots=True, verbose=True, *args, **
 
 @pytest.mark.fast
 def test_slit_energy_conservation(
-    verbose=True, plot=True, close_plots=True, *args, **kwargs
+    verbose=True, plot=False, close_plots=True, *args, **kwargs
 ):
     """Convoluted and non convoluted quantities should have the same area
     (difference arises from side effects if the initial spectrum is not 0 on
@@ -497,7 +501,7 @@ def linear_dispersion(w, f=750, phi=-6, m=1, gr=300):
 
 @pytest.mark.fast
 def test_linear_dispersion_effect(
-    verbose=True, plot=True, close_plots=True, *args, **kwargs
+    verbose=True, plot=False, close_plots=True, *args, **kwargs
 ):
     """A test case to show the effect of wavelength dispersion (cf spectrometer
     reciprocal function) on the slit function
@@ -555,7 +559,7 @@ def test_linear_dispersion_effect(
 
 
 @pytest.mark.fast
-def test_cut_slices(verbose=True, plot=True, close_plots=True, *args, **kwargs):
+def test_cut_slices(verbose=True, plot=False, close_plots=True, *args, **kwargs):
     """A test case to verify that _cut_slices does cut the spectrum into slices
 
     Test fails if a :py:data:`~radis.misc.warning.SlitDispersionWarning`
@@ -597,7 +601,7 @@ def test_cut_slices(verbose=True, plot=True, close_plots=True, *args, **kwargs):
 
 @pytest.mark.fast
 def test_auto_correct_dispersion(
-    verbose=True, plot=True, close_plots=True, *args, **kwargs
+    verbose=True, plot=False, close_plots=True, *args, **kwargs
 ):
     """A test case to show the effect of wavelength dispersion (cf spectrometer
     reciprocal function) on the slit function
@@ -650,7 +654,9 @@ def test_auto_correct_dispersion(
 
 
 @pytest.mark.fast
-def test_resampling(rtol=1e-2, verbose=True, plot=True, warnings=True, *args, **kwargs):
+def test_resampling(
+    rtol=1e-2, verbose=True, plot=False, warnings=True, *args, **kwargs
+):
     """Test what happens when a spectrum in nm or cm-1, is convolved
     with a slit function in nm. In particular, slit function is generated
     in the spectrum unit, and spectrum is resampled if not evenly spaced"""
