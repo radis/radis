@@ -51,6 +51,30 @@ def test_cutoff_error_invalid():
         sf.eq_spectrum(Tgas=300)
 
 
+
+
+def test_cutoff_error_vaex():
+    """Test that cutoff_error works with Vaex dataframes using log-spaced binning."""
+    pytest.importorskip("vaex")
+    sf = SpectrumFactory(
+        wavenum_min=2000,
+        wavenum_max=2300,
+        molecule="CO",
+        isotope="1",
+        pressure=0.01,
+        mole_fraction=1,
+        path_length=1,
+        cutoff=1e-27,
+        cutoff_error=2,
+        wstep="auto",
+        verbose=0,
+        warnings={"AccuracyError": "ignore", "LinestrengthCutoffWarning": "ignore"},
+    )
+    sf.fetch_databank("hitran", load_columns="vaex")
+    s = sf.eq_spectrum(Tgas=300)
+    assert s is not None
+    assert sf.params.cutoff != 1e-27
+    assert sf.params.cutoff_error == 2
 if __name__ == "__main__":
     test_cutoff_error_pandas()
     print("All tests passed!")
