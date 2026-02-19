@@ -207,6 +207,12 @@ class SpectrumFactory(BandFactory):
         discard linestrengths that are lower that this, to reduce calculation
         times. ``1e-27`` is what is generally used to generate databases such as
         CDSD. If ``0``, no cutoff. Default ``1e-27``.
+    cutoff_error: float (percentage, 0-100), optional
+        if given, automatically determines the optimal ``cutoff`` value such
+        that the discarded linestrengths contribute less than ``cutoff_error`` %
+        of the total linestrength. Overrides manual ``cutoff`` if both given.
+        For Vaex dataframes, uses memory-efficient log-spaced binning.
+        Default ``None``.
     parsum_mode: 'full summation', 'tabulation'
         how to compute partition functions, at nonequilibrium or when partition
         function are not already tabulated. ``'full summation'`` : sums over all
