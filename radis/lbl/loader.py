@@ -481,6 +481,7 @@ class Parameters(ConditionDict):
         "neighbour_lines",
         "chunksize",
         "cutoff",
+        "cutoff_error",
         "db_use_cached",
         "dbformat",
         "dbpath",
