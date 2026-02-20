@@ -2070,10 +2070,7 @@ class BroadenFactory(BaseFactory):
                     n_hwhm = 100.0
                 else:
                     val = (
-                        _truncation.lower()
-                        .replace("hwhm", "")
-                        .replace("x", "")
-                        .strip()
+                        _truncation.lower().replace("hwhm", "").replace("x", "").strip()
                     )
                     n_hwhm = float(val)
                 hwhm_max = self.df1["hwhm_voigt"].max()
@@ -2417,7 +2414,11 @@ class BroadenFactory(BaseFactory):
                 LDM_ranges = {}
                 LDM_reduced = {}
                 for groupby_param, group in dgb:
-                    _trunc = self.params.truncation if not isinstance(self.params.truncation, str) else 50.0
+                    _trunc = (
+                        self.params.truncation
+                        if not isinstance(self.params.truncation, str)
+                        else 50.0
+                    )
                     truncation_pts = int(_trunc // self.params.wstep)
                     # note: truncation can be unique for each point of the LDM basis
                     # (allow to have line-dependant truncation, at least as all

@@ -637,12 +637,7 @@ class SpectrumFactory(BandFactory):
             if truncation == "auto":
                 truncation = "auto"  # resolved later in calc_hwhm
             else:
-                val = (
-                    truncation.lower()
-                    .replace("hwhm", "")
-                    .replace("x", "")
-                    .strip()
-                )
+                val = truncation.lower().replace("hwhm", "").replace("x", "").strip()
                 try:
                     float(val)
                     truncation = truncation  # valid, resolved later
@@ -1992,7 +1987,11 @@ class SpectrumFactory(BandFactory):
         truncation = self.params.truncation
         neighbour_lines = self.params.neighbour_lines
 
-        if truncation and not isinstance(truncation, str) and neighbour_lines > truncation:
+        if (
+            truncation
+            and not isinstance(truncation, str)
+            and neighbour_lines > truncation
+        ):
             self.warn(
                 f"Neighbour lines resolved up to {neighbour_lines} cm-1 away from the spectrum. "
                 + f"But lines are anyway truncated at {truncation:.2f} cm-1. "
