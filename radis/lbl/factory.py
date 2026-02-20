@@ -485,12 +485,9 @@ class SpectrumFactory(BandFactory):
 
         if "lvl_use_cached" in kwargs:
             warn(
-                
                 "lvl_use_cached removed from SpectrumFactory init and moved in load/fetch_databank()",
                 DeprecationWarning,
-                stacklevel =2,
-
-                
+                stacklevel=2,
             )
             kwargs0.pop("lvl_use_cached")
         if "broadening_max_width" in kwargs:  # changed in 0.9.30
