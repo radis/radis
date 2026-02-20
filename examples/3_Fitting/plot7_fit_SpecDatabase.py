@@ -26,8 +26,8 @@ sf.load_databank("HITRAN-CO-TEST")
 db = sf.init_database(db_name)
 
 print("Precomputing database...")
-for T in [1000, 1500, 2000]:
-    for x in [0.01, 0.1]:
+for T in np.arange(1000, 2000, 100):
+    for x in np.arange(0.01, 0.2, 0.02):
         sf.eq_spectrum(Tgas=T, mole_fraction=x)
 
 # 3. Fit an experimental spectrum and plot residuals automatically
