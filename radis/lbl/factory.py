@@ -475,14 +475,14 @@ class SpectrumFactory(BandFactory):
             molecule = species
         if "db_use_cached" in kwargs:
             warn(
-                "db_use_cached removed from SpectrumFactory init and moved in load/fetch_databank()",
+                "'db_use_cached' removed from SpectrumFactory init and moved in load/fetch_databank()",
                 DeprecationWarning,
                 stacklevel=2,
             )
             kwargs0.pop("db_use_cached")
         if "lvl_use_cached" in kwargs:
             warn(
-                "lvl_use_cached removed from SpectrumFactory init and moved in load/fetch_databank()",
+                "'lvl_use_cached' removed from SpectrumFactory init and moved in load/fetch_databank()",
                 DeprecationWarning,
                 stacklevel=2,
             )
