@@ -473,19 +473,18 @@ class SpectrumFactory(BandFactory):
             )  # remove it from kwargs0 so it doesn't trigger the error later
         else:
             molecule = species
-
         if "db_use_cached" in kwargs:
             warn(
-                DeprecationWarning(
-                    "db_use_cached removed from SpectrumFactory init and moved in load/fetch_databank()"
-                )
+                "'db_use_cached' removed from SpectrumFactory init and moved in load/fetch_databank()",
+                DeprecationWarning,
+                stacklevel=2,
             )
             kwargs0.pop("db_use_cached")
         if "lvl_use_cached" in kwargs:
             warn(
-                DeprecationWarning(
-                    "lvl_use_cached removed from SpectrumFactory init and moved in load/fetch_databank()"
-                )
+                "'lvl_use_cached' removed from SpectrumFactory init and moved in load/fetch_databank()",
+                DeprecationWarning,
+                stacklevel=2,
             )
             kwargs0.pop("lvl_use_cached")
         if "broadening_max_width" in kwargs:  # changed in 0.9.30
