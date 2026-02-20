@@ -1392,7 +1392,7 @@ class SpectrumFactory(BandFactory):
         var="transmittance",
         slit_function=0.0,
         mpl_backend="",
-        plotkwargs={},
+        plotkwargs=None,
         *vargs,
         **kwargs,
     ) -> Spectrum:
@@ -1444,6 +1444,8 @@ class SpectrumFactory(BandFactory):
             :add-heading:
 
         """
+        if plotkwargs is None:
+            plotkwargs = {}
         if self.input.isatom:
             raise NotImplementedError(
                 "eq_spectrum_gpu hasn't been implemented for atomic spectra"
@@ -2348,9 +2350,9 @@ class SpectrumFactory(BandFactory):
         s_exp,
         model,
         fit_parameters,
-        bounds={},
+        bounds=None,
         plot=False,
-        solver_options={"maxiter": 300},
+        solver_options=None,
         **kwargs,
     ) -> Union[Spectrum, OptimizeResult]:
         """Fit an experimental spectrum with an arbitrary model and an arbitrary
@@ -2417,6 +2419,12 @@ class SpectrumFactory(BandFactory):
         :py:mod:`fitroom`
 
         """
+        # Avoid mutable default arguments
+        if bounds is None:
+            bounds = {}
+
+        if solver_options is None:
+            solver_options = {"maxiter": 300}
         from radis.tools.fitting import fit_legacy
 
         return fit_legacy(

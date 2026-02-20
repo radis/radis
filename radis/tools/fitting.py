@@ -27,7 +27,7 @@ from radis.spectrum.compare import get_default_units, get_diff, get_residual
 
 
 # Calculate a new spectrum for given parameters:
-def LTEModel(factory, fittable_parameters, fixed_parameters={}) -> Spectrum:
+def LTEModel(factory, fittable_parameters, fixed_parameters=None) -> Spectrum:
     """A model returning a single-slab LTE spectrum
 
     Parameters
@@ -52,7 +52,8 @@ def LTEModel(factory, fittable_parameters, fixed_parameters={}) -> Spectrum:
     :py:func:`~radis.tools.new_fitting.residual_LTE`
 
     """
-
+    if fixed_parameters is None:
+        fixed_parameters = {}
     kwargs = {"name": "fit"}
 
     # ... create whatever model below (can have several slabs with SerialSlabs
@@ -74,7 +75,7 @@ def LTEModel(factory, fittable_parameters, fixed_parameters={}) -> Spectrum:
 
 # Calculate a new spectrum for given parameters:
 def Tvib12Tvib3Trot_NonLTEModel(
-    factory, fittable_parameters, fixed_parameters={}
+    factory, fittable_parameters, fixed_parameters=None
 ) -> Spectrum:
     """A model returning a single-slab non-LTE spectrum with Tvib=(T12, T12, T3), Trot
 
@@ -106,7 +107,8 @@ def Tvib12Tvib3Trot_NonLTEModel(
     :py:func:`~radis.tools.fitting.LTEModel`
     :py:func:`~radis.tools.new_fitting.residual_NonLTE`
     """
-
+    if fixed_parameters is None:
+        fixed_parameters = {}
     fittable_parameters = fittable_parameters.copy()
 
     # ... input should remain a dict
@@ -146,11 +148,11 @@ def fit_legacy(
     s_exp,
     model,
     fit_parameters,
-    bounds={},
-    fixed_parameters={},
+    bounds=None,
+    fixed_parameters=None,
     plot=False,
     verbose=True,
-    solver_options={"maxiter": 300},
+    solver_options=None,
 ) -> Union[Spectrum, OptimizeResult]:
     """Fit an experimental spectrum with an arbitrary model and an arbitrary
     number of fit parameters. This legacy function is replaced by :py:func:`~radis.tools.new_fitting.fit_spectrum`
@@ -213,6 +215,15 @@ def fit_legacy(
     :py:func:`~radis.tools.new_fitting.fit_spectrum`,
     :py:mod:`fitroom`
     """
+    # Avoid mutable default arguments
+    if bounds is None:
+        bounds = {}
+
+    if fixed_parameters is None:
+        fixed_parameters = {}
+
+    if solver_options is None:
+        solver_options = {"maxiter": 300}
 
     # Get model being fitted:
     compute_los_model = lambda fit_parameters: model(

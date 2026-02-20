@@ -562,7 +562,7 @@ def fit_spectrum(
     input_file=None,
     verbose=True,
     show_plot=True,
-    fit_kws={},
+    fit_kws=None,
 ) -> Union[Spectrum, MinimizerResult, dict]:
     """Fit an experimental spectrum (referred to as the "data spectrum") with a modeled spectrum,
     and derive the fit results.
@@ -608,7 +608,9 @@ def fit_spectrum(
     :py:mod:`fitroom`
 
     """
-
+    # Avoid mutable default argument
+    if fit_kws is None:
+        fit_kws = {}
     begin = time.time()  # Start the fitting time counter
 
     if verbose:
