@@ -2347,8 +2347,10 @@ class SpecDatabase(SpecList):
         self,
         s_exp,
         residual=None,
+        var=None,
         normalize=False,
         normalize_how="max",
+        plot=False,
         conditions="",
         **kwconditions,
     ):
@@ -2363,18 +2365,15 @@ class SpecDatabase(SpecList):
 
         Other Parameters
         ----------------
-        residual: func, or ``None``
-            which residual function to use. If ``None``, use
-            :func:`~radis.spectrum.compare.get_residual` with option
-            ``ignore_nan=True`` and options ``normalize`` and ``normalize_how``
-            as defined by the user.
-
-            ``get_residual`` should have the form::
-
-                lambda s_exp, s, normalize: func(s_exp, s, normalize=normalize)
-
-            where the output is a float.
-            Default ``None``
+        var: str
+            spectral variable to compare (e.g., 'radiance', 'absorbance').
+            Required if ``s_exp`` has multiple variables and ``residual``
+            is not provided.
+        plot: bool
+            if ``True``, plot the residuals against the varying conditions.
+            If one condition varies, a 1D plot is generated. If two conditions
+            vary, a 2D contour plot is generated using :meth:`~radis.tools.database.SpecList.plot_cond`.
+            Default ``False``.
         conditions, **kwconditions: str, **dict
             restrain fitting to only Spectrum that match the given conditions
             in the database. See :meth:`~radis.tools.database.SpecList.get`
@@ -2392,11 +2391,21 @@ class SpecDatabase(SpecList):
 
         Examples
         --------
+
+        Compare an experimental spectrum to a database of precomputed spectra::
+
+            from radis.tools import SpecDatabase
+            db = SpecDatabase('path/to/database')
+            s_best = db.fit_spectrum(s_exp, plot=True)
+            s_best.plot(nfig='same')
+
+        .. minigallery:: radis.tools.database.SpecDatabase.fit_spectrum
+
         Using a customized residual function (below: to get the transmittance)::
 
             from radis import get_residual
             db = SpecDatabase('...')
-            db.fit_spectrum(s_exp, get_residual=lambda s_exp, s: get_residual(s_exp, s, var='transmittance'))
+            db.fit_spectrum(s_exp, residual=lambda s_exp, s: get_residual(s_exp, s, var='transmittance'))
 
         You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
         More advanced tools for interactive fitting of multi-dimensional, multi-slabs
@@ -2411,18 +2420,23 @@ class SpecDatabase(SpecList):
         if residual is None:
             from radis.spectrum.compare import get_residual
 
-            if len(s_exp.get_vars()) != 1:
-                raise ValueError(
-                    "Multiple variables in fitted Spectrum. Please "
-                    + "define which residual to use with, for instance: "
-                    + "`get_residual=lambda s_exp, s: get_residual(s_exp, s, var=SOMETHING)`)"
-                )
+            if var is None:
+                vars_exp = s_exp.get_vars()
+                if len(vars_exp) == 1:
+                    var = vars_exp[0]
+                else:
+                    raise ValueError(
+                        f"Multiple variables in fitted Spectrum ({vars_exp}). Please "
+                        + "define which spectral variable to use with the `var=` "
+                        + "argument (e.g., `var='radiance'`) or define a custom "
+                        + "residual function with `residual=`."
+                    )
 
             def residual(s_exp, s, normalize):
                 return get_residual(
                     s_exp,
                     s,
-                    var=s_exp.get_vars()[0],
+                    var=var,
                     ignore_nan=True,
                     normalize=normalize,
                     normalize_how=normalize_how,
@@ -2434,6 +2448,60 @@ class SpecDatabase(SpecList):
         assert not np.isnan(res).any()
 
         i = np.argmin(np.array(res))
+
+        if plot:
+            # 1. Find varying conditions
+            # Remove keys that query() doesn't handle from a kwconditions copy
+            kw = kwconditions.copy()
+            for k in ["inplace", "verbose", "scale_if_possible"]:
+                if k in kw:
+                    kw.pop(k)
+            if conditions == "" and not kw:
+                df = self.df
+            else:
+                df = query(self.df, conditions=conditions, **kw)
+
+            varying_cols = []
+            for col in df.columns:
+                if col in [
+                    "file",
+                    "last_modified",
+                    "name",
+                    "Spectrum",
+                    "calculation_time",
+                    "memory_usage",
+                ]:
+                    continue
+                try:
+                    if df[col].nunique() > 1:
+                        varying_cols.append(col)
+                except (TypeError, ValueError):
+                    # Skip columns that are not hashable (e.g., dicts, lists)
+                    continue
+
+            if len(varying_cols) == 0:
+                warn("No conditions vary in the database. Cannot plot residuals.")
+            elif len(varying_cols) == 1:
+                import matplotlib.pyplot as plt
+
+                from radis.misc.plot import set_style
+
+                set_style()
+                col = varying_cols[0]
+                plt.figure()
+                plt.plot(df[col], res, "ok")
+                plt.xlabel(col)
+                plt.ylabel("Residual")
+                plt.title(f"Residual vs {col}")
+                plt.tight_layout()
+            elif len(varying_cols) == 2:
+                self.plot_cond(varying_cols[0], varying_cols[1], z_value=res)
+            else:
+                warn(
+                    f"Too many varying conditions ({len(varying_cols)}: {varying_cols}) "
+                    + "to plot residuals. At most 1 or 2 conditions can vary. "
+                    + "Try to restrain the search using `conditions` or `**kwconditions`."
+                )
 
         return spectra[i].copy()  # dont forget to copy the Spectrum we return
 

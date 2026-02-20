@@ -12,6 +12,7 @@ from os.path import dirname, exists
 
 import pytest
 
+from radis.spectrum import Spectrum
 from radis.test.utils import getTestFile
 from radis.tools.database import SpecDatabase, SpecList
 
@@ -249,6 +250,107 @@ def test_lazy_loading(verbose=True, *args, **kwargs):
         print("Number of spectra found for the given conditions: ", len(sdb))
 
     assert sdb == sdb_2
+
+
+def test_fit_spectrum_plotting(plot=True, close_plots=True, *args, **kwargs):
+    """Test SpecDatabase.fit_spectrum plotting functionality (Issue #377)"""
+
+    import shutil
+    from os.path import dirname, join
+
+    db_path = join(dirname(getTestFile(".")), "test_db_fit")
+    if os.path.exists(db_path):
+        shutil.rmtree(db_path)
+    os.makedirs(db_path)
+
+    try:
+        db = SpecDatabase(db_path, verbose=False)
+
+        # 1. Create dummy spectra for 1D fit
+        for T in [300, 400, 500]:
+            s = Spectrum(
+                {"radiance": ([1000, 1001], [T / 1000, T / 1000])},
+                wunit="cm-1",
+                units={"radiance": "W/cm2/sr/cm-1"},
+                conditions={"Tgas": T, "molecule": "CO2", "isotope": 1},
+            )
+            db.add(s)
+
+        s_exp = Spectrum(
+            {"radiance": ([1000, 1001], [0.42, 0.42])},
+            wunit="cm-1",
+            units={"radiance": "W/cm2/sr/cm-1"},
+            conditions={"Tgas": 420, "molecule": "CO2", "isotope": 1},
+        )
+
+        # Test 1D plot
+        db.fit_spectrum(s_exp, plot=plot)
+        if plot:
+            import matplotlib.pyplot as plt
+
+            assert plt.fignum_exists(plt.gcf().number)
+            if close_plots:
+                plt.close()
+
+        # 2. Add more spectra for 2D fit
+        for T in [300, 500]:
+            for mf in [0.01, 0.1]:
+                s = Spectrum(
+                    {"radiance": ([1000, 1001], [T / 1000 + mf, T / 1000 + mf])},
+                    wunit="cm-1",
+                    units={"radiance": "W/cm2/sr/cm-1"},
+                    conditions={
+                        "Tgas": T,
+                        "mole_fraction": mf,
+                        "molecule": "CO2",
+                        "isotope": 1,
+                    },
+                )
+                db.add(s, if_exists_then="ignore")
+
+        s_exp_2d = Spectrum(
+            {"radiance": ([1000, 1001], [0.45, 0.45])},
+            wunit="cm-1",
+            units={"radiance": "W/cm2/sr/cm-1"},
+            conditions={
+                "Tgas": 450,
+                "mole_fraction": 0.05,
+                "molecule": "CO2",
+                "isotope": 1,
+            },
+        )
+
+        # Test 2D plot
+        db.fit_spectrum(s_exp_2d, plot=plot)
+        if plot:
+            import matplotlib.pyplot as plt
+
+            assert plt.fignum_exists(plt.gcf().number)
+            if close_plots:
+                plt.close()
+
+        # 3. Test 'var' parameter and unhashable type handling
+        s_multi = Spectrum(
+            {
+                "radiance": ([1000, 1001], [0.5, 0.5]),
+                "transmittance": ([1000, 1001], [0.8, 0.8]),
+            },
+            wunit="cm-1",
+            units={"radiance": "W/cm2/sr/cm-1", "transmittance": ""},
+            conditions={
+                "Tgas": 500,
+                "molecule": "CO2",
+                "isotope": 1,
+                "complex_metadata": {"a": 1},  # Unhashable dict
+            },
+        )
+        db.add(s_multi, if_exists_then="ignore")
+
+        # Should work with explicit 'var' even with complex_metadata in the DB
+        db.fit_spectrum(s_multi, var="radiance", plot=plot)
+
+    finally:
+        shutil.rmtree(db_path)
 
 
 if __name__ == "__main__":
