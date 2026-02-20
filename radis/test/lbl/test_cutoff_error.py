@@ -3,6 +3,7 @@ Test automatic linestrength cutoff via cutoff_error parameter.
 Addresses GitHub issue #268.
 """
 import pytest
+
 from radis import SpectrumFactory
 
 
@@ -51,8 +52,6 @@ def test_cutoff_error_invalid():
         sf.eq_spectrum(Tgas=300)
 
 
-
-
 def test_cutoff_error_vaex():
     """Test that cutoff_error works with Vaex dataframes using log-spaced binning."""
     pytest.importorskip("vaex")
@@ -75,6 +74,8 @@ def test_cutoff_error_vaex():
     assert s is not None
     assert sf.params.cutoff != 1e-27
     assert sf.params.cutoff_error == 2
+
+
 if __name__ == "__main__":
     test_cutoff_error_pandas()
     print("All tests passed!")

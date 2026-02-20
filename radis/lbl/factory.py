@@ -440,7 +440,7 @@ class SpectrumFactory(BandFactory):
         zero_padding=-1,
         broadening_method="voigt",
         cutoff=0,
-    cutoff_error=None,
+        cutoff_error=None,
         parsum_mode="full summation",
         verbose=True,
         warnings=True,
