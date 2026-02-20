@@ -480,9 +480,6 @@ class SpectrumFactory(BandFactory):
                 stacklevel=2,
             )
             kwargs0.pop("db_use_cached")
-
-
-
         if "lvl_use_cached" in kwargs:
             warn(
                 "lvl_use_cached removed from SpectrumFactory init and moved in load/fetch_databank()",
