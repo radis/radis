@@ -56,7 +56,8 @@ script:
   - echo ">>> Run GPU tests"
   - xvfb-run -a pytest -m "needs_gpu" --durations=10
   - echo ">>> Run tests require HITRAN/HITEMP credentials (write access only)"
-  - xvfb-run -a pytest -m "needs_HITRAN_credentials and not download_large_databases" --durations=10
+  - xvfb-run -a pytest -m "needs_HITRAN_credentials and not download_large_databases" --durations=10 --cov=radis --cov-report=xml
+  - bash <(curl -s https://codecov.io/bash) -f coverage.xml -v
 
 # stages: #This sequence defines the order of the stages
 #   - name: deploy
