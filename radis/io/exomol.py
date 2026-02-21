@@ -167,16 +167,21 @@ def fetch_exomol(
     known_exomol_databases, recommended_database = get_exomol_database_list(
         molecule, full_molecule_name
     )
-    if verbose:
-        print("\n========== Loading Exomol database [start] ==========")
+
     _exomol_use_hint = "Select one of them with `fetch_exomol(DATABASE_NAME)`, `SpectrumFactory.fetch_databank('exomol', exomol_database=DATABASE_NAME')`, or `calc_spectrum(..., databank=('exomol', DATABASE_NAME))` \n"
+
+    # Track if we're using the default/recommended database
+    is_default_database = False
+
     if database is None or database == "default":
         if len(known_exomol_databases) == 1:
             database = known_exomol_databases[
                 0
             ]  # TODO: if there is only one, is it not the recommended one?
+            is_default_database = True
         elif recommended_database:
             database = recommended_database
+            is_default_database = True
             if verbose > 1:
                 print(
                     f"For {full_molecule_name}, the available databases are {known_exomol_databases}. {_exomol_use_hint}"
@@ -220,6 +225,7 @@ def fetch_exomol(
         cache=cache,
         skip_optional_data=skip_optional_data,
         verbose=verbose,
+        is_default_database=is_default_database,  # Pass the flag
         **kwargs,
     )
 
@@ -328,6 +334,8 @@ def fetch_exomol(
         assert return_local_path
         out.append(mdb.to_partition_function_tabulator())
 
-    if verbose:
-        print("========== Loading Exomol database [end] ==========\n")
+    # Print completion message only if downloads occurred
+    if verbose and mdb._any_downloads:
+        print("\nExoMol database loading complete")
+
     return out

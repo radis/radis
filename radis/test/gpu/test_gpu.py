@@ -7,7 +7,6 @@ Created on Sun Aug 22 13:34:42 2020
 ------------------------------------------------------------------------
 
 """
-# %%
 import pytest
 from numpy import allclose
 
@@ -15,6 +14,46 @@ import radis
 from radis import SpectrumFactory, get_residual
 from radis.misc.printer import printm
 from radis.test.utils import getTestFile
+
+
+@pytest.mark.needs_gpu
+@pytest.mark.fast
+def test_geisa_cpu_gpu_equivalence():
+    """Compare GEISA equilibrium spectra computed on CPU and GPU."""
+
+    # --- Parameters (match GEISA fragment range) ---
+    molecule = "CO"
+    wmin, wmax = 3.6, 3.9
+    wstep = 0.01
+    Tgas = 300.0
+    pressure = 1.0
+
+    sf = SpectrumFactory(
+        wavenum_min=wmin,
+        wavenum_max=wmax,
+        wstep=wstep,
+        molecule=molecule,
+        isotope="1",
+        pressure=pressure,
+    )
+
+    sf.load_databank(
+        path=getTestFile("geisa_CO_fragment.par"),
+        format="geisa",
+    )
+    # sf.fetch_databank('geisa') # to download from geisa - not for CI
+
+    # --- Compute spectra ---
+    s_cpu = sf.eq_spectrum(Tgas=Tgas, mole_fraction=1.0, name="CPU")
+    s_gpu = sf.eq_spectrum_gpu(
+        Tgas=Tgas,
+        mole_fraction=1.0,
+        exit_gpu=True,
+        name="GPU",
+    )
+
+    # --- CPU/GPU equivalence ---
+    assert get_residual(s_cpu, s_gpu, "radiance_noslit") < 1e-5
 
 
 @pytest.mark.needs_gpu
@@ -206,6 +245,7 @@ if __name__ == "__main__":
     # test_eq_spectrum_gpu(plot=True, verbose=2)
     # test_eq_spectrum_gpu_nvidia(plot=True)
     # test_multiple_gpu_calls(plot=True, hard_test=True)
-    test_broadening(plot=True)
+    # test_broadening(plot=True)
+    test_geisa_cpu_gpu_equivalence()
 
     printm("Testing GPU spectrum calculation:", pytest.main(["test_gpu.py"]))

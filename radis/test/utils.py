@@ -278,7 +278,7 @@ def setup_test_line_databases(verbose=True):
                 raise ValueError(
                     f"{diff}"
                     + "\nIn ~/radis.json\n----------\n"
-                    + str(entries)
+                    + f"{entries}"
                     + f"\n\nExpected\n---------\n{dbentries}\n\n"
                     + f"Test Database {dbname} doesnt match expected "
                     + f"entries for key `{diff}`. See comparison above. "
