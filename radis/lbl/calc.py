@@ -912,12 +912,26 @@ def _calc_spectrum_one_molecule(
         if isinstance(databank_test, str) and (
             "*" in databank_test or "?" in databank_test
         ):
+            import os
+            from warnings import warn
+
             from radis.misc.utils import get_files_from_regex
 
-            try:
-                databank_test = get_files_from_regex(databank_test)[0]
-            except IndexError:
-                pass
+            directory = os.path.dirname(databank_test)
+            if not directory or not os.path.isdir(directory):
+                warn(
+                    f"Directory '{directory}' does not exist for pattern '{databank_test}'. "
+                    "Check that the path is correct."
+                )
+            else:
+                matched_files = get_files_from_regex(databank_test)
+                if len(matched_files) == 0:
+                    warn(
+                        f"No files found matching the pattern '{databank_test}'. "
+                        "Check that the wildcard pattern is correct."
+                    )
+                else:
+                    databank_test = matched_files[0]
 
         if not isinstance(databank_test, str):
             raise ValueError(
