@@ -23,6 +23,7 @@ Generate Earth blackbody::
 
 """
 
+import numpy as np
 from numpy import arange, exp, inf, ones_like, zeros_like
 
 from radis.phys.air import air2vacuum
@@ -57,6 +58,9 @@ def planck(lambda_, T, eps=1, unit="mW/cm2/sr/nm"):
     --------
     :py:func:`~radis.tools.blackbody.sPlanck`, :py:func:`~radis.phys.blackbody.planck_wn`
     """
+    if np.any(np.asarray(T) <= 0):
+        raise ValueError(f"Temperature must be strictly positive (K), got T={T}")
+
     k = k_b
     lbd = lambda_ * 1e-9
     iplanck = (
@@ -97,6 +101,9 @@ def planck_wn(wavenum, T, eps=1, unit="mW/cm2/sr/cm-1"):
     --------
     :py:func:`~radis.tools.blackbody.sPlanck`, :py:func:`~radis.phys.blackbody.planck`
     """
+    if np.any(np.asarray(T) <= 0):
+        raise ValueError(f"Temperature must be strictly positive (K), got T={T}")
+
     k = k_b_CGS
     h = h_CGS
     c = c_CGS
