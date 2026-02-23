@@ -1,5 +1,5 @@
- | |badge_pypi|  |badge_pypistats| |badge_article1| |badge_article2| |badge_docs| |badge_binder|
- | |badge_slack| |badge_contributors| |badge_travis| |badge_coverage| |badge_asv| |badge_license|
+| |badge_pypi|  |badge_pypistats| |badge_article1| |badge_article2| |badge_docs| |badge_binder|
+| |badge_slack| |badge_contributors| |badge_travis| |badge_coverage| |badge_asv| |badge_license|
 
 *****************************************
 `RADIS <https://radis.readthedocs.io/>`__
@@ -59,8 +59,7 @@ Advanced use
 ------------
 
 The Quick Start examples automatically download the line databases from `HITRAN-2016 <https://radis.readthedocs.io/en/latest/references/references.html#hitran-2016>`__, which is valid for temperatures below 700 K.
-For *high temperature* cases, you may need to use other line databases such as 
-`HITEMP-2010 <https://radis.readthedocs.io/en/latest/references/references.html#hitemp-2010>`__ (typically T < 2000 K) or `CDSD-4000 <https://radis.readthedocs.io/en/latest/references/references.html#cdsd-4000>`__ (T < 5000 K). HITEMP can also be downloaded
+For *high temperature* cases, you may need to use other line databases such as `HITEMP-2010 <https://radis.readthedocs.io/en/latest/references/references.html#hitemp-2010>`__ (typically T < 2000 K) or `CDSD-4000 <https://radis.readthedocs.io/en/latest/references/references.html#cdsd-4000>`__ (T < 5000 K). HITEMP can also be downloaded
 automatically, or can be downloaded manually and described in a ``~/radis.json``
 `Configuration file <https://radis.readthedocs.io/en/latest/lbl/lbl.html#label-lbl-config-file>`__.
 
