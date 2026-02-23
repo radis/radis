@@ -1,5 +1,5 @@
  | |badge_pypi|  |badge_pypistats| |badge_article1| |badge_article2| |badge_docs| |badge_binder|
- | |badge_slack| |badge_contributors| |badge_travis| |badge_coverage| |badge_code_quality| |badge_asv| |badge_license|
+ | |badge_slack| |badge_contributors| |badge_travis| |badge_coverage| |badge_asv| |badge_license|
 
 *****************************************
 `RADIS <https://radis.readthedocs.io/>`__
@@ -58,8 +58,8 @@ Calculate a CO equilibrium spectrum from the HITRAN database ::
 Advanced use
 ------------
 
-The Quick Start examples automatically downloads the line databases from `HITRAN-2016 <https://radis.readthedocs.io/en/latest/references/references.html#hitran-2016>`__, which is valid for temperatures below 700 K.
-For *high temperature* cases, you may need to use other line databases such as
+The Quick Start examples automatically download the line databases from `HITRAN-2016 <https://radis.readthedocs.io/en/latest/references/references.html#hitran-2016>`__, which is valid for temperatures below 700 K.
+For *high temperature* cases, you may need to use other line databases such as 
 `HITEMP-2010 <https://radis.readthedocs.io/en/latest/references/references.html#hitemp-2010>`__ (typically T < 2000 K) or `CDSD-4000 <https://radis.readthedocs.io/en/latest/references/references.html#cdsd-4000>`__ (T < 5000 K). HITEMP can also be downloaded
 automatically, or can be downloaded manually and described in a ``~/radis.json``
 `Configuration file <https://radis.readthedocs.io/en/latest/lbl/lbl.html#label-lbl-config-file>`__.
@@ -281,10 +281,6 @@ See `awesome-spectra <https://github.com/erwanp/awesome-spectra>`__   |badge_awe
 .. |badge_coverage| image:: https://codecov.io/gh/radis/radis/branch/develop/graph/badge.svg
                     :target: https://codecov.io/gh/radis/radis
                     :alt: Coverage
-
-.. |badge_code_quality| image:: https://img.shields.io/lgtm/grade/python/g/radis/radis.svg?logo=lgtm&logoWidth=18)
-                  :target: https://lgtm.com/projects/g/radis/radis/alerts
-                  :alt: Code Quality
 
 .. |badge_asv| image:: http://img.shields.io/badge/benchmarked%20by-asv-blue.svg?style=flat
                   :target: https://github.com/radis/radis-benchmark
