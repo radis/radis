@@ -14,14 +14,14 @@ import inspect
 import os
 import sys
 from fnmatch import translate
-from os.path import basename, dirname, join
+from pathlib import Path
 from re import IGNORECASE, compile
 
 
 def getProjectRoot():
     """Return the full path of the project root."""
 
-    return dirname(dirname(__file__))
+    return str(Path(__file__).parent.parent)
 
 
 def import_from_module(module, name):
@@ -195,18 +195,17 @@ not_installed_nvidia_args = (
 def get_files_from_regex(path):
     """Returns a list of absolute paths of all the files whose names match the
     input regular expression."""
-    directory_name = dirname(path)
-    if directory_name == "":
-        directory_name = "."
-    regex = basename(path)
+    path = Path(path)
+    directory_name = path.parent if path.parent != Path() else Path(".")
+    regex = path.name
 
     file_names = []
 
     pattern = compile(translate(regex), IGNORECASE)
 
-    for file in os.listdir(directory_name):
-        if pattern.fullmatch(file):
-            file_names.append(join(directory_name, file))
+    for file in directory_name.iterdir():
+        if pattern.fullmatch(file.name):
+            file_names.append(str(directory_name / file.name))
 
     return file_names
 
