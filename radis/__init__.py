@@ -30,9 +30,9 @@
 
 """
 
+import importlib
 import os
 
-from .misc.config import get_config
 from .misc.utils import Chdir as _chdir
 from .misc.utils import getProjectRoot
 
@@ -45,7 +45,72 @@ from .misc.utils import getProjectRoot
 # the default one.
 # # molecular parameters for non-HITRAN species    should also be removed #TODO
 
-config = get_config()
+
+class _LazyConfig(dict):
+    """Lazy-loading wrapper for RADIS global config."""
+
+    def __init__(self):
+        super().__init__()
+        self._is_loaded = False
+
+    def _ensure_loaded(self):
+        if self._is_loaded:
+            return
+        from .misc.config import get_config
+
+        super().update(get_config())
+        self._is_loaded = True
+
+    def __getitem__(self, key):
+        self._ensure_loaded()
+        return super().__getitem__(key)
+
+    def __setitem__(self, key, value):
+        self._ensure_loaded()
+        return super().__setitem__(key, value)
+
+    def __contains__(self, key):
+        self._ensure_loaded()
+        return super().__contains__(key)
+
+    def __iter__(self):
+        self._ensure_loaded()
+        return super().__iter__()
+
+    def __len__(self):
+        self._ensure_loaded()
+        return super().__len__()
+
+    def get(self, key, default=None):
+        self._ensure_loaded()
+        return super().get(key, default)
+
+    def items(self):
+        self._ensure_loaded()
+        return super().items()
+
+    def keys(self):
+        self._ensure_loaded()
+        return super().keys()
+
+    def values(self):
+        self._ensure_loaded()
+        return super().values()
+
+    def update(self, *args, **kwargs):
+        self._ensure_loaded()
+        return super().update(*args, **kwargs)
+
+    def copy(self):
+        self._ensure_loaded()
+        return super().copy()
+
+    def __repr__(self):
+        self._ensure_loaded()
+        return super().__repr__()
+
+
+config = _LazyConfig()
 """dict: RADIS configuration parameters
 
 Parameters
@@ -221,25 +286,131 @@ __all__ = [
     "config",
     "version",
     "__version__",
+    "cdsd2df",
+    "hit2df",
+    "MOLECULES_LIST_EQUILIBRIUM",
+    "MOLECULES_LIST_NONEQUILIBRIUM",
+    "Molecules",
+    "getMolecule",
+    "fetch_hitemp",
+    "fetch_hitran",
+    "fetch_exomol",
+    "fetch_astroquery",
+    "fetch_geisa",
+    "LevelsList",
+    "SpectrumFactory",
+    "calc_spectrum",
+    "spectrum_test",
+    "MergeSlabs",
+    "SerialSlabs",
+    "sPlanck",
+    "planck",
+    "planck_wn",
+    "get_diff",
+    "get_distance",
+    "get_ratio",
+    "get_residual",
+    "get_residual_integral",
+    "plot_diff",
+    "calculated_spectrum",
+    "experimental_spectrum",
+    "transmittance_spectrum",
+    "PerfectAbsorber",
+    "Radiance",
+    "Radiance_noslit",
+    "Transmittance",
+    "Transmittance_noslit",
+    "Spectrum",
+    "SpecDatabase",
+    "load_spec",
+    "plot_spec",
+    "save",
+    "get_eq_mole_fraction",
+    "plot_slit",
+    "get_effective_FWHM",
+    "get_FWHM",
 ]
 
-# prevent cyclic imports:
-from . import api, db, io, lbl, los, misc, phys, spectrum, tools
-from .api import *  # input / output common with ExoJax
-from .db import *  # database of molecules
-from .io import *  # input / output
-from .lbl import *  # line-by-line module
-from .levels import *  # rovibrational energies and partition functions
-from .los import *  # line-of-sight module
-from .phys import *  # conversion functions, blackbody objects
-from .spectrum import *  # Spectrum object
-from .tools import *  # slit, database, line survey, etc.
+_EXPORT_TO_MODULE = {
+    "cdsd2df": "api",
+    "hit2df": "api",
+    "MOLECULES_LIST_EQUILIBRIUM": "db",
+    "MOLECULES_LIST_NONEQUILIBRIUM": "db",
+    "Molecules": "db",
+    "getMolecule": "db",
+    "fetch_hitemp": "io",
+    "fetch_hitran": "io",
+    "fetch_exomol": "io",
+    "fetch_astroquery": "io",
+    "fetch_geisa": "io",
+    "LevelsList": "lbl",
+    "SpectrumFactory": "lbl",
+    "calc_spectrum": "lbl",
+    "spectrum_test": "lbl",
+    "MergeSlabs": "los",
+    "SerialSlabs": "los",
+    "sPlanck": "phys",
+    "planck": "phys",
+    "planck_wn": "phys",
+    "get_diff": "spectrum",
+    "get_distance": "spectrum",
+    "get_ratio": "spectrum",
+    "get_residual": "spectrum",
+    "get_residual_integral": "spectrum",
+    "plot_diff": "spectrum",
+    "calculated_spectrum": "spectrum",
+    "experimental_spectrum": "spectrum",
+    "transmittance_spectrum": "spectrum",
+    "PerfectAbsorber": "spectrum",
+    "Radiance": "spectrum",
+    "Radiance_noslit": "spectrum",
+    "Transmittance": "spectrum",
+    "Transmittance_noslit": "spectrum",
+    "Spectrum": "spectrum",
+    "SpecDatabase": "tools",
+    "load_spec": "tools",
+    "plot_spec": "tools",
+    "save": "tools",
+    "get_eq_mole_fraction": "tools",
+    "plot_slit": "tools",
+    "get_effective_FWHM": "tools",
+    "get_FWHM": "tools",
+}
 
-__all__.extend(api.__all__)
-__all__.extend(db.__all__)
-__all__.extend(io.__all__)
-__all__.extend(lbl.__all__)
-__all__.extend(los.__all__)
-__all__.extend(phys.__all__)
-__all__.extend(spectrum.__all__)
-__all__.extend(tools.__all__)
+_SUBMODULES = {
+    "api",
+    "db",
+    "gpu",
+    "io",
+    "lbl",
+    "levels",
+    "los",
+    "misc",
+    "phys",
+    "spectrum",
+    "tools",
+}
+
+
+def _load_submodule(name):
+    module = importlib.import_module(f".{name}", __name__)
+    globals()[name] = module
+    return module
+
+
+def __getattr__(name):
+    if name in _SUBMODULES:
+        return _load_submodule(name)
+
+    module_name = _EXPORT_TO_MODULE.get(name)
+    if module_name is not None:
+        module = _load_submodule(module_name)
+        value = getattr(module, name)
+        globals()[name] = value
+        return value
+
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
+
+def __dir__():
+    return sorted(set(globals()) | set(__all__) | _SUBMODULES)
