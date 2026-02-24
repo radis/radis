@@ -139,7 +139,6 @@ def fetch_hitran(
         databank_name = databank_name.format(**{"molecule": molecule})
 
     if local_databases is None:
-
         local_databases = join(config["DEFAULT_DOWNLOAD_PATH"], "hitran")
     local_databases = abspath(local_databases.replace("~", expanduser("~")))
 
@@ -153,35 +152,53 @@ def fetch_hitran(
         parallel=parallel,
     )
 
+    # Auto-remove old single-file format (e.g. CO.hdf5 -> CO_iso*.hdf5)
+    ldb.check_old_format_files()
+
+    # Determine which isotopes are needed
+    from radis.db.hitran_isotopes import get_hitran_isotopes
+
+    all_isotopes = get_hitran_isotopes(molecule)
+    if isotope is not None:
+        needed_isotopes = [int(i) for i in str(isotope).split(",")]
+    else:
+        needed_isotopes = all_isotopes
+
+    # Get per-isotope file paths
+    needed_files = ldb.get_filenames_for_isotopes(needed_isotopes)
+    all_files = ldb.get_filenames()  # all possible files for registration
+
     # Check if the database is registered in radis.json
-    local_files = []
+    registered_files = []
     if ldb.is_registered():
         entries = getDatabankEntries(ldb.name)
-        local_files = entries["path"]
+        registered_files = entries["path"]
 
     if ldb.is_registered() and not config["ALLOW_OVERWRITE"]:
         error = False
-        if cache == "regen" or not local_files:
+        if cache == "regen" or not registered_files:
             error = True
-        files_to_check = local_files
-        if ldb.get_missing_files(files_to_check):
+        if ldb.get_missing_files(needed_files):
             error = True
         if error:
             raise Exception(
-                'Changes are required to the local database, and hence updating the registered entry, but "ALLOW_OVERWRITE" is False. Set `radis.config["ALLOW_OVERWRITE"]=True` to allow the changes to be made and config file to be automatically updated accordingly.'
+                "Changes are required to the local database, and hence updating "
+                'the registered entry, but "ALLOW_OVERWRITE" is False. Set '
+                '`radis.config["ALLOW_OVERWRITE"]=True` to allow the changes.'
             )
 
     # Delete files if needed:
     if cache == "regen":
-        ldb.remove_local_files(local_files)
+        ldb.remove_local_files(needed_files)
     else:
-        # Raising AccuracyWarning if local_file exists and doesn't have extra columns in it
-        if ldb.get_existing_files(local_files) and extra_params == "all":
-            columns = ldb.get_columns(local_files[0])
+        # Raising AccuracyWarning if local_file exists and doesn't have extra columns
+        existing = ldb.get_existing_files(needed_files)
+        if existing and extra_params == "all":
+            cols = ldb.get_columns(existing[0])
             extra_columns = ["y_", "gamma_", "n_"]
             found = False
             for key in extra_columns:
-                for column_name in columns:
+                for column_name in cols:
                     if key in column_name:
                         found = True
                         break
@@ -191,22 +208,19 @@ def fetch_hitran(
 
                 warnings.warn(
                     AccuracyWarning(
-                        "All columns are not downloaded currently, please use cache = 'regen' and extra_params='all' to download all columns."
+                        "All columns are not downloaded currently, please use "
+                        "cache = 'regen' and extra_params='all' to download all columns."
                     )
                 )
     ldb.check_deprecated_files(
-        ldb.get_existing_files(local_files),
+        ldb.get_existing_files(needed_files),
         auto_remove=True if cache != "force" else False,
     )
 
-    # Check if local files are available so we don't have to download
-    download_files = True
-    if local_files and not ldb.get_missing_files(local_files):
-        download_files = False
-        ldb.actual_file = local_files[0]
+    # Determine which per-isotope files need to be downloaded
+    missing_files = ldb.get_missing_files(needed_files)
+    do_download = len(missing_files) > 0
 
-    # Download files
-    # Download files
     # Initialize progress printer for consistent output
     printer = DatabaseProgressPrinter(
         database_name="HITRAN",
@@ -215,46 +229,46 @@ def fetch_hitran(
     )
     printer.header("Downloading database")
 
-    if download_files:
+    if do_download:
         printer.section("Download")
-        main_files = ldb.get_filenames()
-        printer.info(f"Downloading all isotopes for {molecule}", indent=1)
-        if main_files:
-            try:
-                ldb.download_and_parse(
-                    main_files, cache=cache, parse_quanta=parse_quanta
-                )
-            except OSError as err:
-                printer.warning(f"Error downloading: {err}")
-                raise
-            else:
-                printer.success("HITRAN database download complete")
-                ldb.actual_file = main_files[0]
+        printer.info(
+            f"Downloading {len(missing_files)} isotope file(s) for {molecule}", indent=1
+        )
+        try:
+            ldb.download_and_parse(
+                missing_files, cache=cache, parse_quanta=parse_quanta
+            )
+        except OSError as err:
+            printer.warning(f"Error downloading: {err}")
+            raise
+        else:
+            printer.success("HITRAN database download complete")
     else:
         printer.section("Download")
-        printer.info("All files already downloaded.", indent=1)
+        printer.info("All needed isotope files already downloaded.", indent=1)
         printer.section("Caching to HDF5/H5 format")
-        printer.info("All files already cached.", indent=1)
+        printer.info("All needed isotope files already cached.", indent=1)
 
-    # Register
-    if download_files or not ldb.is_registered():
-        ldb.register(download_files)
+    # Register all existing per-isotope files
+    existing_all = ldb.get_existing_files(all_files)
+    if do_download or not ldb.is_registered():
+        ldb.register(do_download, local_files=existing_all)
 
-    if download_files and clean_cache_files:
+    if do_download and clean_cache_files:
         ldb.clean_download_files()
 
-    # Load and return
+    # Load from per-isotope files (only the needed ones)
+    files_to_load = ldb.get_existing_files(needed_files)
     df = ldb.load(
-        [ldb.actual_file],
+        files_to_load,
         columns=columns,
-        within=[("iso", isotope)] if isotope is not None else [],
-        # for relevant files, get only the right range :
+        within=[],  # isotope filtering is implicit (separate files)
         lower_bound=[("wav", load_wavenum_min)] if load_wavenum_min is not None else [],
         upper_bound=[("wav", load_wavenum_max)] if load_wavenum_max is not None else [],
         output=output,
     )
 
-    return (df, local_files) if return_local_path else df
+    return (df, files_to_load) if return_local_path else df
 
 
 # ======================================================
