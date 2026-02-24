@@ -68,7 +68,6 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from numpy import array
-from scipy.interpolate import griddata
 
 from radis.misc.basics import all_in, is_float, list_if_float
 from radis.misc.debug import printdbg
@@ -1736,6 +1735,8 @@ class SpecList(object):
             xarr = np.linspace(min(x), max(x))
             yarr = np.linspace(min(y), max(y))
             mx, my = np.meshgrid(xarr, yarr)
+            from scipy.interpolate import griddata
+
             zgrid = griddata((x, y), z, (mx, my), method="linear", fill_value=np.nan)
             levels = np.linspace(min(z), max(z), 20)
             ax.contourf(
