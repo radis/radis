@@ -6,6 +6,7 @@ Test query functions
 
 """
 
+from glob import glob
 from os.path import exists, join
 
 import pytest
@@ -108,16 +109,22 @@ def test_fetch_hitran_CO_pytables(*args, **kwargs):
     from radis.io.hitran import fetch_hitran
     from radis.test.utils import getTestFile
 
+    local_db = join(getTestFile("."), "hitran_iso")
     df = fetch_hitran(
         "CO",
-        local_databases=join(getTestFile("."), "hitran"),
-        databank_name="HITRAN-CO-TEST-ENGINE-PYTABLES",
+        local_databases=local_db,
+        databank_name="HITRAN-CO-TEST-ISO-PYTABLES",
         engine="pytables",
+        cache="regen",
     )
 
     assert len(df) == 5381
     assert df.wav.min() == 3.40191
     assert df.wav.max() == 14477.377153
+
+    # Verify per-isotope files were created
+    iso_files = glob(join(local_db, "CO_iso*.h5"))
+    assert len(iso_files) == 6  # CO has 6 isotopes
 
 
 # TODO : clean database on each new pytest run ?
@@ -131,16 +138,22 @@ def test_fetch_hitran_CO_vaex(*args, **kwargs):
     from radis.io.hitran import fetch_hitran
     from radis.test.utils import getTestFile
 
+    local_db = join(getTestFile("."), "hitran_iso")
     df = fetch_hitran(
         "CO",
-        local_databases=join(getTestFile("."), "hitran"),
-        databank_name="HITRAN-CO-TEST-ENGINE-VAEX",
+        local_databases=local_db,
+        databank_name="HITRAN-CO-TEST-ISO-VAEX",
         engine="vaex",
+        cache="regen",
     )
 
     assert len(df) == 5381
     assert df.wav.min() == 3.40191
     assert df.wav.max() == 14477.377153
+
+    # Verify per-isotope files were created
+    iso_files = glob(join(local_db, "CO_iso*.hdf5"))
+    assert len(iso_files) == 6  # CO has 6 isotopes
 
 
 # ignored by pytest with argument -m "not needs_connection"
@@ -149,12 +162,41 @@ def test_fetch_hitran(*args, **kwargs):
 
     from radis.io.hitran import fetch_hitran
 
-    df = fetch_hitran("CO")
+    df = fetch_hitran("CO", cache="regen")
 
     assert set(df["iso"]) == {1, 2, 3, 4, 5, 6}
     assert len(df) == 5381
     assert df.wav.min() == 3.40191
     assert df.wav.max() == 14477.377153
+
+
+# ignored by pytest with argument -m "not needs_connection"
+@pytest.mark.needs_connection
+def test_fetch_hitran_specific_isotope(*args, **kwargs):
+    """Test that fetching a specific isotope only downloads that isotope's file."""
+
+    from radis.io.hitran import fetch_hitran
+    from radis.test.utils import getTestFile
+
+    local_db = join(getTestFile("."), "hitran_iso_single")
+    df = fetch_hitran(
+        "CO",
+        isotope="1",
+        local_databases=local_db,
+        databank_name="HITRAN-CO-TEST-ISO1-ONLY",
+        engine="pytables",
+        cache="regen",
+    )
+
+    # Only isotope 1 should be present
+    assert set(df["iso"]) == {1}
+    assert len(df) < 5381  # Fewer lines than all isotopes
+    assert len(df) > 0
+
+    # Verify only the requested isotope file was created
+    assert exists(join(local_db, "CO_iso1.h5"))
+    # Other isotope files should NOT exist
+    assert not exists(join(local_db, "CO_iso2.h5"))
 
 
 @pytest.mark.needs_connection
