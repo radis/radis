@@ -1234,10 +1234,12 @@ class DatabankLoader(object):
 
                 df.attrs = {}
 
-                # ... explicitely write all isotopes based on isotopes found in the database
+                # ... explicitly write all isotopes based on the HITRAN registry
                 if isotope == "all":
+                    from radis.db.hitran_isotopes import get_hitran_isotopes
+
                     self.input.isotope = ",".join(
-                        [str(k) for k in self._get_isotope_list(df=df)]
+                        [str(k) for k in get_hitran_isotopes(molecule)]
                     )
 
             elif database == "range":
