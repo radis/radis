@@ -181,8 +181,8 @@ not_installed_vaex_args = (
     "vaex",
     "You must install Vaex to use these features. Vaex is a fast, "
     + "memory-mapped DataFrame library. However is not available yet on latest Python versions. "
-    + "Use Pytables (slower) as an alternative in your Radis.json config file. To use Pytables, set "
-    + '"MEMORY_MAPPING_ENGINE": "pytables" and "DATAFRAME_ENGINE": "pandas"',
+    + "Use h5py or Pytables as alternatives in your Radis.json config file. "
+    + 'For h5py, set "MEMORY_MAPPING_ENGINE": "h5py" and "DATAFRAME_ENGINE": "pandas".',
 )
 not_installed_nvidia_args = (
     "nvidia-cufft",

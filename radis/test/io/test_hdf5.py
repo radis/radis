@@ -19,7 +19,6 @@ except ImportError:
 
 
 @pytest.mark.fast
-@pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
 def test_hdf5_io_engines(*args, **kwargs):
     """Test different engines implemented in :py:class:`radis.api.hdf5.DataFileManager`"""
 
@@ -60,25 +59,73 @@ def test_hdf5_io_engines(*args, **kwargs):
     assert (df == df0).all().all()
     assert manager.read_metadata("test_h5py.h5") == metadata0
 
-    # Test vaex engine : add_metadata ; load ; read_
-    # .. also able to read h5py files
-    manager = DataFileManager(engine="vaex")
-    manager.add_metadata("test_h5py.h5", metadata0, key=None)
-    df = manager.read("test_h5py.h5", key=None)
-    # this time; df is a vaex DataFrame
-    # ... it keeps the file open so we should close the file handle
-    assert (df.to_pandas_df() == df0).all().all()
-    df.close()
-    assert manager.read_metadata("test_h5py.h5", key=None) == metadata0
+    if not isinstance(vaex, NotInstalled):
+        # Test vaex engine : add_metadata ; load ; read_
+        # .. also able to read h5py files
+        manager = DataFileManager(engine="vaex")
+        manager.add_metadata("test_h5py.h5", metadata0, key=None)
+        df = manager.read("test_h5py.h5", key=None)
+        # this time; df is a vaex DataFrame
+        # ... it keeps the file open so we should close the file handle
+        assert (df.to_pandas_df() == df0).all().all()
+        df.close()
+        assert manager.read_metadata("test_h5py.h5", key=None) == metadata0
 
     # Test get_columns function of DataFileManager
-    # For vaex
-    manager = DataFileManager(engine="vaex")
-    assert list(manager.get_columns("test_h5py.h5")) == ["a", "b"]
+    if not isinstance(vaex, NotInstalled):
+        # For vaex
+        manager = DataFileManager(engine="vaex")
+        assert list(manager.get_columns("test_h5py.h5")) == ["a", "b"]
 
     # For pytables
     manager = DataFileManager(engine="pytables")
     assert list(manager.get_columns("test_pytables.h5")) == ["a", "b"]
+
+
+@pytest.mark.fast
+def test_h5py_append_and_filter():
+    import os
+
+    import numpy as np
+    import pandas as pd
+
+    fname = "test_h5py_append.hdf5"
+    if os.path.exists(fname):
+        os.remove(fname)
+
+    df1 = pd.DataFrame({"wav": np.array([1000.0, 1001.0, 1002.0]), "iso": [1, 2, 1]})
+    df2 = pd.DataFrame({"wav": np.array([1003.0, 1004.0, 1005.0]), "iso": [2, 1, 2]})
+
+    manager = DataFileManager(engine="h5py")
+    manager.write(fname, df1, append=False)
+    manager.write(fname, df2, append=True)
+    manager.add_metadata(fname, {"source": "unit_test"}, key=None)
+
+    loaded = manager.load(
+        fname,
+        columns=["wav", "iso"],
+        lower_bound=[("wav", 1001.5)],
+        upper_bound=[("wav", 1004.5)],
+        within=[("iso", "1")],
+        output="pandas",
+    )
+
+    assert list(loaded["wav"]) == [1002.0, 1004.0]
+    assert list(loaded["iso"]) == [1, 1]
+    assert manager.read_metadata(fname, key=None)["source"] == "unit_test"
+
+
+@pytest.mark.fast
+def test_auto_memory_mapping_engine_fallback(monkeypatch):
+    from radis.api import dbmanager
+
+    monkeypatch.setattr(
+        dbmanager,
+        "vaex",
+        NotInstalled(*not_installed_vaex_args),
+        raising=False,
+    )
+    assert dbmanager.get_auto_MEMORY_MAPPING_ENGINE() == "h5py"
 
 
 @pytest.mark.needs_connection

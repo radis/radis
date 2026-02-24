@@ -49,11 +49,11 @@ LAST_VALID_DATE = (
 def get_auto_MEMORY_MAPPING_ENGINE():
     """see https://github.com/radis/radis/issues/653
 
-    Use Vaex by default if it exists (only Python <= 3.11 as of June 2024) ,
-    else use PyTables"""
+    Use Vaex by default if it exists, else use h5py as a lightweight
+    memory-mapped backend."""
     # Check if vaex is available
     if isinstance(vaex, NotInstalled):
-        return "pytables"
+        return "h5py"
     else:
         return "vaex"
 
@@ -604,7 +604,7 @@ class DatabaseManager(object):
         """
         engine = self.engine
         mgr = self.get_datafile_manager()
-        if engine in ["pytables", "feather"]:
+        if engine in ["pytables", "feather", "h5py"]:
             df_all = []
             for local_file in local_files:
                 df_all.append(
@@ -655,7 +655,14 @@ class DatabaseManager(object):
             df.close()
 
         elif engine in ["h5py"]:
-            raise NotImplementedError
+            import h5py
+
+            with h5py.File(local_file, "r") as hf:
+                group = hf
+                if "table" in hf and isinstance(hf["table"], h5py.Group):
+                    group = hf["table"]
+                first_column = next(iter(group.keys()))
+                nrows = len(group[first_column])
         else:
             raise ValueError(engine)
         return nrows

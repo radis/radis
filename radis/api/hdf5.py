@@ -10,6 +10,7 @@ from os.path import abspath, exists, expanduser, splitext
 from time import time
 
 import h5py
+import numpy as np
 import pandas as pd
 from tables.exceptions import NoSuchNodeError
 
@@ -27,6 +28,33 @@ def vaexsafe_colname(name):
     https://github.com/vaexio/vaex/issues/1255
     """
     return name.replace("/", "_")
+
+
+def _decode_if_bytes(arr):
+    """Decode byte arrays loaded from HDF5 to UTF-8 strings."""
+    if isinstance(arr, np.ndarray) and arr.dtype.kind == "S":
+        return np.char.decode(arr, "utf-8", errors="ignore")
+    return arr
+
+
+def _series_to_h5py_array(series):
+    """Convert a pandas Series into an h5py-compatible 1D array."""
+    arr = series.to_numpy()
+    if arr.dtype.kind in {"U", "O"}:
+        arr = arr.astype(str)
+        return arr, h5py.string_dtype(encoding="utf-8")
+    return arr, None
+
+
+def _get_h5_group(hf, key):
+    """Return the target HDF5 group for key.
+
+    If key is None, returns the root group.
+    """
+    if key is None:
+        return hf
+    key = key.lstrip("/")
+    return hf.require_group(key)
 
 
 def update_pytables_to_vaex(fname, remove_initial=False, verbose=True, key="df"):
@@ -218,6 +246,36 @@ class DataFileManager(object):
                 self._temp_batch_files.append(file)
             # Write:
             df.export_hdf5(file, group=key, mode="w")
+        elif self.engine == "h5py":
+            if key == "default":
+                key = None
+
+            # Convert to pandas for a consistent write path.
+            if not isinstance(df, pd.DataFrame):
+                if not isinstance(vaex, NotInstalled) and isinstance(
+                    df, vaex.dataframe.DataFrameLocal
+                ):
+                    df = df.to_pandas_df()
+                else:
+                    df = pd.DataFrame(df)
+
+            mode = "a" if append else "w"
+            with h5py.File(file, mode) as hf:
+                group = _get_h5_group(hf, key)
+
+                for col in df.columns:
+                    arr, dtype = _series_to_h5py_array(df[col])
+
+                    if col in group:
+                        ds = group[col]
+                        old_len = ds.shape[0]
+                        ds.resize((old_len + len(arr),))
+                        ds[old_len:] = arr
+                    else:
+                        kwargs = {"maxshape": (None,), "chunks": True}
+                        if dtype is not None:
+                            kwargs["dtype"] = dtype
+                        group.create_dataset(col, data=arr, **kwargs)
         elif self.engine == "feather":
             df.to_feather(file)
         else:
@@ -238,7 +296,11 @@ class DataFileManager(object):
             with pd.HDFStore(local_file, "r") as store:
                 columns = store.select("df", start=1, stop=1).columns
         elif engine in ["h5py"]:
-            raise NotImplementedError
+            with h5py.File(local_file, "r") as hf:
+                group = hf
+                if "table" in hf and isinstance(hf["table"], h5py.Group):
+                    group = hf["table"]
+                columns = list(group.keys())
         else:
             raise ValueError(engine)
 
@@ -378,6 +440,11 @@ class DataFileManager(object):
                 df = df
             else:
                 raise NotImplementedError(f"output {output} for engine {engine}")
+        elif engine == "h5py":
+            if output == "pandas":
+                df = df
+            else:
+                raise NotImplementedError(f"output {output} for engine {engine}")
         elif engine == "feather":
             if output == "pandas":
                 df = df
@@ -490,18 +557,27 @@ class DataFileManager(object):
 
         elif self.engine == "h5py":
             fname = expanduser(fname)
-            # TODO: define default key ?
-            if key == "default":
-                key = None
+            with h5py.File(fname, "r") as hf:
+                if key == "default":
+                    if "table" in hf and isinstance(hf["table"], h5py.Group):
+                        key = "/table"
+                    else:
+                        key = None
 
-            with h5py.File(fname, "r") as f:
                 if key is None:  # load from root level
-                    load_from = f
+                    load_from = hf
                 else:
-                    load_from = f[key]
+                    load_from = hf[key]
+
+                all_columns = list(load_from.keys())
+                if columns is None:
+                    columns_to_load = all_columns
+                else:
+                    columns_to_load = [c for c in columns if c in all_columns]
+
                 out = {}
-                for k in load_from.keys():
-                    out[k] = f[k][()]
+                for col in columns_to_load:
+                    out[col] = _decode_if_bytes(load_from[col][()])
             return pd.DataFrame(out)
 
         elif self.engine == "feather":
@@ -559,8 +635,58 @@ class DataFileManager(object):
             # Selection is done after opening the file time in vaex
             # see end of this function
             where = None
+        elif self.engine == "h5py":
+            # Selection is implemented below with direct column access.
+            where = None
         else:
             raise NotImplementedError(self.engine)
+
+        if self.engine == "h5py":
+            fname = expanduser(fname)
+            key = store_kwargs.get("key", "default")
+            with h5py.File(fname, "r") as hf:
+                if key == "default":
+                    if "table" in hf and isinstance(hf["table"], h5py.Group):
+                        key = "/table"
+                    else:
+                        key = None
+                load_from = hf if key is None else hf[key]
+
+                all_columns = list(load_from.keys())
+                filter_columns = {column for column, _ in lower_bound}
+                filter_columns.update(column for column, _ in upper_bound)
+                filter_columns.update(column for column, _ in within)
+
+                if columns is None:
+                    target_columns = all_columns
+                else:
+                    target_columns = [c for c in columns if c in all_columns]
+                required_columns = list(set(target_columns).union(filter_columns))
+
+                out = {}
+                for col in required_columns:
+                    out[col] = _decode_if_bytes(load_from[col][()])
+
+            if len(out) == 0:
+                return pd.DataFrame()
+
+            first_col = next(iter(out))
+            mask = np.ones(len(out[first_col]), dtype=bool)
+            for column, lbound in lower_bound:
+                mask &= out[column] > lbound
+            for column, ubound in upper_bound:
+                mask &= out[column] < ubound
+            for column, withinv in within:
+                values = [v for v in withinv.split(",") if v != ""]
+                arr = out[column]
+                if np.issubdtype(arr.dtype, np.number):
+                    values = [arr.dtype.type(float(v)) for v in values]
+                mask &= np.isin(arr, values)
+
+            selected = {}
+            for col in target_columns:
+                selected[col] = out[col][mask]
+            return pd.DataFrame(selected)
 
         # Load :
         df = self.read(fname, columns=columns, where=where, **store_kwargs)
@@ -821,6 +947,10 @@ class DataFileManager(object):
             return b.sum() > 0
         elif self.engine in ["pytables", "feather"]:
             return column.hasnans
+        elif self.engine == "h5py":
+            if np.issubdtype(column.dtype, np.number):
+                return np.isnan(column).any()
+            return False
         else:
             raise NotImplementedError(self.engine)
 
