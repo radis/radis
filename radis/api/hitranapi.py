@@ -1824,22 +1824,69 @@ class HITRANDatabaseManager(DatabaseManager):
         self.actual_file = None
 
     def get_filenames(self):
+        """Return list of per-isotope filenames for this molecule."""
+        from radis.db.hitran_isotopes import get_hitran_isotopes
+
+        isotopes = get_hitran_isotopes(self.molecule)
         if self.engine == "vaex":
-            return [join(self.local_databases, f"{self.molecule}.hdf5")]
+            ext = ".hdf5"
         elif self.engine == "pytables":
-            return [join(self.local_databases, f"{self.molecule}.h5")]
+            ext = ".h5"
         else:
             raise NotImplementedError()
+        return [
+            join(self.local_databases, f"{self.molecule}_iso{iso}{ext}")
+            for iso in isotopes
+        ]
+
+    def get_filenames_for_isotopes(self, isotopes):
+        """Return filenames for specific isotope numbers.
+
+        Parameters
+        ----------
+        isotopes : list of int
+            e.g. [1, 2, 3]
+        """
+        if self.engine == "vaex":
+            ext = ".hdf5"
+        elif self.engine == "pytables":
+            ext = ".h5"
+        else:
+            raise NotImplementedError()
+        return [
+            join(self.local_databases, f"{self.molecule}_iso{iso}{ext}")
+            for iso in isotopes
+        ]
+
+    def check_old_format_files(self):
+        """Detect and auto-remove old single-file databases (e.g. CO.hdf5).
+
+        Follows the established ``check_deprecated_files`` pattern.
+        """
+        for ext in [".hdf5", ".h5"]:
+            old_file = join(self.local_databases, f"{self.molecule}{ext}")
+            if exists(old_file):
+                if self.verbose:
+                    from radis.misc.printer import printr
+
+                    printr(
+                        f"Found old-format database file {old_file}. "
+                        "RADIS now stores isotopes separately. "
+                        "Removing it to regenerate per-isotope files."
+                    )
+                os.remove(old_file)
 
     def download_and_parse(
         self,
-        local_file,
+        local_files,
         cache=True,
         parse_quanta=True,
         add_HITRAN_uncertainty_code=False,
     ):
-        """Download from HITRAN and parse into ``local_file``.
-        Also add metadata
+        """Download from HITRAN and parse into per-isotope ``local_files``.
+
+        Each file in ``local_files`` corresponds to a single isotope,
+        named like ``CO_iso1.hdf5``.
 
         Overwrites :py:meth:`radis.api.dbmanager.DatabaseManager.download_and_parse`
         which downloads from a list of URL, because here we use [HAPI]_ to
@@ -1847,161 +1894,110 @@ class HITRANDatabaseManager(DatabaseManager):
 
         Parameters
         ----------
-        opener: an opener with an .open() command
-        gfile : file handler. Filename: for info"""
+        local_files : list of str
+            Target per-isotope HDF5 file paths.
+        """
+
+        import io
+        import re as re_module
+        import sys
 
         from hapi import LOCAL_TABLE_CACHE, db_begin, fetch
 
         from radis.db.classes import get_molecule_identifier
 
-        if isinstance(local_file, list):
-            assert (
-                len(local_file) == 1
-            )  # fetch_hitran stores all lines of a given molecule in one file
-            local_file = local_file[0]
-
+        molecule = self.molecule
+        extra_params = self.extra_params
         wmin = 0
         wmax = 1e10
+        max_fetch_retries = 3
 
-        def download_all_hitran_isotopes(molecule, directory, extra_params):
-            """Blindly try to download all isotopes 1 - 9 for the given molecule
+        # create database in a subfolder to isolate molecules
+        tempdir = join(self.tempdir, molecule)
+        from radis.misc.basics import make_folders
 
-            .. warning::
-                this won't be able to download higher isotopes (ex : isotope 10-11-12 for CO2)
-                Neglected for the moment, they're irrelevant for most calculations anyway
-            .. Isotope Missing:
-                When an isotope is missing for a particular molecule then a key error `(molecule_id, isotope_id)
-                is raised.
+        make_folders(*split(abspath(expanduser(tempdir))))
 
-            """
-            directory = abspath(expanduser(directory))
-            max_fetch_retries = 3
-            retry_delay = 1
-            # create temp folder :
-            from radis.misc.basics import make_folders
+        # Suppress HAPI's verbose output
+        old_stdout = sys.stdout
+        sys.stdout = io.StringIO()
+        try:
+            db_begin(tempdir)
+        finally:
+            sys.stdout = old_stdout
 
-            make_folders(*split(directory))
-
-            # Use tqdm for isotope progress
-            import io
-            import sys
-
-            from tqdm import tqdm
-
-            # Suppress HAPI's verbose output (version banner, directory messages, etc.)
-            old_stdout = sys.stdout
-            sys.stdout = io.StringIO()
-            try:
-                db_begin(directory)
-            finally:
-                sys.stdout = old_stdout
-
-            isotope_list = []
-            data_file_list = []
-            header_file_list = []
-
-            for iso in tqdm(
-                range(1, 10), desc="Downloading isotopes", disable=not self.verbose
-            ):
-                file = f"{molecule}_{iso}"
-                if exists(join(directory, file + ".data")):
-                    if cache == "regen":
-                        # remove without printing message
-                        os.remove(join(directory, file + ".data"))
-                    else:
-                        from radis.misc.printer import printr
-
-                        printr(
-                            f"File already exist: {join(directory, file + '.data')}. Deleting it.`"
-                        )
-                        os.remove(join(directory, file + ".data"))
-                try:
-                    for attempt in range(max_fetch_retries):
-                        # Suppress HAPI's verbose output (65536 bytes written...)
-                        old_stdout = sys.stdout
-                        sys.stdout = io.StringIO()
-                        try:
-                            if extra_params == "all":
-                                fetch(
-                                    file,
-                                    get_molecule_identifier(molecule),
-                                    iso,
-                                    wmin,
-                                    wmax,
-                                    ParameterGroups=[*PARAMETER_GROUPS_HITRAN],
-                                )
-                            elif extra_params is None:
-                                fetch(
-                                    file,
-                                    get_molecule_identifier(molecule),
-                                    iso,
-                                    wmin,
-                                    wmax,
-                                )
-                            else:
-                                raise ValueError(
-                                    "extra_params can only be 'all' or None "
-                                )
-                        finally:
-                            sys.stdout = old_stdout
-
-                        ### We test if the download went well ###
-                        df = pd.DataFrame(LOCAL_TABLE_CACHE[file]["data"])
-                        if len(df["molec_id"]) != 0:
-                            break  # everything worked well
-                        else:
-                            warning_msg = (
-                                "HITRAN fetch failed. The database looks empty. "
-                                f"Waiting {retry_delay} seconds and trying again (attempt {attempt + 1}/{max_fetch_retries})."
-                            )
-                        if attempt == max_fetch_retries - 1:
-                            warning_msg += "\nLAST ATTEMPT"
-                        warnings.warn(warning_msg, UserWarning, stacklevel=2)
-                        time.sleep(retry_delay)
-                        retry_delay *= 2  # exponential
-                except KeyError as err:  # check for missing isotopes. If the isotope is missing, skip to next up to isotope 9
-                    list_pattern = ["(", ",", ")"]
-                    import re
-
-                    if (
-                        set(list_pattern).issubset(set(str(err)))
-                        and len(re.findall(r"\d", str(err))) >= 2
-                        and get_molecule_identifier(molecule)
-                        == int(
-                            re.findall(r"[\w']+", str(err))[0]
-                        )  # The regex are cryptic
-                    ):
-                        # Isotope not defined, go to next isotope
-                        continue
-                    else:
-                        raise KeyError(f"Error: {str(err)}")
-                else:
-                    isotope_list.append(iso)
-                    data_file_list.append(file + ".data")
-                    header_file_list.append(file + ".header")
-            return isotope_list, data_file_list, header_file_list
-
-        molecule = self.molecule
+        writer = self.get_datafile_manager()
         wmin_final = 100000
         wmax_final = -1
 
-        # create database in a subfolder to isolate molecules from one-another
-        # (HAPI doesn't check and may mix molecules --> see failure at https://app.travis-ci.com/github/radis/radis/jobs/548126303#L2676)
-        tempdir = join(self.tempdir, molecule)
-        extra_params = self.extra_params
+        for local_file in local_files:
+            # Extract isotope number from filename like CO_iso3.hdf5
+            match = re_module.search(r"_iso(\d+)\.", local_file)
+            if not match:
+                raise ValueError(
+                    f"Cannot extract isotope number from filename: {local_file}"
+                )
+            iso = int(match.group(1))
 
-        # Use HAPI only to download the files, then we'll parse them with RADIS's
-        # parsers, and convert to RADIS's fast HDF5 file formats.
-        isotope_list, data_file_list, header_file_list = download_all_hitran_isotopes(
-            molecule, tempdir, extra_params
-        )
+            hapi_table = f"{molecule}_{iso}"
+            data_file_path = join(tempdir, hapi_table + ".data")
+            if exists(data_file_path):
+                os.remove(data_file_path)
 
-        writer = self.get_datafile_manager()
+            # Download this isotope via HAPI
+            retry_delay = 1
+            downloaded = False
+            for attempt in range(max_fetch_retries):
+                old_stdout = sys.stdout
+                sys.stdout = io.StringIO()
+                try:
+                    if extra_params == "all":
+                        fetch(
+                            hapi_table,
+                            get_molecule_identifier(molecule),
+                            iso,
+                            wmin,
+                            wmax,
+                            ParameterGroups=[*PARAMETER_GROUPS_HITRAN],
+                        )
+                    elif extra_params is None:
+                        fetch(
+                            hapi_table,
+                            get_molecule_identifier(molecule),
+                            iso,
+                            wmin,
+                            wmax,
+                        )
+                    else:
+                        raise ValueError("extra_params can only be 'all' or None")
+                finally:
+                    sys.stdout = old_stdout
 
-        # Create HDF5 cache file for all isotopes
-        Nlines = 0
-        for iso, data_file in zip(isotope_list, data_file_list):
-            df = pd.DataFrame(LOCAL_TABLE_CACHE[data_file.split(".")[0]]["data"])
+                df = pd.DataFrame(LOCAL_TABLE_CACHE[hapi_table]["data"])
+                if len(df["molec_id"]) != 0:
+                    downloaded = True
+                    break
+                else:
+                    warning_msg = (
+                        "HITRAN fetch failed. The database looks empty. "
+                        f"Waiting {retry_delay}s and trying again "
+                        f"(attempt {attempt + 1}/{max_fetch_retries})."
+                    )
+                    if attempt == max_fetch_retries - 1:
+                        warning_msg += "\nLAST ATTEMPT"
+                    warnings.warn(warning_msg, UserWarning, stacklevel=2)
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+
+            if not downloaded:
+                warnings.warn(
+                    f"Could not download isotope {iso} of {molecule}.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                continue
+
+            # Parse and write to per-isotope HDF5 file
             df.rename(
                 columns={
                     "molec_id": "id",
@@ -2032,60 +2028,55 @@ class HITRANDatabaseManager(DatabaseManager):
 
             wmin_final = min(wmin_final, df.wav.min())
             wmax_final = max(wmax_final, df.wav.max())
-            Nlines += len(df)
 
-            writer.write(
-                local_file, df, append=True
-            )  # create temporary files if required
+            writer.write(local_file, df, append=False)
+            writer.combine_temp_batch_files(local_file, sort_values="wav")
 
-        # Open all HDF5 cache files and export in a single file with Vaex
-        writer.combine_temp_batch_files(
-            local_file, sort_values="wav"
-        )  # used for vaex mode only
-        # Note: by construction, in Pytables mode the database is not sorted
-        # by 'wav' but by isotope
+            # Add metadata per file
+            from radis import __version__
+
+            writer.add_metadata(
+                local_file,
+                {
+                    "wavenumber_min": float(df.wav.min()),
+                    "wavenumber_max": float(df.wav.max()),
+                    "download_date": self.get_today(),
+                    "download_url": "downloaded by HAPI, parsed & stored with RADIS",
+                    "total_lines": len(df),
+                    "version": __version__,
+                    "isotope": iso,
+                },
+            )
 
         self.wmin = wmin_final
         self.wmax = wmax_final
 
-        # Add metadata
-        from radis import __version__
+    def register(self, download_files, local_files=None):
+        """Register per-isotope files in ~/radis.json.
 
-        writer.add_metadata(
-            local_file,
-            {
-                "wavenumber_min": self.wmin,
-                "wavenumber_max": self.wmax,
-                "download_date": self.get_today(),
-                "download_url": "downloaded by HAPI, parsed & store with RADIS",
-                "total_lines": Nlines,
-                "version": __version__,
-            },
-        )
-
-        # # clean downloaded files  TODO
-        # for file in data_file_list + header_file_list:
-        #     os.remove(join(self.local_databases, "downloads", file))
-
-    def register(self, download_files):
-        """register in ~/radis.json"""
+        Parameters
+        ----------
+        download_files : bool
+            Whether files were downloaded in this session.
+        local_files : list of str, optional
+            Paths to per-isotope files to register.
+        """
 
         if self.is_registered():
             dict_entries = getDatabankEntries(
                 self.name
             )  # just update previous register details
         else:
-
             dict_entries = {}
 
         if download_files:
-            files = [self.actual_file]
+            files = local_files if local_files else self.get_filenames()
+            # Filter to only existing files
+            files = [f for f in files if exists(f)]
             if self.wmin is None or self.wmax is None:
                 print(
                     "Somehow wmin and wmax was not given for this database. Reading from the files"
                 )
-                ##  fix:
-                # (can happen if database was downloaded & parsed, but registration failed a first time)
                 df_full = self.load(
                     local_files=files,
                     columns=["wav"],
