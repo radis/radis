@@ -45,11 +45,11 @@ jobs:
           pip install -e .
       - name: Fast tests with pytest
         run: |
-          python -m pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC and not needs_gpu and not needs_HITRAN_credentials" --durations=10 --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml
+          pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC and not needs_gpu and not needs_HITRAN_credentials" --durations=10 --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml
       - name: Long tests with pytest
         if: always()
         run: |
-          python -m pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM and not needs_gpu and not needs_HITRAN_credentials" --durations=10 --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml --cov-append
+          pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM and not needs_gpu and not needs_HITRAN_credentials" --durations=10 --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml --cov-append
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         if: always()
