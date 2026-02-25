@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-import requests
 import pytest
+import requests
 
 from radis.api.dbmanager import DatabaseManager
 
