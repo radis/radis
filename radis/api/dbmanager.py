@@ -441,10 +441,9 @@ class DatabaseManager(object):
                 )
 
             def _looks_like_html_payload(chunk):
-                snippet = chunk[:1024].lstrip().lower()
-                return snippet.startswith(b"<!doctype html") or snippet.startswith(
-                    b"<html"
-                )
+                snippet = chunk[:2048].lstrip().lower()
+                html_markers = (b"<!doctype html", b"<html", b"<head", b"<body")
+                return any(marker in snippet for marker in html_markers)
 
             try:
                 # Now download the file
@@ -462,9 +461,9 @@ class DatabaseManager(object):
                         first_chunk = chunk
                         break
 
-                if "text/html" in content_type and _looks_like_html_payload(
-                    first_chunk
-                ):
+                # Reject HTML responses from GET directly. Keep payload sniffing as
+                # fallback when servers mislabel an HTML page as octet-stream.
+                if "text/html" in content_type or _looks_like_html_payload(first_chunk):
                     raise requests.HTTPError(
                         "Received HTML content from GET request instead of the expected file payload. "
                         f"This may indicate authentication is required or access is restricted for URL: {urlname}."

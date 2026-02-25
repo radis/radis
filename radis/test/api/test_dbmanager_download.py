@@ -122,6 +122,35 @@ def test_get_html_payload_raises_httperror(tmp_path, monkeypatch):
 
 
 @pytest.mark.fast
+def test_get_html_content_type_with_non_html_chunk_raises_httperror(
+    tmp_path, monkeypatch
+):
+    manager = _DummyDownloadManager(tmp_path)
+    session = _FakeSession(
+        head_response=_FakeResponse(
+            status_code=200, headers={"content-type": "text/html"}
+        ),
+        get_response=_FakeResponse(
+            status_code=200,
+            headers={"content-type": "text/html; charset=utf-8", "content-length": "2"},
+            chunks=[b"\x00\x00"],
+        ),
+    )
+
+    monkeypatch.setattr(requests, "Session", lambda: session)
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(requests.HTTPError, match="HTML content from GET request"):
+        manager.download_and_parse(
+            urlnames=["https://example.org/test.par.bz2"],
+            local_files=[str(tmp_path / "dummy_output.hdf5")],
+            N_files_total=1,
+        )
+
+    assert manager.parse_calls == 0
+
+
+@pytest.mark.fast
 def test_head_http_error_raises_before_get(tmp_path, monkeypatch):
     manager = _DummyDownloadManager(tmp_path)
     session = _FakeSession(
