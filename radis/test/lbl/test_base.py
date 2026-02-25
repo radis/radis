@@ -10,16 +10,46 @@ import matplotlib.pyplot as plt
 
 plt.ion()
 import numpy as np
+import pandas as pd
 import pytest
 
 import radis
 from radis import get_residual, plot_diff, sPlanck
 from radis.lbl import SpectrumFactory
-from radis.lbl.base import get_wavenumber_range
+from radis.lbl.base import BaseFactory, get_wavenumber_range
 from radis.misc.printer import printm
 from radis.misc.progress_bar import ProgressBar
 from radis.misc.utils import Default
 from radis.test.utils import setup_test_line_databases
+
+
+@pytest.mark.fast
+def test_assert_no_nan_co2_gives_actionable_workaround(*args, **kwargs):
+    sf = BaseFactory()
+    sf.dataframe_type = "pandas"
+    sf.input.species = "CO2"
+    df = np.array([1.0, np.nan])
+    df = {"Evib1u": df, "wav": [2000.0, 2001.0]}
+    with pytest.raises(AssertionError) as err:
+        sf.assert_no_nan(pd.DataFrame(df), "Evib1u")
+
+    message = str(err.value)
+    assert "non-equilibrium calculations" in message
+    assert "sf.df0.dropna(" in message
+
+
+@pytest.mark.fast
+def test_assert_no_nan_non_co2_has_no_co2_specific_hint(*args, **kwargs):
+    sf = BaseFactory()
+    sf.dataframe_type = "pandas"
+    sf.input.species = "CO"
+    df = np.array([1.0, np.nan])
+    df = {"Evib1u": df, "wav": [2000.0, 2001.0]}
+    with pytest.raises(AssertionError) as err:
+        sf.assert_no_nan(pd.DataFrame(df), "Evib1u")
+
+    message = str(err.value)
+    assert "HITEMP for CO2" not in message
 
 
 def test_linestrength_calculations(*args, **kwargs):
