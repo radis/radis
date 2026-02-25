@@ -117,6 +117,13 @@ def LineSurvey(
 
             barwidth = 'hwhm_voigt'
 
+        uses the Voigt half-width at half-maximum so each bar reflects the
+        actual physical linewidth. If ``'hwhm_voigt'`` is not already in the
+        lines DataFrame, it will be computed from ``'hwhm_lorentz'`` and
+        ``'hwhm_gauss'`` using the Olivero (1977) approximation. When
+        ``wunit='nm'``, the barwidth is automatically converted from cm-1 to nm
+        using the wavenumber-to-wavelength derivative.
+
     Returns
     -------
     fig: a Plotly figure.
@@ -143,7 +150,7 @@ def LineSurvey(
         sf.load_databank('HITRAN-CO2-TEST')
         s = sf.eq_spectrum(Tgas=1500)
         s.apply_slit(0.5)
-        s.line_survey(overlay='radiance_noslit', barwidth=0.01, lineinfo="all")
+        s.line_survey(overlay='radiance_noslit', barwidth=0.01, lineinfo="all")  # or barwidth='hwhm_voigt'
 
     See the output in :ref:`Examples <label_examples>`
 
@@ -616,13 +623,44 @@ def LineSurvey(
     else:
         raise ValueError(f"unknown wunit: {wunit}")
 
-    # TODO : implement barwidth -->  if ``hwhm_voigt``, bars are one half-width at half-maximum (in cm-1)
+    # Compute barwidth for each line
     if isinstance(barwidth, str):
-        if not barwidth in sp.columns:
+        if barwidth == "hwhm_voigt" and barwidth not in sp.columns:
+            # Compute hwhm_voigt from component widths if not already present
+            if "hwhm_lorentz" in sp.columns and "hwhm_gauss" in sp.columns:
+                from radis.lbl.broadening import olivero_1977
+
+                sp["hwhm_voigt"] = (
+                    olivero_1977(2 * sp["hwhm_gauss"], 2 * sp["hwhm_lorentz"]) / 2
+                )
+            elif "fwhm_lorentz" in sp.columns and "fwhm_gauss" in sp.columns:
+                # Older spectra may store FWHM instead of HWHM
+                from radis.lbl.broadening import olivero_1977
+
+                sp["hwhm_voigt"] = (
+                    olivero_1977(sp["fwhm_gauss"], sp["fwhm_lorentz"]) / 2
+                )
+            else:
+                raise ValueError(
+                    "`hwhm_voigt` not in the lines DataFrame columns and "
+                    "cannot be computed (need `hwhm_lorentz` and `hwhm_gauss`, "
+                    "or `fwhm_lorentz` and `fwhm_gauss`). "
+                    "Make sure the spectrum was computed with broadening enabled, "
+                    "or set `barwidth` to a float or another column name."
+                )
+        elif barwidth not in sp.columns:
             raise ValueError(
-                f"`{barwidth}` not in the lines Dataframe columns. Use one of the column names ({sp.columns}) or set `barwidth=[a 0-1 number]` to plot bars with widths as a fraction of the total range, ex : `barwidth=0.01`"
+                f"`{barwidth}` not in the lines Dataframe columns. "
+                f"Use one of the column names ({list(sp.columns)}) or set "
+                "`barwidth=[a 0-1 number]` to plot bars with widths as a "
+                "fraction of the total range, ex : `barwidth=0.01`"
             )
         barwidth = sp[barwidth]
+
+        # Convert barwidth from cm-1 to nm if needed
+        # Using |dλ/dν| = 1e7 / ν², where ν is the line position in cm-1
+        if wunit == "nm":
+            barwidth = 1e7 / (sp["shiftwav"] ** 2) * barwidth
     else:
         barwidth = (x_range.max() - x_range.min()) * barwidth
     l = [
