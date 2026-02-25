@@ -57,7 +57,7 @@ script:
   - xvfb-run -a env PYTHONPATH="." pytest -m "needs_gpu" --durations=10 --cov=radis --cov-report=xml:coverage.xml
   - echo ">>> Run tests require HITRAN/HITEMP credentials (write access only)"
   - xvfb-run -a env PYTHONPATH="." pytest -m "needs_HITRAN_credentials and not download_large_databases" --durations=10 --cov=radis --cov-report=xml:coverage.xml --cov-append
-  - bash <(curl -s https://codecov.io/bash) -f coverage.xml -F travis -v
+  - bash <(curl -s https://codecov.io/bash) -f coverage.xml -t $CODECOV_TOKEN -F travis -v
 
 # stages: #This sequence defines the order of the stages
 #   - name: deploy
