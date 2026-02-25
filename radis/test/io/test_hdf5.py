@@ -99,20 +99,23 @@ def test_local_hdf5_lines_loading(*args, **kwargs):
 
     # Initialize the database
     fetch_hitran("OH")
-    path = getDatabankEntries("HITRAN-OH")["path"][0]
+    paths = getDatabankEntries("HITRAN-OH")["path"]
+    assert len(paths) >= 1  # Should have multiple per-isotope files
+    path = paths[0]
     df = hdf2df(path)
     wmin, wmax = df.wav.min(), df.wav.max()
     assert wmin < 2300  # needed for next test to be valid
     assert wmax > 2500  # needed for next test to be valid
     assert len(df.columns) > 5  # many columns loaded by default
-    assert len(df.iso.unique()) > 1
+    assert len(df.iso.unique()) == 1  # Each file now contains exactly 1 isotope
 
     # Test loading only certain columns
     df = hdf2df(path, columns=["wav", "int"])
     assert len(df.columns) == 2 and "wav" in df.columns and "int" in df.columns
 
     # Test loading only certain isotopes
-    df = hdf2df(path, isotope="2")
+    path_iso2 = next(p for p in paths if "iso2" in p)
+    df = hdf2df(path_iso2, isotope="2")
     assert df.iso.unique() == 2
 
     # Test partial loading of wavenumbers
