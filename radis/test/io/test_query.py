@@ -147,9 +147,7 @@ def test_fetch_hitran_CO_vaex(*args, **kwargs):
         cache="regen",
     )
 
-
     # Debug statements removed
-    
 
     assert len(df) == 5381
     assert df.wav.min() == 3.40191

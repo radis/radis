@@ -483,8 +483,8 @@ def test_plot_by_parts(plot=False, *args, **kwargs):
     and plot_by_parts=True in :py:meth:`~radis.spectrum.spectrum.Spectrum.plot`
     """
 
-
     import matplotlib.pyplot as plt
+
     if not plot:
         plt.switch_backend("Agg")
 
