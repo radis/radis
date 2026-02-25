@@ -31,8 +31,6 @@ jobs:
           - os: macos-latest
             python-version: "3.10"
     runs-on: ${{ matrix.os }}
-    env:
-      PYTHONPATH: .
 
     steps:
       - uses: actions/checkout@v4
@@ -52,14 +50,9 @@ jobs:
         if: always()
         run: |
           pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM and not needs_gpu and not needs_HITRAN_credentials" --durations=10 --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml --cov-append
-      - name: Doctest coverage
-        if: always()
-        run: |
-          pip install sphinx sphinx_gallery sphinx-autodoc-defaultargs
-          pytest --doctest-modules radis/ --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml --cov-append --ignore=radis/test --ignore=radis/gpu -q || true
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
-        if: always() && github.repository == 'radis/radis'
+        if: always()
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: radis/radis
