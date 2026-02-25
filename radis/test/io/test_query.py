@@ -147,6 +147,9 @@ def test_fetch_hitran_CO_vaex(*args, **kwargs):
         cache="regen",
     )
 
+    print("Loaded completely!", len(df))
+    print(df.iso.value_counts())
+
     assert len(df) == 5381
     assert df.wav.min() == 3.40191
     assert df.wav.max() == 14477.377153
