@@ -410,7 +410,7 @@ def resample_slabs(
             if all([allclose(w, wl[0]) for w in wl[1:]]):
                 return True
             return False
-        except:  # ex:  different lengths
+        except Exception:  # ex:  different lengths
             return False
         else:
             return True
@@ -734,7 +734,7 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
                             from radis.db.molecules import get_molecule_id
 
                             s.lines["id"] = get_molecule_id(s.c["molecule"])
-                        except:
+                        except (KeyError, ValueError):
                             s.lines["id"] = s.c["molecule"]
             import pandas as pd
 

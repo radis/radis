@@ -85,7 +85,7 @@ def is_jsonable(x):
         #        json.dumps(x)
         json_tricks.dumps(x)
         return True
-    except:
+    except (TypeError, ValueError):
         return False
 
 
@@ -909,7 +909,7 @@ def plot_spec(file, what="radiance", title=True, **kwargs):
             print((sys.exc_info()[0], sys.exc_info()[1]))
             s.plot(what + "_noslit", **kwargs)  # who knows maybe it will work :)
             print(f"Printing {what + '_noslit'} instead")
-        except:
+        except KeyError:
             print((sys.exc_info()[0], sys.exc_info()[1]))
             # Plot something
             s.plot(s.get_vars()[0], **kwargs)
@@ -1299,7 +1299,7 @@ class SpecList(object):
                 prevVerbose = kwconditions.get("verbose", None)
                 kwconditions["verbose"] = True
                 self.get_closest(**kwconditions)  # note: wont work with conditions=..
-            except:
+            except Exception:
                 pass
             finally:
                 if prevVerbose is not None:

@@ -1301,7 +1301,7 @@ def compare_spectra(
                         verbose=verbose,
                         **kwargs,
                     )
-                except:
+                except Exception:
                     print(f"... couldn't plot {k}")
 
     else:
@@ -1340,7 +1340,7 @@ def compare_spectra(
                         verbose=verbose,
                         **kwargs,
                     )
-                except:
+                except Exception:
                     print(f"... there was an error while plotting {k}")
 
         # Compare conditions and units

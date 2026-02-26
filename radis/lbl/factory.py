@@ -1160,7 +1160,7 @@ class SpectrumFactory(BandFactory):
 
             else:
                 mol_id = self.df0.attrs["id"]
-        except:
+        except (KeyError, AssertionError, AttributeError):
             mol_id = get_molecule_identifier(self.input.species)
 
         molecule = get_molecule(mol_id)

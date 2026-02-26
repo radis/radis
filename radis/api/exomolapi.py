@@ -56,7 +56,7 @@ def exact_molname_exomol_to_simple_molname(exact_exomol_molecule_name):
     try:
         molname_simple = _molname_simple_no_exception(exact_exomol_molecule_name)
         return molname_simple
-    except:
+    except Exception:
         print(
             "Warning: Exact molname ",
             exact_exomol_molecule_name,
@@ -290,7 +290,7 @@ def read_trans(transf, engine="vaex"):
                 names=("i_upper", "i_lower", "A", "nu_lines"),
                 convert=False,  #  file is created by MdbMol
             )
-        except:
+        except Exception:
             try:
                 dat = vaex.read_csv(
                     transf,
@@ -310,7 +310,7 @@ def read_trans(transf, engine="vaex"):
                 sep=r"\s+",
                 names=("i_upper", "i_lower", "A", "nu_lines"),
             )
-        except:
+        except Exception:
             try:
                 dat = pd.read_csv(
                     transf, sep=r"\s+", names=("i_upper", "i_lower", "A", "nu_lines")
@@ -430,7 +430,7 @@ def read_states(
                 names=names,
                 convert=False,  # written in MolDB
             )
-        except:
+        except Exception:
             try:
                 dat = vaex.read_csv(
                     statesf,
@@ -449,7 +449,7 @@ def read_states(
             dat = pd.read_csv(
                 statesf, compression="bz2", sep=r"\s+", usecols=usecol, names=names
             )
-        except:  #!!!TODO What was the expected error?
+        except Exception:
             dat = pd.read_csv(statesf, sep=r"\s+", usecols=usecol, names=names)
     else:
         raise NotImplementedError(engine)
@@ -884,7 +884,7 @@ def get_list_of_known_isotopes(molecule):
     while True:
         try:
             iso_name = get_exomol_full_isotope_name(molecule, i)
-        except:
+        except (ValueError, KeyError):
             break
         else:
             isotope_list.append(iso_name)

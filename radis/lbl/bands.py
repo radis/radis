@@ -1065,7 +1065,7 @@ class BandFactory(BroadenFactory):
         # Just some tests
         try:
             assert len(df.shape) == 2
-        except:
+        except AssertionError:
             warn(
                 "Dataframe has only one line. Unexpected behaviour could occur"
                 + " because Dataframes will be handled as Series and row/columns"

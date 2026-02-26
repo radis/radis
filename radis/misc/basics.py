@@ -234,7 +234,7 @@ def compare_dict(
             out = out, string
 
         return out
-    except:
+    except Exception:
         raise
     finally:
         sys.stdout = old_stdout
@@ -314,7 +314,7 @@ def compare_lists(
             out = out, string
 
         return out
-    except:
+    except Exception:
         raise
     finally:
         sys.stdout = old_stdout

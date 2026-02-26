@@ -244,7 +244,7 @@ def find_nearest(array, searched, return_bool=False):
             idx, el = find_nearest(array, s)
             b[idx] = True
             nearest_els.append(el)
-    except:
+    except TypeError:
         idx, el = find_nearest(array, searched)
         b[idx] = True
         nearest_els.append(el)

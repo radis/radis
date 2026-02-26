@@ -1350,7 +1350,7 @@ class BroadenFactory(BaseFactory):
             )
             try:
                 assert bool(shift) == False
-            except:
+            except (AssertionError, ValueError):
                 # convoluted solution for vaex, account for case where wl is e.g. int or float, and for case where it's e.g. list
                 if self.dataframe_type == "vaex" and not isinstance(
                     shift, vaex.expression.Expression

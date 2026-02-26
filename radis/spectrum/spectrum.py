@@ -3853,7 +3853,7 @@ class Spectrum(object):
             else:  # Or use a given tuple or arrays
                 try:
                     (w, I) = overlay
-                except:
+                except (TypeError, ValueError):
                     raise ValueError(
                         "Overlay has to be string, or (w,I) tuple of " + "arrays"
                     )
@@ -5505,7 +5505,7 @@ class Spectrum(object):
             try:
                 for k, v in self.populations.items():
                     print(" " * 2, k, "\t\t", list(v.keys()))
-            except:
+            except Exception:
                 pass
 
         # Print conditions

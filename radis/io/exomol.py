@@ -157,7 +157,7 @@ def fetch_exomol(
     # Ensure isotope format:
     try:
         isotope = int(isotope)
-    except:
+    except (ValueError, TypeError):
         raise ValueError(
             f"In fetch_exomol, ``isotope`` must be an integer. Got `{isotope}` "
             + "Only one isotope can be queried at a time. "
@@ -299,7 +299,7 @@ def fetch_exomol(
     if output == "jax":
         try:
             import jax.numpy as jnp
-        except:
+        except ImportError:
             import numpy as jnp
         df["logsij0"] += jnp.log(Ia)
     else:

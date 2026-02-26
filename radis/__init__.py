@@ -198,7 +198,7 @@ def get_version(verbose=False, add_git_number=True):
         cd = _chdir(os.path.dirname(__file__))
         try:
             label = subprocess.check_output("git describe", stderr=subprocess.DEVNULL)
-        except:
+        except Exception:
             if verbose:
                 print(f"couldnt get git version: {sys.exc_info()[1]}")
             # probably not a git session. drop

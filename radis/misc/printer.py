@@ -52,7 +52,7 @@ def _capture_print(*args, **kwargs):
     try:
         print(*args, **kwargs)
         string = newstdout.getvalue()  # Get string output
-    except:
+    except Exception:
         raise
     finally:
         sys.stdout = old_stdout
@@ -84,7 +84,7 @@ def get_print_full(x):
         pd.set_option("display.max_rows", len(x))
         print(x)
         string = newstdout.getvalue()  # Get string output
-    except:
+    except Exception:
         raise
     finally:
         sys.stdout = old_stdout
