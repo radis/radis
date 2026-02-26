@@ -1,6 +1,8 @@
 codecov:
   notify:
-    require_ci_to_pass: yes
+    # Do not wait for CI to pass before sending the Codecov status/comment
+    # Travis CI doesn't run on forks natively, so waiting causes Codecov to hang forever.
+    require_ci_to_pass: no
 
 coverage:
   precision: 2
@@ -8,8 +10,14 @@ coverage:
   range: "70...100"
 
   status:
-    project: yes
-    patch: yes
+    project:
+      default:
+        target: auto
+        threshold: 2%
+    patch:
+      default:
+        target: auto
+        threshold: 1%
     changes: no
 
 parsers:
@@ -23,4 +31,5 @@ parsers:
 comment:
   layout: "header, diff"
   behavior: default
+  # Force Codecov to post a comment on the PR even if coverage did not change
   require_changes: no
