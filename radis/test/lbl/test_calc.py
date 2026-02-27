@@ -866,6 +866,7 @@ def test_check_wavelength_range(verbose=True, warnings=True, *args, **kwargs):
     assert np.isclose(w.max(), 5000, atol=wstep)
 
 
+@pytest.mark.needs_connection
 def test_non_air_diluent_calc(verbose=True, plot=False, warnings=True, *args, **kwargs):
     from radis import plot_diff
 
@@ -927,6 +928,7 @@ def test_non_air_diluent_calc(verbose=True, plot=False, warnings=True, *args, **
         )
 
 
+@pytest.mark.needs_connection
 def test_diluent_invalid(verbose=True, plot=False, *args, **kwargs):
 
     with pytest.raises(KeyError) as err:

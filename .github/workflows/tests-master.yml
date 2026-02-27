@@ -49,6 +49,13 @@ jobs:
         uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Cache downloaded databases
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.radisdb
+            ~/radis.json
+          key: radisdb-v1-${{ matrix.os }}-py${{ matrix.python-version }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip

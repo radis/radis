@@ -167,6 +167,7 @@ def test_save_compressed2(verbose=True, *args, **kwargs):
         assert s.compare_with(s_bis, spectra_only=var, plot=False, verbose=verbose)
 
 
+@pytest.mark.needs_connection
 def test_lazy_loading(verbose=True, *args, **kwargs):
     """Test lazy loading"""
 
