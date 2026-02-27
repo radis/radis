@@ -196,7 +196,7 @@ def get_files_from_regex(path):
     """Returns a list of absolute paths of all the files whose names match the
     input regular expression."""
     path = Path(path)
-    directory_name = path.parent if path.parent != Path() else Path(".")
+    directory_name = path.parent
     regex = path.name
 
     file_names = []
