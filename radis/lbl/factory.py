@@ -207,12 +207,11 @@ class SpectrumFactory(BandFactory):
         discard linestrengths that are lower that this, to reduce calculation
         times. ``1e-27`` is what is generally used to generate databases such as
         CDSD. If ``0``, no cutoff. Default ``1e-27``.
-    cutoff_error: float (percentage, 0-100), optional
+    percentage_cutoff_error: float (percentage, 0-100), optional
         if given, automatically determines the optimal ``cutoff`` value such
-        that the discarded linestrengths contribute less than ``cutoff_error`` %
-        of the total linestrength. Overrides manual ``cutoff`` if both given.
-        For Vaex dataframes, uses memory-efficient log-spaced binning.
-        Default ``None``.
+        that the discarded linestrengths contribute less than ``percentage_cutoff_error`` %
+        of the total linestrength. Cannot be used simultaneously with ``cutoff``.
+
     parsum_mode: 'full summation', 'tabulation'
         how to compute partition functions, at nonequilibrium or when partition
         function are not already tabulated. ``'full summation'`` : sums over all
@@ -440,7 +439,7 @@ class SpectrumFactory(BandFactory):
         zero_padding=-1,
         broadening_method="voigt",
         cutoff=0,
-        cutoff_error=None,
+        percentage_cutoff_error=None,
         parsum_mode="full summation",
         verbose=True,
         warnings=True,
@@ -630,11 +629,16 @@ class SpectrumFactory(BandFactory):
         self.params.diluent = diluent
         self._diluent = None
 
+        if cutoff is not None and cutoff != 0 and percentage_cutoff_error is not None:
+            raise ValueError(
+                "You cannot set `percentage_cutoff_error` and `cutoff` at the same time. "
+                "Choose one of them."
+            )
         if cutoff is None:
             # If None, use no cutoff : https://github.com/radis/radis/pull/259
             cutoff = 0
         self.params.cutoff = cutoff
-        self.params.cutoff_error = cutoff_error
+        self.params.percentage_cutoff_error = percentage_cutoff_error
         self.params.parsum_mode = parsum_mode
 
         # Time Based variables
@@ -752,7 +756,6 @@ class SpectrumFactory(BandFactory):
         diluent=None,
         pressure=None,
         name=None,
-        cutoff_error=None,
     ) -> Spectrum:
         """Generate a spectrum at equilibrium.
 
@@ -1542,7 +1545,6 @@ class SpectrumFactory(BandFactory):
         rot_distribution="boltzmann",
         overpopulation=None,
         name=None,
-        cutoff_error=None,
     ) -> Spectrum:
         """Calculate emission spectrum in non-equilibrium case. Calculates
         absorption with broadened linestrength and emission with broadened
