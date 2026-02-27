@@ -4104,12 +4104,18 @@ class Spectrum(object):
 
         Parameters
         ----------
-        path: path to folder (database) or file
-            if a folder, file is saved to database and name is generated automatically.
-            if a file name, then Spectrum is saved to this file and the later
-            formatting options dont apply
-        file: str
-            explicitly give a filename to save
+        path: str or file-like object
+            If a string: path to folder (database) or file. If a folder, file
+            is saved to database and name is generated automatically. If a file
+            name, then Spectrum is saved to this file and the later formatting
+            options dont apply.
+
+            If a file-like object (e.g., ``io.BytesIO``, ``io.StringIO``):
+            writes directly to the object without any file system operations.
+            Use ``BytesIO`` when ``compress=True`` (binary output), use
+            ``StringIO`` when ``compress=False`` (text output). When using
+            file-like objects, the ``add_date``, ``add_info``, and
+            ``if_exists_then`` parameters are ignored.
         compress: boolean
             if ``False``, save under text format, readable with any editor.
             if ``True``, saves under binary format. Faster and takes less space.
@@ -4138,7 +4144,10 @@ class Spectrum(object):
 
         Returns
         -------
-        Returns filename used
+        str or file-like object
+            If path was a string: filename used (may be different from given
+            path as new info or incremental identifiers are added).
+            If path was a file-like object: returns the same object.
 
 
         Notes
@@ -4156,6 +4165,14 @@ class Spectrum(object):
             s.store('test.spec', compress=True)   # s is a Spectrum
             s2 = load_spec('test.spec')
             s2.update()                           # regenerate missing quantities
+
+        Store a spectrum to a BytesIO buffer (no disk write)::
+
+            from io import BytesIO
+            buffer = BytesIO()
+            s.store(buffer, compress=True)
+            buffer.seek(0)  # Reset position for reading
+            # buffer.getvalue() contains the serialized spectrum
 
         .. minigallery:: radis.spectrum.spectrum.Spectrum.store
             :add-heading:
