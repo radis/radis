@@ -184,60 +184,54 @@ def compare_dict(
     old_stdout = sys.stdout
     sys.stdout = newstdout = StringIO()  # capture all print
 
-    try:
-
-        print(f"{'Key':15}{df1_str:17}\t{df2_str}")
-        print("-" * 40)
-        all_keys = set(list(d1.keys()) + list(d2.keys()))
-        all_keys = [k for k in all_keys if k not in ignore_keys]
-        s = 0  # counter of all matching keys
-        for k in all_keys:
-            if k in d1 and k in d2:  # key in both dicts. Let's compare values
-                # Deal with path case
-                if k in compare_as_paths:
-                    if not compare_paths(d1[k], d2[k]):
-                        print(f"{k:15}{d1[k]}\t{d2[k]}")
-                    else:
-                        s += 1
-                # Deal with is close case
-                elif k in compare_as_close:
-                    if not np.isclose(d1[k], d2[k]):
-                        print(f"{k:15}{d1[k]}\t{d2[k]}")
-                    else:
-                        s += 1
-                # Other cases
+    print(f"{'Key':15}{df1_str:17}\t{df2_str}")
+    print("-" * 40)
+    all_keys = set(list(d1.keys()) + list(d2.keys()))
+    all_keys = [k for k in all_keys if k not in ignore_keys]
+    s = 0  # counter of all matching keys
+    for k in all_keys:
+        if k in d1 and k in d2:  # key in both dicts. Let's compare values
+            # Deal with path case
+            if k in compare_as_paths:
+                if not compare_paths(d1[k], d2[k]):
+                    print(f"{k:15}{d1[k]}\t{d2[k]}")
                 else:
-                    if d1[k] != d2[k]:
-                        print(f"{k:15}{d1[k]}\t{d2[k]}")
-                    else:
-                        s += 1
-            elif k in d1:
-                print(f"{k:15}{d1[k]}\tN/A")
+                    s += 1
+            # Deal with is close case
+            elif k in compare_as_close:
+                if not np.isclose(d1[k], d2[k]):
+                    print(f"{k:15}{d1[k]}\t{d2[k]}")
+                else:
+                    s += 1
+            # Other cases
             else:
-                print(f"{k:15}N/A\t{d2[k]}")
-        print("-" * 40)
-
-        if len(all_keys) == 0:
-            out = 1
+                if d1[k] != d2[k]:
+                    print(f"{k:15}{d1[k]}\t{d2[k]}")
+                else:
+                    s += 1
+        elif k in d1:
+            print(f"{k:15}{d1[k]}\tN/A")
         else:
-            out = s / len(all_keys)
+            print(f"{k:15}N/A\t{d2[k]}")
+    print("-" * 40)
 
-        # Get string output
-        string = newstdout.getvalue()
-        sys.stdout = old_stdout  # reset normal print
+    if len(all_keys) == 0:
+        out = 1
+    else:
+        out = s / len(all_keys)
 
-        # Output
-        if verbose == True or (verbose == "if_different" and out != 1):
-            print(string)
+    # Get string output
+    string = newstdout.getvalue()
+    sys.stdout = old_stdout  # reset normal print
 
-        if return_string:
-            out = out, string
+    # Output
+    if verbose == True or (verbose == "if_different" and out != 1):
+        print(string)
 
-        return out
-    except Exception:
-        raise
-    finally:
-        sys.stdout = old_stdout
+    if return_string:
+        out = out, string
+
+    return out
 
 
 def compare_lists(
@@ -277,47 +271,42 @@ def compare_lists(
     old_stdout = sys.stdout
     sys.stdout = newstdout = StringIO()  # capture all print
 
-    try:
-        tab = "        " if print_index else ""
-        print(tab + f"{l1_str:20}\t\t{tab + l2_str}")
-        print(tab + "-" * (44 + len(tab)))
-        all_keys = set(list(l1) + list(l2))
-        s = 0  # counter of all matching keys
-        for i, k in enumerate(all_keys):
-            if k in l1 and k in l2:  # key in both lists
-                s += 1
-            elif k in l1:
-                l1_index_str = f"|#{l1.index(k):3}|  " if print_index else ""
-                left = f"{l1_index_str}{k} ({type(k)})"
-                right = f"{tab}N/A"
-                print(f"{left:20}\t\t{right}")
+    tab = "        " if print_index else ""
+    print(tab + f"{l1_str:20}\t\t{tab + l2_str}")
+    print(tab + "-" * (44 + len(tab)))
+    all_keys = set(list(l1) + list(l2))
+    s = 0  # counter of all matching keys
+    for i, k in enumerate(all_keys):
+        if k in l1 and k in l2:  # key in both lists
+            s += 1
+        elif k in l1:
+            l1_index_str = f"|#{l1.index(k):3}|  " if print_index else ""
+            left = f"{l1_index_str}{k} ({type(k)})"
+            right = f"{tab}N/A"
+            print(f"{left:20}\t\t{right}")
 
-            else:
-                l2_index_str = f"|#{l2.index(k):3}|  " if print_index else ""
-                print(f"{tab + 'N/A':20}\t\t{l2_index_str + k} ({type(k)})")
-        print(tab + "-" * (44 + len(tab)))
-
-        if len(all_keys) == 0:
-            out = 1
         else:
-            out = s / len(all_keys)
+            l2_index_str = f"|#{l2.index(k):3}|  " if print_index else ""
+            print(f"{tab + 'N/A':20}\t\t{l2_index_str + k} ({type(k)})")
+    print(tab + "-" * (44 + len(tab)))
 
-        # Get string output
-        string = newstdout.getvalue()
-        sys.stdout = old_stdout  # reset normal print
+    if len(all_keys) == 0:
+        out = 1
+    else:
+        out = s / len(all_keys)
 
-        # Output
-        if verbose == True or (verbose == "if_different" and out != 1):
-            print(string)
+    # Get string output
+    string = newstdout.getvalue()
+    sys.stdout = old_stdout  # reset normal print
 
-        if return_string:
-            out = out, string
+    # Output
+    if verbose == True or (verbose == "if_different" and out != 1):
+        print(string)
 
-        return out
-    except Exception:
-        raise
-    finally:
-        sys.stdout = old_stdout
+    if return_string:
+        out = out, string
+
+    return out
 
 
 def stdpath(p):

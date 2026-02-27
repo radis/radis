@@ -51,7 +51,7 @@ class Chdir:
         cd = Chdir(os.path.dirname(__file__))
         try:
             (...)
-        except Exception:
+        except:
             (...)
         finally:
             (...)

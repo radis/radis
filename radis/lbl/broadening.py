@@ -1348,9 +1348,7 @@ class BroadenFactory(BaseFactory):
                 diluent_broadening_coeff=diluent_broadening_coeff,
                 isneutral=isneutral,
             )
-            try:
-                assert bool(shift) == False
-            except (AssertionError, ValueError):
+            if shift is not None:
                 # convoluted solution for vaex, account for case where wl is e.g. int or float, and for case where it's e.g. list
                 if self.dataframe_type == "vaex" and not isinstance(
                     shift, vaex.expression.Expression

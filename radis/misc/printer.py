@@ -49,13 +49,9 @@ def _capture_print(*args, **kwargs):
     # Change the output to capture the string instead of sending it to the console
     old_stdout = sys.stdout
     sys.stdout = newstdout = StringIO()  # capture all print
-    try:
-        print(*args, **kwargs)
-        string = newstdout.getvalue()  # Get string output
-    except Exception:
-        raise
-    finally:
-        sys.stdout = old_stdout
+    print(*args, **kwargs)
+    string = newstdout.getvalue()  # Get string output
+    sys.stdout = old_stdout
 
     # discard line return character (will be added again when we print ``string`` )
     return string[:-1]
@@ -80,15 +76,11 @@ def get_print_full(x):
     # Change the output to capture the string instead of sending it to the console
     old_stdout = sys.stdout
     sys.stdout = newstdout = StringIO()  # capture all print
-    try:
-        pd.set_option("display.max_rows", len(x))
-        print(x)
-        string = newstdout.getvalue()  # Get string output
-    except Exception:
-        raise
-    finally:
-        sys.stdout = old_stdout
-        pd.reset_option("display.max_rows")
+    pd.set_option("display.max_rows", len(x))
+    print(x)
+    string = newstdout.getvalue()  # Get string output
+    sys.stdout = old_stdout
+    pd.reset_option("display.max_rows")
 
     return string[:-1]
 
