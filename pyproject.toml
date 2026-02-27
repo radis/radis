@@ -112,6 +112,7 @@ docs = [
     "lmfit",  # for documentation examples
     "pytest",  # Sphinx autodoc also parses test suite
     "specutils",  # spectroscopic data handling
+    "coverage",  # for tracking code coverage on ReadTheDocs
 ]
 
 [tool.setuptools]

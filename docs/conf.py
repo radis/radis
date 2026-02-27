@@ -21,6 +21,28 @@
 import os
 import sys
 
+# Track code coverage on ReadTheDocs (uploaded to Codecov in post_build)
+if os.environ.get("READTHEDOCS"):
+    try:
+        import atexit
+
+        import coverage
+
+        _cov = coverage.Coverage(source=["radis"])
+        _cov.start()
+        _cov_out = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "..", "coverage.xml"
+        )
+
+        @atexit.register
+        def _stop_cov():
+            _cov.stop()
+            _cov.save()
+            _cov.xml_report(outfile=_cov_out)
+
+    except Exception:
+        pass
+
 import sphinx_gallery.gen_rst
 from sphinx_gallery.sorting import FileNameSortKey
 

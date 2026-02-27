@@ -14,6 +14,16 @@ build:
   apt_packages:
     - mesa-vulkan-drivers #for running GPU examples
     - libvulkan1          #for running GPU examples
+  jobs:
+    post_build:
+      - |
+        set +e
+        if [ -f coverage.xml ] && [ -n "$CODECOV_TOKEN" ]; then
+          echo ">>> Uploading coverage to Codecov"
+          curl -Os https://cli.codecov.io/latest/linux/codecov
+          chmod +x codecov
+          ./codecov do-upload -t "$CODECOV_TOKEN" -F docs -f coverage.xml --disable-search
+        fi
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
