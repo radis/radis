@@ -15,9 +15,10 @@ import numpy as np
 from radis.io.chianti import load_chianti
 
 # Path to the sample CHIANTI database included in RADIS
+import radis
 SAMPLE_DATAPATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-    "radis", "db", "chianti"
+    os.path.dirname(radis.__file__),
+    "db", "chianti"
 )
 
 # Load Fe XII data from sample database
