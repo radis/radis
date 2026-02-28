@@ -482,6 +482,7 @@ class Parameters(ConditionDict):
         "chunksize",
         "cutoff",
         "cutoff_error",
+        "percentage_cutoff_error",   
         "db_use_cached",
         "dbformat",
         "dbpath",
