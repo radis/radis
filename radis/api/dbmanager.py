@@ -434,9 +434,9 @@ class DatabaseManager(object):
 
             # First check if we can access the file
             head_response = session.head(urlname, headers=headers, allow_redirects=True)
-            if head_response.status_code >= 400:
+            if head_response.status_code != 200:
                 raise requests.HTTPError(
-                    f"Unable to access the resource (HEAD request). Received HTTP status code {head_response.status_code} for URL: {urlname}. "
+                    f"Unable to access the resource (HEAD request). Expected HTTP status code 200, got {head_response.status_code} for URL: {urlname}. "
                     "Please verify the URL and your network access permissions."
                 )
 

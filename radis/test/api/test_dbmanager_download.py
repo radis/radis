@@ -178,7 +178,7 @@ def test_head_http_error_raises_before_get(tmp_path, monkeypatch):
 
 
 @pytest.mark.fast
-def test_head_redirect_status_is_accepted(tmp_path, monkeypatch):
+def test_head_redirect_status_raises_before_get(tmp_path, monkeypatch):
     manager = _DummyDownloadManager(tmp_path)
     session = _FakeSession(
         head_response=_FakeResponse(
@@ -198,10 +198,12 @@ def test_head_redirect_status_is_accepted(tmp_path, monkeypatch):
     monkeypatch.setattr(requests, "Session", lambda: session)
     monkeypatch.chdir(tmp_path)
 
-    manager.download_and_parse(
-        urlnames=["https://example.org/test.par.bz2"],
-        local_files=[str(tmp_path / "dummy_output.hdf5")],
-        N_files_total=1,
-    )
+    with pytest.raises(requests.HTTPError, match="HEAD request"):
+        manager.download_and_parse(
+            urlnames=["https://example.org/test.par.bz2"],
+            local_files=[str(tmp_path / "dummy_output.hdf5")],
+            N_files_total=1,
+        )
 
-    assert manager.parse_calls == 1
+    assert manager.parse_calls == 0
+    assert len(session.get_calls) == 0
