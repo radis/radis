@@ -77,16 +77,12 @@ for Developers:
 ----------
 """
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Union
+from typing import Union
 from warnings import warn
 
 import numpy as np
 from numpy import arange, exp, expm1
-
-if TYPE_CHECKING:
-    from scipy.optimize import OptimizeResult
+from scipy.optimize import OptimizeResult
 
 from radis import version
 from radis.db import MOLECULES_LIST_EQUILIBRIUM, MOLECULES_LIST_NONEQUILIBRIUM
