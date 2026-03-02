@@ -23,7 +23,9 @@ import sys
 
 # Track code coverage on ReadTheDocs (uploaded to Codecov in post_build)
 if os.environ.get("READTHEDOCS"):
-    try:
+    from importlib.util import find_spec
+
+    if find_spec("coverage"):
         import atexit
 
         import coverage
@@ -40,8 +42,6 @@ if os.environ.get("READTHEDOCS"):
             _cov.save()
             _cov.xml_report(outfile=_cov_out)
 
-    except Exception:
-        pass
 
 import sphinx_gallery.gen_rst
 from sphinx_gallery.sorting import FileNameSortKey
