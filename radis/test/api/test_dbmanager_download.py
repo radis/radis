@@ -63,9 +63,37 @@ class _DummyDownloadManager(DatabaseManager):
         return 1
 
 
+@pytest.fixture
+def manager(tmp_path):
+    return _DummyDownloadManager(tmp_path)
+
+
+@pytest.fixture
+def run_download(tmp_path, monkeypatch):
+    def _run(
+        manager, session, *, urlname="https://example.org/test.par.bz2", hitemp=False
+    ):
+        if hitemp:
+            import radis.api.hitempapi as hitempapi
+
+            monkeypatch.setattr(
+                hitempapi, "login_to_hitran", lambda verbose=False: session
+            )
+        else:
+            monkeypatch.setattr(requests, "Session", lambda: session)
+
+        monkeypatch.chdir(tmp_path)
+        manager.download_and_parse(
+            urlnames=[urlname],
+            local_files=[str(tmp_path / "dummy_output.hdf5")],
+            N_files_total=1,
+        )
+
+    return _run
+
+
 @pytest.mark.fast
-def test_hitemp_head_html_get_binary_does_not_fail(tmp_path, monkeypatch):
-    manager = _DummyDownloadManager(tmp_path)
+def test_hitemp_head_html_get_binary_does_not_fail(manager, run_download):
     session = _FakeSession(
         head_response=_FakeResponse(
             status_code=200,
@@ -77,16 +105,11 @@ def test_hitemp_head_html_get_binary_does_not_fail(tmp_path, monkeypatch):
             chunks=[b"BZh9", b"DATA"],
         ),
     )
-
-    import radis.api.hitempapi as hitempapi
-
-    monkeypatch.setattr(hitempapi, "login_to_hitran", lambda verbose=False: session)
-    monkeypatch.chdir(tmp_path)
-
-    manager.download_and_parse(
-        urlnames=["https://hitran.org/files/HITEMP/bzip2format/06_HITEMP2020.par.bz2"],
-        local_files=[str(tmp_path / "dummy_output.hdf5")],
-        N_files_total=1,
+    run_download(
+        manager,
+        session,
+        urlname="https://hitran.org/files/HITEMP/bzip2format/06_HITEMP2020.par.bz2",
+        hitemp=True,
     )
 
     assert manager.parse_calls == 1
@@ -95,67 +118,40 @@ def test_hitemp_head_html_get_binary_does_not_fail(tmp_path, monkeypatch):
 
 
 @pytest.mark.fast
-def test_get_html_payload_raises_httperror(tmp_path, monkeypatch):
-    manager = _DummyDownloadManager(tmp_path)
-    session = _FakeSession(
-        head_response=_FakeResponse(
-            status_code=200, headers={"content-type": "text/html"}
-        ),
-        get_response=_FakeResponse(
-            status_code=200,
-            headers={"content-type": "text/html", "content-length": "32"},
-            chunks=[b"<html><body>login</body></html>"],
-        ),
-    )
-
-    monkeypatch.setattr(requests, "Session", lambda: session)
-    monkeypatch.chdir(tmp_path)
-
-    with pytest.raises(requests.HTTPError, match="HTML content from GET request"):
-        manager.download_and_parse(
-            urlnames=["https://example.org/test.par.bz2"],
-            local_files=[str(tmp_path / "dummy_output.hdf5")],
-            N_files_total=1,
-        )
-
-    assert manager.parse_calls == 0
-
-
-@pytest.mark.fast
-def test_get_html_content_type_with_non_html_chunk_raises_httperror(
-    tmp_path, monkeypatch
+@pytest.mark.parametrize(
+    "content_type,chunks",
+    [
+        ("text/html", [b"<html><body>login</body></html>"]),
+        ("text/html; charset=utf-8", [b"\x00\x00"]),
+        ("application/octet-stream", [b"<!doctype html><html>login</html>"]),
+    ],
+)
+def test_get_invalid_payload_raises_httperror(
+    manager, run_download, content_type, chunks
 ):
-    manager = _DummyDownloadManager(tmp_path)
     session = _FakeSession(
         head_response=_FakeResponse(
             status_code=200, headers={"content-type": "text/html"}
         ),
         get_response=_FakeResponse(
             status_code=200,
-            headers={"content-type": "text/html; charset=utf-8", "content-length": "2"},
-            chunks=[b"\x00\x00"],
+            headers={"content-type": content_type, "content-length": "32"},
+            chunks=chunks,
         ),
     )
 
-    monkeypatch.setattr(requests, "Session", lambda: session)
-    monkeypatch.chdir(tmp_path)
-
     with pytest.raises(requests.HTTPError, match="HTML content from GET request"):
-        manager.download_and_parse(
-            urlnames=["https://example.org/test.par.bz2"],
-            local_files=[str(tmp_path / "dummy_output.hdf5")],
-            N_files_total=1,
-        )
+        run_download(manager, session)
 
     assert manager.parse_calls == 0
 
 
 @pytest.mark.fast
-def test_head_http_error_raises_before_get(tmp_path, monkeypatch):
-    manager = _DummyDownloadManager(tmp_path)
+@pytest.mark.parametrize("status_code", [404, 302])
+def test_head_non_200_raises_before_get(manager, run_download, status_code):
     session = _FakeSession(
         head_response=_FakeResponse(
-            status_code=404, headers={"content-type": "text/html"}
+            status_code=status_code, headers={"content-type": "text/html"}
         ),
         get_response=_FakeResponse(
             status_code=200,
@@ -164,46 +160,8 @@ def test_head_http_error_raises_before_get(tmp_path, monkeypatch):
         ),
     )
 
-    monkeypatch.setattr(requests, "Session", lambda: session)
-
     with pytest.raises(requests.HTTPError, match="HEAD request"):
-        manager.download_and_parse(
-            urlnames=["https://example.org/test.par.bz2"],
-            local_files=[str(tmp_path / "dummy_output.hdf5")],
-            N_files_total=1,
-        )
-
-    assert manager.parse_calls == 0
-    assert len(session.get_calls) == 0
-
-
-@pytest.mark.fast
-def test_head_redirect_status_raises_before_get(tmp_path, monkeypatch):
-    manager = _DummyDownloadManager(tmp_path)
-    session = _FakeSession(
-        head_response=_FakeResponse(
-            status_code=302,
-            headers={
-                "content-type": "text/html",
-                "location": "https://example.org/final",
-            },
-        ),
-        get_response=_FakeResponse(
-            status_code=200,
-            headers={"content-type": "application/octet-stream", "content-length": "4"},
-            chunks=[b"data"],
-        ),
-    )
-
-    monkeypatch.setattr(requests, "Session", lambda: session)
-    monkeypatch.chdir(tmp_path)
-
-    with pytest.raises(requests.HTTPError, match="HEAD request"):
-        manager.download_and_parse(
-            urlnames=["https://example.org/test.par.bz2"],
-            local_files=[str(tmp_path / "dummy_output.hdf5")],
-            N_files_total=1,
-        )
+        run_download(manager, session)
 
     assert manager.parse_calls == 0
     assert len(session.get_calls) == 0
