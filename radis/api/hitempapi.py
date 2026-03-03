@@ -907,8 +907,7 @@ def download_and_decompress_CO2_into_df(
 def register_partial_hitemp_co2(
     databank_name_fmt,
     local_paths,
-    load_wavenum_min,
-    load_wavenum_max,
+    wav_pairs,
     info_prefix="HITEMP 2024, CO2, partial chunk download",
 ):
     """
@@ -918,15 +917,17 @@ def register_partial_hitemp_co2(
 
     from radis.api.dbmanager import register_database
 
-    info = (
-        f"{info_prefix}, wavenumber range: {load_wavenum_min}-{load_wavenum_max} cm-1"
-    )
+    if not wav_pairs:
+        raise ValueError("No wav_pairs provided for registration")
+    wavenumber_min = min(start for start, _ in wav_pairs)
+    wavenumber_max = max(end for _, end in wav_pairs)
+    info = f"{info_prefix}, wavenumber range: {wavenumber_min}-{wavenumber_max} cm-1"
     entry = {
         "info": info,
         "path": local_paths,
-        "format": "hitemp-radisdb-partial",
-        "wavenumber_min": load_wavenum_min,
-        "wavenumber_max": load_wavenum_max,
+        "format": "hitemp-radisdb",
+        "wavenumber_min": wavenumber_min,
+        "wavenumber_max": wavenumber_max,
         "download_date": time.strftime("%Y-%m-%d"),
     }
     register_database(databank_name_fmt, entry, verbose=True)
