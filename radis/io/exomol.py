@@ -297,11 +297,9 @@ def fetch_exomol(
     )
 
     if output == "jax":
-        try:
-            import jax.numpy as jnp
-        except:
-            import numpy as jnp
-        df["logsij0"] += jnp.log(Ia)
+        # Abundance correction skipped - ExoJax handles this.
+        # See https://github.com/radis/radis/issues/474
+        pass
     else:
         df["Sij0"] *= Ia
         mdb.rename_columns(df, {"Sij0": "int"})
