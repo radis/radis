@@ -909,27 +909,14 @@ def register_partial_hitemp_co2(
     local_paths,
     load_wavenum_min,
     load_wavenum_max,
-    database_version,
     info_prefix="HITEMP 2024, CO2, partial chunk download",
 ):
     """
     Register a partial HITEMP CO2 2024 download in radis.json.
     """
-    import json
     import time
 
-    from radis import __version__
-    from radis.misc.config import CONFIG_PATH_JSON
-
-    # Load or create config
-    try:
-        with open(CONFIG_PATH_JSON, "r") as f:
-            config_json = json.load(f)
-    except FileNotFoundError:
-        config_json = {}
-
-    if "database" not in config_json:
-        config_json["database"] = {}
+    from radis.api.dbmanager import register_database
 
     info = (
         f"{info_prefix}, wavenumber range: {load_wavenum_min}-{load_wavenum_max} cm-1"
@@ -941,13 +928,8 @@ def register_partial_hitemp_co2(
         "wavenumber_min": load_wavenum_min,
         "wavenumber_max": load_wavenum_max,
         "download_date": time.strftime("%Y-%m-%d"),
-        "version": __version__,
-        "database_version": database_version,
     }
-    config_json["database"][databank_name_fmt] = entry
-
-    with open(CONFIG_PATH_JSON, "w") as f:
-        json.dump(config_json, f, indent=4)
+    register_database(databank_name_fmt, entry, verbose=True)
 
 
 class HITEMPDatabaseManager(DatabaseManager):
