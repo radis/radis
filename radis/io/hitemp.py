@@ -9,7 +9,11 @@ from os.path import abspath, exists, expanduser, join
 
 from radis import config
 from radis.api.hdf5 import update_pytables_to_vaex
-from radis.api.hitempapi import HITEMPDatabaseManager, get_recent_hitemp_database_year
+from radis.api.hitempapi import (
+    HITEMPDatabaseManager,
+    get_recent_hitemp_database_year,
+    register_partial_hitemp_co2,
+)
 from radis.misc.config import getDatabankEntries
 
 
@@ -158,6 +162,20 @@ def fetch_hitemp(
             verbose=verbose,
             engine=engine,
             output=output,
+        )
+
+        # Register the CO2 database in radis.json
+        databank_name_fmt = databank_name
+        if r"{molecule}" in databank_name_fmt:
+            databank_name_fmt = databank_name_fmt.format(**{"molecule": molecule})
+            databank_name_fmt += "-2010" if database == "2010" else ""
+
+        register_partial_hitemp_co2(
+            databank_name_fmt,
+            local_paths,
+            load_wavenum_min,
+            load_wavenum_max,
+            database,
         )
 
         if return_local_path:

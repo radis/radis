@@ -904,6 +904,52 @@ def download_and_decompress_CO2_into_df(
     return combined_df, local_files
 
 
+def register_partial_hitemp_co2(
+    databank_name_fmt,
+    local_paths,
+    load_wavenum_min,
+    load_wavenum_max,
+    database_version,
+    info_prefix="HITEMP 2024, CO2, partial chunk download",
+):
+    """
+    Register a partial HITEMP CO2 2024 download in radis.json.
+    """
+    import json
+    import time
+
+    from radis import __version__
+    from radis.misc.config import CONFIG_PATH_JSON
+
+    # Load or create config
+    try:
+        with open(CONFIG_PATH_JSON, "r") as f:
+            config_json = json.load(f)
+    except FileNotFoundError:
+        config_json = {}
+
+    if "database" not in config_json:
+        config_json["database"] = {}
+
+    info = (
+        f"{info_prefix}, wavenumber range: {load_wavenum_min}-{load_wavenum_max} cm-1"
+    )
+    entry = {
+        "info": info,
+        "path": local_paths,
+        "format": "hitemp-radisdb-partial",
+        "wavenumber_min": load_wavenum_min,
+        "wavenumber_max": load_wavenum_max,
+        "download_date": time.strftime("%Y-%m-%d"),
+        "version": __version__,
+        "database_version": database_version,
+    }
+    config_json["database"][databank_name_fmt] = entry
+
+    with open(CONFIG_PATH_JSON, "w") as f:
+        json.dump(config_json, f, indent=4)
+
+
 class HITEMPDatabaseManager(DatabaseManager):
     def __init__(
         self,
