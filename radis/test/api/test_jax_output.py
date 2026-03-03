@@ -56,3 +56,16 @@ def test_hitran_has_jax_separation():
     assert "GPU/DRAM Array Separation" in source, \
         "hitran.py should have GPU/DRAM separation block"
     print("✅ hitran.py has GPU/DRAM separation")
+
+
+def test_hitemp_has_jax_separation():
+    """
+    radis/io/hitemp.py should have GPU/DRAM separation
+    Ref: https://github.com/radis/radis/issues/474
+    """
+    import inspect
+    import radis.io.hitemp as hitemp_module
+    source = inspect.getsource(hitemp_module)
+    assert "GPU/DRAM Array Separation" in source, \
+        "hitemp.py should have GPU/DRAM separation block"
+    print("✅ hitemp.py has GPU/DRAM separation")
