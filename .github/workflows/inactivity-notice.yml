@@ -1,0 +1,109 @@
+name: Inactivity notice
+
+on:
+  schedule:
+    - cron: '0 3 * * 1' # every Monday at 03:00 UTC
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Post inactivity notices
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const INACTIVE_DAYS = 60;
+            const LABEL = 'inactive-notice';
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - INACTIVE_DAYS);
+
+            // Ensure the label exists
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: LABEL });
+            } catch {
+              await github.rest.issues.createLabel({
+                owner, repo, name: LABEL,
+                color: 'ededed', description: 'Inactivity notice posted',
+              });
+            }
+
+            // --- Check inactive PRs ---
+            const prs = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: 'open', per_page: 100,
+            });
+
+            for (const pr of prs) {
+              const prActive = new Date(pr.updated_at) >= cutoff;
+              const prLabeled = pr.labels.some(l => l.name === LABEL);
+
+              // Remove stale label if item became active again
+              if (prActive && prLabeled) {
+                await github.rest.issues.removeLabel({
+                  owner, repo, issue_number: pr.number, name: LABEL,
+                });
+                console.log(`Removed ${LABEL} from active PR #${pr.number}`);
+              }
+              if (prActive || prLabeled) continue;
+
+              await github.rest.issues.addLabels({
+                owner, repo, issue_number: pr.number, labels: [LABEL],
+              });
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: pr.number,
+                body:
+                  `⚠️ **Inactivity Notice**\n\n` +
+                  `This pull request has been inactive for 2 months. ` +
+                  `To keep the project's workflow efficient, it may be closed by an admin ` +
+                  `if no further updates (commits, comments, or reviews) are made soon.\n\n` +
+                  `If you're still working on this:\n` +
+                  `- Push new commits or address feedback.\n` +
+                  `- Leave a comment with an update or timeline.\n\n` +
+                  `If this PR is no longer needed, feel free to close it yourself. ` +
+                  `Thanks for your contribution!`,
+              });
+              console.log(`Posted notice on PR #${pr.number}`);
+              await new Promise(r => setTimeout(r, 1000));
+            }
+
+            // --- Check inactive issues ---
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', per_page: 100,
+            });
+
+            for (const issue of issues) {
+              if (issue.pull_request) continue;
+              const issueActive = new Date(issue.updated_at) >= cutoff;
+              const issueLabeled = issue.labels.some(l => l.name === LABEL);
+
+              // Remove stale label if item became active again
+              if (issueActive && issueLabeled) {
+                await github.rest.issues.removeLabel({
+                  owner, repo, issue_number: issue.number, name: LABEL,
+                });
+                console.log(`Removed ${LABEL} from active issue #${issue.number}`);
+              }
+              if (issueActive || issueLabeled) continue;
+
+              await github.rest.issues.addLabels({
+                owner, repo, issue_number: issue.number, labels: [LABEL],
+              });
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: issue.number,
+                body:
+                  `⚠️ **Inactivity Notice**\n\n` +
+                  `This issue has been inactive for 2 months. ` +
+                  `To help us manage the backlog, it may be closed by an admin ` +
+                  `if no further activity (comments, updates, or discussions) occurs soon.\n\n` +
+                  `If this issue is still relevant:\n` +
+                  `- Provide additional details or context.\n` +
+                  `- Let us know if you're working on a solution or need help.\n\n` +
+                  `If it's no longer applicable, feel free to close it. ` +
+                  `Thanks for your engagement!`,
+              });
+              console.log(`Posted notice on issue #${issue.number}`);
+              await new Promise(r => setTimeout(r, 1000));
+            }

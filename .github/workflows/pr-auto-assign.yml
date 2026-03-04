@@ -1,0 +1,91 @@
+name: PR auto-assign linked issue
+
+on:
+  pull_request_target:
+    types: [opened]
+
+jobs:
+  auto-assign:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write  # needed to comment on PRs
+    steps:
+      - name: Auto-assign linked issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const user = pr.user.login;
+            const { owner, repo } = context.repo;
+            const prNumber = pr.number;
+            const body = pr.body || '';
+
+            // Skip bot-authored PRs
+            if (pr.user.type === 'Bot') {
+              console.log('Bot PR, skipping.');
+              return;
+            }
+
+            // Match "Fixes #N", "Closes #N", "Resolves #N" (shorthand and full URL)
+            const pattern = new RegExp(
+              `(?:fix(?:es|ed)?|close[sd]?|resolve[sd]?)\\s+` +
+              `(?:https://github\\.com/${owner}/${repo}/issues/|#)(\\d+)`,
+              'gi'
+            );
+            const issueNumbers = [...new Set(
+              [...body.matchAll(pattern)].map(m => parseInt(m[1]))
+            )];
+
+            if (issueNumbers.length === 0) {
+              console.log('No linked issues found, skipping.');
+              return;
+            }
+
+            for (const issueNumber of issueNumbers) {
+              let issue;
+              try {
+                ({ data: issue } = await github.rest.issues.get({
+                  owner, repo, issue_number: issueNumber,
+                }));
+              } catch (err) {
+                if (err.status === 404) { console.log(`#${issueNumber} not found`); continue; }
+                throw err;
+              }
+
+              // Skip PRs and closed issues
+              if (issue.pull_request || issue.state !== 'open') continue;
+
+              const assignees = issue.assignees.map(a => a.login);
+
+              if (assignees.length === 0) {
+                // Unassigned → auto-assign PR author
+                await github.rest.issues.addAssignees({
+                  owner, repo, issue_number: issueNumber, assignees: [user],
+                });
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: issueNumber,
+                  body: `Auto-assigned to @${user} via PR #${prNumber}.`,
+                });
+                console.log(`Assigned #${issueNumber} to ${user}`);
+
+              } else if (!assignees.includes(user)) {
+                // Assigned to someone else → close the PR
+                const who = assignees.map(a => `@${a}`).join(', ');
+                await github.rest.pulls.update({
+                  owner, repo, pull_number: prNumber, state: 'closed',
+                });
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: prNumber,
+                  body:
+                    `This PR was automatically closed because issue #${issueNumber} ` +
+                    `is already assigned to ${who}.\n\n` +
+                    `This issue is currently assigned. If you believe your approach ` +
+                    `offers a significant improvement, please discuss it in the ` +
+                    `original issue first or ping a maintainer.`,
+                });
+                console.log(`Closed PR #${prNumber} — #${issueNumber} already assigned`);
+                return; // Stop processing after closing
+              }
+              // Assigned to PR author → do nothing
+            }
