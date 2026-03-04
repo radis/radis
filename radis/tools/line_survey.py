@@ -563,10 +563,21 @@ def LineSurvey(
 
         return label
 
-    def get_label_all(row):
-        r"""print all lines details"""
-        # label = row.__repr__()
-        label = "<br>".join([f"{k}: {v}" for k, v in row.items()])
+    def get_label_all(row, columns=None):
+        r"""Print line details, optionally filtered to certain columns.
+
+        Parameters
+        ----------
+        row : pandas.Series
+            Line data row
+        columns : list, optional
+            If provided, only show these columns. Otherwise show all.
+        """
+        if columns is not None:
+            items = [(k, row[k]) for k in columns if k in row.index]
+        else:
+            items = row.items()
+        label = "<br>".join([f"{k}: {v}" for k, v in items])
         return label
 
     def get_label_none(row):
@@ -600,8 +611,7 @@ def LineSurvey(
     elif dbformat in ["nist"]:
         sp["label"] = sp.apply(lambda r: get_label_nist(r, sp.attrs), axis=1)
     else:
-        sp["label"] = sp.apply(get_label_all, axis=1)
-        # TODO: add an option to print only certain columns?
+        sp["label"] = sp.apply(lambda r: get_label_all(r, lineinfo), axis=1)
 
         # sp["label"] = sp.apply(get_label_none, axis=1)
 
