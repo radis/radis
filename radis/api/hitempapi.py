@@ -828,7 +828,7 @@ def read_and_write_chunked_for_CO2(
     else:
         combined_df = pd.DataFrame()
 
-    return combined_df, local_paths
+    return combined_df, local_paths, wav_pairs
 
 
 def download_and_decompress_CO2_into_df(
@@ -883,7 +883,7 @@ def download_and_decompress_CO2_into_df(
     if columns is not None and "iso" not in columns:
         columns = columns + ["iso"]
 
-    combined_df, local_files = read_and_write_chunked_for_CO2(
+    combined_df, local_files, wav_pairs = read_and_write_chunked_for_CO2(
         load_wavenum_max,
         load_wavenum_min,
         columns=columns,
@@ -893,6 +893,7 @@ def download_and_decompress_CO2_into_df(
         verbose=verbose,
         local_databases=local_databases,
     )
+    # Recompute wav_pairs here to return
     combined_df = combined_df[
         (combined_df["wav"] >= load_wavenum_min)
         & (combined_df["wav"] <= load_wavenum_max)
@@ -901,13 +902,14 @@ def download_and_decompress_CO2_into_df(
     if original_columns is not None and "iso" not in original_columns:
         combined_df = combined_df.drop(columns=["iso"])
 
-    return combined_df, local_files
+    return combined_df, local_files, wav_pairs
 
 
 def register_partial_hitemp_co2(
     databank_name_fmt,
     local_paths,
     wav_pairs,
+    engine="pytables",
     info_prefix="HITEMP 2024, CO2, partial chunk download",
 ):
     """
@@ -919,16 +921,38 @@ def register_partial_hitemp_co2(
 
     if not wav_pairs:
         raise ValueError("No wav_pairs provided for registration")
-    wavenumber_min = min(start for start, _ in wav_pairs)
-    wavenumber_max = max(end for _, end in wav_pairs)
-    info = f"{info_prefix}, wavenumber range: {wavenumber_min}-{wavenumber_max} cm-1"
+
+    today = time.strftime("%Y-%m-%d")
+
+    # Build per-file metadata using the actual cached HDF5 paths
+    files_meta = []
+    cache_paths = []
+    for par_path, (wmin, wmax) in zip(local_paths, wav_pairs):
+        cache_path = str(_fcache_file_name(par_path, engine))
+        cache_paths.append(cache_path)
+
+        file_entry = {
+            "path": cache_path,
+            "wavenumber_min": wmin,
+            "wavenumber_max": wmax,
+            "download_date": today,
+        }
+
+        if os.path.exists(cache_path):
+            size_bytes = os.path.getsize(cache_path)
+            file_entry["size_mb"] = round(size_bytes / (1024 * 1024), 2)
+
+        files_meta.append(file_entry)
+
+    info = f"{info_prefix}, {len(wav_pairs)} chunk(s)"
     entry = {
         "info": info,
-        "path": local_paths,
+        "path": cache_paths,
         "format": "hitemp-radisdb",
-        "wavenumber_min": wavenumber_min,
-        "wavenumber_max": wavenumber_max,
-        "download_date": time.strftime("%Y-%m-%d"),
+        "wavenumber_min": "",
+        "wavenumber_max": "",
+        "download_date": today,
+        "files": files_meta,
     }
     register_database(databank_name_fmt, entry, verbose=True)
 

@@ -153,7 +153,7 @@ def fetch_hitemp(
         if engine == "default":
             engine = "pytables"
 
-        df, local_paths = download_and_decompress_CO2_into_df(
+        df, local_paths, wav_pairs = download_and_decompress_CO2_into_df(
             local_databases=local_databases,
             load_wavenum_min=load_wavenum_min,
             load_wavenum_max=load_wavenum_max,
@@ -168,14 +168,12 @@ def fetch_hitemp(
         databank_name_fmt = databank_name
         if r"{molecule}" in databank_name_fmt:
             databank_name_fmt = databank_name_fmt.format(**{"molecule": molecule})
-            databank_name_fmt += "-2010" if database == "2010" else ""
 
         register_partial_hitemp_co2(
             databank_name_fmt,
             local_paths,
-            load_wavenum_min,
-            load_wavenum_max,
-            database,
+            wav_pairs,
+            engine=engine,
         )
 
         if return_local_path:
