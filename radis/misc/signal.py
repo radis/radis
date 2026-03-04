@@ -17,11 +17,7 @@ Resampling  & smoothing.
 import math
 
 import numpy as np
-import scipy.linalg as LA
 from numpy import abs, isnan, linspace, nan, zeros_like
-from scipy.integrate import trapezoid
-from scipy.interpolate import splev, splrep
-from scipy.linalg import solveh_banded
 
 from radis.misc.arrays import (
     anynan,
@@ -155,6 +151,8 @@ def resample(
         )
 
     # Resample the slit function on the spectrum grid
+    from scipy.interpolate import splev, splrep
+
     try:
         tck = splrep(xspace, vector, k=k)
     except ValueError:
@@ -195,6 +193,8 @@ def resample(
     # Check energy conservation:
 
     # ... calculate energy
+    from scipy.integrate import trapezoid
+
     energy0 = abs(trapezoid(vector[b], x=xspace[b]))
     energy_new = abs(trapezoid(vector_new[b_new], x=xspace_new[b_new]))
     if energy_new == 0:  # deal with particular case of energy = 0
@@ -440,6 +440,8 @@ def baseline(y, deg=None, max_it=None, tol=None):
     x = np.linspace(0.0, cond, y.size)
     base = y.copy()
 
+    import scipy.linalg as LA
+
     vander = np.vander(x, order)
     vander_pinv = LA.pinv(vander)
 
@@ -497,6 +499,8 @@ class WhittakerSmoother(object):
     def smooth(self, w):
         foo = self.upper_bands.copy()
         foo[-1] += w  # last row is the diagonal
+
+        from scipy.linalg import solveh_banded
 
         return solveh_banded(foo, w * self.y, overwrite_ab=True, overwrite_b=True)
 

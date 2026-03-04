@@ -40,16 +40,12 @@ recenter_slit, crop_slit):
 
 """
 
-
 from warnings import warn
 
 import numpy as np
 from numpy import exp
 from numpy import log as ln
 from numpy import sqrt
-from scipy.integrate import trapezoid
-from scipy.interpolate import splev, splrep
-from scipy.signal import oaconvolve
 
 from radis.misc.arrays import anynan, evenly_distributed, evenly_distributed_fast
 from radis.misc.basics import is_float
@@ -233,6 +229,9 @@ def get_slit_function(
     # in norm_by=max mode, used to keep units in [Iunit]*return_unit in [Iunit]*unit
     scale_slit = 1
     # not used in norm_by=area mode
+
+    # Lazy import heavy dependencies
+    from scipy.integrate import trapezoid
 
     # Generate Slit
     # -------------
@@ -617,9 +616,10 @@ def convolve_with_slit(
 
     """
 
+    from scipy.interpolate import splev, splrep
+
     # 1. Check input
     # --------------
-
     # Deprecated input:
     if waveunit is not None:
         warn(
@@ -732,6 +732,8 @@ def convolve_with_slit(
 
     # We actually do not use mode valid in np.convolve,
     # instead we use mode=same and remove the same boundaries from I and W in remove_boundary()
+    from scipy.signal import oaconvolve
+
     I_conv = oaconvolve(I, I_slit_interp, mode="same") * wstep
 
     # 5. Remove boundary effects
@@ -839,6 +841,8 @@ def get_effective_FWHM(w, I):
     :py:func:`~radis.tools.slit.crop_slit`
 
     """
+
+    from scipy.integrate import trapezoid
 
     Imax = I.max()
 
@@ -980,6 +984,8 @@ def normalize_slit(w_slit, I_slit, norm_by="area"):
     :py:func:`~radis.tools.slit.crop_slit`
 
     """
+
+    from scipy.integrate import trapezoid
 
     # Renormalize
     # ---------
@@ -1146,6 +1152,7 @@ def plot_slit(
         wunit = waveunit
 
     import matplotlib.pyplot as plt
+    from scipy.integrate import trapezoid
 
     from radis.misc.plot import set_style
 
@@ -1413,6 +1420,8 @@ def import_experimental_slit(
 
     """
 
+    from scipy.integrate import trapezoid
+
     # Deprecated input:
     if waveunit is not None:
         warn(
@@ -1585,6 +1594,8 @@ def triangular_slit(
     w = np.hstack((-w[1:][::-1], w)) + center
 
     # Normalize
+    from scipy.integrate import trapezoid
+
     if norm_by == "area":  # normalize by the area
         I /= trapezoid(I, x=w)
         Iunit = f"1/{wunit}"
@@ -1687,6 +1698,8 @@ def trapezoidal_slit(
     :py:func:`~radis.tools.slit.gaussian_slit`
 
     """
+
+    from scipy.integrate import trapezoid
 
     if top > base:
         top, base = base, top
@@ -1818,6 +1831,8 @@ def gaussian_slit(
 
 
     """
+
+    from scipy.integrate import trapezoid
 
     f = int(footerspacing)  # spacing (footer) on left and right
     sigma = FWHM / 2 / sqrt(2 * ln(2))
