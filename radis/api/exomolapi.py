@@ -448,7 +448,7 @@ def read_states(
             dat = pd.read_csv(
                 statesf, compression="bz2", sep=r"\s+", usecols=usecol, names=names
             )
-        except:  #!!!TODO What was the expected error?
+        except (OSError, pd.errors.ParserError):  # File not compressed or parse error
             dat = pd.read_csv(statesf, sep=r"\s+", usecols=usecol, names=names)
     else:
         raise NotImplementedError(engine)

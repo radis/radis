@@ -677,7 +677,19 @@ def rescale_updown_levels(
     when inferring emission quantities from absorption quantities this may
     ends up in error in overpopulation rescaling.
     """
-    # TODO: Add warning when too large rescaling
+    # Warn if rescaling is too large (>30% change)
+    if old_nu != 0 and old_nl != 0 and not ignore_warnings:
+        rescale_nu = abs(new_nu / old_nu - 1)
+        rescale_nl = abs(new_nl / old_nl - 1)
+        if rescale_nu > 0.3 or rescale_nl > 0.3:
+            from warnings import warn
+
+            warn(
+                f"Large rescaling detected: nu factor={new_nu/old_nu:.2f}, "
+                f"nl factor={new_nl/old_nl:.2f}. For large changes, "
+                "calculate a new spectrum instead.",
+                UserWarning,
+            )
 
     # Check inputs
     # ---------
