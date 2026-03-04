@@ -9,6 +9,7 @@ https://stackoverflow.com/questions/55610891/numpy-load-from-io-bytesio-stream
 https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 
 """
+
 import json
 import os
 import re
@@ -21,10 +22,6 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
-import requests
-from bs4 import BeautifulSoup
-from cryptography.fernet import Fernet
-from tqdm import tqdm
 
 from radis.api.hdf5 import update_pytables_to_vaex
 from radis.db.hitemp_co2 import partial_download_co2_chunk
@@ -292,6 +289,8 @@ def setup_credentials():
 
 def get_encryption_key():
     """Get or create encryption key for HITRAN credentials"""
+    from cryptography.fernet import Fernet
+
     # Read existing radis.json
     config = read_config()
 
@@ -321,6 +320,8 @@ def get_encryption_key():
 
 def encrypt_password(password):
     """Encrypt password using Fernet symmetric encryption"""
+    from cryptography.fernet import Fernet
+
     key = get_encryption_key()
     f = Fernet(key)
     return f.encrypt(password.encode()).decode()
@@ -328,6 +329,8 @@ def encrypt_password(password):
 
 def decrypt_password(encrypted_password):
     """Decrypt password using Fernet symmetric encryption"""
+    from cryptography.fernet import Fernet
+
     key = get_encryption_key()
     f = Fernet(key)
     return f.decrypt(encrypted_password.encode()).decode()
@@ -365,6 +368,9 @@ def store_credentials(email, password):
 def login_to_hitran(verbose=False):
     """Login to HITRAN using stored credentials from radis.json or prompt if not available"""
     login_url = "https://hitran.org/login/"
+
+    import requests
+
     session = requests.Session()
 
     class LoginError(Exception):
@@ -409,6 +415,8 @@ def login_to_hitran(verbose=False):
                     f"HITRAN login failed due to a request error: {exc}. "
                     "Please check your network connection and try again."
                 )
+
+        from bs4 import BeautifulSoup
 
         soup = BeautifulSoup(response.text, "html.parser")
         csrf = soup.find("input", {"name": "csrfmiddlewaretoken"})["value"]
@@ -510,6 +518,8 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
             warnings.warn(warning_msg, UserWarning)
 
         with open(output_filename, "wb") as f:
+            from tqdm import tqdm
+
             with tqdm(
                 total=total_size,
                 unit="B",
@@ -775,6 +785,8 @@ def read_and_write_chunked_for_CO2(
     ):
         printer.info("All files already cached.", indent=1)
 
+    from tqdm import tqdm
+
     with tqdm(
         total=len(local_paths), desc="Processing chunks", disable=not verbose
     ) as pbar:
@@ -964,6 +976,8 @@ class HITEMPDatabaseManager(DatabaseManager):
             text = file_response.text
 
             # Parse the HTML then Extract valid file URLs
+            from bs4 import BeautifulSoup
+
             soup = BeautifulSoup(text, "html.parser")
             table = soup.find("table")
             links = table.find_all("a", href=True)

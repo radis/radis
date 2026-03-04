@@ -25,7 +25,6 @@ import re
 from urllib.request import HTTPError, urlopen
 
 import pandas as pd
-from bs4 import BeautifulSoup
 
 from radis.api.hdf5 import vaexsafe_colname
 
@@ -945,6 +944,8 @@ def get_exomol_database_list(molecule, isotope_full_name=None):
         else:
             extra = ""
         raise ValueError(f"HTTPError opening url={url}" + extra) from err
+
+    from bs4 import BeautifulSoup
 
     soup = BeautifulSoup(
         response, features="lxml"

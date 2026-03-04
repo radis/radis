@@ -52,12 +52,9 @@ from copy import deepcopy
 from os.path import basename
 from warnings import warn
 
-import astropy.units as u
 import numpy as np
 import pandas as pd
-import plotly.express as px
 from numpy import abs, diff
-from scipy.integrate import trapezoid
 
 from radis.db.references import doi
 
@@ -2467,6 +2464,8 @@ class Spectrum(object):
         xlabel = format_xlabel(wunit, show_medium)
         ylabel = f"{make_up(var)} ({make_up_unit(Iunit, var)})"
 
+        import plotly.express as px
+
         fig = px.line(x=x, y=y, template=template)
         fig.update_layout(
             xaxis_title=xlabel,
@@ -3946,6 +3945,8 @@ class Spectrum(object):
             else:
                 return cond
         else:
+            import astropy.units as u
+
             if return_unit:
                 if hasattr(cond, "unit"):
                     return cond.to(unit).value, unit
@@ -4849,6 +4850,7 @@ class Spectrum(object):
 
         # Compute area under the curve of models.Voigt1D or models.Gaussian1D or models.Lorentz1D
         from astropy.modeling import models
+        from scipy.integrate import trapezoid
 
         for index, line in enumerate(g_fit_list):
             if isinstance(line, models.Voigt1D):
@@ -6163,6 +6165,8 @@ class Spectrum(object):
           (returns a copy)
         - for 2 Spectra: not defined
         """
+        import astropy.units as u
+
         if (
             isinstance(other, float)
             or isinstance(other, int)
@@ -6186,6 +6190,7 @@ class Spectrum(object):
 
     def __rmul__(self, other):
         r"""Right side multiplication."""
+        import astropy.units as u
 
         if (
             isinstance(other, float)
@@ -6215,6 +6220,8 @@ class Spectrum(object):
           (only if in front, i.e:  s *= 2)  (modifies inplace)
         - for 2 Spectra: not defined
         """
+        import astropy.units as u
+
         if (
             isinstance(other, float)
             or isinstance(other, int)
@@ -6241,6 +6248,8 @@ class Spectrum(object):
 
         - for numeric values: divide algebraically (equivalent to optically thin scaling)
         """
+        import astropy.units as u
+
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
 
@@ -6273,6 +6282,8 @@ class Spectrum(object):
         - for numeric values: divide quantities algebraically
         (equivalent to optically thin scaling)
         """
+        import astropy.units as u
+
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
 
