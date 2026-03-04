@@ -592,6 +592,41 @@ def test_parse_hitemp_missing_labels_issue280(*args, **kwargs):
     print(df.dtypes["v3u"])  # Worked
 
 
+@pytest.mark.fast
+def test_register_partial_hitemp_co2():
+    """Test that register_partial_hitemp_co2 builds a per-file JSON entry."""
+
+    import os
+    import tempfile
+    from unittest.mock import patch
+
+    from radis.api.hitempapi import register_partial_hitemp_co2
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        par1 = os.path.join(tmpdir, "CO2_02_02273-02446_HITEMP2024.par")
+        # Create a fake .h5 cache file
+        with open(par1.replace(".par", ".h5"), "wb") as f:
+            f.write(b"\x00" * 1024)
+
+        captured = {}
+
+        def mock_register(name, entry, verbose):
+            captured.update({"name": name, "entry": entry})
+
+        with patch("radis.api.dbmanager.register_database", side_effect=mock_register):
+            register_partial_hitemp_co2(
+                "HITEMP-CO2", [par1], [(2273, 2446)], engine="pytables"
+            )
+
+        entry = captured["entry"]
+        assert entry["format"] == "hitemp-radisdb"
+        assert "files" in entry
+        assert len(entry["files"]) == 1
+        assert entry["files"][0]["wavenumber_min"] == 2273
+        assert entry["files"][0]["wavenumber_max"] == 2446
+        assert "size_mb" in entry["files"][0]
+
+
 if __name__ == "__main__":
     # Removed due to issue 717 - https://github.com/radis/radis/issues/717
     # from radis.api.hitempapi import (
