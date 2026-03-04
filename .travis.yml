@@ -59,7 +59,7 @@ script:
   - xvfb-run -a env PYTHONPATH="." pytest -m "needs_HITRAN_credentials and not download_large_databases" --durations=10 --cov=radis --cov-report=xml:coverage.xml --cov-append
   - echo ">>> Upload coverage to Codecov"
   - pip install codecov-cli
-  - codecovcli --auto-load-params-from travis do-upload -t $CODECOV_TOKEN -F travis -f coverage.xml --disable-search
+  - codecovcli --auto-load-params-from travis do-upload -F travis -f coverage.xml --disable-search
 
 # stages: #This sequence defines the order of the stages
 #   - name: deploy
