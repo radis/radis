@@ -103,11 +103,11 @@ def fetch_exomol(
         If False, fetch all fields which are marked as available in the ExoMol definition
         file. If True, load only the first 4 columns of the states file
         ("i", "E", "g", "J"). The structure of the columns above 5 depend on the
-        the definitions file (``*.def``) and the Exomol version.
+        the definitions file (*.def) and the Exomol version.
         If ``skip_optional_data=False``, two errors may occur:
 
-            - a field is marked as present/absent in the ``*.def`` field but is
-              absent/present in the ``*.states`` file (ie both files are inconsistent).
+            - a field is marked as present/absent in the *.def field but is
+              absent/present in the *.states file (ie both files are inconsistent).
             - in the updated version of Exomol, new fields have been added in the
               states file of some species. But it has not been done for all species,
               so both structures exist. For instance, the states file of
@@ -297,11 +297,9 @@ def fetch_exomol(
     )
 
     if output == "jax":
-        try:
-            import jax.numpy as jnp
-        except:
-            import numpy as jnp
-        df["logsij0"] += jnp.log(Ia)
+        # Abundance correction skipped - ExoJax handles this.
+        # See https://github.com/radis/radis/issues/474
+        pass
     else:
         df["Sij0"] *= Ia
         mdb.rename_columns(df, {"Sij0": "int"})
@@ -325,6 +323,21 @@ def fetch_exomol(
             for k, v in attrs.items():
                 df.attrs[k] = v
     # Return:
+
+    # GPU/DRAM Array Separation for JAX output
+    # Ref: https://github.com/radis/radis/issues/474
+    if output == "jax":
+        try:
+            import jax.numpy as jnp
+            import numpy as np
+            for col in ["nu_lines", "logsij0", "elower"]:
+                if col in df.columns:
+                    df[col] = jnp.array(df[col].to_numpy())
+            for col in ["n_Texp", "alpha_ref"]:
+                if col in df.columns:
+                    df[col] = np.array(df[col].to_numpy())
+        except ImportError:
+            pass
     out = df
     if return_local_path or return_partition_function:
         out = [out]

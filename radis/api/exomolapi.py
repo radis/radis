@@ -2124,3 +2124,33 @@ if __name__ == "__main__":
     # )
     # print("Databases for SiO: ", databases)
     # print("Database recommended by ExoMol: ", recommended)
+
+
+def apply_jax_array_conversion(df, gpu_cols=None, dram_cols=None):
+    """
+    Convert DataFrame columns to JAX (GPU) or numpy (DRAM) arrays.
+    Part of Common RADIS/ExoJax API.
+    Ref: https://github.com/radis/radis/issues/474
+
+    GPU cols (jnp): nu_lines, logsij0, elower
+    DRAM cols (np): n_Texp, alpha_ref
+    """
+    try:
+        import jax.numpy as jnp
+        import numpy as np
+    except ImportError:
+        return df
+
+    if gpu_cols is None:
+        gpu_cols = ["nu_lines", "logsij0", "elower"]
+    if dram_cols is None:
+        dram_cols = ["n_Texp", "alpha_ref"]
+
+    for col in gpu_cols:
+        if col in df.columns:
+            df[col] = jnp.array(df[col].to_numpy())
+    for col in dram_cols:
+        if col in df.columns:
+            df[col] = np.array(df[col].to_numpy())
+
+    return df

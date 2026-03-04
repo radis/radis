@@ -290,6 +290,20 @@ def fetch_hitemp(
         output=output,
     )
 
+    # GPU/DRAM Array Separation for JAX output
+    # Ref: https://github.com/radis/radis/issues/474
+    if output == "jax":
+        try:
+            import jax.numpy as jnp
+            import numpy as np
+            for col in ["nu_lines", "logsij0", "elower"]:
+                if col in df.columns:
+                    df[col] = jnp.array(df[col].to_numpy())
+            for col in ["n_Texp", "alpha_ref"]:
+                if col in df.columns:
+                    df[col] = np.array(df[col].to_numpy())
+        except ImportError:
+            pass
     return (df, files_loaded) if return_local_path else df
 
 
