@@ -650,20 +650,17 @@ def _build_file_entry(par_path, wmin, wmax, engine):
     """Build a per-file metadata dict for a single CO2 chunk."""
 
     cache_path = str(_fcache_file_name(par_path, engine))
-    today = time.strftime("%Y-%m-%d")
+    today = time.strftime("%Y-%m-%d %H:%M")
+    size_bytes = os.path.getsize(cache_path)
 
     entry = {
         "path": cache_path,
         "wavenumber_min": wmin,
         "wavenumber_max": wmax,
         "download_date": today,
+        "size_mb": round(size_bytes / (1024 * 1024), 2),
+        "last_used": today,
     }
-
-    if os.path.exists(cache_path):
-        size_bytes = os.path.getsize(cache_path)
-        entry["size_mb"] = round(size_bytes / (1024 * 1024), 2)
-
-    entry["last_used"] = today
     return entry
 
 
@@ -828,7 +825,7 @@ def read_and_write_chunked_for_CO2(
             if databank_name is not None:
                 wmin, wmax = wav_pairs[i]
                 file_entry = _build_file_entry(file, wmin, wmax, engine)
-                register_partial_hitemp_co2(databank_name, file_entry)
+                register_partial_hitemp_co2(file_entry)
 
             # Always remove .par file after processing
             if os.path.exists(file):
@@ -940,17 +937,15 @@ def download_and_decompress_CO2_into_df(
 
 
 def register_partial_hitemp_co2(
-    databank_name,
     file_entry,
-    info_prefix="HITEMP 2024, CO2, partial chunk download",
 ):
     """
     Register a partial HITEMP CO2 2024 download in radis.json.
     """
+    databank_name = "HITEMP-CO2-2024"
+    from radis import config
 
-    import radis
-
-    today = time.strftime("%Y-%m-%d")
+    today = time.strftime("%Y-%m-%d %H:%M")
     cache_path = file_entry["path"]
 
     # Merge with existing entry if present
@@ -971,7 +966,7 @@ def register_partial_hitemp_co2(
 
     cache_paths = list(dict.fromkeys(cache_paths))
 
-    info = f"{info_prefix}, {len(files_meta)} chunk(s)"
+    info = f"HITEMP 2024, CO2, partial chunk download, {len(files_meta)} chunk(s)"
     entry = {
         "info": info,
         "path": cache_paths,
@@ -982,12 +977,12 @@ def register_partial_hitemp_co2(
         "files": files_meta,
     }
 
-    old_overwrite = radis.config["ALLOW_OVERWRITE"]
+    old_overwrite = config["ALLOW_OVERWRITE"]
     try:
-        radis.config["ALLOW_OVERWRITE"] = True
+        config["ALLOW_OVERWRITE"] = True
         addDatabankEntries(databank_name, dict(entry))
     finally:
-        radis.config["ALLOW_OVERWRITE"] = old_overwrite
+        config["ALLOW_OVERWRITE"] = old_overwrite
 
 
 class HITEMPDatabaseManager(DatabaseManager):
