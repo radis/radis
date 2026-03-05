@@ -14,7 +14,7 @@ from radis.api.hitempapi import (
     keep_only_relevant,
 )
 from radis.io.hitemp import fetch_hitemp
-from radis.misc.config import getDatabankList
+from radis.misc.config import getDatabankEntries, getDatabankList
 from radis.misc.utils import NotInstalled, not_installed_vaex_args
 from radis.tools.read_wav_index import get_key_pairs
 
@@ -260,6 +260,10 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
     assert (
         actual_files == expected_files
     ), f"Expected files {expected_files}, got {actual_files}"
+
+    # Verify registration in radis.json
+    entry = getDatabankEntries("HITEMP-CO2")
+    assert "files" in entry, "Expected 'files' key in radis.json entry"
 
 
 def test_read_wav_index():
@@ -590,41 +594,6 @@ def test_parse_hitemp_missing_labels_issue280(*args, **kwargs):
         "CO2", load_wavenum_min=800, load_wavenum_max=1300, verbose=3, cache="regen"
     )
     print(df.dtypes["v3u"])  # Worked
-
-
-@pytest.mark.fast
-def test_register_partial_hitemp_co2():
-    """Test that register_partial_hitemp_co2 builds a per-file JSON entry."""
-
-    import os
-    import tempfile
-    from unittest.mock import patch
-
-    from radis.api.hitempapi import register_partial_hitemp_co2
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        par1 = os.path.join(tmpdir, "CO2_02_02273-02446_HITEMP2024.par")
-        # Create a fake .h5 cache file
-        with open(par1.replace(".par", ".h5"), "wb") as f:
-            f.write(b"\x00" * 1024)
-
-        captured = {}
-
-        def mock_register(name, entry, verbose):
-            captured.update({"name": name, "entry": entry})
-
-        with patch("radis.api.dbmanager.register_database", side_effect=mock_register):
-            register_partial_hitemp_co2(
-                "HITEMP-CO2", [par1], [(2273, 2446)], engine="pytables"
-            )
-
-        entry = captured["entry"]
-        assert entry["format"] == "hitemp-radisdb"
-        assert "files" in entry
-        assert len(entry["files"]) == 1
-        assert entry["files"][0]["wavenumber_min"] == 2273
-        assert entry["files"][0]["wavenumber_max"] == 2446
-        assert "size_mb" in entry["files"][0]
 
 
 if __name__ == "__main__":

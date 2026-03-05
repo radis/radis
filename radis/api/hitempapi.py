@@ -650,6 +650,7 @@ def read_and_write_chunked_for_CO2(
     output="pandas",
     verbose=True,
     local_databases=None,
+    databank_name=None,
 ):
     """
     Download, parse and cache CO2 data chunks for specified wavenumber range.
@@ -803,6 +804,12 @@ def read_and_write_chunked_for_CO2(
 
             pbar.update(1)
 
+    # Register the CO2 database in radis.json
+    if databank_name is not None:
+        register_partial_hitemp_co2(
+            databank_name, local_paths, wav_pairs, engine=engine
+        )
+
     # Combine DataFrames
     if dataframes:
         printer.info("Combining parsed data from all chunks...", indent=1)
@@ -840,6 +847,7 @@ def download_and_decompress_CO2_into_df(
     verbose=True,
     engine="pytables",
     output="pandas",
+    databank_name=None,
 ):
     """
     This function handles downloading the HITEMP CO2 database. The full 2024 database is downloaded in smaller files of approximately 50-70 MB (500 MB decompressed chunks in h5 format), locating the appropriate data chunk based on the provided wavenumber range and reading the relevant data into a DataFrame.
@@ -892,6 +900,7 @@ def download_and_decompress_CO2_into_df(
         output=output,
         verbose=verbose,
         local_databases=local_databases,
+        databank_name=databank_name,
     )
     # Recompute wav_pairs here to return
     combined_df = combined_df[
@@ -906,7 +915,7 @@ def download_and_decompress_CO2_into_df(
 
 
 def register_partial_hitemp_co2(
-    databank_name_fmt,
+    databank_name,
     local_paths,
     wav_pairs,
     engine="pytables",
@@ -917,7 +926,12 @@ def register_partial_hitemp_co2(
     """
     import time
 
-    from radis.api.dbmanager import register_database
+    import radis
+    from radis.misc.config import (
+        addDatabankEntries,
+        getDatabankEntries,
+        getDatabankList,
+    )
 
     if not wav_pairs:
         raise ValueError("No wav_pairs provided for registration")
@@ -925,11 +939,11 @@ def register_partial_hitemp_co2(
     today = time.strftime("%Y-%m-%d")
 
     # Build per-file metadata using the actual cached HDF5 paths
-    files_meta = []
-    cache_paths = []
+    new_files_meta = []
+    new_cache_paths = []
     for par_path, (wmin, wmax) in zip(local_paths, wav_pairs):
         cache_path = str(_fcache_file_name(par_path, engine))
-        cache_paths.append(cache_path)
+        new_cache_paths.append(cache_path)
 
         file_entry = {
             "path": cache_path,
@@ -942,9 +956,35 @@ def register_partial_hitemp_co2(
             size_bytes = os.path.getsize(cache_path)
             file_entry["size_mb"] = round(size_bytes / (1024 * 1024), 2)
 
-        files_meta.append(file_entry)
+        file_entry["last_used"] = today
 
-    info = f"{info_prefix}, {len(wav_pairs)} chunk(s)"
+        new_files_meta.append(file_entry)
+
+    # Merge with existing entry if present
+    files_meta = []
+    cache_paths = []
+    if databank_name in getDatabankList():
+        existing = getDatabankEntries(databank_name)
+        existing_files = existing.get("files", [])
+        existing_paths = {f["path"] for f in existing_files}
+        new_paths = {f["path"] for f in new_files_meta}
+        # Keep existing files, updating last_used for re-used ones
+        for ef in existing_files:
+            if ef["path"] in new_paths:
+                ef["last_used"] = today
+            files_meta.append(ef)
+        cache_paths.extend(existing.get("path", []))
+        for f, cp in zip(new_files_meta, new_cache_paths):
+            if f["path"] not in existing_paths:
+                files_meta.append(f)
+                cache_paths.append(cp)
+    else:
+        files_meta = new_files_meta
+        cache_paths = new_cache_paths
+
+    cache_paths = list(dict.fromkeys(cache_paths))
+
+    info = f"{info_prefix}, {len(files_meta)} chunk(s)"
     entry = {
         "info": info,
         "path": cache_paths,
@@ -954,7 +994,13 @@ def register_partial_hitemp_co2(
         "download_date": today,
         "files": files_meta,
     }
-    register_database(databank_name_fmt, entry, verbose=True)
+
+    old_overwrite = radis.config["ALLOW_OVERWRITE"]
+    try:
+        radis.config["ALLOW_OVERWRITE"] = True
+        addDatabankEntries(databank_name, dict(entry))
+    finally:
+        radis.config["ALLOW_OVERWRITE"] = old_overwrite
 
 
 class HITEMPDatabaseManager(DatabaseManager):

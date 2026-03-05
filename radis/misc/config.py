@@ -624,7 +624,6 @@ def addDatabankEntries_configformat(dbname, dict_entries, verbose=True):
         "download_date",
         "wavenumber_min",
         "wavenumber_max",
-        "files",
     ]:
         if entry in dict_entries:
             config[dbname][entry] = dict_entries.pop(entry)
