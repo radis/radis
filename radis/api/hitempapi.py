@@ -673,7 +673,6 @@ def read_and_write_chunked_for_CO2(
     output="pandas",
     verbose=True,
     local_databases=None,
-    databank_name=None,
 ):
     """
     Download, parse and cache CO2 data chunks for specified wavenumber range.
@@ -822,10 +821,9 @@ def read_and_write_chunked_for_CO2(
                 _append_dataframe(df)
 
             # Register (or update last_used for) this file
-            if databank_name is not None:
-                wmin, wmax = wav_pairs[i]
-                file_entry = _build_file_entry(file, wmin, wmax, engine)
-                register_partial_hitemp_co2(file_entry)
+            wmin, wmax = wav_pairs[i]
+            file_entry = _build_file_entry(file, wmin, wmax, engine)
+            register_partial_hitemp_co2(file_entry)
 
             # Always remove .par file after processing
             if os.path.exists(file):
@@ -870,7 +868,6 @@ def download_and_decompress_CO2_into_df(
     verbose=True,
     engine="pytables",
     output="pandas",
-    databank_name=None,
 ):
     """
     This function handles downloading the HITEMP CO2 database. The full 2024 database is downloaded in smaller files of approximately 50-70 MB (500 MB decompressed chunks in h5 format), locating the appropriate data chunk based on the provided wavenumber range and reading the relevant data into a DataFrame.
@@ -923,7 +920,6 @@ def download_and_decompress_CO2_into_df(
         output=output,
         verbose=verbose,
         local_databases=local_databases,
-        databank_name=databank_name,
     )
     combined_df = combined_df[
         (combined_df["wav"] >= load_wavenum_min)

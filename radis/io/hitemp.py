@@ -149,10 +149,6 @@ def fetch_hitemp(
         if engine == "default":
             engine = "pytables"
 
-        # Format databank name before passing to download function
-        if r"{molecule}" in databank_name:
-            databank_name = databank_name.format(**{"molecule": molecule})
-
         df, local_paths = download_and_decompress_CO2_into_df(
             local_databases=local_databases,
             load_wavenum_min=load_wavenum_min,
@@ -162,7 +158,6 @@ def fetch_hitemp(
             verbose=verbose,
             engine=engine,
             output=output,
-            databank_name=databank_name,
         )
 
         if return_local_path:
