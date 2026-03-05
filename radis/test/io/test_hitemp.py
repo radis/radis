@@ -267,9 +267,20 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
     registered = {basename(f["path"]): f for f in entry["files"]}
     for par_file in expected_files:
         h5_file = par_file.replace(".par", ".h5")
-        assert h5_file in registered, f"Expected {h5_file} in registered files, got {list(registered)}"
+        assert (
+            h5_file in registered
+        ), f"Expected {h5_file} in registered files, got {list(registered)}"
         meta = registered[h5_file]
-        assert all(k in meta for k in ("wavenumber_min", "wavenumber_max", "download_date", "last_used", "size_mb"))
+        assert all(
+            k in meta
+            for k in (
+                "wavenumber_min",
+                "wavenumber_max",
+                "download_date",
+                "last_used",
+                "size_mb",
+            )
+        )
         assert meta["size_mb"] > 0
 
 
