@@ -329,7 +329,6 @@ def fetch_exomol(
     if output == "jax":
         try:
             import jax.numpy as jnp
-            import numpy as np
             for col in ["nu_lines", "logsij0", "elower"]:
                 if col in df.columns:
                     df[col] = jnp.array(df[col].to_numpy())
