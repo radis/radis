@@ -682,8 +682,6 @@ def rescale_updown_levels(
         rescale_nu = abs(new_nu / old_nu - 1)
         rescale_nl = abs(new_nl / old_nl - 1)
         if rescale_nu > 0.3 or rescale_nl > 0.3:
-            from warnings import warn
-
             warn(
                 f"Large rescaling detected: nu factor={new_nu/old_nu:.2f}, "
                 f"nl factor={new_nl/old_nl:.2f}. For large changes, "
