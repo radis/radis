@@ -28,7 +28,12 @@ from tqdm import tqdm
 
 from radis.api.hdf5 import update_pytables_to_vaex
 from radis.db.hitemp_co2 import partial_download_co2_chunk
-from radis.misc.config import CONFIG_PATH_JSON, getDatabankEntries
+from radis.misc.config import (
+    CONFIG_PATH_JSON,
+    addDatabankEntries,
+    getDatabankEntries,
+    getDatabankList,
+)
 from radis.misc.warning import DatabaseAlreadyExists
 from radis.tools.read_wav_index import get_key_pairs
 
@@ -641,6 +646,27 @@ def _download_single_chunk(
     )
 
 
+def _build_file_entry(par_path, wmin, wmax, engine):
+    """Build a per-file metadata dict for a single CO2 chunk."""
+
+    cache_path = str(_fcache_file_name(par_path, engine))
+    today = time.strftime("%Y-%m-%d")
+
+    entry = {
+        "path": cache_path,
+        "wavenumber_min": wmin,
+        "wavenumber_max": wmax,
+        "download_date": today,
+    }
+
+    if os.path.exists(cache_path):
+        size_bytes = os.path.getsize(cache_path)
+        entry["size_mb"] = round(size_bytes / (1024 * 1024), 2)
+
+    entry["last_used"] = today
+    return entry
+
+
 def read_and_write_chunked_for_CO2(
     load_wavenum_max,
     load_wavenum_min,
@@ -798,17 +824,17 @@ def read_and_write_chunked_for_CO2(
                 )
                 _append_dataframe(df)
 
+            # Register (or update last_used for) this file
+            if databank_name is not None:
+                wmin, wmax = wav_pairs[i]
+                file_entry = _build_file_entry(file, wmin, wmax, engine)
+                register_partial_hitemp_co2(databank_name, file_entry)
+
             # Always remove .par file after processing
             if os.path.exists(file):
                 os.remove(file)
 
             pbar.update(1)
-
-    # Register the CO2 database in radis.json
-    if databank_name is not None:
-        register_partial_hitemp_co2(
-            databank_name, local_paths, wav_pairs, engine=engine
-        )
 
     # Combine DataFrames
     if dataframes:
@@ -835,7 +861,7 @@ def read_and_write_chunked_for_CO2(
     else:
         combined_df = pd.DataFrame()
 
-    return combined_df, local_paths, wav_pairs
+    return combined_df, local_paths
 
 
 def download_and_decompress_CO2_into_df(
@@ -891,7 +917,7 @@ def download_and_decompress_CO2_into_df(
     if columns is not None and "iso" not in columns:
         columns = columns + ["iso"]
 
-    combined_df, local_files, wav_pairs = read_and_write_chunked_for_CO2(
+    combined_df, local_files = read_and_write_chunked_for_CO2(
         load_wavenum_max,
         load_wavenum_min,
         columns=columns,
@@ -902,7 +928,6 @@ def download_and_decompress_CO2_into_df(
         local_databases=local_databases,
         databank_name=databank_name,
     )
-    # Recompute wav_pairs here to return
     combined_df = combined_df[
         (combined_df["wav"] >= load_wavenum_min)
         & (combined_df["wav"] <= load_wavenum_max)
@@ -911,76 +936,38 @@ def download_and_decompress_CO2_into_df(
     if original_columns is not None and "iso" not in original_columns:
         combined_df = combined_df.drop(columns=["iso"])
 
-    return combined_df, local_files, wav_pairs
+    return combined_df, local_files
 
 
 def register_partial_hitemp_co2(
     databank_name,
-    local_paths,
-    wav_pairs,
-    engine="pytables",
+    file_entry,
     info_prefix="HITEMP 2024, CO2, partial chunk download",
 ):
     """
     Register a partial HITEMP CO2 2024 download in radis.json.
     """
-    import time
 
     import radis
-    from radis.misc.config import (
-        addDatabankEntries,
-        getDatabankEntries,
-        getDatabankList,
-    )
-
-    if not wav_pairs:
-        raise ValueError("No wav_pairs provided for registration")
 
     today = time.strftime("%Y-%m-%d")
-
-    # Build per-file metadata using the actual cached HDF5 paths
-    new_files_meta = []
-    new_cache_paths = []
-    for par_path, (wmin, wmax) in zip(local_paths, wav_pairs):
-        cache_path = str(_fcache_file_name(par_path, engine))
-        new_cache_paths.append(cache_path)
-
-        file_entry = {
-            "path": cache_path,
-            "wavenumber_min": wmin,
-            "wavenumber_max": wmax,
-            "download_date": today,
-        }
-
-        if os.path.exists(cache_path):
-            size_bytes = os.path.getsize(cache_path)
-            file_entry["size_mb"] = round(size_bytes / (1024 * 1024), 2)
-
-        file_entry["last_used"] = today
-
-        new_files_meta.append(file_entry)
+    cache_path = file_entry["path"]
 
     # Merge with existing entry if present
-    files_meta = []
-    cache_paths = []
     if databank_name in getDatabankList():
         existing = getDatabankEntries(databank_name)
-        existing_files = existing.get("files", [])
-        existing_paths = {f["path"] for f in existing_files}
-        new_paths = {f["path"] for f in new_files_meta}
-        # Keep existing files, updating last_used for re-used ones
-        for ef in existing_files:
-            if ef["path"] in new_paths:
-                ef["last_used"] = today
-            files_meta.append(ef)
-        cache_paths.extend(existing.get("path", []))
-        for f, cp in zip(new_files_meta, new_cache_paths):
-            if f["path"] not in existing_paths:
-                files_meta.append(f)
-                cache_paths.append(cp)
+        files_meta = existing.get("files", [])
+        cache_paths = existing.get("path", [])
+        existing_file = next((f for f in files_meta if f["path"] == cache_path), None)
+        if existing_file is not None:
+            # Update last_used for the existing file
+            existing_file["last_used"] = today
+        else:
+            files_meta.append(file_entry)
+            cache_paths.append(cache_path)
     else:
-        files_meta = new_files_meta
-        cache_paths = new_cache_paths
+        files_meta = [file_entry]
+        cache_paths = [cache_path]
 
     cache_paths = list(dict.fromkeys(cache_paths))
 

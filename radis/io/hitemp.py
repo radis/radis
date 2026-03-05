@@ -153,7 +153,7 @@ def fetch_hitemp(
         if r"{molecule}" in databank_name:
             databank_name = databank_name.format(**{"molecule": molecule})
 
-        df, local_paths, wav_pairs = download_and_decompress_CO2_into_df(
+        df, local_paths = download_and_decompress_CO2_into_df(
             local_databases=local_databases,
             load_wavenum_min=load_wavenum_min,
             load_wavenum_max=load_wavenum_max,
