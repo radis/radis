@@ -301,19 +301,19 @@ def LineSurvey(
                 val = f"{row[k]:.3g}"
             else:
                 val = f"{row[k]}"
-            label += f"<br>{k} {name}: {val} {unit}"
+            label += f"<br><b>{k}</b> {name}: {val} {unit}"
             # If lower value, also show upper value on same line
             if k[-1] == "l" and k[:-1] + "u" in details:
                 k_up = k[:-1] + "u"
                 if is_float(row[k_up]):
                     label += (
                         "&nbsp;" * (30 - len(k) - len(val))
-                        + f"{k_up} {name}: {row[k_up]:.3g} {unit}"
+                        + f"<b>{k_up}</b> {name}: {row[k_up]:.3g} {unit}"
                     )
                 else:
                     label += (
                         "&nbsp;" * (30 - len(k) - len(val))
-                        + f"{k_up} {name}: {row[k_up]} {unit}"
+                        + f"<b>{k_up}</b> {name}: {row[k_up]} {unit}"
                     )
 
         return label
@@ -359,7 +359,7 @@ def LineSurvey(
                     iso = "?"
 
                 label = (
-                    "{molec}[iso{iso}] [{branch}{jl:.0f}]({vl:.0f})->({vu:.0f})".format(
+                    "{molec}[iso{iso}] {branch}({vl:.0f},{jl:.0f})".format(
                         **dict(
                             [(k, row[k]) for k in add]
                             + [
@@ -391,7 +391,7 @@ def LineSurvey(
                 else:
                     iso = "?"
 
-                label = "{molec} [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})".format(
+                label = "{molec}[iso{iso}] {branch}({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f},{jl:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})".format(
                     **dict(
                         [(k, row[k]) for k in add]
                         + [
@@ -424,7 +424,7 @@ def LineSurvey(
                 else:
                     iso = "?"
 
-                label = "{molec} [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}{l2l}{v3l:.0f} r={rl})->({v1u:.0f}{v2u:.0f}{l2u}{v3u:.0f} r={ru})"
+                label = "{molec}[iso{iso}] {branch}({v1l:.0f}{v2l:.0f}{l2l}{v3l:.0f},{jl:.0f} r={rl})->({v1u:.0f}{v2u:.0f}{l2u}{v3u:.0f} r={ru})"
                 label = label.format(
                     **dict(
                         [
@@ -499,7 +499,7 @@ def LineSurvey(
         else:
             iso = "?"
 
-        label = "CO2 [{branch}{jl:.0f}](p{polyl:.0f}c{wangl:.0f}n{rankl:.0f})->(p{polyu:.0f}c{wangu:.0f}n{ranku:.0f})".format(
+        label = "CO2[iso{iso}] {branch}(p{polyl:.0f}c{wangl:.0f}n{rankl:.0f},{jl:.0f})->(p{polyu:.0f}c{wangu:.0f}n{ranku:.0f})".format(
             **dict(
                 [(k, row[k]) for k in add]
                 + [("iso", iso), ("branch", _fix_branch_format[row["branch"]])]
@@ -518,7 +518,7 @@ def LineSurvey(
         else:
             iso = "?"
 
-        label = "CO2 [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})".format(
+        label = "CO2[iso{iso}] {branch}({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f},{jl:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})".format(
             **dict(
                 [
                     (k, row[k])
@@ -573,11 +573,26 @@ def LineSurvey(
         columns : list, optional
             If provided, only show these columns. Otherwise show all.
         """
+        # Build a spectroscopic header if branch/vl/jl columns are available
+        header = ""
+        if "branch" in row and "jl" in row:
+            try:
+                branch = _fix_branch_format.get(row["branch"], row["branch"])
+                if "vl" in row:
+                    header = f"{branch}({row['vl']:.0f},{row['jl']:.0f})"
+                else:
+                    header = f"{branch}({row['jl']:.0f})"
+            except (ValueError, TypeError):
+                pass
+        if header:
+            label = header + "<br>"
+        else:
+            label = ""
         if columns is not None:
             items = [(k, row[k]) for k in columns if k in row.index]
         else:
             items = row.items()
-        label = "<br>".join([f"{k}: {v}" for k, v in items])
+        label += "<br>".join([f"<b>{k}</b>: {v}" for k, v in items])
         return label
 
     def get_label_none(row):
