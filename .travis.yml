@@ -57,7 +57,10 @@ script:
   - xvfb-run -a env PYTHONPATH="." pytest -m "needs_gpu" --durations=10 --cov=radis --cov-report=xml:coverage.xml
   - echo ">>> Run tests require HITRAN/HITEMP credentials (write access only)"
   - xvfb-run -a env PYTHONPATH="." pytest -m "needs_HITRAN_credentials and not download_large_databases" --durations=10 --cov=radis --cov-report=xml:coverage.xml --cov-append
-  - bash <(curl -s https://codecov.io/bash) -f coverage.xml -t $CODECOV_TOKEN -F travis -v
+  # Upload coverage to Codecov. Clear CODECOV_TOKEN to prevent routing to the
+  # wrong project (the token in Travis settings belongs to a fork).
+  - pip install codecov-cli
+  - CODECOV_TOKEN= codecovcli -v --auto-load-params-from travis do-upload --slug radis/radis -f coverage.xml --disable-search
 
 # stages: #This sequence defines the order of the stages
 #   - name: deploy
