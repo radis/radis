@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """ """
+
 import os
 import shutil
 from os.path import abspath, dirname, exists, expanduser, join, split, splitext
@@ -37,7 +38,6 @@ import re
 from datetime import date
 
 import pandas as pd
-import requests
 from dateutil.parser import parse as parse_date
 from joblib import Parallel, delayed
 
@@ -418,6 +418,8 @@ class DatabaseManager(object):
             )
 
             # Download file with requests
+            import requests
+
             if "hitemp" in urlname.lower():
                 # Get session from HITEMP API
                 from radis.api.hitempapi import login_to_hitran

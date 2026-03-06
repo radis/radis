@@ -24,8 +24,6 @@ Routine Listing
 import warnings
 
 import numpy as np
-from scipy.interpolate import interp1d
-from scipy.spatial.distance import cdist
 
 
 def curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True):
@@ -78,6 +76,8 @@ def curve_distance(w1, I1, w2, I2, discard_out_of_bounds=True):
     norm_w2 = np.max(w2) - np.min(w2)
     norm_I1 = np.max(I1) - np.min(I1)
     norm_I2 = np.max(I2) - np.min(I2)
+
+    from scipy.spatial.distance import cdist
 
     dist = cdist(
         np.array((w1 / norm_w1, I1 / norm_I1)).T,
@@ -282,6 +282,8 @@ def _curve_interpolate(w1, I1, w2, I2, is_sorted=False, kind="linear"):
 
     # resample if needed
     if not np.array_equal(w1, w2):
+        from scipy.interpolate import interp1d
+
         f = interp1d(w2, I2, kind=kind, bounds_error=False)
         I2 = f(w1)
 
