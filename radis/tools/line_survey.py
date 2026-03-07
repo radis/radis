@@ -387,16 +387,14 @@ def LineSurvey(
                 else:
                     iso = "?"
 
-                label = (
-                    "{molec}[iso{iso}] {branch}({vl:.0f},{jl:.0f})".format(
-                        **dict(
-                            [(k, row[k]) for k in add]
-                            + [
-                                ("iso", iso),
-                                ("molec", molecule),
-                                ("branch", _fix_branch_format[row["branch"]]),
-                            ]
-                        )
+                label = "{molec}[iso{iso}] {branch}({vl:.0f},{jl:.0f})".format(
+                    **dict(
+                        [(k, row[k]) for k in add]
+                        + [
+                            ("iso", iso),
+                            ("molec", molecule),
+                            ("branch", _fix_branch_format[row["branch"]]),
+                        ]
                     )
                 )
             elif molecule in HITRAN_CLASS4:  #  ["N2O", "OCS", "HCN"]
