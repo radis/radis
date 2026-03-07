@@ -225,6 +225,24 @@ def LineSurvey(
     else:
         columndescriptor = {}
 
+    def _fmt_val(k, v):
+        """Format a value: wavenumber with 2 decimals, others with 3 significant figures."""
+        if not is_float(v):
+            return f"{v}"
+        if k == "wav":
+            return f"{v:.2f}"
+        return f"{v:.3g}"
+
+    def _superscript_unit(unit):
+        """Convert plain-text unit exponents to Unicode superscripts.
+
+        e.g. 'cm-1/(molecule/cm-2)' -> 'cm⁻¹/(molecule/cm⁻²)'
+        """
+        repl = {"-1": "\u207b\u00b9", "-2": "\u207b\u00b2", "-3": "\u207b\u00b3"}
+        for old, new in repl.items():
+            unit = unit.replace(old, new)
+        return unit
+
     # Apply cutoff, get ylabel
     if plot == "S":
         if Iunit == "hitran":
@@ -244,12 +262,12 @@ def LineSurvey(
             Iunit_str = "cm-1/atm"
         else:
             raise ValueError(f"Unknown Iunit: {Iunit}")
-        ylabel = f"Linestrength ({Iunit_str})"
+        ylabel = f"Linestrength ({_superscript_unit(Iunit_str)})"
     else:
         cutoff = 0
         try:  # to find units and real name (if columndescriptor is known exists in initial databank)
             _, _, name, unit = columndescriptor[plot]
-            ylabel = f"{name} - {plot} [{unit}]"
+            ylabel = f"{name} - {plot} ({_superscript_unit(unit)})"
         except KeyError:
             ylabel = plot
 
@@ -287,7 +305,7 @@ def LineSurvey(
     _display_names = {
         "int": "S",
         "El": "E\u2032\u2032",
-        "wav": "\u03bd",
+        "wav": "\U0001d708",
     }
 
     # Units for common columns (used for unknown/ExoMol formats)
@@ -315,25 +333,17 @@ def LineSurvey(
                 continue  #  don't show "upper" value. Will be shown on same line as lower
 
             display = _display_names.get(k, k)
-            if is_float(row[k]):
-                val = f"{row[k]:.3g}"
-            else:
-                val = f"{row[k]}"
+            val = _fmt_val(k, row[k])
             label += f"<br><b>{display}</b>: {val} {unit}"
             # If lower value, also show upper value on same line
             if k[-1] == "l" and k[:-1] + "u" in details:
                 k_up = k[:-1] + "u"
                 display_up = _display_names.get(k_up, k_up)
-                if is_float(row[k_up]):
-                    label += (
-                        "&nbsp;" * (30 - len(display) - len(val))
-                        + f"<b>{display_up}</b>: {row[k_up]:.3g} {unit}"
-                    )
-                else:
-                    label += (
-                        "&nbsp;" * (30 - len(display) - len(val))
-                        + f"<b>{display_up}</b>: {row[k_up]} {unit}"
-                    )
+                val_up = _fmt_val(k_up, row[k_up])
+                label += (
+                    "&nbsp;" * (30 - len(display) - len(val))
+                    + f"<b>{display_up}</b>: {val_up} {unit}"
+                )
 
         return label
 
@@ -482,8 +492,6 @@ def LineSurvey(
             # Add details about some line properties
             label += add_details(row, details)
 
-            label += f"<br>s.lines index: {row.name}"
-
         except KeyError as err:
             print(
                 f"Error during customized Line survey labelling. Printing everything : \n{str(err)}"
@@ -559,8 +567,6 @@ def LineSurvey(
 
         label += add_details(row, details)
 
-        label += f"<br>s.lines index: {row.name}"
-
         return label
 
     def get_label_nist(row, attrs):
@@ -613,7 +619,7 @@ def LineSurvey(
             items = row.items()
         label += "<br>".join(
             [
-                f"<b>{_display_names.get(k, k)}</b>: {v}"
+                f"<b>{_display_names.get(k, k)}</b>: {_fmt_val(k, v)}"
                 + (f" {_display_units[k]}" if k in _display_units else "")
                 for k, v in items
             ]
@@ -636,9 +642,10 @@ def LineSurvey(
             try:  # to find units and real name (if exists in initial databank)
                 _, ktype, name, unit = columndescriptor[k]
             except KeyError:
-                details[k] = ("", None, "")  # keep short name
+                fallback_unit = _display_units.get(k, "")
+                details[k] = ("", None, f" {fallback_unit}" if fallback_unit else "")
             else:
-                details[k] = (name, ktype, f" [{unit}]")
+                details[k] = (name, ktype, f" {_superscript_unit(unit)}")
 
     # Get label
     if dbformat in ["hitran", "hitemp", "hitemp-radisdb", "radisdb-hitemp", "geisa"]:
@@ -701,6 +708,11 @@ def LineSurvey(
         #    **{"T": T, "P": P, "Xi": Xi}
         # ),
         hovermode="closest",
+        hoverlabel=dict(
+            bgcolor="white",
+            font=dict(color="#333", size=13, family="Arial, sans-serif"),
+            bordercolor="#ccc",
+        ),
         xaxis=dict(
             title=xlabel,
             range=(x_range.min(), x_range.max()),
