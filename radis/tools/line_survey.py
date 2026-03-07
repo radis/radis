@@ -283,6 +283,24 @@ def LineSurvey(
     # Parse databank to get relevant information on each line
     # (one function per databank format)
 
+    # Display name mapping for common spectroscopic quantities
+    _display_names = {
+        "int": "S",
+        "El": "E\u2032\u2032",
+        "wav": "\u03bd",
+    }
+
+    # Units for common columns (used for unknown/ExoMol formats)
+    _display_units = {
+        "wav": "cm\u207b\u00b9",
+        "int": "cm\u207b\u00b9/(molecule/cm\u207b\u00b2)",
+        "El": "cm\u207b\u00b9",
+        "A": "s\u207b\u00b9",
+        "airbrd": "cm\u207b\u00b9/atm",
+        "selbrd": "cm\u207b\u00b9/atm",
+        "S": "cm\u207b\u00b9/(molecule/cm\u207b\u00b2)",
+    }
+
     def add_details(row, details):
         r"""Add details in string; add on 2 columns if "upper" and "lower" value follow"
 
@@ -292,28 +310,29 @@ def LineSurvey(
         """
         label = ""
         for k in details:
-            name, _, unit = details[k]
+            _, _, unit = details[k]
             if k[-1] == "u" and k[:-1] + "l" in details:
                 continue  #  don't show "upper" value. Will be shown on same line as lower
 
-            name = f"({name})" if name else name
+            display = _display_names.get(k, k)
             if is_float(row[k]):
                 val = f"{row[k]:.3g}"
             else:
                 val = f"{row[k]}"
-            label += f"<br><b>{k}</b> {name}: {val} {unit}"
+            label += f"<br><b>{display}</b>: {val} {unit}"
             # If lower value, also show upper value on same line
             if k[-1] == "l" and k[:-1] + "u" in details:
                 k_up = k[:-1] + "u"
+                display_up = _display_names.get(k_up, k_up)
                 if is_float(row[k_up]):
                     label += (
-                        "&nbsp;" * (30 - len(k) - len(val))
-                        + f"<b>{k_up}</b> {name}: {row[k_up]:.3g} {unit}"
+                        "&nbsp;" * (30 - len(display) - len(val))
+                        + f"<b>{display_up}</b>: {row[k_up]:.3g} {unit}"
                     )
                 else:
                     label += (
-                        "&nbsp;" * (30 - len(k) - len(val))
-                        + f"<b>{k_up}</b> {name}: {row[k_up]} {unit}"
+                        "&nbsp;" * (30 - len(display) - len(val))
+                        + f"<b>{display_up}</b>: {row[k_up]} {unit}"
                     )
 
         return label
@@ -352,9 +371,9 @@ def LineSurvey(
                 add = ["vu", "vl", "jl"]
 
                 if "iso" in row:
-                    iso = row["iso"]
+                    iso = int(row["iso"])
                 elif "isotope" in spec.conditions:
-                    iso = spec.conditions["isotope"]
+                    iso = int(spec.conditions["isotope"])
                 else:
                     iso = "?"
 
@@ -385,9 +404,9 @@ def LineSurvey(
                 ]
 
                 if "iso" in row:
-                    iso = row["iso"]
+                    iso = int(row["iso"])
                 elif "isotope" in spec.conditions:
-                    iso = spec.conditions["isotope"]
+                    iso = int(spec.conditions["isotope"])
                 else:
                     iso = "?"
 
@@ -418,9 +437,9 @@ def LineSurvey(
                 ]
 
                 if "iso" in row:
-                    iso = row["iso"]
+                    iso = int(row["iso"])
                 elif "isotope" in spec.conditions:
-                    iso = spec.conditions["isotope"]
+                    iso = int(spec.conditions["isotope"])
                 else:
                     iso = "?"
 
@@ -493,9 +512,9 @@ def LineSurvey(
         ]
 
         if "iso" in row:
-            iso = row["iso"]
+            iso = int(row["iso"])
         elif "isotope" in spec.conditions:
-            iso = spec.conditions["isotope"]
+            iso = int(spec.conditions["isotope"])
         else:
             iso = "?"
 
@@ -512,9 +531,9 @@ def LineSurvey(
 
     def get_label_cdsd_hitran(row, details):
         if "iso" in row:
-            iso = row["iso"]
+            iso = int(row["iso"])
         elif "isotope" in spec.conditions:
-            iso = spec.conditions["isotope"]
+            iso = int(spec.conditions["isotope"])
         else:
             iso = "?"
 
@@ -592,7 +611,13 @@ def LineSurvey(
             items = [(k, row[k]) for k in columns if k in row.index]
         else:
             items = row.items()
-        label += "<br>".join([f"<b>{k}</b>: {v}" for k, v in items])
+        label += "<br>".join(
+            [
+                f"<b>{_display_names.get(k, k)}</b>: {v}"
+                + (f" {_display_units[k]}" if k in _display_units else "")
+                for k, v in items
+            ]
+        )
         return label
 
     def get_label_none(row):
@@ -655,6 +680,7 @@ def LineSurvey(
             x=get_x(sp.shiftwav),
             y=sp[plot],
             text=sp.label,
+            hoverinfo="text",
             width=barwidth,
             name="linestrength",
         )
@@ -735,6 +761,42 @@ def LineSurvey(
 
     if writefile:
         py.plot(fig, filename=writefile, auto_open=True)
+
+        # Inject copy-to-clipboard JS + hint text into the HTML file
+        _clipboard_js = (
+            "\n<script>\n"
+            "document.addEventListener('DOMContentLoaded', function() {\n"
+            "    var plot = document.querySelector('.plotly-graph-div');\n"
+            "    if (plot) {\n"
+            "        plot.on('plotly_click', function(data) {\n"
+            "            var text = data.points[0].text;\n"
+            "            if (text) {\n"
+            "                var plain = text.replace(/<br>/g, '\\n').replace(/<[^>]*>/g, '');\n"
+            "                navigator.clipboard.writeText(plain).then(function() {\n"
+            "                    var el = document.createElement('div');\n"
+            "                    el.textContent = 'Copied to clipboard!';\n"
+            "                    el.style.cssText = 'position:fixed;bottom:20px;left:50%;"
+            "transform:translateX(-50%);background:#4CAF50;color:white;"
+            "padding:10px 20px;border-radius:5px;z-index:9999;"
+            "font-family:sans-serif;';\n"
+            "                    document.body.appendChild(el);\n"
+            "                    setTimeout(function(){ el.remove(); }, 1500);\n"
+            "                });\n"
+            "            }\n"
+            "        });\n"
+            "    }\n"
+            "});\n"
+            "</script>\n"
+            "<p style='text-align:center;color:#888;font-family:sans-serif;"
+            "font-size:12px;margin-top:5px;'>"
+            "Click on plot to copy data to clipboard.</p>\n"
+        )
+        # Insert before </html> tag
+        with open(writefile, "r", encoding="utf-8") as f:
+            html = f.read()
+        html = html.replace("</html>", _clipboard_js + "</html>")
+        with open(writefile, "w", encoding="utf-8") as f:
+            f.write(html)
 
     return fig
 
