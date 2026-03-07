@@ -14,7 +14,7 @@ from radis.api.hitempapi import (
     keep_only_relevant,
 )
 from radis.io.hitemp import fetch_hitemp
-from radis.misc.config import getDatabankList
+from radis.misc.config import getDatabankEntries, getDatabankList
 from radis.misc.utils import NotInstalled, not_installed_vaex_args
 from radis.tools.read_wav_index import get_key_pairs
 
@@ -260,6 +260,28 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
     assert (
         actual_files == expected_files
     ), f"Expected files {expected_files}, got {actual_files}"
+
+    # Verify registration in radis.json
+    assert "HITEMP-CO2-2024" in getDatabankList()
+    entry = getDatabankEntries("HITEMP-CO2-2024")
+    registered = {basename(f["path"]): f for f in entry["files"]}
+    for par_file in expected_files:
+        h5_file = par_file.replace(".par", ".h5")
+        assert (
+            h5_file in registered
+        ), f"Expected {h5_file} in registered files, got {list(registered)}"
+        meta = registered[h5_file]
+        assert all(
+            k in meta
+            for k in (
+                "wavenumber_min",
+                "wavenumber_max",
+                "download_date",
+                "last_used",
+                "size_mb",
+            )
+        )
+        assert meta["size_mb"] > 0
 
 
 def test_read_wav_index():

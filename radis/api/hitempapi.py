@@ -25,7 +25,12 @@ import pandas as pd
 
 from radis.api.hdf5 import update_pytables_to_vaex
 from radis.db.hitemp_co2 import partial_download_co2_chunk
-from radis.misc.config import CONFIG_PATH_JSON, getDatabankEntries
+from radis.misc.config import (
+    CONFIG_PATH_JSON,
+    addDatabankEntries,
+    getDatabankEntries,
+    getDatabankList,
+)
 from radis.misc.warning import DatabaseAlreadyExists
 from radis.tools.read_wav_index import get_key_pairs
 
@@ -651,6 +656,24 @@ def _download_single_chunk(
     )
 
 
+def _build_file_entry(par_path, wmin, wmax, engine):
+    """Build a per-file metadata dict for a single CO2 chunk."""
+
+    cache_path = str(_fcache_file_name(par_path, engine))
+    today = time.strftime("%Y-%m-%d %H:%M")
+    size_bytes = os.path.getsize(cache_path)
+
+    entry = {
+        "path": cache_path,
+        "wavenumber_min": wmin,
+        "wavenumber_max": wmax,
+        "download_date": today,
+        "size_mb": round(size_bytes / (1024 * 1024), 2),
+        "last_used": today,
+    }
+    return entry
+
+
 def read_and_write_chunked_for_CO2(
     load_wavenum_max,
     load_wavenum_min,
@@ -809,6 +832,11 @@ def read_and_write_chunked_for_CO2(
                 )
                 _append_dataframe(df)
 
+            # Register (or update last_used for) this file
+            wmin, wmax = wav_pairs[i]
+            file_entry = _build_file_entry(file, wmin, wmax, engine)
+            register_partial_hitemp_co2(file_entry)
+
             # Always remove .par file after processing
             if os.path.exists(file):
                 os.remove(file)
@@ -914,6 +942,55 @@ def download_and_decompress_CO2_into_df(
         combined_df = combined_df.drop(columns=["iso"])
 
     return combined_df, local_files
+
+
+def register_partial_hitemp_co2(
+    file_entry,
+):
+    """
+    Register a partial HITEMP CO2 2024 download in radis.json.
+    """
+    databank_name = "HITEMP-CO2-2024"
+    from radis import config
+
+    today = time.strftime("%Y-%m-%d %H:%M")
+    cache_path = file_entry["path"]
+
+    # Merge with existing entry if present
+    if databank_name in getDatabankList():
+        existing = getDatabankEntries(databank_name)
+        files_meta = existing.get("files", [])
+        cache_paths = existing.get("path", [])
+        existing_file = next((f for f in files_meta if f["path"] == cache_path), None)
+        if existing_file is not None:
+            # Update last_used for the existing file
+            existing_file["last_used"] = today
+        else:
+            files_meta.append(file_entry)
+            cache_paths.append(cache_path)
+    else:
+        files_meta = [file_entry]
+        cache_paths = [cache_path]
+
+    cache_paths = list(dict.fromkeys(cache_paths))
+
+    info = f"HITEMP 2024, CO2, partial chunk download, {len(files_meta)} chunk(s)"
+    entry = {
+        "info": info,
+        "path": cache_paths,
+        "format": "hitemp-radisdb",
+        "wavenumber_min": "",
+        "wavenumber_max": "",
+        "download_date": today,
+        "files": files_meta,
+    }
+
+    old_overwrite = config["ALLOW_OVERWRITE"]
+    try:
+        config["ALLOW_OVERWRITE"] = True
+        addDatabankEntries(databank_name, dict(entry))
+    finally:
+        config["ALLOW_OVERWRITE"] = old_overwrite
 
 
 class HITEMPDatabaseManager(DatabaseManager):
