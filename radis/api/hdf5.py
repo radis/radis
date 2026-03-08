@@ -70,7 +70,7 @@ def update_pytables_to_vaex(fname, remove_initial=False, verbose=True, key="df")
 
 class HDF5Manager(object):
     def __init__(*args, **kwargs):
-        raise DeprecationWarning("HDF5Manager replaced with DataFileManager")
+        raise NotImplementedError("HDF5Manager replaced with DataFileManager")
 
 
 class DataFileManager(object):

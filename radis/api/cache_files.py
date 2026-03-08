@@ -663,7 +663,7 @@ def filter_metadata(arguments, discard_variables=["self", "verbose"]):
 
 
 def cache_file_name(fname, engine="pytables"):
-    raise DeprecationWarning("Use DataFileManager.cache_file() instead")
+    raise NotImplementedError("Use DataFileManager.cache_file() instead")
 
 
 if __name__ == "__main__":

@@ -1439,10 +1439,11 @@ class Spectrum(object):
         :ref:`the Spectrum page <label_spectrum>`
         """
         if which is not None:
-            raise DeprecationWarning(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_wavelength()"
+            warn(
+                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_wavelength()",
+                DeprecationWarning,
+                stacklevel=2,
             )
-            # TODO: remove after 0.9.31
 
         # Check input
         if not medium in ["air", "vacuum"]:
@@ -1492,10 +1493,11 @@ class Spectrum(object):
             quantities
         """
         if which is not None:
-            raise DeprecationWarning(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_wavenumber()"
+            warn(
+                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_wavenumber()",
+                DeprecationWarning,
+                stacklevel=2,
             )
-            # TODO: remove after 0.9.31
 
         w = self._get_wavespace(copy=copy)
 
@@ -2109,10 +2111,11 @@ class Spectrum(object):
 
         """
         if which is not None:
-            raise DeprecationWarning(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_vars()"
+            warn(
+                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_vars()",
+                DeprecationWarning,
+                stacklevel=2,
             )
-            # TODO: remove after 0.9.31
 
         # remove wavespace
         varlist = [k for k in self._q.keys() if k != "wavespace"]
@@ -2125,10 +2128,11 @@ class Spectrum(object):
 
         """
         if which is not None:
-            raise DeprecationWarning(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_quantities()"
+            warn(
+                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_quantities()",
+                DeprecationWarning,
+                stacklevel=2,
             )
-            # TODO: remove after 0.9.31
 
         return self.get_vars()
 
@@ -4482,10 +4486,13 @@ class Spectrum(object):
         """
         # Check inputs (check for deprecated)
         if if_conflict_drop is not None:
-            raise DeprecationWarning(
-                "`if_conflict_drop` parameter was deleted in Radis 0.9.30"
+            import warnings
+
+            warnings.warn(
+                "`if_conflict_drop` parameter was deleted in Radis 0.9.30",
+                DeprecationWarning,
+                stacklevel=2,
             )
-            # TODO: remove after 0.9.31
 
         if inplace:
             s = self
