@@ -28,6 +28,7 @@
     "RESAMPLING_TOLERANCE_THRESHOLD": 5e-3  # an error if raises if areas do not match by a value above, this threshold during resampling. See :py:meth:`~radis.spectrum.spectrum.Spectrum.resample`
     "DATAFRAME_ENGINE" : "pandas"
     "MISSING_BROAD_COEF" : false            # accepted values: false and "air". If "air", missing boradening coefficients are replaced by those of air.
+    "HITEMP_CO2_CACHE_LIMIT_MB": 5000        # LRU cache limit for HITEMP CO2 chunks in MB (~5 GB default). Set to 0 to disable eviction.
 
     # molecular parameters
     # --------------------

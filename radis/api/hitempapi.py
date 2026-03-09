@@ -843,6 +843,13 @@ def read_and_write_chunked_for_CO2(
 
             pbar.update(1)
 
+    # Run LRU cache eviction
+    evict_lru_cache(
+        user_wmin=load_wavenum_min,
+        user_wmax=load_wavenum_max,
+        verbose=verbose,
+    )
+
     # Combine DataFrames
     if dataframes:
         printer.info("Combining parsed data from all chunks...", indent=1)
@@ -991,6 +998,96 @@ def register_partial_hitemp_co2(
         addDatabankEntries(databank_name, dict(entry))
     finally:
         config["ALLOW_OVERWRITE"] = old_overwrite
+
+
+def _save_cleaned_metadata(existing_entry, files_meta, verbose=False):
+    databank_name = "HITEMP-CO2-2024"
+    from radis import config
+
+    today = time.strftime("%Y-%m-%d %H:%M")
+    existing_entry["files"] = files_meta
+    existing_entry["path"] = list(dict.fromkeys(f["path"] for f in files_meta))
+    existing_entry["format"] = "hitemp-radisdb"
+    existing_entry[
+        "info"
+    ] = f"HITEMP 2024, CO2, partial chunk download, {len(files_meta)} chunk(s)"
+    existing_entry["download_date"] = today
+
+    old_overwrite = config["ALLOW_OVERWRITE"]
+    try:
+        config["ALLOW_OVERWRITE"] = True
+        addDatabankEntries(databank_name, dict(existing_entry), verbose=verbose)
+    finally:
+        config["ALLOW_OVERWRITE"] = old_overwrite
+
+
+def evict_lru_cache(user_wmin, user_wmax, verbose=True):
+    databank_name = "HITEMP-CO2-2024"
+    cfg = read_config()
+    cache_limit_mb = cfg.get("HITEMP_CO2_CACHE_LIMIT_MB", 5000)
+
+    # Eviction disabled
+    if cache_limit_mb <= 0:
+        return
+
+    if databank_name not in getDatabankList():
+        return
+
+    if user_wmin is None or user_wmax is None:
+        return
+
+    existing = getDatabankEntries(databank_name)
+    files_meta = existing.get("files", [])
+
+    dirty = False
+
+    # Clean missing files
+    before_count = len(files_meta)
+    files_meta = [f for f in files_meta if os.path.exists(f["path"])]
+    removed = before_count - len(files_meta)
+    if removed:
+        dirty = True
+        if verbose:
+            warnings.warn(
+                f"LRU cache: removed {removed} stale metadata "
+                f"entr{'y' if removed == 1 else 'ies'} (files missing on disk)."
+            )
+
+    # Compute cache size (All files)
+    cache_size_mb = sum(f.get("size_mb", 0) for f in files_meta)
+
+    if cache_size_mb <= cache_limit_mb:
+        if dirty:
+            _save_cleaned_metadata(existing, files_meta, verbose=False)
+        return
+
+    # A chunk is protected if its wavenumber range overlaps with the user's requested range.
+    def _is_protected(entry):
+        chunk_wmin = entry.get("wavenumber_min", 0)
+        chunk_wmax = entry.get("wavenumber_max", float("inf"))
+        return chunk_wmin <= user_wmax and chunk_wmax >= user_wmin
+
+    evictable = [f for f in files_meta if not _is_protected(f)]
+    evictable.sort(key=lambda f: f.get("last_used", ""))
+
+    evicted_count = 0
+    while cache_size_mb > cache_limit_mb and len(evictable) > 0:
+        oldest = evictable.pop(0)
+        if os.path.exists(oldest["path"]):
+            os.remove(oldest["path"])
+        files_meta.remove(oldest)
+        cache_size_mb -= oldest.get("size_mb", 0)
+        evicted_count += 1
+
+    if verbose and evicted_count:
+        warnings.warn(
+            f"LRU cache: evicted {evicted_count} chunk(s). "
+            f"Cache size now {cache_size_mb:.1f} MB "
+            f"(limit: {cache_limit_mb} MB)."
+        )
+
+    if dirty or evicted_count > 0:
+        _save_cleaned_metadata(existing, files_meta, verbose=False)
 
 
 class HITEMPDatabaseManager(DatabaseManager):
