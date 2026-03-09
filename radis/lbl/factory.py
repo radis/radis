@@ -76,10 +76,10 @@ for Developers:
 
 ----------
 """
+
 from typing import Union
 from warnings import warn
 
-import astropy.units as u
 import numpy as np
 from numpy import arange, exp, expm1
 from scipy.optimize import OptimizeResult
@@ -593,6 +593,8 @@ class SpectrumFactory(BandFactory):
             )
 
         # Initialize input conditions
+        import astropy.units as u
+
         self.input.wavenum_min = wavenum_min
         self.input.wavenum_max = wavenum_max
         self.input.Tref = convert_and_strip_units(Tref, u.K)
@@ -813,6 +815,8 @@ class SpectrumFactory(BandFactory):
             )
 
         # Convert units
+        import astropy.units as u
+
         Tgas = convert_and_strip_units(Tgas, u.K)
         path_length = convert_and_strip_units(path_length, u.cm)
         pressure = convert_and_strip_units(pressure, u.bar)
@@ -1104,6 +1108,8 @@ class SpectrumFactory(BandFactory):
             )
 
         # Convert units
+        import astropy.units as u
+
         Tgas = convert_and_strip_units(Tgas, u.K)
         path_length = convert_and_strip_units(path_length, u.cm)
         pressure = convert_and_strip_units(pressure, u.bar)
@@ -1634,6 +1640,8 @@ class SpectrumFactory(BandFactory):
         # %% Preprocessing
         # --------------------------------------------------------------------
         # Convert units
+        import astropy.units as u
+
         Tvib = convert_and_strip_units(Tvib, u.K)
         Trot = convert_and_strip_units(Trot, u.K)
         Ttrans = convert_and_strip_units(Ttrans, u.K)

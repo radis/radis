@@ -9,6 +9,7 @@ https://stackoverflow.com/questions/55610891/numpy-load-from-io-bytesio-stream
 https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 
 """
+
 import json
 import os
 import re
@@ -21,14 +22,15 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
-import requests
-from bs4 import BeautifulSoup
-from cryptography.fernet import Fernet
-from tqdm import tqdm
 
 from radis.api.hdf5 import update_pytables_to_vaex
 from radis.db.hitemp_co2 import partial_download_co2_chunk
-from radis.misc.config import CONFIG_PATH_JSON, getDatabankEntries
+from radis.misc.config import (
+    CONFIG_PATH_JSON,
+    addDatabankEntries,
+    getDatabankEntries,
+    getDatabankList,
+)
 from radis.misc.warning import DatabaseAlreadyExists
 from radis.tools.read_wav_index import get_key_pairs
 
@@ -292,6 +294,8 @@ def setup_credentials():
 
 def get_encryption_key():
     """Get or create encryption key for HITRAN credentials"""
+    from cryptography.fernet import Fernet
+
     # Read existing radis.json
     config = read_config()
 
@@ -321,6 +325,8 @@ def get_encryption_key():
 
 def encrypt_password(password):
     """Encrypt password using Fernet symmetric encryption"""
+    from cryptography.fernet import Fernet
+
     key = get_encryption_key()
     f = Fernet(key)
     return f.encrypt(password.encode()).decode()
@@ -328,6 +334,8 @@ def encrypt_password(password):
 
 def decrypt_password(encrypted_password):
     """Decrypt password using Fernet symmetric encryption"""
+    from cryptography.fernet import Fernet
+
     key = get_encryption_key()
     f = Fernet(key)
     return f.decrypt(encrypted_password.encode()).decode()
@@ -365,6 +373,9 @@ def store_credentials(email, password):
 def login_to_hitran(verbose=False):
     """Login to HITRAN using stored credentials from radis.json or prompt if not available"""
     login_url = "https://hitran.org/login/"
+
+    import requests
+
     session = requests.Session()
 
     class LoginError(Exception):
@@ -409,6 +420,8 @@ def login_to_hitran(verbose=False):
                     f"HITRAN login failed due to a request error: {exc}. "
                     "Please check your network connection and try again."
                 )
+
+        from bs4 import BeautifulSoup
 
         soup = BeautifulSoup(response.text, "html.parser")
         csrf = soup.find("input", {"name": "csrfmiddlewaretoken"})["value"]
@@ -510,6 +523,8 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
             warnings.warn(warning_msg, UserWarning)
 
         with open(output_filename, "wb") as f:
+            from tqdm import tqdm
+
             with tqdm(
                 total=total_size,
                 unit="B",
@@ -639,6 +654,24 @@ def _download_single_chunk(
         out_file,
         verbose=verbose,
     )
+
+
+def _build_file_entry(par_path, wmin, wmax, engine):
+    """Build a per-file metadata dict for a single CO2 chunk."""
+
+    cache_path = str(_fcache_file_name(par_path, engine))
+    today = time.strftime("%Y-%m-%d %H:%M")
+    size_bytes = os.path.getsize(cache_path)
+
+    entry = {
+        "path": cache_path,
+        "wavenumber_min": wmin,
+        "wavenumber_max": wmax,
+        "download_date": today,
+        "size_mb": round(size_bytes / (1024 * 1024), 2),
+        "last_used": today,
+    }
+    return entry
 
 
 def read_and_write_chunked_for_CO2(
@@ -775,6 +808,8 @@ def read_and_write_chunked_for_CO2(
     ):
         printer.info("All files already cached.", indent=1)
 
+    from tqdm import tqdm
+
     with tqdm(
         total=len(local_paths), desc="Processing chunks", disable=not verbose
     ) as pbar:
@@ -796,6 +831,11 @@ def read_and_write_chunked_for_CO2(
                     verbose=False,
                 )
                 _append_dataframe(df)
+
+            # Register (or update last_used for) this file
+            wmin, wmax = wav_pairs[i]
+            file_entry = _build_file_entry(file, wmin, wmax, engine)
+            register_partial_hitemp_co2(file_entry)
 
             # Always remove .par file after processing
             if os.path.exists(file):
@@ -904,6 +944,55 @@ def download_and_decompress_CO2_into_df(
     return combined_df, local_files
 
 
+def register_partial_hitemp_co2(
+    file_entry,
+):
+    """
+    Register a partial HITEMP CO2 2024 download in radis.json.
+    """
+    databank_name = "HITEMP-CO2-2024"
+    from radis import config
+
+    today = time.strftime("%Y-%m-%d %H:%M")
+    cache_path = file_entry["path"]
+
+    # Merge with existing entry if present
+    if databank_name in getDatabankList():
+        existing = getDatabankEntries(databank_name)
+        files_meta = existing.get("files", [])
+        cache_paths = existing.get("path", [])
+        existing_file = next((f for f in files_meta if f["path"] == cache_path), None)
+        if existing_file is not None:
+            # Update last_used for the existing file
+            existing_file["last_used"] = today
+        else:
+            files_meta.append(file_entry)
+            cache_paths.append(cache_path)
+    else:
+        files_meta = [file_entry]
+        cache_paths = [cache_path]
+
+    cache_paths = list(dict.fromkeys(cache_paths))
+
+    info = f"HITEMP 2024, CO2, partial chunk download, {len(files_meta)} chunk(s)"
+    entry = {
+        "info": info,
+        "path": cache_paths,
+        "format": "hitemp-radisdb",
+        "wavenumber_min": "",
+        "wavenumber_max": "",
+        "download_date": today,
+        "files": files_meta,
+    }
+
+    old_overwrite = config["ALLOW_OVERWRITE"]
+    try:
+        config["ALLOW_OVERWRITE"] = True
+        addDatabankEntries(databank_name, dict(entry))
+    finally:
+        config["ALLOW_OVERWRITE"] = old_overwrite
+
+
 class HITEMPDatabaseManager(DatabaseManager):
     def __init__(
         self,
@@ -964,6 +1053,8 @@ class HITEMPDatabaseManager(DatabaseManager):
             text = file_response.text
 
             # Parse the HTML then Extract valid file URLs
+            from bs4 import BeautifulSoup
+
             soup = BeautifulSoup(text, "html.parser")
             table = soup.find("table")
             links = table.find_all("a", href=True)

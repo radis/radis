@@ -6,7 +6,6 @@ Small functions used in other procedures
 -------------------------------------------------------------------------------
 """
 
-
 import os
 import sys
 from io import StringIO
@@ -14,7 +13,6 @@ from itertools import filterfalse, tee
 from os.path import abspath, join, normcase, normpath
 
 import numpy as np
-import pandas as pd
 
 verbose = True
 
@@ -350,6 +348,8 @@ def merge_rename_columns(df, columns1, columns2, merged_names):
                                    ['lvl',   'j',  'E',  'n',  'g',  'grot']
                                    )
     """
+
+    import pandas as pd
 
     assert all_in(columns1, list(df.keys()))
     assert all_in(columns2, list(df.keys()))

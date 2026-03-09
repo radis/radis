@@ -53,10 +53,8 @@ Most of these functions are implemented with the standard operators. Ex::
 
 """
 
-
 from warnings import warn
 
-import astropy.units as u
 from numpy import hstack, ones_like
 
 from radis.phys.convert import (
@@ -345,6 +343,8 @@ def crop(s: Spectrum, wmin=None, wmax=None, wunit=None, inplace=False) -> Spectr
 
     stored_waveunit = s.get_waveunit()
 
+    import astropy.units as u
+
     wlunit_list = {
         "km": u.km,
         "m": u.m,
@@ -503,6 +503,8 @@ def multiply(s, coef, unit=None, var=None, inplace=False):
     var = _get_unique_var(s, var, inplace)
 
     # Case where a is dimensioned
+    import astropy.units as u
+
     if isinstance(coef, u.quantity.Quantity):
         if unit is not None:
             raise ValueError(
@@ -634,6 +636,8 @@ def add_array(s, a, unit=None, var=None, inplace=False):
     var = _get_unique_var(s, var, inplace)
 
     # Case where a is dimensioned
+    import astropy.units as u
+
     if isinstance(a, u.quantity.Quantity):
         if unit is not None:
             raise ValueError(
@@ -705,6 +709,8 @@ def sub_baseline(s, left, right, unit=None, var=None, inplace=False):
     var = _get_unique_var(s, var, inplace)
 
     # Case where left, right are dimensioned
+    import astropy.units as u
+
     if isinstance(left, u.quantity.Quantity) or isinstance(right, u.quantity.Quantity):
         if unit is not None:
             raise ValueError(

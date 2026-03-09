@@ -68,7 +68,6 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from numpy import array
-from scipy.interpolate import griddata
 
 from radis.misc.basics import all_in, is_float, list_if_float
 from radis.misc.debug import printdbg
@@ -87,6 +86,11 @@ def is_jsonable(x):
         return True
     except (TypeError, ValueError):
         return False
+
+
+def _is_file_like(obj):
+    """Check if obj is a file-like object."""
+    return hasattr(obj, "write") and callable(obj.write)
 
 
 # def jsonize(x):
@@ -153,10 +157,17 @@ def save(
     ----------
     s: Spectrum
         to save
-    path: str
-        filename to save. No extension needed. If filename already
+    path: str or file-like object
+        If a string: filename to save. No extension needed. If filename already
         exists then a digit is added. If filename is a directory then a new
         file is created within this directory.
+
+        If a file-like object (e.g., ``io.BytesIO``, ``io.StringIO``): writes
+        directly to the object without any file system operations. Use
+        ``BytesIO`` when ``compress=True`` (binary output), use ``StringIO``
+        when ``compress=False`` (text output). When using file-like objects,
+        the ``add_date``, ``add_info``, and ``if_exists_then`` parameters are
+        ignored.
     discard: list of str
         parameters to discard. To save some memory.
     compress: boolean
@@ -186,9 +197,10 @@ def save(
 
     Returns
     -------
-    fout: str
-        filename used (may be different from given path as new info or
-        incremental identifiers are added)
+    fout: str or file-like object
+        If path was a string: filename used (may be different from given path
+        as new info or incremental identifiers are added).
+        If path was a file-like object: returns the same object.
 
 
     See Also
@@ -201,12 +213,31 @@ def save(
     # 1) Format to JSON writable dictionary
     sjson = _format_to_jsondict(s, discard, compress, verbose=verbose)
 
-    # 2) Get final output name (add info, extension, increment number if needed)
+    # 2) Write to file-like object if provided
+    if _is_file_like(path):
+        if add_date and warnings:
+            warn("add_date ignored for file-like object")
+        if add_info and warnings:
+            warn("add_info ignored for file-like object")
+
+        if compress:
+            json_tricks.dump(
+                sjson, path, compression=True, properties={"ndarray_compact": True}
+            )
+        else:
+            json_tricks.dump(sjson, path, indent=4)
+
+        if verbose:
+            print(f"Spectrum stored to buffer ({path.tell() / 1e6:.2f} MB)")
+
+        return path
+
+    # 3) Get final output name (add info, extension, increment number if needed)
     fout = _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose)
     if exists(fout) and if_exists_then == "ignore":
         return fout
 
-    # 3) Now is time to save
+    # 4) Now is time to save
     if compress:
         with open(fout, "wb") as f:
             json_tricks.dump(
@@ -1736,6 +1767,8 @@ class SpecList(object):
             xarr = np.linspace(min(x), max(x))
             yarr = np.linspace(min(y), max(y))
             mx, my = np.meshgrid(xarr, yarr)
+            from scipy.interpolate import griddata
+
             zgrid = griddata((x, y), z, (mx, my), method="linear", fill_value=np.nan)
             levels = np.linspace(min(z), max(z), 20)
             ax.contourf(
