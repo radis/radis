@@ -64,29 +64,25 @@ def load_chianti(
     
     # Check file exists
     if not os.path.exists(wgfa_path):
-        raise DatabankNotFound(
             f"CHIANTI file not found: {wgfa_path}\n"
             f"Expected structure: {datapath}/fe/fe_12/fe_12.wgfa\n"
             f"Download from: https://www.chiantidatabase.org/"
         )
     
     # Read WGFA file (fixed-width format)
-    try:
-        df = pd.read_fwf(
-            wgfa_path,
-            skiprows=12,  # Skip header lines
-            header=None,
-            colspecs=[
+    df = pd.read_fwf(
+        wgfa_path,
+        skiprows=12,  # Skip header lines
+        header=None,
+        colspecs=[
                 (0, 6),      # upper level index
                 (6, 12),     # lower level index
                 (12, 20),    # wavelength (Angstrom)
                 (20, 30),    # gf (oscillator strength)
                 (30, 40),    # A (Einstein A coefficient, s^-1)
             ],
-            names=['upper', 'lower', 'wavelength', 'gf', 'A']
+        names=['upper', 'lower', 'wavelength', 'gf', 'A']
         )
-    except Exception as e:
-        raise DatabankNotFound(f"Error reading {wgfa_path}: {e}")
     
     # Clean data - convert to numeric
     for col in ['wavelength', 'gf', 'A']:
