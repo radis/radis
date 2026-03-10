@@ -143,4 +143,3 @@ radis/test/files/hitran_co_3iso_2000_2300cm.hdf5
 
 # HITRAN credentials
 **/radis.env
-.venv/
