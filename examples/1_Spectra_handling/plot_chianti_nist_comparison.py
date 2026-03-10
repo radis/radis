@@ -25,11 +25,11 @@ SAMPLE_DATAPATH = os.path.join(
 chianti_df = load_chianti(
     datapath=SAMPLE_DATAPATH,
     ion='fe_12',
-    wmin=190.0,
-    wmax=200.0
+    wmin=0.0,
+    wmax=40.0
 )
 
-print(f"\n✅ CHIANTI Data Summary:")
+print("\n✅ CHIANTI Data Summary:")
 print(f"   Total lines: {len(chianti_df)}")
 
 # Create visualization
@@ -69,5 +69,5 @@ ax2.grid(True, alpha=0.3, axis='y')
 plt.tight_layout()
 plt.show()
 
-print(f"\nFirst 5 transitions:")
+print("\nFirst 5 transitions:")
 print(chianti_df[['wav', 'int', 'A']].head())
