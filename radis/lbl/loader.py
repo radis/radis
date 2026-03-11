@@ -1064,6 +1064,29 @@ class DatabankLoader(object):
         load_columns: list, ``'all'``, ``'equilibrium'``, ``'noneq'``, ``diluent``
             Columns names to load. Default is ``'equilibrium'``.
 
+        Other Parameters
+        ----------------
+        diluent: dict or None
+            **ExoMol only.** Dictionary of broadening partners and their mole
+            fractions, e.g. ``{'H2': 0.765, 'He': 0.135}``.  For each species
+            that is not ``'air'`` or ``'self'``, the corresponding ExoMol
+            ``.broad`` file is loaded (if available) and stored as
+            ``gamma_<species.lower()>`` / ``n_<species.lower()>`` columns,
+            which are the convention expected by
+            :py:mod:`radis.lbl.broadening`.
+
+            When a ``.broad`` file is missing the behaviour depends on
+            ``radis.config['MISSING_BROAD_COEF']``:
+
+            - ``False`` (default): raises :py:exc:`ValueError` with
+              actionable suggestions.
+            - ``'air'``: emits
+              :py:class:`~radis.misc.warning.MissingDiluentBroadeningWarning`
+              and falls back to air-broadening coefficients.
+
+            ``'air'`` and ``'self'`` keys are ignored (those columns are
+            always loaded unconditionally).
+
         Notes
         -----
         HITRAN is fetched with Astroquery or HAPI, and HITEMP with :py:func:`~radis.io.hitemp.fetch_hitemp`.

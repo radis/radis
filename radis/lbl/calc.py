@@ -799,10 +799,7 @@ def _calc_spectrum_one_molecule(
         # diluent_other_than_air = len(diluent) > 1 or (
         #     len(diluent) == 1 and "air" not in diluent
         # )
-    if diluent_other_than_air and compare(databank, "exomol"):
-        raise NotImplementedError(
-            "Only air broadening is implemented in RADIS with ExoMol. Please reach out on https://github.com/radis/radis/issues"
-        )
+    # ExoMol multi-diluent broadening is now supported: see radis.io.exomol.fetch_exomol
 
     # Load databank
     # -------------
@@ -836,6 +833,7 @@ def _calc_spectrum_one_molecule(
         elif compare(databank, ["exomol"]):
             conditions = {
                 "source": "exomol",
+                "diluent": diluent if not isinstance(diluent, Default) else None,
             }
         elif compare(databank, ["geisa"]):
             conditions = {
@@ -850,6 +848,7 @@ def _calc_spectrum_one_molecule(
             conditions = {
                 "source": "exomol",
                 "database": databank[1],
+                "diluent": diluent if not isinstance(diluent, Default) else None,
             }
         elif compare(databank, "hitemp"):
             conditions = {

@@ -1239,24 +1239,26 @@ class MdbExomol(DatabaseManager):
         self.pf_file = self.path / pathlib.Path(molec + ".pf")
         self.def_file = self.path / pathlib.Path(molec + ".def")
 
-        self.broad_partners = [
-            "H2",
-            "He",
-            "air",
-            "self",
-            "Ar",
-            "CH4",
-            "CO",
-            "CO2",
-            "H2",
-            "H2O",
-            "N2",
-            "NH3",
-            "NO",
-            "O2",
-            "NH3",
-            "CS",
-        ]  # see ExoMol paper 2024
+        self.broad_partners = list(
+            dict.fromkeys(
+                [
+                    "H2",
+                    "He",
+                    "air",
+                    "self",
+                    "Ar",
+                    "CH4",
+                    "CO",
+                    "CO2",
+                    "H2O",
+                    "N2",
+                    "NH3",
+                    "NO",
+                    "O2",
+                    "CS",
+                ]
+            )
+        )  # see ExoMol paper 2024; dict.fromkeys preserves order and removes duplicates
         self.broad_files = {
             partner: self.path / pathlib.Path(t0 + "__" + partner + ".broad")
             for partner in self.broad_partners
@@ -1473,7 +1475,13 @@ class MdbExomol(DatabaseManager):
         alpha_ref: set default alpha_ref and apply it. None=use self.alpha_ref_def
         n_Texp_def: set default n_Texp and apply it. None=use self.n_Texp_def
         add_columns: adds alpha_ref and n_Texp columns to df
-        species: to select which broadener will be used. Default is "air".
+        species: str
+            Broadening partner to load. ``"air"`` adds ``airbrd``/``Tdpair``
+            columns. ``"self"`` adds ``selbrd``/``selbrd_Tdpair`` columns.
+            Any other species (e.g. ``"H2"``, ``"He"``, ``"CO2"``) adds
+            ``gamma_<species.lower()>`` / ``n_<species.lower()>`` columns,
+            which are the column names expected by the broadening calculation
+            engine in :py:mod:`radis.lbl.broadening`.
 
         Returns
         -------
@@ -1490,8 +1498,12 @@ class MdbExomol(DatabaseManager):
 
         file = self.broad_files[species]
 
+        _is_non_standard_species = species not in ("air", "self")
+        _broad_file_loaded = False  # tracks whether a .broad file was successfully read
+
         if self.broadf and os.path.exists(file):
             bdat = read_broad(file, output)
+            _broad_file_loaded = True
 
             if self.verbose > 1:
                 print(f"The file `{os.path.basename(file)}` is used.")
@@ -1622,23 +1634,74 @@ class MdbExomol(DatabaseManager):
                         n_Texp=[n_Texp_def] * np.ones(len(df))
                     )
         else:
+            fname = os.path.basename(file)
             if not os.path.exists(file):
-                warnings.warn(
-                    f"Could not load `{os.path.basename(file)}`. The default broadening parameters are used.\n"
+                msg_missing = (
+                    f"Could not load `{fname}` for ExoMol broadening by `{species}`. "
+                    "The file was not found locally."
                 )
-            print("The default broadening parameters are used.")
-
-            if output != "vaex":
-                self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
-                self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
             else:
-                self.alpha_ref = vaex.from_arrays(
-                    alpha_ref=[alpha_ref_def] * np.ones(len(df))
+                msg_missing = (
+                    f"`{fname}` was not loaded (broadf=False). "
+                    "The default broadening parameters are used."
                 )
-                self.n_Texp = vaex.from_arrays(n_Texp=[n_Texp_def] * np.ones(len(df)))
 
-        # Status: the 2 solumns self.alpha_ref and self.n_Texp are ready.
-        # Next step: add the 2 solumns in df with the proper labels
+            if _is_non_standard_species:
+                # For user-requested diluent species, respect MISSING_BROAD_COEF policy
+                from radis import config
+
+                solution1 = (
+                    "Try downloading broadening files by recreating the database with "
+                    "`use_cached='regen'` in `calc_spectrum(...)` or `db_use_cached='regen'` "
+                    "in `fetch_databank(...)`."
+                )
+                solution2 = (
+                    f"Remove `{species}` from the `diluent=` parameter, or replace it with 'air'."
+                )
+                solution3 = (
+                    "Set `radis.config['MISSING_BROAD_COEF'] = 'air'` to silently fall back "
+                    f"to air broadening when {species} broadening data is missing."
+                )
+                list_solutions = (
+                    f"\n*** Solution 1 ***\n==> {solution1}"
+                    f"\n*** Solution 2 ***\n==> {solution2}"
+                    f"\n*** Solution 3 ***\n==> {solution3}"
+                )
+
+                if not config["MISSING_BROAD_COEF"]:
+                    raise ValueError(
+                        f"{msg_missing}{list_solutions}"
+                    )
+                else:
+                    # config["MISSING_BROAD_COEF"] == "air": warn and skip column
+                    from radis.misc.warning import MissingDiluentBroadeningWarning
+
+                    warnings.warn(
+                        f"{msg_missing}\n"
+                        f"radis.config['MISSING_BROAD_COEF'] = 'air' is set: "
+                        f"air broadening will be used instead of {species}.\n"
+                        "You can silence this warning with "
+                        "`warnings['MissingDiluentBroadeningWarning'] = 'ignore'`.",
+                        MissingDiluentBroadeningWarning,
+                    )
+                    return  # broadening.py will fall back to airbrd
+            else:
+                # air and self: always safe to fall back to defaults
+                warnings.warn(
+                    f"{msg_missing} The default broadening parameters are used.\n"
+                )
+                if output != "vaex":
+                    self.alpha_ref = np.array(self.alpha_ref_def * np.ones(len(df)))
+                    self.n_Texp = np.array(self.n_Texp_def * np.ones(len(df)))
+                else:
+                    self.alpha_ref = vaex.from_arrays(
+                        alpha_ref=[self.alpha_ref_def] * np.ones(len(df))
+                    )
+                    self.n_Texp = vaex.from_arrays(
+                        n_Texp=[self.n_Texp_def] * np.ones(len(df))
+                    )
+
+        # self.alpha_ref and self.n_Texp are ready; add as labelled columns in df.
         if add_columns:
             if species == "air":
                 self.add_column(df, "airbrd", self.alpha_ref)
@@ -1647,9 +1710,11 @@ class MdbExomol(DatabaseManager):
                 self.add_column(df, "selbrd", self.alpha_ref)
                 self.add_column(df, "selbrd_Tdpair", self.n_Texp)
             else:
-                raise NotImplementedError(
-                    "Please post on https://github.com/radis/radis to ask for this feature."
-                )
+                # Non-standard diluent: use gamma_<species> / n_<species> naming
+                # convention expected by radis.lbl.broadening._calc_broadening_HWHM
+                species_col = species.lower()
+                self.add_column(df, "gamma_" + species_col, self.alpha_ref)
+                self.add_column(df, "n_" + species_col, self.n_Texp)
 
     def QT_interp(self, T):
         """interpolated partition function

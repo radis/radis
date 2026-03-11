@@ -34,6 +34,7 @@ def fetch_exomol(
     engine="default",
     output="pandas",
     skip_optional_data=True,
+    diluent=None,
     **kwargs,
 ):
     """Stream ExoMol file from EXOMOL website. Unzip and build a HDF5 file directly.
@@ -115,6 +116,27 @@ def fetch_exomol(
               structure described in [1]_, unlike the states file of
               https://exomol.com/data/molecules/NO/14N-16O/XABC/ which follows the
               structure described in [2]_.
+    diluent : dict or None
+        Dictionary of broadening partners and their mole fractions, e.g.
+        ``{'H2': 0.85, 'He': 0.15}``.  For each species in the dict that is
+        not ``'air'`` or ``'self'``, the corresponding ExoMol ``.broad`` file
+        is loaded (if available) and the broadening coefficients are stored as
+        ``gamma_<species.lower()>`` / ``n_<species.lower()>`` columns in the
+        returned DataFrame.  These column names are the convention expected by
+        :py:func:`~radis.lbl.broadening._calc_broadening_HWHM`.
+
+        When a ``.broad`` file is missing, the behaviour depends on
+        ``radis.config['MISSING_BROAD_COEF']``:
+
+        - ``False`` (default): raises a :py:exc:`ValueError` with actionable
+          suggestions.
+        - ``'air'``: emits a :py:class:`~radis.misc.warning.MissingDiluentBroadeningWarning`
+          and skips the column; :py:mod:`radis.lbl.broadening` then falls back
+          to air-broadening coefficients automatically.
+
+        ``'air'`` and ``'self'`` keys are ignored here (they are always loaded
+        unconditionally via dedicated columns ``airbrd``/``Tdpair`` and
+        ``selbrd``/``selbrd_Tdpair``).
 
     Returns
     -------
@@ -271,6 +293,26 @@ def fetch_exomol(
 
     # Add self broadening if available
     mdb.set_broadening_coef(df, output=output, species="self")
+
+    # Add broadening for each extra diluent species requested by the caller.
+    # 'air' and 'self' are already handled above; skip them here.
+    if isinstance(diluent, str):
+        diluent = {diluent: 1.0}  # normalize single-string to dict
+    if diluent is not None:
+        for species in diluent:
+            if species in ("air", "self"):
+                continue
+            if species not in mdb.broad_partners:
+                import warnings
+
+                warnings.warn(
+                    f"ExoMol broadening partner `{species}` is not in the known "
+                    f"partner list {mdb.broad_partners}. "
+                    "No `.broad` file will be loaded for this species; "
+                    "broadening will fall back to air coefficients.",
+                )
+                continue
+            mdb.set_broadening_coef(df, output=output, species=species)
 
     # Specific for RADIS :
     # ... Get RADIS column names:
