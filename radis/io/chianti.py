@@ -64,6 +64,7 @@ def load_chianti(
     
     # Check file exists
     if not os.path.exists(wgfa_path):
+        raise FileNotFoundError(
             f"CHIANTI file not found: {wgfa_path}\n"
             f"Expected structure: {datapath}/fe/fe_12/fe_12.wgfa\n"
             f"Download from: https://www.chiantidatabase.org/"
