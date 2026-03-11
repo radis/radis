@@ -73,7 +73,7 @@ def load_chianti(
     # Read WGFA file (fixed-width format)
     df = pd.read_fwf(
         wgfa_path,
-        skiprows=12,  # Skip header lines
+        skiprows=0,  # No header lines in wgfa file
         header=None,
         colspecs=[
                 (0, 6),      # upper level index
