@@ -27,7 +27,6 @@ Routine Listings
 from warnings import warn
 
 import numpy as np
-from scipy.integrate import trapezoid
 
 from radis.misc.arrays import array_allclose
 from radis.misc.basics import compare_dict, compare_lists
@@ -476,6 +475,8 @@ def get_residual_integral(
         wdiff, dI = wdiff[~b], dI[~b]
         b = np.isnan(I1)
         w1, I1 = w1[~b], I1[~b]
+
+    from scipy.integrate import trapezoid
 
     if var in ["transmittance", "transmittance_noslit"]:
         norm = 1 - trapezoid(I1, w1)

@@ -6,9 +6,8 @@
 
 
 import json
-import os
 from collections import OrderedDict
-from os.path import abspath
+from pathlib import Path
 
 from radis.misc.basics import is_number
 
@@ -25,10 +24,9 @@ def getFile(*relpath):
 
     """
 
-    #    return os.path.join(os.path.dirname(__file__), *relpath)
     from radis.misc.utils import getProjectRoot
 
-    return os.path.join(getProjectRoot(), "db", *relpath)
+    return str(Path(getProjectRoot()) / "db" / Path(*relpath))
 
 
 def check_molecule_data_structure(fname, verbose=True):
@@ -198,7 +196,7 @@ def get_default_jsonfile(molecule):
 
     name = config["spectroscopic_constants"][molecule]
 
-    return abspath(getFile(f"{molecule}/{name}"))
+    return str(Path(getFile(f"{molecule}/{name}")).resolve())
 
 
 def get_dunham_coefficients(
@@ -347,14 +345,16 @@ def ignore_trailing_number(coef):
 
 def compare(databank, compare_with):
     """Simply to make databank case-insensitive!"""
-    if isinstance(compare_with, str) and (
-        (isinstance(databank, str) and databank.casefold() == compare_with.casefold())
-        or (
-            isinstance(databank, tuple)
-            and databank[0].casefold() == compare_with.casefold()
-        )
-    ):
-        return True
+    if (
+        isinstance(databank, str)
+        or isinstance(databank, tuple)
+        or isinstance(databank, list)
+    ) and isinstance(compare_with, str):
+        if isinstance(databank, str):
+            databank_str = databank
+        else:
+            databank_str = databank[0]
+        return databank_str.casefold() == compare_with.casefold()
     if isinstance(databank, str) and databank.casefold() in compare_with:
         return True
     return False

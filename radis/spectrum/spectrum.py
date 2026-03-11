@@ -52,12 +52,9 @@ from copy import deepcopy
 from os.path import basename
 from warnings import warn
 
-import astropy.units as u
 import numpy as np
 import pandas as pd
-import plotly.express as px
 from numpy import abs, diff
-from scipy.integrate import trapezoid
 
 from radis.db.references import doi
 
@@ -2467,6 +2464,8 @@ class Spectrum(object):
         xlabel = format_xlabel(wunit, show_medium)
         ylabel = f"{make_up(var)} ({make_up_unit(Iunit, var)})"
 
+        import plotly.express as px
+
         fig = px.line(x=x, y=y, template=template)
         fig.update_layout(
             xaxis_title=xlabel,
@@ -3946,6 +3945,8 @@ class Spectrum(object):
             else:
                 return cond
         else:
+            import astropy.units as u
+
             if return_unit:
                 if hasattr(cond, "unit"):
                     return cond.to(unit).value, unit
@@ -4104,12 +4105,18 @@ class Spectrum(object):
 
         Parameters
         ----------
-        path: path to folder (database) or file
-            if a folder, file is saved to database and name is generated automatically.
-            if a file name, then Spectrum is saved to this file and the later
-            formatting options dont apply
-        file: str
-            explicitly give a filename to save
+        path: str or file-like object
+            If a string: path to folder (database) or file. If a folder, file
+            is saved to database and name is generated automatically. If a file
+            name, then Spectrum is saved to this file and the later formatting
+            options dont apply.
+
+            If a file-like object (e.g., ``io.BytesIO``, ``io.StringIO``):
+            writes directly to the object without any file system operations.
+            Use ``BytesIO`` when ``compress=True`` (binary output), use
+            ``StringIO`` when ``compress=False`` (text output). When using
+            file-like objects, the ``add_date``, ``add_info``, and
+            ``if_exists_then`` parameters are ignored.
         compress: boolean
             if ``False``, save under text format, readable with any editor.
             if ``True``, saves under binary format. Faster and takes less space.
@@ -4138,7 +4145,10 @@ class Spectrum(object):
 
         Returns
         -------
-        Returns filename used
+        str or file-like object
+            If path was a string: filename used (may be different from given
+            path as new info or incremental identifiers are added).
+            If path was a file-like object: returns the same object.
 
 
         Notes
@@ -4156,6 +4166,14 @@ class Spectrum(object):
             s.store('test.spec', compress=True)   # s is a Spectrum
             s2 = load_spec('test.spec')
             s2.update()                           # regenerate missing quantities
+
+        Store a spectrum to a BytesIO buffer (no disk write)::
+
+            from io import BytesIO
+            buffer = BytesIO()
+            s.store(buffer, compress=True)
+            buffer.seek(0)  # Reset position for reading
+            # buffer.getvalue() contains the serialized spectrum
 
         .. minigallery:: radis.spectrum.spectrum.Spectrum.store
             :add-heading:
@@ -4849,6 +4867,7 @@ class Spectrum(object):
 
         # Compute area under the curve of models.Voigt1D or models.Gaussian1D or models.Lorentz1D
         from astropy.modeling import models
+        from scipy.integrate import trapezoid
 
         for index, line in enumerate(g_fit_list):
             if isinstance(line, models.Voigt1D):
@@ -6163,6 +6182,8 @@ class Spectrum(object):
           (returns a copy)
         - for 2 Spectra: not defined
         """
+        import astropy.units as u
+
         if (
             isinstance(other, float)
             or isinstance(other, int)
@@ -6186,6 +6207,7 @@ class Spectrum(object):
 
     def __rmul__(self, other):
         r"""Right side multiplication."""
+        import astropy.units as u
 
         if (
             isinstance(other, float)
@@ -6215,6 +6237,8 @@ class Spectrum(object):
           (only if in front, i.e:  s *= 2)  (modifies inplace)
         - for 2 Spectra: not defined
         """
+        import astropy.units as u
+
         if (
             isinstance(other, float)
             or isinstance(other, int)
@@ -6241,6 +6265,8 @@ class Spectrum(object):
 
         - for numeric values: divide algebraically (equivalent to optically thin scaling)
         """
+        import astropy.units as u
+
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
 
@@ -6273,6 +6299,8 @@ class Spectrum(object):
         - for numeric values: divide quantities algebraically
         (equivalent to optically thin scaling)
         """
+        import astropy.units as u
+
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
 

@@ -38,6 +38,47 @@ def test_exceptions(verbose=True, *args, **kwargs):
         sPlanck(wavelength_min=300, wavelength_max=2000, T=300, eps=10)
 
 
+def test_invalid_temperature(*args, **kwargs):
+    """Test that planck() and planck_wn() raise ValueError for T <= 0.
+
+    Covers scalar and array inputs for both functions.
+    """
+
+    import pytest
+
+    # --- planck: scalar T ---
+    with pytest.raises(ValueError, match="strictly positive"):
+        planck(500, T=0)
+    with pytest.raises(ValueError, match="strictly positive"):
+        planck(500, T=-300)
+
+    # --- planck_wn: scalar T ---
+    with pytest.raises(ValueError, match="strictly positive"):
+        planck_wn(2000, T=0)
+    with pytest.raises(ValueError, match="strictly positive"):
+        planck_wn(2000, T=-100)
+
+    # --- planck: array containing a non-positive value ---
+    with pytest.raises(ValueError, match="strictly positive"):
+        planck(np.array([400, 500]), T=np.array([300, -10]))
+
+    # --- planck_wn: array containing a non-positive value ---
+    with pytest.raises(ValueError, match="strictly positive"):
+        planck_wn(np.array([1000, 2000]), T=np.array([0, 500]))
+
+    # --- sPlanck: T=0 and T<0 are also caught ---
+    with pytest.raises(ValueError, match="strictly positive"):
+        sPlanck(wavelength_min=300, wavelength_max=2000, T=0, eps=1)
+    with pytest.raises(ValueError, match="strictly positive"):
+        sPlanck(wavelength_min=300, wavelength_max=2000, T=-50, eps=1)
+
+    # --- Sanity: valid T still works ---
+    result = planck(500, T=300)
+    assert np.isfinite(result)
+    result = planck_wn(2000, T=300)
+    assert np.isfinite(result)
+
+
 def test_planck_nm(verbose=True, plot=False, *args, **kwargs):
     """Test blackbody with Wien's law, Stefan's law and tabulated data
     of maximum
@@ -177,6 +218,7 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     # Test all Spectrum methods
     # -------------------------
     test_exceptions()
+    test_invalid_temperature()
     test_planck_nm(verbose=verbose, plot=plot, *args, **kwargs)
     test_planck_cm(verbose=verbose, plot=plot, *args, **kwargs)
 

@@ -25,7 +25,6 @@ import re
 from urllib.request import HTTPError, urlopen
 
 import pandas as pd
-from bs4 import BeautifulSoup
 
 from radis.api.hdf5 import vaexsafe_colname
 
@@ -449,7 +448,7 @@ def read_states(
             dat = pd.read_csv(
                 statesf, compression="bz2", sep=r"\s+", usecols=usecol, names=names
             )
-        except:  #!!!TODO What was the expected error?
+        except (OSError, pd.errors.ParserError):  # File not compressed or parse error
             dat = pd.read_csv(statesf, sep=r"\s+", usecols=usecol, names=names)
     else:
         raise NotImplementedError(engine)
@@ -945,6 +944,8 @@ def get_exomol_database_list(molecule, isotope_full_name=None):
         else:
             extra = ""
         raise ValueError(f"HTTPError opening url={url}" + extra) from err
+
+    from bs4 import BeautifulSoup
 
     soup = BeautifulSoup(
         response, features="lxml"

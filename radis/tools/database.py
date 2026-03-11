@@ -68,7 +68,6 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from numpy import array
-from scipy.interpolate import griddata
 
 from radis.misc.basics import all_in, is_float, list_if_float
 from radis.misc.debug import printdbg
@@ -87,6 +86,11 @@ def is_jsonable(x):
         return True
     except:
         return False
+
+
+def _is_file_like(obj):
+    """Check if obj is a file-like object."""
+    return hasattr(obj, "write") and callable(obj.write)
 
 
 # def jsonize(x):
@@ -153,10 +157,17 @@ def save(
     ----------
     s: Spectrum
         to save
-    path: str
-        filename to save. No extension needed. If filename already
+    path: str or file-like object
+        If a string: filename to save. No extension needed. If filename already
         exists then a digit is added. If filename is a directory then a new
         file is created within this directory.
+
+        If a file-like object (e.g., ``io.BytesIO``, ``io.StringIO``): writes
+        directly to the object without any file system operations. Use
+        ``BytesIO`` when ``compress=True`` (binary output), use ``StringIO``
+        when ``compress=False`` (text output). When using file-like objects,
+        the ``add_date``, ``add_info``, and ``if_exists_then`` parameters are
+        ignored.
     discard: list of str
         parameters to discard. To save some memory.
     compress: boolean
@@ -186,9 +197,10 @@ def save(
 
     Returns
     -------
-    fout: str
-        filename used (may be different from given path as new info or
-        incremental identifiers are added)
+    fout: str or file-like object
+        If path was a string: filename used (may be different from given path
+        as new info or incremental identifiers are added).
+        If path was a file-like object: returns the same object.
 
 
     See Also
@@ -201,12 +213,31 @@ def save(
     # 1) Format to JSON writable dictionary
     sjson = _format_to_jsondict(s, discard, compress, verbose=verbose)
 
-    # 2) Get final output name (add info, extension, increment number if needed)
+    # 2) Write to file-like object if provided
+    if _is_file_like(path):
+        if add_date and warnings:
+            warn("add_date ignored for file-like object")
+        if add_info and warnings:
+            warn("add_info ignored for file-like object")
+
+        if compress:
+            json_tricks.dump(
+                sjson, path, compression=True, properties={"ndarray_compact": True}
+            )
+        else:
+            json_tricks.dump(sjson, path, indent=4)
+
+        if verbose:
+            print(f"Spectrum stored to buffer ({path.tell() / 1e6:.2f} MB)")
+
+        return path
+
+    # 3) Get final output name (add info, extension, increment number if needed)
     fout = _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose)
     if exists(fout) and if_exists_then == "ignore":
         return fout
 
-    # 3) Now is time to save
+    # 4) Now is time to save
     if compress:
         with open(fout, "wb") as f:
             json_tricks.dump(
@@ -1736,6 +1767,8 @@ class SpecList(object):
             xarr = np.linspace(min(x), max(x))
             yarr = np.linspace(min(y), max(y))
             mx, my = np.meshgrid(xarr, yarr)
+            from scipy.interpolate import griddata
+
             zgrid = griddata((x, y), z, (mx, my), method="linear", fill_value=np.nan)
             levels = np.linspace(min(z), max(z), 20)
             ax.contourf(
@@ -2347,8 +2380,10 @@ class SpecDatabase(SpecList):
         self,
         s_exp,
         residual=None,
+        var=None,
         normalize=False,
         normalize_how="max",
+        plot=False,
         conditions="",
         **kwconditions,
     ):
@@ -2363,18 +2398,15 @@ class SpecDatabase(SpecList):
 
         Other Parameters
         ----------------
-        residual: func, or ``None``
-            which residual function to use. If ``None``, use
-            :func:`~radis.spectrum.compare.get_residual` with option
-            ``ignore_nan=True`` and options ``normalize`` and ``normalize_how``
-            as defined by the user.
-
-            ``get_residual`` should have the form::
-
-                lambda s_exp, s, normalize: func(s_exp, s, normalize=normalize)
-
-            where the output is a float.
-            Default ``None``
+        var: str
+            spectral variable to compare (e.g., 'radiance', 'absorbance').
+            Required if ``s_exp`` has multiple variables and ``residual``
+            is not provided.
+        plot: bool
+            if ``True``, plot the residuals against the varying conditions.
+            If one condition varies, a 1D plot is generated. If two conditions
+            vary, a 2D contour plot is generated using :meth:`~radis.tools.database.SpecList.plot_cond`.
+            Default ``False``.
         conditions, **kwconditions: str, **dict
             restrain fitting to only Spectrum that match the given conditions
             in the database. See :meth:`~radis.tools.database.SpecList.get`
@@ -2392,11 +2424,21 @@ class SpecDatabase(SpecList):
 
         Examples
         --------
+
+        Compare an experimental spectrum to a database of precomputed spectra::
+
+            from radis.tools import SpecDatabase
+            db = SpecDatabase('path/to/database')
+            s_best = db.fit_spectrum(s_exp, plot=True)
+            s_best.plot(nfig='same')
+
+        .. minigallery:: radis.tools.database.SpecDatabase.fit_spectrum
+
         Using a customized residual function (below: to get the transmittance)::
 
             from radis import get_residual
             db = SpecDatabase('...')
-            db.fit_spectrum(s_exp, get_residual=lambda s_exp, s: get_residual(s_exp, s, var='transmittance'))
+            db.fit_spectrum(s_exp, residual=lambda s_exp, s: get_residual(s_exp, s, var='transmittance'))
 
         You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
         More advanced tools for interactive fitting of multi-dimensional, multi-slabs
@@ -2411,18 +2453,23 @@ class SpecDatabase(SpecList):
         if residual is None:
             from radis.spectrum.compare import get_residual
 
-            if len(s_exp.get_vars()) != 1:
-                raise ValueError(
-                    "Multiple variables in fitted Spectrum. Please "
-                    + "define which residual to use with, for instance: "
-                    + "`get_residual=lambda s_exp, s: get_residual(s_exp, s, var=SOMETHING)`)"
-                )
+            if var is None:
+                vars_exp = s_exp.get_vars()
+                if len(vars_exp) == 1:
+                    var = vars_exp[0]
+                else:
+                    raise ValueError(
+                        f"Multiple variables in fitted Spectrum ({vars_exp}). Please "
+                        + "define which spectral variable to use with the `var=` "
+                        + "argument (e.g., `var='radiance'`) or define a custom "
+                        + "residual function with `residual=`."
+                    )
 
             def residual(s_exp, s, normalize):
                 return get_residual(
                     s_exp,
                     s,
-                    var=s_exp.get_vars()[0],
+                    var=var,
                     ignore_nan=True,
                     normalize=normalize,
                     normalize_how=normalize_how,
@@ -2434,6 +2481,60 @@ class SpecDatabase(SpecList):
         assert not np.isnan(res).any()
 
         i = np.argmin(np.array(res))
+
+        if plot:
+            # 1. Find varying conditions
+            # Remove keys that query() doesn't handle from a kwconditions copy
+            kw = kwconditions.copy()
+            for k in ["inplace", "verbose", "scale_if_possible"]:
+                if k in kw:
+                    kw.pop(k)
+            if conditions == "" and not kw:
+                df = self.df
+            else:
+                df = query(self.df, conditions=conditions, **kw)
+
+            varying_cols = []
+            for col in df.columns:
+                if col in [
+                    "file",
+                    "last_modified",
+                    "name",
+                    "Spectrum",
+                    "calculation_time",
+                    "memory_usage",
+                ]:
+                    continue
+                try:
+                    if df[col].nunique() > 1:
+                        varying_cols.append(col)
+                except (TypeError, ValueError):
+                    # Skip columns that are not hashable (e.g., dicts, lists)
+                    continue
+
+            if len(varying_cols) == 0:
+                warn("No conditions vary in the database. Cannot plot residuals.")
+            elif len(varying_cols) == 1:
+                import matplotlib.pyplot as plt
+
+                from radis.misc.plot import set_style
+
+                set_style()
+                col = varying_cols[0]
+                plt.figure()
+                plt.plot(df[col], res, "ok")
+                plt.xlabel(col)
+                plt.ylabel("Residual")
+                plt.title(f"Residual vs {col}")
+                plt.tight_layout()
+            elif len(varying_cols) == 2:
+                self.plot_cond(varying_cols[0], varying_cols[1], z_value=res)
+            else:
+                warn(
+                    f"Too many varying conditions ({len(varying_cols)}: {varying_cols}) "
+                    + "to plot residuals. At most 1 or 2 conditions can vary. "
+                    + "Try to restrain the search using `conditions` or `**kwconditions`."
+                )
 
         return spectra[i].copy()  # dont forget to copy the Spectrum we return
 

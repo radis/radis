@@ -12,6 +12,7 @@ from os.path import dirname, exists
 
 import pytest
 
+from radis.spectrum import Spectrum
 from radis.test.utils import getTestFile
 from radis.tools.database import SpecDatabase, SpecList
 
@@ -249,6 +250,194 @@ def test_lazy_loading(verbose=True, *args, **kwargs):
         print("Number of spectra found for the given conditions: ", len(sdb))
 
     assert sdb == sdb_2
+
+
+def test_fit_spectrum_plotting(plot=True, close_plots=True, *args, **kwargs):
+    """Test SpecDatabase.fit_spectrum plotting functionality (Issue #377)"""
+
+    import shutil
+    from os.path import dirname, join
+
+    db_path = join(dirname(getTestFile(".")), "test_db_fit")
+    if os.path.exists(db_path):
+        shutil.rmtree(db_path)
+    os.makedirs(db_path)
+
+    try:
+        db = SpecDatabase(db_path, verbose=False)
+
+        # 1. Create dummy spectra for 1D fit
+        for T in [300, 400, 500]:
+            s = Spectrum(
+                {"radiance": ([1000, 1001], [T / 1000, T / 1000])},
+                wunit="cm-1",
+                units={"radiance": "W/cm2/sr/cm-1"},
+                conditions={"Tgas": T, "molecule": "CO2", "isotope": 1},
+            )
+            db.add(s)
+
+        s_exp = Spectrum(
+            {"radiance": ([1000, 1001], [0.42, 0.42])},
+            wunit="cm-1",
+            units={"radiance": "W/cm2/sr/cm-1"},
+            conditions={"Tgas": 420, "molecule": "CO2", "isotope": 1},
+        )
+
+        # Test 1D plot
+        db.fit_spectrum(s_exp, plot=plot)
+        if plot:
+            import matplotlib.pyplot as plt
+
+            assert plt.fignum_exists(plt.gcf().number)
+            if close_plots:
+                plt.close()
+
+        # 2. Add more spectra for 2D fit
+        for T in [300, 500]:
+            for mf in [0.01, 0.1]:
+                s = Spectrum(
+                    {"radiance": ([1000, 1001], [T / 1000 + mf, T / 1000 + mf])},
+                    wunit="cm-1",
+                    units={"radiance": "W/cm2/sr/cm-1"},
+                    conditions={
+                        "Tgas": T,
+                        "mole_fraction": mf,
+                        "molecule": "CO2",
+                        "isotope": 1,
+                    },
+                )
+                db.add(s, if_exists_then="ignore")
+
+        s_exp_2d = Spectrum(
+            {"radiance": ([1000, 1001], [0.45, 0.45])},
+            wunit="cm-1",
+            units={"radiance": "W/cm2/sr/cm-1"},
+            conditions={
+                "Tgas": 450,
+                "mole_fraction": 0.05,
+                "molecule": "CO2",
+                "isotope": 1,
+            },
+        )
+
+        # Test 2D plot
+        db.fit_spectrum(s_exp_2d, plot=plot)
+        if plot:
+            import matplotlib.pyplot as plt
+
+            assert plt.fignum_exists(plt.gcf().number)
+            if close_plots:
+                plt.close()
+
+        # 3. Test 'var' parameter and unhashable type handling
+        s_multi = Spectrum(
+            {
+                "radiance": ([1000, 1001], [0.5, 0.5]),
+                "transmittance": ([1000, 1001], [0.8, 0.8]),
+            },
+            wunit="cm-1",
+            units={"radiance": "W/cm2/sr/cm-1", "transmittance": ""},
+            conditions={
+                "Tgas": 500,
+                "molecule": "CO2",
+                "isotope": 1,
+                "complex_metadata": {"a": 1},  # Unhashable dict
+            },
+        )
+        db.add(s_multi, if_exists_then="ignore")
+
+        # Should work with explicit 'var' even with complex_metadata in the DB
+        db.fit_spectrum(s_multi, var="radiance", plot=plot)
+
+    finally:
+        shutil.rmtree(db_path)
+
+
+@pytest.mark.fast
+def test_store_to_bytesio(verbose=True, *args, **kwargs):
+    """Test storing a spectrum to a BytesIO buffer."""
+    from io import BytesIO
+
+    import json_tricks
+
+    from radis.test.utils import getTestFile
+    from radis.tools.database import load_spec
+
+    s = load_spec(getTestFile("N2C_specair_380nm.spec"))
+
+    buffer = BytesIO()
+    result = s.store(buffer, compress=True, verbose=verbose)
+
+    assert result is buffer
+    assert buffer.tell() > 0
+
+    buffer.seek(0)
+    sload = json_tricks.load(buffer, preserve_order=False)
+    assert "conditions" in sload
+    assert "_q" in sload
+
+
+@pytest.mark.fast
+def test_store_to_stringio(verbose=True, *args, **kwargs):
+    """Test storing a spectrum to a StringIO buffer."""
+    from io import StringIO
+
+    from radis.test.utils import getTestFile
+    from radis.tools.database import load_spec
+
+    s = load_spec(getTestFile("N2C_specair_380nm.spec"))
+
+    buffer = StringIO()
+    result = s.store(buffer, compress=False, verbose=verbose)
+
+    assert result is buffer
+
+    buffer.seek(0)
+    content = buffer.read()
+    assert len(content) > 0
+    assert '"conditions"' in content
+
+
+@pytest.mark.fast
+def test_store_filelike_warns_on_path_params(verbose=True, *args, **kwargs):
+    """Test that path-related parameters emit warnings with file-like objects."""
+    import warnings
+    from io import BytesIO
+
+    from radis.test.utils import getTestFile
+    from radis.tools.database import load_spec
+
+    s = load_spec(getTestFile("N2C_specair_380nm.spec"))
+    buffer = BytesIO()
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        s.store(buffer, compress=True, add_date="%Y%m%d", verbose=False)
+        assert len(w) >= 1
+        assert "add_date" in str(w[0].message)
+
+
+@pytest.mark.fast
+def test_store_roundtrip_via_buffer(verbose=True, *args, **kwargs):
+    """Test that spectrum stored to buffer can be loaded back."""
+    from io import BytesIO
+
+    import json_tricks
+
+    from radis.test.utils import getTestFile
+    from radis.tools.database import _fix_format, _json_to_spec, load_spec
+
+    s = load_spec(getTestFile("N2C_specair_380nm.spec"))
+
+    buffer = BytesIO()
+    s.store(buffer, compress=True, discard=[], verbose=verbose)
+
+    buffer.seek(0)
+    sload = json_tricks.load(buffer, preserve_order=False)
+    sload, _ = _fix_format("buffer", sload)
+    s2 = _json_to_spec(sload, "buffer")
+
+    assert s.compare_with(s2, spectra_only=True, plot=False, verbose=verbose)
 
 
 if __name__ == "__main__":

@@ -76,10 +76,10 @@ for Developers:
 
 ----------
 """
+
 from typing import Union
 from warnings import warn
 
-import astropy.units as u
 import numpy as np
 from numpy import arange, exp, expm1
 from scipy.optimize import OptimizeResult
@@ -473,19 +473,18 @@ class SpectrumFactory(BandFactory):
             )  # remove it from kwargs0 so it doesn't trigger the error later
         else:
             molecule = species
-
         if "db_use_cached" in kwargs:
             warn(
-                DeprecationWarning(
-                    "db_use_cached removed from SpectrumFactory init and moved in load/fetch_databank()"
-                )
+                "'db_use_cached' removed from SpectrumFactory init and moved in load/fetch_databank()",
+                DeprecationWarning,
+                stacklevel=2,
             )
             kwargs0.pop("db_use_cached")
         if "lvl_use_cached" in kwargs:
             warn(
-                DeprecationWarning(
-                    "lvl_use_cached removed from SpectrumFactory init and moved in load/fetch_databank()"
-                )
+                "'lvl_use_cached' removed from SpectrumFactory init and moved in load/fetch_databank()",
+                DeprecationWarning,
+                stacklevel=2,
             )
             kwargs0.pop("lvl_use_cached")
         if "broadening_max_width" in kwargs:  # changed in 0.9.30
@@ -594,6 +593,8 @@ class SpectrumFactory(BandFactory):
             )
 
         # Initialize input conditions
+        import astropy.units as u
+
         self.input.wavenum_min = wavenum_min
         self.input.wavenum_max = wavenum_max
         self.input.Tref = convert_and_strip_units(Tref, u.K)
@@ -835,6 +836,8 @@ class SpectrumFactory(BandFactory):
             )
 
         # Convert units
+        import astropy.units as u
+
         Tgas = convert_and_strip_units(Tgas, u.K)
         path_length = convert_and_strip_units(path_length, u.cm)
         pressure = convert_and_strip_units(pressure, u.bar)
@@ -970,10 +973,7 @@ class SpectrumFactory(BandFactory):
                 "thermal_equilibrium": True,
                 "diluents": self._diluent,
                 "radis_version": version,
-                "spectral_points": (
-                    int(self.params.wavenum_max_calc - self.params.wavenum_min_calc)
-                    / self.params.wstep
-                ),
+                "spectral_points": len(self.wavenumber),
                 "profiler": dict(self.profiler.final),
             }
         )
@@ -1129,6 +1129,8 @@ class SpectrumFactory(BandFactory):
             )
 
         # Convert units
+        import astropy.units as u
+
         Tgas = convert_and_strip_units(Tgas, u.K)
         path_length = convert_and_strip_units(path_length, u.cm)
         pressure = convert_and_strip_units(pressure, u.bar)
@@ -1346,10 +1348,7 @@ class SpectrumFactory(BandFactory):
                 "diluents": self._diluent,
                 "radis_version": version,
                 "gpu_backend": backend,
-                "spectral_points": (
-                    int(self.params.wavenum_max_calc - self.params.wavenum_min_calc)
-                    / self.params.wstep
-                ),
+                "spectral_points": len(self.wavenumber),
                 "add_at_used": "gpu-backend",
                 "profiler": dict(self.profiler.final),
                 "NwL": iter_N_L,
@@ -1662,6 +1661,8 @@ class SpectrumFactory(BandFactory):
         # %% Preprocessing
         # --------------------------------------------------------------------
         # Convert units
+        import astropy.units as u
+
         Tvib = convert_and_strip_units(Tvib, u.K)
         Trot = convert_and_strip_units(Trot, u.K)
         Ttrans = convert_and_strip_units(Ttrans, u.K)
@@ -1881,10 +1882,7 @@ class SpectrumFactory(BandFactory):
                 "thermal_equilibrium": False,  # dont even try to guess if it's at equilibrium
                 "diluents": self._diluent,
                 "radis_version": version,
-                "spectral_points": (
-                    int(self.params.wavenum_max_calc - self.params.wavenum_min_calc)
-                    / self.params.wstep
-                ),
+                "spectral_points": len(self.wavenumber),
                 "profiler": dict(self.profiler.final),
             }
         )
@@ -2134,10 +2132,7 @@ class SpectrumFactory(BandFactory):
         wstep = self.params.wstep
         n_lines = self.misc.total_lines
         truncation = self.params.truncation
-        spectral_points = (
-            int(self.params.wavenum_max_calc - self.params.wavenum_min_calc)
-            / self.params.wstep
-        )
+        spectral_points = len(self.wavenumber)
 
         optimization = self.params.optimization
         broadening_method = self.params.broadening_method

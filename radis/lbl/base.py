@@ -67,7 +67,6 @@ Most methods are written in inherited class with the following inheritance schem
 
 import numpy as np
 import pandas as pd
-from astropy import units as u
 from numpy import exp, pi
 from psutil import virtual_memory
 
@@ -3979,6 +3978,8 @@ def get_wavenumber_range(
     """
 
     # Checking consistency of all input variables
+    from astropy import units as u
+
     assert medium in ["air", "vacuum"]
 
     w_present = wmin is not None and wmax is not None

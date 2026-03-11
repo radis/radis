@@ -14,7 +14,6 @@ Equations derived from the code using `pytexit <https://pytexit.readthedocs.io/e
 
 from warnings import warn
 
-import astropy.units as u
 import numpy as np
 from numpy import exp, expm1
 from numpy import log as ln
@@ -2376,6 +2375,8 @@ def rescale_path_length(
             "Rescaling to 0 will loose information. Choose force " "= True"
         )
     # Convert units
+    import astropy.units as u
+
     new_path_length = convert_and_strip_units(new_path_length, u.cm)
     old_path_length = convert_and_strip_units(old_path_length, u.cm)
 

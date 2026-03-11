@@ -962,6 +962,20 @@ def test_diluents_for_molecule():
             assert diluent_for_this_molecule == {"air": 0.6, "CO2": 0.2}  # etc
 
 
+@pytest.mark.fast
+def test_wildcard_path_error():
+    """Ensure FileNotFoundError is raised when databank wildcard matches no files."""
+
+    with pytest.raises(FileNotFoundError):
+        calc_spectrum(
+            1900,
+            2300,
+            molecule="CO",
+            databank="/nonexistent/path/*.par",
+            Tgas=300,
+        )
+
+
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
     # Test sPlanck and conversion functions

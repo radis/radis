@@ -1385,7 +1385,7 @@ class PartFuncTIPS(RovibParFuncTabulator):
                 }
                 raise KeyError(
                     "KeyError spotted! "
-                    + f"If you are computing GEISA spectra, this result might be because of an "
+                    + "If you are computing GEISA spectra, this result might be because of an "
                     + f"unsupported isotope. Currently isotope ID {GEISA_ns_iso[molecule]} "
                     + f"of molecule {molecule} is not supported by HAPI partitional function, "
                     + "thus stopping this spectrum calculation. Please select other isotopes "
