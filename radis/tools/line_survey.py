@@ -226,22 +226,23 @@ def LineSurvey(
         columndescriptor = {}
 
     def _fmt_val(k, v):
-        """Format a value: wavenumber with 2 decimals, others with 3 significant figures."""
+        """Format a value depending on column type."""
         if not is_float(v):
             return f"{v}"
         if k == "wav":
             return f"{v:.2f}"
+        if k == "El":
+            return f"{v:.0f}"
         return f"{v:.3g}"
 
     def _superscript_unit(unit):
-        """Convert plain-text unit exponents to Unicode superscripts.
+        """Convert plain-text unit exponents to HTML superscripts.
 
-        e.g. 'cm-1/(molecule/cm-2)' -> 'cm⁻¹/(molecule/cm⁻²)'
+        e.g. 'cm-1/(molecule/cm-2)' -> 'cm<sup>-1</sup>/(molecule/cm<sup>-2</sup>)'
         """
-        repl = {"-1": "\u207b\u00b9", "-2": "\u207b\u00b2", "-3": "\u207b\u00b3"}
-        for old, new in repl.items():
-            unit = unit.replace(old, new)
-        return unit
+        import re
+
+        return re.sub(r"(-?\d+)", r"<sup>\1</sup>", unit)
 
     # Apply cutoff, get ylabel
     if plot == "S":
@@ -310,13 +311,13 @@ def LineSurvey(
 
     # Units for common columns (used for unknown/ExoMol formats)
     _display_units = {
-        "wav": "cm\u207b\u00b9",
-        "int": "cm\u207b\u00b9/(molecule/cm\u207b\u00b2)",
-        "El": "cm\u207b\u00b9",
-        "A": "s\u207b\u00b9",
-        "airbrd": "cm\u207b\u00b9/atm",
-        "selbrd": "cm\u207b\u00b9/atm",
-        "S": "cm\u207b\u00b9/(molecule/cm\u207b\u00b2)",
+        "wav": "cm<sup>-1</sup>",
+        "int": "cm<sup>-1</sup>/(molecule/cm<sup>-2</sup>)",
+        "El": "cm<sup>-1</sup>",
+        "A": "s<sup>-1</sup>",
+        "airbrd": "cm<sup>-1</sup>/atm",
+        "selbrd": "cm<sup>-1</sup>/atm",
+        "S": "cm<sup>-1</sup>/(molecule/cm<sup>-2</sup>)",
     }
 
     def add_details(row, details):
@@ -596,19 +597,34 @@ def LineSurvey(
         columns : list, optional
             If provided, only show these columns. Otherwise show all.
         """
+        # Build molecule name
+        molec = ""
+        try:
+            molec = spec.conditions.get("molecule", "") or spec.conditions.get(
+                "species", ""
+            )
+            if "iso" in row:
+                molec += f"[iso{int(row['iso'])}]"
+            elif "isotope" in spec.conditions:
+                molec += f"[iso{int(spec.conditions['isotope'])}]"
+        except (ValueError, TypeError, KeyError):
+            pass
+
         # Build a spectroscopic header if branch/vl/jl columns are available
         header = ""
-        if "branch" in row and "jl" in row:
+        branch_col = "branch" if "branch" in row else "PQR" if "PQR" in row else None
+        if branch_col and "jl" in row:
             try:
-                branch = _fix_branch_format.get(row["branch"], row["branch"])
+                branch = _fix_branch_format.get(row[branch_col], row[branch_col])
                 if "vl" in row:
                     header = f"{branch}({row['vl']:.0f},{row['jl']:.0f})"
                 else:
                     header = f"{branch}({row['jl']:.0f})"
             except (ValueError, TypeError):
                 pass
-        if header:
-            label = header + "<br>"
+
+        if molec or header:
+            label = f"{molec} {header}".strip() + "<br>"
         else:
             label = ""
         if columns is not None:
@@ -659,6 +675,13 @@ def LineSurvey(
         sp["label"] = sp.apply(lambda r: get_label_all(r, lineinfo), axis=1)
 
         # sp["label"] = sp.apply(get_label_none, axis=1)
+
+    # Add hint text to each tooltip
+    _hint = (
+        "<br><span style='color:#888;font-size:11px'>"
+        "Click on a line to copy data to clipboard.</span>"
+    )
+    sp["label"] = sp["label"] + _hint
 
     # from plotly.graph_objs import Scatter, Figure, Layout
 
@@ -784,22 +807,19 @@ def LineSurvey(
             "                var plain = text.replace(/<br>/g, '\\n').replace(/<[^>]*>/g, '');\n"
             "                navigator.clipboard.writeText(plain).then(function() {\n"
             "                    var el = document.createElement('div');\n"
-            "                    el.textContent = 'Copied to clipboard!';\n"
-            "                    el.style.cssText = 'position:fixed;bottom:20px;left:50%;"
-            "transform:translateX(-50%);background:#4CAF50;color:white;"
-            "padding:10px 20px;border-radius:5px;z-index:9999;"
-            "font-family:sans-serif;';\n"
+            "                    el.textContent = '\\u2713 Copied';\n"
+            "                    el.style.cssText = 'position:fixed;bottom:12px;left:50%;transform:translateX(-50%);"
+            "background:rgba(0,0,0,0.7);color:white;"
+            "padding:6px 14px;border-radius:4px;z-index:9999;"
+            "font-family:Arial,sans-serif;font-size:13px;';\n"
             "                    document.body.appendChild(el);\n"
-            "                    setTimeout(function(){ el.remove(); }, 1500);\n"
+            "                    setTimeout(function(){ el.remove(); }, 1200);\n"
             "                });\n"
             "            }\n"
             "        });\n"
             "    }\n"
             "});\n"
             "</script>\n"
-            "<p style='text-align:center;color:#888;font-family:sans-serif;"
-            "font-size:12px;margin-top:5px;'>"
-            "Click on plot to copy data to clipboard.</p>\n"
         )
         # Insert before </html> tag
         with open(writefile, "r", encoding="utf-8") as f:
