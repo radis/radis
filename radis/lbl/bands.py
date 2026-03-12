@@ -1019,9 +1019,7 @@ class BandFactory(BroadenFactory):
 
         self.profiler.start("calc_broadening_eq_bands", 2)
         # Just some tests
-        try:
-            assert len(df.shape) == 2
-        except AssertionError:
+        if len(df.shape) == 2:
             warn(
                 "Dataframe has only one line. Unexpected behaviour could occur"
                 + " because Dataframes will be handled as Series and row/columns"
@@ -1067,9 +1065,7 @@ class BandFactory(BroadenFactory):
 
         self.profiler.start("calc_broadening_noneq_bands", 2)
         # Just some tests
-        try:
-            assert len(df.shape) == 2
-        except:
+        if len(df.shape) == 2:
             warn(
                 "Dataframe has only one line. Unexpected behaviour could occur"
                 + " because Dataframes will be handled as Series and row/columns"

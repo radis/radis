@@ -387,7 +387,7 @@ def print_conditions(
                 for slab in conditions["gas_inp"]:
                     print("Slab", slab)
                     slab.print_conditions()
-            except:
+            except Exception:
                 pass
 
     return None
