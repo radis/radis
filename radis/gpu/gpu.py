@@ -51,6 +51,8 @@ class gpuApp(GPUApplication):
         Q_intp_list,
         verbose=0,
         device_id=0,
+        gaussian_envelope=None,
+        lorentzian_envelope=None,
     ):
         """
         Initialize gpuApp object required for GPU calculations
@@ -93,6 +95,13 @@ class gpuApp(GPUApplication):
             Select the GPU device. If ``int``, specifies the device index, which is printed for convenience during GPU initialization with backend='vulkan' (default).
             If ``str``, return the first device that includes the specified string (case in-sesitive). If not found, return the device at index 0.
             default = 0
+        gaussian_envelope: tuple, optional
+            Pre-computed Gaussian envelope ``(log_2vMm_min, log_2vMm_max)``.
+            If provided, ``init_G_params`` is skipped.
+        lorentzian_envelope: tuple, optional
+            Pre-computed Lorentzian envelope as returned by
+            :func:`~radis.lbl.envelope.compute_lorentzian_envelope`.
+            If provided, ``init_L_params`` is skipped.
 
         """
 
@@ -153,8 +162,19 @@ class gpuApp(GPUApplication):
         init_Q(Q_intp_list)
         log_2vMm = np.log(v0) + log_c2Mm_arr.take(iso)
 
-        init_G_params(log_2vMm.astype(np.float32), verbose)
-        init_L_params(na, gamma_arr, verbose)  # TODO: do this on GPU?
+        if gaussian_envelope is not None:
+            from radis.gpu import params as _params_mod
+
+            _params_mod._G_param_data = gaussian_envelope
+        else:
+            init_G_params(log_2vMm.astype(np.float32), verbose)
+
+        if lorentzian_envelope is not None:
+            from radis.gpu import params as _params_mod
+
+            _params_mod._L_param_data = lorentzian_envelope
+        else:
+            init_L_params(na, gamma_arr, verbose)  # TODO: do this on GPU?
 
         # Parameters that *do* change are stored in iter_h.
         # We only assign values to them in the iterate() method,

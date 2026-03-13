@@ -1216,6 +1216,61 @@ class BroadenFactory(BaseFactory):
 
         self.profiler.stop("calc_hwhm", "Calculate broadening HWHM")
 
+    def _compute_broadening_envelopes(self, df=None):
+        """Compute Gaussian and Lorentzian broadening envelopes from line database.
+
+        Results are stored in ``self._gaussian_envelope`` and
+        ``self._lorentzian_envelope`` for later use in the GPU code path.
+
+        Parameters
+        ----------
+        df : DataFrame, optional
+            Line database.  Defaults to ``self.df0``, then ``self.df1``.
+        """
+        from scipy.constants import N_A, c, k
+
+        from radis.lbl.envelope import (
+            compute_gaussian_envelope,
+            compute_lorentzian_envelope,
+        )
+
+        if df is None:
+            df = getattr(self, "df0", None)
+            if df is None:
+                df = self.df1
+
+        molar_mass = self.get_molar_mass(df)
+        if hasattr(molar_mass, "values"):
+            Mm = molar_mass.values
+        else:
+            Mm = np.full(len(df), float(molar_mass))
+
+        log_2vMm = np.log(df.wav.values) + 0.5 * np.log(
+            8 * k * np.log(2) / (c**2 * Mm * 1e-3 / N_A)
+        )
+        self._gaussian_envelope = compute_gaussian_envelope(log_2vMm.astype(np.float32))
+
+        if "Tdpair" in df.columns:
+            na = df.Tdpair.values.astype(np.float32)
+        elif "n_air" in df.columns:
+            na = df.n_air.values.astype(np.float32)
+        else:
+            self._lorentzian_envelope = None
+            return
+
+        gamma_cols = []
+        if "selbrd" in df.columns:
+            gamma_cols.append(df.selbrd.values.astype(np.float32))
+        if "airbrd" in df.columns:
+            gamma_cols.append(df.airbrd.values.astype(np.float32))
+
+        if not gamma_cols:
+            self._lorentzian_envelope = None
+            return
+
+        gamma_arr = np.array(gamma_cols, dtype=np.float32)
+        self._lorentzian_envelope = compute_lorentzian_envelope(na, gamma_arr)
+
     def _calc_min_width(self, df):
         """Calculates the minimum FWHM of the lines
         and stores in self.min_width
@@ -2997,7 +3052,7 @@ class BroadenFactory(BaseFactory):
                 + " may be inverted"
             )
 
-        (wavenumber, abscoeff, emisscoeff) = self._broaden_lines_noneq(df)
+        wavenumber, abscoeff, emisscoeff = self._broaden_lines_noneq(df)
 
         self.profiler.stop("calc_line_broadening", "Calculated line broadening")
         return wavenumber, abscoeff, emisscoeff

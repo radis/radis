@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.constants import c, h, k
 
+from radis.lbl.envelope import compute_gaussian_envelope, compute_lorentzian_envelope
+
 c_cm = 100 * c
 c2 = h * c_cm / k
 
@@ -10,61 +12,11 @@ def init_L_params(na, gamma_arr, verbose=False):
     if verbose >= 2:
         print("Initializing Lorentzian parameters ")
 
-    # The entire list of widths is first checked for minima, then for maxima.
-    result = []
-    for minmax in (np.min, np.max):
-
-        # Remove duplicates
-        na_gamma_arr = np.zeros((na.size, 2), dtype=np.float32)
-        na_gamma_arr[:, 0] = na
-        na_gamma_arr[:, 1] = minmax(gamma_arr, axis=0)
-
-        unique_lines = np.unique(na_gamma_arr.reshape(2 * na.size).view(np.int64))
-        unique_lines = unique_lines.view(np.float32).reshape(unique_lines.size, 2)
-
-        # Only keep extremes
-        test_dict = {}
-        for na_i, gamma_i in unique_lines:
-            try:
-                test_dict[na_i] = minmax((gamma_i, test_dict[na_i]))
-
-            except KeyError:
-                test_dict[na_i] = gamma_i
-
-        # Check which ones are really at the top:
-
-        keys = sorted(test_dict.keys(), reverse=(minmax == np.min))
-        A = [keys[0]]
-        B = [np.log(test_dict[keys[0]])]
-        X = [-np.inf]
-
-        for key in keys[1:]:
-            for i in range(len(X)):
-                xi = (np.log(test_dict[key]) - B[i]) / (A[i] - key)
-                if xi >= X[i]:
-                    if i < len(X) - 1:
-                        if xi < X[i + 1]:
-                            break
-                    else:
-                        break
-
-            while X[i] == xi:
-                i -= 1
-
-            A = A[: i + 1] + [key]
-            B = B[: i + 1] + [np.log(test_dict[key])]
-            X = X[: i + 1] + [xi]
-
-        X = X[1:] + [np.inf]
-        result.append((A, B, X))
-
-    param_data = tuple(result)
+    global _L_param_data
+    _L_param_data = compute_lorentzian_envelope(na, gamma_arr)
 
     if verbose >= 2:
         print("done!")
-
-    global _L_param_data
-    _L_param_data = param_data
 
 
 def init_G_params(log_2vMm, verbose=False):
@@ -72,13 +24,11 @@ def init_G_params(log_2vMm, verbose=False):
     if verbose >= 2:
         print("Initializing Gaussian parameters")
 
-    param_data = (np.min(log_2vMm), np.max(log_2vMm))
+    global _G_param_data
+    _G_param_data = compute_gaussian_envelope(log_2vMm)
 
     if verbose >= 2:
         print("done!")
-
-    global _G_param_data
-    _G_param_data = param_data
 
 
 def init_Q(Q_intp_list):

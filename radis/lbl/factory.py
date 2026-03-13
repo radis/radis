@@ -1198,6 +1198,9 @@ class SpectrumFactory(BandFactory):
         self.profiler.start("spectrum_calculation", 1)
         self.profiler.start("spectrum_calc_before_obj", 2)
 
+        if not hasattr(self, "_gaussian_envelope") or self._gaussian_envelope is None:
+            self._compute_broadening_envelopes()
+
         self._generate_wavenumber_arrays(checks=False)
         _Nlines_calculated = len(self.df0["wav"])
 
@@ -1250,6 +1253,8 @@ class SpectrumFactory(BandFactory):
             Q_interp_list,
             verbose=verbose,
             device_id=device_id,
+            gaussian_envelope=getattr(self, "_gaussian_envelope", None),
+            lorentzian_envelope=getattr(self, "_lorentzian_envelope", None),
         )
         if verbose >= 2:
             print("Initialization complete!")

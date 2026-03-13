@@ -20,7 +20,6 @@ Routine Listing
 
 """
 
-
 import os
 import sys
 
@@ -157,6 +156,58 @@ def extract_columns(df, extracted_values, columns):
 
     for column in columns:
         df[column] = df.evaluate(df[column])
+
+
+def _compute_envelope_metadata(df, molecule):
+    """Compute Gaussian/Lorentzian broadening envelopes and return as
+    metadata dict suitable for HDF5 cache storage.
+
+    Returns an empty dict if the required columns are missing.
+    """
+    import numpy as np
+    from scipy.constants import N_A, c, k
+
+    from radis.db.molparam import MolParams
+    from radis.lbl.envelope import (
+        compute_gaussian_envelope,
+        compute_lorentzian_envelope,
+        envelope_to_metadata,
+    )
+
+    required = {"wav", "Tdpair", "selbrd", "airbrd"}
+    if not required.issubset(df.columns):
+        return {}
+
+    from radis.db.classes import get_molecule_identifier
+
+    mol_id = get_molecule_identifier(molecule)
+    molparam = MolParams()
+
+    iso_set = df.iso.unique() if "iso" in df.columns else [1]
+    molar_mass = {}
+    for iso in iso_set:
+        try:
+            molar_mass[iso] = molparam.get(mol_id, iso, "mol_mass")
+        except Exception:
+            return {}
+
+    if "iso" in df.columns:
+        Mm = df["iso"].map(molar_mass).values
+    else:
+        Mm = molar_mass[iso_set[0]] * np.ones(len(df))
+
+    log_2vMm = np.log(df.wav.values) + 0.5 * np.log(
+        8 * k * np.log(2) / (c**2 * Mm * 1e-3 / N_A)
+    )
+    g_envelope = compute_gaussian_envelope(log_2vMm.astype(np.float32))
+
+    na = df.Tdpair.values.astype(np.float32)
+    gamma_arr = np.zeros((2, len(df)), dtype=np.float32)
+    gamma_arr[0] = df.selbrd.values.astype(np.float32)
+    gamma_arr[1] = df.airbrd.values.astype(np.float32)
+    l_envelope = compute_lorentzian_envelope(na, gamma_arr)
+
+    return envelope_to_metadata(g_envelope, l_envelope)
 
 
 def hit2df(
@@ -319,6 +370,7 @@ def hit2df(
             "wavenum_min": df.wav.min(),
             "wavenum_max": df.wav.max(),
         }
+        new_metadata.update(_compute_envelope_metadata(df, mol))
         if verbose:
             print(f"Generating cache file {fcache} with metadata :\n{new_metadata}")
         from radis import __version__
@@ -1959,7 +2011,9 @@ class HITRANDatabaseManager(DatabaseManager):
                         warnings.warn(warning_msg, UserWarning, stacklevel=2)
                         time.sleep(retry_delay)
                         retry_delay *= 2  # exponential
-                except KeyError as err:  # check for missing isotopes. If the isotope is missing, skip to next up to isotope 9
+                except (
+                    KeyError
+                ) as err:  # check for missing isotopes. If the isotope is missing, skip to next up to isotope 9
                     list_pattern = ["(", ",", ")"]
                     import re
 

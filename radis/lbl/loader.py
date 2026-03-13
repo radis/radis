@@ -43,6 +43,7 @@ to force regenerating them after a given version. See ``"OLDEST_COMPATIBLE_VERSI
 key in :py:attr:`radis.config`
 -------------------------------------------------------------------------------
 """
+
 # TODO: on use_cache functions, make a 'clean' / 'reset' option to delete / regenerate
 # cache files
 
@@ -675,7 +676,9 @@ class DatabankLoader(object):
         "_databank_kwargs",
         "_diluent",
         "_export_continuum",
+        "_gaussian_envelope",
         "_id",
+        "_lorentzian_envelope",
         "_neighbour_lines",
         "_sparse_ldm",
         "_wstep",
