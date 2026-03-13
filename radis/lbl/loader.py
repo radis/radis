@@ -43,6 +43,7 @@ to force regenerating them after a given version. See ``"OLDEST_COMPATIBLE_VERSI
 key in :py:attr:`radis.config`
 -------------------------------------------------------------------------------
 """
+
 # TODO: on use_cache functions, make a 'clean' / 'reset' option to delete / regenerate
 # cache files
 
@@ -1386,7 +1387,7 @@ class DatabankLoader(object):
                     return_partition_function=True,
                     engine=memory_mapping_engine,
                     output=output,
-                diluent=self.params.diluent,
+                    diluent=self.params.diluent,
                     **kwargs,
                 )
                 # @dev refactor : have a DatabaseClass from which we load lines and partition functions
@@ -2251,9 +2252,9 @@ class DatabankLoader(object):
                 f"`pfsource` {pfsource} is not available for the species {species}. Try running `set_atomic_partition_functions` again with a different `pfsource`."
             )
         else:
-            self.params.parfuncpath = (
-                self.params.levelsfmt
-            ) = self.levelspath = None  # all these parameters are irrelevant for atoms
+            self.params.parfuncpath = self.params.levelsfmt = self.levelspath = (
+                None  # all these parameters are irrelevant for atoms
+            )
 
     def _init_rovibrational_energies(self, levels, levelsfmt):
         """Initializes non equilibrium partition (which contain rovibrational
