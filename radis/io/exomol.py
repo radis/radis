@@ -34,6 +34,7 @@ def fetch_exomol(
     engine="default",
     output="pandas",
     skip_optional_data=True,
+    diluent=None,
     **kwargs,
 ):
     """Stream ExoMol file from EXOMOL website. Unzip and build a HDF5 file directly.
@@ -76,6 +77,12 @@ def fetch_exomol(
         load only specific wavenumbers.
     columns: list of str
         list of columns to load. If ``None``, returns all columns in the file.
+    diluent: str or dict, optional
+        broadening gas used to determine line shape coefficients.
+        Most common broadening partners in ExoMol: ``'air'`` (default),
+        ``'H2'``, ``'He'``, ``'CO2'``, ``'self'``.
+        Raises a ``NotImplementedError`` if the requested broadening
+        data file is not available for the molecule.
 
     Other Parameters
     ----------------
@@ -270,11 +277,36 @@ def fetch_exomol(
             f"jlower not found. Maybe try to delete cache file {local_files} and restart?"
         )
 
-    # Add broadening
-    mdb.set_broadening_coef(df, output=output, species="air")
+    # Add broadening - use diluent to determine broadening species
+    # Get broadening species from diluent (consistent with HITRAN framework)
+    broadening_species = "air"  # default
+    if diluent is not None and diluent != "air":
+        if isinstance(diluent, dict):
+            # e.g. diluent = {'He': 0.5, 'air': 0.5} -> use first non-air key
+            non_air = [k for k in diluent if k != "air"]
+            if non_air:
+                broadening_species = non_air[0]
+        elif isinstance(diluent, str):
+            broadening_species = diluent
+
+    # Check if requested broadening file exists
+    if broadening_species not in mdb.broad_partners:
+        raise NotImplementedError(
+            f"Broadening species '{broadening_species}' is not available for "
+            f"{molecule}. Available partners: {mdb.broad_partners}. "
+            f"Check https://www.exomol.com for available broadening files."
+        )
+    if not mdb.broad_files[broadening_species].exists():
+        raise NotImplementedError(
+            f"Broadening data file for species '{broadening_species}' was not "
+            f"found for {molecule}. Available partners with data: "
+            f"{[p for p in mdb.broad_partners if mdb.broad_files[p].exists()]}."
+        )
+    mdb.set_broadening_coef(df, output=output, species=broadening_species)
 
     # Add self broadening if available
-    mdb.set_broadening_coef(df, output=output, species="self")
+    if "self" in mdb.broad_partners and mdb.broad_files["self"].exists():
+        mdb.set_broadening_coef(df, output=output, species="self")
 
     # Specific for RADIS :
     # ... Get RADIS column names:

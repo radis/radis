@@ -1386,6 +1386,7 @@ class DatabankLoader(object):
                     return_partition_function=True,
                     engine=memory_mapping_engine,
                     output=output,
+                diluent=self.params.diluent,
                     **kwargs,
                 )
                 # @dev refactor : have a DatabaseClass from which we load lines and partition functions
