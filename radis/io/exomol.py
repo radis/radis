@@ -34,6 +34,7 @@ def fetch_exomol(
     engine="default",
     output="pandas",
     skip_optional_data=True,
+    diluent=None,
     **kwargs,
 ):
     """Stream ExoMol file from EXOMOL website. Unzip and build a HDF5 file directly.
@@ -76,6 +77,13 @@ def fetch_exomol(
         load only specific wavenumbers.
     columns: list of str
         list of columns to load. If ``None``, returns all columns in the file.
+    diluent: dict or str, optional
+        Broadening partner for ExoMol line shape coefficients.
+        Most common broadening partners in ExoMol: ``'air'`` (default),
+        ``'He'``, ``'H2'``, ``'CO2'``, ``'H2O'``, ``'self'``.
+        Check https://www.exomol.com for available broadening files.
+        If the requested broadening data is not available for the molecule,
+        a ``NotImplementedError`` is raised.
 
     Other Parameters
     ----------------
@@ -270,12 +278,34 @@ def fetch_exomol(
             f"jlower not found. Maybe try to delete cache file {local_files} and restart?"
         )
 
-    # Add broadening
-    mdb.set_broadening_coef(df, output=output, species="air")
+    # Add broadening based on diluent parameter (consistent with ExoMol website)
+    broadening_species = "air"  # default
+    if diluent is not None:
+        if isinstance(diluent, dict):
+            non_air = [k for k in diluent if k != "air"]
+            if non_air:
+                broadening_species = non_air[0]
+        elif isinstance(diluent, str) and diluent != "air":
+            broadening_species = diluent
 
-    # Add self broadening if available
-    mdb.set_broadening_coef(df, output=output, species="self")
+    broadf = kwargs.get("broadf", True)
+    if broadf is not False:
 
+        if broadening_species not in mdb.broad_partners:
+           raise NotImplementedError(
+              f"Broadening data for species '{broadening_species}' not available "
+              f"for {molecule}. Most common broadening partners in ExoMol: "
+              f"'air' (default), 'He', 'H2', 'CO2', 'H2O', 'self'. "
+              f"Check https://www.exomol.com for available broadening files."
+            )
+
+        mdb.set_broadening_coef(df, output=output, species=broadening_species)
+        if verbose:
+            print(f"Using {broadening_species} broadening coefficients.")
+
+        # Add self broadening if available and not already used
+        if "self" in mdb.broad_partners and broadening_species != "self":
+            mdb.set_broadening_coef(df, output=output, species="self")
     # Specific for RADIS :
     # ... Get RADIS column names:
     exomol2radis_columns = {v: k for k, v in radis2exomol_columns.items()}
