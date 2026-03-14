@@ -1408,13 +1408,13 @@ class BroadenFactory(BaseFactory):
                         import numpy as np
                         selbrd = np.full(len(df), 0.07)
                     else:
-                        selbrd = df.airbrd
+                        selbrd = df.airbrd if "airbrd" in columns else df.selbrd
                 else:
                     selbrd = df.selbrd
 
                 # Calculate broadening HWHM
                 wl = pressure_broadening_HWHM(
-                    df.airbrd,
+                    df.airbrd if "airbrd" in columns else selbrd,
                     selbrd,
                     df.Tdpair,
                     Tdpsel,
