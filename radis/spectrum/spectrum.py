@@ -1649,24 +1649,16 @@ class Spectrum(object):
             header=header,
         )
 
-    def update(self, quantity="all", optically_thin="default", verbose=True):
+    def update(self, quantity="all", optically_thin=None, verbose=True):
         r"""Calculate missing quantities: ex: if path_length and emisscoeff are
         given, recalculate radiance_noslit.
 
         Parameters
         ----------
-
-        spec: Spectrum
         quantity: str
             name of the spectral quantity to recompute. If 'same', only the quantities
             in the Spectrum are recomputed. If 'all', then all quantities that can
             be derived are recomputed. Default 'all'.
-        optically_thin: True, False, or 'default'
-            determines whether to calculate radiance with or without self absorption.
-            If 'default', the value is determined from the self_absorption key
-            in Spectrum.conditions. If not given, False is taken. Default 'default'
-            Also updates the self_absorption value in conditions (creates it if
-            doesnt exist
 
         Examples
         --------
@@ -1693,6 +1685,12 @@ class Spectrum(object):
         --------
 
         :ref:`the Spectrum page <label_spectrum>`
+
+        Notes
+        -----
+        To compute radiance in the optically thin approximation (without
+        self-absorption), set ``self.conditions['self_absorption'] = False``
+        before calling this method.
         """
 
         return update(

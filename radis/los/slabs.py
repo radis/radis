@@ -823,9 +823,9 @@ def MergeSlabs(*slabs, **kwargs) -> Spectrum:
                 )
 
         # Add the rest of the spectral quantities afterwards:
+        s.conditions["self_absorption"] = not optically_thin
         s.update(
             [k for k in requested if k not in ["emisscoeff", "abscoeff"]],
-            optically_thin=optically_thin,
             verbose=verbose,
         )
 
