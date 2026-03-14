@@ -332,7 +332,7 @@ def fetch_exomol(
     if output == "jax":
         try:
             import jax.numpy as jnp
-        except:
+        except ImportError:
             import numpy as jnp
         df["logsij0"] += jnp.log(Ia)
     else:
