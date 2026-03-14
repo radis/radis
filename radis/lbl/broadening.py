@@ -1404,7 +1404,11 @@ class BroadenFactory(BaseFactory):
                         "MissingSelfBroadeningWarning",
                         level=2,  # only appear if verbose>=2
                     )
-                    selbrd = df.airbrd
+                    if "airbrd" not in columns:
+                        import numpy as np
+                        selbrd = np.full(len(df), 0.07)
+                    else:
+                        selbrd = df.airbrd
                 else:
                     selbrd = df.selbrd
 
