@@ -301,7 +301,10 @@ def fetch_exomol(
               f"Check https://www.exomol.com for available broadening files."
             )
 
-        mdb.set_broadening_coef(df, output=output, species=broadening_species)
+        if broadening_species == "air":
+            mdb.set_broadening_coef(df, output=output)
+        else:
+            mdb.set_broadening_coef(df, output=output, species=broadening_species)
         if verbose:
             print(f"Using {broadening_species} broadening coefficients.")
 
