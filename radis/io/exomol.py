@@ -302,7 +302,7 @@ def fetch_exomol(
             )
 
         if broadening_species == "air":
-            mdb.set_broadening_coef(df, output=output)
+            mdb.set_broadening_coef(df, output=output, species="air")
         else:
             mdb.set_broadening_coef(df, output=output, species=broadening_species)
         if verbose:
