@@ -108,6 +108,7 @@ sphinx_gallery_conf = {
     "show_signature": False,
     # Sort example files within gallery subsections with their filename
     "within_subsection_order": FileNameSortKey,
+    "expected_failing_examples": ["../examples/0_Database_handling/plot_hitran.py"],
 }
 
 
