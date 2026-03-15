@@ -1416,7 +1416,7 @@ class BroadenFactory(BaseFactory):
                 wl = pressure_broadening_HWHM(
                     df.airbrd if "airbrd" in columns else selbrd,
                     selbrd,
-                    df.Tdpair,
+                    df.Tdpair if "Tdpair" in columns else 0.5,
                     Tdpsel,
                     pressure_atm,
                     mole_fraction,
