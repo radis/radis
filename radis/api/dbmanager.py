@@ -456,10 +456,11 @@ class DatabaseManager(object):
                 response.raise_for_status()  # Raise an error if request fails
 
                 # Create a temporary file to store the downloaded content
-                temp_file_path = urlname.split("/")[-1]
-                temp_file_path = re.sub(
-                    r'[<>:"/\\|?*&=]', "_", temp_file_path
+                temp_fname = urlname.split("/")[-1]
+                temp_fname = re.sub(
+                    r'[<>:"/\\|?*&=]', "_", temp_fname
                 )  # Sanitize the filename to remove invalid characters for Windows
+                temp_file_path = join(self.tempdir, temp_fname)
 
                 # Get total file size for progress bar
                 total_size = int(response.headers.get("content-length", 0))
