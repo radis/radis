@@ -1470,7 +1470,7 @@ class Spectrum(object):
 
         return w
 
-    def get_wavenumber(self, which=None, copy=True):
+    def get_wavenumber(self, copy=True):
         r"""Return wavenumber (if the same for all quantities)
 
         Other Parameters
@@ -1485,13 +1485,6 @@ class Spectrum(object):
             (a copy of) spectrum wavenumber for convoluted or non convoluted
             quantities
         """
-        if which is not None:
-            warn(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_wavenumber()",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
         w = self._get_wavespace(copy=copy)
 
         if self.get_waveunit() == "cm-1":  #
@@ -2098,35 +2091,21 @@ class Spectrum(object):
 
     # %% Plotting routines
 
-    def get_vars(self, which=None):
+    def get_vars(self):
         r"""Returns all spectral quantities stored in this object (convoluted or
         non convoluted)
 
         """
-        if which is not None:
-            warn(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_vars()",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
         # remove wavespace
         varlist = [k for k in self._q.keys() if k != "wavespace"]
         return varlist
 
-    def get_quantities(self, which=None):
+    def get_quantities(self):
         r"""Returns all spectral quantities stored in this object (convoluted or
         non convoluted). Wrapper to
         :py:meth:`~radis.spectrum.spectrum.get_vars`
 
         """
-        if which is not None:
-            warn(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_quantities()",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
         return self.get_vars()
 
     def _get_items(self) -> dict:
