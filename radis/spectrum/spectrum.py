@@ -1413,7 +1413,7 @@ class Spectrum(object):
 
         return w
 
-    def get_wavelength(self, medium="air", which=None, copy=True):
+    def get_wavelength(self, medium="air", copy=True):
         r"""Return wavelength in defined medium.
 
         Parameters
@@ -1438,13 +1438,6 @@ class Spectrum(object):
         --------
         :ref:`the Spectrum page <label_spectrum>`
         """
-        if which is not None:
-            warn(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_wavelength()",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
         # Check input
         if not medium in ["air", "vacuum"]:
             raise NotImplementedError(f"Unknown propagating medium: {medium}")
@@ -4408,7 +4401,6 @@ class Spectrum(object):
         energy_threshold="default",
         print_conservation=False,
         inplace=True,
-        if_conflict_drop=None,
         **kwargs,
     ):
         r"""Resample spectrum over a new wavelength/wavenumber range.
@@ -4484,16 +4476,6 @@ class Spectrum(object):
         --------
         :func:`radis.misc.signal.resample`, :py:meth:`radis.spectrum.spectrum.Spectrum.resample_even`
         """
-        # Check inputs (check for deprecated)
-        if if_conflict_drop is not None:
-            import warnings
-
-            warnings.warn(
-                "`if_conflict_drop` parameter was deleted in Radis 0.9.30",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
         if inplace:
             s = self
         else:
