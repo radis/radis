@@ -93,8 +93,11 @@ def calc_spectrum(
 
             import astropy.units as u
             calc_spectrum(2.5*u.um, 3.0*u.um, ...)
-    wunit: ``'nm'``, ``'cm-1'``
-        unit for ``wmin`` and ``wmax``. Default is ``"cm-1"``.
+    wunit: ``'nm'``, ``'cm-1'``, ``'nm_air'``, ``'nm_vac'``
+        unit for ``wmin`` and ``wmax``. ``'nm'`` uses the ``medium`` parameter
+        to determine air or vacuum conversion. ``'nm_air'`` and ``'nm_vac'``
+        are explicit and override the ``medium`` parameter.
+        Default is ``"cm-1"``.
     Tgas: float [:math:`K`]
         Gas temperature. If non equilibrium, is used for :math:`T_{translational}`.
         Default ``300`` K​

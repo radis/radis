@@ -616,6 +616,7 @@ class SpectrumFactory(BandFactory):
         )
         self.input.self_absorption = self_absorption
         self.input.potential_lowering = potential_lowering
+        self.input.medium = medium
         self.input.pfsource = pfsource
 
         # Initialize computation variables

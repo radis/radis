@@ -1295,7 +1295,8 @@ class Spectrum(object):
         if wunit == "cm-1":
             w = self.get_wavenumber(copy=copy)
         elif wunit == "nm":
-            w = self.get_wavelength(medium="air", copy=copy)
+            medium = self.conditions.get("medium", "air")
+            w = self.get_wavelength(medium=medium, copy=copy)
         elif wunit == "nm_vac":
             w = self.get_wavelength(medium="vacuum", copy=copy)
         else:
@@ -2298,26 +2299,35 @@ class Spectrum(object):
             ax.legend()
         fix_style()
 
-        from radis.phys.convert import cm2nm, div_safe, nm2cm
+        from radis.phys.convert import cm2nm, cm2nm_air, div_safe, nm2cm, nm_air2cm
 
         if ax.child_axes != []:
             pass
-        elif "cm⁻¹" in ylabel:
+        elif wunit == "cm-1":
             secx = ax.secondary_xaxis(
                 "top", functions=(div_safe(cm2nm), div_safe(nm2cm))
             )
             secx.set_xlabel("Wavelength (nm)")
-        elif "nm" in ylabel:
-            if wunit == "nm" or wunit == "nm_air":
+        elif wunit == "nm":
+            medium = self.conditions.get("medium", "air")
+            if medium == "vacuum":
                 secx = ax.secondary_xaxis(
                     "top", functions=(div_safe(nm2cm), div_safe(cm2nm))
                 )
             else:
-                from radis.phys.convert import cm2nm_air, nm_air2cm
-
                 secx = ax.secondary_xaxis(
                     "top", functions=(div_safe(nm_air2cm), div_safe(cm2nm_air))
                 )
+            secx.set_xlabel("wavenumber (cm⁻¹)")
+        elif wunit == "nm_air":
+            secx = ax.secondary_xaxis(
+                "top", functions=(div_safe(nm_air2cm), div_safe(cm2nm_air))
+            )
+            secx.set_xlabel("wavenumber (cm⁻¹)")
+        elif wunit == "nm_vac":
+            secx = ax.secondary_xaxis(
+                "top", functions=(div_safe(nm2cm), div_safe(cm2nm))
+            )
             secx.set_xlabel("wavenumber (cm⁻¹)")
 
         # Add plotting tools
