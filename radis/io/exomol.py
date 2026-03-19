@@ -206,8 +206,6 @@ def fetch_exomol(
         / database
     )
 
-    # TODO: add deprecation if missing columns in cache file
-
     # Init database, download files if needed.
     mdb = MdbExomol(
         local_path,
@@ -233,6 +231,49 @@ def fetch_exomol(
         local_files = [local_files]
     mgr = mdb.get_datafile_manager()
     local_files = [mgr.cache_file(f) for f in local_files]
+
+    # Warn if cache files are missing expected columns (outdated cache)
+    if cache not in [False, "regen"]:
+        import warnings
+
+        from radis.misc.warning import AccuracyWarning
+
+        expected_columns = [
+            "nu_lines",
+            "Sij0",
+            "elower",
+            "jlower",
+            "jupper",
+            "gupper",
+            "glower",
+        ]
+        for local_file in local_files:
+            if pathlib.Path(local_file).exists():
+                try:
+                    existing_columns = mdb.get_columns(local_file)
+                    missing = [c for c in expected_columns if c not in existing_columns]
+                    if missing:
+                        warnings.warn(
+                            AccuracyWarning(
+                                f"ExoMol cache file {local_file} is missing columns "
+                                f"{missing}. This may be from an older version of RADIS. "
+                                f"Regenerate the cache with `cache='regen'` to fix this."
+                            )
+                        )
+                except Exception:
+                    pass  # If we can't read columns, let loading handle the error
+
+    # Clean downloaded .bz2 files after caching to HDF5
+    if clean_cache_files:
+        trans_files = (
+            mdb.trans_file if isinstance(mdb.trans_file, list) else [mdb.trans_file]
+        )
+        for trans_file in trans_files:
+            bz2_file = pathlib.Path(trans_file)
+            if bz2_file.exists() and mgr.cache_file(trans_file).exists():
+                bz2_file.unlink()
+                if verbose:
+                    print(f"Cleaned up downloaded file: {bz2_file.name}")
 
     # Specific for RADIS : rename columns
     radis2exomol_columns = {
