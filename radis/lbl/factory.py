@@ -953,7 +953,6 @@ class SpectrumFactory(BandFactory):
                 "diluents": self._diluent,
                 "radis_version": version,
                 "spectral_points": len(self.wavenumber),
-                "profiler": dict(self.profiler.final),
             }
         )
         if self.params.optimization != None:
@@ -1002,6 +1001,7 @@ class SpectrumFactory(BandFactory):
             name=name,
             references=dict(self.reftracker),
         )
+        s.profiler = dict(self.profiler.final)
         # OPTION 2.  Change a posteriori using a Spectrum.method. More universal. Can it be slower?
 
         # update database if asked so
@@ -1329,7 +1329,6 @@ class SpectrumFactory(BandFactory):
                 "gpu_backend": backend,
                 "spectral_points": len(self.wavenumber),
                 "add_at_used": "gpu-backend",
-                "profiler": dict(self.profiler.final),
                 "NwL": iter_N_L,
                 "NwG": iter_N_G,
             }
@@ -1862,7 +1861,6 @@ class SpectrumFactory(BandFactory):
                 "diluents": self._diluent,
                 "radis_version": version,
                 "spectral_points": len(self.wavenumber),
-                "profiler": dict(self.profiler.final),
             }
         )
         if self.params.optimization != None:
@@ -1914,6 +1912,7 @@ class SpectrumFactory(BandFactory):
             name=name,
             references=dict(self.reftracker),
         )
+        s.profiler = dict(self.profiler.final)
 
         # update database if asked so
         if self.autoupdatedatabase:

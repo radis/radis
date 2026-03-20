@@ -228,7 +228,7 @@ def fit_legacy(
     s0 = compute_los_model(fit_parameters)  # New run to get performance profile of fit
     sys.stderr.flush()
     s0.name = "Fit (in progress)"
-    if "profiler" in s0.conditions and verbose > 0:
+    if getattr(s0, "profiler", None) is not None and verbose > 0:
         print("-" * 30)
         print("TYPICAL FIT CALCULATION TIME:")
         s0.print_perf_profile()
