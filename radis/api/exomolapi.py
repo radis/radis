@@ -721,7 +721,6 @@ def make_j2b(
 
     # Raise a minor warning if default values are used for high J values
     if Nblower > (np.max(jlower_arr) + 1):
-        import warnings
 
         from radis.misc.warning import AccuracyWarning
 
@@ -828,8 +827,7 @@ def make_j2b_m0(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=Non
 
     # Raise a minor warning if default values are used for high J values
     if Nblower > (np.max(jlower_arr) + 1):
-        import warnings
-
+        
         from radis.misc.warning import AccuracyWarning
 
         warnings.warn(
