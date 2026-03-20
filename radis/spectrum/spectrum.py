@@ -4010,7 +4010,7 @@ class Spectrum(object):
                    molecule             CO
                    overpopulation       None
                    path_length          1 cm
-                   pressure_mbar        1013.25 mbar
+                   pressure             1.01325 bar
                    rot_distribution     boltzmann
                    self_absorption      True
                    state                X

@@ -710,7 +710,7 @@ def _fix_format(file, sload):
         sload["conditions"]["pressure"] = (
             sload["conditions"].pop("air_pressure_mbar") * 1e-3
         )
-        sload["conditions"]["air_pressure"] = "bar"
+        sload["cond_units"]["pressure"] = "bar"
         fixed = True
 
     if "isotope" in sload["conditions"]:
