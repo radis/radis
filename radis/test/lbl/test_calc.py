@@ -580,7 +580,6 @@ def test_all_calc_methods_CO2pcN(
     #    assert np.isclose(s_nq.get_power(), s_eq.get_power(), rtol=rtol)
 
 
-@pytest.mark.needs_connection
 def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **kwargs):
     """Test same spectrum for 2 different calculation codes (equilibrium,
     non-equilibrium) in the presence of isotopes
@@ -590,30 +589,30 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **k
 
     On the old NeQ package the test used [HITEMP-2010]_
 
-    Starting from RADIS 1.0.1, the test is run on [HITRAN-2020]_, which
-    is not valid for these temperatures but can be more conveniently
-    downloaded automatically and thus executed every time with `Travis CI <https://travis-ci.com/radis/radis>`_
+    Starting from RADIS 1.0.1, the test was run on [HITRAN-2020]_ for CO2.
+    Now uses CO from HITRAN-CO-TEST (local test database), which does not
+    require any download and has 3 isotopes (isotopes 1, 2, 3) in 2000-2300 cm-1.
 
     """
+    from radis.test.utils import setup_test_line_databases
 
+    setup_test_line_databases()
     Tgas = 1500
 
     sf = SpectrumFactory(
-        wavelength_min=4250,
-        wavelength_max=4350,
+        wavenum_min=2000,
+        wavenum_max=2300,
         mole_fraction=1,
         path_length=1,
         cutoff=1e-25,
-        molecule="CO2",
+        molecule="CO",
         isotope="1,2",
         verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.warnings["NegativeEnergiesWarning"] = "ignore"
     sf.warnings["HighTemperatureWarning"] = "ignore"
-    sf.fetch_databank(
-        "hitran", load_columns="noneq"
-    )  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
+    sf.load_databank("HITRAN-CO-TEST", load_columns="noneq")
     s_nq = sf.non_eq_spectrum(Tvib=Tgas, Trot=Tgas, name="Non-eq")
     s_eq = sf.eq_spectrum(Tgas=Tgas, name="Eq")
 
