@@ -707,6 +707,7 @@ def read_and_write_chunked_for_CO2(
     output="pandas",
     verbose=True,
     local_databases=None,
+    parallel=True,
 ):
     """
     Download, parse and cache CO2 data chunks for specified wavenumber range.
@@ -827,45 +828,90 @@ def read_and_write_chunked_for_CO2(
         printer.info("All files already downloaded.", indent=1)
 
     printer.section("Caching to HDF5/H5 format")
-    if len(local_paths) == len(
-        [f for f in local_paths if os.path.exists(_fcache_file_name(f, engine))]
-    ):
-        printer.info("All files already cached.", indent=1)
 
     from tqdm import tqdm
 
-    with tqdm(
-        total=len(local_paths), desc="Processing chunks", disable=not verbose
-    ) as pbar:
-        for i, file in enumerate(local_paths):
-            file_name = _fcache_file_name(file, engine)
-            cached_df = _load_cache_file(file_name, engine=engine, columns=columns)
+    # Load cached chunks, collect uncached indices
+    results = [None] * len(local_paths)
+    uncached = []
 
-            if cached_df is not None:
-                _append_dataframe(cached_df)
-                pbar.set_postfix_str("from cache")
-            else:
-                pbar.set_postfix_str("parsing")
-                df = parse_one_CO2_block(
-                    file,
-                    columns=columns,
-                    engine=engine,
-                    output=output,
-                    wav_range=wav_pairs[i],
-                    verbose=False,
-                )
-                _append_dataframe(df)
+    for i, file in enumerate(local_paths):
+        cached_df = _load_cache_file(
+            _fcache_file_name(file, engine), engine=engine, columns=columns
+        )
+        if cached_df is not None:
+            results[i] = cached_df
+        else:
+            uncached.append(i)
 
-            # Register (or update last_used for) this file
-            wmin, wmax = wav_pairs[i]
-            file_entry = _build_file_entry(file, wmin, wmax, engine)
-            register_partial_hitemp_co2(file_entry)
+    # Parse uncached chunks
+    if uncached:
+        parse_kwargs = dict(
+            columns=columns, engine=engine, output=output, verbose=False
+        )
+        cpu_threads = os.cpu_count() or 1
+        if parallel and len(uncached) > 1 and cpu_threads > 1:
+            n_workers = min(len(uncached), cpu_threads, max(4, cpu_threads // 2))
 
-            # Always remove .par file after processing
-            # if os.path.exists(file):
-            #     os.remove(file)
+            def _parse_with_progress(p_idx, file, wav_range, kwargs):
+                with tqdm(
+                    total=1,
+                    desc=f"Caching chunk {p_idx+1}/{len(uncached)}",
+                    position=p_idx + 1,
+                    leave=False,
+                    disable=not verbose,
+                    bar_format="{desc} {percentage:3.0f}%|{bar}| [{elapsed}]",
+                ) as p:
+                    res = parse_one_CO2_block(file, wav_range=wav_range, **kwargs)
+                    p.update(1)
+                    return res
 
-            pbar.update(1)
+            with ThreadPoolExecutor(max_workers=n_workers) as pool:
+                futures = {
+                    pool.submit(
+                        _parse_with_progress,
+                        p_idx,
+                        local_paths[i],
+                        wav_pairs[i],
+                        parse_kwargs,
+                    ): i
+                    for p_idx, i in enumerate(uncached)
+                }
+                with tqdm(
+                    total=len(local_paths),
+                    initial=len(local_paths) - len(uncached),
+                    desc="Total progress",
+                    position=0,
+                    leave=True,
+                    disable=not verbose,
+                ) as pbar:
+                    for future in as_completed(futures):
+                        results[futures[future]] = future.result()
+                        pbar.update(1)
+        else:
+            with tqdm(
+                total=len(local_paths),
+                initial=len(local_paths) - len(uncached),
+                desc="Processing chunks",
+                disable=not verbose,
+            ) as pbar:
+                for i in uncached:
+                    results[i] = parse_one_CO2_block(
+                        local_paths[i],
+                        wav_range=wav_pairs[i],
+                        **parse_kwargs,
+                    )
+                    pbar.update(1)
+    else:
+        printer.info("All files already cached.", indent=1)
+
+    # Register metadata
+    for i, file in enumerate(local_paths):
+        _append_dataframe(results[i])
+        wmin, wmax = wav_pairs[i]
+        register_partial_hitemp_co2(_build_file_entry(file, wmin, wmax, engine))
+        if os.path.exists(file):
+            os.remove(file)
 
     # Combine DataFrames
     if dataframes:
@@ -904,6 +950,7 @@ def download_and_decompress_CO2_into_df(
     verbose=True,
     engine="pytables",
     output="pandas",
+    parallel=True,
 ):
     """
     This function handles downloading the HITEMP CO2 database. The full 2024 database is downloaded in smaller files of approximately 50-70 MB (500 MB decompressed chunks in h5 format), locating the appropriate data chunk based on the provided wavenumber range and reading the relevant data into a DataFrame.
@@ -955,6 +1002,7 @@ def download_and_decompress_CO2_into_df(
         engine=engine,
         output=output,
         verbose=verbose,
+        parallel=parallel,
         local_databases=local_databases,
     )
     combined_df = combined_df[
