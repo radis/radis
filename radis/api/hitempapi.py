@@ -86,8 +86,15 @@ def read_config():
         or an empty dictionary if the file does not exist.
     """
     if os.path.exists(CONFIG_PATH_JSON):
-        with open(CONFIG_PATH_JSON, "r") as f:
-            config = json.load(f)
+        try:
+            with open(CONFIG_PATH_JSON, "r") as f:
+                config = json.load(f)
+        except json.JSONDecodeError as e:
+            warnings.warn(
+                f"RADIS config file {CONFIG_PATH_JSON} is corrupted and could not be read ({e}). Ignoring it.",
+                UserWarning,
+            )
+            config = {}
     else:
         config = {}
     return config
@@ -698,6 +705,24 @@ def _build_file_entry(par_path, wmin, wmax, engine):
     return entry
 
 
+def _parse_with_progress_multiprocess(
+    p_idx, file, wav_range, total_chunks, verbose, kwargs
+):
+    from tqdm import tqdm
+
+    with tqdm(
+        total=1,
+        desc=f"Caching chunk {p_idx+1}/{total_chunks}",
+        position=p_idx + 1,
+        leave=False,
+        disable=not verbose,
+        bar_format="{desc} {percentage:3.0f}%|{bar}| [{elapsed}]",
+    ) as p:
+        res = parse_one_CO2_block(file, wav_range=wav_range, **kwargs)
+        p.update(1)
+        return res
+
+
 def read_and_write_chunked_for_CO2(
     load_wavenum_max,
     load_wavenum_min,
@@ -781,7 +806,7 @@ def read_and_write_chunked_for_CO2(
         version="2024",
     )
     printer.header(
-        f"Downloading and processing {len(wav_pairs)} chunks for range {load_wavenum_min}-{load_wavenum_max} cm⁻¹"
+        f"Downloading and processing {len(wav_pairs)} chunks for range {load_wavenum_min}-{load_wavenum_max} cm-1"
     )
 
     # Download section
@@ -843,7 +868,6 @@ def read_and_write_chunked_for_CO2(
             results[i] = cached_df
         else:
             uncached.append(i)
-
     # Parse uncached chunks
     if uncached:
         parse_kwargs = dict(
@@ -853,41 +877,21 @@ def read_and_write_chunked_for_CO2(
         if parallel and len(uncached) > 1 and cpu_threads > 1:
             n_workers = min(len(uncached), cpu_threads, max(4, cpu_threads // 2))
 
-            def _parse_with_progress(p_idx, file, wav_range, kwargs):
-                with tqdm(
-                    total=1,
-                    desc=f"Caching chunk {p_idx+1}/{len(uncached)}",
-                    position=p_idx + 1,
-                    leave=False,
-                    disable=not verbose,
-                    bar_format="{desc} {percentage:3.0f}%|{bar}| [{elapsed}]",
-                ) as p:
-                    res = parse_one_CO2_block(file, wav_range=wav_range, **kwargs)
-                    p.update(1)
-                    return res
+            from joblib import Parallel, delayed
 
-            with ThreadPoolExecutor(max_workers=n_workers) as pool:
-                futures = {
-                    pool.submit(
-                        _parse_with_progress,
-                        p_idx,
-                        local_paths[i],
-                        wav_pairs[i],
-                        parse_kwargs,
-                    ): i
-                    for p_idx, i in enumerate(uncached)
-                }
-                with tqdm(
-                    total=len(local_paths),
-                    initial=len(local_paths) - len(uncached),
-                    desc="Total progress",
-                    position=0,
-                    leave=True,
-                    disable=not verbose,
-                ) as pbar:
-                    for future in as_completed(futures):
-                        results[futures[future]] = future.result()
-                        pbar.update(1)
+            parallel_results = Parallel(n_jobs=n_workers)(
+                delayed(_parse_with_progress_multiprocess)(
+                    p_idx,
+                    local_paths[i],
+                    wav_pairs[i],
+                    len(uncached),
+                    verbose,
+                    parse_kwargs,
+                )
+                for p_idx, i in enumerate(uncached)
+            )
+            for idx, i in enumerate(uncached):
+                results[i] = parallel_results[idx]
         else:
             with tqdm(
                 total=len(local_paths),
