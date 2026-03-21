@@ -158,6 +158,7 @@ def fetch_hitemp(
             verbose=verbose,
             engine=engine,
             output=output,
+            parallel=parallel,
         )
 
         if return_local_path:
