@@ -108,6 +108,7 @@ sphinx_gallery_conf = {
     "show_signature": False,
     # Sort example files within gallery subsections with their filename
     "within_subsection_order": FileNameSortKey,
+    "ignore_pattern": r"plot1_fit_Tgas\.py",
 }
 
 
