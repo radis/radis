@@ -379,7 +379,7 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
         plt.title("CO spectrum (2000 K)")
         s.plot(
             "radiance_noslit",
-            wunit="nm",
+            wunit="nm_air",
             nfig=fig.number,
             lw=2,
             color="r",
@@ -389,7 +389,7 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
     # ... there should be about ~1.25 nm shift at 4.5 µm:
     assert np.isclose(
         s.get("radiance_noslit", wunit="nm_vac")[0][0]
-        - s.get("radiance_noslit", wunit="nm")[0][0],
+        - s.get("radiance_noslit", wunit="nm_air")[0][0],
         1.2540436086346745,
     )
 

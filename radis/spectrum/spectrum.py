@@ -1291,11 +1291,16 @@ class Spectrum(object):
                 wunit = self.c["default_output_unit"]
             else:
                 wunit = self.get_waveunit()
+        # Handle explicit nm_air before cast_waveunit collapses it to "nm"
+        force_air = wunit in ("nm_air",)
         wunit = cast_waveunit(wunit)
         if wunit == "cm-1":
             w = self.get_wavenumber(copy=copy)
         elif wunit == "nm":
-            medium = self.conditions.get("medium", "air")
+            if force_air:
+                medium = "air"
+            else:
+                medium = self.conditions.get("medium", "air")
             w = self.get_wavelength(medium=medium, copy=copy)
         elif wunit == "nm_vac":
             w = self.get_wavelength(medium="vacuum", copy=copy)
