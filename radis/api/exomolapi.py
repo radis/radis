@@ -2125,3 +2125,54 @@ if __name__ == "__main__":
     # )
     # print("Databases for SiO: ", databases)
     # print("Database recommended by ExoMol: ", recommended)
+
+
+class BroadeningAdapter:
+    def __init__(self, engine=None):
+        if engine is None:
+            try:
+                from radis.misc.config import get_engine
+                engine = get_engine()
+            except Exception:
+                engine = "pytables"
+        self.engine = engine
+        self._adapter = None
+        self._df = None
+
+    def load(self, path, columns=None):
+        from pathlib import Path
+        import pandas as pd
+        path = Path(path)
+        if self.engine == "polars":
+            from radis.io.polars_adapter import PolarsAdapter
+            from radis.io.hdf5_to_parquet import get_parquet_path
+            if path.suffix in (".h5", ".hdf5"):
+                path = Path(get_parquet_path(path))
+            self._adapter = PolarsAdapter()
+            self._adapter.load(str(path), columns=columns)
+        else:
+            if path.suffix == ".parquet":
+                self._df = pd.read_parquet(path, columns=columns)
+            else:
+                self._df = pd.read_hdf(path, columns=columns) if columns else pd.read_hdf(path)
+        return self
+
+    def filter_range(self, column, vmin, vmax):
+        if self.engine == "polars" and self._adapter:
+            self._adapter.filter_range(column, vmin, vmax)
+        elif self._df is not None:
+            self._df = self._df[(self._df[column]>=vmin)&(self._df[column]<=vmax)]
+        return self
+
+    def get_column(self, column):
+        if self.engine == "polars" and self._adapter:
+            return self._adapter.compute()[column].to_numpy()
+        elif self._df is not None:
+            return self._df[column].values
+        raise RuntimeError("Call load() first")
+
+    def to_pandas(self):
+        if self.engine == "polars" and self._adapter:
+            return self._adapter.to_pandas()
+        import pandas as pd
+        return self._df.copy() if self._df is not None else pd.DataFrame()

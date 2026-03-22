@@ -1006,3 +1006,27 @@ if __name__ == "__main__":
     a = get_config()
 
     print(a.keys())
+
+
+def get_engine():
+    import os
+    return os.environ.get("RADIS_DATAFRAME_ENGINE", "pytables")
+
+def set_engine(engine):
+    import os
+    if engine not in ("polars", "pytables", "pandas"):
+        raise ValueError(f"Unknown engine: {engine!r}. Use polars or pytables.")
+    os.environ["RADIS_DATAFRAME_ENGINE"] = engine
+
+def write_engine_to_radis_json(engine):
+    import json
+    from pathlib import Path
+    p = Path.home() / "radis.json"
+    existing = {}
+    if p.exists():
+        try: existing = json.loads(p.read_text())
+        except: pass
+    existing["DATAFRAME_ENGINE"] = engine
+    p.write_text(json.dumps(existing, indent=2))
+    config["DATAFRAME_ENGINE"] = engine
+    print(f"Saved DATAFRAME_ENGINE={engine!r} to {p}")

@@ -321,7 +321,28 @@ class DataFileManager(object):
 
                 within=[("iso", isotope.split(","))]
         """
-        if not lower_bound and not upper_bound and not within:
+        if self.engine == "polars":
+            # Polars/Parquet lazy-loading with predicate pushdown (issue #978)
+            import polars as pl
+            from radis.io.hdf5_to_parquet import get_parquet_path
+            from radis.io.polars_adapter import PolarsAdapter
+            from os.path import expanduser as _eu
+            _pq = get_parquet_path(_eu(fname))
+            _adapter = PolarsAdapter()
+            _adapter.load(_pq, columns=columns)
+            if lower_bound:
+                for _col, _val in lower_bound:
+                    _adapter._lf = _adapter._lf.filter(pl.col(_col) >= _val)
+            if upper_bound:
+                for _col, _val in upper_bound:
+                    _adapter._lf = _adapter._lf.filter(pl.col(_col) <= _val)
+            if within:
+                for _col, _vals in within:
+                    _adapter._lf = _adapter._lf.filter(
+                        pl.col(_col).is_in([float(_v) for _v in _vals])
+                    )
+            return _adapter.to_pandas()  # return early, skip engine conversion
+        elif not lower_bound and not upper_bound and not within:
             df = self.read(
                 fname,
                 columns,
@@ -508,6 +529,16 @@ class DataFileManager(object):
             assert where is None
             fname = expanduser(fname)
             return pd.read_feather(fname)
+
+        elif self.engine == "polars":
+            # Polars/Parquet lazy-loading backend (issue #978)
+            from radis.io.hdf5_to_parquet import get_parquet_path
+            from radis.io.polars_adapter import PolarsAdapter
+            fname = expanduser(fname)
+            parquet_path = get_parquet_path(fname)
+            adapter = PolarsAdapter()
+            adapter.load(parquet_path, columns=columns)
+            return adapter.to_pandas()
 
         else:
             raise NotImplementedError(self.engine)
