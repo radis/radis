@@ -187,9 +187,16 @@ def get_ratio(
 
 
 def get_distance(
-    s1: Spectrum, s2: Spectrum, var, wunit="default", Iunit="default", resample=True
+    s1: Spectrum,
+    s2: Spectrum,
+    var,
+    wunit="default",
+    Iunit="default",
+    resample=True,
+    normalize=False,
+    normalize_how="max",
 ):
-    # type: (Spectrum, Spectrum, str, str, str, str, bool) -> np.array, np.array
+    # type: (Spectrum, Spectrum, str, str, str, str, bool, bool, str) -> np.array, np.array
     r"""Get a regularized Euclidian distance between two spectra ``s1`` and
     ``s2``
 
@@ -230,6 +237,21 @@ def get_distance(
     medium: 'air', 'vacuum', default'
         propagating medium to compare in (if in wavelength)
 
+    Other Parameters
+    ----------------
+    normalize: bool, or tuple
+        if ``True``, normalize the two spectra before computing distance.
+        If a tuple (ex: ``(4168, 4180)``), normalize on this range only. The unit
+        is that of the first Spectrum by default (use ``wunit`` to change). Ex::
+
+            get_distance(s_exp, s_calc, var, normalize=(4178, 4180))
+
+        Default ``False``
+    normalize_how: ``'max'``, ``'area'``, ``'mean'``
+        how to normalize. ``'max'`` is the default but may not be suited for very
+        noisy experimental spectra. ``'area'`` will normalize the integral to 1.
+        ``'mean'`` will normalize by the mean amplitude value
+
     Notes
     -----
     Uses :func:`~radis.misc.curve.curve_distance` internally
@@ -243,7 +265,21 @@ def get_distance(
     :func:`~radis.spectrum.compare.plot_diff`,
     :meth:`~radis.spectrum.spectrum.compare_with`
     """
-    # TODO: normalize with Imax, wmax
+
+    if normalize:
+        if isinstance(normalize, tuple):
+            wrange = normalize
+        else:
+            wrange = ()
+        var, wunit, Iunit = get_default_units(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
+        s1 = s1.take(var).normalize(
+            wrange=wrange, normalize_how=normalize_how, wunit=wunit
+        )
+        s2 = s2.take(var).normalize(
+            wrange=wrange, normalize_how=normalize_how, wunit=wunit
+        )
+        Iunit = s1.units[var]
+        assert Iunit == s2.units[var]
 
     var, wunit, Iunit = get_default_units(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
 

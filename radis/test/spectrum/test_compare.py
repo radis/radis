@@ -172,6 +172,56 @@ def test_get_residual():
         assert residual3 < criterion[index]
 
 
+def test_get_distance_normalize():
+    """Test that get_distance supports normalize parameter.
+
+    Two spectra with the same shape but different scales should yield
+    ~0 distance when normalized (since shape is identical)."""
+    from radis import Spectrum
+
+    w = np.linspace(2000, 2300, 100)
+    I1 = np.exp(-((w - 2150) ** 2) / 500)  # peak = 1.0
+    I2 = I1 * 1000  # same shape, 1000x larger
+
+    s1 = Spectrum.from_array(
+        w, I1, "radiance_noslit", wunit="cm-1", Iunit="mW/cm2/sr/nm"
+    )
+    s2 = Spectrum.from_array(
+        w, I2, "radiance_noslit", wunit="cm-1", Iunit="mW/cm2/sr/nm"
+    )
+
+    var = "radiance_noslit"
+
+    # Identical spectra after normalization: distance should be ~0
+    _, d_norm = get_distance(s1, s2, var, normalize=True)
+    assert (
+        np.nanmean(d_norm) < 1e-10
+    ), f"Same-shape spectra should have ~0 normalized distance, got {np.nanmean(d_norm)}"
+
+    # Self-distance should be ~0
+    _, d_self = get_distance(s1, s1, var, normalize=True)
+    assert np.nanmean(d_self) < 1e-10
+
+    # Different shapes should have non-zero normalized distance
+    I3 = np.exp(-((w - 2180) ** 2) / 500)  # shifted peak
+    s3 = Spectrum.from_array(
+        w, I3, "radiance_noslit", wunit="cm-1", Iunit="mW/cm2/sr/nm"
+    )
+    _, d_diff = get_distance(s1, s3, var, normalize=True)
+    assert (
+        np.nanmean(d_diff) > 1e-3
+    ), "Different-shape spectra should have non-zero normalized distance"
+
+    # Test all normalize_how options work without error
+    for how in ["max", "area", "mean"]:
+        _, d = get_distance(s1, s2, var, normalize=True, normalize_how=how)
+        assert not np.all(np.isnan(d)), f"normalize_how='{how}' returned all NaNs"
+
+    # Test normalize with wrange tuple
+    _, d_range = get_distance(s1, s2, var, normalize=(2100, 2200))
+    assert not np.all(np.isnan(d_range))
+
+
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     """Test procedures"""
 
@@ -180,8 +230,9 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
     test_compare_methods(verbose=verbose, plot=plot, *args, **kwargs)
     test_plot_compare_with_nan(verbose=verbose, plot=True, *args, **kwargs)
     test_get_residual()
+    test_get_distance_normalize()
 
 
 if __name__ == "__main__":
     # print("Test_compare.py: ", _run_testcases())
-    test_get_residual()
+    test_get_distance_normalize()
