@@ -140,7 +140,7 @@ for col, (df, label, colour) in enumerate([
     ax_bot = axes[1, col]
     sorted_df = df.sort_values("wav").reset_index(drop=True)
     log_A_s   = np.log10(sorted_df["A"])
-    colours   = plt.cm.get_cmap(colour)(
+    colours   = plt.colormaps[colour](
         (log_A_s - log_A_s.min()) / (log_A_s.max() - log_A_s.min())
     )
     ax_bot.bar(
