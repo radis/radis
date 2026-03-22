@@ -85,8 +85,6 @@ def test_merge_slabs_resample_intersect(verbose=True, *args, **kwargs):
 
     This tests that spectra with different wavespaces can be merged
     using the intersection of their ranges.
-
-    Related to issue #62 - increasing test coverage.
     """
     from radis.test.utils import getTestFile
     from radis.tools.database import load_spec
