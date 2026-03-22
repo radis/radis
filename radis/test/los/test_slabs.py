@@ -80,6 +80,43 @@ def test_merge_slabs(
 
 
 @pytest.mark.fast
+def test_merge_slabs_resample_intersect(verbose=True, *args, **kwargs):
+    """Test MergeSlabs with resample='intersect' option.
+
+    This tests that spectra with different wavespaces can be merged
+    using the intersection of their ranges.
+
+    Related to issue #62 - increasing test coverage.
+    """
+    from radis.test.utils import getTestFile
+    from radis.tools.database import load_spec
+
+    # Get a spectrum and create two versions with different ranges
+    s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
+    s.update("all")
+
+    # Create two spectra with slightly different ranges by cropping
+    # s1: 2000-2200 cm-1, s2: 2100-2300 cm-1 (overlap: 2100-2200)
+    from radis.spectrum.operations import crop
+
+    s1 = crop(s, 2000, 2200, "cm-1", inplace=False)
+    s2 = crop(s, 2100, 2300, "cm-1", inplace=False)
+
+    # Merge with resample='intersect' - should use the intersection of ranges
+    s_merged = MergeSlabs(s1, s2, resample="intersect")
+
+    # Check that the merged spectrum has the intersected range
+    w, _ = s_merged.get("radiance_noslit")
+    assert w.min() >= 2100, f"Min wavelength {w.min()} should be >= 2100"
+    assert w.max() <= 2200, f"Max wavelength {w.max()} should be <= 2200"
+
+    if verbose:
+        print(
+            f"test_merge_slabs_resample_intersect: merged range [{w.min():.1f}, {w.max():.1f}] cm-1"
+        )
+
+
+@pytest.mark.fast
 def test_equilibrium_condition():
     """See issue #370
 
