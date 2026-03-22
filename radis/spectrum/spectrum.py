@@ -373,8 +373,6 @@ class Spectrum(object):
         check_wavespace=True,
         **kwargs,
     ):
-        # TODO: add help on creating a Spectrum from a dictionary
-
         # Check inputs
         # ---------------
         # ... Replace None attributes with dictionaries
