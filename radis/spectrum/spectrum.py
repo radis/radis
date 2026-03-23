@@ -1413,7 +1413,7 @@ class Spectrum(object):
 
         return w
 
-    def get_wavelength(self, medium="air", which=None, copy=True):
+    def get_wavelength(self, medium="air", copy=True):
         r"""Return wavelength in defined medium.
 
         Parameters
@@ -1438,12 +1438,6 @@ class Spectrum(object):
         --------
         :ref:`the Spectrum page <label_spectrum>`
         """
-        if which is not None:
-            raise DeprecationWarning(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_wavelength()"
-            )
-            # TODO: remove after 0.9.31
-
         # Check input
         if not medium in ["air", "vacuum"]:
             raise NotImplementedError(f"Unknown propagating medium: {medium}")
@@ -1476,7 +1470,7 @@ class Spectrum(object):
 
         return w
 
-    def get_wavenumber(self, which=None, copy=True):
+    def get_wavenumber(self, copy=True):
         r"""Return wavenumber (if the same for all quantities)
 
         Other Parameters
@@ -1491,12 +1485,6 @@ class Spectrum(object):
             (a copy of) spectrum wavenumber for convoluted or non convoluted
             quantities
         """
-        if which is not None:
-            raise DeprecationWarning(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_wavenumber()"
-            )
-            # TODO: remove after 0.9.31
-
         w = self._get_wavespace(copy=copy)
 
         if self.get_waveunit() == "cm-1":  #
@@ -2103,33 +2091,21 @@ class Spectrum(object):
 
     # %% Plotting routines
 
-    def get_vars(self, which=None):
+    def get_vars(self):
         r"""Returns all spectral quantities stored in this object (convoluted or
         non convoluted)
 
         """
-        if which is not None:
-            raise DeprecationWarning(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_vars()"
-            )
-            # TODO: remove after 0.9.31
-
         # remove wavespace
         varlist = [k for k in self._q.keys() if k != "wavespace"]
         return varlist
 
-    def get_quantities(self, which=None):
+    def get_quantities(self):
         r"""Returns all spectral quantities stored in this object (convoluted or
         non convoluted). Wrapper to
         :py:meth:`~radis.spectrum.spectrum.get_vars`
 
         """
-        if which is not None:
-            raise DeprecationWarning(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_quantities()"
-            )
-            # TODO: remove after 0.9.31
-
         return self.get_vars()
 
     def _get_items(self) -> dict:
@@ -3852,7 +3828,7 @@ class Spectrum(object):
             else:  # Or use a given tuple or arrays
                 try:
                     (w, I) = overlay
-                except:
+                except (TypeError, ValueError):
                     raise ValueError(
                         "Overlay has to be string, or (w,I) tuple of " + "arrays"
                     )
@@ -4404,7 +4380,6 @@ class Spectrum(object):
         energy_threshold="default",
         print_conservation=False,
         inplace=True,
-        if_conflict_drop=None,
         **kwargs,
     ):
         r"""Resample spectrum over a new wavelength/wavenumber range.
@@ -4480,13 +4455,6 @@ class Spectrum(object):
         --------
         :func:`radis.misc.signal.resample`, :py:meth:`radis.spectrum.spectrum.Spectrum.resample_even`
         """
-        # Check inputs (check for deprecated)
-        if if_conflict_drop is not None:
-            raise DeprecationWarning(
-                "`if_conflict_drop` parameter was deleted in Radis 0.9.30"
-            )
-            # TODO: remove after 0.9.31
-
         if inplace:
             s = self
         else:
@@ -5524,7 +5492,7 @@ class Spectrum(object):
             try:
                 for k, v in self.populations.items():
                     print(" " * 2, k, "\t\t", list(v.keys()))
-            except:
+            except Exception:
                 pass
 
         # Print conditions

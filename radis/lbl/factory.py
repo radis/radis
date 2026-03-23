@@ -1166,7 +1166,7 @@ class SpectrumFactory(BandFactory):
 
             else:
                 mol_id = self.df0.attrs["id"]
-        except:
+        except (KeyError, AssertionError, AttributeError):
             mol_id = get_molecule_identifier(self.input.species)
 
         molecule = get_molecule(mol_id)
@@ -2080,24 +2080,18 @@ class SpectrumFactory(BandFactory):
         """
 
         def _is_at_equilibrium():
-            try:
-                if "Tvib" in self.input:
-                    assert self.input.Tvib is None or self.input.Tvib == self.input.Tgas
-                if "Trot" in self.input:
-                    assert self.input.Trot is None or self.input.Trot == self.input.Tgas
-                if "overpopulation" in self.input:
-                    assert (
-                        self.input.overpopulation is None
-                        or self.input.overpopulation == {}
-                    )
-                try:
-                    if self.input.self_absorption:
-                        assert self.input.self_absorption  # == True
-                except KeyError:
-                    pass
-                return True
-            except AssertionError:
-                return False
+            if "Tvib" in self.input:
+                if not (self.input.Tvib is None or self.input.Tvib == self.input.Tgas):
+                    return False
+            if "Trot" in self.input:
+                if not (self.input.Trot is None or self.input.Trot == self.input.Tgas):
+                    return False
+            if "overpopulation" in self.input:
+                if not (
+                    self.input.overpopulation is None or self.input.overpopulation == {}
+                ):
+                    return False
+            return True
 
         factor = 1
 

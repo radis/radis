@@ -309,7 +309,7 @@ def get_slit_function(
 
         try:
             top, base = slit_function
-        except:
+        except (TypeError, ValueError):
             raise TypeError(f"Wrong format for slit function: {slit_function}")
         if shape == "trapezoidal":
             pass
@@ -1162,7 +1162,7 @@ def plot_slit(
         from radis.plot.toolbar import add_tools
 
         add_tools()  # includes a Ruler to measure slit
-    except:
+    except ImportError:
         pass
 
     # Check input

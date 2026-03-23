@@ -762,7 +762,7 @@ class DatabankLoader(object):
             self.load_databank.__annotations__["format"] = KNOWN_DBFORMAT
             self.load_databank.__annotations__["levelsfmt"] = KNOWN_LVLFORMAT
             self.load_databank.__annotations__["parfuncfmt"] = KNOWN_PARFUNCFORMAT
-        except:  # old Python version
+        except (AttributeError, TypeError):  # old Python version
             pass
 
         # Variables that will hold the dataframes.
@@ -1594,7 +1594,7 @@ class DatabankLoader(object):
         elif output == "vaex":
             try:
                 attrs = df.attrs
-            except:
+            except AttributeError:
                 attrs = {}
             df = df.sort("wav", ascending=True)
             df.attrs = attrs  # It is required because dataframe returned by sort_values doesn't have attrs, so I have to add it again.
