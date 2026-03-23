@@ -21,7 +21,6 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 
 """
 
-
 import numpy as np
 import pytest
 from numpy import isclose
@@ -41,10 +40,15 @@ from radis.phys.convert import (
     cm2hz,
     cm2J,
     cm2K,
+    cm2nm,
+    cm2nm_air,
     dcm2dnm,
+    dcm2dnm_air,
     dhz2dnm,
+    div_safe,
     dnm2dcm,
     dnm2dhz,
+    dnm_air2dcm,
     eV2cm,
     eV2J,
     eV2K,
@@ -54,8 +58,10 @@ from radis.phys.convert import (
     nm2cm,
     nm2eV,
     nm2hz,
+    nm_air2cm,
     torr2atm,
     torr2bar,
+    zero2nan,
 )
 from radis.phys.units import conv2, is_homogeneous
 
@@ -105,6 +111,65 @@ def test_convert(verbose=True, *args, **kwargs):
 
 
 @pytest.mark.fast
+def test_air_conversions(verbose=True, *args, **kwargs):
+    """Test air wavelength conversion functions."""
+    # Test air wavelength conversions
+    wl_cm1 = 15000  # cm-1 (about 666 nm in vacuum)
+
+    # cm-1 to air nm and back
+    wl_nm_air = cm2nm_air(wl_cm1)
+    wl_cm1_back = nm_air2cm(wl_nm_air)
+    assert isclose(wl_cm1_back, wl_cm1, rtol=1e-6)
+
+    # Air wavelength should be slightly shorter than vacuum wavelength
+    wl_nm_vacuum = cm2nm(wl_cm1)
+    assert wl_nm_air < wl_nm_vacuum
+
+    # Test delta conversions with air wavelengths
+    fwhm_cm = 10  # cm-1
+    nu_0 = 15000  # cm-1
+
+    # Convert FWHM from cm-1 to nm (air)
+    fwhm_nm_air = dcm2dnm_air(fwhm_cm, nu_0)
+
+    # Convert back
+    fwhm_cm_back = dnm_air2dcm(fwhm_nm_air, cm2nm_air(nu_0))
+    assert isclose(fwhm_cm_back, fwhm_cm, rtol=1e-6)
+
+    if verbose:
+        print(f"Air conversion: {wl_cm1} cm-1 = {wl_nm_air:.2f} nm (air)")
+        print(f"Vacuum: {wl_nm_vacuum:.2f} nm, Air: {wl_nm_air:.2f} nm")
+
+
+@pytest.mark.fast
+def test_safe_division_functions(verbose=True, *args, **kwargs):
+    """Test zero2nan and div_safe helper functions."""
+    # Test zero2nan with float
+    assert np.isnan(zero2nan(0))
+    assert zero2nan(5) == 5
+
+    # Test zero2nan with float array (must be float type for nan assignment)
+    arr = np.array([0.0, 1.0, 2.0, 0.0, 3.0])
+    result = zero2nan(arr)
+    assert np.isnan(result[0])
+    assert np.isnan(result[3])
+    assert result[1] == 1.0
+    assert result[2] == 2.0
+    assert result[4] == 3.0
+
+    # Test div_safe wrapper
+    safe_reciprocal = div_safe(lambda x: 1 / x)
+    result = safe_reciprocal(np.array([1.0, 2.0, 0.0, 4.0]))
+    assert result[0] == 1.0
+    assert result[1] == 0.5
+    assert np.isnan(result[2])
+    assert result[3] == 0.25
+
+    if verbose:
+        print("Safe division: zero2nan and div_safe working correctly")
+
+
+@pytest.mark.fast
 def test_units(verbose=True, *args, **kwargs):
 
     # Test unit-ware arrays
@@ -134,6 +199,8 @@ def test_units(verbose=True, *args, **kwargs):
 def _run_testcases(*args, **kwargs):
 
     assert test_convert(*args, **kwargs)
+    assert test_air_conversions(*args, **kwargs)
+    assert test_safe_division_functions(*args, **kwargs)
     assert test_units(*args, **kwargs)
 
 
