@@ -1,6 +1,8 @@
 import pytest
 
 from radis.db.classes import is_atom, to_conventional_name
+from radis.db.conventions import get_convention
+from radis.db.degeneracies import gi, gs
 
 
 @pytest.mark.fast
@@ -33,3 +35,67 @@ def test_to_conventional_name():
 if __name__ == "__main__":
     test_is_atom()
     test_to_conventional_name()
+
+
+@pytest.mark.fast
+def test_get_convention():
+    """Test the get_convention function that determines if coefficients
+    use Herzberg or Dunham notation."""
+    # Herzberg coefficients
+    assert get_convention(["wexe"]) == "herzberg"
+    assert get_convention(["wexe1"]) == "herzberg"  # with mode number suffix
+    assert get_convention(["Be", "De"]) == "herzberg"
+    assert get_convention(["we", "wexe", "Be"]) == "herzberg"
+
+    # Dunham coefficients
+    assert get_convention(["Y01", "Y11"]) == "dunham"
+    assert get_convention(["Y10", "Y20"]) == "dunham"
+
+    # Mixed conventions should fail
+    with pytest.raises(ValueError):
+        get_convention(["wexe", "Y01", "Y11"])
+
+    # Unknown coefficient should fail
+    with pytest.raises(ValueError):
+        get_convention(["unknown_coeff"])
+
+
+@pytest.mark.fast
+def test_degeneracies_gi():
+    """Test state-independent degeneracy function."""
+    # CO2 isotopes
+    assert gi(2, 1) == 1  # 626
+    assert gi(2, 2) == 2  # 636
+    assert gi(2, 3) == 1  # 628
+    assert gi(2, 4) == 6  # 627
+
+    # CO isotopes
+    assert gi(5, 1) == 1  # 26
+    assert gi(5, 2) == 2  # 36
+
+    # Unknown molecule should fail
+    with pytest.raises(NotImplementedError):
+        gi(999, 1)
+
+    # Unknown isotope should fail
+    with pytest.raises(NotImplementedError):
+        gi(2, 999)
+
+
+@pytest.mark.fast
+def test_degeneracies_gs():
+    """Test state-dependent degeneracy function."""
+    # CO2 isotopes - symmetric isotopes have tuple (1, 0)
+    assert gs(2, 1) == (1, 0)  # 626
+    assert gs(2, 2) == (1, 0)  # 636
+    # Asymmetric CO2 isotopes have scalar 1
+    assert gs(2, 3) == 1  # 628
+    assert gs(2, 4) == 1  # 627
+
+    # CO isotopes
+    assert gs(5, 1) == 1  # 26
+    assert gs(5, 2) == 1  # 36
+
+    # Unknown molecule should fail
+    with pytest.raises(NotImplementedError):
+        gs(999, 1)
