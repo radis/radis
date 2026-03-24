@@ -42,208 +42,101 @@ from radis.misc.arrays import (  # add_at,
 
 
 @pytest.mark.fast
-def test_norm(*args, **kwargs):
-    """Test the norm() function for array normalization."""
-    # Test basic max normalization
+def test_norm():
+    """Test norm() function."""
     a = np.array([1, 2, 3, 4, 5])
-    result = norm(a)
-    assert result[-1] == 1.0  # max value normalized to 1
-    assert np.allclose(result, a / 5)
-
-    # Test with negative values
-    a_neg = np.array([-5, -2, 0, 2, 5])
-    result_neg = norm(a_neg)
-    assert result_neg[-1] == 1.0
-
-    # Test normalization with another array (normby)
-    a = np.array([1, 2, 3, 4, 5])
-    normby = np.array([2, 4, 6, 8, 10])
-    result = norm(a, normby=normby)
-    assert np.allclose(result, a / 10)
-
-    # Test mean normalization
-    a = np.array([1, 2, 3, 4, 5])
-    result_mean = norm(a, how="mean")
-    assert np.allclose(result_mean, a / np.mean(np.abs(a)))
-
-    # Test with NaN values
-    a_nan = np.array([1, np.nan, 3, 4, 5])
-    result_nan = norm(a_nan)
-    assert result_nan[-1] == 1.0  # nanmax should ignore NaN
-
-    # Test invalid method raises error
+    assert norm(a)[-1] == 1.0 and np.allclose(norm(a), a / 5)
+    assert np.allclose(norm(a, normby=np.array([2, 4, 6, 8, 10])), a / 10)
+    assert np.allclose(norm(a, how="mean"), a / np.mean(np.abs(a)))
+    assert norm(np.array([1, np.nan, 3, 4, 5]))[-1] == 1.0
     with pytest.raises(ValueError):
         norm(a, how="invalid")
 
 
 @pytest.mark.fast
-def test_norm_on(*args, **kwargs):
-    """Test the norm_on() function for normalization on a specific range."""
+def test_norm_on():
+    """Test norm_on() function."""
     a = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], dtype=float)
     w = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=float)
-
-    # Test normalization on a range
-    result = norm_on(a, w, wmin=2, wmax=5)
-    assert np.max(np.abs(result)) > 0  # normalized array should have values
-
-    # Test with no range specified (normalizes by full array max)
-    result_full = norm_on(a, w)
-    assert np.allclose(result_full, a / 10)
-
-    # Test mean normalization on range
-    result_mean = norm_on(a, w, wmin=2, wmax=5, how="mean")
-    assert result_mean is not None
+    assert np.max(np.abs(norm_on(a, w, wmin=2, wmax=5))) > 0
+    assert np.allclose(norm_on(a, w), a / 10)
+    assert norm_on(a, w, wmin=2, wmax=5, how="mean") is not None
 
 
 @pytest.mark.fast
-def test_scale_to(*args, **kwargs):
-    """Test the scale_to() function for scaling arrays."""
-    a = np.array([1, 2, 3, 4, 5])
-    b = np.array([10, 20, 30, 40, 50])
-
-    # Test basic scaling (k=1)
-    result = scale_to(a, b)
-    assert np.max(np.abs(result)) == np.max(np.abs(b))
-
-    # Test with scaling factor k=2
-    result_k2 = scale_to(a, b, k=2)
-    assert np.max(np.abs(result_k2)) == 2 * np.max(np.abs(b))
-
-    # Test with negative values
-    a_neg = np.array([-5, -2, 0, 2, 5])
-    b_neg = np.array([-10, -5, 0, 5, 10])
-    result_neg = scale_to(a_neg, b_neg)
-    assert np.max(np.abs(result_neg)) == np.max(np.abs(b_neg))
+def test_scale_to():
+    """Test scale_to() function."""
+    a, b = np.array([1, 2, 3, 4, 5]), np.array([10, 20, 30, 40, 50])
+    assert np.max(np.abs(scale_to(a, b))) == np.max(np.abs(b))
+    assert np.max(np.abs(scale_to(a, b, k=2))) == 2 * np.max(np.abs(b))
 
 
 @pytest.mark.fast
-def test_array_allclose(*args, **kwargs):
-    """Test the array_allclose() function."""
-    a = np.array([1, 2, 3])
-    b = np.array([1, 2, 3])
-    c = np.array([1, 2])  # different size
-    d = np.array([1, 2, 4])  # different values
-
-    # Test equal arrays
+def test_array_allclose():
+    """Test array_allclose() function."""
+    a, b = np.array([1, 2, 3]), np.array([1, 2, 3])
     assert array_allclose(a, b)
-
-    # Test different size arrays
-    assert not array_allclose(a, c)
-
-    # Test different values
-    assert not array_allclose(a, d)
-
-    # Test with tolerance
-    e = np.array([1.0, 2.0, 3.0001])
-    assert array_allclose(a, e, atol=1e-3)
-    assert not array_allclose(a, e, atol=1e-5)
-
-    # Test with NaN values (equal_nan=True by default)
-    f = np.array([1, np.nan, 3])
-    g = np.array([1, np.nan, 3])
-    assert array_allclose(f, g)
-
-    # Test with equal_nan=False
-    assert not array_allclose(f, g, equal_nan=False)
+    assert not array_allclose(a, np.array([1, 2]))
+    assert not array_allclose(a, np.array([1, 2, 4]))
+    assert array_allclose(a, np.array([1.0, 2.0, 3.0001]), atol=1e-3)
+    assert array_allclose(np.array([1, np.nan, 3]), np.array([1, np.nan, 3]))
+    arr_nan = np.array([1, np.nan, 3])
+    assert not array_allclose(arr_nan, arr_nan, equal_nan=False)
 
 
 @pytest.mark.fast
-def test_nantrapz(*args, **kwargs):
-    """Test the nantrapz() function for integration ignoring NaN."""
-    # Simple case without NaN
-    I = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-    w = np.array([0.0, 1.0, 2.0, 3.0, 4.0])
-    result = nantrapz(I, w)
-    expected = np.trapezoid(I, w)
-    assert np.isclose(result, expected)
-
-    # Case with NaN values
-    I_nan = np.array([1.0, np.nan, 3.0, 4.0, 5.0])
-    w_nan = np.array([0.0, 1.0, 2.0, 3.0, 4.0])
-    result_nan = nantrapz(I_nan, w_nan)
-    # Should integrate only non-NaN values
-    assert not np.isnan(result_nan)
+def test_nantrapz():
+    """Test nantrapz() function."""
+    I, w = np.array([1.0, 2.0, 3.0, 4.0, 5.0]), np.array([0.0, 1.0, 2.0, 3.0, 4.0])
+    assert np.isclose(nantrapz(I, w), np.trapezoid(I, w))
+    assert not np.isnan(nantrapz(np.array([1.0, np.nan, 3.0, 4.0, 5.0]), w))
 
 
 @pytest.mark.fast
-def test_evenly_distributed(*args, **kwargs):
-    """Test the evenly_distributed() function."""
-    # Evenly distributed array
-    w_even = np.linspace(0, 10, 100)
-    assert evenly_distributed(w_even)
-
-    # Not evenly distributed array
-    w_uneven = np.array([0, 1, 2, 4, 8, 16])
-    assert not evenly_distributed(w_uneven)
-
-    # Test with custom tolerance
-    w_almost_even = np.linspace(0, 10, 100)
-    w_almost_even[50] += 1e-4
-    assert evenly_distributed(w_almost_even, atolerance=1e-3)
-    assert not evenly_distributed(w_almost_even, atolerance=1e-5)
+def test_evenly_distributed():
+    """Test evenly_distributed() function."""
+    assert evenly_distributed(np.linspace(0, 10, 100))
+    assert not evenly_distributed(np.array([0, 1, 2, 4, 8, 16]))
+    w = np.linspace(0, 10, 100)
+    w[50] += 1e-4
+    assert evenly_distributed(w, atolerance=1e-3)
+    assert not evenly_distributed(w, atolerance=1e-5)
 
 
 @pytest.mark.fast
-def test_evenly_distributed_fast(*args, **kwargs):
-    """Test the evenly_distributed_fast() function."""
-    # Evenly distributed array
-    w_even = np.linspace(0, 10, 100)
-    assert evenly_distributed_fast(w_even)
-
-    # Not evenly distributed (different first and last steps)
-    w_uneven = np.array([0, 1, 2, 3, 5])  # last step is 2, first step is 1
-    assert not evenly_distributed_fast(w_uneven)
+def test_evenly_distributed_fast():
+    """Test evenly_distributed_fast() function."""
+    assert evenly_distributed_fast(np.linspace(0, 10, 100))
+    assert not evenly_distributed_fast(np.array([0, 1, 2, 3, 5]))
 
 
 @pytest.mark.fast
-def test_anynan(*args, **kwargs):
-    """Test the anynan() function."""
-    # Array with NaN
-    a_nan = np.array([1, 2, np.nan, 4, 5])
-    assert anynan(a_nan)
-
-    # Array without NaN
-    a_no_nan = np.array([1, 2, 3, 4, 5])
-    assert not anynan(a_no_nan)
+def test_anynan():
+    """Test anynan() function."""
+    assert anynan(np.array([1, 2, np.nan, 4, 5]))
+    assert not anynan(np.array([1, 2, 3, 4, 5]))
 
 
 @pytest.mark.fast
-def test_count_nans(*args, **kwargs):
-    """Test the count_nans() function."""
-    # No NaN
-    a_no_nan = np.array([1, 2, 3, 4, 5])
-    assert count_nans(a_no_nan) == 0
-
-    # Some NaN
-    a_some_nan = np.array([1, np.nan, 3, np.nan, 5])
-    assert count_nans(a_some_nan) == 2
-
-    # All NaN
-    a_all_nan = np.array([np.nan, np.nan, np.nan])
-    assert count_nans(a_all_nan) == 3
-
-    # Single NaN
-    a_single_nan = np.array([np.nan])
-    assert count_nans(a_single_nan) == 1
+def test_count_nans():
+    """Test count_nans() function."""
+    assert count_nans(np.array([1, 2, 3, 4, 5])) == 0
+    assert count_nans(np.array([1, np.nan, 3, np.nan, 5])) == 2
+    assert count_nans(np.array([np.nan, np.nan, np.nan])) == 3
 
 
 @pytest.mark.fast
-def test_numpy_add_at(*args, **kwargs):
-    """Test the numpy_add_at() function."""
-    # Create a 3D array
+def test_numpy_add_at():
+    """Test numpy_add_at() function."""
     LDM = np.zeros((5, 3, 3), dtype=np.float64)
-    k = np.array([0, 1, 2, 0])
-    l = np.array([0, 1, 2, 0])
-    m = np.array([0, 1, 2, 0])
-    I = np.array([1.0, 2.0, 3.0, 4.0])
-
-    numpy_add_at(LDM, k, l, m, I)
-
-    # Check that values were added correctly
-    assert LDM[0, 0, 0] == 5.0  # 1.0 + 4.0
-    assert LDM[1, 1, 1] == 2.0
-    assert LDM[2, 2, 2] == 3.0
-    assert LDM[3, 0, 0] == 0.0  # untouched
+    numpy_add_at(
+        LDM,
+        np.array([0, 1, 2, 0]),
+        np.array([0, 1, 2, 0]),
+        np.array([0, 1, 2, 0]),
+        np.array([1.0, 2.0, 3.0, 4.0]),
+    )
+    assert LDM[0, 0, 0] == 5.0 and LDM[1, 1, 1] == 2.0 and LDM[2, 2, 2] == 3.0
 
 
 @pytest.mark.fast

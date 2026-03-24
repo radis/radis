@@ -816,13 +816,9 @@ def test_input_wunit(plot=True, *args, **kwargs):
 
 
 @pytest.mark.fast
-def test_print_conditions(verbose=True, *args, **kwargs):
-    """Test print_conditions method of SpectrumFactory.
-
-    Related to issue #62 - increasing test coverage for base.py.
-    """
+def test_print_conditions():
+    """Test print_conditions method of SpectrumFactory."""
     setup_test_line_databases()
-
     sf = SpectrumFactory(
         wavenum_min=2000,
         wavenum_max=2100,
@@ -831,31 +827,17 @@ def test_print_conditions(verbose=True, *args, **kwargs):
         path_length=0.1,
         mole_fraction=0.01,
         isotope=[1],
-        medium="vacuum",
         verbose=False,
     )
     sf.load_databank("HITRAN-CO-TEST")
-
-    # Test print_conditions without prepend
-    result = sf.print_conditions()
-    assert result is None or isinstance(result, type(None))
-
-    # Test print_conditions with prepend
-    result = sf.print_conditions(prepend="Test conditions:")
-    assert result is None or isinstance(result, type(None))
-
-    if verbose:
-        printm("test_print_conditions: OK")
+    assert sf.print_conditions() is None
+    assert sf.print_conditions(prepend="Test:") is None
 
 
 @pytest.mark.fast
-def test_get_energy_levels_with_conditions(verbose=True, *args, **kwargs):
-    """Test get_energy_levels method with conditions parameter.
-
-    Related to issue #62 - increasing test coverage for base.py.
-    """
+def test_get_energy_levels_with_conditions():
+    """Test get_energy_levels method with conditions parameter."""
     setup_test_line_databases()
-
     sf = SpectrumFactory(
         wavenum_min=2283,
         wavenum_max=2285,
@@ -864,40 +846,23 @@ def test_get_energy_levels_with_conditions(verbose=True, *args, **kwargs):
         path_length=0.1,
         mole_fraction=0.01,
         isotope=[1],
-        medium="vacuum",
         verbose=False,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.warnings["NegativeEnergiesWarning"] = "ignore"
     sf.load_databank("HITEMP-CO2-TEST", load_energies=True, load_columns="noneq")
-
-    # First calculate a spectrum to populate partition functions
     sf.non_eq_spectrum(Tvib=300, Trot=300)
-
-    # Get all energy levels (no conditions)
     energies_all = sf.get_energy_levels("CO2", 1, "X")
-    assert len(energies_all) > 0
-
-    # Get energy levels with a condition
     energies_filtered = sf.get_energy_levels("CO2", 1, "X", conditions="j==0")
-    assert len(energies_filtered) <= len(energies_all)
-
-    if verbose:
-        printm(
-            f"test_get_energy_levels_with_conditions: {len(energies_all)} total, {len(energies_filtered)} with j==0"
-        )
+    assert len(energies_all) > 0 and len(energies_filtered) <= len(energies_all)
 
 
 @pytest.mark.fast
-def test_assert_no_nan_error_handling(verbose=True, *args, **kwargs):
-    """Test assert_no_nan raises proper error when NaN values present.
-
-    Related to issue #62 - increasing test coverage for base.py.
-    """
+def test_assert_no_nan_error_handling():
+    """Test assert_no_nan raises proper error when NaN values present."""
     import pandas as pd
 
     setup_test_line_databases()
-
     sf = SpectrumFactory(
         wavenum_min=2000,
         wavenum_max=2100,
@@ -906,39 +871,19 @@ def test_assert_no_nan_error_handling(verbose=True, *args, **kwargs):
         path_length=0.1,
         mole_fraction=0.01,
         isotope=[1],
-        medium="vacuum",
         verbose=False,
     )
     sf.load_databank("HITRAN-CO-TEST")
-
-    # Create a test dataframe with NaN values
-    df_with_nan = pd.DataFrame({"test_col": [1.0, 2.0, np.nan, 4.0]})
-
-    # Test that assert_no_nan raises AssertionError for NaN values
     with pytest.raises(AssertionError):
-        sf.assert_no_nan(df_with_nan, "test_col")
-
-    # Test that assert_no_nan passes for clean data
-    df_clean = pd.DataFrame({"test_col": [1.0, 2.0, 3.0, 4.0]})
-    sf.assert_no_nan(df_clean, "test_col")  # Should not raise
-
-    if verbose:
-        printm("test_assert_no_nan_error_handling: OK")
+        sf.assert_no_nan(pd.DataFrame({"col": [1.0, np.nan]}), "col")
+    sf.assert_no_nan(pd.DataFrame({"col": [1.0, 2.0]}), "col")
 
 
 def _run_testcases(verbose=True, plot=True):
-
-    # test_input_wunit()
-    # test_linestrength_calculations()
     test_export_populations(plot=plot, verbose=verbose)
-    # test_export_rovib_fractions(plot=plot, verbose=verbose)
-    # test_populations_CO2_hamiltonian(plot=plot, verbose=verbose)
-    # test_optically_thick_limit_1iso(plot=plot, verbose=verbose)
-    # test_optically_thick_limit_2iso(plot=plot, verbose=verbose)
-    # test_get_wavenumber_range()
-    test_print_conditions(verbose=verbose)
-    test_get_energy_levels_with_conditions(verbose=verbose)
-    test_assert_no_nan_error_handling(verbose=verbose)
+    test_print_conditions()
+    test_get_energy_levels_with_conditions()
+    test_assert_no_nan_error_handling()
 
 
 if __name__ == "__main__":
