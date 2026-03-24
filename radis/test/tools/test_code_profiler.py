@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Test the :py:class:`~radis.tools.code_profiler.CodeProfiler` class.
-"""
+"""Test the :py:class:`~radis.tools.code_profiler.CodeProfiler` class."""
 
 import os
 import sys
@@ -16,25 +14,15 @@ def test_code_profiler_init():
     from radis.tools.code_profiler import CodeProfiler
 
     original_profile = sys.getprofile()
-    temp_file = None
-
     try:
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+        with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as f:
             temp_file = f.name
-
         profiler = CodeProfiler(filename=temp_file)
-
         assert profiler.white_list == {"radis"}
         assert profiler.exclusions == {"<"}
-
         profiler.dump(filename=temp_file)
         assert os.path.exists(temp_file)
-
     finally:
         sys.setprofile(original_profile)
-        if temp_file and os.path.exists(temp_file):
+        if os.path.exists(temp_file):
             os.remove(temp_file)
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])

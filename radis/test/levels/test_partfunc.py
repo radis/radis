@@ -1119,11 +1119,7 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
 
 @pytest.mark.fast
 def test_vibrating_rotor():
-    """Test the vibrating rotor energy calculations.
-
-    Calls the _test() function from radis.levels.vibrating_rotor to ensure
-    the uncoupled vibrating rotor model works correctly for CO2.
-    """
+    """Test vibrating rotor energy calculations."""
     from radis.levels.vibrating_rotor import _test as vibrating_rotor_test
 
     vibrating_rotor_test()
@@ -1131,12 +1127,9 @@ def test_vibrating_rotor():
 
 @pytest.mark.fast
 def test_vibrating_rotor_harmonic_anharmonic():
-    """Test the EvJah_uncoupled_vibrating_rotor function that returns
-    harmonic/anharmonic energy components for CO2.
-    """
+    """Test EvJah_uncoupled_vibrating_rotor for CO2."""
     from radis.levels.vibrating_rotor import EvJah_uncoupled_vibrating_rotor
 
-    # Coefficients for CO2 (from Klarenaar et al.)
     coeffs = {
         "we1": 1333.93,
         "we2": 667.47,
@@ -1148,23 +1141,16 @@ def test_vibrating_rotor_harmonic_anharmonic():
         "De": 1.333e-07,
         "He": 9e-15,
     }
-
-    # Test ground state (v1=0, v2=0, l2=0, v3=0, J=0)
+    # Ground state: all energies should be zero
     result = EvJah_uncoupled_vibrating_rotor(0, 0, 0, 0, 0, coeffs)
-    # All energies should be zero for ground state
-    assert result[0] == (0.0, 0.0)  # G1_h, G1_a
-    assert result[1] == (0.0, 0.0)  # G2_h, G2_a
-    assert result[2] == (0.0, 0.0)  # G3_h, G3_a
-    assert result[3] == 0.0  # F (rotational)
-
-    # Test excited v3 state (v1=0, v2=0, l2=0, v3=1, J=0)
+    assert (
+        result[0] == (0.0, 0.0) and result[1] == (0.0, 0.0) and result[2] == (0.0, 0.0)
+    )
+    # Excited v3: G3_h = we3 * v3
     result = EvJah_uncoupled_vibrating_rotor(0, 0, 0, 1, 0, coeffs)
-    assert result[2][0] == coeffs["we3"]  # G3_h = we3 * v3
-
-    # Test with non-zero J
-    result_J10 = EvJah_uncoupled_vibrating_rotor(0, 0, 0, 0, 10, coeffs)
-    # Rotational energy should be non-zero
-    assert result_J10[3] > 0
+    assert result[2][0] == coeffs["we3"]
+    # Non-zero J: rotational energy > 0
+    assert EvJah_uncoupled_vibrating_rotor(0, 0, 0, 0, 10, coeffs)[3] > 0
 
 
 if __name__ == "__main__":
