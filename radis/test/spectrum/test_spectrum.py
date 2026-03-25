@@ -354,7 +354,8 @@ def test_rescaling_function(verbose=True, *args, **kwargs):
         populations={"molecules": {"N2C": 1e13}},  # arbitrary
         # (just an example)
     )
-    s.update(optically_thin=True)
+    s.conditions["self_absorption"] = False
+    s.update()
     s.rescale_path_length(10)
 
     assert np.isclose(s.get_radiance_noslit(Iunit="mW/cm2/sr/nm")[0], 352.57305783248)
