@@ -1723,14 +1723,8 @@ class MdbExomol(DatabaseManager):
                 self.add_column(df, "selbrd_Tdpair", self.n_Texp)
             else:
                 import numpy as np
-                alpha = self.alpha_ref
-                n_texp = self.n_Texp
-                if hasattr(alpha, '__len__'):
-
-                   nan_mask = np.isnan(alpha)
-                   if nan_mask.any():
-                       alpha = np.where(nan_mask, 0.07, alpha)
-                       n_texp = np.where(np.isnan(n_texp), 0.5, n_texp)
+                alpha = np.where(np.isnan(self.alpha_ref), 0.07, self.alpha_ref)
+                n_texp = np.where(np.isnan(self.n_Texp), 0.5, self.n_Texp)
                 self.add_column(df, "gamma_" + species.lower(), alpha)
                 self.add_column(df, "n_" + species.lower(), n_texp)
 

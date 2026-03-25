@@ -98,6 +98,36 @@ def test_calc_exomol_vs_hitemp(verbose=True, plot=False, *args, **kwargs):
         s_exomol.get_integral("abscoeff"), s_hitemp.get_integral("abscoeff"), rtol=0.001
     )
 
+@pytest.mark.needs_connection
+def test_fetch_exomol_diluent_he():
+    """Test fetch_exomol with He broadening partner - fixes #602"""
+    from radis.io.exomol import fetch_exomol
+
+    df = fetch_exomol(
+        "CO2",
+        isotope=1,
+        load_wavenum_min=2000,
+        load_wavenum_max=2010,
+        diluent="He",
+    )
+    assert "gamma_he" in df.columns, "He broadening column missing"
+    assert "n_he" in df.columns, "He temperature exponent column missing"
+
+
+@pytest.mark.needs_connection
+def test_fetch_exomol_diluent_unavailable():
+    """Test that unavailable broadening partner raises NotImplementedError"""
+    from radis.io.exomol import fetch_exomol
+    import pytest
+
+    with pytest.raises(NotImplementedError, match="not available"):
+        fetch_exomol(
+            "CO2",
+            isotope=1,
+            load_wavenum_min=2000,
+            load_wavenum_max=2010,
+            diluent="INVALID_GAS",
+        )
 
 if __name__ == "__main__":
     # test_exomol_parsing_functions()
