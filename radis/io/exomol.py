@@ -294,11 +294,11 @@ def fetch_exomol(
     if broadf is not False:
 
         if broadening_species not in mdb.broad_partners:
-           raise NotImplementedError(
-              f"Broadening data for species '{broadening_species}' not available "
-              f"for {molecule}. Most common broadening partners in ExoMol: "
-              f"'air' (default), 'He', 'H2', 'CO2', 'H2O', 'self'. "
-              f"Check https://www.exomol.com for available broadening files."
+            raise NotImplementedError(
+                f"Broadening data for species '{broadening_species}' not available "
+                f"for {molecule}. Most common broadening partners in ExoMol: "
+                f"'air' (default), 'He', 'H2', 'CO2', 'H2O', 'self'. "
+                f"Check https://www.exomol.com for available broadening files."
             )
 
         if broadening_species == "air":

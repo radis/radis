@@ -523,12 +523,7 @@ def gamma_vald3(
 
     if "e-" in diluent:
         gamma_stark = (
-            (10**gamSta)
-            * P
-            * 1e6
-            * diluent["e-"]
-            / (k_b_CGS * T)
-            / (4 * np.pi * c_CGS)
+            (10**gamSta) * P * 1e6 * diluent["e-"] / (k_b_CGS * T) / (4 * np.pi * c_CGS)
         )  # see e.g. Gray p244 for temperature scaling
         if is_neutral:
             gamma_stark *= (T / 10000) ** (1.0 / 6.0)  # see e.g. Gray 2005 p244
@@ -1406,6 +1401,7 @@ class BroadenFactory(BaseFactory):
                     )
                     if "airbrd" not in columns:
                         import numpy as np
+
                         selbrd = np.full(len(df), 0.07)
                     else:
                         selbrd = df.airbrd if "airbrd" in columns else df.selbrd
@@ -2999,7 +2995,7 @@ class BroadenFactory(BaseFactory):
                 + " may be inverted"
             )
 
-        (wavenumber, abscoeff, emisscoeff) = self._broaden_lines_noneq(df)
+        wavenumber, abscoeff, emisscoeff = self._broaden_lines_noneq(df)
 
         self.profiler.stop("calc_line_broadening", "Calculated line broadening")
         return wavenumber, abscoeff, emisscoeff
@@ -3341,9 +3337,9 @@ def project_lines_on_grid(df, wavenumber, wstep, dataframe_type="pandas"):
     imin_broadened_wav_offset_left[imin_broadened_wav_offset_left < 0] = -1
     imin_broadened_wav_offset_right[imin_broadened_wav_offset_right < 0] = -1
     imax_broadened_wav_offset_left[imax_broadened_wav_offset_left > len_grid] = len_grid
-    imax_broadened_wav_offset_right[
-        imax_broadened_wav_offset_right > len_grid
-    ] = len_grid
+    imax_broadened_wav_offset_right[imax_broadened_wav_offset_right > len_grid] = (
+        len_grid
+    )
     imin_broadened_wav_offset_left += 1
     imax_broadened_wav_offset_left += 1
     imin_broadened_wav_offset_right += 1
@@ -3499,9 +3495,9 @@ def project_lines_on_grid_noneq(df, wavenumber, wstep, dataframe_type="pandas"):
     imin_broadened_wav_offset_left[imin_broadened_wav_offset_left < 0] = -1
     imin_broadened_wav_offset_right[imin_broadened_wav_offset_right < 0] = -1
     imax_broadened_wav_offset_left[imax_broadened_wav_offset_left > len_grid] = len_grid
-    imax_broadened_wav_offset_right[
-        imax_broadened_wav_offset_right > len_grid
-    ] = len_grid
+    imax_broadened_wav_offset_right[imax_broadened_wav_offset_right > len_grid] = (
+        len_grid
+    )
     imin_broadened_wav_offset_left += 1
     imax_broadened_wav_offset_left += 1
     imin_broadened_wav_offset_right += 1

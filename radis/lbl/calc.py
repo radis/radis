@@ -16,7 +16,6 @@ Routine Listing
 
 """
 
-
 from copy import deepcopy
 from os.path import exists
 
@@ -799,7 +798,6 @@ def _calc_spectrum_one_molecule(
         # diluent_other_than_air = len(diluent) > 1 or (
         #     len(diluent) == 1 and "air" not in diluent
         # )
-
 
     # Load databank
     # -------------
