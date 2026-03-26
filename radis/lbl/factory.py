@@ -1017,6 +1017,9 @@ class SpectrumFactory(BandFactory):
         #  In the less verbose case, we print the total calculation+generation time:
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
 
+        if hasattr(self, "_db_load_time"):
+            self.profiler.final["load_database"] = self._db_load_time
+
         return s
 
     def eq_spectrum_gpu(
@@ -1383,6 +1386,9 @@ class SpectrumFactory(BandFactory):
 
         #  In the less verbose case, we print the total calculation+generation time:
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
+
+        if hasattr(self, "_db_load_time"):
+            self.profiler.final["load_database"] = self._db_load_time
 
         return s
 
@@ -1929,6 +1935,9 @@ class SpectrumFactory(BandFactory):
 
         #  In the less verbose case, we print the total calculation+generation time:
         self.profiler.stop("spectrum_calculation", "Spectrum calculated")
+
+        if hasattr(self, "_db_load_time"):
+            self.profiler.final["load_database"] = self._db_load_time
 
         return s
 

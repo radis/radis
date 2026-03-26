@@ -52,7 +52,7 @@ key in :py:attr:`radis.config`
 import warnings
 from copy import deepcopy
 from os.path import exists, expanduser, join, splitext
-from time import time
+from time import perf_counter, time
 from uuid import uuid1
 
 import numpy as np
@@ -673,6 +673,7 @@ class DatabankLoader(object):
         "_broadening_time_ruleofthumb",
         "_databank_args",
         "_databank_kwargs",
+        "_db_load_time",
         "_diluent",
         "_export_continuum",
         "_id",
@@ -1083,6 +1084,8 @@ class DatabankLoader(object):
         # | Should store the waverange, molecule and isotopes in the cache file
         # | metadata to ensures that it is redownloaded if necessary.
         # | see implementation in load_databank.
+
+        _t0 = perf_counter()
 
         # Check inputs
         compare_source = source.casefold()
@@ -1663,6 +1666,8 @@ class DatabankLoader(object):
                     + "in fetch_databank"
                 )
 
+        self._db_load_time = perf_counter() - _t0
+
         return
 
     def load_databank(
@@ -1780,6 +1785,8 @@ class DatabankLoader(object):
         ----------
         .. [1] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
         """
+        _t0 = perf_counter()
+
         # %% Check inputs
         # ---------
 
@@ -1890,6 +1897,8 @@ class DatabankLoader(object):
         # are calculated ab initio from radis internal species database constants
         if load_energies and not self.input.isatom:
             self._init_rovibrational_energies(levels, levelsfmt)
+
+        self._db_load_time = perf_counter() - _t0
 
         return
 
