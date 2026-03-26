@@ -165,7 +165,7 @@ def fetch_exomol(
     # Ensure isotope format:
     try:
         isotope = int(isotope)
-    except:
+    except (TypeError, ValueError):
         raise ValueError(
             f"In fetch_exomol, ``isotope`` must be an integer. Got `{isotope}` "
             + "Only one isotope can be queried at a time. "
