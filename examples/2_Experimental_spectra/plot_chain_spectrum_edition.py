@@ -114,7 +114,7 @@ import numpy as np
 
 print("Absorbance of original line : ", s.get_integral("absorbance"))
 print(
-    "Absorbance of fitted line   :", np.trapz(y_fit, w_fit)
+    "Absorbance of fitted line   :", np.trapezoid(y_fit, w_fit)
 )  # negative because w_fit in descending order
 #
 
