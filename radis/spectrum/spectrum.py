@@ -356,6 +356,7 @@ class Spectrum(object):
         "name",
         "_slit",
         "file",
+        "profiler",
     ]
 
     def __init__(
@@ -557,6 +558,7 @@ class Spectrum(object):
         self.cond_units = cond_units
         self.name = name
         self.file = None  # used to store filename when loaded from a file
+        self.profiler = None
 
         # Add references
         self.references = RefTracker(**references)
@@ -5964,7 +5966,10 @@ class Spectrum(object):
 
         from radis.spectrum.utils import print_perf_profile
 
-        profiler = self.conditions["profiler"]
+        profiler = getattr(self, "profiler", None)
+        if profiler is None:
+            warn("No profiler attached to this Spectrum instance.")
+            return None
         total_time = profiler["spectrum_calculation"]["value"]
 
         return print_perf_profile(
@@ -5979,7 +5984,7 @@ class Spectrum(object):
         r"""Generate a visual/interactive performance profile diagram using ``tuna``
 
         .. note::
-            requires a `profiler` key with in Spectrum.conditions
+            requires a profiler attached to ``Spectrum.profiler``
 
         .. warning::
             deprecated in favor of :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile`
@@ -6011,9 +6016,13 @@ class Spectrum(object):
         """
         from radis.spectrum.utils import generate_perf_profile
 
-        profiler = self.conditions["profiler"]["spectrum_calculation"].copy()
+        profiler_all = getattr(self, "profiler", None)
+        if profiler_all is None:
+            warn("No profiler attached to this Spectrum instance.")
+            return None
+        profiler = profiler_all.get("spectrum_calculation", {}).copy()
         # Add total calculation time:
-        profiler.update({"value": self.conditions["calculation_time"]})
+        profiler.update({"value": self.conditions.get("calculation_time")})
 
         return generate_perf_profile(profiler)
 
