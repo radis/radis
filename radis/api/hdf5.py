@@ -186,7 +186,14 @@ class DataFileManager(object):
         elif self.engine == "pytables-fixed":
             assert not append
             # export dataframe
-            df.to_hdf(file, key, format="fixed", mode="w", complevel=9, complib="blosc")
+            df.to_hdf(
+                path_or_buf=file,
+                key=key,
+                format="fixed",
+                mode="w",
+                complevel=9,
+                complib="blosc",
+            )
         elif self.engine == "vaex":
             if isinstance(df, pd.DataFrame):
                 df = vaex.from_pandas(df)
