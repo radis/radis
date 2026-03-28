@@ -830,6 +830,8 @@ def test_print_conditions():
         verbose=False,
     )
     sf.load_databank("HITRAN-CO-TEST")
+    # Hitting the prepend branch to ensure full test coverage
+    # and verify that it executes without raising exceptions.
     assert sf.print_conditions() is None
     assert sf.print_conditions(prepend="Test:") is None
 

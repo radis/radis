@@ -88,7 +88,9 @@ def test_array_allclose():
 def test_nantrapz():
     """Test nantrapz() function."""
     I, w = np.array([1.0, 2.0, 3.0, 4.0, 5.0]), np.array([0.0, 1.0, 2.0, 3.0, 4.0])
+    # baseline behavior without NaNs (matches np.trapezoid)
     assert np.isclose(nantrapz(I, w), np.trapezoid(I, w))
+    # feature test to ensure NaN values are handled gracefully
     assert not np.isnan(nantrapz(np.array([1.0, np.nan, 3.0, 4.0, 5.0]), w))
 
 
