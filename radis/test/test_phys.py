@@ -115,12 +115,17 @@ def test_air_conversions(verbose=True, *args, **kwargs):
     """Test air wavelength conversion functions."""
     wl_cm1 = 15000  # cm-1
     wl_nm_air = cm2nm_air(wl_cm1)
+    # Round-trip consistency
     assert isclose(nm_air2cm(wl_nm_air), wl_cm1, rtol=1e-6)
     assert wl_nm_air < cm2nm(wl_cm1)  # air < vacuum
+    # Hard-coded reference values (Ciddor 1996 dispersion formula)
+    assert isclose(wl_nm_air, 666.483, rtol=1e-4)
+    assert isclose(cm2nm(wl_cm1), 666.667, rtol=1e-4)
     # Delta conversions
     fwhm_cm, nu_0 = 10, 15000
     fwhm_nm_air = dcm2dnm_air(fwhm_cm, nu_0)
     assert isclose(dnm_air2dcm(fwhm_nm_air, cm2nm_air(nu_0)), fwhm_cm, rtol=1e-6)
+    assert isclose(fwhm_nm_air, 0.4443, rtol=1e-3)
 
 
 @pytest.mark.fast
