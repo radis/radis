@@ -92,7 +92,8 @@ def test_merge_slabs_resample_intersect(verbose=True, *args, **kwargs):
     s2 = crop(s, 2100, 2300, "cm-1", inplace=False)
     s_merged = MergeSlabs(s1, s2, resample="intersect")
     w, _ = s_merged.get("radiance_noslit")
-    assert w.min() >= 2100 and w.max() <= 2200
+    assert np.isclose(w.min(), 2100)
+    assert np.isclose(w.max(), 2200)
 
 
 @pytest.mark.fast
