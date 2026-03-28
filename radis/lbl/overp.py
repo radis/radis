@@ -240,8 +240,8 @@ class LevelsList(object):
         else:
             raise NotImplementedError(levelsfmt)
 
-        vib_levels = df.drop_duplicates(subset=vib_index)  # 192 ms ± 1.13 ms
-
+        # vib_levels = df.drop_duplicates(subset=vib_index)  # fails in Python 3.13. Old comment: 192 ms ± 1.13 ms
+        vib_levels = df.reset_index().drop_duplicates(subset=vib_index)
         # Add levels
         def add_viblvl(row):
             """ """

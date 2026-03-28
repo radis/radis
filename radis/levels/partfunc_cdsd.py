@@ -262,7 +262,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         self.levelsfmt = levelsfmt
         self.viblvl_label = viblvl_label
         cdsd_fragment_path = join(
-            "radis", "test", "files", "co2_cdsd_hamiltonian_fragment.levels"
+            radis.__path__[0], "test", "files", "co2_cdsd_hamiltonian_fragment.levels"
         )
         self.last_modification = time.ctime(getmtime(cdsd_fragment_path))
         if verbose >= 2:
