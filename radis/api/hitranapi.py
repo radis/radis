@@ -1992,9 +1992,31 @@ class HITRANDatabaseManager(DatabaseManager):
 
         # Use HAPI only to download the files, then we'll parse them with RADIS's
         # parsers, and convert to RADIS's fast HDF5 file formats.
-        isotope_list, data_file_list, header_file_list = download_all_hitran_isotopes(
-            molecule, tempdir, extra_params
-        )
+
+        max_retries = 2
+        retry_count = 0
+
+        while retry_count < max_retries:
+            try:
+                (
+                    isotope_list,
+                    data_file_list,
+                    header_file_list,
+                ) = download_all_hitran_isotopes(molecule, tempdir, extra_params)
+                break  # Success, exit retry loop
+            except ValueError as e:
+                if "invalid literal for int() with base 10: '\\x00\\x00'" in str(e):
+                    retry_count += 1
+                    if retry_count < max_retries:
+                        warnings.warn(
+                            f"ValueError encountered during download. Retrying (attempt {retry_count}/{max_retries})...",
+                            UserWarning,
+                            stacklevel=2,
+                        )
+                    else:
+                        raise  # Re-raise on final attempt
+                else:
+                    raise  # Re-raise if it's a different ValueError
 
         writer = self.get_datafile_manager()
 
