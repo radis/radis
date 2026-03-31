@@ -3496,21 +3496,12 @@ class Spectrum(object):
             if len(self._q["wavespace"]) != len(w_conv) or not np.allclose(
                 self._q["wavespace"], w_conv
             ):
-                if slit_dispersion is not None:  # Fix #440
-                    raise AssertionError(
-                        "You used `slit_dispersion` but this has the effect to modify "
-                        "the size of the spectrum array. Wavespace of the new convolved "
-                        "arrays are different and it cannot be stored in the same "
-                        "Spectrum object. You can use Spectrum.apply_slit(inplace=False) "
-                        "to return a new spectrum with only the convolved arrays."
-                    )
-                else:
-                    raise AssertionError(
-                        "Wavespace of convolved arrays are different and they cannot be "
-                        "stored in the same Spectrum object. You can use "
-                        "Spectrum.apply_slit(inplace=False) to return a new spectrum "
-                        "with only the convolved arrays."
-                    )
+                raise AssertionError(
+                    "Wavespace of convolved arrays are different and they cannot be "
+                    "stored in the same Spectrum object. You can use "
+                    "Spectrum.apply_slit(inplace=False) to return a new spectrum "
+                    "with only the convolved arrays."
+                )
             for q in I_conv_slices.keys():
                 # Merge all slices
                 I_conv = np.hstack(I_conv_slices[q])

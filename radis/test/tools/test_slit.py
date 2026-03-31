@@ -654,30 +654,6 @@ def test_auto_correct_dispersion(
 
 
 @pytest.mark.fast
-def test_slit_dispersion_inplace_error():
-    """Regression test for https://github.com/radis/radis/issues/440
-    Ensure a clear error is raised when wavespace changes with inplace=True."""
-
-    from unittest.mock import patch
-
-    w = np.linspace(380, 400, 100)
-    I = np.ones_like(w)
-
-    def mock_convolve(w, I, wslit, Islit, **kwargs):
-        return w[5:-5], I[5:-5]
-
-    with patch("radis.tools.slit.convolve_with_slit", mock_convolve):
-        s = calculated_spectrum(w, I, Iunit="mW/cm2/sr/µm")
-        with pytest.raises(AssertionError, match="slit_dispersion"):
-            s.apply_slit(0.5, slit_dispersion=linear_dispersion, inplace=True)
-
-    with patch("radis.tools.slit.convolve_with_slit", mock_convolve):
-        s = calculated_spectrum(w, I, Iunit="mW/cm2/sr/µm")
-        with pytest.raises(AssertionError, match="cannot be stored"):
-            s.apply_slit(0.5, inplace=True)
-
-
-@pytest.mark.fast
 def test_resampling(
     rtol=1e-2, verbose=True, plot=False, warnings=True, *args, **kwargs
 ):
