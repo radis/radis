@@ -1512,7 +1512,7 @@ class MdbExomol(DatabaseManager):
                 )
 
                 ##Recompute Line strength:
-                from radis.lbl.base import (  # TODO: move elsewhere
+                from radis.lbl.populations import (  # TODO: move elsewhere
                     linestrength_from_Einstein,
                 )
 

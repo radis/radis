@@ -58,7 +58,7 @@ from numpy import abs, diff
 
 from radis.db.references import doi
 
-# from radis.lbl.base import print_conditions
+# from radis.lbl.populations import print_conditions
 from radis.misc.arrays import (
     anynan,
     count_nans,
