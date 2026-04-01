@@ -30,7 +30,7 @@ PRIVATE METHODS - DATABASE LOADING
 
 Most methods are written in inherited class with the following inheritance scheme:
 
-:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.populations.PopulationFactory` >
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
 :py:class:`~radis.lbl.factory.SpectrumFactory`
 .. inheritance-diagram:: radis.lbl.factory.SpectrumFactory

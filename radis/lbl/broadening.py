@@ -13,7 +13,7 @@ Routine Listing
 
 Most methods are written in inherited class with the following inheritance scheme:
 
-:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.populations.PopulationFactory` >
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
 :py:class:`~radis.lbl.factory.SpectrumFactory`
 
@@ -71,7 +71,7 @@ from numpy import pi, sin, sqrt, zeros, zeros_like
 
 import radis
 from radis.db.references import doi
-from radis.lbl.base import BaseFactory
+from radis.lbl.populations import PopulationFactory
 from radis.misc.arrays import (  # add_at, #cython
     arange_len,
     boolean_array_from_ranges,
@@ -963,7 +963,7 @@ def _whiting_jit(w_centered, wl, wv):
 # %% Tools
 
 
-class BroadenFactory(BaseFactory):
+class BroadenFactory(PopulationFactory):
     """A class that holds all broadening methods.
 
     Eventually inherited by :class:`~radis.lbl.factory.SpectrumFactory`
@@ -976,7 +976,7 @@ class BroadenFactory(BaseFactory):
     :class:`~radis.lbl.factory.SpectrumFactory`
     """
 
-    __slots__ = BaseFactory.__slots__
+    __slots__ = PopulationFactory.__slots__
 
     def __init__(self):
 

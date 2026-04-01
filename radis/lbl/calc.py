@@ -23,11 +23,11 @@ from os.path import exists
 import numpy as np
 
 try:  # Proper import
-    from .base import get_wavenumber_range
     from .factory import SpectrumFactory
+    from .populations import get_wavenumber_range
 except ImportError:  # if ran from here
     from radis.lbl.factory import SpectrumFactory
-    from radis.lbl.base import get_wavenumber_range
+    from radis.lbl.populations import get_wavenumber_range
 
 from radis import config
 from radis.db.utils import compare

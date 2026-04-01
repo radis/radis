@@ -40,7 +40,7 @@ PUBLIC METHODS
 
 Most methods are written in inherited class with the following inheritance scheme:
 
-:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.populations.PopulationFactory` >
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
 :py:class:`~radis.lbl.factory.SpectrumFactory`
 
@@ -90,10 +90,10 @@ from radis.db.classes import get_molecule, get_molecule_identifier, to_conventio
 
 try:  # Proper import
     from .bands import BandFactory
-    from .base import get_wavenumber_range
+    from .populations import get_wavenumber_range
 except ImportError:  # if ran from here
     from radis.lbl.bands import BandFactory
-    from radis.lbl.base import get_wavenumber_range
+    from radis.lbl.populations import get_wavenumber_range
 
 from radis import config
 from radis.db.classes import is_atom, is_neutral
@@ -2153,7 +2153,7 @@ class SpectrumFactory(BandFactory):
         """Calculates ratioed self/air broadening based on molefraction"""
         df = self.df0
         # TODO: deal with the case of gamma_self [so we don't forget]
-        # TODO (refactor) : move into BaseFactory or BroadenFactory (parent classes)
+        # TODO (refactor) : move into PopulationFactory or BroadenFactory (parent classes)
 
         gamma_air = df["airbrd"].to_numpy()
         gamma_self = df["selbrd"].to_numpy()
