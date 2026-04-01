@@ -7,7 +7,7 @@ Summary
 A class to aggregate methods to calculate spectroscopic parameter and
 populations (and unload factory.py)
 
-:py:class:`~radis.lbl.base.BaseFactory` is inherited by
+:py:class:`~radis.lbl.populations.PopulationFactory` is inherited by
 :py:class:`~radis.lbl.broadening.BroadenFactory` eventually
 
 Routine Listing
@@ -16,41 +16,41 @@ Routine Listing
 
 PUBLIC METHODS
 
-- :py:meth:`radis.lbl.base.BaseFactory.print_conditions`         >>> get all calculation conditions
-- :py:meth:`radis.lbl.base.BaseFactory.get_energy_levels`        >>> return energy database
-- :py:meth:`radis.lbl.base.BaseFactory.plot_linestrength_hist`   >>>  plot distribution of linestrengths
-- :py:meth:`radis.lbl.base.BaseFactory.plot_hist`                >>> same
+- :py:meth:`radis.lbl.populations.PopulationFactory.print_conditions`         >>> get all calculation conditions
+- :py:meth:`radis.lbl.populations.PopulationFactory.get_energy_levels`        >>> return energy database
+- :py:meth:`radis.lbl.populations.PopulationFactory.plot_linestrength_hist`   >>>  plot distribution of linestrengths
+- :py:meth:`radis.lbl.populations.PopulationFactory.plot_hist`                >>> same
 
 PRIVATE METHODS - CALCULATE SPECTROSCOPIC PARAMETERS
 (everything that doesnt depend on populations / temperatures)
 (computation: work & update with 'df0' and called before eq_spectrum()  )
 
-- :py:meth:`radis.lbl.base.BaseFactory._add_EvibErot`
-- :py:meth:`radis.lbl.base.BaseFactory._add_EvibErot_CDSD`
-- :py:meth:`radis.lbl.base.BaseFactory._add_EvibErot_RADIS_cls1`
-- :py:meth:`radis.lbl.base.BaseFactory._add_Evib123Erot_RADIS_cls5`
-- :py:meth:`radis.lbl.base.BaseFactory._add_ju`
-- :py:meth:`radis.lbl.base.BaseFactory._add_Eu`
-- :py:meth:`radis.lbl.base.BaseFactory._calc_noneq_parameters`
-- :py:meth:`radis.lbl.base.BaseFactory.calc_weighted_trans_moment`
-- :py:meth:`radis.lbl.base.BaseFactory.calc_einstein_coefficients`
+- :py:meth:`radis.lbl.populations.PopulationFactory._add_EvibErot`
+- :py:meth:`radis.lbl.populations.PopulationFactory._add_EvibErot_CDSD`
+- :py:meth:`radis.lbl.populations.PopulationFactory._add_EvibErot_RADIS_cls1`
+- :py:meth:`radis.lbl.populations.PopulationFactory._add_Evib123Erot_RADIS_cls5`
+- :py:meth:`radis.lbl.populations.PopulationFactory._add_ju`
+- :py:meth:`radis.lbl.populations.PopulationFactory._add_Eu`
+- :py:meth:`radis.lbl.populations.PopulationFactory._calc_noneq_parameters`
+- :py:meth:`radis.lbl.populations.PopulationFactory.calc_weighted_trans_moment`
+- :py:meth:`radis.lbl.populations.PopulationFactory.calc_einstein_coefficients`
 
 PRIVATE METHODS - APPLY ENVIRONMENT PARAMETERS
 (all functions that depends upon T or P)
 (calculates populations, linestrength & radiance, lineshift)
 (computation: work on df1, called by or after eq_spectrum() )
 
-- :py:meth:`radis.lbl.base.BaseFactory.calc_lineshift`
-- :py:meth:`radis.lbl.base.BaseFactory.calc_linestrength_eq`
-- :py:meth:`radis.lbl.base.BaseFactory.calc_populations_eq`
-- :py:meth:`radis.lbl.base.BaseFactory.calc_populations_noneq`
-- :py:meth:`radis.lbl.base.BaseFactory.calc_linestrength_noneq`
-- :py:meth:`radis.lbl.base.BaseFactory.calc_emission_integral`
-- :py:meth:`radis.lbl.base.BaseFactory._cutoff_linestrength`
+- :py:meth:`radis.lbl.populations.PopulationFactory.calc_lineshift`
+- :py:meth:`radis.lbl.populations.PopulationFactory.calc_linestrength_eq`
+- :py:meth:`radis.lbl.populations.PopulationFactory.calc_populations_eq`
+- :py:meth:`radis.lbl.populations.PopulationFactory.calc_populations_noneq`
+- :py:meth:`radis.lbl.populations.PopulationFactory.calc_linestrength_noneq`
+- :py:meth:`radis.lbl.populations.PopulationFactory.calc_emission_integral`
+- :py:meth:`radis.lbl.populations.PopulationFactory._cutoff_linestrength`
 
 Most methods are written in inherited class with the following inheritance scheme:
 
-:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.populations.PopulationFactory` >
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
 :py:class:`~radis.lbl.factory.SpectrumFactory`
 
@@ -99,7 +99,7 @@ except ImportError:
     vaex = NotInstalled(*not_installed_vaex_args)
 
 
-class BaseFactory(DatabankLoader):
+class PopulationFactory(DatabankLoader):
 
     __slots__ = DatabankLoader.__slots__
 
@@ -160,11 +160,11 @@ class BaseFactory(DatabankLoader):
 
         """
 
-        super(BaseFactory, self).__init__()  # initialize parent class
+        super(PopulationFactory, self).__init__()  # initialize parent class
 
-        # Make units specific to this BaseFactory instance :
-        self.units = BaseFactory.units0.copy()
-        self.cond_units = BaseFactory.cond_units0.copy()
+        # Make units specific to this PopulationFactory instance :
+        self.units = PopulationFactory.units0.copy()
+        self.cond_units = PopulationFactory.cond_units0.copy()
 
         # Define variable names
         # ... Note: defaults values are overwritten by SpectrumFactory input
@@ -240,7 +240,7 @@ class BaseFactory(DatabankLoader):
 
         See Also
         --------
-        :meth:`~radis.lbl.base.BaseFactory.get_populations`
+        :meth:`~radis.lbl.populations.PopulationFactory.get_populations`
         """
 
         energies = self.get_partition_function_calculator(molecule, isotope, state).df
@@ -2406,7 +2406,7 @@ class BaseFactory(DatabankLoader):
 
         See Also
         --------
-        :py:meth:`~radis.lbl.base.BaseFactory.Qgas_Qref_ratio`
+        :py:meth:`~radis.lbl.populations.PopulationFactory.Qgas_Qref_ratio`
         """
         if self.input.isatom:
             if self.input.pfsource.casefold() == "kurucz":
@@ -2464,7 +2464,7 @@ class BaseFactory(DatabankLoader):
 
         See Also
         --------
-        :py:meth:`~radis.lbl.base.BaseFactory.Qgas`
+        :py:meth:`~radis.lbl.populations.PopulationFactory.Qgas`
         """
 
         if "id" in df1.columns:
@@ -2548,12 +2548,12 @@ class BaseFactory(DatabankLoader):
         :meth:`~radis.lbl.loader.DatabankLoader.load_databank`
         Updates linestrength in df1. Cutoff criteria is applied afterwards.
 
-        .. minigallery:: radis.lbl.base.BaseFactory.calc_linestrength_eq
+        .. minigallery:: radis.lbl.populations.PopulationFactory.calc_linestrength_eq
             :add-heading:
 
         See Also
         --------
-        :py:func:`~radis.lbl.base.linestrength_from_Einstein`
+        :py:func:`~radis.lbl.populations.linestrength_from_Einstein`
         """
 
         Tref = self.input.Tref
@@ -2642,8 +2642,8 @@ class BaseFactory(DatabankLoader):
 
         See Also
         --------
-        :meth:`~radis.lbl.base.BaseFactory.calc_populations_noneq`,
-        :meth:`~radis.lbl.base.BaseFactory._calc_populations_noneq_multiTvib`,
+        :meth:`~radis.lbl.populations.PopulationFactory.calc_populations_noneq`,
+        :meth:`~radis.lbl.populations.PopulationFactory._calc_populations_noneq_multiTvib`,
         :meth:`~radis.levels.partfunc.RovibPartitionFunction.at`
         """
 
@@ -3024,8 +3024,8 @@ class BaseFactory(DatabankLoader):
 
         See Also
         --------
-        :meth:`~radis.lbl.base.BaseFactory.calc_populations_eq`,
-        :meth:`~radis.lbl.base.BaseFactory._calc_populations_noneq_multiTvib`,
+        :meth:`~radis.lbl.populations.PopulationFactory.calc_populations_eq`,
+        :meth:`~radis.lbl.populations.PopulationFactory._calc_populations_noneq_multiTvib`,
         :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq`
         """
 
@@ -3211,8 +3211,8 @@ class BaseFactory(DatabankLoader):
 
         See Also
         --------
-        :meth:`~radis.lbl.base.BaseFactory.calc_populations_eq`,
-        :meth:`~radis.lbl.base.BaseFactory.calc_populations_noneq`,
+        :meth:`~radis.lbl.populations.PopulationFactory.calc_populations_eq`,
+        :meth:`~radis.lbl.populations.PopulationFactory.calc_populations_noneq`,
         :meth:`~radis.levels.partfunc.RovibPartitionFunction.at_noneq_3Tvib`
         """
 
@@ -3350,7 +3350,7 @@ class BaseFactory(DatabankLoader):
         See Also
         --------
 
-        :meth:`~radis.lbl.base.BaseFactory.get_energy_levels`
+        :meth:`~radis.lbl.populations.PopulationFactory.get_energy_levels`
         """
 
         # Check input
@@ -3427,7 +3427,7 @@ class BaseFactory(DatabankLoader):
         Pre-requisite:
 
             lower state population `nl` has already been calculated by
-            :meth:`~radis.lbl.base.BaseFactory.calc_populations_noneq`
+            :meth:`~radis.lbl.populations.PopulationFactory.calc_populations_noneq`
 
 
         Returns
@@ -3450,9 +3450,9 @@ class BaseFactory(DatabankLoader):
         See Also
         --------
 
-        :py:meth:`~radis.lbl.base.BaseFactory.calc_populations_noneq`,
-        :py:meth:`~radis.lbl.base.BaseFactory.calc_emission_integral`,
-        :py:func:`~radis.lbl.base.linestrength_from_Einstein`
+        :py:meth:`~radis.lbl.populations.PopulationFactory.calc_populations_noneq`,
+        :py:meth:`~radis.lbl.populations.PopulationFactory.calc_emission_integral`,
+        :py:func:`~radis.lbl.populations.linestrength_from_Einstein`
 
         """
 
@@ -3553,7 +3553,7 @@ class BaseFactory(DatabankLoader):
 
         See Also
         --------
-        :py:meth:`~radis.lbl.base.BaseFactory.calc_linestrength_noneq`
+        :py:meth:`~radis.lbl.populations.PopulationFactory.calc_linestrength_noneq`
         """
 
         df = self.df1
@@ -4161,7 +4161,7 @@ def linestrength_from_Einstein(
 
     See Also
     --------
-    :py:meth:`~radis.lbl.base.BaseFactory.calc_linestrength_eq`
+    :py:meth:`~radis.lbl.populations.PopulationFactory.calc_linestrength_eq`
 
     """
 
