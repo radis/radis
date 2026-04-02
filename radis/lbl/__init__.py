@@ -7,4 +7,13 @@ from .calc import calc_spectrum, spectrum_test
 from .factory import SpectrumFactory
 from .overp import LevelsList
 
-__all__ = ["LevelsList", "SpectrumFactory", "calc_spectrum", "spectrum_test"]
+# Backward compatibility alias (deprecated)
+from .populations import PopulationFactory as BaseFactory
+
+__all__ = [
+    "LevelsList",
+    "SpectrumFactory",
+    "calc_spectrum",
+    "spectrum_test",
+    "BaseFactory",
+]
