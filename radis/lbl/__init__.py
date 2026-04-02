@@ -6,14 +6,16 @@ from . import bands, broadening, calc, factory, labels, loader, overp, populatio
 from .calc import calc_spectrum, spectrum_test
 from .factory import SpectrumFactory
 from .overp import LevelsList
+from .populations import PopulationFactory
 
-# Backward compatibility alias (deprecated)
-from .populations import PopulationFactory as BaseFactory
+# Backward compatibility alias (deprecated - use PopulationFactory instead)
+BaseFactory = PopulationFactory
 
 __all__ = [
     "LevelsList",
+    "PopulationFactory",
     "SpectrumFactory",
     "calc_spectrum",
     "spectrum_test",
-    "BaseFactory",
+    "BaseFactory",  # deprecated alias
 ]
