@@ -22,6 +22,8 @@ def __getattr__(name):
             DeprecationWarning,
             stacklevel=2,
         )
+        # Cache to avoid repeated warnings on subsequent access
+        globals()["BaseFactory"] = populations.PopulationFactory
         return populations.PopulationFactory
 
     # Forward other attributes from populations without warning
@@ -30,8 +32,3 @@ def __getattr__(name):
         return getattr(populations, name)
 
     raise AttributeError(f"module 'radis.lbl.base' has no attribute '{name}'")
-
-
-def __dir__():
-    """Support for dir() and tab-completion."""
-    return dir(populations) + ["BaseFactory"]

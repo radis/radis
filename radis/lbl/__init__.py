@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 """Core of the line-by-line calculations"""
 
+import warnings
+
 # prevent cyclic imports:
-from . import bands, broadening, calc, factory, labels, loader, overp, populations
+from . import bands, base, broadening, calc, factory, labels, loader, overp, populations
 from .calc import calc_spectrum, spectrum_test
 from .factory import SpectrumFactory
 from .overp import LevelsList
 from .populations import PopulationFactory
-
-# Backward compatibility alias (deprecated - use PopulationFactory instead)
-BaseFactory = PopulationFactory
 
 __all__ = [
     "LevelsList",
@@ -17,5 +16,16 @@ __all__ = [
     "SpectrumFactory",
     "calc_spectrum",
     "spectrum_test",
-    "BaseFactory",  # deprecated alias
 ]
+
+
+def __getattr__(name):
+    """Lazy access with deprecation warning for BaseFactory."""
+    if name == "BaseFactory":
+        warnings.warn(
+            "BaseFactory is deprecated, use PopulationFactory instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return PopulationFactory
+    raise AttributeError(f"module 'radis.lbl' has no attribute '{name}'")

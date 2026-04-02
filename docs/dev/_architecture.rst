@@ -82,8 +82,8 @@ Methods from the Flow Chart: this methods are called successively from the
 - Line Intensities: methods of :py:class:`~radis.lbl.populations.PopulationFactory` :
 
     - :py:meth:`radis.lbl.populations.PopulationFactory.calc_linestrength_eq`
-    - :py:meth:`radis.lbl.populations.PopulationFactory._calc_linestrength_noneq`
-    - :py:meth:`radis.lbl.populations.PopulationFactory._calc_emission_integral`
+    - :py:meth:`radis.lbl.populations.PopulationFactory.calc_linestrength_noneq`
+    - :py:meth:`radis.lbl.populations.PopulationFactory.calc_emission_integral`
 
 - Line Positions:  methods of :py:class:`~radis.lbl.populations.PopulationFactory` :
 
