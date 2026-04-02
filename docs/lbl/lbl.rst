@@ -610,7 +610,7 @@ impact on the calculation performances are:
 
 - The ``broadening_max_width``, which defines the spectral range over which the broadening is calculated.
 - The linestrength ``cutoff``, which defines which low intensity lines should be discarded. See
-  :meth:`~radis.lbl.base.BaseFactory.plot_linestrength_hist` to choose a correct cutoff.
+  :meth:`~radis.lbl.populations.PopulationFactory.plot_linestrength_hist` to choose a correct cutoff.
 - The ``pseudo_continuum_threshold`` defines a threshold to integrate weak lines into a continuum. This solution will be deprecated in the future.
 
 Check the [RADIS-2018]_ article for a quantitative assessment of the influence of the different parameters.

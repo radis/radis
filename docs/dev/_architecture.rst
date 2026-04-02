@@ -18,7 +18,7 @@ See details at the end of this file.
 
 Methods are written in Factory objects inherited with the following scheme:
 
-:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.base.BaseFactory` >
+:py:class:`~radis.lbl.loader.DatabankLoader` > :py:class:`~radis.lbl.populations.PopulationFactory` >
 :py:class:`~radis.lbl.broadening.BroadenFactory` > :py:class:`~radis.lbl.bands.BandFactory` >
 :py:class:`~radis.lbl.factory.SpectrumFactory`
 
@@ -74,24 +74,24 @@ Methods from the Flow Chart: this methods are called successively from the
     - :py:meth:`radis.levels.partfunc.RovibParFuncCalculator.at_noneq`
     - :py:meth:`radis.levels.partfunc.RovibParFuncCalculator.at_noneq_3Tvib`
 
-- Populations: methods of :py:class:`~radis.lbl.base.BaseFactory` :
+- Populations: methods of :py:class:`~radis.lbl.populations.PopulationFactory` :
 
-    - :py:meth:`radis.lbl.base.BaseFactory.calc_populations_eq`
-    - :py:meth:`radis.lbl.base.BaseFactory.calc_populations_noneq`
+    - :py:meth:`radis.lbl.populations.PopulationFactory.calc_populations_eq`
+    - :py:meth:`radis.lbl.populations.PopulationFactory.calc_populations_noneq`
 
-- Line Intensities: methods of :py:class:`~radis.lbl.base.BaseFactory` :
+- Line Intensities: methods of :py:class:`~radis.lbl.populations.PopulationFactory` :
 
-    - :py:meth:`radis.lbl.base.BaseFactory.calc_linestrength_eq`
-    - :py:meth:`radis.lbl.base.BaseFactory._calc_linestrength_noneq`
-    - :py:meth:`radis.lbl.base.BaseFactory._calc_emission_integral`
+    - :py:meth:`radis.lbl.populations.PopulationFactory.calc_linestrength_eq`
+    - :py:meth:`radis.lbl.populations.PopulationFactory._calc_linestrength_noneq`
+    - :py:meth:`radis.lbl.populations.PopulationFactory._calc_emission_integral`
 
-- Line Positions:  methods of :py:class:`~radis.lbl.base.BaseFactory` :
+- Line Positions:  methods of :py:class:`~radis.lbl.populations.PopulationFactory` :
 
-    - :py:meth:`radis.lbl.base.BaseFactory.calc_lineshift`
+    - :py:meth:`radis.lbl.populations.PopulationFactory.calc_lineshift`
 
-- Reduced line set: methods of :py:class:`~radis.lbl.base.BaseFactory` :
+- Reduced line set: methods of :py:class:`~radis.lbl.populations.PopulationFactory` :
 
-    - :py:meth:`radis.lbl.base.BaseFactory._cutoff_linestrength`
+    - :py:meth:`radis.lbl.populations.PopulationFactory._cutoff_linestrength`
 
 - Voigt Broadening: methods of :py:class:`~radis.lbl.broadening.BroadenFactory` :
 
