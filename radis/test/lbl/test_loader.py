@@ -174,8 +174,8 @@ def test_custom_abundance(verbose=True, plot=False, *args, **kwargs):
     force computation of linestrength from Einstein coefficients instead
     of rescaling parameters
 
-    :py:meth:`~radis.lbl.base.DatabankLoader.get_abundance`,
-    :py:meth:`~radis.lbl.base.DatabankLoader.set_abundance`
+    :py:meth:`~radis.lbl.loader.DatabankLoader.get_abundance`,
+    :py:meth:`~radis.lbl.loader.DatabankLoader.set_abundance`
     """
 
     sf = SpectrumFactory(

@@ -15,7 +15,7 @@ import pytest
 import radis
 from radis import get_residual, plot_diff, sPlanck
 from radis.lbl import SpectrumFactory
-from radis.lbl.base import get_wavenumber_range
+from radis.lbl.populations import get_wavenumber_range
 from radis.misc.printer import printm
 from radis.misc.progress_bar import ProgressBar
 from radis.misc.utils import Default
@@ -24,9 +24,9 @@ from radis.test.utils import setup_test_line_databases
 
 def test_linestrength_calculations(*args, **kwargs):
     """Compare and validate linestrength calculations from
-    :py:func:`radis.lbl.base.linestrength_from_Einstein`,
-    :py:meth:`radis.lbl.base.BaseFactory.calc_linestrength_eq`,
-    :py:meth:`radis.lbl.base.BaseFactory.calc_linestrength_non_eq`,
+    :py:func:`radis.lbl.populations.linestrength_from_Einstein`,
+    :py:meth:`radis.lbl.populations.PopulationFactory.calc_linestrength_eq`,
+    :py:meth:`radis.lbl.populations.PopulationFactory.calc_linestrength_non_eq`,
 
     """
 
@@ -38,7 +38,7 @@ def test_linestrength_calculations(*args, **kwargs):
 
     from radis.db.classes import get_molecule_identifier
     from radis.db.molparam import MolParams
-    from radis.lbl.base import linestrength_from_Einstein
+    from radis.lbl.populations import linestrength_from_Einstein
     from radis.levels.partfunc import PartFuncTIPS
 
     molpar = MolParams()
