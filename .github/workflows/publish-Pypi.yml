@@ -1,17 +1,20 @@
-# This workflow will upload a Python Package to PyPI when a release is created
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python#publishing-to-package-registries
-
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
+# This workflow uploads a Python Package to PyPI when a release is published.
+# Uses OIDC Trusted Publishing (no API tokens needed).
+# For setup instructions: https://docs.pypi.org/trusted-publishers/adding-a-publisher/
+#
+# IMPORTANT: On PyPI, the Trusted Publisher must be configured with:
+#   - Owner:        radis
+#   - Repository:   radis
+#   - Workflow:     publish-Pypi.yml
+#   - Environment:  pypi-deploy
 
 name: Upload Python Package to PyPI
 
 on:
   release:
-    types: [published] #this event will be triggered only when a release is published. Not when we push on the master.
-    #WARNING: make sure you finished a merge to master before creating the release
+    types: [published]
+    # WARNING: merge to master BEFORE creating the release
+
 permissions:
   contents: read
 
@@ -26,14 +29,23 @@ jobs:
         with:
           python-version: "3.x"
 
+      - name: Validate release tag matches package version
+        run: |
+          PKG_VERSION=$(cat radis/__version__.txt | tr -d '[:space:]')
+          TAG_VERSION="${{ github.event.release.tag_name }}"
+          # Strip leading 'v' from tag if present (e.g. v0.16.4 -> 0.16.4)
+          TAG_VERSION="${TAG_VERSION#v}"
+          echo "Package version: $PKG_VERSION"
+          echo "Release tag:     $TAG_VERSION"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "ERROR: Tag '$TAG_VERSION' does not match radis/__version__.txt '$PKG_VERSION'"
+            echo "Bump the version in radis/__version__.txt before releasing."
+            exit 1
+          fi
+
       - name: Build release distributions
         run: |
-          # Convert README FIRST, before building
-          sudo apt-get install pandoc
-          pandoc README.rst -o README.md
-
-          # NOTE: put your own distribution build steps here.
-          python -m pip install build twine
+          python -m pip install build
           python -m build --sdist --wheel
 
       - name: Upload distributions
@@ -47,19 +59,11 @@ jobs:
     needs:
       - release-build
     permissions:
-      # IMPORTANT: this permission is mandatory for trusted publishing, in our case we use this tutorial: https://docs.pypi.org/trusted-publishers/adding-a-publisher/
-      id-token: write
+      id-token: write  # required for OIDC Trusted Publishing
 
-    # Dedicated environments with protections for publishing are strongly recommended.
-    # For more information, see: https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#deployment-protection-rules
     environment:
       name: pypi-deploy
-      # OPTIONAL: uncomment and update to include your PyPI project URL in the deployment status:
       url: https://pypi.org/project/radis/
-      #
-      # ALTERNATIVE: if your GitHub Release name is the PyPI project version string
-      # ALTERNATIVE: exactly, uncomment the following line instead:
-      # url: https://pypi.org/project/YOURPROJECT/${{ github.event.release.name }}
 
     steps:
       - name: Retrieve release distributions
@@ -71,7 +75,6 @@ jobs:
       - name: Publish release distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-            packages-dir: dist/
-            skip-existing: true #skip the process if the version already exists on PyPI
-            verbose: true #nice to catch error messages
-            repository-url: https://upload.pypi.org/legacy/ # add this line if you want to specify the repository URL
+          packages-dir: dist/
+          skip-existing: true
+          verbose: true

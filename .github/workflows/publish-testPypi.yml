@@ -1,17 +1,23 @@
-# This workflow will upload a Python Package to PyPI when a release is created
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python#publishing-to-package-registries
-
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
+# This workflow uploads a Python Package to TestPyPI for validation.
+# Uses OIDC Trusted Publishing (no API tokens needed).
+# For setup instructions: https://docs.pypi.org/trusted-publishers/adding-a-publisher/
+#
+# IMPORTANT: On TestPyPI, the Trusted Publisher must be configured with:
+#   - Owner:        radis
+#   - Repository:   radis
+#   - Workflow:     publish-testPypi.yml
+#   - Environment:  testPypi-deploy
+#
+# Trigger: push of a version tag (e.g. v0.16.4 or 0.16.4) to develop/master.
+# This avoids running a full publish attempt on every single commit.
 
 name: Upload Python Package to test PyPI
 
-#see Just to test the publishing process to Test PyPI, on develop branch
 on:
   push:
-    branches: [ "master", "develop" ]
+    tags:
+      - 'v[0-9]*'   # matches v0.16.4, v1.0.0, etc.
+      - '[0-9]*'    # matches 0.16.4, 1.0.0, etc. (tagless style)
 
 permissions:
   contents: read
@@ -29,14 +35,8 @@ jobs:
 
       - name: Build release distributions
         run: |
-          # Convert README FIRST, before building
-          sudo apt-get install pandoc
-          pandoc README.rst -o README.md
-
-          # NOTE: put your own distribution build steps here.
-          python -m pip install build twine
+          python -m pip install build
           python -m build --sdist --wheel
-
 
       - name: Upload distributions
         uses: actions/upload-artifact@v4
@@ -49,19 +49,11 @@ jobs:
     needs:
       - release-build
     permissions:
-      # IMPORTANT: this permission is mandatory for trusted publishing, in our case we use this tutorial: https://docs.pypi.org/trusted-publishers/adding-a-publisher/
-      id-token: write
+      id-token: write  # required for OIDC Trusted Publishing
 
-    # Dedicated environments with protections for publishing are strongly recommended.
-    # For more information, see: https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment#deployment-protection-rules
     environment:
       name: testPypi-deploy
-      # OPTIONAL: uncomment and update to include your PyPI project URL in the deployment status:
       url: https://test.pypi.org/project/radis/
-      #
-      # ALTERNATIVE: if your GitHub Release name is the PyPI project version string
-      # ALTERNATIVE: exactly, uncomment the following line instead:
-      # url: https://pypi.org/project/YOURPROJECT/${{ github.event.release.name }}
 
     steps:
       - name: Retrieve release distributions
@@ -75,6 +67,5 @@ jobs:
         with:
           packages-dir: dist/
           repository-url: https://test.pypi.org/legacy/
-          skip-existing: true #skip the process if the version already exists on Test PyPI
+          skip-existing: true
           verbose: true
-
