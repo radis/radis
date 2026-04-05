@@ -2,7 +2,7 @@ name: PR auto-assign linked issue
 
 on:
   pull_request_target:
-    types: [opened]
+    types: [opened, edited]
 
 jobs:
   auto-assign:

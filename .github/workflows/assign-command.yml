@@ -7,6 +7,10 @@ on:
 env:
   MAX_ASSIGNMENTS: 2
 
+concurrency:
+  group: assign-command-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
 jobs:
   handle-command:
     if: >-
@@ -84,7 +88,7 @@ jobs:
 
             // Check max assignments (maintainers bypass)
             if (!isMaintainer) {
-              const { data: assigned } = await github.rest.issues.listForRepo({
+              const assigned = await github.paginate(github.rest.issues.listForRepo, {
                 owner, repo, assignee: user, state: 'open', per_page: 100,
               });
               const assignedIssues = assigned.filter(i => !i.pull_request);
