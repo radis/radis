@@ -57,7 +57,6 @@ Formula in docstrings generated with :py:func:`~pytexit.pytexit.py2tex` ::
     from pytexit import py2tex
     py2tex('...')
 
-----------
 
 """
 

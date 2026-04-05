@@ -59,8 +59,6 @@ Most methods are written in inherited class with the following inheritance schem
    :parts: 1
 
 
-----------
-
 
 """
 # TODO: move all CDSD dependant functions _add_Evib123Erot to a specific file for CO2.

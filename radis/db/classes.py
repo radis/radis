@@ -46,7 +46,6 @@ Routine Listing
 - :func:`~radis.db.classes.get_molecule`
 - :func:`~radis.db.classes.get_molecule_identifier`
 
--------------------------------------------------------------------------------
 """
 
 import re

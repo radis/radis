@@ -18,7 +18,7 @@ Routine Listings
 - :func:`~radis.spectrum.compare.plot_diff`
 
 
--------------------------------------------------------------------------------
+
 
 
 

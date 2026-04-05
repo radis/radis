@@ -36,7 +36,6 @@ PRIVATE METHODS
 - _calc_broadening_bands
 - _calc_broadening_noneq_bands
 
-----------
 
 
 """

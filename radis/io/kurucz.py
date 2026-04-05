@@ -1,11 +1,9 @@
-""" "
+"""
 
 Summary
 -----------------------
 
 Kurucz database parser
-
------------------------
 
 Defines :func:`~radis.io.fetch_kurucz` based on :class:`~radis.api.kuruczapi.KuruczDatabaseManager`
 
@@ -35,7 +33,7 @@ def fetch_kurucz(
     parallel=True,
 ):
     """
-    See e.g. :func:`~radis.io.hitemp.fetch_hitemp` for an explanation of the parameters largely applicable to `fetch_kurucz`
+    See e.g. :func:`~radis.io.hitemp.fetch_hitemp` for an explanation of the parameters largely applicable to ``fetch_kurucz``
 
     .. note::
 

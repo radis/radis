@@ -30,7 +30,6 @@ Routine Listing
 - :func:`~radis.misc.config.printDatabankEntries`
 - :func:`~radis.misc.config.printDatabankList`
 
--------------------------------------------------------------------------------
 
 
 """

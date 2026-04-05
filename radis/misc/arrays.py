@@ -31,8 +31,6 @@ Functions to deal with numpy arrays:
 
 
 
--------------------------------------------------------------------------------
-
 """
 
 from math import ceil
