@@ -56,7 +56,7 @@ jobs:
                 owner, repo, issue_number: pr.number,
                 body:
                   `⚠️ **Inactivity Notice**\n\n` +
-                  `This pull request has been inactive for 2 months. ` +
+                  `This pull request has been inactive for ${INACTIVE_DAYS} days. ` +
                   `To keep the project's workflow efficient, it may be closed by an admin ` +
                   `if no further updates (commits, comments, or reviews) are made soon.\n\n` +
                   `If you're still working on this:\n` +
