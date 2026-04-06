@@ -8,7 +8,7 @@ env:
   MAX_ASSIGNMENTS: 2
 
 concurrency:
-  group: assign-command-${{ github.event.issue.number }}
+  group: assign-command-${{ github.repository }}-${{ github.event.comment.user.login }}
   cancel-in-progress: false
 
 jobs:
