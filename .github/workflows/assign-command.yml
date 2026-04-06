@@ -41,9 +41,17 @@ jobs:
             }
 
             // Check if user is a maintainer (admin/maintain/write → bypass limits)
-            const { data: { permission } } = await github.rest.repos.getCollaboratorPermissionLevel({
-              owner, repo, username: user,
-            });
+            let permission = 'none';
+            try {
+              const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner, repo, username: user,
+              });
+              permission = data.permission;
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+            }
             const isMaintainer = ['admin', 'write', 'maintain'].includes(permission);
 
             // --- /unassign ---
