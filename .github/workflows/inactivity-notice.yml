@@ -95,7 +95,7 @@ jobs:
                 owner, repo, issue_number: issue.number,
                 body:
                   `⚠️ **Inactivity Notice**\n\n` +
-                  `This issue has been inactive for 2 months. ` +
+                  `This issue has been inactive for ${INACTIVE_DAYS} days. ` +
                   `To help us manage the backlog, it may be closed by an admin ` +
                   `if no further activity (comments, updates, or discussions) occurs soon.\n\n` +
                   `If this issue is still relevant:\n` +
