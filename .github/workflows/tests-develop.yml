@@ -16,20 +16,18 @@ jobs:
       # max-parallel: 3
       matrix:
         include:
-          # - os: ubuntu-latest
-          #   python-version: "3.14"
-          #   continue-on-error: true #this is allowed to fail, as some dependencies may not yet be available
+          # Try only the oldest and latest supported versions of Python on develop, to speed up the tests. We test more versions on master (see python-package-master.yml)
           - os: ubuntu-latest
             python-version: "3.10"
-          - os: ubuntu-latest
-            python-version: "3.11"
           - os: ubuntu-latest
             python-version: "3.12"
-          #Issue with Windows and Mac OS, see https://github.com/radis/radis/issues/864
+          - os: ubuntu-latest
+            python-version: "3.13" #added to test the behavior without vaex (compatible up to 3.12)
+          #For windows and macOS, we test only the Python 3.12, to speed up the tests.
           - os: windows-latest
-            python-version: "3.10"
+            python-version: "3.12"
           - os: macos-latest
-            python-version: "3.10"
+            python-version: "3.12"
     runs-on: ${{ matrix.os }}
 
     steps:

@@ -356,6 +356,7 @@ class Spectrum(object):
         "name",
         "_slit",
         "file",
+        "profiler",
     ]
 
     def __init__(
@@ -557,6 +558,7 @@ class Spectrum(object):
         self.cond_units = cond_units
         self.name = name
         self.file = None  # used to store filename when loaded from a file
+        self.profiler = None
 
         # Add references
         self.references = RefTracker(**references)
@@ -1637,24 +1639,16 @@ class Spectrum(object):
             header=header,
         )
 
-    def update(self, quantity="all", optically_thin="default", verbose=True):
+    def update(self, quantity="all", optically_thin=None, verbose=True):
         r"""Calculate missing quantities: ex: if path_length and emisscoeff are
         given, recalculate radiance_noslit.
 
         Parameters
         ----------
-
-        spec: Spectrum
         quantity: str
             name of the spectral quantity to recompute. If 'same', only the quantities
             in the Spectrum are recomputed. If 'all', then all quantities that can
             be derived are recomputed. Default 'all'.
-        optically_thin: True, False, or 'default'
-            determines whether to calculate radiance with or without self absorption.
-            If 'default', the value is determined from the self_absorption key
-            in Spectrum.conditions. If not given, False is taken. Default 'default'
-            Also updates the self_absorption value in conditions (creates it if
-            doesnt exist
 
         Examples
         --------
@@ -1681,6 +1675,12 @@ class Spectrum(object):
         --------
 
         :ref:`the Spectrum page <label_spectrum>`
+
+        Notes
+        -----
+        To compute radiance in the optically thin approximation (without
+        self-absorption), set ``self.conditions['self_absorption'] = False``
+        before calling this method.
         """
 
         return update(
@@ -3497,7 +3497,10 @@ class Spectrum(object):
                 self._q["wavespace"], w_conv
             ):
                 raise AssertionError(
-                    "Wavespace of convolved arrays is different, cannot store it in the same Spectrum. You can use Spectrum.apply_slit(inplace=False) to return a new spectrum with only the convolved arrays"
+                    "Wavespace of convolved arrays are different and they cannot be "
+                    "stored in the same Spectrum object. You can use "
+                    "Spectrum.apply_slit(inplace=False) to return a new spectrum "
+                    "with only the convolved arrays."
                 )
             for q in I_conv_slices.keys():
                 # Merge all slices
@@ -5966,7 +5969,10 @@ class Spectrum(object):
 
         from radis.spectrum.utils import print_perf_profile
 
-        profiler = self.conditions["profiler"]
+        profiler = getattr(self, "profiler", None)
+        if profiler is None:
+            warn("No profiler attached to this Spectrum instance.")
+            return None
         total_time = profiler["spectrum_calculation"]["value"]
 
         return print_perf_profile(
@@ -5981,7 +5987,7 @@ class Spectrum(object):
         r"""Generate a visual/interactive performance profile diagram using ``tuna``
 
         .. note::
-            requires a `profiler` key with in Spectrum.conditions
+            requires a profiler attached to ``Spectrum.profiler``
 
         .. warning::
             deprecated in favor of :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile`
@@ -6013,9 +6019,13 @@ class Spectrum(object):
         """
         from radis.spectrum.utils import generate_perf_profile
 
-        profiler = self.conditions["profiler"]["spectrum_calculation"].copy()
+        profiler_all = getattr(self, "profiler", None)
+        if profiler_all is None:
+            warn("No profiler attached to this Spectrum instance.")
+            return None
+        profiler = profiler_all.get("spectrum_calculation", {}).copy()
         # Add total calculation time:
-        profiler.update({"value": self.conditions["calculation_time"]})
+        profiler.update({"value": self.conditions.get("calculation_time")})
 
         return generate_perf_profile(profiler)
 
