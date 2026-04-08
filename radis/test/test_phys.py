@@ -169,10 +169,11 @@ def test_units(verbose=True, *args, **kwargs):
 
 def _run_testcases(*args, **kwargs):
 
-    assert test_convert(*args, **kwargs)
-    assert test_air_conversions(*args, **kwargs)
-    assert test_safe_division_functions(*args, **kwargs)
-    assert test_units(*args, **kwargs)
+    test_convert(*args, **kwargs)
+    test_air_conversions(*args, **kwargs)
+    test_safe_division_functions(*args, **kwargs)
+    test_units(*args, **kwargs)
+    return True
 
 
 if __name__ == "__main__":
