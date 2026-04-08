@@ -32,11 +32,6 @@ def test_to_conventional_name():
     assert to_conventional_name(49) == 49  # ID for COCl2
 
 
-if __name__ == "__main__":
-    test_is_atom()
-    test_to_conventional_name()
-
-
 @pytest.mark.fast
 def test_get_convention():
     """Test the get_convention function that determines if coefficients
@@ -99,3 +94,11 @@ def test_degeneracies_gs():
     # Unknown molecule should fail
     with pytest.raises(NotImplementedError):
         gs(999, 1)
+
+
+if __name__ == "__main__":
+    test_is_atom()
+    test_to_conventional_name()
+    test_get_convention()
+    test_degeneracies_gi()
+    test_degeneracies_gs()
