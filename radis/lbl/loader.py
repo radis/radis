@@ -52,7 +52,7 @@ key in :py:attr:`radis.config`
 import warnings
 from copy import deepcopy
 from os.path import exists, expanduser, join, splitext
-from time import perf_counter, time
+from time import time
 from uuid import uuid1
 
 import numpy as np
@@ -673,7 +673,6 @@ class DatabankLoader(object):
         "_broadening_time_ruleofthumb",
         "_databank_args",
         "_databank_kwargs",
-        "_db_load_time",
         "_diluent",
         "_export_continuum",
         "_id",
@@ -830,7 +829,14 @@ class DatabankLoader(object):
         --------
         :py:func:`radis.lbl.factory.SpectrumFactory.print_perf_profile"""
 
+        db_loading_time = None
+        if self.profiler is not None and "db_loading" in self.profiler.final:
+            db_loading_time = self.profiler.final["db_loading"]
+
         self.profiler = Profiler(verbose)
+
+        if db_loading_time is not None:
+            self.profiler.final["db_loading"] = db_loading_time
 
     def _reset_references(self):
         """Reset :py:class:`~radis.tools.track_refs.RefTracker`"""
@@ -1085,7 +1091,9 @@ class DatabankLoader(object):
         # | metadata to ensures that it is redownloaded if necessary.
         # | see implementation in load_databank.
 
-        _t0 = perf_counter()
+        if self.profiler is None:
+            self.profiler = Profiler(self.verbose)
+        self.profiler.start("db_loading", 1)
 
         # Check inputs
         compare_source = source.casefold()
@@ -1666,7 +1674,7 @@ class DatabankLoader(object):
                     + "in fetch_databank"
                 )
 
-        self._db_load_time = perf_counter() - _t0
+        self.profiler.stop("db_loading", "Loaded database")
 
         return
 
@@ -1785,7 +1793,9 @@ class DatabankLoader(object):
         ----------
         .. [1] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
         """
-        _t0 = perf_counter()
+        if self.profiler is None:
+            self.profiler = Profiler(self.verbose)
+        self.profiler.start("db_loading", 1)
 
         # %% Check inputs
         # ---------
@@ -1898,7 +1908,7 @@ class DatabankLoader(object):
         if load_energies and not self.input.isatom:
             self._init_rovibrational_energies(levels, levelsfmt)
 
-        self._db_load_time = perf_counter() - _t0
+        self.profiler.stop("db_loading", "Loaded database")
 
         return
 
