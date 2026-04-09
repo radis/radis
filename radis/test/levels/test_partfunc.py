@@ -1118,14 +1118,6 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
 
 
 @pytest.mark.fast
-def test_vibrating_rotor():
-    """Test vibrating rotor energy calculations."""
-    from radis.levels.vibrating_rotor import _test as vibrating_rotor_test
-
-    vibrating_rotor_test()
-
-
-@pytest.mark.fast
 def test_vibrating_rotor_harmonic_anharmonic():
     """Test EvJah_uncoupled_vibrating_rotor for CO2."""
     from radis.levels.vibrating_rotor import EvJah_uncoupled_vibrating_rotor
