@@ -920,8 +920,8 @@ def hdf2df(
     # warning when requested wavenumber range lies outside DB metadata
     md = metadata[0] if isinstance(metadata, list) and len(metadata) > 0 else metadata
     if isinstance(md, dict):
-        db_min = md.get("wavenumber_min") or None
-        db_max = md.get("wavenumber_max") or None
+        db_min = md.get("wavenumber_min", None)
+        db_max = md.get("wavenumber_max", None)
 
         req_min = load_wavenum_min
         req_max = load_wavenum_max
@@ -933,6 +933,7 @@ def hdf2df(
                 warnings.warn(
                     f"Requested range [{req_min}, {req_max}] outside database range [{db_min}, {db_max}]",
                     UserWarning,
+                    stacklevel=2,
                 )
 
     # Sanity Checks if loading the full file
