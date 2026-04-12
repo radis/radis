@@ -3497,7 +3497,10 @@ class Spectrum(object):
                 self._q["wavespace"], w_conv
             ):
                 raise AssertionError(
-                    "Wavespace of convolved arrays is different, cannot store it in the same Spectrum. You can use Spectrum.apply_slit(inplace=False) to return a new spectrum with only the convolved arrays"
+                    "Wavespace of convolved arrays are different and they cannot be "
+                    "stored in the same Spectrum object. You can use "
+                    "Spectrum.apply_slit(inplace=False) to return a new spectrum "
+                    "with only the convolved arrays."
                 )
             for q in I_conv_slices.keys():
                 # Merge all slices
