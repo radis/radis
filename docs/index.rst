@@ -21,12 +21,12 @@ with RADIS, or with other spectral codes.
 Install
 ===============
 
-**We recommend** using the latest stable version of RADIS available from `GitHub <https://github.com/radis/radis>`_ . You can refer to this :ref:`detailed installation procedure <label_install>` if needed.
-A stable version of RADIS (0.16.3) is available on PyPI and you can use::
+**We recommend** installing the latest stable version of RADIS from `PyPI <https://pypi.org/project/radis/>`_ (|badge_pypi|)::
 
     pip install radis
 
-For those prefering an installation via ``conda`` from the conda-forge channel but we cannot ensure that conda-forge will be the latest version::
+For the development version from `GitHub <https://github.com/radis/radis>`_, refer to the :ref:`detailed installation procedure <label_install>`.
+For those preferring installation via ``conda`` from conda-forge (which may not always host the latest version), use:
 
     conda install radis -c conda-forge
 
@@ -120,9 +120,7 @@ the work! See :ref:`How to cite? <label_cite>`
 
 ---------------------------------------------------------------------
 
-`Q&A Forum <https://groups.google.com/forum/#!forum/radis-radiation>`__
-
-|badge_pypi|  |badge_pypistats| |badge_article| |badge_docs| |badge_license| |badge_contributors| |badge_travis| |badge_coverage| |badge_binder| |badge_gitter| |badge_slack|
+|badge_pypi|  |badge_pypistats| |badge_article| |badge_docs| |badge_license| |badge_contributors| |badge_tests| |badge_coverage| |badge_binder| |badge_gitter| |badge_slack|
 
 |badge_stars|
 
@@ -147,8 +145,8 @@ the work! See :ref:`How to cite? <label_cite>`
                    :target: ./License.md
                    :alt: License
 
-.. |badge_travis| image:: https://img.shields.io/travis/radis/radis.svg
-                  :target: https://travis-ci.com/radis/radis
+.. |badge_tests| image:: https://github.com/radis/radis/actions/workflows/tests.yml/badge.svg
+                  :target: https://github.com/radis/radis/actions/workflows/tests.yml
                   :alt: Tests
 
 .. |badge_coverage| image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg
