@@ -21,7 +21,6 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 
 """
 
-
 import numpy as np
 import pytest
 from numpy import isclose
@@ -41,10 +40,15 @@ from radis.phys.convert import (
     cm2hz,
     cm2J,
     cm2K,
+    cm2nm,
+    cm2nm_air,
     dcm2dnm,
+    dcm2dnm_air,
     dhz2dnm,
+    div_safe,
     dnm2dcm,
     dnm2dhz,
+    dnm_air2dcm,
     eV2cm,
     eV2J,
     eV2K,
@@ -54,8 +58,10 @@ from radis.phys.convert import (
     nm2cm,
     nm2eV,
     nm2hz,
+    nm_air2cm,
     torr2atm,
     torr2bar,
+    zero2nan,
 )
 from radis.phys.units import conv2, is_homogeneous
 
@@ -105,6 +111,36 @@ def test_convert(verbose=True, *args, **kwargs):
 
 
 @pytest.mark.fast
+def test_air_conversions(verbose=True, *args, **kwargs):
+    """Test air wavelength conversion functions."""
+    wl_cm1 = 15000  # cm-1
+    wl_nm_air = cm2nm_air(wl_cm1)
+    # Round-trip consistency
+    assert isclose(nm_air2cm(wl_nm_air), wl_cm1, rtol=1e-6)
+    assert wl_nm_air < cm2nm(wl_cm1)  # air < vacuum
+    # Hard-coded reference values (Ciddor 1996 dispersion formula)
+    assert isclose(wl_nm_air, 666.483, rtol=1e-4)
+    assert isclose(cm2nm(wl_cm1), 666.667, rtol=1e-4)
+    # Delta conversions
+    fwhm_cm, nu_0 = 10, 15000
+    fwhm_nm_air = dcm2dnm_air(fwhm_cm, nu_0)
+    assert isclose(dnm_air2dcm(fwhm_nm_air, cm2nm_air(nu_0)), fwhm_cm, rtol=1e-6)
+    assert isclose(fwhm_nm_air, 0.4443, rtol=1e-3)
+
+
+@pytest.mark.fast
+def test_safe_division_functions(verbose=True, *args, **kwargs):
+    """Test zero2nan and div_safe helper functions."""
+    assert np.isnan(zero2nan(0)) and zero2nan(5) == 5
+    arr = np.array([0.0, 1.0, 2.0, 0.0, 3.0])
+    result = zero2nan(arr)
+    assert np.isnan(result[0]) and np.isnan(result[3]) and result[2] == 2.0
+    safe_reciprocal = div_safe(lambda x: 1 / x)
+    result = safe_reciprocal(np.array([1.0, 2.0, 0.0, 4.0]))
+    assert result[0] == 1.0 and result[1] == 0.5 and np.isnan(result[2])
+
+
+@pytest.mark.fast
 def test_units(verbose=True, *args, **kwargs):
 
     # Test unit-ware arrays
@@ -133,8 +169,11 @@ def test_units(verbose=True, *args, **kwargs):
 
 def _run_testcases(*args, **kwargs):
 
-    assert test_convert(*args, **kwargs)
-    assert test_units(*args, **kwargs)
+    test_convert(*args, **kwargs)
+    test_air_conversions(*args, **kwargs)
+    test_safe_division_functions(*args, **kwargs)
+    test_units(*args, **kwargs)
+    return True
 
 
 if __name__ == "__main__":

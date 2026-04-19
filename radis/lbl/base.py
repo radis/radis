@@ -331,16 +331,17 @@ class BaseFactory(DatabankLoader):
         except AssertionError as err:
             if self.dataframe_type == "pandas":
                 index = np.isnan(df[column]).idxmax()
+                fix_idea = ""
                 if self.input.species == "CO2":
                     fix_idea = (
-                        "If using HITEMP2010 for CO2, some lines are unlabelled and therefore cannot be used at "
+                        "\nIf using HITEMP2010 for CO2, some lines are unlabelled and therefore cannot be used at "
                         "equilibrium. This is a known issue of the HITEMP database and will soon be fixed in the "
                         "edition. In the meantime you can use:\n 'sf.df0.drop(sf.df0.index[sf.df0['v1u']==-1], inplace=True)' "
                         "where 'sf' is SpectrumFactory object"
                     )
                 raise AssertionError(
                     f"{column}=NaN in line database at index {index}"
-                    + f" corresponding to Line:\n {get_print_full(df.loc[index]) + fix_idea}"
+                    + f" corresponding to Line:\n {get_print_full(df.loc[index])}{fix_idea}"
                 ) from err
             elif self.dataframe_type == "vaex":
                 if self.input.species == "CO2":
