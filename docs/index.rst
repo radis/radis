@@ -21,12 +21,11 @@ with RADIS, or with other spectral codes.
 Install
 ===============
 
-**We recommend** installing the latest stable version of RADIS from `PyPI <https://pypi.org/project/radis/>`_ (|badge_pypi|)::
+**We recommend** installing the latest stable version of RADIS from `PyPI <https://pypi.org/project/radis/>`_ |badge_pypi|
 
     pip install radis
 
-For the development version from `GitHub <https://github.com/radis/radis>`_, refer to the :ref:`detailed installation procedure <label_install>`.
-For those preferring installation via ``conda`` from conda-forge (which may not always host the latest version), use:
+For the development version from `GitHub <https://github.com/radis/radis>`_, refer to the :ref:`detailed installation procedure <label_install>`. For those preferring installation via ``conda`` from conda-forge (which may not always host the latest version), use:
 
     conda install radis -c conda-forge
 
