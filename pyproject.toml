@@ -131,12 +131,3 @@ exclude = ["radis.test*", "docs*", "examples*", "test*"]
 
 [tool.setuptools.dynamic]
 version = {file = "radis/__version__.txt"}
-
-# Note: The following RST cleanup functionality was previously used when README was in RST format
-# It's preserved here for reference in case it's needed in the future:
-#
-# RST cleanup for PyPI compatibility included:
-# - Removing Sphinx-only roles (:abbr:, :ref:, :term:, :dfn:, etc.)
-# - Converting Sphinx directives (.. doctest, .. plot::, etc.)
-# - Handling special cases for RADIS documentation
-# For full details see the original yield_sphinx_only_markup function in setup.py
