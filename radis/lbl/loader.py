@@ -828,15 +828,7 @@ class DatabankLoader(object):
         See Also
         --------
         :py:func:`radis.lbl.factory.SpectrumFactory.print_perf_profile"""
-
-        db_loading_time = None
-        if self.profiler is not None and "db_loading" in self.profiler.final:
-            db_loading_time = self.profiler.final["db_loading"]
-
         self.profiler = Profiler(verbose)
-
-        if db_loading_time is not None:
-            self.profiler.final["db_loading"] = db_loading_time
 
     def _reset_references(self):
         """Reset :py:class:`~radis.tools.track_refs.RefTracker`"""
