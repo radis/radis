@@ -29,7 +29,7 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Validate release tag matches package version
+      - name: Validate release tag matches package version in radis/__version__.txt
         run: |
           PKG_VERSION=$(cat radis/__version__.txt | tr -d '[:space:]')
           TAG_VERSION="${{ github.event.release.tag_name }}"

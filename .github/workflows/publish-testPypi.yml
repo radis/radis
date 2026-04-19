@@ -14,10 +14,28 @@
 name: Upload Python Package to test PyPI
 
 on:
+  workflow_dispatch:
+    inputs:
+      git-ref:
+        description: "Git ref (branch or tag) to build and publish from"
+        required: false
+        default: "develop"
   push:
     tags:
       - 'v[0-9]*'   # matches v0.16.4, v1.0.0, etc.
       - '[0-9]*'    # matches 0.16.4, 1.0.0, etc. (tagless style)
+
+# How to run it manually:
+#
+# 1. In GitHub, open Actions.
+# 2. Select Upload Python Package to test PyPI.
+# 3. Click Run workflow.
+# 4. Choose the branch containing this workflow file.
+# 5. Set git-ref to what you want to test:
+#    develop
+#    master
+#    a specific tag like v0.16.4
+# 6. Click Run.
 
 permissions:
   contents: read
@@ -28,6 +46,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.git-ref || github.ref }}
 
       - uses: actions/setup-python@v5
         with:
