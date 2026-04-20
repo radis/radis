@@ -6,8 +6,6 @@ Summary
 
 GEISA database parser
 
------------------------
-
 Defines :py:func:`~radis.io.fetch_geisa` based on :py:class:`~radis.api.geisaapi.GEISADatabaseManager`
 
 

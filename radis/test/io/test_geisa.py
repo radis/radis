@@ -9,7 +9,7 @@ Examples
 Run all tests::
         pytest       (in command line, in project folder)
 
--------------------------------------------------------------------------------
+
 """
 
 import astropy.units as u

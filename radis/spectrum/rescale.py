@@ -9,7 +9,7 @@ unload the spectrum.py file
 
 Equations derived from the code using `pytexit <https://pytexit.readthedocs.io/en/latest/>`__
 
--------------------------------------------------------------------------------
+
 """
 
 from warnings import warn

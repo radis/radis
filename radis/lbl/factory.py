@@ -74,7 +74,6 @@ for Developers:
   :py:meth:`~radis.lbl.loader.DatabankLoader._build_partition_function_interpolator`
 
 
-----------
 """
 
 from typing import Union

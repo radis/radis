@@ -38,7 +38,7 @@ a condition was added afterwards to the Spectrum class)::
 You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
 of the website.
 
--------------------------------------------------------------------------------
+
 """
 
 # TODO:
@@ -1834,7 +1834,7 @@ class SpecDatabase(SpecList):
 
     Other Parameters
     ----------------
-    *input for :class:`~joblib.parallel.Parallel` loading of database*
+    Input for :class:`~joblib.parallel.Parallel` loading of database:
 
     nJobs: int
         Number of processors to use to load a database (useful for big

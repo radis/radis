@@ -22,7 +22,6 @@ vib_lvl_name_cdsd_pc,
 vib_lvl_name_cdsd_pcN
 
 
-----------
 """
 
 # %% Vibrational levels names

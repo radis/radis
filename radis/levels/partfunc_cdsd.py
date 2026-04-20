@@ -16,7 +16,7 @@ Which inherit from:
 - :class:`~radis.levels.partfunc.RovibParFuncTabulator`
 
 
--------------------------------------------------------------------------------
+
 """
 
 import time

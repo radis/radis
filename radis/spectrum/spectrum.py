@@ -43,7 +43,7 @@ they have been created, with
 
 More in :ref:`The Spectrum object <label_spectrum>`.
 
--------------------------------------------------------------------------------
+
 
 
 """
@@ -785,7 +785,7 @@ class Spectrum(object):
             sorts the arrays in ``file`` by wavespace. Convenient way to load
             a file where points have been manually added at the end. Default ``False``.
 
-        *Optional Spectrum parameters*
+        **Optional Spectrum parameters:**
 
         conditions: dict
             physical conditions and calculation parameters

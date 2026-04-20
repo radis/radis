@@ -26,7 +26,7 @@ Typical results on an XPS 15 laptop here::
     >>> Calculated with RADIS in 1.65s
 
 
--------------------------------------------------------------------------------
+
 
 """
 

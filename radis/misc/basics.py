@@ -3,7 +3,6 @@
 
 @author: Erwan
 Small functions used in other procedures
--------------------------------------------------------------------------------
 """
 
 import os

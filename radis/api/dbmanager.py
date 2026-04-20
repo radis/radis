@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" """
+"""Database manager for RADIS line databases."""
 
 import os
 import shutil
@@ -118,7 +118,8 @@ class DatabaseManager(object):
 
     Other Parameters
     ----------------
-    *input for :class:`~joblib.parallel.Parallel` loading of database*
+    Input for :class:`~joblib.parallel.Parallel` loading of database:
+
     parallel: bool
         if ``True``, use parallel loading.
         Default ``True``.

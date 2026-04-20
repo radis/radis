@@ -18,7 +18,6 @@ Routine Listing
 - :func:`~radis.misc.curve.curve_divide`
 
 
--------------------------------------------------------------------------------
 """
 
 import warnings
