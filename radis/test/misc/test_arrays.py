@@ -13,11 +13,16 @@ import pytest
 # from radis import get_residual
 # from radis.lbl.factory import SpectrumFactory
 from radis.misc.arrays import (  # add_at,
+    anynan,
     arange_len,
+    array_allclose,
     autoturn,
     bining,
     calc_diff,
     centered_diff,
+    count_nans,
+    evenly_distributed,
+    evenly_distributed_fast,
     find_first,
     find_nearest,
     first_nonnan_index,
@@ -25,10 +30,115 @@ from radis.misc.arrays import (  # add_at,
     is_sorted_backward,
     last_nonnan_index,
     logspace,
+    nantrapz,
     non_zero_values_around,
+    norm,
+    norm_on,
+    numpy_add_at,
+    scale_to,
 )
 
 # from radis.test.utils import setup_test_line_databases
+
+
+@pytest.mark.fast
+def test_norm():
+    """Test norm() function."""
+    a = np.array([1, 2, 3, 4, 5])
+    assert norm(a)[-1] == 1.0 and np.allclose(norm(a), a / 5)
+    assert np.allclose(norm(a, normby=np.array([2, 4, 6, 8, 10])), a / 10)
+    assert np.allclose(norm(a, how="mean"), a / np.mean(np.abs(a)))
+    assert norm(np.array([1, np.nan, 3, 4, 5]))[-1] == 1.0
+    with pytest.raises(ValueError):
+        norm(a, how="invalid")
+
+
+@pytest.mark.fast
+def test_norm_on():
+    """Test norm_on() function."""
+    a = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], dtype=float)
+    w = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=float)
+    assert np.max(np.abs(norm_on(a, w, wmin=2, wmax=5))) > 0
+    assert np.allclose(norm_on(a, w), a / 10)
+    assert norm_on(a, w, wmin=2, wmax=5, how="mean") is not None
+
+
+@pytest.mark.fast
+def test_scale_to():
+    """Test scale_to() function."""
+    a, b = np.array([1, 2, 3, 4, 5]), np.array([10, 20, 30, 40, 50])
+    assert np.max(np.abs(scale_to(a, b))) == np.max(np.abs(b))
+    assert np.max(np.abs(scale_to(a, b, k=2))) == 2 * np.max(np.abs(b))
+
+
+@pytest.mark.fast
+def test_array_allclose():
+    """Test array_allclose() function."""
+    a, b = np.array([1, 2, 3]), np.array([1, 2, 3])
+    assert array_allclose(a, b)
+    assert not array_allclose(a, np.array([1, 2]))
+    assert not array_allclose(a, np.array([1, 2, 4]))
+    assert array_allclose(a, np.array([1.0, 2.0, 3.0001]), atol=1e-3)
+    assert array_allclose(np.array([1, np.nan, 3]), np.array([1, np.nan, 3]))
+    arr_nan = np.array([1, np.nan, 3])
+    assert not array_allclose(arr_nan, arr_nan, equal_nan=False)
+
+
+@pytest.mark.fast
+def test_nantrapz():
+    """Test nantrapz() function."""
+    I, w = np.array([1.0, 2.0, 3.0, 4.0, 5.0]), np.array([0.0, 1.0, 2.0, 3.0, 4.0])
+    # baseline behavior without NaNs (matches np.trapezoid)
+    assert np.isclose(nantrapz(I, w), np.trapezoid(I, w))
+    # feature test to ensure NaN values are handled gracefully
+    assert not np.isnan(nantrapz(np.array([1.0, np.nan, 3.0, 4.0, 5.0]), w))
+
+
+@pytest.mark.fast
+def test_evenly_distributed():
+    """Test evenly_distributed() function."""
+    assert evenly_distributed(np.linspace(0, 10, 100))
+    assert not evenly_distributed(np.array([0, 1, 2, 4, 8, 16]))
+    w = np.linspace(0, 10, 100)
+    w[50] += 1e-4
+    assert evenly_distributed(w, atolerance=1e-3)
+    assert not evenly_distributed(w, atolerance=1e-5)
+
+
+@pytest.mark.fast
+def test_evenly_distributed_fast():
+    """Test evenly_distributed_fast() function."""
+    assert evenly_distributed_fast(np.linspace(0, 10, 100))
+    assert not evenly_distributed_fast(np.array([0, 1, 2, 3, 5]))
+
+
+@pytest.mark.fast
+def test_anynan():
+    """Test anynan() function."""
+    assert anynan(np.array([1, 2, np.nan, 4, 5]))
+    assert not anynan(np.array([1, 2, 3, 4, 5]))
+
+
+@pytest.mark.fast
+def test_count_nans():
+    """Test count_nans() function."""
+    assert count_nans(np.array([1, 2, 3, 4, 5])) == 0
+    assert count_nans(np.array([1, np.nan, 3, np.nan, 5])) == 2
+    assert count_nans(np.array([np.nan, np.nan, np.nan])) == 3
+
+
+@pytest.mark.fast
+def test_numpy_add_at():
+    """Test numpy_add_at() function."""
+    LDM = np.zeros((5, 3, 3), dtype=np.float64)
+    numpy_add_at(
+        LDM,
+        np.array([0, 1, 2, 0]),
+        np.array([0, 1, 2, 0]),
+        np.array([0, 1, 2, 0]),
+        np.array([1.0, 2.0, 3.0, 4.0]),
+    )
+    assert LDM[0, 0, 0] == 5.0 and LDM[1, 1, 1] == 2.0 and LDM[2, 2, 2] == 3.0
 
 
 @pytest.mark.fast

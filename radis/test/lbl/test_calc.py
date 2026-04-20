@@ -1015,5 +1015,5 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
 # --------------------------
 if __name__ == "__main__":
-    test_non_air_diluent_calc()
+    test_all_calc_methods_CO2pcN()
     # printm("Testing calc.py: ", _run_testcases(verbose=True))

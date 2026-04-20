@@ -729,7 +729,7 @@ calculation steps at runtime. Example with ``verbose=3``::
                       verbose=3,
                       )
 
-Performance profiles are kept in the output spectrum ``conditions['profiler']`` dictionary.
+Performance profiles are kept in the output spectrum ``Spectrum.profiler`` dictionary.
 You can also use the :py:meth:`~radis.lbl.factory.SpectrumFactory.print_perf_profile`
 method in the SpectrumFactory object or the :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile`
 method in the Spectrum object to print them in the console :

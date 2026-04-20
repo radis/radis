@@ -6,6 +6,7 @@ Defines the :py:class:`~radis.api.hdf5.DataFileManager` class
 import os
 import pathlib
 import sys
+import warnings
 from os.path import abspath, exists, expanduser, splitext
 from time import time
 
@@ -70,7 +71,7 @@ def update_pytables_to_vaex(fname, remove_initial=False, verbose=True, key="df")
 
 class HDF5Manager(object):
     def __init__(*args, **kwargs):
-        raise DeprecationWarning("HDF5Manager replaced with DataFileManager")
+        raise NotImplementedError("HDF5Manager replaced with DataFileManager")
 
 
 class DataFileManager(object):
@@ -186,7 +187,14 @@ class DataFileManager(object):
         elif self.engine == "pytables-fixed":
             assert not append
             # export dataframe
-            df.to_hdf(file, key, format="fixed", mode="w", complevel=9, complib="blosc")
+            df.to_hdf(
+                path_or_buf=file,
+                key=key,
+                format="fixed",
+                mode="w",
+                complevel=9,
+                complib="blosc",
+            )
         elif self.engine == "vaex":
             if isinstance(df, pd.DataFrame):
                 df = vaex.from_pandas(df)
@@ -915,6 +923,25 @@ def hdf2df(
 
     # Read and add metadata in the DataFrame
     metadata = manager.read_metadata(fname)
+
+    # warning when requested wavenumber range lies outside DB metadata
+    md = metadata[0] if isinstance(metadata, list) and len(metadata) > 0 else metadata
+    if isinstance(md, dict):
+        db_min = md.get("wavenumber_min", None)
+        db_max = md.get("wavenumber_max", None)
+
+        req_min = load_wavenum_min
+        req_max = load_wavenum_max
+
+        if db_min is not None and db_max is not None:
+            if (req_min is not None and req_min < db_min) or (
+                req_max is not None and req_max > db_max
+            ):
+                warnings.warn(
+                    f"Requested range [{req_min}, {req_max}] outside database range [{db_min}, {db_max}]",
+                    UserWarning,
+                    stacklevel=2,
+                )
 
     # Sanity Checks if loading the full file
     selection = isotope or load_wavenum_min or load_wavenum_max
