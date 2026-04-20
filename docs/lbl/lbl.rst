@@ -20,9 +20,6 @@ Calculations are performed within the :class:`~radis.lbl.factory.SpectrumFactory
 .. toctree::
    :maxdepth: 3
 
-   gpu
-
-
 .. include:: _databases.rst
 
 Calculating spectra
