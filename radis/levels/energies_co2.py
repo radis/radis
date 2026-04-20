@@ -12,7 +12,7 @@ In both cases, you will need to overwrite the :meth:`~radis.db.classes.Electroni
 method. See ``radis.db.molecules.py``
 
 
-----------------------------------------------------------------------------------------------
+
 """
 
 

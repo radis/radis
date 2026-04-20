@@ -12,7 +12,6 @@ References
 
 CDSD-4000 manual
 
--------------------------------------------------------------------------------
 """
 
 # TODO: remove wangl2  after loading database (wangl is enough, with 1=e and 2=f)

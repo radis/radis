@@ -3,7 +3,7 @@
 Functions and constants used in :class:`~radis.spectrum.spectrum.Spectrum`
 object
 
--------------------------------------------------------------------------------
+
 
 
 """

@@ -41,7 +41,6 @@ Notes
 RADIS includes automatic rebuilding of Deprecated cache files + a global variable
 to force regenerating them after a given version. See ``"OLDEST_COMPATIBLE_VERSION"``
 key in :py:attr:`radis.config`
--------------------------------------------------------------------------------
 """
 # TODO: on use_cache functions, make a 'clean' / 'reset' option to delete / regenerate
 # cache files
@@ -937,7 +936,7 @@ class DatabankLoader(object):
                 if using ``'equilibrium'``, not all parameters will be available
                 for a Spectrum :py:func:`~radis.spectrum.spectrum.Spectrum.line_survey`.
 
-        *Other arguments are related to how to open the files*
+        **Other arguments are related to how to open the files:**
 
         Notes
         -----
@@ -1753,7 +1752,8 @@ class DatabankLoader(object):
             ``True``, includes off-range, neighbouring lines that contribute
             because of lineshape broadening. The ``neighbour_lines``
             parameter is used to determine the limit. Default ``True``.
-        *Other arguments are related to how to open the files:*
+        **Other arguments are related to how to open the files:**
+
         drop_columns: list
             columns names to drop from Line DataFrame after loading the file.
             Not recommended to use, unless you explicitly want to drop information

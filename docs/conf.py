@@ -20,9 +20,13 @@
 
 import os
 import sys
+import warnings
 
 import sphinx_gallery.gen_rst
 from sphinx_gallery.sorting import FileNameSortKey
+
+# Suppress matplotlib font warnings during doc build
+warnings.filterwarnings("ignore", message="findfont: Font family")
 
 # %% Custom Example header
 # https://github.com/sphinx-gallery/sphinx-gallery/issues/978
@@ -85,7 +89,6 @@ extensions = [
     #'numpydoc',
     #'sphinxcontrib.napoleon',
     "sphinx.ext.napoleon",
-    "sphinx_autodoc_defaultargs",
     "sphinx.ext.intersphinx",
     "sphinx.ext.inheritance_diagram",
     # "sphinxcontrib.apidoc",  # not needed, we run run_apidoc() manually implemented below
@@ -301,7 +304,7 @@ html_theme_options = {
         "RADIS Website": "https://radis.github.io/",
         "Video Tutorials": "https://www.youtube.com/channel/UCO-7NXkubTAiGGxXmvtQlsA",
     },
-    "collapse_navigation": True,
+    # "collapse_navigation": True,  # not supported by alabaster theme
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -355,16 +358,6 @@ html_sidebars = {
 }
 
 
-# The default values of all documented arguments, and undocumented arguments if enabled, are automatically detected and added to the docstring.
-# It also detects existing documentation of default arguments with the text unchanged.
-
-rst_prolog = (
-    """
-.. |default| raw:: html
-
-    <div class="default-value-section">"""
-    + ' <span class="default-value-label">Default:</span>'
-)
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
 # html_additional_pages = {}
