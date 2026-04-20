@@ -259,7 +259,7 @@ def drop_object_format_columns(df, verbose=True):
     elif (
         not isinstance(vaex, NotInstalled) and df_type == vaex.dataframe.DataFrameLocal
     ):  # no objects in vaex
-        df.drop(cols_to_drop, axis=1, inplace=True)
+        df.drop(cols_to_drop, inplace=True)
     else:
         raise NotImplementedError(df_type)
 
