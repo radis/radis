@@ -838,8 +838,8 @@ def read_and_write_chunked_for_CO2(
             register_partial_hitemp_co2(file_entry)
 
             # Always remove .par file after processing
-            if os.path.exists(file):
-                os.remove(file)
+            # if os.path.exists(file):
+            #     os.remove(file)
 
             pbar.update(1)
 
