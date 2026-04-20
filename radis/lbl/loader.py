@@ -820,7 +820,7 @@ class DatabankLoader(object):
         # TODO @dev : Refactor : turn it into a Dictionary? (easier to store as JSON Etc.)
 
         # Profiler
-        self.profiler = None
+        self.profiler = Profiler(self.verbose)
 
     def _reset_profiler(self, verbose):
         """Reset :py:class:`~radis.misc.profiler.Profiler`
@@ -828,7 +828,17 @@ class DatabankLoader(object):
         See Also
         --------
         :py:func:`radis.lbl.factory.SpectrumFactory.print_perf_profile"""
+        db_loading = None
+        if (
+            self.profiler is not None
+            and "spectrum_calculation" not in self.profiler.final
+        ):
+            db_loading = self.profiler.final.get("db_loading")
+
         self.profiler = Profiler(verbose)
+
+        if db_loading is not None:
+            self.profiler.final["db_loading"] = db_loading
 
     def _reset_references(self):
         """Reset :py:class:`~radis.tools.track_refs.RefTracker`"""
@@ -1083,8 +1093,6 @@ class DatabankLoader(object):
         # | metadata to ensures that it is redownloaded if necessary.
         # | see implementation in load_databank.
 
-        if self.profiler is None:
-            self.profiler = Profiler(self.verbose)
         self.profiler.start("db_loading", 1)
 
         # Check inputs
@@ -1785,8 +1793,6 @@ class DatabankLoader(object):
         ----------
         .. [1] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
         """
-        if self.profiler is None:
-            self.profiler = Profiler(self.verbose)
         self.profiler.start("db_loading", 1)
 
         # %% Check inputs
