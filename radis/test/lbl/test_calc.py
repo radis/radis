@@ -589,9 +589,12 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **k
 
     On the old NeQ package the test used [HITEMP-2010]_
 
-    Starting from RADIS 1.0.1, the test was run on [HITRAN-2020]_ for CO2.
-    Now uses CO from HITRAN-CO-TEST (local test database), which does not
-    require any download and has 3 isotopes (isotopes 1, 2, 3) in 2000-2300 cm-1.
+    Starting from RADIS 1.0.1, the test was run on [HITRAN-2020]_ for CO2
+    through online fetch.
+
+    This variant uses the embedded HITRAN-CO2-TEST local database instead,
+    so it remains a non-equilibrium CO2 regression test without network
+    download.
 
     """
     from radis.test.utils import setup_test_line_databases
@@ -600,23 +603,23 @@ def test_eq_vs_noneq_isotope(verbose=True, plot=False, warnings=True, *args, **k
     Tgas = 1500
 
     sf = SpectrumFactory(
-        wavenum_min=2000,
-        wavenum_max=2300,
+        wavelength_min=4165,
+        wavelength_max=4200,
         mole_fraction=1,
         path_length=1,
         cutoff=1e-25,
-        molecule="CO",
-        isotope="1,2",
+        molecule="CO2",
+        isotope="1",
         verbose=verbose,
     )
     sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
     sf.warnings["NegativeEnergiesWarning"] = "ignore"
     sf.warnings["HighTemperatureWarning"] = "ignore"
-    sf.load_databank("HITRAN-CO-TEST", load_columns="noneq")
+    sf.load_databank("HITRAN-CO2-TEST", load_columns="noneq")
     s_nq = sf.non_eq_spectrum(Tvib=Tgas, Trot=Tgas, name="Non-eq")
     s_eq = sf.eq_spectrum(Tgas=Tgas, name="Eq")
 
-    rtol = 7.2e-3  # 2nd isotope calculated with placeholder energies
+    rtol = 7.2e-3  # empirical tolerance for Eq vs non-Eq consistency check
     match_eq_vs_non_eq = s_eq.compare_with(
         s_nq, spectra_only="abscoeff", rtol=rtol, plot=plot
     )
@@ -1014,5 +1017,5 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
 # --------------------------
 if __name__ == "__main__":
-    test_non_air_diluent_calc()
+    test_all_calc_methods_CO2pcN()
     # printm("Testing calc.py: ", _run_testcases(verbose=True))
