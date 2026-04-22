@@ -176,27 +176,31 @@ def test_calc_spectrum(verbose=True, plot=False, warnings=True, *args, **kwargs)
     # Update on 14/11/21: after switching from HITRAN fetched by astroquery (partial range)
     # to HITRAN fetched by HAPI (full database) > atol=1e-6 fails, because of
     # numerical errors in how the two databases are stored. Switched to rtol=1e-3
+    # Update after PR #982 (issue #707): Spectrum.plot/get(wunit='nm') now
+    # respects the medium from conditions. Since this spectrum is calculated
+    # with medium='vacuum', get(wunit='nm') now returns vacuum wavelengths
+    # (previously it always returned air wavelengths).
     w_ref = np.array(
         [
-            4197.60321744,
-            4195.84148905,
-            4194.08123884,
-            4192.32246493,
-            4190.56516548,
-            4188.80933862,
-            4187.05498252,
-            4185.30209532,
-            4183.55067518,
-            4181.80072025,
-            4180.05222871,
-            4178.30519870,
-            4176.55962842,
-            4174.81551601,
-            4173.07285967,
-            4171.33165756,
-            4169.59190786,
-            4167.85360877,
-            4166.11675846,
+            4198.74793337,
+            4196.98572485,
+            4195.22499491,
+            4193.46574168,
+            4191.70796331,
+            4189.95165793,
+            4188.19682371,
+            4186.44345879,
+            4184.69156133,
+            4182.94112949,
+            4181.19216142,
+            4179.44465530,
+            4177.69860928,
+            4175.95402155,
+            4174.21089028,
+            4172.46921363,
+            4170.72898980,
+            4168.99021697,
+            4167.25289331,
         ]
     )
 
