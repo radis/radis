@@ -7,6 +7,8 @@ Created on Mon May  7 17:34:52 2018
 
 import astropy.units as u
 import matplotlib.pyplot as plt
+
+plt.ion()
 import numpy as np
 import pytest
 
@@ -62,7 +64,6 @@ def test_linestrength_calculations(*args, **kwargs):
     sf.load_databank(
         path=getTestFile("hitran_co_3iso_2000_2300cm.par"),
         format="hitran",
-        parfuncfmt="hapi",
     )
 
     # TODO : write an example of all the calculation steps in SpectrumFactory
@@ -85,7 +86,7 @@ def test_linestrength_calculations(*args, **kwargs):
 
 
 @pytest.mark.fast
-def test_export_populations(plot=True, verbose=True, warnings=True, *args, **kwargs):
+def test_export_populations(plot=False, verbose=True, warnings=True, *args, **kwargs):
     """Check populations calculated in the nonequilibrium module are exported in Spectrum.
 
     Compare with hardcoded values
@@ -149,7 +150,7 @@ def test_export_populations(plot=True, verbose=True, warnings=True, *args, **kwa
 
 @pytest.mark.fast
 def test_export_rovib_fractions(
-    plot=True, verbose=True, warnings=True, *args, **kwargs
+    plot=False, verbose=True, warnings=True, *args, **kwargs
 ):
     """Compare rovib fraction (nu_vib, nl_vib, nu_rot, nl_rot) are calculated
     in the nonequilibrium module
@@ -202,7 +203,7 @@ def test_export_rovib_fractions(
 
 @pytest.mark.fast
 def test_populations_CO2_hamiltonian(
-    plot=True, verbose=True, warnings=True, *args, **kwargs
+    plot=False, verbose=True, warnings=True, *args, **kwargs
 ):
     """Calculate nonequilibrium modes with the CO2 Hamiltonian
 
@@ -273,7 +274,7 @@ def test_populations_CO2_hamiltonian(
 
 
 # @pytest.mark.needs_connection
-def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
+def test_optically_thick_limit_1iso(verbose=True, plot=False, *args, **kwargs):
     """Test that we find Planck in the optically thick limit
 
     In particular, this test will fail if :
@@ -405,7 +406,7 @@ def test_optically_thick_limit_1iso(verbose=True, plot=True, *args, **kwargs):
         radis.config["DEBUG_MODE"] = DEBUG_MODE
 
 
-def test_optically_thick_limit_2iso(verbose=True, plot=True, *args, **kwargs):
+def test_optically_thick_limit_2iso(verbose=True, plot=False, *args, **kwargs):
     """Test that we find Planck in the optically thick limit
 
     In particular, this test will fail if :
@@ -814,16 +815,77 @@ def test_input_wunit(plot=True, *args, **kwargs):
     )
 
 
-def _run_testcases(verbose=True, plot=True):
+@pytest.mark.fast
+def test_print_conditions():
+    """Test print_conditions method of SpectrumFactory."""
+    setup_test_line_databases()
+    sf = SpectrumFactory(
+        wavenum_min=2000,
+        wavenum_max=2100,
+        wstep=0.01,
+        cutoff=1e-30,
+        path_length=0.1,
+        mole_fraction=0.01,
+        isotope=[1],
+        verbose=False,
+    )
+    sf.load_databank("HITRAN-CO-TEST")
+    # Hitting the prepend branch to ensure full test coverage
+    # and verify that it executes without raising exceptions.
+    assert sf.print_conditions() is None
+    assert sf.print_conditions(prepend="Test:") is None
 
-    # test_input_wunit()
-    # test_linestrength_calculations()
-    # test_export_populations(plot=plot, verbose=verbose)
-    # test_export_rovib_fractions(plot=plot, verbose=verbose)
-    # test_populations_CO2_hamiltonian(plot=plot, verbose=verbose)
-    # test_optically_thick_limit_1iso(plot=plot, verbose=verbose)
-    test_optically_thick_limit_2iso(plot=plot, verbose=verbose)
-    # test_get_wavenumber_range()
+
+@pytest.mark.fast
+def test_get_energy_levels_with_conditions():
+    """Test get_energy_levels method with conditions parameter."""
+    setup_test_line_databases()
+    sf = SpectrumFactory(
+        wavenum_min=2283,
+        wavenum_max=2285,
+        wstep=0.001,
+        cutoff=1e-30,
+        path_length=0.1,
+        mole_fraction=0.01,
+        isotope=[1],
+        verbose=False,
+    )
+    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+    sf.warnings["NegativeEnergiesWarning"] = "ignore"
+    sf.load_databank("HITEMP-CO2-TEST", load_energies=True, load_columns="noneq")
+    sf.non_eq_spectrum(Tvib=300, Trot=300)
+    energies_all = sf.get_energy_levels("CO2", 1, "X")
+    energies_filtered = sf.get_energy_levels("CO2", 1, "X", conditions="j==0")
+    assert len(energies_all) > 0 and len(energies_filtered) <= len(energies_all)
+
+
+@pytest.mark.fast
+def test_assert_no_nan_error_handling():
+    """Test assert_no_nan raises proper error when NaN values present."""
+    import pandas as pd
+
+    setup_test_line_databases()
+    sf = SpectrumFactory(
+        wavenum_min=2000,
+        wavenum_max=2100,
+        wstep=0.01,
+        cutoff=1e-30,
+        path_length=0.1,
+        mole_fraction=0.01,
+        isotope=[1],
+        verbose=False,
+    )
+    sf.load_databank("HITRAN-CO-TEST")
+    with pytest.raises(AssertionError):
+        sf.assert_no_nan(pd.DataFrame({"col": [1.0, np.nan]}), "col")
+    sf.assert_no_nan(pd.DataFrame({"col": [1.0, 2.0]}), "col")
+
+
+def _run_testcases(verbose=True, plot=True):
+    test_export_populations(plot=plot, verbose=verbose)
+    test_print_conditions()
+    test_get_energy_levels_with_conditions()
+    test_assert_no_nan_error_handling()
 
 
 if __name__ == "__main__":

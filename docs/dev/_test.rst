@@ -1,8 +1,5 @@
 .. _label_dev_test:
 
-Testing RADIS
-=============
-
 Test Status
 -----------
 
@@ -41,11 +38,11 @@ Additional tags for user-defined [HITEMP-2010]_ databases, as described in the :
 - **needs_db_HITEMP_CO_DUNHAM**: Requires the HITEMP-CO-DUNHAM database in ``~/radis.json``.
 - **needs_db_CDSD_HITEMP_PC**: Requires the CDSD-HITEMP-PC database in ``~/radis.json``.
 
-The default test routine executed on Travis (see the ``radis/.travis.yml`` file) is::
+The default test routine executed on GitHub actions (see the ``radis/.travis.yml`` file) are::
 
+    pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC"
     pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM"
 
-This routine excludes all tests that require large database files.
 
 Writing New Tests
 -----------------

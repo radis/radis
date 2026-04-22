@@ -12,7 +12,7 @@ Run only fast tests (i.e: tests that a  'fast' label)::
 
     pytest -m fast
 
--------------------------------------------------------------------------------
+
 
 
 """
@@ -20,7 +20,10 @@ Run only fast tests (i.e: tests that a  'fast' label)::
 import os
 from os.path import basename, exists
 
+import matplotlib.pyplot as plt
 import numpy as np
+
+plt.ion()  # dont get stuck with Matplotlib if executing through pytest
 import pytest
 from numpy import allclose, linspace
 from scipy.integrate import trapezoid
@@ -91,7 +94,7 @@ def test_spectrum_creation_method(*args, **kwargs):
 
 @pytest.mark.fast
 def test_spectrum_get_methods(
-    verbose=True, plot=True, close_plots=True, *args, **kwargs
+    verbose=True, plot=False, close_plots=True, *args, **kwargs
 ):
     """Test all spectrum methods on a Spectrum generated in Specair"""
 
@@ -218,13 +221,8 @@ def test_copy(verbose=True, *args, **kwargs):
         print("Tested that s2 == s (but s2 is not s) after Spectrum copy")
 
 
-def test_populations(verbose=True, plot=True, close_plots=True, *args, **kwargs):
+def test_populations(verbose=True, plot=False, close_plots=True, *args, **kwargs):
     """Test that populations in a Spectrum are correctly read"""
-
-    if plot:
-        import matplotlib.pyplot as plt
-
-        plt.ion()  # dont get stuck with Matplotlib if executing through pytest
 
     if plot and close_plots:
         import matplotlib.pyplot as plt
@@ -356,7 +354,8 @@ def test_rescaling_function(verbose=True, *args, **kwargs):
         populations={"molecules": {"N2C": 1e13}},  # arbitrary
         # (just an example)
     )
-    s.update(optically_thin=True)
+    s.conditions["self_absorption"] = False
+    s.update()
     s.rescale_path_length(10)
 
     assert np.isclose(s.get_radiance_noslit(Iunit="mW/cm2/sr/nm")[0], 352.57305783248)
@@ -378,6 +377,7 @@ def test_resampling_function(
     if plot and close_plots:
         import matplotlib.pyplot as plt
 
+        plt.ion()
         plt.close("all")
 
     s = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
@@ -479,7 +479,7 @@ def test_noplot_different_quantities(*args, **kwargs):
 
 
 @pytest.mark.fast
-def test_plot_by_parts(plot=True, *args, **kwargs):
+def test_plot_by_parts(plot=False, *args, **kwargs):
     """Test :py:func:`~radis.misc.plot.split_and_plot_by_parts`
     and plot_by_parts=True in :py:meth:`~radis.spectrum.spectrum.Spectrum.plot`
     """
@@ -571,6 +571,7 @@ def test_argmax_argmin(*args, **kwargs):
     assert np.isclose(s.take("abscoeff").argmin(value_only=True), 2144.215391118094)
 
 
+@pytest.mark.fast
 def test_fitting_lineshape(verbose=False, plot=False, *args, **kwargs):
     """Test :py:meth:`~radis.spectrum.spectrum.Spectrum.fit_model``"""
 

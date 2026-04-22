@@ -34,12 +34,11 @@ recenter_slit, crop_slit):
 - :func:`~radis.tools.slit.crop_slit`
 
 
--------------------------------------------------------------------------------
+
 
 
 
 """
-
 
 from warnings import warn
 
@@ -47,9 +46,6 @@ import numpy as np
 from numpy import exp
 from numpy import log as ln
 from numpy import sqrt
-from scipy.integrate import trapezoid
-from scipy.interpolate import splev, splrep
-from scipy.signal import oaconvolve
 
 from radis.misc.arrays import anynan, evenly_distributed, evenly_distributed_fast
 from radis.misc.basics import is_float
@@ -234,6 +230,9 @@ def get_slit_function(
     scale_slit = 1
     # not used in norm_by=area mode
 
+    # Lazy import heavy dependencies
+    from scipy.integrate import trapezoid
+
     # Generate Slit
     # -------------
     # First get the slit in return_unit space
@@ -310,7 +309,7 @@ def get_slit_function(
 
         try:
             top, base = slit_function
-        except:
+        except (TypeError, ValueError):
             raise TypeError(f"Wrong format for slit function: {slit_function}")
         if shape == "trapezoidal":
             pass
@@ -617,9 +616,10 @@ def convolve_with_slit(
 
     """
 
+    from scipy.interpolate import splev, splrep
+
     # 1. Check input
     # --------------
-
     # Deprecated input:
     if waveunit is not None:
         warn(
@@ -636,10 +636,10 @@ def convolve_with_slit(
 
     if w_slit_range > 10 * slit_FWHM:
         warn(
-            f"FWHM >> spectral range!\n"
+            "FWHM >> spectral range!\n"
             + f"Slit Function is provided with a spectral range {w_slit_range:.1f} nm that is much "
             + f"wider than its estimated FWHM {slit_FWHM:.1f}. We recommend truncating the input "
-            + f"slit function. See radis documentation about convolve_with_slit for more information."
+            + "slit function. See radis documentation about convolve_with_slit for more information."
         )
 
     if w_range < w_slit_range:
@@ -647,16 +647,16 @@ def convolve_with_slit(
             raise AssertionError(
                 f"Slit function is provided with a spectral range ({w_slit_range:.1f} {waveunit}) larger than "
                 + f"the spectral range of the spectrum ({w_range:.1f} {waveunit}) : the output spectrum will therefore be empty "
-                + f"as boundary effects of the convolution are automatically discarded. If you still want to apply the slit "
-                + f"despite potential boundary effects, set `mode='same'`. However, we recommend truncating the input slit function if possible, or compute the spectrum on a larger spectral range. "
-                + f"See radis documentation about convolve_with_slit for more information."
+                + "as boundary effects of the convolution are automatically discarded. If you still want to apply the slit "
+                + "despite potential boundary effects, set `mode='same'`. However, we recommend truncating the input slit function if possible, or compute the spectrum on a larger spectral range. "
+                + "See radis documentation about convolve_with_slit for more information."
             )
         else:
             warn(
-                f"Slit spectral range > Spectrum spectral range!\n"
+                "Slit spectral range > Spectrum spectral range!\n"
                 + f"Slit function is provided with a spectral range ({w_slit_range:.1f} nm) larger than "
                 + f"the spectral range of the spectrum ({w_range:.1f} nm). We recommend truncating the input "
-                + f"slit function. See radis documentation about convolve_with_slit for more information."
+                + "slit function. See radis documentation about convolve_with_slit for more information."
             )
 
     # 2. Interpolate the slit function on the spectrum grid, resample it if not
@@ -732,6 +732,8 @@ def convolve_with_slit(
 
     # We actually do not use mode valid in np.convolve,
     # instead we use mode=same and remove the same boundaries from I and W in remove_boundary()
+    from scipy.signal import oaconvolve
+
     I_conv = oaconvolve(I, I_slit_interp, mode="same") * wstep
 
     # 5. Remove boundary effects
@@ -839,6 +841,8 @@ def get_effective_FWHM(w, I):
     :py:func:`~radis.tools.slit.crop_slit`
 
     """
+
+    from scipy.integrate import trapezoid
 
     Imax = I.max()
 
@@ -980,6 +984,8 @@ def normalize_slit(w_slit, I_slit, norm_by="area"):
     :py:func:`~radis.tools.slit.crop_slit`
 
     """
+
+    from scipy.integrate import trapezoid
 
     # Renormalize
     # ---------
@@ -1146,6 +1152,7 @@ def plot_slit(
         wunit = waveunit
 
     import matplotlib.pyplot as plt
+    from scipy.integrate import trapezoid
 
     from radis.misc.plot import set_style
 
@@ -1155,7 +1162,7 @@ def plot_slit(
         from radis.plot.toolbar import add_tools
 
         add_tools()  # includes a Ruler to measure slit
-    except:
+    except ImportError:
         pass
 
     # Check input
@@ -1413,6 +1420,8 @@ def import_experimental_slit(
 
     """
 
+    from scipy.integrate import trapezoid
+
     # Deprecated input:
     if waveunit is not None:
         warn(
@@ -1445,6 +1454,32 @@ def import_experimental_slit(
     if not I_slit[0] == 0 and I_slit[-1] == 0:
         raise ValueError("Slit function must be null on each side. Fix it")
 
+    # sanity check: slit wavespace must stay in the original measured absolute axis
+    # (not centered around 0), especially before nm <-> cm-1 conversions.
+    finite_w = w_slit[np.isfinite(w_slit)]
+    if finite_w.size == 0:
+        raise ValueError("Invalid slit axis: `w_slit` contains no finite values.")
+
+    atol_zero = max(np.finfo(float).eps * 100, np.ptp(finite_w) * 1e-15)
+    zero_mask = np.isclose(finite_w, 0.0, atol=atol_zero, rtol=0.0)
+    if np.any(zero_mask):
+        n_zero = int(np.count_nonzero(zero_mask))
+        raise ValueError(
+            f"Invalid slit axis: detected {n_zero} value(s) at/near zero in `w_slit` "
+            f"(min={finite_w.min():.6g}, max={finite_w.max():.6g}). "
+            "The slit should not be centered to zero. Use the wavespace where the slit "
+            "was actually measured (absolute nm or cm-1), which can be critical for nm <-> cm-1 conversions."
+        )
+
+    wmin = float(np.min(finite_w))
+    wmax = float(np.max(finite_w))
+    if wmin < 0.0 < wmax:
+        raise ValueError(
+            f"Invalid slit axis: sign change detected in `w_slit` "
+            f"(min={wmin:.6g}, max={wmax:.6g}). "
+            "The slit should not be centered to zero. Use the wavespace where the slit "
+            "was actually measured (absolute nm or cm-1), which can be critical for nm <-> cm-1 conversions."
+        )
     # recenter if asked for
     if auto_recenter:
         w_slit, I_slit = recenter_slit(w_slit, I_slit, verbose=verbose)
@@ -1585,6 +1620,8 @@ def triangular_slit(
     w = np.hstack((-w[1:][::-1], w)) + center
 
     # Normalize
+    from scipy.integrate import trapezoid
+
     if norm_by == "area":  # normalize by the area
         I /= trapezoid(I, x=w)
         Iunit = f"1/{wunit}"
@@ -1687,6 +1724,8 @@ def trapezoidal_slit(
     :py:func:`~radis.tools.slit.gaussian_slit`
 
     """
+
+    from scipy.integrate import trapezoid
 
     if top > base:
         top, base = base, top
@@ -1818,6 +1857,8 @@ def gaussian_slit(
 
 
     """
+
+    from scipy.integrate import trapezoid
 
     f = int(footerspacing)  # spacing (footer) on left and right
     sigma = FWHM / 2 / sqrt(2 * ln(2))

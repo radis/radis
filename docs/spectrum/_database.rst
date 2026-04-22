@@ -89,8 +89,8 @@ an customized function too (below: to get the transmittance)::
     db.fit_spectrum(s_exp, get_residual=lambda s_exp, s: get_residual(s_exp, s, var='transmittance'))
 
 You don't necessarily need to precompute spectra to fit an experimental spectrum.
-You can find an example of :ref:`multi temperature fitting script <label_examples_multitemperature_fit>`
-in the Example pages, which shows the evolution of the spectra in real-time. You can get inspiration from there!
+You can find an example of multi temperature fitting script
+in the :ref:`Fitting examples <sphx_glr_auto_examples_3_Fitting>`, which shows the evolution of the spectra in real-time. You can get inspiration from there!
 
 Updating a database
 -------------------

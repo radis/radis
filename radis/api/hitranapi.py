@@ -15,7 +15,6 @@ Routine Listing
 - :func:`~radis.api.hitranapi.hitranxsc`
 
 
--------------------------------------------------------------------------------
 
 
 """
@@ -169,6 +168,7 @@ def hit2df(
     engine="pytables",
     output="pandas",
     parse_quanta=True,
+    cache_directory_path=None,
     fast_parsing=True,
 ):
     """Convert a HITRAN/HITEMP [1]_ file to a Pandas dataframe
@@ -205,6 +205,8 @@ def hit2df(
         Default ``True``.
     output : str
         output format of data as pandas Dataformat or vaex Dataformat
+    cache_directory_path : str or None, optional
+        Directory to store/read cache files. If None, use the directory of `fname`.
 
     Returns
     -------
@@ -258,7 +260,15 @@ def hit2df(
     columns = columns_2004
 
     # Use cache file if possible
-    fcache = DataFileManager(engine).cache_file(fname)
+    if cache_directory_path:
+        base_filename = os.path.basename(fname)
+        possible_cache_file = os.path.join(cache_directory_path, base_filename)
+        fcache = DataFileManager(engine).cache_file(possible_cache_file)
+    else:
+        fcache = DataFileManager(engine).cache_file(
+            fname
+        )  # Use default cache directory
+
     if cache and exists(fcache):
         relevant_if_metadata_above = (
             {"wavenum_max": load_wavenum_min} if load_wavenum_min else {}
@@ -839,25 +849,35 @@ def _parse_HITRAN_class5(df, verbose=True, dataframe_type="pandas"):
 
         return pd.concat([df, dgu, dgl], axis=1)
     elif dataframe_type == "vaex":
-        # 1. Parse
-        extracted_values = df["globu"].str.extract_regex(
-            pattern=r"[ ]{6}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<ru>\d)"
-        )
+        # Define slices for extracting values from globu and globl
+        _GLOBU_SLICES = {
+            "v1u": (6, 8),
+            "v2u": (8, 10),
+            "l2u": (10, 12),
+            "v3u": (12, 14),
+            "ru": (14, 15),
+        }
+        _GLOBL_SLICES = {
+            "v1l": (6, 8),
+            "v2l": (8, 10),
+            "l2l": (10, 12),
+            "v3l": (12, 14),
+            "rl": (14, 15),
+        }
 
-        extract_columns(df, extracted_values, ["v1u", "v2u", "l2u", "v3u", "ru"])
+        for name, (i0, i1) in _GLOBU_SLICES.items():
+            df[name] = df["globu"].str.slice(i0, i1).str.strip()
 
-        extracted_values = df["globl"].str.extract_regex(
-            pattern=r"[ ]{6}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})(?P<rl>\d)"
-        )
+        for name, (i0, i1) in _GLOBL_SLICES.items():
+            df[name] = df["globl"].str.slice(i0, i1).str.strip()
 
-        extract_columns(df, extracted_values, ["v1l", "v2l", "l2l", "v3l", "rl"])
+        # Replace spaces with empty strings for numeric columns
+        for col in ["v1u", "v2u", "l2u", "v3u", "v1l", "v2l", "l2l", "v3l"]:
+            df[col] = df[col].str.replace(" ", "")
 
-        # # 2. Convert to numeric
-        # cast_to_int64_with_missing_values(
-        #     df,
-        #     ["v1u", "v2u", "l2u", "v3u", "ru", "v1l", "v2l", "l2l", "v3l", "rl"],
-        #     dataframe_type=dataframe_type,
-        # )
+        numeric_cols = list(_GLOBU_SLICES.keys()) + list(_GLOBL_SLICES.keys())
+        for col in numeric_cols:
+            df[col] = df[col].astype("int64")
 
         # 3. Clean
         df.drop("globu", inplace=True)
@@ -1502,25 +1522,25 @@ def _parse_HITRAN_group2(df, verbose=True, dataframe_type="pandas"):
         return pd.concat([df, dgu, dgl], axis=1)
     elif dataframe_type == "vaex":
         # 1.Parse
-        extracted_values = df["locu"].str.extract_regex(pattern=r"[ ]{10}(?P<Fu>.{5})")
-        extract_columns(df, extracted_values, ["Fu"])
+        _LOCU_SLICES = {
+            "Fu": (10, 15),
+        }
 
-        # dgu = df["locu"].astype(str).str.extract(r"[ ]{10}(?P<Fu>.{5})", expand=True)
-        # Ref [1] : locl
-        # --------------
-        #     | Br  | J'' | Sym''| F'' |
-        # 5X  | A1  | I3  | A1   | A5  |
+        _LOCL_SLICES = {
+            "branch": (5, 6),
+            "jl": (6, 9),
+            "syml": (9, 10),
+            "Fl": (10, 15),
+        }
 
-        extracted_values = df["locl"].str.extract_regex(
-            pattern=r"[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<syml>.)(?P<Fl>.{5})"
-        )
+        for name, (i0, i1) in _LOCU_SLICES.items():
+            df[name] = df["locu"].str.slice(i0, i1).str.strip()
 
-        extract_columns(df, extracted_values, ["branch", "jl", "syml", "Fl"])
+        for name, (i0, i1) in _LOCL_SLICES.items():
+            df[name] = df["locl"].str.slice(i0, i1).str.strip()
 
-        # # 2. Convert to numeric
-        # cast_to_int64_with_missing_values(
-        #     df, ["Fu", "branch", "jl", "syml", "Fl"], dataframe_type=dataframe_type
-        # )
+        df["jl"] = df["jl"].str.replace(" ", "")  # remove spaces first
+        df["jl"] = df["jl"].astype("int64")
 
         # 3. Clean
         df.drop("locu", inplace=True)
@@ -1839,8 +1859,8 @@ class HITRANDatabaseManager(DatabaseManager):
             )  # fetch_hitran stores all lines of a given molecule in one file
             local_file = local_file[0]
 
-        wmin = 1
-        wmax = 40000
+        wmin = 0
+        wmax = 1e10
 
         def download_all_hitran_isotopes(molecule, directory, extra_params):
             """Blindly try to download all isotopes 1 - 9 for the given molecule
@@ -1854,17 +1874,34 @@ class HITRANDatabaseManager(DatabaseManager):
 
             """
             directory = abspath(expanduser(directory))
-
+            max_fetch_retries = 3
+            retry_delay = 1
             # create temp folder :
             from radis.misc.basics import make_folders
 
             make_folders(*split(directory))
 
-            db_begin(directory)
+            # Use tqdm for isotope progress
+            import io
+            import sys
+
+            from tqdm import tqdm
+
+            # Suppress HAPI's verbose output (version banner, directory messages, etc.)
+            old_stdout = sys.stdout
+            sys.stdout = io.StringIO()
+            try:
+                db_begin(directory)
+            finally:
+                sys.stdout = old_stdout
+
             isotope_list = []
             data_file_list = []
             header_file_list = []
-            for iso in range(1, 10):
+
+            for iso in tqdm(
+                range(1, 10), desc="Downloading isotopes", disable=not self.verbose
+            ):
                 file = f"{molecule}_{iso}"
                 if exists(join(directory, file + ".data")):
                     if cache == "regen":
@@ -1878,20 +1915,50 @@ class HITRANDatabaseManager(DatabaseManager):
                         )
                         os.remove(join(directory, file + ".data"))
                 try:
-                    if extra_params == "all":
-                        fetch(
-                            file,
-                            get_molecule_identifier(molecule),
-                            iso,
-                            wmin,
-                            wmax,
-                            ParameterGroups=[*PARAMETER_GROUPS_HITRAN],
-                        )
-                    elif extra_params is None:
-                        fetch(file, get_molecule_identifier(molecule), iso, wmin, wmax)
-                    else:
-                        raise ValueError("extra_params can only be 'all' or None ")
-                except KeyError as err:
+                    for attempt in range(max_fetch_retries):
+                        # Suppress HAPI's verbose output (65536 bytes written...)
+                        old_stdout = sys.stdout
+                        sys.stdout = io.StringIO()
+                        try:
+                            if extra_params == "all":
+                                fetch(
+                                    file,
+                                    get_molecule_identifier(molecule),
+                                    iso,
+                                    wmin,
+                                    wmax,
+                                    ParameterGroups=[*PARAMETER_GROUPS_HITRAN],
+                                )
+                            elif extra_params is None:
+                                fetch(
+                                    file,
+                                    get_molecule_identifier(molecule),
+                                    iso,
+                                    wmin,
+                                    wmax,
+                                )
+                            else:
+                                raise ValueError(
+                                    "extra_params can only be 'all' or None "
+                                )
+                        finally:
+                            sys.stdout = old_stdout
+
+                        ### We test if the download went well ###
+                        df = pd.DataFrame(LOCAL_TABLE_CACHE[file]["data"])
+                        if len(df["molec_id"]) != 0:
+                            break  # everything worked well
+                        else:
+                            warning_msg = (
+                                "HITRAN fetch failed. The database looks empty. "
+                                f"Waiting {retry_delay} seconds and trying again (attempt {attempt + 1}/{max_fetch_retries})."
+                            )
+                        if attempt == max_fetch_retries - 1:
+                            warning_msg += "\nLAST ATTEMPT"
+                        warnings.warn(warning_msg, UserWarning, stacklevel=2)
+                        time.sleep(retry_delay)
+                        retry_delay *= 2  # exponential
+                except KeyError as err:  # check for missing isotopes. If the isotope is missing, skip to next up to isotope 9
                     list_pattern = ["(", ",", ")"]
                     import re
 
@@ -1924,9 +1991,31 @@ class HITRANDatabaseManager(DatabaseManager):
 
         # Use HAPI only to download the files, then we'll parse them with RADIS's
         # parsers, and convert to RADIS's fast HDF5 file formats.
-        isotope_list, data_file_list, header_file_list = download_all_hitran_isotopes(
-            molecule, tempdir, extra_params
-        )
+
+        max_retries = 2
+        retry_count = 0
+
+        while retry_count < max_retries:
+            try:
+                (
+                    isotope_list,
+                    data_file_list,
+                    header_file_list,
+                ) = download_all_hitran_isotopes(molecule, tempdir, extra_params)
+                break  # Success, exit retry loop
+            except ValueError as e:
+                if "invalid literal for int() with base 10: '\\x00\\x00'" in str(e):
+                    retry_count += 1
+                    if retry_count < max_retries:
+                        warnings.warn(
+                            f"ValueError encountered during download. Retrying (attempt {retry_count}/{max_retries})...",
+                            UserWarning,
+                            stacklevel=2,
+                        )
+                    else:
+                        raise  # Re-raise on final attempt
+                else:
+                    raise  # Re-raise if it's a different ValueError
 
         writer = self.get_datafile_manager()
 
@@ -2040,7 +2129,6 @@ class HITRANDatabaseManager(DatabaseManager):
                 "wavenumber_min": self.wmin,
                 "wavenumber_max": self.wmax,
                 "download_date": self.get_today(),
-                "parfuncfmt": "hapi",
             }
         )
 

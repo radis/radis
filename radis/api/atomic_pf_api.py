@@ -7,7 +7,6 @@ Kurucz database parser
 
 Based largely on the `Exojax <https://github.com/HajimeKawahara/exojax>`__ code
 
------------------------
 
 
 """
@@ -120,7 +119,7 @@ def fetch_kurucz_pfs(
     parallel=True,
 ):
     """
-    See e.g. :func:`~radis.io.hitemp.fetch_hitemp` for an explanation of the parameters largely applicable to `fetch_kurucz_pfs`
+    See e.g. :func:`~radis.io.hitemp.fetch_hitemp` for an explanation of the parameters largely applicable to ``fetch_kurucz_pfs``
     """
 
     # largely based on :py:func:`~radis.io.fetch_geisa`
@@ -296,7 +295,7 @@ def fetch_NIST_pfs(
     parallel=True,
 ):
     """
-    See e.g. :func:`~radis.io.hitemp.fetch_hitemp` for an explanation of the parameters largely applicable to `fetch_NIST_pfs`
+    See e.g. :func:`~radis.io.hitemp.fetch_hitemp` for an explanation of the parameters largely applicable to ``fetch_NIST_pfs``
     """
 
     # largely based on :py:func:`~radis.io.fetch_geisa`

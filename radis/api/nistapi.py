@@ -88,6 +88,14 @@ class NISTDatabaseManager(DatabaseManager):
         # Use the opener's open method which should be available in all implementations
         with opener.open() as file:
             file_content = file.read().decode("utf-8")
+
+        # Check if NIST returned no data
+        if "No lines are available in ASD with the parameters selected" in file_content:
+            raise ValueError(
+                f"No spectral lines available for {self.molecule} in NIST database "
+                "with the selected parameters"
+            )
+
         file = StringIO(file_content)
 
         df = nist2df(file, self.molecule)
@@ -172,7 +180,7 @@ def nist2df(file, species):
 
     # for col in ["Ei(cm-1)", "Ek(cm-1)"]:
     for col in ["Ei(cm-1)", "Ek(cm-1)", "Aki(s^-1)", "g_i", "g_k"]:
-        if df[col].dtype == ("object" or "string"):
+        if df[col].dtype == "object" or pd.api.types.is_string_dtype(df[col]):
             df[col] = (
                 df[col].str.strip("()[]?").astype("float")
             )  # see `fetch_urlnames` or https://physics.nist.gov/PhysRefData/ASD/Html/levelshelp.html about meaning of question mark, brackets and parentheses

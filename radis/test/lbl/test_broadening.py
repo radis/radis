@@ -94,9 +94,7 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
             "GaussianBroadeningWarning": "ignore",
         },
     )
-    sf.load_databank(
-        path=join(hapi_data_path, "CO.data"), format="hitran", parfuncfmt="hapi"
-    )
+    sf.load_databank(path=join(hapi_data_path, "CO.data"), format="hitran")
     #    s = pl.non_eq_spectrum(Tvib=T, Trot=T, Ttrans=T)
     s = sf.eq_spectrum(Tgas=T, name="RADIS")
 
@@ -183,21 +181,21 @@ def test_broadening_methods_different_conditions(
         s_voigt = sf.eq_spectrum(Tgas=T, name="direct")
 
         # assert broadening FWHM are correct
-        assert isclose(2 * float(sf.df1.hwhm_gauss), fwhm_gauss)
-        assert isclose(2 * float(sf.df1.hwhm_lorentz), fwhm_lorentz)
+        assert isclose(2 * sf.df1.hwhm_gauss[0], fwhm_gauss)
+        assert isclose(2 * sf.df1.hwhm_lorentz[0], fwhm_lorentz)
 
         sf.params.broadening_method = "convolve"
         s_convolve = sf.eq_spectrum(Tgas=T, name="convolve")
 
         # assert broadening FWHM are correct
-        assert isclose(2 * float(sf.df1.hwhm_gauss), fwhm_gauss)
-        assert isclose(2 * float(sf.df1.hwhm_lorentz), fwhm_lorentz)
+        assert isclose(2 * sf.df1.hwhm_gauss[0], fwhm_gauss)
+        assert isclose(2 * sf.df1.hwhm_lorentz[0], fwhm_lorentz)
 
         res = get_residual(s_voigt, s_convolve, "abscoeff")
 
         if verbose:
             print(
-                f"{T} K, {p} bar: FWHM lorentz = {2 * float(sf.df1.hwhm_lorentz):.3f} cm-1, FWHM gauss = {2 * float(sf.df1.hwhm_gauss):.3f} cm-1"
+                f"{T} K, {p} bar: FWHM lorentz = {2 * sf.df1.hwhm_lorentz[0]:.3f} cm-1, FWHM gauss = {2 * sf.df1.hwhm_gauss[0]:.3f} cm-1"
             )
 
         if plot:
@@ -729,7 +727,7 @@ def test_broadening_warnings(*args, **kwargs):
 
 # @pytest.mark.needs_config_file
 # @pytest.mark.needs_db_HITEMP_CO2_DUNHAM
-@pytest.mark.needs_connection
+@pytest.mark.deprecated
 def test_abscoeff_continuum(
     plot=False, verbose=2, warnings=True, threshold=0.1, *args, **kwargs
 ):
@@ -755,11 +753,13 @@ def test_abscoeff_continuum(
         printm(">>> test_abscoeff_continuum")
 
     sf = SpectrumFactory(
-        wavelength_min=4200,
-        wavelength_max=4500,
+        # wavelength_min=4200, # old test - required long download of HITRAN
+        # wavelength_max=4500, # was also prone to download error during CI and hard to reproduce
+        wavelength_min=4165,
+        wavelength_max=4200,
         cutoff=1e-23,
         molecule="CO2",
-        isotope="1,2",
+        isotope="1",
         truncation=5,
         path_length=0.1,
         mole_fraction=1e-3,
@@ -775,10 +775,12 @@ def test_abscoeff_continuum(
             "HighTemperatureWarning": "ignore",
         }
     )
-    sf.fetch_databank(
-        "hitran"
+    # sf.fetch_databank(
+    #     "hitran"
+    # )  # old test - required long download of HITRAN and was also prone to download error during CI and hard to reproduce
+    sf.load_databank(
+        "HITRAN-CO2-TEST"
     )  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
-    #        sf.load_databank('HITEMP-CO2-DUNHAM')       # to take a real advantage of abscoeff continuum, should calculate with HITEMP
     sf._export_continuum = True  # activate it
 
     # Calculate one without pseudo-continuum
@@ -830,7 +832,7 @@ def test_abscoeff_continuum(
 
 # @pytest.mark.needs_config_file
 # @pytest.mark.needs_db_HITEMP_CO2_DUNHAM
-@pytest.mark.needs_connection
+@pytest.mark.deprecated
 def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
     """
     Test calculation with pseudo-continuum under nonequilibrium
@@ -854,11 +856,11 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
         printm(">>> test_noneq_continuum")
 
     sf = SpectrumFactory(
-        wavelength_min=4200,
-        wavelength_max=4500,
+        wavelength_min=4165,
+        wavelength_max=4200,
         cutoff=1e-23,
         molecule="CO2",
-        isotope="1,2",
+        isotope="1",
         truncation=5,
         neighbour_lines=10,
         path_length=0.1,
@@ -875,8 +877,8 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
             "HighTemperatureWarning": "ignore",
         }
     )
-    sf.fetch_databank(
-        "hitran", load_columns="noneq"
+    sf.load_databank(
+        "HITRAN-CO2-TEST"
     )  # uses HITRAN: not really valid at this temperature, but runs on all machines without install
     sf._export_continuum = True  # activate it
 
@@ -1131,6 +1133,6 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-
-    printm("test_broadening: ", _run_testcases(plot=True, verbose=True, debug=False))
-    printm("Testing broadening:", pytest.main(["test_broadening.py", "--pdb"]))
+    test_broadening_methods_different_conditions()
+    # printm("test_broadening: ", _run_testcases(plot=True, verbose=True, debug=False))
+    # printm("Testing broadening:", pytest.main(["test_broadening.py", "--pdb"]))

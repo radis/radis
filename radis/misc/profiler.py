@@ -14,7 +14,6 @@ Routine Listing
 - :meth:`~radis.misc.profiler.Profiler.stop`
 - :meth:`~radis.misc.profiler.Profiler._print`
 
--------------------------------------------------------------------------------
 """
 
 from collections import OrderedDict

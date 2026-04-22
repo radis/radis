@@ -120,10 +120,10 @@ def test_ignore_cached_files():
 
     file_dir = getTestFile("cdsd_hitemp_09_fragment.txt")
     test_file = file_dir[:-8] + "*"
-    sf.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
+    sf.load_databank(path=test_file, format="cdsd-hitemp")
 
     try:
-        sf.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
+        sf.load_databank(path=test_file, format="cdsd-hitemp")
     except UnicodeDecodeError as err:
         raise UnicodeDecodeError(
             "Couldn't load database the 2nd time. This may be due to cache files trying to be read as normal files"
@@ -144,9 +144,7 @@ def test_ignore_irrelevant_files(*args, **kwargs):
     # Regenerate .h5 cache file
     sf = SpectrumFactory(wavenum_min=2280, wavenum_max=2290)
     test_file = getTestFile("cdsd_hitemp_09_fragment.txt")
-    sf.load_databank(
-        path=test_file, format="cdsd-hitemp", parfuncfmt="hapi", db_use_cached="regen"
-    )
+    sf.load_databank(path=test_file, format="cdsd-hitemp", db_use_cached="regen")
     assert exists(test_file.replace(".txt", ".h5"))
     # Also note that there was no EmptyDatabaseError : file was properly loaded!
 
@@ -158,7 +156,6 @@ def test_ignore_irrelevant_files(*args, **kwargs):
         sf2.load_databank(
             path=test_file,
             format="cdsd-hitemp",
-            parfuncfmt="hapi",
             db_use_cached="force",
         )
 
@@ -166,7 +163,7 @@ def test_ignore_irrelevant_files(*args, **kwargs):
     # ... Expect no IrrelevantFile error, however range should be empty.
     with pytest.raises(EmptyDatabaseError):
         sf3 = SpectrumFactory(wavenum_min=100000, wavenum_max=100002)
-        sf3.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
+        sf3.load_databank(path=test_file, format="cdsd-hitemp")
 
 
 @pytest.mark.fast
@@ -373,6 +370,7 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
     assert compare_dataframe(df1, df2, df2.columns)
 
 
+@pytest.mark.fast
 @pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
 def test_vaex_and_pandas_dataframe_load_databank():
     """
@@ -441,12 +439,16 @@ def test_vaex_and_pandas_dataframe_load_databank():
 
 def _run_testcases(verbose=True, plot=False):
 
-    test_retrieve_from_database(plot=plot, verbose=verbose)
+    # from time import time
+
+    # t0 = time()
+    # test_retrieve_from_database(plot=plot, verbose=verbose)
+    # # print(time() - t0)
     # test_ignore_cached_files()
     # test_ignore_irrelevant_files(verbose=verbose)
     # test_custom_abundance()
     # test_vaex_and_pandas_dataframe_fetch_databank()
-    # test_vaex_and_pandas_dataframe_load_databank()
+    test_vaex_and_pandas_dataframe_load_databank()
 
 
 if __name__ == "__main__":
