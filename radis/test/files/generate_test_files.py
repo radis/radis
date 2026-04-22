@@ -3,7 +3,7 @@
 Scripts used to generate some test files for RADIS
 
 
--------------------------------------------------------------------------------
+
 
 """
 if __name__ == "__main__":

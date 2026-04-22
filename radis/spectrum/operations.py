@@ -48,7 +48,7 @@ Most of these functions are implemented with the standard operators. Ex::
 
     ((s_exp - 0.1)*10).plot()   # works for a Spectrum s_exp
 
--------------------------------------------------------------------------------
+
 
 
 """

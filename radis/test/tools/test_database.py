@@ -2,7 +2,7 @@
 """
 Test that :class:`~radis.tools.database.SpecDatabase` works
 
--------------------------------------------------------------------------------
+
 
 """
 

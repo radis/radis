@@ -43,7 +43,7 @@ they have been created, with
 
 More in :ref:`The Spectrum object <label_spectrum>`.
 
--------------------------------------------------------------------------------
+
 
 
 """
@@ -785,7 +785,7 @@ class Spectrum(object):
             sorts the arrays in ``file`` by wavespace. Convenient way to load
             a file where points have been manually added at the end. Default ``False``.
 
-        *Optional Spectrum parameters*
+        **Optional Spectrum parameters:**
 
         conditions: dict
             physical conditions and calculation parameters
@@ -3497,7 +3497,10 @@ class Spectrum(object):
                 self._q["wavespace"], w_conv
             ):
                 raise AssertionError(
-                    "Wavespace of convolved arrays is different, cannot store it in the same Spectrum. You can use Spectrum.apply_slit(inplace=False) to return a new spectrum with only the convolved arrays"
+                    "Wavespace of convolved arrays are different and they cannot be "
+                    "stored in the same Spectrum object. You can use "
+                    "Spectrum.apply_slit(inplace=False) to return a new spectrum "
+                    "with only the convolved arrays."
                 )
             for q in I_conv_slices.keys():
                 # Merge all slices

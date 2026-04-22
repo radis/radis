@@ -45,7 +45,7 @@ References
 
 
 
--------------------------------------------------------------------------------
+
 """
 
 # TODO: vectorize partition function calculations for different temperatures. Would need

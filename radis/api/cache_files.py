@@ -17,7 +17,6 @@ See Also
 :py:func:`~radis.api.hitranapi.hit2df`,
 :py:func:`~radis.api.cdsdapi.cdsd2df`
 
--------------------------------------------------------------------------------
 """
 # TODO: start using .feather format. Faster than HDF5 for pandas Dataframe,
 # and can be multithreaded.

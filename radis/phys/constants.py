@@ -6,7 +6,7 @@ Note : more units available in :
 - sympy.physics.units
 
 
--------------------------------------------------------------------------------
+
 """
 
 # %% SI units

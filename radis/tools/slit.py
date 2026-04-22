@@ -34,7 +34,7 @@ recenter_slit, crop_slit):
 - :func:`~radis.tools.slit.crop_slit`
 
 
--------------------------------------------------------------------------------
+
 
 
 
@@ -1454,6 +1454,32 @@ def import_experimental_slit(
     if not I_slit[0] == 0 and I_slit[-1] == 0:
         raise ValueError("Slit function must be null on each side. Fix it")
 
+    # sanity check: slit wavespace must stay in the original measured absolute axis
+    # (not centered around 0), especially before nm <-> cm-1 conversions.
+    finite_w = w_slit[np.isfinite(w_slit)]
+    if finite_w.size == 0:
+        raise ValueError("Invalid slit axis: `w_slit` contains no finite values.")
+
+    atol_zero = max(np.finfo(float).eps * 100, np.ptp(finite_w) * 1e-15)
+    zero_mask = np.isclose(finite_w, 0.0, atol=atol_zero, rtol=0.0)
+    if np.any(zero_mask):
+        n_zero = int(np.count_nonzero(zero_mask))
+        raise ValueError(
+            f"Invalid slit axis: detected {n_zero} value(s) at/near zero in `w_slit` "
+            f"(min={finite_w.min():.6g}, max={finite_w.max():.6g}). "
+            "The slit should not be centered to zero. Use the wavespace where the slit "
+            "was actually measured (absolute nm or cm-1), which can be critical for nm <-> cm-1 conversions."
+        )
+
+    wmin = float(np.min(finite_w))
+    wmax = float(np.max(finite_w))
+    if wmin < 0.0 < wmax:
+        raise ValueError(
+            f"Invalid slit axis: sign change detected in `w_slit` "
+            f"(min={wmin:.6g}, max={wmax:.6g}). "
+            "The slit should not be centered to zero. Use the wavespace where the slit "
+            "was actually measured (absolute nm or cm-1), which can be critical for nm <-> cm-1 conversions."
+        )
     # recenter if asked for
     if auto_recenter:
         w_slit, I_slit = recenter_slit(w_slit, I_slit, verbose=verbose)

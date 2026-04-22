@@ -15,7 +15,7 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 
     pytest -m fast
 
-------------------------------------------------------------------------
+
 
 """
 

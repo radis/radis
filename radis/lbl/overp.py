@@ -15,7 +15,6 @@ having to recalculate the broadening of each line
     Order of magnitude faster, but only valid under optically thin conditions as the
     rescaling of absorption doesnt scale induced emission properly
 
-----------
 """
 
 from time import time
