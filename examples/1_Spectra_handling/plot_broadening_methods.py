@@ -27,29 +27,28 @@ conditions = {
     "wstep": 0.002,
     # also measure interpolation time
     "truncation": trunc_ref,  # cm-1; Default value is 50 cm-1 but the value is decreased in this example to accelerate the computation
-    "cutoff": 1e-27,  # cm-1/(#.cm-2); Default value ie 1e-27 but the value is increased in this example to accelerate the computation
+    "cutoff": 1e-27,  # cm-1/(#.cm-2); Default is 1e-27
 }
 Tgas = 400
 databank, database = "hitran", "default"
 # databank, database =  = "hitemp", "2010" #for H2O, on your machine (will take longer to compute the reference spectrum)
 
-#%% ############## Reference spectrum - No optimization used ##############
+############## Reference spectrum - No optimization used ##############
 conditions["optimization"] = None
 
-## Using a convolution of a Gaussian and Lorentzian, no optimization
+## Using a convolution of Gaussian and Lorentzian, no optimization
 conditions[
     "broadening_method"
 ] = "convolve"  # Voigt = numpy.convolve("Gaussian", "Lorentzian")
 sf = SpectrumFactory(**conditions)
 sf.fetch_databank(databank)
 s_conv = sf.eq_spectrum(Tgas=Tgas)
-
 s_conv.name = f"Convolution : {s_conv.c['calculation_time']:.1f}s"
 
 # Using a polynomial approximation, no optimization
 conditions[
     "broadening_method"
-] = "voigt"  # Voigt = polynomial approximation derived from Whithing
+] = "voigt_poly"  # Voigt = polynomial approximation derived from Whithing
 sf = SpectrumFactory(**conditions)
 sf.fetch_databank(databank, database=database)
 s_poly = sf.eq_spectrum(Tgas=Tgas)
@@ -63,7 +62,7 @@ plot_diff(
     yscale="log",
     # yscale="linear",
 )
-#%% ############## Using LDM optimization ##############
+############## Using LDM optimization ##############
 """
 The objective of this section is to show how fast are the LDM optimizations.
 The calculated spectra are compared to a reference (no optimization) where the
@@ -77,7 +76,7 @@ changing from 'LDM = linear' to 'LDM = min-RMS' for a small cost in time.
 """
 s_ref = s_conv
 LDM_dic = {}
-for method in ["convolve", "voigt", "fft"]:
+for method in ["convolve", "voigt_poly", "fft"]:
     for LDM in ["simple", "min-RMS"]:
         conditions["optimization"] = LDM
         conditions["broadening_method"] = method
@@ -119,8 +118,7 @@ from radis import get_residual
 # Prepare the parameter grid for progress bar
 trunc_values0 = [0.05, 0.1, 0.5, 1, 2, 3, 4, 5, 7]
 LDM_values = [None, "simple", "min-RMS"]
-# LDM_values = [None, "simple"]
-method_values = ["convolve", "voigt"]
+method_values = ["convolve", "voigt_poly"]
 
 conditions["verbose"] = False
 total_iterations = (
@@ -173,7 +171,7 @@ for LDM in ["simple", "min-RMS"]:
     progress.update(1)
 
 linestyles = {None: ":", "simple": "-", "min-RMS": "--"}
-colors = {"convolve": "k", "voigt": "r", "fft": "b"}
+colors = {"convolve": "k", "voigt_poly": "r", "fft": "b"}
 
 plt.figure("Time")
 for LDM in LDM_values:

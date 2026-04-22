@@ -4002,7 +4002,7 @@ class Spectrum(object):
                    NwG                  3
                    NwL                  5
                    Tref                 296 K
-                   broadening_method    voigt
+                   broadening_method    voigt_poly
                    cutoff               1e-27 cm-1/(#.cm-2)
                    dbformat             hitran
                    dbpath               C:\Users\erwan\.radisdb\hitran\CO.hdf5
