@@ -27,5 +27,7 @@ def __getattr__(name):
             DeprecationWarning,
             stacklevel=2,
         )
+        # Cache to avoid duplicate warnings during from-import resolution.
+        globals()["BaseFactory"] = PopulationFactory
         return PopulationFactory
     raise AttributeError(f"module 'radis.lbl' has no attribute '{name}'")
