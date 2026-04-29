@@ -478,10 +478,14 @@ def post_process_hitran_data(
     if drop_non_numeric:
         if "branch" in df:
             replace_PQR_with_m101(df)
+        ierr = None
         if ("ierr" in df) and add_HITRAN_uncertainty_code:
             df["ierr"] = df["ierr"].astype(int64)
+            ierr = df["ierr"]
         if dataframe_type != "vaex":
             df = drop_object_format_columns(df, verbose=verbose)
+            if add_HITRAN_uncertainty_code and ierr is not None:
+                df["ierr"] = ierr
 
     return df
 
@@ -1898,6 +1902,7 @@ class HITRANDatabaseManager(DatabaseManager):
             isotope_list = []
             data_file_list = []
             header_file_list = []
+            uncertainty_params = ["ierr", "iref"] if add_HITRAN_uncertainty_code else []
 
             for iso in tqdm(
                 range(1, 10), desc="Downloading isotopes", disable=not self.verbose
@@ -1928,6 +1933,7 @@ class HITRANDatabaseManager(DatabaseManager):
                                     wmin,
                                     wmax,
                                     ParameterGroups=[*PARAMETER_GROUPS_HITRAN],
+                                    Parameters=uncertainty_params,
                                 )
                             elif extra_params is None:
                                 fetch(
@@ -1936,6 +1942,7 @@ class HITRANDatabaseManager(DatabaseManager):
                                     iso,
                                     wmin,
                                     wmax,
+                                    Parameters=uncertainty_params,
                                 )
                             else:
                                 raise ValueError(
@@ -2023,6 +2030,9 @@ class HITRANDatabaseManager(DatabaseManager):
         Nlines = 0
         for iso, data_file in zip(isotope_list, data_file_list):
             df = pd.DataFrame(LOCAL_TABLE_CACHE[data_file.split(".")[0]]["data"])
+            if add_HITRAN_uncertainty_code and "ierr" not in df and "par_line" in df:
+                df["ierr"] = df["par_line"].str.slice(127, 133).str.strip()
+                df["iref"] = df["par_line"].str.slice(133, 145).str.strip()
             df.rename(
                 columns={
                     "molec_id": "id",
@@ -2050,6 +2060,10 @@ class HITRANDatabaseManager(DatabaseManager):
                 parse_quanta=parse_quanta,
                 add_HITRAN_uncertainty_code=add_HITRAN_uncertainty_code,
             )
+            if add_HITRAN_uncertainty_code and "ierr" not in df.columns:
+                raise KeyError(
+                    "HITRAN uncertainty column 'ierr' was requested but not loaded"
+                )
 
             wmin_final = min(wmin_final, df.wav.min())
             wmax_final = max(wmax_final, df.wav.max())
