@@ -203,6 +203,43 @@ See Also
 - 'cdsd-pcN' (CDSD-HITEMP): :data:`~radis.api.cdsdapi.columns_hitemp`,
 - 'cdsd-hamil': :data:`~radis.api.cdsdapi.columns_4000`,
 """
+
+
+def get_auto_drop_columns(dbformat, levelsfmt, preserve_uncertainty=False):
+    """Get the list of columns to auto-drop, with option to keep
+    uncertainty columns.
+
+    Parameters
+    ----------
+    dbformat : str
+        Database format (e.g., ``'hitran'``, ``'hitemp'``).
+    levelsfmt : str or None
+        Levels format (e.g., ``'radis'``, ``None``).
+    preserve_uncertainty : bool
+        If ``True``, keep ``'ierr'`` column for HITRAN/HITEMP databases
+        so that uncertainty codes are available for
+        :mod:`radis.tools.uncertainty`. Default ``False``.
+
+    Returns
+    -------
+    list
+        Column names to drop.
+
+    See Also
+    --------
+    :data:`drop_auto_columns_for_dbformat`,
+    :data:`drop_auto_columns_for_levelsfmt`,
+    :mod:`radis.tools.uncertainty`
+    """
+    drop_db = list(drop_auto_columns_for_dbformat.get(dbformat, []))
+    drop_lvl = list(drop_auto_columns_for_levelsfmt.get(levelsfmt, []))
+
+    if preserve_uncertainty and "ierr" in drop_db:
+        drop_db.remove("ierr")
+
+    return drop_db + drop_lvl
+
+
 # TODO @dev : switch from a model where we drop certain useless columns (RADIS==0.9.28)
 # to a model where we only-load the required ones initially (if possible with lazy-loading,
 # i.e. only load them on demand. See https://github.com/radis/radis/issues/118 )
