@@ -13,23 +13,21 @@ jobs:
   build:
     strategy:
       fail-fast: false
-      max-parallel: 3
+      # max-parallel: 3
       matrix:
         include:
-          # - os: ubuntu-latest
-          #   python-version: "3.14"
-          #   continue-on-error: true #this is allowed to fail, as some dependencies may not yet be available
+          # Try only the oldest and latest supported versions of Python on develop, to speed up the tests. We test more versions on master (see python-package-master.yml)
           - os: ubuntu-latest
             python-version: "3.10"
-          - os: ubuntu-latest
-            python-version: "3.11"
           - os: ubuntu-latest
             python-version: "3.12"
-          #Issue with Windows and Mac OS, see https://github.com/radis/radis/issues/864
+          - os: ubuntu-latest
+            python-version: "3.13" #added to test the behavior without vaex (compatible up to 3.12)
+          #For windows and macOS, we test only the Python 3.12, to speed up the tests.
           - os: windows-latest
-            python-version: "3.10"
+            python-version: "3.12"
           - os: macos-latest
-            python-version: "3.10"
+            python-version: "3.12"
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -41,18 +39,22 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest specutils
+          python -m pip install pytest specutils pytest-cov
           pip install -e .
       - name: Fast tests with pytest
         run: |
-          pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC and not needs_gpu and not needs_HITRAN_credentials" --durations=10
+          pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC and not needs_gpu and not needs_HITRAN_credentials" --durations=10 --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml
       - name: Long tests with pytest
+        if: always()
         run: |
-          pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM and not needs_gpu and not needs_HITRAN_credentials" --durations=10
-      - name: Test with HITRAN/HITEMP credentials (write access only)
-        env:
-          HITRAN_EMAIL: ${{ secrets.HITRAN_EMAIL }}
-          HITRAN_PASSWORD: ${{ secrets.HITRAN_PASSWORD }}
-        run: |
-          pytest -m "needs_HITRAN_credentials and not download_large_databases" --durations=10
-        continue-on-error: true #see the file ".travis.yml" where these tests are actually tested.
+          pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM and not needs_gpu and not needs_HITRAN_credentials" --durations=10 --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml --cov-append
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: radis/radis
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false

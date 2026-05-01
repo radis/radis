@@ -94,9 +94,7 @@ def test_broadening_vs_hapi(rtol=1e-2, verbose=True, plot=False, *args, **kwargs
             "GaussianBroadeningWarning": "ignore",
         },
     )
-    sf.load_databank(
-        path=join(hapi_data_path, "CO.data"), format="hitran", parfuncfmt="hapi"
-    )
+    sf.load_databank(path=join(hapi_data_path, "CO.data"), format="hitran")
     #    s = pl.non_eq_spectrum(Tvib=T, Trot=T, Ttrans=T)
     s = sf.eq_spectrum(Tgas=T, name="RADIS")
 
@@ -183,21 +181,21 @@ def test_broadening_methods_different_conditions(
         s_voigt = sf.eq_spectrum(Tgas=T, name="direct")
 
         # assert broadening FWHM are correct
-        assert isclose(2 * float(sf.df1.hwhm_gauss), fwhm_gauss)
-        assert isclose(2 * float(sf.df1.hwhm_lorentz), fwhm_lorentz)
+        assert isclose(2 * sf.df1.hwhm_gauss[0], fwhm_gauss)
+        assert isclose(2 * sf.df1.hwhm_lorentz[0], fwhm_lorentz)
 
         sf.params.broadening_method = "convolve"
         s_convolve = sf.eq_spectrum(Tgas=T, name="convolve")
 
         # assert broadening FWHM are correct
-        assert isclose(2 * float(sf.df1.hwhm_gauss), fwhm_gauss)
-        assert isclose(2 * float(sf.df1.hwhm_lorentz), fwhm_lorentz)
+        assert isclose(2 * sf.df1.hwhm_gauss[0], fwhm_gauss)
+        assert isclose(2 * sf.df1.hwhm_lorentz[0], fwhm_lorentz)
 
         res = get_residual(s_voigt, s_convolve, "abscoeff")
 
         if verbose:
             print(
-                f"{T} K, {p} bar: FWHM lorentz = {2 * float(sf.df1.hwhm_lorentz):.3f} cm-1, FWHM gauss = {2 * float(sf.df1.hwhm_gauss):.3f} cm-1"
+                f"{T} K, {p} bar: FWHM lorentz = {2 * sf.df1.hwhm_lorentz[0]:.3f} cm-1, FWHM gauss = {2 * sf.df1.hwhm_gauss[0]:.3f} cm-1"
             )
 
         if plot:
@@ -1135,6 +1133,6 @@ def _run_testcases(plot=False, verbose=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-
-    printm("test_broadening: ", _run_testcases(plot=True, verbose=True, debug=False))
-    printm("Testing broadening:", pytest.main(["test_broadening.py", "--pdb"]))
+    test_broadening_methods_different_conditions()
+    # printm("test_broadening: ", _run_testcases(plot=True, verbose=True, debug=False))
+    # printm("Testing broadening:", pytest.main(["test_broadening.py", "--pdb"]))

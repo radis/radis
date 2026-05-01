@@ -521,7 +521,7 @@ def spectrum_refinement(s_data, conditions, verbose) -> Union[Spectrum, dict]:
     s_data_mtr = s_data_mtr[:, ~np.isnan(s_data_mtr).any(axis=0)]  # Purge NaN pairs
 
     if verbose:
-        print(f"NaN values successfully purged.", end="")
+        print("NaN values successfully purged.", end="")
         print(f"Number of data points left: {len(s_data_mtr[0])} points.")
 
     # Recreate the data spectrum with the spectral quantity

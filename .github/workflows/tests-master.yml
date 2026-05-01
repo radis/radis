@@ -13,7 +13,7 @@ jobs:
   build:
     strategy:
       fail-fast: false
-      max-parallel: 3
+      max-parallel: 5
       matrix:
         include:
           - os: ubuntu-latest
@@ -24,7 +24,6 @@ jobs:
             python-version: "3.12"
           - os: ubuntu-latest
             python-version: "3.13"
-          #Issue with Windows and Mac OS, see https://github.com/radis/radis/issues/864
           - os: windows-latest
             python-version: "3.10"
           - os: windows-latest
@@ -37,6 +36,9 @@ jobs:
             python-version: "3.11"
           - os: macos-latest
             python-version: "3.12"
+          - os: ubuntu-latest
+            python-version: "3.14"
+            continue-on-error: true #this is allowed to fail, as some dependencies may not yet be available
     runs-on: ${{ matrix.os }}
 
     steps:

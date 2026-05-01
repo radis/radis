@@ -43,7 +43,7 @@ they have been created, with
 
 More in :ref:`The Spectrum object <label_spectrum>`.
 
--------------------------------------------------------------------------------
+
 
 
 """
@@ -52,12 +52,9 @@ from copy import deepcopy
 from os.path import basename
 from warnings import warn
 
-import astropy.units as u
 import numpy as np
 import pandas as pd
-import plotly.express as px
 from numpy import abs, diff
-from scipy.integrate import trapezoid
 
 from radis.db.references import doi
 
@@ -360,6 +357,7 @@ class Spectrum(object):
         "_slit",
         "file",
         "_confidence",  # uncertainty/confidence band storage
+        "profiler",
     ]
 
     def __init__(
@@ -564,6 +562,7 @@ class Spectrum(object):
         self.name = name
         self.file = None  # used to store filename when loaded from a file
         # _confidence already initialized above in array creation section
+        self.profiler = None
 
         # Add references
         self.references = RefTracker(**references)
@@ -790,7 +789,7 @@ class Spectrum(object):
             sorts the arrays in ``file`` by wavespace. Convenient way to load
             a file where points have been manually added at the end. Default ``False``.
 
-        *Optional Spectrum parameters*
+        **Optional Spectrum parameters:**
 
         conditions: dict
             physical conditions and calculation parameters
@@ -1420,7 +1419,7 @@ class Spectrum(object):
 
         return w
 
-    def get_wavelength(self, medium="air", which=None, copy=True):
+    def get_wavelength(self, medium="air", copy=True):
         r"""Return wavelength in defined medium.
 
         Parameters
@@ -1445,12 +1444,6 @@ class Spectrum(object):
         --------
         :ref:`the Spectrum page <label_spectrum>`
         """
-        if which is not None:
-            raise DeprecationWarning(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_wavelength()"
-            )
-            # TODO: remove after 0.9.31
-
         # Check input
         if not medium in ["air", "vacuum"]:
             raise NotImplementedError(f"Unknown propagating medium: {medium}")
@@ -1483,7 +1476,7 @@ class Spectrum(object):
 
         return w
 
-    def get_wavenumber(self, which=None, copy=True):
+    def get_wavenumber(self, copy=True):
         r"""Return wavenumber (if the same for all quantities)
 
         Other Parameters
@@ -1498,12 +1491,6 @@ class Spectrum(object):
             (a copy of) spectrum wavenumber for convoluted or non convoluted
             quantities
         """
-        if which is not None:
-            raise DeprecationWarning(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_wavenumber()"
-            )
-            # TODO: remove after 0.9.31
-
         w = self._get_wavespace(copy=copy)
 
         if self.get_waveunit() == "cm-1":  #
@@ -1656,24 +1643,16 @@ class Spectrum(object):
             header=header,
         )
 
-    def update(self, quantity="all", optically_thin="default", verbose=True):
+    def update(self, quantity="all", optically_thin=None, verbose=True):
         r"""Calculate missing quantities: ex: if path_length and emisscoeff are
         given, recalculate radiance_noslit.
 
         Parameters
         ----------
-
-        spec: Spectrum
         quantity: str
             name of the spectral quantity to recompute. If 'same', only the quantities
             in the Spectrum are recomputed. If 'all', then all quantities that can
             be derived are recomputed. Default 'all'.
-        optically_thin: True, False, or 'default'
-            determines whether to calculate radiance with or without self absorption.
-            If 'default', the value is determined from the self_absorption key
-            in Spectrum.conditions. If not given, False is taken. Default 'default'
-            Also updates the self_absorption value in conditions (creates it if
-            doesnt exist
 
         Examples
         --------
@@ -1700,6 +1679,12 @@ class Spectrum(object):
         --------
 
         :ref:`the Spectrum page <label_spectrum>`
+
+        Notes
+        -----
+        To compute radiance in the optically thin approximation (without
+        self-absorption), set ``self.conditions['self_absorption'] = False``
+        before calling this method.
         """
 
         return update(
@@ -2110,33 +2095,21 @@ class Spectrum(object):
 
     # %% Plotting routines
 
-    def get_vars(self, which=None):
+    def get_vars(self):
         r"""Returns all spectral quantities stored in this object (convoluted or
         non convoluted)
 
         """
-        if which is not None:
-            raise DeprecationWarning(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_vars()"
-            )
-            # TODO: remove after 0.9.31
-
         # remove wavespace
         varlist = [k for k in self._q.keys() if k != "wavespace"]
         return varlist
 
-    def get_quantities(self, which=None):
+    def get_quantities(self):
         r"""Returns all spectral quantities stored in this object (convoluted or
         non convoluted). Wrapper to
         :py:meth:`~radis.spectrum.spectrum.get_vars`
 
         """
-        if which is not None:
-            raise DeprecationWarning(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_quantities()"
-            )
-            # TODO: remove after 0.9.31
-
         return self.get_vars()
 
     def _get_items(self) -> dict:
@@ -2470,6 +2443,8 @@ class Spectrum(object):
         # Get labels
         xlabel = format_xlabel(wunit, show_medium)
         ylabel = f"{make_up(var)} ({make_up_unit(Iunit, var)})"
+
+        import plotly.express as px
 
         fig = px.line(x=x, y=y, template=template)
         fig.update_layout(
@@ -3648,7 +3623,10 @@ class Spectrum(object):
                 self._q["wavespace"], w_conv
             ):
                 raise AssertionError(
-                    "Wavespace of convolved arrays is different, cannot store it in the same Spectrum. You can use Spectrum.apply_slit(inplace=False) to return a new spectrum with only the convolved arrays"
+                    "Wavespace of convolved arrays are different and they cannot be "
+                    "stored in the same Spectrum object. You can use "
+                    "Spectrum.apply_slit(inplace=False) to return a new spectrum "
+                    "with only the convolved arrays."
                 )
             for q in I_conv_slices.keys():
                 # Merge all slices
@@ -3979,7 +3957,7 @@ class Spectrum(object):
             else:  # Or use a given tuple or arrays
                 try:
                     (w, I) = overlay
-                except:
+                except (TypeError, ValueError):
                     raise ValueError(
                         "Overlay has to be string, or (w,I) tuple of " + "arrays"
                     )
@@ -4072,6 +4050,8 @@ class Spectrum(object):
             else:
                 return cond
         else:
+            import astropy.units as u
+
             if return_unit:
                 if hasattr(cond, "unit"):
                     return cond.to(unit).value, unit
@@ -4159,7 +4139,6 @@ class Spectrum(object):
                    memory_mapping_engine  auto
                    neighbour_lines      0 cm-1
                    optimization         simple
-                   parfuncfmt           hapi
                    parsum_mode          full summation
                    profiler             {'spectrum_calculation': {'check_line_databank': ...
                    pseudo_continuum_threshold  0
@@ -4231,12 +4210,18 @@ class Spectrum(object):
 
         Parameters
         ----------
-        path: path to folder (database) or file
-            if a folder, file is saved to database and name is generated automatically.
-            if a file name, then Spectrum is saved to this file and the later
-            formatting options dont apply
-        file: str
-            explicitly give a filename to save
+        path: str or file-like object
+            If a string: path to folder (database) or file. If a folder, file
+            is saved to database and name is generated automatically. If a file
+            name, then Spectrum is saved to this file and the later formatting
+            options dont apply.
+
+            If a file-like object (e.g., ``io.BytesIO``, ``io.StringIO``):
+            writes directly to the object without any file system operations.
+            Use ``BytesIO`` when ``compress=True`` (binary output), use
+            ``StringIO`` when ``compress=False`` (text output). When using
+            file-like objects, the ``add_date``, ``add_info``, and
+            ``if_exists_then`` parameters are ignored.
         compress: boolean
             if ``False``, save under text format, readable with any editor.
             if ``True``, saves under binary format. Faster and takes less space.
@@ -4265,7 +4250,10 @@ class Spectrum(object):
 
         Returns
         -------
-        Returns filename used
+        str or file-like object
+            If path was a string: filename used (may be different from given
+            path as new info or incremental identifiers are added).
+            If path was a file-like object: returns the same object.
 
 
         Notes
@@ -4283,6 +4271,14 @@ class Spectrum(object):
             s.store('test.spec', compress=True)   # s is a Spectrum
             s2 = load_spec('test.spec')
             s2.update()                           # regenerate missing quantities
+
+        Store a spectrum to a BytesIO buffer (no disk write)::
+
+            from io import BytesIO
+            buffer = BytesIO()
+            s.store(buffer, compress=True)
+            buffer.seek(0)  # Reset position for reading
+            # buffer.getvalue() contains the serialized spectrum
 
         .. minigallery:: radis.spectrum.spectrum.Spectrum.store
             :add-heading:
@@ -4513,7 +4509,6 @@ class Spectrum(object):
         energy_threshold="default",
         print_conservation=False,
         inplace=True,
-        if_conflict_drop=None,
         **kwargs,
     ):
         r"""Resample spectrum over a new wavelength/wavenumber range.
@@ -4589,13 +4584,6 @@ class Spectrum(object):
         --------
         :func:`radis.misc.signal.resample`, :py:meth:`radis.spectrum.spectrum.Spectrum.resample_even`
         """
-        # Check inputs (check for deprecated)
-        if if_conflict_drop is not None:
-            raise DeprecationWarning(
-                "`if_conflict_drop` parameter was deleted in Radis 0.9.30"
-            )
-            # TODO: remove after 0.9.31
-
         if inplace:
             s = self
         else:
@@ -4976,6 +4964,7 @@ class Spectrum(object):
 
         # Compute area under the curve of models.Voigt1D or models.Gaussian1D or models.Lorentz1D
         from astropy.modeling import models
+        from scipy.integrate import trapezoid
 
         for index, line in enumerate(g_fit_list):
             if isinstance(line, models.Voigt1D):
@@ -5632,7 +5621,7 @@ class Spectrum(object):
             try:
                 for k, v in self.populations.items():
                     print(" " * 2, k, "\t\t", list(v.keys()))
-            except:
+            except Exception:
                 pass
 
         # Print conditions
@@ -6106,7 +6095,10 @@ class Spectrum(object):
 
         from radis.spectrum.utils import print_perf_profile
 
-        profiler = self.conditions["profiler"]
+        profiler = getattr(self, "profiler", None)
+        if profiler is None:
+            warn("No profiler attached to this Spectrum instance.")
+            return None
         total_time = profiler["spectrum_calculation"]["value"]
 
         return print_perf_profile(
@@ -6121,7 +6113,7 @@ class Spectrum(object):
         r"""Generate a visual/interactive performance profile diagram using ``tuna``
 
         .. note::
-            requires a `profiler` key with in Spectrum.conditions
+            requires a profiler attached to ``Spectrum.profiler``
 
         .. warning::
             deprecated in favor of :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile`
@@ -6153,9 +6145,13 @@ class Spectrum(object):
         """
         from radis.spectrum.utils import generate_perf_profile
 
-        profiler = self.conditions["profiler"]["spectrum_calculation"].copy()
+        profiler_all = getattr(self, "profiler", None)
+        if profiler_all is None:
+            warn("No profiler attached to this Spectrum instance.")
+            return None
+        profiler = profiler_all.get("spectrum_calculation", {}).copy()
         # Add total calculation time:
-        profiler.update({"value": self.conditions["calculation_time"]})
+        profiler.update({"value": self.conditions.get("calculation_time")})
 
         return generate_perf_profile(profiler)
 
@@ -6290,6 +6286,8 @@ class Spectrum(object):
           (returns a copy)
         - for 2 Spectra: not defined
         """
+        import astropy.units as u
+
         if (
             isinstance(other, float)
             or isinstance(other, int)
@@ -6313,6 +6311,7 @@ class Spectrum(object):
 
     def __rmul__(self, other):
         r"""Right side multiplication."""
+        import astropy.units as u
 
         if (
             isinstance(other, float)
@@ -6342,6 +6341,8 @@ class Spectrum(object):
           (only if in front, i.e:  s *= 2)  (modifies inplace)
         - for 2 Spectra: not defined
         """
+        import astropy.units as u
+
         if (
             isinstance(other, float)
             or isinstance(other, int)
@@ -6368,6 +6369,8 @@ class Spectrum(object):
 
         - for numeric values: divide algebraically (equivalent to optically thin scaling)
         """
+        import astropy.units as u
+
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
 
@@ -6400,6 +6403,8 @@ class Spectrum(object):
         - for numeric values: divide quantities algebraically
         (equivalent to optically thin scaling)
         """
+        import astropy.units as u
+
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
 

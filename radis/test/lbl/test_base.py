@@ -64,7 +64,6 @@ def test_linestrength_calculations(*args, **kwargs):
     sf.load_databank(
         path=getTestFile("hitran_co_3iso_2000_2300cm.par"),
         format="hitran",
-        parfuncfmt="hapi",
     )
 
     # TODO : write an example of all the calculation steps in SpectrumFactory
@@ -816,16 +815,77 @@ def test_input_wunit(plot=True, *args, **kwargs):
     )
 
 
-def _run_testcases(verbose=True, plot=True):
+@pytest.mark.fast
+def test_print_conditions():
+    """Test print_conditions method of SpectrumFactory."""
+    setup_test_line_databases()
+    sf = SpectrumFactory(
+        wavenum_min=2000,
+        wavenum_max=2100,
+        wstep=0.01,
+        cutoff=1e-30,
+        path_length=0.1,
+        mole_fraction=0.01,
+        isotope=[1],
+        verbose=False,
+    )
+    sf.load_databank("HITRAN-CO-TEST")
+    # Hitting the prepend branch to ensure full test coverage
+    # and verify that it executes without raising exceptions.
+    assert sf.print_conditions() is None
+    assert sf.print_conditions(prepend="Test:") is None
 
-    # test_input_wunit()
-    # test_linestrength_calculations()
+
+@pytest.mark.fast
+def test_get_energy_levels_with_conditions():
+    """Test get_energy_levels method with conditions parameter."""
+    setup_test_line_databases()
+    sf = SpectrumFactory(
+        wavenum_min=2283,
+        wavenum_max=2285,
+        wstep=0.001,
+        cutoff=1e-30,
+        path_length=0.1,
+        mole_fraction=0.01,
+        isotope=[1],
+        verbose=False,
+    )
+    sf.warnings["MissingSelfBroadeningWarning"] = "ignore"
+    sf.warnings["NegativeEnergiesWarning"] = "ignore"
+    sf.load_databank("HITEMP-CO2-TEST", load_energies=True, load_columns="noneq")
+    sf.non_eq_spectrum(Tvib=300, Trot=300)
+    energies_all = sf.get_energy_levels("CO2", 1, "X")
+    energies_filtered = sf.get_energy_levels("CO2", 1, "X", conditions="j==0")
+    assert len(energies_all) > 0 and len(energies_filtered) <= len(energies_all)
+
+
+@pytest.mark.fast
+def test_assert_no_nan_error_handling():
+    """Test assert_no_nan raises proper error when NaN values present."""
+    import pandas as pd
+
+    setup_test_line_databases()
+    sf = SpectrumFactory(
+        wavenum_min=2000,
+        wavenum_max=2100,
+        wstep=0.01,
+        cutoff=1e-30,
+        path_length=0.1,
+        mole_fraction=0.01,
+        isotope=[1],
+        verbose=False,
+    )
+    sf.load_databank("HITRAN-CO-TEST")
+    with pytest.raises(AssertionError):
+        sf.assert_no_nan(pd.DataFrame({"col": [1.0, np.nan]}), "col")
+    sf.assert_no_nan(pd.DataFrame({"col": [1.0, 2.0]}), "col")
+
+
+def _run_testcases(verbose=True, plot=True):
     test_export_populations(plot=plot, verbose=verbose)
-    # test_export_rovib_fractions(plot=plot, verbose=verbose)
-    # test_populations_CO2_hamiltonian(plot=plot, verbose=verbose)
-    # test_optically_thick_limit_1iso(plot=plot, verbose=verbose)
-    # test_optically_thick_limit_2iso(plot=plot, verbose=verbose)
-    # test_get_wavenumber_range()
+    test_print_conditions()
+    test_get_energy_levels_with_conditions()
+    test_assert_no_nan_error_handling()
 
 
 if __name__ == "__main__":

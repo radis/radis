@@ -30,7 +30,6 @@ Routine Listing
 - :func:`~radis.misc.config.printDatabankEntries`
 - :func:`~radis.misc.config.printDatabankList`
 
--------------------------------------------------------------------------------
 
 
 """
@@ -107,18 +106,10 @@ path =                           #  no "", multipath allowed
 format = hitran                  #  'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
                                  # databank text file format. More info in
                                  # SpectrumFactory.load_databank function.
-parfuncfmt:                      #  'cdsd', 'hapi', etc.
-                                 # format to read tabulated partition function
-                                 # file. If `hapi`, then HAPI (HITRAN Python
-                                 # interface) is used to retrieve them (valid if
-                                 # your databank is HITRAN data). HAPI is embedded
-                                 # into RADIS. Check the version.
 # Optional
 # ----------
 parfunc:                         #  path to tabulated partition function to use.
-                                 # If `parfuncfmt` is `hapi` then `parfunc`
-                                 # should be the link to the hapi.py file. If
-                                 # not given, then the hapi.py embedded in RADIS
+                                 # If not given, then the hapi.py embedded in RADIS
                                  # is used (check version)
 levels_iso1                      #  path to energy levels (needed for non-eq
                                  # calculations). Default None
@@ -146,19 +137,10 @@ r"""str: Typical expected format of a ~/.radis entry::
                                      # formats in :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT`
                                      # More info in
                                      # :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank` function.
-    parfuncfmt:                      #  'cdsd', 'hapi', etc.
-                                     # format to read tabulated partition function
-                                     # file. If `hapi`, then HAPI (HITRAN Python
-                                     # interface) is used to retrieve them (valid if
-                                     # your databank is HITRAN data). HAPI is embedded
-                                     # into RADIS. Check the version.
-                                     # List of all formats in :py:data:`~radis.lbl.loader.KNOWN_LVLFORMAT`
     # Optional
     # ----------
     parfunc:                         #  path to tabulated partition function to use.
-                                     # If `parfuncfmt` is `hapi` then `parfunc`
-                                     # should be the link to the hapi.py file. If
-                                     # not given, then the hapi.py embedded in RADIS
+                                     # If not given, then the hapi.py embedded in RADIS
                                      # is used (check version)
     levels_iso1                      #  path to energy levels (needed for non-eq
                                      # calculations). Default None
@@ -200,18 +182,10 @@ DBFORMATJSON = r"""
     "format": "hitran",             # 'hitran' (HITRAN/HITEMP), 'cdsd-hitemp', 'cdsd-4000'
                                     # databank text file format. More info in
                                     # SpectrumFactory.load_databank function.
-    "parfuncfmt":                   # 'cdsd', 'hapi', etc.
-                                    # format to read tabulated partition function
-                                    # file. If `hapi`, then HAPI (HITRAN Python
-                                    # interface) is used to retrieve them (valid if
-                                    # your databank is HITRAN data). HAPI is embedded
-                                    # into RADIS. Check the version.
     # Optional
     # ----------
     "parfunc":                      # path to tabulated partition function to use.
-                                    # If `parfuncfmt` is `hapi` then `parfunc`
-                                    # should be the link to the hapi.py file. If
-                                    # not given, then the hapi.py embedded in RADIS
+                                    # If not given, then the hapi.py embedded in RADIS
                                     # is used (check version)
     "levels_iso1":                  # path to energy levels (needed for non-eq
                                     # calculations). Default None
@@ -242,19 +216,10 @@ r"""str: Typical expected format of a ~/radis.json entry in "database" key::
                                     # formats in :py:data:`~radis.lbl.loader.KNOWN_DBFORMAT`
                                     # More info in
                                     # :py:meth:`~radis.lbl.loader.DatabankLoader.load_databank` function.
-    "parfuncfmt":                   # 'cdsd', 'hapi', etc.
-                                    # format to read tabulated partition function
-                                    # file. If `hapi`, then HAPI (HITRAN Python
-                                    # interface) is used to retrieve them (valid if
-                                    # your databank is HITRAN data). HAPI is embedded
-                                    # into RADIS. Check the version.
-                                    # List of all formats in :py:data:`~radis.lbl.loader.KNOWN_LVLFORMAT`
     # Optional
     # ----------
     "parfunc":                      # path to tabulated partition function to use.
-                                    # If `parfuncfmt` is `hapi` then `parfunc`
-                                    # should be the link to the hapi.py file. If
-                                    # not given, then the hapi.py embedded in RADIS
+                                    # If not given, then the hapi.py embedded in RADIS
                                     # is used (check version)
     "levels_iso1":                  # path to energy levels (needed for non-eq
                                     # calculations). Default None
@@ -282,23 +247,21 @@ See Also
 """
 
 
-def get_user_config_configformat():
+def get_user_config_configformat(config_path=CONFIG_PATH_OLD):
     r"""Read config file and returns it.
 
     Config file name is hardcoded: :ref:`~/.radis <label_lbl_config_file>`
     """
 
     config = configparser.ConfigParser()
-    configpath = CONFIG_PATH_OLD
-
     # Test ~/.radis exists
-    if not exists(configpath):
+    if not exists(config_path):
 
         raise FileNotFoundError(
-            f"Create a `.radis` file in {dirname(configpath)} to store links to "
+            f"Create a `.radis` file in {dirname(config_path)} to store links to "
             + f"your local databanks. Format must be:\n {DBFORMAT}"
         )
-    config.read(configpath)
+    config.read(config_path)
 
     return config
 
@@ -314,7 +277,6 @@ def convertRadisToJSON(config_path_json, config_path_old=CONFIG_PATH_OLD):
         info = HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)
         path = PATH_TO\radis\radis\test\files\hitran_co2_626_bandhead_4165_4200nm.par
         format = hitran
-        parfuncfmt = hapi
         levelsfmt = radis
 
     -----------
@@ -326,7 +288,6 @@ def convertRadisToJSON(config_path_json, config_path_old=CONFIG_PATH_OLD):
                 "info": "HITRAN 2016 database, CO2, 1 main isotope (CO2-626), bandhead: 2380-2398 cm-1 (4165-4200 nm)",
                 "path": "PATH_TO\\radis\\radis\\test\\files\\hitran_co2_626_bandhead_4165_4200nm.par",
                 "format": "hitran",
-                "parfuncfmt": "hapi",
                 "levelsfmt": "radis"
             }
           }
@@ -514,11 +475,6 @@ def getDatabankEntries_configformat(dbname, get_extra_keys=[]):
                                          if your databank is HITRAN data). HAPI
                                          is embedded into RADIS. Check the version.
 
-        parfuncfmt:                      # 'cdsd'
-                                         # format to read tabulated partition function
-                                         # file. If `USE_HAPI` is given as `parfunc`
-                                         # parameter then this line should not be used.
-
         levels_iso1                      # path to energy levels (needed for non-eq)
                                          # calculations.
         levels_iso2                      # etc
@@ -611,7 +567,6 @@ def addDatabankEntries_configformat(dbname, dict_entries, verbose=True):
                 "info": "HITEMP2020 CO2 lines with TIPS-2017 for partition functions (equilibrium) and RADIS for rovibrational energies (nonequilibrium) ",
                 "path": ["PATH/TO/HITEMP/CO2/*.par"],
                 "format": "hitran",
-                "parfuncfmt": "hapi",
                 "levelsfmt": "radis",
             })
     """
@@ -645,7 +600,8 @@ def addDatabankEntries_configformat(dbname, dict_entries, verbose=True):
         config[dbname]["path"] = "\n       ".join(dict_entries.pop("path"))
 
     config[dbname]["format"] = dict_entries.pop("format")
-    config[dbname]["parfuncfmt"] = dict_entries.pop("parfuncfmt")
+    if "parfuncfmt" in dict_entries:
+        dict_entries.pop("parfuncfmt")
 
     # Optional:
     # ... partition functions:
@@ -662,7 +618,12 @@ def addDatabankEntries_configformat(dbname, dict_entries, verbose=True):
 
     # Allow some informative parameters
     # ... "download_url", "download_date", "wavenumber_min", "wavenumber_max" generated by fetch_hitemp
-    for entry in ["download_url", "download_date", "wavenumber_min", "wavenumber_max"]:
+    for entry in [
+        "download_url",
+        "download_date",
+        "wavenumber_min",
+        "wavenumber_max",
+    ]:
         if entry in dict_entries:
             config[dbname][entry] = dict_entries.pop(entry)
 
@@ -692,6 +653,10 @@ def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
 
     try:
         verbose_compare = "if_different" if verbose else False
+        # Filter out deprecated parfuncfmt key for backward compatibility
+        dict_entries1 = {k: v for k, v in dict_entries1.items() if k != "parfuncfmt"}
+        dict_entries2 = {k: v for k, v in dict_entries2.items() if k != "parfuncfmt"}
+
         assert len(dict_entries1) == len(dict_entries2)
         assert (
             compare_lists(
@@ -704,7 +669,7 @@ def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
         for k in dict_entries1.keys():
             v1 = dict_entries1[k]
             v2 = dict_entries2[k]
-            if k in ["info", "format", "parfunc", "parfuncfmt", "levelsfmt"]:
+            if k in ["info", "format", "parfunc", "levelsfmt"]:
                 assert v1.lower() == v2.lower()
             elif k in ["path"]:
                 assert (
@@ -725,6 +690,9 @@ def diffDatabankEntries(dict_entries1, dict_entries2, verbose=True):
                     )
                     == 1
                 )
+            elif k == "parfuncfmt":
+                # Ignore deprecated parfuncfmt key for backward compatibility
+                pass
             else:
                 raise ValueError("Unexpected key:", k)
 
@@ -811,11 +779,6 @@ def getDatabankEntries(dbname, get_extra_keys=[], configpath=CONFIG_PATH_JSON):
                                         interface) [1]_ is used to retrieve them (valid
                                         if your databank is HITRAN data). HAPI
                                         is embedded into RADIS. Check the version.
-
-        "parfuncfmt":                   # 'cdsd'
-                                        # format to read tabulated partition function
-                                        # file. If `USE_HAPI` is given as `parfunc`
-                                        # parameter then this line should not be used.
 
         "levels_iso1":                  # path to energy levels (needed for non-eq)
                                         # calculations.
@@ -921,7 +884,6 @@ def addDatabankEntries(dbname, dict_entries, verbose=True, configpath=CONFIG_PAT
                 "info": "HITEMP2020 CO2 lines with TIPS-2017 for partition functions (equilibrium) and RADIS for rovibrational energies (nonequilibrium) ",
                 "path": ["PATH/TO/HITEMP/CO2/*.par"],
                 "format": "hitran",
-                "parfuncfmt": "hapi",
                 "levelsfmt": "radis",
             })
     """
@@ -963,7 +925,7 @@ def addDatabankEntries(dbname, dict_entries, verbose=True, configpath=CONFIG_PAT
     # Optional:
     # ... partition functions:
     if "parfuncfmt" in dict_entries:
-        config[dbname]["parfuncfmt"] = dict_entries.pop("parfuncfmt")
+        dict_entries.pop("parfuncfmt")
     if "parfunc" in dict_entries:
         config[dbname]["parfunc"] = dict_entries.pop("parfunc")
 
@@ -977,7 +939,13 @@ def addDatabankEntries(dbname, dict_entries, verbose=True, configpath=CONFIG_PAT
 
     # Allow some informative parameters
     # ... "download_url", "download_date", "wavenumber_min", "wavenumber_max" generated by fetch_hitemp
-    for entry in ["download_url", "download_date", "wavenumber_min", "wavenumber_max"]:
+    for entry in [
+        "download_url",
+        "download_date",
+        "wavenumber_min",
+        "wavenumber_max",
+        "files",
+    ]:
         if entry in dict_entries:
             config[dbname][entry] = dict_entries.pop(entry)
 
