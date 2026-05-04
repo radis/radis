@@ -46,7 +46,6 @@ Routine Listing
 - :func:`~radis.db.classes.get_molecule`
 - :func:`~radis.db.classes.get_molecule_identifier`
 
--------------------------------------------------------------------------------
 """
 
 import re
@@ -219,10 +218,12 @@ trans = {
     "53": "CS2",
     "54": "CH3I",
     "55": "NF3",
-    "56": "HONO",
-    "57": "COFCl",
+    "56": "H3+",
+    "57": "CH3",
     "58": "S2",
-    "59": "ClNO2",
+    "59": "COFCl",
+    "60": "HONO",
+    "61": "ClNO2",
 }
 HITRAN_MOLECULES = list(trans.values())
 """ str: list of [HITRAN-2020]_ molecules. """

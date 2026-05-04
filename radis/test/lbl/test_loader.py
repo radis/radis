@@ -120,10 +120,10 @@ def test_ignore_cached_files():
 
     file_dir = getTestFile("cdsd_hitemp_09_fragment.txt")
     test_file = file_dir[:-8] + "*"
-    sf.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
+    sf.load_databank(path=test_file, format="cdsd-hitemp")
 
     try:
-        sf.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
+        sf.load_databank(path=test_file, format="cdsd-hitemp")
     except UnicodeDecodeError as err:
         raise UnicodeDecodeError(
             "Couldn't load database the 2nd time. This may be due to cache files trying to be read as normal files"
@@ -144,9 +144,7 @@ def test_ignore_irrelevant_files(*args, **kwargs):
     # Regenerate .h5 cache file
     sf = SpectrumFactory(wavenum_min=2280, wavenum_max=2290)
     test_file = getTestFile("cdsd_hitemp_09_fragment.txt")
-    sf.load_databank(
-        path=test_file, format="cdsd-hitemp", parfuncfmt="hapi", db_use_cached="regen"
-    )
+    sf.load_databank(path=test_file, format="cdsd-hitemp", db_use_cached="regen")
     assert exists(test_file.replace(".txt", ".h5"))
     # Also note that there was no EmptyDatabaseError : file was properly loaded!
 
@@ -158,7 +156,6 @@ def test_ignore_irrelevant_files(*args, **kwargs):
         sf2.load_databank(
             path=test_file,
             format="cdsd-hitemp",
-            parfuncfmt="hapi",
             db_use_cached="force",
         )
 
@@ -166,7 +163,7 @@ def test_ignore_irrelevant_files(*args, **kwargs):
     # ... Expect no IrrelevantFile error, however range should be empty.
     with pytest.raises(EmptyDatabaseError):
         sf3 = SpectrumFactory(wavenum_min=100000, wavenum_max=100002)
-        sf3.load_databank(path=test_file, format="cdsd-hitemp", parfuncfmt="hapi")
+        sf3.load_databank(path=test_file, format="cdsd-hitemp")
 
 
 @pytest.mark.fast

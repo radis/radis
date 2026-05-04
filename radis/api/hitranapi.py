@@ -15,7 +15,6 @@ Routine Listing
 - :func:`~radis.api.hitranapi.hitranxsc`
 
 
--------------------------------------------------------------------------------
 
 
 """
@@ -479,10 +478,14 @@ def post_process_hitran_data(
     if drop_non_numeric:
         if "branch" in df:
             replace_PQR_with_m101(df)
+        ierr = None
         if ("ierr" in df) and add_HITRAN_uncertainty_code:
             df["ierr"] = df["ierr"].astype(int64)
+            ierr = df["ierr"]
         if dataframe_type != "vaex":
             df = drop_object_format_columns(df, verbose=verbose)
+            if add_HITRAN_uncertainty_code and ierr is not None:
+                df["ierr"] = ierr
 
     return df
 
@@ -1860,8 +1863,8 @@ class HITRANDatabaseManager(DatabaseManager):
             )  # fetch_hitran stores all lines of a given molecule in one file
             local_file = local_file[0]
 
-        wmin = 1
-        wmax = 40000
+        wmin = 0
+        wmax = 1e10
 
         def download_all_hitran_isotopes(molecule, directory, extra_params):
             """Blindly try to download all isotopes 1 - 9 for the given molecule
@@ -1882,11 +1885,28 @@ class HITRANDatabaseManager(DatabaseManager):
 
             make_folders(*split(directory))
 
-            db_begin(directory)
+            # Use tqdm for isotope progress
+            import io
+            import sys
+
+            from tqdm import tqdm
+
+            # Suppress HAPI's verbose output (version banner, directory messages, etc.)
+            old_stdout = sys.stdout
+            sys.stdout = io.StringIO()
+            try:
+                db_begin(directory)
+            finally:
+                sys.stdout = old_stdout
+
             isotope_list = []
             data_file_list = []
             header_file_list = []
-            for iso in range(1, 10):
+            uncertainty_params = ["ierr", "iref"] if add_HITRAN_uncertainty_code else []
+
+            for iso in tqdm(
+                range(1, 10), desc="Downloading isotopes", disable=not self.verbose
+            ):
                 file = f"{molecule}_{iso}"
                 if exists(join(directory, file + ".data")):
                     if cache == "regen":
@@ -1901,21 +1921,35 @@ class HITRANDatabaseManager(DatabaseManager):
                         os.remove(join(directory, file + ".data"))
                 try:
                     for attempt in range(max_fetch_retries):
-                        if extra_params == "all":
-                            fetch(
-                                file,
-                                get_molecule_identifier(molecule),
-                                iso,
-                                wmin,
-                                wmax,
-                                ParameterGroups=[*PARAMETER_GROUPS_HITRAN],
-                            )
-                        elif extra_params is None:
-                            fetch(
-                                file, get_molecule_identifier(molecule), iso, wmin, wmax
-                            )
-                        else:
-                            raise ValueError("extra_params can only be 'all' or None ")
+                        # Suppress HAPI's verbose output (65536 bytes written...)
+                        old_stdout = sys.stdout
+                        sys.stdout = io.StringIO()
+                        try:
+                            if extra_params == "all":
+                                fetch(
+                                    file,
+                                    get_molecule_identifier(molecule),
+                                    iso,
+                                    wmin,
+                                    wmax,
+                                    ParameterGroups=[*PARAMETER_GROUPS_HITRAN],
+                                    Parameters=uncertainty_params,
+                                )
+                            elif extra_params is None:
+                                fetch(
+                                    file,
+                                    get_molecule_identifier(molecule),
+                                    iso,
+                                    wmin,
+                                    wmax,
+                                    Parameters=uncertainty_params,
+                                )
+                            else:
+                                raise ValueError(
+                                    "extra_params can only be 'all' or None "
+                                )
+                        finally:
+                            sys.stdout = old_stdout
 
                         ### We test if the download went well ###
                         df = pd.DataFrame(LOCAL_TABLE_CACHE[file]["data"])
@@ -1964,9 +1998,31 @@ class HITRANDatabaseManager(DatabaseManager):
 
         # Use HAPI only to download the files, then we'll parse them with RADIS's
         # parsers, and convert to RADIS's fast HDF5 file formats.
-        isotope_list, data_file_list, header_file_list = download_all_hitran_isotopes(
-            molecule, tempdir, extra_params
-        )
+
+        max_retries = 2
+        retry_count = 0
+
+        while retry_count < max_retries:
+            try:
+                (
+                    isotope_list,
+                    data_file_list,
+                    header_file_list,
+                ) = download_all_hitran_isotopes(molecule, tempdir, extra_params)
+                break  # Success, exit retry loop
+            except ValueError as e:
+                if "invalid literal for int() with base 10: '\\x00\\x00'" in str(e):
+                    retry_count += 1
+                    if retry_count < max_retries:
+                        warnings.warn(
+                            f"ValueError encountered during download. Retrying (attempt {retry_count}/{max_retries})...",
+                            UserWarning,
+                            stacklevel=2,
+                        )
+                    else:
+                        raise  # Re-raise on final attempt
+                else:
+                    raise  # Re-raise if it's a different ValueError
 
         writer = self.get_datafile_manager()
 
@@ -1974,6 +2030,9 @@ class HITRANDatabaseManager(DatabaseManager):
         Nlines = 0
         for iso, data_file in zip(isotope_list, data_file_list):
             df = pd.DataFrame(LOCAL_TABLE_CACHE[data_file.split(".")[0]]["data"])
+            if add_HITRAN_uncertainty_code and "ierr" not in df and "par_line" in df:
+                df["ierr"] = df["par_line"].str.slice(127, 133).str.strip()
+                df["iref"] = df["par_line"].str.slice(133, 145).str.strip()
             df.rename(
                 columns={
                     "molec_id": "id",
@@ -2001,6 +2060,10 @@ class HITRANDatabaseManager(DatabaseManager):
                 parse_quanta=parse_quanta,
                 add_HITRAN_uncertainty_code=add_HITRAN_uncertainty_code,
             )
+            if add_HITRAN_uncertainty_code and "ierr" not in df.columns:
+                raise KeyError(
+                    "HITRAN uncertainty column 'ierr' was requested but not loaded"
+                )
 
             wmin_final = min(wmin_final, df.wav.min())
             wmax_final = max(wmax_final, df.wav.max())
@@ -2080,7 +2143,6 @@ class HITRANDatabaseManager(DatabaseManager):
                 "wavenumber_min": self.wmin,
                 "wavenumber_max": self.wmax,
                 "download_date": self.get_today(),
-                "parfuncfmt": "hapi",
             }
         )
 

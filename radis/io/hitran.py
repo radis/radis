@@ -8,6 +8,7 @@ from os.path import abspath, expanduser, join
 from radis import config
 from radis.api.hitranapi import HITRANDatabaseManager
 from radis.misc.config import getDatabankEntries
+from radis.misc.database_progress import DatabaseProgressPrinter
 from radis.misc.warning import AccuracyWarning
 
 
@@ -205,21 +206,35 @@ def fetch_hitran(
         ldb.actual_file = local_files[0]
 
     # Download files
+    # Download files
+    # Initialize progress printer for consistent output
+    printer = DatabaseProgressPrinter(
+        database_name="HITRAN",
+        molecule=molecule,
+        verbose=verbose,
+    )
+    printer.header("Downloading database")
+
     if download_files:
+        printer.section("Download")
         main_files = ldb.get_filenames()
-        print(f"Attempting to download {main_files}")
+        printer.info(f"Downloading all isotopes for {molecule}", indent=1)
         if main_files:
             try:
                 ldb.download_and_parse(
                     main_files, cache=cache, parse_quanta=parse_quanta
                 )
             except OSError as err:
-                print(f"Error downloading : {err}.")
+                printer.warning(f"Error downloading: {err}")
                 raise
             else:
-                if verbose:
-                    print(f"Successfully downloaded")
+                printer.success("HITRAN database download complete")
                 ldb.actual_file = main_files[0]
+    else:
+        printer.section("Download")
+        printer.info("All files already downloaded.", indent=1)
+        printer.section("Caching to HDF5/H5 format")
+        printer.info("All files already cached.", indent=1)
 
     # Register
     if download_files or not ldb.is_registered():

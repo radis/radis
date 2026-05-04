@@ -9,25 +9,28 @@ https://stackoverflow.com/questions/55610891/numpy-load-from-io-bytesio-stream
 https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 
 """
+
 import json
 import os
 import re
 import time
 import urllib.request
 import warnings
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from os.path import basename, commonpath, join
 from typing import Union
 
 import numpy as np
 import pandas as pd
-import requests
-from bs4 import BeautifulSoup
-from cryptography.fernet import Fernet
-from tqdm import tqdm
 
 from radis.api.hdf5 import update_pytables_to_vaex
 from radis.db.hitemp_co2 import partial_download_co2_chunk
-from radis.misc.config import CONFIG_PATH_JSON, getDatabankEntries
+from radis.misc.config import (
+    CONFIG_PATH_JSON,
+    addDatabankEntries,
+    getDatabankEntries,
+    getDatabankList,
+)
 from radis.misc.warning import DatabaseAlreadyExists
 from radis.tools.read_wav_index import get_key_pairs
 
@@ -66,6 +69,7 @@ except ImportError:  # ran from here
         raise
 
 from radis.db import MOLECULES_LIST_NONEQUILIBRIUM
+from radis.misc.database_progress import DatabaseProgressPrinter
 from radis.misc.progress_bar import ProgressBar
 
 HITEMP_MOLECULES = ["H2O", "CO2", "N2O", "CO", "CH4", "NO", "NO2", "OH"]
@@ -253,6 +257,7 @@ def setup_credentials():
     is_rtd = os.environ.get("READTHEDOCS", "").lower() == "true"
     is_travis = os.environ.get("TRAVIS", "").lower() == "true"
     is_github_action = os.environ.get("GITHUB_ACTIONS", "").lower() == "true"
+    is_pytest = os.environ.get("PYTEST_CURRENT_TEST")
 
     # compatibly with old versions
     email = os.environ.get("HITRAN_EMAIL")
@@ -273,14 +278,24 @@ def setup_credentials():
 
     if (not email or not password) and not (is_rtd or is_travis or is_github_action):
         # In normal usage, fall back to prompt if environment variables not set
-        email = input("Enter HITRAN email: ")
-        password = _prompt_password(email)
+        import sys
+
+        if is_pytest and (not email or not password):
+            raise OSError(
+                "HITRAN_EMAIL and/or HITRAN_PASSWORD environment variables are not set, and the script is running in a non-interactive environment (e.g. captured stdin in pytest). Please set the environment variables or run with 'pytest -s' to allow interactive input."
+            )
+
+        if sys.stdin.isatty():
+            email = input("Enter HITRAN email: ")
+            password = _prompt_password(email)
 
     return email, password
 
 
 def get_encryption_key():
     """Get or create encryption key for HITRAN credentials"""
+    from cryptography.fernet import Fernet
+
     # Read existing radis.json
     config = read_config()
 
@@ -310,6 +325,8 @@ def get_encryption_key():
 
 def encrypt_password(password):
     """Encrypt password using Fernet symmetric encryption"""
+    from cryptography.fernet import Fernet
+
     key = get_encryption_key()
     f = Fernet(key)
     return f.encrypt(password.encode()).decode()
@@ -317,6 +334,8 @@ def encrypt_password(password):
 
 def decrypt_password(encrypted_password):
     """Decrypt password using Fernet symmetric encryption"""
+    from cryptography.fernet import Fernet
+
     key = get_encryption_key()
     f = Fernet(key)
     return f.decrypt(encrypted_password.encode()).decode()
@@ -354,6 +373,9 @@ def store_credentials(email, password):
 def login_to_hitran(verbose=False):
     """Login to HITRAN using stored credentials from radis.json or prompt if not available"""
     login_url = "https://hitran.org/login/"
+
+    import requests
+
     session = requests.Session()
 
     class LoginError(Exception):
@@ -398,6 +420,8 @@ def login_to_hitran(verbose=False):
                     f"HITRAN login failed due to a request error: {exc}. "
                     "Please check your network connection and try again."
                 )
+
+        from bs4 import BeautifulSoup
 
         soup = BeautifulSoup(response.text, "html.parser")
         csrf = soup.find("input", {"name": "csrfmiddlewaretoken"})["value"]
@@ -499,6 +523,8 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
             warnings.warn(warning_msg, UserWarning)
 
         with open(output_filename, "wb") as f:
+            from tqdm import tqdm
+
             with tqdm(
                 total=total_size,
                 unit="B",
@@ -611,6 +637,43 @@ def parse_one_CO2_block(
     return df
 
 
+def _download_single_chunk(
+    start_wavno, end_wavno, out_file, session, engine, verbose=True
+):
+    """Download a single CO2 chunk."""
+    if engine == "vaex":
+        fcache = _fcache_file_name(out_file, engine)
+        fcache_str = str(fcache)
+        if os.path.exists(fcache_str.replace(".hdf5", ".h5")):
+            update_pytables_to_vaex(fcache_str.replace(".hdf5", ".h5"))
+
+    partial_download_co2_chunk(
+        start_wavno,
+        end_wavno,
+        session,
+        out_file,
+        verbose=verbose,
+    )
+
+
+def _build_file_entry(par_path, wmin, wmax, engine):
+    """Build a per-file metadata dict for a single CO2 chunk."""
+
+    cache_path = str(_fcache_file_name(par_path, engine))
+    today = time.strftime("%Y-%m-%d %H:%M")
+    size_bytes = os.path.getsize(cache_path)
+
+    entry = {
+        "path": cache_path,
+        "wavenumber_min": wmin,
+        "wavenumber_max": wmax,
+        "download_date": today,
+        "size_mb": round(size_bytes / (1024 * 1024), 2),
+        "last_used": today,
+    }
+    return entry
+
+
 def read_and_write_chunked_for_CO2(
     load_wavenum_max,
     load_wavenum_min,
@@ -685,48 +748,67 @@ def read_and_write_chunked_for_CO2(
         if not (os.path.exists(fcache) or os.path.exists(out_decompressed_file)):
             files_to_download.append((start_wavno, end_wavno, out_decompressed_file))
 
-    if verbose:
-        print("-" * 80)
-        print(
-            f"CO2 - HITEMP 2024 - Downloading and processing {len(wav_pairs)} chunks for range {load_wavenum_min}-{load_wavenum_max} cm⁻¹"
-        )
-        print("-" * 80)
+    # Initialize progress printer
+    printer = DatabaseProgressPrinter(
+        database_name="HITEMP",
+        molecule="CO2",
+        verbose=verbose,
+        version="2024",
+    )
+    printer.header(
+        f"Downloading and processing {len(wav_pairs)} chunks for range {load_wavenum_min}-{load_wavenum_max} cm⁻¹"
+    )
 
     # Download section
     if files_to_download:
-        if verbose:
-            print(f"\n\x1B[4mDownload:\x1B[0m")
-            print(
-                f"- Download {len(files_to_download)} file(s) missing out of {len(wav_pairs)}."
+        printer.section("Download")
+        files_cached = len(wav_pairs) - len(files_to_download)
+        printer.download_summary(
+            files_needed=len(files_to_download),
+            files_total=len(wav_pairs),
+            files_cached=files_cached,
+        )
+
+        # Use parallel downloads for multiple chunks
+        if len(files_to_download) > 1:
+            printer.info("Starting parallel downloads...", level=1, indent=1)
+
+            cpu_threads = os.cpu_count() or 1
+            max_threads = min(max(cpu_threads - 1, 1), len(files_to_download), 4)
+
+            with ThreadPoolExecutor(max_workers=max_threads) as executor:
+                futures = [
+                    executor.submit(
+                        _download_single_chunk,
+                        start,
+                        end,
+                        out_file,
+                        session,
+                        engine,
+                        verbose,
+                    )
+                    for (start, end, out_file) in files_to_download
+                ]
+                for future in as_completed(futures):
+                    future.result()
+        else:
+            # Single chunk download - no threading overhead
+            start_wavno, end_wavno, out_file = files_to_download[0]
+            _download_single_chunk(
+                start_wavno, end_wavno, out_file, session, engine, verbose
             )
 
-        # Download each chunk with individual progress
-        for i, (start_wavno, end_wavno, out_decompressed_file) in enumerate(
-            files_to_download
-        ):
-            if engine == "vaex":
-                fcache = _fcache_file_name(out_decompressed_file, engine)
-                fcache_str = str(fcache)
-                if os.path.exists(fcache_str.replace(".hdf5", ".h5")):
-                    update_pytables_to_vaex(fcache_str.replace(".hdf5", ".h5"))
-
-            if verbose:
-                print(
-                    f"\nDownloading chunk {i+1}/{len(files_to_download)}: {start_wavno:.0f}-{end_wavno:.0f} cm⁻¹"
-                )
-
-            partial_download_co2_chunk(
-                start_wavno,
-                end_wavno,
-                session,
-                out_decompressed_file,
-                verbose=verbose,  # Show internal download progress
-            )
     else:
-        if verbose:
-            print(
-                f"\nAll files already downloaded. Loading from `.h5` or `.hdf5` files."
-            )
+        printer.section("Download")
+        printer.info("All files already downloaded.", indent=1)
+
+    printer.section("Caching to HDF5/H5 format")
+    if len(local_paths) == len(
+        [f for f in local_paths if os.path.exists(_fcache_file_name(f, engine))]
+    ):
+        printer.info("All files already cached.", indent=1)
+
+    from tqdm import tqdm
 
     with tqdm(
         total=len(local_paths), desc="Processing chunks", disable=not verbose
@@ -750,16 +832,20 @@ def read_and_write_chunked_for_CO2(
                 )
                 _append_dataframe(df)
 
+            # Register (or update last_used for) this file
+            wmin, wmax = wav_pairs[i]
+            file_entry = _build_file_entry(file, wmin, wmax, engine)
+            register_partial_hitemp_co2(file_entry)
+
             # Always remove .par file after processing
-            if os.path.exists(file):
-                os.remove(file)
+            # if os.path.exists(file):
+            #     os.remove(file)
 
             pbar.update(1)
 
     # Combine DataFrames
     if dataframes:
-        if verbose:
-            print("Combining parsed data from all chunks...")
+        printer.info("Combining parsed data from all chunks...", indent=1)
 
         if output == "vaex":
             import vaex
@@ -858,6 +944,55 @@ def download_and_decompress_CO2_into_df(
     return combined_df, local_files
 
 
+def register_partial_hitemp_co2(
+    file_entry,
+):
+    """
+    Register a partial HITEMP CO2 2024 download in radis.json.
+    """
+    databank_name = "HITEMP-CO2-2024"
+    from radis import config
+
+    today = time.strftime("%Y-%m-%d %H:%M")
+    cache_path = file_entry["path"]
+
+    # Merge with existing entry if present
+    if databank_name in getDatabankList():
+        existing = getDatabankEntries(databank_name)
+        files_meta = existing.get("files", [])
+        cache_paths = existing.get("path", [])
+        existing_file = next((f for f in files_meta if f["path"] == cache_path), None)
+        if existing_file is not None:
+            # Update last_used for the existing file
+            existing_file["last_used"] = today
+        else:
+            files_meta.append(file_entry)
+            cache_paths.append(cache_path)
+    else:
+        files_meta = [file_entry]
+        cache_paths = [cache_path]
+
+    cache_paths = list(dict.fromkeys(cache_paths))
+
+    info = f"HITEMP 2024, CO2, partial chunk download, {len(files_meta)} chunk(s)"
+    entry = {
+        "info": info,
+        "path": cache_paths,
+        "format": "hitemp-radisdb",
+        "wavenumber_min": "",
+        "wavenumber_max": "",
+        "download_date": today,
+        "files": files_meta,
+    }
+
+    old_overwrite = config["ALLOW_OVERWRITE"]
+    try:
+        config["ALLOW_OVERWRITE"] = True
+        addDatabankEntries(databank_name, dict(entry))
+    finally:
+        config["ALLOW_OVERWRITE"] = old_overwrite
+
+
 class HITEMPDatabaseManager(DatabaseManager):
     def __init__(
         self,
@@ -918,6 +1053,8 @@ class HITEMPDatabaseManager(DatabaseManager):
             text = file_response.text
 
             # Parse the HTML then Extract valid file URLs
+            from bs4 import BeautifulSoup
+
             soup = BeautifulSoup(text, "html.parser")
             table = soup.find("table")
             links = table.find_all("a", href=True)
@@ -1244,7 +1381,6 @@ class HITEMPDatabaseManager(DatabaseManager):
                     "info": info,
                     "path": local_files,
                     "format": "hitemp-radisdb",
-                    "parfuncfmt": "hapi",
                     "wavenumber_min": self.wmin,
                     "wavenumber_max": self.wmax,
                     "download_date": self.get_today(),

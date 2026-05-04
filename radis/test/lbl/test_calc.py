@@ -16,7 +16,7 @@ Run only fast tests (i.e: tests that have a 'fast' label)
 >>> pytest -m fast
 
 
--------------------------------------------------------------------------------
+
 
 
 """
@@ -368,24 +368,24 @@ def test_calc_spectrum_overpopulations(
 
     I_ref = np.array(
         [
-            0.67486785,
-            0.81622363,
-            0.79304703,
-            0.55360112,
-            0.58994659,
-            0.61157865,
-            0.52107744,
-            0.51866847,
-            0.47210067,
-            0.51107946,
-            0.45979748,
-            0.39722396,
+            0.67481252,
+            0.8162244,
+            0.79265991,
+            0.55284581,
+            0.58977946,
+            0.61140796,
+            0.52058259,
+            0.51859913,
+            0.47202512,
+            0.51092902,
+            0.45967962,
+            0.3974771,
             0.3493322,
-            0.32207141,
-            0.32954643,
-            0.13293136,
-            0.00640475,
-            0.00365381,
+            0.32168965,
+            0.3278813,
+            0.13260797,
+            0.00672379,
+            0.00378035,
         ]
     )
     if plot:
@@ -962,6 +962,20 @@ def test_diluents_for_molecule():
             assert diluent_for_this_molecule == {"air": 0.6, "CO2": 0.2}  # etc
 
 
+@pytest.mark.fast
+def test_wildcard_path_error():
+    """Ensure FileNotFoundError is raised when databank wildcard matches no files."""
+
+    with pytest.raises(FileNotFoundError):
+        calc_spectrum(
+            1900,
+            2300,
+            molecule="CO",
+            databank="/nonexistent/path/*.par",
+            Tgas=300,
+        )
+
+
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
     # Test sPlanck and conversion functions
@@ -1001,5 +1015,5 @@ def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
 # --------------------------
 if __name__ == "__main__":
-    test_non_air_diluent_calc()
+    test_all_calc_methods_CO2pcN()
     # printm("Testing calc.py: ", _run_testcases(verbose=True))

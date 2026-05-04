@@ -14,7 +14,7 @@ from radis.api.hitempapi import (
     keep_only_relevant,
 )
 from radis.io.hitemp import fetch_hitemp
-from radis.misc.config import getDatabankList
+from radis.misc.config import getDatabankEntries, getDatabankList
 from radis.misc.utils import NotInstalled, not_installed_vaex_args
 from radis.tools.read_wav_index import get_key_pairs
 
@@ -241,17 +241,47 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
 
     from os.path import basename  # use platform-aware basename
 
+    # This range triggers 2 chunks and parallel download
     df, local_files = fetch_hitemp(
         "CO2",
-        load_wavenum_min=0,  # cm-1
-        load_wavenum_max=100,
+        load_wavenum_min=2300,  # cm-1
+        load_wavenum_max=2500,
         verbose=3,
         return_local_path=True,
     )
 
     assert df.shape[1] == 24
-    assert len(local_files) == 1
-    assert basename(local_files[0]).startswith("CO2_02_00000-00261_HITEMP2024.")
+    assert len(local_files) == 2, f"Expected 2 files, got {len(local_files)}"
+    expected_files = [
+        "CO2_02_02273-02446_HITEMP2024.par",
+        "CO2_02_02446-02659_HITEMP2024.par",
+    ]
+    actual_files = [basename(f) for f in local_files]
+    assert (
+        actual_files == expected_files
+    ), f"Expected files {expected_files}, got {actual_files}"
+
+    # Verify registration in radis.json
+    assert "HITEMP-CO2-2024" in getDatabankList()
+    entry = getDatabankEntries("HITEMP-CO2-2024")
+    registered = {basename(f["path"]): f for f in entry["files"]}
+    for par_file in expected_files:
+        h5_file = par_file.replace(".par", ".h5")
+        assert (
+            h5_file in registered
+        ), f"Expected {h5_file} in registered files, got {list(registered)}"
+        meta = registered[h5_file]
+        assert all(
+            k in meta
+            for k in (
+                "wavenumber_min",
+                "wavenumber_max",
+                "download_date",
+                "last_used",
+                "size_mb",
+            )
+        )
+        assert meta["size_mb"] > 0
 
 
 def test_read_wav_index():

@@ -45,7 +45,7 @@ References
 
 
 
--------------------------------------------------------------------------------
+
 """
 
 # TODO: vectorize partition function calculations for different temperatures. Would need
@@ -1327,7 +1327,11 @@ class PartFuncTIPS(RovibParFuncTabulator):
         self.I = I
 
         # Get min and maximum of partition functions in TIPS
-        from hapi import TIPS_2021_ISOT_HASH
+        # Suppress HAPI import output
+        from contextlib import redirect_stdout
+
+        with redirect_stdout(None):
+            from hapi import TIPS_2021_ISOT_HASH
 
         TT = TIPS_2021_ISOT_HASH[(M, I)]
         self.Tmin = min(TT)
@@ -1381,7 +1385,7 @@ class PartFuncTIPS(RovibParFuncTabulator):
                 }
                 raise KeyError(
                     "KeyError spotted! "
-                    + f"If you are computing GEISA spectra, this result might be because of an "
+                    + "If you are computing GEISA spectra, this result might be because of an "
                     + f"unsupported isotope. Currently isotope ID {GEISA_ns_iso[molecule]} "
                     + f"of molecule {molecule} is not supported by HAPI partitional function, "
                     + "thus stopping this spectrum calculation. Please select other isotopes "

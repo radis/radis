@@ -8,7 +8,7 @@ The databases are stored in a hidden folder ``~/.radisdb`` on the user's compute
 The informations regarding each database are stored in the configuration file ``~/radis.json``, see the :ref:`Configuration file <label_lbl_config_file>` section.
 
 HITRAN / HITEMP
-------
+---------------
 
 HITRAN is designed for atmospheric applications. It is the most widely used line database.
 The HITRAN group also supports the HITEMP database, which is designed for high-temperature applications.

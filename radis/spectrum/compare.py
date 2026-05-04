@@ -18,7 +18,7 @@ Routine Listings
 - :func:`~radis.spectrum.compare.plot_diff`
 
 
--------------------------------------------------------------------------------
+
 
 
 
@@ -27,7 +27,6 @@ Routine Listings
 from warnings import warn
 
 import numpy as np
-from scipy.integrate import trapezoid
 
 from radis.misc.arrays import array_allclose
 from radis.misc.basics import compare_dict, compare_lists
@@ -110,8 +109,8 @@ def get_diff(
 
     # Get data
     # ----
-    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit, trim_nan=True)
-    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit, trim_nan=True)
+    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit, copy=False, trim_nan=True)
+    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit, copy=False, trim_nan=True)
 
     if not resample:
         if not array_allclose(w1, w2):
@@ -176,8 +175,8 @@ def get_ratio(
 
     # Get data
     # ----
-    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit)
-    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit)
+    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit, copy=False)
+    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit, copy=False)
 
     if not resample:
         if not array_allclose(w1, w2):
@@ -250,8 +249,8 @@ def get_distance(
 
     # Get data
     # ----
-    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit)
-    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit)
+    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit, copy=False)
+    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit, copy=False)
 
     if not resample:
         if not array_allclose(w1, w2):
@@ -467,7 +466,7 @@ def get_residual_integral(
 
     # Get data
     # ----
-    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit)
+    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit, copy=False)
     wdiff, dI = get_diff(s1, s2, var, wunit=wunit, Iunit=Iunit, resample=True)
 
     # mask for 0
@@ -476,6 +475,8 @@ def get_residual_integral(
         wdiff, dI = wdiff[~b], dI[~b]
         b = np.isnan(I1)
         w1, I1 = w1[~b], I1[~b]
+
+    from scipy.integrate import trapezoid
 
     if var in ["transmittance", "transmittance_noslit"]:
         norm = 1 - trapezoid(I1, w1)
@@ -885,14 +886,14 @@ def plot_diff(
     # Plot compared spectra
     # ... note: if 'normalize', s1 & s2 have been edited by _get_wdiff_Idiff
     ax0.plot(
-        *s1.get(var, wunit=wunit, Iunit=Iunit),
+        *s1.get(var, wunit=wunit, Iunit=Iunit, copy=False),
         style,
         color="k",
         lw=3 * lw_multiplier,
         label=label1,
     )
     ax0.plot(
-        *s2.get(var, wunit=wunit, Iunit=Iunit),
+        *s2.get(var, wunit=wunit, Iunit=Iunit, copy=False),
         style,
         color="r",
         lw=1 * lw_multiplier,
@@ -1259,8 +1260,8 @@ def compare_spectra(
         # Compare spectral arrays
         # -----------
         for k in vars:
-            w, q = first.get(k, wunit=wunit, Iunit=first.units[k])
-            w0, q0 = other.get(k, wunit=wunit, Iunit=first.units[k])
+            w, q = first.get(k, wunit=wunit, Iunit=first.units[k], copy=False)
+            w0, q0 = other.get(k, wunit=wunit, Iunit=first.units[k], copy=False)
             if len(w) != len(w0):
                 print(
                     f"Wavespaces have different length (for {k}: {len(w)} vs {len(w0)})"
@@ -1301,15 +1302,15 @@ def compare_spectra(
                         verbose=verbose,
                         **kwargs,
                     )
-                except:
+                except Exception:
                     print(f"... couldn't plot {k}")
 
     else:
         # Compare spectral variables
         # -----------
         for k in vars:
-            w, q = first.get(k, wunit=wunit, Iunit=first.units[k])
-            w0, q0 = other.get(k, wunit=wunit, Iunit=first.units[k])
+            w, q = first.get(k, wunit=wunit, Iunit=first.units[k], copy=False)
+            w0, q0 = other.get(k, wunit=wunit, Iunit=first.units[k], copy=False)
             if len(w) != len(w0):
                 print(
                     f"Wavespaces have different length (for {k}: {len(w)} vs {len(w0)})"
@@ -1340,7 +1341,7 @@ def compare_spectra(
                         verbose=verbose,
                         **kwargs,
                     )
-                except:
+                except Exception:
                     print(f"... there was an error while plotting {k}")
 
         # Compare conditions and units

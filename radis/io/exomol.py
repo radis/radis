@@ -103,11 +103,11 @@ def fetch_exomol(
         If False, fetch all fields which are marked as available in the ExoMol definition
         file. If True, load only the first 4 columns of the states file
         ("i", "E", "g", "J"). The structure of the columns above 5 depend on the
-        the definitions file (*.def) and the Exomol version.
+        the definitions file (``*.def``) and the Exomol version.
         If ``skip_optional_data=False``, two errors may occur:
 
-            - a field is marked as present/absent in the *.def field but is
-              absent/present in the *.states file (ie both files are inconsistent).
+            - a field is marked as present/absent in the ``*.def`` field but is
+              absent/present in the ``*.states`` file (ie both files are inconsistent).
             - in the updated version of Exomol, new fields have been added in the
               states file of some species. But it has not been done for all species,
               so both structures exist. For instance, the states file of
@@ -155,9 +155,7 @@ def fetch_exomol(
     # refactor with "self._quantumNumbers" (which serves the same purpose)
 
     # Ensure isotope format:
-    try:
-        isotope = int(isotope)
-    except:
+    if not isinstance(isotope, (int, np.integer)):
         raise ValueError(
             f"In fetch_exomol, ``isotope`` must be an integer. Got `{isotope}` "
             + "Only one isotope can be queried at a time. "
@@ -167,16 +165,21 @@ def fetch_exomol(
     known_exomol_databases, recommended_database = get_exomol_database_list(
         molecule, full_molecule_name
     )
-    if verbose:
-        print("\n========== Loading Exomol database [start] ==========")
+
     _exomol_use_hint = "Select one of them with `fetch_exomol(DATABASE_NAME)`, `SpectrumFactory.fetch_databank('exomol', exomol_database=DATABASE_NAME')`, or `calc_spectrum(..., databank=('exomol', DATABASE_NAME))` \n"
+
+    # Track if we're using the default/recommended database
+    is_default_database = False
+
     if database is None or database == "default":
         if len(known_exomol_databases) == 1:
             database = known_exomol_databases[
                 0
             ]  # TODO: if there is only one, is it not the recommended one?
+            is_default_database = True
         elif recommended_database:
             database = recommended_database
+            is_default_database = True
             if verbose > 1:
                 print(
                     f"For {full_molecule_name}, the available databases are {known_exomol_databases}. {_exomol_use_hint}"
@@ -220,6 +223,7 @@ def fetch_exomol(
         cache=cache,
         skip_optional_data=skip_optional_data,
         verbose=verbose,
+        is_default_database=is_default_database,  # Pass the flag
         **kwargs,
     )
 
@@ -293,7 +297,7 @@ def fetch_exomol(
     if output == "jax":
         try:
             import jax.numpy as jnp
-        except:
+        except ImportError:
             import numpy as jnp
         df["logsij0"] += jnp.log(Ia)
     else:
@@ -328,6 +332,8 @@ def fetch_exomol(
         assert return_local_path
         out.append(mdb.to_partition_function_tabulator())
 
-    if verbose:
-        print("========== Loading Exomol database [end] ==========\n")
+    # Print completion message only if downloads occurred
+    if verbose and mdb._any_downloads:
+        print("\nExoMol database loading complete")
+
     return out

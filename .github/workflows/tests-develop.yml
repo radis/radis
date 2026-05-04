@@ -1,0 +1,60 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Tests on develop
+
+on:
+  push:
+    branches: [ "develop" ] #see python-package-master.yml for tests on master
+  pull_request:
+    branches: [ "develop" ]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      # max-parallel: 3
+      matrix:
+        include:
+          # Try only the oldest and latest supported versions of Python on develop, to speed up the tests. We test more versions on master (see python-package-master.yml)
+          - os: ubuntu-latest
+            python-version: "3.10"
+          - os: ubuntu-latest
+            python-version: "3.12"
+          - os: ubuntu-latest
+            python-version: "3.13" #added to test the behavior without vaex (compatible up to 3.12)
+          #For windows and macOS, we test only the Python 3.12, to speed up the tests.
+          - os: windows-latest
+            python-version: "3.12"
+          - os: macos-latest
+            python-version: "3.12"
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest specutils pytest-cov
+          pip install -e .
+      - name: Fast tests with pytest
+        run: |
+          pytest -m "fast and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC and not needs_gpu and not needs_HITRAN_credentials" --durations=10 --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml
+      - name: Long tests with pytest
+        if: always()
+        run: |
+          pytest -m "not fast and not needs_cuda and not download_large_databases and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP_PC and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM and not needs_gpu and not needs_HITRAN_credentials" --durations=10 --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml --cov-append
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: radis/radis
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false

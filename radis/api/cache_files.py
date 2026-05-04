@@ -17,7 +17,6 @@ See Also
 :py:func:`~radis.api.hitranapi.hit2df`,
 :py:func:`~radis.api.cdsdapi.cdsd2df`
 
--------------------------------------------------------------------------------
 """
 # TODO: start using .feather format. Faster than HDF5 for pandas Dataframe,
 # and can be multithreaded.
@@ -660,10 +659,6 @@ def filter_metadata(arguments, discard_variables=["self", "verbose"]):
     metadata = {k: v for (k, v) in metadata.items() if v is not None}
 
     return metadata
-
-
-def cache_file_name(fname, engine="pytables"):
-    raise DeprecationWarning("Use DataFileManager.cache_file() instead")
 
 
 if __name__ == "__main__":
