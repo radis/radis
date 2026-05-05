@@ -402,11 +402,44 @@ def test_sensitivity_analyzer_invalid_bounds():
 
 @pytest.mark.fast
 def test_sensitivity_analyzer_stub():
-    """Test that sobol_analysis raises NotImplementedError."""
-    sa = SensitivityAnalyzer(sf=None)
-    sa.add_parameter("Tgas", bounds=[1200, 1800])
-    with pytest.raises(NotImplementedError, match="Phase 3"):
-        sa.sobol_analysis()
+    """Test that sobol_analysis raises ImportError when SALib is missing."""
+    import sys
+    import types
+
+    # Temporarily block SALib by replacing all SALib modules with a
+    # sentinel module whose __getattr__ raises ImportError, and by
+    # also inserting a None for the submodules we import.
+    saved = {}
+    keys_to_block = [k for k in sys.modules if k == "SALib" or k.startswith("SALib.")]
+    for k in keys_to_block:
+        saved[k] = sys.modules.pop(k)
+
+    # Insert a blocker so 'from SALib.analyze import sobol' fails
+    blocker = types.ModuleType("SALib")
+    blocker.__path__ = []  # make it a package
+
+    def _raise(*a, **kw):
+        raise ImportError("blocked")
+
+    blocker.__getattr__ = _raise
+    sys.modules["SALib"] = blocker
+    sys.modules["SALib.analyze"] = None
+    sys.modules["SALib.analyze.sobol"] = None
+    sys.modules["SALib.sample"] = None
+    sys.modules["SALib.sample.sobol"] = None
+
+    try:
+        sa = SensitivityAnalyzer(sf=None)
+        sa.add_parameter("Tgas", bounds=[1200, 1800])
+        with pytest.raises(ImportError, match="SALib"):
+            sa.sobol_analysis()
+    finally:
+        # Remove blockers
+        for k in list(sys.modules.keys()):
+            if k == "SALib" or k.startswith("SALib."):
+                del sys.modules[k]
+        # Restore original modules
+        sys.modules.update(saved)
 
 
 # ============================================================================
@@ -484,6 +517,277 @@ def test_uncertainty_propagator_add_conditions():
     assert uq.model.has_line_uncertainty
 
 
+@pytest.mark.fast
+def test_uncertainty_propagator_propagate():
+    """Test the Monte Carlo propagation loop with a mock SpectrumFactory."""
+    from radis.test.tools.mock_sf import MockSpectrumFactory
+
+    sf = MockSpectrumFactory()
+    uq = UncertaintyPropagator(sf=sf)
+
+    # Add a simple condition uncertainty
+    uq.add_condition_uncertainty("Tgas", distribution="normal", std=10)
+
+    # Run propagation with very few samples for speed
+    result = uq.propagate(
+        Tgas=1500,
+        n_samples=5,
+        confidence_level=0.95,
+        method="monte_carlo",
+        seed=42,
+    )
+
+    assert isinstance(result, ConfidenceBandResult)
+    assert result.n_samples == 5
+    assert result.quantity == "radiance_noslit"
+    assert "mean" in result.get_stats()
+    # verify w was extracted correctly
+    assert len(result.wavenumber) == 100
+
+
+# ============================================================================
+# Phase 2: Line-Parameter Perturbation Tests
+# ============================================================================
+
+
+@pytest.mark.fast
+def test_line_parameter_perturbation():
+    """Test the perturb/restore cycle on df0."""
+    from radis.test.tools.mock_sf import MockSpectrumFactory
+
+    sf = MockSpectrumFactory(n_lines=10)
+    uq = UncertaintyPropagator(sf=sf)
+    uq.add_line_parameter_uncertainty(source="hitran")
+
+    # Save originals
+    orig_int = sf.df0["int"].values.copy()
+    orig_air = sf.df0["airbrd"].values.copy()
+
+    rng = np.random.default_rng(123)
+    uq._perturb_line_parameters(rng)
+
+    # Values should be different after perturbation
+    # Use array_equal (exact match) since perturbation adds noise
+    assert not np.array_equal(
+        sf.df0["int"].values, orig_int
+    ), "int column should be perturbed"
+
+    # Restore
+    uq._restore_line_parameters()
+    assert np.allclose(sf.df0["int"].values, orig_int), "int column should be restored"
+    assert np.allclose(
+        sf.df0["airbrd"].values, orig_air
+    ), "airbrd column should be restored"
+
+
+@pytest.mark.fast
+def test_propagate_with_line_uncertainty():
+    """Test MC propagation with line-parameter perturbation enabled."""
+    from radis.test.tools.mock_sf import MockSpectrumFactory
+
+    sf = MockSpectrumFactory()
+    uq = UncertaintyPropagator(sf=sf)
+    uq.add_line_parameter_uncertainty(source="hitran")
+    uq.add_condition_uncertainty("Tgas", distribution="normal", std=10)
+
+    result = uq.propagate(
+        Tgas=1500,
+        n_samples=5,
+        seed=42,
+    )
+
+    assert isinstance(result, ConfidenceBandResult)
+    assert result.n_samples == 5
+
+    # After propagation df0 should be restored
+    # (just verify no crash and result shape is correct)
+    assert result.spectra_array.shape == (5, 100)
+
+
+@pytest.mark.fast
+def test_confidence_band_plot():
+    """Test that plot_confidence_bands returns a matplotlib figure."""
+    import matplotlib
+
+    matplotlib.use("Agg")  # non-interactive backend
+
+    rng = np.random.default_rng(42)
+    wavenumber = np.linspace(2000, 2300, 50)
+    base = np.sin(wavenumber / 100)
+    spectra = base + rng.normal(0, 0.1, (20, 50))
+
+    result = ConfidenceBandResult(
+        wavenumber=wavenumber,
+        spectra_array=spectra,
+        quantity="radiance_noslit",
+    )
+
+    fig = result.plot_confidence_bands()
+    assert fig is not None
+    import matplotlib.pyplot as plt
+
+    plt.close(fig)
+
+    # Also test with show_individual
+    fig2 = result.plot_confidence_bands(show_individual=True)
+    assert fig2 is not None
+    plt.close(fig2)
+
+
+@pytest.mark.fast
+def test_latin_hypercube_sampling():
+    """Test that LHS produces correct sample shapes and coverage."""
+    rng = np.random.default_rng(42)
+    samples = UncertaintyPropagator._latin_hypercube_samples(
+        n_samples=64,
+        n_dims=3,
+        rng=rng,
+    )
+
+    assert samples.shape == (64, 3)
+    # All values should be in [0, 1)
+    assert np.all(samples >= 0.0)
+    assert np.all(samples < 1.0)
+
+    # Each column should have good coverage of [0, 1]
+    for d in range(3):
+        col = samples[:, d]
+        assert col.min() < 0.05, "LHS should cover near 0"
+        assert col.max() > 0.95, "LHS should cover near 1"
+
+
+@pytest.mark.fast
+def test_propagate_latin_hypercube():
+    """Test propagation with method='latin_hypercube'."""
+    from radis.test.tools.mock_sf import MockSpectrumFactory
+
+    sf = MockSpectrumFactory()
+    uq = UncertaintyPropagator(sf=sf)
+    uq.add_condition_uncertainty("Tgas", distribution="normal", std=10)
+
+    result = uq.propagate(
+        Tgas=1500,
+        n_samples=8,
+        method="latin_hypercube",
+        seed=42,
+    )
+
+    assert isinstance(result, ConfidenceBandResult)
+    assert result.n_samples == 8
+
+
+# ============================================================================
+# Phase 3: SensitivityAnalyzer Tests
+# ============================================================================
+
+
+@pytest.mark.fast
+def test_sensitivity_analyzer_sobol_with_mock():
+    """Test Sobol analysis with MockSpectrumFactory (requires SALib)."""
+    pytest.importorskip("SALib", reason="SALib not installed")
+    from radis.test.tools.mock_sf import MockSpectrumFactory
+
+    sf = MockSpectrumFactory()
+    sa = SensitivityAnalyzer(sf=sf)
+    sa.add_parameter("Tgas", bounds=[1400, 1600])
+
+    results = sa.sobol_analysis(n_samples=16)
+
+    assert "S1" in results
+    assert "ST" in results
+    assert "wavenumber" in results
+    assert results["S1"].shape[0] == 1  # 1 parameter
+    assert results["parameter_names"] == ["Tgas"]
+
+
+@pytest.mark.fast
+def test_sensitivity_analyzer_error_budget():
+    """Test error budget computation."""
+    pytest.importorskip("SALib", reason="SALib not installed")
+    from radis.test.tools.mock_sf import MockSpectrumFactory
+
+    sf = MockSpectrumFactory()
+    sa = SensitivityAnalyzer(sf=sf)
+    sa.add_parameter("Tgas", bounds=[1400, 1600])
+
+    results = sa.sobol_analysis(n_samples=16)
+    budget = sa.get_error_budget(results)
+
+    assert "Tgas" in budget
+    # With a single parameter, its normalised contribution should be 1.0
+    assert abs(budget["Tgas"] - 1.0) < 1e-10
+
+
+@pytest.mark.fast
+def test_sensitivity_analyzer_no_salib():
+    """Test graceful error when SALib is not installed."""
+    import sys
+    import types
+
+    # Temporarily block SALib
+    saved = {}
+    keys_to_block = [k for k in sys.modules if k == "SALib" or k.startswith("SALib.")]
+    for k in keys_to_block:
+        saved[k] = sys.modules.pop(k)
+
+    blocker = types.ModuleType("SALib")
+    blocker.__path__ = []
+
+    def _raise(*a, **kw):
+        raise ImportError("blocked")
+
+    blocker.__getattr__ = _raise
+    sys.modules["SALib"] = blocker
+    sys.modules["SALib.analyze"] = None
+    sys.modules["SALib.analyze.sobol"] = None
+    sys.modules["SALib.sample"] = None
+    sys.modules["SALib.sample.sobol"] = None
+
+    try:
+        sa = SensitivityAnalyzer(sf=None)
+        sa.add_parameter("Tgas", bounds=[1200, 1800])
+        with pytest.raises(ImportError, match="SALib"):
+            sa.sobol_analysis()
+    finally:
+        for k in list(sys.modules.keys()):
+            if k == "SALib" or k.startswith("SALib."):
+                del sys.modules[k]
+        sys.modules.update(saved)
+
+
+@pytest.mark.fast
+def test_sensitivity_analyzer_no_params():
+    """Test that sobol_analysis with no parameters raises ValueError."""
+    pytest.importorskip("SALib", reason="SALib not installed")
+
+    sa = SensitivityAnalyzer(sf=None)
+    with pytest.raises(ValueError, match="No parameters"):
+        sa.sobol_analysis()
+
+
+@pytest.mark.fast
+def test_sensitivity_analyzer_plot():
+    """Test that plot_sensitivity returns a matplotlib figure."""
+    pytest.importorskip("SALib", reason="SALib not installed")
+    import matplotlib
+
+    matplotlib.use("Agg")
+
+    from radis.test.tools.mock_sf import MockSpectrumFactory
+
+    sf = MockSpectrumFactory()
+    sa = SensitivityAnalyzer(sf=sf)
+    sa.add_parameter("Tgas", bounds=[1400, 1600])
+
+    results = sa.sobol_analysis(n_samples=16)
+    fig = sa.plot_sensitivity(results)
+    assert fig is not None
+
+    import matplotlib.pyplot as plt
+
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     test_decode_hitran_uncertainty_all_codes()
     test_decode_hitran_uncertainty_position()
@@ -513,11 +817,16 @@ if __name__ == "__main__":
     test_spectrum_confidence_band_not_stored()
     test_sensitivity_analyzer_add_parameter()
     test_sensitivity_analyzer_invalid_bounds()
-    test_sensitivity_analyzer_stub()
     test_get_auto_drop_columns_default()
     test_get_auto_drop_columns_preserve_uncertainty()
     test_get_auto_drop_columns_hitemp_preserve()
     test_get_auto_drop_columns_geisa()
     test_uncertainty_propagator_creation()
     test_uncertainty_propagator_add_conditions()
+    test_uncertainty_propagator_propagate()
+    test_line_parameter_perturbation()
+    test_propagate_with_line_uncertainty()
+    test_confidence_band_plot()
+    test_latin_hypercube_sampling()
+    test_propagate_latin_hypercube()
     print("All uncertainty tests passed!")

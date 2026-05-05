@@ -1062,8 +1062,10 @@ class SpectrumFactory(BandFactory):
 
         Notes
         -----
-        *(Phase 1 Stub)* Full line-parameter Monte Carlo propagation
-        will be available in Phase 2. Currently provides the interface.
+        This method uses Monte Carlo propagation to perturb both
+        experimental conditions and line parameters (based on HITRAN
+        ``ierr`` codes), producing a spectrum with attached confidence
+        bands.
 
         See Also
         --------

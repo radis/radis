@@ -540,6 +540,86 @@ class ConfidenceBandResult:
             "confidence_level": self.confidence_level,
         }
 
+    def plot_confidence_bands(
+        self,
+        ax=None,
+        show_mean=True,
+        show_individual=False,
+        alpha_band=0.3,
+        alpha_individual=0.05,
+        wunit="cm-1",
+        title=None,
+    ):
+        """Plot the confidence bands.
+
+        Parameters
+        ----------
+        ax : matplotlib.axes.Axes or None
+            Axes to plot on. If ``None``, a new figure is created.
+        show_mean : bool
+            Whether to plot the mean spectrum. Default ``True``.
+        show_individual : bool
+            Whether to overlay individual MC spectra. Default ``False``.
+        alpha_band : float
+            Alpha for the confidence band fill. Default 0.3.
+        alpha_individual : float
+            Alpha for individual spectra lines. Default 0.05.
+        wunit : str
+            Label for the x-axis unit. Default ``'cm-1'``.
+        title : str or None
+            Plot title. If ``None``, auto-generated.
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            The figure containing the plot.
+        """
+        import matplotlib.pyplot as plt
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(10, 5))
+        else:
+            fig = ax.get_figure()
+
+        cl = self.confidence_level
+
+        # Confidence band
+        ax.fill_between(
+            self.wavenumber,
+            self.lower,
+            self.upper,
+            alpha=alpha_band,
+            color="C0",
+            label=f"{cl*100:.0f}% confidence band",
+        )
+
+        # Mean
+        if show_mean:
+            ax.plot(self.wavenumber, self.mean, color="C0", linewidth=1.5, label="Mean")
+
+        # Individual spectra
+        if show_individual:
+            for i in range(self.n_samples):
+                ax.plot(
+                    self.wavenumber,
+                    self.spectra_array[i],
+                    color="C1",
+                    alpha=alpha_individual,
+                    linewidth=0.5,
+                )
+
+        ax.set_xlabel(f"Wavenumber ({wunit})")
+        ax.set_ylabel(self.quantity)
+        if title is None:
+            title = (
+                f"Uncertainty propagation — {self.n_samples} samples, "
+                f"{cl*100:.0f}% CI"
+            )
+        ax.set_title(title)
+        ax.legend(loc="best")
+        fig.tight_layout()
+        return fig
+
 
 # ============================================================================
 # UncertaintyPropagator
@@ -575,25 +655,46 @@ class UncertaintyPropagator:
 
         uq = UncertaintyPropagator(sf)
         uq.model.add_condition('Tgas', distribution='normal', std=50)
+        uq.model.add_line_uncertainty(source='hitran')
 
         result = uq.propagate(Tgas=1500, n_samples=100)
         w, lower, upper = result.get_confidence_band()
 
     Notes
     -----
-    Full Monte Carlo propagation (Phase 2) will iterate over
-    ``n_samples``, perturbing parameters according to the
-    :class:`UncertaintyModel` and collecting the resulting spectra.
+    The propagator supports two sources of uncertainty:
 
-    The current Phase 1 implementation provides the framework and
-    supports condition-parameter perturbation. Line-parameter
-    perturbation (perturbing individual ``S``, ``gamma_air``, etc.
-    based on ``ierr`` codes) will be added in Phase 2.
+    - **Condition-parameter perturbation**: perturbs experimental
+      conditions (``Tgas``, ``pressure``, ``mole_fraction``, etc.)
+      according to user-specified distributions.
+    - **Line-parameter perturbation**: perturbs individual line
+      parameters (``int``, ``airbrd``, ``selbrd``, ``Tdpair``,
+      ``Pshft``) based on HITRAN ``ierr`` uncertainty codes read
+      from the loaded databank.
+
+    Sampling can use plain Monte Carlo or Latin Hypercube Sampling
+    (``method='latin_hypercube'``). The MC loop can be parallelized
+    across CPU cores via ``joblib`` (set ``n_jobs > 1``).
     """
+
+    # Mapping from HITRAN ierr digit index to df0 column name
+    _IERR_TO_COLUMN = {
+        1: "int",  # line intensity S
+        2: "airbrd",  # air-broadened half-width γ_air
+        3: "selbrd",  # self-broadened half-width γ_self
+        4: "Tdpair",  # temperature-dependence exponent n_air
+        5: "Pshft",  # pressure-induced shift δ_air
+    }
+
+    # Which ierr indices use relative uncertainty (as fraction)
+    _RELATIVE_INDICES = {1, 2, 3, 4}
+    # Which use absolute uncertainty
+    _ABSOLUTE_INDICES = {5}
 
     def __init__(self, sf, model=None):
         self.sf = sf
         self.model = model or UncertaintyModel()
+        self._original_values = {}  # backup for restore
 
     def add_line_parameter_uncertainty(self, source="hitran"):
         """Enable line parameter uncertainty from database codes.
@@ -619,6 +720,133 @@ class UncertaintyPropagator:
         """
         self.model.add_condition(param, distribution, **kwargs)
 
+    # ------------------------------------------------------------------
+    # Line-parameter perturbation helpers
+    # ------------------------------------------------------------------
+
+    def _perturb_line_parameters(self, rng):
+        """Perturb line parameters in ``sf.df0`` based on ``ierr`` codes.
+
+        For each line in the databank that has an ``ierr`` column,
+        the relevant columns (``int``, ``airbrd``, ``selbrd``,
+        ``Tdpair``, ``Pshft``) are perturbed within the uncertainty
+        range indicated by the corresponding ``ierr`` digit.
+
+        Parameters
+        ----------
+        rng : numpy.random.Generator
+            Random number generator instance.
+
+        Notes
+        -----
+        Backs up original values so they can be restored with
+        :meth:`_restore_line_parameters`.
+        """
+        df0 = self.sf.df0
+        if "ierr" not in df0.columns:
+            return  # nothing to perturb
+
+        ierr_strs = df0["ierr"].astype(str).str.zfill(6)
+        n_lines = len(df0)
+
+        for digit_idx, col_name in self._IERR_TO_COLUMN.items():
+            if col_name not in df0.columns:
+                continue
+
+            original = df0[col_name].values.copy()
+            self._original_values[col_name] = original
+
+            # Extract per-line uncertainty code for this parameter
+            codes = ierr_strs.str[digit_idx].astype(int).values
+
+            # Build per-line sigma
+            sigma = np.zeros(n_lines, dtype=np.float64)
+            for code_val in range(1, 10):
+                mask = codes == code_val
+                if not np.any(mask):
+                    continue
+
+                if digit_idx in self._RELATIVE_INDICES:
+                    bounds = HITRAN_IERR_RELATIVE.get(code_val)
+                else:
+                    bounds = HITRAN_IERR_SHIFT.get(code_val)
+
+                if bounds is None:
+                    continue
+
+                min_unc, max_unc = bounds
+                if max_unc is None:
+                    max_unc = min_unc * 2  # conservative cap
+
+                # Use midpoint of range as 1-sigma
+                mid_unc = (min_unc + max_unc) / 2.0
+
+                if digit_idx in self._RELATIVE_INDICES:
+                    # Relative: mid_unc is in %, convert to fraction
+                    sigma[mask] = original[mask] * (mid_unc / 100.0)
+                else:
+                    # Absolute
+                    sigma[mask] = mid_unc
+
+            # Perturb: only where sigma > 0
+            perturb_mask = sigma > 0
+            if np.any(perturb_mask):
+                noise = rng.normal(0, 1, size=int(perturb_mask.sum()))
+                perturbed = original.copy()
+                perturbed[perturb_mask] += sigma[perturb_mask] * noise
+                # Ensure non-negative for physical quantities
+                if digit_idx in self._RELATIVE_INDICES:
+                    perturbed = np.maximum(perturbed, 0.0)
+                df0[col_name] = perturbed
+
+    def _restore_line_parameters(self):
+        """Restore original line parameters in ``sf.df0`` after
+        perturbation.
+
+        Reverts all columns modified by :meth:`_perturb_line_parameters`.
+        """
+        if not self._original_values:
+            return
+        df0 = self.sf.df0
+        for col_name, original in self._original_values.items():
+            if col_name in df0.columns:
+                df0[col_name] = original
+        self._original_values.clear()
+
+    # ------------------------------------------------------------------
+    # Latin Hypercube Sampling helper
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _latin_hypercube_samples(n_samples, n_dims, rng):
+        """Generate Latin Hypercube samples in [0, 1]^n_dims.
+
+        Parameters
+        ----------
+        n_samples : int
+            Number of samples.
+        n_dims : int
+            Number of dimensions.
+        rng : numpy.random.Generator
+            Random number generator.
+
+        Returns
+        -------
+        numpy.ndarray
+            Array of shape ``(n_samples, n_dims)`` with values in
+            ``[0, 1]``.
+        """
+        result = np.zeros((n_samples, n_dims))
+        for d in range(n_dims):
+            perm = rng.permutation(n_samples)
+            for i in range(n_samples):
+                result[perm[i], d] = (i + rng.random()) / n_samples
+        return result
+
+    # ------------------------------------------------------------------
+    # Main propagation
+    # ------------------------------------------------------------------
+
     def propagate(
         self,
         Tgas,
@@ -627,6 +855,7 @@ class UncertaintyPropagator:
         confidence_level=0.95,
         method="monte_carlo",
         seed=None,
+        n_jobs=1,
         **eq_spectrum_kwargs,
     ):
         """Run uncertainty propagation via Monte Carlo sampling.
@@ -647,6 +876,12 @@ class UncertaintyPropagator:
             ``'latin_hypercube'``. Default ``'monte_carlo'``.
         seed : int or None
             Random seed for reproducibility.
+        n_jobs : int
+            Number of parallel jobs (requires ``joblib``).
+            Default 1 (sequential). Set to ``-1`` for all cores.
+            **Note**: parallelization is only used when line-parameter
+            perturbation is *disabled*, since ``df0`` mutation is
+            not thread-safe.
         **eq_spectrum_kwargs
             Additional keyword arguments passed to
             ``sf.eq_spectrum()``.
@@ -655,11 +890,6 @@ class UncertaintyPropagator:
         -------
         ConfidenceBandResult
             Results container with mean, std, and confidence bands.
-
-        Notes
-        -----
-        Currently supports condition-parameter perturbation only.
-        Line-parameter perturbation will be implemented in Phase 2.
         """
         rng = np.random.default_rng(seed)
 
@@ -667,45 +897,94 @@ class UncertaintyPropagator:
         nominal_conditions = {"Tgas": Tgas}
         nominal_conditions.update(eq_spectrum_kwargs)
 
+        # ----------------------------------------------------------
         # Generate perturbed condition samples
-        condition_samples = {}
-        for param in self.model.condition_params:
-            if param in nominal_conditions:
-                nominal = nominal_conditions[param]
-            elif param == "mole_fraction":
-                nominal = self.sf.input.mole_fraction
-            elif param == "pressure":
-                nominal = self.sf.input.pressure
-            elif param == "path_length":
-                nominal = self.sf.input.path_length
-            else:
-                raise ValueError(
-                    f"Cannot find nominal value for " f"parameter '{param}'"
+        # ----------------------------------------------------------
+        params = self.model.condition_params
+        n_params = len(params)
+
+        if method == "latin_hypercube" and n_params > 0:
+            # LHS: generate uniform samples, then invert CDF
+            lhs_uniform = self._latin_hypercube_samples(n_samples, n_params, rng)
+            condition_samples = {}
+            for j, param in enumerate(params):
+                nominal = self._get_nominal(param, nominal_conditions)
+                info = self.model._conditions[param]
+                scipy_dist = info["scipy_dist"]
+                # Shift distribution to be centred on nominal
+                if info["distribution"] in ("normal", "truncnorm"):
+                    samples = scipy_dist.ppf(lhs_uniform[:, j]) + nominal
+                elif info["distribution"] == "uniform":
+                    samples = scipy_dist.ppf(lhs_uniform[:, j])
+                elif info["distribution"] == "lognormal":
+                    samples = scipy_dist.ppf(lhs_uniform[:, j])
+                else:
+                    samples = scipy_dist.ppf(lhs_uniform[:, j])
+                condition_samples[param] = samples
+        else:
+            condition_samples = {}
+            for param in params:
+                nominal = self._get_nominal(param, nominal_conditions)
+                condition_samples[param] = self.model.sample_condition(
+                    param,
+                    nominal,
+                    n_samples=n_samples,
+                    seed=rng.integers(0, 2**31),
                 )
-            condition_samples[param] = self.model.sample_condition(
-                param,
-                nominal,
-                n_samples=n_samples,
-                seed=rng.integers(0, 2**31),
-            )
 
-        # Run MC loop
-        spectra_list = []
-        wavenumber = None
+        has_line_unc = self.model.has_line_uncertainty
+        use_parallel = (n_jobs != 1) and not has_line_unc
 
-        for i in range(n_samples):
-            # Build kwargs for this sample
+        # ----------------------------------------------------------
+        # Single-sample computation function
+        # ----------------------------------------------------------
+        def _compute_single(i, sample_seed):
             sample_kwargs = dict(nominal_conditions)
             for param, samples in condition_samples.items():
                 sample_kwargs[param] = float(samples[i])
-
-            # Calculate spectrum
             s = self.sf.eq_spectrum(**sample_kwargs)
             w, I = s.get(spectral_quantity)
+            return w, I
 
-            if wavenumber is None:
-                wavenumber = w
-            spectra_list.append(I)
+        # ----------------------------------------------------------
+        # Run MC loop
+        # ----------------------------------------------------------
+        spectra_list = []
+        wavenumber = None
+
+        if use_parallel:
+            try:
+                from joblib import Parallel, delayed  # noqa: F811
+            except ImportError:
+                use_parallel = False
+
+        if use_parallel:
+            seeds = rng.integers(0, 2**31, size=n_samples)
+            results = Parallel(n_jobs=n_jobs)(
+                delayed(_compute_single)(i, int(seeds[i])) for i in range(n_samples)
+            )
+            wavenumber = results[0][0]
+            spectra_list = [r[1] for r in results]
+
+        if not use_parallel:
+            for i in range(n_samples):
+                # Perturb line parameters if enabled
+                if has_line_unc:
+                    self._perturb_line_parameters(rng)
+
+                sample_kwargs = dict(nominal_conditions)
+                for param, samples in condition_samples.items():
+                    sample_kwargs[param] = float(samples[i])
+
+                s = self.sf.eq_spectrum(**sample_kwargs)
+                w, I = s.get(spectral_quantity)
+
+                if has_line_unc:
+                    self._restore_line_parameters()
+
+                if wavenumber is None:
+                    wavenumber = w
+                spectra_list.append(I)
 
         spectra_array = np.array(spectra_list)
 
@@ -717,18 +996,31 @@ class UncertaintyPropagator:
             conditions=nominal_conditions,
         )
 
+    def _get_nominal(self, param, nominal_conditions):
+        """Resolve the nominal value for a condition parameter."""
+        if param in nominal_conditions:
+            return nominal_conditions[param]
+        elif param == "mole_fraction":
+            return self.sf.input.mole_fraction
+        elif param == "pressure":
+            return self.sf.input.pressure
+        elif param == "path_length":
+            return self.sf.input.path_length
+        else:
+            raise ValueError(f"Cannot find nominal value for parameter '{param}'")
+
 
 # ============================================================================
-# SensitivityAnalyzer (stub — full implementation in Phase 3)
+# SensitivityAnalyzer
 # ============================================================================
 
 
 class SensitivityAnalyzer:
     """Global sensitivity analysis for spectral simulations.
 
-    Uses Sobol' indices (via SALib) to determine which input
-    parameters contribute most to spectral uncertainty at each
-    wavenumber.
+    Uses Sobol' indices (via `SALib <https://salib.readthedocs.io>`_)
+    to determine which input parameters contribute most to spectral
+    uncertainty at each wavenumber.
 
     Parameters
     ----------
@@ -737,8 +1029,8 @@ class SensitivityAnalyzer:
 
     Notes
     -----
-    This is a Phase 3 stub. Full implementation requires the
-    optional ``SALib`` dependency.
+    Requires the optional ``SALib`` dependency
+    (``pip install SALib``).
 
     Examples
     --------
@@ -749,7 +1041,9 @@ class SensitivityAnalyzer:
         sa = SensitivityAnalyzer(sf)
         sa.add_parameter('Tgas', bounds=[1200, 1800])
         sa.add_parameter('mole_fraction', bounds=[0.05, 0.15])
-        indices = sa.sobol_analysis(n_samples=1024)
+        results = sa.sobol_analysis(n_samples=1024)
+        budget = sa.get_error_budget(results)
+        fig = sa.plot_sensitivity(results)
     """
 
     def __init__(self, sf):
@@ -779,6 +1073,16 @@ class SensitivityAnalyzer:
         """list: Names of parameters added for analysis."""
         return list(self._parameters.keys())
 
+    def _build_problem(self):
+        """Build a SALib-compatible problem dictionary."""
+        names = self.parameter_names
+        bounds = [self._parameters[n]["bounds"] for n in names]
+        return {
+            "num_vars": len(names),
+            "names": names,
+            "bounds": bounds,
+        }
+
     def sobol_analysis(
         self,
         n_samples=1024,
@@ -786,25 +1090,227 @@ class SensitivityAnalyzer:
     ):
         """Run Sobol' sensitivity analysis.
 
+        Generates a Sobol' quasi-random sample matrix, evaluates
+        the model (``sf.eq_spectrum``) at each sample point, and
+        computes first-order and total-order Sobol' indices at
+        each wavenumber.
+
         Parameters
         ----------
         n_samples : int
-            Number of Sobol' samples (must be power of 2).
+            Number of base Sobol' samples (must be power of 2).
+            Total model evaluations will be ``n_samples * (D + 2)``
+            where ``D`` is the number of parameters.
         spectral_quantity : str
-            Spectral quantity to analyze.
+            Spectral quantity to analyze. Default
+            ``'radiance_noslit'``.
 
         Returns
         -------
         dict
-            Placeholder. Full implementation in Phase 3.
+            Dictionary with keys:
+
+            - ``'S1'`` : numpy.ndarray of shape ``(D, n_wavenum)``
+              — first-order Sobol' indices
+            - ``'ST'`` : numpy.ndarray of shape ``(D, n_wavenum)``
+              — total-order Sobol' indices
+            - ``'S1_conf'`` : numpy.ndarray — confidence intervals
+            - ``'ST_conf'`` : numpy.ndarray — confidence intervals
+            - ``'wavenumber'`` : numpy.ndarray
+            - ``'parameter_names'`` : list of str
+            - ``'n_evaluations'`` : int
 
         Raises
         ------
-        NotImplementedError
-            This is a Phase 3 stub.
+        ImportError
+            If ``SALib`` is not installed.
+        ValueError
+            If no parameters have been added.
         """
-        raise NotImplementedError(
-            "SensitivityAnalyzer.sobol_analysis() will be "
-            "implemented in Phase 3. Requires the optional "
-            "'SALib' dependency."
-        )
+        try:
+            from SALib.analyze import sobol as sobol_analyze
+            from SALib.sample import sobol as sobol_sample
+        except ImportError:
+            raise ImportError(
+                "SensitivityAnalyzer requires the 'SALib' package. "
+                "Install it with: pip install SALib"
+            )
+
+        if not self._parameters:
+            raise ValueError("No parameters added. Use add_parameter() first.")
+
+        problem = self._build_problem()
+        D = problem["num_vars"]
+
+        # Generate Sobol' sample matrix
+        param_values = sobol_sample.sample(problem, n_samples)
+        n_evals = param_values.shape[0]
+
+        # Evaluate model at each sample point
+        wavenumber = None
+        spectra_list = []
+
+        for i in range(n_evals):
+            kwargs = {}
+            for j, name in enumerate(problem["names"]):
+                kwargs[name] = float(param_values[i, j])
+
+            s = self.sf.eq_spectrum(**kwargs)
+            w, I = s.get(spectral_quantity)
+
+            if wavenumber is None:
+                wavenumber = w
+            spectra_list.append(I)
+
+        Y = np.array(spectra_list)  # (n_evals, n_wavenum)
+        n_wavenum = Y.shape[1]
+
+        # Compute Sobol' indices at each wavenumber
+        S1 = np.zeros((D, n_wavenum))
+        ST = np.zeros((D, n_wavenum))
+        S1_conf = np.zeros((D, n_wavenum))
+        ST_conf = np.zeros((D, n_wavenum))
+
+        for k in range(n_wavenum):
+            si = sobol_analyze.analyze(problem, Y[:, k])
+            S1[:, k] = si["S1"]
+            ST[:, k] = si["ST"]
+            S1_conf[:, k] = si["S1_conf"]
+            ST_conf[:, k] = si["ST_conf"]
+
+        return {
+            "S1": S1,
+            "ST": ST,
+            "S1_conf": S1_conf,
+            "ST_conf": ST_conf,
+            "wavenumber": wavenumber,
+            "parameter_names": problem["names"],
+            "n_evaluations": n_evals,
+        }
+
+    def get_error_budget(self, sobol_results):
+        """Compute per-parameter variance contribution (error budget).
+
+        Averages Sobol' first-order indices across all wavenumbers
+        to produce a single percentage contribution for each
+        parameter.
+
+        Parameters
+        ----------
+        sobol_results : dict
+            Output from :meth:`sobol_analysis`.
+
+        Returns
+        -------
+        dict
+            Dictionary mapping parameter names to their average
+            first-order Sobol' index (fraction of total variance).
+        """
+        S1 = sobol_results["S1"]
+        names = sobol_results["parameter_names"]
+
+        # Average S1 across wavenumbers
+        avg_S1 = np.mean(S1, axis=1)
+
+        # Normalise so they sum to 1 (may not due to interactions)
+        total = np.sum(avg_S1)
+        if total > 0:
+            normalised = avg_S1 / total
+        else:
+            normalised = avg_S1
+
+        return {name: float(normalised[i]) for i, name in enumerate(names)}
+
+    def plot_sensitivity(
+        self, sobol_results, ax=None, kind="bar", index="S1", title=None
+    ):
+        """Plot a tornado / bar chart of Sobol' indices.
+
+        Parameters
+        ----------
+        sobol_results : dict
+            Output from :meth:`sobol_analysis`.
+        ax : matplotlib.axes.Axes or None
+            Axes to plot on. If ``None``, creates a new figure.
+        kind : str
+            ``'bar'`` for a bar chart (default) or ``'heatmap'``
+            for a wavenumber-resolved heatmap.
+        index : str
+            Which index to plot: ``'S1'`` (first-order) or
+            ``'ST'`` (total-order). Default ``'S1'``.
+        title : str or None
+            Plot title. Auto-generated if ``None``.
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            The figure containing the plot.
+        """
+        import matplotlib.pyplot as plt
+
+        names = sobol_results["parameter_names"]
+        S = sobol_results[index]  # (D, n_wavenum)
+        S_conf = sobol_results.get(f"{index}_conf", None)
+
+        if kind == "bar":
+            # Average across wavenumbers for a tornado chart
+            avg = np.mean(S, axis=1)
+            err = np.mean(S_conf, axis=1) if S_conf is not None else None
+
+            # Sort descending
+            order = np.argsort(avg)[::-1]
+            avg = avg[order]
+            sorted_names = [names[i] for i in order]
+            if err is not None:
+                err = err[order]
+
+            if ax is None:
+                fig, ax = plt.subplots(figsize=(8, max(3, len(names) * 0.5)))
+            else:
+                fig = ax.get_figure()
+
+            y_pos = np.arange(len(sorted_names))
+            ax.barh(
+                y_pos,
+                avg,
+                xerr=err,
+                align="center",
+                color="C0",
+                alpha=0.8,
+                edgecolor="C0",
+            )
+            ax.set_yticks(y_pos)
+            ax.set_yticklabels(sorted_names)
+            ax.invert_yaxis()
+            ax.set_xlabel(f"Sobol' {index} index")
+            if title is None:
+                label = "First-order" if index == "S1" else "Total-order"
+                title = f"{label} Sobol' Sensitivity Indices"
+            ax.set_title(title)
+            fig.tight_layout()
+            return fig
+
+        elif kind == "heatmap":
+            if ax is None:
+                fig, ax = plt.subplots(figsize=(10, max(3, len(names) * 0.5)))
+            else:
+                fig = ax.get_figure()
+
+            wavenumber = sobol_results["wavenumber"]
+            im = ax.imshow(
+                S,
+                aspect="auto",
+                cmap="viridis",
+                extent=[wavenumber[0], wavenumber[-1], len(names) - 0.5, -0.5],
+            )
+            ax.set_yticks(range(len(names)))
+            ax.set_yticklabels(names)
+            ax.set_xlabel("Wavenumber (cm⁻¹)")
+            fig.colorbar(im, ax=ax, label=f"Sobol' {index}")
+            if title is None:
+                title = f"Sobol' {index} — wavenumber resolved"
+            ax.set_title(title)
+            fig.tight_layout()
+            return fig
+        else:
+            raise ValueError(f"Unknown plot kind '{kind}'. " "Use 'bar' or 'heatmap'.")
