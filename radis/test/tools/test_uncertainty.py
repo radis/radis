@@ -545,6 +545,30 @@ def test_uncertainty_propagator_propagate():
     assert len(result.wavenumber) == 100
 
 
+@pytest.mark.fast
+def test_uncertainty_propagator_parallel():
+    """Test the Monte Carlo propagation loop with joblib parallelization."""
+    pytest.importorskip("joblib", reason="joblib not installed")
+    from radis.test.tools.mock_sf import MockSpectrumFactory
+
+    sf = MockSpectrumFactory()
+    uq = UncertaintyPropagator(sf=sf)
+
+    # Add condition uncertainty (line uncertainty must be disabled for parallel)
+    uq.add_condition_uncertainty("Tgas", distribution="normal", std=10)
+
+    # Run propagation with n_jobs=2
+    result = uq.propagate(
+        Tgas=1500,
+        n_samples=6,
+        n_jobs=2,
+        seed=42,
+    )
+
+    assert isinstance(result, ConfidenceBandResult)
+    assert result.n_samples == 6
+
+
 # ============================================================================
 # Phase 2: Line-Parameter Perturbation Tests
 # ============================================================================
@@ -663,7 +687,13 @@ def test_propagate_latin_hypercube():
 
     sf = MockSpectrumFactory()
     uq = UncertaintyPropagator(sf=sf)
+
+    # Test multiple distributions to hit all LHS code paths
     uq.add_condition_uncertainty("Tgas", distribution="normal", std=10)
+    uq.add_condition_uncertainty(
+        "mole_fraction", distribution="uniform", low=0.08, high=0.12
+    )
+    uq.add_condition_uncertainty("pressure", distribution="lognormal", s=0.1)
 
     result = uq.propagate(
         Tgas=1500,
@@ -773,6 +803,8 @@ def test_sensitivity_analyzer_plot():
 
     matplotlib.use("Agg")
 
+    import matplotlib.pyplot as plt
+
     from radis.test.tools.mock_sf import MockSpectrumFactory
 
     sf = MockSpectrumFactory()
@@ -780,12 +812,20 @@ def test_sensitivity_analyzer_plot():
     sa.add_parameter("Tgas", bounds=[1400, 1600])
 
     results = sa.sobol_analysis(n_samples=16)
-    fig = sa.plot_sensitivity(results)
+
+    # Test bar plot
+    fig = sa.plot_sensitivity(results, kind="bar")
     assert fig is not None
-
-    import matplotlib.pyplot as plt
-
     plt.close(fig)
+
+    # Test heatmap plot
+    fig_heat = sa.plot_sensitivity(results, kind="heatmap")
+    assert fig_heat is not None
+    plt.close(fig_heat)
+
+    # Test unknown plot
+    with pytest.raises(ValueError):
+        sa.plot_sensitivity(results, kind="unknown")
 
 
 if __name__ == "__main__":
