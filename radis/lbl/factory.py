@@ -268,8 +268,8 @@ class SpectrumFactory(BandFactory):
             can be used as a reference for comparison with other methods.
         - ``"fft"``: fast Fourier transform convolution.
             Only available with ``optimization="simple"`` or ``optimization="min-RMS"``.
-            Because LDM convolves all lines at once on large arrays,
-            this method is often more appropriate than real-space convolutions
+            Because LDM convolves all lines at once,
+            this method is often faster than real-space convolutions on large arrays
             (``"voigt_poly"``, ``"convolve"``).
 
         This SpectrumFactory parameter can be manually adjusted a posteriori with::

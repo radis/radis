@@ -26,7 +26,7 @@ conditions = {
     "pressure": 1,
     "wstep": 0.002,
     # also measure interpolation time
-    "truncation": trunc_ref,  # cm-1; Default value is 50 cm-1 but the value is decreased in this example to accelerate the computation
+    "truncation": trunc_ref,  # cm-1; Default value is 50 cm-1 but the value is decreased here to accelerate the execution of this example
     "cutoff": 1e-27,  # cm-1/(#.cm-2); Default is 1e-27
 }
 Tgas = 400
@@ -95,18 +95,19 @@ for method in ["convolve", "voigt_poly", "fft"]:
         # Compare the spectrum to the reference
         plot_diff(s_ref, s, "absorbance", yscale="log")
 
-#%% Compute reference spectrum
+# %% Compare computation time and residual for several truncation widths, LDM optimizations, and broadening methods
 """
-The spectrum computation can be accelerated by truncation the lineshape. The
-impact of the truncation on the performance is demonstrated here for several
-LDM optizations and broadening methods. For all methods and optimizations,
-the computation time increases linearly with truncation width. The residual
-between the truncation spectrum and the reference one decreases exponentially.
+Truncation speeds up spectrum computation. This section shows its effect on
+performance for several LDM optimizations and broadening methods. For all
+methods, computation time increases roughly linearly with truncation width,
+while the residual versus the reference decreases exponentially.
 
-For any broadening method, a decent residual of 1e-6 can be achieved with both
-LDM methods and the computation takes from 0.1 to 2 seconds. This has to be
-compared to the combination 'LDM = None' and 'broadening_method = convolve'
-which takes approximatelly 20 seconds.
+For any broadening method, a residual of diff/ref < 1e-6 is reachable with
+both LDM methods, with computation times from 0.1 to 2 seconds. This is much
+faster than 'LDM = None' with 'broadening_method = convolve', which takes
+about 20 seconds.
+
+Note that the 'fft' method does not use truncation which explains the differences in the sides of the CO spectrum.
 """
 s_ref = s_conv
 
