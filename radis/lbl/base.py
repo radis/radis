@@ -3970,6 +3970,8 @@ def get_wavenumber_range(
         If unitless, wunit is assumed as the accompanying unit.
     wunit: string
         The unit accompanying wmin and wmax. Cannot be passed without passing values for wmin and wmax.
+        Accepted values: ``'cm-1'``, ``'nm'``, ``'nm_air'``, ``'nm_vac'``.
+        ``'nm_air'`` and ``'nm_vac'`` override the ``medium`` parameter.
         Default: cm-1
     wavenum_min, wavenum_max: float, or `~astropy.units.quantity.Quantity` or ``None``
         wavenumbers
@@ -4012,6 +4014,15 @@ def get_wavenumber_range(
             "or `wavelength_min=..., wavelength_max=...` (in nm)"
             "We recommend to use units. Example: \n\n  import astropy.units as u\n  calc_spectrum(wmin=2000 / u.cm, wmax=2300 / u.cm, ..."
         )
+
+    # Allow medium-specific wavelength units
+    if not isinstance(wunit, Default) and isinstance(wunit, str):
+        if wunit in ["nm_vac", "nm_vacuum"]:
+            medium = "vacuum"
+            wunit = "nm"
+        elif wunit in ["nm_air"]:
+            medium = "air"
+            wunit = "nm"
 
     if not isinstance(wunit, Default):
         if not u.Unit(wunit).is_equivalent(u.m) and not u.Unit(wunit).is_equivalent(
