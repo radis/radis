@@ -513,7 +513,7 @@ class Parameters(ConditionDict):
         self.truncation = None  #: float: cutoff for half-width lineshape calculation (cm-1). Overwritten by SpectrumFactory
         self.neighbour_lines = None  #: float: extra range (cm-1) on each side of the spectrum to account for neighbouring lines. Overwritten by SpectrumFactory
         self.cutoff = None  #: float: linestrength cutoff (molecule/cm)
-        self.broadening_method = ""  #: str:``"voigt"``, ``"convolve"``, ``"fft"``
+        self.broadening_method = ""  #: str:``"voigt_poly"``, ``"convolve"``, ``"fft"``
         self.optimization = None  #: str: ``"simple"``, ``"min-RMS"``, ``None``
         self.db_use_cached = (
             None  #: bool: use (and generate) cache files for Line Database

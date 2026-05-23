@@ -58,7 +58,7 @@ def calc_spectrum(
     parsum_mode="full summation",
     optimization="simple",
     chunksize=None,
-    broadening_method="voigt",
+    broadening_method="voigt_poly",
     overpopulation=None,
     name=None,
     save_to="",
