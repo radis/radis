@@ -459,6 +459,7 @@ EXOMOL_MOLECULES = [
     "AlO",
     "AsH3",
     "BeH",
+    "BH",
     "C2",
     "C3",
     "C2H2",
@@ -501,6 +502,7 @@ EXOMOL_MOLECULES = [
     # "K", #not anymore since 01/07/2024
     "KCl",
     "KF",
+    "KH",
     "KOH",
     "LaO",
     "LiCl",
@@ -534,9 +536,10 @@ EXOMOL_MOLECULES = [
     "PN",
     "PO",
     "PS",
+    "S2",
     "ScO",  # added: 12/2024
     "SH",
-    "SO",  # new
+    "SO",
     "SO2",
     "SO3",
     "ScH",
