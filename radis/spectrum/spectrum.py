@@ -88,7 +88,20 @@ from radis.spectrum.utils import (
     make_up_unit,
     print_conditions,
 )
-from radis.tools.track_ref import RefTracker
+
+# RefTracker is imported lazily to avoid circular import with radis.tools
+# (radis.tools.__init__ imports radis.tools.database which imports Spectrum)
+_RefTracker = None
+
+
+def _get_RefTracker():
+    global _RefTracker
+    if _RefTracker is None:
+        from radis.tools.track_ref import RefTracker
+
+        _RefTracker = RefTracker
+    return _RefTracker
+
 
 # %% Spectrum class to hold results
 
@@ -559,7 +572,7 @@ class Spectrum(object):
         self.profiler = None
 
         # Add references
-        self.references = RefTracker(**references)
+        self.references = _get_RefTracker()(**references)
         if not doi["RADIS-2018"] in self.references:
             self.references.add(
                 doi["RADIS-2018"], "post-processing"
@@ -5378,8 +5391,8 @@ class Spectrum(object):
                 "You first need to register the dictionary of bibliographic references. Set `s.references= {'doi':'use in the calculation'}` "
             )
 
-        if not isinstance(self.references, RefTracker):
-            self.references = RefTracker(**self.references)
+        if not isinstance(self.references, _get_RefTracker()):
+            self.references = _get_RefTracker()(**self.references)
 
         return self.references.cite(format=format)
 
