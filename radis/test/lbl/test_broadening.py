@@ -122,8 +122,9 @@ def test_broadening_methods_different_conditions(
     verbose=True, plot=False, *args, **kwargs
 ):
     """
-    Test direct Voigt broadening vs convolution of Gaussian x Lorentzian
-    for different spectral grid resolution
+    Test direct a polynomial approximation of a Voigt broadening
+    vs convolution of Gaussian x Lorentzian for different spectral
+    grid resolutions.
 
     Notes
     -----
@@ -177,7 +178,7 @@ def test_broadening_methods_different_conditions(
         assert isclose(sf.df0.wav, 2150.856008)
 
         # Calculate spectra (different broadening methods)
-        sf.params.broadening_method = "voigt"
+        sf.params.broadening_method = "voigt_poly"
         s_voigt = sf.eq_spectrum(Tgas=T, name="direct")
 
         # assert broadening FWHM are correct
@@ -260,7 +261,7 @@ def test_broadening_methods_different_wstep(verbose=True, plot=False, *args, **k
         )  # 0.2)
         sf.load_databank("HITRAN-CO-TEST")
         #    s = pl.non_eq_spectrum(Tvib=T, Trot=T, Ttrans=T)
-        sf.params.broadening_method = "voigt"
+        sf.params.broadening_method = "voigt_poly"
         s_voigt = sf.eq_spectrum(Tgas=T, name="direct")
 
         sf.params.broadening_method = "convolve"
@@ -340,7 +341,7 @@ def test_broadening_LDM(verbose=True, plot=False, *args, **kwargs):
     s_ldm = sf.eq_spectrum(Tgas=T)
     s_ldm.name = f"LDM ({s_ldm.conditions['calculation_time']:.2f}s)"
     # LDM Voigt with Whiting approximation:
-    sf.params.broadening_method = "voigt"
+    sf.params.broadening_method = "voigt_poly"
     s_ldm_voigt = sf.eq_spectrum(Tgas=T)
     s_ldm_voigt.name = (
         f"LDM Whiting ({s_ldm_voigt.conditions['calculation_time']:.2f}s)"
@@ -612,11 +613,11 @@ def test_truncations_and_neighbour_lines(*args, **kwargs):
         calc_spectrum(
             **conditions,
             optimization="simple",
-            broadening_method="voigt",
+            broadening_method="voigt_poly",
             truncation=None,  # truncation is None
         )
     assert (
-        "Currently `broadening_method='voigt'` doesn't support computation of lineshape on the full spectral range, use `broadening_method='fft'` instead or use a truncation value > 0"
+        "Currently `broadening_method='voigt_poly'` doesn't support computation of lineshape on the full spectral range, use `broadening_method='fft'` instead or use a truncation value > 0"
         in str(err.value)
     )
 
@@ -649,7 +650,7 @@ def test_truncations_and_neighbour_lines(*args, **kwargs):
     s_dit_voigt_trunc10 = calc_spectrum(
         **conditions,
         optimization="simple",
-        broadening_method="voigt",  # = "fft"
+        broadening_method="voigt_poly",  # = "fft"
         truncation=10,  # truncation != 0
         neighbour_lines=0,
     )
@@ -662,7 +663,7 @@ def test_truncations_and_neighbour_lines(*args, **kwargs):
     s_lbl_voigt_trunc10 = calc_spectrum(
         **conditions,
         optimization=None,
-        broadening_method="voigt",
+        broadening_method="voigt_poly",
         wstep=0.31,  # floating point division can create issues. We test here.
         truncation=300,
         neighbour_lines=15,

@@ -1492,13 +1492,9 @@ class MdbExomol(DatabaseManager):
                     f"Caching the *.trans.bz2 file to the {engine} (*.h5) format. After the second time, it will become much faster.",
                     indent=2,
                 )
-                self._printer.info(
-                    "You can delete the 'trans.bz2' file by hand.", level=2, indent=2
-                )
                 trans = read_trans(
                     trans_file, engine="vaex" if engine == "vaex" else "csv"
                 )
-                # TODO: add option to delete file at the end
 
                 # Complete transition data with lookup on upper & lower state :
                 # In particular, compute gup and elower
@@ -1512,9 +1508,7 @@ class MdbExomol(DatabaseManager):
                 )
 
                 ##Recompute Line strength:
-                from radis.lbl.base import (  # TODO: move elsewhere
-                    linestrength_from_Einstein,
-                )
+                from radis.lbl.base import linestrength_from_Einstein
 
                 self.Sij0 = linestrength_from_Einstein(
                     A=trans["A"],

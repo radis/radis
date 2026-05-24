@@ -262,6 +262,86 @@ def test_medium(plot=False, verbose=True, debug=False, warnings=True, *args, **k
     assert all(s.get_wavelength(medium="vacuum") > s.get_wavelength(medium="air"))
 
 
+@pytest.mark.fast
+def test_plot_wunit_nm_medium_consistency(verbose=True, *args, **kwargs):
+    """Test that plot(wunit='nm') respects the medium from calculation
+    and that get_wavenumber_range accepts 'nm_vac'/'nm_air'.
+
+    Regression test for https://github.com/radis/radis/issues/707
+    """
+    from radis import Spectrum
+    from radis.lbl.base import get_wavenumber_range
+
+    # --- Test 1: get_wavenumber_range accepts 'nm_vac' and 'nm_air' ---
+    wmin_nm = 3403.0
+    wmax_nm = 3405.0
+
+    wn_min_vac, wn_max_vac = get_wavenumber_range(
+        wmin=wmin_nm, wmax=wmax_nm, wunit="nm_vac"
+    )
+    wn_min_vac2, wn_max_vac2 = get_wavenumber_range(
+        wmin=wmin_nm, wmax=wmax_nm, wunit="nm", medium="vacuum"
+    )
+    assert np.isclose(wn_min_vac, wn_min_vac2)
+    assert np.isclose(wn_max_vac, wn_max_vac2)
+
+    wn_min_air, wn_max_air = get_wavenumber_range(
+        wmin=wmin_nm, wmax=wmax_nm, wunit="nm_air"
+    )
+    wn_min_air2, wn_max_air2 = get_wavenumber_range(
+        wmin=wmin_nm, wmax=wmax_nm, wunit="nm", medium="air"
+    )
+    assert np.isclose(wn_min_air, wn_min_air2)
+    assert np.isclose(wn_max_air, wn_max_air2)
+
+    assert not np.isclose(
+        wn_min_vac, wn_min_air
+    ), "nm_vac and nm_air should produce different wavenumber conversions"
+
+    # --- Test 2: get(wunit='nm') respects medium from conditions ---
+    w_cm = np.linspace(2937.0, 2938.0, 100)
+    I = np.random.uniform(0.8, 1.0, len(w_cm))
+
+    s_vac = Spectrum.from_array(
+        w_cm,
+        I,
+        "transmittance_noslit",
+        wunit="cm-1",
+        Iunit="",
+        conditions={"medium": "vacuum"},
+    )
+    s_air = Spectrum.from_array(
+        w_cm,
+        I,
+        "transmittance_noslit",
+        wunit="cm-1",
+        Iunit="",
+        conditions={"medium": "air"},
+    )
+
+    w_nm_from_vac, _ = s_vac.get("transmittance_noslit", wunit="nm")
+    w_nm_from_air, _ = s_air.get("transmittance_noslit", wunit="nm")
+    w_nm_vac_explicit, _ = s_vac.get("transmittance_noslit", wunit="nm_vac")
+
+    # wunit='nm' on a vacuum spectrum should return vacuum wavelengths
+    assert np.allclose(
+        w_nm_from_vac, w_nm_vac_explicit
+    ), "get(wunit='nm') on a vacuum spectrum should return vacuum wavelengths"
+
+    # wunit='nm' on air vs vacuum spectrum should give different values
+    assert not np.allclose(
+        w_nm_from_vac, w_nm_from_air
+    ), "get(wunit='nm') should give different results for air vs vacuum spectra"
+
+    # Vacuum wavelengths > air wavelengths
+    assert all(
+        w_nm_from_vac > w_nm_from_air
+    ), "Vacuum wavelengths should be larger than air wavelengths"
+
+    if verbose:
+        printm("test_plot_wunit_nm_medium_consistency: OK")
+
+
 def _run_testcases(
     plot=False, verbose=True, debug=False, warnings=True, *args, **kwargs
 ):

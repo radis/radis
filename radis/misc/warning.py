@@ -191,9 +191,17 @@ class ZeroBroadeningWarning(UserWarning):
 
 
 class MissingPressureShiftWarning(UserWarning):
-    """Pressure-shift coefficient is missing in Line Database."""
+    """Pressure-shift coefficient (``Pshft``) is missing in Line Database.
 
-    # TODO : add docstring link to references of line database columns.
+    When missing, zero pressure shift is assumed.
+
+    The ``Pshft`` column is defined in:
+
+    - HITRAN format: :py:data:`~radis.api.hitranapi.columns_hitran`
+    - GEISA format: :py:data:`~radis.api.geisaapi.columns_geisa`
+    - CDSD format: :py:data:`~radis.api.cdsdapi.columns_cdsd`
+    """
+
     pass
 
 
