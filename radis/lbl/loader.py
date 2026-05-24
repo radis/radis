@@ -839,6 +839,12 @@ class DatabankLoader(object):
         if db_loading is not None:
             self.profiler.final["db_loading"] = db_loading
 
+    def _db_loading_profiler_level(self):
+        """Return the profiler level to use for databank loading."""
+        if "spectrum_calculation" in self.profiler.initial:
+            return 2
+        return 1
+
     def _reset_references(self):
         """Reset :py:class:`~radis.tools.track_refs.RefTracker`"""
 
@@ -1092,7 +1098,7 @@ class DatabankLoader(object):
         # | metadata to ensures that it is redownloaded if necessary.
         # | see implementation in load_databank.
 
-        self.profiler.start("db_loading", 1)
+        self.profiler.start("db_loading", self._db_loading_profiler_level())
 
         # Check inputs
         compare_source = source.casefold()
@@ -1793,7 +1799,7 @@ class DatabankLoader(object):
         ----------
         .. [1] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
         """
-        self.profiler.start("db_loading", 1)
+        self.profiler.start("db_loading", self._db_loading_profiler_level())
 
         # %% Check inputs
         # ---------
