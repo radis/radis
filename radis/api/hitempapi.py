@@ -723,6 +723,62 @@ def _parse_with_progress_multiprocess(
         return res
 
 
+def _parse_uncached_chunks(
+    uncached,
+    local_paths,
+    wav_pairs,
+    results,
+    printer,
+    columns,
+    engine,
+    output,
+    verbose,
+    parallel,
+):
+
+    if uncached:
+        parse_kwargs = dict(
+            columns=columns, engine=engine, output=output, verbose=False
+        )
+        cpu_threads = os.cpu_count() or 1
+        if parallel and len(uncached) > 1 and cpu_threads > 1:
+            n_workers = min(len(uncached), cpu_threads, max(4, cpu_threads // 2))
+
+            from joblib import Parallel, delayed
+
+            parallel_results = Parallel(n_jobs=n_workers)(
+                delayed(_parse_with_progress_multiprocess)(
+                    p_idx,
+                    local_paths[i],
+                    wav_pairs[i],
+                    len(uncached),
+                    verbose,
+                    parse_kwargs,
+                )
+                for p_idx, i in enumerate(uncached)
+            )
+            for idx, i in enumerate(uncached):
+                results[i] = parallel_results[idx]
+        else:
+            from tqdm import tqdm
+
+            with tqdm(
+                total=len(local_paths),
+                initial=len(local_paths) - len(uncached),
+                desc="Processing chunks",
+                disable=not verbose,
+            ) as pbar:
+                for i in uncached:
+                    results[i] = parse_one_CO2_block(
+                        local_paths[i],
+                        wav_range=wav_pairs[i],
+                        **parse_kwargs,
+                    )
+                    pbar.update(1)
+    else:
+        printer.info("All files already cached.", indent=1)
+
+
 def read_and_write_chunked_for_CO2(
     load_wavenum_max,
     load_wavenum_min,
@@ -854,8 +910,6 @@ def read_and_write_chunked_for_CO2(
 
     printer.section("Caching to HDF5/H5 format")
 
-    from tqdm import tqdm
-
     # Load cached chunks, collect uncached indices
     results = [None] * len(local_paths)
     uncached = []
@@ -868,46 +922,19 @@ def read_and_write_chunked_for_CO2(
             results[i] = cached_df
         else:
             uncached.append(i)
-    # Parse uncached chunks
-    if uncached:
-        parse_kwargs = dict(
-            columns=columns, engine=engine, output=output, verbose=False
-        )
-        cpu_threads = os.cpu_count() or 1
-        if parallel and len(uncached) > 1 and cpu_threads > 1:
-            n_workers = min(len(uncached), cpu_threads, max(4, cpu_threads // 2))
 
-            from joblib import Parallel, delayed
-
-            parallel_results = Parallel(n_jobs=n_workers)(
-                delayed(_parse_with_progress_multiprocess)(
-                    p_idx,
-                    local_paths[i],
-                    wav_pairs[i],
-                    len(uncached),
-                    verbose,
-                    parse_kwargs,
-                )
-                for p_idx, i in enumerate(uncached)
-            )
-            for idx, i in enumerate(uncached):
-                results[i] = parallel_results[idx]
-        else:
-            with tqdm(
-                total=len(local_paths),
-                initial=len(local_paths) - len(uncached),
-                desc="Processing chunks",
-                disable=not verbose,
-            ) as pbar:
-                for i in uncached:
-                    results[i] = parse_one_CO2_block(
-                        local_paths[i],
-                        wav_range=wav_pairs[i],
-                        **parse_kwargs,
-                    )
-                    pbar.update(1)
-    else:
-        printer.info("All files already cached.", indent=1)
+    _parse_uncached_chunks(
+        uncached,
+        local_paths,
+        wav_pairs,
+        results,
+        printer,
+        columns,
+        engine,
+        output,
+        verbose,
+        parallel,
+    )
 
     # Register metadata
     for i, file in enumerate(local_paths):
