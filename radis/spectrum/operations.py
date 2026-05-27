@@ -444,9 +444,9 @@ def crop(s: Spectrum, wmin=None, wmax=None, wunit=None, inplace=False) -> Spectr
     # Crop
     if len(s._q) > 0:
         b = ones_like(s._q["wavespace"], dtype=bool)
-        if wmin:
+        if wmin is not None:
             b *= wmin <= s._q["wavespace"]
-        if wmax:
+        if wmax is not None:
             b *= s._q["wavespace"] <= wmax
         for k, v in s._q.items():
             s._q[k] = v[b]
