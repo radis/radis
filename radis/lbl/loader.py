@@ -2273,9 +2273,9 @@ class DatabankLoader(object):
                 f"`pfsource` {pfsource} is not available for the species {species}. Try running `set_atomic_partition_functions` again with a different `pfsource`."
             )
         else:
-            self.params.parfuncpath = (
-                self.params.levelsfmt
-            ) = self.levelspath = None  # all these parameters are irrelevant for atoms
+            self.params.parfuncpath = self.params.levelsfmt = self.levelspath = (
+                None  # all these parameters are irrelevant for atoms
+            )
 
     def _init_rovibrational_energies(self, levels, levelsfmt):
         """Initializes non equilibrium partition (which contain rovibrational

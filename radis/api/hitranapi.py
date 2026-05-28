@@ -1965,7 +1965,9 @@ class HITRANDatabaseManager(DatabaseManager):
                         warnings.warn(warning_msg, UserWarning, stacklevel=2)
                         time.sleep(retry_delay)
                         retry_delay *= 2  # exponential
-                except KeyError as err:  # check for missing isotopes. If the isotope is missing, skip to next up to isotope 9
+                except (
+                    KeyError
+                ) as err:  # check for missing isotopes. If the isotope is missing, skip to next up to isotope 9
                     list_pattern = ["(", ",", ")"]
                     import re
 
