@@ -37,18 +37,18 @@ databank, database = "hitran", "default"
 conditions["optimization"] = None
 
 ## Using a convolution of Gaussian and Lorentzian, no optimization
-conditions[
-    "broadening_method"
-] = "convolve"  # Voigt = numpy.convolve("Gaussian", "Lorentzian")
+conditions["broadening_method"] = (
+    "convolve"  # Voigt = numpy.convolve("Gaussian", "Lorentzian")
+)
 sf = SpectrumFactory(**conditions)
 sf.fetch_databank(databank)
 s_conv = sf.eq_spectrum(Tgas=Tgas)
 s_conv.name = f"Convolution : {s_conv.c['calculation_time']:.1f}s"
 
 # Using a polynomial approximation, no optimization
-conditions[
-    "broadening_method"
-] = "voigt_poly"  # Voigt = polynomial approximation derived from Whithing
+conditions["broadening_method"] = (
+    "voigt_poly"  # Voigt = polynomial approximation derived from Whithing
+)
 sf = SpectrumFactory(**conditions)
 sf.fetch_databank(databank, database=database)
 s_poly = sf.eq_spectrum(Tgas=Tgas)
