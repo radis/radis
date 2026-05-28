@@ -34,6 +34,7 @@ def fetch_exomol(
     engine="default",
     output="pandas",
     skip_optional_data=True,
+    parallel=True,
     **kwargs,
 ):
     """Stream ExoMol file from EXOMOL website. Unzip and build a HDF5 file directly.
@@ -79,6 +80,9 @@ def fetch_exomol(
 
     Other Parameters
     ----------------
+    parallel: bool
+        if True, downloads files concurrently using a thread pool, significantly speeding up
+        the fetching process especially for databases with many transition files. Default is True.
     cache: bool, or ``'regen'`` or ``'force'``
         if ``True``, use existing HDF5 file. If ``False`` or ``'regen'``, rebuild it.
         If ``'force'``, crash if not cache file found. Default ``True``.
@@ -222,6 +226,7 @@ def fetch_exomol(
         skip_optional_data=skip_optional_data,
         verbose=verbose,
         is_default_database=is_default_database,  # Pass the flag
+        parallel=parallel,
         **kwargs,
     )
 
