@@ -1341,7 +1341,6 @@ class MdbExomol(DatabaseManager):
 
         if basic_exts:
             if self.parallel:
-                from concurrent.futures import ThreadPoolExecutor
 
                 with ThreadPoolExecutor(max_workers=4) as executor:
                     list(
@@ -1497,8 +1496,6 @@ class MdbExomol(DatabaseManager):
 
             if trans_downloads:
                 if self.parallel:
-                    from concurrent.futures import ThreadPoolExecutor
-
                     with ThreadPoolExecutor(
                         max_workers=min(4, len(trans_downloads))
                     ) as executor:
