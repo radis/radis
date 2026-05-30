@@ -95,6 +95,10 @@ extensions = [
     "sphinx.ext.linkcode",
 ]
 
+# Pin MathJax to v3; v4 output is rendering incorrectly for RADIS docs.
+mathjax_path = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+
+
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to your example scripts
     "gallery_dirs": "auto_examples",  # path to where to save gallery generated output
@@ -162,8 +166,29 @@ def run_apidoc(_):
         apidoc.main(argv)
 
 
+def _fix_math_backslashes(app, what, name, obj, options, lines):
+    """Normalize LaTeX backslashes in autodoc math blocks.
+
+    Docstrings are raw strings with doubled backslashes (\\frac, \\sqrt, ...),
+    which MathJax interprets as line breaks. Convert to single backslashes
+    inside ".. math::" blocks so formulas render correctly.
+    """
+    in_math = False
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith(".. math::"):
+            in_math = True
+            continue
+        if in_math:
+            if stripped == "" or line.startswith(" "):
+                lines[i] = line.replace("\\\\", "\\")
+                continue
+            in_math = False
+
+
 def setup(app):
     app.connect("builder-inited", run_apidoc)
+    app.connect("autodoc-process-docstring", _fix_math_backslashes, priority=999)
     # Use add_css_file if available (Sphinx >= 1.6), fallback for older Sphinx
     if hasattr(app, "add_css_file"):
         app.add_css_file("custom.css")  # for scrollable sidebar
