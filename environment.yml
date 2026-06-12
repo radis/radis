@@ -54,4 +54,3 @@ dependencies:
   - vaex-hdf5; python_version < '3.13' #latest version 4.19 is not on conda-forge yet
   - vaex-viz; python_version < '3.13'
   - vulkan
-

@@ -5,6 +5,7 @@
 
 State-dependant and state-independent degeneracies for molecules
 """
+
 # TODO: Make it a JSON file
 
 

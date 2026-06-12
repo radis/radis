@@ -26,7 +26,6 @@ See Also
 
 """
 
-
 from radis import calc_spectrum
 
 s = calc_spectrum(

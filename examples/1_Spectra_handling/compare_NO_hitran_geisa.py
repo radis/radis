@@ -7,6 +7,7 @@ Compare NO cross-sections from GEISA and ExoMol
 Auto-download, calculate, and compare NO spectra from the HITRAN and GEISA databases
 
 """
+
 import astropy.units as u
 
 from radis import calc_spectrum, plot_diff

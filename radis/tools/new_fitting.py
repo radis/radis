@@ -18,7 +18,6 @@ serves as a bridge between RADIS codebase and a future fitting feature on RADIS 
 
 """
 
-
 import json
 import time
 from typing import Union
