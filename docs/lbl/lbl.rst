@@ -20,6 +20,8 @@ Calculations are performed within the :class:`~radis.lbl.factory.SpectrumFactory
 .. toctree::
    :maxdepth: 3
 
+   gpu
+
 .. include:: _databases.rst
 
 Calculating spectra
@@ -222,7 +224,6 @@ the flow chart below:
 
 .. image:: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
     :alt: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
-    :scale: 100 %
 
 The detail of the functions that perform each step of the RADIS calculation flow chart
 is given in :ref:`Architecture <label_dev_architecture>`.
