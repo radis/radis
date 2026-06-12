@@ -109,8 +109,6 @@ sphinx_gallery_conf = {
     },
     # directory where function/class granular galleries are stored
     "backreferences_dir": "source/backreferences",
-    # Modules for which function/class level galleries are created.
-    "doc_module": ("radis"),
     "inspect_global_variables": True,
     "show_signature": False,
     # Sort example files within gallery subsections with their filename
@@ -202,7 +200,7 @@ def setup(app):
 intersphinx_mapping = {
     "astropy": ("https://docs.astropy.org/en/stable/", None),
     "astroquery": ("https://astroquery.readthedocs.io/en/latest/", None),
-    "exojax": ("https://secondearths.sakura.ne.jp/exojax/objects.inv", None),
+    "exojax": ("https://secondearths.sakura.ne.jp/exojax/", None),
     "fitroom": ("https://fitroom.readthedocs.io/en/latest/", None),
     "habanero": ("https://habanero.readthedocs.io/en/latest/", None),
     "joblib": ("https://joblib.readthedocs.io/en/latest/", None),
