@@ -1,21 +1,21 @@
 repos:
   - repo: https://github.com/psf/black
-    rev: 24.4.2
+    rev: 26.5.0
     hooks:
       - id: black
 
-  - repo: https://github.com/timothycrosley/isort
-    rev: 5.11.5
+  - repo: https://github.com/PyCQA/isort
+    rev: 9.0.0a3
     hooks:
       - id: isort
 
   - repo: https://github.com/PyCQA/flake8
-    rev: 7.1.1
+    rev: 7.3.0
     hooks:
       - id: flake8
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.3.0
+    rev: v6.0.0
     hooks:
       - id: mixed-line-ending
         args: ["--fix=lf"]
