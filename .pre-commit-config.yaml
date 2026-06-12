@@ -32,3 +32,14 @@ repos:
               ^.+\.dat|
               ^.+\.levels
           )
+      - id: end-of-file-fixer
+        exclude: |
+          (?x)(
+              ^.+\.spec|
+              ^.+\.dat|
+              ^.+\.levels
+          )
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+      - id: debug-statements
