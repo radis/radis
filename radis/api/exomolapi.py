@@ -266,7 +266,7 @@ def read_trans(transf, engine="vaex"):
         A=Einstein coefficient in s-1
         nu_lines=transition wavenumber in cm-1
 
-    See Table 12 in https://arxiv.org/pdf/1603.05890.pdf [Exomol-2016]_
+    See Table 12 in https://arxiv.org/pdf/1603.05890.pdf [ExoMol-2016]_
 
     Parameters
     ----------
