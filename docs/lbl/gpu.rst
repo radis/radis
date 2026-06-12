@@ -83,7 +83,7 @@ entire database must be transferred to the GPU. The real power of GPU accelerati
 becomes evident when computation times are not limited by data-transfer, i.e., when multiple
 consecutive spectra are synthesized. One obvious use case would be the fitting of a spectrum.
 Another one is interactive plotting, which can be done by calling
-:py:func:`~radis.lbl.factory.eq_spectrum_gpu_interactive()`. A usage example is shown below::
+:py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu_interactive`. A usage example is shown below::
 
     from radis.tools.plot_tools import ParamRange
     from radis import SpectrumFactory
@@ -123,13 +123,16 @@ Quantities that are to be varied must be initialized by a
 :py:func:`~radis.tools.plot_tools.ParamRange` (valmin, valmax, valinit) object, which
 takes the minimum value, maximum value, and init values of the scan range. Each `ParamRange()`
 object will spawn a slider widget in the plot window with which the parameter can be
- interactively adjusted. The algorithm is extremely fast for a large number of lines (>100M)
- and will update with very low latency (<200ms typically). The code is not currently optimized
- for large wavenumber ranges (>500cm-1) however, which may take a bit longer (up to a couple seconds),
- provided the GPU didn't run out of memory.
+interactively adjusted. The algorithm is extremely fast for a large number of lines (>100M)
+and will update with very low latency (<200ms typically). The code is not currently optimized
+for large wavenumber ranges (>500cm-1) however, which may take a bit longer (up to a couple seconds),
+provided the GPU didn't run out of memory.
 
 At this moment the application of the instrumental function is done on the CPU to benefit from all features
 already implemented in :py:func:`~radis.spectrum.Spectrum.apply_slit`. It is expected that these computations
 will also move to the GPU at some point in the future.
 
-Did you miss any feature implemented on GPU? or support for your particular system? The GPU code is heavily under development, so drop us a visit on [our Githup](https://github.com/radis/radis/issues/616) and let us know what you're looking for!
+Did you miss any feature implemented on GPU? Or support for your particular system? The GPU code is heavily under development, so drop us a visit on `our GitHub <https://github.com/radis/radis/issues/616>`__ and let us know what you're looking for!
+
+
+

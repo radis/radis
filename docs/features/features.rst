@@ -21,7 +21,7 @@ It includes:
 - Spatially heterogeneous spectra, see :ref:`see line-of-sight <label_los_index>`
 - Post-processing tools to load and :ref:`compare with experimental spectra <label_spectrum_howto_compare>`
 - A :ref:`Line Survey <label_spectrum_linesurvey>` tool to identify which lines correspond to a spectral feature.
-- A :ref:`Matlab implementation <label_matlab_access>`)
+- A `Matlab implementation <https://github.com/radis/radis/tree/develop/examples/5_MatLab>`__
 
 RADIS does *not* include, so far:
 
@@ -34,9 +34,12 @@ RADIS does *not* include, so far:
 RADIS also features:
 
 - :ref:`High Performances <label_lbl_performance>`: spectra are calculated up to several orders of magnitude faster than equivalent line-by-line codes.
+- :ref:`GPU Acceleration <label_radis_gpu>`: CUDA/Vulkan GPU-powered spectrum computation for real-time and interactive use with :py:meth:`~radis.lbl.factory.SpectrumFactory.eq_spectrum_gpu`.
 - In-the-browser calculations (no install needed) : see :ref:`🌱 RADIS Online <label_radis_online>`.
 - Automatic download of the latest HITRAN and HITEMP databases with :py:func:`~radis.lbl.calc.calc_spectrum`
 - Automatic testing and continuous integration tools for a reliable :ref:`Open-source Development <label_developer_guide>`.
+
+.. include:: thermo.rst
 
 New features
 ============
