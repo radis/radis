@@ -393,14 +393,14 @@ def crop(s: Spectrum, wmin=None, wmax=None, wunit=None, inplace=False) -> Spectr
     if stored_waveunit == "cm-1":
         # convert wmin, wmax to wavenumber
         if wunit == "nm":
-            if wmax0:
+            if wmax0 is not None:
                 wmin = nm_air2cm(wmax0)  # note: min/max inverted
-            if wmin0:
+            if wmin0 is not None:
                 wmax = nm_air2cm(wmin0)  # note: min/max inverted
         elif wunit == "nm_vac":
-            if wmax0:
+            if wmax0 is not None:
                 wmin = nm2cm(wmax0)  # note: min/max inverted
-            if wmin0:
+            if wmin0 is not None:
                 wmax = nm2cm(wmin0)  # note: min/max inverted
         elif wunit == "cm-1":
             pass
@@ -411,30 +411,30 @@ def crop(s: Spectrum, wmin=None, wmax=None, wunit=None, inplace=False) -> Spectr
         if wunit == "nm":
             pass
         elif wunit == "nm_vac":
-            if wmin0:
+            if wmin0 is not None:
                 wmin = vacuum2air(wmin0)
-            if wmax0:
+            if wmax0 is not None:
                 wmax = vacuum2air(wmax0)
         elif wunit == "cm-1":
-            if wmax0:
+            if wmax0 is not None:
                 wmin = cm2nm_air(wmax0)  # note: min/max inverted
-            if wmin0:
+            if wmin0 is not None:
                 wmax = cm2nm_air(wmin0)  # note: min/max inverted
         else:
             raise ValueError(wunit)
     elif stored_waveunit == "nm_vac":
         # convert wmin, wmax to wavelength vacuum
         if wunit == "nm":
-            if wmin0:
+            if wmin0 is not None:
                 wmin = air2vacuum(wmin0)
-            if wmax0:
+            if wmax0 is not None:
                 wmax = air2vacuum(wmax0)
         elif wunit == "nm_vac":
             pass
         elif wunit == "cm-1":
-            if wmax0:
+            if wmax0 is not None:
                 wmin = cm2nm(wmax0)  # note: min/max inverted
-            if wmin0:
+            if wmin0 is not None:
                 wmax = cm2nm(wmin0)  # note: min/max inverted
         else:
             raise ValueError(wunit)
@@ -444,9 +444,9 @@ def crop(s: Spectrum, wmin=None, wmax=None, wunit=None, inplace=False) -> Spectr
     # Crop
     if len(s._q) > 0:
         b = ones_like(s._q["wavespace"], dtype=bool)
-        if wmin:
+        if wmin is not None:
             b *= wmin <= s._q["wavespace"]
-        if wmax:
+        if wmax is not None:
             b *= s._q["wavespace"] <= wmax
         for k, v in s._q.items():
             s._q[k] = v[b]

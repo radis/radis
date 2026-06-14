@@ -63,6 +63,20 @@ def test_crop(verbose=True, *args, **kwargs):
     w3 = s3.get_wavelength()
     assert np.array_equal(w, w3)
 
+    # 5) A crop example with wmin=0.0 to verify 0.0 is not treated as None (GH #1000)
+    s4 = load_spec(getTestFile("CO_Tgas1500K_mole_fraction0.01.spec"), binary=True)
+    # Store original wavelengths and crop with wmin=0.0
+    s4_w_orig = s4.get_wavelength()
+    s4.crop(0.0, 4600, "nm")
+
+    w4 = s4.get_wavelength()
+    assert w4.min() >= 0.0 - 1e-10, "crop(wmin=0.0) should have applied the lower bound"
+    assert w4.max() <= 4600, "crop(wmax=4600) should have applied the upper bound"
+    # The result should differ from the original if the crop was actually applied
+    assert len(w4) < len(s4_w_orig), (
+        "crop(wmin=0.0, wmax=4600) should have removed points above 4600nm"
+    )
+
     print("Crop test cases passed successfully.")
 
 
