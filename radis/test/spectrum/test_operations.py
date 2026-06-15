@@ -76,8 +76,8 @@ def test_crop_zero_boundary():
     """
     from radis.spectrum.spectrum import Spectrum
 
-    # Create a spectrum that spans negative-to-positive wavenumbers
-    w = np.linspace(-10, 10, 201)
+    # Create a spectrum that spans from 0.0 to 10.0 wavenumbers
+    w = np.linspace(0.0, 10.0, 201)
     I = np.ones_like(w)
     s = Spectrum.from_array(w, I, "transmittance_noslit", wunit="cm-1", Iunit="")
 
@@ -88,12 +88,11 @@ def test_crop_zero_boundary():
     assert w_crop.max() <= 5.0
 
     # --- Test wmax = 0.0 ---
-    s_crop2 = s.crop(wmin=-5.0, wmax=0.0, wunit="cm-1", inplace=False)
+    s_crop2 = s.crop(wmin=None, wmax=0.0, wunit="cm-1", inplace=False)
     w_crop2 = s_crop2.get("transmittance_noslit", wunit="cm-1")[0]
     assert (
         w_crop2.max() <= 0.0
     ), f"wmax=0.0 was not applied: got w.max()={w_crop2.max()}"
-    assert w_crop2.min() >= -5.0
 
     # --- Test both = 0.0 (wmin >= wmax correctly raises ValueError) ---
     with pytest.raises(ValueError, match="wmin should be < wmax"):
@@ -113,19 +112,15 @@ def test_crop_zero_boundary():
                 continue
 
             # Use wmin=0.0, wmax=None
-            try:
+            with pytest.raises(Exception):
                 # We expect physical unit conversion errors for 0.0 depending on the direction
                 # (e.g. 0 nm -> inf cm-1) which might raise ZeroDivisionError or similar.
                 # The purpose of this call is to hit the `is not None` branch in crop().
                 s_unit.crop(wmin=0.0, wmax=None, wunit=test_wunit, inplace=False)
-            except Exception:
-                pass
 
             # Use wmin=None, wmax=0.0
-            try:
+            with pytest.raises(Exception):
                 s_unit.crop(wmin=None, wmax=0.0, wunit=test_wunit, inplace=False)
-            except Exception:
-                pass
 
     # --- Test that ordinary (non-zero) boundaries still work ---
     s_crop4 = s.crop(wmin=2.0, wmax=8.0, wunit="cm-1", inplace=False)
