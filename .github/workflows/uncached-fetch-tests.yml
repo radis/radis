@@ -1,7 +1,5 @@
-# Separate workflow to test actual database fetching from HITRAN, HITEMP, ExoMol, GEISA.
-# No cache - every run downloads fresh from the servers.
-# Known to fail intermittently due to server-side rate-limiting - this is NOT
-# a required check, but gives visibility into fetch regressions before merge.
+# Verifies live database fetching without cache (HITRAN, HITEMP, ExoMol, GEISA).
+# Non-blocking workflow: Expect occasional rate-limit failures from remote servers.before merge.
 
 name: Test fetch from databases
 
