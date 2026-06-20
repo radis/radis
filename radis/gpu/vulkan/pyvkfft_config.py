@@ -3,6 +3,7 @@
 """Global configuration variables. The approach is adapted
 from Numba's config.py
 """
+
 import os
 
 FFT_CACHE_NB = 32

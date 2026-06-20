@@ -34,7 +34,6 @@ spectrum. See the :ref:`Calculate a large spectrum by part <example_large_range_
 
 """
 
-
 # %%
 import astropy.units as u
 

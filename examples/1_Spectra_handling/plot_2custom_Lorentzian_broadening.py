@@ -16,6 +16,7 @@ The line shift is also calculated by default as 2/3 times the Van der Waals broa
 
 To make use of it, familiarise yourself with the column names that RADIS assigns to the relevant quantities you intend to use in `lbfunc`.
 """
+
 from radis import SpectrumFactory
 
 

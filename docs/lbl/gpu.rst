@@ -133,6 +133,3 @@ already implemented in :py:func:`~radis.spectrum.Spectrum.apply_slit`. It is exp
 will also move to the GPU at some point in the future.
 
 Did you miss any feature implemented on GPU? or support for your particular system? The GPU code is heavily under development, so drop us a visit on [our Githup](https://github.com/radis/radis/issues/616) and let us know what you're looking for!
-
-
-

@@ -13,6 +13,7 @@ Examples
 See more examples in the
 `RADIS line-of-sight module <https://radis.readthedocs.io/en/latest/los/index.html>`__
 """
+
 # Todo:
 #
 # - transport emisscoeff too
