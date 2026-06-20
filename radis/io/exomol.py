@@ -47,7 +47,9 @@ def fetch_exomol(
     database: ``str``
         database name. Ex: ``POKAZATEL`` or ``BT2`` for ``H2O``. See
         :py:data:`~radis.api.exomolapi.KNOWN_EXOMOL_DATABASE_NAMES`. If ``None`` and
-        there is only one database available, use it.
+        there is only one database available, use it. If multiple databases are
+        available but none is recommended by ExoMol (e.g., for ``13C-16O``), a
+        ``KeyError`` is raised and you must explicitly choose one.
     local_databases: ``str``
         where to create the RADIS HDF5 files. Default ``"~/.radisdb/exomol"``.
         Can be changed in ``radis.config["DEFAULT_DOWNLOAD_PATH"]`` or in ~/radis.json config file
@@ -166,7 +168,7 @@ def fetch_exomol(
         molecule, full_molecule_name
     )
 
-    _exomol_use_hint = "Select one of them with `fetch_exomol(DATABASE_NAME)`, `SpectrumFactory.fetch_databank('exomol', exomol_database=DATABASE_NAME')`, or `calc_spectrum(..., databank=('exomol', DATABASE_NAME))` \n"
+    _exomol_use_hint = "Select one of them with `fetch_exomol(..., database=DATABASE_NAME)`, `SpectrumFactory.fetch_databank('exomol', database=DATABASE_NAME)`, or `calc_spectrum(..., databank=('exomol', DATABASE_NAME))` \n"
 
     # Track if we're using the default/recommended database
     is_default_database = False
