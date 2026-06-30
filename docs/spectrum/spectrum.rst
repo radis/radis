@@ -382,9 +382,6 @@ which can return condition in arbitrary units::
 
 .. _label_spectrum_plot:
 
-Plotting
---------
-
 Plot spectral arrays
 --------------------
 
