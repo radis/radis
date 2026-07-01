@@ -1398,15 +1398,20 @@ class BroadenFactory(BaseFactory):
                         "MissingSelfBroadeningWarning",
                         level=2,  # only appear if verbose>=2
                     )
-                    selbrd = df.airbrd
+                    if "airbrd" not in columns:
+                        import numpy as np
+
+                        selbrd = np.full(len(df), 0.07)
+                    else:
+                        selbrd = df.airbrd if "airbrd" in columns else df.selbrd
                 else:
                     selbrd = df.selbrd
 
                 # Calculate broadening HWHM
                 wl = pressure_broadening_HWHM(
-                    df.airbrd,
+                    df.airbrd if "airbrd" in columns else selbrd,
                     selbrd,
-                    df.Tdpair,
+                    df.Tdpair if "Tdpair" in columns else 0.5,
                     Tdpsel,
                     pressure_atm,
                     mole_fraction,

@@ -1525,6 +1525,7 @@ class MdbExomol(DatabaseManager):
         add_columns=True,
         species=None,
     ):
+        import numpy as np
         """setting broadening parameters
 
         Parameters
@@ -1707,9 +1708,11 @@ class MdbExomol(DatabaseManager):
                 self.add_column(df, "selbrd", self.alpha_ref)
                 self.add_column(df, "selbrd_Tdpair", self.n_Texp)
             else:
-                raise NotImplementedError(
-                    "Please post on https://github.com/radis/radis to ask for this feature."
-                )
+                import numpy as np
+                alpha = np.where(np.isnan(self.alpha_ref), 0.07, self.alpha_ref)
+                n_texp = np.where(np.isnan(self.n_Texp), 0.5, self.n_Texp)
+                self.add_column(df, "gamma_" + species.lower(), alpha)
+                self.add_column(df, "n_" + species.lower(), n_texp)
 
     def QT_interp(self, T):
         """interpolated partition function
