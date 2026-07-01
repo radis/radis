@@ -6,6 +6,7 @@ Scripts used to generate some test files for RADIS
 
 
 """
+
 if __name__ == "__main__":
     # %% Generate carbon monoxide files
     from radis import SpectrumFactory

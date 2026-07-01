@@ -2989,7 +2989,7 @@ class BroadenFactory(BaseFactory):
                 + " may be inverted"
             )
 
-        (wavenumber, abscoeff, emisscoeff) = self._broaden_lines_noneq(df)
+        wavenumber, abscoeff, emisscoeff = self._broaden_lines_noneq(df)
 
         self.profiler.stop("calc_line_broadening", "Calculated line broadening")
         return wavenumber, abscoeff, emisscoeff

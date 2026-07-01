@@ -10,6 +10,7 @@ optimization ("simple" or "min-RMS") leads to a significantly faster
 computation for almost no impact on the Voigt computation.
 
 """
+
 from radis import SpectrumFactory, plot_diff
 
 trunc_ref = 8

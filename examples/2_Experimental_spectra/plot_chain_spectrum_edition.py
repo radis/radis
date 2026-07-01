@@ -15,6 +15,7 @@ models, among :py:class:`astropy.modeling.functional_models.Gaussian1D`,
 See more loading and post-processing functions on the :ref:`Spectrum page <label_spectrum>`.
 
 """
+
 from radis import Spectrum
 from radis.test.utils import getTestFile
 

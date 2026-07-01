@@ -27,7 +27,6 @@ See Also
 
 """
 
-
 import matplotlib.pyplot as plt
 
 import radis

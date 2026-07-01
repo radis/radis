@@ -13,6 +13,7 @@ models, among :py:class:`astropy.modeling.functional_models.Gaussian1D`,
 :py:class:`astropy.modeling.functional_models.Lorentz1D` or :py:class:`astropy.modeling.functional_models.Voigt1D`
 
 """
+
 import numpy as np
 
 from radis import Spectrum, calc_spectrum

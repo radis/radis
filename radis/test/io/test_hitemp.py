@@ -5,7 +5,6 @@ Created on Tue Feb  2 13:51:40 2021
 @author: erwan
 """
 
-
 import pytest
 
 from radis.api.hitempapi import (

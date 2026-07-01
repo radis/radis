@@ -42,6 +42,7 @@ RADIS includes automatic rebuilding of Deprecated cache files + a global variabl
 to force regenerating them after a given version. See ``"OLDEST_COMPATIBLE_VERSION"``
 key in :py:attr:`radis.config`
 """
+
 # TODO: on use_cache functions, make a 'clean' / 'reset' option to delete / regenerate
 # cache files
 
@@ -1044,7 +1045,7 @@ class DatabankLoader(object):
         database: str
             If fetching from HITRAN, ``'full'`` downloads the full database and registers it, ``'range'`` downloads only the lines in the range of the molecule.
             If fetching from HITEMP, Kurucz, or NIST, only ``'full'`` is available.
-            If fetching from ExoMol, use this parameter to choose which database to use. Keep ``'default'`` to use the recommended one.
+            If fetching from ExoMol, use this parameter to choose which database to use. Keep ``'default'`` to use the recommended one. If no database is recommended (e.g., for ``13C-16O``), you must explicitly provide one or a ``KeyError`` will be raised.
             Default is ``'full'``.
 
 

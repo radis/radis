@@ -179,4 +179,3 @@ the work! See :ref:`How to cite? <label_cite>`
 .. |badge_slack| image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
                   :target: https://radis.github.io/slack-invite/
                   :alt: Slack
-
