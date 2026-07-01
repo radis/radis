@@ -16,7 +16,7 @@ Run only fast tests (i.e: tests that a 'fast' label)::
     pytest -m fast
 
 
--------------------------------------------------------------------------------
+
 
 """
 
@@ -1115,6 +1115,34 @@ def _run_testcases(verbose=True, warnings=True, *args, **kwargs):
 
     # # Test 10:
     # test_partfuncbarklem()
+
+
+@pytest.mark.fast
+def test_vibrating_rotor_harmonic_anharmonic():
+    """Test EvJah_uncoupled_vibrating_rotor for CO2."""
+    from radis.levels.vibrating_rotor import EvJah_uncoupled_vibrating_rotor
+
+    coeffs = {
+        "we1": 1333.93,
+        "we2": 667.47,
+        "we3": 2349.16,
+        "wexe1": 2.93,
+        "wexe2": -0.38,
+        "wexe3": 12.47,
+        "Be": 0.39022,
+        "De": 1.333e-07,
+        "He": 9e-15,
+    }
+    # Ground state: all energies should be zero
+    result = EvJah_uncoupled_vibrating_rotor(0, 0, 0, 0, 0, coeffs)
+    assert (
+        result[0] == (0.0, 0.0) and result[1] == (0.0, 0.0) and result[2] == (0.0, 0.0)
+    )
+    # Excited v3: G3_h = we3 * v3
+    result = EvJah_uncoupled_vibrating_rotor(0, 0, 0, 1, 0, coeffs)
+    assert result[2][0] == coeffs["we3"]
+    # Non-zero J: rotational energy > 0
+    assert EvJah_uncoupled_vibrating_rotor(0, 0, 0, 0, 10, coeffs)[3] > 0
 
 
 if __name__ == "__main__":

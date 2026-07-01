@@ -19,7 +19,10 @@ s = calc_spectrum(
     Tgas=1000,  # K
     mole_fraction=0.1,
     path_length=1,  # cm
-    databank=("exomol", "EBJT"),  # Simply use 'exomol' for the recommended database
+    databank=(
+        "exomol",
+        "EBJT",
+    ),  # Or simply use 'exomol' to auto-select the recommended database (if one exists)
 )
 s.apply_slit(1, "cm-1")  # simulate an experimental slit
 s.plot("radiance")
@@ -34,7 +37,7 @@ s.plot("radiance")
 # See line data:
 from radis.io.exomol import fetch_exomol
 
-df = fetch_exomol("SiO", database="EBJT", isotope="1", load_wavenum_max=5000)
+df = fetch_exomol("SiO", database="EBJT", isotope=1, load_wavenum_max=5000)
 print(df)
 
 

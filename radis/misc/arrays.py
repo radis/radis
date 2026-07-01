@@ -31,10 +31,7 @@ Functions to deal with numpy arrays:
 
 
 
--------------------------------------------------------------------------------
-
 """
-
 
 from math import ceil
 
@@ -42,8 +39,6 @@ import numba
 import numpy as np
 from numba import bool_
 from numpy import hstack
-from scipy.integrate import trapezoid
-from scipy.interpolate import interp1d
 
 # Normalize
 
@@ -136,6 +131,8 @@ def array_allclose(a, b, rtol=1e-5, atol=1e-8, equal_nan=True):
 
 def nantrapz(I, w, dx=1.0, axis=-1):
     """Returns :py:func:`~numpy.trapezoid` (I, w) discarding nan."""
+    from scipy.integrate import trapezoid
+
     b = ~np.isnan(I)
     return trapezoid(I[b], w[b], dx=dx, axis=axis)
 
@@ -192,6 +189,8 @@ def calc_diff(t1, v1, t2, v2):
     v2 = v2[b]
 
     # Interpolate the correct values
+    from scipy.interpolate import interp1d
+
     f = interp1d(t1, v1)
     v1 = f(tdiff)
 
@@ -244,7 +243,7 @@ def find_nearest(array, searched, return_bool=False):
             idx, el = find_nearest(array, s)
             b[idx] = True
             nearest_els.append(el)
-    except:
+    except TypeError:
         idx, el = find_nearest(array, searched)
         b[idx] = True
         nearest_els.append(el)

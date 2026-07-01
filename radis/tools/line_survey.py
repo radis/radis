@@ -3,11 +3,10 @@
 Functions to plot line surveys
 
 
--------------------------------------------------------------------------------
+
 
 
 """
-
 
 from warnings import warn
 
@@ -232,6 +231,25 @@ def LineSurvey(
     else:
         columndescriptor = {}
 
+    def _fmt_val(k, v):
+        """Format a value depending on column type."""
+        if not is_float(v):
+            return f"{v}"
+        if k == "wav":
+            return f"{v:.2f}"
+        if k == "El":
+            return f"{v:.0f}"
+        return f"{v:.3g}"
+
+    def _superscript_unit(unit):
+        """Convert plain-text unit exponents to HTML superscripts.
+
+        e.g. 'cm-1/(molecule/cm-2)' -> 'cm<sup>-1</sup>/(molecule/cm<sup>-2</sup>)'
+        """
+        import re
+
+        return re.sub(r"(-?\d+)", r"<sup>\1</sup>", unit)
+
     # Apply cutoff, get ylabel
     if plot == "S":
         if Iunit == "hitran":
@@ -251,12 +269,12 @@ def LineSurvey(
             Iunit_str = "cm-1/atm"
         else:
             raise ValueError(f"Unknown Iunit: {Iunit}")
-        ylabel = f"Linestrength ({Iunit_str})"
+        ylabel = f"Linestrength ({_superscript_unit(Iunit_str)})"
     else:
         cutoff = 0
         try:  # to find units and real name (if columndescriptor is known exists in initial databank)
             _, _, name, unit = columndescriptor[plot]
-            ylabel = f"{name} - {plot} [{unit}]"
+            ylabel = f"{name} - {plot} ({_superscript_unit(unit)})"
         except KeyError:
             ylabel = plot
 
@@ -290,6 +308,24 @@ def LineSurvey(
     # Parse databank to get relevant information on each line
     # (one function per databank format)
 
+    # Display name mapping for common spectroscopic quantities
+    _display_names = {
+        "int": "S",
+        "El": "E\u2032\u2032",
+        "wav": "\U0001d708",
+    }
+
+    # Units for common columns (used for unknown/ExoMol formats)
+    _display_units = {
+        "wav": "cm<sup>-1</sup>",
+        "int": "cm<sup>-1</sup>/(molecule/cm<sup>-2</sup>)",
+        "El": "cm<sup>-1</sup>",
+        "A": "s<sup>-1</sup>",
+        "airbrd": "cm<sup>-1</sup>/atm",
+        "selbrd": "cm<sup>-1</sup>/atm",
+        "S": "cm<sup>-1</sup>/(molecule/cm<sup>-2</sup>)",
+    }
+
     def add_details(row, details):
         r"""Add details in string; add on 2 columns if "upper" and "lower" value follow"
 
@@ -299,29 +335,22 @@ def LineSurvey(
         """
         label = ""
         for k in details:
-            name, _, unit = details[k]
+            _, _, unit = details[k]
             if k[-1] == "u" and k[:-1] + "l" in details:
                 continue  #  don't show "upper" value. Will be shown on same line as lower
 
-            name = f"({name})" if name else name
-            if is_float(row[k]):
-                val = f"{row[k]:.3g}"
-            else:
-                val = f"{row[k]}"
-            label += f"<br>{k} {name}: {val} {unit}"
+            display = _display_names.get(k, k)
+            val = _fmt_val(k, row[k])
+            label += f"<br><b>{display}</b>: {val} {unit}"
             # If lower value, also show upper value on same line
             if k[-1] == "l" and k[:-1] + "u" in details:
                 k_up = k[:-1] + "u"
-                if is_float(row[k_up]):
-                    label += (
-                        "&nbsp;" * (30 - len(k) - len(val))
-                        + f"{k_up} {name}: {row[k_up]:.3g} {unit}"
-                    )
-                else:
-                    label += (
-                        "&nbsp;" * (30 - len(k) - len(val))
-                        + f"{k_up} {name}: {row[k_up]} {unit}"
-                    )
+                display_up = _display_names.get(k_up, k_up)
+                val_up = _fmt_val(k_up, row[k_up])
+                label += (
+                    "&nbsp;" * (30 - len(display) - len(val))
+                    + f"<b>{display_up}</b>: {val_up} {unit}"
+                )
 
         return label
 
@@ -359,22 +388,20 @@ def LineSurvey(
                 add = ["vu", "vl", "jl"]
 
                 if "iso" in row:
-                    iso = row["iso"]
+                    iso = int(row["iso"])
                 elif "isotope" in spec.conditions:
-                    iso = spec.conditions["isotope"]
+                    iso = int(spec.conditions["isotope"])
                 else:
                     iso = "?"
 
-                label = (
-                    "{molec}[iso{iso}] [{branch}{jl:.0f}]({vl:.0f})->({vu:.0f})".format(
-                        **dict(
-                            [(k, row[k]) for k in add]
-                            + [
-                                ("iso", iso),
-                                ("molec", molecule),
-                                ("branch", _fix_branch_format[row["branch"]]),
-                            ]
-                        )
+                label = "{molec}[iso{iso}] {branch}({vl:.0f},{jl:.0f})".format(
+                    **dict(
+                        [(k, row[k]) for k in add]
+                        + [
+                            ("iso", iso),
+                            ("molec", molecule),
+                            ("branch", _fix_branch_format[row["branch"]]),
+                        ]
                     )
                 )
             elif molecule in HITRAN_CLASS4:  #  ["N2O", "OCS", "HCN"]
@@ -392,13 +419,13 @@ def LineSurvey(
                 ]
 
                 if "iso" in row:
-                    iso = row["iso"]
+                    iso = int(row["iso"])
                 elif "isotope" in spec.conditions:
-                    iso = spec.conditions["isotope"]
+                    iso = int(spec.conditions["isotope"])
                 else:
                     iso = "?"
 
-                label = "{molec} [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})".format(
+                label = "{molec}[iso{iso}] {branch}({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f},{jl:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})".format(
                     **dict(
                         [(k, row[k]) for k in add]
                         + [
@@ -425,13 +452,13 @@ def LineSurvey(
                 ]
 
                 if "iso" in row:
-                    iso = row["iso"]
+                    iso = int(row["iso"])
                 elif "isotope" in spec.conditions:
-                    iso = spec.conditions["isotope"]
+                    iso = int(spec.conditions["isotope"])
                 else:
                     iso = "?"
 
-                label = "{molec} [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}{l2l}{v3l:.0f} r={rl})->({v1u:.0f}{v2u:.0f}{l2u}{v3u:.0f} r={ru})"
+                label = "{molec}[iso{iso}] {branch}({v1l:.0f}{v2l:.0f}{l2l}{v3l:.0f},{jl:.0f} r={rl})->({v1u:.0f}{v2u:.0f}{l2u}{v3u:.0f} r={ru})"
                 label = label.format(
                     **dict(
                         [
@@ -470,8 +497,6 @@ def LineSurvey(
             # Add details about some line properties
             label += add_details(row, details)
 
-            label += f"<br>s.lines index: {row.name}"
-
         except KeyError as err:
             print(
                 f"Error during customized Line survey labelling. Printing everything : \n{str(err)}"
@@ -500,13 +525,13 @@ def LineSurvey(
         ]
 
         if "iso" in row:
-            iso = row["iso"]
+            iso = int(row["iso"])
         elif "isotope" in spec.conditions:
-            iso = spec.conditions["isotope"]
+            iso = int(spec.conditions["isotope"])
         else:
             iso = "?"
 
-        label = "CO2 [{branch}{jl:.0f}](p{polyl:.0f}c{wangl:.0f}n{rankl:.0f})->(p{polyu:.0f}c{wangu:.0f}n{ranku:.0f})".format(
+        label = "CO2[iso{iso}] {branch}(p{polyl:.0f}c{wangl:.0f}n{rankl:.0f},{jl:.0f})->(p{polyu:.0f}c{wangu:.0f}n{ranku:.0f})".format(
             **dict(
                 [(k, row[k]) for k in add]
                 + [("iso", iso), ("branch", _fix_branch_format[row["branch"]])]
@@ -519,13 +544,13 @@ def LineSurvey(
 
     def get_label_cdsd_hitran(row, details):
         if "iso" in row:
-            iso = row["iso"]
+            iso = int(row["iso"])
         elif "isotope" in spec.conditions:
-            iso = spec.conditions["isotope"]
+            iso = int(spec.conditions["isotope"])
         else:
             iso = "?"
 
-        label = "CO2 [{branch}{jl:.0f}]({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})".format(
+        label = "CO2[iso{iso}] {branch}({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f},{jl:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})".format(
             **dict(
                 [
                     (k, row[k])
@@ -546,8 +571,6 @@ def LineSurvey(
         )
 
         label += add_details(row, details)
-
-        label += f"<br>s.lines index: {row.name}"
 
         return label
 
@@ -570,10 +593,57 @@ def LineSurvey(
 
         return label
 
-    def get_label_all(row):
-        r"""print all lines details"""
-        # label = row.__repr__()
-        label = "<br>".join([f"{k}: {v}" for k, v in row.items()])
+    def get_label_all(row, columns=None):
+        r"""Print line details, optionally filtered to certain columns.
+
+        Parameters
+        ----------
+        row : pandas.Series
+            Line data row
+        columns : list, optional
+            If provided, only show these columns. Otherwise show all.
+        """
+        # Build molecule name
+        molec = ""
+        try:
+            molec = spec.conditions.get("molecule", "") or spec.conditions.get(
+                "species", ""
+            )
+            if "iso" in row:
+                molec += f"[iso{int(row['iso'])}]"
+            elif "isotope" in spec.conditions:
+                molec += f"[iso{int(spec.conditions['isotope'])}]"
+        except (ValueError, TypeError, KeyError):
+            pass
+
+        # Build a spectroscopic header if branch/vl/jl columns are available
+        header = ""
+        branch_col = "branch" if "branch" in row else "PQR" if "PQR" in row else None
+        if branch_col and "jl" in row:
+            try:
+                branch = _fix_branch_format.get(row[branch_col], row[branch_col])
+                if "vl" in row:
+                    header = f"{branch}({row['vl']:.0f},{row['jl']:.0f})"
+                else:
+                    header = f"{branch}({row['jl']:.0f})"
+            except (ValueError, TypeError):
+                pass
+
+        if molec or header:
+            label = f"{molec} {header}".strip() + "<br>"
+        else:
+            label = ""
+        if columns is not None:
+            items = [(k, row[k]) for k in columns if k in row.index]
+        else:
+            items = row.items()
+        label += "<br>".join(
+            [
+                f"<b>{_display_names.get(k, k)}</b>: {_fmt_val(k, v)}"
+                + (f" {_display_units[k]}" if k in _display_units else "")
+                for k, v in items
+            ]
+        )
         return label
 
     def get_label_none(row):
@@ -592,9 +662,10 @@ def LineSurvey(
             try:  # to find units and real name (if exists in initial databank)
                 _, ktype, name, unit = columndescriptor[k]
             except KeyError:
-                details[k] = ("", None, "")  # keep short name
+                fallback_unit = _display_units.get(k, "")
+                details[k] = ("", None, f" {fallback_unit}" if fallback_unit else "")
             else:
-                details[k] = (name, ktype, f" [{unit}]")
+                details[k] = (name, ktype, f" {_superscript_unit(unit)}")
 
     # Get label
     if dbformat in ["hitran", "hitemp", "hitemp-radisdb", "radisdb-hitemp", "geisa"]:
@@ -607,10 +678,16 @@ def LineSurvey(
     elif dbformat in ["nist"]:
         sp["label"] = sp.apply(lambda r: get_label_nist(r, sp.attrs), axis=1)
     else:
-        sp["label"] = sp.apply(get_label_all, axis=1)
-        # TODO: add an option to print only certain columns?
+        sp["label"] = sp.apply(lambda r: get_label_all(r, lineinfo), axis=1)
 
         # sp["label"] = sp.apply(get_label_none, axis=1)
+
+    # Add hint text to each tooltip
+    _hint = (
+        "<br><span style='color:#888;font-size:11px'>"
+        "Click on a line to copy data to clipboard.</span>"
+    )
+    sp["label"] = sp["label"] + _hint
 
     # from plotly.graph_objs import Scatter, Figure, Layout
 
@@ -668,6 +745,7 @@ def LineSurvey(
             x=get_x(sp.shiftwav),
             y=sp[plot],
             text=sp.label,
+            hoverinfo="text",
             width=barwidth,
             name="linestrength",
         )
@@ -688,6 +766,11 @@ def LineSurvey(
         #    **{"T": T, "P": P, "Xi": Xi}
         # ),
         hovermode="closest",
+        hoverlabel=dict(
+            bgcolor="white",
+            font=dict(color="#333", size=13, family="Arial, sans-serif"),
+            bordercolor="#ccc",
+        ),
         xaxis=dict(
             title=xlabel,
             range=(x_range.min(), x_range.max()),
@@ -748,6 +831,39 @@ def LineSurvey(
 
     if writefile:
         py.plot(fig, filename=writefile, auto_open=True)
+
+        # Inject copy-to-clipboard JS + hint text into the HTML file
+        _clipboard_js = (
+            "\n<script>\n"
+            "document.addEventListener('DOMContentLoaded', function() {\n"
+            "    var plot = document.querySelector('.plotly-graph-div');\n"
+            "    if (plot) {\n"
+            "        plot.on('plotly_click', function(data) {\n"
+            "            var text = data.points[0].text;\n"
+            "            if (text) {\n"
+            "                var plain = text.replace(/<br>/g, '\\n').replace(/<[^>]*>/g, '');\n"
+            "                navigator.clipboard.writeText(plain).then(function() {\n"
+            "                    var el = document.createElement('div');\n"
+            "                    el.textContent = '\\u2713 Copied';\n"
+            "                    el.style.cssText = 'position:fixed;bottom:12px;left:50%;transform:translateX(-50%);"
+            "background:rgba(0,0,0,0.7);color:white;"
+            "padding:6px 14px;border-radius:4px;z-index:9999;"
+            "font-family:Arial,sans-serif;font-size:13px;';\n"
+            "                    document.body.appendChild(el);\n"
+            "                    setTimeout(function(){ el.remove(); }, 1200);\n"
+            "                });\n"
+            "            }\n"
+            "        });\n"
+            "    }\n"
+            "});\n"
+            "</script>\n"
+        )
+        # Insert before </html> tag
+        with open(writefile, "r", encoding="utf-8") as f:
+            html = f.read()
+        html = html.replace("</html>", _clipboard_js + "</html>")
+        with open(writefile, "w", encoding="utf-8") as f:
+            f.write(html)
 
     return fig
 

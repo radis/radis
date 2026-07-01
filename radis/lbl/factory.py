@@ -74,12 +74,11 @@ for Developers:
   :py:meth:`~radis.lbl.loader.DatabankLoader._build_partition_function_interpolator`
 
 
-----------
 """
+
 from typing import Union
 from warnings import warn
 
-import astropy.units as u
 import numpy as np
 from numpy import arange, exp, expm1
 from scipy.optimize import OptimizeResult
@@ -243,16 +242,6 @@ class SpectrumFactory(BandFactory):
         and slows the system down. Chunksize let you change the default chunk
         size. If ``None``, all lines are processed directly. Usually faster but
         can create memory problems. Default ``None``
-    optimization : ``"simple"``, ``"min-RMS"``, ``None``
-        If either ``"simple"`` or ``"min-RMS"`` LDM optimization for lineshape calculation is used:
-        - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [Spectral-Synthesis-Algorithm]_)
-        - ``"simple"`` : weights equal to their relative position in the grid
-
-        If ``None``, no lineshape interpolation is performed and the lineshape of all lines is calculated.
-
-        Refer to [Spectral-Synthesis-Algorithm]_ for more explanation on the LDM method for lineshape interpolation.
-
-        Default ``"min-RMS"``
     folding_thresh: float
         Folding is a correction procedure that is applied when the lineshape is calculated with
         the ``fft`` broadening method and the linewidth is comparable to ``wstep``, that prevents
@@ -268,23 +257,38 @@ class SpectrumFactory(BandFactory):
 
         Range: 0 <= zero_padding <= len(w), or zero_padding = -1
         Default: -1
-    broadening_method: ``"voigt"``, ``"convolve"``, ``"fft"``
-        Calculates broadening with a direct voigt approximation ('voigt') or
-        by convoluting independently calculated Doppler and collisional
-        broadening ('convolve'). First is much faster, 2nd can be used to
-        compare results. This SpectrumFactory parameter can be manually
-        adjusted a posteriori with::
+    broadening_method: ``"voigt_poly"``, ``"convolve"``, ``"fft"``
+        Available methods:
+
+        - ``"voigt_poly"``: polynomial approximation of a Voigt profile.
+            This is the fastest method in most cases (default).
+        - ``"convolve"``: independent calculation of Doppler (Gaussian) and
+            collisional broadening (Lorentzian), then convolution in real
+            space. This is slower but is an exact definition of a Voigt and
+            can be used as a reference for comparison with other methods.
+        - ``"fft"``: fast Fourier transform convolution.
+            Only available with ``optimization="simple"`` or ``optimization="min-RMS"``.
+            Because LDM convolves all lines at once,
+            this method is often faster than real-space convolutions on large arrays
+            (``"voigt_poly"``, ``"convolve"``).
+
+        This SpectrumFactory parameter can be manually adjusted a posteriori with::
 
             sf = SpectrumFactory(...)
-            sf.params.broadening_method = 'voigt'
+            sf.params.broadening_method = 'voigt_poly'
 
-        Fast fourier transform ``'fft'`` is only available if using the LDM lineshape
-        calculation ``optimization``. Because the LDM convolves all lines at the same time,
-        and thus operates on large arrays, ``'fft'`` becomes more appropriate than
-        convolutions in real space (``'voigt'``, ``'convolve'`` )
+        By default, ``optimization="simple"`` and ``broadening_method="voigt_poly"``.
+    optimization : ``"simple"``, ``"min-RMS"``, ``None``
+        If either ``"simple"`` or ``"min-RMS"`` LDM optimization for lineshape calculation is used:
 
-        By default, use ``"fft"`` for any ``optimization``, and ``"voigt"`` if
-        optimization is ``None`` .
+        - ``"min-RMS"`` : weights optimized by analytical minimization of the RMS-error (See: [Spectral-Synthesis-Algorithm]_)
+        - ``"simple"`` : weights equal to their relative position in the grid
+
+        If ``None``, no lineshape interpolation is performed and the lineshape of all lines is calculated.
+
+        Refer to [Spectral-Synthesis-Algorithm]_ for more explanation on the LDM method for lineshape interpolation.
+
+        By default, ``optimization="simple"`` and ``broadening_method="voigt_poly"``.
     warnings: bool, or one of ``['warn', 'error', 'ignore']``, dict
         If one of ``['warn', 'error', 'ignore']``, set the default behaviour
         for all warnings. Can also be a dictionary to set specific warnings only.
@@ -432,7 +436,7 @@ class SpectrumFactory(BandFactory):
         optimization="simple",
         folding_thresh=1e-6,
         zero_padding=-1,
-        broadening_method="voigt",
+        broadening_method="voigt_poly",
         cutoff=0,
         parsum_mode="full summation",
         verbose=True,
@@ -593,6 +597,8 @@ class SpectrumFactory(BandFactory):
             )
 
         # Initialize input conditions
+        import astropy.units as u
+
         self.input.wavenum_min = wavenum_min
         self.input.wavenum_max = wavenum_max
         self.input.Tref = convert_and_strip_units(Tref, u.K)
@@ -614,6 +620,7 @@ class SpectrumFactory(BandFactory):
         )
         self.input.self_absorption = self_absorption
         self.input.potential_lowering = potential_lowering
+        self.input.medium = medium
         self.input.pfsource = pfsource
 
         # Initialize computation variables
@@ -650,15 +657,15 @@ class SpectrumFactory(BandFactory):
                 truncation = None
             elif truncation is not None and broadening_method == "fft":
                 raise NotImplementedError(
-                    "Lines cannot be truncated with `broadening_method='fft'`. Use `broadening_method='voigt'`"
+                    "Lines cannot be truncated with `broadening_method='fft'`. Use `broadening_method='voigt_poly'`"
                 )
         elif (
-            broadening_method == "voigt"
+            broadening_method == "voigt_poly"
             and truncation is None
             and optimization is not None
         ):
             raise NotImplementedError(
-                "Currently `broadening_method='voigt'` doesn't support computation of lineshape on the full spectral range, use `broadening_method='fft'` instead or use a truncation value > 0"
+                "Currently `broadening_method='voigt_poly'` doesn't support computation of lineshape on the full spectral range, use `broadening_method='fft'` instead or use a truncation value > 0"
             )
 
         if isinstance(truncation, Default):
@@ -813,6 +820,8 @@ class SpectrumFactory(BandFactory):
             )
 
         # Convert units
+        import astropy.units as u
+
         Tgas = convert_and_strip_units(Tgas, u.K)
         path_length = convert_and_strip_units(path_length, u.cm)
         pressure = convert_and_strip_units(pressure, u.bar)
@@ -949,7 +958,6 @@ class SpectrumFactory(BandFactory):
                 "diluents": self._diluent,
                 "radis_version": version,
                 "spectral_points": len(self.wavenumber),
-                "profiler": dict(self.profiler.final),
             }
         )
         if self.params.optimization != None:
@@ -998,6 +1006,7 @@ class SpectrumFactory(BandFactory):
             name=name,
             references=dict(self.reftracker),
         )
+        s.profiler = dict(self.profiler.final)
         # OPTION 2.  Change a posteriori using a Spectrum.method. More universal. Can it be slower?
 
         # update database if asked so
@@ -1104,6 +1113,8 @@ class SpectrumFactory(BandFactory):
             )
 
         # Convert units
+        import astropy.units as u
+
         Tgas = convert_and_strip_units(Tgas, u.K)
         path_length = convert_and_strip_units(path_length, u.cm)
         pressure = convert_and_strip_units(pressure, u.bar)
@@ -1160,7 +1171,7 @@ class SpectrumFactory(BandFactory):
 
             else:
                 mol_id = self.df0.attrs["id"]
-        except:
+        except (KeyError, AssertionError, AttributeError):
             mol_id = get_molecule_identifier(self.input.species)
 
         molecule = get_molecule(mol_id)
@@ -1323,7 +1334,6 @@ class SpectrumFactory(BandFactory):
                 "gpu_backend": backend,
                 "spectral_points": len(self.wavenumber),
                 "add_at_used": "gpu-backend",
-                "profiler": dict(self.profiler.final),
                 "NwL": iter_N_L,
                 "NwG": iter_N_G,
             }
@@ -1634,6 +1644,8 @@ class SpectrumFactory(BandFactory):
         # %% Preprocessing
         # --------------------------------------------------------------------
         # Convert units
+        import astropy.units as u
+
         Tvib = convert_and_strip_units(Tvib, u.K)
         Trot = convert_and_strip_units(Trot, u.K)
         Ttrans = convert_and_strip_units(Ttrans, u.K)
@@ -1854,7 +1866,6 @@ class SpectrumFactory(BandFactory):
                 "diluents": self._diluent,
                 "radis_version": version,
                 "spectral_points": len(self.wavenumber),
-                "profiler": dict(self.profiler.final),
             }
         )
         if self.params.optimization != None:
@@ -1906,6 +1917,7 @@ class SpectrumFactory(BandFactory):
             name=name,
             references=dict(self.reftracker),
         )
+        s.profiler = dict(self.profiler.final)
 
         # update database if asked so
         if self.autoupdatedatabase:
@@ -2072,24 +2084,18 @@ class SpectrumFactory(BandFactory):
         """
 
         def _is_at_equilibrium():
-            try:
-                if "Tvib" in self.input:
-                    assert self.input.Tvib is None or self.input.Tvib == self.input.Tgas
-                if "Trot" in self.input:
-                    assert self.input.Trot is None or self.input.Trot == self.input.Tgas
-                if "overpopulation" in self.input:
-                    assert (
-                        self.input.overpopulation is None
-                        or self.input.overpopulation == {}
-                    )
-                try:
-                    if self.input.self_absorption:
-                        assert self.input.self_absorption  # == True
-                except KeyError:
-                    pass
-                return True
-            except AssertionError:
-                return False
+            if "Tvib" in self.input:
+                if not (self.input.Tvib is None or self.input.Tvib == self.input.Tgas):
+                    return False
+            if "Trot" in self.input:
+                if not (self.input.Trot is None or self.input.Trot == self.input.Tgas):
+                    return False
+            if "overpopulation" in self.input:
+                if not (
+                    self.input.overpopulation is None or self.input.overpopulation == {}
+                ):
+                    return False
+            return True
 
         factor = 1
 
@@ -2107,7 +2113,7 @@ class SpectrumFactory(BandFactory):
         if optimization in ("simple", "min-RMS"):
             NwL = self.NwL
             NwG = self.NwG
-            if broadening_method == "voigt":
+            if broadening_method == "voigt_poly":
                 estimated_time = (
                     2.096e-07 * n_lines
                     + 7.185e-09
@@ -2133,7 +2139,7 @@ class SpectrumFactory(BandFactory):
             else:
                 raise NotImplementedError("broadening_method not implemented")
         elif optimization is None:
-            if broadening_method == "voigt":
+            if broadening_method == "voigt_poly":
                 estimated_time = 6.6487e-08 * n_lines * truncation / wstep
             elif broadening_method == "convolve":  # Not benchmarked
                 estimated_time = (

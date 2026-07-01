@@ -5,6 +5,7 @@ Comparing an atomic spectrum for the Kurucz database with that generated from Sp
 2. `test_Kurucz_vs_NISTandSpectraplot_4000` uses `calc_spectrum`, with values for most parameters largely equivalent to the defaults in SpectraPlot, works in cm-1, tests the integral under the emission graphs, uses Vaex, and produces verbose output
 Note that SpectraPlot appears to use the 'Observed Wavelength Air' given by NIST, whereas the wavelengths in the Kurucz database seem to equate to the more precise 'Ritz Wavelength Air' in NIST, so there may be a relative shift between the spectrum from RADIS and that from SpectraPlot
 """
+
 import numpy as np
 import pytest
 

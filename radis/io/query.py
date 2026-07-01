@@ -13,8 +13,6 @@ References
 .. [R1] `Astroquery <https://astroquery.readthedocs.io>`_
 
 
--------------------------------------------------------------------------------
-
 """
 
 import os

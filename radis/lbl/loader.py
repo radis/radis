@@ -41,8 +41,8 @@ Notes
 RADIS includes automatic rebuilding of Deprecated cache files + a global variable
 to force regenerating them after a given version. See ``"OLDEST_COMPATIBLE_VERSION"``
 key in :py:attr:`radis.config`
--------------------------------------------------------------------------------
 """
+
 # TODO: on use_cache functions, make a 'clean' / 'reset' option to delete / regenerate
 # cache files
 
@@ -514,7 +514,7 @@ class Parameters(ConditionDict):
         self.truncation = None  #: float: cutoff for half-width lineshape calculation (cm-1). Overwritten by SpectrumFactory
         self.neighbour_lines = None  #: float: extra range (cm-1) on each side of the spectrum to account for neighbouring lines. Overwritten by SpectrumFactory
         self.cutoff = None  #: float: linestrength cutoff (molecule/cm)
-        self.broadening_method = ""  #: str:``"voigt"``, ``"convolve"``, ``"fft"``
+        self.broadening_method = ""  #: str:``"voigt_poly"``, ``"convolve"``, ``"fft"``
         self.optimization = None  #: str: ``"simple"``, ``"min-RMS"``, ``None``
         self.db_use_cached = (
             None  #: bool: use (and generate) cache files for Line Database
@@ -762,7 +762,7 @@ class DatabankLoader(object):
             self.load_databank.__annotations__["format"] = KNOWN_DBFORMAT
             self.load_databank.__annotations__["levelsfmt"] = KNOWN_LVLFORMAT
             self.load_databank.__annotations__["parfuncfmt"] = KNOWN_PARFUNCFORMAT
-        except:  # old Python version
+        except (AttributeError, TypeError):  # old Python version
             pass
 
         # Variables that will hold the dataframes.
@@ -820,7 +820,7 @@ class DatabankLoader(object):
         # TODO @dev : Refactor : turn it into a Dictionary? (easier to store as JSON Etc.)
 
         # Profiler
-        self.profiler = None
+        self.profiler = Profiler(self.verbose)
 
     def _reset_profiler(self, verbose):
         """Reset :py:class:`~radis.misc.profiler.Profiler`
@@ -828,8 +828,23 @@ class DatabankLoader(object):
         See Also
         --------
         :py:func:`radis.lbl.factory.SpectrumFactory.print_perf_profile"""
+        db_loading = None
+        if (
+            self.profiler is not None
+            and "spectrum_calculation" not in self.profiler.final
+        ):
+            db_loading = self.profiler.final.get("db_loading")
 
         self.profiler = Profiler(verbose)
+
+        if db_loading is not None:
+            self.profiler.final["db_loading"] = db_loading
+
+    def _db_loading_profiler_level(self):
+        """Return the profiler level to use for databank loading."""
+        if "spectrum_calculation" in self.profiler.initial:
+            return 2
+        return 1
 
     def _reset_references(self):
         """Reset :py:class:`~radis.tools.track_refs.RefTracker`"""
@@ -928,7 +943,7 @@ class DatabankLoader(object):
                 if using ``'equilibrium'``, not all parameters will be available
                 for a Spectrum :py:func:`~radis.spectrum.spectrum.Spectrum.line_survey`.
 
-        *Other arguments are related to how to open the files*
+        **Other arguments are related to how to open the files:**
 
         Notes
         -----
@@ -1030,7 +1045,7 @@ class DatabankLoader(object):
         database: str
             If fetching from HITRAN, ``'full'`` downloads the full database and registers it, ``'range'`` downloads only the lines in the range of the molecule.
             If fetching from HITEMP, Kurucz, or NIST, only ``'full'`` is available.
-            If fetching from ExoMol, use this parameter to choose which database to use. Keep ``'default'`` to use the recommended one.
+            If fetching from ExoMol, use this parameter to choose which database to use. Keep ``'default'`` to use the recommended one. If no database is recommended (e.g., for ``13C-16O``), you must explicitly provide one or a ``KeyError`` will be raised.
             Default is ``'full'``.
 
 
@@ -1083,6 +1098,8 @@ class DatabankLoader(object):
         # | Should store the waverange, molecule and isotopes in the cache file
         # | metadata to ensures that it is redownloaded if necessary.
         # | see implementation in load_databank.
+
+        self.profiler.start("db_loading", self._db_loading_profiler_level())
 
         # Check inputs
         compare_source = source.casefold()
@@ -1594,7 +1611,7 @@ class DatabankLoader(object):
         elif output == "vaex":
             try:
                 attrs = df.attrs
-            except:
+            except AttributeError:
                 attrs = {}
             df = df.sort("wav", ascending=True)
             df.attrs = attrs  # It is required because dataframe returned by sort_values doesn't have attrs, so I have to add it again.
@@ -1662,6 +1679,8 @@ class DatabankLoader(object):
                     + "equilibrium spectra, try using 'load_energies=False' "
                     + "in fetch_databank"
                 )
+
+        self.profiler.stop("db_loading", "Loaded database")
 
         return
 
@@ -1740,7 +1759,8 @@ class DatabankLoader(object):
             ``True``, includes off-range, neighbouring lines that contribute
             because of lineshape broadening. The ``neighbour_lines``
             parameter is used to determine the limit. Default ``True``.
-        *Other arguments are related to how to open the files:*
+        **Other arguments are related to how to open the files:**
+
         drop_columns: list
             columns names to drop from Line DataFrame after loading the file.
             Not recommended to use, unless you explicitly want to drop information
@@ -1780,6 +1800,8 @@ class DatabankLoader(object):
         ----------
         .. [1] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
         """
+        self.profiler.start("db_loading", self._db_loading_profiler_level())
+
         # %% Check inputs
         # ---------
 
@@ -1890,6 +1912,8 @@ class DatabankLoader(object):
         # are calculated ab initio from radis internal species database constants
         if load_energies and not self.input.isatom:
             self._init_rovibrational_energies(levels, levelsfmt)
+
+        self.profiler.stop("db_loading", "Loaded database")
 
         return
 
@@ -2250,9 +2274,9 @@ class DatabankLoader(object):
                 f"`pfsource` {pfsource} is not available for the species {species}. Try running `set_atomic_partition_functions` again with a different `pfsource`."
             )
         else:
-            self.params.parfuncpath = (
-                self.params.levelsfmt
-            ) = self.levelspath = None  # all these parameters are irrelevant for atoms
+            self.params.parfuncpath = self.params.levelsfmt = self.levelspath = (
+                None  # all these parameters are irrelevant for atoms
+            )
 
     def _init_rovibrational_energies(self, levels, levelsfmt):
         """Initializes non equilibrium partition (which contain rovibrational

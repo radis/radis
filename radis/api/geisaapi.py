@@ -5,11 +5,9 @@ Summary
 
 GEISA database parser
 
------------------------
 
 
 """
-
 
 # import re
 import time

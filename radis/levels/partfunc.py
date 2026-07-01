@@ -45,7 +45,7 @@ References
 
 
 
--------------------------------------------------------------------------------
+
 """
 
 # TODO: vectorize partition function calculations for different temperatures. Would need
@@ -640,9 +640,13 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 # Add overpopulations (so they are taken into account in the partition function)
                 for viblvl, ov in overpopulation.items():
                     if ov != 1:
-                        df.loc[df.viblvl == viblvl, "nvibQvib"] *= ov
-                        # TODO: add warning if empty? I dont know how to do it without
-                        # an extra lookup though.
+                        mask = df.viblvl == viblvl
+                        if mask.sum() == 0:
+                            warn(
+                                f"Overpopulation set for level '{viblvl}' but no "
+                                f"rows match in the energy level database."
+                            )
+                        df.loc[mask, "nvibQvib"] *= ov
 
             # Calculate sum of levels
             nQ = df.nvibQvib * df.nrotQrot
@@ -1385,7 +1389,7 @@ class PartFuncTIPS(RovibParFuncTabulator):
                 }
                 raise KeyError(
                     "KeyError spotted! "
-                    + f"If you are computing GEISA spectra, this result might be because of an "
+                    + "If you are computing GEISA spectra, this result might be because of an "
                     + f"unsupported isotope. Currently isotope ID {GEISA_ns_iso[molecule]} "
                     + f"of molecule {molecule} is not supported by HAPI partitional function, "
                     + "thus stopping this spectrum calculation. Please select other isotopes "

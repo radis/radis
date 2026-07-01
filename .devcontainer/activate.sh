@@ -11,4 +11,3 @@ fi
 
 conda activate radis-env
 pip install -e .[dev] -v
-

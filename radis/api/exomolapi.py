@@ -25,7 +25,6 @@ import re
 from urllib.request import HTTPError, urlopen
 
 import pandas as pd
-from bs4 import BeautifulSoup
 
 from radis.api.hdf5 import vaexsafe_colname
 
@@ -56,7 +55,7 @@ def exact_molname_exomol_to_simple_molname(exact_exomol_molecule_name):
     try:
         molname_simple = _molname_simple_no_exception(exact_exomol_molecule_name)
         return molname_simple
-    except:
+    except Exception:
         print(
             "Warning: Exact molname ",
             exact_exomol_molecule_name,
@@ -267,7 +266,7 @@ def read_trans(transf, engine="vaex"):
         A=Einstein coefficient in s-1
         nu_lines=transition wavenumber in cm-1
 
-    See Table 12 in https://arxiv.org/pdf/1603.05890.pdf [Exomol-2016]_
+    See Table 12 in https://arxiv.org/pdf/1603.05890.pdf [ExoMol-2016]_
 
     Parameters
     ----------
@@ -290,7 +289,7 @@ def read_trans(transf, engine="vaex"):
                 names=("i_upper", "i_lower", "A", "nu_lines"),
                 convert=False,  #  file is created by MdbMol
             )
-        except:
+        except Exception:
             try:
                 dat = vaex.read_csv(
                     transf,
@@ -310,7 +309,7 @@ def read_trans(transf, engine="vaex"):
                 sep=r"\s+",
                 names=("i_upper", "i_lower", "A", "nu_lines"),
             )
-        except:
+        except Exception:
             try:
                 dat = pd.read_csv(
                     transf, sep=r"\s+", names=("i_upper", "i_lower", "A", "nu_lines")
@@ -430,7 +429,7 @@ def read_states(
                 names=names,
                 convert=False,  # written in MolDB
             )
-        except:
+        except Exception:
             try:
                 dat = vaex.read_csv(
                     statesf,
@@ -449,7 +448,7 @@ def read_states(
             dat = pd.read_csv(
                 statesf, compression="bz2", sep=r"\s+", usecols=usecol, names=names
             )
-        except:  #!!!TODO What was the expected error?
+        except (OSError, pd.errors.ParserError):  # File not compressed or parse error
             dat = pd.read_csv(statesf, sep=r"\s+", usecols=usecol, names=names)
     else:
         raise NotImplementedError(engine)
@@ -884,7 +883,7 @@ def get_list_of_known_isotopes(molecule):
     while True:
         try:
             iso_name = get_exomol_full_isotope_name(molecule, i)
-        except:
+        except (ValueError, KeyError):
             break
         else:
             isotope_list.append(iso_name)
@@ -945,6 +944,8 @@ def get_exomol_database_list(molecule, isotope_full_name=None):
         else:
             extra = ""
         raise ValueError(f"HTTPError opening url={url}" + extra) from err
+
+    from bs4 import BeautifulSoup
 
     soup = BeautifulSoup(
         response, features="lxml"
@@ -1339,23 +1340,15 @@ class MdbExomol(DatabaseManager):
         #  default n_Texp value if not given
         if self.n_Texp_def is None:
             self.n_Texp_def = 0.5
-            warnings.warn(
-                Warning(
-                    f"""
+            warnings.warn(Warning(f"""
                     No default broadening exponent in def file. Assigned n = {self.n_Texp_def}
-                    """
-                )
-            )
+                    """))
         #  default alpha_ref value if not given
         if self.alpha_ref_def is None:
             self.alpha_ref_def = 0.07
-            warnings.warn(
-                Warning(
-                    f"""
+            warnings.warn(Warning(f"""
                     No default broadening in def file. Assigned alpha_ref = {self.alpha_ref_def}
-                    """
-                )
-            )
+                    """))
 
         # load states
         if cache == "regen" and mgr.cache_file(self.states_file).exists():
@@ -1491,13 +1484,9 @@ class MdbExomol(DatabaseManager):
                     f"Caching the *.trans.bz2 file to the {engine} (*.h5) format. After the second time, it will become much faster.",
                     indent=2,
                 )
-                self._printer.info(
-                    "You can delete the 'trans.bz2' file by hand.", level=2, indent=2
-                )
                 trans = read_trans(
                     trans_file, engine="vaex" if engine == "vaex" else "csv"
                 )
-                # TODO: add option to delete file at the end
 
                 # Complete transition data with lookup on upper & lower state :
                 # In particular, compute gup and elower
@@ -1511,9 +1500,7 @@ class MdbExomol(DatabaseManager):
                 )
 
                 ##Recompute Line strength:
-                from radis.lbl.base import (  # TODO: move elsewhere
-                    linestrength_from_Einstein,
-                )
+                from radis.lbl.base import linestrength_from_Einstein
 
                 self.Sij0 = linestrength_from_Einstein(
                     A=trans["A"],

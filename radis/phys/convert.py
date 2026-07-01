@@ -13,7 +13,7 @@ Get equivalent width in nm of a 10cm-1 width at 380 nm
     >>> dcm2dnm(10, nm2cm(380))
 
 
--------------------------------------------------------------------------------
+
 """
 
 import numpy as np

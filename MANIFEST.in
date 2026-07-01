@@ -1,4 +1,4 @@
-include README.rst
+include README.md
 include LICENSE
 include requirements.txt
 include radis/__version__.txt
@@ -23,8 +23,7 @@ global-exclude */test/*
 global-exclude *test*.py
 
 # Exclude documentation
-global-exclude docs/*
-global-exclude *.rst
+prune docs
 
 # Exclude examples
-global-exclude examples/*
+prune examples

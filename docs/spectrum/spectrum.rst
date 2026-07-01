@@ -32,11 +32,6 @@ Refer to the guide below for an exhaustive list of all features:
 
 ---------------------------------------------------------------------
 
-.. toctree::
-   :maxdepth: 3
-
-   spectrum
-
 For any other question you can use the `Q&A forum <https://groups.google.com/forum/#!forum/radis-radiation>`__,
 the `GitHub issues <https://github.com/radis/radis/issues>`__ or the
 community chats on `Gitter <https://gitter.im/radis-radiation/community>`__ or
@@ -90,6 +85,7 @@ The standard way to build a Radis Spectrum is from a dictionary of
     from radis import Spectrum
     s = Spectrum({"wavenumber":w, "abscoeff":k, "radiance_noslit":I},
                  units={"radiance_noslit":"mW/cm2/sr/nm", "abscoeff":"cm-1"})
+
 Or::
 
     s = Spectrum({"abscoeff":(w,k), "radiance_noslit":(w,I)},
@@ -196,8 +192,8 @@ You need a spectrum immediatly, to run some tests ? Use :py:func:`~radis.test.ut
 
 This returns the CO spectrum from the :ref:`first documentation example <label_first_example>`
 
-.. figure:: examples/co_spectrum_700K.png
-:scale: 60 %
+.. figure:: ../examples/co_spectrum_700K.png
+   :scale: 60 %
 
 
 Generate a Blackbody (Planck) function object
@@ -245,14 +241,14 @@ as measured in experimental spectra:
 Other variables represent quantities that have not been convolved (theoretical spectra):
 
 - ``'radiance_noslit'``: the spectral radiance (typically in :math:`mW/cm^2/sr/nm`). This
-is sometimes confusingly called *spectral intensity*.
-- ``'transmittance_noslit'``: the directional spectral transmittance (:math:``0`` to :math:``1``)
+  is sometimes confusingly called *spectral intensity*.
+- ``'transmittance_noslit'``: the directional spectral transmittance (:math:`0` to :math:`1`)
 - ``'emissivity_noslit'``: spectral emissivity (``0`` to ``1``) *i.e.* the radiance emitted by a surface
   divided by that emitted by a black body at the same temperature as that surface. This value is only
   defined under thermal equilibrium.
-- ``'emisscoeff'``: the directional spectral emission density (typically in :math:``'mW/cm^3/sr/nm'``).
+- ``'emisscoeff'``: the directional spectral emission density (typically in :math:`mW/cm^3/sr/nm`).
 - ``'absorbance'``: the directional spectral absorbance (no dimension), also called *optical depth*.
-- ``'abscoeff'``: spectral absorption coefficient (typically in :math:``'cm^{-1}'``), also called *opacity*.
+- ``'abscoeff'``: spectral absorption coefficient (typically in :math:`cm^{-1}`), also called *opacity*.
   This is sometimes found as the *extinction coefficient* in the literature (strictly speaking, *extinction*
   is *absorption* + *diffusion*, the latter being negligible in the infrared).
 - ``'xsection'``: absorption cross-section, typically in cm2
@@ -343,7 +339,7 @@ Use with `return_units` to get dimensioned Astropy Quantities ::
     w, R  = s.get('radiance_noslit', return_units=True)
     # w, R are astropy quantities
 
-See :ref:`spectral arrays <label_spectral _arrays>` for the list
+See :ref:`spectral arrays <label_spectral_arrays>` for the list
 of spectral arrays.
 
 Get wavelength/wavenumber
@@ -385,41 +381,6 @@ which can return condition in arbitrary units::
 
 
 .. _label_spectrum_plot:
-
-Plotting
-    -----
-
-    The `plot` method can be used to visualize the resulting spectrum. Available plot types are:
-
-    - 'absorption': plot absorption coefficient vs. wavenumber
-    - 'transmittance': plot transmittance vs. wavenumber
-    - 'radiance': plot radiance vs. wavenumber
-    - 'intensity': plot spectral intensity vs. wavenumber
-    - 'lines': plot individual spectral lines
-
-    Each plot type also has additional optional parameters that can be passed to `plot_options`.
-
-    Parameters
-    ----------
-    var : str, optional
-        The type of plot to generate. Defaults to 'absorption'.
-        Valid options are 'absorption', 'transmittance', 'radiance', 'intensity', and 'lines'.
-    plot_options : dict, optional
-        A dictionary of additional plot options. Valid keys and their descriptions are:
-
-        - 'figsize' : (width, height) tuple in inches for the plot figure size. Defaults to (10, 6).
-        - 'xlim' : (xmin, xmax) tuple in cm-1 for the x-axis limits. Defaults to (0, 5000).
-        - 'ylim' : (ymin, ymax) tuple for the y-axis limits. Defaults to 'auto'.
-        - 'linewidth' : float value for the line width. Defaults to 1.0.
-        - 'color' : string or tuple value for the line color. Defaults to 'k'.
-        - 'title' : string value for the plot title. Defaults to an automatically generated title.
-        - 'xlabel' : string value for the x-axis label. Defaults to 'Wavenumber (cm$^{-1}$)'.
-        - 'ylabel' : string value for the y-axis label. Defaults to 'Absorption Coefficient (cm$^{-1}$/(molecule cm$^{-2}$))' for 'absorption' plots,
-                      'Transmittance' for 'transmittance' plots,
-                      'Radiance (W/(cm$^{-1}$ sr))' for 'radiance' plots,
-                      'Spectral Intensity (W/(cm$^{-1}$ sr))' for 'intensity' plots.
-
-    def plot(self, var ='absorption', plot_options=None):
 
 Plot spectral arrays
 --------------------
@@ -925,7 +886,7 @@ class.
 
 An example of a script that uses the :class:`~radis.lbl.factory.SpectrumFactory`,
 multiple fitting parameters, and plots the residual and the calculated spectrum
-in real-time, can be found :ref:`in the Examples page <label_examples_multitemperature_fit>`
+in real-time, can be found in the :ref:`Fitting examples <sphx_glr_auto_examples_3_Fitting>`.
 
 
 .. _label_spectrum_howto_interpolate:

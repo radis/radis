@@ -16,16 +16,14 @@ Which inherit from:
 - :class:`~radis.levels.partfunc.RovibParFuncTabulator`
 
 
--------------------------------------------------------------------------------
-"""
 
+"""
 
 import time
 from os.path import exists, getmtime, join
 from warnings import warn
 
 import pandas as pd
-from scipy.interpolate import splev, splrep
 
 import radis
 from radis.api.cache_files import filter_metadata, load_h5_cache_file, save_to_hdf
@@ -88,6 +86,8 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
             raise KeyError(f"Missing columns ({'T(K)'}) in {database}")
 
         # Define spline interpolation
+        from scipy.interpolate import splrep
+
         isoname = Itable[isotope]
         tck = splrep(parsum["T(K)"], parsum[isoname])
 
@@ -111,6 +111,8 @@ class PartFuncCO2_CDSDtab(RovibParFuncTabulator):
             raise OutOfBoundError(
                 f"Temperature: {T} is out of bounds {self.Tmin}-{self.Tmax}"
             )
+
+        from scipy.interpolate import splev
 
         return splev(T, self.tck)
 
@@ -262,7 +264,7 @@ class PartFuncCO2_CDSDcalc(RovibParFuncCalculator):
         self.levelsfmt = levelsfmt
         self.viblvl_label = viblvl_label
         cdsd_fragment_path = join(
-            "radis", "test", "files", "co2_cdsd_hamiltonian_fragment.levels"
+            radis.__path__[0], "test", "files", "co2_cdsd_hamiltonian_fragment.levels"
         )
         self.last_modification = time.ctime(getmtime(cdsd_fragment_path))
         if verbose >= 2:

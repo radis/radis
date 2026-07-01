@@ -9,7 +9,7 @@ database using block-aligned bzip2 decompression for specific wavenumber ranges.
 
 import bz2
 import io
-import os
+from pathlib import Path
 
 import numpy as np
 from tqdm import tqdm
@@ -17,8 +17,8 @@ from tqdm import tqdm
 from radis.misc.utils import getProjectRoot
 
 # Use absolute path to avoid issues
-project_root = getProjectRoot()
-offset_path = os.path.join(project_root, "db", "offset_arr.npy")
+project_root = Path(getProjectRoot())
+offset_path = project_root / "db" / "offset_arr.npy"
 
 offsets, pads = np.load(offset_path)
 sizes = offsets[1:] - offsets[:-1]
@@ -103,7 +103,7 @@ def partial_download_co2_chunk(
         If True, prints progress and status messages
     """
 
-    wavenumber_path = os.path.join(project_root, "db", "wavenumber_arr.npy")
+    wavenumber_path = project_root / "db" / "wavenumber_arr.npy"
     wavenumbers = np.load(wavenumber_path)
     i_min = np.searchsorted(wavenumbers, target_wn_min, side="left")
     i_max = np.searchsorted(wavenumbers, target_wn_max, side="right")
@@ -118,7 +118,7 @@ def partial_download_co2_chunk(
             f"Wavenumber range: {wavenumbers[i_min]:.6f} to {wavenumbers[i_max]:.6f} cm-1"
         )
 
-    os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
+    Path(output_file_path).parent.mkdir(parents=True, exist_ok=True)
 
     offset = offsets[i_min]
     size = offsets[i_max + 1] - offsets[i_min]

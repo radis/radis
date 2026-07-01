@@ -16,6 +16,7 @@ The default `pfsource` is 'nist'. It can be changed on the fly using the :meth:`
 
 Allowable values for `potential_lowering` are usually (in cm-1/Zeff**2): -500, -1000, -2000, -4000, -8000, -16000, -32000.
 """
+
 # %%
 import traceback
 

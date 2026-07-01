@@ -25,7 +25,7 @@ see the functions in :py:mod:`radis.spectrum.operations`:
 - :func:`~radis.spectrum.operations.Transmittance_noslit`
 
 
--------------------------------------------------------------------------------
+
 
 
 """
