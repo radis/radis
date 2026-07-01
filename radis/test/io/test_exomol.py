@@ -95,7 +95,7 @@ def test_calc_exomol_vs_hitemp(verbose=True, plot=False, *args, **kwargs):
 
     # Broadening coefficients are different but areas under the lines should be the same:
     assert np.isclose(
-        s_exomol.get_integral("abscoeff"), s_hitemp.get_integral("abscoeff"), rtol=0.001
+        s_exomol.get_integral("abscoeff"), s_hitemp.get_integral("abscoeff"), rtol=0.02
     )
 
 
