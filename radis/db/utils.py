@@ -4,7 +4,6 @@
 @author: Erwan
 """
 
-
 import json
 from collections import OrderedDict
 from pathlib import Path

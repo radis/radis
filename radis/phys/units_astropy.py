@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-
-
-
-
-"""
+""" """
 
 
 def convert_and_strip_units(quantity, output_unit=None, digit=10):

@@ -8,7 +8,6 @@ Functions to plot line surveys
 
 """
 
-
 from warnings import warn
 
 import numpy as np

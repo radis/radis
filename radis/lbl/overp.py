@@ -247,6 +247,7 @@ class LevelsList(object):
             )  # fails in Python 3.13. Old comment: 192 ms ± 1.13 ms
         else:
             vib_levels = df.reset_index().drop_duplicates(subset=vib_index)
+
         # Add levels
         def add_viblvl(row):
             """ """

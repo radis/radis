@@ -23,7 +23,6 @@ a few seconds only)::
 
 """
 
-
 import os
 from os.path import dirname, exists, join
 

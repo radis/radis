@@ -17,6 +17,7 @@ underlying :py:mod:`vaex` library.
 In this example, we plot the dependance of the broadening coefficients to the rotational number and the line density.
 
 """
+
 import matplotlib.pyplot as plt
 
 from radis.io.hitran import fetch_hitran

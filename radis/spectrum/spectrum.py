@@ -3842,7 +3842,7 @@ class Spectrum(object):
 
             else:  # Or use a given tuple or arrays
                 try:
-                    (w, I) = overlay
+                    w, I = overlay
                 except (TypeError, ValueError):
                     raise ValueError(
                         "Overlay has to be string, or (w,I) tuple of " + "arrays"
@@ -6601,9 +6601,7 @@ def _cut_slices(w_spec_nm, w_slit_nm, slit_dispersion, slit_dispersion_threshold
         res = root_scalar(
             lambda w: slit_dispersion(w) - slit_disp_target, bracket=[w_start, w_end]
         )
-        assert (
-            res.converged
-        ), "Did not converged, something went wrong... +\
+        assert res.converged, "Did not converged, something went wrong... +\
         Are you sure the slit dispersion function is monotone?"
         w_next = res.root
         w_list_slices.append(w_next)

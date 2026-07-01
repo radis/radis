@@ -42,6 +42,7 @@ RADIS includes automatic rebuilding of Deprecated cache files + a global variabl
 to force regenerating them after a given version. See ``"OLDEST_COMPATIBLE_VERSION"``
 key in :py:attr:`radis.config`
 """
+
 # TODO: on use_cache functions, make a 'clean' / 'reset' option to delete / regenerate
 # cache files
 
@@ -819,7 +820,7 @@ class DatabankLoader(object):
         # TODO @dev : Refactor : turn it into a Dictionary? (easier to store as JSON Etc.)
 
         # Profiler
-        self.profiler = None
+        self.profiler = Profiler(self.verbose)
 
     def _reset_profiler(self, verbose):
         """Reset :py:class:`~radis.misc.profiler.Profiler`
@@ -827,8 +828,23 @@ class DatabankLoader(object):
         See Also
         --------
         :py:func:`radis.lbl.factory.SpectrumFactory.print_perf_profile"""
+        db_loading = None
+        if (
+            self.profiler is not None
+            and "spectrum_calculation" not in self.profiler.final
+        ):
+            db_loading = self.profiler.final.get("db_loading")
 
         self.profiler = Profiler(verbose)
+
+        if db_loading is not None:
+            self.profiler.final["db_loading"] = db_loading
+
+    def _db_loading_profiler_level(self):
+        """Return the profiler level to use for databank loading."""
+        if "spectrum_calculation" in self.profiler.initial:
+            return 2
+        return 1
 
     def _reset_references(self):
         """Reset :py:class:`~radis.tools.track_refs.RefTracker`"""
@@ -1029,7 +1045,7 @@ class DatabankLoader(object):
         database: str
             If fetching from HITRAN, ``'full'`` downloads the full database and registers it, ``'range'`` downloads only the lines in the range of the molecule.
             If fetching from HITEMP, Kurucz, or NIST, only ``'full'`` is available.
-            If fetching from ExoMol, use this parameter to choose which database to use. Keep ``'default'`` to use the recommended one.
+            If fetching from ExoMol, use this parameter to choose which database to use. Keep ``'default'`` to use the recommended one. If no database is recommended (e.g., for ``13C-16O``), you must explicitly provide one or a ``KeyError`` will be raised.
             Default is ``'full'``.
 
 
@@ -1082,6 +1098,8 @@ class DatabankLoader(object):
         # | Should store the waverange, molecule and isotopes in the cache file
         # | metadata to ensures that it is redownloaded if necessary.
         # | see implementation in load_databank.
+
+        self.profiler.start("db_loading", self._db_loading_profiler_level())
 
         # Check inputs
         compare_source = source.casefold()
@@ -1662,6 +1680,8 @@ class DatabankLoader(object):
                     + "in fetch_databank"
                 )
 
+        self.profiler.stop("db_loading", "Loaded database")
+
         return
 
     def load_databank(
@@ -1780,6 +1800,8 @@ class DatabankLoader(object):
         ----------
         .. [1] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
         """
+        self.profiler.start("db_loading", self._db_loading_profiler_level())
+
         # %% Check inputs
         # ---------
 
@@ -1890,6 +1912,8 @@ class DatabankLoader(object):
         # are calculated ab initio from radis internal species database constants
         if load_energies and not self.input.isatom:
             self._init_rovibrational_energies(levels, levelsfmt)
+
+        self.profiler.stop("db_loading", "Loaded database")
 
         return
 
@@ -2250,9 +2274,9 @@ class DatabankLoader(object):
                 f"`pfsource` {pfsource} is not available for the species {species}. Try running `set_atomic_partition_functions` again with a different `pfsource`."
             )
         else:
-            self.params.parfuncpath = (
-                self.params.levelsfmt
-            ) = self.levelspath = None  # all these parameters are irrelevant for atoms
+            self.params.parfuncpath = self.params.levelsfmt = self.levelspath = (
+                None  # all these parameters are irrelevant for atoms
+            )
 
     def _init_rovibrational_energies(self, levels, levelsfmt):
         """Initializes non equilibrium partition (which contain rovibrational

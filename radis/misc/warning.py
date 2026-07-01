@@ -13,7 +13,6 @@ Main warning classes :
 
 """
 
-
 import warnings
 
 from radis.misc.printer import printr
