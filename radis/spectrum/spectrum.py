@@ -88,11 +88,9 @@ from radis.spectrum.utils import (
     make_up_unit,
     print_conditions,
 )
-from radis.tools.track_ref import RefTracker
+
 
 # %% Spectrum class to hold results
-
-
 def _is_running_in_notebook():
     """Check if the code is running in a Jupyter Notebook."""
     try:
@@ -558,7 +556,8 @@ class Spectrum(object):
         self.file = None  # used to store filename when loaded from a file
         self.profiler = None
 
-        # Add references
+        from radis.tools.track_ref import RefTracker
+
         self.references = RefTracker(**references)
         if not doi["RADIS-2018"] in self.references:
             self.references.add(
@@ -5387,6 +5386,8 @@ class Spectrum(object):
             raise ValueError(
                 "You first need to register the dictionary of bibliographic references. Set `s.references= {'doi':'use in the calculation'}` "
             )
+
+        from radis.tools.track_ref import RefTracker
 
         if not isinstance(self.references, RefTracker):
             self.references = RefTracker(**self.references)
