@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Tools : database of spectra, line survey, interface with Cantera."""
 
-
 from .database import SpecDatabase, load_spec, plot_spec, save
 from .gascomp import get_eq_mole_fraction
 from .slit import (

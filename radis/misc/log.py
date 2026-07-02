@@ -5,7 +5,6 @@
 Logging and warning functions
 """
 
-
 import sys
 from time import gmtime, strftime
 from warnings import warn

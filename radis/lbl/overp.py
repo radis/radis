@@ -15,7 +15,6 @@ having to recalculate the broadening of each line
     Order of magnitude faster, but only valid under optically thin conditions as the
     rescaling of absorption doesnt scale induced emission properly
 
-----------
 """
 
 from time import time
@@ -240,7 +239,14 @@ class LevelsList(object):
         else:
             raise NotImplementedError(levelsfmt)
 
-        vib_levels = df.drop_duplicates(subset=vib_index)  # 192 ms ± 1.13 ms
+        import sys
+
+        if sys.version_info < (3, 13):
+            vib_levels = df.drop_duplicates(
+                subset=vib_index
+            )  # fails in Python 3.13. Old comment: 192 ms ± 1.13 ms
+        else:
+            vib_levels = df.reset_index().drop_duplicates(subset=vib_index)
 
         # Add levels
         def add_viblvl(row):
@@ -677,7 +683,17 @@ def rescale_updown_levels(
     when inferring emission quantities from absorption quantities this may
     ends up in error in overpopulation rescaling.
     """
-    # TODO: Add warning when too large rescaling
+    # Warn if rescaling is too large (>30% change)
+    if old_nu != 0 and old_nl != 0 and not ignore_warnings:
+        rescale_nu = abs(new_nu / old_nu - 1)
+        rescale_nl = abs(new_nl / old_nl - 1)
+        if rescale_nu > 0.3 or rescale_nl > 0.3:
+            warn(
+                f"Large rescaling detected: nu factor={new_nu/old_nu:.2f}, "
+                f"nl factor={new_nl/old_nl:.2f}. For large changes, "
+                "calculate a new spectrum instead.",
+                UserWarning,
+            )
 
     # Check inputs
     # ---------

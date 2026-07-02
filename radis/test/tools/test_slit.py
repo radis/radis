@@ -14,10 +14,9 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
     pytest -m fast
 
 
--------------------------------------------------------------------------------
+
 
 """
-
 
 from os.path import basename
 from warnings import catch_warnings, filterwarnings
@@ -764,6 +763,57 @@ def test_resampling(
     assert bool(error < rtol)
 
 
+@pytest.mark.fast
+def test_rejects_axis_without_finite_values():
+    slit = np.array(
+        [
+            [np.nan, np.inf, -np.inf],
+            [0.0, 1.0, 0.0],
+        ]
+    )
+
+    with pytest.raises(
+        ValueError, match=r"Invalid slit axis: `w_slit` contains no finite values\."
+    ):
+        import_experimental_slit(
+            slit, auto_recenter=False, auto_crop=False, norm_by=None
+        )
+
+
+@pytest.mark.fast
+def test_rejects_axis_at_or_near_zero():
+    slit = np.array(
+        [
+            [1e-16, 632.8, 632.9],
+            [0.0, 1.0, 0.0],
+        ]
+    )
+
+    with pytest.raises(
+        ValueError, match=r"Invalid slit axis: detected 1 value\(s\) at/near zero"
+    ):
+        import_experimental_slit(
+            slit, auto_recenter=False, auto_crop=False, norm_by=None
+        )
+
+
+@pytest.mark.fast
+def test_rejects_axis_crossing_zero():
+    slit = np.array(
+        [
+            [-1.0, -0.5, 0.5, 1.0],
+            [0.0, 1.0, 1.0, 0.0],
+        ]
+    )
+
+    with pytest.raises(
+        ValueError, match=r"Invalid slit axis: sign change detected in `w_slit`"
+    ):
+        import_experimental_slit(
+            slit, auto_recenter=False, auto_crop=False, norm_by=None
+        )
+
+
 def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):
 
     # Validation
@@ -810,5 +860,8 @@ def _run_testcases(plot=True, close_plots=False, verbose=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    print(("Testing slit.py: ", _run_testcases(plot=True)))
+    test_rejects_axis_crossing_zero()
+    test_rejects_axis_at_or_near_zero()
+    test_rejects_axis_without_finite_values()
+    # print(("Testing slit.py: ", _run_testcases(plot=True)))
     # printm("Testing slit.py:", pytest.main(["test_slit.py", "--pdb"]))

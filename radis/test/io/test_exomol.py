@@ -99,6 +99,35 @@ def test_calc_exomol_vs_hitemp(verbose=True, plot=False, *args, **kwargs):
     )
 
 
+@pytest.mark.needs_connection
+def test_exomol_parallel_vs_sequential(tmp_path, verbose=True, *args, **kwargs):
+    """Test that parallel fetch_exomol produces same DataFrame as sequential"""
+    import pandas as pd
+
+    from radis.io.exomol import fetch_exomol
+
+    molecule = "CO"
+    isotope = 1
+    wmin = 2000
+    wmax = 2010
+
+    def get_df(parallel, path):
+        return fetch_exomol(
+            molecule=molecule,
+            isotope=isotope,
+            load_wavenum_min=wmin,
+            load_wavenum_max=wmax,
+            parallel=parallel,
+            clean_cache_files=False,
+            verbose=False,
+            local_databases=path,
+        )
+
+    df_seq = get_df(parallel=False, path=tmp_path / "seq")
+    df_par = get_df(parallel=True, path=tmp_path / "par")
+    pd.testing.assert_frame_equal(df_seq, df_par)
+
+
 if __name__ == "__main__":
     # test_exomol_parsing_functions()
     # test_calc_exomol_spectrum()

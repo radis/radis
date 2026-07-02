@@ -45,7 +45,7 @@ References
 
 
 
--------------------------------------------------------------------------------
+
 """
 
 # TODO: vectorize partition function calculations for different temperatures. Would need
@@ -651,9 +651,13 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 # Add overpopulations (so they are taken into account in the partition function)
                 for viblvl, ov in overpopulation.items():
                     if ov != 1:
-                        df.loc[df.viblvl == viblvl, "nvibQvib"] *= ov
-                        # TODO: add warning if empty? I dont know how to do it without
-                        # an extra lookup though.
+                        mask = df.viblvl == viblvl
+                        if mask.sum() == 0:
+                            warn(
+                                f"Overpopulation set for level '{viblvl}' but no "
+                                f"rows match in the energy level database."
+                            )
+                        df.loc[mask, "nvibQvib"] *= ov
 
             # Calculate sum of levels
             # Include electronic factor if Te column exists and Telec is provided
@@ -1373,7 +1377,11 @@ class PartFuncTIPS(RovibParFuncTabulator):
         self.I = I
 
         # Get min and maximum of partition functions in TIPS
-        from hapi import TIPS_2021_ISOT_HASH
+        # Suppress HAPI import output
+        from contextlib import redirect_stdout
+
+        with redirect_stdout(None):
+            from hapi import TIPS_2021_ISOT_HASH
 
         TT = TIPS_2021_ISOT_HASH[(M, I)]
         self.Tmin = min(TT)

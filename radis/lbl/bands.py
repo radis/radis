@@ -36,17 +36,16 @@ PRIVATE METHODS
 - _calc_broadening_bands
 - _calc_broadening_noneq_bands
 
-----------
 
 
 """
+
 # TODO: merge common parts of BandList.eq_bands  and SpectrumFactory.eq_spectrum,
 # under a same function call
 
 from time import time
 from warnings import warn
 
-import astropy.units as u
 import numpy as np
 import pandas as pd
 from numpy import exp, expm1
@@ -163,6 +162,8 @@ class BandFactory(BroadenFactory):
         """
 
         # Convert units
+        import astropy.units as u
+
         Tgas = convert_and_strip_units(Tgas, u.K)
         path_length = convert_and_strip_units(path_length, u.cm)
         pressure = convert_and_strip_units(pressure, u.bar)
@@ -462,6 +463,8 @@ class BandFactory(BroadenFactory):
         """
 
         # Convert units
+        import astropy.units as u
+
         Tvib = convert_and_strip_units(Tvib, u.K)
         Trot = convert_and_strip_units(Trot, u.K)
         Ttrans = convert_and_strip_units(Ttrans, u.K)
@@ -895,7 +898,7 @@ class BandFactory(BroadenFactory):
         for i, (band, dg) in enumerate(gb):
             if optimization in ("simple", "min-RMS"):
                 line_profile_LDM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_LDM(dg)
-                (wavenumber, absorption) = self._apply_lineshape_LDM(
+                wavenumber, absorption = self._apply_lineshape_LDM(
                     dg.S.values,
                     line_profile_LDM,
                     dg.shiftwav.values,
@@ -907,7 +910,7 @@ class BandFactory(BroadenFactory):
                 )
             else:
                 line_profile = self._calc_lineshape(dg)
-                (wavenumber, absorption) = self._apply_lineshape(
+                wavenumber, absorption = self._apply_lineshape(
                     dg.S.values, line_profile, dg.shiftwav.values
                 )
             abscoeff_bands[band] = absorption
@@ -946,7 +949,7 @@ class BandFactory(BroadenFactory):
         for i, (band, dg) in enumerate(gb):
             if optimization in ("simple", "min-RMS"):
                 line_profile_LDM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_LDM(dg)
-                (wavenumber, absorption) = self._apply_lineshape_LDM(
+                wavenumber, absorption = self._apply_lineshape_LDM(
                     dg.S.values,
                     line_profile_LDM,
                     dg.shiftwav.values,
@@ -956,7 +959,7 @@ class BandFactory(BroadenFactory):
                     wG_dat,
                     optimization,
                 )
-                (_, emission) = self._apply_lineshape_LDM(
+                _, emission = self._apply_lineshape_LDM(
                     dg.Ei.values,
                     line_profile_LDM,
                     dg.shiftwav.values,
@@ -969,10 +972,10 @@ class BandFactory(BroadenFactory):
 
             else:
                 line_profile = self._calc_lineshape(dg)
-                (wavenumber, absorption) = self._apply_lineshape(
+                wavenumber, absorption = self._apply_lineshape(
                     dg.S.values, line_profile, dg.shiftwav.values
                 )
-                (_, emission) = self._apply_lineshape(
+                _, emission = self._apply_lineshape(
                     dg.Ei.values, line_profile, dg.shiftwav.values
                 )
             abscoeff_bands[band] = absorption  #
@@ -1016,16 +1019,14 @@ class BandFactory(BroadenFactory):
 
         self.profiler.start("calc_broadening_eq_bands", 2)
         # Just some tests
-        try:
-            assert len(df.shape) == 2
-        except AssertionError:
+        if len(df.shape) == 2:
             warn(
                 "Dataframe has only one line. Unexpected behaviour could occur"
                 + " because Dataframes will be handled as Series and row/columns"
                 + " may be inverted"
             )
 
-        (wavenumber, abscoeff_bands) = self._broaden_lines_bands(df)
+        wavenumber, abscoeff_bands = self._broaden_lines_bands(df)
 
         self.profiler.stop("calc_broadening_eq_bands", "Calc Broadening Eq Bands")
 
@@ -1064,9 +1065,7 @@ class BandFactory(BroadenFactory):
 
         self.profiler.start("calc_broadening_noneq_bands", 2)
         # Just some tests
-        try:
-            assert len(df.shape) == 2
-        except:
+        if len(df.shape) == 2:
             warn(
                 "Dataframe has only one line. Unexpected behaviour could occur"
                 + " because Dataframes will be handled as Series and row/columns"

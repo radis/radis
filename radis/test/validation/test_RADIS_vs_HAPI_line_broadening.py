@@ -116,9 +116,8 @@ def test_line_broadening(rtol=1e-3, verbose=True, plot=False, *args, **kwargs):
                 name="HAPI",
             )
 
-        except:
+        except Exception:
             raise
-
         finally:
             if clean_after_run:
                 shutil.rmtree(HAPIdb)

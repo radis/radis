@@ -6,8 +6,6 @@ Predefined molecules using RADIS built-in
 
 See :py:data:`~radis.db.molecules.Molecules`
 
--------------------------------------------------------------------------------
-
 
 """
 

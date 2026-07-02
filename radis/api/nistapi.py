@@ -88,6 +88,14 @@ class NISTDatabaseManager(DatabaseManager):
         # Use the opener's open method which should be available in all implementations
         with opener.open() as file:
             file_content = file.read().decode("utf-8")
+
+        # Check if NIST returned no data
+        if "No lines are available in ASD with the parameters selected" in file_content:
+            raise ValueError(
+                f"No spectral lines available for {self.molecule} in NIST database "
+                "with the selected parameters"
+            )
+
         file = StringIO(file_content)
 
         df = nist2df(file, self.molecule)

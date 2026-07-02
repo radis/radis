@@ -59,8 +59,6 @@ Most methods are written in inherited class with the following inheritance schem
    :parts: 1
 
 
-----------
-
 
 """
 
@@ -68,7 +66,6 @@ Most methods are written in inherited class with the following inheritance schem
 
 import numpy as np
 import pandas as pd
-from astropy import units as u
 from numpy import exp, pi
 from psutil import virtual_memory
 
@@ -333,16 +330,17 @@ class BaseFactory(DatabankLoader):
         except AssertionError as err:
             if self.dataframe_type == "pandas":
                 index = np.isnan(df[column]).idxmax()
+                fix_idea = ""
                 if self.input.species == "CO2":
                     fix_idea = (
-                        "If using HITEMP2010 for CO2, some lines are unlabelled and therefore cannot be used at "
+                        "\nIf using HITEMP2010 for CO2, some lines are unlabelled and therefore cannot be used at "
                         "equilibrium. This is a known issue of the HITEMP database and will soon be fixed in the "
                         "edition. In the meantime you can use:\n 'sf.df0.drop(sf.df0.index[sf.df0['v1u']==-1], inplace=True)' "
                         "where 'sf' is SpectrumFactory object"
                     )
                 raise AssertionError(
                     f"{column}=NaN in line database at index {index}"
-                    + f" corresponding to Line:\n {get_print_full(df.loc[index]) + fix_idea}"
+                    + f" corresponding to Line:\n {get_print_full(df.loc[index])}{fix_idea}"
                 ) from err
             elif self.dataframe_type == "vaex":
                 if self.input.species == "CO2":
@@ -770,7 +768,15 @@ class BaseFactory(DatabankLoader):
             # only keep vibrational energies
             # see text for how we define vibrational energy
             index = ["p", "c", "N"]
-            energies = energies.drop_duplicates(index, inplace=False)
+
+            import sys
+
+            if sys.version_info < (3, 13):
+                energies = energies.drop_duplicates(index, inplace=False)
+            else:
+                energies = energies.reset_index().drop_duplicates(
+                    subset=index, inplace=False
+                )
             # (work on a copy)
 
             # reindexing to get a direct access to level database (instead of using df.v1==v1 syntax)
@@ -2041,6 +2047,7 @@ class BaseFactory(DatabankLoader):
         if dbformat in [
             "hitran",
             "hitemp",
+            "geisa",
             "hitemp-radisdb",
             "cdsd-hitemp",
             "cdsd-4000",
@@ -4421,6 +4428,8 @@ def get_wavenumber_range(
         If unitless, wunit is assumed as the accompanying unit.
     wunit: string
         The unit accompanying wmin and wmax. Cannot be passed without passing values for wmin and wmax.
+        Accepted values: ``'cm-1'``, ``'nm'``, ``'nm_air'``, ``'nm_vac'``.
+        ``'nm_air'`` and ``'nm_vac'`` override the ``medium`` parameter.
         Default: cm-1
     wavenum_min, wavenum_max: float, or `~astropy.units.quantity.Quantity` or ``None``
         wavenumbers
@@ -4436,6 +4445,8 @@ def get_wavenumber_range(
     """
 
     # Checking consistency of all input variables
+    from astropy import units as u
+
     assert medium in ["air", "vacuum"]
 
     w_present = wmin is not None and wmax is not None
@@ -4461,6 +4472,15 @@ def get_wavenumber_range(
             "or `wavelength_min=..., wavelength_max=...` (in nm)"
             "We recommend to use units. Example: \n\n  import astropy.units as u\n  calc_spectrum(wmin=2000 / u.cm, wmax=2300 / u.cm, ..."
         )
+
+    # Allow medium-specific wavelength units
+    if not isinstance(wunit, Default) and isinstance(wunit, str):
+        if wunit in ["nm_vac", "nm_vacuum"]:
+            medium = "vacuum"
+            wunit = "nm"
+        elif wunit in ["nm_air"]:
+            medium = "air"
+            wunit = "nm"
 
     if not isinstance(wunit, Default):
         if not u.Unit(wunit).is_equivalent(u.m) and not u.Unit(wunit).is_equivalent(
