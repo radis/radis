@@ -178,7 +178,7 @@ def test_OH_AX_noneq_vs_specair(verbose=True, plot=False):
     s_Specair_c3 = _load_Specair_csv(
         getValidationCase(
             join(
-                "test_validation_vs_Specair_OH_AX_data",
+                "test_validation_vs_specair_OH_AX_data",
                 "radiance_spectrum_Tgas300_Trot2000_Tvib500_Telec15000.csv",
             )
         )
