@@ -1674,10 +1674,11 @@ class PartFunc_Dunham(RovibParFuncCalculator):
                     )
             if molecule in HITRAN_CLASS1:
                 self.build_energy_levels_class1()
-            elif molecule in HITRAN_CLASS3:  # OH, NO, ClO (2Π states)
-                # Use CLASS1 method (diatomic Dunham/Herzberg)
-                # TODO: implement full 2Π treatment with spin-orbit and Lambda-doubling
-                self.build_energy_levels_class1()
+            ## Added in #842 but not used (MinouHub)
+            # elif molecule in HITRAN_CLASS3:  # OH, NO, ClO (2Π states)
+            #     # Use CLASS1 method (diatomic Dunham/Herzberg)
+            #     # TODO: implement full 2Π treatment with spin-orbit and Lambda-doubling
+            #     self.build_energy_levels_class1()
             elif molecule in HITRAN_CLASS5:  # CO2
                 self.build_energy_levels_class5(
                     calc_Evib_per_mode=calc_Evib_per_mode,

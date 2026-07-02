@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Validate RADIS OH(A-X) electronic spectrum against SpecAir reference data.
+Validate RADIS OH(A-X) electronic spectrum against Specair reference data.
 
 Three tests:
-- Test 1: RADIS equilibrium vs SpecAir equilibrium (integrated radiance regression)
+- Test 1: RADIS equilibrium vs Specair equilibrium (integrated radiance regression)
 - Test 2: RADIS eq_spectrum vs non_eq_spectrum at same T (self-consistency)
-- Test 3: RADIS non-eq vs SpecAir non-eq (integrated radiance regression)
+- Test 3: RADIS non-eq vs Specair non-eq (integrated radiance regression)
 """
 
 from os.path import join
@@ -28,8 +28,8 @@ def _integrate_radiance(s, wunit="nm", Iunit="mW/cm2/sr/cm-1"):
     return np.trapezoid(I[idx], w[idx])
 
 
-def _load_specair_csv(csv_path):
-    """Load a SpecAir reference CSV and return a Spectrum object.
+def _load_Specair_csv(csv_path):
+    """Load a Specair reference CSV and return a Spectrum object.
 
     Handles unit conversion: Case 1 CSV is in W/cm^2/nm/sr,
     Cases 2 & 3 are in mW/cm^2/sr/cm^-1.
@@ -50,7 +50,7 @@ def _load_specair_csv(csv_path):
         I = I * w**2 / 1e4  # W/cm^2/nm/sr -> mW/cm^2/sr/cm^-1
 
     return Spectrum.from_array(
-        w, I, "radiance", wunit="nm", unit="mW/cm2/sr/cm-1", name="SpecAir"
+        w, I, "radiance", wunit="nm", unit="mW/cm2/sr/cm-1", name="Specair"
     )
 
 
@@ -75,11 +75,11 @@ def _setup_OH_factory():
 
 @pytest.mark.needs_connection
 def test_OH_AX_eq_vs_specair(verbose=True, plot=False):
-    """Test 1: RADIS equilibrium OH(A-X) vs SpecAir equilibrium at 400K.
+    """Test 1: RADIS equilibrium OH(A-X) vs Specair equilibrium at 400K.
 
-    Regression test against known RADIS/SpecAir integrated radiance ratio.
+    Regression test against known RADIS/Specair integrated radiance ratio.
     """
-    s_specair = _load_specair_csv(
+    s_specair = _load_Specair_csv(
         getValidationCase(
             join(
                 "test_validation_vs_specair_OH_AX_data",
@@ -98,7 +98,7 @@ def test_OH_AX_eq_vs_specair(verbose=True, plot=False):
 
     if verbose:
         printm(
-            f">>> OH(A-X) eq 400K: RADIS/SpecAir integrated radiance ratio = {ratio:.4f}"
+            f">>> OH(A-X) eq 400K: RADIS/Specair integrated radiance ratio = {ratio:.4f}"
         )
 
     if plot:
@@ -147,9 +147,9 @@ def test_OH_AX_eq_vs_noneq_self_consistency(verbose=True, plot=False):
 
 @pytest.mark.needs_connection
 def test_OH_AX_noneq_vs_specair(verbose=True, plot=False):
-    """Test 3: RADIS non-eq OH(A-X) vs SpecAir non-eq.
+    """Test 3: RADIS non-eq OH(A-X) vs Specair non-eq.
 
-    Regression test against known RADIS/SpecAir integrated radiance ratios.
+    Regression test against known RADIS/Specair integrated radiance ratios.
     The discrepancy is documented and likely due to database differences.
 
     Known ratios:
@@ -159,10 +159,10 @@ def test_OH_AX_noneq_vs_specair(verbose=True, plot=False):
     sf = _setup_OH_factory()
 
     # Case 2
-    s_specair_c2 = _load_specair_csv(
+    s_Specair_c2 = _load_Specair_csv(
         getValidationCase(
             join(
-                "test_validation_vs_specair_OH_AX_data",
+                "test_validation_vs_Specair_OH_AX_data",
                 "radiance_spectrum_Tgas300_Trot500_Tvib2000_Telec10000.csv",
             )
         )
@@ -172,13 +172,13 @@ def test_OH_AX_noneq_vs_specair(verbose=True, plot=False):
     )
     s_radis_c2.apply_slit(0.1)
 
-    ratio2 = _integrate_radiance(s_radis_c2) / _integrate_radiance(s_specair_c2)
+    ratio2 = _integrate_radiance(s_radis_c2) / _integrate_radiance(s_Specair_c2)
 
     # Case 3
-    s_specair_c3 = _load_specair_csv(
+    s_Specair_c3 = _load_Specair_csv(
         getValidationCase(
             join(
-                "test_validation_vs_specair_OH_AX_data",
+                "test_validation_vs_Specair_OH_AX_data",
                 "radiance_spectrum_Tgas300_Trot2000_Tvib500_Telec15000.csv",
             )
         )
@@ -188,20 +188,20 @@ def test_OH_AX_noneq_vs_specair(verbose=True, plot=False):
     )
     s_radis_c3.apply_slit(0.1)
 
-    ratio3 = _integrate_radiance(s_radis_c3) / _integrate_radiance(s_specair_c3)
+    ratio3 = _integrate_radiance(s_radis_c3) / _integrate_radiance(s_Specair_c3)
 
     if verbose:
         printm(
-            f">>> OH(A-X) non-eq Case 2: RADIS/SpecAir ratio = {ratio2:.4f} (expected ~1.22)"
+            f">>> OH(A-X) non-eq Case 2: RADIS/Specair ratio = {ratio2:.4f} (expected ~1.22)"
         )
         printm(
-            f">>> OH(A-X) non-eq Case 3: RADIS/SpecAir ratio = {ratio3:.4f} (expected ~1.12)"
+            f">>> OH(A-X) non-eq Case 3: RADIS/Specair ratio = {ratio3:.4f} (expected ~1.12)"
         )
 
     if plot:
         plot_diff(
             s_radis_c2,
-            s_specair_c2,
+            s_Specair_c2,
             "radiance",
             wunit="nm",
             Iunit="mW/cm2/sr/cm-1",
@@ -209,7 +209,7 @@ def test_OH_AX_noneq_vs_specair(verbose=True, plot=False):
         )
         plot_diff(
             s_radis_c3,
-            s_specair_c3,
+            s_Specair_c3,
             "radiance",
             wunit="nm",
             Iunit="mW/cm2/sr/cm-1",

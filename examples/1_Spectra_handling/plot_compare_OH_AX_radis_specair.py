@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 """
 ===============================================================
-Compare OH(A-X) electronic spectra: RADIS vs SpecAir
+Compare OH(A-X) electronic spectra: RADIS vs Specair
 ===============================================================
 
 Auto-download the MoLLIST-OH line database from ExoMol and compute
 the OH A-X electronic band (300-340 nm) under equilibrium and
-non-equilibrium conditions. Compare with SpecAir reference data.
+non-equilibrium conditions. Compare with Specair reference data.
 
 .. note::
     Electronic spectra computation in RADIS is a work in progress.
     RADIS currently shows ~10-20% discrepancy in integrated radiance
-    compared to SpecAir, likely due to database differences.
-    See :py:mod:`radis.test.validation.test_validation_vs_specair_OH_AX`
+    compared to Specair, likely due to database differences.
+    See :py:mod:`radis.test.validation.test_validation_vs_Specair_OH_AX`
     for the full validation test suite.
 
 """
@@ -26,8 +26,8 @@ from radis import Spectrum, SpectrumFactory, plot_diff
 from radis.test.utils import getValidationCase
 
 
-def _load_specair_csv(csv_path):
-    """Load a SpecAir reference CSV and return a Spectrum object."""
+def _load_Specair_csv(csv_path):
+    """Load a Specair reference CSV and return a Spectrum object."""
     data = pd.read_csv(csv_path)
     header = ",".join(data.columns)
     w = data.iloc[:, 0].values
@@ -42,7 +42,7 @@ def _load_specair_csv(csv_path):
         I = I * w**2 / 1e4
 
     return Spectrum.from_array(
-        w, I, "radiance", wunit="nm", unit="mW/cm2/sr/cm-1", name="SpecAir"
+        w, I, "radiance", wunit="nm", unit="mW/cm2/sr/cm-1", name="Specair"
     )
 
 
@@ -74,12 +74,12 @@ sf.warnings["ElectronicSpectraWarning"] = "ignore"
 sf.fetch_databank("exomol", "MoLLIST-OH", load_energies=True)
 
 
-# %% Plot 1: Equilibrium RADIS vs SpecAir (400 K)
+# %% Plot 1: Equilibrium RADIS vs Specair (400 K)
 # -------------------------------------------------
 
-s_specair_eq = _load_specair_csv(
+s_Specair_eq = _load_Specair_csv(
     getValidationCase(
-        join("test_validation_vs_specair_OH_AX_data", "radiance_spectrum.csv")
+        join("test_validation_vs_Specair_OH_AX_data", "radiance_spectrum.csv")
     )
 )
 
@@ -90,14 +90,14 @@ s_radis_eq.apply_slit(0.1)
 
 fig, [ax0, ax1] = plot_diff(
     s_radis_eq,
-    s_specair_eq,
+    s_Specair_eq,
     "radiance",
     wunit="nm",
     Iunit="mW/cm2/sr/cm-1",
     method="diff",
 )
-ratio = _integrate_radiance(s_radis_eq) / _integrate_radiance(s_specair_eq)
-ax0.set_title(f"Equilibrium 400 K: RADIS vs SpecAir (ratio={ratio:.2f})")
+ratio = _integrate_radiance(s_radis_eq) / _integrate_radiance(s_Specair_eq)
+ax0.set_title(f"Equilibrium 400 K: RADIS vs Specair (ratio={ratio:.2f})")
 
 
 # %% Plot 2: Self-consistency check (eq vs noneq at same T)
@@ -114,10 +114,10 @@ ax2.set_title(f"Self-consistency: eq vs noneq at 400 K (ratio={ratio2:.4f})")
 # %% Plot 3: Non-equilibrium Case 2 (Trot=500K, Tvib=2000K, Telec=10000K)
 # -------------------------------------------------------------------------
 
-s_specair_c2 = _load_specair_csv(
+s_Specair_c2 = _load_Specair_csv(
     getValidationCase(
         join(
-            "test_validation_vs_specair_OH_AX_data",
+            "test_validation_vs_Specair_OH_AX_data",
             "radiance_spectrum_Tgas300_Trot500_Tvib2000_Telec10000.csv",
         )
     )
@@ -130,23 +130,23 @@ s_radis_c2.apply_slit(0.1)
 
 fig3, [ax4, ax5] = plot_diff(
     s_radis_c2,
-    s_specair_c2,
+    s_Specair_c2,
     "radiance",
     wunit="nm",
     Iunit="mW/cm2/sr/cm-1",
     method="diff",
 )
-ratio3 = _integrate_radiance(s_radis_c2) / _integrate_radiance(s_specair_c2)
+ratio3 = _integrate_radiance(s_radis_c2) / _integrate_radiance(s_Specair_c2)
 ax4.set_title(f"Non-eq Trot=500 Tvib=2000 Telec=10000 (ratio={ratio3:.2f})")
 
 
 # %% Plot 4: Non-equilibrium Case 3 (Trot=2000K, Tvib=500K, Telec=15000K)
 # -------------------------------------------------------------------------
 
-s_specair_c3 = _load_specair_csv(
+s_Specair_c3 = _load_Specair_csv(
     getValidationCase(
         join(
-            "test_validation_vs_specair_OH_AX_data",
+            "test_validation_vs_Specair_OH_AX_data",
             "radiance_spectrum_Tgas300_Trot2000_Tvib500_Telec15000.csv",
         )
     )
@@ -159,11 +159,11 @@ s_radis_c3.apply_slit(0.1)
 
 fig4, [ax6, ax7] = plot_diff(
     s_radis_c3,
-    s_specair_c3,
+    s_Specair_c3,
     "radiance",
     wunit="nm",
     Iunit="mW/cm2/sr/cm-1",
     method="diff",
 )
-ratio4 = _integrate_radiance(s_radis_c3) / _integrate_radiance(s_specair_c3)
+ratio4 = _integrate_radiance(s_radis_c3) / _integrate_radiance(s_Specair_c3)
 ax6.set_title(f"Non-eq Trot=2000 Tvib=500 Telec=15000 (ratio={ratio4:.2f})")

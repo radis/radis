@@ -1702,8 +1702,9 @@ class SpectrumFactory(BandFactory):
         if not self.input.isatom and Telec is not None:
             self.warn(
                 "Non-equilibrium electronic spectra for molecules is work in "
-                "progress in RADIS. Validation against SpecAir for OH(A-X) shows "
-                "~20%% discrepancy in integrated radiance. "
+                "progress in RADIS. Validation against Specair for OH(A-X) shows "
+                "~20%% discrepancy in integrated radiance - likely due to. "
+                "differences between the two databases. "
                 "See the 'plot_compare_OH_AX_radis_specair' example and "
                 "radis.test.validation.test_validation_vs_specair_OH_AX "
                 "for current validation status.",
