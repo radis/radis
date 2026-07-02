@@ -209,6 +209,27 @@ def running_in_spyder():
     return "SPYDER_ARGS" in os.environ
 
 
+def _can_prompt_for_input():
+    """Return True when interactive input prompts are expected to work."""
+    import sys
+
+    if running_in_spyder():
+        return True
+
+    # Most terminal launches (shell, VS Code terminal, etc.)
+    stdin = getattr(sys, "stdin", None)
+    if stdin is not None and hasattr(stdin, "isatty") and stdin.isatty():
+        return True
+
+    # IPython/Jupyter-like frontends are interactive even when stdin isn't a TTY.
+    try:
+        from IPython import get_ipython
+
+        return get_ipython() is not None
+    except Exception:
+        return False
+
+
 def _prompt_password(user):
     """
     Prompts the user for a password securely and handels input if spyder is used.
@@ -278,14 +299,13 @@ def setup_credentials():
 
     if (not email or not password) and not (is_rtd or is_travis or is_github_action):
         # In normal usage, fall back to prompt if environment variables not set
-        import sys
 
-        if is_pytest and (not email or not password):
+        if is_pytest:
             raise OSError(
                 "HITRAN_EMAIL and/or HITRAN_PASSWORD environment variables are not set, and the script is running in a non-interactive environment (e.g. captured stdin in pytest). Please set the environment variables or run with 'pytest -s' to allow interactive input."
             )
 
-        if sys.stdin.isatty():
+        if _can_prompt_for_input():
             email = input("Enter HITRAN email: ")
             password = _prompt_password(email)
 
@@ -359,7 +379,7 @@ def store_credentials(email, password):
     config["credentials"]["HITRAN_PASSWORD"] = encrypted_password
 
     print(
-        f"Your HITRAN credentials will be saved securely in {CONFIG_PATH_JSON}. You can delete the credentials section if you wish but you will have to prompt your credentials at next download."
+        f"Your HITRAN credentials will be saved securely in {CONFIG_PATH_JSON}. You can delete the credentials section if you wish but you will have to prompt your credentials at next download.\n"
     )
 
     # Write back to radis.json
@@ -412,7 +432,7 @@ def login_to_hitran(verbose=False):
                     # raise a more explicit error
                     raise LoginError(
                         f"HITRAN login failed due to {exc} (status code {code}). "
-                        "Please check your credentials and try again."
+                        f"Please check your credentials in {CONFIG_PATH_JSON} and try again."
                     )
             except requests.exceptions.RequestException as exc:
                 # raise a more explicit error
@@ -473,7 +493,7 @@ def login_to_hitran(verbose=False):
                     login_response, session = attempt_login(email, password)
                     if is_login_successful(login_response):
                         if verbose:
-                            print("Login successful.")
+                            print("***Successful login to HITRAN***")
                         return session
                 except Exception as e:
                     if verbose:
@@ -495,7 +515,7 @@ def login_to_hitran(verbose=False):
     # TO-DO: the function is_login_successful is likely not needed anymore due to definition of attempt_login. Still, let's keep it to make sure to fail in case of problems.
     if is_login_successful(login_response):
         if verbose:
-            print("Login successful.")
+            print("***Successful login to HITRAN***")
         store_credentials(email, password)
         return session
     else:
