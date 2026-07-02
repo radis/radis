@@ -74,6 +74,7 @@ def test_calc_exomol_vs_hitemp(verbose=True, plot=False, *args, **kwargs):
     # ExoMol
     sf.fetch_databank(
         source="exomol",
+        database="Li2015",
         broadf=False,
         broadf_download=False,  # accelerates the test!
     )
@@ -95,11 +96,10 @@ def test_calc_exomol_vs_hitemp(verbose=True, plot=False, *args, **kwargs):
 
     # Broadening coefficients are different but areas under the lines should be the same:
     assert np.isclose(
-        s_exomol.get_integral("abscoeff"), s_hitemp.get_integral("abscoeff"), rtol=0.02
+        s_exomol.get_integral("abscoeff"), s_hitemp.get_integral("abscoeff"), rtol=0.001
     )
 
 
 if __name__ == "__main__":
     # test_exomol_parsing_functions()
-    # test_calc_exomol_spectrum()
     test_calc_exomol_vs_hitemp()
