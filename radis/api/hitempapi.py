@@ -308,6 +308,10 @@ def setup_credentials():
         if _can_prompt_for_input():
             email = input("Enter HITRAN email: ")
             password = _prompt_password(email)
+        else:
+            raise OSError(
+                "HITRAN_EMAIL and/or HITRAN_PASSWORD environment variables are not set, and the script is running in a non-interactive environment. Please run in an interactive environment or a normal console to allow input prompts."
+            )
 
     return email, password
 
