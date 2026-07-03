@@ -3,6 +3,7 @@
 
 @author: erwan
 """
+
 # TODO refactor : rename this file as hitran_utils.py
 
 from warnings import warn
@@ -246,22 +247,28 @@ def drop_object_format_columns(df, verbose=True):
     operations (as they are converted to 'object' in pandas DataFrame).
     If you want to keep them, better convert them to some numeric values
     """
-
+    # Remove ["ierr", "iref", "lmix", "Fu", "syml", "Fl"] which is object for Python<=3.12 and string for Python 3.13+
+    additional_cols = ["ierr", "iref", "lmix", "Fu", "syml", "Fl"]
     df_type = type(df)
     objects = [k for k, v in df.dtypes.items() if v == object]
+
+    cols_to_drop = list(
+        set([col for col in additional_cols if col in df.columns] + objects)
+    )
     if df_type == pd.DataFrame:
-        df.drop(objects, axis=1, inplace=True)
+        df.drop(cols_to_drop, axis=1, inplace=True)
     elif (
         not isinstance(vaex, NotInstalled) and df_type == vaex.dataframe.DataFrameLocal
     ):  # no objects in vaex
-        pass
+        df.drop(cols_to_drop, inplace=True)
     else:
         raise NotImplementedError(df_type)
 
     if verbose >= 2 and len(objects) > 0:
         print(
             (
-                f"The following columns had the `object` format and were removed: {objects}"
+                f"The following columns had the `object` format and were removed: {objects}. "
+                f"The following additional columns were also removed: {cols_to_drop}"
             )
         )
     return df

@@ -18,7 +18,7 @@ Routine Listings
 - :func:`~radis.spectrum.compare.plot_diff`
 
 
--------------------------------------------------------------------------------
+
 
 
 
@@ -27,7 +27,6 @@ Routine Listings
 from warnings import warn
 
 import numpy as np
-from scipy.integrate import trapezoid
 
 from radis.misc.arrays import array_allclose
 from radis.misc.basics import compare_dict, compare_lists
@@ -110,8 +109,8 @@ def get_diff(
 
     # Get data
     # ----
-    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit, trim_nan=True)
-    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit, trim_nan=True)
+    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit, copy=False, trim_nan=True)
+    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit, copy=False, trim_nan=True)
 
     if not resample:
         if not array_allclose(w1, w2):
@@ -176,8 +175,8 @@ def get_ratio(
 
     # Get data
     # ----
-    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit)
-    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit)
+    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit, copy=False)
+    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit, copy=False)
 
     if not resample:
         if not array_allclose(w1, w2):
@@ -188,9 +187,16 @@ def get_ratio(
 
 
 def get_distance(
-    s1: Spectrum, s2: Spectrum, var, wunit="default", Iunit="default", resample=True
+    s1: Spectrum,
+    s2: Spectrum,
+    var,
+    wunit="default",
+    Iunit="default",
+    resample=True,
+    normalize=False,
+    normalize_how="max",
 ):
-    # type: (Spectrum, Spectrum, str, str, str, str, bool) -> np.array, np.array
+    # type: (Spectrum, Spectrum, str, str, str, str, bool, bool, str) -> np.array, np.array
     r"""Get a regularized Euclidian distance between two spectra ``s1`` and
     ``s2``
 
@@ -231,6 +237,21 @@ def get_distance(
     medium: 'air', 'vacuum', default'
         propagating medium to compare in (if in wavelength)
 
+    Other Parameters
+    ----------------
+    normalize: bool, or tuple
+        if ``True``, normalize the two spectra before computing distance.
+        If a tuple (ex: ``(4168, 4180)``), normalize on this range only. The unit
+        is that of the first Spectrum by default (use ``wunit`` to change). Ex::
+
+            get_distance(s_exp, s_calc, var, normalize=(4178, 4180))
+
+        Default ``False``
+    normalize_how: ``'max'``, ``'area'``, ``'mean'``
+        how to normalize. ``'max'`` is the default but may not be suited for very
+        noisy experimental spectra. ``'area'`` will normalize the integral to 1.
+        ``'mean'`` will normalize by the mean amplitude value
+
     Notes
     -----
     Uses :func:`~radis.misc.curve.curve_distance` internally
@@ -244,14 +265,28 @@ def get_distance(
     :func:`~radis.spectrum.compare.plot_diff`,
     :meth:`~radis.spectrum.spectrum.compare_with`
     """
-    # TODO: normalize with Imax, wmax
+
+    if normalize:
+        if isinstance(normalize, tuple):
+            wrange = normalize
+        else:
+            wrange = ()
+        var, wunit, Iunit = get_default_units(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
+        s1 = s1.take(var).normalize(
+            wrange=wrange, normalize_how=normalize_how, wunit=wunit
+        )
+        s2 = s2.take(var).normalize(
+            wrange=wrange, normalize_how=normalize_how, wunit=wunit
+        )
+        Iunit = s1.units[var]
+        assert Iunit == s2.units[var]
 
     var, wunit, Iunit = get_default_units(s1, s2, var=var, wunit=wunit, Iunit=Iunit)
 
     # Get data
     # ----
-    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit)
-    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit)
+    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit, copy=False)
+    w2, I2 = s2.get(var, wunit=wunit, Iunit=Iunit, copy=False)
 
     if not resample:
         if not array_allclose(w1, w2):
@@ -467,7 +502,7 @@ def get_residual_integral(
 
     # Get data
     # ----
-    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit)
+    w1, I1 = s1.get(var, wunit=wunit, Iunit=Iunit, copy=False)
     wdiff, dI = get_diff(s1, s2, var, wunit=wunit, Iunit=Iunit, resample=True)
 
     # mask for 0
@@ -476,6 +511,8 @@ def get_residual_integral(
         wdiff, dI = wdiff[~b], dI[~b]
         b = np.isnan(I1)
         w1, I1 = w1[~b], I1[~b]
+
+    from scipy.integrate import trapezoid
 
     if var in ["transmittance", "transmittance_noslit"]:
         norm = 1 - trapezoid(I1, w1)
@@ -885,14 +922,14 @@ def plot_diff(
     # Plot compared spectra
     # ... note: if 'normalize', s1 & s2 have been edited by _get_wdiff_Idiff
     ax0.plot(
-        *s1.get(var, wunit=wunit, Iunit=Iunit),
+        *s1.get(var, wunit=wunit, Iunit=Iunit, copy=False),
         style,
         color="k",
         lw=3 * lw_multiplier,
         label=label1,
     )
     ax0.plot(
-        *s2.get(var, wunit=wunit, Iunit=Iunit),
+        *s2.get(var, wunit=wunit, Iunit=Iunit, copy=False),
         style,
         color="r",
         lw=1 * lw_multiplier,
@@ -908,13 +945,22 @@ def plot_diff(
         ax0.legend(**legendargs)
 
     # Start to 0
-    if var in ["radiance_noslit", "radiance", "abscoeff", "absorbance"]:
+    if (
+        var in ["radiance_noslit", "radiance", "abscoeff", "absorbance"]
+        and yscale != "log"
+    ):
         ax0.set_ylim(bottom=0)
 
     # plot difference (sorted)
     for ax1i, wdiff, Idiff in zip(ax1, wdiffs, Idiffs):
         b = np.argsort(wdiff)
-        ax1i.plot(wdiff[b], Idiff[b], style, color="k", lw=1 * lw_multiplier)
+
+        if yscale != "log":
+            ax1i.plot(wdiff[b], Idiff[b], style, color="k", lw=1 * lw_multiplier)
+        else:
+            ax1i.plot(
+                wdiff[b], np.abs(Idiff[b]), style, color="k", lw=1 * lw_multiplier
+            )
 
     # Write labels
     ax1[-1].set_xlabel(make_up(xlabel))
@@ -941,15 +987,29 @@ def plot_diff(
             # symmetrize error scale:
             # auto-zoom on min, max, but discard first and last centile (case of spikes / divergences)
             Idiff = Idiffs[i]
-            if discard_centile:
+            if discard_centile and yscale != "log":
                 Idiff_sorted = np.sort(Idiff[~np.isnan(Idiff)])
                 ymax = max(
                     abs(Idiff_sorted[-int(discard_centile * len(Idiff_sorted) // 100)]),
                     abs(Idiff_sorted[int(discard_centile * len(Idiff_sorted) // 100)]),
                 )
+            elif yscale == "log":
+                abs_Idiff = np.abs(
+                    Idiff[b * Idiff != 0]
+                )  # Idiff != 0 to avoid 0 in log10
+
+                min_val = abs_Idiff.min()
+                bottom = 10 ** np.floor(np.log10(min_val))  # round to lower power of 10
+
+                max_val = abs_Idiff.max()
+                top = 10 ** np.ceil(np.log10(max_val))  # round to higher power of 10
+
+                ax1i.set_ylim(bottom=bottom, top=top)
             else:
                 ymax = np.nanmax(abs(Idiff))
-            ax1[i].set_ylim(-ymax * diff_scale_multiplier, ymax * diff_scale_multiplier)
+                ax1[i].set_ylim(
+                    -ymax * diff_scale_multiplier, ymax * diff_scale_multiplier
+                )
         elif method == "distance":
             if discard_centile:
                 raise NotImplementedError(
@@ -1259,8 +1319,8 @@ def compare_spectra(
         # Compare spectral arrays
         # -----------
         for k in vars:
-            w, q = first.get(k, wunit=wunit, Iunit=first.units[k])
-            w0, q0 = other.get(k, wunit=wunit, Iunit=first.units[k])
+            w, q = first.get(k, wunit=wunit, Iunit=first.units[k], copy=False)
+            w0, q0 = other.get(k, wunit=wunit, Iunit=first.units[k], copy=False)
             if len(w) != len(w0):
                 print(
                     f"Wavespaces have different length (for {k}: {len(w)} vs {len(w0)})"
@@ -1301,15 +1361,15 @@ def compare_spectra(
                         verbose=verbose,
                         **kwargs,
                     )
-                except:
+                except Exception:
                     print(f"... couldn't plot {k}")
 
     else:
         # Compare spectral variables
         # -----------
         for k in vars:
-            w, q = first.get(k, wunit=wunit, Iunit=first.units[k])
-            w0, q0 = other.get(k, wunit=wunit, Iunit=first.units[k])
+            w, q = first.get(k, wunit=wunit, Iunit=first.units[k], copy=False)
+            w0, q0 = other.get(k, wunit=wunit, Iunit=first.units[k], copy=False)
             if len(w) != len(w0):
                 print(
                     f"Wavespaces have different length (for {k}: {len(w)} vs {len(w0)})"
@@ -1340,7 +1400,7 @@ def compare_spectra(
                         verbose=verbose,
                         **kwargs,
                     )
-                except:
+                except Exception:
                     print(f"... there was an error while plotting {k}")
 
         # Compare conditions and units

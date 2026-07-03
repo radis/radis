@@ -57,7 +57,6 @@ Formula in docstrings generated with :py:func:`~pytexit.pytexit.py2tex` ::
     from pytexit import py2tex
     py2tex('...')
 
-----------
 
 """
 
@@ -68,8 +67,6 @@ from numba import float64, jit
 from numpy import arange, exp
 from numpy import log as ln
 from numpy import pi, sin, sqrt, zeros, zeros_like
-from scipy.integrate import trapezoid
-from scipy.signal import oaconvolve
 
 import radis
 from radis.db.references import doi
@@ -525,12 +522,7 @@ def gamma_vald3(
 
     if "e-" in diluent:
         gamma_stark = (
-            (10**gamSta)
-            * P
-            * 1e6
-            * diluent["e-"]
-            / (k_b_CGS * T)
-            / (4 * np.pi * c_CGS)
+            (10**gamSta) * P * 1e6 * diluent["e-"] / (k_b_CGS * T) / (4 * np.pi * c_CGS)
         )  # see e.g. Gray p244 for temperature scaling
         if is_neutral:
             gamma_stark *= (T / 10000) ** (1.0 / 6.0)  # see e.g. Gray 2005 p244
@@ -802,6 +794,8 @@ def voigt_lineshape(w_centered, hwhm_lorentz, hwhm_voigt, jit=True):
     :py:func:`~radis.lbl.broadening.voigt_broadening_HWHM`
     :py:func:`~radis.lbl.broadening.whiting1968`
     """
+
+    from scipy.integrate import trapezoid
 
     # Note: Whiting and Olivero use FWHM. Here we keep HWHM in all public function
     # arguments for consistency.
@@ -1204,7 +1198,7 @@ class BroadenFactory(BaseFactory):
         )
         # Add hwhm_gauss:
         self._add_doppler_broadening_HWHM(df, Tgas)
-        if broadening_method == "voigt":
+        if broadening_method == "voigt_poly":
             # Adds hwhm_voigt:
             df["hwhm_voigt"] = (
                 olivero_1977(2 * df["hwhm_gauss"], 2 * df["hwhm_lorentz"]) / 2
@@ -1348,9 +1342,7 @@ class BroadenFactory(BaseFactory):
                 diluent_broadening_coeff=diluent_broadening_coeff,
                 isneutral=isneutral,
             )
-            try:
-                assert bool(shift) == False
-            except:
+            if shift is not None:
                 # convoluted solution for vaex, account for case where wl is e.g. int or float, and for case where it's e.g. list
                 if self.dataframe_type == "vaex" and not isinstance(
                     shift, vaex.expression.Expression
@@ -1484,6 +1476,8 @@ class BroadenFactory(BaseFactory):
             line profile normalized with area = 1
         """
 
+        from scipy.integrate import trapezoid
+
         # Get collisional broadening HWHM
         gamma_lb = dg.hwhm_lorentz
 
@@ -1546,6 +1540,8 @@ class BroadenFactory(BaseFactory):
 
         # Prepare coefficients, vectorize
         # --------
+
+        from scipy.integrate import trapezoid
 
         # Broadening parameter:
         # ... Doppler broadened half-width:
@@ -1709,6 +1705,8 @@ class BroadenFactory(BaseFactory):
 
         self.profiler.start(key="init_vectors", verbose_level=3)
 
+        from scipy.integrate import trapezoid
+
         # Init variables
         if self.input.Tgas is None:
             raise AttributeError(
@@ -1743,7 +1741,7 @@ class BroadenFactory(BaseFactory):
         broadening_method = (
             self.params.broadening_method
         )  # Lineshape broadening algorithm
-        if broadening_method == "voigt":
+        if broadening_method == "voigt_poly":
             jit = True
             self.profiler.start("voigt_broadening", 3)
             line_profile = self._voigt_broadening(dg, wbroad_centered, jit=jit)
@@ -1856,9 +1854,11 @@ class BroadenFactory(BaseFactory):
         # Calculate the Lineshape
         # -----------------------
 
+        from scipy.integrate import trapezoid
+
         line_profile_LDM = {}
         broadening_method = self.params.broadening_method
-        if broadening_method == "voigt":
+        if broadening_method == "voigt_poly":
             jit = False  # not enough lines to make the just-in-time FORTRAN compilation useful
             wbroad_centered = self.wbroad_centered
 
@@ -1965,6 +1965,7 @@ class BroadenFactory(BaseFactory):
         # TODO #clean: make it a standalone function.
 
         import matplotlib.pyplot as plt
+        from scipy.integrate import trapezoid
 
         if pressure_atm is None:
             pressure_atm = self.input.pressure / 1.01325
@@ -2321,7 +2322,7 @@ class BroadenFactory(BaseFactory):
         )
         self.profiler.start("LDM_Distribute_lines", 3)
         # ... Initialize array on which to distribute the lineshapes
-        if broadening_method in ["voigt", "convolve"]:
+        if broadening_method in ["voigt_poly", "convolve"]:
             if self.params.sparse_ldm == True:
                 # LDM is constructed in a sparse-way later
                 pass
@@ -2334,7 +2335,7 @@ class BroadenFactory(BaseFactory):
             if self.params.sparse_ldm == True:
                 if self.verbose >= 2:
                     print(
-                        "SPARSE optimization not implemented with 'fft' mode. Use 'voigt' for analytical voigt, or radis.config['SPARSE_WAVERANGE'] = False"
+                        "SPARSE optimization not implemented with 'fft' mode. Use 'voigt_poly' for analytical voigt_poly, or radis.config['SPARSE_WAVERANGE'] = False"
                     )
             LDM = np.zeros(
                 (
@@ -2348,7 +2349,7 @@ class BroadenFactory(BaseFactory):
 
         # Distribute all line intensities on the 2x2x2 bins.
         if (
-            broadening_method in ["voigt", "convolve"]
+            broadening_method in ["voigt_poly", "convolve"]
             and self.params.sparse_ldm == True
         ):
 
@@ -2483,7 +2484,7 @@ class BroadenFactory(BaseFactory):
             _add_at(LDM, ki1, li1, mi0, Iv1 * awV10)
             _add_at(LDM, ki1, li1, mi1, Iv1 * awV11)
 
-            if broadening_method in ["voigt", "convolve"]:
+            if broadening_method in ["voigt_poly", "convolve"]:
                 LDM = LDM[1:-1, :, :]
                 # 1:-1 to remove the empty grid point on each side
 
@@ -2495,7 +2496,9 @@ class BroadenFactory(BaseFactory):
 
         # For each value from the LDM, retrieve the lineshape and convolve all
         # corresponding lines with it before summing.
-        if broadening_method in ["voigt", "convolve"]:
+        if broadening_method in ["voigt_poly", "convolve"]:
+
+            from scipy.signal import oaconvolve
 
             # ... Initialize array on which to distribute the lineshapes
             sumoflines_calc = zeros_like(wavenumber_calc)
@@ -2627,7 +2630,7 @@ class BroadenFactory(BaseFactory):
                         )
 
                     line_profile = self._calc_lineshape(df)  # usually the bottleneck
-                    (wavenumber, abscoeff) = self._apply_lineshape(
+                    wavenumber, abscoeff = self._apply_lineshape(
                         df.S.values, line_profile, df.shiftwav.values
                     )
                 elif optimization in ("simple", "min-RMS"):
@@ -2647,7 +2650,7 @@ class BroadenFactory(BaseFactory):
                             f"Estimated time for calculating broadening: {estimated_time:.2f}s on 1 CPU"
                         )
 
-                    (wavenumber, abscoeff) = self._apply_lineshape_LDM(
+                    wavenumber, abscoeff = self._apply_lineshape_LDM(
                         df.S.values,
                         line_profile_LDM,
                         df.shiftwav.values,
@@ -2704,7 +2707,7 @@ class BroadenFactory(BaseFactory):
 
                     for i, (_, dg) in enumerate(df):
                         line_profile = self._calc_lineshape(dg)
-                        (wavenumber, absorption) = self._apply_lineshape(
+                        wavenumber, absorption = self._apply_lineshape(
                             dg.S.values, line_profile, dg.shiftwav.values
                         )
                         abscoeff += absorption
@@ -2733,7 +2736,7 @@ class BroadenFactory(BaseFactory):
                             wL_dat_i,
                             wG_dat_i,
                         ) = self._calc_lineshape_LDM(dg)
-                        (wavenumber, absorption) = self._apply_lineshape_LDM(
+                        wavenumber, absorption = self._apply_lineshape_LDM(
                             dg.S.values,
                             line_profile_LDM,
                             dg.shiftwav.values,
@@ -2800,7 +2803,7 @@ class BroadenFactory(BaseFactory):
                     print(
                         f"Estimated time for calculating broadening: {estimated_time:.2f}s on 1 CPU"
                     )
-                (wavenumber, abscoeff) = self._apply_lineshape_LDM(
+                wavenumber, abscoeff = self._apply_lineshape_LDM(
                     df.S.values,
                     line_profile_LDM,
                     df.shiftwav.values,
@@ -2810,7 +2813,7 @@ class BroadenFactory(BaseFactory):
                     wG_dat,
                     optimization,
                 )
-                (_, emisscoeff) = self._apply_lineshape_LDM(
+                _, emisscoeff = self._apply_lineshape_LDM(
                     df.Ei.values,
                     line_profile_LDM,
                     df.shiftwav.values,
@@ -2848,10 +2851,10 @@ class BroadenFactory(BaseFactory):
                 if chunksize is None:
                     # Deal with all lines directly (usually faster)
                     line_profile = self._calc_lineshape(df)  # usually the bottleneck
-                    (wavenumber, abscoeff) = self._apply_lineshape(
+                    wavenumber, abscoeff = self._apply_lineshape(
                         df.S.values, line_profile, df.shiftwav.values
                     )
-                    (_, emisscoeff) = self._apply_lineshape(
+                    _, emisscoeff = self._apply_lineshape(
                         df.Ei.values, line_profile, df.shiftwav.values
                     )
 
@@ -2869,10 +2872,10 @@ class BroadenFactory(BaseFactory):
                     pb = ProgressBar(N, active=self.verbose)
                     for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
                         line_profile = self._calc_lineshape(dg)
-                        (wavenumber, absorption) = self._apply_lineshape(
+                        wavenumber, absorption = self._apply_lineshape(
                             dg.S.values, line_profile, dg.shiftwav.values
                         )
-                        (_, emission) = self._apply_lineshape(
+                        _, emission = self._apply_lineshape(
                             dg.Ei.values, line_profile, dg.shiftwav.values
                         )
                         abscoeff += absorption  #
@@ -2938,7 +2941,7 @@ class BroadenFactory(BaseFactory):
                 + " may be inverted"
             )
 
-        (wavenumber, abscoeff) = self._broaden_lines(df)
+        wavenumber, abscoeff = self._broaden_lines(df)
         self.profiler.stop("calc_line_broadening", "Calculated line broadening")
 
         return wavenumber, abscoeff
@@ -2986,7 +2989,7 @@ class BroadenFactory(BaseFactory):
                 + " may be inverted"
             )
 
-        (wavenumber, abscoeff, emisscoeff) = self._broaden_lines_noneq(df)
+        wavenumber, abscoeff, emisscoeff = self._broaden_lines_noneq(df)
 
         self.profiler.stop("calc_line_broadening", "Calculated line broadening")
         return wavenumber, abscoeff, emisscoeff
@@ -3120,6 +3123,8 @@ class BroadenFactory(BaseFactory):
             )
 
             # Check inputs
+            from scipy.integrate import trapezoid
+
             wavenumber_calc = self.wavenumber_calc
             pseudo_continuum_threshold = self.params.pseudo_continuum_threshold
             wstep = self.params.wstep
@@ -3326,9 +3331,9 @@ def project_lines_on_grid(df, wavenumber, wstep, dataframe_type="pandas"):
     imin_broadened_wav_offset_left[imin_broadened_wav_offset_left < 0] = -1
     imin_broadened_wav_offset_right[imin_broadened_wav_offset_right < 0] = -1
     imax_broadened_wav_offset_left[imax_broadened_wav_offset_left > len_grid] = len_grid
-    imax_broadened_wav_offset_right[
-        imax_broadened_wav_offset_right > len_grid
-    ] = len_grid
+    imax_broadened_wav_offset_right[imax_broadened_wav_offset_right > len_grid] = (
+        len_grid
+    )
     imin_broadened_wav_offset_left += 1
     imax_broadened_wav_offset_left += 1
     imin_broadened_wav_offset_right += 1
@@ -3484,9 +3489,9 @@ def project_lines_on_grid_noneq(df, wavenumber, wstep, dataframe_type="pandas"):
     imin_broadened_wav_offset_left[imin_broadened_wav_offset_left < 0] = -1
     imin_broadened_wav_offset_right[imin_broadened_wav_offset_right < 0] = -1
     imax_broadened_wav_offset_left[imax_broadened_wav_offset_left > len_grid] = len_grid
-    imax_broadened_wav_offset_right[
-        imax_broadened_wav_offset_right > len_grid
-    ] = len_grid
+    imax_broadened_wav_offset_right[imax_broadened_wav_offset_right > len_grid] = (
+        len_grid
+    )
     imin_broadened_wav_offset_left += 1
     imax_broadened_wav_offset_left += 1
     imin_broadened_wav_offset_right += 1

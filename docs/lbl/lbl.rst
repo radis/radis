@@ -20,8 +20,7 @@ Calculations are performed within the :class:`~radis.lbl.factory.SpectrumFactory
 .. toctree::
    :maxdepth: 3
 
-   lbl
-
+   gpu
 
 .. include:: _databases.rst
 
@@ -225,7 +224,6 @@ the flow chart below:
 
 .. image:: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
     :alt: https://radis.readthedocs.io/en/latest/_images/RADIS_flow_chart.svg
-    :scale: 100 %
 
 The detail of the functions that perform each step of the RADIS calculation flow chart
 is given in :ref:`Architecture <label_dev_architecture>`.
@@ -329,9 +327,7 @@ The configuration file will help to:
 
 
 A ``~/radis.json`` is user-dependant, and machine-dependant. It contains a list of database, each of which
-is specific to a given molecule. It typically looks like::
-
-str: Typical expected format of a ~/radis.json entry::
+is specific to a given molecule. Typical expected format of a ``~/radis.json`` entry::
 
     {
       "database": {                                     # database key: all databanks information are stored in this key
@@ -729,7 +725,7 @@ calculation steps at runtime. Example with ``verbose=3``::
                       verbose=3,
                       )
 
-Performance profiles are kept in the output spectrum ``conditions['profiler']`` dictionary.
+Performance profiles are kept in the output spectrum ``Spectrum.profiler`` dictionary.
 You can also use the :py:meth:`~radis.lbl.factory.SpectrumFactory.print_perf_profile`
 method in the SpectrumFactory object or the :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile`
 method in the Spectrum object to print them in the console :
@@ -799,9 +795,9 @@ The following Benchmarks were used to derive the time complexity:
 Complexity vs Calculation Time Visualizations for different optimizations and broadening_method:
 
 
-|    LBL>Voigt: `LINK <https://public.tableau.com/app/profile/anand.kumar4841/viz/LegacyComplexityvsCalculationTime/Sheet1>`_
-|    DIT>Voigt: `LINK <https://public.tableau.com/app/profile/anand.kumar4841/viz/2_096e-07lines_calculated7_185e-091wLwGSpectral_PointslogSpectral_Points/Sheet1>`_
-|    DIT>FFT: `LINK <https://public.tableau.com/app/profile/anand.kumar4841/viz/LDMLatestLDMFFTComplexity4_675e-081wLwGSpectralPointslogSpectralPoints/Sheet1>`_
+|    LBL>Voigt: `LINK <https://public.tableau.com/app/profile/anand.kumar4841/viz/LegacyComplexityvsCalculationTime/Sheet1>`__
+|    DIT>Voigt: `LINK <https://public.tableau.com/app/profile/anand.kumar4841/viz/2_096e-07lines_calculated7_185e-091wLwGSpectral_PointslogSpectral_Points/Sheet1>`__
+|    DIT>FFT: `LINK <https://public.tableau.com/app/profile/anand.kumar4841/viz/LDMLatestLDMFFTComplexity4_675e-081wLwGSpectralPointslogSpectralPoints/Sheet1>`__
 
 Precompute Spectra
 ------------------

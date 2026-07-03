@@ -9,12 +9,11 @@ unload the spectrum.py file
 
 Equations derived from the code using `pytexit <https://pytexit.readthedocs.io/en/latest/>`__
 
--------------------------------------------------------------------------------
+
 """
 
 from warnings import warn
 
-import astropy.units as u
 import numpy as np
 from numpy import exp, expm1
 from numpy import log as ln
@@ -539,7 +538,7 @@ def get_recompute(spec, wanted, no_change=False, true_path_length=None):
 def update(
     spec,
     quantity="all",
-    optically_thin="default",
+    optically_thin=None,
     assume_equilibrium="default",
     verbose=True,
 ):
@@ -547,8 +546,7 @@ def update(
     quantities and conditions.
 
     e.g: if `path_length` and `emisscoeff` are given, `radiance_noslit` can be recalculated
-    if `abscoeff` is also given, or without `abscoeff` in an optically thin configuration, else
-
+    if `abscoeff` is also given, or without `abscoeff` if the spectrum is optically thin.
 
     Parameters
     ----------
@@ -559,18 +557,29 @@ def update(
         be derived are recomputed. Default ``'all'``. See
         :py:data:`~radis.spectrum.utils.CONVOLUTED_QUANTITIES`
         and :py:data:`~radis.spectrum.utils.NON_CONVOLUTED_QUANTITIES`
-    optically_thin: True, False, or ``'default'``
-        determines whether to calculate radiance with or without self-absorption.
-        If ``'default'``, the value is determined from the ``'self_absorption'`` key
-        in Spectrum.conditions. If not given, ``False`` is taken. Default ``'default'``
-        Also updates the ``'self_absorption'`` key in conditions (creates it if
-        doesnt exist)
     assume_equilibrium: boolean
         if ``True``, only absorption coefficient ``abscoeff`` is recomputed
         and all values are derived from a calculation under equilibrium,
         using Kirchoff's Law. If ``default``, use the value stored in
         Spectrum conditions[``thermal_equilibrium``], else use ``False``.
+
+    Notes
+    -----
+    To compute radiance in the optically thin approximation (without
+    self-absorption), set ``spec.conditions['self_absorption'] = False``
+    before calling this method.
     """
+    import warnings
+
+    if optically_thin is not None:
+        warnings.warn(
+            "The `optically_thin` parameter is deprecated and will be removed in a future version. "
+            "To compute radiance in the optically thin approximation (without self-absorption), "
+            "set `spec.conditions['self_absorption'] = False` before calling this method.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        spec.conditions["self_absorption"] = not optically_thin
 
     # Check inputs
     # ------------
@@ -590,20 +599,9 @@ def update(
         assume_equilibrium = spec.conditions.get("thermal_equilibrium", False)
         assert assume_equilibrium in [True, False]  # prevent 'N/A' for instance
 
-    # Update optically thin
-    if optically_thin not in [True, False, "default"]:
-        raise ValueError("optically_thin must be one of True, False, 'default'")
-    if optically_thin == "default":
-        if "self_absorption" in list(spec.conditions.keys()):
-            optically_thin = not spec.conditions["self_absorption"]
-        else:
-            optically_thin = False
-    assert optically_thin in [True, False]
-    old_self_absorption = spec.conditions.get("self_absorption")
-    if old_self_absorption != (not optically_thin):
-        spec.conditions["self_absorption"] = not optically_thin
-        if verbose:
-            print(("self absorption set to:", spec.conditions["self_absorption"]))
+    # Ensure self_absorption condition exists (default: True, i.e. not optically thin)
+    if "self_absorption" not in spec.conditions:
+        spec.conditions["self_absorption"] = True
 
     initial = spec.get_vars()
 
@@ -2376,6 +2374,8 @@ def rescale_path_length(
             "Rescaling to 0 will loose information. Choose force " "= True"
         )
     # Convert units
+    import astropy.units as u
+
     new_path_length = convert_and_strip_units(new_path_length, u.cm)
     old_path_length = convert_and_strip_units(old_path_length, u.cm)
 

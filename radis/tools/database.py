@@ -38,7 +38,7 @@ a condition was added afterwards to the Spectrum class)::
 You can see more examples on the :ref:`Spectrum Database section <label_spectrum_database>`
 of the website.
 
--------------------------------------------------------------------------------
+
 """
 
 # TODO:
@@ -68,7 +68,6 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from numpy import array
-from scipy.interpolate import griddata
 
 from radis.misc.basics import all_in, is_float, list_if_float
 from radis.misc.debug import printdbg
@@ -85,8 +84,13 @@ def is_jsonable(x):
         #        json.dumps(x)
         json_tricks.dumps(x)
         return True
-    except:
+    except (TypeError, ValueError):
         return False
+
+
+def _is_file_like(obj):
+    """Check if obj is a file-like object."""
+    return hasattr(obj, "write") and callable(obj.write)
 
 
 # def jsonize(x):
@@ -153,10 +157,17 @@ def save(
     ----------
     s: Spectrum
         to save
-    path: str
-        filename to save. No extension needed. If filename already
+    path: str or file-like object
+        If a string: filename to save. No extension needed. If filename already
         exists then a digit is added. If filename is a directory then a new
         file is created within this directory.
+
+        If a file-like object (e.g., ``io.BytesIO``, ``io.StringIO``): writes
+        directly to the object without any file system operations. Use
+        ``BytesIO`` when ``compress=True`` (binary output), use ``StringIO``
+        when ``compress=False`` (text output). When using file-like objects,
+        the ``add_date``, ``add_info``, and ``if_exists_then`` parameters are
+        ignored.
     discard: list of str
         parameters to discard. To save some memory.
     compress: boolean
@@ -186,9 +197,10 @@ def save(
 
     Returns
     -------
-    fout: str
-        filename used (may be different from given path as new info or
-        incremental identifiers are added)
+    fout: str or file-like object
+        If path was a string: filename used (may be different from given path
+        as new info or incremental identifiers are added).
+        If path was a file-like object: returns the same object.
 
 
     See Also
@@ -201,12 +213,31 @@ def save(
     # 1) Format to JSON writable dictionary
     sjson = _format_to_jsondict(s, discard, compress, verbose=verbose)
 
-    # 2) Get final output name (add info, extension, increment number if needed)
+    # 2) Write to file-like object if provided
+    if _is_file_like(path):
+        if add_date and warnings:
+            warn("add_date ignored for file-like object")
+        if add_info and warnings:
+            warn("add_info ignored for file-like object")
+
+        if compress:
+            json_tricks.dump(
+                sjson, path, compression=True, properties={"ndarray_compact": True}
+            )
+        else:
+            json_tricks.dump(sjson, path, indent=4)
+
+        if verbose:
+            print(f"Spectrum stored to buffer ({path.tell() / 1e6:.2f} MB)")
+
+        return path
+
+    # 3) Get final output name (add info, extension, increment number if needed)
     fout = _get_fout_name(path, if_exists_then, add_date, add_info, sjson, verbose)
     if exists(fout) and if_exists_then == "ignore":
         return fout
 
-    # 3) Now is time to save
+    # 4) Now is time to save
     if compress:
         with open(fout, "wb") as f:
             json_tricks.dump(
@@ -630,25 +661,20 @@ def _fix_format(file, sload):
                 f"Spectrum 'conditions' dict should at least have a 'waveunit' key. Got: {list(sload['conditions'].keys())}"
             ) from err
 
-    # propagation medium removed in 0.9.22, replaced with 'nm' and 'nm_vac' in
-    # waveunit directly
-    if "medium" in sload["conditions"]:
+    # propagation medium was removed in 0.9.22 (replaced with 'nm' and 'nm_vac'
+    # in waveunit) but reintroduced in PR #982 (issue #707) as a computation
+    # medium stored in conditions. Only treat as the pre-0.9.22 deprecated
+    # structure when waveunit == 'nm' (old files encoded the medium there).
+    if "medium" in sload["conditions"] and sload["conditions"].get("waveunit") == "nm":
         printr(
             f"File {basename(file)} has a deprecated structure (key medium removed in 0.9.22). Fixing this time, but regenerate database ASAP."
         )  # , DeprecationWarning)
-        # Fix: rewrite waveunit
-        assert "waveunit" in sload["conditions"]
-        if sload["conditions"]["waveunit"] == "cm-1":
-            pass  # does not change anything, no need to report
-        else:  # wavelength is in air or vacuum.
-            assert sload["conditions"]["waveunit"] == "nm"
-            if sload["conditions"]["medium"] == "air":
-                sload["conditions"]["waveunit"] = "nm"
-            elif sload["conditions"]["medium"] == "vacuum":
-                sload["conditions"]["waveunit"] = "nm_vac"
-            else:
-                raise ValueError(sload["conditions"]["medium"])
-        # fix: delete medium key
+        if sload["conditions"]["medium"] == "air":
+            sload["conditions"]["waveunit"] = "nm"
+        elif sload["conditions"]["medium"] == "vacuum":
+            sload["conditions"]["waveunit"] = "nm_vac"
+        else:
+            raise ValueError(sload["conditions"]["medium"])
         del sload["conditions"]["medium"]
         fixed = True
 
@@ -679,7 +705,7 @@ def _fix_format(file, sload):
         sload["conditions"]["pressure"] = (
             sload["conditions"].pop("air_pressure_mbar") * 1e-3
         )
-        sload["conditions"]["air_pressure"] = "bar"
+        sload["cond_units"]["pressure"] = "bar"
         fixed = True
 
     if "isotope" in sload["conditions"]:
@@ -909,7 +935,7 @@ def plot_spec(file, what="radiance", title=True, **kwargs):
             print((sys.exc_info()[0], sys.exc_info()[1]))
             s.plot(what + "_noslit", **kwargs)  # who knows maybe it will work :)
             print(f"Printing {what + '_noslit'} instead")
-        except:
+        except KeyError:
             print((sys.exc_info()[0], sys.exc_info()[1]))
             # Plot something
             s.plot(s.get_vars()[0], **kwargs)
@@ -1299,7 +1325,7 @@ class SpecList(object):
                 prevVerbose = kwconditions.get("verbose", None)
                 kwconditions["verbose"] = True
                 self.get_closest(**kwconditions)  # note: wont work with conditions=..
-            except:
+            except Exception:
                 pass
             finally:
                 if prevVerbose is not None:
@@ -1736,6 +1762,8 @@ class SpecList(object):
             xarr = np.linspace(min(x), max(x))
             yarr = np.linspace(min(y), max(y))
             mx, my = np.meshgrid(xarr, yarr)
+            from scipy.interpolate import griddata
+
             zgrid = griddata((x, y), z, (mx, my), method="linear", fill_value=np.nan)
             levels = np.linspace(min(z), max(z), 20)
             ax.contourf(
@@ -1801,7 +1829,7 @@ class SpecDatabase(SpecList):
 
     Other Parameters
     ----------------
-    *input for :class:`~joblib.parallel.Parallel` loading of database*
+    Input for :class:`~joblib.parallel.Parallel` loading of database:
 
     nJobs: int
         Number of processors to use to load a database (useful for big
@@ -2337,9 +2365,9 @@ class SpecDatabase(SpecList):
         # case, use s_left.take(var)   with 'var' given in parameters of interpolate()
         # Or tell user to generate a subdatabase with only one spectral array
 
-        s_interp.conditions[
-            "interpolated_from"
-        ] = f"{spectra[index]}, {spectra[index+1]}"
+        s_interp.conditions["interpolated_from"] = (
+            f"{spectra[index]}, {spectra[index+1]}"
+        )
 
         return s_interp
 

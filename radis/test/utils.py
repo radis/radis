@@ -20,9 +20,8 @@ a few seconds only)::
     cd radis/test
     pytest -m fast
 
--------------------------------------------------------------------------------
-"""
 
+"""
 
 import os
 from os.path import dirname, exists, join

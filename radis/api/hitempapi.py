@@ -9,6 +9,7 @@ https://stackoverflow.com/questions/55610891/numpy-load-from-io-bytesio-stream
 https://stupidpythonideas.blogspot.com/2014/07/three-ways-to-read-files.html
 
 """
+
 import json
 import os
 import re
@@ -21,14 +22,15 @@ from typing import Union
 
 import numpy as np
 import pandas as pd
-import requests
-from bs4 import BeautifulSoup
-from cryptography.fernet import Fernet
-from tqdm import tqdm
 
 from radis.api.hdf5 import update_pytables_to_vaex
 from radis.db.hitemp_co2 import partial_download_co2_chunk
-from radis.misc.config import CONFIG_PATH_JSON, getDatabankEntries
+from radis.misc.config import (
+    CONFIG_PATH_JSON,
+    addDatabankEntries,
+    getDatabankEntries,
+    getDatabankList,
+)
 from radis.misc.warning import DatabaseAlreadyExists
 from radis.tools.read_wav_index import get_key_pairs
 
@@ -207,6 +209,27 @@ def running_in_spyder():
     return "SPYDER_ARGS" in os.environ
 
 
+def _can_prompt_for_input():
+    """Return True when interactive input prompts are expected to work."""
+    import sys
+
+    if running_in_spyder():
+        return True
+
+    # Most terminal launches (shell, VS Code terminal, etc.)
+    stdin = getattr(sys, "stdin", None)
+    if stdin is not None and hasattr(stdin, "isatty") and stdin.isatty():
+        return True
+
+    # IPython/Jupyter-like frontends are interactive even when stdin isn't a TTY.
+    try:
+        from IPython import get_ipython
+
+        return get_ipython() is not None
+    except Exception:
+        return False
+
+
 def _prompt_password(user):
     """
     Prompts the user for a password securely and handels input if spyder is used.
@@ -276,22 +299,27 @@ def setup_credentials():
 
     if (not email or not password) and not (is_rtd or is_travis or is_github_action):
         # In normal usage, fall back to prompt if environment variables not set
-        import sys
 
-        if is_pytest and (not email or not password):
+        if is_pytest:
             raise OSError(
                 "HITRAN_EMAIL and/or HITRAN_PASSWORD environment variables are not set, and the script is running in a non-interactive environment (e.g. captured stdin in pytest). Please set the environment variables or run with 'pytest -s' to allow interactive input."
             )
 
-        if sys.stdin.isatty():
+        if _can_prompt_for_input():
             email = input("Enter HITRAN email: ")
             password = _prompt_password(email)
+        else:
+            raise OSError(
+                "HITRAN_EMAIL and/or HITRAN_PASSWORD environment variables are not set, and the script is running in a non-interactive environment. Please run in an interactive environment or a normal console to allow input prompts."
+            )
 
     return email, password
 
 
 def get_encryption_key():
     """Get or create encryption key for HITRAN credentials"""
+    from cryptography.fernet import Fernet
+
     # Read existing radis.json
     config = read_config()
 
@@ -321,6 +349,8 @@ def get_encryption_key():
 
 def encrypt_password(password):
     """Encrypt password using Fernet symmetric encryption"""
+    from cryptography.fernet import Fernet
+
     key = get_encryption_key()
     f = Fernet(key)
     return f.encrypt(password.encode()).decode()
@@ -328,6 +358,8 @@ def encrypt_password(password):
 
 def decrypt_password(encrypted_password):
     """Decrypt password using Fernet symmetric encryption"""
+    from cryptography.fernet import Fernet
+
     key = get_encryption_key()
     f = Fernet(key)
     return f.decrypt(encrypted_password.encode()).decode()
@@ -351,7 +383,7 @@ def store_credentials(email, password):
     config["credentials"]["HITRAN_PASSWORD"] = encrypted_password
 
     print(
-        f"Your HITRAN credentials will be saved securely in {CONFIG_PATH_JSON}. You can delete the credentials section if you wish but you will have to prompt your credentials at next download."
+        f"Your HITRAN credentials will be saved securely in {CONFIG_PATH_JSON}. You can delete the credentials section if you wish but you will have to prompt your credentials at next download.\n"
     )
 
     # Write back to radis.json
@@ -365,6 +397,9 @@ def store_credentials(email, password):
 def login_to_hitran(verbose=False):
     """Login to HITRAN using stored credentials from radis.json or prompt if not available"""
     login_url = "https://hitran.org/login/"
+
+    import requests
+
     session = requests.Session()
 
     class LoginError(Exception):
@@ -401,7 +436,7 @@ def login_to_hitran(verbose=False):
                     # raise a more explicit error
                     raise LoginError(
                         f"HITRAN login failed due to {exc} (status code {code}). "
-                        "Please check your credentials and try again."
+                        f"Please check your credentials in {CONFIG_PATH_JSON} and try again."
                     )
             except requests.exceptions.RequestException as exc:
                 # raise a more explicit error
@@ -409,6 +444,8 @@ def login_to_hitran(verbose=False):
                     f"HITRAN login failed due to a request error: {exc}. "
                     "Please check your network connection and try again."
                 )
+
+        from bs4 import BeautifulSoup
 
         soup = BeautifulSoup(response.text, "html.parser")
         csrf = soup.find("input", {"name": "csrfmiddlewaretoken"})["value"]
@@ -460,7 +497,7 @@ def login_to_hitran(verbose=False):
                     login_response, session = attempt_login(email, password)
                     if is_login_successful(login_response):
                         if verbose:
-                            print("Login successful.")
+                            print("***Successful login to HITRAN***")
                         return session
                 except Exception as e:
                     if verbose:
@@ -482,7 +519,7 @@ def login_to_hitran(verbose=False):
     # TO-DO: the function is_login_successful is likely not needed anymore due to definition of attempt_login. Still, let's keep it to make sure to fail in case of problems.
     if is_login_successful(login_response):
         if verbose:
-            print("Login successful.")
+            print("***Successful login to HITRAN***")
         store_credentials(email, password)
         return session
     else:
@@ -510,6 +547,8 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
             warnings.warn(warning_msg, UserWarning)
 
         with open(output_filename, "wb") as f:
+            from tqdm import tqdm
+
             with tqdm(
                 total=total_size,
                 unit="B",
@@ -639,6 +678,24 @@ def _download_single_chunk(
         out_file,
         verbose=verbose,
     )
+
+
+def _build_file_entry(par_path, wmin, wmax, engine):
+    """Build a per-file metadata dict for a single CO2 chunk."""
+
+    cache_path = str(_fcache_file_name(par_path, engine))
+    today = time.strftime("%Y-%m-%d %H:%M")
+    size_bytes = os.path.getsize(cache_path)
+
+    entry = {
+        "path": cache_path,
+        "wavenumber_min": wmin,
+        "wavenumber_max": wmax,
+        "download_date": today,
+        "size_mb": round(size_bytes / (1024 * 1024), 2),
+        "last_used": today,
+    }
+    return entry
 
 
 def read_and_write_chunked_for_CO2(
@@ -775,6 +832,8 @@ def read_and_write_chunked_for_CO2(
     ):
         printer.info("All files already cached.", indent=1)
 
+    from tqdm import tqdm
+
     with tqdm(
         total=len(local_paths), desc="Processing chunks", disable=not verbose
     ) as pbar:
@@ -797,9 +856,14 @@ def read_and_write_chunked_for_CO2(
                 )
                 _append_dataframe(df)
 
+            # Register (or update last_used for) this file
+            wmin, wmax = wav_pairs[i]
+            file_entry = _build_file_entry(file, wmin, wmax, engine)
+            register_partial_hitemp_co2(file_entry)
+
             # Always remove .par file after processing
-            if os.path.exists(file):
-                os.remove(file)
+            # if os.path.exists(file):
+            #     os.remove(file)
 
             pbar.update(1)
 
@@ -904,6 +968,55 @@ def download_and_decompress_CO2_into_df(
     return combined_df, local_files
 
 
+def register_partial_hitemp_co2(
+    file_entry,
+):
+    """
+    Register a partial HITEMP CO2 2024 download in radis.json.
+    """
+    databank_name = "HITEMP-CO2-2024"
+    from radis import config
+
+    today = time.strftime("%Y-%m-%d %H:%M")
+    cache_path = file_entry["path"]
+
+    # Merge with existing entry if present
+    if databank_name in getDatabankList():
+        existing = getDatabankEntries(databank_name)
+        files_meta = existing.get("files", [])
+        cache_paths = existing.get("path", [])
+        existing_file = next((f for f in files_meta if f["path"] == cache_path), None)
+        if existing_file is not None:
+            # Update last_used for the existing file
+            existing_file["last_used"] = today
+        else:
+            files_meta.append(file_entry)
+            cache_paths.append(cache_path)
+    else:
+        files_meta = [file_entry]
+        cache_paths = [cache_path]
+
+    cache_paths = list(dict.fromkeys(cache_paths))
+
+    info = f"HITEMP 2024, CO2, partial chunk download, {len(files_meta)} chunk(s)"
+    entry = {
+        "info": info,
+        "path": cache_paths,
+        "format": "hitemp-radisdb",
+        "wavenumber_min": "",
+        "wavenumber_max": "",
+        "download_date": today,
+        "files": files_meta,
+    }
+
+    old_overwrite = config["ALLOW_OVERWRITE"]
+    try:
+        config["ALLOW_OVERWRITE"] = True
+        addDatabankEntries(databank_name, dict(entry))
+    finally:
+        config["ALLOW_OVERWRITE"] = old_overwrite
+
+
 class HITEMPDatabaseManager(DatabaseManager):
     def __init__(
         self,
@@ -964,6 +1077,8 @@ class HITEMPDatabaseManager(DatabaseManager):
             text = file_response.text
 
             # Parse the HTML then Extract valid file URLs
+            from bs4 import BeautifulSoup
+
             soup = BeautifulSoup(text, "html.parser")
             table = soup.find("table")
             links = table.find_all("a", href=True)

@@ -15,6 +15,7 @@ models, among :py:class:`astropy.modeling.functional_models.Gaussian1D`,
 See more loading and post-processing functions on the :ref:`Spectrum page <label_spectrum>`.
 
 """
+
 from radis import Spectrum
 from radis.test.utils import getTestFile
 
@@ -114,7 +115,7 @@ import numpy as np
 
 print("Absorbance of original line : ", s.get_integral("absorbance"))
 print(
-    "Absorbance of fitted line   :", np.trapz(y_fit, w_fit)
+    "Absorbance of fitted line   :", np.trapezoid(y_fit, w_fit)
 )  # negative because w_fit in descending order
 #
 

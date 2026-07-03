@@ -310,13 +310,17 @@ def test_vaex_and_pandas_dataframe_fetch_databank():
 
     # Fetching in vaex dataframe format
     config["DATAFRAME_ENGINE"] = "vaex"
-    sf.fetch_databank("exomol", memory_mapping_engine="vaex", load_columns="all")
+    sf.fetch_databank(
+        "exomol", "Li2015", memory_mapping_engine="vaex", load_columns="all"
+    )
     df1 = sf.df0
     assert isinstance(df1, vaex.dataframe.DataFrameLocal)
 
     # Fetching in Pandas dataframe format
     config["DATAFRAME_ENGINE"] = "pandas"
-    sf.fetch_databank("exomol", memory_mapping_engine="vaex", load_columns="all")
+    sf.fetch_databank(
+        "exomol", "Li2015", memory_mapping_engine="vaex", load_columns="all"
+    )
     df2 = sf.df0
     assert isinstance(df1, vaex.dataframe.DataFrameLocal)
 

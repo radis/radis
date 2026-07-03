@@ -20,9 +20,13 @@
 
 import os
 import sys
+import warnings
 
 import sphinx_gallery.gen_rst
 from sphinx_gallery.sorting import FileNameSortKey
+
+# Suppress matplotlib font warnings during doc build
+warnings.filterwarnings("ignore", message="findfont: Font family")
 
 # %% Custom Example header
 # https://github.com/sphinx-gallery/sphinx-gallery/issues/978
@@ -85,12 +89,15 @@ extensions = [
     #'numpydoc',
     #'sphinxcontrib.napoleon',
     "sphinx.ext.napoleon",
-    "sphinx_autodoc_defaultargs",
     "sphinx.ext.intersphinx",
     "sphinx.ext.inheritance_diagram",
     # "sphinxcontrib.apidoc",  # not needed, we run run_apidoc() manually implemented below
     "sphinx.ext.linkcode",
 ]
+
+# Pin MathJax to v3; v4 output is rendering incorrectly for RADIS docs.
+mathjax_path = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+
 
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to your example scripts
@@ -102,8 +109,6 @@ sphinx_gallery_conf = {
     },
     # directory where function/class granular galleries are stored
     "backreferences_dir": "source/backreferences",
-    # Modules for which function/class level galleries are created.
-    "doc_module": ("radis"),
     "inspect_global_variables": True,
     "show_signature": False,
     # Sort example files within gallery subsections with their filename
@@ -159,9 +164,34 @@ def run_apidoc(_):
         apidoc.main(argv)
 
 
+def _fix_math_backslashes(app, what, name, obj, options, lines):
+    """Normalize LaTeX backslashes in autodoc math blocks.
+
+    Docstrings are raw strings with doubled backslashes (\\frac, \\sqrt, ...),
+    which MathJax interprets as line breaks. Convert to single backslashes
+    inside ".. math::" blocks so formulas render correctly.
+    """
+    in_math = False
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith(".. math::"):
+            in_math = True
+            continue
+        if in_math:
+            if stripped == "" or line.startswith(" "):
+                lines[i] = line.replace("\\\\", "\\")
+                continue
+            in_math = False
+
+
 def setup(app):
     app.connect("builder-inited", run_apidoc)
-    app.add_css_file("custom.css")  #  for scrollable sidebar
+    app.connect("autodoc-process-docstring", _fix_math_backslashes, priority=999)
+    # Use add_css_file if available (Sphinx >= 1.6), fallback for older Sphinx
+    if hasattr(app, "add_css_file"):
+        app.add_css_file("custom.css")  # for scrollable sidebar
+    else:
+        app.add_stylesheet("custom.css")
 
 
 # %%
@@ -170,7 +200,7 @@ def setup(app):
 intersphinx_mapping = {
     "astropy": ("https://docs.astropy.org/en/stable/", None),
     "astroquery": ("https://astroquery.readthedocs.io/en/latest/", None),
-    "exojax": ("https://secondearths.sakura.ne.jp/exojax/objects.inv", None),
+    "exojax": ("https://secondearths.sakura.ne.jp/exojax/", None),
     "fitroom": ("https://fitroom.readthedocs.io/en/latest/", None),
     "habanero": ("https://habanero.readthedocs.io/en/latest/", None),
     "joblib": ("https://joblib.readthedocs.io/en/latest/", None),
@@ -297,7 +327,7 @@ html_theme_options = {
         "RADIS Website": "https://radis.github.io/",
         "Video Tutorials": "https://www.youtube.com/channel/UCO-7NXkubTAiGGxXmvtQlsA",
     },
-    "collapse_navigation": True,
+    # "collapse_navigation": True,  # not supported by alabaster theme
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -351,16 +381,6 @@ html_sidebars = {
 }
 
 
-# The default values of all documented arguments, and undocumented arguments if enabled, are automatically detected and added to the docstring.
-# It also detects existing documentation of default arguments with the text unchanged.
-
-rst_prolog = (
-    """
-.. |default| raw:: html
-
-    <div class="default-value-section">"""
-    + ' <span class="default-value-label">Default:</span>'
-)
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
 # html_additional_pages = {}

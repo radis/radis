@@ -43,7 +43,7 @@ they have been created, with
 
 More in :ref:`The Spectrum object <label_spectrum>`.
 
--------------------------------------------------------------------------------
+
 
 
 """
@@ -52,12 +52,9 @@ from copy import deepcopy
 from os.path import basename
 from warnings import warn
 
-import astropy.units as u
 import numpy as np
 import pandas as pd
-import plotly.express as px
 from numpy import abs, diff
-from scipy.integrate import trapezoid
 
 from radis.db.references import doi
 
@@ -91,11 +88,9 @@ from radis.spectrum.utils import (
     make_up_unit,
     print_conditions,
 )
-from radis.tools.track_ref import RefTracker
+
 
 # %% Spectrum class to hold results
-
-
 def _is_running_in_notebook():
     """Check if the code is running in a Jupyter Notebook."""
     try:
@@ -359,6 +354,7 @@ class Spectrum(object):
         "name",
         "_slit",
         "file",
+        "profiler",
     ]
 
     def __init__(
@@ -376,8 +372,6 @@ class Spectrum(object):
         check_wavespace=True,
         **kwargs,
     ):
-        # TODO: add help on creating a Spectrum from a dictionary
-
         # Check inputs
         # ---------------
         # ... Replace None attributes with dictionaries
@@ -560,8 +554,10 @@ class Spectrum(object):
         self.cond_units = cond_units
         self.name = name
         self.file = None  # used to store filename when loaded from a file
+        self.profiler = None
 
-        # Add references
+        from radis.tools.track_ref import RefTracker
+
         self.references = RefTracker(**references)
         if not doi["RADIS-2018"] in self.references:
             self.references.add(
@@ -786,7 +782,7 @@ class Spectrum(object):
             sorts the arrays in ``file`` by wavespace. Convenient way to load
             a file where points have been manually added at the end. Default ``False``.
 
-        *Optional Spectrum parameters*
+        **Optional Spectrum parameters:**
 
         conditions: dict
             physical conditions and calculation parameters
@@ -1294,11 +1290,17 @@ class Spectrum(object):
                 wunit = self.c["default_output_unit"]
             else:
                 wunit = self.get_waveunit()
+        # Handle explicit nm_air before cast_waveunit collapses it to "nm"
+        force_air = wunit in ("nm_air",)
         wunit = cast_waveunit(wunit)
         if wunit == "cm-1":
             w = self.get_wavenumber(copy=copy)
         elif wunit == "nm":
-            w = self.get_wavelength(medium="air", copy=copy)
+            if force_air:
+                medium = "air"
+            else:
+                medium = self.conditions.get("medium", "air")
+            w = self.get_wavelength(medium=medium, copy=copy)
         elif wunit == "nm_vac":
             w = self.get_wavelength(medium="vacuum", copy=copy)
         else:
@@ -1416,7 +1418,7 @@ class Spectrum(object):
 
         return w
 
-    def get_wavelength(self, medium="air", which=None, copy=True):
+    def get_wavelength(self, medium="air", copy=True):
         r"""Return wavelength in defined medium.
 
         Parameters
@@ -1441,12 +1443,6 @@ class Spectrum(object):
         --------
         :ref:`the Spectrum page <label_spectrum>`
         """
-        if which is not None:
-            raise DeprecationWarning(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_wavelength()"
-            )
-            # TODO: remove after 0.9.31
-
         # Check input
         if not medium in ["air", "vacuum"]:
             raise NotImplementedError(f"Unknown propagating medium: {medium}")
@@ -1479,7 +1475,7 @@ class Spectrum(object):
 
         return w
 
-    def get_wavenumber(self, which=None, copy=True):
+    def get_wavenumber(self, copy=True):
         r"""Return wavenumber (if the same for all quantities)
 
         Other Parameters
@@ -1494,12 +1490,6 @@ class Spectrum(object):
             (a copy of) spectrum wavenumber for convoluted or non convoluted
             quantities
         """
-        if which is not None:
-            raise DeprecationWarning(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_wavenumber()"
-            )
-            # TODO: remove after 0.9.31
-
         w = self._get_wavespace(copy=copy)
 
         if self.get_waveunit() == "cm-1":  #
@@ -1652,24 +1642,16 @@ class Spectrum(object):
             header=header,
         )
 
-    def update(self, quantity="all", optically_thin="default", verbose=True):
+    def update(self, quantity="all", optically_thin=None, verbose=True):
         r"""Calculate missing quantities: ex: if path_length and emisscoeff are
         given, recalculate radiance_noslit.
 
         Parameters
         ----------
-
-        spec: Spectrum
         quantity: str
             name of the spectral quantity to recompute. If 'same', only the quantities
             in the Spectrum are recomputed. If 'all', then all quantities that can
             be derived are recomputed. Default 'all'.
-        optically_thin: True, False, or 'default'
-            determines whether to calculate radiance with or without self absorption.
-            If 'default', the value is determined from the self_absorption key
-            in Spectrum.conditions. If not given, False is taken. Default 'default'
-            Also updates the self_absorption value in conditions (creates it if
-            doesnt exist
 
         Examples
         --------
@@ -1696,6 +1678,12 @@ class Spectrum(object):
         --------
 
         :ref:`the Spectrum page <label_spectrum>`
+
+        Notes
+        -----
+        To compute radiance in the optically thin approximation (without
+        self-absorption), set ``self.conditions['self_absorption'] = False``
+        before calling this method.
         """
 
         return update(
@@ -2106,33 +2094,21 @@ class Spectrum(object):
 
     # %% Plotting routines
 
-    def get_vars(self, which=None):
+    def get_vars(self):
         r"""Returns all spectral quantities stored in this object (convoluted or
         non convoluted)
 
         """
-        if which is not None:
-            raise DeprecationWarning(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_vars()"
-            )
-            # TODO: remove after 0.9.31
-
         # remove wavespace
         varlist = [k for k in self._q.keys() if k != "wavespace"]
         return varlist
 
-    def get_quantities(self, which=None):
+    def get_quantities(self):
         r"""Returns all spectral quantities stored in this object (convoluted or
         non convoluted). Wrapper to
         :py:meth:`~radis.spectrum.spectrum.get_vars`
 
         """
-        if which is not None:
-            raise DeprecationWarning(
-                "`which` parameter was deleted in Radis 0.9.30. Just use Spectrum.get_quantities()"
-            )
-            # TODO: remove after 0.9.31
-
         return self.get_vars()
 
     def _get_items(self) -> dict:
@@ -2325,26 +2301,35 @@ class Spectrum(object):
             ax.legend()
         fix_style()
 
-        from radis.phys.convert import cm2nm, div_safe, nm2cm
+        from radis.phys.convert import cm2nm, cm2nm_air, div_safe, nm2cm, nm_air2cm
 
         if ax.child_axes != []:
             pass
-        elif "cm⁻¹" in ylabel:
+        elif wunit == "cm-1":
             secx = ax.secondary_xaxis(
                 "top", functions=(div_safe(cm2nm), div_safe(nm2cm))
             )
             secx.set_xlabel("Wavelength (nm)")
-        elif "nm" in ylabel:
-            if wunit == "nm" or wunit == "nm_air":
+        elif wunit == "nm":
+            medium = self.conditions.get("medium", "air")
+            if medium == "vacuum":
                 secx = ax.secondary_xaxis(
                     "top", functions=(div_safe(nm2cm), div_safe(cm2nm))
                 )
             else:
-                from radis.phys.convert import cm2nm_air, nm_air2cm
-
                 secx = ax.secondary_xaxis(
                     "top", functions=(div_safe(nm_air2cm), div_safe(cm2nm_air))
                 )
+            secx.set_xlabel("wavenumber (cm⁻¹)")
+        elif wunit == "nm_air":
+            secx = ax.secondary_xaxis(
+                "top", functions=(div_safe(nm_air2cm), div_safe(cm2nm_air))
+            )
+            secx.set_xlabel("wavenumber (cm⁻¹)")
+        elif wunit == "nm_vac":
+            secx = ax.secondary_xaxis(
+                "top", functions=(div_safe(nm2cm), div_safe(cm2nm))
+            )
             secx.set_xlabel("wavenumber (cm⁻¹)")
 
         # Add plotting tools
@@ -2466,6 +2451,8 @@ class Spectrum(object):
         # Get labels
         xlabel = format_xlabel(wunit, show_medium)
         ylabel = f"{make_up(var)} ({make_up_unit(Iunit, var)})"
+
+        import plotly.express as px
 
         fig = px.line(x=x, y=y, template=template)
         fig.update_layout(
@@ -3522,7 +3509,10 @@ class Spectrum(object):
                 self._q["wavespace"], w_conv
             ):
                 raise AssertionError(
-                    "Wavespace of convolved arrays is different, cannot store it in the same Spectrum. You can use Spectrum.apply_slit(inplace=False) to return a new spectrum with only the convolved arrays"
+                    "Wavespace of convolved arrays are different and they cannot be "
+                    "stored in the same Spectrum object. You can use "
+                    "Spectrum.apply_slit(inplace=False) to return a new spectrum "
+                    "with only the convolved arrays."
                 )
             for q in I_conv_slices.keys():
                 # Merge all slices
@@ -3745,94 +3735,104 @@ class Spectrum(object):
         *args,
         **kwargs,
     ):
-        r"""Plot Line Survey (all linestrengths used for calculation) Output in
-            Plotly (html)
+        r"""Plot line survey (all linestrengths used for calculation).
+
+        Output in Plotly (HTML).
 
         Parameters
         ----------
-        overlay: tuple (w, I, [name], [units]), or list or tuples
-            plot (w, I) on a secondary axis. Useful to compare linestrength with
-            calculated / measured data::
+        overlay: tuple (w, I, [name], [units]), or list of tuples
+            Plot ``(w, I)`` on a secondary axis. Useful to compare linestrength
+            with calculated / measured data::
 
                 LineSurvey(overlay='abscoeff')
         wunit: ``'nm'``, ``'cm-1'``
-            wavelength / wavenumber units
+            Wavelength / wavenumber units.
         Iunit: ``'hitran'``, ``'splot'``
             Linestrength output units:
 
             - ``'hitran'``: (cm-1/(molecule/cm-2))
             - ``'splot'`` : (cm-1/atm)   (Spectraplot units [2]_)
 
-            Note: if not None, cutoff criteria is applied in this unit.
-            Not used if plot is not 'S'
+            Note: if not ``None``, the cutoff criteria is applied in this unit.
+            Not used if ``plot`` is not ``'S'``.
         medium: ``'air'``, ``'vacuum'``
-            show wavelength either in air or vacuum. Default ``'air'``
+            Show wavelength either in air or vacuum. Default ``'air'``.
         plot: str
-            what to plot. Default ``'S'`` (scaled line intensity). But it can be
-            any key in the lines, such as population (``'nu'``), or Einstein coefficient (``'A'``)
+            What to plot. Default ``'S'`` (scaled linestrength), but it can be
+            any key in the lines, such as population (``'nu'``) or Einstein
+            coefficient (``'A'``).
         lineinfo: list, or ``'all'``
-            extra line information to plot. Should be a column name in the databank
-            (s.lines). For instance: ``'int'``, ``'selbrd'``, etc... Default [``'int'``]
+            Extra line information to plot. Should be a column name in the
+            databank (``s.lines``). For instance: ``'int'``, ``'selbrd'``, etc.
+            Default is [``'int'``, ``'A'``, ``'El'``].
 
         Other Parameters
         ----------------
         writefile: str
-            if not ``None``, a valid filename to save the plot under .html format.
-            If ``None``, use the ``fig`` object returned to show the plot.
+            If not ``None``, a valid filename to save the plot in ``.html``
+            format. If ``None``, use the returned ``fig`` object to display
+            the plot.
         yscale: ``'log'``, ``'linear'``
-            Default ``'log'``
+            Default ``'log'``.
         barwidth: float or str
-            if float, width of bars, in ``wunit``, as a fraction of full-range; i.e. ::
+            If float, width of bars in ``wunit`` as a fraction of full range,
+            i.e.::
 
                 barwidth=0.01
 
-            makes bars span 1% of the full range.
-            if ``str``, uses the column as width. Example ::
+            Makes bars span 1% of the full range.
+            If ``str``, uses the column as width. Example::
 
                 barwidth = 'hwhm_voigt'
 
-            Returns
-            -------
-            fig: a Plotly figure.
-                If using a Jupyter Notebook, the plot will appear. Else, use ``writefile``
-                to export to an html file.
+        Returns
+        -------
+        fig: plotly.graph_objects.Figure
+            If using a Jupyter notebook, the plot will appear. Otherwise, use
+            ``writefile`` to export to an HTML file.
 
-            Plot in Plotly. See Output in [1]_
-
-
-            Examples
-            --------
-            An example using the :class:`~radis.lbl.factory.SpectrumFactory` to generate a spectrum::
-
-                from radis import SpectrumFactory
-                sf = SpectrumFactory(
-                                     wavenum_min=2380,
-                                     wavenum_max=2400,
-                                     mole_fraction=400e-6,
-                                     path_length=100,  # cm
-                                     isotope=[1],
-                                     export_lines=True,    # required for LineSurvey!
-                                     db_use_cached=True)
-                sf.load_databank('HITRAN-CO2-TEST')
-                s = sf.eq_spectrum(Tgas=1500)
-                s.apply_slit(0.5)
-                s.line_survey(overlay='radiance_noslit', barwidth=0.01, lineinfo="all")  # or barwidth='hwhm_voigt'
-
-            See the output in :ref:`Examples <label_examples>`
-
-            .. minigallery:: radis.spectrum.spectrum.Spectrum.line_survey
-
-            References
-            ----------
-            .. [1] `RADIS Online Documentation (LineSurvey) <https://radis.readthedocs.io/en/latest/tools/line_survey.html>`__
-
-            .. [2] `SpectraPlot <http://www.spectraplot.com/survey>`__
+        Plot in Plotly.
 
 
-            See Also
-            --------
-            :func:`~radis.tools.line_survey.LineSurvey`,
-            :ref:`the Spectrum page <label_spectrum>`
+        Examples
+        --------
+        An example using the :class:`~radis.lbl.factory.SpectrumFactory` to
+        generate a spectrum::
+
+            from radis import SpectrumFactory
+
+            sf = SpectrumFactory(
+                wavenum_min=2380,
+                wavenum_max=2400,
+                mole_fraction=400e-6,
+                path_length=100,  # cm
+                isotope=[1],
+                export_lines=True,  # required for LineSurvey!
+                db_use_cached=True,
+            )
+            sf.load_databank("HITRAN-CO2-TEST")
+            s = sf.eq_spectrum(Tgas=1500)
+            s.apply_slit(0.5)
+            s.line_survey(
+                overlay="radiance_noslit", barwidth=0.01, lineinfo="all"
+            )  # or barwidth='hwhm_voigt'
+
+        See the output in [1]_.
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.line_survey
+
+        References
+        ----------
+        .. [1] `RADIS Online Documentation (LineSurvey) <https://radis.readthedocs.io/en/latest/tools/line_survey.html>`__
+
+        .. [2] `SpectraPlot <http://www.spectraplot.com/survey>`__
+
+
+        See Also
+        --------
+        :func:`~radis.tools.line_survey.LineSurvey`,
+        :ref:`the Spectrum page <label_spectrum>`
         """
 
         from radis.tools.line_survey import LineSurvey
@@ -3852,8 +3852,8 @@ class Spectrum(object):
 
             else:  # Or use a given tuple or arrays
                 try:
-                    (w, I) = overlay
-                except:
+                    w, I = overlay
+                except (TypeError, ValueError):
                     raise ValueError(
                         "Overlay has to be string, or (w,I) tuple of " + "arrays"
                     )
@@ -3946,6 +3946,8 @@ class Spectrum(object):
             else:
                 return cond
         else:
+            import astropy.units as u
+
             if return_unit:
                 if hasattr(cond, "unit"):
                     return cond.to(unit).value, unit
@@ -4009,7 +4011,7 @@ class Spectrum(object):
                    molecule             CO
                    overpopulation       None
                    path_length          1 cm
-                   pressure_mbar        1013.25 mbar
+                   pressure             1.01325 bar
                    rot_distribution     boltzmann
                    self_absorption      True
                    state                X
@@ -4022,7 +4024,7 @@ class Spectrum(object):
                    NwG                  3
                    NwL                  5
                    Tref                 296 K
-                   broadening_method    voigt
+                   broadening_method    voigt_poly
                    cutoff               1e-27 cm-1/(#.cm-2)
                    dbformat             hitran
                    dbpath               C:\Users\erwan\.radisdb\hitran\CO.hdf5
@@ -4104,12 +4106,18 @@ class Spectrum(object):
 
         Parameters
         ----------
-        path: path to folder (database) or file
-            if a folder, file is saved to database and name is generated automatically.
-            if a file name, then Spectrum is saved to this file and the later
-            formatting options dont apply
-        file: str
-            explicitly give a filename to save
+        path: str or file-like object
+            If a string: path to folder (database) or file. If a folder, file
+            is saved to database and name is generated automatically. If a file
+            name, then Spectrum is saved to this file and the later formatting
+            options dont apply.
+
+            If a file-like object (e.g., ``io.BytesIO``, ``io.StringIO``):
+            writes directly to the object without any file system operations.
+            Use ``BytesIO`` when ``compress=True`` (binary output), use
+            ``StringIO`` when ``compress=False`` (text output). When using
+            file-like objects, the ``add_date``, ``add_info``, and
+            ``if_exists_then`` parameters are ignored.
         compress: boolean
             if ``False``, save under text format, readable with any editor.
             if ``True``, saves under binary format. Faster and takes less space.
@@ -4138,7 +4146,10 @@ class Spectrum(object):
 
         Returns
         -------
-        Returns filename used
+        str or file-like object
+            If path was a string: filename used (may be different from given
+            path as new info or incremental identifiers are added).
+            If path was a file-like object: returns the same object.
 
 
         Notes
@@ -4156,6 +4167,14 @@ class Spectrum(object):
             s.store('test.spec', compress=True)   # s is a Spectrum
             s2 = load_spec('test.spec')
             s2.update()                           # regenerate missing quantities
+
+        Store a spectrum to a BytesIO buffer (no disk write)::
+
+            from io import BytesIO
+            buffer = BytesIO()
+            s.store(buffer, compress=True)
+            buffer.seek(0)  # Reset position for reading
+            # buffer.getvalue() contains the serialized spectrum
 
         .. minigallery:: radis.spectrum.spectrum.Spectrum.store
             :add-heading:
@@ -4386,7 +4405,6 @@ class Spectrum(object):
         energy_threshold="default",
         print_conservation=False,
         inplace=True,
-        if_conflict_drop=None,
         **kwargs,
     ):
         r"""Resample spectrum over a new wavelength/wavenumber range.
@@ -4462,13 +4480,6 @@ class Spectrum(object):
         --------
         :func:`radis.misc.signal.resample`, :py:meth:`radis.spectrum.spectrum.Spectrum.resample_even`
         """
-        # Check inputs (check for deprecated)
-        if if_conflict_drop is not None:
-            raise DeprecationWarning(
-                "`if_conflict_drop` parameter was deleted in Radis 0.9.30"
-            )
-            # TODO: remove after 0.9.31
-
         if inplace:
             s = self
         else:
@@ -4849,6 +4860,7 @@ class Spectrum(object):
 
         # Compute area under the curve of models.Voigt1D or models.Gaussian1D or models.Lorentz1D
         from astropy.modeling import models
+        from scipy.integrate import trapezoid
 
         for index, line in enumerate(g_fit_list):
             if isinstance(line, models.Voigt1D):
@@ -5375,6 +5387,8 @@ class Spectrum(object):
                 "You first need to register the dictionary of bibliographic references. Set `s.references= {'doi':'use in the calculation'}` "
             )
 
+        from radis.tools.track_ref import RefTracker
+
         if not isinstance(self.references, RefTracker):
             self.references = RefTracker(**self.references)
 
@@ -5505,7 +5519,7 @@ class Spectrum(object):
             try:
                 for k, v in self.populations.items():
                     print(" " * 2, k, "\t\t", list(v.keys()))
-            except:
+            except Exception:
                 pass
 
         # Print conditions
@@ -5979,7 +5993,10 @@ class Spectrum(object):
 
         from radis.spectrum.utils import print_perf_profile
 
-        profiler = self.conditions["profiler"]
+        profiler = getattr(self, "profiler", None)
+        if profiler is None:
+            warn("No profiler attached to this Spectrum instance.")
+            return None
         total_time = profiler["spectrum_calculation"]["value"]
 
         return print_perf_profile(
@@ -5994,7 +6011,7 @@ class Spectrum(object):
         r"""Generate a visual/interactive performance profile diagram using ``tuna``
 
         .. note::
-            requires a `profiler` key with in Spectrum.conditions
+            requires a profiler attached to ``Spectrum.profiler``
 
         .. warning::
             deprecated in favor of :py:meth:`~radis.spectrum.spectrum.Spectrum.print_perf_profile`
@@ -6026,9 +6043,13 @@ class Spectrum(object):
         """
         from radis.spectrum.utils import generate_perf_profile
 
-        profiler = self.conditions["profiler"]["spectrum_calculation"].copy()
+        profiler_all = getattr(self, "profiler", None)
+        if profiler_all is None:
+            warn("No profiler attached to this Spectrum instance.")
+            return None
+        profiler = profiler_all.get("spectrum_calculation", {}).copy()
         # Add total calculation time:
-        profiler.update({"value": self.conditions["calculation_time"]})
+        profiler.update({"value": self.conditions.get("calculation_time")})
 
         return generate_perf_profile(profiler)
 
@@ -6163,6 +6184,8 @@ class Spectrum(object):
           (returns a copy)
         - for 2 Spectra: not defined
         """
+        import astropy.units as u
+
         if (
             isinstance(other, float)
             or isinstance(other, int)
@@ -6186,6 +6209,7 @@ class Spectrum(object):
 
     def __rmul__(self, other):
         r"""Right side multiplication."""
+        import astropy.units as u
 
         if (
             isinstance(other, float)
@@ -6215,6 +6239,8 @@ class Spectrum(object):
           (only if in front, i.e:  s *= 2)  (modifies inplace)
         - for 2 Spectra: not defined
         """
+        import astropy.units as u
+
         if (
             isinstance(other, float)
             or isinstance(other, int)
@@ -6241,6 +6267,8 @@ class Spectrum(object):
 
         - for numeric values: divide algebraically (equivalent to optically thin scaling)
         """
+        import astropy.units as u
+
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
 
@@ -6273,6 +6301,8 @@ class Spectrum(object):
         - for numeric values: divide quantities algebraically
         (equivalent to optically thin scaling)
         """
+        import astropy.units as u
+
         if isinstance(other, float) or isinstance(other, int):
             from radis.spectrum.operations import multiply
 
@@ -6581,9 +6611,7 @@ def _cut_slices(w_spec_nm, w_slit_nm, slit_dispersion, slit_dispersion_threshold
         res = root_scalar(
             lambda w: slit_dispersion(w) - slit_disp_target, bracket=[w_start, w_end]
         )
-        assert (
-            res.converged
-        ), "Did not converged, something went wrong... +\
+        assert res.converged, "Did not converged, something went wrong... +\
         Are you sure the slit dispersion function is monotone?"
         w_next = res.root
         w_list_slices.append(w_next)

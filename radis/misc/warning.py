@@ -13,7 +13,6 @@ Main warning classes :
 
 """
 
-
 import warnings
 
 from radis.misc.printer import printr
@@ -191,9 +190,17 @@ class ZeroBroadeningWarning(UserWarning):
 
 
 class MissingPressureShiftWarning(UserWarning):
-    """Pressure-shift coefficient is missing in Line Database."""
+    """Pressure-shift coefficient (``Pshft``) is missing in Line Database.
 
-    # TODO : add docstring link to references of line database columns.
+    When missing, zero pressure shift is assumed.
+
+    The ``Pshft`` column is defined in:
+
+    - HITRAN format: :py:data:`~radis.api.hitranapi.columns_hitran`
+    - GEISA format: :py:data:`~radis.api.geisaapi.columns_geisa`
+    - CDSD format: :py:data:`~radis.api.cdsdapi.columns_cdsd`
+    """
+
     pass
 
 
@@ -225,6 +232,13 @@ class IrrelevantFileWarning(PerformanceWarning):
 class MissingReferenceWarning(UserWarning):
     """Warning triggered when some algorithm / database is missing the bibliographic
     data used by :py:meth:`~radis.spectrum.spectrum.Spectrum.cite`"""
+
+    pass
+
+
+class ElectronicSpectraWarning(AccuracyWarning):
+    """Warning triggered when computing non-equilibrium electronic spectra
+    for molecules. Electronic spectra in RADIS are work in progress."""
 
     pass
 
@@ -284,6 +298,7 @@ WarningClasses = {
     "IrrelevantFileWarning": IrrelevantFileWarning,
     "OutOfBoundWarning": OutOfBoundWarning,
     "MissingReferenceWarning": MissingReferenceWarning,
+    "ElectronicSpectraWarning": ElectronicSpectraWarning,
     # Spectrum Post-Processing Warnings & Errors :
     "UnevenWaverangeWarning": UnevenWaverangeWarning,
 }
@@ -338,6 +353,7 @@ default_warning_status = {
     "IrrelevantFileWarning": "warn",
     "OutOfBoundWarning": "warn",
     "MissingReferenceWarning": "warn",
+    "ElectronicSpectraWarning": "once",
     # Spectrum Post-Processing Warnings & Errors :
     "UnevenWaverangeWarning": "warn",
 }

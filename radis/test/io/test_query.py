@@ -2,7 +2,7 @@
 """
 Test query functions
 
--------------------------------------------------------------------------------
+
 
 """
 
@@ -210,13 +210,16 @@ def test_pytable_vs_vaex(verbose=True):
     Tgas = 1000
     sf_exo_pytables = SpectrumFactory(**conditions)
     sf_exo_pytables.fetch_databank(
-        "exomol", memory_mapping_engine="pytables", db_use_cached="regen"
+        "exomol",
+        database="Li2015",
+        memory_mapping_engine="pytables",
+        db_use_cached="regen",
     )
     s_exo_pytables = sf_exo_pytables.eq_spectrum(Tgas=Tgas * u.K, path_length=1 * u.cm)
 
     sf_exo_vaex = SpectrumFactory(**conditions)
     sf_exo_vaex.fetch_databank(
-        "exomol", memory_mapping_engine="vaex", db_use_cached="regen"
+        "exomol", database="Li2015", memory_mapping_engine="vaex", db_use_cached="regen"
     )
     s_exo_vaex = sf_exo_vaex.eq_spectrum(Tgas=Tgas * u.K, path_length=1 * u.cm)
 
