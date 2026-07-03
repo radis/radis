@@ -327,10 +327,20 @@ class BaseFactory(DatabankLoader):
         fix_idea = ""
         if self.input.species == "CO2":
             fix_idea = (
-                "\nIf using HITEMP for CO2, some lines may be unlabeled and cannot be used in non-equilibrium "
+                "\n*** Known Issue with HITEMP for CO2 ***\n"
+                "Some lines of HITEMP CO2 may be unlabeled and cannot be used in non-equilibrium "
                 "calculations.\n"
-                "After this first failed run, drop incomplete rows in the line dataframe and run again:\n"
-                "  sf.df0.dropna(subset=[c for c in sf.df0.columns if 'Evib' in c or 'Erot' in c], inplace=True)"
+                "This usually happens during the computation of Evib and Erot. "
+                "To solve this issue, you can perform a dry run in a try block. "
+                "Then, drop incomplete rows in the line dataframe and run again. "
+                "See also https://github.com/radis/radis/pull/942."
+                "Example:\n"
+                "\n"
+                "try:\n"
+                "    s1 = sf.non_eq_spectrum(Tvib=9800, Trot=8500) #dry run to compute all energy columns\n"
+                "except AssertionError:\n"
+                '    bad_cols = [c for c in sf.df0.columns if "Evib" in c or "Erot" in c]\n'
+                "    sf.df0.dropna(subset=bad_cols, inplace=True)"
             )
 
         if self.dataframe_type == "pandas":
