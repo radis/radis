@@ -144,7 +144,7 @@ def read_def(deff):
     if deff.stem == "1H-35Cl__HITRAN-HCl":
         quantum_labels = ["v"]
         # See https://github.com/HajimeKawahara/exojax/issues/330
-    if deff.stem == "16O-1H__MoLLIST":
+    if deff.stem in ("16O-1H__MoLLIST", "16O-1H__MoLLIST-OH"):
         quantum_labels = ["e/f", "v", "F1/F2", "Es"]
 
     if deff.stem == "1H-2H-16O__VTT":

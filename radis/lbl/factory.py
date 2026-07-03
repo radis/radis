@@ -1554,7 +1554,8 @@ class SpectrumFactory(BandFactory):
             taken as rotational temperature (valid at 1 atm for times above ~ 2ns
             which is the RT characteristic time)
         Telec: float
-            electronic temperature [K]; only implemented for atoms, not molecules
+            electronic temperature [K]. For molecules, see
+            :py:class:`~radis.misc.warning.ElectronicSpectraWarning`
         mole_fraction: float
             database species mole fraction. If None, Factory mole fraction is used.
         diluent: str or dictionary
@@ -1709,6 +1710,19 @@ class SpectrumFactory(BandFactory):
 
         # %% Start
         # --------------------------------------------------------------------
+
+        # Warn about electronic spectra accuracy for molecules
+        if not self.input.isatom and Telec is not None:
+            self.warn(
+                "Non-equilibrium electronic spectra for molecules is work in "
+                "progress in RADIS. Validation against Specair for OH(A-X) shows "
+                "~20%% discrepancy in integrated radiance - likely due to. "
+                "differences between the two databases. "
+                "See the 'plot_compare_OH_AX_radis_specair' example and "
+                "radis.test.validation.test_validation_vs_specair_OH_AX "
+                "for current validation status.",
+                "ElectronicSpectraWarning",
+            )
 
         self.profiler.start("spectrum_calculation", 1)
         self.profiler.start("spectrum_calc_before_obj", 2)

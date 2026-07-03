@@ -236,6 +236,13 @@ class MissingReferenceWarning(UserWarning):
     pass
 
 
+class ElectronicSpectraWarning(AccuracyWarning):
+    """Warning triggered when computing non-equilibrium electronic spectra
+    for molecules. Electronic spectra in RADIS are work in progress."""
+
+    pass
+
+
 # %% Spectrum object  warnings / errors
 # -------------------------------------
 
@@ -291,6 +298,7 @@ WarningClasses = {
     "IrrelevantFileWarning": IrrelevantFileWarning,
     "OutOfBoundWarning": OutOfBoundWarning,
     "MissingReferenceWarning": MissingReferenceWarning,
+    "ElectronicSpectraWarning": ElectronicSpectraWarning,
     # Spectrum Post-Processing Warnings & Errors :
     "UnevenWaverangeWarning": UnevenWaverangeWarning,
 }
@@ -345,6 +353,7 @@ default_warning_status = {
     "IrrelevantFileWarning": "warn",
     "OutOfBoundWarning": "warn",
     "MissingReferenceWarning": "warn",
+    "ElectronicSpectraWarning": "once",
     # Spectrum Post-Processing Warnings & Errors :
     "UnevenWaverangeWarning": "warn",
 }

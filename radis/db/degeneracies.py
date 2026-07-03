@@ -31,6 +31,7 @@ def gi(M, I):
     _gi = {
         2: {1: 1, 2: 2, 3: 1, 4: 6},  # CO2  # 626  # 636  # 628  # 627
         5: {1: 1, 2: 2, 3: 1, 4: 6},  # CO  # 26  # 36
+        13: {1: 1, 2: 1, 3: 1},  # OH  # 16O-1H  # 16O-2H  # 18O-1H
     }
 
     try:
@@ -82,6 +83,13 @@ def gs(M, I):
             3: 1,
             4: 1,
         },  # CO  # 26  # 36
+        13: {  # OH (2Π state - includes Lambda-doubling factor of 2)
+            # Each rotational level in 2Π states has e and f parity components
+            # (Lambda-doubling), so effective degeneracy is 2*(2J+1)
+            1: 2,  # 16O-1H
+            2: 2,  # 16O-2H
+            3: 2,  # 18O-1H
+        },
     }
 
     try:
