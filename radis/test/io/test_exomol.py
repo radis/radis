@@ -74,6 +74,7 @@ def test_calc_exomol_vs_hitemp(verbose=True, plot=False, *args, **kwargs):
     # ExoMol
     sf.fetch_databank(
         source="exomol",
+        database="Li2015",
         broadf=False,
         broadf_download=False,  # accelerates the test!
     )
@@ -130,5 +131,4 @@ def test_exomol_parallel_vs_sequential(tmp_path, verbose=True, *args, **kwargs):
 
 if __name__ == "__main__":
     # test_exomol_parsing_functions()
-    # test_calc_exomol_spectrum()
     test_calc_exomol_vs_hitemp()
