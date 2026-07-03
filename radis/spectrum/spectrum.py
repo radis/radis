@@ -354,6 +354,7 @@ class Spectrum(object):
         "name",
         "_slit",
         "file",
+        "_confidence",  # uncertainty/confidence band storage
         "profiler",
     ]
 
@@ -469,6 +470,8 @@ class Spectrum(object):
 
         self._slit = {}  #: dict: hold slit function
 
+        self._confidence = {}  #: dict: stores confidence band data
+
         # infer format:
         tuple_format = (
             "wavelength" not in quantities
@@ -554,6 +557,7 @@ class Spectrum(object):
         self.cond_units = cond_units
         self.name = name
         self.file = None  # used to store filename when loaded from a file
+        # _confidence already initialized above in array creation section
         self.profiler = None
 
         from radis.tools.track_ref import RefTracker
@@ -2650,6 +2654,128 @@ class Spectrum(object):
                 show_ruler=show_ruler,
                 **kwargs,
             )
+
+    # %% Confidence bands (uncertainty quantification)
+
+    def set_confidence_band(
+        self,
+        quantity,
+        lower,
+        upper,
+        confidence_level=0.95,
+        n_samples=None,
+        std=None,
+    ):
+        """Store a confidence band for a spectral quantity.
+
+        Parameters
+        ----------
+        quantity : str
+            Spectral quantity name (e.g., ``'radiance_noslit'``).
+        lower : numpy.ndarray
+            Lower bound of the confidence band.
+        upper : numpy.ndarray
+            Upper bound of the confidence band.
+        confidence_level : float
+            Confidence level (e.g., 0.95 for 95%). Default 0.95.
+        n_samples : int or None
+            Number of MC samples used. Stored as metadata.
+        std : numpy.ndarray or None
+            Standard deviation at each spectral point.
+
+        See Also
+        --------
+        :meth:`get_confidence_band`,
+        :meth:`get_uncertainty_stats`,
+        :mod:`radis.tools.uncertainty`
+        """
+        self._confidence[quantity] = {
+            "lower": np.asarray(lower),
+            "upper": np.asarray(upper),
+            "confidence_level": confidence_level,
+            "n_samples": n_samples,
+            "std": np.asarray(std) if std is not None else None,
+        }
+
+    def get_confidence_band(self, quantity):
+        """Return the confidence band for a spectral quantity.
+
+        Parameters
+        ----------
+        quantity : str
+            Spectral quantity name (e.g., ``'radiance_noslit'``).
+
+        Returns
+        -------
+        tuple
+            ``(wavenumber, lower, upper)`` arrays.
+
+        Raises
+        ------
+        KeyError
+            If no confidence band is stored for ``quantity``.
+
+        See Also
+        --------
+        :meth:`set_confidence_band`,
+        :mod:`radis.tools.uncertainty`
+        """
+        if quantity not in self._confidence:
+            raise KeyError(
+                f"No confidence band stored for '{quantity}'. "
+                f"Available: {list(self._confidence.keys())}"
+            )
+        w = self._q["wavespace"]
+        band = self._confidence[quantity]
+        return w, band["lower"], band["upper"]
+
+    def get_uncertainty_stats(self, quantity):
+        """Return uncertainty statistics for a spectral quantity.
+
+        Parameters
+        ----------
+        quantity : str
+            Spectral quantity name.
+
+        Returns
+        -------
+        dict
+            Dictionary with keys: ``'lower'``, ``'upper'``,
+            ``'confidence_level'``, ``'n_samples'``, ``'std'``.
+
+        Raises
+        ------
+        KeyError
+            If no confidence band is stored for ``quantity``.
+
+        See Also
+        --------
+        :meth:`set_confidence_band`,
+        :mod:`radis.tools.uncertainty`
+        """
+        if quantity not in self._confidence:
+            raise KeyError(
+                f"No uncertainty stats for '{quantity}'. "
+                f"Available: {list(self._confidence.keys())}"
+            )
+        return dict(self._confidence[quantity])
+
+    def has_confidence_band(self, quantity=None):
+        """Check if confidence bands are stored.
+
+        Parameters
+        ----------
+        quantity : str or None
+            If given, check for a specific quantity.
+            If ``None``, check if any confidence bands exist.
+
+        Returns
+        -------
+        bool
+        """
+        if quantity is None:
+            return len(self._confidence) > 0
+        return quantity in self._confidence
 
     def get_populations(
         self, molecule=None, isotope=None, electronic_state=None, show_warning=True
