@@ -912,10 +912,11 @@ def test_assert_no_nan_error_handling():
 
 
 def _run_testcases(verbose=True, plot=True):
-    test_export_populations(plot=plot, verbose=verbose)
-    test_print_conditions()
-    test_get_energy_levels_with_conditions()
-    test_assert_no_nan_error_handling()
+    # test_export_populations(plot=plot, verbose=verbose)
+    # test_print_conditions()
+    # test_get_energy_levels_with_conditions()
+    # test_assert_no_nan_error_handling()
+    test_assert_no_nan_co2_gives_actionable_workaround()
 
 
 if __name__ == "__main__":
