@@ -58,7 +58,6 @@ dependencies = [
     "beautifulsoup4>=4.10.0",  # parse ExoMol website and HITRAN responses
     "configparser",  # for configuration file handling
     "cryptography",  # for encryption and security features
-    "getpass4",  # for handling password input securely
     "habanero>=1.2.0",  # CrossRef API to retrieve data from doi
     "h5py>=3.2.1",  # load HDF5
     "hjson",  # Json with comments (for default_radis.json)

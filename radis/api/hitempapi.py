@@ -267,7 +267,7 @@ def _prompt_password(user):
             )
     else:
         # If not using spyder use getpass
-        from getpass4 import getpass
+        from getpass import getpass
 
         return getpass(f"Enter password for {user}: ")
 
