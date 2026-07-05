@@ -322,35 +322,35 @@ class BaseFactory(DatabankLoader):
         Crash with a nice explanation if one is found"""
         from radis.misc.printer import get_print_full
 
-        try:
-            if self.dataframe_type == "pandas":
-                assert not anynan(df[column])
-            elif self.dataframe_type == "vaex":
-                assert not anynan_vaex(df[column])
-        except AssertionError as err:
-            if self.dataframe_type == "pandas":
-                index = np.isnan(df[column]).idxmax()
-                fix_idea = ""
-                if self.input.species == "CO2":
-                    fix_idea = (
-                        "\nIf using HITEMP2010 for CO2, some lines are unlabelled and therefore cannot be used at "
-                        "equilibrium. This is a known issue of the HITEMP database and will soon be fixed in the "
-                        "edition. In the meantime you can use:\n 'sf.df0.drop(sf.df0.index[sf.df0['v1u']==-1], inplace=True)' "
-                        "where 'sf' is SpectrumFactory object"
-                    )
+        fix_idea = ""
+        if self.input.species == "CO2":
+            fix_idea = (
+                "\n*** Known Issue with HITEMP for CO2 ***\n"
+                "Some lines of HITEMP CO2 may be unlabeled and cannot be used in non-equilibrium "
+                "calculations.\n"
+                "This usually happens during the computation of Evib and Erot. "
+                "To solve this issue, you can perform a dry run in a try block. "
+                "Then, drop incomplete rows in the line dataframe and run again. "
+                "See also https://github.com/radis/radis/pull/942."
+                "Example:\n"
+                "\n"
+                "try:\n"
+                "    s1 = sf.non_eq_spectrum(Tvib=9800, Trot=8500) #dry run to compute all energy columns\n"
+                "except AssertionError:\n"
+                '    bad_cols = [c for c in sf.df0.columns if "Evib" in c or "Erot" in c]\n'
+                "    sf.df0.dropna(subset=bad_cols, inplace=True)"
+            )
+
+        if self.dataframe_type == "pandas":
+            if anynan(df[column]):
+                index = pd.isna(df[column]).idxmax()
                 raise AssertionError(
-                    f"{column}=NaN in line database at index {index}"
-                    + f" corresponding to Line:\n {get_print_full(df.loc[index])}{fix_idea}"
-                ) from err
-            elif self.dataframe_type == "vaex":
-                if self.input.species == "CO2":
-                    fix_idea = (
-                        "If using HITEMP2010 for CO2, some lines are unlabelled and therefore cannot be used at "
-                        "equilibrium. This is a known issue of the HITEMP database and will soon be fixed in the "
-                        "edition. In the meantime you can use:\n 'sf.df0.drop(sf.df0.index[sf.df0['v1u']==-1], inplace=True)' "
-                        "where 'sf' is SpectrumFactory object"
-                    )
-                raise AssertionError("Lines Have NaN Values")
+                    f"{column}=NaN in line database at index {index} corresponding to line:\n"
+                    f"{get_print_full(df.loc[index])}{fix_idea}"
+                )
+        elif self.dataframe_type == "vaex":
+            if anynan_vaex(df[column]):
+                raise AssertionError(f"{column}=NaN in line database{fix_idea}")
 
     def _add_EvibErot(self, df, calc_Evib_harmonic_anharmonic=False):
         """Calculate Evib & Erot in Line dataframe.
