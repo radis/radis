@@ -1190,15 +1190,11 @@ class HITEMPDatabaseManager(DatabaseManager):
             urlnames = [f"{base_url}{f}" for f in inputfiles]
 
         elif molecule in HITEMP_MOLECULES:
+            if self.verbose:
+                print("Fetching urls from HITRAN")
             session = login_to_hitran(verbose=self.verbose)
-            if session:
-                url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax(
-                    session
-                )
-                download_hitemp_file(session, url, basename(url))
-                urlnames = [url]
-            else:
-                return []  # Exit if login failed
+            url, Ntotal_lines_expected, _, _ = self.fetch_url_Nlines_wmin_wmax(session)
+            urlnames = [url]
         else:
             raise KeyError(
                 f"Please choose one of HITEMP molecules : {HITEMP_MOLECULES}. Got '{molecule}'"
