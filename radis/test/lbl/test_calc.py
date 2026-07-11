@@ -981,6 +981,7 @@ def test_wildcard_path_error():
 
 
 @pytest.mark.needs_connection
+@pytest.mark.needs_HITRAN_credentials
 def test_drop_unlabelled_CO2_hitemp_lines():
     """Ensure the 'drop_unlabelled_CO2_hitemp_lines' arg drops unlabelled HITEMP lines."""
 
