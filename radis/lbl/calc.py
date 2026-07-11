@@ -718,6 +718,9 @@ def _calc_spectrum_one_molecule(
 
     # Initialize Factory
     # ------------------
+    drop_unlabelled_CO2_hitemp_lines = kwargs.pop(
+        "drop_unlabelled_CO2_hitemp_lines", False
+    )
 
     # Check inputs
 
@@ -996,6 +999,10 @@ def _calc_spectrum_one_molecule(
             drop_columns=drop_columns,
             load_columns=load_columns,
         )
+
+    if drop_unlabelled_CO2_hitemp_lines:
+        unlabelled = (sf.df0["v1u"] == -1) | (sf.df0["v1l"] == -1)
+        sf.df0.drop(sf.df0.index[unlabelled], inplace=True)
 
     #    # Get optimization strategies
     #    if lineshape_optimization == 'auto':        # NotImplemented: finally we use DLM all the time as default.

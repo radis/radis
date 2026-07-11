@@ -331,14 +331,16 @@ class BaseFactory(DatabankLoader):
                 "This usually happens during the computation of Evib and Erot. "
                 "To solve this issue, you can perform a dry run in a try block. "
                 "Then, drop incomplete rows in the line dataframe and run again. "
-                "See also https://github.com/radis/radis/pull/942."
+                "See also https://github.com/radis/radis/pull/942.\n"
                 "Example:\n"
                 "\n"
                 "try:\n"
                 "    s1 = sf.non_eq_spectrum(Tvib=9800, Trot=8500) #dry run to compute all energy columns\n"
                 "except AssertionError:\n"
                 '    bad_cols = [c for c in sf.df0.columns if "Evib" in c or "Erot" in c]\n'
-                "    sf.df0.dropna(subset=bad_cols, inplace=True)"
+                "    sf.df0.dropna(subset=bad_cols, inplace=True)\n"
+                "\n"
+                "Alternatively, if you are using `calc_spectrum`, you can simply use the `drop_unlabelled_CO2_hitemp_lines=True` argument."
             )
 
         if self.dataframe_type == "pandas":
