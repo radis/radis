@@ -980,6 +980,25 @@ def test_wildcard_path_error():
         )
 
 
+@pytest.mark.needs_connection
+def test_drop_unlabelled_CO2_hitemp_lines():
+    """Ensure the 'drop_unlabelled_CO2_hitemp_lines' arg drops unlabelled HITEMP lines."""
+
+    # Using the parameters from the issue that trigger the Evib nan error.
+    df = calc_spectrum(
+        2000,
+        2002,
+        molecule="CO2",
+        Trot=3000,
+        isotope=1,
+        Tvib=(3000, 3000, 1000),
+        databank="hitemp",
+        drop_unlabelled_CO2_hitemp_lines=True,
+    )
+    # the function should finish and return a spectrum without raising AssertionError
+    assert df is not None
+
+
 def _run_testcases(plot=True, verbose=True, warnings=True, *args, **kwargs):
 
     # Test sPlanck and conversion functions
