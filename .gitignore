@@ -25,6 +25,10 @@ radis/test/*.png
 radis/test/validation/*.png
 .pytest_cache/*
 
+# SSL certificates
+*.pem
+*.key
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
