@@ -8,8 +8,6 @@ on:
     branches: [ "develop" ] #see python-package-master.yml for tests on master
   pull_request:
     branches: [ "develop" ]
-
-jobs:===========
      # Job 1: Spin up and expose the Nginx Reverse Proxy
 jobs:
   proxy-job:
@@ -61,7 +59,7 @@ jobs:
           python -m pip install pytest specutils pytest-cov
           pip install -e .
       - name: Test proxy server
-        run: |
+        run: | 
           python test_proxy.py
       # - name: Fast tests with pytest
         # run: |
