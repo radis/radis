@@ -31,4 +31,4 @@ def append_to_hosts(ip_address, domain_name):
 
 
 if __name__ == "__main__":
-    append_to_hosts("127.0.0.1", "www.hitran.org")
+    append_to_hosts("127.0.0.1", "www.hitran.org  hitran.org")
