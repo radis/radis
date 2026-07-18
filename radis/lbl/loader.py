@@ -579,6 +579,7 @@ class MiscParams(ConditionDict):
         "zero_padding",
         "memory_mapping_engine",
         "add_at_used",  # function used in DIT ; a Cython and a pure-Python version exist
+        "parallel",
     ]
 
     def __init__(self):
