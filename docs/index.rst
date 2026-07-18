@@ -144,8 +144,8 @@ the work! See :ref:`How to cite? <label_cite>`
                    :target: ./License.md
                    :alt: License
 
-.. |badge_tests| image:: https://github.com/radis/radis/actions/workflows/tests.yml/badge.svg
-                  :target: https://github.com/radis/radis/actions/workflows/tests.yml
+.. |badge_tests| image:: https://github.com/radis/radis/actions/workflows/tests-develop.yml/badge.svg
+                  :target: https://github.com/radis/radis/actions/workflows/tests-develop.yml
                   :alt: Tests
 
 .. |badge_coverage| image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg
