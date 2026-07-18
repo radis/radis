@@ -741,22 +741,44 @@ def _parse_uncached_chunks(
             columns=columns, engine=engine, output=output, verbose=False
         )
         cpu_threads = os.cpu_count() or 1
-        if parallel and len(uncached) > 1 and cpu_threads > 1:
-            n_workers = min(len(uncached), cpu_threads, max(4, cpu_threads // 2))
 
+        # Determine whether to use parallel processing and how many workers:
+        #   parallel=True  → auto-detect worker count
+        #   parallel=N (int > 1) → use exactly N workers
+        #   parallel=False / parallel=0 / parallel=1 → serial
+        use_parallel = False
+        n_workers = 1
+
+        if type(parallel) is bool:
+            if parallel and len(uncached) > 1 and cpu_threads > 1:
+                use_parallel = True
+                n_workers = min(len(uncached), cpu_threads, max(4, cpu_threads // 2))
+        elif isinstance(parallel, int) and parallel > 1 and len(uncached) > 1:
+            use_parallel = True
+            n_workers = min(parallel, len(uncached))
+
+        if use_parallel:
             from joblib import Parallel, delayed
 
-            parallel_results = Parallel(n_jobs=n_workers)(
-                delayed(_parse_with_progress_multiprocess)(
-                    p_idx,
-                    local_paths[i],
-                    wav_pairs[i],
-                    len(uncached),
-                    verbose,
-                    parse_kwargs,
+            try:
+                parallel_results = Parallel(n_jobs=n_workers)(
+                    delayed(_parse_with_progress_multiprocess)(
+                        p_idx,
+                        local_paths[i],
+                        wav_pairs[i],
+                        len(uncached),
+                        verbose,
+                        parse_kwargs,
+                    )
+                    for p_idx, i in enumerate(uncached)
                 )
-                for p_idx, i in enumerate(uncached)
-            )
+            except MemoryError:
+                raise MemoryError(
+                    "Out of memory while loading HITEMP CO2 chunks in parallel "
+                    f"({n_workers} workers). "
+                    "Try reducing the number of workers, e.g. parallel=2, "
+                    "or use serial loading with parallel=False."
+                ) from None
             for idx, i in enumerate(uncached):
                 results[i] = parallel_results[idx]
         else:
@@ -808,6 +830,12 @@ def read_and_write_chunked_for_CO2(
         Print progress messages (default True)
     local_databases : str, optional
         Custom cache directory
+    parallel : bool or int
+        If ``True``, uses joblib with an auto-detected number of workers.
+        If ``False`` or ``0`` or ``1``, uses serial (single-process) loading.
+        If an integer N > 1, uses exactly N parallel workers. This is useful
+        on memory-constrained machines where auto-detected parallelism may
+        cause MemoryError (e.g. ``parallel=2``). Default ``True``.
 
     Returns
     -------
@@ -1004,6 +1032,12 @@ def download_and_decompress_CO2_into_df(
         Output format for the data. Default is "pandas" DataFrame.
     local_databases : str or None, optional
         Directory to store/read local database files. If None, uses the default directory.
+    parallel : bool or int
+        If ``True``, uses joblib with an auto-detected number of workers.
+        If ``False`` or ``0`` or ``1``, uses serial (single-process) loading.
+        If an integer N > 1, uses exactly N parallel workers. This is useful
+        on memory-constrained machines where auto-detected parallelism may
+        cause MemoryError (e.g. ``parallel=2``). Default ``True``.
     Returns
     -------
     DataFrame or object
