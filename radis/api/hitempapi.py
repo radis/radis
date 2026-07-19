@@ -459,7 +459,7 @@ def login_to_hitran(verbose=False):
         headers = {
             "Referer": login_url,
             "Origin": "https://hitran.org",
-            #"Cookie": f"csrftoken={csrf}",
+            # "Cookie": f"csrftoken={csrf}",
         }
 
         login_response = session.post(

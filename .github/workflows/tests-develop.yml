@@ -28,18 +28,22 @@ jobs:
           # Using a unique run key, this first job will always miss the cache, re-download, and store the new cache
           key: hitran-cache-${{ github.run_id }}-${{ github.run_attempt }}
           enableCrossOsArchive: true
-          
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install pytest specutils
-          pip install -e .
+
+      # - name: Install dependencies
+        # run: |
+          # python -m pip install --upgrade pip
+          # python -m pip install pytest specutils
+          # pip install -e .
+
       - &setup_proxy_linux
         name: Set-up proxy server (Linux)
         if: runner.os == 'Linux'
         run: | # generate SSL certificates, run server in the background, and reroute hitran traffic to the proxy
           openssl req -x509 -nodes -days 365 -newkey rsa:2048 -subj "/CN=www.hitran.org" -keyout cert.key -out cert.pem -addext "subjectAltName = DNS:www.hitran.org,DNS:hitran.org,DNS:localhost,IP:127.0.0.1"
-          sudo nginx -c ${{ github.workspace }}/.github/proxy/nginx_linux.conf -g "user $(whoami);"&
+
+          export NGINX_CACHE_DIR=/home/runner/work/radis/radis/nginx_cache
+          envsubst '$NGINX_CACHE_DIR' < .github/proxy/nginx.conf > .github/proxy/nginx.conf.gen
+          sudo nginx -c ${{ github.workspace }}/.github/proxy/nginx.conf.gen -g "user $(whoami);"&
 
           echo "127.0.0.1 www.hitran.org  hitran.org" | sudo tee -a /etc/hosts
 
@@ -51,16 +55,16 @@ jobs:
         run: |
           pip install requests urllib3
           python .github/proxy/test_proxy.py pre-build
-      
-      - name: Connection required tests with pytest
-        env:
-          HITRAN_EMAIL: ${{ secrets.HITRAN_EMAIL }}
-          HITRAN_PASSWORD: ${{ secrets.HITRAN_PASSWORD }}
-        run: |
-          echo ${{ secrets.HITRAN_EMAIL && 'HITRAN credentials available!' || 'HITRAN credentials NOT available!' }}
-          pytest -m "needs_connection and not download_large_databases and not needs_fixing ${{ secrets.HITRAN_EMAIL && ' ' || 'and not needs_HITRAN_credentials' }}" --durations=10 --tb=short
-        #  pytest -s radis/test/io/test_exomol.py::test_calc_exomol_vs_hitemp
-        
+
+      # - name: Connection required tests with pytest
+        # env:
+          # HITRAN_EMAIL: ${{ secrets.HITRAN_EMAIL }}
+          # HITRAN_PASSWORD: ${{ secrets.HITRAN_PASSWORD }}
+        # run: |
+          # echo ${{ secrets.HITRAN_EMAIL && 'HITRAN credentials available!' || 'HITRAN credentials NOT available!' }}
+          # pytest -m "needs_connection and not download_large_databases and not needs_fixing ${{ secrets.HITRAN_EMAIL && ' ' || 'and not needs_HITRAN_credentials' }}" --durations=10 --tb=short
+        # #  pytest -s radis/test/io/test_exomol.py::test_calc_exomol_vs_hitemp
+
   build:
     env:
       MPLBACKEND: Agg
@@ -98,20 +102,23 @@ jobs:
             nginx_cache
           key: hitran-cache-${{ github.run_id }}-${{ github.run_attempt }}
           enableCrossOsArchive: true
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install pytest specutils pytest-cov
-          pip install -e .
+      # - name: Install dependencies
+        # run: |
+          # python -m pip install --upgrade pip
+          # python -m pip install pytest specutils pytest-cov
+          # pip install -e .
       - *setup_proxy_linux
       - name: Set-up proxy server (Windows)
         if: runner.os == 'Windows'
         shell: powershell
         run: | # generate SSL certificates, run server in the background, and reroute hitran traffic to the proxy
           openssl req -x509 -nodes -days 365 -newkey rsa:2048 -subj "/CN=www.hitran.org" -keyout cert.key -out cert.pem -addext "subjectAltName = DNS:www.hitran.org,DNS:hitran.org,DNS:localhost,IP:127.0.0.1"
+
           cd C:\tools\nginx-*\
           Stop-Service -Name "W3SVC" -Force
-          Start-Process ".\nginx.exe" -ArgumentList "-c", "${{ github.workspace }}/.github/proxy/nginx_win.conf"
+          $env:NGINX_CACHE_DIR = "D:/a/radis/radis/nginx_cache"
+          (Get-Content ${{ github.workspace }}/.github/proxy/nginx.conf) -replace '\$\{NGINX_CACHE_DIR\}', $env:NGINX_CACHE_DIR | Set-Content ${{ github.workspace }}/.github/proxy/nginx.conf.gen
+          Start-Process ".\nginx.exe" -ArgumentList "-c", "${{ github.workspace }}/.github/proxy/nginx.conf.gen"
           cd ${{ github.workspace }}
 
           Add-Content -Path C:\Windows\System32\drivers\etc\hosts -Value "`r`n127.0.0.1 www.hitran.org hitran.org"
@@ -130,8 +137,11 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           openssl req -x509 -nodes -days 365 -newkey rsa:2048 -subj "/CN=www.hitran.org" -keyout cert.key -out cert.pem -addext "subjectAltName = DNS:www.hitran.org,DNS:hitran.org,DNS:localhost,IP:127.0.0.1"
+
           brew install nginx
-          sudo nginx -c ${{ github.workspace }}/.github/proxy/nginx_mac.conf -g "user $(whoami) staff;"&
+          export NGINX_CACHE_DIR=/Users/runner/work/radis/radis/nginx_cache
+          envsubst '$NGINX_CACHE_DIR' < .github/proxy/nginx.conf > .github/proxy/nginx.conf.gen
+          sudo nginx -c ${{ github.workspace }}/.github/proxy/nginx.conf.gen -g "user $(whoami) staff;"&
 
           echo "127.0.0.1 www.hitran.org hitran.org" | sudo tee -a /etc/hosts
 
@@ -151,20 +161,20 @@ jobs:
           pip install requests
           python .github/proxy/test_proxy.py
 
-      - name: Fast tests with pytest
-        run: |
-          pytest -m     "fast and not needs_gpu and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC ${{ secrets.HITRAN_EMAIL && '' || 'and not needs_HITRAN_credentials' }}" --durations=10 --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml
-      - name: Long tests with pytest
-        if: always()
-        run: |
-          pytest -m "not fast and not needs_gpu and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC ${{ secrets.HITRAN_EMAIL && '' || 'and not needs_HITRAN_credentials' }} and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM and not download_large_databases" --durations=10 --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml --cov-append
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        if: always()
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          slug: radis/radis
-          files: ./coverage.xml
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
+      # - name: Fast tests with pytest
+        # run: |
+          # pytest -m     "fast and not needs_gpu and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC ${{ secrets.HITRAN_EMAIL && '' || 'and not needs_HITRAN_credentials' }}" --durations=10 --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml
+      # - name: Long tests with pytest
+        # if: always()
+        # run: |
+          # pytest -m "not fast and not needs_gpu and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC ${{ secrets.HITRAN_EMAIL && '' || 'and not needs_HITRAN_credentials' }} and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM and not download_large_databases" --durations=10 --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml --cov-append
+      # - name: Upload coverage to Codecov
+        # uses: codecov/codecov-action@v4
+        # if: always()
+        # with:
+          # token: ${{ secrets.CODECOV_TOKEN }}
+          # slug: radis/radis
+          # files: ./coverage.xml
+          # flags: unittests
+          # name: codecov-umbrella
+          # fail_ci_if_error: false

@@ -13,8 +13,7 @@ Run all tests::
 """
 
 import astropy.units as u
-
-# import numpy as np
+import numpy as np
 import pytest
 
 from radis.api.geisaapi import add_geisa_local_quanta, gei2df
@@ -156,6 +155,7 @@ def test_local_geisa_co2(verbose=True, warnings=True, **kwargs):
     ]
 
     print("GEISA parsing process of molecule CO2 works normally.\n")
+
 
 @pytest.mark.needs_connection
 @pytest.mark.needs_fixing
