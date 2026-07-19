@@ -39,8 +39,8 @@ jobs:
         name: Set-up proxy server (Linux)
         if: runner.os == 'Linux'
         run: | # generate SSL certificates, run server in the background, and reroute hitran traffic to the proxy
-          sudo chmod -x ./.github/proxy/start_proxy_linux.sh
-          sudo ./.github/proxy/start_proxy_linux.sh
+          sudo chmod -x .github/proxy/start_proxy_linux.sh
+          sudo .github/proxy/start_proxy_linux.sh
 
       - name: Test Proxy
         run: |
