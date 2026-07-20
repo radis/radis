@@ -532,7 +532,7 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
     if verbose:
         print(f"Starting download from {file_url}")
     file_response = session.get(file_url, stream=True)
-    print('Cache:', response.headers.get("X-Cache-Status"), __file__)
+    print('NGINX-Cache:', response.headers.get("X-Cache-Status"), __file__)
     if file_response.status_code == 200:
         total_size = int(file_response.headers.get("content-length", 0))
         file_size_in_GB = total_size / (1024**3)

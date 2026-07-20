@@ -43,7 +43,7 @@ jobs:
 
             export NGINX_CACHE_DIR=/home/runner/work/radis/radis/nginx_cache
             envsubst '$NGINX_CACHE_DIR' < .github/proxy/nginx.conf > .github/proxy/nginx.conf.gen
-            sudo nginx -c $GITHUB_WORKSPACE/.github/proxy/nginx.conf.gen -g "user $(whoami);"&
+            sudo nginx -c $GITHUB_WORKSPACE/.github/proxy/nginx.conf.gen -g "user $(whoami);" --with-debug& 
 
             echo "127.0.0.1 www.hitran.org  hitran.org" | sudo tee -a /etc/hosts
 
