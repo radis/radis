@@ -64,7 +64,7 @@ def get_bz2(session, file_url, offset=None, size=None, verbose=True):
     # Download the file chunk using the authenticated session
     with session.get(file_url, headers=range_headers, stream=True) as r:
         print('NGINX-Cache:', r.headers.get("X-Cache-Status"), __file__)
-        print(urlname)
+        print(file_url)
         total = int(r.headers.get("content-length", 0))
 
         buf = io.BytesIO()
