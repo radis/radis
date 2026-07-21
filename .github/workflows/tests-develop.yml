@@ -63,6 +63,7 @@ jobs:
         run: |
           echo ${{ secrets.HITRAN_EMAIL && 'HITRAN credentials available!' || 'HITRAN credentials NOT available!' }}
           pytest -s radis/test/io/test_exomol.py::test_calc_exomol_vs_hitemp
+          pytest -s radis/test/io/test_exomol.py::test_calc_exomol_vs_hitemp
         #  pytest -m "needs_connection and not download_large_databases and not needs_fixing ${{ secrets.HITRAN_EMAIL && ' ' || 'and not needs_HITRAN_credentials' }}" --durations=10 --tb=short
 
 
@@ -170,6 +171,7 @@ jobs:
           HITRAN_PASSWORD: ${{ secrets.HITRAN_PASSWORD }}
         run: |
           echo ${{ secrets.HITRAN_EMAIL && 'HITRAN credentials available!' || 'HITRAN credentials NOT available!' }}
+          pytest -s radis/test/io/test_exomol.py::test_calc_exomol_vs_hitemp
           pytest -s radis/test/io/test_exomol.py::test_calc_exomol_vs_hitemp
         #  pytest -m     "fast and not needs_gpu and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC ${{ secrets.HITRAN_EMAIL && '' || 'and not needs_HITRAN_credentials' }}" --durations=10 --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml
       
