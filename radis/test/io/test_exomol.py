@@ -77,12 +77,13 @@ def test_calc_exomol_vs_hitemp(verbose=True, plot=False, *args, **kwargs):
         database="Li2015",
         broadf=False,
         broadf_download=False,  # accelerates the test!
-        cache='regen',
+
     )
     s_exomol = sf.eq_spectrum(Tgas=1000, path_length=1)
 
     sf.fetch_databank(
         source="hitemp",
+        cache='regen',
     )
     s_hitemp = sf.eq_spectrum(Tgas=1000, path_length=1, name="HITEMP (Air broadened)")
 
