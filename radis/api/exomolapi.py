@@ -1909,6 +1909,7 @@ class MdbExomol(DatabaseManager):
                 try:
                     response = requests.get(pfpath, stream=True)
                     print('NGINX-Cache:', response.headers.get("X-Cache-Status"), __file__)
+                    print(urlname)
                     response.raise_for_status()
                     total_size = int(response.headers.get("content-length", 0))
 

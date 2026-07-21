@@ -454,6 +454,7 @@ class DatabaseManager(object):
                     urlname, headers=headers, stream=True, allow_redirects=True
                 )
                 print('NGINX-Cache:', response.headers.get("X-Cache-Status"), __file__)
+                print(urlname)
                 response.raise_for_status()  # Raise an error if request fails
                 content_type = response.headers.get("content-type", "").lower()
                 chunks = response.iter_content(chunk_size=8192)
