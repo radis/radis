@@ -25,7 +25,8 @@ Install
 
     pip install radis
 
-For the development version from `GitHub <https://github.com/radis/radis>`_, refer to the :ref:`detailed installation procedure <label_install>`. For those preferring installation via ``conda`` from conda-forge (which may not always host the latest version), use: ::
+For performance purposes, we also recommend using Python 3.12 or earlier, as the latest versions of Python 3.13 and 3.14 are not yet fully supported by all dependencies.
+For the development version from `GitHub <https://github.com/radis/radis>`_, refer to the :ref:`detailed installation procedure <label_install>`. For those preferring installation via ``conda`` from conda-forge (which may not always host the latest RADIS version), use: ::
 
     conda install radis -c conda-forge
 
