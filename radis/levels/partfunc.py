@@ -78,7 +78,6 @@ from radis.db.classes import (
     get_molecule,
     get_molecule_identifier,
 )
-from radis.lbl.labels import vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5
 from radis.misc.basics import all_in
 from radis.misc.debug import printdbg
 from radis.misc.printer import printg
@@ -1770,6 +1769,8 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             - ``viblvl`` : vibrational level name
         """
 
+        from radis.lbl.labels import vib_lvl_name_hitran_class1
+
         vib_lvl_name = vib_lvl_name_hitran_class1
 
         ElecState = self.ElecState  # molecule
@@ -1923,6 +1924,8 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             - ``Erot`` : rotational energy
             - ``viblvl`` : vibrational level name
         """
+
+        from radis.lbl.labels import vib_lvl_name_hitran_class5
 
         vib_lvl_name = vib_lvl_name_hitran_class5
 
