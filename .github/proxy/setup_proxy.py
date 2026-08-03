@@ -44,6 +44,7 @@ from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
+from ipaddress import ip_address
 
 def generate_self_signed_cert():
     private_key = rsa.generate_private_key(
@@ -71,7 +72,7 @@ def generate_self_signed_cert():
         x509.DNSName("www.hitran.org"),
         x509.DNSName("hitran.org"),
         x509.DNSName("localhost"),
-        x509.IPAddress(x509.ip_address("127.0.0.1")),
+        x509.IPAddress(ip_address("127.0.0.1")),
     ])
     
     cert_builder = cert_builder.add_extension(san_extension, critical=False)
