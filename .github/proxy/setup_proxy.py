@@ -30,7 +30,7 @@ def append_to_hosts(ip_address, domain_names):
         # 3. Open the file in append mode and write the entry
         with open(HOSTS_PATH, 'a') as hosts_file:
             hosts_file.write(new_entry)
-        print(f"Successfully added '{new_entry}'")
+        print(f"Successfully added '{new_entry[1:]}'")
 
     except PermissionError:
         print("Permission Denied! This script must be run with admin/root privileges.")

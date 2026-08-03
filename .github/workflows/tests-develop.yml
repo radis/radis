@@ -39,6 +39,7 @@ jobs:
         name: Set-up proxy server (Linux)
         if: runner.os == 'Linux'
         run: | # generate SSL certificates, run server in the background, and reroute hitran traffic to the proxy
+            pip install cryptography
             sudo python .github/proxy/setup_proxy.py
             
             # openssl req -x509 -nodes -days 365 -newkey rsa:2048 -subj "/CN=www.hitran.org" -keyout cert.key -out cert.pem -addext "subjectAltName = DNS:www.hitran.org,DNS:hitran.org,DNS:localhost,IP:127.0.0.1"
@@ -119,6 +120,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: | # generate SSL certificates, run server in the background, and reroute hitran traffic to the proxy
+          pip install cryptography
           python .github/proxy/setup_proxy.py
 
           # openssl req -x509 -nodes -days 365 -newkey rsa:2048 -subj "/CN=www.hitran.org" -keyout cert.key -out cert.pem -addext "subjectAltName = DNS:www.hitran.org,DNS:hitran.org,DNS:localhost,IP:127.0.0.1"
@@ -146,6 +148,7 @@ jobs:
       - name: Set-up proxy server (MacOS)
         if: runner.os == 'macOS'
         run: |
+          pip install cryptography
           sudo python .github/proxy/setup_proxy.py
           
           # openssl req -x509 -nodes -days 365 -newkey rsa:2048 -subj "/CN=www.hitran.org" -keyout cert.key -out cert.pem -addext "subjectAltName = DNS:www.hitran.org,DNS:hitran.org,DNS:localhost,IP:127.0.0.1"
