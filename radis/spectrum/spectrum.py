@@ -3431,7 +3431,8 @@ class Spectrum(object):
 
         # Loop over all waverange slices (needed if slit changes over the spectral range)
         for islice, slice_window in enumerate(slice_windows):
-            print("Slice {0}/{1}".format(islice + 1, len(slice_windows)))
+            # DvdB: can't print here unconditionally as it will mess with gpu_recalc()
+            # print("Slice {0}/{1}".format(islice + 1, len(slice_windows)))
 
             # Scale slit
             if slit_dispersion is not None:
