@@ -56,6 +56,9 @@ jobs:
             #echo "REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt" >> $GITHUB_ENV
 
       - name: Test Proxy
+        env:
+          REQUESTS_CA_BUNDLE: ${{ github.workspace }}/ca-certificates.crt
+          SSL_CERT_FILE: ${{ github.workspace }}/ca-certificates.crt
         run: |
           python .github/proxy/test_proxy.py pre-build
 
@@ -157,6 +160,8 @@ jobs:
           envsubst '$NGINX_CACHE_DIR' < .github/proxy/nginx.conf > .github/proxy/nginx.conf.gen
           sudo nginx -c ${{ github.workspace }}/.github/proxy/nginx.conf.gen -g "user $(whoami) staff;"&
 
+
+
           # echo "127.0.0.1 www.hitran.org hitran.org" | sudo tee -a /etc/hosts
           
           # sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain cert.pem
@@ -171,6 +176,9 @@ jobs:
       # - name: Setup tmate session
         # uses: mxschmitt/action-tmate@v3
       - name: Test Proxy
+        env:
+          REQUESTS_CA_BUNDLE: ${{ github.workspace }}/ca-certificates.crt
+          SSL_CERT_FILE: ${{ github.workspace }}/ca-certificates.crt
         run: |
           # pip install requests urllib3 cryptography certifi
           python .github/proxy/test_proxy.py
