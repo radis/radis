@@ -705,22 +705,20 @@ def _build_file_entry(par_path, wmin, wmax, engine):
     return entry
 
 
-def _parse_with_progress_multiprocess(
-    p_idx, file, wav_range, total_chunks, verbose, kwargs
-):
-    from tqdm import tqdm
+def _parse_and_cache_one_chunk(file, wav_range, kwargs):
+    """Parse one CO2 chunk in a worker process and return its cache file path.
 
-    with tqdm(
-        total=1,
-        desc=f"Caching chunk {p_idx+1}/{total_chunks}",
-        position=p_idx + 1,
-        leave=False,
-        disable=not verbose,
-        bar_format="{desc} {percentage:3.0f}%|{bar}| [{elapsed}]",
-    ) as p:
-        res = parse_one_CO2_block(file, wav_range=wav_range, **kwargs)
-        p.update(1)
-        return res
+    Returning the path rather than the DataFrame keeps joblib from pickling a
+    several-hundred-MB frame back into the parent process, which doubles peak
+    memory. The parent reads the chunk back from disk instead.
+
+    Returns ``None`` if the cache file could not be written (e.g. read-only
+    cache directory), so that the caller parses the chunk itself.
+    """
+    parse_one_CO2_block(file, wav_range=wav_range, **kwargs)
+
+    fcache = _fcache_file_name(file, kwargs["engine"])
+    return str(fcache) if os.path.exists(fcache) else None
 
 
 def _parse_uncached_chunks(
@@ -759,19 +757,34 @@ def _parse_uncached_chunks(
 
         if use_parallel:
             from joblib import Parallel, delayed
+            from tqdm import tqdm
 
             try:
-                parallel_results = Parallel(n_jobs=n_workers)(
-                    delayed(_parse_with_progress_multiprocess)(
-                        p_idx,
-                        local_paths[i],
-                        wav_pairs[i],
-                        len(uncached),
-                        verbose,
-                        parse_kwargs,
+                fcaches = []
+                with tqdm(
+                    total=len(uncached), desc="Parsing chunks", disable=not verbose
+                ) as pbar:
+                    # `return_as="generator"` lets the bar advance as chunks are
+                    # cached, instead of jumping to 100% once they all are.
+                    for fcache in Parallel(n_jobs=n_workers, return_as="generator")(
+                        delayed(_parse_and_cache_one_chunk)(
+                            local_paths[i], wav_pairs[i], parse_kwargs
+                        )
+                        for i in uncached
+                    ):
+                        fcaches.append(fcache)
+                        pbar.update(1)
+
+                # The workers wrote the chunks to disk rather than sending them
+                # back, so read them in here, one at a time.
+                for idx, i in enumerate(uncached):
+                    results[i] = (
+                        _load_cache_file(fcaches[idx], engine=engine, columns=columns)
+                        if fcaches[idx]
+                        else parse_one_CO2_block(
+                            local_paths[i], wav_range=wav_pairs[i], **parse_kwargs
+                        )
                     )
-                    for p_idx, i in enumerate(uncached)
-                )
             except MemoryError:
                 raise MemoryError(
                     "Out of memory while loading HITEMP CO2 chunks in parallel "
@@ -779,8 +792,6 @@ def _parse_uncached_chunks(
                     "Try reducing the number of workers, e.g. parallel=2, "
                     "or use serial loading with parallel=False."
                 ) from None
-            for idx, i in enumerate(uncached):
-                results[i] = parallel_results[idx]
         else:
             from tqdm import tqdm
 
@@ -967,6 +978,7 @@ def read_and_write_chunked_for_CO2(
     # Register metadata
     for i, file in enumerate(local_paths):
         _append_dataframe(results[i])
+        results[i] = None  # `dataframes` holds it now; don't keep it twice
         wmin, wmax = wav_pairs[i]
         register_partial_hitemp_co2(_build_file_entry(file, wmin, wmax, engine))
         if os.path.exists(file):
