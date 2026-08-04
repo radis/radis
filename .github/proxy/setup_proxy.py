@@ -114,7 +114,7 @@ def append_self_signed_cert(cert_file='cert.pem'):
             fw.write(fr.read())
    
 
-def generate_nginx_config(conf_path='.github/proxy/nginx_template.conf')
+def generate_nginx_config(conf_path='.github/proxy/nginx_template.conf'):
     
     with open(conf_path, 'r') as fr:
         conf_file = fr.read()
