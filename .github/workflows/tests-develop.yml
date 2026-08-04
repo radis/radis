@@ -43,8 +43,8 @@ jobs:
             sudo python .github/proxy/setup_proxy.py
 
             export NGINX_CACHE_DIR=/home/runner/work/radis/radis/nginx_cache
-            envsubst '$NGINX_CACHE_DIR' < .github/proxy/nginx.conf > .github/proxy/nginx.conf.gen
-            sudo nginx -c $GITHUB_WORKSPACE/.github/proxy/nginx.conf.gen -g "user $(whoami);"& 
+            envsubst '$NGINX_CACHE_DIR' < .github/proxy/nginx_template.conf > .github/proxy/nginx.conf
+            sudo nginx -c $GITHUB_WORKSPACE/.github/proxy/nginx.conf -g "user $(whoami);"& 
 
 
       - name: Test Proxy
@@ -120,8 +120,8 @@ jobs:
           cd C:\tools\nginx-*\
           Stop-Service -Name "W3SVC" -Force
           $env:NGINX_CACHE_DIR = "D:/a/radis/radis/nginx_cache"
-          (Get-Content ${{ github.workspace }}/.github/proxy/nginx.conf) -replace '\$\{NGINX_CACHE_DIR\}', $env:NGINX_CACHE_DIR | Set-Content ${{ github.workspace }}/.github/proxy/nginx.conf.gen
-          Start-Process ".\nginx.exe" -ArgumentList "-c", "${{ github.workspace }}/.github/proxy/nginx.conf.gen"
+          (Get-Content ${{ github.workspace }}/.github/proxy/nginx_template.conf) -replace '\$\{NGINX_CACHE_DIR\}', $env:NGINX_CACHE_DIR | Set-Content ${{ github.workspace }}/.github/proxy/nginx.conf
+          Start-Process ".\nginx.exe" -ArgumentList "-c", "${{ github.workspace }}/.github/proxy/nginx.conf"
           cd ${{ github.workspace }}
 
           Get-Process nginx
@@ -134,8 +134,8 @@ jobs:
 
           brew install nginx
           export NGINX_CACHE_DIR=/Users/runner/work/radis/radis/nginx_cache
-          envsubst '$NGINX_CACHE_DIR' < .github/proxy/nginx.conf > .github/proxy/nginx.conf.gen
-          sudo nginx -c ${{ github.workspace }}/.github/proxy/nginx.conf.gen -g "user $(whoami) staff;"&
+          envsubst '$NGINX_CACHE_DIR' < .github/proxy/nginx_template.conf > .github/proxy/nginx.conf
+          sudo nginx -c ${{ github.workspace }}/.github/proxy/nginx.conf -g "user $(whoami) staff;"&
 
       # - name: Setup tmate session
         # uses: mxschmitt/action-tmate@v3
