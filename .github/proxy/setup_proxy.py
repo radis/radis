@@ -123,6 +123,9 @@ def append_self_signed_cert(self_signed_cert='cert.pem'):
             gh_file.write(f"REQUESTS_CA_BUNDLE={certs_path}\n")
             gh_file.write(f"SSL_CERT_FILE={certs_path}\n")
         print("Successfully written environment variables to $GITHUB_ENV!")
+        
+        with open(github_env_file, 'r') as gh_file:
+            print(gh_file.read())
 
 if __name__ == "__main__":
     generate_self_signed_cert()
