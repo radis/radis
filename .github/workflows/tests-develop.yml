@@ -51,9 +51,9 @@ jobs:
             # echo "127.0.0.1 www.hitran.org  hitran.org" | sudo tee -a /etc/hosts
             
 
-            # sudo cp "$GITHUB_WORKSPACE/cert.pem" /usr/local/share/ca-certificates/nginx-proxy.crt
-            # sudo update-ca-certificates
-            # echo "REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt" >> $GITHUB_ENV
+            sudo cp "$GITHUB_WORKSPACE/cert.pem" /usr/local/share/ca-certificates/nginx-proxy.crt
+            sudo update-ca-certificates
+            echo "REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt" >> $GITHUB_ENV
 
       - name: Test Proxy
         run: |
