@@ -143,7 +143,7 @@ def generate_nginx_config(conf_path='.github/proxy/nginx_template.conf'):
     
     new_conf_file = conf_file.replace('${NGINX_CACHE_DIR}', cache_dir)
 
-    with open('.github/proxy/nginx.conf', 'w') as fw:
+    with open('.github/proxy/nginx.conf', 'w', encoding='utf-8', newline='\n') as fw:
         fw.write(new_conf_file)
         
     # for folder in NGINX_FOLDERS:
