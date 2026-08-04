@@ -67,6 +67,7 @@ jobs:
         #  pytest -m "needs_connection and not download_large_databases and not needs_fixing ${{ secrets.HITRAN_EMAIL && ' ' || 'and not needs_HITRAN_credentials' }}" --durations=10 --tb=short
       - &show_nginx_logs
         name: Print NGINX Error Logs on Failure
+        if: failure()
         shell: bash
         run: cat nginx_logs/error.log nginx_logs/access.log 2>/dev/null || echo "Log files missing."
 
