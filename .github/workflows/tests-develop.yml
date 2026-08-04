@@ -58,7 +58,6 @@ jobs:
       - name: Test Proxy
         env:
           REQUESTS_CA_BUNDLE: ${{ github.workspace }}/ca-certificates.crt
-          SSL_CERT_FILE: ${{ github.workspace }}/ca-certificates.crt
         run: |
           python .github/proxy/test_proxy.py pre-build
 
@@ -178,7 +177,6 @@ jobs:
       - name: Test Proxy
         env:
           REQUESTS_CA_BUNDLE: ${{ github.workspace }}/ca-certificates.crt
-          SSL_CERT_FILE: ${{ github.workspace }}/ca-certificates.crt
         run: |
           # pip install requests urllib3 cryptography certifi
           python .github/proxy/test_proxy.py

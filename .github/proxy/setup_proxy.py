@@ -98,8 +98,8 @@ def append_self_signed_cert(cert_file='cert.pem'):
     import requests
     import os
 
-    print('Certifi:  ',certifi.where())
-    print('Requests: ',requests.certs.where())
+    #print('Certifi:  ',certifi.where())
+    #print('Requests: ',requests.certs.where())
     
     certs_path = certifi.where()
     
