@@ -17,7 +17,7 @@ else:
 
 
 def append_to_hosts(ip_address, domain_names):
-    
+    print('-> Adding ', domain_names, 'to hosts... ', end='')
     new_entry = f"\n{ip_address}"
     
     if isinstance(domain_names, str):
@@ -30,12 +30,11 @@ def append_to_hosts(ip_address, domain_names):
         # 3. Open the file in append mode and write the entry
         with open(HOSTS_PATH, 'a') as hosts_file:
             hosts_file.write(new_entry)
-        print(f"Successfully added '{new_entry[1:]}'")
+        print('Done!')
 
     except PermissionError:
-        print("Permission Denied! This script must be run with admin/root privileges.")
-        print(f"   Current OS detected: {current_os}")
-        sys.exit(1)
+        print(f"FAIL - Permission Denied!\nThis script must be run with admin/root privileges (OS={current_os}).")
+        return 1
 
 
 from datetime import datetime, timedelta, timezone
@@ -47,6 +46,7 @@ from cryptography.hazmat.primitives import serialization
 from ipaddress import ip_address
 
 def generate_self_signed_cert():
+    print('Generating self singed certificate... ', end='')
     private_key = rsa.generate_private_key(
         public_exponent=65537,
         key_size=2048
@@ -90,18 +90,21 @@ def generate_self_signed_cert():
     with open("cert.pem", "wb") as f:
         f.write(cert.public_bytes(serialization.Encoding.PEM))
 
-    print("Successfully generated cert.key and cert.pem!")
+    print("Done!")
 
 
 def append_self_signed_cert(cert_file='cert.pem'):
     import certifi
     import requests
     import os
-
+    
     #print('Certifi:  ',certifi.where())
     #print('Requests: ',requests.certs.where())
     
     certs_path = certifi.where()
+    
+    print(f'-> Appending self signed certificate to {certs_path}... ', end='') 
+
     
     # Create a new combined file in the CWD
     with open('ca-certificates.crt', 'w') as fw:
@@ -113,8 +116,13 @@ def append_self_signed_cert(cert_file='cert.pem'):
         with open(cert_file, 'r') as fr:
             fw.write(fr.read())
    
+    print('Done!')
+   
 
 def generate_nginx_config(conf_path='.github/proxy/nginx_template.conf'):
+    import os
+    
+    print('-> Generating NGINX config... ', end='')
     
     with open(conf_path, 'r') as fr:
         conf_file = fr.read()
@@ -127,6 +135,7 @@ def generate_nginx_config(conf_path='.github/proxy/nginx_template.conf'):
     with open('nginx.conf','w') as fw:
         fw.write(new_conf_file)
 
+    print('Done!')
 
 if __name__ == "__main__":
     generate_self_signed_cert()
