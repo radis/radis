@@ -108,11 +108,11 @@ jobs:
           key: hitran-cache-${{ github.run_id }}-${{ github.run_attempt }}
           enableCrossOsArchive: true
       
-      # - name: Install dependencies
-        # run: |
-          # python -m pip install --upgrade pip
-          # python -m pip install pytest specutils pytest-cov
-          # pip install -e .
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest specutils pytest-cov
+          pip install -e .
           
       - *setup_proxy_linux
       - name: Set-up proxy server (Windows)
