@@ -51,9 +51,9 @@ jobs:
             # echo "127.0.0.1 www.hitran.org  hitran.org" | sudo tee -a /etc/hosts
             
 
-            sudo cp "$GITHUB_WORKSPACE/cert.pem" /usr/local/share/ca-certificates/nginx-proxy.crt
-            sudo update-ca-certificates
-            echo "REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt" >> $GITHUB_ENV
+            # sudo cp "$GITHUB_WORKSPACE/cert.pem" /usr/local/share/ca-certificates/nginx-proxy.crt
+            # sudo update-ca-certificates
+            # echo "REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt" >> $GITHUB_ENV
 
       - name: Test Proxy
         run: |
@@ -135,14 +135,14 @@ jobs:
           # Add-Content -Path C:\Windows\System32\drivers\etc\hosts -Value "`r`n127.0.0.1 www.hitran.org hitran.org"
 
 
-          Import-Certificate -FilePath .\cert.pem -CertStoreLocation Cert:\LocalMachine\Root
-          Copy-Item -Path .\cert.pem -Destination "${{ github.workspace }}/combined_cacert.pem"
+          # Import-Certificate -FilePath .\cert.pem -CertStoreLocation Cert:\LocalMachine\Root
+          # Copy-Item -Path .\cert.pem -Destination "${{ github.workspace }}/combined_cacert.pem"
 
-          pip install certifi
-          $pythonCertPath = python -c "import certifi; print(certifi.where())"
-          Get-Content -Path $pythonCertPath | Add-Content -Path "${{ github.workspace }}/combined_cacert.pem"
+          # pip install certifi
+          # $pythonCertPath = python -c "import certifi; print(certifi.where())"
+          # Get-Content -Path $pythonCertPath | Add-Content -Path "${{ github.workspace }}/combined_cacert.pem"
 
-          "REQUESTS_CA_BUNDLE=${{ github.workspace }}/combined_cacert.pem" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          # "REQUESTS_CA_BUNDLE=${{ github.workspace }}/combined_cacert.pem" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
           Get-Process nginx
       - name: Set-up proxy server (MacOS)
@@ -160,14 +160,14 @@ jobs:
 
           # echo "127.0.0.1 www.hitran.org hitran.org" | sudo tee -a /etc/hosts
           
-          sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain cert.pem
+          # sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain cert.pem
 
-          python3 -c "import certifi; print(certifi.where())" > certifi_path.txt
-          cp $(cat certifi_path.txt) combined_ca.pem
-          cat cert.pem >> combined_ca.pem
+          # python3 -c "import certifi; print(certifi.where())" > certifi_path.txt
+          # cp $(cat certifi_path.txt) combined_ca.pem
+          # cat cert.pem >> combined_ca.pem
 
-          echo "REQUESTS_CA_BUNDLE=${{ github.workspace }}/combined_ca.pem" >> $GITHUB_ENV
-          echo "SSL_CERT_FILE=${{ github.workspace }}/combined_ca.pem" >> $GITHUB_ENV
+          # echo "REQUESTS_CA_BUNDLE=${{ github.workspace }}/combined_ca.pem" >> $GITHUB_ENV
+          # echo "SSL_CERT_FILE=${{ github.workspace }}/combined_ca.pem" >> $GITHUB_ENV
 
       # - name: Setup tmate session
         # uses: mxschmitt/action-tmate@v3

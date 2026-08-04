@@ -93,6 +93,29 @@ def generate_self_signed_cert():
     print("Successfully generated cert.key and cert.pem!")
 
 
+def append_self_signed_cert(self_signed_cert='cert.pem'):
+    import certifi
+    
+    with open(self_signed_cert, 'r') as fr:
+        ss_cert_content = fr.read()
+    
+    print('Certifi:  ',certifi.where())
+    print('Requests: ',requests.certs.where())
+    
+    certifi_fname = certifi.where()
+    
+    try:
+        with open(certifi_fname, 'a') as fa:
+            
+            fa.write(ss_cert_content)
+        print('appended key to certifi!')
+    except PermissionError:
+        print('Could not append certificates!')
+        #TODO: if this happens, make a local copy of the combined certificates and set environment variables REQUESTS_CA_BUNDLE and SSL_CERT_FILE to point at this new file.
+        sys.exit(1)
+        
+
 if __name__ == "__main__":
     generate_self_signed_cert()
+    append_self_signed_cert()
     append_to_hosts("127.0.0.1", ['www.hitran.org', 'hitran.org'])
