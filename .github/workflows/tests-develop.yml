@@ -69,7 +69,7 @@ jobs:
 
       - name: Print NGINX Error Logs on Failure
         shell: bash
-        run: cat .github/proxy/logs/error.log .github/proxy/logs/access.log 2>/dev/null || echo "Log files missing."
+        run: cat logs/error.log logs/access.log 2>/dev/null || echo "Log files missing."
 
   build:
     env:

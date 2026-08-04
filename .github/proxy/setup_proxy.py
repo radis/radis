@@ -4,19 +4,21 @@ import sys
 
 current_os = platform.system()
 
+# NGINX_FOLDERS = ['logs', 
+                 # 'temp', 
+                 # 'temp/client_body_temp',
+                 # 'temp/fastcgi_temp',
+                 # 'temp/proxy_temp',
+                 # 'temp/scgi_temp',
+                 # 'temp/uwsgi_temp',
+                 # ]
+
 if current_os == 'Linux':
     HOSTS_PATH = r'/etc/hosts'
     NGINX_FOLDERS = []
 elif current_os == 'Windows':
     HOSTS_PATH = r'C:\Windows\System32\drivers\etc\hosts'
-    NGINX_FOLDERS = ['logs', 
-                     'temp', 
-                     'temp/client_body_temp',
-                     'temp/fastcgi_temp',
-                     'temp/proxy_remp',
-                     'temp/scgi_temp',
-                     'temp/uwsgi_temp',
-                     ]
+
 elif current_os == 'Darwin':
     HOSTS_PATH = r'/etc/hosts'
     NGINX_FOLDERS = []
@@ -138,16 +140,19 @@ def generate_nginx_config(conf_path='.github/proxy/nginx_template.conf'):
     with open(conf_path, 'r') as fr:
         conf_file = fr.read()
     
-    base_dir = os.path.abspath(os.getcwd())
-    cache_dir = Path(os.path.join(base_dir, 'nginx_cache')).as_posix()
+    base_dir = Path(os.path.abspath(os.getcwd())).as_posix()
     
-    new_conf_file = conf_file.replace('${NGINX_CACHE_DIR}', cache_dir)
+    new_conf_file = conf_file.replace('${GITHUB_DIR}', base_dir)
 
     with open('.github/proxy/nginx.conf', 'w', encoding='utf-8', newline='\n') as fw:
         fw.write(new_conf_file)
         
+    os.makedirs(os.path.join(base_dir,'nginx_logs'), exist_ok=True)    
+        
     # for folder in NGINX_FOLDERS:
-        # os.makedirs(folder, exist_ok=True)
+        # curfolder = os.path.join(*(('.github/proxy/' + folder).split('/')))
+        # print(curfolder)
+        # os.makedirs(curfolder, exist_ok=True)
         
     print('Done!')
 
