@@ -235,7 +235,6 @@ def test_fetch_hitemp_OH_vaex(verbose=True, *args, **kwargs):
 
 @pytest.mark.needs_connection
 @pytest.mark.needs_HITRAN_credentials
-@pytest.mark.needs_fixing
 def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
     """Test partial download of HITEMP CO2 2024 database."""
 

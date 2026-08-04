@@ -1,29 +1,7 @@
 # import os
 import sys
-
 import requests
 import urllib3
-
-# print("CA_bundle:", os.environ["REQUESTS_CA_BUNDLE"])
-# print("${{ github.workspace }} path:", os.path.abspath("."))
-# print("${{ github.workspace }} contents:", os.listdir("."))
-
-# cert_path = sys.argv[-1]
-# print('CERT_FILE', cert_path)
-# # 1. Direct OpenSSL and requests to trust your CA bundle
-# os.environ["SSL_CERT_FILE"] = cert_path
-# os.environ["REQUESTS_CA_BUNDLE"] = cert_path
-
-# # 2. Tell Python where your Nginx proxy is located
-# os.environ["HTTP_PROXY"] = "http://127.0.0.1:443"
-# os.environ["HTTPS_PROXY"] = "http://127.0.0.1:443"
-
-# # 3. Handle the routing logic
-# # 'requests' reads the wildcard '*' perfectly.
-# # For 'urllib', explicitly list common domains to bypass instead (e.g., '.com', '.org')
-# # os.environ["no_proxy"] = "*, localhost, 127.0.0.1, .com, .org, .fr"
-# os.environ["NO_PROXY"] = "*, localhost, 127.0.0.1, .com, .org, .fr"
-
 
 expected_outcome = [
     [("MISS" if sys.argv[-1] == "pre-build" else "HIT"), "HIT"],
