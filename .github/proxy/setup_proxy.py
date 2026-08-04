@@ -88,7 +88,7 @@ def generate_self_signed_cert():
     cert_builder = cert_builder.add_extension(san_extension, critical=False)
     cert = cert_builder.sign(private_key, hashes.SHA256())
 
-    with open("cert.key", "wb") as f:
+    with open(".github/proxy/cert.key", "wb") as f:
         f.write(
             private_key.private_bytes(
                 encoding=serialization.Encoding.PEM,
@@ -97,13 +97,13 @@ def generate_self_signed_cert():
             )
         )
 
-    with open("cert.pem", "wb") as f:
+    with open(".github/proxy/cert.pem", "wb") as f:
         f.write(cert.public_bytes(serialization.Encoding.PEM))
 
     print("Done!")
 
 
-def append_self_signed_cert(cert_file='cert.pem'):
+def append_self_signed_cert(cert_file='.github/proxy/cert.pem'):
     import certifi
     import requests
     import os
@@ -113,7 +113,7 @@ def append_self_signed_cert(cert_file='cert.pem'):
     
     certs_path = certifi.where()
     
-    print(f'-> Appending self-signed certificate to {certs_path}... ', end='') 
+    print(f'-> Combining self-signed certificate with {certs_path}... ', end='') 
 
     
     # Create a new combined file in the CWD
@@ -142,16 +142,16 @@ def generate_nginx_config(conf_path='.github/proxy/nginx_template.conf'):
     
     new_conf_file = conf_file.replace('${NGINX_CACHE_DIR}', cache_dir)
 
-    with open('nginx.conf','w') as fw:
+    with open('.github/proxy/nginx.conf','w') as fw:
         fw.write(new_conf_file)
         
-    for folder in NGINX_FOLDERS:
-        os.makedirs(folder, exist_ok=True)
+    # for folder in NGINX_FOLDERS:
+        # os.makedirs(folder, exist_ok=True)
         
     print('Done!')
 
 if __name__ == "__main__":
     generate_self_signed_cert()
     append_self_signed_cert()
-    append_to_hosts("127.0.0.1", ['www.hitran.org', 'hitran.org', 'localhost'])
+    append_to_hosts("127.0.0.1", ['www.hitran.org', 'hitran.org'])
     generate_nginx_config()

@@ -122,7 +122,7 @@ jobs:
           Stop-Service -Name "W3SVC" -Force
           # $env:NGINX_CACHE_DIR = "D:/a/radis/radis/nginx_cache"
           # (Get-Content ${{ github.workspace }}/.github/proxy/nginx.conf) -replace '\$\{NGINX_CACHE_DIR\}', $env:NGINX_CACHE_DIR | Set-Content ${{ github.workspace }}/.github/proxy/nginx.conf.gen
-          Start-Process ".\nginx.exe" -ArgumentList "-c", "${{ github.workspace }}/nginx.conf"
+          Start-Process ".\nginx.exe" -ArgumentList "-c", "${{ github.workspace }}/nginx.conf", "-p", "."
           cd ${{ github.workspace }}
 
           Get-Process nginx
