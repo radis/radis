@@ -131,6 +131,7 @@ def append_self_signed_cert(cert_file='.github/proxy/cert.pem'):
 
 def generate_nginx_config(conf_path='.github/proxy/nginx_template.conf'):
     import os
+    from pathlib import Path
     
     print('-> Generating NGINX config... ', end='')
     
@@ -138,11 +139,11 @@ def generate_nginx_config(conf_path='.github/proxy/nginx_template.conf'):
         conf_file = fr.read()
     
     base_dir = os.path.abspath(os.getcwd())
-    cache_dir = os.path.join(base_dir, 'nginx_cache')
+    cache_dir = Path(os.path.join(base_dir, 'nginx_cache')).as_posix()
     
     new_conf_file = conf_file.replace('${NGINX_CACHE_DIR}', cache_dir)
 
-    with open('.github/proxy/nginx.conf','w') as fw:
+    with open('.github/proxy/nginx.conf', 'w', encoding='utf-8', newline='\n') as fw:
         fw.write(new_conf_file)
         
     # for folder in NGINX_FOLDERS:
