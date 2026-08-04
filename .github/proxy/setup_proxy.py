@@ -12,7 +12,6 @@ elif current_os == 'Windows':
     NGINX_FOLDERS = ['logs', 
                      'temp', 
                      'temp/client_body_temp',
-                     'temp/client_body_temperature',
                      'temp/fastcgi_temp',
                      'temp/proxy_remp',
                      'temp/scgi_temp',
