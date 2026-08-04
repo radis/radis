@@ -24,6 +24,8 @@ radis/test/test.nfig
 radis/test/*.png
 radis/test/validation/*.png
 .pytest_cache/*
+ca-certificates.crt
+.github/proxy/nginx.conf
 
 # SSL certificates
 *.pem
