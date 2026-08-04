@@ -42,8 +42,8 @@ jobs:
             pip install requests urllib3 cryptography certifi
             sudo python .github/proxy/setup_proxy.py
 
-            export NGINX_CACHE_DIR=/home/runner/work/radis/radis/nginx_cache
-            envsubst '$NGINX_CACHE_DIR' < .github/proxy/nginx_template.conf > .github/proxy/nginx.conf
+            #export NGINX_CACHE_DIR=/home/runner/work/radis/radis/nginx_cache
+            #envsubst '$NGINX_CACHE_DIR' < .github/proxy/nginx_template.conf > .github/proxy/nginx.conf
             sudo nginx -c $GITHUB_WORKSPACE/.github/proxy/nginx.conf -g "user $(whoami);"& 
 
 
