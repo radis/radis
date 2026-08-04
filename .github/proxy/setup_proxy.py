@@ -114,7 +114,22 @@ def append_self_signed_cert(cert_file='cert.pem'):
             fw.write(fr.read())
    
 
+def generate_nginx_config(conf_path='.github/proxy/nginx_template.conf')
+    
+    with open(conf_path, 'r') as fr:
+        conf_file = fr.read()
+    
+    base_dir = os.path.abspath(os.getcwd())
+    cache_dir = os.path.join(base_dir, 'nginx_cache')
+    
+    new_conf_file = conf_file.replace('${NGINX_CACHE_DIR}', cache_dir)
+
+    with open('nginx.conf','w') as fw:
+        fw.write(new_conf_file)
+
+
 if __name__ == "__main__":
     generate_self_signed_cert()
     append_self_signed_cert()
     append_to_hosts("127.0.0.1", ['www.hitran.org', 'hitran.org'])
+    generate_nginx_config()
