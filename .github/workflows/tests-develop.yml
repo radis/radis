@@ -65,8 +65,8 @@ jobs:
           echo ${{ secrets.HITRAN_EMAIL && 'HITRAN credentials available!' || 'HITRAN credentials NOT available!' }}
           pytest -s radis/test/io/test_exomol.py::test_calc_exomol_vs_hitemp
         #  pytest -m "needs_connection and not download_large_databases and not needs_fixing ${{ secrets.HITRAN_EMAIL && ' ' || 'and not needs_HITRAN_credentials' }}" --durations=10 --tb=short
-
-      - name: Print NGINX Error Logs on Failure
+      - &show_nginx_logs
+        name: Print NGINX Error Logs on Failure
         shell: bash
         run: cat nginx_logs/error.log nginx_logs/access.log 2>/dev/null || echo "Log files missing."
 
@@ -148,22 +148,19 @@ jobs:
           # pip install requests urllib3 cryptography certifi
           python .github/proxy/test_proxy.py
 
-      # - name: Fast tests with pytest
-        # env:
-          # REQUESTS_CA_BUNDLE: ${{ github.workspace }}/ca-certificates.crt
-          # SSL_CERT_FILE: ${{ github.workspace }}/ca-certificates.crt
-          # HITRAN_EMAIL: ${{ secrets.HITRAN_EMAIL }}
-          # HITRAN_PASSWORD: ${{ secrets.HITRAN_PASSWORD }}
-        # run: |
-          # echo ${{ secrets.HITRAN_EMAIL && 'HITRAN credentials available!' || 'HITRAN credentials NOT available!' }}
-          # pytest -s radis/test/io/test_exomol.py::test_calc_exomol_vs_hitemp
-          # pytest -s radis/test/io/test_exomol.py::test_calc_exomol_vs_hitemp
-        # # pytest -m     "fast and not needs_gpu and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC ${{ secrets.HITRAN_EMAIL && '' || 'and not needs_HITRAN_credentials' }}" --durations=10 --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml
+      - name: Fast tests with pytest
+        env:
+          REQUESTS_CA_BUNDLE: ${{ github.workspace }}/ca-certificates.crt
+          SSL_CERT_FILE: ${{ github.workspace }}/ca-certificates.crt
+          HITRAN_EMAIL: ${{ secrets.HITRAN_EMAIL }}
+          HITRAN_PASSWORD: ${{ secrets.HITRAN_PASSWORD }}
+        run: |
+          echo ${{ secrets.HITRAN_EMAIL && 'HITRAN credentials available!' || 'HITRAN credentials NOT available!' }}
+          pytest -s radis/test/io/test_exomol.py::test_calc_exomol_vs_hitemp
+        # pytest -m     "fast and not needs_gpu and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC ${{ secrets.HITRAN_EMAIL && '' || 'and not needs_HITRAN_credentials' }}" --durations=10 --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml
       
-      - name: Print NGINX Error Logs on Failure
-        shell: bash
-        run: cat .github/proxy/logs/error.log .github/proxy/logs/access.log 2>/dev/null || echo "Log files missing."
-
+      - *show_nginx_logs
+      
       # - name: Long tests with pytest
         # if: always()
         # env:
