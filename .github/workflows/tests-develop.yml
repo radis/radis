@@ -41,8 +41,8 @@ jobs:
         run: | # generate SSL certificates, run server in the background, and reroute hitran traffic to the proxy
             pip install requests urllib3 cryptography certifi
             sudo python .github/proxy/setup_proxy.py
-            
-            sudo nginx -c $GITHUB_WORKSPACE/.github/proxy/nginx.conf -g "user $(whoami);"& 
+
+            sudo nginx -c $GITHUB_WORKSPACE/.github/proxy/nginx.conf -g "user $(whoami);"&
 
       - name: Test Proxy
         env:
@@ -53,7 +53,6 @@ jobs:
 
       # - name: Setup tmate session
         # uses: mxschmitt/action-tmate@v3
-        
 
       - name: Connection required tests with pytest
         env:
@@ -63,8 +62,9 @@ jobs:
           HITRAN_PASSWORD: ${{ secrets.HITRAN_PASSWORD }}
         run: |
           echo ${{ secrets.HITRAN_EMAIL && 'HITRAN credentials available!' || 'HITRAN credentials NOT available!' }}
-        $  pytest -s radis/test/io/test_exomol.py::test_calc_exomol_vs_hitemp
           pytest -m "needs_connection and not download_large_databases and not needs_fixing ${{ secrets.HITRAN_EMAIL && ' ' || 'and not needs_HITRAN_credentials' }}" --durations=10 --tb=short
+        #  pytest -s radis/test/io/test_exomol.py::test_calc_exomol_vs_hitemp
+
       - &show_nginx_logs
         name: Print NGINX Error Logs on Failure
         if: failure()
@@ -109,13 +109,13 @@ jobs:
             nginx_cache
           key: hitran-cache-${{ github.run_id }}-${{ github.run_attempt }}
           enableCrossOsArchive: true
-      
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install pytest specutils pytest-cov
           pip install -e .
-          
+
       - *setup_proxy_linux
       - name: Set-up proxy server (Windows)
         if: runner.os == 'Windows'
@@ -123,31 +123,30 @@ jobs:
         run: | # generate SSL certificates, run server in the background, and reroute hitran traffic to the proxy
           pip install requests urllib3 cryptography certifi
           python .github/proxy/setup_proxy.py
-          
+
           cd C:\tools\nginx-*\
           Stop-Service -Name "W3SVC" -Force
           Start-Process ".\nginx.exe" -ArgumentList "-c", "${{ github.workspace }}/.github/proxy/nginx.conf"
           cd ${{ github.workspace }}
           Get-Process nginx
-          
+
       - name: Set-up proxy server (MacOS)
         if: runner.os == 'macOS'
         run: |
           pip install requests urllib3 cryptography certifi
           sudo python .github/proxy/setup_proxy.py
-          
+
           brew install nginx
           sudo nginx -c ${{ github.workspace }}/.github/proxy/nginx.conf -g "user $(whoami) staff;"&
 
       # - name: Setup tmate session
         # uses: mxschmitt/action-tmate@v3
-        
+
       - name: Test Proxy
         env:
           REQUESTS_CA_BUNDLE: ${{ github.workspace }}/ca-certificates.crt
           SSL_CERT_FILE: ${{ github.workspace }}/ca-certificates.crt
         run: |
-          # pip install requests urllib3 cryptography certifi
           python .github/proxy/test_proxy.py
 
       - name: Fast tests with pytest
@@ -158,20 +157,22 @@ jobs:
           HITRAN_PASSWORD: ${{ secrets.HITRAN_PASSWORD }}
         run: |
           echo ${{ secrets.HITRAN_EMAIL && 'HITRAN credentials available!' || 'HITRAN credentials NOT available!' }}
+          pytest -m     "fast and not needs_gpu and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC ${{ secrets.HITRAN_EMAIL && '' || 'and not needs_HITRAN_credentials' }}" --durations=10 --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml
         #  pytest -s radis/test/io/test_exomol.py::test_calc_exomol_vs_hitemp
-         pytest -m     "fast and not needs_gpu and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC ${{ secrets.HITRAN_EMAIL && '' || 'and not needs_HITRAN_credentials' }}" --durations=10 --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml
-      
+
       - *show_nginx_logs
-      
+
       - name: Long tests with pytest
         if: always()
         env:
+          REQUESTS_CA_BUNDLE: ${{ github.workspace }}/ca-certificates.crt
+          SSL_CERT_FILE: ${{ github.workspace }}/ca-certificates.crt
           HITRAN_EMAIL: ${{ secrets.HITRAN_EMAIL }}
           HITRAN_PASSWORD: ${{ secrets.HITRAN_PASSWORD }}
         run: |
           echo ${{ secrets.HITRAN_EMAIL && 'HITRAN credentials available!' || 'HITRAN credentials NOT available!' }}
           pytest -m "not fast and not needs_gpu and not needs_db_CDSD_HITEMP_PCN and not needs_db_CDSD_HITEMP and not needs_db_CDSD_HITEMP_PC ${{ secrets.HITRAN_EMAIL && '' || 'and not needs_HITRAN_credentials' }} and not needs_db_HITEMP_CO2_DUNHAM and not needs_db_HITEMP_CO_DUNHAM and not download_large_databases" --durations=10 --cov=radis --cov-config=setup.cfg --cov-report=xml:coverage.xml --cov-append
-      
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         if: always()

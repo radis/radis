@@ -532,7 +532,7 @@ def download_hitemp_file(session, file_url, output_filename, verbose=False):
     if verbose:
         print(f"Starting download from {file_url}")
     file_response = session.get(file_url, stream=True)
-    print('NGINX-Cache:', file_response.headers.get("X-Cache-Status"), __file__)
+    print("NGINX-Cache:", file_response.headers.get("X-Cache-Status"), __file__)
     print(file_url)
     print(file_response.headers)
     if file_response.status_code == 200:
