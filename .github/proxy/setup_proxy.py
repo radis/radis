@@ -5,11 +5,11 @@ import sys
 current_os = platform.system()
 
 if current_os == 'Linux':
-    HOSTS_PATH = '/etc/hosts'
+    HOSTS_PATH = r'/etc/hosts'
 elif current_os == 'Windows':
-    HOSTS_PATH = 'C:\Windows\System32\drivers\etc\hosts'
+    HOSTS_PATH = r'C:\Windows\System32\drivers\etc\hosts'
 elif current_os == 'Darwin':
-    HOSTS_PATH = '/etc/hosts'
+    HOSTS_PATH = r'/etc/hosts'
 else:
     print(f"Unsupported operating system: {current_os}")
     sys.exit(1)
@@ -107,7 +107,7 @@ def append_self_signed_cert(self_signed_cert='cert.pem'):
     
     try:
         with open(certifi_fname, 'a') as fa:
-            
+            fa.write('\n')
             fa.write(ss_cert_content)
         print('appended key to certifi!')
     except PermissionError:
