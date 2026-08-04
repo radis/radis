@@ -6,10 +6,21 @@ current_os = platform.system()
 
 if current_os == 'Linux':
     HOSTS_PATH = r'/etc/hosts'
+    NGINX_FOLDERS = []
 elif current_os == 'Windows':
     HOSTS_PATH = r'C:\Windows\System32\drivers\etc\hosts'
+    NGINX_FOLDERS = ['logs', 
+                     'temp', 
+                     'temp/client_body_temp',
+                     'temp/client_body_temperature',
+                     'temp/fastcgi_temp',
+                     'temp/proxy_remp',
+                     'temp/scgi_temp',
+                     'temp/uwsgi_temp',
+                     ]
 elif current_os == 'Darwin':
     HOSTS_PATH = r'/etc/hosts'
+    NGINX_FOLDERS = []
 else:
     print(f"Unsupported operating system: {current_os}")
     sys.exit(1)
@@ -46,7 +57,7 @@ from cryptography.hazmat.primitives import serialization
 from ipaddress import ip_address
 
 def generate_self_signed_cert():
-    print('Generating self singed certificate... ', end='')
+    print('-> Generating self singed certificate... ', end='')
     private_key = rsa.generate_private_key(
         public_exponent=65537,
         key_size=2048
@@ -103,7 +114,7 @@ def append_self_signed_cert(cert_file='cert.pem'):
     
     certs_path = certifi.where()
     
-    print(f'-> Appending self signed certificate to {certs_path}... ', end='') 
+    print(f'-> Appending self-signed certificate to {certs_path}... ', end='') 
 
     
     # Create a new combined file in the CWD
@@ -134,7 +145,10 @@ def generate_nginx_config(conf_path='.github/proxy/nginx_template.conf'):
 
     with open('nginx.conf','w') as fw:
         fw.write(new_conf_file)
-
+        
+    for folder in NGINX_FOLDERS:
+        os.makedirs(folder, exist_ok=True)
+        
     print('Done!')
 
 if __name__ == "__main__":
