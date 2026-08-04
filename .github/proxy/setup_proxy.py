@@ -96,6 +96,7 @@ def generate_self_signed_cert():
 def append_self_signed_cert(self_signed_cert='cert.pem'):
     import certifi
     import requests
+    import os
     
     with open(self_signed_cert, 'r') as fr:
         ss_cert_content = fr.read()
@@ -103,10 +104,10 @@ def append_self_signed_cert(self_signed_cert='cert.pem'):
     print('Certifi:  ',certifi.where())
     print('Requests: ',requests.certs.where())
     
-    certifi_fname = certifi.where()
+    certs_path = certifi.where()
     
     try:
-        with open(certifi_fname, 'a') as fa:
+        with open(certs_path, 'a') as fa:
             fa.write('\n')
             fa.write(ss_cert_content)
         print('appended key to certifi!')
@@ -114,7 +115,14 @@ def append_self_signed_cert(self_signed_cert='cert.pem'):
         print('Could not append certificates!')
         #TODO: if this happens, make a local copy of the combined certificates and set environment variables REQUESTS_CA_BUNDLE and SSL_CERT_FILE to point at this new file.
         sys.exit(1)
-        
+    
+    # Only runs if executed inside a GitHub Actions environment
+    github_env_file = os.getenv('GITHUB_ENV')
+    if github_env_file:  
+        with open(github_env_file, 'a') as gh_file:
+            gh_file.write(f"REQUESTS_CA_BUNDLE={certs_path}\n")
+            gh_file.write(f"SSL_CERT_FILE={certs_path}\n")
+        print("Successfully written environment variables to $GITHUB_ENV!")
 
 if __name__ == "__main__":
     generate_self_signed_cert()
