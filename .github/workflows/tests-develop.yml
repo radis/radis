@@ -69,7 +69,7 @@ jobs:
 
       - name: Print NGINX Error Logs on Failure
         shell: bash
-        run: cat logs/error.log logs/access.log 2>/dev/null || echo "Log files missing."
+        run: cat nginx_logs/error.log nginx_logs/access.log 2>/dev/null || echo "Log files missing."
 
   build:
     env:
