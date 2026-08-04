@@ -95,6 +95,7 @@ def generate_self_signed_cert():
 
 def append_self_signed_cert(self_signed_cert='cert.pem'):
     import certifi
+    import requests
     
     with open(self_signed_cert, 'r') as fr:
         ss_cert_content = fr.read()
