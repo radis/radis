@@ -118,5 +118,5 @@ def append_self_signed_cert(self_signed_cert='cert.pem'):
 
 if __name__ == "__main__":
     generate_self_signed_cert()
-    #append_self_signed_cert()
+    append_self_signed_cert()
     append_to_hosts("127.0.0.1", ['www.hitran.org', 'hitran.org'])
