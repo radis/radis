@@ -153,5 +153,5 @@ def generate_nginx_config(conf_path='.github/proxy/nginx_template.conf'):
 if __name__ == "__main__":
     generate_self_signed_cert()
     append_self_signed_cert()
-    append_to_hosts("127.0.0.1", ['www.hitran.org', 'hitran.org'])
+    append_to_hosts("127.0.0.1", ['www.hitran.org', 'hitran.org', 'localhost'])
     generate_nginx_config()
