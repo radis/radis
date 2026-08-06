@@ -10,7 +10,7 @@ on:
     branches: [ "develop" ]
 
 jobs:
-  pre-build:
+  cache-databases:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -54,7 +54,7 @@ jobs:
       # - name: Setup tmate session
         # uses: mxschmitt/action-tmate@v3
 
-      - name: Connection required tests with pytest
+      - name: Cache databases
         env:
           REQUESTS_CA_BUNDLE: ${{ github.workspace }}/ca-certificates.crt
           SSL_CERT_FILE: ${{ github.workspace }}/ca-certificates.crt
@@ -68,8 +68,8 @@ jobs:
         #  pytest -s radis/test/io/test_exomol.py::test_calc_exomol_vs_hitemp
 
       - &show_nginx_logs
-        name: Print NGINX Error Logs on Failure
-        if: failure()
+        name: NGINX logs
+        if: always()
         shell: bash
         run: cat nginx_logs/error.log nginx_logs/access.log 2>/dev/null || echo "Log files missing."
 
@@ -96,7 +96,7 @@ jobs:
             python-version: "3.12"
     runs-on: ${{ matrix.os }}
 
-    needs: pre-build # Forces completion of the downloads & caching first
+    needs: cache-databases # Forces completion of the downloads & caching first
 
     steps:
       - uses: actions/checkout@v4
