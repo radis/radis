@@ -69,7 +69,7 @@ jobs:
 
       - &show_nginx_logs
         name: NGINX logs
-        if: always()
+        if: failure()
         shell: bash
         run: cat nginx_logs/error.log nginx_logs/access.log 2>/dev/null || echo "Log files missing."
 
