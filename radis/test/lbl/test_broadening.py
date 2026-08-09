@@ -130,7 +130,7 @@ def test_broadening_methods_different_conditions(
     -----
 
     Reference broadening calculated manually with the HWHM formula of
-    `HITRAN.org <https://www.hitran.org/docs/definitions-and-units/>`_
+    `HITRAN.org <https://hitran.org/docs/definitions-and-units/>`_
     """
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest

@@ -167,7 +167,7 @@ def get_recent_hitemp_database_year(molecule):
         >>> "2024"
     """
 
-    response = urllib.request.urlopen("https://www.hitran.org/hitemp/")
+    response = urllib.request.urlopen("https://hitran.org/hitemp/")
 
     text = response.read().decode()
     text = text[
@@ -396,7 +396,7 @@ def store_credentials(email, password):
 
 def login_to_hitran(verbose=False):
     """Login to HITRAN using stored credentials from radis.json or prompt if not available"""
-    login_url = "https://www.hitran.org/login/"
+    login_url = "https://hitran.org/login/"
 
     import requests
 
@@ -458,7 +458,7 @@ def login_to_hitran(verbose=False):
 
         headers = {
             "Referer": login_url,
-            "Origin": "https://www.hitran.org",
+            "Origin": "https://hitran.org",
             # "Cookie": f"csrftoken={csrf}",
         }
 
@@ -524,7 +524,7 @@ def login_to_hitran(verbose=False):
         return session
     else:
         raise OSError(  # Status code guide: https://www.geeksforgeeks.org/computer-networks/http-status-codes-successful-responses/
-            f"HITRAN login failed.\nStatus_code of the login attempt: {login_response.status_code} \nA common mistake: please ensure you entered correct credentials from https://www.hitran.org/login/"
+            f"HITRAN login failed.\nStatus_code of the login attempt: {login_response.status_code} \nA common mistake: please ensure you entered correct credentials from https://hitran.org/login/"
         )
 
 
@@ -1055,7 +1055,7 @@ class HITEMPDatabaseManager(DatabaseManager):
         self.urlnames = None
         self.database = database
 
-    def fetch_url_Nlines_wmin_wmax(self, session=None, hitemp_url="https://www.hitran.org"):
+    def fetch_url_Nlines_wmin_wmax(self, session=None, hitemp_url="https://hitran.org"):
         r"""requires connexion"""
 
         molecule = self.molecule
@@ -1158,7 +1158,7 @@ class HITEMPDatabaseManager(DatabaseManager):
             Nlines = int(re.findall(r"(\d+)", lines[3].replace("&nbsp;", ""))[0])
             wmin = int(re.findall(r"(\d+)", lines[4].replace("&nbsp;", ""))[0])
             wmax = int(re.findall(r"(\d+)", lines[5].replace("&nbsp;", ""))[0])
-            url = "https://www.hitran.org" + re.findall(r'href="(.+?)"', lines[7])[0]
+            url = "https://hitran.org" + re.findall(r'href="(.+?)"', lines[7])[0]
 
             self.base_url, self.Nlines, self.wmin, self.wmax = url, Nlines, wmin, wmax
 
@@ -1189,7 +1189,7 @@ class HITEMPDatabaseManager(DatabaseManager):
                 response_string = file.read()
 
             inputfiles = re.findall(r'href="(\S+.zip)"', response_string)
-            base_url = "https://www.hitran.org"
+            base_url = "https://hitran.org"
             urlnames = [f"{base_url}{f}" for f in inputfiles]
 
         elif molecule in HITEMP_MOLECULES:
