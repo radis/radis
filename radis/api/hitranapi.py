@@ -107,6 +107,28 @@ columns_2004 = OrderedDict(
 # fmt: on
 
 
+def get_hitran_isotopes(molecule, max_isotope=9):
+    """Isotopes of ``molecule`` available in HITRAN, read from HAPI's
+    isotopologue table.
+
+    Isotopes above ``max_isotope`` (ex: 10-12 for CO2) are left out: they have
+    negligible abundance and were never downloaded.
+
+    Examples
+    --------
+    ::
+
+        get_hitran_isotopes("CO")
+        >>> [1, 2, 3, 4, 5, 6]
+    """
+    from hapi import ISO
+
+    from radis.db.classes import get_molecule_identifier
+
+    mol_id = get_molecule_identifier(molecule)
+    return [iso for (m, iso) in sorted(ISO) if m == mol_id and iso <= max_isotope]
+
+
 PARAMETER_GROUPS_HITRAN = {
     "par_line": "PARLIST_DOTPAR",
     "id": "PARLIST_ID",
@@ -1866,19 +1888,14 @@ class HITRANDatabaseManager(DatabaseManager):
         wmax = 1e10
 
         def download_all_hitran_isotopes(molecule, directory, extra_params):
-            """Blindly try to download all isotopes 1 - 9 for the given molecule
+            """Download all isotopes of the given molecule, one request each.
 
             .. warning::
-                this won't be able to download higher isotopes (ex : isotope 10-11-12 for CO2)
+                this won't download higher isotopes (ex : isotope 10-11-12 for CO2)
                 Neglected for the moment, they're irrelevant for most calculations anyway
-            .. Isotope Missing:
-                When an isotope is missing for a particular molecule then a key error `(molecule_id, isotope_id)
-                is raised.
-
             """
             directory = abspath(expanduser(directory))
             max_fetch_retries = 3
-            retry_delay = 1
             # create temp folder :
             from radis.misc.basics import make_folders
 
@@ -1902,90 +1919,87 @@ class HITRANDatabaseManager(DatabaseManager):
             data_file_list = []
             header_file_list = []
             uncertainty_params = ["ierr", "iref"] if add_HITRAN_uncertainty_code else []
+            if extra_params == "all":
+                fetch_kwargs = dict(
+                    ParameterGroups=[*PARAMETER_GROUPS_HITRAN],
+                    Parameters=uncertainty_params,
+                )
+            elif extra_params is None:
+                fetch_kwargs = dict(Parameters=uncertainty_params)
+            else:
+                raise ValueError("extra_params can only be 'all' or None ")
+
+            def is_complete(data_file):
+                """A complete HITRAN response ends on a record boundary, in both
+                the fixed-width ``.par`` and the comma-separated formats."""
+                with open(data_file, "rb") as f:
+                    f.seek(-1, os.SEEK_END)
+                    return f.read(1) == b"\n"
 
             for iso in tqdm(
-                range(1, 10), desc="Downloading isotopes", disable=not self.verbose
+                get_hitran_isotopes(molecule),
+                desc="Downloading isotopes",
+                disable=not self.verbose,
             ):
                 file = f"{molecule}_{iso}"
-                if exists(join(directory, file + ".data")):
-                    if cache == "regen":
-                        # remove without printing message
-                        os.remove(join(directory, file + ".data"))
-                    else:
+                data_file = join(directory, file + ".data")
+                if exists(data_file):
+                    if cache != "regen":  # else remove without printing message
                         from radis.misc.printer import printr
 
-                        printr(
-                            f"File already exist: {join(directory, file + '.data')}. Deleting it.`"
+                        printr(f"File already exist: {data_file}. Deleting it.`")
+                    os.remove(data_file)
+
+                retry_delay = 1
+                truncated = False
+                for attempt in range(max_fetch_retries):
+                    # Suppress HAPI's verbose output (65536 bytes written...)
+                    old_stdout = sys.stdout
+                    sys.stdout = io.StringIO()
+                    try:
+                        fetch(
+                            file,
+                            get_molecule_identifier(molecule),
+                            iso,
+                            wmin,
+                            wmax,
+                            **fetch_kwargs,
                         )
-                        os.remove(join(directory, file + ".data"))
-                try:
-                    for attempt in range(max_fetch_retries):
-                        # Suppress HAPI's verbose output (65536 bytes written...)
-                        old_stdout = sys.stdout
-                        sys.stdout = io.StringIO()
-                        try:
-                            if extra_params == "all":
-                                fetch(
-                                    file,
-                                    get_molecule_identifier(molecule),
-                                    iso,
-                                    wmin,
-                                    wmax,
-                                    ParameterGroups=[*PARAMETER_GROUPS_HITRAN],
-                                    Parameters=uncertainty_params,
-                                )
-                            elif extra_params is None:
-                                fetch(
-                                    file,
-                                    get_molecule_identifier(molecule),
-                                    iso,
-                                    wmin,
-                                    wmax,
-                                    Parameters=uncertainty_params,
-                                )
-                            else:
-                                raise ValueError(
-                                    "extra_params can only be 'all' or None "
-                                )
-                        finally:
-                            sys.stdout = old_stdout
+                    finally:
+                        sys.stdout = old_stdout
 
-                        ### We test if the download went well ###
-                        df = pd.DataFrame(LOCAL_TABLE_CACHE[file]["data"])
-                        if len(df["molec_id"]) != 0:
-                            break  # everything worked well
-                        else:
-                            warning_msg = (
-                                "HITRAN fetch failed. The database looks empty. "
-                                f"Waiting {retry_delay} seconds and trying again (attempt {attempt + 1}/{max_fetch_retries})."
-                            )
-                        if attempt == max_fetch_retries - 1:
-                            warning_msg += "\nLAST ATTEMPT"
-                        warnings.warn(warning_msg, UserWarning, stacklevel=2)
-                        time.sleep(retry_delay)
-                        retry_delay *= 2  # exponential
-                except (
-                    KeyError
-                ) as err:  # check for missing isotopes. If the isotope is missing, skip to next up to isotope 9
-                    list_pattern = ["(", ",", ")"]
-                    import re
-
-                    if (
-                        set(list_pattern).issubset(set(str(err)))
-                        and len(re.findall(r"\d", str(err))) >= 2
-                        and get_molecule_identifier(molecule)
-                        == int(
-                            re.findall(r"[\w']+", str(err))[0]
-                        )  # The regex are cryptic
-                    ):
-                        # Isotope not defined, go to next isotope
-                        continue
+                    ### We test if the download went well ###
+                    df = pd.DataFrame(LOCAL_TABLE_CACHE[file]["data"])
+                    truncated = False
+                    if len(df["molec_id"]) == 0:
+                        reason = "The database looks empty."
+                    elif not is_complete(data_file):
+                        # HAPI doesn't check that the transfer completed: a
+                        # truncated file still parses, silently giving an
+                        # incomplete line list
+                        truncated = True
+                        reason = "The response was cut short."
                     else:
-                        raise KeyError(f"Error: {str(err)}")
-                else:
-                    isotope_list.append(iso)
-                    data_file_list.append(file + ".data")
-                    header_file_list.append(file + ".header")
+                        break  # everything worked well
+                    warning_msg = (
+                        f"HITRAN fetch failed. {reason} "
+                        f"Waiting {retry_delay} seconds and trying again (attempt {attempt + 1}/{max_fetch_retries})."
+                    )
+                    if attempt == max_fetch_retries - 1:
+                        warning_msg += "\nLAST ATTEMPT"
+                    warnings.warn(warning_msg, UserWarning, stacklevel=2)
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # exponential
+
+                if truncated:  # never return a partial line list silently
+                    raise ConnectionError(
+                        f"Download of {file} from HITRAN was truncated every time "
+                        f"({max_fetch_retries} attempts). The line list would be incomplete."
+                    )
+
+                isotope_list.append(iso)
+                data_file_list.append(file + ".data")
+                header_file_list.append(file + ".header")
             return isotope_list, data_file_list, header_file_list
 
         molecule = self.molecule
