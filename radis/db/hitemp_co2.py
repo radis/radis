@@ -126,7 +126,7 @@ def partial_download_co2_chunk(
     offset = offsets[i_min]
     size = offsets[i_max + 1] - offsets[i_min]
 
-    file_url = "https://hitran.org/files/HITEMP/bzip2format/02_HITEMP2024.par.bz2"
+    file_url = "https://www.hitran.org/files/HITEMP/bzip2format/02_HITEMP2024.par.bz2"
     buf = get_bz2(session, file_url, offset=offset, size=size, verbose=verbose)
 
     # Perform block-aligned bzip2 decompression
