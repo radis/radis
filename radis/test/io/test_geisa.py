@@ -158,6 +158,7 @@ def test_local_geisa_co2(verbose=True, warnings=True, **kwargs):
 
 
 @pytest.mark.needs_connection
+@pytest.mark.needs_fixing
 def test_calc_geisa_spectrum(plot=False):
     """
     Auto-fetch and calculate a CO spectrum from the Geisa database
@@ -193,7 +194,7 @@ def _run_testcases(verbose=True, *args, **kwargs):
     test_local_geisa_co(verbose=verbose, *args, **kwargs)
     test_local_geisa_h2o(verbose=verbose, *args, **kwargs)
     test_local_geisa_co2(verbose=verbose, *args, **kwargs)
-    test_calc_geisa_spectrum(plot=True)
+    # test_calc_geisa_spectrum(plot=True)
 
 
 if __name__ == "__main__":

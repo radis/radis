@@ -413,7 +413,7 @@ class GEISADatabaseManager(DatabaseManager):
             return self.urlnames
 
         molecule = self.molecule
-        geisa_url = "https://aeris-geisa.ipsl.fr/geisa_files/2020/Lines/line_GEISA2020_asc_gs08_v1.0_"
+        geisa_url = "https://geisa.aeris-data.fr/geisa_files/2020/Lines/line_GEISA2020_asc_gs08_v1.0_"
 
         # Initialize progress printer for consistent output
         printer = DatabaseProgressPrinter(

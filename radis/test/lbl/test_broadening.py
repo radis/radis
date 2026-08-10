@@ -926,6 +926,7 @@ def test_noneq_continuum(plot=False, verbose=2, warnings=True, *args, **kwargs):
     assert res < 5.2e-6
 
 
+@pytest.mark.needs_connection
 def test_broadening_chunksize_eq(verbose=True, plot=False, *args, **kwargs):
     """
     Test equilibrium spectra with and without chunksize,
@@ -990,6 +991,7 @@ def test_broadening_chunksize_eq(verbose=True, plot=False, *args, **kwargs):
 
 
 # @pytest.mark.fast #not fast due to connection, Nicolas Minesi 08/04/2024
+@pytest.mark.needs_connection
 def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
     """Test collisional broadening by other species than air and self (resonant)
 
@@ -1055,6 +1057,7 @@ def test_non_air_diluent(verbose=True, plot=False, *args, **kwargs):
 
 
 # @pytest.mark.fast #not fast due to connection, Nicolas Minesi 08/04/2024
+@pytest.mark.needs_connection
 def test_diluents_molefraction(verbose=True, plot=False, *args, **kwargs):
     """
     Assert an error is raised when Molefraction (molecule + diluent) < 1 or > 1

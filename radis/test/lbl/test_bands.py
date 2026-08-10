@@ -22,15 +22,14 @@ Run only fast tests (i.e: tests that have a 'fast' label)
 """
 
 import matplotlib.pyplot as plt
-import pytest
 
 from radis import get_residual
 from radis.lbl import SpectrumFactory
 from radis.los import MergeSlabs
 from radis.misc.printer import printm
+from radis.test.utils import setup_test_line_databases
 
 
-@pytest.mark.needs_connection
 def test_plot_all_CO2_bandheads(verbose=True, plot=False, *args, **kwargs):
     """In this test we use the :meth:`~radis.lbl.bands.BandFactory.non_eq_bands`
     method to calculate separately all vibrational bands of CO2, and compare
@@ -43,6 +42,8 @@ def test_plot_all_CO2_bandheads(verbose=True, plot=False, *args, **kwargs):
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
+
+    setup_test_line_databases()  # add HITRAN-CO2-TEST in ~/radis.json if not there
 
     Tgas = 1000
 

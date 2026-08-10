@@ -641,6 +641,7 @@ def test_all_spectrum_using_wstep_auto(verbose=True, plot=False, *args, **kwargs
     assert sf._wstep == "auto"
 
 
+@pytest.mark.needs_connection
 @pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
 def test_vaex_and_pandas_spectrum():
     """Compares spectrum calculated using vaex and pandas are same.
@@ -724,6 +725,7 @@ def test_vaex_and_pandas_spectrum():
 
 
 # %%
+@pytest.mark.needs_connection
 @pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
 def test_vaex_and_pandas_spectrum_noneq():
     """Compares the Spectrum calculated under non-equilibrium conditions .
