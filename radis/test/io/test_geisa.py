@@ -158,6 +158,7 @@ def test_local_geisa_co2(verbose=True, warnings=True, **kwargs):
 
 
 @pytest.mark.needs_connection
+@pytest.mark.broken #See issue: https://github.com/radis/radis/issues/1036
 def test_calc_geisa_spectrum(plot=False):
     """
     Auto-fetch and calculate a CO spectrum from the Geisa database
