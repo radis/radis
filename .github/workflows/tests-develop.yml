@@ -43,9 +43,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install pytest specutils pytest-cov
           pip install -e .
-      - name: Review tests marked 'broken'
+      - name: Review tests marked broken
         run: |
-          @echo "The following tests are marked 'broken', please ensure they cannot be fixed at this time before merging."
+          python -c "print('The following tests are marked broken, please ensure they cannot be fixed at this time before merging.')"
           pytest --collect-only -q -m broken
       - name: Fast tests with pytest
         run: |
