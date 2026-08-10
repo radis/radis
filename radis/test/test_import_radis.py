@@ -60,3 +60,15 @@ def test_import_radis_public_symbols():
         "]))"
     )
     assert result == "True"
+
+
+@pytest.mark.fast
+def test_import_partition_functions_from_submodule():
+    result = _run_python(
+        "from radis.levels.partfunc import PartFunc_Dunham, PartFuncTIPS; "
+        "print(all(["
+        "isinstance(PartFunc_Dunham, type), "
+        "isinstance(PartFuncTIPS, type)"
+        "]))"
+    )
+    assert result == "True"
