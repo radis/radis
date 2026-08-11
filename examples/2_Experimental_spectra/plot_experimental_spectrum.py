@@ -12,7 +12,6 @@ See more loading and post-processing functions on the :ref:`Spectrum page <label
 
 """
 
-
 from radis.test.utils import getTestFile
 from radis.tools.database import load_spec
 

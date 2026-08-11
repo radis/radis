@@ -25,7 +25,8 @@ Install
 
     pip install radis
 
-For the development version from `GitHub <https://github.com/radis/radis>`_, refer to the :ref:`detailed installation procedure <label_install>`. For those preferring installation via ``conda`` from conda-forge (which may not always host the latest version), use: ::
+For performance purposes, we also recommend using Python 3.12 or earlier, as the latest versions of Python 3.13 and 3.14 are not yet fully supported by all dependencies.
+For the development version from `GitHub <https://github.com/radis/radis>`_, refer to the :ref:`detailed installation procedure <label_install>`. For those preferring installation via ``conda`` from conda-forge (which may not always host the latest RADIS version), use: ::
 
     conda install radis -c conda-forge
 
@@ -144,8 +145,8 @@ the work! See :ref:`How to cite? <label_cite>`
                    :target: ./License.md
                    :alt: License
 
-.. |badge_tests| image:: https://github.com/radis/radis/actions/workflows/tests.yml/badge.svg
-                  :target: https://github.com/radis/radis/actions/workflows/tests.yml
+.. |badge_tests| image:: https://github.com/radis/radis/actions/workflows/tests-develop.yml/badge.svg
+                  :target: https://github.com/radis/radis/actions/workflows/tests-develop.yml
                   :alt: Tests
 
 .. |badge_coverage| image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg
@@ -179,4 +180,3 @@ the work! See :ref:`How to cite? <label_cite>`
 .. |badge_slack| image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
                   :target: https://radis.github.io/slack-invite/
                   :alt: Slack
-

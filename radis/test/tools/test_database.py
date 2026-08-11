@@ -6,7 +6,6 @@ Test that :class:`~radis.tools.database.SpecDatabase` works
 
 """
 
-
 import os
 from os.path import dirname, exists
 

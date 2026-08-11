@@ -8,7 +8,6 @@ Remove a baseline from an experimental spectrum :
 
 """
 
-
 # Get a spectrum:
 from radis import load_spec
 from radis.test.utils import getTestFile

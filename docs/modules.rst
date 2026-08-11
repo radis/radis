@@ -15,15 +15,15 @@ Documentation of each module and each function in RADIS
 
 .. autosummary::
    :toctree: gen_modules/
-   :template: module.rst
 
-   api
-   db
-   io
-   lbl
-   levels
-   los
-   misc
-   phys
-   spectrum
-   tools
+   radis.api
+   radis.db
+   radis.gpu
+   radis.io
+   radis.lbl
+   radis.levels
+   radis.los
+   radis.misc
+   radis.phys
+   radis.spectrum
+   radis.tools

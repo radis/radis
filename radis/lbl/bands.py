@@ -51,6 +51,7 @@ import pandas as pd
 from numpy import exp, expm1
 
 from radis.api.hitranapi import HITRAN_CLASS1, get_molecule
+from radis.db.classes import HITRAN_CLASS3
 from radis.lbl.broadening import BroadenFactory
 from radis.lbl.labels import (
     vib_lvl_name_cdsd_pc,
@@ -1258,28 +1259,50 @@ def add_bands(df, dbformat, lvlformat, dataframe_type="pandas", verbose=True):
                 f"Cant deal with lvlformat={lvlformat} for {molecule}"
             )
 
-    elif molecule in HITRAN_CLASS1:  # includes 'CO'
+    elif (
+        molecule in HITRAN_CLASS1 or molecule in HITRAN_CLASS3
+    ):  # includes 'CO', 'OH', 'NO', 'ClO'
         # Note. TODO. Move that in loader.py (or somewhere consistent with
         # classes defined in cdsd.py / hitran.py)
 
         if lvlformat in ["radis"]:
 
             # ensures that vib_lvl_name functions wont crash
-            if dbformat not in ["hitran", "hitemp", "hitemp-radisdb"]:
+            if dbformat not in ["hitran", "hitemp", "hitemp-radisdb", "exomol-radisdb"]:
                 raise NotImplementedError(
                     f"lvlformat {lvlformat} not supported with dbformat {dbformat}"
                 )
 
             vib_lvl_name = vib_lvl_name_hitran_class1
 
-            if dataframe_type == "pandas":
-                df.loc[:, "viblvl_l"] = vib_lvl_name(df["vl"])
-                df.loc[:, "viblvl_u"] = vib_lvl_name(df["vu"])
-                df.loc[:, "band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
-            elif dataframe_type == "vaex":
-                df["viblvl_l"] = df.vl.apply(vib_lvl_name)
-                df["viblvl_u"] = df.vu.apply(vib_lvl_name)
-                df["band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
+            # Check if vibrational quantum numbers are available
+            if "vl" in df and "vu" in df:
+                if dataframe_type == "pandas":
+                    df.loc[:, "viblvl_l"] = vib_lvl_name(df["vl"])
+                    df.loc[:, "viblvl_u"] = vib_lvl_name(df["vu"])
+                    df.loc[:, "band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
+                elif dataframe_type == "vaex":
+                    df["viblvl_l"] = df.vl.apply(vib_lvl_name)
+                    df["viblvl_u"] = df.vu.apply(vib_lvl_name)
+                    df["band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
+            else:
+                # For databases without vibrational quantum numbers (e.g., ExoMol)
+                # Use energy-based identification for electronic states
+                if verbose >= 2:
+                    print(
+                        f"No vibrational quantum numbers (vl, vu) found for {molecule}"
+                    )
+                    print("Using generic band assignments based on energy ranges")
+
+                # Assign generic band name based on energy
+                if dataframe_type == "pandas":
+                    df.loc[:, "viblvl_l"] = "v?"
+                    df.loc[:, "viblvl_u"] = "v?"
+                    df.loc[:, "band"] = "v?->v?"
+                elif dataframe_type == "vaex":
+                    df["viblvl_l"] = "v?"
+                    df["viblvl_u"] = "v?"
+                    df["band"] = "v?->v?"
 
         else:
             raise NotImplementedError(

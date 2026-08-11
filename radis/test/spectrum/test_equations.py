@@ -3,7 +3,6 @@
 Test RTE and rescale equations from :py:meth:`radis.spectrum.spectrum.Spectrum.update`
 """
 
-
 # test_equations
 from numpy import allclose, exp, expm1
 

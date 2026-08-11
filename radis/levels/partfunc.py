@@ -78,7 +78,6 @@ from radis.db.classes import (
     get_molecule,
     get_molecule_identifier,
 )
-from radis.lbl.labels import vib_lvl_name_hitran_class1, vib_lvl_name_hitran_class5
 from radis.misc.basics import all_in
 from radis.misc.debug import printdbg
 from radis.misc.printer import printg
@@ -379,13 +378,14 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         self,
         Tvib,
         Trot,
+        Telec=None,
         overpopulation=None,
         vib_distribution="boltzmann",
         rot_distribution="boltzmann",
         returnQvibQrot=False,
         update_populations=False,
     ):
-        r"""Calculate Partition Function under non equilibrium (Tvib, Trot),
+        r"""Calculate Partition Function under non equilibrium (Tvib, Trot, Telec),
         with boltzmann/treanor distributions and overpopulations as specified
         by the user.
 
@@ -393,6 +393,9 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         ----------
         Tvib, Trot: float
             vibrational & rotational temperatures (K)
+        Telec: float, optional
+            electronic temperature (K). If provided and Te column exists in
+            energy levels, includes exp(-Te/Telec) in the partition function.
         overpopulation: dict, or ``None``
             dict of overpopulated levels: ``{'level':over_factor}``
         vib_distribution: ``'boltzmann'``, ``'treanor'``
@@ -469,6 +472,7 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             return self._noneq_full_summation(
                 Tvib=Tvib,
                 Trot=Trot,
+                Telec=Telec,
                 overpopulation=overpopulation,
                 vib_distribution=vib_distribution,
                 rot_distribution=rot_distribution,
@@ -589,13 +593,19 @@ class RovibParFuncCalculator(RovibPartitionFunction):
         self,
         Tvib,
         Trot,
+        Telec=None,
         overpopulation=None,
         vib_distribution="boltzmann",
         rot_distribution="boltzmann",
         returnQvibQrot=False,
         update_populations=False,
     ):
-        r"""Computes partition function by summing over all levels"""
+        r"""Computes partition function by summing over all levels.
+
+        For electronic spectra with multiple electronic states:
+        Q = Σ g × exp(-Te/kTelec) × exp(-Evib/kTvib) × exp(-Erot/kTrot)
+
+        If Telec is None, assumes all states have Te=0 (ground state only)."""
 
         # Get variables
         df = self.df
@@ -640,12 +650,24 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 # Add overpopulations (so they are taken into account in the partition function)
                 for viblvl, ov in overpopulation.items():
                     if ov != 1:
-                        df.loc[df.viblvl == viblvl, "nvibQvib"] *= ov
-                        # TODO: add warning if empty? I dont know how to do it without
-                        # an extra lookup though.
+                        mask = df.viblvl == viblvl
+                        if mask.sum() == 0:
+                            warn(
+                                f"Overpopulation set for level '{viblvl}' but no "
+                                f"rows match in the energy level database."
+                            )
+                        df.loc[mask, "nvibQvib"] *= ov
 
             # Calculate sum of levels
-            nQ = df.nvibQvib * df.nrotQrot
+            # Include electronic factor if Te column exists and Telec is provided
+            has_Te = "Te" in df.columns
+            use_Te = has_Te and Telec is not None
+
+            if use_Te:
+                df["nelecQelec"] = exp(-df.Te * hc_k / Telec)
+                nQ = df.nvibQvib * df.nrotQrot * df.nelecQelec
+            else:
+                nQ = df.nvibQvib * df.nrotQrot
             Q = nQ.sum()
 
             # Group by vibrational level, and get level-dependant
@@ -686,7 +708,9 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 df["nrot"] = df.nrotQrot / df.Qrot
 
             # Check that partition functions are valid
-            if __debug__:  # discarded if running with python -O
+            # Skip this check when using electronic states (use_Te) since the
+            # factorization Q = Qvib * Qrot only works for single electronic state
+            if __debug__ and not use_Te:  # discarded if running with python -O
                 # the calculation below is valid without Born-Oppenheimer, however
                 # it assumes Boltzmann distribution + no overpopulation
                 #                Qrovib = ((dfQrot.gvib*exp(-dfQrot.Evib*hc_k/Tvib))*dfQrot.Qrot).sum()
@@ -703,6 +727,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
             # Clean
             del df["nrotQrot"]
             del df["nvibQvib"]
+            if "nelecQelec" in df.columns:
+                del df["nelecQelec"]
 
             return Q, Qvib, dfQrot
 
@@ -711,10 +737,33 @@ class RovibParFuncCalculator(RovibPartitionFunction):
 
             g = gvib * grot
 
+            # Check if we have electronic energy (Te) and Telec is provided
+            has_Te = "Te" in df.columns
+            use_Te = has_Te and Telec is not None
+
             if vib_distribution == "boltzmann" and rot_distribution == "boltzmann":
-                nQ = g * exp(-hc_k * (df.Evib / Tvib + df.Erot / Trot))
+                if use_Te:
+                    # Full formula: Q = Σ g × exp(-Te/Telec - Evib/Tvib - Erot/Trot)
+                    nQ = g * exp(
+                        -hc_k * (df.Te / Telec + df.Evib / Tvib + df.Erot / Trot)
+                    )
+                else:
+                    # Original formula (no electronic states or Telec not provided)
+                    nQ = g * exp(-hc_k * (df.Evib / Tvib + df.Erot / Trot))
             elif vib_distribution == "treanor" and rot_distribution == "boltzmann":
-                nQ = g * exp(-hc_k * (df.Evib_h / Tvib + (df.Evib_a + df.Erot) / Trot))
+                if use_Te:
+                    nQ = g * exp(
+                        -hc_k
+                        * (
+                            df.Te / Telec
+                            + df.Evib_h / Tvib
+                            + (df.Evib_a + df.Erot) / Trot
+                        )
+                    )
+                else:
+                    nQ = g * exp(
+                        -hc_k * (df.Evib_h / Tvib + (df.Evib_a + df.Erot) / Trot)
+                    )
             else:
                 raise NotImplementedError
 
@@ -1632,6 +1681,11 @@ class PartFunc_Dunham(RovibParFuncCalculator):
                     )
             if molecule in HITRAN_CLASS1:
                 self.build_energy_levels_class1()
+            ## Added in #842 but not used (MinouHub)
+            # elif molecule in HITRAN_CLASS3:  # OH, NO, ClO (2Π states)
+            #     # Use CLASS1 method (diatomic Dunham/Herzberg)
+            #     # TODO: implement full 2Π treatment with spin-orbit and Lambda-doubling
+            #     self.build_energy_levels_class1()
             elif molecule in HITRAN_CLASS5:  # CO2
                 self.build_energy_levels_class5(
                     calc_Evib_per_mode=calc_Evib_per_mode,
@@ -1714,6 +1768,8 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             - ``Erot`` : rotational energy
             - ``viblvl`` : vibrational level name
         """
+
+        from radis.lbl.labels import vib_lvl_name_hitran_class1
 
         vib_lvl_name = vib_lvl_name_hitran_class1
 
@@ -1868,6 +1924,8 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             - ``Erot`` : rotational energy
             - ``viblvl`` : vibrational level name
         """
+
+        from radis.lbl.labels import vib_lvl_name_hitran_class5
 
         vib_lvl_name = vib_lvl_name_hitran_class5
 
@@ -2288,6 +2346,262 @@ class PartFunc_Dunham(RovibParFuncCalculator):
 
         M, I = ElecState.id, ElecState.iso
         return gi(M, I)
+
+
+class PartFuncExoMolStates(RovibParFuncCalculator):
+    """Calculate partition functions from ExoMol .states file.
+
+    This class reads energy levels from an ExoMol .states file and uses them
+    to calculate equilibrium and non-equilibrium partition functions.
+
+    Parameters
+    ----------
+    states_file: str
+        path to ExoMol .states file
+    molecule: str
+        molecule name
+    isotope: int
+        isotope number
+
+    Other Parameters
+    ----------------
+    use_cached: bool or str
+        if ``True``, use (and generate if doesn't exist) a ``.h5`` file.
+        If ``'regen'``, regenerate cache file. If ``'force'``, raise an error
+        if file doesn't exist. Default ``True``
+    verbose: bool
+        verbosity level
+    mode: str
+        'full summation' or 'tabulation'. Default 'full summation'.
+    """
+
+    def __init__(
+        self,
+        states_file,
+        molecule,
+        isotope,
+        state="X",
+        use_cached=True,
+        verbose=False,
+        mode="full summation",
+    ):
+        # Create a minimal ElectronicState object for compatibility
+        from radis.db.classes import ElectronicState
+
+        # Create minimal electronic state
+        # For ExoMol, we don't need spectroscopic constants since we read
+        # energies directly from .states file
+        elec_state = ElectronicState(
+            molecule_name=molecule,
+            isotope=isotope,
+            state=state,
+            term_symbol="",  # unknown for ExoMol
+            spectroscopic_constants={},  # Empty dict - we don't need them
+        )
+
+        # Initialize parent with electronic state
+        super(PartFuncExoMolStates, self).__init__(
+            elec_state, mode=mode, verbose=verbose
+        )
+
+        self.states_file = states_file
+        self.use_cached = use_cached
+
+        # Load energy levels from .states file
+        self._load_energy_levels()
+
+    def _load_energy_levels(self):
+        """Load energy levels from ExoMol .states file."""
+        from pathlib import Path
+
+        from radis.api.exomolapi import read_def, read_states
+
+        states_path = Path(self.states_file)
+        states_dir = states_path.parent
+
+        # Handle both .states and .states.bz2 paths
+        # Pattern: 16O-1H__MYTHOS.states or 16O-1H__MYTHOS.states.bz2 -> 16O-1H__MYTHOS.def
+        states_name = states_path.name
+        if states_name.endswith(".states.bz2"):
+            base_name = states_name[:-11]  # Remove '.states.bz2'
+            states_bz2 = states_path
+            states_uncompressed = states_dir / f"{base_name}.states"
+        elif states_name.endswith(".states"):
+            base_name = states_name[:-7]  # Remove '.states'
+            states_uncompressed = states_path
+            states_bz2 = states_dir / f"{base_name}.states.bz2"
+        else:
+            raise ValueError(f"Unexpected states file format: {states_path}")
+
+        def_file = states_dir / f"{base_name}.def"
+
+        if not def_file.exists():
+            raise FileNotFoundError(f"Definition file not found: {def_file}")
+
+        if self.verbose:
+            print(f"Loading ExoMol states from {self.states_file}")
+
+        # Read definition
+        dic_def = read_def(def_file)
+
+        # Try to read from .bz2 file to get quantum numbers
+        # If not available, fall back to decompressed file
+        if states_bz2.exists():
+            if self.verbose:
+                print("  Reading from .bz2 file to get quantum numbers")
+            df_states = read_states(
+                states_bz2,
+                dic_def,
+                engine="csv",
+                skip_optional_data=False,  # Get quantum numbers!
+            )
+        else:
+            if self.verbose:
+                print(
+                    "  Warning: .bz2 file not found, using cached file (no quantum numbers)"
+                )
+            df_states = read_states(
+                states_uncompressed, dic_def, engine="csv", skip_optional_data=True
+            )
+
+        # Fix column mapping for MoLLIST states files
+        # The .def file says quantum labels are [v, Es, F1/F2, e/f]
+        # But the actual states file has [e/f, v, F1/F2, Es]
+        if (
+            "v" in df_states.columns
+            and "Es" in df_states.columns
+            and "e/f" in df_states.columns
+        ):
+            v_sample = df_states["v"].iloc[0]
+            if isinstance(v_sample, str) and v_sample in ["e", "f"]:
+                if self.verbose:
+                    print("  Detected MoLLIST column mismatch - fixing column mapping")
+                # Columns are mislabeled, swap them
+                mislabeled_v = df_states["v"].values.copy()  # Actually e/f
+                mislabeled_Es = df_states["Es"].values.copy()  # Actually v
+                mislabeled_ef = df_states["e/f"].values.copy()  # Actually Es
+                df_states["e/f"] = mislabeled_v
+                df_states["v"] = mislabeled_Es
+                df_states["Es"] = mislabeled_ef
+
+        # Rename 'Es' to 'ElecState' for consistency (MoLLIST uses 'Es')
+        if "Es" in df_states.columns and "ElecState" not in df_states.columns:
+            df_states["ElecState"] = df_states["Es"]
+
+        # ExoMol states file gives total energy E and total degeneracy g
+        # For diatomics, we need to separate into Evib and Erot for non-eq calculations
+        #
+        # Strategy:
+        # 1. Group states by vibrational level v
+        # 2. Find minimum E for each v (that's E_vib + E_elec)
+        # 3. Calculate E_rot = E_total - Te - E_vib_for_that_v
+        # IMPORTANT: Must account for electronic states!
+
+        # Check if we have vibrational quantum number AND electronic state
+        has_v = "v" in df_states.columns
+        has_elec = "ElecState" in df_states.columns
+
+        if has_v and has_elec:
+            # CORRECT: Group by (ElecState, v) to get proper energy separation
+            # Each electronic state has its own Te and vibrational ladder
+
+            # Calculate Te for each electronic state (min energy at v=0)
+            Te_lookup = {}
+            Evib_lookup = {}  # (elec_state, v) -> Evib
+
+            for elec_state in df_states["ElecState"].unique():
+                df_elec = df_states[df_states["ElecState"] == elec_state]
+
+                # Te = minimum energy of v=0 for this electronic state
+                df_v0 = df_elec[df_elec["v"] == 0]
+                if len(df_v0) > 0:
+                    Te = df_v0["E"].min()
+                else:
+                    Te = df_elec["E"].min()
+                Te_lookup[elec_state] = Te
+
+                # Evib for each v in this electronic state
+                for v in df_elec["v"].unique():
+                    df_v = df_elec[df_elec["v"] == v]
+                    E_v_min = df_v["E"].min()
+                    Evib_lookup[(elec_state, int(v))] = E_v_min - Te
+
+            # Calculate Evib and Erot for each state
+            Evib_vals = np.zeros(len(df_states))
+            Erot_vals = np.zeros(len(df_states))
+            Te_vals = np.zeros(len(df_states))
+
+            for i, (elec, v, E) in enumerate(
+                zip(df_states["ElecState"], df_states["v"], df_states["E"])
+            ):
+                Te = Te_lookup.get(elec, 0.0)
+                Evib = Evib_lookup.get((elec, int(v)), 0.0)
+                Te_vals[i] = Te
+                Evib_vals[i] = Evib
+                Erot_vals[i] = E - Te - Evib
+
+            if self.verbose:
+                print(f"  Electronic states found: {list(Te_lookup.keys())}")
+                for elec, Te in Te_lookup.items():
+                    print(f"    {elec}: Te = {Te:.2f} cm⁻¹")
+
+            gvib_vals = np.ones(len(df_states))
+            grot_vals = df_states["g"].values
+
+        elif has_v:
+            # Fallback: no electronic state info, group by v only
+            # This was the old buggy behavior - kept for backwards compatibility
+            # but should issue a warning
+            if self.verbose:
+                print(
+                    "  Warning: No ElecState column - grouping by v only (may be inaccurate)"
+                )
+
+            Evib_lookup = df_states.groupby("v")["E"].min().to_dict()
+            Evib_vals = df_states["v"].map(Evib_lookup).values
+            Erot_vals = df_states["E"].values - Evib_vals
+            Te_vals = np.zeros(len(df_states))
+            gvib_vals = np.ones(len(df_states))
+            grot_vals = df_states["g"].values
+
+        else:
+            # Fallback: no quantum numbers available
+            if self.verbose:
+                print("  Warning: No vibrational quantum numbers - using E as Evib")
+            Evib_vals = df_states["E"].values
+            Erot_vals = np.zeros(len(df_states))
+            Te_vals = np.zeros(len(df_states))
+            gvib_vals = np.ones(len(df_states))
+            grot_vals = df_states["g"].values
+
+        self.df = pd.DataFrame(
+            {
+                "E": df_states["E"].values,
+                "Evib": Evib_vals,
+                "Erot": Erot_vals,
+                "g": df_states["g"].values,
+                "gvib": gvib_vals,
+                "grot": grot_vals,
+            }
+        )
+
+        # Store Te if calculated
+        if has_elec:
+            self.df["Te"] = Te_vals
+
+        # Store quantum numbers if available
+        if "v" in df_states.columns:
+            self.df["v"] = df_states["v"].values
+        if "J" in df_states.columns:
+            self.df["J"] = df_states["J"].values
+        if "ElecState" in df_states.columns:
+            self.df["ElecState"] = df_states["ElecState"].values
+
+        if self.verbose:
+            print(f"  Loaded {len(self.df)} energy levels")
+            print(
+                f"  Energy range: {self.df['E'].min():.2f} - {self.df['E'].max():.2f} cm⁻¹"
+            )
 
 
 # %% Test

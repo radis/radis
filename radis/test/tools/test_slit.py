@@ -18,7 +18,6 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 
 """
 
-
 from os.path import basename
 from warnings import catch_warnings, filterwarnings
 

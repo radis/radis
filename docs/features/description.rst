@@ -19,4 +19,3 @@ experiments. :ref:`Validation cases <label_dev_test>` against existing
 spectral codes and experimental results from various plasma sources are included [RADIS-2018]_.
 
 .. |CO2| replace:: CO\ :sub:`2`
-

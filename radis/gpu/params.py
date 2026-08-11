@@ -88,7 +88,6 @@ def init_Q(Q_intp_list):
 
 def set_L_params(init_h, iter_h, epsilon=1e-4):
 
-    global _L_param_data
     result = []
     for params in _L_param_data:
         A, B, X = params
@@ -106,7 +105,6 @@ def set_L_params(init_h, iter_h, epsilon=1e-4):
 
 
 def set_G_params(init_h, iter_h, epsilon=1e-4):
-    global _G_param_data
 
     log_2vMm_min, log_2vMm_max = _G_param_data
     log_wG_min = log_2vMm_min + iter_h.hlog_T
@@ -142,7 +140,6 @@ def set_pTQ(p, T, mole_fraction, iter_h, l=1.0, slit_FWHM=0.0):
     None.
 
     """
-    global _Q_intp_list
     iter_h.p = p  # bar
     iter_h.log_2p = np.log(2 * p)
     iter_h.hlog_T = 0.5 * np.log(T)

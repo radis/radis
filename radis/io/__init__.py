@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Parsers for various databases
-
-"""
+"""Parsers for various databases"""
 
 __all__ = [
     "fetch_hitemp",

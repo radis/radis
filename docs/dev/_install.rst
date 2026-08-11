@@ -34,5 +34,3 @@ from the Quick Start page. Then, you're all set.
 
 .. note::
     The command `pip install -e .` is different from `pip install radis --upgrade`. The former will install the latest version from the local folder, which may be more recent than the latest release on PyPI.
-
-

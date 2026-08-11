@@ -42,6 +42,7 @@ RADIS includes automatic rebuilding of Deprecated cache files + a global variabl
 to force regenerating them after a given version. See ``"OLDEST_COMPATIBLE_VERSION"``
 key in :py:attr:`radis.config`
 """
+
 # TODO: on use_cache functions, make a 'clean' / 'reset' option to delete / regenerate
 # cache files
 
@@ -118,6 +119,7 @@ KNOWN_DBFORMAT = [
     "hitemp-radisdb",
     "hdf5-radisdb",
     "geisa",
+    "exomol-radisdb",
 ]
 """list: Known formats for Line Databases:
 
@@ -175,6 +177,7 @@ drop_auto_columns_for_dbformat = {
     "hdf5-radisdb": [],
     "hitemp-radisdb": [],
     "geisa": [],
+    "exomol-radisdb": [],
 }
 """ dict: drop these columns if using ``drop_columns='auto'`` in load_databank
 Based on the value of ``dbformat=``, some of these columns won't be used.
@@ -513,7 +516,7 @@ class Parameters(ConditionDict):
         self.truncation = None  #: float: cutoff for half-width lineshape calculation (cm-1). Overwritten by SpectrumFactory
         self.neighbour_lines = None  #: float: extra range (cm-1) on each side of the spectrum to account for neighbouring lines. Overwritten by SpectrumFactory
         self.cutoff = None  #: float: linestrength cutoff (molecule/cm)
-        self.broadening_method = ""  #: str:``"voigt"``, ``"convolve"``, ``"fft"``
+        self.broadening_method = ""  #: str:``"voigt_poly"``, ``"convolve"``, ``"fft"``
         self.optimization = None  #: str: ``"simple"``, ``"min-RMS"``, ``None``
         self.db_use_cached = (
             None  #: bool: use (and generate) cache files for Line Database
@@ -819,7 +822,7 @@ class DatabankLoader(object):
         # TODO @dev : Refactor : turn it into a Dictionary? (easier to store as JSON Etc.)
 
         # Profiler
-        self.profiler = None
+        self.profiler = Profiler(self.verbose)
 
     def _reset_profiler(self, verbose):
         """Reset :py:class:`~radis.misc.profiler.Profiler`
@@ -827,8 +830,23 @@ class DatabankLoader(object):
         See Also
         --------
         :py:func:`radis.lbl.factory.SpectrumFactory.print_perf_profile"""
+        db_loading = None
+        if (
+            self.profiler is not None
+            and "spectrum_calculation" not in self.profiler.final
+        ):
+            db_loading = self.profiler.final.get("db_loading")
 
         self.profiler = Profiler(verbose)
+
+        if db_loading is not None:
+            self.profiler.final["db_loading"] = db_loading
+
+    def _db_loading_profiler_level(self):
+        """Return the profiler level to use for databank loading."""
+        if "spectrum_calculation" in self.profiler.initial:
+            return 2
+        return 1
 
     def _reset_references(self):
         """Reset :py:class:`~radis.tools.track_refs.RefTracker`"""
@@ -1029,7 +1047,7 @@ class DatabankLoader(object):
         database: str
             If fetching from HITRAN, ``'full'`` downloads the full database and registers it, ``'range'`` downloads only the lines in the range of the molecule.
             If fetching from HITEMP, Kurucz, or NIST, only ``'full'`` is available.
-            If fetching from ExoMol, use this parameter to choose which database to use. Keep ``'default'`` to use the recommended one.
+            If fetching from ExoMol, use this parameter to choose which database to use. Keep ``'default'`` to use the recommended one. If no database is recommended (e.g., for ``13C-16O``), you must explicitly provide one or a ``KeyError`` will be raised.
             Default is ``'full'``.
 
 
@@ -1082,6 +1100,8 @@ class DatabankLoader(object):
         # | Should store the waverange, molecule and isotopes in the cache file
         # | metadata to ensures that it is redownloaded if necessary.
         # | see implementation in load_databank.
+
+        self.profiler.start("db_loading", self._db_loading_profiler_level())
 
         # Check inputs
         compare_source = source.casefold()
@@ -1370,6 +1390,7 @@ class DatabankLoader(object):
             partition_function_exomol = {
                 molecule: {}
             }  # partition function tabulators for all isotopes
+            states_paths = {}  # ExoMol .states file paths for energy levels
             for iso in isotope_list:
                 df, local_path, Z_exomol = fetch_exomol(
                     molecule,
@@ -1392,6 +1413,21 @@ class DatabankLoader(object):
                     frames.append(df)
                 local_paths.append(local_path)
                 partition_function_exomol[molecule][iso] = Z_exomol
+
+                # Store .states file path for non-equilibrium calculations
+                from pathlib import Path
+
+                states_file = Path(local_path) / f"{Z_exomol.name}__{database}.states"
+                states_file_bz2 = (
+                    Path(local_path) / f"{Z_exomol.name}__{database}.states.bz2"
+                )
+                if states_file.exists():
+                    states_paths[iso] = str(states_file)
+                elif states_file_bz2.exists():
+                    # Use .bz2 file - PartFuncExoMolStates can read it directly
+                    states_paths[iso] = str(states_file_bz2)
+                elif self.verbose and load_energies:
+                    print(f"Warning: .states file not found at {states_file}")
 
             # Merge
             if frames == []:
@@ -1651,7 +1687,17 @@ class DatabankLoader(object):
         # are calculated ab initio from radis internal species database constants
         if load_energies and not self.input.isatom:
             try:
-                self._init_rovibrational_energies(levels, levelsfmt)
+                # For ExoMol, use .states file for energy levels
+                if compare_source == "exomol":
+                    if states_paths:
+                        self._init_rovibrational_energies(states_paths, "exomol")
+                    else:
+                        raise FileNotFoundError(
+                            f"Cannot load energies for ExoMol {molecule}: .states file not found. "
+                            + "Make sure the .states file is downloaded in the ExoMol database directory."
+                        )
+                else:
+                    self._init_rovibrational_energies(levels, levelsfmt)
             except KeyError as err:
                 print(err)
                 raise KeyError(
@@ -1661,6 +1707,8 @@ class DatabankLoader(object):
                     + "equilibrium spectra, try using 'load_energies=False' "
                     + "in fetch_databank"
                 )
+
+        self.profiler.stop("db_loading", "Loaded database")
 
         return
 
@@ -1780,6 +1828,8 @@ class DatabankLoader(object):
         ----------
         .. [1] `HAPI: The HITRAN Application Programming Interface <http://hitran.org/hapi>`_
         """
+        self.profiler.start("db_loading", self._db_loading_profiler_level())
+
         # %% Check inputs
         # ---------
 
@@ -1890,6 +1940,8 @@ class DatabankLoader(object):
         # are calculated ab initio from radis internal species database constants
         if load_energies and not self.input.isatom:
             self._init_rovibrational_energies(levels, levelsfmt)
+
+        self.profiler.stop("db_loading", "Loaded database")
 
         return
 
@@ -2250,9 +2302,9 @@ class DatabankLoader(object):
                 f"`pfsource` {pfsource} is not available for the species {species}. Try running `set_atomic_partition_functions` again with a different `pfsource`."
             )
         else:
-            self.params.parfuncpath = (
-                self.params.levelsfmt
-            ) = self.levelspath = None  # all these parameters are irrelevant for atoms
+            self.params.parfuncpath = self.params.levelsfmt = self.levelspath = (
+                None  # all these parameters are irrelevant for atoms
+            )
 
     def _init_rovibrational_energies(self, levels, levelsfmt):
         """Initializes non equilibrium partition (which contain rovibrational
@@ -3078,6 +3130,21 @@ class DatabankLoader(object):
             )
             # note: use 'levels' (useless here) to specify calculations options
             # for the abinitio calculation ? Like Jmax, etc.
+
+        # read energy levels from ExoMol .states file
+        elif levelsfmt == "exomol":
+            from radis.levels.partfunc import PartFuncExoMolStates
+
+            self.reftracker.add(doi["ExoMol-2020"], "rovibrational energies")
+            parsum = PartFuncExoMolStates(
+                states_file=levels,
+                molecule=self.input.species,
+                isotope=isotope,
+                state=self.input.state,
+                use_cached=self.params.lvl_use_cached,
+                verbose=self.verbose,
+                mode=parsum_mode,
+            )
 
         else:
             raise ValueError(f"Unknown format for energy levels : {levelsfmt}")

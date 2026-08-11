@@ -88,11 +88,9 @@ from radis.spectrum.utils import (
     make_up_unit,
     print_conditions,
 )
-from radis.tools.track_ref import RefTracker
+
 
 # %% Spectrum class to hold results
-
-
 def _is_running_in_notebook():
     """Check if the code is running in a Jupyter Notebook."""
     try:
@@ -374,8 +372,6 @@ class Spectrum(object):
         check_wavespace=True,
         **kwargs,
     ):
-        # TODO: add help on creating a Spectrum from a dictionary
-
         # Check inputs
         # ---------------
         # ... Replace None attributes with dictionaries
@@ -560,7 +556,8 @@ class Spectrum(object):
         self.file = None  # used to store filename when loaded from a file
         self.profiler = None
 
-        # Add references
+        from radis.tools.track_ref import RefTracker
+
         self.references = RefTracker(**references)
         if not doi["RADIS-2018"] in self.references:
             self.references.add(
@@ -1293,11 +1290,17 @@ class Spectrum(object):
                 wunit = self.c["default_output_unit"]
             else:
                 wunit = self.get_waveunit()
+        # Handle explicit nm_air before cast_waveunit collapses it to "nm"
+        force_air = wunit in ("nm_air",)
         wunit = cast_waveunit(wunit)
         if wunit == "cm-1":
             w = self.get_wavenumber(copy=copy)
         elif wunit == "nm":
-            w = self.get_wavelength(medium="air", copy=copy)
+            if force_air:
+                medium = "air"
+            else:
+                medium = self.conditions.get("medium", "air")
+            w = self.get_wavelength(medium=medium, copy=copy)
         elif wunit == "nm_vac":
             w = self.get_wavelength(medium="vacuum", copy=copy)
         else:
@@ -2298,26 +2301,35 @@ class Spectrum(object):
             ax.legend()
         fix_style()
 
-        from radis.phys.convert import cm2nm, div_safe, nm2cm
+        from radis.phys.convert import cm2nm, cm2nm_air, div_safe, nm2cm, nm_air2cm
 
         if ax.child_axes != []:
             pass
-        elif "cm⁻¹" in ylabel:
+        elif wunit == "cm-1":
             secx = ax.secondary_xaxis(
                 "top", functions=(div_safe(cm2nm), div_safe(nm2cm))
             )
             secx.set_xlabel("Wavelength (nm)")
-        elif "nm" in ylabel:
-            if wunit == "nm" or wunit == "nm_air":
+        elif wunit == "nm":
+            medium = self.conditions.get("medium", "air")
+            if medium == "vacuum":
                 secx = ax.secondary_xaxis(
                     "top", functions=(div_safe(nm2cm), div_safe(cm2nm))
                 )
             else:
-                from radis.phys.convert import cm2nm_air, nm_air2cm
-
                 secx = ax.secondary_xaxis(
                     "top", functions=(div_safe(nm_air2cm), div_safe(cm2nm_air))
                 )
+            secx.set_xlabel("wavenumber (cm⁻¹)")
+        elif wunit == "nm_air":
+            secx = ax.secondary_xaxis(
+                "top", functions=(div_safe(nm_air2cm), div_safe(cm2nm_air))
+            )
+            secx.set_xlabel("wavenumber (cm⁻¹)")
+        elif wunit == "nm_vac":
+            secx = ax.secondary_xaxis(
+                "top", functions=(div_safe(nm2cm), div_safe(cm2nm))
+            )
             secx.set_xlabel("wavenumber (cm⁻¹)")
 
         # Add plotting tools
@@ -3723,94 +3735,104 @@ class Spectrum(object):
         *args,
         **kwargs,
     ):
-        r"""Plot Line Survey (all linestrengths used for calculation) Output in
-            Plotly (html)
+        r"""Plot line survey (all linestrengths used for calculation).
+
+        Output in Plotly (HTML).
 
         Parameters
         ----------
-        overlay: tuple (w, I, [name], [units]), or list or tuples
-            plot (w, I) on a secondary axis. Useful to compare linestrength with
-            calculated / measured data::
+        overlay: tuple (w, I, [name], [units]), or list of tuples
+            Plot ``(w, I)`` on a secondary axis. Useful to compare linestrength
+            with calculated / measured data::
 
                 LineSurvey(overlay='abscoeff')
         wunit: ``'nm'``, ``'cm-1'``
-            wavelength / wavenumber units
+            Wavelength / wavenumber units.
         Iunit: ``'hitran'``, ``'splot'``
             Linestrength output units:
 
             - ``'hitran'``: (cm-1/(molecule/cm-2))
             - ``'splot'`` : (cm-1/atm)   (Spectraplot units [2]_)
 
-            Note: if not None, cutoff criteria is applied in this unit.
-            Not used if plot is not 'S'
+            Note: if not ``None``, the cutoff criteria is applied in this unit.
+            Not used if ``plot`` is not ``'S'``.
         medium: ``'air'``, ``'vacuum'``
-            show wavelength either in air or vacuum. Default ``'air'``
+            Show wavelength either in air or vacuum. Default ``'air'``.
         plot: str
-            what to plot. Default ``'S'`` (scaled line intensity). But it can be
-            any key in the lines, such as population (``'nu'``), or Einstein coefficient (``'A'``)
+            What to plot. Default ``'S'`` (scaled linestrength), but it can be
+            any key in the lines, such as population (``'nu'``) or Einstein
+            coefficient (``'A'``).
         lineinfo: list, or ``'all'``
-            extra line information to plot. Should be a column name in the databank
-            (s.lines). For instance: ``'int'``, ``'selbrd'``, etc... Default [``'int'``]
+            Extra line information to plot. Should be a column name in the
+            databank (``s.lines``). For instance: ``'int'``, ``'selbrd'``, etc.
+            Default is [``'int'``, ``'A'``, ``'El'``].
 
         Other Parameters
         ----------------
         writefile: str
-            if not ``None``, a valid filename to save the plot under .html format.
-            If ``None``, use the ``fig`` object returned to show the plot.
+            If not ``None``, a valid filename to save the plot in ``.html``
+            format. If ``None``, use the returned ``fig`` object to display
+            the plot.
         yscale: ``'log'``, ``'linear'``
-            Default ``'log'``
+            Default ``'log'``.
         barwidth: float or str
-            if float, width of bars, in ``wunit``, as a fraction of full-range; i.e. ::
+            If float, width of bars in ``wunit`` as a fraction of full range,
+            i.e.::
 
                 barwidth=0.01
 
-            makes bars span 1% of the full range.
-            if ``str``, uses the column as width. Example ::
+            Makes bars span 1% of the full range.
+            If ``str``, uses the column as width. Example::
 
                 barwidth = 'hwhm_voigt'
 
-            Returns
-            -------
-            fig: a Plotly figure.
-                If using a Jupyter Notebook, the plot will appear. Else, use ``writefile``
-                to export to an html file.
+        Returns
+        -------
+        fig: plotly.graph_objects.Figure
+            If using a Jupyter notebook, the plot will appear. Otherwise, use
+            ``writefile`` to export to an HTML file.
 
-            Plot in Plotly. See Output in [1]_
-
-
-            Examples
-            --------
-            An example using the :class:`~radis.lbl.factory.SpectrumFactory` to generate a spectrum::
-
-                from radis import SpectrumFactory
-                sf = SpectrumFactory(
-                                     wavenum_min=2380,
-                                     wavenum_max=2400,
-                                     mole_fraction=400e-6,
-                                     path_length=100,  # cm
-                                     isotope=[1],
-                                     export_lines=True,    # required for LineSurvey!
-                                     db_use_cached=True)
-                sf.load_databank('HITRAN-CO2-TEST')
-                s = sf.eq_spectrum(Tgas=1500)
-                s.apply_slit(0.5)
-                s.line_survey(overlay='radiance_noslit', barwidth=0.01, lineinfo="all")  # or barwidth='hwhm_voigt'
-
-            See the output in :ref:`Examples <label_examples>`
-
-            .. minigallery:: radis.spectrum.spectrum.Spectrum.line_survey
-
-            References
-            ----------
-            .. [1] `RADIS Online Documentation (LineSurvey) <https://radis.readthedocs.io/en/latest/tools/line_survey.html>`__
-
-            .. [2] `SpectraPlot <http://www.spectraplot.com/survey>`__
+        Plot in Plotly.
 
 
-            See Also
-            --------
-            :func:`~radis.tools.line_survey.LineSurvey`,
-            :ref:`the Spectrum page <label_spectrum>`
+        Examples
+        --------
+        An example using the :class:`~radis.lbl.factory.SpectrumFactory` to
+        generate a spectrum::
+
+            from radis import SpectrumFactory
+
+            sf = SpectrumFactory(
+                wavenum_min=2380,
+                wavenum_max=2400,
+                mole_fraction=400e-6,
+                path_length=100,  # cm
+                isotope=[1],
+                export_lines=True,  # required for LineSurvey!
+                db_use_cached=True,
+            )
+            sf.load_databank("HITRAN-CO2-TEST")
+            s = sf.eq_spectrum(Tgas=1500)
+            s.apply_slit(0.5)
+            s.line_survey(
+                overlay="radiance_noslit", barwidth=0.01, lineinfo="all"
+            )  # or barwidth='hwhm_voigt'
+
+        See the output in [1]_.
+
+        .. minigallery:: radis.spectrum.spectrum.Spectrum.line_survey
+
+        References
+        ----------
+        .. [1] `RADIS Online Documentation (LineSurvey) <https://radis.readthedocs.io/en/latest/tools/line_survey.html>`__
+
+        .. [2] `SpectraPlot <http://www.spectraplot.com/survey>`__
+
+
+        See Also
+        --------
+        :func:`~radis.tools.line_survey.LineSurvey`,
+        :ref:`the Spectrum page <label_spectrum>`
         """
 
         from radis.tools.line_survey import LineSurvey
@@ -3830,7 +3852,7 @@ class Spectrum(object):
 
             else:  # Or use a given tuple or arrays
                 try:
-                    (w, I) = overlay
+                    w, I = overlay
                 except (TypeError, ValueError):
                     raise ValueError(
                         "Overlay has to be string, or (w,I) tuple of " + "arrays"
@@ -3989,7 +4011,7 @@ class Spectrum(object):
                    molecule             CO
                    overpopulation       None
                    path_length          1 cm
-                   pressure_mbar        1013.25 mbar
+                   pressure             1.01325 bar
                    rot_distribution     boltzmann
                    self_absorption      True
                    state                X
@@ -4002,7 +4024,7 @@ class Spectrum(object):
                    NwG                  3
                    NwL                  5
                    Tref                 296 K
-                   broadening_method    voigt
+                   broadening_method    voigt_poly
                    cutoff               1e-27 cm-1/(#.cm-2)
                    dbformat             hitran
                    dbpath               C:\Users\erwan\.radisdb\hitran\CO.hdf5
@@ -5365,6 +5387,8 @@ class Spectrum(object):
                 "You first need to register the dictionary of bibliographic references. Set `s.references= {'doi':'use in the calculation'}` "
             )
 
+        from radis.tools.track_ref import RefTracker
+
         if not isinstance(self.references, RefTracker):
             self.references = RefTracker(**self.references)
 
@@ -6587,9 +6611,7 @@ def _cut_slices(w_spec_nm, w_slit_nm, slit_dispersion, slit_dispersion_threshold
         res = root_scalar(
             lambda w: slit_dispersion(w) - slit_disp_target, bracket=[w_start, w_end]
         )
-        assert (
-            res.converged
-        ), "Did not converged, something went wrong... +\
+        assert res.converged, "Did not converged, something went wrong... +\
         Are you sure the slit dispersion function is monotone?"
         w_next = res.root
         w_list_slices.append(w_next)

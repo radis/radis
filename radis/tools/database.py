@@ -661,25 +661,20 @@ def _fix_format(file, sload):
                 f"Spectrum 'conditions' dict should at least have a 'waveunit' key. Got: {list(sload['conditions'].keys())}"
             ) from err
 
-    # propagation medium removed in 0.9.22, replaced with 'nm' and 'nm_vac' in
-    # waveunit directly
-    if "medium" in sload["conditions"]:
+    # propagation medium was removed in 0.9.22 (replaced with 'nm' and 'nm_vac'
+    # in waveunit) but reintroduced in PR #982 (issue #707) as a computation
+    # medium stored in conditions. Only treat as the pre-0.9.22 deprecated
+    # structure when waveunit == 'nm' (old files encoded the medium there).
+    if "medium" in sload["conditions"] and sload["conditions"].get("waveunit") == "nm":
         printr(
             f"File {basename(file)} has a deprecated structure (key medium removed in 0.9.22). Fixing this time, but regenerate database ASAP."
         )  # , DeprecationWarning)
-        # Fix: rewrite waveunit
-        assert "waveunit" in sload["conditions"]
-        if sload["conditions"]["waveunit"] == "cm-1":
-            pass  # does not change anything, no need to report
-        else:  # wavelength is in air or vacuum.
-            assert sload["conditions"]["waveunit"] == "nm"
-            if sload["conditions"]["medium"] == "air":
-                sload["conditions"]["waveunit"] = "nm"
-            elif sload["conditions"]["medium"] == "vacuum":
-                sload["conditions"]["waveunit"] = "nm_vac"
-            else:
-                raise ValueError(sload["conditions"]["medium"])
-        # fix: delete medium key
+        if sload["conditions"]["medium"] == "air":
+            sload["conditions"]["waveunit"] = "nm"
+        elif sload["conditions"]["medium"] == "vacuum":
+            sload["conditions"]["waveunit"] = "nm_vac"
+        else:
+            raise ValueError(sload["conditions"]["medium"])
         del sload["conditions"]["medium"]
         fixed = True
 
@@ -710,7 +705,7 @@ def _fix_format(file, sload):
         sload["conditions"]["pressure"] = (
             sload["conditions"].pop("air_pressure_mbar") * 1e-3
         )
-        sload["conditions"]["air_pressure"] = "bar"
+        sload["cond_units"]["pressure"] = "bar"
         fixed = True
 
     if "isotope" in sload["conditions"]:
@@ -2370,9 +2365,9 @@ class SpecDatabase(SpecList):
         # case, use s_left.take(var)   with 'var' given in parameters of interpolate()
         # Or tell user to generate a subdatabase with only one spectral array
 
-        s_interp.conditions[
-            "interpolated_from"
-        ] = f"{spectra[index]}, {spectra[index+1]}"
+        s_interp.conditions["interpolated_from"] = (
+            f"{spectra[index]}, {spectra[index+1]}"
+        )
 
         return s_interp
 

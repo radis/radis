@@ -20,6 +20,11 @@ GitHub repository
 .. include:: _github.rst
 
 
+AI Policy
+=========
+.. include:: _ai_policy.rst
+
+
 Dependency Management
 ===================
 
