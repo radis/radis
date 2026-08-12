@@ -81,6 +81,7 @@ def test_sparse_with_optimization_raises_error():
 
     import pytest
 
+    init_config = radis.config["MULTI_SPARSE_GRID"]
     radis.config["MULTI_SPARSE_GRID"] = True
 
     for optim in ["simple", "min-RMS"]:
@@ -97,6 +98,8 @@ def test_sparse_with_optimization_raises_error():
                 optimization=optim,
             )
             sf.fetch_databank("hitran")  # to avoid flake8 error in linting
+
+    radis.config["MULTI_SPARSE_GRID"] = init_config
 
 
 if __name__ == "__main__":
