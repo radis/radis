@@ -517,6 +517,7 @@ def numpy_add_at(LDM, k, l, m, I):
 # else:
 #     add_at = rcx.add_at
 
+
 # %%
 # Functions for legacy aggregation of lineshapes over an array
 def numpy_aggregate_at_indices(
@@ -576,6 +577,7 @@ if (
     False
 ):  # EP 15/08 : as of manual benchmark, Cython version is 10x slower than numba version. Deactivated
     import radis_cython_extensions as rcx
+
     # TODO : remove fully?
 
     aggregate_at_indices = rcx.aggregate_at_indices_64
@@ -672,7 +674,7 @@ if (
     False
 ):  # EP 15/08 : as of manual benchmark, Cython version is 10x slower than numba version. Deactivated
     import radis_cython_extensions as rcx
-    
+
     # TODO: remove this part since it's unused?
     aggregate_at_indices = rcx.aggregate_at_indices_hollow_64
 # aggregate_at_indices_hollow = numpy_aggregate_at_indices_hollow

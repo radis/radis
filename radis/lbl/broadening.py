@@ -3037,11 +3037,11 @@ class BroadenFactory(BaseFactory):
                     )
                     # usually the bottleneck :
                     if wavenumber_group is None:
-                        (wavenumber, abscoeff) = self._apply_lineshape(
+                        wavenumber, abscoeff = self._apply_lineshape(
                             df.S.values, line_profile, df.shiftwav.values
                         )
                     else:
-                        (wavenumber, abscoeff) = self._apply_lineshape_multigrid(
+                        wavenumber, abscoeff = self._apply_lineshape_multigrid(
                             df.S.values,
                             line_profile,
                             df.shiftwav.values,
@@ -3126,11 +3126,11 @@ class BroadenFactory(BaseFactory):
                         )
                         # usually the bottleneck :
                         if wavenumber_group is None:
-                            (wavenumber, absorption) = self._apply_lineshape(
+                            wavenumber, absorption = self._apply_lineshape(
                                 dg.S.values, line_profile, dg.shiftwav.values
                             )
                         else:
-                            (wavenumber, absorption) = self._apply_lineshape_multigrid(
+                            wavenumber, absorption = self._apply_lineshape_multigrid(
                                 dg.S.values,
                                 line_profile,
                                 dg.shiftwav.values,
@@ -3164,7 +3164,7 @@ class BroadenFactory(BaseFactory):
                         ) = self._calc_lineshape_LDM(
                             dg, wavenumber_group=wavenumber_group
                         )
-                        (wavenumber, absorption) = self._apply_lineshape_LDM(
+                        wavenumber, absorption = self._apply_lineshape_LDM(
                             dg.S.values,
                             line_profile_LDM,
                             dg.shiftwav.values,
@@ -3307,20 +3307,20 @@ class BroadenFactory(BaseFactory):
                     )
                     # usually the bottleneck :
                     if wavenumber_group is None:
-                        (wavenumber, abscoeff) = self._apply_lineshape(
+                        wavenumber, abscoeff = self._apply_lineshape(
                             df.S.values, line_profile, df.shiftwav.values
                         )
-                        (_, emisscoeff) = self._apply_lineshape(
+                        _, emisscoeff = self._apply_lineshape(
                             df.Ei.values, line_profile, df.shiftwav.values
                         )
                     else:
-                        (wavenumber, abscoeff) = self._apply_lineshape_multigrid(
+                        wavenumber, abscoeff = self._apply_lineshape_multigrid(
                             df.S.values,
                             line_profile,
                             df.shiftwav.values,
                             wavenumber_group,
                         )
-                        (_, emisscoeff) = self._apply_lineshape_multigrid(
+                        _, emisscoeff = self._apply_lineshape_multigrid(
                             df.Ei.values,
                             line_profile,
                             df.shiftwav.values,
@@ -3342,20 +3342,20 @@ class BroadenFactory(BaseFactory):
                     for i, (_, dg) in enumerate(df.groupby(arange(len(df)) % N)):
                         line_profile = self._calc_lineshape(dg, wavenumber_group)
                         if wavenumber_group is None:
-                            (wavenumber, absorption) = self._apply_lineshape(
+                            wavenumber, absorption = self._apply_lineshape(
                                 dg.S.values, line_profile, dg.shiftwav.values
                             )
-                            (_, emission) = self._apply_lineshape(
+                            _, emission = self._apply_lineshape(
                                 dg.Ei.values, line_profile, dg.shiftwav.values
                             )
                         else:
-                            (wavenumber, absorption) = self._apply_lineshape_multigrid(
+                            wavenumber, absorption = self._apply_lineshape_multigrid(
                                 dg.S.values,
                                 line_profile,
                                 dg.shiftwav.values,
                                 wavenumber_group,
                             )
-                            (_, emission) = self._apply_lineshape_multigrid(
+                            _, emission = self._apply_lineshape_multigrid(
                                 dg.Ei.values,
                                 line_profile,
                                 dg.shiftwav.values,
@@ -3742,7 +3742,7 @@ class BroadenFactory(BaseFactory):
             )
 
         if not self._multisparsegrid:
-            (wavenumber, abscoeff) = self._broaden_lines(df)
+            wavenumber, abscoeff = self._broaden_lines(df)
         elif (
             self.params.optimization in ["simple", "min-RMS"]
             and self.params.sparse_ldm == True
@@ -3756,7 +3756,7 @@ class BroadenFactory(BaseFactory):
             for grid_number_j, grid_ranges in enumerate(self._ix_ranges):
                 # loop over all grid-ranges:
                 # Note : 1st grid is the most resolved, last grid is the coarsest
-                (wavenumber_j, abscoeff_j) = self._broaden_lines(
+                wavenumber_j, abscoeff_j = self._broaden_lines(
                     df,  # all lines appear in every grid
                     (grid_number_j, "all"),
                 )
@@ -3785,7 +3785,7 @@ class BroadenFactory(BaseFactory):
                 wavenumber_j = []
                 abscoeff_j = []
                 for wavenumber_group_i, lines_range_i in enumerate(grid_ranges):
-                    (wavenumber_i, abscoeff_i) = self._broaden_lines(
+                    wavenumber_i, abscoeff_i = self._broaden_lines(
                         df.iloc[lines_range_i[0] : lines_range_i[-1] + 1],
                         (grid_number_j, wavenumber_group_i),
                     )
@@ -3858,7 +3858,7 @@ class BroadenFactory(BaseFactory):
             wavenumber, abscoeff, emisscoeff = [], [], []
             assert len(self._ix_ranges) > 0
             for wavenumber_group_i, lines_range_i in enumerate(self._ix_ranges):
-                (wavenumber_i, abscoeff_i, emisscoeff_i) = self._broaden_lines_noneq(
+                wavenumber_i, abscoeff_i, emisscoeff_i = self._broaden_lines_noneq(
                     df=df.iloc[lines_range_i[0] : lines_range_i[-1]],
                     wavenumber_group=wavenumber_group_i,
                 )
@@ -3871,7 +3871,7 @@ class BroadenFactory(BaseFactory):
                 np.hstack(emisscoeff),
             )
         else:
-            (wavenumber, abscoeff, emisscoeff) = self._broaden_lines_noneq(
+            wavenumber, abscoeff, emisscoeff = self._broaden_lines_noneq(
                 df, wavenumber_group=None
             )
 
