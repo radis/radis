@@ -2155,12 +2155,9 @@ class Spectrum(object):
         var: variable (`absorbance`, `transmittance`, `transmittance_noslit`, `xsection`, etc.)
             For full list see :py:meth:`~radis.spectrum.spectrum.Spectrum.get_vars()`.
             If ``None``, plot the first thing in the Spectrum. Default ``None``.
-        wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``, or tuple of these
+        wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``
             wavelength air, wavenumber, or wavelength vacuum. If ``'default'``,
             Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit` is used.
-            To use multiple units add two::
-
-                wunit=["nm", "cm-1"]  # will add a secondary axis in `cm-1`
         Iunit: unit for variable
             if `default`, default unit for quantity `var` is used.
             for radiance, one can use per wavelength (~ `W/m2/sr/nm`) or
@@ -2219,12 +2216,6 @@ class Spectrum(object):
         import matplotlib.pyplot as plt
 
         from radis.misc.plot import fix_style, set_style
-
-        # Get variable
-        if isinstance(wunit, list) or isinstance(wunit, tuple):
-            wunit, wunit_2nd_axis = wunit
-        else:
-            wunit_2nd_axis = None
 
         x, y, wunit, Iunit = self.get(
             var, wunit=wunit, Iunit=Iunit, return_units="as_str"
