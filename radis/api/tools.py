@@ -59,7 +59,7 @@ def parse_hitran_file(fname, columns, count=-1, output="pandas", molecule=None):
     # line return characters are not converted when read from .egg files). Here
     # we read the first line and infer the line return character for it
     data = _read_hitran_file(
-        fname, columns, count=1, linereturnformat="a2"
+        fname, columns, count=1, linereturnformat="S2"
     )  # 'a2' allocates space to get \n or \n\r linereturn formats
     linereturnformat = _get_linereturnformat(data, columns, fname)
 
@@ -97,9 +97,9 @@ def _get_linereturnformat(data, columns, fname=""):
 
     linereturn = to_str(data[0][-1])
     if to_str("\r\n") in linereturn:
-        linereturnformat = "a2"
+        linereturnformat = "S2"
     elif to_str("\n") in linereturn or to_str("\r") in linereturn:
-        linereturnformat = "a1"
+        linereturnformat = "S1"
     else:
         raise ValueError(
             f"Unknown Line return format: {linereturn}. Check that your file {fname} has the HITRAN format. First line : {data[0]}"

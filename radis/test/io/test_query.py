@@ -245,5 +245,5 @@ def _run_testcases(verbose=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    test_fetch_hitran()
+    test_calc_hitran_spectrum()
     # print("test_query.py: ", _run_testcases(verbose=True))
