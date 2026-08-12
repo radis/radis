@@ -37,7 +37,7 @@ from math import ceil
 
 import numba
 import numpy as np
-from numba import bool_, float64, int32, int64
+from numba import bool_  # , float64, int32, int64
 from numpy import hstack
 
 # Normalize
@@ -943,12 +943,14 @@ def get_overlapping_ranges(wav_positions, half_width):
     return np.vstack((i_start, i_end)).T
 
 
-@numba.njit(
-    numba.types.Tuple((int64[:, :], float64[:]))(
-        int32[:], float64[:], float64[:], float64[:], int64, int64
-    ),
-    cache=True,
-)
+# @numba.njit(
+#     numba.types.Tuple((int64[:, :], float64[:]))(
+#         int32[:], float64[:], float64[:], float64[:], int64, int64
+#     ),
+#     cache=True,
+# )
+# Let numba decide the type of arrays to avoid crashing (happened with depedencies changing from Python 3.12 to 3.13)
+@numba.njit(cache=True)
 def sparse_add_at(ki0, Iv0, Iv1, weight, max_range, truncation_pts):
     """Returns (start, stop) of non-zero ranges, and intensity ``I`` (length
     ``truncation_pts``) for all line intensities ``Iv0`` and ``Iv1`` at position ``ki0``
