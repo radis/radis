@@ -522,6 +522,19 @@ class SpectrumFactory(BandFactory):
                 + f"or 'False'. Got '{export_populations}'"
             )
 
+        import radis
+
+        multisparsegrid = radis.config["MULTI_SPARSE_GRID"]
+        if multisparsegrid:
+            if broadening_method != "voigt_poly":
+                raise ValueError(
+                    f"Multigrid is only implemented for broadening_method=`voigt_poly`. You used broadening_method=`{broadening_method}`."
+                )
+            if optimization != None:
+                raise ValueError(
+                    f"Multigrid is only implemented for optimization=None. You used optimization=`{optimization}`."
+                )
+
         # calculate waveranges
         # --------------------
 

@@ -11,28 +11,28 @@ import radis
 from radis import SpectrumFactory, get_residual, plot_diff
 
 radis.config["DEBUG_MODE"] = True
+sf_args = {
+    # "wavenum_min": 3800,
+    # "wavenum_max": 4500,
+    "wavenum_min": 500,
+    "wavenum_max": 10000,
+    "molecule": "CO",
+    # "wavenum_min": 2008,
+    # "wavenum_max": 2009,
+    ####
+    "path_length": 0.1,
+    "mole_fraction": 0.2,
+    "isotope": 1,
+    "pressure": 1e-5,
+    "wstep": 0.004,
+    "save_memory": False,
+    "verbose": False,
+}
 
 
 def test_sparse_vs_regular_methods(plot=True):
     # save original config
     init_config = radis.config["MULTI_SPARSE_GRID"]
-    sf_args = {
-        # "wavenum_min": 3800,
-        # "wavenum_max": 4500,
-        "wavenum_min": 500,
-        "wavenum_max": 10000,
-        "molecule": "CO",
-        # "wavenum_min": 2008,
-        # "wavenum_max": 2009,
-        ####
-        "path_length": 0.1,
-        "mole_fraction": 0.2,
-        "isotope": 1,
-        "pressure": 1e-5,
-        "wstep": 0.004,
-        "save_memory": False,
-        "verbose": False,
-    }
     sf = SpectrumFactory(**sf_args)
 
     for broadening_method in ["voigt_poly"]:
@@ -49,7 +49,6 @@ def test_sparse_vs_regular_methods(plot=True):
 
         for optim in [None, "simple", "min-RMS"]:
             # for optim in ["simple", "min-RMS"]:
-            # print(f"******** {optim}: {residual:.2e} ********")
             # NOW compute a Spectrum
             if optim == None and broadening_method == "convolve":
                 pass
@@ -71,9 +70,33 @@ def test_sparse_vs_regular_methods(plot=True):
             )
 
             residual = get_residual(s_single, s_multi, "abscoeff")
-            assert np.isclose(residual, 0, atol=1e-8)
+            print(f"******** {optim}: {residual:.2e} ********")
+            assert np.isclose(residual, 0, atol=2e-10)
 
     radis.config["MULTI_SPARSE_GRID"] = init_config
+
+
+def test_sparse_with_optimization_raises_error():
+    """Test that MULTI_SPARSE_GRID with optimization raises NotImplementedError."""
+
+    import pytest
+
+    radis.config["MULTI_SPARSE_GRID"] = True
+
+    for optim in ["simple", "min-RMS"]:
+        with pytest.raises(ValueError):
+            sf = SpectrumFactory(
+                **sf_args,
+                optimization=optim,
+            )
+
+    for broadening_method in ["voigt", "convolve"]:
+        with pytest.raises(ValueError):
+            sf = SpectrumFactory(
+                **sf_args,
+                optimization=optim,
+            )
+            sf.fetch_databank("hitran")  # to avoid flake8 error in linting
 
 
 if __name__ == "__main__":
@@ -82,6 +105,6 @@ if __name__ == "__main__":
 
     # sparse_vs_regular(optim='simple', broadening_method='fft')
     test_sparse_vs_regular_methods(plot=True)
-
+    test_sparse_with_optimization_raises_error()
     # put back initial config
     radis.config["MULTI_SPARSE_GRID"] = init_config0
