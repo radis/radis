@@ -84,8 +84,7 @@ dependencies = [
     "termcolor",  # terminal colors
     "toml",
     "tqdm",  # for progress bars
-    #"numpy~=2.0",
-    "numpy>=2.5",
+    "numpy~=2.0",
     'vaex-core; python_version < "3.13"', #to-do, check latest release of vaex (last compatible with 3.12 in january 2026)
     'vaex-hdf5; python_version < "3.13"',
     'vaex-viz; python_version < "3.13"',
