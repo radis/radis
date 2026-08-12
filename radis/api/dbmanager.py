@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
-""" """
+"""Database manager for RADIS line databases."""
+
 import os
 import shutil
 from os.path import abspath, dirname, exists, expanduser, join, split, splitext
 
 try:
     from ..misc.config import addDatabankEntries, getDatabankEntries, getDatabankList
+    from ..misc.database_progress import DatabaseProgressPrinter
     from ..misc.printer import printr
     from ..misc.utils import NotInstalled, not_installed_vaex_args
     from ..misc.warning import DatabaseAlreadyExists, DeprecatedFileWarning
@@ -20,6 +22,7 @@ except ImportError:
             getDatabankEntries,
             getDatabankList,
         )
+        from radis.misc.database_progress import DatabaseProgressPrinter
         from radis.misc.printer import printr
         from radis.misc.utils import NotInstalled, not_installed_vaex_args
         from radis.misc.warning import DatabaseAlreadyExists, DeprecatedFileWarning
@@ -35,7 +38,6 @@ import re
 from datetime import date
 
 import pandas as pd
-import requests
 from dateutil.parser import parse as parse_date
 from joblib import Parallel, delayed
 
@@ -49,11 +51,8 @@ def get_auto_MEMORY_MAPPING_ENGINE():
 
     Use Vaex by default if it exists (only Python <= 3.11 as of June 2024) ,
     else use PyTables"""
-    try:
-        import vaex
-
-        vaex
-    except ImportError:
+    # Check if vaex is available
+    if isinstance(vaex, NotInstalled):
         return "pytables"
     else:
         return "vaex"
@@ -119,7 +118,8 @@ class DatabaseManager(object):
 
     Other Parameters
     ----------------
-    *input for :class:`~joblib.parallel.Parallel` loading of database*
+    Input for :class:`~joblib.parallel.Parallel` loading of database:
+
     parallel: bool
         if ``True``, use parallel loading.
         Default ``True``.
@@ -397,6 +397,13 @@ class DatabaseManager(object):
         molecule = self.molecule
         parallel = self.parallel
 
+        # Initialize progress printer for consistent output
+        printer = DatabaseProgressPrinter(
+            database_name=self.name.split("-")[0] if "-" in self.name else self.name,
+            molecule=molecule,
+            verbose=verbose,
+        )
+
         from time import time
 
         t0 = time()
@@ -411,14 +418,15 @@ class DatabaseManager(object):
         Nlines_total = 0
         Ntotal_downloads = len(local_files)
 
-        def download_and_parse_one_file(urlname, local_file, Ndownload):
-            if verbose:
-                inputf = urlname.split("/")[-1]
-                print(
-                    f"Downloading {inputf} for {molecule} ({Ndownload}/{Ntotal_downloads})."
-                )
+        def download_and_parse_one_file(urlname, local_file, Ndownload, printer):
+            inputf = urlname.split("/")[-1]
+            printer.info(
+                f"Downloading {inputf} ({Ndownload}/{Ntotal_downloads})", indent=1
+            )
 
             # Download file with requests
+            import requests
+
             if "hitemp" in urlname.lower():
                 # Get session from HITEMP API
                 from radis.api.hitempapi import login_to_hitran
@@ -437,15 +445,14 @@ class DatabaseManager(object):
             head_response = session.head(urlname, headers=headers, allow_redirects=True)
             if head_response.status_code != 200:
                 raise requests.HTTPError(
-                    f"Unable to access the resource. Received HTTP status code {head_response.status_code} for URL: {urlname}. "
+                    f"Unable to access the resource (HEAD request). Expected HTTP status code 200, got {head_response.status_code} for URL: {urlname}. "
                     "Please verify the URL and your network access permissions."
                 )
 
-            # Check if we got redirected to login page
-            if "text/html" in head_response.headers.get("content-type", "").lower():
-                raise requests.HTTPError(
-                    "Received an HTML response instead of the expected file content. This may indicate authentication is required or access to the resource is restricted. Please verify your credentials and permissions for the requested URL: ({urlname})."
-                )
+            def _looks_like_html_payload(chunk):
+                snippet = chunk[:2048].lstrip().lower()
+                html_markers = (b"<!doctype html", b"<html", b"<head", b"<body")
+                return any(marker in snippet for marker in html_markers)
 
             try:
                 # Now download the file
@@ -453,17 +460,54 @@ class DatabaseManager(object):
                     urlname, headers=headers, stream=True, allow_redirects=True
                 )
                 response.raise_for_status()  # Raise an error if request fails
+                content_type = response.headers.get("content-type", "").lower()
+                chunks = response.iter_content(chunk_size=8192)
+
+                # Peek the first non-empty chunk to detect HTML/login pages.
+                first_chunk = b""
+                for chunk in chunks:
+                    if chunk:
+                        first_chunk = chunk
+                        break
+
+                # Reject HTML responses from GET directly. Keep payload sniffing as
+                # fallback when servers mislabel an HTML page as octet-stream.
+                if "text/html" in content_type or _looks_like_html_payload(first_chunk):
+                    raise requests.HTTPError(
+                        "Received HTML content from GET request instead of the expected file payload. "
+                        f"This may indicate authentication is required or access is restricted for URL: {urlname}."
+                    )
 
                 # Create a temporary file to store the downloaded content
-                temp_file_path = urlname.split("/")[-1]
-                temp_file_path = re.sub(
-                    r'[<>:"/\\|?*&=]', "_", temp_file_path
+                temp_fname = urlname.split("/")[-1]
+                temp_fname = re.sub(
+                    r'[<>:"/\\|?*&=]', "_", temp_fname
                 )  # Sanitize the filename to remove invalid characters for Windows
+                temp_file_path = join(self.tempdir, temp_fname)
+
+                # Get total file size for progress bar
+                total_size = int(response.headers.get("content-length", 0))
+
+                # Download with progress bar
+                from tqdm import tqdm
 
                 with open(f"{temp_file_path}", "wb") as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        if chunk:  # filter out keep-alive new chunks
-                            f.write(chunk)
+                    with tqdm(
+                        total=total_size,
+                        unit="B",
+                        unit_scale=True,
+                        unit_divisor=1024,
+                        desc="Downloading",
+                        disable=not verbose,
+                    ) as pbar:
+                        if first_chunk:
+                            f.write(first_chunk)
+                            pbar.update(len(first_chunk))
+
+                        for chunk in chunks:
+                            if chunk:  # filter out keep-alive new chunks
+                                f.write(chunk)
+                                pbar.update(len(chunk))
 
                 # Create an opener object using the global RequestsFileOpener class
                 opener = RequestsFileOpener(temp_file_path)
@@ -494,14 +538,15 @@ class DatabaseManager(object):
         if parallel and len(local_files) > self.minimum_nfiles:
             nJobs = self.nJobs
             batch_size = self.batch_size
-            if self.verbose:
-                print(
-                    f"Downloading and parsing {urlnames} to {local_files} "
-                    + f"({len(local_files)}) files), in parallel ({nJobs} jobs)"
-                )
+            printer.info(
+                f"Downloading {len(local_files)} files in parallel ({nJobs} jobs)",
+                indent=1,
+            )
             Nlines_total = sum(
                 Parallel(n_jobs=nJobs, batch_size=batch_size, verbose=self.verbose)(
-                    delayed(download_and_parse_one_file)(urlname, local_file, Ndownload)
+                    delayed(download_and_parse_one_file)(
+                        urlname, local_file, Ndownload, printer
+                    )
                     for urlname, local_file, Ndownload in zip(
                         urlnames, local_files, range(1, len(local_files) + 1)
                     )
@@ -511,7 +556,7 @@ class DatabaseManager(object):
             for urlname, local_file, Ndownload in zip(
                 urlnames, local_files, range(1, len(local_files) + 1)
             ):
-                download_and_parse_one_file(urlname, local_file, Ndownload)
+                download_and_parse_one_file(urlname, local_file, Ndownload, printer)
 
     def parse_to_local_file(
         self,
@@ -654,7 +699,9 @@ class DatabaseManager(object):
         from radis.misc.basics import is_number
 
         if is_number(self.alpha_ref):
-            if isinstance(df, vaex.dataframe.DataFrameLocal):
+            if not isinstance(vaex, NotInstalled) and isinstance(
+                df, vaex.dataframe.DataFrameLocal
+            ):
                 # see https://github.com/vaexio/vaex/pull/1570
                 df[key] = vaex.vconstant(float(value), length=df.length_unfiltered())
             else:
@@ -700,7 +747,6 @@ def register_database(databank_name, dict_entries, verbose):
         parameters. Also adds ::
 
             format : "hitemp-radisdb"
-            parfuncfmt : "hapi"   # TIPS-2017 for equilibrium partition functions
 
         And if the molecule is in :py:attr:`~radis.db.MOLECULES_LIST_NONEQUILIBRIUM`::
 

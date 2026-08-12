@@ -1,11 +1,9 @@
-""" "
+"""
 
 Summary
 -----------------------
 
 NIST database parser
-
------------------------
 
 Defines :func:`~radis.io.fetch_nist` based on :class:`~radis.api.nistapi.NISTDatabaseManager`
 
@@ -34,7 +32,7 @@ def fetch_nist(
     parallel=True,
 ):
     """
-    See e.g. :func:`~radis.io.hitemp.fetch_hitemp` for an explanation of the parameters largely applicable to `fetch_nist`
+    See e.g. :func:`~radis.io.hitemp.fetch_hitemp` for an explanation of the parameters largely applicable to ``fetch_nist``
 
     .. note::
 

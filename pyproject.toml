@@ -42,15 +42,15 @@ classifiers = [
     "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Topic :: Scientific/Engineering",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.9",    #DEV MESSAGE: end of life, October 2025, https://devguide.python.org/versions/.
-    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.10",   #DEV MESSAGE: end of life, October 2026, https://devguide.python.org/versions/.
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
-    # This is a duplicate of environment.yml; but it is NECESSARY to tell pip what are the dependencies.
+    # This is a duplicate of environment.yml; but it is NECESSARY to tell pip what are the dependencies in case use employ `pip install -e .` from empty environment
     # Dependencies in environment.yml and here should be kept consistent.
     # This is tested automatically https://github.com/radis/radis/pull/734
     "astropy>=4.3.1",  # Unit aware calculations
@@ -58,7 +58,6 @@ dependencies = [
     "beautifulsoup4>=4.10.0",  # parse ExoMol website and HITRAN responses
     "configparser",  # for configuration file handling
     "cryptography",  # for encryption and security features
-    "getpass4",  # for handling password input securely
     "habanero>=1.2.0",  # CrossRef API to retrieve data from doi
     "h5py>=3.2.1",  # load HDF5
     "hjson",  # Json with comments (for default_radis.json)
@@ -70,7 +69,6 @@ dependencies = [
     "matplotlib",  # for plotting
     "mpldatacursor",  # interactive data cursors for matplotlib
     "numba",  # just-in-time compiler
-    "numpy",  # numerical computations
     "pandas",  # data manipulation and analysis
     "peakutils",  # peak detection and fitting
     "periodictable",  # periodic table data
@@ -86,10 +84,11 @@ dependencies = [
     "termcolor",  # terminal colors
     "toml",
     "tqdm",  # for progress bars
-    'vaex-core; python_version < "3.11"',  # out-of-core dataframes
-    'vaex-hdf5; python_version < "3.11"',  # HDF5 support for vaex
-    'vaex-viz; python_version < "3.11"',  # visualization for vaex
-    'vulkan',
+    "numpy~=2.0", #Warning, numpy 2.0 is not compatible with vaex-hdf5<=0.14.1, but we install vaex-hdf5 from the github repo see #869 and https://github.com/vaexio/vaex/issues/2468
+    'vaex-core; python_version < "3.13"', #to-do, check latest release of vaex (last compatible with 3.12 in january 2026)
+    'vaex-hdf5; python_version < "3.13"',
+    'vaex-viz; python_version < "3.13"',
+    "vulkan",
 ]
 
 [project.optional-dependencies]
@@ -103,14 +102,14 @@ dev = [
 ]
 docs = [
     "sphinx-autodoc-annotation",  # for sphinx documentation annotations
-    "sphinx_autodoc_defaultargs>=0.1.2",  # for handling default arguments in sphinx
-    "sphinx>=1.7.0",  # documentation generator
+    "sphinx>=7",  # documentation generator
+    "docutils",  # markup processing
     "astroquery>=0.3.9",  # for documentation examples
     "sphinxcontrib-apidoc",  # for API documentation generation
     "sphinx-gallery",  # for documentation examples gallery
     "lmfit",  # for documentation examples
     "pytest",  # Sphinx autodoc also parses test suite
-    "specutils<2.0",  # spectroscopic data handling, <2.0 see #834
+    "specutils",  # spectroscopic data handling
 ]
 
 [tool.setuptools]
@@ -130,12 +129,3 @@ exclude = ["radis.test*", "docs*", "examples*", "test*"]
 
 [tool.setuptools.dynamic]
 version = {file = "radis/__version__.txt"}
-
-# Note: The following RST cleanup functionality was previously used when README was in RST format
-# It's preserved here for reference in case it's needed in the future:
-#
-# RST cleanup for PyPI compatibility included:
-# - Removing Sphinx-only roles (:abbr:, :ref:, :term:, :dfn:, etc.)
-# - Converting Sphinx directives (.. doctest, .. plot::, etc.)
-# - Handling special cases for RADIS documentation
-# For full details see the original yield_sphinx_only_markup function in setup.py

@@ -1,45 +1,44 @@
 <style>
+    .circle-icon-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-top: 12px;
+        margin-bottom: 8px;
+    }
     .circle-icon {
         width: 28px;
         height: 28px;
-        margin-left: 5px;
-        margin-right: 5px;
-        margin-top: 15px;
+        display: block;
     }
 </style>
 
 
-<p>
-</a>
-<a href="https://radis.github.io/radis-lab/">
+<div class="circle-icon-row">
+<a href="https://radis.github.io/" title="RADIS Website">
     <img class="circle-icon"
-         src="{{ pathto('radis_ico.png', 1) }}"
-         alt="Radis-Website">
+         src="{{ pathto('_static/radis_ico.png', 1) }}"
+         alt="RADIS Website">
 </a>
-<a href="https://github.com/radis/radis">
+<a href="https://github.com/radis/radis" title="GitHub Repository">
     <img class="circle-icon"
          src="{{ pathto('_static/assets/general/button_github.svg', 1) }}"
          alt="GitHub">
 </a>
-<a href="https://www.radis.app/">
+<a href="https://www.radis.app/" title="RADIS App">
     <img class="circle-icon"
          src="{{ pathto('_static/assets/general/radisapp.png', 1) }}"
-         alt="Radis-App">
+         alt="RADIS App">
 </a>
-<a href="https://twitter.com/radis_radiation">
+<a href="https://radis.github.io/radis-lab/" title="RADIS Lab">
+    <img class="circle-icon"
+         src="{{ pathto('_static/assets/general/radislab.png', 1) }}"
+         alt="RADIS Lab">
+</a>
+<a href="https://twitter.com/radis_radiation" title="Twitter">
     <img class="circle-icon"
          src="{{ pathto('_static/assets/general/button_twitter.svg', 1) }}"
          alt="Twitter">
 </a>
-</a>
-<a href="https://radis.github.io/radis-lab/">
-    <img class="circle-icon"
-         src="{{ pathto('_static/assets/general/radislab.png', 1) }}"
-         alt="Radis-Lab">
-</a>
-<a href="https://radis.github.io/">
-    <img class="circle-icon"
-         src="{{ pathto('_static/assets/general/radisicon.png', 1) }}"
-         alt="Radis-Lab">
-</a>
-</p>
+</div>

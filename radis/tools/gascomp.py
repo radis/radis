@@ -2,7 +2,7 @@
 """
 Determine gas mixture composition under chemical equilibrium using CANTERA.
 
--------------------------------------------------------------------------------
+
 
 """
 

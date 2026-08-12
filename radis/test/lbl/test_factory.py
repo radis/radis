@@ -15,7 +15,7 @@ Run only fast tests (i.e: tests that have a 'fast' label)::
 
     pytest -m fast
 
-------------------------------------------------------------------------
+
 
 """
 
@@ -49,7 +49,7 @@ except ImportError:
 @pytest.mark.needs_config_file
 @pytest.mark.needs_db_CDSD_HITEMP
 def test_spec_generation(
-    plot=True,
+    plot=False,
     verbose=2,
     warnings=True,
     update_reference_spectrum=False,
@@ -94,7 +94,6 @@ def test_spec_generation(
            levelsfmt            cdsd
            levelspath           # USER-DEPENDANT: CDSD-4000
            medium               vacuum
-           parfuncfmt           cdsd
            parfuncpath          # USER-DEPENDANT: CDSD-4000
            rot_distribution     boltzmann
            self_absorption      True
@@ -380,7 +379,7 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
         plt.title("CO spectrum (2000 K)")
         s.plot(
             "radiance_noslit",
-            wunit="nm",
+            wunit="nm_air",
             nfig=fig.number,
             lw=2,
             color="r",
@@ -390,7 +389,7 @@ def test_media_line_shift(plot=False, verbose=True, warnings=True, *args, **kwar
     # ... there should be about ~1.25 nm shift at 4.5 µm:
     assert np.isclose(
         s.get("radiance_noslit", wunit="nm_vac")[0][0]
-        - s.get("radiance_noslit", wunit="nm")[0][0],
+        - s.get("radiance_noslit", wunit="nm_air")[0][0],
         1.2540436086346745,
     )
 
@@ -588,7 +587,7 @@ def test_wstep_auto_method_sf(verbose=True, plot=False, *args, **kwargs):
 
     # Checking computed wstep and expected wstep are equal
     assert wstep_calculated == round_off(
-        sf._min_width / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
+        sf.min_width / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
     )
 
     s2 = sf.eq_spectrum(300, pressure=0.2)
@@ -780,6 +779,6 @@ def test_vaex_and_pandas_spectrum_noneq():
 
 # --------------------------
 if __name__ == "__main__":
-    test_wstep_auto_method_sf()
+    test_vaex_and_pandas_spectrum_noneq()
     # printm("Testing factory:", pytest.main(["test_factory.py", "--pdb"]))
 #    printm('Testing factory:', pytest.main(['test_factory.py', '-k', 'test_wavenumber_units_conversion']))

@@ -12,10 +12,7 @@ Routine Listing
 
 :func:`~radis.lbl.calc.calc_spectrum`
 
--------------------------------------------------------------------------------
-
 """
-
 
 from copy import deepcopy
 from os.path import exists
@@ -60,7 +57,7 @@ def calc_spectrum(
     parsum_mode="full summation",
     optimization="simple",
     chunksize=None,
-    broadening_method="voigt",
+    broadening_method="voigt_poly",
     overpopulation=None,
     name=None,
     save_to="",
@@ -93,8 +90,11 @@ def calc_spectrum(
 
             import astropy.units as u
             calc_spectrum(2.5*u.um, 3.0*u.um, ...)
-    wunit: ``'nm'``, ``'cm-1'``
-        unit for ``wmin`` and ``wmax``. Default is ``"cm-1"``.
+    wunit: ``'nm'``, ``'cm-1'``, ``'nm_air'``, ``'nm_vac'``
+        unit for ``wmin`` and ``wmax``. ``'nm'`` uses the ``medium`` parameter
+        to determine air or vacuum conversion. ``'nm_air'`` and ``'nm_vac'``
+        are explicit and override the ``medium`` parameter.
+        Default is ``"cm-1"``.
     Tgas: float [:math:`K`]
         Gas temperature. If non equilibrium, is used for :math:`T_{translational}`.
         Default ``300`` K​
@@ -821,7 +821,6 @@ def _calc_spectrum_one_molecule(
         if compare(databank, ["fetch", "hitran"]):
             conditions = {
                 "source": "hitran",
-                "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
             }
         elif compare(databank, "hitran"):
             conditions = {
@@ -829,22 +828,18 @@ def _calc_spectrum_one_molecule(
                 "database": databank[
                     1
                 ],  # 'full' or 'partial', cf LoaderFactory.fetch_databank()
-                "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
             }
         elif compare(databank, ["hitemp"]):
             conditions = {
                 "source": "hitemp",
-                "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium}
             }
         elif compare(databank, ["exomol"]):
             conditions = {
                 "source": "exomol",
-                "parfuncfmt": "exomol",  # download & use Exo partition functions for equilibrium}
             }
         elif compare(databank, ["geisa"]):
             conditions = {
                 "source": "geisa",
-                "parfuncfmt": "hapi",
                 # TODO: replace with GEISA partition function someday.............
             }
         elif compare(databank, ["kurucz"]):
@@ -855,13 +850,11 @@ def _calc_spectrum_one_molecule(
             conditions = {
                 "source": "exomol",
                 "database": databank[1],
-                "parfuncfmt": "exomol",  # download & use Exo partition functions for equilibrium}
             }
         elif compare(databank, "hitemp"):
             conditions = {
                 "source": "hitemp",
                 "database": databank[1],
-                "parfuncfmt": "hapi",
             }
         # Partition functions :
         conditions.update(
@@ -897,16 +890,53 @@ def _calc_spectrum_one_molecule(
 
         # Finally, LOAD :
         sf.fetch_databank(**conditions)
-    elif exists(databank):
+    elif (
+        (isinstance(databank, str) and exists(databank))
+        or isinstance(databank, list)
+        or (isinstance(databank, str) and ("*" in databank or "?" in databank))
+    ):
         conditions = {
             "path": databank,
             "drop_columns": drop_columns,
-            "parfuncfmt": "hapi",  # use HAPI (TIPS) partition functions for equilibrium
             "levelsfmt": None,  # no need to load energies by default
             "db_use_cached": use_cached,
         }
         # Guess format
-        if databank.endswith(".par"):
+        if isinstance(databank, list) and not isinstance(databank[0], str):
+            # databank is likely a keyword list like ["hitemp", "2010"]
+            # This should have been caught by the previous block if compare() worked.
+            # But if it falls here, we should probably raise an error or handle it.
+            raise ValueError(f"Invalid databank format: {databank}")
+
+        databank_test = databank[0] if isinstance(databank, list) else databank
+        if isinstance(databank_test, str) and (
+            "*" in databank_test or "?" in databank_test
+        ):
+            import os
+
+            from radis.misc.utils import get_files_from_regex
+
+            directory = os.path.dirname(databank_test)
+            if not directory or not os.path.isdir(directory):
+                raise FileNotFoundError(
+                    f"Directory '{directory}' does not exist for pattern '{databank_test}'. "
+                    "Check that the path is correct."
+                )
+
+            matched_files = get_files_from_regex(databank_test)
+            if len(matched_files) == 0:
+                raise FileNotFoundError(
+                    f"No files found matching the pattern '{databank_test}'. "
+                    "Check that the wildcard pattern is correct."
+                )
+            databank_test = matched_files[0]
+
+        if not isinstance(databank_test, str):
+            raise ValueError(
+                f"Couldnt infer the format of the line database file: {databank}"
+            )
+
+        if databank_test.endswith(".par") or "HITEMP" in databank_test.upper():
             if verbose:
                 print(f"Inferred {databank} is a HITRAN-format file.")
             conditions["format"] = "hitran"
@@ -916,7 +946,7 @@ def _calc_spectrum_one_molecule(
                 # constants (not all molecules are supported!)
                 conditions["levelsfmt"] = "radis"
                 conditions["lvl_use_cached"] = use_cached
-        elif databank.endswith(".h5") or databank.endswith(".hdf5"):
+        elif databank_test.endswith(".h5") or databank_test.endswith(".hdf5"):
             if verbose:
                 print(f"Inferred {databank} is a HDF5 file with RADISDB columns format")
             conditions["format"] = "hdf5-radisdb"

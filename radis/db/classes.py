@@ -46,7 +46,6 @@ Routine Listing
 - :func:`~radis.db.classes.get_molecule`
 - :func:`~radis.db.classes.get_molecule_identifier`
 
--------------------------------------------------------------------------------
 """
 
 import re
@@ -219,6 +218,12 @@ trans = {
     "53": "CS2",
     "54": "CH3I",
     "55": "NF3",
+    "56": "H3+",
+    "57": "CH3",
+    "58": "S2",
+    "59": "COFCl",
+    "60": "HONO",
+    "61": "ClNO2",
 }
 HITRAN_MOLECULES = list(trans.values())
 """ str: list of [HITRAN-2020]_ molecules. """
@@ -339,15 +344,19 @@ def to_conventional_name(species):
         roman = int_to_roman(charge + 1)
         return f"{symbol}_{roman}"
     if "+" in species:
-        # Count the number of positive charges
-        chargeplus1 = (
-            species.count("+") + 1
-        )  # Add one to convert to conventional notation
-        # Get the element of the species without the charge
-        element_name = species.split("+")[0]
-        # Convert the charge to roman notation
-        chargeplus1_in_roman = int_to_roman(chargeplus1)
-        return f"{element_name}_{chargeplus1_in_roman}"
+        # Only treat as an atomic species if the part before '+' looks like
+        # an atomic symbol (1-2 letters, first uppercase, optional second lowercase)
+        # and is present in the periodictable module. Otherwise treat as a
+        # molecular cation and return unchanged (e.g., 'NO+' stays 'NO+').
+        base = species.split("+")[0]
+        if base == "NO":  # Known exception for nitric oxide cation (HITRAN)
+
+            return species  # Not an element symbol: treat as molecule (leave unchanged)
+        if re.fullmatch(r"[A-Z][a-z]?", base):
+            # Count the number of positive charges and convert to roman notation
+            chargeplus1 = species.count("+") + 1
+            chargeplus1_in_roman = int_to_roman(chargeplus1)
+            return f"{base}_{chargeplus1_in_roman}"
     if " " in species.strip():
         species = species.replace(" ", "_")
     atomic_symbol = species.split("_")[0]
@@ -449,13 +458,12 @@ EXOMOL_MOLECULES = [
     "AlH",
     "AlO",
     "AsH3",
+    "BH",
     "BeH",
     "C2",
-    "C3",
     "C2H2",
     "C2H4",
     "C3",
-    "CaCl",
     "CH",
     "CH3",
     "CH3Cl",
@@ -467,6 +475,7 @@ EXOMOL_MOLECULES = [
     "CO2",
     "CP",
     "CS",
+    "CaCl",
     "CaF",
     "CaH",
     "CaO",
@@ -474,7 +483,6 @@ EXOMOL_MOLECULES = [
     "CrH",
     "FeH",
     "H2",
-    "HBO",
     "H2CO",
     "H2CS",
     "H2O",
@@ -483,15 +491,17 @@ EXOMOL_MOLECULES = [
     "H2_p",
     "H3O_p",
     "H3_p",
+    "HBO",
     "HBr",
-    "HCN",
     "HCl",
+    "HCN",
     "HF",
     "HNO3",
     "HeH_p",
     # "K", #not anymore since 01/07/2024
     "KCl",
     "KF",
+    "KH",
     "KOH",
     "LaO",
     "LiCl",
@@ -507,6 +517,7 @@ EXOMOL_MOLECULES = [
     "NH",
     "NH3",
     "NO",
+    "NO_p",
     "NS",
     # "Na",  #not anymore since 01/07/2024
     "NaCl",
@@ -525,12 +536,13 @@ EXOMOL_MOLECULES = [
     "PN",
     "PO",
     "PS",
-    "ScO",  # added: 12/2024
+    "S2",
     "SH",
-    "SO",  # new
+    "SO",
     "SO2",
     "SO3",
     "ScH",
+    "ScO",
     "SiH",
     "SiH2",
     "SiH4",
@@ -538,7 +550,6 @@ EXOMOL_MOLECULES = [
     "SiO",
     "SiO2",
     "SiS",
-    "SO",
     "TiH",
     "TiO",
     "VO",

@@ -2,7 +2,7 @@
 """
 Test query functions
 
--------------------------------------------------------------------------------
+
 
 """
 
@@ -117,7 +117,7 @@ def test_fetch_hitran_CO_pytables(*args, **kwargs):
 
     assert len(df) == 5381
     assert df.wav.min() == 3.40191
-    assert df.wav.max() == 14477.377142
+    assert df.wav.max() == 14477.377153
 
 
 # TODO : clean database on each new pytest run ?
@@ -140,7 +140,7 @@ def test_fetch_hitran_CO_vaex(*args, **kwargs):
 
     assert len(df) == 5381
     assert df.wav.min() == 3.40191
-    assert df.wav.max() == 14477.377142
+    assert df.wav.max() == 14477.377153
 
 
 # ignored by pytest with argument -m "not needs_connection"
@@ -151,9 +151,10 @@ def test_fetch_hitran(*args, **kwargs):
 
     df = fetch_hitran("CO")
 
+    assert set(df["iso"]) == {1, 2, 3, 4, 5, 6}
     assert len(df) == 5381
     assert df.wav.min() == 3.40191
-    assert df.wav.max() == 14477.377142
+    assert df.wav.max() == 14477.377153
 
 
 @pytest.mark.needs_connection
@@ -209,13 +210,16 @@ def test_pytable_vs_vaex(verbose=True):
     Tgas = 1000
     sf_exo_pytables = SpectrumFactory(**conditions)
     sf_exo_pytables.fetch_databank(
-        "exomol", memory_mapping_engine="pytables", db_use_cached="regen"
+        "exomol",
+        database="Li2015",
+        memory_mapping_engine="pytables",
+        db_use_cached="regen",
     )
     s_exo_pytables = sf_exo_pytables.eq_spectrum(Tgas=Tgas * u.K, path_length=1 * u.cm)
 
     sf_exo_vaex = SpectrumFactory(**conditions)
     sf_exo_vaex.fetch_databank(
-        "exomol", memory_mapping_engine="vaex", db_use_cached="regen"
+        "exomol", database="Li2015", memory_mapping_engine="vaex", db_use_cached="regen"
     )
     s_exo_vaex = sf_exo_vaex.eq_spectrum(Tgas=Tgas * u.K, path_length=1 * u.cm)
 
@@ -241,4 +245,5 @@ def _run_testcases(verbose=True, *args, **kwargs):
 
 
 if __name__ == "__main__":
-    print("test_query.py: ", _run_testcases(verbose=True))
+    test_fetch_hitran()
+    # print("test_query.py: ", _run_testcases(verbose=True))

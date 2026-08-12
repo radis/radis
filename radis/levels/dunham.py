@@ -18,7 +18,6 @@ Reference
 Mantz et al 1975, "Ground state molecular constants of 12C16O"
 """
 
-
 # %% Dunham development
 
 # ... vibrational term (Herzberg notation)

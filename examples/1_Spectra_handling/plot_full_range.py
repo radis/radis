@@ -34,7 +34,6 @@ spectrum. See the :ref:`Calculate a large spectrum by part <example_large_range_
 
 """
 
-
 # %%
 import astropy.units as u
 
@@ -46,7 +45,10 @@ config["MISSING_BROAD_COEF"] = "air"
 s = calc_spectrum(
     wmin=0.5 * u.um,
     wmax=15 * u.um,  # cm-1
-    mole_fraction={"CO2": 420e-6, "H2O": 0.02},
+    mole_fraction={
+        "CO2": 425.48e-6,
+        "H2O": 0.02,
+    },  # CO2 as of August 2025, see https://gml.noaa.gov/ccgg/trends/
     isotope="1,2,3",
     pressure=1.01325,  # bar
     Tgas=300,  # K

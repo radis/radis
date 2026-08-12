@@ -12,9 +12,8 @@ In both cases, you will need to overwrite the :meth:`~radis.db.classes.Electroni
 method. See ``radis.db.molecules.py``
 
 
-----------------------------------------------------------------------------------------------
-"""
 
+"""
 
 from radis.levels.vibrating_rotor import (
     EvJ_uncoupled_vibrating_rotor,

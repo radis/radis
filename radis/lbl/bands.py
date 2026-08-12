@@ -36,22 +36,22 @@ PRIVATE METHODS
 - _calc_broadening_bands
 - _calc_broadening_noneq_bands
 
-----------
 
 
 """
+
 # TODO: merge common parts of BandList.eq_bands  and SpectrumFactory.eq_spectrum,
 # under a same function call
 
 from time import time
 from warnings import warn
 
-import astropy.units as u
 import numpy as np
 import pandas as pd
 from numpy import exp, expm1
 
 from radis.api.hitranapi import HITRAN_CLASS1, get_molecule
+from radis.db.classes import HITRAN_CLASS3
 from radis.lbl.broadening import BroadenFactory
 from radis.lbl.labels import (
     vib_lvl_name_cdsd_pc,
@@ -162,6 +162,8 @@ class BandFactory(BroadenFactory):
         """
 
         # Convert units
+        import astropy.units as u
+
         Tgas = convert_and_strip_units(Tgas, u.K)
         path_length = convert_and_strip_units(path_length, u.cm)
         pressure = convert_and_strip_units(pressure, u.bar)
@@ -461,6 +463,8 @@ class BandFactory(BroadenFactory):
         """
 
         # Convert units
+        import astropy.units as u
+
         Tvib = convert_and_strip_units(Tvib, u.K)
         Trot = convert_and_strip_units(Trot, u.K)
         Ttrans = convert_and_strip_units(Ttrans, u.K)
@@ -894,7 +898,7 @@ class BandFactory(BroadenFactory):
         for i, (band, dg) in enumerate(gb):
             if optimization in ("simple", "min-RMS"):
                 line_profile_LDM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_LDM(dg)
-                (wavenumber, absorption) = self._apply_lineshape_LDM(
+                wavenumber, absorption = self._apply_lineshape_LDM(
                     dg.S.values,
                     line_profile_LDM,
                     dg.shiftwav.values,
@@ -906,7 +910,7 @@ class BandFactory(BroadenFactory):
                 )
             else:
                 line_profile = self._calc_lineshape(dg)
-                (wavenumber, absorption) = self._apply_lineshape(
+                wavenumber, absorption = self._apply_lineshape(
                     dg.S.values, line_profile, dg.shiftwav.values
                 )
             abscoeff_bands[band] = absorption
@@ -945,7 +949,7 @@ class BandFactory(BroadenFactory):
         for i, (band, dg) in enumerate(gb):
             if optimization in ("simple", "min-RMS"):
                 line_profile_LDM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_LDM(dg)
-                (wavenumber, absorption) = self._apply_lineshape_LDM(
+                wavenumber, absorption = self._apply_lineshape_LDM(
                     dg.S.values,
                     line_profile_LDM,
                     dg.shiftwav.values,
@@ -955,7 +959,7 @@ class BandFactory(BroadenFactory):
                     wG_dat,
                     optimization,
                 )
-                (_, emission) = self._apply_lineshape_LDM(
+                _, emission = self._apply_lineshape_LDM(
                     dg.Ei.values,
                     line_profile_LDM,
                     dg.shiftwav.values,
@@ -968,10 +972,10 @@ class BandFactory(BroadenFactory):
 
             else:
                 line_profile = self._calc_lineshape(dg)
-                (wavenumber, absorption) = self._apply_lineshape(
+                wavenumber, absorption = self._apply_lineshape(
                     dg.S.values, line_profile, dg.shiftwav.values
                 )
-                (_, emission) = self._apply_lineshape(
+                _, emission = self._apply_lineshape(
                     dg.Ei.values, line_profile, dg.shiftwav.values
                 )
             abscoeff_bands[band] = absorption  #
@@ -1015,16 +1019,14 @@ class BandFactory(BroadenFactory):
 
         self.profiler.start("calc_broadening_eq_bands", 2)
         # Just some tests
-        try:
-            assert len(df.shape) == 2
-        except AssertionError:
+        if len(df.shape) == 2:
             warn(
                 "Dataframe has only one line. Unexpected behaviour could occur"
                 + " because Dataframes will be handled as Series and row/columns"
                 + " may be inverted"
             )
 
-        (wavenumber, abscoeff_bands) = self._broaden_lines_bands(df)
+        wavenumber, abscoeff_bands = self._broaden_lines_bands(df)
 
         self.profiler.stop("calc_broadening_eq_bands", "Calc Broadening Eq Bands")
 
@@ -1063,9 +1065,7 @@ class BandFactory(BroadenFactory):
 
         self.profiler.start("calc_broadening_noneq_bands", 2)
         # Just some tests
-        try:
-            assert len(df.shape) == 2
-        except:
+        if len(df.shape) == 2:
             warn(
                 "Dataframe has only one line. Unexpected behaviour could occur"
                 + " because Dataframes will be handled as Series and row/columns"
@@ -1259,28 +1259,50 @@ def add_bands(df, dbformat, lvlformat, dataframe_type="pandas", verbose=True):
                 f"Cant deal with lvlformat={lvlformat} for {molecule}"
             )
 
-    elif molecule in HITRAN_CLASS1:  # includes 'CO'
+    elif (
+        molecule in HITRAN_CLASS1 or molecule in HITRAN_CLASS3
+    ):  # includes 'CO', 'OH', 'NO', 'ClO'
         # Note. TODO. Move that in loader.py (or somewhere consistent with
         # classes defined in cdsd.py / hitran.py)
 
         if lvlformat in ["radis"]:
 
             # ensures that vib_lvl_name functions wont crash
-            if dbformat not in ["hitran", "hitemp", "hitemp-radisdb"]:
+            if dbformat not in ["hitran", "hitemp", "hitemp-radisdb", "exomol-radisdb"]:
                 raise NotImplementedError(
                     f"lvlformat {lvlformat} not supported with dbformat {dbformat}"
                 )
 
             vib_lvl_name = vib_lvl_name_hitran_class1
 
-            if dataframe_type == "pandas":
-                df.loc[:, "viblvl_l"] = vib_lvl_name(df["vl"])
-                df.loc[:, "viblvl_u"] = vib_lvl_name(df["vu"])
-                df.loc[:, "band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
-            elif dataframe_type == "vaex":
-                df["viblvl_l"] = df.vl.apply(vib_lvl_name)
-                df["viblvl_u"] = df.vu.apply(vib_lvl_name)
-                df["band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
+            # Check if vibrational quantum numbers are available
+            if "vl" in df and "vu" in df:
+                if dataframe_type == "pandas":
+                    df.loc[:, "viblvl_l"] = vib_lvl_name(df["vl"])
+                    df.loc[:, "viblvl_u"] = vib_lvl_name(df["vu"])
+                    df.loc[:, "band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
+                elif dataframe_type == "vaex":
+                    df["viblvl_l"] = df.vl.apply(vib_lvl_name)
+                    df["viblvl_u"] = df.vu.apply(vib_lvl_name)
+                    df["band"] = df["viblvl_l"] + "->" + df["viblvl_u"]
+            else:
+                # For databases without vibrational quantum numbers (e.g., ExoMol)
+                # Use energy-based identification for electronic states
+                if verbose >= 2:
+                    print(
+                        f"No vibrational quantum numbers (vl, vu) found for {molecule}"
+                    )
+                    print("Using generic band assignments based on energy ranges")
+
+                # Assign generic band name based on energy
+                if dataframe_type == "pandas":
+                    df.loc[:, "viblvl_l"] = "v?"
+                    df.loc[:, "viblvl_u"] = "v?"
+                    df.loc[:, "band"] = "v?->v?"
+                elif dataframe_type == "vaex":
+                    df["viblvl_l"] = "v?"
+                    df["viblvl_u"] = "v?"
+                    df["band"] = "v?->v?"
 
         else:
             raise NotImplementedError(

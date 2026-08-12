@@ -7,7 +7,6 @@ Kurucz database parser
 
 Based largely on the `Exojax <https://github.com/HajimeKawahara/exojax>`__ code
 
------------------------
 
 
 """

@@ -16,7 +16,6 @@ of spectroscopic constants.
 
 """
 
-
 from astropy import units as u
 
 from radis import calc_spectrum

@@ -15,9 +15,8 @@ References
 
 
 
------------------------------------------------------------------------------
-"""
 
+"""
 
 from radis.db.conventions import (
     herzberg_coefficients_rot,

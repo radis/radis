@@ -19,7 +19,6 @@ scripts = [
 ]
 
 
-@pytest.fixture(scope="session")
 @pytest.mark.parametrize("script", scripts)
 def test_script_execution(script):
     """Run all examples in `radis/examples <https://github.com/radis/radis/tree/develop/examples>`__"""

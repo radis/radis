@@ -34,6 +34,7 @@ def fetch_exomol(
     engine="default",
     output="pandas",
     skip_optional_data=True,
+    parallel=True,
     **kwargs,
 ):
     """Stream ExoMol file from EXOMOL website. Unzip and build a HDF5 file directly.
@@ -47,7 +48,9 @@ def fetch_exomol(
     database: ``str``
         database name. Ex: ``POKAZATEL`` or ``BT2`` for ``H2O``. See
         :py:data:`~radis.api.exomolapi.KNOWN_EXOMOL_DATABASE_NAMES`. If ``None`` and
-        there is only one database available, use it.
+        there is only one database available, use it. If multiple databases are
+        available but none is recommended by ExoMol (e.g., for ``13C-16O``), a
+        ``KeyError`` is raised and you must explicitly choose one.
     local_databases: ``str``
         where to create the RADIS HDF5 files. Default ``"~/.radisdb/exomol"``.
         Can be changed in ``radis.config["DEFAULT_DOWNLOAD_PATH"]`` or in ~/radis.json config file
@@ -79,6 +82,9 @@ def fetch_exomol(
 
     Other Parameters
     ----------------
+    parallel: bool
+        if True, downloads files concurrently using a thread pool, significantly speeding up
+        the fetching process especially for databases with many transition files. Default is True.
     cache: bool, or ``'regen'`` or ``'force'``
         if ``True``, use existing HDF5 file. If ``False`` or ``'regen'``, rebuild it.
         If ``'force'``, crash if not cache file found. Default ``True``.
@@ -103,11 +109,11 @@ def fetch_exomol(
         If False, fetch all fields which are marked as available in the ExoMol definition
         file. If True, load only the first 4 columns of the states file
         ("i", "E", "g", "J"). The structure of the columns above 5 depend on the
-        the definitions file (*.def) and the Exomol version.
+        the definitions file (``*.def``) and the Exomol version.
         If ``skip_optional_data=False``, two errors may occur:
 
-            - a field is marked as present/absent in the *.def field but is
-              absent/present in the *.states file (ie both files are inconsistent).
+            - a field is marked as present/absent in the ``*.def`` field but is
+              absent/present in the ``*.states`` file (ie both files are inconsistent).
             - in the updated version of Exomol, new fields have been added in the
               states file of some species. But it has not been done for all species,
               so both structures exist. For instance, the states file of
@@ -155,9 +161,7 @@ def fetch_exomol(
     # refactor with "self._quantumNumbers" (which serves the same purpose)
 
     # Ensure isotope format:
-    try:
-        isotope = int(isotope)
-    except:
+    if not isinstance(isotope, (int, np.integer)):
         raise ValueError(
             f"In fetch_exomol, ``isotope`` must be an integer. Got `{isotope}` "
             + "Only one isotope can be queried at a time. "
@@ -167,16 +171,21 @@ def fetch_exomol(
     known_exomol_databases, recommended_database = get_exomol_database_list(
         molecule, full_molecule_name
     )
-    if verbose:
-        print("\n========== Loading Exomol database [start] ==========")
-    _exomol_use_hint = "Select one of them with `fetch_exomol(DATABASE_NAME)`, `SpectrumFactory.fetch_databank('exomol', exomol_database=DATABASE_NAME')`, or `calc_spectrum(..., databank=('exomol', DATABASE_NAME))` \n"
+
+    _exomol_use_hint = "Select one of them with `fetch_exomol(..., database=DATABASE_NAME)`, `SpectrumFactory.fetch_databank('exomol', database=DATABASE_NAME)`, or `calc_spectrum(..., databank=('exomol', DATABASE_NAME))` \n"
+
+    # Track if we're using the default/recommended database
+    is_default_database = False
+
     if database is None or database == "default":
         if len(known_exomol_databases) == 1:
             database = known_exomol_databases[
                 0
             ]  # TODO: if there is only one, is it not the recommended one?
+            is_default_database = True
         elif recommended_database:
             database = recommended_database
+            is_default_database = True
             if verbose > 1:
                 print(
                     f"For {full_molecule_name}, the available databases are {known_exomol_databases}. {_exomol_use_hint}"
@@ -203,8 +212,6 @@ def fetch_exomol(
         / database
     )
 
-    # TODO: add deprecation if missing columns in cache file
-
     # Init database, download files if needed.
     mdb = MdbExomol(
         local_path,
@@ -220,6 +227,8 @@ def fetch_exomol(
         cache=cache,
         skip_optional_data=skip_optional_data,
         verbose=verbose,
+        is_default_database=is_default_database,  # Pass the flag
+        parallel=parallel,
         **kwargs,
     )
 
@@ -229,6 +238,49 @@ def fetch_exomol(
         local_files = [local_files]
     mgr = mdb.get_datafile_manager()
     local_files = [mgr.cache_file(f) for f in local_files]
+
+    # Warn if cache files are missing expected columns (outdated cache)
+    if cache not in [False, "regen"]:
+        import warnings
+
+        from radis.misc.warning import AccuracyWarning
+
+        expected_columns = [
+            "nu_lines",
+            "Sij0",
+            "elower",
+            "jlower",
+            "jupper",
+            "gupper",
+            "glower",
+        ]
+        for local_file in local_files:
+            if pathlib.Path(local_file).exists():
+                try:
+                    existing_columns = mdb.get_columns(local_file)
+                    missing = [c for c in expected_columns if c not in existing_columns]
+                    if missing:
+                        warnings.warn(
+                            AccuracyWarning(
+                                f"ExoMol cache file {local_file} is missing columns "
+                                f"{missing}. This may be from an older version of RADIS. "
+                                f"Regenerate the cache with `cache='regen'` to fix this."
+                            )
+                        )
+                except Exception:
+                    pass  # If we can't read columns, let loading handle the error
+
+    # Clean downloaded .bz2 files after caching to HDF5
+    if clean_cache_files:
+        trans_files = (
+            mdb.trans_file if isinstance(mdb.trans_file, list) else [mdb.trans_file]
+        )
+        for trans_file in trans_files:
+            bz2_file = pathlib.Path(trans_file)
+            if bz2_file.exists() and mgr.cache_file(trans_file).exists():
+                bz2_file.unlink()
+                if verbose:
+                    print(f"Cleaned up downloaded file: {bz2_file.name}")
 
     # Specific for RADIS : rename columns
     radis2exomol_columns = {
@@ -293,7 +345,7 @@ def fetch_exomol(
     if output == "jax":
         try:
             import jax.numpy as jnp
-        except:
+        except ImportError:
             import numpy as jnp
         df["logsij0"] += jnp.log(Ia)
     else:
@@ -328,6 +380,8 @@ def fetch_exomol(
         assert return_local_path
         out.append(mdb.to_partition_function_tabulator())
 
-    if verbose:
-        print("========== Loading Exomol database [end] ==========\n")
+    # Print completion message only if downloads occurred
+    if verbose and mdb._any_downloads:
+        print("\nExoMol database loading complete")
+
     return out

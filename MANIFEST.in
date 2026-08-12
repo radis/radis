@@ -1,4 +1,4 @@
-include README.rst
+include README.md
 include LICENSE
 include requirements.txt
 include radis/__version__.txt
@@ -8,6 +8,9 @@ include radis/gpu/vulkan/bin/*.*
 include radis/phys/units.txt
 include radis/db/molparam.txt
 include radis/db/molparams_extra.json
+include radis/db/offset_arr.npy
+include radis/db/wavenumber_arr.npy
+include radis/db/wav_index.json
 include radis/default_radis.json
 
 # Include hardcoded informations for databases
@@ -20,8 +23,7 @@ global-exclude */test/*
 global-exclude *test*.py
 
 # Exclude documentation
-global-exclude docs/*
-global-exclude *.rst
+prune docs
 
 # Exclude examples
-global-exclude examples/*
+prune examples

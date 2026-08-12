@@ -21,11 +21,12 @@ with RADIS, or with other spectral codes.
 Install
 ===============
 
-Assuming you have Python installed with the `Anaconda <https://www.anaconda.com/download/>`_ distribution you can use ``pip``::
+**We recommend** installing the latest stable version of RADIS from `PyPI <https://pypi.org/project/radis/>`_ ::
 
     pip install radis
 
-or ``conda`` via the conda-forge channel::
+For performance purposes, we also recommend using Python 3.12 or earlier, as the latest versions of Python 3.13 and 3.14 are not yet fully supported by all dependencies.
+For the development version from `GitHub <https://github.com/radis/radis>`_, refer to the :ref:`detailed installation procedure <label_install>`. For those preferring installation via ``conda`` from conda-forge (which may not always host the latest RADIS version), use: ::
 
     conda install radis -c conda-forge
 
@@ -119,9 +120,7 @@ the work! See :ref:`How to cite? <label_cite>`
 
 ---------------------------------------------------------------------
 
-`Q&A Forum <https://groups.google.com/forum/#!forum/radis-radiation>`__
-
-|badge_pypi|  |badge_pypistats| |badge_article| |badge_docs| |badge_license| |badge_contributors| |badge_travis| |badge_coverage| |badge_binder| |badge_gitter| |badge_slack|
+|badge_pypi|  |badge_pypistats| |badge_article| |badge_docs| |badge_license| |badge_contributors| |badge_tests| |badge_coverage| |badge_binder| |badge_gitter| |badge_slack|
 
 |badge_stars|
 
@@ -146,8 +145,8 @@ the work! See :ref:`How to cite? <label_cite>`
                    :target: ./License.md
                    :alt: License
 
-.. |badge_travis| image:: https://img.shields.io/travis/radis/radis.svg
-                  :target: https://travis-ci.com/radis/radis
+.. |badge_tests| image:: https://github.com/radis/radis/actions/workflows/tests-develop.yml/badge.svg
+                  :target: https://github.com/radis/radis/actions/workflows/tests-develop.yml
                   :alt: Tests
 
 .. |badge_coverage| image:: https://codecov.io/gh/radis/radis/branch/master/graph/badge.svg
@@ -181,4 +180,3 @@ the work! See :ref:`How to cite? <label_cite>`
 .. |badge_slack| image:: https://img.shields.io/badge/slack-join-green.svg?logo=slack
                   :target: https://radis.github.io/slack-invite/
                   :alt: Slack
-
