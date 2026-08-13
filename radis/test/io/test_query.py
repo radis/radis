@@ -157,15 +157,15 @@ def test_fetch_hitran(*args, **kwargs):
     assert df.wav.max() == 14477.377153
 
 
-def test_hitran_isotopes(*args, **kwargs):
-    """Isotopes to download are the ones HITRAN actually has, capped at 9"""
+def test_hitran_isotopologues(*args, **kwargs):
+    """Isotopologues to download are the ones HITRAN actually has, capped at 9"""
 
-    from radis.api.hitranapi import get_hitran_isotopes
+    from radis.api.hitranapi import get_hitran_isotopologues
 
-    assert get_hitran_isotopes("CO") == [1, 2, 3, 4, 5, 6]
-    assert get_hitran_isotopes("H2O") == [1, 2, 3, 4, 5, 6, 7]
-    # CO2 has 12 isotopes; only the first 9 are downloaded
-    assert get_hitran_isotopes("CO2") == list(range(1, 10))
+    assert get_hitran_isotopologues("CO") == [1, 2, 3, 4, 5, 6]
+    assert get_hitran_isotopologues("H2O") == [1, 2, 3, 4, 5, 6, 7]
+    # CO2 has 12 isotopologues; only the first 9 are downloaded
+    assert get_hitran_isotopologues("CO2") == list(range(1, 10))
 
 
 @pytest.mark.needs_connection

@@ -107,18 +107,18 @@ columns_2004 = OrderedDict(
 # fmt: on
 
 
-def get_hitran_isotopes(molecule, max_isotope=9):
-    """Isotopes of ``molecule`` available in HITRAN, read from HAPI's
+def get_hitran_isotopologues(molecule, max_isotopologue=9):
+    """Isotopologues of ``molecule`` available in HITRAN, read from HAPI's
     isotopologue table.
 
-    Isotopes above ``max_isotope`` (ex: 10-12 for CO2) are left out: they have
-    negligible abundance and were never downloaded.
+    Isotopologues above ``max_isotopologue`` (ex: 10-12 for CO2) are left out:
+    they have negligible abundance and were never downloaded.
 
     Examples
     --------
     ::
 
-        get_hitran_isotopes("CO")
+        get_hitran_isotopologues("CO")
         >>> [1, 2, 3, 4, 5, 6]
     """
     from hapi import ISO
@@ -126,7 +126,7 @@ def get_hitran_isotopes(molecule, max_isotope=9):
     from radis.db.classes import get_molecule_identifier
 
     mol_id = get_molecule_identifier(molecule)
-    return [iso for (m, iso) in sorted(ISO) if m == mol_id and iso <= max_isotope]
+    return [iso for (m, iso) in sorted(ISO) if m == mol_id and iso <= max_isotopologue]
 
 
 PARAMETER_GROUPS_HITRAN = {
@@ -1888,11 +1888,12 @@ class HITRANDatabaseManager(DatabaseManager):
         wmax = 1e10
 
         def download_all_hitran_isotopes(molecule, directory, extra_params):
-            """Download all isotopes of the given molecule, one request each.
+            """Download all isotopologues of the given molecule, one request each.
 
             .. warning::
-                this won't download higher isotopes (ex : isotope 10-11-12 for CO2)
-                Neglected for the moment, they're irrelevant for most calculations anyway
+                this won't download higher isotopologues (ex : isotopologue
+                10-11-12 for CO2). Neglected for the moment, they're irrelevant
+                for most calculations anyway
             """
             directory = abspath(expanduser(directory))
             max_fetch_retries = 3
@@ -1937,8 +1938,8 @@ class HITRANDatabaseManager(DatabaseManager):
                     return f.read(1) == b"\n"
 
             for iso in tqdm(
-                get_hitran_isotopes(molecule),
-                desc="Downloading isotopes",
+                get_hitran_isotopologues(molecule),
+                desc="Downloading isotopologues",
                 disable=not self.verbose,
             ):
                 file = f"{molecule}_{iso}"
