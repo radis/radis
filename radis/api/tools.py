@@ -184,9 +184,17 @@ def _format_dtype(dtype):
     Crash with hopefully helping error message
     """
     try:
-        dt = np.dtype(
-            [(str(k), c) for k, c in dtype]
-        )  # DeprecationWarning: Data type alias 'a' was deprecated in NumPy 2.0. Use the 'S' alias instead.
+        # NumPy 2.5 removed the legacy "aN" fixed-width string alias; use "SN".
+        formatted_dtype = [
+            (
+                str(k),
+                f"S{c[1:]}"
+                if isinstance(c, str) and c.startswith("a") and c[1:].isdigit()
+                else c,
+            )
+            for k, c in dtype
+        ]
+        dt = np.dtype(formatted_dtype)
         # Note: dtype names cannot be `unicode` in Python2. Hence the str()
     except TypeError as err:
         # Cant read database. Try to be more explicit for user before crashing

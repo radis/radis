@@ -30,8 +30,14 @@ import pytest
 
 from radis.api.cdsdapi import cdsd2df
 from radis.api.hitranapi import hit2df
+from radis.api.tools import _format_dtype
 from radis.misc.warning import IrrelevantFileWarning
 from radis.test.utils import getTestFile, setup_test_line_databases
+
+
+@pytest.mark.fast
+def test_format_dtype_with_legacy_string_alias():
+    assert _format_dtype([("id", "a2")]) == np.dtype([("id", "S2")])
 
 
 @pytest.mark.fast
