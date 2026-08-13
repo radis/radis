@@ -288,7 +288,7 @@ class SpectrumFactory(BandFactory):
 
         Refer to [Spectral-Synthesis-Algorithm]_ for more explanation on the LDM method for lineshape interpolation.
 
-        By default, ``optimization="simple"`` and ``broadening_method="voigt_poly"``.
+        By default, ``optimization=None`` and ``broadening_method="voigt_poly"``.
     warnings: bool, or one of ``['warn', 'error', 'ignore']``, dict
         If one of ``['warn', 'error', 'ignore']``, set the default behaviour
         for all warnings. Can also be a dictionary to set specific warnings only.
@@ -433,7 +433,7 @@ class SpectrumFactory(BandFactory):
         pseudo_continuum_threshold=0,
         self_absorption=True,
         chunksize=None,
-        optimization="simple",
+        optimization=None,
         folding_thresh=1e-6,
         zero_padding=-1,
         broadening_method="voigt_poly",
@@ -525,30 +525,26 @@ class SpectrumFactory(BandFactory):
         import radis
 
         sparse_waverange = radis.config.get("SPARSE_WAVERANGE", "multi_sparse_grid")
-        if sparse_waverange == "auto":
+        if sparse_waverange in ["auto", True, "true", "True"]:
             warn(
-                'Legacy SPARSE_WAVERANGE = "auto" is deprecated. Please use "false", "simple", or "multi_sparse_grid" in radis.json. The default is "multi_sparse_grid".',
+                f"""Legacy SPARSE_WAVERANGE = {sparse_waverange} is deprecated.
+                Please use "false", "simple", or "multi_sparse_grid" in radis.json. \n
+                We now set SPARSE_WAVERANGE to "simple" to keep identical behavior similar to you previous configuration but you should set to "multi_sparse_grid" for improved performances.""",
                 DeprecationWarning,
                 stacklevel=2,
             )
             sparse_waverange = "simple"
 
-        if sparse_waverange in [True, "true", "True"]:
-            warn(
-                'Legacy SPARSE_WAVERANGE = True is deprecated. Please use "false", "simple", or "multi_sparse_grid" in radis.json. The default is "multi_sparse_grid".',
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            sparse_waverange = "simple"
         if sparse_waverange in [False, "false", "False"]:
             sparse_waverange = False
+
         if sparse_waverange not in [False, "simple", "multi_sparse_grid"]:
             raise ValueError(
                 "SPARSE_WAVERANGE must be False, 'simple', or 'multi_sparse_grid'."
             )
 
-        multisparsegrid = sparse_waverange == "multi_sparse_grid"
-        if multisparsegrid:
+        ## Check incompatibility of multi_sparse_grid
+        if sparse_waverange == "multi_sparse_grid":
             note_for_error_message = """Default configuration for this mode: SPARSE_WAVERANGE='multi_sparse_grid', optimization=None, and broadening_method='voigt_poly'.
                 SPARSE_WAVERANGE can also be changed in your radis.json configuration file."""
             if broadening_method != "voigt_poly":
@@ -567,6 +563,8 @@ class SpectrumFactory(BandFactory):
 
                     {note_for_error_message}"""
                 )
+        # Now save sparse-grid state to sf.
+        self.sparse_waverange = sparse_waverange
 
         # calculate waveranges
         # --------------------
@@ -593,9 +591,6 @@ class SpectrumFactory(BandFactory):
 
         # Set default variables from config:
         import radis
-
-        # Canonical sparse-grid state.
-        self.sparse_waverange = sparse_waverange
 
         # Init variables
         # --------------
@@ -2045,9 +2040,6 @@ class SpectrumFactory(BandFactory):
 
         self.profiler.start("generate_wavenumber_arrays", 2)
 
-        sparse_waverange = self.sparse_waverange
-        multisparsegrid = sparse_waverange == "multi_sparse_grid"
-
         if (
             checks
         ):  # check == False is used to bypass some stuff that isn't known at this point for GPU calculations
@@ -2076,12 +2068,12 @@ class SpectrumFactory(BandFactory):
                 raise ValueError(
                     "Current configuration incompatible with wstep='auto', please provide value for wstep"
                 )
-            if multisparsegrid:
+            if self.sparse_waverange == "multi_sparse_grid":
                 raise ValueError(
                     "Current configuration incompatible with multisparsegrid=True"
                 )
 
-        if multisparsegrid:
+        if self.sparse_waverange == "multi_sparse_grid":
             wstep_calc_narrow = self.params.wstep
             # wstep_calc_coarse1 = wstep_calc_narrow * 10
             # wstep_calc_coarse2 = wstep_calc_narrow * 100
@@ -2098,8 +2090,7 @@ class SpectrumFactory(BandFactory):
             )
 
         # TODO / save memory : do not build self.wavenumber; only use wavenumber_calc?
-        self._multisparsegrid = multisparsegrid
-        if not multisparsegrid:
+        if self.sparse_waverange != "multi_sparse_grid":
             wavenumber, wavenumber_calc, woutrange = _generate_wavenumber_range(
                 self.input.wavenum_min,
                 self.input.wavenum_max,
@@ -2173,7 +2164,7 @@ class SpectrumFactory(BandFactory):
             # (note that this means 3x wavenumber_calc will be required when applying lineshapes)
             truncation = wavenumber_calc[-1] - wavenumber_calc[0]
 
-        if not multisparsegrid:
+        if self.sparse_waverange != "multi_sparse_grid":
             wbroad_centered = _generate_broadening_range(self.params.wstep, truncation)
         else:
             # create waveranges with a center hollow zone for coarser grids
@@ -2212,7 +2203,7 @@ class SpectrumFactory(BandFactory):
 
             # Check wavenumber grids (in single grid & multi grid modes)
             if radis.config["DEBUG_MODE"]:
-                if not self._multisparsegrid:
+                if self.sparse_waverange != "multi_sparse_grid":
                     assert (
                         wavenumber_calc[woutrange[0] : woutrange[1]] == wavenumber
                     ).all()

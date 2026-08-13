@@ -23,7 +23,7 @@
     "GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD": 3    # raise a warning if less than THIS number of grid points per lineshape,
     "GRIDPOINTS_PER_LINEWIDTH_ERROR_THRESHOLD": 1   # raise an error if less than THIS number of grid points per lineshape,
     "MEMORY_MAPPING_ENGINE": "auto"         # "vaex",/"pytables"/"feather". "auto" uses "vaex" in most cases
-    "SPARSE_WAVERANGE": "multi_sparse_grid"            # "false" disables sparse grids; "simple" uses the automatic sparse LDM algorithm; "multi_sparse_grid" uses multiple coarser sparse wavenumber grids.
+    "SPARSE_WAVERANGE": "multi_sparse_grid"            # "false" disables sparse grids; "simple" uses the sparse LDM algorithm with automatic selection of the grid size; "multi_sparse_grid" uses three sparse wavenumber grids (coarse, regular, fine).
     "DEFAULT_DOWNLOAD_PATH": "~/.radisdb"   # default path for downloading databases with databank='hitran'/'hitemp'/'exomol' . You can also specify a local path for each entry of the, "database" list.
     "RESAMPLING_TOLERANCE_THRESHOLD": 5e-3  # an error if raises if areas do not match by a value above, this threshold during resampling. See :py:meth:`~radis.spectrum.spectrum.Spectrum.resample`
     "PRECOMPUTE_ALL_QUANTITIES": true       # if `true` Spectrum objects contain radiance, transmittance, etc. Else only abscoeff is computed.
