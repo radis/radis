@@ -188,9 +188,11 @@ def _format_dtype(dtype):
         formatted_dtype = [
             (
                 str(k),
-                f"S{c[1:]}"
-                if isinstance(c, str) and c.startswith("a") and c[1:].isdigit()
-                else c,
+                (
+                    f"S{c[1:]}"
+                    if isinstance(c, str) and c.startswith("a") and c[1:].isdigit()
+                    else c
+                ),
             )
             for k, c in dtype
         ]
