@@ -4319,10 +4319,6 @@ class BaseFactory(DatabankLoader):
             self._wstep != "auto"
         ):  # TODO refactor : rename self._wstep and remove it from SpectrumFactory.__slots__
             assert self._wstep == self.params.wstep
-        if (
-            self._sparse_ldm != "auto"
-        ):  # TODO refactor : rename self._sparse_ldm and remove it from SpectrumFactory.__slots__
-            assert self._sparse_ldm == self.params.sparse_ldm
 
         # Checks there if there is change in truncation value
         # (except in the case where truncation is None, where we set it to be the full range)

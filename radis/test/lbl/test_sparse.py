@@ -32,14 +32,14 @@ sf_args = {
 
 def test_sparse_vs_regular_methods(plot=True):
     # save original config
-    init_config = radis.config["MULTI_SPARSE_GRID"]
+    init_config = radis.config["SPARSE_WAVERANGE"]
     sf = SpectrumFactory(**sf_args)
 
     for broadening_method in ["voigt_poly"]:
         # for broadening_method in ["voigt", 'convolve']: #the convolve method is simply too long
 
         # Compute Multi-grid
-        radis.config["MULTI_SPARSE_GRID"] = True
+        radis.config["SPARSE_WAVERANGE"] = "multi_sparse_grid"
         sf = SpectrumFactory(
             **sf_args, optimization=None, broadening_method=broadening_method
         )
@@ -52,7 +52,7 @@ def test_sparse_vs_regular_methods(plot=True):
             # NOW compute a Spectrum
             if optim == None and broadening_method == "convolve":
                 pass
-            radis.config["MULTI_SPARSE_GRID"] = False
+            radis.config["SPARSE_WAVERANGE"] = "simple"
             sf = SpectrumFactory(
                 **sf_args, optimization=optim, broadening_method=broadening_method
             )
@@ -73,16 +73,16 @@ def test_sparse_vs_regular_methods(plot=True):
             print(f"******** {optim}: {residual:.2e} ********")
             assert np.isclose(residual, 0, atol=2e-10)
 
-    radis.config["MULTI_SPARSE_GRID"] = init_config
+    radis.config["SPARSE_WAVERANGE"] = init_config
 
 
 def test_sparse_with_optimization_raises_error():
-    """Test that MULTI_SPARSE_GRID with optimization raises NotImplementedError."""
+    """Test that multi_sparse_grid with optimization raises NotImplementedError."""
 
     import pytest
 
-    init_config = radis.config["MULTI_SPARSE_GRID"]
-    radis.config["MULTI_SPARSE_GRID"] = True
+    init_config = radis.config["SPARSE_WAVERANGE"]
+    radis.config["SPARSE_WAVERANGE"] = "multi_sparse_grid"
 
     for optim in ["simple", "min-RMS"]:
         with pytest.raises(ValueError):
@@ -99,15 +99,34 @@ def test_sparse_with_optimization_raises_error():
             )
             sf.fetch_databank("hitran")  # to avoid flake8 error in linting
 
-    radis.config["MULTI_SPARSE_GRID"] = init_config
+    radis.config["SPARSE_WAVERANGE"] = init_config
+
+
+def test_sparse_waverange_single_mode():
+    """SPARSE_WAVERANGE should expose the unified false/simple/multi_sparse_grid modes."""
+
+    init_config = radis.config["SPARSE_WAVERANGE"]
+
+    try:
+        for value, expected_multigrid in [
+            (False, False),
+            ("simple", False),
+            ("multi_sparse_grid", True),
+        ]:
+            radis.config["SPARSE_WAVERANGE"] = value
+            sf = SpectrumFactory(**sf_args)
+            assert sf.sparse_waverange in [False, "simple", "multi_sparse_grid"]
+            assert sf._multisparsegrid is expected_multigrid
+    finally:
+        radis.config["SPARSE_WAVERANGE"] = init_config
 
 
 if __name__ == "__main__":
     # save original config
-    init_config0 = radis.config["MULTI_SPARSE_GRID"]
+    init_config0 = radis.config["SPARSE_WAVERANGE"]
 
     # sparse_vs_regular(optim='simple', broadening_method='fft')
     test_sparse_vs_regular_methods(plot=True)
     test_sparse_with_optimization_raises_error()
     # put back initial config
-    radis.config["MULTI_SPARSE_GRID"] = init_config0
+    radis.config["SPARSE_WAVERANGE"] = init_config0

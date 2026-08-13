@@ -524,15 +524,48 @@ class SpectrumFactory(BandFactory):
 
         import radis
 
-        multisparsegrid = radis.config["MULTI_SPARSE_GRID"]
+        sparse_waverange = radis.config.get("SPARSE_WAVERANGE", "multi_sparse_grid")
+        if sparse_waverange == "auto":
+            warn(
+                'Legacy SPARSE_WAVERANGE = "auto" is deprecated. Please use "false", "simple", or "multi_sparse_grid" in radis.json. The default is "multi_sparse_grid".',
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            sparse_waverange = "simple"
+
+        if sparse_waverange in [True, "true", "True"]:
+            warn(
+                'Legacy SPARSE_WAVERANGE = True is deprecated. Please use "false", "simple", or "multi_sparse_grid" in radis.json. The default is "multi_sparse_grid".',
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            sparse_waverange = "simple"
+        if sparse_waverange in [False, "false", "False"]:
+            sparse_waverange = False
+        if sparse_waverange not in [False, "simple", "multi_sparse_grid"]:
+            raise ValueError(
+                "SPARSE_WAVERANGE must be False, 'simple', or 'multi_sparse_grid'."
+            )
+
+        multisparsegrid = sparse_waverange == "multi_sparse_grid"
         if multisparsegrid:
+            note_for_error_message = """Default configuration for this mode: SPARSE_WAVERANGE='multi_sparse_grid', optimization=None, and broadening_method='voigt_poly'.
+                SPARSE_WAVERANGE can also be changed in your radis.json configuration file."""
             if broadening_method != "voigt_poly":
                 raise ValueError(
-                    f"Multigrid is only implemented for broadening_method=`voigt_poly`. You used broadening_method=`{broadening_method}`."
+                    f"""multi_sparse_grid requires broadening_method='voigt_poly'.
+                    You used broadening_method='{broadening_method}'.
+                    Please switch to 'voigt_poly' or set radis.config['SPARSE_WAVERANGE'] to 'simple' or False.
+
+                    {note_for_error_message}"""
                 )
-            if optimization != None:
+            if optimization is not None:
                 raise ValueError(
-                    f"Multigrid is only implemented for optimization=None. You used optimization=`{optimization}`."
+                    f"""multi_sparse_grid is only supported with optimization=None.
+                    You used optimization='{optimization}'.
+                    Please switch to optimization=None or set radis.config['SPARSE_WAVERANGE'] to 'simple' or False.
+
+                    {note_for_error_message}"""
                 )
 
         # calculate waveranges
@@ -561,12 +594,8 @@ class SpectrumFactory(BandFactory):
         # Set default variables from config:
         import radis
 
-        self._sparse_ldm = radis.config[
-            "SPARSE_WAVERANGE"
-        ]  # target value (can be 'auto'), stored for next calculations
-        self.params["sparse_ldm"] = radis.config[
-            "SPARSE_WAVERANGE"
-        ]  # value evaluated at each new spectrum calculation
+        # Canonical sparse-grid state.
+        self.sparse_waverange = sparse_waverange
 
         # Init variables
         # --------------
@@ -1988,6 +2017,16 @@ class SpectrumFactory(BandFactory):
 
         return s
 
+    def _sparse_ldm_enabled(self):
+        """Return whether the sparse LDM mode is active for the current setup."""
+        if self.sparse_waverange is False:
+            return False
+        if self.sparse_waverange == "multi_sparse_grid":
+            return True
+        if self.sparse_waverange in ["auto", "simple"]:
+            return len(self.wavenumber_calc) / len(self.df1) > 1.0
+        return False
+
     def _generate_wavenumber_arrays(self, checks=True):
         """define wavenumber grid vectors
 
@@ -2006,7 +2045,8 @@ class SpectrumFactory(BandFactory):
 
         self.profiler.start("generate_wavenumber_arrays", 2)
 
-        multisparsegrid = radis.config["MULTI_SPARSE_GRID"]
+        sparse_waverange = self.sparse_waverange
+        multisparsegrid = sparse_waverange == "multi_sparse_grid"
 
         if (
             checks
@@ -2163,14 +2203,11 @@ class SpectrumFactory(BandFactory):
         # Setting wstep to optimal value and rounding it to a degree 3
         if checks:
             # Check the interest of Sparse / Regular Mode
-            if self._sparse_ldm == "auto":
+            if self.sparse_waverange in ["auto", "simple"]:
                 sparsity = len(wavenumber_calc) / len(self.df1)
-                self.params["sparse_ldm"] = (
-                    sparsity > 1.0
-                )  # works ; TODO : set a threshold based on more data
                 if self.verbose >= 2:
                     print(
-                        f"Sparsity (grid points/lines) = {sparsity:.1f}. Set sparse_ldm to {self.params['sparse_ldm']}"
+                        f"Sparsity (grid points/lines) = {sparsity:.1f}. sparse_waverange={self.sparse_waverange}"
                     )
 
             # Check wavenumber grids (in single grid & multi grid modes)

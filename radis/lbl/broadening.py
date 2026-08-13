@@ -2051,7 +2051,7 @@ class BroadenFactory(BaseFactory):
         wbroad = wbroad_centered + dg.shiftwav
         #        convolve_profile = self._calc_lineshape(dg)
         # Get Voigt from empirical approximation
-        if not self._multisparsegrid:
+        if self.sparse_waverange != "multi_sparse_grid":
             if "hwhm_voigt" in dg:
                 voigt_profile = self._voigt_broadening(dg, wbroad_centered, jit=False)
             # Get Voigt from convolution
@@ -2704,8 +2704,9 @@ class BroadenFactory(BaseFactory):
         )
         self.profiler.start("LDM_Distribute_lines", 3)
         # ... Initialize array on which to distribute the lineshapes
+        sparse_ldm_enabled = self._sparse_ldm_enabled()
         if broadening_method in ["voigt_poly", "convolve"]:
-            if self.params.sparse_ldm == True:
+            if sparse_ldm_enabled:
                 # LDM is constructed in a sparse-way later
                 pass
             else:
@@ -2714,7 +2715,7 @@ class BroadenFactory(BaseFactory):
                 ki0 += 1
                 ki1 += 1
         elif broadening_method == "fft":
-            if self.params.sparse_ldm == True:
+            if sparse_ldm_enabled:
                 if self.verbose >= 2:
                     print(
                         "SPARSE optimization not implemented with 'fft' mode. Use 'voigt_poly' for analytical voigt_poly, or radis.config['SPARSE_WAVERANGE'] = False"
@@ -2730,10 +2731,7 @@ class BroadenFactory(BaseFactory):
             raise NotImplementedError(broadening_method)
 
         # Distribute all line intensities on the 2x2x2 bins.
-        if (
-            broadening_method in ["voigt_poly", "convolve"]
-            and self.params.sparse_ldm == True
-        ):
+        if broadening_method in ["voigt_poly", "convolve"] and sparse_ldm_enabled:
 
             import pandas as pd
 
@@ -2889,7 +2887,7 @@ class BroadenFactory(BaseFactory):
                 for m in range(len(wL)):
                     lineshape = line_profile_LDM[l][m]
 
-                    if self.params.sparse_ldm == True:
+                    if sparse_ldm_enabled:
                         if (l, m) in LDM_ranges.keys():
                             mask = boolean_array_from_ranges(
                                 LDM_ranges[(l, m)], len(sumoflines_calc)
@@ -3741,11 +3739,11 @@ class BroadenFactory(BaseFactory):
                 + " may be inverted"
             )
 
-        if not self._multisparsegrid:
+        if self.sparse_waverange != "multi_sparse_grid":
             wavenumber, abscoeff = self._broaden_lines(df)
         elif (
             self.params.optimization in ["simple", "min-RMS"]
-            and self.params.sparse_ldm == True
+            and self._sparse_ldm_enabled()
         ):
             # spectrum is split over multiple, discontinued spectral grids.
             # To leverage the sparse LDM algorithm, treat all discontinued groups
@@ -3852,7 +3850,7 @@ class BroadenFactory(BaseFactory):
                 + " may be inverted"
             )
 
-        if self._multisparsegrid:
+        if self.sparse_waverange == "multi_sparse_grid":
             # spectrum is split over multiple, discontinued spectral grids
             # Deal with all of them
             wavenumber, abscoeff, emisscoeff = [], [], []
@@ -4002,7 +4000,7 @@ class BroadenFactory(BaseFactory):
                 DeprecationWarning,
             )
 
-            if self._multisparsegrid:
+            if self.sparse_waverange == "multi_sparse_grid":
                 raise NotImplementedError(
                     "Pseudo continuum not implemented with sparse wavenumber grid"
                 )
