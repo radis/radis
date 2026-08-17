@@ -280,6 +280,12 @@ class DatabaseManager(object):
                     metadata_keys_contain=["wavenumber_min", "wavenumber_max"],
                     engine=engine,
                 )
+            except KeyError as err:
+                if "No object named df in the file" in str(err):
+                    raise KeyError(
+                        f"No object named df in the file {local_file}, likely due to change in the HDF5 engine; if the file is a cache file you can remove it safely on your computer to fix the error: it will be regenerated with the correct format."
+                    )
+                raise err
             except DeprecatedFileWarning as err:
                 if not auto_remove:
                     raise err

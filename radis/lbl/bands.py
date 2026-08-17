@@ -897,7 +897,9 @@ class BandFactory(BroadenFactory):
 
         for i, (band, dg) in enumerate(gb):
             if optimization in ("simple", "min-RMS"):
-                line_profile_LDM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_LDM(dg)
+                line_profile_LDM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_LDM(
+                    dg, wavenumber_group=None
+                )
                 wavenumber, absorption = self._apply_lineshape_LDM(
                     dg.S.values,
                     line_profile_LDM,
@@ -948,7 +950,9 @@ class BandFactory(BroadenFactory):
         pb = ProgressBar(len(gb), active=self.verbose)
         for i, (band, dg) in enumerate(gb):
             if optimization in ("simple", "min-RMS"):
-                line_profile_LDM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_LDM(dg)
+                line_profile_LDM, wL, wG, wL_dat, wG_dat = self._calc_lineshape_LDM(
+                    dg, wavenumber_group=None
+                )
                 wavenumber, absorption = self._apply_lineshape_LDM(
                     dg.S.values,
                     line_profile_LDM,

@@ -2155,7 +2155,7 @@ class Spectrum(object):
         var: variable (`absorbance`, `transmittance`, `transmittance_noslit`, `xsection`, etc.)
             For full list see :py:meth:`~radis.spectrum.spectrum.Spectrum.get_vars()`.
             If ``None``, plot the first thing in the Spectrum. Default ``None``.
-        wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``,
+        wunit: ``'default'``, ``'nm'``, ``'cm-1'``, ``'nm_vac'``
             wavelength air, wavenumber, or wavelength vacuum. If ``'default'``,
             Spectrum :py:meth:`~radis.spectrum.spectrum.Spectrum.get_waveunit` is used.
         Iunit: unit for variable
@@ -2217,7 +2217,6 @@ class Spectrum(object):
 
         from radis.misc.plot import fix_style, set_style
 
-        # Get variable
         x, y, wunit, Iunit = self.get(
             var, wunit=wunit, Iunit=Iunit, return_units="as_str"
         )
