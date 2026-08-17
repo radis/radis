@@ -2352,8 +2352,8 @@ class Spectrum(object):
 
         if show:
             plt.show()
-
-        return line
+        else:
+            return plt, ax
 
     def _plot_plotly(
         self,
@@ -2454,13 +2454,28 @@ class Spectrum(object):
 
         import plotly.express as px
 
-        fig = px.line(x=x, y=y, template=template)
+        radiance_data = self.get("radiance_noslit")
+        df = pd.DataFrame(
+            {"Wavenumber": radiance_data[0], "Radiance_noslit": radiance_data[1]}
+        )
+
+        # Add extra plotting parameters
+        if "lw" in kwargs:
+            kwargs["line_width"] = kwargs.pop("lw")
+        if "color" in kwargs:
+            kwargs["line_color"] = kwargs.pop("color")
+
+        fig = px.line(df, x=x, y=y, template=template)
+        fig.update_traces(**kwargs)
         fig.update_layout(
             xaxis_title=xlabel,
             yaxis_title=ylabel,
             yaxis=dict(tickmode="linear", dtick=0.01),
         )
-        fig.show()
+        if show is True:
+            fig.show()
+        else:
+            return fig
 
     def plot(
         self,
@@ -2529,8 +2544,9 @@ class Spectrum(object):
             plotting on an existing figure is forbidden if labels are not the
             same. Use ``force=True`` to ignore that.
         show: bool
-            show figure. Default ``False``. Will still show the figure in
+            show figure. Default ``True``. Will still show the figure in
             interactive mode, e.g, `%matplotlib inline` in a Notebook.
+            If ``show=False``, the function returns the Matplotlib or Plotly object for customization.
         show_ruler: bool
             if `True`, add a ruler tool to the Matplotlib toolbar. Convenient
             to measure distances between peaks, etc.
@@ -2549,7 +2565,7 @@ class Spectrum(object):
         **kwargs: **dict
             kwargs forwarded as argument to plot (e.g: lineshape
             attributes: `lw=3, color='r'`)
-
+            Note: for more customizations set ``show=False`` to return the Matplotlib or Plotly object.
         Returns
         -------
         line:
