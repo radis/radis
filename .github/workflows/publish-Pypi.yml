@@ -24,15 +24,19 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
       - name: Validate release tag matches package version in radis/__version__.txt
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           PKG_VERSION=$(cat radis/__version__.txt | tr -d '[:space:]')
-          TAG_VERSION="${{ github.event.release.tag_name }}"
+          TAG_VERSION="$RELEASE_TAG"
           # Strip leading 'v' from tag if present (e.g. v0.16.4 -> 0.16.4)
           TAG_VERSION="${TAG_VERSION#v}"
           echo "Package version: $PKG_VERSION"
