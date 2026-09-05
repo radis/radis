@@ -11,6 +11,8 @@ on:
 
 jobs:
   build:
+    permissions:
+      contents: read
     env:
       MPLBACKEND: Agg
     strategy:
@@ -45,6 +47,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
         with:

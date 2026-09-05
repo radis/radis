@@ -1,0 +1,10 @@
+# Configuration for zizmor (GitHub Actions static analysis).
+# Docs: https://docs.zizmor.sh/configuration/
+
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        # Tag pins (e.g. @v4) are enough here; we don't pin to commit hashes
+        # because there is no bot to keep the hashes updated.
+        "*": ref-pin
