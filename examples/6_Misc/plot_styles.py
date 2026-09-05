@@ -48,7 +48,7 @@ for plotlib, context, style in [
     plt.title(", ".join(f"{v}" for v in radis.config["plot"].values()))
     plt.tight_layout()
 
-#%%
+# %%
 # You can also choose to not show the figure immediately, and instead return
 # the Matplotlib or Plotly object. This allows for **advanced customization**
 # (e.g., modifying the matplotlib figure).
