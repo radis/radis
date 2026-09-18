@@ -1697,16 +1697,16 @@ class MdbExomol(DatabaseManager):
                         )
                 alpha_ref_dict = dict(zip(bdat["jlower"], bdat["alpha_ref"]))
                 self.alpha_ref = (
-                    np.array(df["m"].map(alpha_ref_dict).values)
+                    np.array(df["m"].map(alpha_ref_dict).fillna(self.alpha_ref_def).values)
                     if self.engine != "vaex"
-                    else df["m"].map(alpha_ref_dict).values
+                    else df["m"].map(alpha_ref_dict).fillmissing(self.alpha_ref_def)
                 )
 
                 n_Texp_dict = dict(zip(bdat["jlower"], bdat["n_Texp"]))
                 self.n_Texp = (
-                    np.array(df["m"].map(n_Texp_dict).values)
+                    np.array(df["m"].map(n_Texp_dict).fillna(self.n_Texp_def).values)
                     if self.engine != "vaex"
-                    else df["m"].map(n_Texp_dict).values
+                    else df["m"].map(n_Texp_dict).fillmissing(self.n_Texp_def)
                 )
                 ## for pandas but returns DataFrame
                 # bdat.set_index("jlower", inplace=True)
