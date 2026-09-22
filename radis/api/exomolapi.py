@@ -796,7 +796,10 @@ def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None, output="pyta
 
 def _map_m0_parameter(values, mapping, default):
     """Map ExoMol m0 broadening values and replace missing entries."""
-    mapped = np.asarray(values.map(mapping).values, dtype=float)
+    # `copy=True` (the default for np.array, unlike np.asarray) ensures a
+    # writable array even when the mapped values are already float64 and
+    # backed by a read-only buffer (e.g. from a Pandas/Vaex `.values` view).
+    mapped = np.array(values.map(mapping).values, dtype=float, copy=True)
     missing = ~np.isfinite(mapped)
     if missing.any():
         mapped[missing] = default
@@ -1722,12 +1725,8 @@ class MdbExomol(DatabaseManager):
                     alpha_ref_dict, self.alpha_ref_def, "alpha_ref"
                 )
                 n_Texp = map_m0_parameter(n_Texp_dict, self.n_Texp_def, "n_Texp")
-                if self.engine == "vaex":
-                    self.alpha_ref = vaex.array(alpha_ref)
-                    self.n_Texp = vaex.array(n_Texp)
-                else:
-                    self.alpha_ref = alpha_ref
-                    self.n_Texp = n_Texp
+                self.alpha_ref = alpha_ref
+                self.n_Texp = n_Texp
 
             else:
                 warnings.warn(
