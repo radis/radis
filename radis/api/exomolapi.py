@@ -795,15 +795,23 @@ def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None, output="pyta
 
 
 def _map_m0_parameter(values, mapping, default):
-    """Map ExoMol m0 broadening values and replace missing entries."""
-    # `copy=True` (the default for np.array, unlike np.asarray) ensures a
-    # writable array even when the mapped values are already float64 and
-    # backed by a read-only buffer (e.g. from a Pandas/Vaex `.values` view).
-    mapped = np.array(values.map(mapping).values, dtype=float, copy=True)
+    """Map ExoMol m0 broadening values and replace missing entries.
+
+    ``values.map(mapping).values`` may already be a fully materialized,
+    read-only buffer (e.g. a PyArrow array for the Vaex engine, or a Pandas
+    array under Copy-on-Write). We only take a copy when there are actually
+    missing entries to patch, and only if the buffer isn't already
+    writable, to avoid doubling memory usage for the (common) case where
+    every `m` value is found in the broadening file.
+    """
+    mapped = np.asarray(values.map(mapping).values, dtype=float)
     missing = ~np.isfinite(mapped)
-    if missing.any():
+    missing_count = int(missing.sum())
+    if missing_count:
+        if not mapped.flags.writeable:
+            mapped = mapped.copy()
         mapped[missing] = default
-    return mapped, int(missing.sum())
+    return mapped, missing_count
 
 
 def make_j2b_m0(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
