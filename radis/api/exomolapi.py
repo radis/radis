@@ -794,6 +794,15 @@ def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None, output="pyta
     return jj2alpha_ref, jj2n_Texp
 
 
+def _map_m0_parameter(values, mapping, default):
+    """Map ExoMol m0 broadening values and replace missing entries."""
+    mapped = np.asarray(values.map(mapping).values, dtype=float)
+    missing = ~np.isfinite(mapped)
+    if missing.any():
+        mapped[missing] = default
+    return mapped, int(missing.sum())
+
+
 def make_j2b_m0(bdat, alpha_ref_default=0.07, n_Texp_default=0.5, jlower_max=None):
     """compute j2b (code m0, map from |m| to alpha_ref)
 
@@ -1696,25 +1705,29 @@ class MdbExomol(DatabaseManager):
                             f"Found {len(invalid_pqr)} values in 'PQR' outside of -1, 0, 1: {invalid_pqr['PQR'].unique()}"
                         )
                 alpha_ref_dict = dict(zip(bdat["jlower"], bdat["alpha_ref"]))
-                self.alpha_ref = (
-                    np.array(df["m"].map(alpha_ref_dict).values)
-                    if self.engine != "vaex"
-                    else df["m"].map(alpha_ref_dict).values
-                )
-
                 n_Texp_dict = dict(zip(bdat["jlower"], bdat["n_Texp"]))
-                self.n_Texp = (
-                    np.array(df["m"].map(n_Texp_dict).values)
-                    if self.engine != "vaex"
-                    else df["m"].map(n_Texp_dict).values
+
+                def map_m0_parameter(mapping, default, parameter_name):
+                    mapped, missing_count = _map_m0_parameter(df["m"], mapping, default)
+                    if missing_count:
+                        warnings.warn(
+                            f"{missing_count} missing or unexpected m value(s) in "
+                            f"ExoMol m0 broadening data; replacing {parameter_name} "
+                            f"with the default value {default}.",
+                            UserWarning,
+                        )
+                    return mapped
+
+                alpha_ref = map_m0_parameter(
+                    alpha_ref_dict, self.alpha_ref_def, "alpha_ref"
                 )
-                ## for pandas but returns DataFrame
-                # bdat.set_index("jlower", inplace=True)
-                # self.alpha_ref = df["m"].map(bdat["alpha_ref"])
-                # self.n_Texp = df["m"].map(bdat["n_Texp"])
-                ## fill values outside of m range (but this gives DataFrame instead of np.array)
-                # self.alpha_ref = self.alpha_ref.fillna(self.alpha_ref_def)
-                # self.n_Texp = self.n_Texp.fillna(self.n_Texp_def)
+                n_Texp = map_m0_parameter(n_Texp_dict, self.n_Texp_def, "n_Texp")
+                if self.engine == "vaex":
+                    self.alpha_ref = vaex.array(alpha_ref)
+                    self.n_Texp = vaex.array(n_Texp)
+                else:
+                    self.alpha_ref = alpha_ref
+                    self.n_Texp = n_Texp
 
             else:
                 warnings.warn(
