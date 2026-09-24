@@ -4051,7 +4051,7 @@ class BaseFactory(DatabankLoader):
         return
 
     # %%
-    def _cutoff_linestrength(self, cutoff=None):
+    def _cutoff_linestrength(self, cutoff=None, percentage_cutoff_error=None):
         """Discard linestrengths that are lower that this, to reduce
         calculation times. Set the number of lines cut in
         ``self._Nlines_cutoff``
@@ -4063,21 +4063,21 @@ class BaseFactory(DatabankLoader):
             discard linestrengths that are lower that this, to reduce calculation
             times. If 0, no cutoff. Default 0
 
-        Notes
-        -----
-
-        # TODO:
-
-        turn linestrength cutoff criteria in 'auto' mode that adjusts linestrength
-        calculations based an error percentage criteria
+        percentage_cutoff_error: float (percentage, 0-100), optional
+            if given, automatically determines the optimal ``cutoff`` value such
+            that the discarded linestrengths contribute less than
+            ``percentage_cutoff_error`` % of the total linestrength.
         """
 
         # Update defaults
         if cutoff is not None:
             self.params.cutoff = cutoff
+        if percentage_cutoff_error is not None:
+            self.params.percentage_cutoff_error = percentage_cutoff_error
 
         # Load variables
         cutoff = self.params.cutoff
+        percentage_cutoff_error = getattr(self.params, "percentage_cutoff_error", None)
         verbose = self.verbose
         df = self.df1
 
@@ -4085,14 +4085,66 @@ class BaseFactory(DatabankLoader):
             self._Nlines_cutoff = None
             return
 
+        # --- AUTO CUTOFF from percentage_cutoff_error ---
+        if percentage_cutoff_error is not None:
+            self.profiler.start("applied_linestrength_cutoff", 2)  # profiler BEFORE logic
+
+            if self.dataframe_type == "pandas":
+                # Pandas: cumsum approach — sort ascending, cumsum, find threshold
+                S_sorted = df["S"].sort_values(ascending=True)
+                total_S = S_sorted.sum()
+                threshold = (percentage_cutoff_error / 100.0) * total_S
+                cumsum = S_sorted.cumsum()
+                # Find cutoff: largest S where cumsum is still below threshold
+                cutoff_auto = S_sorted[cumsum <= threshold]
+                if len(cutoff_auto) > 0:
+                    cutoff = float(cutoff_auto.iloc[-1])
+                else:
+                    cutoff = 0.0  # no lines to cut
+
+            elif self.dataframe_type == "vaex":
+                # Vaex: memory-efficient log-spaced binning with EARLY EXIT
+                # Do NOT load full dataframe — use bin-by-bin aggregation
+                S_min = float(df["S"].min())
+                S_max = float(df["S"].max())
+                if S_min <= 0:
+                    S_min = 1e-100  # avoid log(0)
+                n_bins = 1000
+                bin_edges = np.logspace(np.log10(S_min), np.log10(S_max), n_bins + 1)
+                total_S = float(df["S"].sum())
+                threshold = (percentage_cutoff_error / 100.0) * total_S
+
+                cumulative = 0.0
+                cutoff = 0.0
+                # Iterate bins from smallest S upward — BREAK as soon as threshold reached
+                for i in range(n_bins):
+                    lo = float(bin_edges[i])
+                    hi = float(bin_edges[i + 1])
+                    # vaex filter — does NOT load full df into memory
+                    bin_sum = float(
+                        df[(df["S"] >= lo) & (df["S"] < hi)]["S"].sum()
+                    )
+                    cumulative += bin_sum
+                    if cumulative >= threshold:
+                        cutoff = lo  # lines below `lo` are within allowed error
+                        break
+
+            self.params.cutoff = cutoff
+            if verbose >= 2:
+                print(
+                    f"Auto-cutoff set to {cutoff:.3e} based on "
+                    f"{percentage_cutoff_error}% error budget"
+                )
+        else:
+            self.profiler.start("applied_linestrength_cutoff", 2)  # profiler BEFORE logic
+
         if cutoff <= 0:
             self._Nlines_cutoff = 0
+            self.profiler.stop("applied_linestrength_cutoff", "Applied linestrength cutoff")
             return  # dont update self.df1
 
-        self.profiler.start("applied_linestrength_cutoff", 2)
-
         # Cutoff:
-        b = df.S <= cutoff
+        b = df["S"] <= cutoff
         Nlines_cutoff = b.sum()
 
         # Estimate time gained
@@ -4107,13 +4159,14 @@ class BaseFactory(DatabankLoader):
         if self.warnings["LinestrengthCutoffWarning"] != "ignore":
 
             if self.dataframe_type == "vaex":
-                error_cutoff = df[b].sum(df[b].S) / df.sum(df.S) * 100
+               error_cutoff = df[b]["S"].sum() / df["S"].sum() * 100
             else:
-                error_cutoff = df.S[b].sum() / df.S.sum() * 100
+                error_cutoff = df["S"][b].sum() / df["S"].sum() * 100
 
             if verbose >= 2:
                 print(
-                    f"Discarded {Nlines_cutoff / len(df) * 100:.2f}% of lines (linestrength<{cutoff}cm-1/(#.cm-2))"
+                    f"Discarded {Nlines_cutoff / len(df) * 100:.2f}% of lines "
+                    f"(linestrength<{cutoff}cm-1/(#.cm-2))"
                     + f" Estimated error: {error_cutoff:.2f}%"
                 )
             if error_cutoff > self.misc.warning_linestrength_cutoff:
@@ -4132,7 +4185,7 @@ class BaseFactory(DatabankLoader):
             self.plot_linestrength_hist(cutoff=cutoff)
             raise AssertionError(
                 f"All lines discarded! Please increase cutoff (currently : {cutoff:.1e}). "
-                + f"In your case: (min,max,mean)=({df.S.min():.2e},{df.S.max():.2e},{df.S.mean():.2e}"
+                + f"In your case: (min,max,mean)=({df['S'].min():.2e},{df['S'].max():.2e},{df['S'].mean():.2e}"
                 + "cm-1/(#.cm-2)). See histogram"
             ) from err
 
@@ -4161,15 +4214,6 @@ class BaseFactory(DatabankLoader):
 
         return
 
-    # %% ======================================================================
-    # PRIVATE METHODS - UTILS
-    # (cleaning)
-    # ---------------------------------
-    # _reinitialize_factory
-    # _check_inputs
-    # plot_populations()
-
-    # XXX =====================================================================
 
     def _reinitialize(self):
         """Reinitialize Factory before a new spectrum is calculated. It does:
