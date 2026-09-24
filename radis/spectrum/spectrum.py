@@ -4825,12 +4825,11 @@ class Spectrum(object):
         if plot:
             import matplotlib.pyplot as plt
 
-            plt_line = self.plot(
+            _, ax = self.plot(
                 lw=5,
                 color="grey",
                 show=False,  # needed when using `inline` ploting (e.g. default in Spyder)
             )
-            ax = plt_line.figure.axes[0]
             for i, y_fit in enumerate(y_fit_list):
                 g_fit = g_fit_list[i]
                 label = " ".join(
