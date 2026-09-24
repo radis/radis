@@ -53,7 +53,7 @@ for plotlib, context, style in [
 # the Matplotlib or Plotly object. This allows for **advanced customization**
 # (e.g., modifying the matplotlib figure).
 
-fig, ax = s.plot("radiance", plotting_library="matplotlib", show=False)
+fig, ax = s.plot("radiance_noslit", plotting_library="matplotlib", show=False)
 
 ax.set_xlabel("Updated X-axis Label")
 ax.set_ylabel("Updated Y-axis Label")
