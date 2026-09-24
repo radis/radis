@@ -22,7 +22,7 @@ dependencies:
 - h5py>=3.2.1   # load HDF5
 - joblib  # for parallel loading of SpecDatabase
 - lmfit  # for new fitting modules
-- matplotlib
+- matplotlib<3.11  # >=3.11 removes matplotlib.cm.get_cmap() but this feature is still used by vaex-viz
 - numpy~=2.0
 - numba  # just-in-time compiler
 - pandas
