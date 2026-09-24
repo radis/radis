@@ -123,7 +123,7 @@ Initialize from Specutils
 -------------------------
 
 Use :py:meth:`~radis.spectrum.spectrum.Spectrum.from_specutils` to convert
-from a ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D` object ::
+from a ``specutils`` :py:class:`specutils.spectra.spectrum.Spectrum` object ::
 
     from radis import Spectrum
     Spectrum.from_specutils(spectrum)
@@ -525,7 +525,7 @@ Export to Specutils
 -------------------
 
 Use :py:meth:`~radis.spectrum.spectrum.Spectrum.to_specutils` to convert
-to a to ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D` object ::
+to a to ``specutils`` :py:class:`specutils.spectra.spectrum.Spectrum` object ::
 
     s.to_specutils()
 

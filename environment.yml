@@ -32,7 +32,7 @@ dependencies:
 - scipy>=1.4.0
 - seaborn   # other matplotlib themes
 - termcolor  # terminal colors
-- specutils  # spectroscopic data handling
+- specutils>=2.0  # spectroscopic data handling; the `Spectrum` class (superseding `Spectrum1D`) requires >=2.0
 - pip
 - pip:
   - cryptography

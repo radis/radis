@@ -57,7 +57,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest specutils
+          python -m pip install pytest "specutils>=2.0"
           pip install -e .
       - name: Fast tests with pytest
         env:
