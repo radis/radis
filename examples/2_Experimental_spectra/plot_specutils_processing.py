@@ -5,7 +5,7 @@ Post-process using Specutils
 ============================
 
 Find peaks or uncertainties using the :py:mod:`specutils` library. A Radis Spectrum
-object can easily be converted to a ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D`
+object can easily be converted to a ``specutils`` :py:class:`specutils.spectra.spectrum.Spectrum`
 using :py:meth:`~radis.spectrum.spectrum.Spectrum.to_specutils`.
 
 Below, we create a noisy spectrum based on a synthetic CO spectrum,
@@ -39,19 +39,9 @@ spectrum = s_exp.to_specutils()
 
 from specutils import SpectralRegion
 from specutils.manipulation import noise_region_uncertainty
-from specutils.spectra import Spectrum1D
 
 noise_region = SpectralRegion(2010.5 / u.cm, 2009.5 / u.cm)
 spectrum = noise_region_uncertainty(spectrum, noise_region)
-if not isinstance(spectrum, Spectrum1D):
-    spectrum = Spectrum1D(
-        flux=spectrum.flux,
-        spectral_axis=spectrum.spectral_axis,
-        uncertainty=getattr(spectrum, "uncertainty", None),
-        wcs=getattr(spectrum, "wcs", None),
-        mask=getattr(spectrum, "mask", None),
-        meta=getattr(spectrum, "meta", None),
-    )
 
 
 # %%
@@ -75,7 +65,7 @@ plt.axvspan(noise_region.lower.value, noise_region.upper.value, color="b", alpha
 
 # %%
 # Note: we can also create a RADIS spectrum object from Specutils
-# :py:class:`specutils.spectra.spectrum1d.Spectrum1D` :
+# :py:class:`specutils.spectra.spectrum.Spectrum` :
 
 from radis import Spectrum
 

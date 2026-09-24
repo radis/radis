@@ -1485,8 +1485,9 @@ class SpectrumFactory(BandFactory):
         was_interactive = plt.isinteractive
         plt.ion()
 
-        line = s.plot(var, show=True, **plotkwargs)
-        fig = line.figure
+        _, ax = s.plot(var, show=False, **plotkwargs)
+        fig = ax.figure
+        line = ax.get_lines()[-1]
 
         def update_plot(val):
             # We directly updated the s.conditions dict so params don't have to
@@ -1516,6 +1517,8 @@ class SpectrumFactory(BandFactory):
 
         fig.subplots_adjust(bottom=0.05 * n_sliders + 0.15)
         fig.canvas.mpl_connect("close_event", s.exit_gpu)
+
+        plt.show()
 
         if not was_interactive:
             plt.ioff()

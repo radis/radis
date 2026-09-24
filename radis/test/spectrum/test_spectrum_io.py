@@ -30,7 +30,7 @@ def test_specutils_io(verbose=True, plot=False, *args, **kwargs):
             "transmittance_noslit", wunit="nm_air", Iunit="default"
         )
         assert (
-            "specutil's Spectrum1D will only handle wavelengths as seen in vacuum"
+            "specutil's Spectrum will only handle wavelengths as seen in vacuum"
             in str(err)
         )
 

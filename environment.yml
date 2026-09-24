@@ -22,7 +22,7 @@ dependencies:
 - h5py>=3.2.1   # load HDF5
 - joblib  # for parallel loading of SpecDatabase
 - lmfit  # for new fitting modules
-- matplotlib
+- matplotlib<3.11  # >=3.11 removes matplotlib.cm.get_cmap() but this feature is still used by vaex-viz
 - numpy~=2.0
 - numba  # just-in-time compiler
 - pandas
@@ -32,7 +32,7 @@ dependencies:
 - scipy>=1.4.0
 - seaborn   # other matplotlib themes
 - termcolor  # terminal colors
-- specutils  # spectroscopic data handling
+- specutils>=2.0  # spectroscopic data handling; the `Spectrum` class (superseding `Spectrum1D`) requires >=2.0
 - pip
 - pip:
   - cryptography

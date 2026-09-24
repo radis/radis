@@ -66,7 +66,7 @@ dependencies = [
     "json-tricks>=3.15.0",  # to deal with non jsonable formats
     "lmfit",  # for new fitting modules
     "lxml",  # parser used for ExoMol website
-    "matplotlib",  # for plotting
+    "matplotlib<3.11",  # >=3.11 removes matplotlib.cm.get_cmap() but this feature is still used by vaex-viz
     "mpldatacursor",  # interactive data cursors for matplotlib
     "numba",  # just-in-time compiler
     "pandas",  # data manipulation and analysis
@@ -109,7 +109,7 @@ docs = [
     "sphinx-gallery",  # for documentation examples gallery
     "lmfit",  # for documentation examples
     "pytest",  # Sphinx autodoc also parses test suite
-    "specutils",  # spectroscopic data handling
+    "specutils>=2.0",  # spectroscopic data handling; the `Spectrum` class (superseding `Spectrum1D`) requires >=2.0
 ]
 
 [tool.setuptools]

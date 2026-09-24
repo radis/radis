@@ -928,12 +928,12 @@ class Spectrum(object):
 
     @classmethod
     def from_specutils(self, spectrum, var="radiance"):
-        r"""Convert a :py:mod:`specutils` :py:class:`~specutils.spectra.spectrum1d.Spectrum1D`
+        r"""Convert a :py:mod:`specutils` :py:class:`~specutils.spectra.spectrum.Spectrum`
         to a ``radis`` :py:class:`~radis.spectrum.spectrum.Spectrum` object.
 
         Parameters
         ----------
-        spectrum: a ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D`
+        spectrum: a ``specutils`` :py:class:`specutils.spectra.spectrum.Spectrum`
         var: str
             spectral array, default ``"radiance"``
 
@@ -945,7 +945,7 @@ class Spectrum(object):
 
             from astropy.io import fits
             from astropy import units as u
-            from specutils import Spectrum1D
+            from specutils import Spectrum
 
             f = fits.open('https://data.sdss.org/sas/dr16/sdss/spectro/redux/26/spectra/1323/spec-1323-52797-0012.fits')
             # The spectrum is in the second HDU of this file.
@@ -953,11 +953,11 @@ class Spectrum(object):
 
             lamb = 10**specdata['loglam'] * u.AA
             flux = specdata['flux'] * 10**-17 * u.Unit('erg cm-2 s-1 AA-1')
-            spec = Spectrum1D(spectral_axis=lamb, flux=flux)
+            spec = Spectrum(spectral_axis=lamb, flux=flux)
 
 
-            from radis import Spectrum
-            s = Spectrum.from_specutils(spec)
+            from radis import Spectrum as RadisSpectrum
+            s = RadisSpectrum.from_specutils(spec)
             s.plot(wunit='nm')
 
 
@@ -978,7 +978,7 @@ class Spectrum(object):
                 "   pip install specutils"
             ) from err
 
-        assert isinstance(spectrum, specutils.Spectrum1D)
+        assert isinstance(spectrum, specutils.Spectrum)
 
         if "waveunit" in spectrum.meta and spectrum.meta["waveunit"] in WAVELEN_UNITS:
             raise ValueError(
@@ -4311,7 +4311,7 @@ class Spectrum(object):
 
     def to_specutils(self, var=None, wunit="default", Iunit="default"):
         r"""Convert a ``radis`` :py:class:`~radis.spectrum.spectrum.Spectrum`
-        object to ``specutils`` :py:class:`specutils.spectra.spectrum1d.Spectrum1D`
+        object to ``specutils`` :py:class:`specutils.spectra.spectrum.Spectrum`
 
         Parameters
         ----------
@@ -4370,7 +4370,7 @@ class Spectrum(object):
 
         """
         try:
-            from specutils.spectra import Spectrum1D
+            from specutils.spectra import Spectrum
         except ModuleNotFoundError as err:
             raise ModuleNotFoundError(
                 "Specutils is required to use this function."
@@ -4387,12 +4387,12 @@ class Spectrum(object):
         if wunit == "default":
             wunit = self.get_waveunit()
             if wunit in WAVELEN_UNITS:  # wavelength units in air
-                # AFAIK, specutil's Spectrum1D will only handle wavelengths as seen in vacuum
+                # AFAIK, specutil's Spectrum will only handle wavelengths as seen in vacuum
                 # so below we request wavelengths in vac :
                 wunit = "nm_vac"
         if wunit in WAVELEN_UNITS:  # wavelength units in air
             raise ValueError(
-                f"specutil's Spectrum1D will only handle wavelengths as seen in vacuum. Use one of `s.to_specutils(..., wunit={WAVELENVAC_UNITS}`)"
+                f"specutil's Spectrum will only handle wavelengths as seen in vacuum. Use one of `s.to_specutils(..., wunit={WAVELENVAC_UNITS}`)"
             )
 
         # Update waveunit stored in conditions (in particular, update if wavelengths are in vacuum or air)
@@ -4407,7 +4407,7 @@ class Spectrum(object):
         )
         # w, I are dimensioned arrays
 
-        return Spectrum1D(
+        return Spectrum(
             flux=I,
             spectral_axis=w,
             meta=meta,
@@ -4825,12 +4825,11 @@ class Spectrum(object):
         if plot:
             import matplotlib.pyplot as plt
 
-            plt_line = self.plot(
+            _, ax = self.plot(
                 lw=5,
                 color="grey",
                 show=False,  # needed when using `inline` ploting (e.g. default in Spyder)
             )
-            ax = plt_line.figure.axes[0]
             for i, y_fit in enumerate(y_fit_list):
                 g_fit = g_fit_list[i]
                 label = " ".join(

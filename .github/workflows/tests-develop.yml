@@ -26,7 +26,7 @@ jobs:
           - os: ubuntu-latest
             python-version: "3.12"
           - os: ubuntu-latest
-            python-version: "3.13" #added to test the behavior without vaex (compatible up to 3.12)
+            python-version: "3.14" #added to test the behavior without vaex (compatible up to 3.12)
           #For windows and macOS, we test only the Python 3.12, to speed up the tests.
           - os: windows-latest
             python-version: "3.12"
@@ -45,7 +45,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pytest specutils pytest-cov
+          python -m pip install pytest "specutils>=2.0" pytest-cov
           pip install -e .
       - name: Fast tests with pytest
         run: |
