@@ -498,7 +498,6 @@ class Parameters(ConditionDict):
         "parfuncpath",
         "parsum_mode",
         "pseudo_continuum_threshold",
-        "sparse_ldm",
         "warning_broadening_threshold",
         "warning_linestrength_cutoff",
         "wavenum_max_calc",
@@ -546,7 +545,6 @@ class Parameters(ConditionDict):
         """bool: if ``True``, includes the contribution of off-range, neighbouring
         lines because of lineshape broadening. Default ``True``."""
         self.parsum_mode = "full summation"  #: int : "full summation" or "tabulation"  . calculation mode of partition function. See :py:class:`~radis.levels.partfunc.RovibParFuncCalculator`
-        self.sparse_ldm = "auto"  #: str: "auto", True, False  . Sparse LDM calculation. See :py:meth:`radis.lbl.broadening.BroadenFactory._apply_lineshape_LDM`
 
 
 class MiscParams(ConditionDict):
@@ -679,8 +677,9 @@ class DatabankLoader(object):
         "_export_continuum",
         "_id",
         "_neighbour_lines",
-        "_sparse_ldm",
+        "sparse_waverange",
         "_wstep",
+        "_wstep_multigrid",
         "autoretrievedatabase",
         "autoupdatedatabase",
         "cond_units",
@@ -694,7 +693,7 @@ class DatabankLoader(object):
         "interactive_params",
         "levels",
         "levelspath",
-        "min_width",
+        "_min_width",
         "misc",
         "molparam",
         "params",
@@ -712,6 +711,9 @@ class DatabankLoader(object):
         "wavenumber_calc",
         "wbroad_centered",
         "woutrange",
+        "_multisparsegrid",
+        "_truncation_multigrid",
+        "_ix_ranges",
     ]
 
     def __init__(self):

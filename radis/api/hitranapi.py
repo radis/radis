@@ -104,6 +104,31 @@ columns_2004 = OrderedDict(
     ]
 )
 """ OrderedDict: parsing order of HITRAN 2004 format """
+columns_2004_numpy2 = OrderedDict(
+    [
+        # name    # format # type  # description                                 # unit
+        ("id", ("S2", int, "Molecular number", "")),
+        ("iso", ("S1", int, "isotope number", "")),
+        ("wav", ("S12", float, "vacuum wavenumber", "cm-1")),
+        ("int", ("S10", float, "intensity at 296K", "cm-1/(molecule/cm-2)")),
+        ("A", ("S10", float, "Einstein A coefficient", "s-1")),
+        ("airbrd", ("S5", float, "air-broadened half-width at 296K", "cm-1.atm-1")),
+        ("selbrd", ("S5", float, "self-broadened half-width at 296K", "cm-1.atm-1")),
+        ("El", ("S10", float, "lower-state energy", "cm-1")),
+        ("Tdpair", ("S4", float, "temperature-dependance exponent for Gamma air", "")),
+        ("Pshft", ("S8", float, "air pressure-induced line shift at 296K", "cm-1.atm-1")),
+        ("globu", ("S15", str, "electronic and vibrational global upper quanta", "")),
+        ("globl", ("S15", str, "electronic and vibrational global lower quanta", "")),
+        ("locu", ("S15", str, "electronic and vibrational local upper quanta", "")),
+        ("locl", ("S15", str, "electronic and vibrational local lower quanta", "")),
+        ("ierr", ("S6", str, "ordered list of indices corresponding to uncertainty estimates of transition parameters", "")),
+        ("iref", ("S12", str, "ordered list of reference identifiers for transition parameters", "")),
+        ("lmix", ("S1", str, "flag indicating the presence of additional data and code relating to line-mixing", "")),
+        ("gp", ("S7", float, "upper state degeneracy", "")),
+        ("gpp", ("S7", float, "lower state degeneracy", "")),
+    ]
+)
+""" OrderedDict: parsing order of HITRAN 2004 format """
 # fmt: on
 
 
@@ -278,7 +303,7 @@ def hit2df(
     if load_wavenum_min and load_wavenum_max:
         assert load_wavenum_min < load_wavenum_max
 
-    columns = columns_2004
+    columns = columns_2004_numpy2
 
     # Use cache file if possible
     if cache_directory_path:

@@ -126,12 +126,15 @@ def test_broadening_methods_different_conditions(
     vs convolution of Gaussian x Lorentzian for different spectral
     grid resolutions.
 
+    This test is performed with SPARSE_WAVERANGE = "simple", because these other broadening methods are too slow or incompatible with "multi_sparse_grid".
+
     Notes
     -----
 
     Reference broadening calculated manually with the HWHM formula of
     `HITRAN.org <https://hitran.org/docs/definitions-and-units/>`_
     """
+    import radis
 
     if plot:  # Make sure matplotlib is interactive so that test are not stuck in pytest
         plt.ion()
@@ -143,6 +146,10 @@ def test_broadening_methods_different_conditions(
     wmin = 2150.4  # cm-1
     wmax = 2151.4  # cm-1
     truncation = 1  # cm-1
+
+    # set to SPARSE_WAVERANGE to simple
+    init_config = radis.config["SPARSE_WAVERANGE"]
+    radis.config["SPARSE_WAVERANGE"] = "simple"
 
     for T, p, fwhm_lorentz, fwhm_gauss in [
         # K, bar, expected FWHM for Lorentz, gauss (cm-1)
@@ -212,6 +219,7 @@ def test_broadening_methods_different_conditions(
 
         # assert all broadening methods match
         assert res < 2e-4
+    radis.config["SPARSE_WAVERANGE"] = init_config
 
 
 @pytest.mark.fast

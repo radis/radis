@@ -55,7 +55,7 @@ def calc_spectrum(
     neighbour_lines=0,
     cutoff=1e-27,
     parsum_mode="full summation",
-    optimization="simple",
+    optimization=None,
     chunksize=None,
     broadening_method="voigt_poly",
     overpopulation=None,
