@@ -86,8 +86,15 @@ def read_config():
         or an empty dictionary if the file does not exist.
     """
     if os.path.exists(CONFIG_PATH_JSON):
-        with open(CONFIG_PATH_JSON, "r") as f:
-            config = json.load(f)
+        try:
+            with open(CONFIG_PATH_JSON, "r") as f:
+                config = json.load(f)
+        except json.JSONDecodeError as e:
+            warnings.warn(
+                f"RADIS config file {CONFIG_PATH_JSON} is corrupted and could not be read ({e}). Ignoring it.",
+                UserWarning,
+            )
+            config = {}
     else:
         config = {}
     return config
@@ -698,6 +705,113 @@ def _build_file_entry(par_path, wmin, wmax, engine):
     return entry
 
 
+def _parse_and_cache_one_chunk(file, wav_range, kwargs):
+    """Parse one CO2 chunk in a worker process and return its cache file path.
+
+    Returning the path rather than the DataFrame keeps joblib from pickling a
+    several-hundred-MB frame back into the parent process, which doubles peak
+    memory. The parent reads the chunk back from disk instead.
+
+    Returns ``None`` if the cache file could not be written (e.g. read-only
+    cache directory), so that the caller parses the chunk itself.
+    """
+    parse_one_CO2_block(file, wav_range=wav_range, **kwargs)
+
+    fcache = _fcache_file_name(file, kwargs["engine"])
+    return str(fcache) if os.path.exists(fcache) else None
+
+
+def _parse_uncached_chunks(
+    uncached,
+    local_paths,
+    wav_pairs,
+    results,
+    printer,
+    columns,
+    engine,
+    output,
+    verbose,
+    parallel,
+):
+
+    if uncached:
+        parse_kwargs = dict(
+            columns=columns, engine=engine, output=output, verbose=False
+        )
+        cpu_threads = os.cpu_count() or 1
+
+        # Determine whether to use parallel processing and how many workers:
+        #   parallel=True  → auto-detect worker count
+        #   parallel=N (int > 1) → use exactly N workers
+        #   parallel=False / parallel=0 / parallel=1 → serial
+        use_parallel = False
+        n_workers = 1
+
+        if type(parallel) is bool:
+            if parallel and len(uncached) > 1 and cpu_threads > 1:
+                use_parallel = True
+                n_workers = min(len(uncached), cpu_threads, max(4, cpu_threads // 2))
+        elif isinstance(parallel, int) and parallel > 1 and len(uncached) > 1:
+            use_parallel = True
+            n_workers = min(parallel, len(uncached))
+
+        if use_parallel:
+            from joblib import Parallel, delayed
+            from tqdm import tqdm
+
+            try:
+                fcaches = []
+                with tqdm(
+                    total=len(uncached), desc="Parsing chunks", disable=not verbose
+                ) as pbar:
+                    # `return_as="generator"` lets the bar advance as chunks are
+                    # cached, instead of jumping to 100% once they all are.
+                    for fcache in Parallel(n_jobs=n_workers, return_as="generator")(
+                        delayed(_parse_and_cache_one_chunk)(
+                            local_paths[i], wav_pairs[i], parse_kwargs
+                        )
+                        for i in uncached
+                    ):
+                        fcaches.append(fcache)
+                        pbar.update(1)
+
+                # The workers wrote the chunks to disk rather than sending them
+                # back, so read them in here, one at a time.
+                for idx, i in enumerate(uncached):
+                    results[i] = (
+                        _load_cache_file(fcaches[idx], engine=engine, columns=columns)
+                        if fcaches[idx]
+                        else parse_one_CO2_block(
+                            local_paths[i], wav_range=wav_pairs[i], **parse_kwargs
+                        )
+                    )
+            except MemoryError:
+                raise MemoryError(
+                    "Out of memory while loading HITEMP CO2 chunks in parallel "
+                    f"({n_workers} workers). "
+                    "Try reducing the number of workers, e.g. parallel=2, "
+                    "or use serial loading with parallel=False."
+                ) from None
+        else:
+            from tqdm import tqdm
+
+            with tqdm(
+                total=len(local_paths),
+                initial=len(local_paths) - len(uncached),
+                desc="Processing chunks",
+                disable=not verbose,
+            ) as pbar:
+                for i in uncached:
+                    results[i] = parse_one_CO2_block(
+                        local_paths[i],
+                        wav_range=wav_pairs[i],
+                        **parse_kwargs,
+                    )
+                    pbar.update(1)
+    else:
+        printer.info("All files already cached.", indent=1)
+
+
 def read_and_write_chunked_for_CO2(
     load_wavenum_max,
     load_wavenum_min,
@@ -707,6 +821,7 @@ def read_and_write_chunked_for_CO2(
     output="pandas",
     verbose=True,
     local_databases=None,
+    parallel=True,
 ):
     """
     Download, parse and cache CO2 data chunks for specified wavenumber range.
@@ -726,6 +841,12 @@ def read_and_write_chunked_for_CO2(
         Print progress messages (default True)
     local_databases : str, optional
         Custom cache directory
+    parallel : bool or int
+        If ``True``, uses joblib with an auto-detected number of workers.
+        If ``False`` or ``0`` or ``1``, uses serial (single-process) loading.
+        If an integer N > 1, uses exactly N parallel workers. This is useful
+        on memory-constrained machines where auto-detected parallelism may
+        cause MemoryError (e.g. ``parallel=2``). Default ``True``.
 
     Returns
     -------
@@ -780,7 +901,7 @@ def read_and_write_chunked_for_CO2(
         version="2024",
     )
     printer.header(
-        f"Downloading and processing {len(wav_pairs)} chunks for range {load_wavenum_min}-{load_wavenum_max} cm⁻¹"
+        f"Downloading and processing {len(wav_pairs)} chunks for range {load_wavenum_min}-{load_wavenum_max} cm-1"
     )
 
     # Download section
@@ -827,45 +948,41 @@ def read_and_write_chunked_for_CO2(
         printer.info("All files already downloaded.", indent=1)
 
     printer.section("Caching to HDF5/H5 format")
-    if len(local_paths) == len(
-        [f for f in local_paths if os.path.exists(_fcache_file_name(f, engine))]
-    ):
-        printer.info("All files already cached.", indent=1)
 
-    from tqdm import tqdm
+    # Load cached chunks, collect uncached indices
+    results = [None] * len(local_paths)
+    uncached = []
 
-    with tqdm(
-        total=len(local_paths), desc="Processing chunks", disable=not verbose
-    ) as pbar:
-        for i, file in enumerate(local_paths):
-            file_name = _fcache_file_name(file, engine)
-            cached_df = _load_cache_file(file_name, engine=engine, columns=columns)
+    for i, file in enumerate(local_paths):
+        cached_df = _load_cache_file(
+            _fcache_file_name(file, engine), engine=engine, columns=columns
+        )
+        if cached_df is not None:
+            results[i] = cached_df
+        else:
+            uncached.append(i)
 
-            if cached_df is not None:
-                _append_dataframe(cached_df)
-                pbar.set_postfix_str("from cache")
-            else:
-                pbar.set_postfix_str("parsing")
-                df = parse_one_CO2_block(
-                    file,
-                    columns=columns,
-                    engine=engine,
-                    output=output,
-                    wav_range=wav_pairs[i],
-                    verbose=False,
-                )
-                _append_dataframe(df)
+    _parse_uncached_chunks(
+        uncached,
+        local_paths,
+        wav_pairs,
+        results,
+        printer,
+        columns,
+        engine,
+        output,
+        verbose,
+        parallel,
+    )
 
-            # Register (or update last_used for) this file
-            wmin, wmax = wav_pairs[i]
-            file_entry = _build_file_entry(file, wmin, wmax, engine)
-            register_partial_hitemp_co2(file_entry)
-
-            # Always remove .par file after processing
-            # if os.path.exists(file):
-            #     os.remove(file)
-
-            pbar.update(1)
+    # Register metadata
+    for i, file in enumerate(local_paths):
+        _append_dataframe(results[i])
+        results[i] = None  # `dataframes` holds it now; don't keep it twice
+        wmin, wmax = wav_pairs[i]
+        register_partial_hitemp_co2(_build_file_entry(file, wmin, wmax, engine))
+        if os.path.exists(file):
+            os.remove(file)
 
     # Combine DataFrames
     if dataframes:
@@ -904,6 +1021,7 @@ def download_and_decompress_CO2_into_df(
     verbose=True,
     engine="pytables",
     output="pandas",
+    parallel=True,
 ):
     """
     This function handles downloading the HITEMP CO2 database. The full 2024 database is downloaded in smaller files of approximately 50-70 MB (500 MB decompressed chunks in h5 format), locating the appropriate data chunk based on the provided wavenumber range and reading the relevant data into a DataFrame.
@@ -926,6 +1044,12 @@ def download_and_decompress_CO2_into_df(
         Output format for the data. Default is "pandas" DataFrame.
     local_databases : str or None, optional
         Directory to store/read local database files. If None, uses the default directory.
+    parallel : bool or int
+        If ``True``, uses joblib with an auto-detected number of workers.
+        If ``False`` or ``0`` or ``1``, uses serial (single-process) loading.
+        If an integer N > 1, uses exactly N parallel workers. This is useful
+        on memory-constrained machines where auto-detected parallelism may
+        cause MemoryError (e.g. ``parallel=2``). Default ``True``.
     Returns
     -------
     DataFrame or object
@@ -955,6 +1079,7 @@ def download_and_decompress_CO2_into_df(
         engine=engine,
         output=output,
         verbose=verbose,
+        parallel=parallel,
         local_databases=local_databases,
     )
     combined_df = combined_df[

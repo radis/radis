@@ -62,7 +62,7 @@ dependencies = [
     "h5py>=3.2.1",  # load HDF5
     "hjson",  # Json with comments (for default_radis.json)
     "hitran-api",  # HAPI, used to access TIPS partition functions
-    "joblib",  # for parallel loading of SpecDatabase
+    "joblib>=1.3",  # for parallel loading of SpecDatabase ; >=1.3 for `return_as="generator"`
     "json-tricks>=3.15.0",  # to deal with non jsonable formats
     "lmfit",  # for new fitting modules
     "lxml",  # parser used for ExoMol website
