@@ -26,7 +26,7 @@ jobs:
           - os: ubuntu-latest
             python-version: "3.12"
           - os: ubuntu-latest
-            python-version: "3.13" #added to test the behavior without vaex (compatible up to 3.12)
+            python-version: "3.14" #added to test the behavior without vaex (compatible up to 3.12)
           #For windows and macOS, we test only the Python 3.12, to speed up the tests.
           - os: windows-latest
             python-version: "3.12"
