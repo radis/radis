@@ -129,6 +129,34 @@ def test_exomol_parallel_vs_sequential(tmp_path, verbose=True, *args, **kwargs):
     pd.testing.assert_frame_equal(df_seq, df_par)
 
 
+@pytest.mark.fast
+@pytest.mark.parametrize("isotope", ["1", 1, np.int64(1)])
+def test_fetch_exomol_accepts_string_and_integer_isotopes(monkeypatch, isotope):
+    """``isotope`` is documented as ``str`` or ``int``, and defaults to ``"1"``."""
+    import radis.io.exomol as exomol
+
+    class Stop(Exception):
+        pass
+
+    def stop(molecule, isotope):
+        assert isotope == 1
+        raise Stop
+
+    # Stop before anything is downloaded, once the isotope has been checked.
+    monkeypatch.setattr(exomol, "get_exomol_full_isotope_name", stop)
+    with pytest.raises(Stop):
+        exomol.fetch_exomol("SiO", "EBJT", isotope=isotope)
+
+
+@pytest.mark.fast
+@pytest.mark.parametrize("isotope", ["1,2", "all", None])
+def test_fetch_exomol_rejects_several_isotopes(isotope):
+    from radis.io.exomol import fetch_exomol
+
+    with pytest.raises(ValueError, match="must be an integer"):
+        fetch_exomol("SiO", "EBJT", isotope=isotope)
+
+
 if __name__ == "__main__":
     # test_exomol_parsing_functions()
     test_calc_exomol_vs_hitemp()

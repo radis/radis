@@ -161,11 +161,13 @@ def fetch_exomol(
     # refactor with "self._quantumNumbers" (which serves the same purpose)
 
     # Ensure isotope format:
-    if not isinstance(isotope, (int, np.integer)):
+    try:
+        isotope = int(isotope)
+    except (ValueError, TypeError):
         raise ValueError(
             f"In fetch_exomol, ``isotope`` must be an integer. Got `{isotope}` "
             + "Only one isotope can be queried at a time. "
-        )
+        ) from None
 
     full_molecule_name = get_exomol_full_isotope_name(molecule, isotope)
     known_exomol_databases, recommended_database = get_exomol_database_list(
