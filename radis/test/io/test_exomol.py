@@ -23,6 +23,45 @@ conditions = {
 }
 
 
+@pytest.mark.fast
+def test_fetch_exomol_isotope_format(monkeypatch, *args, **kwargs):
+    """Check ``isotope`` validation in fetch_exomol (offline).
+
+    See https://github.com/radis/radis/issues/1045"""
+
+    import radis.io.exomol
+    from radis.io.exomol import fetch_exomol
+
+    class _Stop(Exception):
+        pass
+
+    received = []
+
+    def _fake_get_exomol_full_isotope_name(molecule, isotope):
+        received.append(isotope)
+        raise _Stop
+
+    monkeypatch.setattr(
+        radis.io.exomol,
+        "get_exomol_full_isotope_name",
+        _fake_get_exomol_full_isotope_name,
+    )
+
+    # Valid inputs pass validation and are converted to int
+    valid = [{}, {"isotope": 1}, {"isotope": "1"}, {"isotope": np.int64(1)}]
+    for kw in valid:
+        with pytest.raises(_Stop):
+            fetch_exomol("SiO", "EBJT", **kw)
+    assert received == [1] * len(valid)
+    assert all(type(i) is int for i in received)
+
+    # Invalid inputs raise before anything is fetched
+    for isotope in ["1,2", "abc", None, 1.5, 1.0, True]:
+        with pytest.raises(ValueError, match="must be an integer"):
+            fetch_exomol("SiO", "EBJT", isotope=isotope)
+    assert len(received) == len(valid)
+
+
 @pytest.mark.needs_connection
 def test_exomol_parsing_functions(verbose=True, *args, **kwargs):
     """Test functions used to parse ExoMol website"""
