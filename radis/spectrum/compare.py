@@ -1072,8 +1072,9 @@ def plot_diff(
     # Add tools
     # ... Add cursors
     axes = [ax0] + ax1
-    # `canvas` deprecated in matplotlib 3.11, removed in 3.13; required before
-    if getattr(matplotlib, "__version_info__", (0,)) >= (3, 11):
+    # matplotlib >= 3.11 deprecates the unused `canvas` arg (error in 3.13),
+    # older versions still require it. Drop the else branch once we require >= 3.11.
+    if matplotlib.__version_info__ >= (3, 11):
         cursor_args = (axes,)
     else:
         cursor_args = (fig.canvas, axes)
