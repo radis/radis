@@ -154,11 +154,16 @@ def test_fetch_exomol_accepts_string_and_integer_isotopes(monkeypatch, isotope):
 
 @pytest.mark.fast
 @pytest.mark.parametrize("isotope", ["1,2", "all", "", "1.0", 1.0, 1.5, True, None])
-def test_fetch_exomol_rejects_anything_but_one_integer_isotope(isotope):
-    from radis.io.exomol import fetch_exomol
+def test_fetch_exomol_rejects_anything_but_one_integer_isotope(monkeypatch, isotope):
+    import radis.io.exomol as exomol
 
+    def let_through(molecule, isotope):
+        raise AssertionError(f"isotope check let {isotope!r} through")
+
+    # Fail fast instead of downloading if a bad value ever passes the check.
+    monkeypatch.setattr(exomol, "get_exomol_full_isotope_name", let_through)
     with pytest.raises(ValueError, match="must be an integer"):
-        fetch_exomol("SiO", "EBJT", isotope=isotope)
+        exomol.fetch_exomol("SiO", "EBJT", isotope=isotope)
 
 
 if __name__ == "__main__":
