@@ -22,7 +22,7 @@ def fetch_exomol(
     database=None,
     local_databases=None,
     databank_name="EXOMOL-{molecule}",
-    isotope="1",
+    isotope=1,
     load_wavenum_min=None,
     load_wavenum_max=None,
     columns=None,
@@ -160,14 +160,16 @@ def fetch_exomol(
     # TODO: implement columns= ... to load only specific columns.
     # refactor with "self._quantumNumbers" (which serves the same purpose)
 
-    # Ensure isotope format:
-    try:
+    # Ensure isotope format: a single isotope, as an integer or a string of digits
+    if isinstance(isotope, str) and isotope.strip().isdecimal():
         isotope = int(isotope)
-    except (ValueError, TypeError):
+    elif isinstance(isotope, (int, np.integer)) and not isinstance(isotope, bool):
+        isotope = int(isotope)
+    else:
         raise ValueError(
             f"In fetch_exomol, ``isotope`` must be an integer. Got `{isotope}` "
             + "Only one isotope can be queried at a time. "
-        ) from None
+        )
 
     full_molecule_name = get_exomol_full_isotope_name(molecule, isotope)
     known_exomol_databases, recommended_database = get_exomol_database_list(

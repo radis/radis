@@ -129,28 +129,32 @@ def test_exomol_parallel_vs_sequential(tmp_path, verbose=True, *args, **kwargs):
     pd.testing.assert_frame_equal(df_seq, df_par)
 
 
+_DEFAULT = object()
+
+
 @pytest.mark.fast
-@pytest.mark.parametrize("isotope", ["1", 1, np.int64(1)])
+@pytest.mark.parametrize("isotope", [_DEFAULT, "1", 1, np.int64(1)])
 def test_fetch_exomol_accepts_string_and_integer_isotopes(monkeypatch, isotope):
-    """``isotope`` is documented as ``str`` or ``int``, and defaults to ``"1"``."""
+    """``isotope`` is documented as ``str`` or ``int``, and defaults to ``1``."""
     import radis.io.exomol as exomol
 
     class Stop(Exception):
         pass
 
     def stop(molecule, isotope):
-        assert isotope == 1
+        assert isotope == 1 and type(isotope) is int
         raise Stop
 
     # Stop before anything is downloaded, once the isotope has been checked.
     monkeypatch.setattr(exomol, "get_exomol_full_isotope_name", stop)
+    kwargs = {} if isotope is _DEFAULT else {"isotope": isotope}
     with pytest.raises(Stop):
-        exomol.fetch_exomol("SiO", "EBJT", isotope=isotope)
+        exomol.fetch_exomol("SiO", "EBJT", **kwargs)
 
 
 @pytest.mark.fast
-@pytest.mark.parametrize("isotope", ["1,2", "all", None])
-def test_fetch_exomol_rejects_several_isotopes(isotope):
+@pytest.mark.parametrize("isotope", ["1,2", "all", "", "1.0", 1.0, 1.5, True, None])
+def test_fetch_exomol_rejects_anything_but_one_integer_isotope(isotope):
     from radis.io.exomol import fetch_exomol
 
     with pytest.raises(ValueError, match="must be an integer"):
