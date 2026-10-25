@@ -5,6 +5,9 @@ Created on Mon Jul 19 22:44:39 2021
 @author: erwan
 """
 
+from decimal import Decimal
+from fractions import Fraction
+
 import astropy.units as u
 import numpy as np
 import pytest
@@ -24,8 +27,14 @@ conditions = {
 
 
 @pytest.mark.fast
-def test_fetch_exomol_isotope_format(monkeypatch, *args, **kwargs):
-    """Check ``isotope`` validation in fetch_exomol (offline).
+@pytest.mark.parametrize(
+    "fetch_kwargs",
+    [{}, {"isotope": 1}, {"isotope": "1"}, {"isotope": np.int64(1)}],
+    ids=["default", "int", "str", "np.int64"],
+)
+def test_fetch_exomol_valid_isotope(fetch_kwargs, monkeypatch):
+    """Check that valid ``isotope`` values pass validation in fetch_exomol
+    and are converted to int (offline).
 
     See https://github.com/radis/radis/issues/1045"""
 
@@ -47,19 +56,38 @@ def test_fetch_exomol_isotope_format(monkeypatch, *args, **kwargs):
         _fake_get_exomol_full_isotope_name,
     )
 
-    # Valid inputs pass validation and are converted to int
-    valid = [{}, {"isotope": 1}, {"isotope": "1"}, {"isotope": np.int64(1)}]
-    for kw in valid:
-        with pytest.raises(_Stop):
-            fetch_exomol("SiO", "EBJT", **kw)
-    assert received == [1] * len(valid)
-    assert all(type(i) is int for i in received)
+    with pytest.raises(_Stop):
+        fetch_exomol("SiO", "EBJT", **fetch_kwargs)
+    assert received == [1]
+    assert type(received[0]) is int
 
-    # Invalid inputs raise before anything is fetched
-    for isotope in ["1,2", "abc", None, 1.5, 1.0, True]:
-        with pytest.raises(ValueError, match="must be an integer"):
-            fetch_exomol("SiO", "EBJT", isotope=isotope)
-    assert len(received) == len(valid)
+
+@pytest.mark.fast
+@pytest.mark.parametrize(
+    "isotope",
+    ["1,2", "abc", None, 1.5, 1.0, True, Decimal("1.7"), Fraction(3, 2)],
+    ids=repr,
+)
+def test_fetch_exomol_invalid_isotope(isotope, monkeypatch):
+    """Check that invalid ``isotope`` values raise before anything is fetched
+    in fetch_exomol (offline).
+
+    See https://github.com/radis/radis/issues/1045"""
+
+    import radis.io.exomol
+    from radis.io.exomol import fetch_exomol
+
+    def _fake_get_exomol_full_isotope_name(molecule, isotope):
+        raise AssertionError(f"isotope={isotope!r} passed validation")
+
+    monkeypatch.setattr(
+        radis.io.exomol,
+        "get_exomol_full_isotope_name",
+        _fake_get_exomol_full_isotope_name,
+    )
+
+    with pytest.raises(ValueError, match="must be an integer"):
+        fetch_exomol("SiO", "EBJT", isotope=isotope)
 
 
 @pytest.mark.needs_connection
