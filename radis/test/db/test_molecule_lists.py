@@ -61,6 +61,11 @@ def test_ExoMol_molecules_list(verbose=True, *args, **kwargs):
             print_index=True,
         )
         == 1
+    ), (
+        "EXOMOL_MOLECULES is out of date. When adding a molecule to EXOMOL_MOLECULES "
+        "(radis/db/classes.py), also add its parameters to radis/db/molparams_extra.json: "
+        "generate them with generate_molparam_for_non_HITRAN_species(molecules=[...]) "
+        "in this file. test_exomol_molecules_have_molparams checks this offline."
     )
     print("----")
 
