@@ -1145,6 +1145,27 @@ def test_vibrating_rotor_harmonic_anharmonic():
     assert EvJah_uncoupled_vibrating_rotor(0, 0, 0, 0, 10, coeffs)[3] > 0
 
 
+@pytest.mark.fast
+@pytest.mark.parametrize(
+    "M, I", [(56, 1), (57, 1), (58, 1), (59, 1), (59, 2), (60, 1), (61, 1), (61, 2)]
+)
+def test_tips_new_hitran_molecules(M, I):
+    """HITRAN molecules 56-61 are only in HAPI's TIPS-2025 tables"""
+    import contextlib
+    import io
+
+    with contextlib.redirect_stdout(io.StringIO()):  # HAPI prints a banner on import
+        hapi = pytest.importorskip("hapi")
+    if not hasattr(hapi, "TIPS_2025_ISOT_HASH"):
+        pytest.skip("this HAPI version has no TIPS-2025 data")
+
+    from radis.db.molparam import MolParams
+    from radis.levels.partfunc import PartFuncTIPS
+
+    Q = PartFuncTIPS(M, I, verbose=False).at(296)
+    assert Q == pytest.approx(MolParams().df.loc[(M, I), "Q_296K"], rel=1e-4)
+
+
 if __name__ == "__main__":
     # printm(f"Testing parfunc: {_run_testcases()}")
     printm("Testing partfunc.py:", pytest.main(["test_partfunc.py", "--pdb"]))

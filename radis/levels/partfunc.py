@@ -1382,7 +1382,20 @@ class PartFuncTIPS(RovibParFuncTabulator):
         with redirect_stdout(None):
             from hapi import TIPS_2021_ISOT_HASH
 
-        TT = TIPS_2021_ISOT_HASH[(M, I)]
+            try:  # TIPS-2025 only exists in recent HAPI versions
+                from hapi import TIPS_2025_ISOT_HASH
+            except ImportError:
+                TIPS_2025_ISOT_HASH = {}
+
+        # Molecules added to HITRAN after TIPS-2021 (ids 56-61) only have TIPS-2025 data
+        if (M, I) in TIPS_2021_ISOT_HASH:
+            TT = TIPS_2021_ISOT_HASH[(M, I)]
+        elif (M, I) in TIPS_2025_ISOT_HASH:
+            TT = TIPS_2025_ISOT_HASH[(M, I)]
+        else:
+            raise KeyError(
+                f"No TIPS partition function in HAPI for {self.molecule} (id {M}), isotope {I}"
+            )
         self.Tmin = min(TT)
         self.Tmax = max(TT)
 

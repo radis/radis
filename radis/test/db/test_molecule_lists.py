@@ -137,7 +137,12 @@ def test_HITRAN_molecules_list(verbose=True, *args, **kwargs):
             print(f"In Radis but not in HITRAN website: {radis_only}")
         if fetched_only:
             print(f"In HITRAN website but not in Radis: {fetched_only}")
-        raise AssertionError("HITRAN molecule lists do not match")
+        raise AssertionError(
+            "HITRAN molecule lists do not match. When adding a molecule to `trans` "
+            "(radis/db/classes.py), also add its rows to radis/db/molparam.txt and its "
+            "names to isotope_name_dict (radis/db/molparam.py), from "
+            "https://hitran.org/media/molparam.txt"
+        )
     print("----")
 
 
