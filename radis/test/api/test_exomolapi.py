@@ -1,6 +1,7 @@
+import numpy as np
 import pytest
 
-from radis.api.exomolapi import check_code_level
+from radis.api.exomolapi import _map_m0_parameter, check_code_level
 
 
 @pytest.mark.fast
@@ -26,3 +27,14 @@ def test_check_bdat_no_code_level(bdat_list):
     bdat = {}
     bdat["code"] = bdat_list
     assert check_code_level(bdat) == None
+
+
+@pytest.mark.fast
+def test_map_m0_parameter_replaces_missing_values():
+    import pandas as pd
+
+    values = pd.Series([1, 2, 3])
+    mapped, missing_count = _map_m0_parameter(values, {1: 0.1, 2: np.nan}, 0.07)
+
+    assert missing_count == 2
+    assert mapped.tolist() == [0.1, 0.07, 0.07]
