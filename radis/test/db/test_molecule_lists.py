@@ -65,11 +65,18 @@ def test_ExoMol_molecules_list(verbose=True, *args, **kwargs):
     print("----")
 
 
-def fetch_ExoMol_isotopes(verbose=True, *args, **kwargs):
-    """Get dictionary of isotope names in ExoMol by scrapping the ExoMol pages"""
+def fetch_ExoMol_isotopes(verbose=True, molecules=None, *args, **kwargs):
+    """Get dictionary of isotope names in ExoMol by scrapping the ExoMol pages
+
+    Parameters
+    ----------
+    molecules: list of str, optional
+        ExoMol molecules to look up. Default ``None``: every molecule on the ExoMol website.
+    """
 
     isotopes_full_names = {}
-    molecules = fetch_ExoMol_molecules()
+    if molecules is None:
+        molecules = fetch_ExoMol_molecules()
 
     if verbose:
         print("Parsing ExoMol molecules", flush=True)
@@ -149,7 +156,7 @@ def test_HITRAN_molecules_list(verbose=True, *args, **kwargs):
 # %%
 
 
-def generate_molparam_for_non_HITRAN_species():
+def generate_molparam_for_non_HITRAN_species(molecules=None):
     """Simple estimator of molecular parameters when not given in HITRAN.
 
     isotopic abundance  : in a simple approach, we multiply isotopic abundances
@@ -159,17 +166,25 @@ def generate_molparam_for_non_HITRAN_species():
 
     molar mass : we sum the mass of all elements
 
+    Parameters
+    ----------
+    molecules: list of str, optional
+        ExoMol molecules to generate parameters for. Default ``None``: every
+        molecule on the ExoMol website.
 
     Output ``EXTRA_ABUNDANCES_DICT, EXTRA_MOLAR_MASS_DICT, EXTRA_ISOTOPE_FULLNAME_DICT``
-    should be pasted in ``default_radis.json``
+    should be added to ``radis/db/molparams_extra.json`` (keep molecules in sorted
+    order; don't regenerate existing entries)
     """
 
     # %%
     import numpy as np
 
-    exomol_molecules = fetch_ExoMol_molecules()
+    exomol_molecules = (
+        fetch_ExoMol_molecules() if molecules is None else list(molecules)
+    )
     # hitran_molecules = fetch_HITRAN_molecules()
-    isotopes_full_names = fetch_ExoMol_isotopes()
+    isotopes_full_names = fetch_ExoMol_isotopes(molecules=exomol_molecules)
 
     # %%
     import periodictable
@@ -204,21 +219,18 @@ def generate_molparam_for_non_HITRAN_species():
         "K",
         "As",
         "He",
+        "B",
+        "Ge",
+        "La",
+        "Zr",
     ]:
         el = getattr(periodictable, atom)
         Ia_dict[atom] = {}
         Mm_dict[atom] = {}
-        for iso in el.isotopes:
-            if iso.abundance is None:
-                Ia_dict[atom][iso.mass_number] = 1e-6  # arbitrary
-            else:
-                Ia_dict[atom][iso.mass_number] = iso.abundance
-            Mm_dict[atom][iso.mass_number] = iso.mass
-    # add missing:
-    Ia_dict["Al"][26] = 1e-6  # arbitrary
-    Mm_dict["Al"][26] = 26.9815385 - 1.006  # doesn't exist by default
-    Mm_dict["H"][3] = 2.0141017781 + 1.006  # 3H  'None' by default
-    Mm_dict["C"][14] = 13.003354835 + 1.006  # 14C
+        for iso in el:
+            # abundances are in %; 0 means no natural abundance: use an arbitrary 1e-6
+            Ia_dict[atom][iso.isotope] = iso.abundance / 100 if iso.abundance else 1e-6
+            Mm_dict[atom][iso.isotope] = iso.mass
 
     import re
 
@@ -229,10 +241,9 @@ def generate_molparam_for_non_HITRAN_species():
         for mass_number, atom, number in _parse_molecule.findall(molecule):
             if number == "":
                 number = 1
-            if atom in atoms:
-                atoms[atom][int(mass_number)] = int(number)
-            else:
-                atoms[atom] = {int(mass_number): int(number)}
+            A = int(mass_number)
+            atoms.setdefault(atom, {})
+            atoms[atom][A] = atoms[atom].get(A, 0) + int(number)
         return atoms
 
         # out = dict(_parse_molecule.findall(molecule))
@@ -270,7 +281,7 @@ def generate_molparam_for_non_HITRAN_species():
         )
         return molar_mass
 
-    assert get_molar_mass("12C-16O2") == 43.98982924
+    assert np.isclose(get_molar_mass("12C-16O2"), 43.98982924, rtol=1e-9)
 
     # Test : compare with terrestrial abundance when known:
 
@@ -282,7 +293,9 @@ def generate_molparam_for_non_HITRAN_species():
     for _, r in molpar.df.reset_index().iterrows():
         print(get_molecule(r.id), "-", r.isotope_name_exomol)
         if not r.isotope_name_exomol:
-            raise
+            raise ValueError(
+                f"No isotopologue name for HITRAN molecule {r.id}, isotope {r.iso}: add it to isotope_name_dict"
+            )
         estimate = estimate_terrestrial_abundance(r.isotope_name_exomol)
         print(f"... Estim: {estimate_terrestrial_abundance(r.isotope_name_exomol):.3e}")
         print(
@@ -304,7 +317,8 @@ def generate_molparam_for_non_HITRAN_species():
                 for isotope_fullname in isotopes_full_names[M]
             ]
         )
-        b_sort_naive = np.argsort(abundances_naive)[::-1]  # most abundant isotope first
+        # most abundant isotope first; ties keep ExoMol's page order
+        b_sort_naive = np.argsort(-abundances_naive, kind="stable")
         abundances_naive = abundances_naive[b_sort_naive]
         molar_mass = [
             get_molar_mass(isotope_fullname)
