@@ -161,10 +161,14 @@ def fetch_exomol(
     # refactor with "self._quantumNumbers" (which serves the same purpose)
 
     # Ensure isotope format:
-    if not isinstance(isotope, (int, np.integer)):
+    if isinstance(isotope, str) and isotope.strip().isdecimal():
+        isotope = int(isotope)
+    elif isinstance(isotope, (int, np.integer)) and not isinstance(isotope, bool):
+        isotope = int(isotope)
+    else:
         raise ValueError(
-            f"In fetch_exomol, ``isotope`` must be an integer. Got `{isotope}` "
-            + "Only one isotope can be queried at a time. "
+            f"In fetch_exomol, ``isotope`` must be an integer or a digit string such as '1'. "
+            f"Got {isotope!r}. Only one isotope can be queried at a time."
         )
 
     full_molecule_name = get_exomol_full_isotope_name(molecule, isotope)
