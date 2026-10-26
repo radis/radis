@@ -862,6 +862,7 @@ def plot_diff(
     :py:func:`~radis.spectrum.compare.get_residual`,
     :py:meth:`~radis.spectrum.spectrum.Spectrum.compare_with`
     """
+    import matplotlib
     import matplotlib.pyplot as plt
     from matplotlib import gridspec
     from matplotlib.widgets import MultiCursor
@@ -1071,9 +1072,14 @@ def plot_diff(
     # Add tools
     # ... Add cursors
     axes = [ax0] + ax1
+    # matplotlib >= 3.11 deprecates the unused `canvas` arg (error in 3.13),
+    # older versions still require it. Drop the else branch once we require >= 3.11.
+    if matplotlib.__version_info__ >= (3, 11):
+        cursor_args = (axes,)
+    else:
+        cursor_args = (fig.canvas, axes)
     fig.cursors = MultiCursor(
-        fig.canvas,
-        axes,
+        *cursor_args,
         color="r",
         lw=1 * lw_multiplier,
         alpha=0.2,
