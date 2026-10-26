@@ -344,16 +344,20 @@ class MolParams(object):
                     raise NotImplementedError(
                         f"{key} for isotope `{str(isotope)}` for molecule {M} not supported"
                         + f"\nChoose one of{list(self.extra_molparams[key][M].keys())}"
-                        + f"\nYou can manually add it in the {MOLPARAMS_EXTRA_PATH} file"
-                        + "{'molparams':{'molar_mass':{'molecule':{'ISOTOPE':...}}}}; or in the `SpectrumFactory.molpar.extra_molparams[key][molecule][isotope]` dictionary. Please also report on GitHub so we can update !"
+                        + f"\nYou can add it to {MOLPARAMS_EXTRA_PATH}, in the "
+                        + "'isotope_full_name', 'abundance' and 'molar_mass' sections "
+                        + "(e.g. {'abundance': {'MOLECULE': {'ISOTOPE': value}}}). "
+                        + "Please also report on GitHub so we can update !"
                     )
             else:
                 raise NotImplementedError(
                     f"{key} for molecule '{M}' not supported"
                     + f"\nChoose one of{self._get_molecule_list()}"
                     + f"\nor `\n{list(self.extra_molparams.get(key, {}).keys())}"
-                    + f"\nYou can manually add it in the {MOLPARAMS_EXTRA_PATH} file"
-                    + "{'molparams':{'molar_mass':{'molecule':{'ISOTOPE':...}}}}; or in the `SpectrumFactory.molpar.extra_molparams[key][molecule][isotope]` dictionary. Please also report on GitHub so we can update !"
+                    + f"\nYou can add it to {MOLPARAMS_EXTRA_PATH}, in the "
+                    + "'isotope_full_name', 'abundance' and 'molar_mass' sections "
+                    + "(e.g. {'abundance': {'MOLECULE': {'ISOTOPE': value}}}). "
+                    + "Please also report on GitHub so we can update !"
                 )
 
         else:
