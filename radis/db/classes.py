@@ -473,6 +473,7 @@ EXOMOL_MOLECULES = [
     "CN",
     "CO",
     "CO2",
+    "CO_p",
     "CP",
     "CS",
     "CaCl",
