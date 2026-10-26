@@ -587,7 +587,7 @@ def test_wstep_auto_method_sf(verbose=True, plot=False, *args, **kwargs):
 
     # Checking computed wstep and expected wstep are equal
     assert wstep_calculated == round_off(
-        sf.min_width / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
+        sf._min_width / radis.config["GRIDPOINTS_PER_LINEWIDTH_WARN_THRESHOLD"]
     )
 
     s2 = sf.eq_spectrum(300, pressure=0.2)

@@ -37,6 +37,7 @@ def test_reftracker(verbose=True, *args, **kwargs):
 @pytest.mark.needs_connection
 def test_citations_in_eq_spectrum(verbose=False, *args, **kwargs):
 
+    import radis
     from radis import spectrum_test
 
     s = spectrum_test()
@@ -45,15 +46,23 @@ def test_citations_in_eq_spectrum(verbose=False, *args, **kwargs):
         s.cite()
 
     assert doi["RADIS-2018"] in s.references
-    assert doi["DIT-2020"] in s.references
     assert doi["HITRAN-2020"] in s.references
     assert doi["TIPS-2020"] in s.references
+
+    # Test ref of DIT algorithm
+    init_config = radis.config["SPARSE_WAVERANGE"]
+    radis.config["SPARSE_WAVERANGE"] = "simple"
+
+    s2 = spectrum_test(optimization="simple")
+    assert doi["DIT-2020"] in s2.references
+    radis.config["SPARSE_WAVERANGE"] = init_config
 
 
 @pytest.mark.fast
 @pytest.mark.needs_connection
 def test_citations_in_noneq_spectrum(verbose=False, *args, **kwargs):
 
+    import radis
     from radis import calc_spectrum
 
     s = calc_spectrum(
@@ -73,11 +82,30 @@ def test_citations_in_noneq_spectrum(verbose=False, *args, **kwargs):
         s.cite()
 
     assert doi["RADIS-2018"] in s.references
-    assert doi["DIT-2020"] in s.references
     assert doi["HITRAN-2020"] in s.references
     assert doi["TIPS-2020"] in s.references
 
     assert doi["Guelachvili-1983"] in s.references
+
+    # Test ref of DIT algorithm
+    init_config = radis.config["SPARSE_WAVERANGE"]
+    radis.config["SPARSE_WAVERANGE"] = "simple"
+
+    s2 = calc_spectrum(
+        1900,
+        2300,  # cm-1
+        molecule="CO",
+        isotope="1,2,3",
+        pressure=1.01325,  # bar
+        Tvib=2000,  #
+        Trot=300,
+        mole_fraction=0.1,
+        path_length=1,  # cm
+        databank="hitran",
+        optimization="simple",
+    )
+    assert doi["DIT-2020"] in s2.references
+    radis.config["SPARSE_WAVERANGE"] = init_config
 
 
 @pytest.mark.needs_connection
