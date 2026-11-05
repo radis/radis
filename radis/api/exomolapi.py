@@ -29,6 +29,10 @@ import pandas as pd
 
 from radis.api.hdf5 import vaexsafe_colname
 
+# Allowed difference (cm-1) between the .trans wavenumber column and the
+# states-file energy difference before warning. Both are written to 1e-6 cm-1.
+NU_LINES_TOLERANCE = 1e-4
+
 
 def exact_molname_exomol_to_simple_molname(exact_exomol_molecule_name):
     """convert the exact molname (used in ExoMol) to the simple molname.
@@ -528,6 +532,7 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
     trans = map_add(trans, "J", "jlower", "i_lower")
     trans = map_add(trans, "J", "jupper", "i_upper")
     trans = map_add(trans, "E", "elower", "i_lower")
+    trans = map_add(trans, "E", "eupper", "i_upper")
 
     def has_nan(column):
         try:  # Vaex
@@ -535,9 +540,20 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
         except AttributeError:  # Pandas
             return column.hasnans
 
-    if not "nu_lines" in trans or has_nan(trans["nu_lines"]):
-        trans = map_add(trans, "E", "eupper", "i_upper")
-        trans["nu_lines"] = trans["eupper"] - trans["elower"]
+    # Line positions always come from the states file, which holds the
+    # recommended (e.g. MARVEL-corrected) energies. The optional wavenumber
+    # column of the .trans file can be stale: for 24Mg-1H__XAB it was computed
+    # from the calculated energies and is off by up to 27 cm-1.
+    nu_states = trans["eupper"] - trans["elower"]
+    if "nu_lines" in trans and not has_nan(trans["nu_lines"]):
+        dnu_max = float(abs(trans["nu_lines"] - nu_states).max())
+        if dnu_max > NU_LINES_TOLERANCE:
+            warnings.warn(
+                f"Wavenumbers in the .trans file differ from the states-file "
+                f"energy differences by up to {dnu_max:.3g} cm-1. Using the "
+                "states-file values (E_upper - E_lower)."
+            )
+    trans["nu_lines"] = nu_states
 
     ### Step 2. Extra quantum numbers (e/f parity, vib and rot numbers)
     # -----------------------------------------------------------------
@@ -1542,6 +1558,21 @@ class MdbExomol(DatabaseManager):
                         "`regen = True`. Removing the file", level=2, indent=2
                     )
                 os.remove(mgr.cache_file(trans_file))
+
+            if mgr.cache_file(trans_file).exists() and cache != "force":
+                # Caches written before nu_lines was always taken from the states
+                # file lack 'eupper' and may hold the .trans wavenumbers: regenerate.
+                try:
+                    stale = "eupper" not in mgr.get_columns(mgr.cache_file(trans_file))
+                except (NotImplementedError, ValueError):
+                    stale = False
+                if stale:
+                    self._printer.info(
+                        f"Cache {mgr.cache_file(trans_file).name} predates line positions "
+                        "from the states file. Regenerating it.",
+                        indent=2,
+                    )
+                    os.remove(mgr.cache_file(trans_file))
 
             if not mgr.cache_file(trans_file).exists():
                 if cache == "force":
