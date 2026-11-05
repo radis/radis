@@ -1809,9 +1809,10 @@ class MdbExomol(DatabaseManager):
                 self.add_column(df, "selbrd", self.alpha_ref)
                 self.add_column(df, "selbrd_Tdpair", self.n_Texp)
             else:
-                raise NotImplementedError(
-                    "Please post on https://github.com/radis/radis to ask for this feature."
-                )
+                # other broadening partners (H2, He, CO2, ...): same column names
+                # as HITRAN's gamma_<diluent> / n_<diluent>
+                self.add_column(df, "gamma_" + species.lower(), self.alpha_ref)
+                self.add_column(df, "n_" + species.lower(), self.n_Texp)
 
     def QT_interp(self, T):
         """interpolated partition function
