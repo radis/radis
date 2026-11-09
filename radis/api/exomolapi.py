@@ -828,9 +828,13 @@ def broadening_from_recipes(
 
     Recipes are layered as in PyExoCross: a0 (J''), then a1 (J'', J') and m0 (|m|,
     with m = -J'' for P, J'' for Q and J'' + 1 for R branch lines) wherever their
-    tables have an entry. J'' beyond the a0 table get the values of its largest
-    J''; without a0 or a1, |m| beyond the m0 table get the values of its largest
-    |m|. m1 (|m|, K'') needs K'', which is not loaded, and is skipped.
+    tables have an entry. The ExoMol 2024 specification tabulates m0 against |m|,
+    but older files (e.g. most ``__air.broad`` files, such as 27Al-1H__air.broad)
+    tabulate the signed m, with different P and R branch values: if the table has
+    a negative m, lines are looked up by signed m. J'' beyond the a0 table get the
+    values of its largest J''; without a0 or a1, m beyond the m0 table get the
+    values of its largest (or, for signed tables, smallest) m. m1 (|m|, K'') needs
+    K'', which is not loaded, and is skipped.
 
     Args:
         bdat: .broad data given by exomolapi.read_broad (pandas)
@@ -879,21 +883,25 @@ def broadening_from_recipes(
 
     if (codes == "m0").any():
         m0 = bdat[codes == "m0"]
-        dj = jupper - jlower
-        m = np.where(
-            dj == -1, jl, np.where(dj == 0, jl, np.where(dj == 1, jl + 1, -1))
-        )  # |m|, -1 for lines that are not P, Q or R
+        dj = ju - jl
+        pqr = np.isin(dj, (-1, 0, 1))  # other lines have no m
         m_table = np.asarray(m0["jlower"], dtype=int)
-        mmax = m_table.max()
+        # ExoMol 2024 tabulates |m|; older files (most air ones) the signed m
+        signed = (m_table < 0).any()
+        m = np.where(dj == -1, -jl, np.where(dj == 1, jl + 1, jl))
+        if not signed:
+            m = np.abs(m)
         if not used:
-            m = np.where(m > mmax, mmax, m)
-        M = int(max(m.max(), mmax)) + 2  # last slot: lines without a valid m
+            m = np.clip(m, m_table.min() if signed else None, m_table.max())
+        m = np.where(pqr, m, m_table[0])  # any table entry: not used (found False)
+        mmin = int(min(m.min(), m_table.min()))
+        M = int(max(m.max(), m_table.max())) - mmin + 1
         m2alpha_ref = np.full(M, np.nan)
         m2n_Texp = np.full(M, np.nan)
-        m2alpha_ref[m_table] = np.asarray(m0["alpha_ref"], dtype=float)
-        m2n_Texp[m_table] = np.asarray(m0["n_Texp"], dtype=float)
-        idx = np.where(m >= 0, m, M - 1)
-        found = np.isfinite(m2alpha_ref[idx]) & np.isfinite(m2n_Texp[idx])
+        m2alpha_ref[m_table - mmin] = np.asarray(m0["alpha_ref"], dtype=float)
+        m2n_Texp[m_table - mmin] = np.asarray(m0["n_Texp"], dtype=float)
+        idx = m - mmin
+        found = pqr & np.isfinite(m2alpha_ref[idx]) & np.isfinite(m2n_Texp[idx])
         alpha_ref = np.where(found, m2alpha_ref[idx], alpha_ref)
         n_Texp = np.where(found, m2n_Texp[idx], n_Texp)
         if not used and not found.all():
