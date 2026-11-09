@@ -16,6 +16,29 @@ from radis.api.exomolapi import (
 )
 from radis.db.classes import get_molecule_identifier
 
+BAR_PER_ATM = 1.01325
+"""float: ExoMol broadening coefficients (cm-1/bar) x BAR_PER_ATM = cm-1/atm"""
+
+
+def _exomol_broadening_partners(diluent, mdb):
+    """ExoMol broadening partners (``.broad`` file names) to load for ``diluent``,
+    other than air and self (always loaded). Diluent names are matched
+    case-insensitively; diluents without a ``.broad`` file are skipped."""
+    if not isinstance(diluent, (str, dict)):  # None or radis Default
+        return []
+    names = [diluent] if isinstance(diluent, str) else list(diluent)
+    partners = {p.lower(): p for p in mdb.broad_partners}
+    out = []
+    for name in names:
+        partner = partners.get(name.lower())
+        if (
+            partner not in (None, "air", "self")
+            and partner not in out
+            and mdb.broad_files[partner].exists()
+        ):
+            out.append(partner)
+    return out
+
 
 def fetch_exomol(
     molecule,
@@ -35,6 +58,7 @@ def fetch_exomol(
     output="pandas",
     skip_optional_data=True,
     parallel=True,
+    diluent=None,
     **kwargs,
 ):
     """Stream ExoMol file from EXOMOL website. Unzip and build a HDF5 file directly.
@@ -79,6 +103,12 @@ def fetch_exomol(
         load only specific wavenumbers.
     columns: list of str
         list of columns to load. If ``None``, returns all columns in the file.
+    diluent: str or dict, optional
+        diluent(s), e.g. ``{"H2": 0.85, "He": 0.15}``. Each diluent with an ExoMol
+        ``.broad`` file (e.g. ``24Mg-1H__H2.broad``) adds ``gamma_<diluent>`` and
+        ``n_<diluent>`` columns (lower case, e.g. ``gamma_h2``). Air and self
+        broadening are always loaded. All broadening coefficients are converted from
+        cm-1/bar (ExoMol) to cm-1/atm (RADIS).
 
     Other Parameters
     ----------------
@@ -327,6 +357,19 @@ def fetch_exomol(
 
     # Add self broadening if available
     mdb.set_broadening_coef(df, output=output, species="self")
+
+    # Add the other diluents (H2, He, CO2, ...) from their .broad files, as
+    # gamma_<diluent> / n_<diluent> columns. Diluents without a file get no
+    # column, so RADIS handles them with radis.config["MISSING_BROAD_COEF"].
+    for partner in _exomol_broadening_partners(diluent, mdb):
+        mdb.set_broadening_coef(df, output=output, species=partner)
+
+    # ExoMol broadening coefficients are given at 1 bar; RADIS uses them with
+    # the pressure in atm (as in HITRAN): convert from cm-1/bar to cm-1/atm
+    columns_df = df.get_column_names() if output == "vaex" else list(df.columns)
+    for column in columns_df:
+        if column in ("airbrd", "selbrd") or column.startswith("gamma_"):
+            df[column] = df[column] * BAR_PER_ATM
 
     # Specific for RADIS :
     # ... Get RADIS column names:
