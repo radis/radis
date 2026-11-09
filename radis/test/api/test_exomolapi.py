@@ -99,6 +99,30 @@ def test_broadening_from_recipes_layers_a0_m0():
 
 
 @pytest.mark.fast
+def test_broadening_from_recipes_signed_m0():
+    """Older m0 tables (e.g. 27Al-1H__air.broad) use the signed m (-J'' for P,
+    J'' for Q, J'' + 1 for R), with different P and R values, in any row order"""
+    import pandas as pd
+
+    from radis.api.exomolapi import broadening_from_recipes
+
+    m0 = pd.DataFrame(
+        {
+            "code": ["m0"] * 7,
+            "alpha_ref": [0.13, 0.21, 0.12, 0.22, 0.10, 0.11, 0.20],
+            "n_Texp": [0.5] * 7,
+            "jlower": [2, -2, 3, -3, 0, 1, -1],  # interleaved, as NH3 air
+        }
+    )
+    #             P(1) Q(1) R(1) R(0) P(2) R(2) P(9) R(9) J''=1 -> 3
+    jlower = np.array([1, 1, 1, 0, 2, 2, 9, 9, 1])
+    jupper = np.array([0, 1, 2, 1, 1, 3, 8, 10, 3])
+    alpha_ref, _ = broadening_from_recipes(m0, jlower, jupper)
+    # m:             -1    1     2     1    -2     3    -3(min) 3(max)  none
+    assert alpha_ref.tolist() == [0.20, 0.11, 0.13, 0.11, 0.21, 0.12, 0.22, 0.12, 0.07]
+
+
+@pytest.mark.fast
 @pytest.mark.parametrize("engine", ["pytables", "vaex"])
 @pytest.mark.parametrize("with_trans_wavenumber", [True, False])
 def test_pickup_gE_line_positions_from_states(engine, with_trans_wavenumber):
