@@ -50,10 +50,7 @@ dependencies:
   - ruamel.yaml
   - toml
   - tqdm
-  # - vaex-core; python_version < '3.13' #latest version 4.19 is not on conda-forge yet
-  # - vaex-hdf5; python_version < '3.13' #latest version 4.19 is not on conda-forge yet
-  # - vaex-viz; python_version < '3.13'
-  - git+https://github.com/vaexio/vaex.git#subdirectory=packages/vaex-core
-  - git+https://github.com/vaexio/vaex.git#subdirectory=packages/vaex-hdf5
-  - git+https://github.com/vaexio/vaex.git#subdirectory=packages/vaex-viz
+  - vaex-core; python_version < '3.15'
+  - vaex-hdf5; python_version < '3.15'
+  - vaex-viz; python_version < '3.15'
   - vulkan
