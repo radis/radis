@@ -25,7 +25,7 @@ dependencies:
 - matplotlib<3.11  # >=3.11 removes matplotlib.cm.get_cmap() but this feature is still used by vaex-viz
 - numpy~=2.0
 - numba  # just-in-time compiler
-- pandas
+- pandas>=2.2
 - plotly>=2.5.1  # for line survey HTML output
 - psutil # to get user RAM
 - pytables # for pandas to HDF5 export

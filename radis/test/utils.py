@@ -339,11 +339,16 @@ def define_Evib_as_min_of_polyad(levels, keys):
         grp["Erot"] = grp.E - Evib0
         return grp
 
-    levels = levels.groupby(keys).apply(fill_EvibErot)
-    # Note: The `allow_duplicates` parameter controls whether duplicate column
-    #   labels are allowed. The `True` behaviour used to be the default in
-    #   Pandas <2.0.
-    levels.reset_index(allow_duplicates=True)
+    # With pandas >=2.2 (enforced), pass include_groups=False so groupby().apply()
+    # excludes the grouping keys from its output on BOTH pandas 2.x and 3.x.
+    # This keeps the result identical across versions, and lets reset_index()
+    # promote the grouping keys ('p','c','N') back to real columns without
+    # creating duplicate columns (avoiding the pandas<3 vs pandas>=3 divergence).
+    levels = (
+        levels.groupby(keys, sort=False)
+        .apply(fill_EvibErot, include_groups=False)
+        .reset_index()
+    )
 
     return levels
 
