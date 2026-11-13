@@ -320,7 +320,7 @@ class VkFFTApp(VkFFTAppBase):
 
         shape = np.ones(vkfft_max_fft_dimensions(), dtype=vkfft_long_type)
         skip = np.zeros(vkfft_max_fft_dimensions(), dtype=vkfft_long_type)
-        grouped_batch = -np.ones(vkfft_max_fft_dimensions(), dtype=vkfft_long_type)
+        grouped_batch = np.ones(vkfft_max_fft_dimensions(), dtype=vkfft_long_type)
 
         shape[0] = self.shape[-1]
         # skip[1 : len(self.shape)] = 1
