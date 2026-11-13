@@ -19,7 +19,7 @@ readme = "README.md"
 authors = [
     {name = "Erwan Pannier"},
 ]
-license = {text = "GNU Lesser General Public License v3 (LGPLv3)"}
+license = "LGPL-3.0-only"  # was "GNU Lesser General Public License v3 (LGPLv3)" but updated for setuptools ≥ 77
 keywords = [
     "spectrum",
     "infrared",
