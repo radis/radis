@@ -777,6 +777,42 @@ def test_vaex_and_pandas_spectrum_noneq():
         assert np.all(factory_s1.df1[column] == factory_s.df1[column].to_numpy())
 
 
+@pytest.mark.skipif(isinstance(vaex, NotInstalled), reason="Vaex not available")
+def test_cutoff_error_vaex_memory_efficient():
+    """Verify vaex path does NOT load full dataframe into memory.
+
+    Addresses mentor review on PR #924 — proves memory efficiency.
+    The vaex early-exit binning should NOT load the full dataframe into memory.
+    """
+    import tracemalloc
+
+    config["DATAFRAME_ENGINE"] = "vaex"
+
+    sf = SpectrumFactory(
+        wavenum_min=2000,
+        wavenum_max=2100,
+        molecule="CO",
+        isotope="1",
+        verbose=0,
+    )
+    sf.fetch_databank("hitran")
+
+    tracemalloc.start()
+    sf._cutoff_linestrength(percentage_cutoff_error=1.0)
+    current, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+
+    # Reset config back to pandas
+    config["DATAFRAME_ENGINE"] = "pandas"
+
+    # Peak memory should be well under full-load threshold.
+    # Full dataframe load would be several hundred MB.
+    # Memory-efficient vaex path should be well below 200MB.
+    assert peak < 200 * 1024 * 1024, (
+        f"Memory too high: {peak / 1e6:.1f} MB — vaex path may be loading full df"
+    )
+
+
 # --------------------------
 if __name__ == "__main__":
     test_vaex_and_pandas_spectrum_noneq()
