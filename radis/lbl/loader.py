@@ -579,6 +579,7 @@ class MiscParams(ConditionDict):
         "zero_padding",
         "memory_mapping_engine",
         "add_at_used",  # function used in DIT ; a Cython and a pure-Python version exist
+        "parallel",
     ]
 
     def __init__(self):
@@ -1031,7 +1032,7 @@ class DatabankLoader(object):
         lvl_use_cached=True,
         memory_mapping_engine="default",
         load_columns="equilibrium",
-        parallel=True,
+        parallel=None,
         extra_params=None,
         **kwargs,
     ):
@@ -1076,9 +1077,12 @@ class DatabankLoader(object):
         memory_mapping_engine: str
             Which library to use to read HDF5 files. Options are ``'pytables'``, ``'vaex'``, ``'feather'``.
             Default is ``'default'``.
-        parallel: bool
-            If ``True``, uses joblib.parallel to load database with multiple processes.
-            Default is ``True``.
+        parallel: bool or int
+            If ``True``, uses joblib with an auto-detected number of parallel workers.
+            If ``False``, uses serial (single-process) loading.
+            If an integer N > 1, uses exactly N parallel workers. Useful on
+            memory-constrained machines to avoid MemoryError (e.g. ``parallel=2``).
+            Default ``True``.
         load_columns: list, ``'all'``, ``'equilibrium'``, ``'noneq'``, ``diluent``
             Columns names to load. Default is ``'equilibrium'``.
 
@@ -1102,6 +1106,11 @@ class DatabankLoader(object):
         # | see implementation in load_databank.
 
         self.profiler.start("db_loading", self._db_loading_profiler_level())
+
+        # Resolve parallel: caller-supplied value takes precedence;
+        # fall back to SpectrumFactory-level setting (self.misc.parallel) or True.
+        if parallel is None:
+            parallel = getattr(self.misc, "parallel", True)
 
         # Check inputs
         compare_source = source.casefold()

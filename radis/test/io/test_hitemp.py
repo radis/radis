@@ -247,6 +247,7 @@ def test_fetch_hitemp_partial_download_CO2(verbose=True, *args, **kwargs):
         load_wavenum_max=2500,
         verbose=3,
         return_local_path=True,
+        parallel=True,
     )
 
     assert df.shape[1] == 24
