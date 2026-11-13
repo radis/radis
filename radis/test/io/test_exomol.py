@@ -196,6 +196,58 @@ def test_exomol_parallel_vs_sequential(tmp_path, verbose=True, *args, **kwargs):
     pd.testing.assert_frame_equal(df_seq, df_par)
 
 
+
+@pytest.mark.fast
+def test_exomol_broadening_partners(tmp_path):
+    """Diluents are matched case-insensitively to ExoMol .broad files; air and self
+    are always loaded separately, and diluents without a file are skipped"""
+    from types import SimpleNamespace
+
+    from radis.io.exomol import _exomol_broadening_partners
+
+    partners = ["H2", "He", "air", "self", "CO2"]
+    files = {p: tmp_path / f"12C-16O__{p}.broad" for p in partners}
+    for p in ("H2", "He", "air"):
+        files[p].write_text("a0 0.07 0.5 0\n")
+    mdb = SimpleNamespace(broad_partners=partners, broad_files=files)
+
+    assert _exomol_broadening_partners({"H2": 0.85, "He": 0.15}, mdb) == ["H2", "He"]
+    assert _exomol_broadening_partners({"h2": 0.5, "air": 0.5}, mdb) == ["H2"]
+    assert _exomol_broadening_partners("CO2", mdb) == []  # no file
+    assert _exomol_broadening_partners("air", mdb) == []
+    assert _exomol_broadening_partners(None, mdb) == []
+
+
+@pytest.mark.needs_connection
+def test_fetch_exomol_diluent_broadening(tmp_path):
+    """H2 and He .broad files give gamma_h2 / gamma_he columns, and all ExoMol
+    broadening coefficients are converted from cm-1/bar to cm-1/atm"""
+    from radis.api.exomolapi import read_broad
+    from radis.io.exomol import BAR_PER_ATM, fetch_exomol
+
+    df = fetch_exomol(
+        molecule="CO",
+        database="Li2015",
+        isotope=1,
+        load_wavenum_min=2000,
+        load_wavenum_max=2010,
+        diluent={"H2": 0.85, "He": 0.15},
+        clean_cache_files=False,
+        verbose=False,
+        local_databases=tmp_path,
+    )
+    path = tmp_path / "CO" / "12C-16O" / "Li2015"
+    for partner, col in (("H2", "h2"), ("He", "he"), ("air", None)):
+        bdat = read_broad(path / f"12C-16O__{partner}.broad", output="pandas")
+        gamma_col, n_col = ("airbrd", "Tdpair") if col is None else (f"gamma_{col}", f"n_{col}")
+        if partner == "air" and (bdat["code"] != "a0").any():
+            continue  # only check a0 (J'') recipes here
+        table = bdat.set_index("jlower")
+        line = df[df["jl"].isin(table.index)].iloc[0]
+        assert np.isclose(line[gamma_col], table.loc[line["jl"], "alpha_ref"] * BAR_PER_ATM)
+        assert np.isclose(line[n_col], table.loc[line["jl"], "n_Texp"])
+
+
 if __name__ == "__main__":
     # test_exomol_parsing_functions()
     test_calc_exomol_vs_hitemp()
