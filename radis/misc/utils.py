@@ -11,7 +11,6 @@
 import importlib
 import inspect
 import os
-import sys
 from fnmatch import translate
 from pathlib import Path
 from re import IGNORECASE, compile
@@ -103,15 +102,9 @@ def getarglist(function):
     See https://stackoverflow.com/a/41188411/5622825
     """
 
-    if sys.version_info[0] == 2:
-        from inspect import getargspec
+    from inspect import signature
 
-        return getargspec(function).args
-
-    else:
-        from inspect import signature
-
-        return list(signature(function).parameters)
+    return list(signature(function).parameters)
 
 
 def get_default_arg(func, arg):

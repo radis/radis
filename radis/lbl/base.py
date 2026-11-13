@@ -769,15 +769,9 @@ class BaseFactory(DatabankLoader):
             # see text for how we define vibrational energy
             index = ["p", "c", "N"]
 
-            import sys
-
-            if sys.version_info < (3, 13):
-                energies = energies.drop_duplicates(index, inplace=False)
-            else:
-                energies = energies.reset_index().drop_duplicates(
-                    subset=index, inplace=False
-                )
-            # (work on a copy)
+            energies = energies.reset_index().drop_duplicates(
+                subset=index, inplace=False
+            )
 
             # reindexing to get a direct access to level database (instead of using df.v1==v1 syntax)
             energies.set_index(index, inplace=True)

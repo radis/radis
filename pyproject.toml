@@ -19,7 +19,7 @@ readme = "README.md"
 authors = [
     {name = "Erwan Pannier"},
 ]
-license = {text = "GNU Lesser General Public License v3 (LGPLv3)"}
+license = "LGPL-3.0-only"  # was "GNU Lesser General Public License v3 (LGPLv3)" but updated for setuptools ≥ 77
 keywords = [
     "spectrum",
     "infrared",
@@ -39,13 +39,13 @@ keywords = [
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Topic :: Scientific/Engineering",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3.10",   #DEV MESSAGE: end of life, October 2026, https://devguide.python.org/versions/.
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Operating System :: OS Independent",
 ]
 requires-python = ">=3.10"
@@ -84,10 +84,10 @@ dependencies = [
     "termcolor",  # terminal colors
     "toml",
     "tqdm",  # for progress bars
-    "numpy~=2.0", #Warning, numpy 2.0 is not compatible with vaex-hdf5<=0.14.1, but we install vaex-hdf5 from the github repo see #869 and https://github.com/vaexio/vaex/issues/2468
-    'vaex-core; python_version < "3.13"', #to-do, check latest release of vaex (last compatible with 3.12 in january 2026)
-    'vaex-hdf5; python_version < "3.13"',
-    'vaex-viz; python_version < "3.13"',
+    "numpy~=2.0",
+    'vaex-core; python_version < "3.15"',
+    'vaex-hdf5; python_version < "3.15"',
+    'vaex-viz; python_version < "3.15"',
     "vulkan",
 ]
 
