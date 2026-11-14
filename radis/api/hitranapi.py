@@ -41,7 +41,6 @@ from radis.db.classes import (  # get_molecule_identifier,
     HITRAN_CLASS7,
     HITRAN_CLASS8,
     HITRAN_CLASS9,
-    HITRAN_CLASS10,
     HITRAN_GROUP1,
     HITRAN_GROUP2,
     HITRAN_GROUP3,
@@ -1803,8 +1802,6 @@ def parse_global_quanta(
         df = _parse_HITRAN_class8(df, verbose=verbose)
     elif mol in HITRAN_CLASS9:
         df = _parse_HITRAN_class9(df, verbose=verbose)
-    elif mol in HITRAN_CLASS10:
-        df = _parse_HITRAN_class10(df, verbose=verbose)
     else:
         raise ValueError(f"Unknown class for molecule {mol}. Cant parse global quanta")
 

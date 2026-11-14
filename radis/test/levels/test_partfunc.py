@@ -135,7 +135,6 @@ def test_cache_file_generation_and_update(verbose=True, *args, **kwargs):
 
 
 @pytest.mark.needs_config_file
-@pytest.mark.fast
 @pytest.mark.needs_db_CDSD_HITEMP_PC
 def test_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
     """Test 1: compare calculated PartFunc to the tabulated one"""
@@ -317,7 +316,6 @@ def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
 
 
 @pytest.mark.needs_config_file
-@pytest.mark.fast
 @pytest.mark.needs_db_CDSD_HITEMP_PC
 def test_CDSD_calc_vs_ref(warnings=True, verbose=True, *args, **kwargs):
     """Test partition functions calculated with CDSD energy levels against
@@ -627,7 +625,6 @@ def test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(
 
 
 @pytest.mark.needs_config_file
-@pytest.mark.fast
 @pytest.mark.needs_db_CDSD_HITEMP
 def test_recompute_Q_from_QvibQrot_CDSD_PC(
     verbose=True, warnings=True, *args, **kwargs

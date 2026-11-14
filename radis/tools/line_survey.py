@@ -14,10 +14,9 @@ import numpy as np
 
 from radis.api.cdsdapi import columns_4000 as cdsd4000columns
 from radis.api.cdsdapi import columns_cdsdhitemp as cdsdhitempcolumns
-from radis.api.hitranapi import (  # HITRAN_CLASS2,; HITRAN_CLASS3,; HITRAN_CLASS6,; HITRAN_CLASS7,; HITRAN_CLASS8,; HITRAN_CLASS9,; HITRAN_CLASS10,
+from radis.api.hitranapi import (  # HITRAN_CLASS2,; HITRAN_CLASS3,; HITRAN_CLASS6,; HITRAN_CLASS7,; HITRAN_CLASS8,; HITRAN_CLASS9,;
     HITRAN_CLASS1,
-    HITRAN_CLASS4,
-    HITRAN_CLASS5,
+    HITRAN_CLASS2,
 )
 from radis.api.hitranapi import columns_2004 as hitrancolumns
 from radis.db.classes import get_molecule, get_molecule_identifier
@@ -404,38 +403,7 @@ def LineSurvey(
                         ]
                     )
                 )
-            elif molecule in HITRAN_CLASS4:  #  ["N2O", "OCS", "HCN"]
-
-                add = [
-                    "v1u",
-                    "v2u",
-                    "l2u",
-                    "v3u",
-                    "v1l",
-                    "v2l",
-                    "l2l",
-                    "v3l",
-                    "jl",
-                ]
-
-                if "iso" in row:
-                    iso = int(row["iso"])
-                elif "isotope" in spec.conditions:
-                    iso = int(spec.conditions["isotope"])
-                else:
-                    iso = "?"
-
-                label = "{molec}[iso{iso}] {branch}({v1l:.0f}{v2l:.0f}`{l2l:.0f}`{v3l:.0f},{jl:.0f})->({v1u:.0f}{v2u:.0f}`{l2u:.0f}`{v3u:.0f})".format(
-                    **dict(
-                        [(k, row[k]) for k in add]
-                        + [
-                            ("iso", iso),
-                            ("molec", molecule),
-                            ("branch", _fix_branch_format[row["branch"]]),
-                        ]
-                    )
-                )
-            elif molecule in HITRAN_CLASS5:  # ["CO2"]
+            elif molecule in HITRAN_CLASS2:  #  ["CO2", "N2O", "OCS", "HCN", "CS2"]
 
                 add = [
                     "v1u",

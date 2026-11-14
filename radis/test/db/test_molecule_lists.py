@@ -12,6 +12,27 @@ import pytest
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
+from radis.db.classes import (
+    HITRAN_CLASS1,
+    HITRAN_CLASS2,
+    HITRAN_CLASS3,
+    HITRAN_CLASS4,
+    HITRAN_CLASS5,
+    HITRAN_CLASS6,
+    HITRAN_CLASS7,
+    HITRAN_CLASS8,
+    HITRAN_CLASS9,
+    HITRAN_GROUP1,
+    HITRAN_GROUP2,
+    HITRAN_GROUP3,
+    HITRAN_GROUP4,
+    HITRAN_GROUP5,
+    HITRAN_GROUP6,
+    HITRAN_GROUP7,
+    is_atom,
+    trans,
+)
+
 
 def fetch_ExoMol_molecules():
     """Get list of molecules in ExoMol by scrapping the ExoMol page"""
@@ -373,8 +394,58 @@ def generate_molparam_for_non_HITRAN_species(molecules=None):
     return EXTRA_ABUNDANCES_DICT, EXTRA_MOLAR_MASS_DICT, EXTRA_ISOTOPE_FULLNAME_DICT
 
 
+@pytest.mark.fast
+def test_HITRAN_molecules_have_group_and_class(verbose=True, *args, **kwargs):
+    """Check that every HITRAN molecule (excluding atoms) belongs to at least
+    one HITRAN_GROUP (local quanta) and one HITRAN_CLASS (global quanta), so
+    that local/global quanta can be parsed for nonequilibrium calculations.
+    """
+
+    all_groups = set(
+        HITRAN_GROUP1
+        + HITRAN_GROUP2
+        + HITRAN_GROUP3
+        + HITRAN_GROUP4
+        + HITRAN_GROUP5
+        + HITRAN_GROUP6
+        + HITRAN_GROUP7
+    )
+
+    all_classes = set(
+        HITRAN_CLASS1
+        + HITRAN_CLASS2
+        + HITRAN_CLASS3
+        + HITRAN_CLASS4
+        + HITRAN_CLASS5
+        + HITRAN_CLASS6
+        + HITRAN_CLASS7
+        + HITRAN_CLASS8
+        + HITRAN_CLASS9
+    )
+
+    # All HITRAN molecules, minus atomic species (e.g. 'O')
+    molecules = [mol for mol in trans.values() if not is_atom(mol)]
+
+    missing_groups = sorted(set(mol for mol in molecules if mol not in all_groups))
+    missing_classes = sorted(set(mol for mol in molecules if mol not in all_classes))
+
+    assert (
+        not missing_groups
+    ), "Molecules missing from any HITRAN_GROUP: {missing_groups}"
+    assert (
+        not missing_classes
+    ), "Molecules missing from any HITRAN_CLASS: {missing_classes}"
+
+    if verbose:
+        print(
+            f"All {len(molecules)} HITRAN molecules (excluding atoms) are "
+            "assigned to a HITRAN_GROUP and a HITRAN_CLASS"
+        )
+
+
 # %%
 
 if __name__ == "__main__":
-    test_ExoMol_molecules_list()
+    # test_ExoMol_molecules_list()
     # test_HITRAN_molecules_list()
+    test_HITRAN_molecules_have_group_and_class(verbose=True)

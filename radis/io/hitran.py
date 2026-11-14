@@ -220,16 +220,9 @@ def fetch_hitran(
         main_files = ldb.get_filenames()
         printer.info(f"Downloading all isotopes for {molecule}", indent=1)
         if main_files:
-            try:
-                ldb.download_and_parse(
-                    main_files, cache=cache, parse_quanta=parse_quanta
-                )
-            except OSError as err:
-                printer.warning(f"Error downloading: {err}")
-                raise
-            else:
-                printer.success("HITRAN database download complete")
-                ldb.actual_file = main_files[0]
+            ldb.download_and_parse(main_files, cache=cache, parse_quanta=parse_quanta)
+            printer.success("HITRAN database download complete")
+            ldb.actual_file = main_files[0]
     else:
         printer.section("Download")
         printer.info("All files already downloaded.", indent=1)
