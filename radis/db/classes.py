@@ -63,6 +63,9 @@ from radis.db.utils import (
 from radis.levels.dunham import EvJ, Fv, Gv
 
 # %% Hitran groups and classes
+# From the appendix of Gordon et al., "The HITRAN2020 molecular spectroscopic database", 10.1016/j.jqsrt.2021.107949
+
+# Initial version:
 # As defined in Rothman et al, "The HITRAN 2004 molecular spectroscopic database"
 # Tables 3 and 4
 # Groups and classes are needed to compute energy in nonequilibrium mode.
@@ -85,6 +88,9 @@ HITRAN_GROUP1 = [
     "ClONO2",
     "HOBr",
     "C2H4",
+    "COCl2",
+    "HONO",
+    "ClNO2",
 ]
 """str: asymmetric rotors"""
 
@@ -101,62 +107,115 @@ HITRAN_GROUP2 = [
     "HCN",
     "C2H2",
     "NO+",
+    "HC3N",
+    "H2",
+    "CS",
+    "C2N2",
+    "CS2",
+    "C4H2",
+    "COFCl",
 ]
 """str: diatomic and linear molecules"""
 
-HITRAN_GROUP3 = ["SF6", "CH4"]
+HITRAN_GROUP3 = [
+    "SF6",
+    "CH4",
+    "CF4",
+    "GeH4",
+]
 """str: Spherical rotors"""
 
-HITRAN_GROUP4 = ["CH3D", "CH3Cl", "C2H6", "NH3", "PH3", "CH3OH"]
+HITRAN_GROUP4 = [
+    "CH3D",
+    "CH3Cl",
+    "C2H6",
+    "NH3",
+    "PH3",
+    "CH3OH",
+    "CH3Br",
+    "CH3CN",
+    "CH3F",
+    "CH3I",
+    "NF3",
+]
 """str: symmetric rotors"""
 
-HITRAN_GROUP5 = ["O2"]
+HITRAN_GROUP5 = ["SO3", "CH3", "H3+"]
+"""str: Planar symmetric molecules"""
+
+HITRAN_GROUP6 = ["O2", "SO", "S2"]  # Was GROUP5 in HITRAN2004
 """str: Triplet-Sigma ground electronic states"""
 
-HITRAN_GROUP6 = ["NO", "OH", "ClO"]
+HITRAN_GROUP7 = ["NO", "OH", "ClO"]
 """str: Doublet-Pi ground electronic states"""
 
 # Classes (define global quanta)
 
-HITRAN_CLASS1 = ["CO", "HF", "HCl", "HBr", "HI", "N2", "NO+"]
-"""str: Diatomic molecules with ? """
+HITRAN_CLASS1 = [
+    "CO",
+    "HF",
+    "HCl",
+    "HBr",
+    "HI",
+    "N2",
+    "NO+",
+    "H2",
+    "CS",
+    "O2",
+    "NO",
+    "OH",
+    "ClO",
+    "SO",
+    "S2",
+]
+"""str: Diatomic molecules"""
 
-HITRAN_CLASS2 = ["O2"]
-"""str: Diatomic molecules with different electronic levels"""
+HITRAN_CLASS2 = ["CO2", "N2O", "OCS", "HCN", "CS2"]
+"""str: Linear triatomic molecules"""
 
-HITRAN_CLASS3 = ["NO", "OH", "ClO"]
-"""str: Diatomic molecules with doublet-Pi electronic state"""
-
-HITRAN_CLASS4 = ["N2O", "OCS", "HCN"]
-"""str: Linear triatomic"""
-
-HITRAN_CLASS5 = ["CO2"]
-"""str: Linear triatomic with large Fermi resonance"""
-
-HITRAN_CLASS6 = ["H2O", "O3", "SO2", "NO2", "HOCl", "H2S", "HO2", "HOBr"]
+# HITRAN_CLASS3 = ["NO", "OH", "ClO"]
+# """str: Diatomic molecules with doublet-Pi electronic state"""
+HITRAN_CLASS3 = ["H2O", "O3", "SO2", "NO2", "HOCl", "H2S", "HO2", "HOBr"]
 """str: Non-linear triatomic"""
 
-HITRAN_CLASS7 = ["C2H2"]
-"""str: Linear tetratomic"""
+HITRAN_CLASS4 = ["NH3", "PH3", "NF3"]
+"""str: Pyramidal tetratomic molecules"""
 
-HITRAN_CLASS8 = ["NH3", "PH3"]
-"""str: Pyramidal tetratomic"""
+HITRAN_CLASS5 = ["C2H2", "C4H2", "HC3N", "C2N2"]
+"""str: Linear polyatomic molecules"""
 
-HITRAN_CLASS9 = ["H2CO", "H2O2", "COF2"]
-"""str: Non-linear tetratomic"""
+HITRAN_CLASS6 = ["H2CO", "H2O2", "COF2", "COCl2"]
+"""str: Asymmetric top molecules"""
 
-HITRAN_CLASS10 = [
+HITRAN_CLASS7 = ["SO3", "CH3", "H3+"]
+"""str: Planar symmetric molecules"""
+
+HITRAN_CLASS8 = [
     "CH4",
+    "CF4",
+    "GeH4",
+]
+"""str: pherical top molecules/isotopologues"""
+
+HITRAN_CLASS9 = [
+    "CH3D",
+    "HNO3",
     "CH3Cl",
     "C2H6",
-    "HNO3",
     "SF6",
     "HCOOH",
     "ClONO2",
     "C2H4",
     "CH3OH",
+    "CH3Br",
+    "CH3CN",
+    "CH3F",
+    "CH3I",
+    "COFCl",
+    "HONO",
+    "ClNO2",
 ]
-"""str: Pentatomic or greater polyatomic"""
+"""str: The following molecules/isotopologues have explicit global quantum number notation"""
 # 0.9.22: Removed CH3D has no HITRAN identifier
 
 
@@ -973,7 +1032,7 @@ class ElectronicState(Isotope):
                                 f"{self.get_fullname()}: using Dunham coefficients for Energy calculation"
                             )
                         # TODO: reformat these methods as external functions, but keep docstrings
-                elif self.name in HITRAN_CLASS5:
+                elif self.name in HITRAN_CLASS2:
                     if convention == "herzberg":
                         from radis.levels.energies_co2 import EvJ_co2, EvJah_co2
 

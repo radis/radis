@@ -3,6 +3,7 @@
 Defines the :py:class:`~radis.api.hdf5.DataFileManager` class
 """
 
+import gc
 import os
 import pathlib
 import sys
@@ -281,10 +282,19 @@ class DataFileManager(object):
             else:
                 df.export_hdf5(file, group=key, mode="w")
             df.close()
+            # Windows + Vaex: memory-mapped temp files may stay locked even after
+            # df.close() (Vaex logs "could not close memmap for column ..."). Force
+            # a garbage collection to release the mmap (and the numpy buffer views
+            # still referencing it) before deleting the temp batch files.
+            df = None
+            gc.collect()
         self._close_temp_batch_files()
 
     def _close_temp_batch_files(self):
         for i in range(len(self._temp_batch_files) - 1, -1, -1):
+            # Windows: a Vaex memory-mapped temp file may still be locked.
+            # Collect garbage to release the mmap, then retry deletion.
+            gc.collect()
             os.remove(self._temp_batch_files[i])
             del self._temp_batch_files[i]
 

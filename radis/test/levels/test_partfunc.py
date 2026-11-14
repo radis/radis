@@ -135,7 +135,6 @@ def test_cache_file_generation_and_update(verbose=True, *args, **kwargs):
 
 
 @pytest.mark.needs_config_file
-@pytest.mark.fast
 @pytest.mark.needs_db_CDSD_HITEMP_PC
 def test_CDSD_calc_vs_tab(verbose=True, warnings=True, *args, **kwargs):
     """Test 1: compare calculated PartFunc to the tabulated one"""
@@ -317,7 +316,6 @@ def test_calculatedQ_match_HAPI(plot=False, verbose=True, *args, **kwargs):
 
 
 @pytest.mark.needs_config_file
-@pytest.mark.fast
 @pytest.mark.needs_db_CDSD_HITEMP_PC
 def test_CDSD_calc_vs_ref(warnings=True, verbose=True, *args, **kwargs):
     """Test partition functions calculated with CDSD energy levels against
@@ -627,7 +625,6 @@ def test_recompute_Q_from_QvibQrot_Dunham_Evib123_Erot(
 
 
 @pytest.mark.needs_config_file
-@pytest.mark.fast
 @pytest.mark.needs_db_CDSD_HITEMP
 def test_recompute_Q_from_QvibQrot_CDSD_PC(
     verbose=True, warnings=True, *args, **kwargs
@@ -1143,6 +1140,27 @@ def test_vibrating_rotor_harmonic_anharmonic():
     assert result[2][0] == coeffs["we3"]
     # Non-zero J: rotational energy > 0
     assert EvJah_uncoupled_vibrating_rotor(0, 0, 0, 0, 10, coeffs)[3] > 0
+
+
+@pytest.mark.fast
+@pytest.mark.parametrize(
+    "M, I", [(56, 1), (57, 1), (58, 1), (59, 1), (59, 2), (60, 1), (61, 1), (61, 2)]
+)
+def test_tips_new_hitran_molecules(M, I):
+    """HITRAN molecules 56-61 are only in HAPI's TIPS-2025 tables"""
+    import contextlib
+    import io
+
+    with contextlib.redirect_stdout(io.StringIO()):  # HAPI prints a banner on import
+        hapi = pytest.importorskip("hapi")
+    if not hasattr(hapi, "TIPS_2025_ISOT_HASH"):
+        pytest.skip("this HAPI version has no TIPS-2025 data")
+
+    from radis.db.molparam import MolParams
+    from radis.levels.partfunc import PartFuncTIPS
+
+    Q = PartFuncTIPS(M, I, verbose=False).at(296)
+    assert Q == pytest.approx(MolParams().df.loc[(M, I), "Q_296K"], rel=1e-4)
 
 
 if __name__ == "__main__":

@@ -47,27 +47,6 @@ def test_getMolecule(verbose=True, *args, **kwargs):
 
     assert S.get_fullname() == "CO(X1Σ+)(iso1)"
 
-    #    # Print CO Dunham development calculation (can be accessed from console)
-    #    if verbose:
-    #        print('Dunham development')
-    #        print('------------\n')
-    #    S.get_ref('Erovib')
-
-
-# Test defined in neq 0.9.24. Deactivated in the move to RADIS 1.0
-# @pytest.mark.fast       # this is a fast test. Run fast tests only with 'pytest -m fast'
-# def test_CO_energies_Herzberg_vs_Dunham(verbose=True, *args, **kwargs):
-#
-#    from radis.db.molecules import CO_X_iso1_Herzberg, CO_X_iso1
-#
-#    for (v, J) in [(0, 0), (1, 10), (10, 10)]:
-#        if verbose:
-#            print('v={0}, J={1}'.format(v,J))
-#            print('CO_X_iso1_Herzberg: {0:.3f}cm-1'.format(CO_X_iso1_Herzberg.Erovib(v,J)))
-#            print('CO_X_iso1_from_json: {0:.3f}cm-1'.format(CO_X_iso1.Erovib(v,J)))
-#        assert np.isclose(CO_X_iso1_Herzberg.Erovib(v,J), CO_X_iso1.Erovib(v,J),
-#                          rtol=1e-4)
-
 
 def test_ZPE(verbose=True, *args, **kwargs):
     """Test that Zero-Point-Energy stored in the default RADIS database

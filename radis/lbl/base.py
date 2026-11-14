@@ -377,7 +377,7 @@ class BaseFactory(DatabankLoader):
                     + " directly. See functions in factory.py "
                 )
 
-        from radis.db.classes import HITRAN_CLASS1, HITRAN_CLASS3, HITRAN_CLASS5
+        from radis.db.classes import HITRAN_CLASS1, HITRAN_CLASS2
 
         # Different methods to get Evib and Erot:
         # fetch energies from precomputed CDSD levels: one Evib per (p, c) group
@@ -472,14 +472,7 @@ class BaseFactory(DatabankLoader):
                 return self._add_EvibErot_RADIS_cls1(
                     df, calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic
                 )
-            elif (
-                molecule in HITRAN_CLASS3
-            ):  # OH, NO, ClO (2Π states - treat as class 1)
-                # Use CLASS1 method (diatomic Dunham/Herzberg)
-                return self._add_EvibErot_RADIS_cls1(
-                    df, calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic
-                )
-            elif molecule in HITRAN_CLASS5:
+            elif molecule in HITRAN_CLASS2:
                 if __debug__:
                     printdbg(
                         "placeholder: using getEvib123 while getEvib would be enough"
