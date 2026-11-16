@@ -26,6 +26,7 @@ from os.path import getmtime
 from warnings import warn
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from radis.api.cdsdapi import cdsd2df
@@ -294,6 +295,79 @@ def test_hitran_cross_sections(*args, **kwargs):
     assert data["name"] == "Acetone"
     assert data["wavenumber"].min() == 700.004
     assert data["wavenumber"].max() == 1780.0066
+
+
+@pytest.mark.fast
+@pytest.mark.parametrize(
+    "molecule, globu, globl, expected",
+    [
+        ("CO", "              1", "              0", {"vu": 1, "vl": 0}),
+        ("OH", "       X3/2   1", "       X3/2   0", {"vu": 1, "vl": 0}),
+        (
+            "CO2",
+            "       0 0 0 11",
+            "       0 0 0 01",
+            {"v1u": 0, "v2u": 0, "l2u": 0, "v3u": 1, "ru": 1, "v3l": 0, "rl": 1},
+        ),
+        (
+            "N2O",
+            "        0 0 0 1",
+            "        0 0 0 0",
+            {"v1u": 0, "v2u": 0, "l2u": 0, "v3u": 1, "v3l": 0},
+        ),
+        ("H2O", "          0 1 0", "          0 0 0", {"v1u": 0, "v2u": 1, "v3u": 0}),
+    ],
+)
+def test_parse_global_quanta_by_class(molecule, globu, globl, expected):
+    """Each HITRAN class is read with the parser written for its format"""
+    from radis.api.hitranapi import parse_global_quanta
+
+    df = pd.DataFrame({"globu": [globu], "globl": [globl]})
+    df = parse_global_quanta(df, molecule, verbose=False)
+    for column, value in expected.items():
+        assert df[column].iloc[0] == value, column
+
+
+@pytest.mark.fast
+@pytest.mark.parametrize("molecule", ["NH3", "C2H2", "H2CO", "CH3", "CH4", "HNO3"])
+def test_parse_global_quanta_not_implemented(molecule):
+    """Classes without a parser are left untouched, not read as another class"""
+    from radis.api.hitranapi import parse_global_quanta
+
+    df = pd.DataFrame({"globu": [" " * 15], "globl": [" " * 15]})
+    df = parse_global_quanta(df, molecule, verbose=False)
+    assert list(df.columns) == ["globu", "globl"]
+
+
+@pytest.mark.fast
+def test_parse_local_quanta_linear():
+    from radis.api.hitranapi import parse_local_quanta
+
+    df = pd.DataFrame({"locu": [" " * 15], "locl": ["     R  5      "]})
+    df = parse_local_quanta(df, "CO", verbose=False)
+    assert df["branch"].iloc[0] == "R"
+    assert df["jl"].iloc[0] == 5
+
+
+@pytest.mark.fast
+@pytest.mark.parametrize(
+    "molecule", ["O2", "SO", "S2", "NO", "OH", "ClO", "SO3", "CH3", "H3+", "C4H2"]
+)
+def test_parse_local_quanta_not_implemented(molecule):
+    """Groups without a parser, and C4H2 (own layout), are left untouched"""
+    from radis.api.hitranapi import parse_local_quanta
+
+    df = pd.DataFrame({"locu": [" " * 15], "locl": ["     R  5      "]})
+    df = parse_local_quanta(df, molecule, verbose=False)
+    assert list(df.columns) == ["locu", "locl"]
+
+
+@pytest.mark.fast
+def test_COFCl_is_an_asymmetric_rotor():
+    from radis.db.classes import HITRAN_GROUP1, HITRAN_GROUP2
+
+    assert "COFCl" in HITRAN_GROUP1
+    assert "COFCl" not in HITRAN_GROUP2
 
 
 def _run_testcases(verbose=True, *args, **kwargs):

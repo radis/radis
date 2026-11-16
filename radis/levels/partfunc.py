@@ -71,10 +71,7 @@ from radis.api.atomic_pf_api import (
 from radis.api.cache_files import load_h5_cache_file, save_to_hdf
 from radis.db.classes import (
     HITRAN_CLASS1,
-    HITRAN_CLASS2,
     HITRAN_CLASS3,
-    HITRAN_CLASS5,
-    HITRAN_CLASS6,
     get_molecule,
     get_molecule_identifier,
 )
@@ -1673,9 +1670,9 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         )
 
         # Get levels
-        if molecule in HITRAN_CLASS1 + HITRAN_CLASS2 + HITRAN_CLASS3:
+        if molecule in HITRAN_CLASS1:
             nb_vib_modes = 1
-        elif molecule in HITRAN_CLASS5 + HITRAN_CLASS6:
+        elif molecule == "CO2" or molecule in HITRAN_CLASS3:
             nb_vib_modes = 3
         else:
             raise NotImplementedError
@@ -1699,7 +1696,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
             #     # Use CLASS1 method (diatomic Dunham/Herzberg)
             #     # TODO: implement full 2Π treatment with spin-orbit and Lambda-doubling
             #     self.build_energy_levels_class1()
-            elif molecule in HITRAN_CLASS5:  # CO2
+            elif molecule == "CO2":
                 self.build_energy_levels_class5(
                     calc_Evib_per_mode=calc_Evib_per_mode,
                     calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic,
@@ -1900,7 +1897,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
     ):
         r"""in the case where only Ediss is given. Deal with vmax, Jmax later.
 
-        :data:`~radis.api.hitranapi.HITRAN_CLASS5` = ['CO2']
+        Applies to CO2 (in :data:`~radis.api.hitranapi.HITRAN_CLASS2`)
         # Linear triatomic with large Fermi resonance
 
         Parameters

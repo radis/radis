@@ -47,6 +47,7 @@ from radis.db.classes import (  # get_molecule_identifier,
     HITRAN_GROUP4,
     HITRAN_GROUP5,
     HITRAN_GROUP6,
+    HITRAN_GROUP7,
     get_molecule,
 )
 from radis.misc.config import getDatabankEntries
@@ -1734,6 +1735,10 @@ def parse_local_quanta(
                 df, verbose=verbose, dataframe_type=dataframe_type
             )
 
+    elif mol == "C4H2":
+        # C4H2 has its own layout in HITRAN (group 2b), which is not implemented:
+        # the group 2 parser would read the wrong columns
+        pass
     elif mol in HITRAN_GROUP2:
         if fast_parsing:
             df = _parse_HITRAN_group2_fast_parsing(
@@ -1747,9 +1752,12 @@ def parse_local_quanta(
         df = _parse_HITRAN_group3(df, verbose=verbose)
     elif mol in HITRAN_GROUP4:
         df = _parse_HITRAN_group4(df, verbose=verbose)
-    elif mol in HITRAN_GROUP5:
+    # Note: the two parsers below are still named after their HITRAN 2004 group numbers
+    elif mol in HITRAN_GROUP5:  # planar symmetric rotors: no parser yet
+        pass
+    elif mol in HITRAN_GROUP6:  # triplet-Sigma ground states (O2, SO, S2)
         df = _parse_HITRAN_group5(df, verbose=verbose)
-    elif mol in HITRAN_GROUP6:
+    elif mol in HITRAN_GROUP7:  # doublet-Pi ground states (NO, OH, ClO)
         df = _parse_HITRAN_group6(df, verbose=verbose)
     else:
         raise ValueError(f"Unknown group for molecule {mol}. Cant parse local quanta")
@@ -1779,15 +1787,17 @@ def parse_global_quanta(
             df = _parse_HITRAN_class1(
                 df, verbose=verbose, dataframe_type=dataframe_type
             )
-    elif mol in HITRAN_CLASS2:
-        df = _parse_HITRAN_class2(df, verbose=verbose)
-    elif mol in HITRAN_CLASS3:
-        df = _parse_HITRAN_class3(df, verbose=verbose)
-    elif mol in HITRAN_CLASS4:
-        df = _parse_HITRAN_class4(df, verbose=verbose, dataframe_type=dataframe_type)
-    elif mol in HITRAN_CLASS5:
-        df = _parse_HITRAN_class5(df, verbose=verbose, dataframe_type=dataframe_type)
-    elif mol in HITRAN_CLASS6:
+    # Note: the parsers below are still named after their HITRAN 2004 class numbers
+    elif mol in HITRAN_CLASS2:  # linear triatomic
+        if mol == "CO2":  # v1 v2 l2 v3 r
+            df = _parse_HITRAN_class5(
+                df, verbose=verbose, dataframe_type=dataframe_type
+            )
+        else:  # v1 v2 l2 v3
+            df = _parse_HITRAN_class4(
+                df, verbose=verbose, dataframe_type=dataframe_type
+            )
+    elif mol in HITRAN_CLASS3:  # non-linear triatomic: v1 v2 v3
         if fast_parsing:
             df = _parse_HITRAN_class6_fast_parsing(
                 df, verbose=verbose, dataframe_type=dataframe_type
@@ -1796,12 +1806,14 @@ def parse_global_quanta(
             df = _parse_HITRAN_class6(
                 df, verbose=verbose, dataframe_type=dataframe_type
             )
-    elif mol in HITRAN_CLASS7:
-        df = _parse_HITRAN_class7(df, verbose=verbose)
-    elif mol in HITRAN_CLASS8:
+    elif mol in HITRAN_CLASS4:  # pyramidal tetratomic (not implemented)
         df = _parse_HITRAN_class8(df, verbose=verbose)
-    elif mol in HITRAN_CLASS9:
+    elif mol in HITRAN_CLASS5:  # linear polyatomic (not implemented)
+        df = _parse_HITRAN_class7(df, verbose=verbose)
+    elif mol in HITRAN_CLASS6:  # asymmetric top (not implemented)
         df = _parse_HITRAN_class9(df, verbose=verbose)
+    elif mol in HITRAN_CLASS7 + HITRAN_CLASS8 + HITRAN_CLASS9:  # not implemented
+        df = _parse_HITRAN_class10(df, verbose=verbose)
     else:
         raise ValueError(f"Unknown class for molecule {mol}. Cant parse global quanta")
 

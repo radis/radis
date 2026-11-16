@@ -51,7 +51,6 @@ import pandas as pd
 from numpy import exp, expm1
 
 from radis.api.hitranapi import HITRAN_CLASS1, get_molecule
-from radis.db.classes import HITRAN_CLASS3
 from radis.lbl.broadening import BroadenFactory
 from radis.lbl.labels import (
     vib_lvl_name_cdsd_pc,
@@ -1259,9 +1258,7 @@ def add_bands(df, dbformat, lvlformat, dataframe_type="pandas", verbose=True):
                 f"Cant deal with lvlformat={lvlformat} for {molecule}"
             )
 
-    elif (
-        molecule in HITRAN_CLASS1 or molecule in HITRAN_CLASS3
-    ):  # includes 'CO', 'OH', 'NO', 'ClO'
+    elif molecule in HITRAN_CLASS1:  # includes 'CO', 'OH', 'NO', 'ClO'
         # Note. TODO. Move that in loader.py (or somewhere consistent with
         # classes defined in cdsd.py / hitran.py)
 

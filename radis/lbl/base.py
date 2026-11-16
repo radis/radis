@@ -509,8 +509,6 @@ class BaseFactory(DatabankLoader):
                 + " directly. See functions in factory.py "
             )
 
-        from radis.db.classes import HITRAN_CLASS5
-
         if self.params.levelsfmt == "cdsd-pc":  # calculate from precomputed CDSD levels
             return self._add_Evib123Erot_CDSD_pc(df)
 
@@ -520,14 +518,14 @@ class BaseFactory(DatabankLoader):
             raise NotImplementedError("3 Tvib mode for CDSD in pcN convention")  # TODO
 
         elif self.params.levelsfmt == "radis":  # calculate with Dunham expansions
-            if self.input.species in HITRAN_CLASS5:  # class 5
+            if self.input.species == "CO2":
                 if calc_Evib_harmonic_anharmonic:
                     return self._add_Evib123Erot_RADIS_cls5_harmonicanharmonic(df)
                 else:
                     return self._add_Evib123Erot_RADIS_cls5(df)
             else:
                 raise NotImplementedError(
-                    "Molecules other than HITRAN class 5 (CO2) not implemented"
+                    "Molecules other than CO2 not implemented"
                 )  # TODO
 
         else:

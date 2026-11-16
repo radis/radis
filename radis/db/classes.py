@@ -89,6 +89,7 @@ HITRAN_GROUP1 = [
     "HOBr",
     "C2H4",
     "COCl2",
+    "COFCl",
     "HONO",
     "ClNO2",
 ]
@@ -113,7 +114,6 @@ HITRAN_GROUP2 = [
     "C2N2",
     "CS2",
     "C4H2",
-    "COFCl",
 ]
 """str: diatomic and linear molecules"""
 

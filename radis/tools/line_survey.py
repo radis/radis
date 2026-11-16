@@ -426,7 +426,10 @@ def LineSurvey(
                 else:
                     iso = "?"
 
-                label = "{molec}[iso{iso}] {branch}({v1l:.0f}{v2l:.0f}{l2l}{v3l:.0f},{jl:.0f} r={rl})->({v1u:.0f}{v2u:.0f}{l2u}{v3u:.0f} r={ru})"
+                if molecule == "CO2":  # only CO2 has the ranking number r
+                    label = "{molec}[iso{iso}] {branch}({v1l:.0f}{v2l:.0f}{l2l}{v3l:.0f},{jl:.0f} r={rl})->({v1u:.0f}{v2u:.0f}{l2u}{v3u:.0f} r={ru})"
+                else:
+                    label = "{molec}[iso{iso}] {branch}({v1l:.0f}{v2l:.0f}{l2l}{v3l:.0f},{jl:.0f})->({v1u:.0f}{v2u:.0f}{l2u}{v3u:.0f})"
                 label = label.format(
                     **dict(
                         [
