@@ -287,7 +287,9 @@ def drop_object_format_columns(df, verbose=True):
 def replace_PQR_with_m101(df):
     """Return O, P, Q, R, S in column ``branch`` with -2, -1, 0, 1, 2 to get a fully numeric
     database. This improves performances quite a lot, as Pandas doesnt have a
-    fixed-string dtype hence would use the slow ``object`` dtype.
+    fixed-string dtype hence would use the slow ``object`` dtype. A blank
+    branch is converted to NaN and reported as invalid. Edited with AI
+    assistance.
 
     Parameters
     ----------
@@ -331,6 +333,7 @@ def replace_PQR_with_m101(df):
             "2": 2,
             "-1": -1,
             "-2": -2,
+            "": float("nan"),
         }
         valid_values = [-2, -1, 0, 1, 2]
 
@@ -355,8 +358,7 @@ def replace_PQR_with_m101(df):
             # invalid_values = df["branch"][~new_col.isin(valid_values)] #not implemented in vaex
             is_invalid = ~new_col.isin(valid_values)
             # Raise a warning if there are branch values outside valid_values
-            if is_invalid.unique() != [False]:
-                invalid_indices = invalid_values.index
+            if any(is_invalid.unique()):
                 warn(
                     "Invalid values found in 'branch' column.\nValid values are branch = [-2, -1, 0, 1, 2]",
                     UserWarning,

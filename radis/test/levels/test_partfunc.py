@@ -54,6 +54,28 @@ except ImportError:
 # %% Test
 
 
+@pytest.mark.fast
+@pytest.mark.parametrize("molecule,expected_modes", [("CO", 1), ("CO2", 3)])
+def test_dunham_vibrational_modes_with_new_hitran_classes(
+    molecule, expected_modes, tmp_path, monkeypatch
+):
+    cachefile = tmp_path / "levels.h5"
+    monkeypatch.setattr(
+        "radis.levels.partfunc._get_cachefile_name", lambda state: str(cachefile)
+    )
+    state = Molecules[molecule][1]["X"]
+    kwargs = dict(vmax=2, Jmax=3, verbose=False)
+    if molecule == "CO":
+        kwargs["vmax_morse"] = 2
+
+    generated = PartFunc_Dunham(state, use_cached=True, **kwargs)
+    cached = PartFunc_Dunham(state, use_cached="force", **kwargs)
+
+    assert generated.nb_vib_modes == cached.nb_vib_modes == expected_modes
+    assert len(generated.df) > 0
+    assert np.isclose(generated.at(300), cached.at(300))
+
+
 # never add @pytest.mark.fast so we don't delete cached files for 'fast' tests
 def test_delete_all_cached_energies(verbose=True, warnings=True, *args, **kwargs):
     """Doesnt really test anything, but cleans all cached energy levels"""

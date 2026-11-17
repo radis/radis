@@ -5,6 +5,12 @@ Summary
 
 HITRAN database parser
 
+The quantum formats follow the supplementary material of Gordon et al.,
+`The HITRAN2020 molecular spectroscopic database (2022)
+<https://doi.org/10.1016/j.jqsrt.2021.107949>`_, with the newer HITRAN2024
+formats where they differ (Gordon et al., 2026,
+`HITRAN2024 <https://doi.org/10.1016/j.jqsrt.2026.109807>`_).
+
 
 Routine Listing
 ---------------
@@ -163,9 +169,11 @@ def cast_to_int64_with_missing_values(dg, keys, dataframe_type="pandas"):
 
 
 def cast_all_to_int64(df, keys):
-    """converts string to int64"""
+    """Convert integer strings to int64. Edited with AI assistance."""
     for key in keys:
-        df[key] = df[key].apply(lambda x: int(x) if (x.strip()).isdigit() else x)
+        df[key] = df[key].apply(
+            lambda x: int(x) if x.strip().lstrip("-").isdigit() else x
+        )
 
 
 def extract_columns(df, extracted_values, columns):
@@ -222,8 +230,8 @@ def hit2df(
         if ``True``, parse local & global quanta (required to identify lines
         for non-LTE calculations ; but sometimes lines are not labelled.)
     fast_parsing: bool
-        if ``True``, uses vectorized parsing instead of regex for global quanta.
-        Default ``True``.
+        Retained for compatibility. Fast quantum parsing is temporarily
+        disabled because it mishandles unassigned quantum numbers.
     output : str
         output format of data as pandas Dataformat or vaex Dataformat
     cache_directory_path : str or None, optional
@@ -246,6 +254,8 @@ def hit2df(
     -----
 
     Performances: see CDSD-HITEMP parser
+    Quantum formats are described in :mod:`radis.api.hitranapi`.
+    Edited with AI assistance.
 
 
     See Also
@@ -253,13 +263,6 @@ def hit2df(
 
     :func:`~radis.api.cdsdapi.cdsd2df`
     """
-    if not fast_parsing:
-        warnings.warn(
-            "`fast_parsing=False` will be deprecated in future versions. "
-            "Please use fast_parsing=True for better performance and compatibility.",
-            FutureWarning,
-        )
-
     if engine == "pytables" and output == "vaex":
         raise ValueError(
             "Incompatible options: engine='pytables' cannot be used with output='vaex'. "
@@ -404,8 +407,8 @@ def post_process_hitran_data(
     dataframe_type: str
         pandas or vaex
     fast_parsing: bool
-        if ``True``, uses vectorized parsing instead of regex for global quanta.
-        Default ``True``.
+        Retained for compatibility. Fast quantum parsing is temporarily
+        disabled because it mishandles unassigned quantum numbers.
 
     Returns
     -------
@@ -424,6 +427,8 @@ def post_process_hitran_data(
     -----
 
     Performances: see CDSD-HITEMP parser
+    Quantum formats are described in :mod:`radis.api.hitranapi`.
+    Edited with AI assistance.
 
 
     See Also
@@ -529,7 +534,10 @@ def _parse_HITRAN_class1_fast_parsing(df, verbose=True, dataframe_type="pandas")
 
     Notes
     -----
-    Uses fixed-width slicing based on HITRAN columns for speed.
+    HITRAN2020 format (Gordon et al., 2022), with HITRAN2024 updates; see
+    :mod:`radis.api.hitranapi`. Edited with AI assistance.
+
+    Disabled in dispatch because blank assignments are not preserved.
 
     HITRAN syntax [1]_ :
 
@@ -601,6 +609,9 @@ def _parse_HITRAN_class1(df, verbose=True, dataframe_type="pandas"):
 
     Notes
     -----
+    HITRAN2020 format (Gordon et al., 2022), with HITRAN2024 updates; see
+    :mod:`radis.api.hitranapi`. Edited with AI assistance.
+
     HITRAN syntax [1]_ :
 
     >>>       v
@@ -615,26 +626,7 @@ def _parse_HITRAN_class1(df, verbose=True, dataframe_type="pandas"):
     """
 
     if dataframe_type == "vaex":
-        # 1. Parse
-
-        extracted_values = df["globu"].str.extract_regex(
-            pattern=r"[ ]{13}(?P<vu>[\d ]{2})"
-        )
-
-        extract_columns(df, extracted_values, ["vu"])
-
-        extracted_values = df["globl"].str.extract_regex(
-            pattern=r"[ ]{13}(?P<vl>[\d ]{2})"
-        )
-
-        extract_columns(df, extracted_values, ["vl"])
-
-        # # 2. Convert to numeric
-        # cast_to_int64_with_missing_values(
-        #     df, ["vu", "vl"], dataframe_type=dataframe_type
-        # )
-
-        # 3. Clean
+        df = _parse_HITRAN_global_fields(df, [("v", 13, 15, True)], dataframe_type)
         df.drop("globu", inplace=True)
         df.drop("globl", inplace=True)
 
@@ -661,71 +653,7 @@ def _parse_HITRAN_class1(df, verbose=True, dataframe_type="pandas"):
         raise NotImplementedError(dataframe_type)
 
 
-def _parse_HITRAN_class2(df, verbose=True):
-    r"""Diatomic molecules with different electronic levels: O2
-
-
-    Parameters
-    ----------
-
-    df: pandas Dataframe
-        lines read from a HITRAN-like database
-
-
-    Notes
-    -----
-
-    HITRAN syntax [1]_ :
-
-    >>>      X   v
-    >>>  12x A1 I2
-
-    References
-    ----------
-
-    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
-
-    """
-    if verbose > 2:
-        print(
-            f"parse_global_quanta not implemented for molecules of HITRAN class 2 ({HITRAN_CLASS2}). Non-LTE calculations will not be possible."
-        )
-    return df
-
-
-def _parse_HITRAN_class3(df, verbose=True):
-    r"""Diatomic molecules with doublet-Pi electronic state: NO, OH, ClO
-
-
-    Parameters
-    ----------
-
-    df: pandas Dataframe
-        lines read from a HITRAN-like database
-
-
-    Notes
-    -------
-
-    HITRAN syntax [1]_:
-
-    >>>      X i     v1
-    >>>  7x A1 A3 2x I2
-
-    References
-    ----------
-
-    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
-
-    """
-    if verbose > 2:
-        print(
-            "parse_global_quanta not implemented for molecules of HITRAN class 3 ({HITRAN_CLASS3}). Non-LTE calculations will not be possible."
-        )
-    return df
-
-
-def _parse_HITRAN_class4(df, verbose=True, dataframe_type="pandas"):
+def _parse_HITRAN_class2b(df, verbose=True, dataframe_type="pandas"):
     r"""Parse linear triatomic class in HITRAN [1]_: N2O, OCS, HCN
 
     Parameters
@@ -742,6 +670,8 @@ def _parse_HITRAN_class4(df, verbose=True, dataframe_type="pandas"):
 
     Notes
     -----
+    HITRAN2020 format (Gordon et al., 2022), with HITRAN2024 updates; see
+    :mod:`radis.api.hitranapi`. Edited with AI assistance.
 
     HITRAN syntax:
 
@@ -762,7 +692,7 @@ def _parse_HITRAN_class4(df, verbose=True, dataframe_type="pandas"):
             df["globu"]
             .astype(str)
             .str.extract(
-                r"[ ]{7}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})",
+                r"[ ]{7}(?P<v1u>[-\d ]{2})(?P<v2u>[-\d ]{2})(?P<l2u>[-\d ]{2})(?P<v3u>[-\d ]{2})",
                 expand=True,
             )
         )
@@ -770,7 +700,7 @@ def _parse_HITRAN_class4(df, verbose=True, dataframe_type="pandas"):
             df["globl"]
             .astype(str)
             .str.extract(
-                r"[ ]{7}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})",
+                r"[ ]{7}(?P<v1l>[-\d ]{2})(?P<v2l>[-\d ]{2})(?P<l2l>[-\d ]{2})(?P<v3l>[-\d ]{2})",
                 expand=True,
             )
         )
@@ -785,35 +715,25 @@ def _parse_HITRAN_class4(df, verbose=True, dataframe_type="pandas"):
 
         return pd.concat([df, dgu, dgl], axis=1)
     elif dataframe_type == "vaex":
-        # 1. Parse
-        extracted_values = df["globu"].str.extract_regex(
-            pattern=r"[ ]{7}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})"
+        df = _parse_HITRAN_global_fields(
+            df,
+            [
+                ("v1", 7, 9, True),
+                ("v2", 9, 11, True),
+                ("l2", 11, 13, True),
+                ("v3", 13, 15, True),
+            ],
+            dataframe_type,
         )
-
-        extract_columns(df, extracted_values, ["v1u", "v2u", "l2u", "v3u"])
-
-        extracted_values = df["globl"].str.extract_regex(
-            pattern=r"[ ]{7}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})"
-        )
-
-        extract_columns(df, extracted_values, ["v1l", "v2l", "l2l", "v3l"])
-
-        # # 2. Convert to numeric
-        # cast_to_int64_with_missing_values(
-        #     df,
-        #     ["v1u", "v2u", "l2u", "v3u", "v1l", "v2l", "l2l", "v3l"],
-        #     dataframe_type=dataframe_type,
-        # )
-
-        # 3. Clean
         df.drop("globu", inplace=True)
+        df.drop("globl", inplace=True)
 
         return df
     else:
         raise NotImplementedError(dataframe_type)
 
 
-def _parse_HITRAN_class5(df, verbose=True, dataframe_type="pandas"):
+def _parse_HITRAN_class2a(df, verbose=True, dataframe_type="pandas"):
     r"""Parse linear triatomic with large Fermi resonance in HITRAN [1]_: CO2
 
     Parameters
@@ -830,6 +750,8 @@ def _parse_HITRAN_class5(df, verbose=True, dataframe_type="pandas"):
 
     Notes
     -----
+    HITRAN2020 format (Gordon et al., 2022), with HITRAN2024 updates; see
+    :mod:`radis.api.hitranapi`. Edited with AI assistance.
 
     HITRAN syntax:
 
@@ -851,7 +773,7 @@ def _parse_HITRAN_class5(df, verbose=True, dataframe_type="pandas"):
             df["globu"]
             .astype(str)
             .str.extract(
-                r"[ ]{6}(?P<v1u>[\d ]{2})(?P<v2u>[\d ]{2})(?P<l2u>[\d ]{2})(?P<v3u>[\d ]{2})(?P<ru>\d)",
+                r"[ ]{6}(?P<v1u>[-\d ]{2})(?P<v2u>[-\d ]{2})(?P<l2u>[-\d ]{2})(?P<v3u>[-\d ]{2})(?P<ru>[\d ])",
                 expand=True,
             )
         )
@@ -859,7 +781,7 @@ def _parse_HITRAN_class5(df, verbose=True, dataframe_type="pandas"):
             df["globl"]
             .astype(str)
             .str.extract(
-                r"[ ]{6}(?P<v1l>[\d ]{2})(?P<v2l>[\d ]{2})(?P<l2l>[\d ]{2})(?P<v3l>[\d ]{2})(?P<rl>\d)",
+                r"[ ]{6}(?P<v1l>[-\d ]{2})(?P<v2l>[-\d ]{2})(?P<l2l>[-\d ]{2})(?P<v3l>[-\d ]{2})(?P<rl>[\d ])",
                 expand=True,
             )
         )
@@ -896,13 +818,9 @@ def _parse_HITRAN_class5(df, verbose=True, dataframe_type="pandas"):
         for name, (i0, i1) in _GLOBL_SLICES.items():
             df[name] = df["globl"].str.slice(i0, i1).str.strip()
 
-        # Replace spaces with empty strings for numeric columns
-        for col in ["v1u", "v2u", "l2u", "v3u", "v1l", "v2l", "l2l", "v3l"]:
-            df[col] = df[col].str.replace(" ", "")
-
         numeric_cols = list(_GLOBU_SLICES.keys()) + list(_GLOBL_SLICES.keys())
         for col in numeric_cols:
-            df[col] = df[col].astype("int64")
+            df[col] = df[col].str.replace(r"^\s*$", "-1", regex=True).astype("int64")
 
         # 3. Clean
         df.drop("globu", inplace=True)
@@ -911,7 +829,7 @@ def _parse_HITRAN_class5(df, verbose=True, dataframe_type="pandas"):
         return df
 
 
-def _parse_HITRAN_class6_fast_parsing(df, verbose=True, dataframe_type="pandas"):
+def _parse_HITRAN_class3_fast_parsing(df, verbose=True, dataframe_type="pandas"):
     r"""Parse non-linear triatomic in HITRAN [1]_: H2O, O3, SO2, NO2, HOCl, H2S, HO2, HOBr
 
     Parameters
@@ -928,11 +846,10 @@ def _parse_HITRAN_class6_fast_parsing(df, verbose=True, dataframe_type="pandas")
     Notes
     -----
 
-    This function is a fast parsing version that does not use regular expressions.
-    This makes it faster but less flexible. Currently, it behaves the same as the
-    equivalent regex version.
+    HITRAN2020 format (Gordon et al., 2022), with HITRAN2024 updates; see
+    :mod:`radis.api.hitranapi`. Edited with AI assistance.
 
-    Added in PR #826.
+    Disabled in dispatch because blank assignments are not preserved.
 
     HITRAN syntax:
 
@@ -980,7 +897,7 @@ def _parse_HITRAN_class6_fast_parsing(df, verbose=True, dataframe_type="pandas")
         raise NotImplementedError(dataframe_type)
 
 
-def _parse_HITRAN_class6(df, verbose=True, dataframe_type="pandas"):
+def _parse_HITRAN_class3(df, verbose=True, dataframe_type="pandas"):
     r"""Parse non-linear triatomic in HITRAN [1]_: H2O, O3, SO2, NO2, HOCl, H2S, HO2, HOBr
 
     Parameters
@@ -996,6 +913,8 @@ def _parse_HITRAN_class6(df, verbose=True, dataframe_type="pandas"):
         pandas Dataframe or Vaex Dataframe
     Notes
     -----
+    HITRAN2020 format (Gordon et al., 2022), with HITRAN2024 updates; see
+    :mod:`radis.api.hitranapi`. Edited with AI assistance.
 
     HITRAN syntax:
 
@@ -1050,28 +969,11 @@ def _parse_HITRAN_class6(df, verbose=True, dataframe_type="pandas"):
 
         return pd.concat([df, dgu, dgl], axis=1)
     elif dataframe_type == "vaex":
-        # 1. Parse
-
-        # ... note @EP: in HITRAN H2O files, for iso=2, vibrational levels are
-        # ... somehow negative. The regex below is adapted to catch negation signs with \-
-        extracted_values = df["globu"].str.extract_regex(
-            pattern=r"[ ]{9}(?P<v1u>[\-\d ]{2})(?P<v2u>[\-\d ]{2})(?P<v3u>[\-\d ]{2})"
+        df = _parse_HITRAN_global_fields(
+            df,
+            [("v1", 9, 11, True), ("v2", 11, 13, True), ("v3", 13, 15, True)],
+            dataframe_type,
         )
-
-        extract_columns(df, extracted_values, ["v1u", "v2u", "v3u"])
-
-        extracted_values = df["globl"].str.extract_regex(
-            pattern=r"[ ]{9}(?P<v1l>[\-\d ]{2})(?P<v2l>[\-\d ]{2})(?P<v3l>[\-\d ]{2})"
-        )
-
-        extract_columns(df, extracted_values, ["v1l", "v2l", "v3l"])
-
-        # # 2. Convert to numeric
-        # cast_to_int64_with_missing_values(
-        #     df, ["v1l", "v2l", "v3l", "v1u", "v2u", "v3u"]
-        # )
-
-        # 3. Clean
         df.drop("globu", inplace=True)
         df.drop("globl", inplace=True)
 
@@ -1080,126 +982,154 @@ def _parse_HITRAN_class6(df, verbose=True, dataframe_type="pandas"):
         raise NotImplementedError(dataframe_type)
 
 
-def _parse_HITRAN_class7(df, verbose=True):
-    r"""Parse linear tetratomic in HITRAN [1]_: C2H2
+def _parse_HITRAN_global_fields(df, fields, dataframe_type):
+    """Parse fixed-width global fields, retaining the original state labels.
 
-    Parameters
-    ----------
-
-    df: pandas Dataframe
-        lines read from a HITRAN-like database
-
-    Notes
-    -----
-
-    HITRAN syntax:
-
-    >>>
-
-    References
-    ----------
-
-    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
-
+    Each field is (name, start, end, numeric). Ammonia's single-character
+    assignments are strings because HITRAN also uses special characters for
+    partially assigned states. Edited with AI assistance.
     """
-    if verbose > 2:
-        print(
-            "parse_global_quanta not implemented for molecules of HITRAN class 7 ({HITRAN_CLASS7}). Non-LTE calculations will not be possible."
-        )
+    if dataframe_type not in ("pandas", "vaex"):
+        raise NotImplementedError(dataframe_type)
+    parsed = {}
+    for source, suffix in (("globu", "u"), ("globl", "l")):
+        for name, start, end, numeric in fields:
+            values = df[source].str.slice(start, end).str.strip()
+            if numeric:
+                if dataframe_type == "pandas":
+                    values = values.replace("", "-1").fillna("-1").astype("int64")
+                else:
+                    values = values.str.replace(r"^\s*$", "-1", regex=True).astype(
+                        "int64"
+                    )
+            parsed[name + suffix] = values
+    for name, values in parsed.items():
+        df[name] = values
     return df
 
 
-def _parse_HITRAN_class8(df, verbose=True):
-    r"""Pyramidal tetratomic in HITRAN [1]_: NH3, PH3
+def _parse_HITRAN_class1b(df, dataframe_type="pandas"):
+    """Parse HITRAN2024 class 1b, updating HITRAN2020. Edited with AI assistance."""
+    return _parse_HITRAN_global_fields(
+        df,
+        [
+            ("electronic_state", 6, 8, False),
+            ("omega", 8, 11, False),
+            ("v", 13, 15, True),
+        ],
+        dataframe_type,
+    )
 
 
-    Parameters
-    ----------
-
-    df: pandas Dataframe
-        lines read from a HITRAN-like database
-
-
-    Notes
-    -----
-
-    HITRAN syntax:
-
-    >>>
-
-    References
-    ----------
-
-    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
-
-    """
-    if verbose > 2:
-        print(
-            "parse_global_quanta not implemented for molecules of HITRAN class 8 ({HITRAN_CLASS8}). Non-LTE calculations will not be possible."
-        )
-    return df
+def _parse_HITRAN_class4(df, mol, dataframe_type="pandas"):
+    """Parse HITRAN2024 class 4, updating HITRAN2020. Edited with AI assistance."""
+    if mol == "NH3":
+        fields = [
+            ("v1", 1, 2, False),
+            ("v2", 2, 3, False),
+            ("v3", 3, 4, False),
+            ("v4", 4, 5, False),
+            ("l3", 6, 7, False),
+            ("l4", 7, 8, False),
+            ("l", 9, 10, False),
+            ("vib_symmetry", 11, 15, False),
+        ]
+    else:
+        fields = [
+            ("v1", 5, 7, True),
+            ("v2", 7, 9, True),
+            ("v3", 9, 11, True),
+            ("v4", 11, 13, True),
+            ("vib_symmetry", 13, 15, False),
+        ]
+    return _parse_HITRAN_global_fields(df, fields, dataframe_type)
 
 
-def _parse_HITRAN_class9(df, verbose=True):
-    r"""Non-linear tetratomic in HITRAN [1]_: H2CO, H2O2, COF2
+def _parse_HITRAN_class5(df, mol, dataframe_type="pandas"):
+    """Parse HITRAN2024 class 5, updating HITRAN2020. Edited with AI assistance."""
+    if mol == "C2H2":
+        fields = [
+            ("v1", 1, 2, True),
+            ("v2", 2, 3, True),
+            ("v3", 3, 4, True),
+            ("v4", 4, 6, True),
+            ("v5", 6, 8, True),
+            ("l4", 8, 10, True),
+            ("l5", 10, 12, True),
+            ("vib_parity", 12, 13, False),
+            ("vib_symmetry", 14, 15, False),
+        ]
+    elif mol == "C4H2":
+        fields = [(f"v{i}", i, i + 1, True) for i in range(1, 10)]
+        fields += [("vib_parity", 11, 12, False), ("vib_symmetry", 13, 15, False)]
+    elif mol == "HC3N":
+        fields = [(f"v{i}", i + 1, i + 2, True) for i in range(1, 8)]
+        fields += [("l5", 9, 11, True), ("l6", 11, 13, True), ("l7", 13, 15, True)]
+    elif mol == "C2N2":
+        fields = [(f"v{i}", 2 * (i - 1), 2 * i, True) for i in range(1, 6)]
+        fields += [
+            ("l", 10, 12, True),
+            ("vib_parity", 12, 13, False),
+            ("r", 13, 14, True),
+            ("vib_symmetry", 14, 15, False),
+        ]
+    else:
+        raise ValueError(f"Unknown HITRAN class 5 molecule {mol}")
+    return _parse_HITRAN_global_fields(df, fields, dataframe_type)
 
 
-    Parameters
-    ----------
-
-    df: pandas Dataframe
-        lines read from a HITRAN-like database
-
-
-    Notes
-    -----
-
-    HITRAN syntax:
-
-    >>>
-
-    References
-    ----------
-
-    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
-
-    """
-    if verbose > 2:
-        print(
-            "parse_global_quanta not implemented for molecules of HITRAN class 9 ({HITRAN_CLASS9}). Non-LTE calculations will not be possible."
-        )
-    return df
+def _parse_HITRAN_class6(df, mol, dataframe_type="pandas"):
+    """Parse HITRAN2024 class 6, updating HITRAN2020. Edited with AI assistance."""
+    fields = [("v1", 3, 5, True), ("v2", 5, 7, True), ("v3", 7, 9, True)]
+    if mol == "H2O2":
+        fields += [("n", 9, 10, True), ("tau", 10, 11, True)]
+    else:
+        fields += [("v4", 9, 11, True)]
+    fields += [("v5", 11, 13, True), ("v6", 13, 15, True)]
+    return _parse_HITRAN_global_fields(df, fields, dataframe_type)
 
 
-def _parse_HITRAN_class10(df, verbose=True):
-    r"""Pentatomic or greater polyatomic in HITRAN [1]_
+def _parse_HITRAN_class7(df, mol, dataframe_type="pandas"):
+    """Parse HITRAN2024 class 7, updating HITRAN2020. Edited with AI assistance."""
+    if mol == "H3+":
+        fields = [
+            ("v1", 5, 7, True),
+            ("v2", 7, 9, True),
+            ("l2", 9, 11, True),
+            ("total_symmetry", 12, 15, False),
+        ]
+    else:
+        fields = [
+            ("v1", 0, 2, True),
+            ("v2", 2, 4, True),
+            ("v3", 4, 6, True),
+            ("l3", 6, 8, True),
+            ("v4", 8, 10, True),
+            ("l4", 10, 12, True),
+            ("vib_symmetry", 12, 15, False),
+        ]
+    return _parse_HITRAN_global_fields(df, fields, dataframe_type)
 
 
-    Parameters
-    ----------
+def _parse_HITRAN_class8(df, dataframe_type="pandas"):
+    """Parse HITRAN2024 class 8, updating HITRAN2020. Edited with AI assistance."""
+    return _parse_HITRAN_global_fields(
+        df,
+        [
+            ("v1", 3, 5, True),
+            ("v2", 5, 7, True),
+            ("v3", 7, 9, True),
+            ("v4", 9, 11, True),
+            ("multiplicity", 11, 13, False),
+            ("vib_symmetry", 13, 15, False),
+        ],
+        dataframe_type,
+    )
 
-    df: pandas Dataframe
-        lines read from a HITRAN-like database
 
-
-    Notes
-    -----
-
-    HITRAN syntax:
-
-    >>>
-
-    References
-    ----------
-
-    .. [1] `Table 3 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
-
-    """
-    if verbose > 2:
-        print(
-            "parse_global_quanta not implemented for molecules of HITRAN class 10. Non-LTE calculations will not be possible."
-        )
-    return df
+def _parse_HITRAN_class9(df, dataframe_type="pandas"):
+    """Parse HITRAN2024 class 9, updating HITRAN2020. Edited with AI assistance."""
+    return _parse_HITRAN_global_fields(df, [("vib_band", 0, 15, False)], dataframe_type)
 
 
 # %% HITRAN Local quanta
@@ -1225,11 +1155,10 @@ def _parse_HITRAN_group1_fast_parsing(df, verbose=True, dataframe_type="pandas")
     Notes
     -----
 
-    This function is a fast parsing version that does not use regular expressions.
-    This makes it faster but less flexible. Currently, it behaves the same as the
-    equivalent regex version.
+    HITRAN2020 format (Gordon et al., 2022), with HITRAN2024 updates; see
+    :mod:`radis.api.hitranapi`. Edited with AI assistance.
 
-    Added in PR #826.
+    Disabled in dispatch because blank assignments are not preserved.
 
     HITRAN syntax: [1]_
 
@@ -1267,7 +1196,7 @@ def _parse_HITRAN_group1_fast_parsing(df, verbose=True, dataframe_type="pandas")
             if name in ("jl", "Kal", "Kcl"):
                 df[name] = df["locl"].str.slice(i0, i1).str.strip().astype("int64")
             else:
-                df[name] = df["locu"].str.slice(i0, i1).str.strip()
+                df[name] = df["locl"].str.slice(i0, i1).str.strip()
         df.drop("locu", inplace=True)
         df.drop("locl", inplace=True)
         return df
@@ -1312,6 +1241,8 @@ def _parse_HITRAN_group1(df, verbose=True, dataframe_type="pandas"):
 
     Notes
     -----
+    HITRAN2020 format (Gordon et al., 2022), with HITRAN2024 updates; see
+    :mod:`radis.api.hitranapi`. Edited with AI assistance.
 
     HITRAN syntax: [1]_
 
@@ -1325,38 +1256,17 @@ def _parse_HITRAN_group1(df, verbose=True, dataframe_type="pandas"):
     """
 
     if dataframe_type == "vaex":
-        # 1. Parse
-
-        # Ref [1] : locu
-        # --------------
-        # J'  | Ka' | Kc' | F'  | Sym'
-        # I3  | I3  | I3  | A5  | A1
-
-        extracted_values = df["locu"].str.extract_regex(
-            pattern=r"(?P<ju>[\d ]{3})(?P<Kau>[\-\d ]{3})(?P<Kcu>[\-\d ]{3})(?P<Fu>.{5})(?P<symu>.)"
+        df = _parse_HITRAN_local_states(
+            df,
+            [
+                ("j", 0, 3, "int64"),
+                ("Ka", 3, 6, "int64"),
+                ("Kc", 6, 9, "int64"),
+                ("F", 9, 14, "str"),
+                ("sym", 14, 15, "str"),
+            ],
+            dataframe_type,
         )
-
-        extract_columns(df, extracted_values, ["ju", "Kau", "Kcu", "Fu", "symu"])
-
-        # Ref [1] : locl
-        # --------------
-        # J'' | Ka''| Kc''| F'' | Sym''
-        # I3  | I3  | I3  | A5  | A1
-
-        extracted_values = df["locl"].str.extract_regex(
-            pattern=r"(?P<jl>[\d ]{3})(?P<Kal>[\-\d ]{3})(?P<Kcl>[\-\d ]{3})(?P<Fl>.{5})(?P<syml>.)"
-        )
-
-        extract_columns(df, extracted_values, ["jl", "Kal", "Kcl", "Fl", "syml"])
-
-        # ... note @EP: in HITRAN H2O files, for iso=2, the Kau, Kcu can somehow
-        # ... be negative. The regex above is adapted to catch negation signs with \-
-        # # 2. Convert to numeric
-        # cast_to_int64_with_missing_values(
-        #     df, ["ju", "Kau", "Kcu", "Fu", "symu", "jl", "Kal", "Kcl", "Fl", "syml"]
-        # )
-
-        # 3. Clean
         df.drop("locu", inplace=True)
         df.drop("locl", inplace=True)
 
@@ -1424,11 +1334,10 @@ def _parse_HITRAN_group2_fast_parsing(df, verbose=True, dataframe_type="pandas")
     Notes
     -----
 
-    This function is a fast parsing version that does not use regular expressions.
-    This makes it faster but less flexible. Currently, it behaves the same as the
-    equivalent regex version.
+    HITRAN2020 format (Gordon et al., 2022), with HITRAN2024 updates; see
+    :mod:`radis.api.hitranapi`. Edited with AI assistance.
 
-    Added in PR #836.
+    Disabled in dispatch because blank assignments are not preserved.
 
     HITRAN syntax: [1]
 
@@ -1441,6 +1350,7 @@ def _parse_HITRAN_group2_fast_parsing(df, verbose=True, dataframe_type="pandas")
     """
     # Define slicing positions
     _LOCU_SLICES = {
+        "magnetic": (0, 1),
         "Fu": (10, 15),
     }
     _LOCL_SLICES = {
@@ -1466,7 +1376,9 @@ def _parse_HITRAN_group2_fast_parsing(df, verbose=True, dataframe_type="pandas")
     elif dataframe_type == "pandas":
         # pandas: str.slice + replace + astype
         for name, (i0, i1) in _LOCU_SLICES.items():
-            series = df["locu"].str.slice(i0, i1).str.strip().replace("", "0")
+            series = df["locu"].str.slice(i0, i1).str.strip()
+            if name != "magnetic":
+                series = series.replace("", "0")
             df[name] = series
 
         for name, (i0, i1) in _LOCL_SLICES.items():
@@ -1501,6 +1413,8 @@ def _parse_HITRAN_group2(df, verbose=True, dataframe_type="pandas"):
 
     Notes
     -----
+    HITRAN2020 format (Gordon et al., 2022), with HITRAN2024 updates; see
+    :mod:`radis.api.hitranapi`. Edited with AI assistance.
 
     HITRAN syntax: [1]
 
@@ -1520,7 +1434,11 @@ def _parse_HITRAN_group2(df, verbose=True, dataframe_type="pandas"):
     #     | F'  |
     # 10X | A5  |
     if dataframe_type == "pandas":
-        dgu = df["locu"].astype(str).str.extract(r"[ ]{10}(?P<Fu>.{5})", expand=True)
+        dgu = (
+            df["locu"]
+            .astype(str)
+            .str.extract(r"(?P<magnetic>.)[ ]{9}(?P<Fu>.{5})", expand=True)
+        )
 
         # Ref [1] : locl
         # --------------
@@ -1530,7 +1448,7 @@ def _parse_HITRAN_group2(df, verbose=True, dataframe_type="pandas"):
             df["locl"]
             .astype(str)
             .str.extract(
-                r"[ ]{5}(?P<branch>[\S]{1})(?P<jl>[\d ]{3})(?P<syml>.)(?P<Fl>.{5})",
+                r"[ ]{5}(?P<branch>[\S ])(?P<jl>[\d ]{3})(?P<syml>.)(?P<Fl>.{5})",
                 expand=True,
             )
         )
@@ -1539,6 +1457,7 @@ def _parse_HITRAN_group2(df, verbose=True, dataframe_type="pandas"):
 
         # dgl['jl'] = dgl.jl.apply(pd.to_numeric)
         cast_to_int64_with_missing_values(dgl, ["jl"], dataframe_type=dataframe_type)
+        dgl["branch"] = dgl["branch"].str.strip()
 
         # 3. Clean
         del df["locu"]
@@ -1548,6 +1467,7 @@ def _parse_HITRAN_group2(df, verbose=True, dataframe_type="pandas"):
     elif dataframe_type == "vaex":
         # 1.Parse
         _LOCU_SLICES = {
+            "magnetic": (0, 1),
             "Fu": (10, 15),
         }
 
@@ -1564,8 +1484,7 @@ def _parse_HITRAN_group2(df, verbose=True, dataframe_type="pandas"):
         for name, (i0, i1) in _LOCL_SLICES.items():
             df[name] = df["locl"].str.slice(i0, i1).str.strip()
 
-        df["jl"] = df["jl"].str.replace(" ", "")  # remove spaces first
-        df["jl"] = df["jl"].astype("int64")
+        df["jl"] = df["jl"].str.replace(r"^\s*$", "-1", regex=True).astype("int64")
 
         # 3. Clean
         df.drop("locu", inplace=True)
@@ -1585,128 +1504,150 @@ def _parse_HITRAN_group2(df, verbose=True, dataframe_type="pandas"):
 #               'Fl',     ('a5',   str,   'lower state total angular momentum including nuclear spin', ''         )),(
 
 
-def _parse_HITRAN_group3(df, verbose=True):
-    r"""Parse Spherical rotors (:py:attr:`~radis.db.classes.HITRAN_GROUP3` ) :
-    SF6, CH4
-
-    Parameters
-    ----------
-
-    df: pandas Dataframe
-        lines read from a HITRAN-like database
-
-
-    Notes
-    -----
-
-    HITRAN syntax [1]_:
-
-
-    References
-    ----------
-
-    .. [1] `Table 4 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
-
-
-    """
-    if verbose > 2:
-        print(
-            f"parse_local_quanta not implemented for molecules of HITRAN group 3 ({HITRAN_GROUP3}). Non-LTE calculations will not be possible."
-        )
+def _parse_HITRAN_local_fields(df, fields, dataframe_type):
+    """Parse fixed-width local fields. Edited with AI assistance."""
+    if dataframe_type not in ("pandas", "vaex"):
+        raise NotImplementedError(dataframe_type)
+    parsed = {}
+    for source, name, start, end, dtype in fields:
+        values = df[source].str.slice(start, end).str.strip()
+        if dtype != "str":
+            if dataframe_type == "pandas":
+                values = values.replace("", "-1").fillna("-1").astype(dtype)
+            else:
+                values = values.str.replace(r"^\s*$", "-1", regex=True).astype(dtype)
+        parsed[name] = values
+    for name, values in parsed.items():
+        df[name] = values
     return df
 
 
-def _parse_HITRAN_group4(df, verbose=True):
-    r"""Parse symmetric rotors (:py:attr:`~radis.db.classes.HITRAN_GROUP4` ):
-    CH3D, CH3Cl, C2H6, NH3, PH3, CH3OH
-
-    Parameters
-    ----------
-
-    df: pandas Dataframe
-        lines read from a HITRAN-like database
-
-
-    Notes
-    -----
-
-    HITRAN syntax [1]_:
+def _parse_HITRAN_local_states(df, fields, dataframe_type):
+    """Parse both local states. Edited with AI assistance."""
+    return _parse_HITRAN_local_fields(
+        df,
+        [
+            (source, name + suffix, start, end, dtype)
+            for source, suffix in (("locu", "u"), ("locl", "l"))
+            for name, start, end, dtype in fields
+        ],
+        dataframe_type,
+    )
 
 
-    References
-    ----------
-
-    .. [1] `Table 4 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
-
-
-    """
-    if verbose > 2:
-        print(
-            f"parse_local_quanta not implemented for molecules of HITRAN group 4 ({HITRAN_GROUP4}). Non-LTE calculations will not be possible."
-        )
-    return df
-
-
-def _parse_HITRAN_group5(df, verbose=True):
-    r"""Parse Triplet-Sigma ground electronic states (:py:attr:`~radis.db.classes.HITRAN_GROUP5` ) :
-    O2
-
-    Parameters
-    ----------
-
-    df: pandas Dataframe
-        lines read from a HITRAN-like database
+def _parse_HITRAN_group2b(df, dataframe_type="pandas"):
+    """Parse HITRAN2024 group 2b, updating HITRAN2020. Edited with AI assistance."""
+    fields = [(f"l{i}", 2 * (i - 6), 2 * (i - 5), "str") for i in range(6, 10)]
+    df = _parse_HITRAN_local_states(df, fields, dataframe_type)
+    return _parse_HITRAN_local_fields(
+        df,
+        [
+            ("locl", "branch", 9, 10, "str"),
+            ("locl", "jl", 10, 13, "int64"),
+            ("locl", "syml", 13, 14, "str"),
+        ],
+        dataframe_type,
+    )
 
 
-    Notes
-    -----
-
-    HITRAN syntax [1]_:
-
-
-    References
-    ----------
-
-    .. [1] `Table 4 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
-
-
-    """
-    if verbose > 2:
-        print(
-            "parse_local_quanta not implemented for molecules of HITRAN group 5 ({HITRAN_GROUP5}). Non-LTE calculations will not be possible."
-        )
-    return df
+def _parse_HITRAN_group3(df, dataframe_type="pandas"):
+    """Parse HITRAN2024 group 3, updating HITRAN2020. Edited with AI assistance."""
+    return _parse_HITRAN_local_states(
+        df,
+        [
+            ("j", 2, 5, "int64"),
+            ("rot_symmetry", 5, 7, "str"),
+            ("alpha", 7, 10, "int64"),
+            ("F", 10, 15, "str"),
+        ],
+        dataframe_type,
+    )
 
 
-def _parse_HITRAN_group6(df, verbose=True):
-    r"""Parse Doublet-Pi ground electronic states (:py:attr:`~radis.db.classes.HITRAN_GROUP6` ) :
-    NO, OH, ClO
+def _parse_HITRAN_group4(df, mol, dataframe_type="pandas"):
+    """Parse HITRAN2024 group 4, updating HITRAN2020. Edited with AI assistance."""
+    if mol == "NH3":
+        fields = [
+            ("j", 0, 2, "int64"),
+            ("K", 2, 5, "int64"),
+            ("rot_l", 5, 7, "int64"),
+            ("rot_symmetry", 8, 11, "str"),
+            ("total_symmetry", 11, 14, "str"),
+        ]
+    elif mol == "C2H6":
+        fields = [
+            ("j", 0, 3, "int64"),
+            ("K", 3, 6, "int64"),
+            ("rot_l", 6, 8, "int64"),
+            ("sym", 8, 11, "str"),
+            ("F", 11, 15, "str"),
+        ]
+    else:
+        fields = [
+            ("j", 0, 3, "int64"),
+            ("K", 3, 6, "int64"),
+            ("rot_l", 6, 8, "int64"),
+            ("rot_symmetry", 8, 10, "str"),
+            ("sym", 10, 11, "str"),
+            ("F", 11, 15, "str"),
+        ]
+    return _parse_HITRAN_local_states(df, fields, dataframe_type)
 
-    Parameters
-    ----------
 
-    df: pandas Dataframe
-        lines read from a HITRAN-like database
+def _parse_HITRAN_group5(df, mol, dataframe_type="pandas"):
+    """Parse HITRAN2024 group 5, updating HITRAN2020. Edited with AI assistance."""
+    if mol == "H3+":
+        fields = [
+            ("j", 0, 3, "int64"),
+            ("sym", 3, 5, "str"),
+            ("G", 5, 8, "int64"),
+            ("U", 8, 10, "str"),
+            ("K", 10, 13, "str"),
+        ]
+    else:
+        fields = [
+            ("j", 0, 3, "int64"),
+            ("K", 3, 6, "int64"),
+            ("rot_symmetry", 8, 11, "str"),
+            ("total_symmetry", 11, 14, "str"),
+        ]
+    return _parse_HITRAN_local_states(df, fields, dataframe_type)
 
 
-    Notes
-    -----
+def _parse_HITRAN_group6(df, dataframe_type="pandas"):
+    """Parse HITRAN2024 group 6, updating HITRAN2020. Edited with AI assistance."""
+    return _parse_HITRAN_local_fields(
+        df,
+        [
+            ("locu", "Fu", 10, 15, "str"),
+            ("locl", "branch_N", 1, 2, "str"),
+            ("locl", "Nl", 2, 5, "int64"),
+            ("locl", "branch_J", 5, 6, "str"),
+            ("locl", "jl", 6, 9, "int64"),
+            ("locl", "Fl", 9, 14, "str"),
+            ("locl", "transition_type", 14, 15, "str"),
+        ],
+        dataframe_type,
+    )
 
-    HITRAN syntax [1]_:
 
-
-    References
-    ----------
-
-    .. [1] `Table 4 of Rothman et al. HITRAN 2004 <https://www.cfa.harvard.edu/hitran/Download/HITRAN04paper.pdf>`__
-
-
-    """
-    if verbose > 2:
-        print(
-            "parse_local_quanta not implemented for molecules of HITRAN group 6 ({HITRAN_GROUP6}). Non-LTE calculations will not be possible."
-        )
-    return df
+def _parse_HITRAN_group7(df, mol, dataframe_type="pandas"):
+    """Parse HITRAN2024 group 7, updating HITRAN2020. Edited with AI assistance."""
+    if mol == "OH":
+        fields = [
+            ("locl", "branch_NJ", 1, 3, "str"),
+            ("locl", "jl", 3, 8, "float64"),
+            ("locl", "symmetry_pair", 8, 10, "str"),
+        ]
+    else:
+        fields = [
+            ("locu", "magnetic", 0, 1, "str"),
+            ("locl", "branch_NJ", 2, 4, "str"),
+            ("locl", "jl", 4, 9, "float64"),
+            ("locl", "syml", 9, 10, "str"),
+        ]
+    fields += [("locu", "Fu", 10, 15, "str"), ("locl", "Fl", 10, 15, "str")]
+    return _parse_HITRAN_local_fields(df, fields, dataframe_type)
 
 
 # %% Reading function
@@ -1723,42 +1664,39 @@ def parse_local_quanta(
 
     mol: str
         molecule name
+
+    Notes
+    -----
+    Uses the HITRAN2024 Table S2 local-state formats. Newly supported groups
+    retain ``locu`` and ``locl``; blank numeric assignments are -1. Local
+    angular momenta are named ``rot_l`` to distinguish them from global
+    vibrational angular momenta. Open-shell branches are kept as separate
+    strings rather than interpreted as closed-shell P/Q/R branches. String
+    labels are removed by pandas post-processing when ``drop_non_numeric`` is
+    true; parsing these fields does not itself enable non-LTE calculations.
+    These formats update HITRAN2020 (Gordon et al., 2022); see
+    :mod:`radis.api.hitranapi`. Edited with AI assistance. ``fast_parsing`` is
+    retained for compatibility but currently has no effect.
     """
 
+    # Fast paths are disabled until they preserve unassigned quantum numbers.
     if mol in HITRAN_GROUP1:
-        if fast_parsing:
-            df = _parse_HITRAN_group1_fast_parsing(
-                df, verbose=verbose, dataframe_type=dataframe_type
-            )
-        else:
-            df = _parse_HITRAN_group1(
-                df, verbose=verbose, dataframe_type=dataframe_type
-            )
+        df = _parse_HITRAN_group1(df, verbose=verbose, dataframe_type=dataframe_type)
 
     elif mol == "C4H2":
-        # C4H2 has its own layout in HITRAN (group 2b), which is not implemented:
-        # the group 2 parser would read the wrong columns
-        pass
+        df = _parse_HITRAN_group2b(df, dataframe_type=dataframe_type)
     elif mol in HITRAN_GROUP2:
-        if fast_parsing:
-            df = _parse_HITRAN_group2_fast_parsing(
-                df, verbose=verbose, dataframe_type=dataframe_type
-            )
-        else:
-            df = _parse_HITRAN_group2(
-                df, verbose=verbose, dataframe_type=dataframe_type
-            )
+        df = _parse_HITRAN_group2(df, verbose=verbose, dataframe_type=dataframe_type)
     elif mol in HITRAN_GROUP3:
-        df = _parse_HITRAN_group3(df, verbose=verbose)
+        df = _parse_HITRAN_group3(df, dataframe_type=dataframe_type)
     elif mol in HITRAN_GROUP4:
-        df = _parse_HITRAN_group4(df, verbose=verbose)
-    # Note: the two parsers below are still named after their HITRAN 2004 group numbers
-    elif mol in HITRAN_GROUP5:  # planar symmetric rotors: no parser yet
-        pass
-    elif mol in HITRAN_GROUP6:  # triplet-Sigma ground states (O2, SO, S2)
-        df = _parse_HITRAN_group5(df, verbose=verbose)
-    elif mol in HITRAN_GROUP7:  # doublet-Pi ground states (NO, OH, ClO)
-        df = _parse_HITRAN_group6(df, verbose=verbose)
+        df = _parse_HITRAN_group4(df, mol, dataframe_type=dataframe_type)
+    elif mol in HITRAN_GROUP5:
+        df = _parse_HITRAN_group5(df, mol, dataframe_type=dataframe_type)
+    elif mol in HITRAN_GROUP6:
+        df = _parse_HITRAN_group6(df, dataframe_type=dataframe_type)
+    elif mol in HITRAN_GROUP7:
+        df = _parse_HITRAN_group7(df, mol, dataframe_type=dataframe_type)
     else:
         raise ValueError(f"Unknown group for molecule {mol}. Cant parse local quanta")
 
@@ -1777,43 +1715,49 @@ def parse_global_quanta(
 
     mol: str
         molecule name
+
+    Notes
+    -----
+    Uses the nine-class global-state formats in Table S1 of the HITRAN2024
+    supplementary material. Previously unsupported formats retain ``globu``
+    and ``globl`` alongside the parsed columns. In those formats, blank
+    numeric assignments are represented by -1; NH3 assignments are strings
+    to preserve partial labels. String-valued fields are dropped when
+    ``post_process_hitran_data`` is called with ``drop_non_numeric=True``.
+    These formats update HITRAN2020 (Gordon et al., 2022); see
+    :mod:`radis.api.hitranapi`. Edited with AI assistance. ``fast_parsing`` is
+    retained for compatibility but currently has no effect.
     """
     if mol in HITRAN_CLASS1:
-        if fast_parsing:
-            df = _parse_HITRAN_class1_fast_parsing(
-                df, verbose=verbose, dataframe_type=dataframe_type
-            )
+        if mol in ("O2", "NO", "OH", "ClO", "SO", "S2"):
+            df = _parse_HITRAN_class1b(df, dataframe_type=dataframe_type)
         else:
             df = _parse_HITRAN_class1(
                 df, verbose=verbose, dataframe_type=dataframe_type
             )
-    # Note: the parsers below are still named after their HITRAN 2004 class numbers
-    elif mol in HITRAN_CLASS2:  # linear triatomic
-        if mol == "CO2":  # v1 v2 l2 v3 r
-            df = _parse_HITRAN_class5(
-                df, verbose=verbose, dataframe_type=dataframe_type
-            )
-        else:  # v1 v2 l2 v3
-            df = _parse_HITRAN_class4(
-                df, verbose=verbose, dataframe_type=dataframe_type
-            )
-    elif mol in HITRAN_CLASS3:  # non-linear triatomic: v1 v2 v3
-        if fast_parsing:
-            df = _parse_HITRAN_class6_fast_parsing(
+    elif mol in HITRAN_CLASS2:
+        if mol == "CO2":
+            df = _parse_HITRAN_class2a(
                 df, verbose=verbose, dataframe_type=dataframe_type
             )
         else:
-            df = _parse_HITRAN_class6(
+            df = _parse_HITRAN_class2b(
                 df, verbose=verbose, dataframe_type=dataframe_type
             )
-    elif mol in HITRAN_CLASS4:  # pyramidal tetratomic (not implemented)
-        df = _parse_HITRAN_class8(df, verbose=verbose)
-    elif mol in HITRAN_CLASS5:  # linear polyatomic (not implemented)
-        df = _parse_HITRAN_class7(df, verbose=verbose)
-    elif mol in HITRAN_CLASS6:  # asymmetric top (not implemented)
-        df = _parse_HITRAN_class9(df, verbose=verbose)
-    elif mol in HITRAN_CLASS7 + HITRAN_CLASS8 + HITRAN_CLASS9:  # not implemented
-        df = _parse_HITRAN_class10(df, verbose=verbose)
+    elif mol in HITRAN_CLASS3:
+        df = _parse_HITRAN_class3(df, verbose=verbose, dataframe_type=dataframe_type)
+    elif mol in HITRAN_CLASS4:
+        df = _parse_HITRAN_class4(df, mol, dataframe_type=dataframe_type)
+    elif mol in HITRAN_CLASS5:
+        df = _parse_HITRAN_class5(df, mol, dataframe_type=dataframe_type)
+    elif mol in HITRAN_CLASS6:
+        df = _parse_HITRAN_class6(df, mol, dataframe_type=dataframe_type)
+    elif mol in HITRAN_CLASS7:
+        df = _parse_HITRAN_class7(df, mol, dataframe_type=dataframe_type)
+    elif mol in HITRAN_CLASS8:
+        df = _parse_HITRAN_class8(df, dataframe_type=dataframe_type)
+    elif mol in HITRAN_CLASS9:
+        df = _parse_HITRAN_class9(df, dataframe_type=dataframe_type)
     else:
         raise ValueError(f"Unknown class for molecule {mol}. Cant parse global quanta")
 
