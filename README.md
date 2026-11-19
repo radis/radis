@@ -1,5 +1,5 @@
 [![PyPI](https://img.shields.io/pypi/v/radis.svg)](https://pypi.python.org/pypi/radis) [![Downloads](https://img.shields.io/pypi/dw/radis.svg)](https://pypistats.org/packages/radis) [![Article](https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg)](https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867) [![Spectral Synthesis Algorithm](https://zenodo.org/badge/doi/10.1016/j.jqsrt.2020.107476.svg)](https://linkinghub.elsevier.com/retrieve/pii/S0022407320310049) [![Documentation Status](https://readthedocs.org/projects/radis/badge/)](https://readthedocs.org/projects/radis/) [![Binder](https://mybinder.org/badge.svg)](https://radis.github.io/radis-lab/)
-[![Slack](https://img.shields.io/badge/slack-join-green.svg?logo=slack)](https://radis.github.io/slack-invite/) [![Contributors](https://img.shields.io/github/contributors/radis/radis.svg)](https://github.com/radis/radis/graphs/contributors) [![Tests](https://app.travis-ci.com/radis/radis.svg?branch=develop)](https://app.travis-ci.com/github/radis/radis) [![Coverage](https://codecov.io/gh/radis/radis/branch/develop/graph/badge.svg)](https://codecov.io/gh/radis/radis) [![Benchmarks](http://img.shields.io/badge/benchmarked%20by-asv-blue.svg?style=flat)](https://github.com/radis/radis-benchmark) [![License](https://img.shields.io/badge/License-LGPL3-blue.svg)](./License.md)
+[![Slack](https://img.shields.io/badge/slack-join-green.svg?logo=slack)](https://radis.github.io/slack-invite/) [![Contributors](https://img.shields.io/github/contributors/radis/radis.svg)](https://github.com/radis/radis/graphs/contributors) [![Tests](https://app.travis-ci.com/radis/radis.svg?branch=develop)](https://app.travis-ci.com/github/radis/radis) [![Coverage](https://codecov.io/gh/radis/radis/branch/develop/graph/badge.svg)](https://codecov.io/gh/radis/radis) [![Benchmarks](http://img.shields.io/badge/benchmarked%20by-asv-blue.svg?style=flat)](https://github.com/radis/radis-benchmark) [![License](https://img.shields.io/badge/License-LGPL3-blue.svg)](./LICENSE)
 
 # [RADIS](https://radis.readthedocs.io/)
 
@@ -134,7 +134,7 @@ RADIS internals are also described in the [full documentation](https://radis.rea
 ### License
 
 The code is available on this repository under
-[GNU LESSER GENERAL PUBLIC LICENSE (v3)](./LICENSE) [![License](https://img.shields.io/badge/License-LGPL3-blue.svg)](./License.md)
+[GNU LESSER GENERAL PUBLIC LICENSE (v3)](./LICENSE) [![License](https://img.shields.io/badge/License-LGPL3-blue.svg)](./LICENSE)
 
 ---
 
@@ -148,7 +148,7 @@ The code is available on this repository under
 
 - Articles: [![Article](https://zenodo.org/badge/doi/10.1016/j.jqsrt.2018.09.027.svg)](https://linkinghub.elsevier.com/retrieve/pii/S0022407318305867) [![Spectral Synthesis Algorithm](https://zenodo.org/badge/doi/10.1016/j.jqsrt.2020.107476.svg)](https://linkinghub.elsevier.com/retrieve/pii/S0022407320310049)
 
-- Source Code: [![GitHub](https://img.shields.io/github/stars/radis/radis.svg?style=social&label=Star)](https://github.com/radis/radis/stargazers) [![Contributors](https://img.shields.io/github/contributors/radis/radis.svg)](https://github.com/radis/radis/graphs/contributors) [![License](https://img.shields.io/badge/License-LGPL3-blue.svg)](./License.md)
+- Source Code: [![GitHub](https://img.shields.io/github/stars/radis/radis.svg?style=social&label=Star)](https://github.com/radis/radis/stargazers) [![Contributors](https://img.shields.io/github/contributors/radis/radis.svg)](https://github.com/radis/radis/graphs/contributors) [![License](https://img.shields.io/badge/License-LGPL3-blue.svg)](./LICENSE)
 
 - Test Status: [![Tests](https://app.travis-ci.com/radis/radis.svg?branch=develop)](https://app.travis-ci.com/github/radis/radis) [![Coverage](https://codecov.io/gh/radis/radis/branch/develop/graph/badge.svg)](https://codecov.io/gh/radis/radis) [![Benchmarks](http://img.shields.io/badge/benchmarked%20by-asv-blue.svg?style=flat)](https://github.com/radis/radis-benchmark)
 
