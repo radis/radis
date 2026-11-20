@@ -77,8 +77,12 @@ def fetch_hitemp(
             Vaex DataFrames are memory-mapped. They do not take any space in RAM
             and are extremely useful to deal with the largest databases.
 
-    parallel: bool
-        if ``True``, uses joblib.parallel to load database with multiple processes
+    parallel: bool or int
+        if ``True``, uses joblib with an auto-detected number of parallel workers.
+        if ``False``, uses serial (single-process) loading.
+        if an integer N > 1, uses exactly N parallel workers. Useful on
+        memory-constrained machines to avoid MemoryError (e.g. ``parallel=2``).
+        Default ``True``.
     database: ``str``
         The database version to retrieve. Options include:
         - `"most_recent"`: Fetches the latest available database version.
@@ -158,6 +162,7 @@ def fetch_hitemp(
             verbose=verbose,
             engine=engine,
             output=output,
+            parallel=parallel,
         )
 
         if return_local_path:

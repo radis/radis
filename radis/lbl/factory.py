@@ -300,6 +300,13 @@ class SpectrumFactory(BandFactory):
 
         See :py:data:`~radis.misc.warning.default_warning_status` for more
         information.
+    parallel: bool or int
+        If ``True``, uses joblib with an auto-detected number of parallel workers
+        when loading the database. If ``False``, uses serial (single-process) loading.
+        If an integer N > 1, uses exactly N parallel workers. Useful on
+        memory-constrained machines to avoid MemoryError (e.g. ``parallel=2``).
+        This value is used as the default for :meth:`~radis.lbl.loader.DatabankLoader.fetch_databank`.
+        Default ``True``.
     verbose: boolean, or int
         If ``False``, stays quiet. If ``True``, tells what is going on.
         If ``>=2``, gives more detailed messages (for instance, details of
@@ -450,6 +457,7 @@ class SpectrumFactory(BandFactory):
         lbfunc=None,
         potential_lowering=None,
         pfsource="default",
+        parallel=True,
         **kwargs,
     ):
 
@@ -693,6 +701,8 @@ class SpectrumFactory(BandFactory):
 
         # used to split lines into blocks not too big for memory
         self.misc.chunksize = chunksize
+        # parallel loading of database chunks (bool or int number of workers)
+        self.misc.parallel = parallel
         # Other parameters:
         self.save_memory = save_memory
         self.autoupdatedatabase = False  # a boolean to automatically store calculated
