@@ -184,9 +184,29 @@ def _fix_math_backslashes(app, what, name, obj, options, lines):
             in_math = False
 
 
+def _skip_reimported_members(app, what, name, obj, skip, options):
+    """Skip members that are re-imported from submodules."""
+    # We only care about objects that have a __module__ attribute
+    obj_module = getattr(obj, "__module__", None)
+    if not obj_module:
+        return skip
+
+    # Get the module currently being documented by autodoc
+    current_module = app.env.ref_context.get("py:module")
+
+    if current_module and obj_module != current_module:
+        # If the object belongs to the radis package but is not defined in the current module,
+        # it is a re-import. We skip it so it's only indexed at its true definition site.
+        if obj_module.startswith("radis."):
+            return True
+
+    return skip
+
+
 def setup(app):
     app.connect("builder-inited", run_apidoc)
     app.connect("autodoc-process-docstring", _fix_math_backslashes, priority=999)
+    app.connect("autodoc-skip-member", _skip_reimported_members)
     # Use add_css_file if available (Sphinx >= 1.6), fallback for older Sphinx
     if hasattr(app, "add_css_file"):
         app.add_css_file("custom.css")  # for scrollable sidebar
