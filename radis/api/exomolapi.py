@@ -29,6 +29,10 @@ import pandas as pd
 
 from radis.api.hdf5 import vaexsafe_colname
 
+# Allowed difference (cm-1) between the .trans wavenumber column and the
+# states-file energy difference before warning. Both are written to 1e-6 cm-1.
+NU_LINES_TOLERANCE = 1e-4
+
 
 def exact_molname_exomol_to_simple_molname(exact_exomol_molecule_name):
     """convert the exact molname (used in ExoMol) to the simple molname.
@@ -528,6 +532,7 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
     trans = map_add(trans, "J", "jlower", "i_lower")
     trans = map_add(trans, "J", "jupper", "i_upper")
     trans = map_add(trans, "E", "elower", "i_lower")
+    trans = map_add(trans, "E", "eupper", "i_upper")
 
     def has_nan(column):
         try:  # Vaex
@@ -535,9 +540,20 @@ def pickup_gE(states, trans, dic_def, skip_optional_data=True, engine="vaex"):
         except AttributeError:  # Pandas
             return column.hasnans
 
-    if not "nu_lines" in trans or has_nan(trans["nu_lines"]):
-        trans = map_add(trans, "E", "eupper", "i_upper")
-        trans["nu_lines"] = trans["eupper"] - trans["elower"]
+    # Line positions always come from the states file, which holds the
+    # recommended (e.g. MARVEL-corrected) energies. The optional wavenumber
+    # column of the .trans file can be stale: for 24Mg-1H__XAB it was computed
+    # from the calculated energies and is off by up to 27 cm-1.
+    nu_states = trans["eupper"] - trans["elower"]
+    if "nu_lines" in trans and not has_nan(trans["nu_lines"]):
+        dnu_max = float(abs(trans["nu_lines"] - nu_states).max())
+        if dnu_max > NU_LINES_TOLERANCE:
+            warnings.warn(
+                f"Wavenumbers in the .trans file differ from the states-file "
+                f"energy differences by up to {dnu_max:.3g} cm-1. Using the "
+                "states-file values (E_upper - E_lower)."
+            )
+    trans["nu_lines"] = nu_states
 
     ### Step 2. Extra quantum numbers (e/f parity, vib and rot numbers)
     # -----------------------------------------------------------------
@@ -665,9 +681,10 @@ def make_j2b(
 
     Args:
         bdat: exomol .broad data given by exomolapi.read_broad
-        alpha_ref_default: default value
-        n_Texp_default: default value
-        jlower_max: maximum number of jlower
+        alpha_ref_default: default value, used for jlower missing inside the table
+        n_Texp_default: default value, used for jlower missing inside the table
+        jlower_max: maximum number of jlower; jlower above the table's largest
+            jlower get the values of that largest jlower
         engine: "pytables" (default) for NumPy/Pandas processing, "vaex" for Vaex processing.
     Returns:
         j2alpha_ref[jlower] provides alpha_ref for jlower
@@ -719,15 +736,24 @@ def make_j2b(
         j2alpha_ref[jlower_arr] = alpha_ref_arr
         j2n_Texp[jlower_arr] = n_Texp_arr
 
-    # Raise a minor warning if default values are used for high J values
-    if Nblower > (np.max(jlower_arr) + 1):
+    # J'' beyond the table: carry the values of the largest tabulated J''
+    # (as PyExoCross does, Zhang, Tennyson & Yurchenko 2024, Sect. 3.4.1)
+    # instead of jumping to the .def defaults
+    jmax = int(np.nanmax(jlower_arr))
+    if Nblower > jmax + 1:
         import warnings
 
         from radis.misc.warning import AccuracyWarning
 
+        imax = int(np.nanargmax(np.asarray(jlower_arr, dtype=float)))
+        j2alpha_ref = np.array(j2alpha_ref, dtype=float)
+        j2n_Texp = np.array(j2n_Texp, dtype=float)
+        j2alpha_ref[jmax + 1 :] = np.asarray(alpha_ref_arr)[imax]
+        j2n_Texp[jmax + 1 :] = np.asarray(n_Texp_arr)[imax]
+
         warnings.warn(
             AccuracyWarning(
-                f"The default broadening parameter (alpha = {alpha_ref_default} cm^-1 and n = {n_Texp_default}) are used for J'' > {np.max(jlower_arr)} up to J'' = {Nblower}"
+                f"The broadening parameters of J'' = {jmax} (alpha = {j2alpha_ref[jmax]} cm^-1 and n = {j2n_Texp[jmax]}) are used for J'' > {jmax} up to J'' = {int(Nblower) - 1}"
             )
         )
 
@@ -792,6 +818,122 @@ def make_jj2b(bdat, j2alpha_ref_def, j2n_Texp_def, jupper_max=None, output="pyta
     jj2n_Texp[jlower_arr, jupper_arr] = n_Texp_arr
 
     return jj2alpha_ref, jj2n_Texp
+
+
+def broadening_from_recipes(
+    bdat, jlower, jupper, alpha_ref_default=0.07, n_Texp_default=0.5
+):
+    """Lorentzian HWHM (alpha_ref) and temperature exponent (n_Texp) of each line
+    from the recipes of an ExoMol .broad file (ExoMol 2024 release, Table 13).
+
+    Recipes are layered as in PyExoCross: a0 (J''), then a1 (J'', J') and m0 (|m|,
+    with m = -J'' for P, J'' for Q and J'' + 1 for R branch lines) wherever their
+    tables have an entry. The ExoMol 2024 specification tabulates m0 against |m|,
+    but older files (e.g. most ``__air.broad`` files, such as 27Al-1H__air.broad)
+    tabulate the signed m, with different P and R branch values: if the table has
+    a negative m, lines are looked up by signed m. J'' beyond the a0 table get the
+    values of its largest J''; without a0 or a1, m beyond the m0 table get the
+    values of its largest (or, for signed tables, smallest) m. m1 (|m|, K'') needs
+    K'', which is not loaded, and is skipped.
+
+    Args:
+        bdat: .broad data given by exomolapi.read_broad (pandas)
+        jlower, jupper: J'' and J' of each line
+        alpha_ref_default, n_Texp_default: values for lines no recipe covers
+    Returns:
+        alpha_ref, n_Texp: arrays, one value per line
+    """
+    import warnings
+
+    from radis.misc.warning import AccuracyWarning
+
+    jlower = np.asarray(jlower, dtype=float)
+    jupper = np.asarray(jupper, dtype=float)
+    jl = jlower.astype(int)
+    ju = jupper.astype(int)
+    codes = bdat["code"].astype(str).str.strip().str.lower()
+    alpha_ref = np.full(len(jl), alpha_ref_default, dtype=float)
+    n_Texp = np.full(len(jl), n_Texp_default, dtype=float)
+    if len(jl) == 0:
+        return alpha_ref, n_Texp
+    used = []
+
+    if (codes == "a0").any():
+        a0 = bdat[codes == "a0"]
+        j2alpha_ref, j2n_Texp = make_j2b(
+            a0, alpha_ref_default, n_Texp_default, jlower_max=jl.max()
+        )
+        alpha_ref, n_Texp = j2alpha_ref[jl], j2n_Texp[jl]
+        used.append("a0")
+
+    if (codes == "a1").any():
+        a1 = bdat[codes == "a1"]
+        N = int(max(jl.max(), a1["jlower"].max())) + 1
+        j2alpha_ref_def = np.full(N, alpha_ref_default, dtype=float)
+        j2n_Texp_def = np.full(N, n_Texp_default, dtype=float)
+        if "a0" in used:
+            k = min(N, len(j2alpha_ref))
+            j2alpha_ref_def[:k], j2n_Texp_def[:k] = j2alpha_ref[:k], j2n_Texp[:k]
+            j2alpha_ref_def[k:], j2n_Texp_def[k:] = j2alpha_ref[-1], j2n_Texp[-1]
+        jj2alpha_ref, jj2n_Texp = make_jj2b(
+            a1, j2alpha_ref_def, j2n_Texp_def, jupper_max=ju.max()
+        )
+        alpha_ref, n_Texp = jj2alpha_ref[jl, ju], jj2n_Texp[jl, ju]
+        used.append("a1")
+
+    if (codes == "m0").any():
+        m0 = bdat[codes == "m0"]
+        dj = ju - jl
+        pqr = np.isin(dj, (-1, 0, 1))  # other lines have no m
+        m_table = np.asarray(m0["jlower"], dtype=int)
+        # ExoMol 2024 tabulates |m|; older files (most air ones) the signed m
+        signed = (m_table < 0).any()
+        m = np.where(dj == -1, -jl, np.where(dj == 1, jl + 1, jl))
+        if not signed:
+            m = np.abs(m)
+        if not used:
+            m = np.clip(m, m_table.min() if signed else None, m_table.max())
+        m = np.where(pqr, m, m_table[0])  # any table entry: not used (found False)
+        mmin = int(min(m.min(), m_table.min()))
+        M = int(max(m.max(), m_table.max())) - mmin + 1
+        m2alpha_ref = np.full(M, np.nan)
+        m2n_Texp = np.full(M, np.nan)
+        m2alpha_ref[m_table - mmin] = np.asarray(m0["alpha_ref"], dtype=float)
+        m2n_Texp[m_table - mmin] = np.asarray(m0["n_Texp"], dtype=float)
+        idx = m - mmin
+        found = pqr & np.isfinite(m2alpha_ref[idx]) & np.isfinite(m2n_Texp[idx])
+        alpha_ref = np.where(found, m2alpha_ref[idx], alpha_ref)
+        n_Texp = np.where(found, m2n_Texp[idx], n_Texp)
+        if not used and not found.all():
+            warnings.warn(
+                AccuracyWarning(
+                    f"{(~found).sum()} lines are not covered by the m0 broadening "
+                    f"table; the default parameters (alpha = {alpha_ref_default} "
+                    f"cm^-1 and n = {n_Texp_default}) are used for them"
+                )
+            )
+        used.append("m0")
+
+    if (codes == "m1").any():
+        warnings.warn(
+            AccuracyWarning(
+                "The m1 broadening recipe (|m|, K'') is skipped: RADIS does not load "
+                "K''. " + ("Using " + ", ".join(used) + " instead." if used else "")
+            )
+        )
+    others = sorted(set(codes) - {"a0", "a1", "m0", "m1"})
+    if others:
+        warnings.warn(
+            f"The broadening file contains broadening codes {others} that are NOT "
+            "implemented yet; they are ignored."
+        )
+    if not used:
+        warnings.warn(
+            "No usable broadening recipe in the broadening file: the default "
+            f"parameters (alpha = {alpha_ref_default} cm^-1 and n = {n_Texp_default}) "
+            "are used."
+        )
+    return alpha_ref, n_Texp
 
 
 def _map_m0_parameter(values, mapping, default):
@@ -1543,6 +1685,21 @@ class MdbExomol(DatabaseManager):
                     )
                 os.remove(mgr.cache_file(trans_file))
 
+            if mgr.cache_file(trans_file).exists() and cache != "force":
+                # Caches written before nu_lines was always taken from the states
+                # file lack 'eupper' and may hold the .trans wavenumbers: regenerate.
+                try:
+                    stale = "eupper" not in mgr.get_columns(mgr.cache_file(trans_file))
+                except (NotImplementedError, ValueError):
+                    stale = False
+                if stale:
+                    self._printer.info(
+                        f"Cache {mgr.cache_file(trans_file).name} predates line positions "
+                        "from the states file. Regenerating it.",
+                        indent=2,
+                    )
+                    os.remove(mgr.cache_file(trans_file))
+
             if not mgr.cache_file(trans_file).exists():
                 if cache == "force":
                     raise ValueError(
@@ -1627,131 +1784,18 @@ class MdbExomol(DatabaseManager):
             if self.verbose > 1:
                 print(f"The file `{os.path.basename(file)}` is used.")
 
-            codelv = check_code_level(bdat, output=output)
+            if output == "vaex":
+                bdat = bdat.to_pandas_df()
             if self.verbose:
-                print("Broadening code level:", codelv)
+                print("Broadening codes:", sorted(set(bdat["code"].astype(str))))
 
-            if codelv == "a0":
-                j2alpha_ref, j2n_Texp = make_j2b(
-                    bdat,
-                    alpha_ref_default=self.alpha_ref_def,
-                    n_Texp_default=self.n_Texp_def,
-                    jlower_max=df["jlower"].max(),
-                    output=output,
-                )
-                self.alpha_ref = j2alpha_ref[df["jlower"].values.astype(int)]
-                self.n_Texp = j2n_Texp[df["jlower"].values.astype(int)]
-            elif codelv == "a1":
-                j2alpha_ref, j2n_Texp = make_j2b(
-                    bdat,
-                    alpha_ref_default=self.alpha_ref_def,
-                    n_Texp_default=self.n_Texp_def,
-                    jlower_max=df["jlower"].max(),
-                    output=output,
-                )
-                jj2alpha_ref, jj2n_Texp = make_jj2b(
-                    bdat,
-                    j2alpha_ref_def=j2alpha_ref,
-                    j2n_Texp_def=j2n_Texp,
-                    jupper_max=df["jupper"].max(),
-                    output=output,
-                )
-                self.alpha_ref = (
-                    np.array(
-                        jj2alpha_ref[
-                            df["jlower"].values.astype(int),
-                            df["jupper"].values.astype(int),
-                        ]
-                    )
-                    if self.engine != "vaex"
-                    else jj2alpha_ref[
-                        df["jlower"].values.astype(int), df["jupper"].values.astype(int)
-                    ]
-                )
-                self.n_Texp = (
-                    np.array(
-                        jj2n_Texp[
-                            df["jlower"].values.astype(int),
-                            df["jupper"].values.astype(int),
-                        ]
-                    )
-                    if self.engine != "vaex"
-                    else jj2n_Texp[
-                        df["jlower"].values.astype(int), df["jupper"].values.astype(int)
-                    ]
-                )
-            elif codelv == "m0":
-
-                # label P, Q, and R the transitions
-                df["PQR"] = df["jupper"] - df["jlower"]  # P:+1, Q:0, R:-1
-
-                if output == "vaex":
-                    df["m"] = df.func.where(
-                        df["PQR"] == -1,
-                        -df["jlower"],
-                        df.func.where(
-                            df["PQR"] == 0,
-                            df["jlower"],
-                            df.func.where(df["PQR"] == 1, df["jlower"] + 1, 0),
-                        ),
-                    )
-                    # np.nan causes the error in vaex when using map,
-                    # 0 is regarded as the exeption value because m must not be zero
-                else:
-                    df["m"] = np.where(
-                        df["PQR"] == -1,
-                        -df["jlower"],
-                        np.where(
-                            df["PQR"] == 0,
-                            df["jlower"],
-                            np.where(df["PQR"] == 1, df["jlower"] + 1, np.nan),
-                        ),
-                    )
-
-                    # Check for values outside -1, 0, 1 and raise a warning
-                    invalid_pqr = df[~df["PQR"].isin([-1, 0, 1])]
-                    # Not working for Vaex
-                    if not invalid_pqr.empty:
-                        warnings.warn(
-                            f"Found {len(invalid_pqr)} values in 'PQR' outside of -1, 0, 1: {invalid_pqr['PQR'].unique()}"
-                        )
-                alpha_ref_dict = dict(zip(bdat["jlower"], bdat["alpha_ref"]))
-                n_Texp_dict = dict(zip(bdat["jlower"], bdat["n_Texp"]))
-
-                def map_m0_parameter(mapping, default, parameter_name):
-                    mapped, missing_count = _map_m0_parameter(df["m"], mapping, default)
-                    if missing_count:
-                        warnings.warn(
-                            f"{missing_count} missing or unexpected m value(s) in "
-                            f"ExoMol m0 broadening data; replacing {parameter_name} "
-                            f"with the default value {default}.",
-                            UserWarning,
-                        )
-                    return mapped
-
-                alpha_ref = map_m0_parameter(
-                    alpha_ref_dict, self.alpha_ref_def, "alpha_ref"
-                )
-                n_Texp = map_m0_parameter(n_Texp_dict, self.n_Texp_def, "n_Texp")
-                self.alpha_ref = alpha_ref
-                self.n_Texp = n_Texp
-
-            else:
-                warnings.warn(
-                    f"The broadening file contains this broadening code: {codelv}."
-                    + " This broadening code is NOT implemented yet.\n"
-                    + "Using default parameters instead."
-                )
-                if output != "vaex":
-                    self.alpha_ref = self.alpha_ref_def * np.ones(len(df))
-                    self.n_Texp = self.n_Texp_def * np.ones(len(df))
-                else:
-                    self.alpha_ref = vaex.from_arrays(
-                        alpha_ref=[alpha_ref_def] * np.ones(len(df))
-                    )
-                    self.n_Texp = vaex.from_arrays(
-                        n_Texp=[n_Texp_def] * np.ones(len(df))
-                    )
+            self.alpha_ref, self.n_Texp = broadening_from_recipes(
+                bdat,
+                np.asarray(df["jlower"].values),
+                np.asarray(df["jupper"].values),
+                alpha_ref_default=self.alpha_ref_def,
+                n_Texp_default=self.n_Texp_def,
+            )
         else:
             if not os.path.exists(file):
                 warnings.warn(
@@ -1778,9 +1822,10 @@ class MdbExomol(DatabaseManager):
                 self.add_column(df, "selbrd", self.alpha_ref)
                 self.add_column(df, "selbrd_Tdpair", self.n_Texp)
             else:
-                raise NotImplementedError(
-                    "Please post on https://github.com/radis/radis to ask for this feature."
-                )
+                # other broadening partners (H2, He, CO2, ...): same column names
+                # as HITRAN's gamma_<diluent> / n_<diluent>
+                self.add_column(df, "gamma_" + species.lower(), self.alpha_ref)
+                self.add_column(df, "n_" + species.lower(), self.n_Texp)
 
     def QT_interp(self, T):
         """interpolated partition function
