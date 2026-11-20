@@ -215,8 +215,8 @@ def cdsd2df(
 
     Storage::
 
-        %timeit df.to_hdf("cdsd_02069_02070.h5", "df", format="fixed")  337ms
-        %timeit df.to_hdf("cdsd_02069_02070.h5", "df", format="table")  1.03s
+        %timeit df.to_hdf("cdsd_02069_02070.h5", key="df", format="fixed")  337ms
+        %timeit df.to_hdf("cdsd_02069_02070.h5", key="df", format="table")  1.03s
 
     References
     ----------

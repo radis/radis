@@ -38,7 +38,7 @@ def test_hdf5_io_engines(*args, **kwargs):
     df0 = pd.DataFrame({"a": np.arange(10) ** 2, "b": np.arange(10) ** 3})
     metadata0 = {"some_metadata": True}
     # ... a Pandas HDFStore file
-    df0.to_hdf("test_pytables.h5", "df")
+    df0.to_hdf("test_pytables.h5", key="df")
     # ... a h5py file with same content
     with h5py.File("test_h5py.h5", "w") as f:
         # group = f.create_group("df")
