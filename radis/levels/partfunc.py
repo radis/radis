@@ -73,8 +73,6 @@ from radis.db.classes import (
     HITRAN_CLASS1,
     HITRAN_CLASS2,
     HITRAN_CLASS3,
-    HITRAN_CLASS5,
-    HITRAN_CLASS6,
     get_molecule,
     get_molecule_identifier,
 )
@@ -1383,7 +1381,20 @@ class PartFuncTIPS(RovibParFuncTabulator):
         with redirect_stdout(None):
             from hapi import TIPS_2021_ISOT_HASH
 
-        TT = TIPS_2021_ISOT_HASH[(M, I)]
+            try:  # TIPS-2025 only exists in recent HAPI versions
+                from hapi import TIPS_2025_ISOT_HASH
+            except ImportError:
+                TIPS_2025_ISOT_HASH = {}
+
+        # Molecules added to HITRAN after TIPS-2021 (ids 56-61) only have TIPS-2025 data
+        if (M, I) in TIPS_2021_ISOT_HASH:
+            TT = TIPS_2021_ISOT_HASH[(M, I)]
+        elif (M, I) in TIPS_2025_ISOT_HASH:
+            TT = TIPS_2025_ISOT_HASH[(M, I)]
+        else:
+            raise KeyError(
+                f"No TIPS partition function in HAPI for {self.molecule} (id {M}), isotope {I}"
+            )
         self.Tmin = min(TT)
         self.Tmax = max(TT)
 
@@ -1553,6 +1564,8 @@ class PartFunc_Dunham(RovibParFuncCalculator):
     Above a certain vibrational level a Morse Potential may be used. See how
     the molecule is defined in :mod:`~radis.db.molecules`
 
+    The HITRAN class dispatch in initialization was edited with AI assistance.
+
     See Also
     --------
 
@@ -1661,9 +1674,9 @@ class PartFunc_Dunham(RovibParFuncCalculator):
         )
 
         # Get levels
-        if molecule in HITRAN_CLASS1 + HITRAN_CLASS2 + HITRAN_CLASS3:
+        if molecule in HITRAN_CLASS1:
             nb_vib_modes = 1
-        elif molecule in HITRAN_CLASS5 + HITRAN_CLASS6:
+        elif molecule in HITRAN_CLASS2 + HITRAN_CLASS3:
             nb_vib_modes = 3
         else:
             raise NotImplementedError
@@ -1682,12 +1695,7 @@ class PartFunc_Dunham(RovibParFuncCalculator):
                     )
             if molecule in HITRAN_CLASS1:
                 self.build_energy_levels_class1()
-            ## Added in #842 but not used (MinouHub)
-            # elif molecule in HITRAN_CLASS3:  # OH, NO, ClO (2Π states)
-            #     # Use CLASS1 method (diatomic Dunham/Herzberg)
-            #     # TODO: implement full 2Π treatment with spin-orbit and Lambda-doubling
-            #     self.build_energy_levels_class1()
-            elif molecule in HITRAN_CLASS5:  # CO2
+            elif molecule == "CO2":
                 self.build_energy_levels_class5(
                     calc_Evib_per_mode=calc_Evib_per_mode,
                     calc_Evib_harmonic_anharmonic=calc_Evib_harmonic_anharmonic,
@@ -1888,8 +1896,9 @@ class PartFunc_Dunham(RovibParFuncCalculator):
     ):
         r"""in the case where only Ediss is given. Deal with vmax, Jmax later.
 
-        :data:`~radis.api.hitranapi.HITRAN_CLASS5` = ['CO2']
-        # Linear triatomic with large Fermi resonance
+        For CO2, a linear triatomic with large Fermi resonance. The method
+        name refers to the HITRAN2004 class number (class 2 in HITRAN2020).
+        Edited with AI assistance.
 
         Parameters
         ----------

@@ -66,13 +66,10 @@ def fetch_exomol(
             In RADIS, isotope abundance is included in the line intensity
             calculation. However, the terrestrial abundances used may not be
             relevant to non-terrestrial applications.
-            By default, the abundance is given reading HITRAN data. If the molecule
-            does not exist in the HITRAN database, the abundance is read from
-            the ``radis/radis_default.json`` configuration file, which can be
-            modified by editing ``radis.config`` after import or directly
-            by editing the user ``~/radis.json`` user configuration file
-            (overwrites ``radis_default.json``). In the ``radis/radis_default.json``
-            file, values were calculated with a simple model based on the
+            By default, the abundance is read from the HITRAN molecular
+            parameters (``radis/db/molparam.txt``). If the molecule does not
+            exist in HITRAN, it is read from ``radis/db/molparams_extra.json``,
+            where values were estimated with a simple model based on the
             terrestrial isotopic abundance of each element.
 
     load_wavenum_min, load_wavenum_max: float (cm-1)
