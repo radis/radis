@@ -227,7 +227,8 @@ class RovibParFuncCalculator(RovibPartitionFunction):
                 vaex  # to avoid linting errors
             except ImportError:
                 raise ImportError(
-                    r"On-the-fly tabulation of partition functions require Vaex. Install it. /!\ as of June 2024 Vaex is not available on Python>=3.11 "
+                    "On-the-fly tabulation of partition functions requires Vaex. Install it "
+                    + "(RADIS installs it automatically on Python < 3.15)."
                 )
 
         self.mode = mode

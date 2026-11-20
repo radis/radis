@@ -49,8 +49,8 @@ LAST_VALID_DATE = (
 def get_auto_MEMORY_MAPPING_ENGINE():
     """see https://github.com/radis/radis/issues/653
 
-    Use Vaex by default if it exists (only Python <= 3.11 as of June 2024) ,
-    else use PyTables"""
+    Use Vaex by default if it is installed (RADIS installs it automatically
+    on Python < 3.15), else use PyTables"""
     # Check if vaex is available
     if isinstance(vaex, NotInstalled):
         return "pytables"

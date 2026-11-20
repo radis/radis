@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 from radis.io.hitran import fetch_hitran
 
 # %% Adapt this example if vaex is installed or not
-# June 2024: vaex is not compatible with python>=3.11, see https://github.com/radis/radis/pull/656 and the WIP solution here https://github.com/radis/radis/pull/698
+# Vaex is installed automatically with RADIS on Python < 3.15; otherwise we fall back to pytables
 try:
     import vaex
 

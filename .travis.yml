@@ -1,8 +1,8 @@
 # Runs Test scripts; Linting; Deployment on Travis-CI
 language: python
-python: #we test on 3.10, compatible with vaex, and 3.11, which is not compatible with vaex (as of September 2025)
-  - "3.10" #compatible with vaex
-  - "3.11" #not compatible with vaex
+python: #we test on 3.10 and 3.11 (vaex is installed on both)
+  - "3.10"
+  - "3.11"
 os: linux
 dist: noble # this gives us Ubuntu 24.04 LTS
 
