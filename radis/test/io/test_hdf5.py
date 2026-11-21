@@ -81,6 +81,19 @@ def test_hdf5_io_engines(*args, **kwargs):
     assert list(manager.get_columns("test_pytables.h5")) == ["a", "b"]
 
 
+@pytest.mark.fast
+def test_get_columns_feather(tmp_path):
+    """Test :py:meth:`~radis.api.hdf5.DataFileManager.get_columns` with the
+    feather engine. See https://github.com/radis/radis/issues/1059"""
+    import pandas as pd
+
+    file = str(tmp_path / "test_feather.feather")
+    pd.DataFrame({"a": [1, 3], "b": [2, 4]}).to_feather(file)
+
+    manager = DataFileManager(engine="feather")
+    assert list(manager.get_columns(file)) == ["a", "b"]
+
+
 @pytest.mark.needs_connection
 def test_local_hdf5_lines_loading(*args, **kwargs):
     """
