@@ -246,6 +246,12 @@ class DataFileManager(object):
         elif engine == "pytables":
             with pd.HDFStore(local_file, "r") as store:
                 columns = store.select("df", start=1, stop=1).columns
+        elif engine == "feather":
+            # read the column names from the Arrow schema, without loading the data
+            import pyarrow.ipc
+
+            with pyarrow.ipc.open_file(local_file) as reader:
+                columns = reader.schema.names
         elif engine in ["h5py"]:
             raise NotImplementedError
         else:
