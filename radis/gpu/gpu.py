@@ -8,7 +8,6 @@ from scipy.fft import next_fast_len
 from radis.gpu.params import (
     init_G_params,
     init_L_params,
-    init_Q,
     set_G_params,
     set_L_params,
     set_pTQ,
@@ -150,11 +149,14 @@ class gpuApp(GPUApplication):
         for i in range(len(log_c2Mm_arr)):
             self.init_h.log_c2Mm[i] = log_c2Mm_arr[i]
 
-        init_Q(Q_intp_list)
         log_2vMm = np.log(v0) + log_c2Mm_arr.take(iso)
 
-        init_G_params(log_2vMm.astype(np.float32), verbose)
-        init_L_params(na, gamma_arr, verbose)  # TODO: do this on GPU?
+        # Stored per instance (not module-level) so that several gpuApp
+        # objects can coexist, see https://github.com/radis/radis/issues/1003
+        self._Q_intp_list = Q_intp_list
+        self._G_param_data = init_G_params(log_2vMm.astype(np.float32), verbose)
+        # TODO: do this on GPU?
+        self._L_param_data = init_L_params(na, gamma_arr, verbose)
 
         # Parameters that *do* change are stored in iter_h.
         # We only assign values to them in the iterate() method,
@@ -342,9 +344,17 @@ class gpuApp(GPUApplication):
         ## Update the contents of iter_h, which as a device_local buffer also
         ## immediately updates the GPU side buffer
 
-        set_pTQ(p, T, mole_fraction, self.iter_h, l=l, slit_FWHM=slit_FWHM)
-        set_G_params(self.init_h, self.iter_h)
-        set_L_params(self.init_h, self.iter_h)
+        set_pTQ(
+            p,
+            T,
+            mole_fraction,
+            self.iter_h,
+            self._Q_intp_list,
+            l=l,
+            slit_FWHM=slit_FWHM,
+        )
+        set_G_params(self.init_h, self.iter_h, self._G_param_data)
+        set_L_params(self.init_h, self.iter_h, self._L_param_data)
 
         if verbose >= 2:
             print("Running compute pipelines...")
