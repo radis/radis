@@ -1792,6 +1792,13 @@ class HITRANDatabaseManager(DatabaseManager):
             verbose=verbose,
             parallel=parallel,
         )
+        if self.engine not in ["vaex", "pytables"]:
+            # see https://github.com/radis/radis/issues/1061
+            raise NotImplementedError(
+                f"HITRAN databases support the 'vaex' and 'pytables' memory-mapping engines, got '{self.engine}'. "
+                + "Set radis.config['MEMORY_MAPPING_ENGINE'] to 'vaex' or 'pytables' (or 'auto'), "
+                + "or use `engine='vaex'` / `engine='pytables'` in fetch_hitran()"
+            )
         self.downloadable = True
         self.base_url = None
         self.Nlines = None
