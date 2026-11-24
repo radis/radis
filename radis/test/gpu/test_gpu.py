@@ -198,6 +198,42 @@ def test_multiple_gpu_calls(plot=False, hard_test=True):
 
 
 @pytest.mark.needs_gpu
+@pytest.mark.fast
+def test_multiple_gpu_apps():
+    """Creating a second gpuApp must not change the results of the first one.
+
+    See https://github.com/radis/radis/issues/1003
+    """
+
+    conditions = {
+        "wavenum_min": 2000,
+        "wavenum_max": 2100,
+        "wstep": 0.002,
+        "isotope": "all",
+    }
+
+    sf_CO = SpectrumFactory(molecule="CO", **conditions)
+    sf_CO.load_databank(
+        path=getTestFile("hitran_co_3iso_2000_2300cm.par"), format="hitran"
+    )
+    sf_H2O = SpectrumFactory(molecule="H2O", **conditions)
+    sf_H2O.load_databank(
+        path=getTestFile("hitran_2016_H2O_2iso_2000_2100cm.par"), format="hitran"
+    )
+
+    s_CO = sf_CO.eq_spectrum_gpu(Tgas=440, mole_fraction=0.01)
+    _, A_before = s_CO.get("abscoeff")
+
+    s_H2O = sf_H2O.eq_spectrum_gpu(Tgas=440, mole_fraction=50e-6)
+    A_after = s_CO.recalc_gpu("abscoeff", Tgas=440, mole_fraction=0.01)
+
+    s_CO.exit_gpu()
+    s_H2O.exit_gpu()
+
+    assert allclose(A_before, A_after, rtol=1e-4)
+
+
+@pytest.mark.needs_gpu
 def test_broadening(plot=False):
     """Compare broadening to ensure it is the same in cpu and gpu"""
 

@@ -63,8 +63,7 @@ def init_L_params(na, gamma_arr, verbose=False):
     if verbose >= 2:
         print("done!")
 
-    global _L_param_data
-    _L_param_data = param_data
+    return param_data
 
 
 def init_G_params(log_2vMm, verbose=False):
@@ -77,19 +76,13 @@ def init_G_params(log_2vMm, verbose=False):
     if verbose >= 2:
         print("done!")
 
-    global _G_param_data
-    _G_param_data = param_data
+    return param_data
 
 
-def init_Q(Q_intp_list):
-    global _Q_intp_list
-    _Q_intp_list = Q_intp_list
-
-
-def set_L_params(init_h, iter_h, epsilon=1e-4):
+def set_L_params(init_h, iter_h, L_param_data, epsilon=1e-4):
 
     result = []
-    for params in _L_param_data:
+    for params in L_param_data:
         A, B, X = params
         i = 0
         while X[i] < iter_h.log_rT:
@@ -104,9 +97,9 @@ def set_L_params(init_h, iter_h, epsilon=1e-4):
     iter_h.N_L = N
 
 
-def set_G_params(init_h, iter_h, epsilon=1e-4):
+def set_G_params(init_h, iter_h, G_param_data, epsilon=1e-4):
 
-    log_2vMm_min, log_2vMm_max = _G_param_data
+    log_2vMm_min, log_2vMm_max = G_param_data
     log_wG_min = log_2vMm_min + iter_h.hlog_T
     log_wG_max = log_2vMm_max + iter_h.hlog_T
     log_wG_max += epsilon
@@ -117,7 +110,7 @@ def set_G_params(init_h, iter_h, epsilon=1e-4):
     iter_h.N_G = N
 
 
-def set_pTQ(p, T, mole_fraction, iter_h, l=1.0, slit_FWHM=0.0):
+def set_pTQ(p, T, mole_fraction, iter_h, Q_intp_list, l=1.0, slit_FWHM=0.0):
     """
 
 
@@ -130,6 +123,8 @@ def set_pTQ(p, T, mole_fraction, iter_h, l=1.0, slit_FWHM=0.0):
     mole_fraction : float
     iter_h : TYPE
         DESCRIPTION.
+    Q_intp_list : list
+        List of Q branch interpolators.
     l : TYPE, optional
         DESCRIPTION. The default is 1.0.
     slit_FWHM : TYPE, optional
@@ -151,5 +146,5 @@ def set_pTQ(p, T, mole_fraction, iter_h, l=1.0, slit_FWHM=0.0):
     # iter_h.l = l //TODO: GPU calculation of absorbance not currently implemented
     # iter_h.slit_FWHM = slit_FWHM //TODO: GPU application of ILS not currently implemented
 
-    for i in range(len(_Q_intp_list)):
-        iter_h.Q[i] = _Q_intp_list[i](T)
+    for i in range(len(Q_intp_list)):
+        iter_h.Q[i] = Q_intp_list[i](T)
