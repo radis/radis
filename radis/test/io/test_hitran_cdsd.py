@@ -757,6 +757,26 @@ def test_COFCl_is_an_asymmetric_rotor():
     assert "COFCl" not in HITRAN_GROUP2
 
 
+@pytest.mark.fast
+def test_hitran_unsupported_engine_error(tmp_path, monkeypatch):
+    """HITRAN only supports the 'vaex' and 'pytables' engines: other engines
+    should raise a clear error before anything is downloaded.
+    See https://github.com/radis/radis/issues/1061"""
+    from radis import config
+    from radis.io.hitran import fetch_hitran
+
+    kwargs = dict(local_databases=str(tmp_path), databank_name="HITRAN-CO-ENGINE-TEST")
+
+    # engine given directly
+    with pytest.raises(NotImplementedError, match="'vaex' and 'pytables'"):
+        fetch_hitran("CO", engine="feather", **kwargs)
+
+    # engine taken from the config
+    monkeypatch.setitem(config, "MEMORY_MAPPING_ENGINE", "feather")
+    with pytest.raises(NotImplementedError, match="got 'feather'"):
+        fetch_hitran("CO", **kwargs)
+
+
 def _run_testcases(verbose=True, *args, **kwargs):
 
     test_hitran_names_match(verbose=verbose, *args, **kwargs)
